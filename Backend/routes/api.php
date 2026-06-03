@@ -119,6 +119,7 @@ Route::group(['middleware' => ['jwt.auth']], function () {
     require base_path('routes/modulos/contabilidad/configuracion.php');
     require base_path('routes/modulos/contabilidad/partidas.php');
     require base_path('routes/modulos/contabilidad/reportes.php');
+    require base_path('routes/modulos/contabilidad/notas-estados-financieros.php');
 
 	// Bancos
     require base_path('routes/modulos/bancos/cuentas.php');

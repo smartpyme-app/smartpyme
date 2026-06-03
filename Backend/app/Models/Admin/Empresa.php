@@ -136,6 +136,10 @@ class Empresa extends Model
         'tipo_renta_productos',
         'tipo_sector',
 
+        // Contabilidad — ejercicio fiscal
+        'mes_inicio_ejercicio_fiscal',
+        'id_cuenta_cierre_resultados',
+
         //Sello y firma
         'sello',
         'firma',

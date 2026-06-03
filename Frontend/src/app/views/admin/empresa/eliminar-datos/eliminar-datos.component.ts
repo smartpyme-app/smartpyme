@@ -40,6 +40,7 @@ export class EliminarDatosComponent implements OnInit {
         this.empresa.m_compras      = false;
         this.empresa.m_gastos      = false;
         this.empresa.m_presupuestos = false;
+        this.empresa.m_catalogo_cuentas = false;
 
   	    this.loading = true;
         this.apiService.read('empresa/', this.apiService.auth_user().id_empresa)
@@ -59,6 +60,7 @@ export class EliminarDatosComponent implements OnInit {
         this.empresa.m_compras      = value;
         this.empresa.m_gastos      = value;
         this.empresa.m_presupuestos      = value;
+        this.empresa.m_catalogo_cuentas = value;
         // this.empresa.m_promociones  = value;
     }
 

@@ -1,6 +1,5 @@
 <?php 
 
-use App\Http\Controllers\Api\Compras\DocumentoImportController;
 use App\Http\Controllers\Api\Compras\Gastos\GastosController;
 use App\Http\Controllers\Api\Compras\Gastos\GastosAbonosController;
 use App\Http\Controllers\Api\Compras\Gastos\CategoriasController;
@@ -18,7 +17,6 @@ use Illuminate\Support\Facades\Route;
     Route::post('/gastos/dash',         [GastosController::class, 'dash']);
 
     Route::post('/gastos/importar-json', [GastosController::class, 'importarJson']);
-    Route::post('/gastos/importar-documento', [DocumentoImportController::class, 'importarGasto']);
     Route::get('/gastos/nums-ids', [GastosController::class, 'getNumerosIdentificacion']);
 
     Route::get('/gastos/categorias',    [CategoriasController::class, 'index']);

@@ -128,11 +128,21 @@
                                     </div>
                                 </td>
                             </tr>
+                            <tr>
+                                <td>Catálogo de cuentas</td>
+                                <td>Se marcarán como eliminadas todas las cuentas del catálogo contable de la empresa (soft delete). Podrá importar o crear un catálogo nuevo sin conflictos de código.</td>
+                                <td class="text-center">
+                                    <div class="form-switch bg-light-info rounded">
+                                        <label for=""></label>
+                                        <input type="checkbox" class="form-check-input float-end" [(ngModel)]="empresa.m_catalogo_cuentas" name="catalogo_cuentas">
+                                    </div>
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
                 <div class="col-12 mt-3">
-                    <button type="submit" [disabled]="saving || (!empresa.m_inventario && !empresa.m_categorias && !empresa.m_ventas && !empresa.m_clientes && !empresa.m_proveedores && !empresa.m_compras && !empresa.m_gastos && !empresa.m_presupuestos && !empresa.m_paquetes)" class="btn btn-danger float-end">
+                    <button type="submit" [disabled]="saving || (!empresa.m_inventario && !empresa.m_categorias && !empresa.m_ventas && !empresa.m_clientes && !empresa.m_proveedores && !empresa.m_compras && !empresa.m_gastos && !empresa.m_presupuestos && !empresa.m_paquetes && !empresa.m_catalogo_cuentas)" class="btn btn-danger float-end">
                         @if (!saving) {
                           <span>Eliminar datos</span>
                         }

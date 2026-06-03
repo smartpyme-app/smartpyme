@@ -1,0 +1,137 @@
+<div class="container-fluid py-3 cierre-ejercicio-container">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <h2 class="page-heading mb-0">Cierre de ejercicio fiscal</h2>
+    <button type="button" class="btn btn-outline-secondary" (click)="volverPartidas()">
+      <i class="fa fa-arrow-left me-1"></i> Partidas
+    </button>
+  </div>
+
+  <section class="bg-white p-4 rounded shadow-sm mb-4">
+    <h4 class="h6 mb-3">Configuración del ejercicio (empresa)</h4>
+    <p class="text-muted small mb-3">
+      La <strong>etiqueta del ejercicio</strong> es el año calendario del <strong>último mes</strong> del ejercicio
+      (ej. julio–junio con cierre en junio de 2025 → año de referencia <strong>2025</strong>).
+    </p>
+    <div class="row g-3 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label">Mes de inicio del ejercicio</label>
+        <select class="form-select" [(ngModel)]="mesInicioEjercicio">
+          <option *ngFor="let m of [1,2,3,4,5,6,7,8,9,10,11,12]" [ngValue]="m">
+            {{ nombreMes(m) }}
+          </option>
+        </select>
+      </div>
+      <div class="col-md-5">
+        <label class="form-label">Cuenta patrimonio / resultado (cierre)</label>
+        <select class="form-select" [(ngModel)]="idCuentaCierre">
+          <option [ngValue]="null">— Seleccione —</option>
+          <option *ngFor="let c of catalogo" [ngValue]="c.id">
+            {{ c.codigo }} — {{ c.nombre }}
+          </option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <button
+          type="button"
+          class="btn btn-primary w-100"
+          [disabled]="guardandoConfig"
+          (click)="guardarConfiguracionFiscal()">
+          <span *ngIf="!guardandoConfig"><i class="fa fa-save me-1"></i> Guardar</span>
+          <span *ngIf="guardandoConfig">Guardando…</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <section class="bg-white p-4 rounded shadow-sm mb-4">
+    <div class="row g-3 align-items-end mb-3">
+      <div class="col-md-4">
+        <label class="form-label">Año de referencia del ejercicio</label>
+        <select class="form-select" [(ngModel)]="selectedAnio" (ngModelChange)="cargarEstado()">
+          <option *ngFor="let a of anios" [ngValue]="a">{{ a }}</option>
+        </select>
+      </div>
+      <div class="col-md-8 d-flex align-items-center">
+        <span *ngIf="estado?.ejercicio_cerrado" class="badge bg-success">Ejercicio cerrado</span>
+        <span *ngIf="estado && !estado.ejercicio_cerrado" class="badge bg-secondary">Ejercicio abierto</span>
+      </div>
+    </div>
+
+    <div *ngIf="cargando" class="text-center py-4 text-muted">Cargando…</div>
+
+    <div *ngIf="!cargando && estado">
+      <p class="small text-muted mb-2">
+        Mes fiscal inicio configurado: <strong>{{ nombreMes(estado.mes_inicio_ejercicio_fiscal || 1) }}</strong>
+        — Último mes de este ejercicio:
+        <strong>{{ nombreMes(estado.ultimo_mes?.month) }} {{ estado.ultimo_mes?.year }}</strong>
+      </p>
+
+      <div *ngIf="estado.id_partida_cierre" class="alert alert-secondary small py-2 mb-3 d-flex flex-wrap align-items-center gap-2">
+        <span><strong>Asiento de cierre de resultados:</strong></span>
+        <a class="btn btn-sm btn-outline-primary" [routerLink]="['/contabilidad/partida', estado.id_partida_cierre]">
+          Ver partida #{{ estado.id_partida_cierre }}
+        </a>
+        <span *ngIf="estado.partida_cierre_fecha" class="text-muted">{{ estado.partida_cierre_fecha }}</span>
+        <span *ngIf="estado.partida_cierre_concepto" class="text-muted text-break">{{ estado.partida_cierre_concepto }}</span>
+      </div>
+
+      <div class="table-responsive mb-3">
+        <table class="table table-sm table-bordered">
+          <thead>
+            <tr>
+              <th>Mes</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let x of estado.meses">
+              <td>{{ nombreMes(x.month) }} {{ x.year }}</td>
+              <td>
+                <span class="badge" [ngClass]="x.cerrado ? 'bg-success' : 'bg-warning text-dark'">
+                  {{ x.cerrado ? 'Cerrado' : 'Abierto' }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <ul class="small mb-3">
+        <li [class.text-success]="estado.configuracion_ok" [class.text-danger]="!estado.configuracion_ok">
+          Cuenta de cierre configurada: {{ estado.configuracion_ok ? 'Sí' : 'No' }}
+        </li>
+        <li [class.text-success]="estado.once_primeros_meses_cerrados" [class.text-danger]="!estado.once_primeros_meses_cerrados">
+          Los once primeros meses del ejercicio cerrados: {{ estado.once_primeros_meses_cerrados ? 'Sí' : 'No' }}
+        </li>
+      </ul>
+
+      <div *ngIf="estado.ultimo_mes_cerrado && !estado.tiene_partida_cierre_ejercicio && !estado.ejercicio_cerrado" class="alert alert-info small py-2 mb-3">
+        El <strong>último mes</strong> del ejercicio aparece como cerrado (cierre de mes).
+        Al usar «Cerrar ejercicio fiscal», el sistema lo <strong>reabrirá solo para este proceso</strong>,
+        registrará el asiento de cierre de resultados y lo volverá a cerrar.
+        Si también tiene cerrado el <strong>mes siguiente</strong> (p. ej. enero del año siguiente), debe reabrir el último mes desde
+        <a routerLink="/contabilidad/cierre-mes">Cierre de mes</a> primero.
+      </div>
+
+      <p *ngIf="mensajeBloqueoCierre()" class="alert alert-warning small py-2 mb-3">{{ mensajeBloqueoCierre() }}</p>
+
+      <div class="d-flex flex-wrap gap-2">
+        <button
+          type="button"
+          class="btn btn-primary"
+          [disabled]="!puedeCerrarEjercicio() || cargando || !!mensajeBloqueoCierre()"
+          (click)="cerrarEjercicio()">
+          <i class="fa fa-lock me-1"></i> Cerrar ejercicio fiscal
+        </button>
+        <button
+          *ngIf="puedeReabrirContabilidad() && estado.ejercicio_cerrado"
+          type="button"
+          class="btn btn-warning"
+          [disabled]="cargando"
+          (click)="reabrirEjercicio()">
+          <i class="fa fa-unlock me-1"></i> Reabrir ejercicio
+        </button>
+      </div>
+    </div>
+  </section>
+</div>
