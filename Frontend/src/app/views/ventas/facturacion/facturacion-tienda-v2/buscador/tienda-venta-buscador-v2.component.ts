@@ -220,7 +220,10 @@ export class TiendaVentaBuscadorV2Component implements OnInit {
             this.detalle.id_presentacion   = producto.id_presentacion ?? null;
             this.detalle.factor_conversion = producto.factor_conversion ?? 1;
             this.detalle.descripcion       = producto.nombre_mostrar;
-            this.detalle.stock             = producto.stock_base_actual ?? null;
+            this.detalle.tipo              = producto.tipo;
+            this.detalle.stock             = producto.tipo === 'Servicio'
+                ? null
+                : (producto.stock_base_actual ?? null);
             this.detalle.precios           = [{
                 precio: precioSinIva.toFixed(4),
                 precio_sin_iva: precioSinIva,
