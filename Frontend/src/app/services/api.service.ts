@@ -90,6 +90,10 @@ export class ApiService {
     return this.httpService.update(url, id, model);
   }
 
+  patch(url: string, id: number, model: any): Observable<any> {
+    return this.httpService.patch(url, id, model);
+  }
+
   delete(url: string, id: number): Observable<any> {
     return this.httpService.delete(url, id);
   }

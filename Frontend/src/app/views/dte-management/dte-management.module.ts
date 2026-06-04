@@ -30,9 +30,7 @@ import { DteDetailComponent } from './dte-detail/dte-detail.component';
     TooltipModule.forRoot(),
     ModalModule.forRoot(),
     CollapseModule.forRoot(),
-    PopoverModule.forRoot()
-  ],
-  declarations: [
+    PopoverModule.forRoot(),
     DteManagementComponent,
     EmailAccountsComponent,
     SyncDashboardComponent,

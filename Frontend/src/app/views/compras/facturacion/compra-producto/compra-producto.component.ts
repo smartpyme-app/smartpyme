@@ -1,4 +1,7 @@
 import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { of } from 'rxjs';
@@ -6,12 +9,18 @@ import { FormControl } from '@angular/forms';
 import { debounceTime, switchMap, filter,catchError  } from 'rxjs/operators';
 
 import { SumPipe }     from '@pipes/sum.pipe';
+import { FilterPipe } from '@pipes/filter.pipe';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
+import { CrearProductoComponent } from '@shared/modals/crear-producto/crear-producto.component';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 
 @Component({
   selector: 'app-compra-producto',
-  templateUrl: './compra-producto.component.html'
+  templateUrl: './compra-producto.component.html',
+  standalone: true,
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, TooltipModule, CrearProductoComponent, SumPipe, FilterPipe],
+  providers: [SumPipe],
 })
 export class CompraProductoComponent implements OnInit {
 

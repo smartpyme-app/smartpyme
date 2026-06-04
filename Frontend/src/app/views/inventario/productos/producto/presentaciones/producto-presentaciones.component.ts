@@ -1,5 +1,8 @@
 import { Component, Input, OnChanges, OnInit, SimpleChanges, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
@@ -7,6 +10,8 @@ import { ApiService } from '@services/api.service';
   selector: 'app-producto-presentaciones',
   templateUrl: './producto-presentaciones.component.html',
   styleUrls: ['./producto-presentaciones.component.scss'],
+  standalone: true,
+  imports: [CommonModule, FormsModule, TooltipModule],
 })
 export class ProductoPresentacionesComponent implements OnInit, OnChanges {
 

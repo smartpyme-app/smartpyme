@@ -1,13 +1,33 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
-import { Router, ActivatedRoute } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
+import { PopoverModule } from 'ngx-bootstrap/popover';
+import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
+import { ImportarExcelComponent } from '@shared/parts/importar-excel/importar-excel.component';
+import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
 
 @Component({
     selector: 'app-productos',
     templateUrl: './productos.component.html',
+    standalone: true,
+    imports: [
+        CommonModule,
+        FormsModule,
+        RouterModule,
+        NgSelectModule,
+        TooltipModule,
+        PopoverModule,
+        ImportarExcelComponent,
+        PaginationComponent,
+        NotificacionesContainerComponent,
+    ],
 })
 export class ProductosComponent implements OnInit {
 

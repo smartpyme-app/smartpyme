@@ -1,13 +1,18 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { BsModalRef, BsModalService } from 'ngx-bootstrap/modal';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { AlertService } from '@services/alert.service';
 import { DteDocumentService, DteDocument } from '@services/dte-management/dte-document.service';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
 @Component({
   selector: 'app-dte-detail',
-  templateUrl: './dte-detail.component.html'
+  templateUrl: './dte-detail.component.html',
+  standalone: true,
+  imports: [CommonModule, FormsModule, RouterModule, TooltipModule],
 })
 export class DteDetailComponent implements OnInit {
   document: DteDocument | null = null;

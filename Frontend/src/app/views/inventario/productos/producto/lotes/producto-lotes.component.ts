@@ -1,6 +1,9 @@
 import { Component, OnInit, OnChanges, SimpleChanges, TemplateRef, Input } from '@angular/core';
-import { Router, ActivatedRoute } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 
 import Swal from 'sweetalert2';
 
@@ -9,7 +12,9 @@ import { ApiService } from '@services/api.service';
 
 @Component({
   selector: 'app-producto-lotes',
-  templateUrl: './producto-lotes.component.html'
+  templateUrl: './producto-lotes.component.html',
+  standalone: true,
+  imports: [CommonModule, FormsModule, RouterModule, TooltipModule],
 })
 export class ProductoLotesComponent implements OnInit, OnChanges {
 

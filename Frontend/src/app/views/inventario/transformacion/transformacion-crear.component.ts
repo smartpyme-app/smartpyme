@@ -1,12 +1,18 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { ApiService } from '../../../services/api.service';
 import { AlertService } from '../../../services/alert.service';
 import { TransformacionService } from './transformacion.service';
+import { BuscadorProductosComponent } from '@shared/parts/buscador-productos/buscador-productos.component';
 
 @Component({
   selector: 'app-transformacion-crear',
-  templateUrl: './transformacion-crear.component.html'
+  templateUrl: './transformacion-crear.component.html',
+  standalone: true,
+  imports: [CommonModule, FormsModule, TooltipModule, BuscadorProductosComponent],
 })
 export class TransformacionCrearComponent implements OnInit {
 

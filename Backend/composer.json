@@ -39,7 +39,7 @@
         "picqer/php-barcode-generator": "^3.2",
         "simplesoftwareio/simple-qrcode": "^4.2",
         "spatie/laravel-permission": "^6.0",
-        "webklex/laravel-imap": "^5.0"
+        "webklex/laravel-imap": "^6.2"
     },
     "require-dev": {
         "spatie/laravel-ignition": "^2.0",

@@ -1,12 +1,28 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
-import { Router, ActivatedRoute } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { BsModalRef, BsModalService } from 'ngx-bootstrap/modal';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
+import { PopoverModule } from 'ngx-bootstrap/popover';
 import { AlertService } from '@services/alert.service';
 import { DteDocumentService, DteDocument, DteDocumentsResponse } from '@services/dte-management/dte-document.service';
+import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { TruncatePipe } from '@pipes/truncate.pipe';
 
 @Component({
   selector: 'app-dte-inbox',
-  templateUrl: './dte-inbox.component.html'
+  templateUrl: './dte-inbox.component.html',
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    RouterModule,
+    TooltipModule,
+    PopoverModule,
+    PaginationComponent,
+    TruncatePipe,
+  ],
 })
 export class DteInboxComponent implements OnInit {
   documents: DteDocumentsResponse | null = null;

@@ -1,12 +1,18 @@
 import { Component, OnInit } from '@angular/core';
-import { Router, ActivatedRoute } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule, Router, ActivatedRoute } from '@angular/router';
+import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
-import { SyncLogService, SyncLog, SyncLogsResponse } from '@services/dte-management/sync-log.service';
+import { SyncLogService, SyncLogsResponse } from '@services/dte-management/sync-log.service';
 import { EmailAccountService } from '@services/dte-management/email-account.service';
+import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 
 @Component({
   selector: 'app-sync-dashboard',
-  templateUrl: './sync-dashboard.component.html'
+  templateUrl: './sync-dashboard.component.html',
+  standalone: true,
+  imports: [CommonModule, FormsModule, RouterModule, NgSelectModule, PaginationComponent],
 })
 export class SyncDashboardComponent implements OnInit {
   logs: SyncLogsResponse | null = null;

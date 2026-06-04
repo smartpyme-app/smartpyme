@@ -1,4 +1,7 @@
 import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Router } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -7,7 +10,9 @@ import Swal from 'sweetalert2';
 @Component({
   selector: 'app-cierre-ejercicio-fiscal',
   templateUrl: './cierre-ejercicio-fiscal.component.html',
-  styleUrls: ['./cierre-ejercicio-fiscal.component.scss']
+  styleUrls: ['./cierre-ejercicio-fiscal.component.scss'],
+  standalone: true,
+  imports: [CommonModule, FormsModule, RouterModule],
 })
 export class CierreEjercicioFiscalComponent implements OnInit {
   public selectedAnio: number = new Date().getFullYear();

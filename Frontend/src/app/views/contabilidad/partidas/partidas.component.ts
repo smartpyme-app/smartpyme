@@ -334,7 +334,7 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
     }
   }
 
-  public setPagination(event: { page: number }): void {
+  public override setPagination(event: { page: number }): void {
     this.filtros.page = event.page;
     this.filtrarPartidas({ keepPage: true });
   }

@@ -1,13 +1,20 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
+import { PopoverModule } from 'ngx-bootstrap/popover';
+import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { EmailAccountService, EmailAccount } from '@services/dte-management/email-account.service';
 
 @Component({
   selector: 'app-email-accounts',
-  templateUrl: './email-accounts.component.html'
+  templateUrl: './email-accounts.component.html',
+  standalone: true,
+  imports: [CommonModule, FormsModule, RouterModule, NgSelectModule, TooltipModule, PopoverModule],
 })
 export class EmailAccountsComponent implements OnInit {
   accounts: EmailAccount[] = [];

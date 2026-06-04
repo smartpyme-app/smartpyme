@@ -1,10 +1,13 @@
 import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { ReactiveFormsModule } from '@angular/forms';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { of } from 'rxjs';
 import { FormControl } from '@angular/forms';
 import { debounceTime, switchMap, filter, catchError, tap } from 'rxjs/operators';
 
 import { SumPipe }     from '@pipes/sum.pipe';
+import { FilterPipe } from '@pipes/filter.pipe';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import {
@@ -14,7 +17,10 @@ import {
 
 @Component({
   selector: 'app-tienda-venta-buscador-v2',
-  templateUrl: './tienda-venta-buscador-v2.component.html'
+  templateUrl: './tienda-venta-buscador-v2.component.html',
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule, SumPipe, FilterPipe],
+  providers: [SumPipe],
 })
 export class TiendaVentaBuscadorV2Component implements OnInit {
 

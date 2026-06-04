@@ -1,15 +1,36 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
-import { Router, ActivatedRoute } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { BsModalService } from 'ngx-bootstrap/modal';
-import { BsModalRef } from 'ngx-bootstrap/modal/bs-modal-ref.service';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
+import { ProductoInformacionComponent } from './informacion/producto-informacion.component';
+import { ProductoComposicionComponent } from './composicion/producto-composicion.component';
+import { ProductoPresentacionesComponent } from './presentaciones/producto-presentaciones.component';
+import { ProductoInventariosComponent } from './inventario/producto-inventarios.component';
+import { ProductoLotesComponent } from './lotes/producto-lotes.component';
+import { ProductoPreciosComponent } from './precios/producto-precios.component';
+import { ProductoProveedoresComponent } from './proveedores/producto-proveedores.component';
+import { ProductoImagenesComponent } from './imagenes/producto-imagenes.component';
 
 @Component({
   selector: 'app-producto',
-  templateUrl: './producto.component.html'
+  templateUrl: './producto.component.html',
+  standalone: true,
+  imports: [
+    CommonModule,
+    RouterModule,
+    ProductoInformacionComponent,
+    ProductoComposicionComponent,
+    ProductoPresentacionesComponent,
+    ProductoInventariosComponent,
+    ProductoLotesComponent,
+    ProductoPreciosComponent,
+    ProductoProveedoresComponent,
+    ProductoImagenesComponent,
+  ],
 })
 export class ProductoComponent implements OnInit {
 

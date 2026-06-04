@@ -6,7 +6,8 @@ import { AlertService } from '@services/alert.service';
 @Component({
   selector: 'app-zonas-restaurante',
   templateUrl: './zonas-restaurante.component.html',
-  styleUrls: ['./zonas-restaurante.component.css']
+  styleUrls: ['./zonas-restaurante.component.css'],
+  standalone: false,
 })
 export class ZonasRestauranteComponent implements OnInit {
   zonas: ZonaRestaurante[] = [];
