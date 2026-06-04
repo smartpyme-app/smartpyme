@@ -11,6 +11,7 @@ import {
   DropdownMultiFiltroItem,
   DropdownMultiFiltroSelection,
 } from '../../components/dropdown-multi-filtro/dropdown-multi-filtro.component';
+import { MetricCard } from '../../models/chart-config.model';
 
 @Component({
   selector: 'app-gastos',
@@ -21,6 +22,37 @@ import {
 export class GastosComponent implements OnInit, OnChanges, OnDestroy {
   @Input() datos: any = {};
   @Output() filtrosCambiados = new EventEmitter<any>();
+
+  get metricasCards(): MetricCard[] {
+    const m = this.datos?.metricasGastos || {};
+    return [
+      {
+        title: 'Gastos totales',
+        value: m.gastosConIVA || 0,
+        type: 'currency'
+      },
+      {
+        title: 'Gastos del mes',
+        value: m.gastosMesActual || 0,
+        type: 'currency'
+      },
+      {
+        title: 'Gastos mes anterior',
+        value: m.gastosMesAnterior || 0,
+        type: 'currency'
+      },
+      {
+        title: 'Variación en gastos',
+        value: m.variacionGastos || 0,
+        type: 'currency-int'
+      },
+      {
+        title: (m.aumentoCostosPorcentaje || 0) >= 0 ? 'Aumento de costos' : 'Disminución de costos',
+        value: m.aumentoCostosPorcentaje || 0,
+        type: 'percentage-int'
+      }
+    ];
+  }
 
   // Datos originales (sin filtrar)
   datosOriginales: any = {};
@@ -1037,6 +1069,10 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
     this.datosFiltrados.gastosPorMesConfig = {
       title: '',
       type: 'line',
+      showArea: false,
+      smooth: false,
+      showYAxisLabels: false,
+      showXAxisLine: false,
       labels,
       data,
       colors: ['#F19447']
@@ -1086,7 +1122,12 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
       }
     });
 
-    const labels = categorias;
+    // Sort categories from highest to lowest amount
+    const sortedCategorias = [...categorias].sort((a, b) => {
+      return (gastosPorCategoria[b] || 0) - (gastosPorCategoria[a] || 0);
+    });
+
+    const labels = sortedCategorias;
     const data = labels.map(c => gastosPorCategoria[c] || 0);
 
     // Crear o actualizar la configuración del gráfico
@@ -1096,7 +1137,9 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
       labels,
       data,
       colors: ['#F19447'],
-      horizontal: true
+      horizontal: true,
+      showXAxisLabels: false,
+      highlightMaxBar: true
     };
   }
 

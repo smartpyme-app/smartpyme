@@ -49,8 +49,23 @@ export class ChartCardComponent implements OnInit {
         return `${sign}${Math.abs(pct).toFixed(2)}%`;
       }
 
+      if (this.data.type === 'percentage-int') {
+        const pct = Math.abs(value) <= 1 && value !== 0 ? value * 100 : value;
+        const sign = pct >= 0 ? '' : '-';
+        const rounded = Math.round(Math.abs(pct));
+        return `${sign}${rounded}%`;
+      }
+
       if (this.data.type === 'number') {
         // Formatear números enteros (sin decimales)
+        return new Intl.NumberFormat('es-GT', {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0
+        }).format(value);
+      }
+
+      if (this.data.type === 'currency-int') {
+        // Formatear números de moneda sin decimales
         return new Intl.NumberFormat('es-GT', {
           minimumFractionDigits: 0,
           maximumFractionDigits: 0
@@ -74,8 +89,8 @@ export class ChartCardComponent implements OnInit {
   }
 
   shouldShowCurrency(): boolean {
-    // Mostrar $ solo si el tipo es 'currency'
-    return this.data.type === 'currency';
+    // Mostrar $ solo si el tipo es 'currency' o 'currency-int'
+    return this.data.type === 'currency' || this.data.type === 'currency-int';
   }
 
   isNegativeValue(): boolean {

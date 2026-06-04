@@ -74,8 +74,13 @@ export class GastosDashboardDataService {
       },
       gastosPorMesConfig: {
         type: 'line',
+        showArea: false,
+        smooth: false,
+        showYAxisLabels: false,
+        showXAxisLine: false,
         labels: (porMes ?? []).map((f: any) => this.obtenerNombreMes(f.anioMes)),
         data: (porMes ?? []).map((f: any) => f.gastosConIva),
+        colors: ['#F19447'],
       },
       gastosVsPresupuestoConfig: {
         type: 'bar',

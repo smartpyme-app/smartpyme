@@ -122,18 +122,27 @@ export class BarChartComponent implements OnInit, OnChanges {
             // Verde para valores positivos, rojo para negativos
             return originalValue >= 0 ? '#4caf50' : '#f44336';
           },
-          borderRadius: [4, 4, 0, 0]
+        } : (this.config.graduatedOpacity ? {
+          color: (params: any) => {
+            const baseColor = this.config.colors?.[0] || '#5470c6';
+            const maxVal = Math.max(...data);
+            if (maxVal <= 0) return baseColor;
+            const ratio = params.value / maxVal;
+            const opacity = 0.35 + 0.65 * ratio;
+            return this.hexToRgba(baseColor, opacity);
+          },
+          borderRadius: (this.config as any).horizontal ? [0, 4, 4, 0] : [4, 4, 0, 0]
         } : (this.config.highlightMaxBar ? {
           color: (params: any) => {
             const baseColor = this.config.colors?.[0] || '#5470c6';
             const maxVal = Math.max(...data);
             return params.value === maxVal ? baseColor : this.hexToRgba(baseColor, 0.4);
           },
-          borderRadius: [4, 4, 0, 0]
+          borderRadius: (this.config as any).horizontal ? [0, 4, 4, 0] : [4, 4, 0, 0]
         } : {
           color: this.config.colors?.[0] || '#5470c6',
-          borderRadius: [4, 4, 0, 0]
-        }),
+          borderRadius: (this.config as any).horizontal ? [0, 4, 4, 0] : [4, 4, 0, 0]
+        })),
         label: barValueLabel,
         barMaxWidth: 60,
         emphasis: {
@@ -221,7 +230,7 @@ export class BarChartComponent implements OnInit, OnChanges {
       xAxis: (this.config as any).horizontal ? {
         type: 'value',
         axisLabel: {
-          show: true,
+          show: this.config.showXAxisLabels !== false,
           formatter: (value: number) => {
             if (value >= 1000000) {
               return `$${(value / 1000000).toFixed(1)}M`;
@@ -238,6 +247,7 @@ export class BarChartComponent implements OnInit, OnChanges {
         type: 'category',
         data: this.config.labels || [],
         axisLabel: {
+          show: this.config.showXAxisLabels !== false,
           rotate: rotateLabels,
           interval: 0,
           fontSize: labelCount > 6 ? 10 : 11,
