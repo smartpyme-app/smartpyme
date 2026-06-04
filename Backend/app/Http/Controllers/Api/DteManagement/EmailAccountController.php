@@ -28,7 +28,7 @@ class EmailAccountController extends Controller
         $accounts = UserEmailAccount::with([
                 'sucursal:id,nombre',
                 'bodega:id,nombre',
-                'notificationUser:id,name',
+                'notificationUser:id,name,email',
             ])
             ->orderBy('created_at', 'desc')
             ->get()
@@ -135,17 +135,52 @@ class EmailAccountController extends Controller
             return response()->json(['error' => 'Cuenta inactiva'], 422);
         }
 
-        $daysBack = (int) ($request->input('dias', 30));
-        $dateTo = Carbon::now();
-        $dateFrom = Carbon::now()->subDays($daysBack);
+        if ($account->last_sync_at) {
+            $nextAllowedAt = $account->last_sync_at->copy()->addMinutes(10);
+            if ($nextAllowedAt->isFuture()) {
+                return response()->json([
+                    'error' => 'Debe esperar antes de sincronizar nuevamente',
+                    'message' => 'Puede volver a sincronizar después de 10 minutos desde la última ejecución.',
+                    'retry_after_seconds' => max(1, (int) now()->diffInSeconds($nextAllowedAt)),
+                    'next_sync_at' => $nextAllowedAt->toIso8601String(),
+                ], 429);
+            }
+        }
 
-        ProcessEmailAccountJob::dispatch($account, $dateFrom, $dateTo);
+        $request->validate([
+            'dias' => 'sometimes|integer|min:1|max:365',
+            'fecha_inicio' => 'sometimes|date',
+            'fecha_fin' => 'sometimes|date|after_or_equal:fecha_inicio',
+        ]);
+
+        if ($request->filled('fecha_inicio') && $request->filled('fecha_fin')) {
+            $dateFrom = Carbon::parse($request->input('fecha_inicio'))->startOfDay();
+            $dateTo = Carbon::parse($request->input('fecha_fin'))->endOfDay();
+            if ($dateTo->gt(now())) {
+                $dateTo = Carbon::now();
+            }
+        } else {
+            $daysBack = (int) $request->input('dias', 30);
+            $dateTo = Carbon::now();
+            $dateFrom = Carbon::now()->subDays($daysBack);
+        }
+
+        if ($dateFrom->gt($dateTo)) {
+            return response()->json(['error' => 'La fecha inicial no puede ser posterior a la final'], 422);
+        }
+
+        // Ejecutar en la misma petición: evita depender de queue:work cuando QUEUE_CONNECTION no es sync.
+        set_time_limit(300);
+        ProcessEmailAccountJob::dispatchSync($account, $dateFrom, $dateTo);
+
+        $account->refresh();
 
         return response()->json([
             'success' => true,
-            'message' => 'Sincronización iniciada',
+            'message' => 'Sincronización completada',
             'date_from' => $dateFrom->toDateString(),
             'date_to' => $dateTo->toDateString(),
+            'last_sync_at' => $account->last_sync_at?->toIso8601String(),
         ]);
     }
 
@@ -208,7 +243,7 @@ class EmailAccountController extends Controller
 
         $account->update(['notification_user_id' => $notificationUserId]);
 
-        $account->load('notificationUser:id,name');
+        $account->load('notificationUser:id,name,email');
 
         return response()->json([
             'success' => true,
@@ -236,7 +271,11 @@ class EmailAccountController extends Controller
             'actualizar_inventario' => $account->actualizar_inventario,
             'notification_user_id' => $account->notification_user_id,
             'notification_user' => $account->notificationUser
-                ? ['id' => $account->notificationUser->id, 'name' => $account->notificationUser->name]
+                ? [
+                    'id' => $account->notificationUser->id,
+                    'name' => $account->notificationUser->name,
+                    'email' => $account->notificationUser->email,
+                ]
                 : null,
             'sucursal' => $account->sucursal ? ['id' => $account->sucursal->id, 'nombre' => $account->sucursal->nombre] : null,
             'bodega' => $account->bodega ? ['id' => $account->bodega->id, 'nombre' => $account->bodega->nombre] : null,

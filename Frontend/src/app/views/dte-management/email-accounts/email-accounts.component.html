@@ -1,16 +1,27 @@
 <section class="d-flex justify-content-between align-items-center bg-white p-4 rounded mb-3">
   <h5 class="mb-0">Cuentas de correo</h5>
   <div class="d-flex gap-2">
-    <button class="btn btn-primary" (click)="connectGmail()">
+    <button class="btn btn-primary" (click)="connectGmail()" [disabled]="isSyncing">
       <i class="fa fa-google me-2"></i>Conectar Gmail
     </button>
-    <button class="btn btn-outline-primary" (click)="openImapModal(imapModal)">
+    <button class="btn btn-outline-primary" (click)="openImapModal(imapModal)" [disabled]="isSyncing">
       <i class="fa fa-server me-2"></i>Conectar Otros
     </button>
   </div>
 </section>
 
-<section class="bg-white p-4 rounded">
+<div *ngIf="isSyncing" class="alert alert-info d-flex align-items-center gap-3 mb-3" role="status">
+  <div class="spinner-border spinner-border-sm text-primary" aria-hidden="true"></div>
+  <div class="flex-grow-1">
+    <strong>Sincronizando correos…</strong>
+    <p class="mb-2 small text-muted">El proceso puede tardar uno o varios minutos según la cantidad de mensajes. No cierre esta ventana.</p>
+    <div class="progress" style="height: 6px;">
+      <div class="progress-bar progress-bar-striped progress-bar-animated w-100" role="progressbar" aria-valuemin="0" aria-valuemax="100"></div>
+    </div>
+  </div>
+</div>
+
+<section class="bg-white p-4 rounded" [class.opacity-50]="isSyncing" [style.pointer-events]="isSyncing ? 'none' : 'auto'">
   <div class="table-responsive">
     <table class="table table-hover mb-0">
       <thead>
@@ -43,19 +54,35 @@
             </span>
           </td>
           <td>
-            <span class="text-muted">{{ notificationUserLabel(account) }}</span>
+            <ng-container *ngIf="account.notification_user; else sinNotificacion">
+              <span>{{ account.notification_user.name }}</span>
+              <small class="text-muted d-block" *ngIf="account.notification_user.email">{{ account.notification_user.email }}</small>
+            </ng-container>
+            <ng-template #sinNotificacion>
+              <span class="text-muted">Sin configurar</span>
+            </ng-template>
           </td>
           <td>
             {{ account.last_sync_at ? (account.last_sync_at | date:'dd/MM/yyyy HH:mm') : '-' }}
           </td>
           <td class="text-center">
-            <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+            <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones" [class.disabled]="isSyncing">
               <i class="fa fa-ellipsis-vertical fa-fw"></i>
             </span>
             <ng-template #accionesTemplate>
               <div class="list-group border-0">
-                <a *ngIf="account.is_active" (click)="syncAccount(account)" class="list-group-item list-group-item-action border-0 click">
-                  <i class="fa fa-fw fa-sync-alt"></i> Sincronizar
+                <a
+                  *ngIf="account.is_active"
+                  (click)="requestSync(account)"
+                  class="list-group-item list-group-item-action border-0 click"
+                  [class.disabled]="!canSync(account)"
+                  [class.pe-none]="!canSync(account)"
+                  [attr.aria-disabled]="!canSync(account)"
+                >
+                  <i class="fa fa-fw" [ngClass]="syncingAccountId === account.id ? 'fa-spinner fa-spin' : 'fa-sync-alt'"></i>
+                  <span *ngIf="syncingAccountId === account.id"> Sincronizando…</span>
+                  <span *ngIf="syncingAccountId !== account.id"> Sincronizar</span>
+                  <small class="d-block text-muted" *ngIf="syncCooldownLabel(account)">{{ syncCooldownLabel(account) }}</small>
                 </a>
                 <a (click)="openNotificationModal(notificacionesModal, account)" class="list-group-item list-group-item-action border-0 click">
                   <i class="fa fa-fw fa-bell"></i> Configurar notificaciones
@@ -72,6 +99,36 @@
   </div>
 </section>
 
+<ng-template #syncModal>
+  <div class="modal-header">
+    <h5 class="modal-title">Primera sincronización</h5>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close" [disabled]="isSyncing"></button>
+  </div>
+  <div class="modal-body">
+    <p class="text-muted mb-3" *ngIf="syncAccountTarget">
+      Cuenta: <strong>{{ syncAccountTarget.email }}</strong><br>
+      Elija el rango de fechas de los correos a revisar (solo la primera vez; después se usarán los últimos 30 días).
+    </p>
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <label class="form-label">Desde</label>
+        <input type="date" class="form-control" [(ngModel)]="syncFechaInicio" name="syncFechaInicio" required>
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label">Hasta</label>
+        <input type="date" class="form-control" [(ngModel)]="syncFechaFin" name="syncFechaFin" required>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-light" (click)="modalRef.hide()" [disabled]="isSyncing">Cancelar</button>
+    <button type="button" class="btn btn-primary" (click)="confirmSyncWithRange()" [disabled]="isSyncing || !syncFechaInicio || !syncFechaFin">
+      <span *ngIf="!isSyncing">Iniciar sincronización</span>
+      <span *ngIf="isSyncing"><i class="fa fa-spinner fa-spin me-1"></i> Sincronizando…</span>
+    </button>
+  </div>
+</ng-template>
+
 <ng-template #notificacionesModal>
   <div class="modal-header">
     <h5 class="modal-title">Configurar notificaciones</h5>
@@ -83,9 +140,23 @@
     </p>
     <div class="mb-3">
       <label class="form-label">Seleccione usuario que recibirá las notificaciones</label>
-      <ng-select [(ngModel)]="notificationUserId" [clearable]="true" placeholder="Seleccione un usuario">
-        <ng-option [value]="null">Ninguno</ng-option>
-        <ng-option *ngFor="let u of usuarios" [value]="u.id">{{ u.name }}</ng-option>
+      <ng-select
+        [(ngModel)]="notificationUserId"
+        [items]="usuarios"
+        bindValue="id"
+        bindLabel="name"
+        [clearable]="true"
+        placeholder="Seleccione un usuario"
+        appendTo="body"
+      >
+        <ng-template ng-label-tmp let-item="item">
+          <span>{{ item?.name }}</span>
+          <small class="text-muted d-block" *ngIf="item?.email">{{ item.email }}</small>
+        </ng-template>
+        <ng-template ng-option-tmp let-item="item">
+          <div>{{ item?.name }}</div>
+          <small class="text-muted">{{ item?.email }}</small>
+        </ng-template>
       </ng-select>
     </div>
     <p class="text-muted small mb-0">
