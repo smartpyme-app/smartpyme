@@ -1062,7 +1062,10 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
       }
     });
 
-    const labels = meses;
+    let labels = meses.filter(m => gastosPorMes[m] !== undefined && gastosPorMes[m] !== 0);
+    if (labels.length === 0) {
+      labels = meses;
+    }
     const data = labels.map(m => gastosPorMes[m] || 0);
 
     // Crear o actualizar la configuración del gráfico
@@ -1203,7 +1206,6 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
       'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     const gastosPorMes: { [key: string]: number } = {};
 
-    // Calcular gastos reales por mes
     this.datosFiltrados.detalleGastos.forEach((g: any) => {
       if (g.fecha) {
         try {
@@ -1219,17 +1221,23 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
       }
     });
 
-    // Obtener presupuestos (si existen en datos originales, sino usar valores por defecto)
-    const presupuestos = this.datosOriginales.gastosPresupuesto || meses.map(() => 5000); // Valor por defecto
+    const presupuestosOriginales = this.datosOriginales?.gastosVsPresupuestoConfig?.dataExtra || [];
 
-    // Si hay filtros activos, usar los datos filtrados, sino usar los originales para el presupuesto
-    const presupuestosData = this.datosOriginales.gastosPresupuesto || presupuestos;
+    let filteredIndices = meses
+      .map((mes, index) => index)
+      .filter(index => {
+        const mes = meses[index];
+        return (gastosPorMes[mes] || 0) !== 0 || (presupuestosOriginales[index] || 0) !== 0;
+      });
 
-    const labels = meses;
-    const dataGastos = labels.map(m => gastosPorMes[m] || 0);
-    const dataPresupuesto = labels.map((m, i) => presupuestosData[i] || 5000);
+    if (filteredIndices.length === 0) {
+      filteredIndices = meses.map((_, index) => index);
+    }
 
-    // Crear configuración para gráfico de barras comparativo
+    const labels = filteredIndices.map(index => meses[index]);
+    const dataGastos = filteredIndices.map(index => gastosPorMes[meses[index]] || 0);
+    const dataPresupuesto = filteredIndices.map(index => presupuestosOriginales[index] || 0);
+
     this.datosFiltrados.gastosVsPresupuestoConfig = {
       title: '',
       type: 'bar',
@@ -1271,12 +1279,23 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
       }
     });
 
-    // Obtener gastos del año anterior (si existen en datos originales, sino usar valores por defecto)
-    const gastosAnioAnteriorData = this.datosOriginales.gastosAnioAnterior || meses.map(() => 4000); // Valor por defecto
+    // ✅ CORREGIDO: Extraer gastos del año anterior del config original
+    const gastosAnioAnteriorOriginales = this.datosOriginales?.gastosVsAnioAnteriorConfig?.dataExtra || [];
 
-    const labels = meses;
-    const dataGastosActual = labels.map(m => gastosPorMes[m] || 0);
-    const dataGastosAnterior = labels.map((m, i) => gastosAnioAnteriorData[i] || 4000);
+    let filteredIndices = meses
+      .map((mes, index) => index)
+      .filter(index => {
+        const mes = meses[index];
+        return (gastosPorMes[mes] || 0) !== 0 || (gastosAnioAnteriorOriginales[index] || 0) !== 0;
+      });
+
+    if (filteredIndices.length === 0) {
+      filteredIndices = meses.map((_, index) => index);
+    }
+
+    const labels = filteredIndices.map(index => meses[index]);
+    const dataGastosActual = filteredIndices.map(index => gastosPorMes[meses[index]] || 0);
+    const dataGastosAnterior = filteredIndices.map(index => gastosAnioAnteriorOriginales[index] || 0);
 
     // Crear configuración para gráfico de barras comparativo
     this.datosFiltrados.gastosVsAnioAnteriorConfig = {

@@ -25,10 +25,12 @@ export class LineChartComponent implements OnInit, OnChanges {
 
   formatValue(value: number): string {
     let formatted = '';
-    if (value >= 1000000) {
-      formatted = (value / 1000000).toFixed(1) + 'M';
-    } else if (value >= 1000) {
-      formatted = (value / 1000).toFixed(1) + 'K';
+    const absValue = Math.abs(value);
+    const sign = value >= 0 ? '' : '-';
+    if (absValue >= 1000000) {
+      formatted = sign + (Math.floor((absValue / 1000000) * 10) / 10).toFixed(1) + 'M';
+    } else if (absValue >= 1000) {
+      formatted = sign + (Math.floor((absValue / 1000) * 10) / 10).toFixed(1) + 'K';
     } else {
       formatted = value.toString();
     }
@@ -115,9 +117,9 @@ export class LineChartComponent implements OnInit, OnChanges {
 
               let formatted: string;
               if (absValue >= 1000000) {
-                formatted = `${(absValue / 1000000).toFixed(1)}M`;
+                formatted = `${(Math.floor((absValue / 1000000) * 10) / 10).toFixed(1)}M`;
               } else if (absValue >= 1000) {
-                formatted = `${(absValue / 1000).toFixed(1)}K`;
+                formatted = `${(Math.floor((absValue / 1000) * 10) / 10).toFixed(1)}K`;
               } else {
                 formatted = absValue.toFixed(0);
               }

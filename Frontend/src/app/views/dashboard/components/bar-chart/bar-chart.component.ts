@@ -64,9 +64,9 @@ export class BarChartComponent implements OnInit, OnChanges {
 
         let formatted: string;
         if (absValue >= 1000000) {
-          formatted = `${(absValue / 1000000).toFixed(1)}M`;
+          formatted = `${(Math.floor((absValue / 1000000) * 10) / 10).toFixed(1)}M`;
         } else if (absValue >= 1000) {
-          formatted = `${(absValue / 1000).toFixed(1)}K`;
+          formatted = `${(Math.floor((absValue / 1000) * 10) / 10).toFixed(1)}K`;
         } else {
           formatted = absValue.toFixed(0);
         }
@@ -232,12 +232,14 @@ export class BarChartComponent implements OnInit, OnChanges {
         axisLabel: {
           show: this.config.showXAxisLabels !== false,
           formatter: (value: number) => {
-            if (value >= 1000000) {
-              return `$${(value / 1000000).toFixed(1)}M`;
-            } else if (value >= 1000) {
-              return `$${(value / 1000).toFixed(1)}K`;
+            const absValue = Math.abs(value);
+            const sign = value >= 0 ? '' : '-';
+            if (absValue >= 1000000) {
+              return `${sign}$${(Math.floor((absValue / 1000000) * 10) / 10).toFixed(1)}M`;
+            } else if (absValue >= 1000) {
+              return `${sign}$${(Math.floor((absValue / 1000) * 10) / 10).toFixed(1)}K`;
             }
-            return `$${value.toFixed(0)}`;
+            return `${sign}$${absValue.toFixed(0)}`;
           }
         },
         splitLine: {

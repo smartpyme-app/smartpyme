@@ -51,6 +51,8 @@ export class AccountsListComponent implements OnInit, OnChanges {
     const data = sorted.map(a => Math.abs(a.amount));
     const color = this.type === 'payable' ? '#F19447' : '#7CABFF';
 
+    const showZoom = labels.length > 10;
+
     this.chartOption = {
       tooltip: {
         trigger: 'axis',
@@ -70,11 +72,11 @@ export class AccountsListComponent implements OnInit, OnChanges {
         }
       },
       grid: {
-        left: '30%',
-        right: '8%',
+        left: '3%',
+        right: showZoom ? '15%' : '8%',
         bottom: '3%',
         top: '3%',
-        containLabel: false
+        containLabel: true
       },
       xAxis: {
         type: 'value',
@@ -100,6 +102,31 @@ export class AccountsListComponent implements OnInit, OnChanges {
           }
         }
       },
+      dataZoom: showZoom ? [
+        {
+          type: 'slider',
+          yAxisIndex: 0,
+          startValue: 0,
+          endValue: 9,
+          right: '2%',
+          width: 15,
+          borderColor: 'transparent',
+          fillerColor: '#e2e8f0',
+          handleSize: 0,
+          showDetail: false,
+          zoomLock: true,
+          brushSelect: false
+        },
+        {
+          type: 'inside',
+          yAxisIndex: 0,
+          startValue: 0,
+          endValue: 9,
+          zoomOnMouseWheel: false,
+          moveOnMouseMove: true,
+          moveOnMouseWheel: true
+        }
+      ] : undefined,
       series: [{
         type: 'bar',
         data: data,
@@ -115,12 +142,16 @@ export class AccountsListComponent implements OnInit, OnChanges {
           position: 'right',
           formatter: (params: any) => {
             const value = params.value;
-            if (value >= 1000000) {
-              return `$${(value / 1000000).toFixed(1)}M`;
-            } else if (value >= 1000) {
-              return `$${(value / 1000).toFixed(0)}K`;
+            const absValue = Math.abs(value);
+            let formatted: string;
+            if (absValue >= 1000000) {
+              formatted = `${(Math.floor((absValue / 1000000) * 10) / 10).toFixed(1)}M`;
+            } else if (absValue >= 1000) {
+              formatted = `${(Math.floor((absValue / 1000) * 10) / 10).toFixed(1)}K`;
+            } else {
+              formatted = absValue.toLocaleString('es-GT', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
             }
-            return `$${value.toLocaleString('es-GT')}`;
+            return `$${formatted}`;
           },
           color: '#000',
           fontSize: 11,
