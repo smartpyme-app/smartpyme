@@ -12,7 +12,7 @@ export interface EmailAccount {
   id_bodega?: number;
   actualizar_inventario?: boolean;
   notification_user_id?: number | null;
-  notification_user?: { id: number; name: string } | null;
+  notification_user?: { id: number; name: string; email?: string } | null;
   sucursal?: { id: number; nombre: string };
   bodega?: { id: number; nombre: string };
 }
@@ -35,8 +35,16 @@ export class EmailAccountService {
     return this.api.store('email-accounts/imap', config);
   }
 
-  sync(id: number, dias?: number): Observable<{ success: boolean; message: string; date_from: string; date_to: string }> {
-    const body = dias ? { dias } : {};
+  sync(
+    id: number,
+    options?: { dias?: number; fecha_inicio?: string; fecha_fin?: string }
+  ): Observable<{ success: boolean; message: string; date_from: string; date_to: string; last_sync_at?: string }> {
+    let body: { dias?: number; fecha_inicio?: string; fecha_fin?: string } = {};
+    if (options?.fecha_inicio && options?.fecha_fin) {
+      body = { fecha_inicio: options.fecha_inicio, fecha_fin: options.fecha_fin };
+    } else if (options?.dias) {
+      body = { dias: options.dias };
+    }
     return this.api.store(`email-accounts/${id}/sync`, body);
   }
 
