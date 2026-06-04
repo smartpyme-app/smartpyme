@@ -85,14 +85,34 @@ export class GastosDashboardDataService {
       gastosVsPresupuestoConfig: {
         type: 'bar',
         labels: (vsPresupuesto ?? []).map((f: any) => this.obtenerNombreMes(f.anioMes)),
-        data: (vsPresupuesto ?? []).map((f: any) => f.gastosConIva),
+        data: [
+          {
+            name: 'Gastos totales',
+            data: (vsPresupuesto ?? []).map((f: any) => f.gastosConIva || 0)
+          },
+          {
+            name: 'Presupuestado',
+            data: (vsPresupuesto ?? []).map((f: any) => f.presupuesto || 0)
+          }
+        ],
         dataExtra: (vsPresupuesto ?? []).map((f: any) => f.presupuesto),
+        colors: ['#F19447', '#d3d3d3']
       },
       gastosVsAnioAnteriorConfig: {
         type: 'bar',
         labels: (vsAnioAnterior ?? []).map((f: any) => this.obtenerNombreMes(f.anioMes)),
-        data: (vsAnioAnterior ?? []).map((f: any) => f.anioActual),
+        data: [
+          {
+            name: 'Año actual',
+            data: (vsAnioAnterior ?? []).map((f: any) => f.anioActual || 0)
+          },
+          {
+            name: 'Año anterior',
+            data: (vsAnioAnterior ?? []).map((f: any) => f.anioAnterior || 0)
+          }
+        ],
         dataExtra: (vsAnioAnterior ?? []).map((f: any) => f.anioAnterior),
+        colors: ['#F19447', '#d3d3d3']
       },
     };
   }
@@ -103,8 +123,9 @@ export class GastosDashboardDataService {
     porFormaPago: any;
     porProveedor: any;
     detalle: any;
+    gastosDetallados?: any;
   }): Record<string, unknown> {
-    const { porCategoria, porConcepto, porFormaPago, porProveedor, detalle } =
+    const { porCategoria, porConcepto, porFormaPago, porProveedor, detalle, gastosDetallados } =
       raw;
     return {
       gastosPorCategoriaConfig: {
@@ -112,11 +133,16 @@ export class GastosDashboardDataService {
         horizontal: true,
         labels: (porCategoria ?? []).map((i: any) => i.name),
         data: (porCategoria ?? []).map((i: any) => i.amount),
+        colors: ['#F19447'],
+        showXAxisLabels: false,
+        graduatedOpacity: true,
       },
       gastosPorConceptoConfig: {
         type: 'bar',
         labels: (porConcepto ?? []).map((i: any) => i.name),
         data: (porConcepto ?? []).map((i: any) => i.amount),
+        colors: ['#F19447'],
+        graduatedOpacity: true,
       },
       gastosPorFormaPagoConfig: {
         type: 'doughnut',
@@ -135,6 +161,7 @@ export class GastosDashboardDataService {
         correlativo: i.correlativo,
         gastosConIVA: i.gastosConIva,
       })),
+      gastosDetallados: gastosDetallados ?? [],
     };
   }
 
@@ -163,6 +190,7 @@ export class GastosDashboardDataService {
         `/api/gastos/por-proveedor?${p}${pExtra}&limite=10`,
       ),
       detalle: safe(`/api/gastos/detalle?${p}${pExtra}`),
+      gastosDetallados: safe(`/api/gastos/detalladas?${p}${pExtra}`),
     }).pipe(map((r) => this.mapearGastosPesado(r)));
 
     return critico$.pipe(
@@ -194,6 +222,7 @@ export class GastosDashboardDataService {
         `/api/gastos/por-proveedor?${p}${pExtra}&limite=10`,
       ),
       detalle: safe(`/api/gastos/detalle?${p}${pExtra}`),
+      gastosDetallados: safe(`/api/gastos/detalladas?${p}${pExtra}`),
     }).pipe(
       map((all) => ({
         ...this.mapearGastosCritico({
@@ -208,6 +237,7 @@ export class GastosDashboardDataService {
           porFormaPago: all.porFormaPago,
           porProveedor: all.porProveedor,
           detalle: all.detalle,
+          gastosDetallados: all.gastosDetallados,
         }),
       })),
     );

@@ -385,9 +385,9 @@
                         <div class="col-12">
                             <div class="card">
                                 <div class="card-header bg-white border-0 py-3">
-                                    <div
-                                        class="d-flex flex-column justify-content-between gap-2">
-                                        <div class="ventas-card-title mb-0 text-center">Detalle de ventas por producto</div>
+                                    <div class="d-flex flex-column justify-content-between gap-2">
+                                        <div class="ventas-card-title mb-0 text-center">Detalle de ventas por producto
+                                        </div>
                                         <div
                                             class="d-flex flex-wrap gap-2 align-items-center justify-content-end w-100">
                                             <!-- Buscador global -->
@@ -400,10 +400,6 @@
                                                     (input)="onQuickFilterChange()">
                                             </div>
                                             <!-- Botones de exportación -->
-                                            <button class="btn btn-sm btn-outline-primary" (click)="exportarCSV()"
-                                                title="Exportar a CSV">
-                                                <i class="fas fa-file-csv me-1"></i> CSV
-                                            </button>
                                             <button class="btn btn-sm btn-outline-success" (click)="exportarExcel()"
                                                 title="Exportar a Excel">
                                                 <i class="fas fa-file-excel me-1"></i> Excel
@@ -472,9 +468,9 @@
                         <div class="col-md-6 mb-2">
                             <div class="card h-100">
                                 <div class="card-header bg-white border-0 py-3">
-                                    <div
-                                        class="d-flex flex-column justify-content-between gap-2">
-                                        <div class="ventas-card-title mb-0 text-center">Detalle de ventas por cliente</div>
+                                    <div class="d-flex flex-column justify-content-between gap-2">
+                                        <div class="ventas-card-title mb-0 text-center">Detalle de ventas por cliente
+                                        </div>
                                         <div
                                             class="d-flex flex-wrap gap-2 align-items-center justify-content-end w-100">
                                             <!-- Buscador global -->
@@ -486,11 +482,6 @@
                                                     placeholder="Buscar..." [(ngModel)]="quickFilterTextCliente"
                                                     (input)="onQuickFilterClienteChange()">
                                             </div>
-                                            <!-- Botones de exportación -->
-                                            <button class="btn btn-sm btn-outline-primary"
-                                                (click)="exportarClientesCSV()" title="Exportar a CSV">
-                                                <i class="fas fa-file-csv me-1"></i> CSV
-                                            </button>
                                             <button class="btn btn-sm btn-outline-success"
                                                 (click)="exportarClientesExcel()" title="Exportar a Excel">
                                                 <i class="fas fa-file-excel me-1"></i> Excel

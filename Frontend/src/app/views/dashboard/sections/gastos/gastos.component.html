@@ -152,19 +152,35 @@
                                 (click)="cambiarVistaMetricas('anio')">
                                 vs Año anterior
                             </button>
-                            <!-- Indicador de filtros activos -->
-                            <div *ngIf="tieneFiltrosInteractivos()"
-                                class="mt-2 p-2 d-flex flex-column align-items-stretch"
-                                style="background-color: #fff3cd; border-radius: 8px; border: 1px solid #ffc107; gap: 4px;">
-                                <small class="text-dark fw-medium" style="font-size: 0.72rem; line-height: 1.2;">
-                                    <i class="fas fa-info-circle me-1"></i>
-                                    Filtros: {{ getFiltrosInteractivosTexto() }}
-                                </small>
-                                <button type="button" class="btn btn-sm btn-outline-warning w-100"
-                                    style="font-size: 0.7rem; padding: 2px 6px;" (click)="limpiarFiltrosInteractivos()"
-                                    title="Limpiar filtros interactivos">
-                                    <i class="fas fa-times me-1"></i>
-                                    Limpiar
+                            <!-- Indicador de filtros activos (chips premium) -->
+                            <div class="filtros-activos" *ngIf="tieneFiltrosInteractivos()">
+                                <span class="badge-filtro" *ngIf="filtrosInteractivos.proveedor">
+                                    <span>Proveedor: <strong>{{ filtrosInteractivos.proveedor }}</strong></span>
+                                    <button type="button" (click)="limpiarFiltroIndividual('proveedor')"
+                                        aria-label="Quitar filtro de proveedor">×</button>
+                                </span>
+                                <span class="badge-filtro" *ngIf="filtrosInteractivos.categoria">
+                                    <span>Categoría: <strong>{{ filtrosInteractivos.categoria }}</strong></span>
+                                    <button type="button" (click)="limpiarFiltroIndividual('categoria')"
+                                        aria-label="Quitar filtro de categoría">×</button>
+                                </span>
+                                <span class="badge-filtro" *ngIf="filtrosInteractivos.concepto">
+                                    <span>Concepto: <strong>{{ filtrosInteractivos.concepto }}</strong></span>
+                                    <button type="button" (click)="limpiarFiltroIndividual('concepto')"
+                                        aria-label="Quitar filtro de concepto">×</button>
+                                </span>
+                                <span class="badge-filtro" *ngIf="filtrosInteractivos.formaPago">
+                                    <span>Forma Pago: <strong>{{ filtrosInteractivos.formaPago }}</strong></span>
+                                    <button type="button" (click)="limpiarFiltroIndividual('formaPago')"
+                                        aria-label="Quitar filtro de forma de pago">×</button>
+                                </span>
+                                <span class="badge-filtro" *ngIf="filtrosInteractivos.mes">
+                                    <span>Mes: <strong>{{ filtrosInteractivos.mes }}</strong></span>
+                                    <button type="button" (click)="limpiarFiltroIndividual('mes')"
+                                        aria-label="Quitar filtro de mes">×</button>
+                                </span>
+                                <button type="button" class="btn-limpiar-todos" (click)="limpiarFiltrosInteractivos()">
+                                    Limpiar todos
                                 </button>
                             </div>
                         </div>
@@ -271,10 +287,6 @@
                                                     placeholder="Buscar..." [(ngModel)]="quickFilterTextGastos"
                                                     (input)="onQuickFilterChangeGastos()">
                                             </div>
-                                            <button type="button" class="btn btn-sm btn-outline-primary"
-                                                (click)="exportarCSVGastos()" title="Exportar a CSV">
-                                                <i class="fas fa-file-csv me-1"></i> CSV
-                                            </button>
                                             <button type="button" class="btn btn-sm btn-outline-success"
                                                 (click)="exportarExcelGastos()" title="Exportar a Excel">
                                                 <i class="fas fa-file-excel me-1"></i> Excel
@@ -289,23 +301,17 @@
                                 <div class="card-body px-3 py-0 gastos-detalle-grid-body">
                                     <ng-container *ngIf="datos.detalleGastos !== undefined; else gastosTableLoader">
                                         <ag-grid-angular #detalleGastosGrid class="ag-theme-alpine detalle-gastos-grid"
-                                            [rowData]="detalleGastosRows" [columnDefs]="detalleGastosColumnDefs"
+                                            [rowData]="detalleGastosRows"
+                                            [pinnedBottomRowData]="pinnedBottomRowDataGastos"
+                                            [columnDefs]="detalleGastosColumnDefs"
                                             [gridOptions]="detalleGastosGridOptions" [defaultColDef]="{
                                                 resizable: true,
                                                 sortable: true,
                                                 filter: true
                                             }" style="width: 100%; flex: 1; min-height: 0;" [domLayout]="'normal'"
-                                            (gridReady)="onGridReadyGastos($event)">
+                                            (gridReady)="onGridReadyGastos($event)"
+                                            (filterChanged)="onFilterChangedGastos()">
                                         </ag-grid-angular>
-                                        <div class="p-3 gastos-detalle-total-footer">
-                                            <div
-                                                class="d-flex flex-wrap justify-content-between align-items-center gap-2">
-                                                <span class="fw-bold" style="color: #F19447;">Total</span>
-                                                <span class="fw-bold text-break text-end" style="color: #F19447;">
-                                                    {{ totalDetalleGastos }}
-                                                </span>
-                                            </div>
-                                        </div>
                                     </ng-container>
                                 </div>
                             </div>

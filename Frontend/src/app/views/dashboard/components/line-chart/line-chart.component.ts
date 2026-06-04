@@ -13,6 +13,14 @@ export class LineChartComponent implements OnInit, OnChanges {
   chartOption: any = {};
   echartsInstance: any;
 
+  private hexToRgba(hex: string, alpha: number): string {
+    if (!hex || !hex.startsWith('#')) return hex;
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+
   ngOnInit(): void {
     this.initChart();
   }
@@ -63,6 +71,12 @@ export class LineChartComponent implements OnInit, OnChanges {
         axisPointer: {
           type: 'cross'
         },
+        ...(this.config.colors?.[0] ? {
+          backgroundColor: '#ffffff',
+          borderColor: this.config.colors[0],
+          borderWidth: 2,
+          textStyle: { color: '#333' }
+        } : {}),
         formatter: (params: any) => {
           const resolveParams = Array.isArray(params) ? params : [params];
           if (resolveParams.length === 0) return '';

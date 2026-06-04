@@ -195,3 +195,93 @@ label {
   border-color: rgba(241, 148, 71, 0.35) !important;
   box-shadow: 0 4px 12px rgba(241, 148, 71, 0.08) !important;
 }
+
+/* Filtros interactivos activos (chips premium) */
+.filtros-activos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background-color: #fff8f3;
+  border: 1px solid #ffd8be;
+  border-radius: 8px;
+  margin-top: 0.75rem;
+  width: 100%;
+}
+
+.filtros-activos .badge-filtro {
+  display: inline-flex;
+  align-items: center;
+  background-color: #ffe6d4;
+  color: #c45f15;
+  border: 1px solid #ffcb9f;
+  padding: 0.25rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  gap: 0.35rem;
+}
+
+.filtros-activos .badge-filtro button {
+  background: none;
+  border: none;
+  color: #c45f15;
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.filtros-activos .badge-filtro button:hover {
+  color: #d9381e;
+}
+
+.filtros-activos .btn-limpiar-todos {
+  background: none;
+  border: none;
+  color: #F19447;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  margin-left: auto;
+}
+
+.filtros-activos .btn-limpiar-todos:hover {
+  background-color: #ffe6d4;
+  color: #c45f15;
+}
+
+/* Estilos para la fila de totales del grid de Gastos */
+::ng-deep .detalle-gastos-grid .ag-row.ag-row-total {
+  background-color: #fff !important;
+  font-weight: bold;
+}
+
+::ng-deep .detalle-gastos-grid .ag-row.ag-row-total .ag-cell {
+  color: #F19447 !important;
+}
+
+::ng-deep .detalle-gastos-grid .ag-row.ag-row-total:hover {
+  background-color: #fff !important;
+}
+
+/* Hacer que la sección pinned bottom se vea exactamente como parte de la tabla */
+::ng-deep .detalle-gastos-grid .ag-floating-bottom {
+  background-color: #fff !important;
+  border-top: 1px solid #dee2e6 !important;
+}
+
+::ng-deep .detalle-gastos-grid .ag-floating-bottom-viewport {
+  background-color: #fff !important;
+}
+
+::ng-deep .detalle-gastos-grid .ag-floating-bottom .ag-row {
+  background-color: #fff !important;
+  border-bottom: none !important;
+}

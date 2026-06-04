@@ -60,6 +60,9 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
   // Datos filtrados (se muestran en la vista)
   datosFiltrados: any = {};
 
+  // Fila de total pinned para AG Grid (se recalcula al filtrar)
+  pinnedBottomRowDataGastos: any[] = [];
+
   // Propiedades cacheadas para evitar recálculos
   private _detalleGastosRowsCache: any[] = [];
   private _totalDetalleGastosCache: string = '';
@@ -110,6 +113,8 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
   filtrosInteractivos: {
     proveedor?: string;
     categoria?: string;
+    concepto?: string;
+    formaPago?: string;
     mes?: string;
   } = {};
 
@@ -171,7 +176,10 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
       sortable: true,
       filter: true,
       valueFormatter: (params: any) => {
-        return params.value ? this.formatCurrency(params.value) : '';
+        if (params.value !== undefined && params.value !== null) {
+          return this.formatCurrency(params.value);
+        }
+        return '';
       },
       cellStyle: { textAlign: 'right' },
       type: 'numericColumn'
@@ -569,10 +577,18 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
 
   configurarAGGrid(): void {
     this.detalleGastosGridOptions = {
+      pagination: true,
+      paginationPageSize: 20,
       defaultColDef: {
         resizable: true,
         sortable: true,
         filter: true
+      },
+      getRowClass: (params: any) => {
+        if (params.node.rowPinned === 'bottom') {
+          return 'ag-row-total';
+        }
+        return '';
       },
       enableCellTextSelection: true,
       ensureDomOrder: true,
@@ -588,6 +604,30 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
   onGridReadyGastos(params: any): void {
     this.detalleGastosGridApi = params.api;
     this.detalleGastosGridApi.sizeColumnsToFit();
+  }
+
+  /** Recalcula el total pinned basándose en las filas visibles tras filtrar */
+  onFilterChangedGastos(): void {
+    if (!this.detalleGastosGridApi) return;
+
+    let total = 0;
+    this.detalleGastosGridApi.forEachNodeAfterFilter((node: any) => {
+      if (node.data) {
+        total += (node.data.gastosConIVA || 0);
+      }
+    });
+
+    this.pinnedBottomRowDataGastos = [{
+      fecha: 'Total',
+      proveedor: '',
+      concepto: '',
+      documento: '',
+      correlativo: '',
+      gastosConIVA: total
+    }];
+
+    this._totalDetalleGastosCache = this.formatCurrency(total);
+    this.cdr.markForCheck();
   }
 
   onQuickFilterChangeGastos(): void {
@@ -822,15 +862,11 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
       this.datosFiltrados = this.clonarDatos(this.datosOriginales);
 
       // Recalcular todos los gráficos con datos originales
+      this.recalcularTodosLosGraficos();
       this.recalcularMetricas();
-      this.recalcularGastosPorMes();
-      this.recalcularGastosPorCategoria();
-      this.recalcularGastosPorConcepto();
-      this.recalcularGastosPorProveedor();
-      this.recalcularGastosPorFormaPago();
 
       // Actualizar referencia - crear nuevo objeto para forzar detección de cambios
-      this.datos = { ...this.datosFiltrados };
+      this.datos = this.clonarDatos(this.datosFiltrados);
       this.recalcularRowsCache();
       this.cdr.markForCheck();
     }
@@ -842,9 +878,13 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
     this.cdr.markForCheck();
   }
 
-  onMesClick(event: { name: string; value: any; index: number }): void {
-    if (event.name) {
-      // Toggle: si ya está filtrado por este mes, quitar el filtro
+  limpiarFiltroIndividual(key: string): void {
+    delete (this.filtrosInteractivos as any)[key];
+    this.aplicarFiltrosInteractivos();
+  }
+
+  onMesClick(event: any): void {
+    if (event && event.name) {
       if (this.filtrosInteractivos.mes === event.name) {
         delete this.filtrosInteractivos.mes;
       } else {
@@ -854,9 +894,8 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
     }
   }
 
-  onCategoriaClick(event: { name: string; value: any; index: number }): void {
-    if (event.name) {
-      // Toggle: si ya está filtrado por esta categoría, quitar el filtro
+  onCategoriaClick(event: any): void {
+    if (event && event.name) {
       if (this.filtrosInteractivos.categoria === event.name) {
         delete this.filtrosInteractivos.categoria;
       } else {
@@ -866,26 +905,30 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
     }
   }
 
-  onConceptoClick(event: { name: string; value: any; index: number }): void {
-    if (event.name) {
-      // Toggle: si ya está filtrado por este concepto, quitar el filtro
-      if (this.filtrosInteractivos.categoria === event.name) {
-        delete this.filtrosInteractivos.categoria;
+  onConceptoClick(event: any): void {
+    if (event && event.name) {
+      if (this.filtrosInteractivos.concepto === event.name) {
+        delete this.filtrosInteractivos.concepto;
       } else {
-        this.filtrosInteractivos.categoria = event.name;
+        this.filtrosInteractivos.concepto = event.name;
       }
       this.aplicarFiltrosInteractivos();
     }
   }
 
-  onFormaPagoClick(event: { name: string; value: any; index: number }): void {
-    // Por ahora no hay filtro de forma de pago, pero se puede agregar
-    // console.log('Forma de pago seleccionada:', event);
+  onFormaPagoClick(event: any): void {
+    if (event && event.name) {
+      if (this.filtrosInteractivos.formaPago === event.name) {
+        delete this.filtrosInteractivos.formaPago;
+      } else {
+        this.filtrosInteractivos.formaPago = event.name;
+      }
+      this.aplicarFiltrosInteractivos();
+    }
   }
 
-  onProveedorClick(event: { name: string; value: any; index: number }): void {
-    if (event.name) {
-      // Toggle: si ya está filtrado por este proveedor, quitar el filtro
+  onProveedorClick(event: any): void {
+    if (event && event.name) {
       if (this.filtrosInteractivos.proveedor === event.name) {
         delete this.filtrosInteractivos.proveedor;
       } else {
@@ -895,60 +938,88 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
     }
   }
 
-  aplicarFiltrosInteractivos(): void {
-    if (!this.inicializado || !this.datosOriginales.detalleGastos) {
-      return;
-    }
-
-    // Restaurar datos originales
-    this.datosFiltrados = this.clonarDatos(this.datosOriginales);
-
-    // Filtrar detalle de gastos
-    let gastosFiltrados = [...this.datosOriginales.detalleGastos];
-
-    // Aplicar filtros
+  filtrarGastosDetallados(): void {
+    if (!this.datosFiltrados.gastosDetallados) return;
+    
+    let gastosFiltrados = [...this.datosFiltrados.gastosDetallados];
+    
     if (this.filtrosInteractivos.proveedor) {
-      gastosFiltrados = gastosFiltrados.filter((g: any) =>
-        g.proveedor === this.filtrosInteractivos.proveedor
-      );
+      gastosFiltrados = gastosFiltrados.filter(g => g.proveedor === this.filtrosInteractivos.proveedor);
     }
-
     if (this.filtrosInteractivos.categoria) {
-      gastosFiltrados = gastosFiltrados.filter((g: any) =>
-        g.concepto?.toLowerCase().includes(this.filtrosInteractivos.categoria?.toLowerCase() || '')
-      );
+      gastosFiltrados = gastosFiltrados.filter(g => g.categoria === this.filtrosInteractivos.categoria);
     }
-
+    if (this.filtrosInteractivos.concepto) {
+      gastosFiltrados = gastosFiltrados.filter(g => g.concepto === this.filtrosInteractivos.concepto);
+    }
+    if (this.filtrosInteractivos.formaPago) {
+      gastosFiltrados = gastosFiltrados.filter(g => g.formaPago === this.filtrosInteractivos.formaPago);
+    }
     if (this.filtrosInteractivos.mes) {
       const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
         'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-      const mesIndex = meses.indexOf(this.filtrosInteractivos.mes);
-      if (mesIndex !== -1) {
-        gastosFiltrados = gastosFiltrados.filter((g: any) => {
-          if (g.fecha) {
-            const fecha = new Date(g.fecha);
-            return fecha.getMonth() === mesIndex;
-          }
-          return false;
-        });
-      }
+      gastosFiltrados = gastosFiltrados.filter(g => {
+        if (!g.fecha) return false;
+        const partes = g.fecha.split('/');
+        if (partes.length !== 3) return false;
+        const mesNum = parseInt(partes[1], 10) - 1;
+        if (mesNum < 0 || mesNum > 11) return false;
+        return meses[mesNum].toLowerCase() === this.filtrosInteractivos.mes?.toLowerCase();
+      });
     }
+    
+    this.datosFiltrados.gastosDetallados = gastosFiltrados;
+  }
 
-    // Actualizar datos filtrados
-    this.datosFiltrados.detalleGastos = gastosFiltrados;
-
-    // Recalcular todos los gráficos y métricas
-    this.recalcularMetricas();
+  recalcularTodosLosGraficos(): void {
     this.recalcularGastosPorMes();
+    this.recalcularGastosVsPresupuesto();
+    this.recalcularGastosVsAnioAnterior();
     this.recalcularGastosPorCategoria();
     this.recalcularGastosPorConcepto();
     this.recalcularGastosPorProveedor();
     this.recalcularGastosPorFormaPago();
+  }
 
-    // Actualizar referencia - crear nuevo objeto para forzar detección de cambios
-    this.datos = { ...this.datosFiltrados };
+  aplicarFiltrosInteractivos(): void {
+    if (!this.inicializado) {
+      return;
+    }
 
-    // Recalcular cache y forzar detección de cambios
+    const datosBase = Object.keys(this.datosOriginales).length > 0
+      ? this.datosOriginales
+      : (this.datos || {});
+
+    // Crear una copia profunda de los datos para filtrar
+    this.datosFiltrados = this.clonarDatos(datosBase);
+
+    // Filtrar los gastos detallados
+    this.filtrarGastosDetallados();
+
+    // Actualizar detalleGastos en base a los gastos detallados filtrados
+    if (this.tieneFiltrosInteractivos()) {
+      this.datosFiltrados.detalleGastos = (this.datosFiltrados.gastosDetallados || []).map((g: any) => ({
+        fecha: g.fecha,
+        proveedor: g.proveedor,
+        concepto: g.concepto,
+        documento: g.doc,
+        correlativo: g.correlativo,
+        gastosConIVA: g.gastosConIva,
+      }));
+    } else {
+      this.datosFiltrados.detalleGastos = this.clonarDatos(datosBase.detalleGastos || []);
+    }
+
+    // Recalcular todos los gráficos
+    this.recalcularTodosLosGraficos();
+
+    // Recalcular métricas
+    this.recalcularMetricas();
+
+    // Actualizar referencia expuesta
+    this.datos = this.clonarDatos(this.datosFiltrados);
+
+    // Recalcular filas de cache y forzar detección
     this.recalcularRowsCache();
     this.cdr.markForCheck();
   }
@@ -1036,7 +1107,14 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   recalcularGastosPorMes(): void {
-    if (!this.datosFiltrados.detalleGastos) return;
+    if (!this.tieneFiltrosInteractivos()) {
+      if (this.datosOriginales?.gastosPorMesConfig) {
+        this.datosFiltrados.gastosPorMesConfig = this.clonarDatos(this.datosOriginales.gastosPorMesConfig);
+      }
+      return;
+    }
+
+    if (!this.datosFiltrados.gastosDetallados) return;
 
     const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
       'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -1047,17 +1125,15 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
       gastosPorMes[mes] = 0;
     });
 
-    this.datosFiltrados.detalleGastos.forEach((g: any) => {
+    this.datosFiltrados.gastosDetallados.forEach((g: any) => {
       if (g.fecha) {
-        try {
-          const fecha = new Date(g.fecha);
-          if (!isNaN(fecha.getTime())) {
-            const mesIndex = fecha.getMonth();
-            const mesNombre = meses[mesIndex];
-            gastosPorMes[mesNombre] = (gastosPorMes[mesNombre] || 0) + (g.gastosConIVA || 0);
+        const partes = g.fecha.split('/');
+        if (partes.length === 3) {
+          const mesNum = parseInt(partes[1], 10) - 1; // 0-indexed
+          if (mesNum >= 0 && mesNum <= 11) {
+            const mesNombre = meses[mesNum];
+            gastosPorMes[mesNombre] = (gastosPorMes[mesNombre] || 0) + (g.gastosConIva || 0);
           }
-        } catch (e) {
-          // console.warn('Fecha inválida:', g.fecha);
         }
       }
     });
@@ -1068,7 +1144,6 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
     }
     const data = labels.map(m => gastosPorMes[m] || 0);
 
-    // Crear o actualizar la configuración del gráfico
     this.datosFiltrados.gastosPorMesConfig = {
       title: '',
       type: 'line',
@@ -1083,57 +1158,29 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   recalcularGastosPorCategoria(): void {
-    if (!this.datosFiltrados.detalleGastos) return;
+    if (!this.tieneFiltrosInteractivos()) {
+      if (this.datosOriginales?.gastosPorCategoriaConfig) {
+        this.datosFiltrados.gastosPorCategoriaConfig = this.clonarDatos(this.datosOriginales.gastosPorCategoriaConfig);
+      }
+      return;
+    }
 
-    // Mapeo de conceptos a categorías (simplificado)
-    const categoriaMap: { [key: string]: string } = {
-      'compras': 'Compras',
-      'materia prima': 'Compras',
-      'planilla': 'G. operativos',
-      'alquiler': 'G. operativos',
-      'luz': 'G. operativos',
-      'agua': 'G. operativos',
-      'electricidad': 'G. operativos',
-      'servicios': 'G. administrativos',
-      'impuestos': 'G. financieros',
-      'publicidad': 'G. comerciales',
-      'costo': 'Costo de ventas'
-    };
+    if (!this.datosFiltrados.gastosDetallados) return;
 
     const gastosPorCategoria: { [key: string]: number } = {};
 
-    // Inicializar todas las categorías en 0
-    const categorias = ['Compras', 'G. operativos', 'G. administrativos', 'G. financieros', 'G. comerciales', 'Costo de ventas'];
-    categorias.forEach(cat => {
-      gastosPorCategoria[cat] = 0;
+    this.datosFiltrados.gastosDetallados.forEach((g: any) => {
+      const categoria = g.categoria || 'Gastos varios';
+      gastosPorCategoria[categoria] = (gastosPorCategoria[categoria] || 0) + (g.gastosConIva || 0);
     });
 
-    this.datosFiltrados.detalleGastos.forEach((g: any) => {
-      const concepto = (g.concepto || '').toLowerCase();
-      let categoria = 'Gastos varios';
+    // Ordenar categorías de mayor a menor monto
+    const sorted = Object.entries(gastosPorCategoria)
+      .sort((a, b) => b[1] - a[1]);
 
-      for (const [key, value] of Object.entries(categoriaMap)) {
-        if (concepto.includes(key)) {
-          categoria = value;
-          break;
-        }
-      }
+    const labels = sorted.map(([name]) => name);
+    const data = sorted.map(([, value]) => value);
 
-      // Solo agregar si la categoría está en la lista
-      if (categorias.includes(categoria)) {
-        gastosPorCategoria[categoria] = (gastosPorCategoria[categoria] || 0) + (g.gastosConIVA || 0);
-      }
-    });
-
-    // Sort categories from highest to lowest amount
-    const sortedCategorias = [...categorias].sort((a, b) => {
-      return (gastosPorCategoria[b] || 0) - (gastosPorCategoria[a] || 0);
-    });
-
-    const labels = sortedCategorias;
-    const data = labels.map(c => gastosPorCategoria[c] || 0);
-
-    // Crear o actualizar la configuración del gráfico
     this.datosFiltrados.gastosPorCategoriaConfig = {
       title: '',
       type: 'bar',
@@ -1142,21 +1189,27 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
       colors: ['#F19447'],
       horizontal: true,
       showXAxisLabels: false,
-      highlightMaxBar: true
+      graduatedOpacity: true
     };
   }
 
   recalcularGastosPorConcepto(): void {
-    if (!this.datosFiltrados.detalleGastos) return;
+    if (!this.tieneFiltrosInteractivos()) {
+      if (this.datosOriginales?.gastosPorConceptoConfig) {
+        this.datosFiltrados.gastosPorConceptoConfig = this.clonarDatos(this.datosOriginales.gastosPorConceptoConfig);
+      }
+      return;
+    }
+
+    if (!this.datosFiltrados.gastosDetallados) return;
 
     const gastosPorConcepto: { [key: string]: number } = {};
 
-    this.datosFiltrados.detalleGastos.forEach((g: any) => {
+    this.datosFiltrados.gastosDetallados.forEach((g: any) => {
       const concepto = g.concepto || 'Sin concepto';
-      gastosPorConcepto[concepto] = (gastosPorConcepto[concepto] || 0) + (g.gastosConIVA || 0);
+      gastosPorConcepto[concepto] = (gastosPorConcepto[concepto] || 0) + (g.gastosConIva || 0);
     });
 
-    // Ordenar por monto y tomar los top 13
     const sorted = Object.entries(gastosPorConcepto)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 13);
@@ -1164,59 +1217,98 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
     const labels = sorted.map(([name]) => name.length > 15 ? name.substring(0, 15) + '...' : name);
     const data = sorted.map(([, value]) => value);
 
-    // Crear o actualizar la configuración del gráfico
     this.datosFiltrados.gastosPorConceptoConfig = {
       title: '',
       type: 'bar',
       labels,
       data,
       colors: ['#F19447'],
-      rotateLabels: 45
+      rotateLabels: 45,
+      graduatedOpacity: true
     };
   }
 
   recalcularGastosPorProveedor(): void {
-    if (!this.datosFiltrados.detalleGastos) return;
+    if (!this.tieneFiltrosInteractivos()) {
+      if (this.datosOriginales?.gastosPorProveedor) {
+        this.datosFiltrados.gastosPorProveedor = this.clonarDatos(this.datosOriginales.gastosPorProveedor);
+      }
+      return;
+    }
+
+    if (!this.datosFiltrados.gastosDetallados) return;
 
     const gastosPorProveedor: { [key: string]: number } = {};
 
-    this.datosFiltrados.detalleGastos.forEach((g: any) => {
+    this.datosFiltrados.gastosDetallados.forEach((g: any) => {
       const proveedor = g.proveedor || 'Sin proveedor';
-      gastosPorProveedor[proveedor] = (gastosPorProveedor[proveedor] || 0) + (g.gastosConIVA || 0);
+      gastosPorProveedor[proveedor] = (gastosPorProveedor[proveedor] || 0) + (g.gastosConIva || 0);
     });
 
-    // Actualizar la lista de proveedores ordenada por monto
     this.datosFiltrados.gastosPorProveedor = Object.entries(gastosPorProveedor)
       .map(([name, amount]) => ({ name, amount: amount as number }))
       .sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount));
   }
 
   recalcularGastosPorFormaPago(): void {
-    // Por ahora mantener los datos originales del treemap si existen
-    // En el futuro se puede implementar filtrado por forma de pago si se agrega ese campo a detalleGastos
-    if (!this.datosFiltrados.gastosPorFormaPagoConfig && this.datosOriginales.gastosPorFormaPagoConfig) {
-      this.datosFiltrados.gastosPorFormaPagoConfig = this.clonarDatos(this.datosOriginales.gastosPorFormaPagoConfig);
+    if (!this.tieneFiltrosInteractivos()) {
+      if (this.datosOriginales?.gastosPorFormaPagoConfig) {
+        this.datosFiltrados.gastosPorFormaPagoConfig = this.clonarDatos(this.datosOriginales.gastosPorFormaPagoConfig);
+      }
+      return;
     }
+
+    if (!this.datosFiltrados.gastosDetallados) return;
+
+    const gastosPorFormaPago: { [key: string]: number } = {};
+
+    this.datosFiltrados.gastosDetallados.forEach((g: any) => {
+      const formaPago = g.formaPago || 'Sin forma de pago';
+      gastosPorFormaPago[formaPago] = (gastosPorFormaPago[formaPago] || 0) + (g.gastosConIva || 0);
+    });
+
+    const labels = Object.keys(gastosPorFormaPago);
+    const numericData = labels.map(fp => gastosPorFormaPago[fp]);
+    const total = numericData.reduce((s, x) => s + x, 0);
+    const porcentajes = numericData.map((v) =>
+      total > 0 ? (v / total) * 100 : 0
+    );
+
+    const data = Object.entries(gastosPorFormaPago)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+
+    this.datosFiltrados.gastosPorFormaPagoConfig = {
+      type: 'doughnut',
+      labels,
+      data,
+      porcentajes,
+    };
   }
 
   recalcularGastosVsPresupuesto(): void {
-    if (!this.datosFiltrados.detalleGastos) return;
+    if (!this.tieneFiltrosInteractivos()) {
+      if (this.datosOriginales?.gastosVsPresupuestoConfig) {
+        this.datosFiltrados.gastosVsPresupuestoConfig = this.clonarDatos(this.datosOriginales.gastosVsPresupuestoConfig);
+      }
+      return;
+    }
+
+    if (!this.datosFiltrados.gastosDetallados) return;
 
     const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
       'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     const gastosPorMes: { [key: string]: number } = {};
 
-    this.datosFiltrados.detalleGastos.forEach((g: any) => {
+    this.datosFiltrados.gastosDetallados.forEach((g: any) => {
       if (g.fecha) {
-        try {
-          const fecha = new Date(g.fecha);
-          if (!isNaN(fecha.getTime())) {
-            const mesIndex = fecha.getMonth();
-            const mesNombre = meses[mesIndex];
-            gastosPorMes[mesNombre] = (gastosPorMes[mesNombre] || 0) + (g.gastosConIVA || 0);
+        const partes = g.fecha.split('/');
+        if (partes.length === 3) {
+          const mesNum = parseInt(partes[1], 10) - 1;
+          if (mesNum >= 0 && mesNum <= 11) {
+            const mesNombre = meses[mesNum];
+            gastosPorMes[mesNombre] = (gastosPorMes[mesNombre] || 0) + (g.gastosConIva || 0);
           }
-        } catch (e) {
-          // console.warn('Fecha inválida:', g.fecha);
         }
       }
     });
@@ -1257,29 +1349,32 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   recalcularGastosVsAnioAnterior(): void {
-    if (!this.datosFiltrados.detalleGastos) return;
+    if (!this.tieneFiltrosInteractivos()) {
+      if (this.datosOriginales?.gastosVsAnioAnteriorConfig) {
+        this.datosFiltrados.gastosVsAnioAnteriorConfig = this.clonarDatos(this.datosOriginales.gastosVsAnioAnteriorConfig);
+      }
+      return;
+    }
+
+    if (!this.datosFiltrados.gastosDetallados) return;
 
     const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
       'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     const gastosPorMes: { [key: string]: number } = {};
 
-    // Calcular gastos del año actual por mes
-    this.datosFiltrados.detalleGastos.forEach((g: any) => {
+    this.datosFiltrados.gastosDetallados.forEach((g: any) => {
       if (g.fecha) {
-        try {
-          const fecha = new Date(g.fecha);
-          if (!isNaN(fecha.getTime())) {
-            const mesIndex = fecha.getMonth();
-            const mesNombre = meses[mesIndex];
-            gastosPorMes[mesNombre] = (gastosPorMes[mesNombre] || 0) + (g.gastosConIVA || 0);
+        const partes = g.fecha.split('/');
+        if (partes.length === 3) {
+          const mesNum = parseInt(partes[1], 10) - 1;
+          if (mesNum >= 0 && mesNum <= 11) {
+            const mesNombre = meses[mesNum];
+            gastosPorMes[mesNombre] = (gastosPorMes[mesNombre] || 0) + (g.gastosConIva || 0);
           }
-        } catch (e) {
-          // console.warn('Fecha inválida:', g.fecha);
         }
       }
     });
 
-    // ✅ CORREGIDO: Extraer gastos del año anterior del config original
     const gastosAnioAnteriorOriginales = this.datosOriginales?.gastosVsAnioAnteriorConfig?.dataExtra || [];
 
     let filteredIndices = meses
@@ -1297,7 +1392,6 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
     const dataGastosActual = filteredIndices.map(index => gastosPorMes[meses[index]] || 0);
     const dataGastosAnterior = filteredIndices.map(index => gastosAnioAnteriorOriginales[index] || 0);
 
-    // Crear configuración para gráfico de barras comparativo
     this.datosFiltrados.gastosVsAnioAnteriorConfig = {
       title: '',
       type: 'bar',
@@ -1344,9 +1438,20 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
         return sum + (gasto.gastosConIVA || 0);
       }, 0);
       this._totalDetalleGastosCache = this.formatCurrency(total);
+
+      // Actualizar fila de totales pinned
+      this.pinnedBottomRowDataGastos = [{
+        fecha: 'Total',
+        proveedor: '',
+        concepto: '',
+        documento: '',
+        correlativo: '',
+        gastosConIVA: total
+      }];
     } else {
       this._detalleGastosRowsCache = [];
       this._totalDetalleGastosCache = this.formatCurrency(0);
+      this.pinnedBottomRowDataGastos = [];
     }
   }
 

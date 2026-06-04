@@ -31,6 +31,17 @@ export class BarChartComponent implements OnInit, OnChanges {
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   }
 
+  private buildTooltipStyle(): Record<string, any> {
+    const primary = this.config?.colors?.[0];
+    if (!primary || !primary.startsWith('#')) return {};
+    return {
+      backgroundColor: '#ffffff',
+      borderColor: primary,
+      borderWidth: 2,
+      textStyle: { color: '#333' }
+    };
+  }
+
   initChart(): void {
     if (!this.config) {
       return;
@@ -128,6 +139,12 @@ export class BarChartComponent implements OnInit, OnChanges {
             const maxVal = Math.max(...data);
             if (maxVal <= 0) return baseColor;
             const ratio = params.value / maxVal;
+            if (baseColor.toUpperCase() === '#F19447') {
+              const r = Math.round(246 + (241 - 246) * ratio);
+              const g = Math.round(193 + (148 - 193) * ratio);
+              const b = Math.round(146 + (71 - 146) * ratio);
+              return `rgb(${r}, ${g}, ${b})`;
+            }
             const opacity = 0.35 + 0.65 * ratio;
             return this.hexToRgba(baseColor, opacity);
           },
@@ -162,9 +179,37 @@ export class BarChartComponent implements OnInit, OnChanges {
 
     const labelCount = this.config.labels?.length ?? 0;
     const rotateLabels = this.config.rotateLabels ?? 0;
-    const gridBottom = this.config.gridBottom ?? (
+    const isHorizontal = !!(this.config as any).horizontal;
+    const needsDataZoom = !isHorizontal && !isMultiSeries && labelCount > 6;
+    const dataZoomBottom = needsDataZoom ? '20%' : undefined;
+    const gridBottom = this.config.gridBottom ?? dataZoomBottom ?? (
       rotateLabels >= 45 ? '16%' : rotateLabels > 0 ? '10%' : '8%'
     );
+
+    const primaryColor = this.config.colors?.[0] || '#5470c6';
+    const dataZoom = needsDataZoom ? [
+      {
+        type: 'slider',
+        xAxisIndex: 0,
+        start: 0,
+        end: Math.round((6 / labelCount) * 100),
+        bottom: 5,
+        height: 14,
+        borderColor: primaryColor,
+        fillerColor: this.hexToRgba(primaryColor, 0.15),
+        handleStyle: { color: primaryColor, borderColor: primaryColor },
+        moveHandleStyle: { color: primaryColor },
+        emphasis: { handleStyle: { color: primaryColor } },
+        textStyle: { color: '#666', fontSize: 10 },
+        brushSelect: false,
+      },
+      {
+        type: 'inside',
+        xAxisIndex: 0,
+        start: 0,
+        end: Math.round((6 / labelCount) * 100),
+      }
+    ] : undefined;
 
     const barTooltipFormatter = (params: any) => {
       const resolveLabel = (item: any) =>
@@ -200,11 +245,13 @@ export class BarChartComponent implements OnInit, OnChanges {
           trigger: 'axis',
           axisPointer: { type: 'shadow' },
           formatter: barTooltipFormatter,
+          ...this.buildTooltipStyle()
         }
         : {
           trigger: 'item',
           axisPointer: { type: 'none' },
           formatter: barTooltipFormatter,
+          ...this.buildTooltipStyle()
         },
       legend: isMultiSeries ? {
         data: (this.config.data as any[]).map((s: any) => s.name),
@@ -291,7 +338,8 @@ export class BarChartComponent implements OnInit, OnChanges {
           };
         }
         return s;
-      })
+      }),
+      ...(dataZoom ? { dataZoom } : {})
     };
 
     this.attachItemClickHandler();
