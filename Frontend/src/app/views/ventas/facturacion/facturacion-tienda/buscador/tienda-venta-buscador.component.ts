@@ -7,6 +7,7 @@ import { debounceTime, switchMap, filter, catchError, tap } from 'rxjs/operators
 import { SumPipe }     from '@pipes/sum.pipe';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
+import { copiarImpuestosProductoAlDetalle } from '@utils/impuestos-venta.util';
 
 @Component({
   selector: 'app-tienda-venta-buscador',
@@ -173,6 +174,11 @@ export class TiendaVentaBuscadorComponent implements OnInit {
         this.detalle.img            = producto.img;
         this.detalle.precio         = parseFloat(producto.precio);
         this.detalle.porcentaje_impuesto = producto.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
+        copiarImpuestosProductoAlDetalle(
+            this.detalle,
+            producto,
+            this.apiService.auth_user()?.empresa?.iva ?? 0
+        );
         this.detalle.precios        = producto.precios;
         this.detalle.precios.unshift({
                 'precio' : this.detalle.precio
