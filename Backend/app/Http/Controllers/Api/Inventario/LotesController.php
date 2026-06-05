@@ -52,7 +52,10 @@ class LotesController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Lote::with(['producto', 'bodega'])
+        $query = Lote::with([
+            'producto:id,nombre,codigo',
+            'bodega:id,nombre',
+        ])
             ->where('id_empresa', Auth::user()->id_empresa);
         $query = $this->applyFilters($query, $request);
 

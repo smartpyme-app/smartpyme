@@ -1,6 +1,8 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { Subject, of } from 'rxjs';
+import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/operators';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
@@ -16,6 +18,8 @@ export class LotesComponent implements OnInit {
     public filtros: any = {};
     public bodegas: any = [];
     public productos: any = [];
+    public productosBusqueda$ = new Subject<string>();
+    public productosBuscando = false;
     public estadisticas: any = {
         total: 0,
         vencidos: 0,
@@ -53,9 +57,23 @@ export class LotesComponent implements OnInit {
             this.bodegas = bodegas;
         }, error => { this.alertService.error(error); });
 
-        this.apiService.getAll('productos/list').subscribe(productos => {
-            this.productos = productos;
-        }, error => { this.alertService.error(error); });
+        this.productosBusqueda$.pipe(
+            debounceTime(300),
+            distinctUntilChanged(),
+            switchMap((term: string) => {
+                const q = (term ?? '').trim();
+                if (q.length < 2) {
+                    return of([]);
+                }
+                this.productosBuscando = true;
+                return this.apiService.getAll('productos/list/search', { search: q, limit: 30 }).pipe(
+                    catchError(() => of([]))
+                );
+            })
+        ).subscribe((productos: any[]) => {
+            this.productos = Array.isArray(productos) ? productos : [];
+            this.productosBuscando = false;
+        });
 
         this.cargarEstadisticas();
     }
@@ -178,6 +196,16 @@ export class LotesComponent implements OnInit {
     }
 
     public openFilter(template: TemplateRef<any>) {
+        if (this.filtros.id_producto && !this.productos.some((p: any) => p.id === this.filtros.id_producto)) {
+            this.apiService.read('producto/', this.filtros.id_producto).subscribe(
+                (producto: any) => {
+                    if (producto?.id) {
+                        this.productos = [{ id: producto.id, nombre: producto.nombre }];
+                    }
+                },
+                () => {}
+            );
+        }
         this.modalRef = this.modalService.show(template);
     }
 

@@ -66,6 +66,7 @@ export class KardexComponent implements OnInit, OnDestroy {
     ).subscribe(results => {
       this.searchResults = results || [];
       this.searchLoading = false;
+      this.cdr.markForCheck();
     });
   }
 
@@ -100,7 +101,8 @@ export class KardexComponent implements OnInit, OnDestroy {
     this.apiService.getAll('bodegas/list').subscribe(bodegas => {
       this.bodegas = bodegas;
       this.loading = false;
-    }, error => { this.alertService.error(error); this.loading = false; });
+      this.cdr.markForCheck();
+    }, error => { this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
 
     this.routeSub = this.route.paramMap.subscribe(params => {
       const idParam = params.get('id');
@@ -118,6 +120,7 @@ export class KardexComponent implements OnInit, OnDestroy {
         this.producto = { movimientos: [] };
         this.lotes = [];
       }
+      this.cdr.markForCheck();
     });
   }
 
@@ -142,10 +145,13 @@ export class KardexComponent implements OnInit, OnDestroy {
       && this.producto?.inventario_por_lotes;
     if (requiereLote && (!this.filtros.id_inventario || !this.filtros.lote_id)) {
       this.producto = { ...this.producto, movimientos: [] };
+      this.loading = false;
+      this.cdr.markForCheck();
       return;
     }
 
     this.loading = true;
+    this.cdr.markForCheck();
     this.apiService.getAll('productos/kardex', this.filtros).subscribe(producto => {
       this.producto = producto;
       if (this.producto?.id) {
@@ -165,7 +171,8 @@ export class KardexComponent implements OnInit, OnDestroy {
         this.lotes = [];
       }
       this.loading = false;
-    }, error => { this.alertService.error(error); this.loading = false; });
+      this.cdr.markForCheck();
+    }, error => { this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
   }
 
   public isLotesActivo(): boolean {
@@ -204,11 +211,13 @@ export class KardexComponent implements OnInit, OnDestroy {
         const loteExiste = this.lotes.some((l: any) => String(l.id) === loteIdActual);
         this.filtros.lote_id = loteExiste ? loteIdActual : '';
       }
+      this.cdr.markForCheck();
     }, error => {
       this.lotes = [];
       if (error) {
         this.filtros.lote_id = '';
       }
+      this.cdr.markForCheck();
     });
   }
 
@@ -223,6 +232,7 @@ export class KardexComponent implements OnInit, OnDestroy {
       this.lotes = [];
       this.loadAll();
     }
+    this.cdr.markForCheck();
   }
 
   public onBodegaChange() {
@@ -233,6 +243,7 @@ export class KardexComponent implements OnInit, OnDestroy {
     } else {
       this.loadAll();
     }
+    this.cdr.markForCheck();
   }
 
   public descargarKardex() {

@@ -253,11 +253,17 @@
         <div class="row mb-3">
             <div class="form-group col-md-6">
                 <label for="id_producto">Producto:</label>
-                <ng-select name="id_producto" [(ngModel)]="filtros.id_producto" class="form-select p-0">
-                    <ng-option value="">Todos</ng-option>
-                    <ng-option *ngFor="let producto of productos" [value]="producto.id">
-                        {{ producto.nombre }}
-                    </ng-option>
+                <ng-select
+                    name="id_producto"
+                    [(ngModel)]="filtros.id_producto"
+                    class="form-select p-0"
+                    [items]="productos"
+                    bindLabel="nombre"
+                    bindValue="id"
+                    [loading]="productosBuscando"
+                    [typeahead]="productosBusqueda$"
+                    placeholder="Escriba al menos 2 caracteres"
+                    [clearable]="true">
                 </ng-select>
             </div>
             <div class="form-group col-md-6">

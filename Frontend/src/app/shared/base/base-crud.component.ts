@@ -322,7 +322,8 @@ export abstract class BaseCrudComponent<T = any> extends BaseFilteredPaginatedMo
   public override openModal(template: TemplateRef<any>, item?: T, modalConfig?: any): void {
     const itemProperty = this.config.itemProperty;
     
-    if (item) {
+    const itemId = item != null ? (item as any).id : null;
+    if (item != null && itemId != null && itemId !== '') {
       // Copiar el item para evitar mutaciones
       (this as any)[itemProperty] = { ...item };
     } else {

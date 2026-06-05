@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Inventario;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Auth;
 
 class StoreBodegaRequest extends FormRequest
 {
@@ -24,7 +25,7 @@ class StoreBodegaRequest extends FormRequest
             'nombre' => 'required|string|max:255',
             'descripcion' => 'sometimes|nullable|string|max:255',
             'id_sucursal' => 'required|integer|exists:sucursales,id',
-            'id_empresa' => 'required|integer|exists:empresas,id',
+            'id_empresa' => 'sometimes|nullable|integer|exists:empresas,id',
             'activo' => 'sometimes|nullable|boolean',
         ];
     }
@@ -68,6 +69,13 @@ class StoreBodegaRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
+        $user = Auth::user();
+        if ($user && $user->id_empresa && !$this->filled('id_empresa')) {
+            $this->merge([
+                'id_empresa' => (int) $user->id_empresa,
+            ]);
+        }
+
         // Sanitizar nombre
         if ($this->has('nombre')) {
             $this->merge([

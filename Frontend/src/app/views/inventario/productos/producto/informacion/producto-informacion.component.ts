@@ -132,6 +132,8 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
       .subscribe(
       (categorias) => {
         this.categorias = categorias;
+        this.normalizarCategoriaProducto();
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error(error);
@@ -143,9 +145,12 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
       .subscribe(
       (subcategorias) => {
         this.subcategorias = subcategorias;
-        this.subcategRes = this.subcategorias.filter((cat: any) => {
-          return cat.id_cate_padre == this.producto.id_categoria;
-        });
+        if (this.producto?.id_categoria) {
+          this.subcategRes = this.subcategorias.filter((cat: any) => {
+            return cat.id_cate_padre == this.producto.id_categoria;
+          });
+        }
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error(error);
@@ -189,8 +194,25 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['producto']) {
+      this.normalizarCategoriaProducto();
       this.intentarCargarBarcodeSugerido();
       this.syncCabysSeleccionFromProducto();
+      if (this.subcategorias?.length && this.producto?.id_categoria) {
+        this.subcategRes = this.subcategorias.filter((cat: any) => {
+          return cat.id_cate_padre == this.producto.id_categoria;
+        });
+      }
+      this.cdr.markForCheck();
+    }
+  }
+
+  /** ng-select bindValue="id" requiere número; la API suele devolver string. */
+  private normalizarCategoriaProducto(): void {
+    if (this.producto?.id_categoria != null && this.producto.id_categoria !== '') {
+      this.producto.id_categoria = Number(this.producto.id_categoria);
+    }
+    if (this.producto?.id_subcategoria != null && this.producto.id_subcategoria !== '') {
+      this.producto.id_subcategoria = Number(this.producto.id_subcategoria);
     }
   }
 

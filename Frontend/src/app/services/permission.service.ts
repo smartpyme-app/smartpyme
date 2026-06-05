@@ -206,7 +206,7 @@ export class PermissionService {
         role === 'usuario_citas'
       );
     }
-    return false;
+    return this.isAdmin();
   }
 
   verifyVentasRole(): boolean {

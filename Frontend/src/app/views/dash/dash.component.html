@@ -8,7 +8,7 @@
 
 
 
-@if (apiService.isAdminRole() && !usuario.empresa.licencia) {
+@if (apiService.isAdmin() && !usuario?.empresa?.licencia) {
     <app-admin-dash></app-admin-dash>
 }
 @if (apiService.validateRole('usuario_ventas', true)) {
