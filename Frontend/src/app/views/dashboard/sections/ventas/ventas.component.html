@@ -88,19 +88,7 @@
                             <button type="button" class="btn btn-outline-primary" (click)="toggleFiltrosAdicionales()">
                                 <i class="fas fa-filter me-1"></i> Ver otros filtros
                             </button>
-                            <button type="button" class="btn btn-outline-primary" tooltip="Limpiar otros filtros"
-                                (click)="limpiarFiltrosAdicionales()" *ngIf="hayFiltrosAdicionalesActivos">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    class="icon icon-tabler icons-tabler-outline icon-tabler-filter-x">
-                                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                                    <path
-                                        d="M13.758 19.414l-4.758 1.586v-8.5l-4.48 -4.928a2 2 0 0 1 -.52 -1.345v-2.227h16v2.172a2 2 0 0 1 -.586 1.414l-4.414 4.414v1.5" />
-                                    <path d="M22 22l-5 -5" />
-                                    <path d="M17 22l5 -5" />
-                                </svg>
-                            </button>
+
                             <button type="button" class="btn btn-primary" tooltip="Aplicar filtros"
                                 *ngIf="mostrarBotonAplicarOtrosFiltrosVentas" (click)="confirmarOtrosFiltrosVentas()">
                                 <i class="fa fa-check"></i> Aplicar
@@ -391,7 +379,7 @@
                                         <div
                                             class="d-flex flex-wrap gap-2 align-items-center justify-content-end w-100">
                                             <!-- Buscador global -->
-                                            <div class="input-group" style="width: 250px;">
+                                            <div class="input-group" style="flex: 1 1 200px; max-width: 350px; min-width: 200px;">
                                                 <span class="input-group-text bg-white border-end-0">
                                                     <i class="fas fa-search text-muted"></i>
                                                 </span>
@@ -476,7 +464,7 @@
                                         <div
                                             class="d-flex flex-wrap gap-2 align-items-center justify-content-end w-100">
                                             <!-- Buscador global -->
-                                            <div class="input-group" style="width: 250px;">
+                                            <div class="input-group" style="flex: 1 1 200px; max-width: 350px; min-width: 200px;">
                                                 <span class="input-group-text bg-white border-end-0">
                                                     <i class="fas fa-search text-muted"></i>
                                                 </span>

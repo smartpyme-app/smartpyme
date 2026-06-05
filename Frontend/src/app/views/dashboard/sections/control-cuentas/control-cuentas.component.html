@@ -164,7 +164,8 @@
                     <div class="card h-100">
                         <div class="card-header bg-white border-0 py-3">
                             <div class="inv-ag-grid-toolbar">
-                                <h5 class="mb-0 fw-bold inv-ag-grid-toolbar-title text-center w-100" style="text-align: center;">Cuentas por cobrar según vigencia</h5>
+                                <h5 class="mb-0 fw-bold inv-ag-grid-toolbar-title text-center w-100"
+                                    style="text-align: center;">Cuentas por cobrar según vigencia</h5>
                             </div>
                         </div>
                         <div class="card-body">
@@ -180,7 +181,8 @@
                     <div class="card h-100">
                         <div class="card-header bg-white border-0 py-3">
                             <div class="inv-ag-grid-toolbar">
-                                <h5 class="mb-0 fw-bold inv-ag-grid-toolbar-title text-center w-100" style="text-align: center;">Cuentas por cobrar clientes</h5>
+                                <h5 class="mb-0 fw-bold inv-ag-grid-toolbar-title text-center w-100"
+                                    style="text-align: center;">Cuentas por cobrar clientes</h5>
                             </div>
                         </div>
                         <div class="card-body">
@@ -200,9 +202,9 @@
                 <div class="col-12">
                     <div class="card">
                         <div class="card-header bg-white border-0 py-3">
-                            <div class="inv-ag-grid-toolbar">
-                                <h5 class="mb-0 fw-bold inv-ag-grid-toolbar-title">Detalle de cuentas por cobrar</h5>
-                                <div class="inv-ag-grid-toolbar-actions"
+                            <div class="d-flex flex-column gap-2 align-items-center w-100">
+                                <h5 class="mb-0 fw-bold text-center w-100">Detalle de cuentas por cobrar</h5>
+                                <div class="d-flex flex-wrap gap-2 align-items-center justify-content-end w-100"
                                     *ngIf="datos.detalleCuentasPorCobrar !== undefined">
                                     <div class="input-group inv-ag-grid-toolbar-search">
                                         <span class="input-group-text bg-white border-end-0">
@@ -347,7 +349,8 @@
                     <div class="card h-100">
                         <div class="card-header bg-white border-0 py-3">
                             <div class="inv-ag-grid-toolbar">
-                                <h5 class="mb-0 fw-bold inv-ag-grid-toolbar-title text-center w-100" style="color: #F19447; text-align: center;">Cuentas por pagar según vigencia</h5>
+                                <h5 class="mb-0 fw-bold inv-ag-grid-toolbar-title text-center w-100"
+                                    style="color: #F19447; text-align: center;">Cuentas por pagar según vigencia</h5>
                             </div>
                         </div>
                         <div class="card-body">
@@ -365,7 +368,8 @@
                     <div class="card h-100">
                         <div class="card-header bg-white border-0 py-3">
                             <div class="inv-ag-grid-toolbar">
-                                <h5 class="mb-0 fw-bold inv-ag-grid-toolbar-title text-center w-100" style="color: #F19447; text-align: center;">Cuentas por pagar proveedores</h5>
+                                <h5 class="mb-0 fw-bold inv-ag-grid-toolbar-title text-center w-100"
+                                    style="color: #F19447; text-align: center;">Cuentas por pagar proveedores</h5>
                             </div>
                         </div>
                         <div class="card-body">
@@ -385,11 +389,10 @@
                 <div class="col-12">
                     <div class="card">
                         <div class="card-header bg-white border-0 py-3">
-                            <div class="inv-ag-grid-toolbar">
-                                <h4 class="mb-0 fw-bold inv-ag-grid-toolbar-title text-center"
-                                    style="color: #F19447; text-align: center;">
-                                    Resumen de cuentas por pagar</h4>
-                                <div class="inv-ag-grid-toolbar-actions"
+                            <div class="d-flex flex-column gap-2 align-items-center w-100">
+                                <h5 class="mb-0 fw-bold text-center w-100" style="color: #F19447;">
+                                    Resumen de cuentas por pagar</h5>
+                                <div class="d-flex flex-wrap gap-2 align-items-center justify-content-end w-100"
                                     *ngIf="datos.resumenCuentasPorPagar !== undefined">
                                     <div class="input-group inv-ag-grid-toolbar-search">
                                         <span class="input-group-text bg-white border-end-0">

@@ -38,14 +38,14 @@
 }
 
 .gastos-section .inv-ag-grid-toolbar-search {
-  flex: 1 1 12rem;
-  min-width: min(100%, 12rem);
+  flex: 1 1 200px;
+  min-width: min(100%, 200px);
   max-width: 100%;
 }
 
 @media (min-width: 576px) {
   .gastos-section .inv-ag-grid-toolbar-search {
-    max-width: 18rem;
+    max-width: 350px;
   }
 }
 

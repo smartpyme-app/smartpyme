@@ -1075,6 +1075,7 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
   limpiarFiltros(): void {
     this.anio = new Date().getFullYear().toString();
     this.mes = '';
+    this.limpiarFiltrosInteractivos();
     this.filtroAdSucursalTodasImplicitas = true;
     this.filtroAdSucursalSeleccionadas = [];
     this.filtroAdEstadoTodasImplicitas = true;
@@ -1349,7 +1350,8 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
       this.anio !== anioActual ||
       hayAdicionalesEnBorrador ||
       hayAdicionalesAplicados ||
-      hayCatProd
+      hayCatProd ||
+      this.tieneFiltrosInteractivos()
     );
   }
 
