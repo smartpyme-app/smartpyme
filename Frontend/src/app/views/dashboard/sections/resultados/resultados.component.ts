@@ -282,6 +282,12 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
   quickFilterAbonosCxc: string = '';
   quickFilterAbonosCxp: string = '';
 
+  // Pinned bottom row data for totals
+  pinnedBottomRowDataVentas: any[] = [];
+  pinnedBottomRowDataGastos: any[] = [];
+  pinnedBottomRowDataAbonosCxc: any[] = [];
+  pinnedBottomRowDataAbonosCxp: any[] = [];
+
   // Filtros
   anios = [2024, 2025, 2026];
   anioSeleccionado: number = new Date().getFullYear();
@@ -402,16 +408,6 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
 
     const nVentas = this._ventasRowsCache.length;
     const nGastos = this._gastosRowsCache.length;
-    console.log('[Resultados][Flujo efectivo] Ventas del mes:', {
-      tieneDatos: nVentas > 0,
-      filas: nVentas,
-      muestra: nVentas ? this._ventasRowsCache[0] : null
-    });
-    console.log('[Resultados][Flujo efectivo] Gastos del mes:', {
-      tieneDatos: nGastos > 0,
-      filas: nGastos,
-      muestra: nGastos ? this._gastosRowsCache[0] : null
-    });
 
     this._cobrar30RowsCache = this.datos?.cuentas30?.cobrar || [];
     this._pagar30RowsCache = this.datos?.cuentas30?.pagar || [];
@@ -437,6 +433,12 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
       (acc, curr) => acc + (curr.monto || 0),
       0
     );
+
+    // Recalcular filas fijas de totales
+    this.recalcularTotalesVentas();
+    this.recalcularTotalesGastos();
+    this.recalcularTotalesAbonosCxc();
+    this.recalcularTotalesAbonosCxp();
   }
 
   configurarAGGrid(): void {
@@ -448,18 +450,29 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
 
     const sizeToFit = (api: any) => { try { api.sizeColumnsToFit(); } catch { } };
 
+    const getRowClassCallback = (params: any) => {
+      if (params.node.rowPinned === 'bottom') {
+        return 'ag-row-total';
+      }
+      return '';
+    };
+
     this.ventasGridOptions = {
       defaultColDef: defaultDefs,
       enableCellTextSelection: true,
       ensureDomOrder: true,
       pagination: true,
       paginationPageSize: 10,
+      getRowClass: getRowClassCallback,
       onGridReady: (params: any) => {
         this.ventasGridApi = params.api;
         sizeToFit(params.api);
       },
       onFirstDataRendered: (params: any) => sizeToFit(params.api),
-      onGridSizeChanged: (params: any) => sizeToFit(params.api)
+      onGridSizeChanged: (params: any) => sizeToFit(params.api),
+      onFilterChanged: () => {
+        this.onFilterChangedVentas();
+      }
     };
 
     this.gastosGridOptions = {
@@ -468,12 +481,16 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
       ensureDomOrder: true,
       pagination: true,
       paginationPageSize: 10,
+      getRowClass: getRowClassCallback,
       onGridReady: (params: any) => {
         this.gastosGridApi = params.api;
         sizeToFit(params.api);
       },
       onFirstDataRendered: (params: any) => sizeToFit(params.api),
-      onGridSizeChanged: (params: any) => sizeToFit(params.api)
+      onGridSizeChanged: (params: any) => sizeToFit(params.api),
+      onFilterChanged: () => {
+        this.onFilterChangedGastos();
+      }
     };
 
     this.cobrar30GridOptions = {
@@ -511,12 +528,16 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
       ensureDomOrder: true,
       pagination: true,
       paginationPageSize: 10,
+      getRowClass: getRowClassCallback,
       onGridReady: (params: any) => {
         this.abonosCxcGridApi = params.api;
         sizeToFit(params.api);
       },
       onFirstDataRendered: (params: any) => sizeToFit(params.api),
-      onGridSizeChanged: (params: any) => sizeToFit(params.api)
+      onGridSizeChanged: (params: any) => sizeToFit(params.api),
+      onFilterChanged: () => {
+        this.onFilterChangedAbonosCxc();
+      }
     };
 
     this.abonosCxpGridOptions = {
@@ -525,18 +546,22 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
       ensureDomOrder: true,
       pagination: true,
       paginationPageSize: 10,
+      getRowClass: getRowClassCallback,
       onGridReady: (params: any) => {
         this.abonosCxpGridApi = params.api;
         sizeToFit(params.api);
       },
       onFirstDataRendered: (params: any) => sizeToFit(params.api),
-      onGridSizeChanged: (params: any) => sizeToFit(params.api)
+      onGridSizeChanged: (params: any) => sizeToFit(params.api),
+      onFilterChanged: () => {
+        this.onFilterChangedAbonosCxp();
+      }
     };
   }
 
   ngOnInit(): void {
     this.configurarAGGrid();
-    
+
     const savedState = this.dashboardDataService.obtenerFiltrosUI('Resultados');
     const tieneEstadoGuardado = !!savedState;
     if (savedState) {
@@ -615,10 +640,6 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['datos']) {
-      console.log('Resultados - ngOnChanges ejecutado');
-      console.log('Resultados - ESTRUCTURA COMPLETA DE DATOS:', JSON.stringify(this.datos, null, 2));
-      console.log('Resultados - Propiedades disponibles:', Object.keys(this.datos || {}));
-
       if (this.datos && Object.keys(this.datos).length > 0) {
         // Recalcular cache cuando los datos cambien
         this.recalcularRowsCache();
@@ -626,9 +647,6 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
         this.actualizarGastosPivot();
         this.actualizarCobrar30Pivot();
         this.actualizarPagar30Pivot();
-        console.log('Resultados - cache recalculado');
-        console.log('Resultados - ventasRows:', this._ventasRowsCache);
-        console.log('Resultados - gastosRows:', this._gastosRowsCache);
         this.cdr.markForCheck();
       }
     }
@@ -898,16 +916,10 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
     }
   }
 
-  // ─── Exportar Excel (CSV con extensión .xlsx como fallback) ──────────────
-
   private exportarComoExcel(api: GridApi | undefined, filename: string): void {
     if (!api) { alert('No hay datos para exportar'); return; }
-    try {
-      (api as any).exportDataAsExcel({ fileName: filename });
-    } catch {
-      // Fallback a CSV si no hay módulo enterprise
-      api.exportDataAsCsv({ fileName: filename.replace('.xlsx', '.csv') });
-    }
+    const csvFilename = filename.replace(/\.xlsx$/i, '.csv');
+    api.exportDataAsCsv({ fileName: csvFilename });
   }
 
   exportarVentasExcel(): void {
@@ -1289,6 +1301,126 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
 
   get totalAbonosCxp(): number {
     return this._totalAbonosCxpCache;
+  }
+
+  recalcularTotalesVentas(): void {
+    let total = 0;
+    if (this.ventasGridApi) {
+      this.ventasGridApi.forEachNodeAfterFilter((node: any) => {
+        if (node.data) {
+          total += (node.data.monto || 0);
+        }
+      });
+    } else {
+      total = (this.datos?.cashflow?.ventas || []).reduce((acc: number, curr: any) => acc + (curr.monto || 0), 0);
+    }
+    this.pinnedBottomRowDataVentas = [{
+      cliente: 'Total',
+      factura: '',
+      monto: total
+    }];
+  }
+
+  onFilterChangedVentas(): void {
+    this.recalcularTotalesVentas();
+    this.cdr.markForCheck();
+  }
+
+  recalcularTotalesGastos(): void {
+    let total = 0;
+    if (this.gastosGridApi) {
+      this.gastosGridApi.forEachNodeAfterFilter((node: any) => {
+        if (node.data) {
+          total += (node.data.monto || 0);
+        }
+      });
+    } else {
+      total = (this.datos?.cashflow?.gastos || []).reduce((acc: number, curr: any) => acc + (curr.monto || 0), 0);
+    }
+    this.pinnedBottomRowDataGastos = [{
+      proveedor: 'Total',
+      factura: '',
+      monto: total
+    }];
+  }
+
+  onFilterChangedGastos(): void {
+    this.recalcularTotalesGastos();
+    this.cdr.markForCheck();
+  }
+
+  recalcularTotalesAbonosCxc(): void {
+    let total = 0;
+    if (this.abonosCxcGridApi) {
+      this.abonosCxcGridApi.forEachNodeAfterFilter((node: any) => {
+        if (node.data) {
+          total += (node.data.monto || 0);
+        }
+      });
+    } else {
+      total = (this.datos?.abonos?.cxc || []).reduce((acc: number, curr: any) => acc + (curr.monto || 0), 0);
+    }
+    this.pinnedBottomRowDataAbonosCxc = [{
+      cliente: 'Total',
+      factura: '',
+      vence: '',
+      diasVencimiento: null,
+      monto: total
+    }];
+  }
+
+  onFilterChangedAbonosCxc(): void {
+    this.recalcularTotalesAbonosCxc();
+    this.cdr.markForCheck();
+  }
+
+  recalcularTotalesAbonosCxp(): void {
+    let total = 0;
+    if (this.abonosCxpGridApi) {
+      this.abonosCxpGridApi.forEachNodeAfterFilter((node: any) => {
+        if (node.data) {
+          total += (node.data.monto || 0);
+        }
+      });
+    } else {
+      total = (this.datos?.abonos?.cxp || []).reduce((acc: number, curr: any) => acc + (curr.monto || 0), 0);
+    }
+    this.pinnedBottomRowDataAbonosCxp = [{
+      proveedor: 'Total',
+      factura: '',
+      vence: '',
+      diasVencimiento: null,
+      monto: total
+    }];
+  }
+
+  onFilterChangedAbonosCxp(): void {
+    this.recalcularTotalesAbonosCxp();
+    this.cdr.markForCheck();
+  }
+
+  onVentasGridReady(params: any): void {
+    this.ventasGridApi = params.api;
+    try { params.api.sizeColumnsToFit(); } catch { }
+    this.recalcularTotalesVentas();
+  }
+
+  onGastosGridReady(params: any): void {
+    this.gastosGridApi = params.api;
+    try { params.api.sizeColumnsToFit(); } catch { }
+    this.recalcularTotalesGastos();
+  }
+
+  onAbonosCxcGridReady(params: any): void {
+    this.abonosCxcGridApi = params.api;
+    try { params.api.sizeColumnsToFit(); } catch { }
+    this.recalcularTotalesAbonosCxc();
+  }
+
+  onAbonosCxpGridReady(params: any): void {
+    this.abonosCxpGridApi = params.api;
+    try { params.api.sizeColumnsToFit(); } catch { }
+    this.recalcularTotalesAbonosCxp();
   }
 
   /**

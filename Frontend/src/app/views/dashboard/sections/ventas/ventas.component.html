@@ -416,7 +416,9 @@
                                         *ngIf="datos.ventasPorProducto !== undefined; else ventasListPlaceholder">
                                         <ag-grid-angular #ventasPorProductoGrid
                                             class="ag-theme-alpine ventas-producto-grid"
-                                            [rowData]="ventasPorProductoRows" [columnDefs]="ventasPorProductoColumnDefs"
+                                            [rowData]="ventasPorProductoRows"
+                                            [pinnedBottomRowData]="pinnedBottomRowDataVentasProducto"
+                                            [columnDefs]="ventasPorProductoColumnDefs"
                                             [gridOptions]="ventasPorProductoGridOptions" [defaultColDef]="{
                                                 resizable: true,
                                                 sortable: true,
@@ -498,6 +500,7 @@
                                         *ngIf="datos.ventasPorCliente !== undefined; else ventasListPlaceholder">
                                         <ag-grid-angular #ventasPorClienteGrid
                                             class="ag-theme-alpine ventas-cliente-grid" [rowData]="ventasPorClienteRows"
+                                            [pinnedBottomRowData]="pinnedBottomRowDataVentasCliente"
                                             [columnDefs]="ventasPorClienteColumnDefs"
                                             [gridOptions]="ventasPorClienteGridOptions" [defaultColDef]="{
                                                 resizable: true,

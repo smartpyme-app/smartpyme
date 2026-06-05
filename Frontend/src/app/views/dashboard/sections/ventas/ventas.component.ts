@@ -193,6 +193,8 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
   private _ventasDetalladasRowsCache: any[] = [];
   private _ventasPorProductoRowsCache: any[] = [];
   private _ventasPorClienteRowsCache: any[] = [];
+  pinnedBottomRowDataVentasProducto: any[] = [];
+  pinnedBottomRowDataVentasCliente: any[] = [];
   private _lastDatosHash: string = '';
 
   ventasPorProductoColumns = [
@@ -486,12 +488,20 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
       paginationPageSize: 20,
       suppressMenuHide: true,
       quickFilterText: '',
-      getRowClass: (params: any) => (params.data?.isTotal ? 'ag-row-total' : ''),
+      getRowClass: (params: any) => {
+        if (params.node.rowPinned === 'bottom') {
+          return 'ag-row-total';
+        }
+        return '';
+      },
       onGridReady: (params: any) => {
         this.gridApi = params.api;
         this.gridColumnApi = params.columnApi;
         setTimeout(() => params.api.sizeColumnsToFit(), 0);
       },
+      onFilterChanged: () => {
+        this.onFilterChangedVentasProducto();
+      }
     };
   }
 
@@ -503,12 +513,7 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
         width: 250,
         sortable: true,
         filter: true,
-        cellStyle: (params: any): any => {
-          if (params.data?.isTotal) {
-            return { fontWeight: '600', backgroundColor: '#66A3FF', color: '#ffffff', textAlign: 'left' };
-          }
-          return { textAlign: 'left' } as any;
-        }
+        cellStyle: { textAlign: 'left' }
       },
       {
         field: 'ultimaVenta',
@@ -516,12 +521,7 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
         width: 120,
         sortable: true,
         filter: true,
-        cellStyle: (params: any): any => {
-          if (params.data?.isTotal) {
-            return { fontWeight: '600', backgroundColor: '#66A3FF', color: '#ffffff', textAlign: 'center' };
-          }
-          return { textAlign: 'center' } as any;
-        }
+        cellStyle: { textAlign: 'center' }
       },
       {
         field: 'dias',
@@ -529,17 +529,9 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
         width: 100,
         sortable: true,
         filter: true,
-        cellStyle: (params: any): any => {
-          if (params.data?.isTotal) {
-            return { fontWeight: '600', backgroundColor: '#66A3FF', color: '#ffffff', textAlign: 'right' };
-          }
-          return { textAlign: 'right' } as any;
-        },
+        cellStyle: { textAlign: 'right' },
         valueFormatter: (params: any) => {
-          if (params.data?.isTotal) {
-            return params.value ? params.value.toLocaleString('es-GT') : '';
-          }
-          return params.value ? params.value.toLocaleString('es-GT') : '';
+          return params.value !== null && params.value !== undefined ? params.value.toLocaleString('es-GT') : '';
         }
       },
       {
@@ -548,17 +540,9 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
         width: 120,
         sortable: true,
         filter: true,
-        cellStyle: (params: any): any => {
-          if (params.data?.isTotal) {
-            return { fontWeight: '600', backgroundColor: '#66A3FF', color: '#ffffff', textAlign: 'right' };
-          }
-          return { textAlign: 'right' } as any;
-        },
+        cellStyle: { textAlign: 'right' },
         valueFormatter: (params: any) => {
-          if (params.data?.isTotal) {
-            return params.value ? params.value.toLocaleString('es-GT') : '';
-          }
-          return params.value ? params.value.toLocaleString('es-GT') : '';
+          return params.value !== null && params.value !== undefined ? params.value.toLocaleString('es-GT') : '';
         }
       },
       {
@@ -567,12 +551,7 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
         width: 150,
         sortable: true,
         filter: true,
-        cellStyle: (params: any): any => {
-          if (params.data?.isTotal) {
-            return { fontWeight: '600', backgroundColor: '#66A3FF', color: '#ffffff', textAlign: 'right' };
-          }
-          return { textAlign: 'right' } as any;
-        }
+        cellStyle: { textAlign: 'right' }
       },
       {
         field: 'ventasConIva',
@@ -580,12 +559,7 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
         width: 150,
         sortable: true,
         filter: true,
-        cellStyle: (params: any): any => {
-          if (params.data?.isTotal) {
-            return { fontWeight: '600', backgroundColor: '#66A3FF', color: '#ffffff', textAlign: 'right' };
-          }
-          return { textAlign: 'right' } as any;
-        }
+        cellStyle: { textAlign: 'right' }
       }
     ];
 
@@ -600,7 +574,7 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
         filter: true
       },
       getRowClass: (params: any) => {
-        if (params.data?.isTotal) {
+        if (params.node.rowPinned === 'bottom') {
           return 'ag-row-total';
         }
         return '';
@@ -628,6 +602,9 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
         setTimeout(() => {
           params.api.sizeColumnsToFit();
         }, 100);
+      },
+      onFilterChanged: () => {
+        this.onFilterChangedVentasCliente();
       },
       suppressExcelExport: false,
       suppressCsvExport: false
@@ -1436,9 +1413,11 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
 
     // Recalcular ventas por producto
     this._ventasPorProductoRowsCache = this.calcularVentasPorProductoRows();
+    this.recalcularTotalesVentasProducto();
 
     // Recalcular ventas por cliente
     this._ventasPorClienteRowsCache = this.calcularVentasPorClienteRows();
+    this.recalcularTotalesVentasCliente();
   }
 
   get ventasDetalladasRows(): any[] {
@@ -1477,7 +1456,7 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
 
   private calcularVentasPorProductoRows(): any[] {
     if (!this.datos.ventasPorProducto) return [];
-    const rows = this.datos.ventasPorProducto.map((item: any) => ({
+    return this.datos.ventasPorProducto.map((item: any) => ({
       categoria: item.categoria || '-',
       producto: item.producto || '-',
       formaPago: item.formaPago || '-',
@@ -1489,24 +1468,6 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
       utilidad: item.utilidad || 0,
       isTotal: false,
     }));
-
-    const totales = this.totalVentasPorProducto;
-    if (totales.cantidad > 0) {
-      rows.push({
-        categoria: 'TOTAL',
-        producto: '',
-        formaPago: '',
-        cantidad: totales.cantidad,
-        precioUnitario: null,
-        descuento: null,
-        ventasSinIVA: totales.ventasSinIVA,
-        costoTotal: totales.costoTotal,
-        utilidad: totales.utilidad,
-        isTotal: true,
-      });
-    }
-
-    return rows;
   }
 
   get ventasPorProductoRows(): any[] {
@@ -1528,7 +1489,7 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
   private calcularVentasPorClienteRows(): any[] {
     if (!this.datos.ventasPorCliente) return [];
 
-    const rows = this.datos.ventasPorCliente.map((item: any) => ({
+    return this.datos.ventasPorCliente.map((item: any) => ({
       cliente: item.cliente || '-',
       ultimaVenta: item.ultimaVenta || '-',
       dias: item.dias || 0,
@@ -1539,24 +1500,6 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
       ventasConIvaOriginal: item.ventasConIva || 0,
       isTotal: false
     }));
-
-    // Agregar fila de totales al final
-    const totales = this.totalVentasPorCliente;
-    if (totales.transacciones > 0) {
-      rows.push({
-        cliente: 'Total',
-        ultimaVenta: totales.ultimaVenta || '-',
-        dias: totales.dias || 0,
-        transacciones: totales.transacciones,
-        ventasSinIva: this.formatCurrency(totales.ventasSinIva),
-        ventasSinIvaOriginal: totales.ventasSinIva,
-        ventasConIva: this.formatCurrency(totales.ventasConIva),
-        ventasConIvaOriginal: totales.ventasConIva,
-        isTotal: true
-      });
-    }
-
-    return rows;
   }
 
   get ventasPorClienteRows(): any[] {
@@ -1763,7 +1706,6 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
   copiarAlPortapapeles(texto: string): void {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(texto).then(() => {
-        console.log('Valor copiado al portapapeles');
       }).catch(err => {
         console.error('Error al copiar:', err);
         // Fallback para navegadores antiguos
@@ -1785,7 +1727,6 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
     textArea.select();
     try {
       document.execCommand('copy');
-      console.log('Valor copiado al portapapeles (fallback)');
     } catch (err) {
       console.error('Error al copiar:', err);
     }
@@ -1972,8 +1913,6 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   onMesClick(event: { name: string; value: any; index: number }): void {
-    console.log('Mes clickeado:', event); // Verifica que event.name sea 'Enero', 'Febrero', etc.
-
     if (this.filtrosInteractivos.mes === event.name) {
       delete this.filtrosInteractivos.mes;
     } else {
@@ -2448,6 +2387,121 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
     if (this.filtrosInteractivos.cliente) filtros.push(`Cliente: ${this.filtrosInteractivos.cliente}`);
     if (this.filtrosInteractivos.mes) filtros.push(`Mes: ${this.filtrosInteractivos.mes}`);
     return filtros.join(', ');
+  }
+
+  recalcularTotalesVentasProducto(): void {
+    let cantidad = 0;
+    let ventasSinIVA = 0;
+    let costoTotal = 0;
+    let utilidad = 0;
+
+    if (this.gridApi) {
+      this.gridApi.forEachNodeAfterFilter((node: any) => {
+        if (node.data) {
+          cantidad += (node.data.cantidad || 0);
+          ventasSinIVA += (node.data.ventasSinIVA || 0);
+          costoTotal += (node.data.costoTotal || 0);
+          utilidad += (node.data.utilidad || 0);
+        }
+      });
+    } else if (this.datos.ventasPorProducto) {
+      this.datos.ventasPorProducto.forEach((item: any) => {
+        cantidad += (item.cantidad || 0);
+        ventasSinIVA += (item.ventasSinIVA || 0);
+        costoTotal += (item.costoTotal || 0);
+        utilidad += (item.utilidad || 0);
+      });
+    }
+
+    if (cantidad > 0 || ventasSinIVA > 0) {
+      this.pinnedBottomRowDataVentasProducto = [{
+        categoria: 'TOTAL',
+        producto: '',
+        formaPago: '',
+        cantidad: cantidad,
+        precioUnitario: null,
+        descuento: null,
+        ventasSinIVA: ventasSinIVA,
+        costoTotal: costoTotal,
+        utilidad: utilidad
+      }];
+    } else {
+      this.pinnedBottomRowDataVentasProducto = [];
+    }
+  }
+
+  onFilterChangedVentasProducto(): void {
+    this.recalcularTotalesVentasProducto();
+    this.cdr.markForCheck();
+  }
+
+  recalcularTotalesVentasCliente(): void {
+    let transacciones = 0;
+    let ventasSinIvaVal = 0;
+    let ventasConIvaVal = 0;
+    let diasMax = 0;
+    let ultimaVentaStr = '';
+
+    if (this.clienteGridApi) {
+      const fechas: string[] = [];
+      this.clienteGridApi.forEachNodeAfterFilter((node: any) => {
+        if (node.data) {
+          transacciones += (node.data.transacciones || 0);
+          ventasSinIvaVal += (node.data.ventasSinIvaOriginal || 0);
+          ventasConIvaVal += (node.data.ventasConIvaOriginal || 0);
+          diasMax = Math.max(diasMax, node.data.dias || 0);
+          if (node.data.ultimaVenta && node.data.ultimaVenta !== '-') {
+            fechas.push(node.data.ultimaVenta);
+          }
+        }
+      });
+      if (fechas.length > 0) {
+        fechas.sort((a: string, b: string) => {
+          const dateA = new Date(a.split('/').reverse().join('-'));
+          const dateB = new Date(b.split('/').reverse().join('-'));
+          return dateB.getTime() - dateA.getTime();
+        });
+        ultimaVentaStr = fechas[0];
+      }
+    } else if (this.datos.ventasPorCliente) {
+      const datesList = this.datos.ventasPorCliente
+        .map((item: any) => item.ultimaVenta)
+        .filter((fecha: string) => fecha && fecha !== '-');
+      if (datesList.length > 0) {
+        datesList.sort((a: string, b: string) => {
+          const dateA = new Date(a.split('/').reverse().join('-'));
+          const dateB = new Date(b.split('/').reverse().join('-'));
+          return dateB.getTime() - dateA.getTime();
+        });
+        ultimaVentaStr = datesList[0];
+      }
+      this.datos.ventasPorCliente.forEach((item: any) => {
+        transacciones += (item.transacciones || 0);
+        ventasSinIvaVal += (item.ventasSinIva || 0);
+        ventasConIvaVal += (item.ventasConIva || 0);
+        diasMax = Math.max(diasMax, item.dias || 0);
+      });
+    }
+
+    if (transacciones > 0) {
+      this.pinnedBottomRowDataVentasCliente = [{
+        cliente: 'Total',
+        ultimaVenta: ultimaVentaStr || '-',
+        dias: diasMax,
+        transacciones: transacciones,
+        ventasSinIva: this.formatCurrency(ventasSinIvaVal),
+        ventasSinIvaOriginal: ventasSinIvaVal,
+        ventasConIva: this.formatCurrency(ventasConIvaVal),
+        ventasConIvaOriginal: ventasConIvaVal
+      }];
+    } else {
+      this.pinnedBottomRowDataVentasCliente = [];
+    }
+  }
+
+  onFilterChangedVentasCliente(): void {
+    this.recalcularTotalesVentasCliente();
+    this.cdr.markForCheck();
   }
 
   // ─────────────────────────────────────────────

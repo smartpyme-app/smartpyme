@@ -213,12 +213,14 @@
                                     </div>
                                 </div>
                                 <ag-grid-angular #ventasGrid class="ag-theme-alpine w-100" [rowData]="ventasRows"
+                                    [pinnedBottomRowData]="pinnedBottomRowDataVentas"
                                     [columnDefs]="ventasColumnDefs" [gridOptions]="ventasGridOptions"
                                     [quickFilterText]="quickFilterVentas" [defaultColDef]="{
                                         resizable: true,
                                         sortable: true,
                                         filter: true
-                                    }" style="width: 100%; height: 400px;" [domLayout]="'normal'">
+                                    }" style="width: 100%; height: 400px;" [domLayout]="'normal'"
+                                    (gridReady)="onVentasGridReady($event)">
                                 </ag-grid-angular>
                             </div>
                         </div>
@@ -252,12 +254,14 @@
                                     </div>
                                 </div>
                                 <ag-grid-angular #gastosGrid class="ag-theme-alpine w-100" [rowData]="gastosRows"
+                                    [pinnedBottomRowData]="pinnedBottomRowDataGastos"
                                     [columnDefs]="gastosColumnDefs" [gridOptions]="gastosGridOptions"
                                     [quickFilterText]="quickFilterGastos" [defaultColDef]="{
                                         resizable: true,
                                         sortable: true,
                                         filter: true
-                                    }" style="width: 100%; height: 400px;" [domLayout]="'normal'">
+                                    }" style="width: 100%; height: 400px;" [domLayout]="'normal'"
+                                    (gridReady)="onGastosGridReady($event)">
                                 </ag-grid-angular>
                             </div>
                         </div>
@@ -293,12 +297,14 @@
                                     </div>
                                 </div>
                                 <ag-grid-angular #abonosCxcGrid class="ag-theme-alpine w-100" [rowData]="abonosCxcRows"
+                                    [pinnedBottomRowData]="pinnedBottomRowDataAbonosCxc"
                                     [columnDefs]="abonosCxcColumnDefs" [gridOptions]="abonosCxcGridOptions"
                                     [quickFilterText]="quickFilterAbonosCxc" [defaultColDef]="{
                             resizable: true,
                             sortable: true,
                             filter: true
-                        }" style="width: 100%; height: 400px;" [domLayout]="'normal'">
+                        }" style="width: 100%; height: 400px;" [domLayout]="'normal'"
+                                    (gridReady)="onAbonosCxcGridReady($event)">
                                 </ag-grid-angular>
                             </div>
                         </div>
@@ -328,12 +334,14 @@
                                     </div>
                                 </div>
                                 <ag-grid-angular #abonosCxpGrid class="ag-theme-alpine w-100" [rowData]="abonosCxpRows"
+                                    [pinnedBottomRowData]="pinnedBottomRowDataAbonosCxp"
                                     [columnDefs]="abonosCxpColumnDefs" [gridOptions]="abonosCxpGridOptions"
                                     [quickFilterText]="quickFilterAbonosCxp" [defaultColDef]="{
                             resizable: true,
                             sortable: true,
                             filter: true
-                        }" style="width: 100%; height: 400px;" [domLayout]="'normal'">
+                        }" style="width: 100%; height: 400px;" [domLayout]="'normal'"
+                                    (gridReady)="onAbonosCxpGridReady($event)">
                                 </ag-grid-angular>
                             </div>
                         </div>

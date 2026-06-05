@@ -415,3 +415,70 @@ revo-grid {
     background: #eff6ff;
     color: #0076E3;
 }
+
+/* ----------------------------------------
+   Estilos de AG Grid para Resultados
+   ---------------------------------------- */
+
+/* Header - fondo azul tema, texto blanco */
+::ng-deep .resultados-section .ag-header {
+    background-color: #66A3FF !important;
+    border-bottom: none !important;
+}
+
+::ng-deep .resultados-section .ag-header-cell {
+    background-color: #66A3FF !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.2) !important;
+    color: white !important;
+    font-weight: 600 !important;
+    font-size: 0.875rem !important;
+}
+
+::ng-deep .resultados-section .ag-header-cell-text {
+    color: white !important;
+}
+
+::ng-deep .resultados-section .ag-header-cell-label {
+    color: white !important;
+}
+
+::ng-deep .resultados-section .ag-header-cell .ag-icon {
+    color: #ffffff !important;
+}
+
+::ng-deep .resultados-section .ag-header-cell .ag-sort-indicator-container {
+    color: #ffffff !important;
+}
+
+/* Fila de totales - fondo blanco, texto azul oscuro */
+::ng-deep .resultados-section .ag-row.ag-row-total {
+    background-color: #ffffff !important;
+    border-top: none !important;
+    border-bottom: none !important;
+    font-weight: 600 !important;
+}
+
+::ng-deep .resultados-section .ag-row.ag-row-total .ag-cell {
+    font-weight: 600 !important;
+    color: #0076E3 !important;
+    background-color: #ffffff !important;
+}
+
+::ng-deep .resultados-section .ag-row.ag-row-total:hover {
+    background-color: #ffffff !important;
+}
+
+/* Hacer que la sección pinned bottom se vea exactamente como parte de la tabla */
+::ng-deep .resultados-section .ag-floating-bottom {
+    background-color: #ffffff !important;
+    border-top: 1px solid #dee2e6 !important;
+}
+
+::ng-deep .resultados-section .ag-floating-bottom-viewport {
+    background-color: #ffffff !important;
+}
+
+::ng-deep .resultados-section .ag-floating-bottom .ag-row {
+    background-color: #ffffff !important;
+    border-bottom: none !important;
+}

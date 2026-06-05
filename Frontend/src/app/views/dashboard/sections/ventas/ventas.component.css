@@ -122,9 +122,9 @@
     background-color: #ffffff !important;
 }
 
-/* Fila de totales - fondo azul igual al header, texto blanco */
+/* Fila de totales - fondo blanco, texto azul oscuro */
 ::ng-deep .ventas-producto-grid .ag-row.ag-row-total {
-    background-color: #66A3FF !important;
+    background-color: #ffffff !important;
     border-top: none !important;
     border-bottom: none !important;
     font-weight: 600 !important;
@@ -132,12 +132,25 @@
 
 ::ng-deep .ventas-producto-grid .ag-row.ag-row-total .ag-cell {
     font-weight: 600 !important;
-    color: #ffffff !important;
-    background-color: #66A3FF !important;
+    color: #38528f !important;
+    background-color: #ffffff !important;
 }
 
 ::ng-deep .ventas-producto-grid .ag-row.ag-row-total:hover {
-    background-color: #66A3FF !important;
+    background-color: #ffffff !important;
+}
+
+/* Hacer que la sección pinned bottom se vea exactamente como parte de la tabla */
+::ng-deep .ventas-producto-grid .ag-floating-bottom {
+    background-color: #ffffff !important;
+    border-top: 1px solid #dee2e6 !important;
+}
+::ng-deep .ventas-producto-grid .ag-floating-bottom-viewport {
+    background-color: #ffffff !important;
+}
+::ng-deep .ventas-producto-grid .ag-floating-bottom .ag-row {
+    background-color: #ffffff !important;
+    border-bottom: none !important;
 }
 
 /* Iconos de ordenamiento más sutiles */
@@ -270,9 +283,9 @@
     overflow-x: auto !important;
 }
 
-/* Fila de totales - fondo azul igual al header, texto blanco */
+/* Fila de totales - fondo blanco, texto azul oscuro */
 ::ng-deep .ventas-cliente-grid .ag-row.ag-row-total {
-    background-color: #66A3FF !important;
+    background-color: #ffffff !important;
     border-top: none !important;
     border-bottom: none !important;
     font-weight: 600 !important;
@@ -280,12 +293,25 @@
 
 ::ng-deep .ventas-cliente-grid .ag-row.ag-row-total .ag-cell {
     font-weight: 600 !important;
-    color: #ffffff !important;
-    background-color: #66A3FF !important;
+    color: #38528f !important;
+    background-color: #ffffff !important;
 }
 
 ::ng-deep .ventas-cliente-grid .ag-row.ag-row-total:hover {
-    background-color: #66A3FF !important;
+    background-color: #ffffff !important;
+}
+
+/* Hacer que la sección pinned bottom se vea exactamente como parte de la tabla */
+::ng-deep .ventas-cliente-grid .ag-floating-bottom {
+    background-color: #ffffff !important;
+    border-top: 1px solid #dee2e6 !important;
+}
+::ng-deep .ventas-cliente-grid .ag-floating-bottom-viewport {
+    background-color: #ffffff !important;
+}
+::ng-deep .ventas-cliente-grid .ag-floating-bottom .ag-row {
+    background-color: #ffffff !important;
+    border-bottom: none !important;
 }
 
 /* Estilos para gráficos interactivos */

@@ -22,7 +22,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   ]);
 
   private destroy$ = new Subject<void>();
-  
+
   loading = false;
   datos: any = {};
   filtrosPorSeccion: { [seccion: string]: any } = {};
@@ -101,21 +101,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   cargarDatos(filtrosAdicionales: any = {}): void {
     this.loading = true;
-    
+
     const filtros = {
       seccion: this.seccionActiva,
       ...filtrosAdicionales
     };
-    
+
     this.dashboardDataService.obtenerDatosPorFiltro(filtros).subscribe({
       next: (data) => {
-        console.log('Dashboard - Datos recibidos:', {
-          seccion: filtros.seccion,
-          tieneDatos: !!data,
-          keys: data ? Object.keys(data) : [],
-          tieneDetalleGastos: !!(data && (data as any).detalleGastos),
-          cantidadGastos: data && (data as any).detalleGastos ? (data as any).detalleGastos.length : 0
-        });
         // Crear nueva referencia para que OnPush detecte cambios
         this.datos = { ...(data || {}) };
         this.loading = false;
