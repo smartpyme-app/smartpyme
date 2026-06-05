@@ -2,6 +2,7 @@ import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitte
 import { DashboardDataService } from '../../services/dashboard-data.service';
 import { ApiService } from '@services/api.service';
 import { ColDef, GridOptions, GridApi, ColumnApi } from 'ag-grid-community';
+import { MetricCard } from '../../models/chart-config.model';
 
 @Component({
   selector: 'app-inventario',
@@ -12,6 +13,36 @@ import { ColDef, GridOptions, GridApi, ColumnApi } from 'ag-grid-community';
 export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
   @Input() datos: any = {};
   @Output() filtrosCambiados = new EventEmitter<any>();
+
+  get metricasCards(): MetricCard[] {
+    const m = (this.datosFiltrados?.metricasInventario) || this.datos?.metricasInventario || {};
+    return [
+      { title: 'Productos en stock', value: m.productosEnStock || 0, type: 'number' },
+      { title: 'Promedio invertido',  value: m.promedioInvertido  || 0, type: 'currency' },
+      { title: 'Ventas esperadas',    value: m.ventasEsperadas    || 0, type: 'currency' },
+      { title: 'Utilidad esperada',   value: m.utilidadEsperada   || 0, type: 'currency' }
+    ];
+  }
+
+  get metricasEntradasSalidasCards(): MetricCard[] {
+    const m = (this.datosFiltrados?.entradasSalidas) || this.datos?.entradasSalidas || {};
+    return [
+      { title: 'Productos en stock', value: m.productosEnStock  || 0, type: 'number' },
+      { title: 'Entradas',           value: m.entradas          || 0, type: 'number' },
+      { title: 'Salidas',            value: m.salidas           || 0, type: 'number' },
+      { title: 'Utilidad esperada',  value: m.utilidadEsperada  || 0, type: 'currency' }
+    ];
+  }
+
+  get metricasAjustesCards(): MetricCard[] {
+    const m = (this.datosFiltrados?.ajustes) || this.datos?.ajustes || {};
+    return [
+      { title: 'Productos en stock',    value: m.productosEnStock      || 0, type: 'number' },
+      { title: 'Unidades perdidas',     value: m.unidadesPerdidas      || 0, type: 'number' },
+      { title: 'Unidades recuperadas',  value: m.unidadesRecuperadas   || 0, type: 'number' },
+      { title: 'Monto total recuperado',value: m.montoTotalRecuperado  || 0, type: 'currency' }
+    ];
+  }
 
   @ViewChild('inventarioProductosGrid') inventarioProductosGrid: any;
   @ViewChild('entradasSalidasGrid') entradasSalidasGrid: any;
