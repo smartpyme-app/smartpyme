@@ -2,6 +2,7 @@
 
 namespace App\Models\MH;
 
+use App\Models\MH\Concerns\BuildsTributosVenta;
 use Illuminate\Database\Eloquent\Model;
 use Ramsey\Uuid\Uuid;
 use Illuminate\Support\Facades\Http;
@@ -10,6 +11,7 @@ use Luecano\NumeroALetras\NumeroALetras;
 
 class MHNotaDebito extends Model
 {
+    use BuildsTributosVenta;
 
     public $devolucion;
     public $caja;
@@ -159,13 +161,9 @@ class MHNotaDebito extends Model
 
     public function generarNotaCredito(){
 
-        $tributos = NULL;
+        $tributos = $this->buildTributosResumen();
 
         if ($this->devolucion->iva > 0) {
-            $tributos = collect();
-            if ($this->devolucion->iva){ 
-                $tributos->push(['codigo' => '20', 'descripcion'=> 'Impuesto al Valor Agregado 13%', 'valor' => floatval(number_format($this->devolucion->iva, 2, '.', ''))]);
-            }
             $this->devolucion->gravada = $this->devolucion->sub_total;
         }else{
             $this->devolucion->gravada = 0;
@@ -231,12 +229,12 @@ class MHNotaDebito extends Model
             }
 
             $detalle->codTributo = NULL;
-            $tributos = NULL;
+
             if ($this->devolucion->iva > 0) {
-                $tributos = collect();
-                $tributos = ['20'];
+                $tributos = $this->buildTributosLineaCodes($detalle);
                 $detalle->gravada = $detalle->total;
             }else{
+                $tributos = NULL;
                 $detalle->gravada = 0;
                 $detalle->exenta = $detalle->total;
             }

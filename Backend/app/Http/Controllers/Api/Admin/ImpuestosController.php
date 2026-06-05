@@ -33,6 +33,7 @@ class ImpuestosController extends Controller
         $request->validate([
             'nombre'        => 'required|max:255',
             'porcentaje'        => 'required|numeric',
+            'codigo_mh'    => 'nullable|string|max:5',
             'id_empresa'       => 'required|numeric',
             'aplica_ventas'    => 'sometimes|boolean',
             'aplica_gastos'    => 'sometimes|boolean',

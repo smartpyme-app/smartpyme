@@ -2,6 +2,7 @@
 
 namespace App\Models\MH;
 
+use App\Models\MH\Concerns\BuildsTributosVenta;
 use Illuminate\Database\Eloquent\Model;
 use Ramsey\Uuid\Uuid;
 use Illuminate\Support\Facades\Http;
@@ -11,6 +12,7 @@ use Carbon\Carbon;
 
 class MHFactura extends Model
 {
+    use BuildsTributosVenta;
 
     public $venta;
     public $caja;
@@ -233,7 +235,7 @@ class MHFactura extends Model
                   "totalNoGravado" => floatval(number_format($this->venta->cuenta_a_terceros, 2, '.', '')),
                   "totalPagar" => floatval(number_format($this->venta->total, 2, '.', '')),
                   "totalLetras" => $this->venta->total_en_letras,
-                  "totalIva" => floatval(number_format($this->venta->iva, 2, '.', '')),
+                  "totalIva" => floatval(number_format($this->montoIvaVenta(), 2, '.', '')),
                   "saldoFavor" => 0,
                   "condicionOperacion" => $pagoCond['condicionOperacion'],
                   "pagos" => [
@@ -287,7 +289,7 @@ class MHFactura extends Model
                 "tributos" => NULL,
                 "psv" => 0,
                 "noGravado" => 0,
-                "ivaItem" => floatval(number_format($this->venta->iva, 4, '.', ''))
+                "ivaItem" => floatval(number_format($this->montoIvaVenta(), 4, '.', ''))
             ]);
 
             return $detalles;
@@ -320,16 +322,14 @@ class MHFactura extends Model
             }
 
             if ($this->venta->iva > 0) {
-                // Agregar IVA
-                    $detalle->precio = round($detalle->precio * 1.13, 4);
-                    $detalle->descuento = round($detalle->descuento * 1.13, 2);
-                    $detalle->iva = ($detalle->total * 0.13);
-                    $detalle->gravada = ($detalle->cantidad * $detalle->precio) - $detalle->descuento;
-            }else{
-                // Sin IVA
-                    $detalle->gravada = 0;
-                    $detalle->exenta = $detalle->total;
-                    $detalle->iva = 0;
+                $factor = $this->factorImpuestosIncluidos($detalle);
+                $detalle->precio = round($detalle->precio * $factor, 4);
+                $detalle->descuento = round($detalle->descuento * $factor, 2);
+                $detalle->gravada = ($detalle->cantidad * $detalle->precio) - $detalle->descuento;
+            } else {
+                $detalle->gravada = 0;
+                $detalle->exenta = $detalle->total;
+                $detalle->iva = 0;
             }
 
             if ($detalle->cuenta_a_terceros > 0) {
@@ -355,7 +355,7 @@ class MHFactura extends Model
                     "tributos" => $tributos,
                     "psv" => 0,
                     "noGravado" => 0,
-                    "ivaItem" => floatval(number_format(round($ventaItem * 0.13 / 1.13, 4), 4, '.', ''))
+                    "ivaItem" => floatval(number_format($this->calcularIvaItemFactura($detalle, $ventaItem), 4, '.', ''))
                   ]);
 
                 $detalles->push([
@@ -399,7 +399,7 @@ class MHFactura extends Model
                     "tributos" => $tributos,
                     "psv" => 0,
                     "noGravado" => 0,
-                    "ivaItem" => floatval(number_format($detalle->gravada > 0 ? round($ventaItem * 0.13 / 1.13, 4) : 0, 4, '.', ''))
+                    "ivaItem" => floatval(number_format($detalle->gravada > 0 ? $this->calcularIvaItemFactura($detalle, $ventaItem) : 0, 4, '.', ''))
                   ]);
             }
         }

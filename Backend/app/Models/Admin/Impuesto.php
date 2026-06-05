@@ -12,6 +12,7 @@ class Impuesto extends Model {
     protected $fillable = array(
         'nombre',
         'porcentaje',
+        'codigo_mh',
         'id_empresa',
         'aplica_ventas',
         'aplica_gastos',

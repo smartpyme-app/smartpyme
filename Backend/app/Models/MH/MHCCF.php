@@ -2,6 +2,7 @@
 
 namespace App\Models\MH;
 
+use App\Models\MH\Concerns\BuildsTributosVenta;
 use Illuminate\Database\Eloquent\Model;
 use Ramsey\Uuid\Uuid;
 use Illuminate\Support\Facades\Http;
@@ -12,6 +13,7 @@ use Illuminate\Support\Facades\Log;
 
 class MHCCF extends Model
 {
+    use BuildsTributosVenta;
 
     public $venta;
     public $caja;
@@ -159,8 +161,6 @@ class MHCCF extends Model
 
     public function generarCCF(){
 
-        $tributos = NULL;
-
         $apendice = NULL;
         
         if ($this->venta->observaciones ) {
@@ -170,11 +170,9 @@ class MHCCF extends Model
             }
         }
 
+        $tributos = $this->buildTributosResumen();
+
         if ($this->venta->iva > 0) {
-            $tributos = collect();
-            if ($this->venta->iva){ 
-                $tributos->push(['codigo' => '20', 'descripcion'=> 'Impuesto al Valor Agregado 13%', 'valor' => floatval(number_format($this->venta->iva, 2, '.', ''))]);
-            }
             $this->venta->gravada = $this->venta->sub_total;
         }else{
             $this->venta->gravada = 0;
@@ -250,12 +248,11 @@ class MHCCF extends Model
                 $this->venta->exenta = $this->venta->sub_total;
             }
 
-            $tributos = NULL;
             if ($this->venta->iva > 0) {
-                $tributos = collect();
-                $tributos = ['20'];
+                $tributos = $this->buildTributosLineaCodesDesdeVenta();
                 $this->venta->gravada = $this->venta->detalles()->sum('total');
             }else{
+                $tributos = NULL;
                 $this->venta->gravada = 0;
                 $this->venta->exenta = $this->venta->detalles()->sum('total');
             }
@@ -298,7 +295,6 @@ class MHCCF extends Model
                 $detalle->tipo_item = 1;
             }
 
-            $tributos = NULL;
             $detalle->codTributo = NULL;
             
             if ($detalle->producto) {
@@ -308,10 +304,10 @@ class MHCCF extends Model
             }
 
             if ($this->venta->iva > 0) {
-                $tributos = collect();
-                $tributos = ['20'];
+                $tributos = $this->buildTributosLineaCodes($detalle);
                 $detalle->gravada = $detalle->total;
             }else{
+                $tributos = NULL;
                 $detalle->gravada = 0;
                 $detalle->exenta = $detalle->total;
             }
