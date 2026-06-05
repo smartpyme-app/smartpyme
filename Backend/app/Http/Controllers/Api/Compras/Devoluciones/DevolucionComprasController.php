@@ -3,30 +3,62 @@
 namespace App\Http\Controllers\Api\Compras\Devoluciones;
 
 use App\Http\Controllers\Controller;
-use App\Services\Compras\DevolucionCompraService;
 use Illuminate\Http\Request;
 
 use App\Models\Compras\Devoluciones\Devolucion;
-use App\Models\Compras\Compra;
-use App\Models\Registros\Proveedor;
 use App\Models\Compras\Devoluciones\Detalle;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Lote;
-use App\Models\Inventario\Kardex;
 use Illuminate\Support\Facades\DB;
 use App\Exports\DevolucionesComprasExport;
 use Maatwebsite\Excel\Facades\Excel;
-use App\Http\Requests\Compras\Devoluciones\StoreDevolucionCompraRequest;
-use App\Http\Requests\Compras\Devoluciones\FacturacionDevolucionCompraRequest;
 
 class DevolucionComprasController extends Controller
 {
-    protected $devolucionService;
-
-    public function __construct(DevolucionCompraService $devolucionService)
+    public function index(Request $request)
     {
+        $compras = Devolucion::when($request->buscador, function ($query) use ($request) {
+            return $query->where('observaciones', 'like', '%' . $request->buscador . '%');
+        })
+            ->when($request->inicio, function ($query) use ($request) {
+                return $query->where('fecha', '>=', $request->inicio);
+            })
+            ->when($request->fin, function ($query) use ($request) {
+                return $query->where('fecha', '<=', $request->fin);
+            })
+            ->when($request->estado !== null, function ($q) use ($request) {
+                $q->where('enable', !!$request->estado);
+            })
+            ->when($request->id_usuario, function ($query) use ($request) {
+                return $query->where('id_usuario', $request->id_usuario);
+            })
+            ->when($request->estado, function ($query) use ($request) {
+                return $query->where('enable', $request->estado);
+            })
+            ->when($request->id_proveedor, function ($query) use ($request) {
+                $query->where('id_proveedor', $request->id_proveedor);
+            })
+            ->orderBy($request->orden, $request->direccion)
+            ->orderBy('id', 'desc')
+            ->paginate($request->paginate);
 
+        return Response()->json($compras, 200);
+    }
+
+    public function filter(Request $request)
+    {
+        return $this->index($request);
+    }
+
+    public function read($id)
+    {
+        $compra = Devolucion::where('id', $id)->with('detalles', 'compra', 'proveedor')->first();
+        return Response()->json($compra, 200);
+    }
+
+    public function store(Request $request)
+    {
         $request->validate([
             'fecha'             => 'required',
             'enable'            => 'required',
@@ -35,27 +67,24 @@ class DevolucionComprasController extends Controller
             'tipo'              => 'required|in:devolucion,descuento_ajuste,anulacion_factura',
         ]);
 
-        if($request->id)
+        if ($request->id) {
             $compra = Devolucion::findOrFail($request->id);
-        else
+        } else {
             $compra = new Devolucion;
+        }
 
-        // Solo ajustar stocks si el tipo de devolución afecta inventario
         if ($request->tipo !== 'descuento_ajuste') {
-            // Ajustar stocks
             foreach ($compra->detalles as $detalle) {
-
                 $producto = Producto::where('id', $detalle->id_producto)
-                                        ->with('composiciones')->firstOrFail();
+                    ->with('composiciones')->firstOrFail();
 
-                $inventario = Inventario::where('id_producto', $detalle->id_producto)->where('id_bodega', $compra->id_bodega)->first();
+                $inventario = Inventario::where('id_producto', $detalle->id_producto)
+                    ->where('id_bodega', $compra->id_bodega)->first();
 
                 $empresa = \App\Models\Admin\Empresa::find($compra->id_empresa);
                 $lotesActivo = $empresa ? $empresa->isLotesActivo() : false;
 
-                // Anular y regresar stock
-                if(($compra->enable != '0') && ($request['enable'] == '0')){
-                    // Si el producto tiene lotes y el detalle tiene lote_id, regresar stock al lote
+                if (($compra->enable != '0') && ($request['enable'] == '0')) {
                     if ($producto->inventario_por_lotes && $lotesActivo && $detalle->lote_id) {
                         $lote = Lote::find($detalle->lote_id);
                         if ($lote) {
@@ -69,11 +98,9 @@ class DevolucionComprasController extends Controller
                         $inventario->save();
                         $inventario->kardex($compra, $detalle->cantidad * -1);
                     }
-
                 }
-                // Cancelar anulación y descargar stock
-                if(($compra->enable == '0') && ($request['enable'] != '0')){
-                    // Si el producto tiene lotes y el detalle tiene lote_id, descontar del lote
+
+                if (($compra->enable == '0') && ($request['enable'] != '0')) {
                     if ($producto->inventario_por_lotes && $lotesActivo && $detalle->lote_id) {
                         $lote = Lote::find($detalle->lote_id);
                         if ($lote && $lote->stock >= $detalle->cantidad) {
@@ -82,13 +109,11 @@ class DevolucionComprasController extends Controller
                         }
                     }
 
-                    // Aplicar stock
                     if ($inventario) {
                         $inventario->stock -= $detalle->cantidad;
                         $inventario->save();
                         $inventario->kardex($compra, $detalle->cantidad);
                     }
-
                 }
             }
         }
@@ -97,7 +122,6 @@ class DevolucionComprasController extends Controller
         $compra->save();
 
         return Response()->json($compra, 200);
-
     }
 
     public function delete($id)
@@ -111,46 +135,36 @@ class DevolucionComprasController extends Controller
         return Response()->json($compra, 201);
     }
 
-
-    public function facturacion(Request $request){
+    public function facturacion(Request $request)
+    {
         $request->validate([
             'fecha'             => 'required',
             'tipo'              => 'required|in:devolucion,descuento_ajuste,anulacion_factura',
             'id_proveedor'      => 'required',
             'detalles'          => 'required',
             'iva'               => 'required|numeric',
-            // 'subcosto'          => 'required|numeric',
-            'sub_total'          => 'required|numeric',
+            'sub_total'         => 'required|numeric',
             'total'             => 'required|numeric',
             'observaciones'     => 'required|max:255',
             'id_compra'         => 'required',
             'id_usuario'        => 'required',
-            'id_bodega'        => 'required',
+            'id_bodega'         => 'required',
             'id_empresa'        => 'required',
-        ],[
-            'detalles.required' => 'No hay detalles agregados'
+        ], [
+            'detalles.required' => 'No hay detalles agregados',
         ]);
-
 
         DB::beginTransaction();
 
         try {
-
-        // Compra
-            if($request->id)
+            if ($request->id) {
                 $devolucion = Devolucion::findOrFail($request->id);
-            else
+            } else {
                 $devolucion = new Devolucion;
+            }
 
             $devolucion->fill($request->all());
             $devolucion->save();
-
-            // $compra = Compra::findOrFail($request['id_compra']);
-            // $compra->estado = 'Anulada';
-            // $compra->save();
-
-
-        // Detalles
 
             foreach ($request->detalles as $det) {
                 $detalle = new Detalle;
@@ -158,18 +172,15 @@ class DevolucionComprasController extends Controller
                 $detalle->fill($det);
                 $detalle->save();
 
-                // Solo actualizar inventario si el tipo de devolución afecta inventario
                 if ($request->tipo !== 'descuento_ajuste') {
                     $producto = Producto::find($det['id_producto']);
 
                     $empresa = \App\Models\Admin\Empresa::find($devolucion->id_empresa);
                     $lotesActivo = $empresa ? $empresa->isLotesActivo() : false;
 
-                    // Si el producto tiene lotes y se especificó un lote, actualizar el stock del lote
                     if ($producto && $producto->inventario_por_lotes && $lotesActivo && isset($det['lote_id']) && $det['lote_id']) {
                         $lote = Lote::find($det['lote_id']);
                         if ($lote) {
-                            // Verificar que el lote pertenezca al producto y bodega correctos
                             if ($lote->id_producto == $det['id_producto'] && $lote->id_bodega == $request->id_bodega) {
                                 $lote->stock -= $det['cantidad'];
                                 $lote->save();
@@ -177,8 +188,8 @@ class DevolucionComprasController extends Controller
                         }
                     }
 
-                    // Actualizar inventario tradicional
-                    $inventario = Inventario::where('id_producto', $det['id_producto'])->where('id_bodega', $request->id_bodega)->first();
+                    $inventario = Inventario::where('id_producto', $det['id_producto'])
+                        ->where('id_bodega', $request->id_bodega)->first();
 
                     if ($inventario) {
                         $inventario->stock -= $det['cantidad'];
@@ -186,12 +197,10 @@ class DevolucionComprasController extends Controller
                         $inventario->kardex($devolucion, $det['cantidad']);
                     }
                 }
-
             }
 
-        DB::commit();
-        return Response()->json($devolucion, 200);
-
+            DB::commit();
+            return Response()->json($devolucion, 200);
         } catch (\Exception $e) {
             DB::rollback();
             return Response()->json(['error' => $e->getMessage()], 400);
@@ -199,18 +208,13 @@ class DevolucionComprasController extends Controller
             DB::rollback();
             return Response()->json(['error' => $e->getMessage()], 400);
         }
-
-        return Response()->json($compra, 200);
-
     }
 
-    public function export(Request $request){
+    public function export(Request $request)
+    {
         $compras = new DevolucionesComprasExport();
         $compras->filter($request);
 
         return Excel::download($compras, 'compras.xlsx');
     }
-
-
-
 }

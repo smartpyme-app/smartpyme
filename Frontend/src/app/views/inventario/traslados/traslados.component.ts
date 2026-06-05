@@ -11,6 +11,7 @@ import { PaginationComponent } from '@shared/parts/pagination/pagination.compone
 import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
 import { BuscadorProductosComponent } from '@shared/parts/buscador-productos/buscador-productos.component';
 import { TruncatePipe } from '@pipes/truncate.pipe';
+import { NgSelectModule } from '@ng-select/ng-select';
 
 @Component({
   selector: 'app-traslados',
@@ -26,6 +27,7 @@ import { TruncatePipe } from '@pipes/truncate.pipe';
     NotificacionesContainerComponent,
     BuscadorProductosComponent,
     TruncatePipe,
+    NgSelectModule,
   ],
 })
 export class TrasladosComponent implements OnInit {

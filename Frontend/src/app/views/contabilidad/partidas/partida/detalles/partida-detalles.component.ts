@@ -1,4 +1,4 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ViewChild, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnChanges, SimpleChanges, EventEmitter, Input, Output, TemplateRef, ViewChild, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -19,7 +19,7 @@ import Swal from 'sweetalert2';
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class PartidaDetallesComponent extends BaseModalComponent implements OnInit {
+export class PartidaDetallesComponent extends BaseModalComponent implements OnInit, OnChanges {
 
     @Input() partida: any = {};
     public detalle:any = {};
@@ -49,8 +49,30 @@ export class PartidaDetallesComponent extends BaseModalComponent implements OnIn
           .pipe(this.untilDestroyed())
           .subscribe(catalogo => {
             this.catalogo = catalogo;
+            this.normalizarCuentasDetalles();
             this.cdr.markForCheck();
         }, error => {this.alertService.error(error); this.cdr.markForCheck();});
+    }
+
+    ngOnChanges(changes: SimpleChanges): void {
+        if (changes['partida'] && this.catalogo?.length) {
+            this.normalizarCuentasDetalles();
+            this.cdr.markForCheck();
+        }
+    }
+
+    /** ng-select bindValue="id" requiere número; la API suele devolver string. */
+    private normalizarCuentasDetalles(): void {
+        (this.partida?.detalles || []).forEach((detalle: any) => {
+            if (detalle?.id_cuenta != null && detalle.id_cuenta !== '') {
+                detalle.id_cuenta = Number(detalle.id_cuenta);
+            }
+        });
+    }
+
+    labelCuenta(cuenta: any): string {
+        if (!cuenta) return '';
+        return `${cuenta.codigo} - ${cuenta.nombre}`;
     }
 
     public selectCuenta(){

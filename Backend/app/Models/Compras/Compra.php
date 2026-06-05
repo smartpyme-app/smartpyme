@@ -126,6 +126,11 @@ class Compra extends Model {
         return $this->belongsTo('App\Models\Admin\Empresa','id_empresa');
     }
 
+    public function proyecto()
+    {
+        return $this->belongsTo('App\Models\Contabilidad\Proyecto', 'id_proyecto');
+    }
+
     public function detalles(){
         return $this->hasMany('App\Models\Compras\Detalle','id_compra');
     }

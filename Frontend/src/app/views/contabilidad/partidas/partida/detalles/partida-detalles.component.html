@@ -37,16 +37,24 @@
                     <tr>
                         <!-- detalle de vendedor  -->
                         <td>
-                            <ng-select [(ngModel)]="detalle.id_cuenta" (change)="onCuentaChange(detalle)" class="form-select p-0" name="detalle.id_cuenta" [disabled]="partida.estado === 'Cerrada'">
-                                <ng-option value="">Seleccione aquí</ng-option>
-                                @for (cuenta of catalogo; track cuenta.id) {
-                                    <ng-option [value]="cuenta.id">
-                                        <div class="d-flex align-items-center">
-                                            <span style="width: 75px;">{{ cuenta.codigo }} </span>
-                                            <span class="col-8"> - {{ cuenta.nombre }}</span>
-                                        </div>
-                                    </ng-option>
-                                }
+                            <ng-select
+                                [(ngModel)]="detalle.id_cuenta"
+                                (change)="onCuentaChange(detalle)"
+                                class="form-select p-0"
+                                name="detalle.id_cuenta"
+                                [disabled]="partida.estado === 'Cerrada'"
+                                [items]="catalogo"
+                                bindLabel="nombre"
+                                bindValue="id"
+                                placeholder="Seleccione aquí"
+                                [clearable]="true">
+                                <ng-template ng-label-tmp let-item="item">
+                                    {{ labelCuenta(item) }}
+                                </ng-template>
+                                <ng-template ng-option-tmp let-item="item">
+                                    <span class="me-2">{{ item.codigo }}</span>
+                                    <span>{{ item.nombre }}</span>
+                                </ng-template>
                             </ng-select>
                         </td>
                         <td>
@@ -157,16 +165,24 @@
 
             <div class="form-group col-md-12">
                 <label for="detalle.id_cuenta">Cuenta del catálogo:</label>
-                <ng-select [(ngModel)]="detalle.id_cuenta" (change)="selectCuenta()" class="form-select p-0" name="detalle.id_cuenta" [disabled]="partida.estado === 'Cerrada'">
-                    <ng-option value="">Seleccione aquí</ng-option>
-                    @for (cuenta of catalogo; track cuenta.id) {
-                        <ng-option [value]="cuenta.id">
-                            <div class="d-flex align-items-center">
-                                <span class="col-4">{{ cuenta.codigo }} </span>
-                                <span class="col-8"> - {{ cuenta.nombre }}</span>
-                            </div>
-                        </ng-option>
-                    }
+                <ng-select
+                    [(ngModel)]="detalle.id_cuenta"
+                    (change)="selectCuenta()"
+                    class="form-select p-0"
+                    name="detalle.id_cuenta"
+                    [disabled]="partida.estado === 'Cerrada'"
+                    [items]="catalogo"
+                    bindLabel="nombre"
+                    bindValue="id"
+                    placeholder="Seleccione aquí"
+                    [clearable]="true">
+                    <ng-template ng-label-tmp let-item="item">
+                        {{ labelCuenta(item) }}
+                    </ng-template>
+                    <ng-template ng-option-tmp let-item="item">
+                        <span class="me-2">{{ item.codigo }}</span>
+                        <span>{{ item.nombre }}</span>
+                    </ng-template>
                 </ng-select>
             </div>
 

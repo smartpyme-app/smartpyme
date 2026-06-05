@@ -7,15 +7,28 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
-import { CountryISO, PhoneNumberFormat, SearchCountryField } from 'ngx-intl-tel-input';
+import { CountryISO, PhoneNumberFormat, SearchCountryField, NgxIntlTelInputModule } from 'ngx-intl-tel-input';
 import { EncryptService } from '@services/encryption/encrypt.service';
+import { FilterPipe } from '@pipes/filter.pipe';
+import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 
 
 @Component({
     selector: 'app-usuarios',
     templateUrl: './usuarios.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule],
+    imports: [
+        CommonModule,
+        RouterModule,
+        FormsModule,
+        NgxIntlTelInputModule,
+        FilterPipe,
+        PaginationComponent,
+        NotificacionesContainerComponent,
+        TooltipModule,
+    ],
     changeDetection: ChangeDetectionStrategy.OnPush,
 
 })
@@ -203,6 +216,7 @@ export class UsuariosComponent extends BaseCrudComponent<any> implements OnInit 
 
     override openModal(template: TemplateRef<any>, usuario?: any, modalConfig?: any) {
         super.openModal(template, usuario, { class: 'modal-lg', backdrop: 'static', ...modalConfig });
+        this.cdr.markForCheck();
     }
 
     openRoleModal() {

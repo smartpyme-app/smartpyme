@@ -166,22 +166,46 @@
             </div>
             <div class="form-group col-md-6">
                 <label for="">De</label>
-                <ng-select [disabled]="!producto?.id" name="id_bodega_de" (change)="setSucursalDe()" [(ngModel)]="traslado.id_bodega_de" class="form-select p-0">
-                    <ng-option value="" selected>Seleccionar bodega</ng-option>
-                    <ng-option *ngFor="let inventario of producto?.inventarios" [value]="inventario.id_bodega">
-                        {{inventario.nombre_bodega}}
-                        <span class="badge bg-primary float-end">{{inventario.stock | number:'1.0' }} en stock <span *ngIf="producto?.id_presentacion">base</span></span>
-                    </ng-option>
+                <ng-select
+                    [disabled]="!producto?.id"
+                    name="id_bodega_de"
+                    (change)="setSucursalDe()"
+                    [(ngModel)]="traslado.id_bodega_de"
+                    class="form-select p-0"
+                    [items]="producto?.inventarios || []"
+                    bindLabel="nombre_bodega"
+                    bindValue="id_bodega"
+                    placeholder="Seleccionar bodega"
+                    [clearable]="true">
+                    <ng-template ng-option-tmp let-item="item">
+                        <span>{{ item.nombre_bodega }}</span>
+                        <span class="badge bg-primary ms-2">{{ item.stock | number:'1.0' }} en stock<span *ngIf="producto?.id_presentacion"> base</span></span>
+                    </ng-template>
+                    <ng-template ng-label-tmp let-item="item">
+                        {{ item.nombre_bodega }} ({{ item.stock | number:'1.0' }} en stock)
+                    </ng-template>
                 </ng-select>
             </div>
             <div class="form-group col-md-6">
                 <label for="">Para</label>
-                <ng-select [disabled]="!producto?.id" name="id_bodega" (change)="setSucursalPara()" [(ngModel)]="traslado.id_bodega" class="form-select p-0">
-                    <ng-option value="" selected>Seleccionar bodega</ng-option>
-                    <ng-option *ngFor="let inventario of producto?.inventarios" [value]="inventario.id_bodega">
-                        {{inventario.nombre_bodega}}
-                        <span class="badge bg-primary float-end">{{inventario.stock | number:'1.0' }} en stock <span *ngIf="producto?.id_presentacion">base</span></span>
-                    </ng-option>
+                <ng-select
+                    [disabled]="!producto?.id"
+                    name="id_bodega"
+                    (change)="setSucursalPara()"
+                    [(ngModel)]="traslado.id_bodega"
+                    class="form-select p-0"
+                    [items]="producto?.inventarios || []"
+                    bindLabel="nombre_bodega"
+                    bindValue="id_bodega"
+                    placeholder="Seleccionar bodega"
+                    [clearable]="true">
+                    <ng-template ng-option-tmp let-item="item">
+                        <span>{{ item.nombre_bodega }}</span>
+                        <span class="badge bg-primary ms-2">{{ item.stock | number:'1.0' }} en stock<span *ngIf="producto?.id_presentacion"> base</span></span>
+                    </ng-template>
+                    <ng-template ng-label-tmp let-item="item">
+                        {{ item.nombre_bodega }} ({{ item.stock | number:'1.0' }} en stock)
+                    </ng-template>
                 </ng-select>
             </div>
             <div class="form-group col-md-6" *ngIf="producto?.inventario_por_lotes && isLotesActivo() && traslado.id_bodega_de">

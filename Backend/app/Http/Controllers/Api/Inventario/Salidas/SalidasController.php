@@ -45,23 +45,28 @@ class SalidasController extends Controller
     }
 
     public function filter(Request $request) {
-        
-        $salidas = Salida::when($request->inicio, function($query) use ($request){
-                                return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
-                            })
-                            ->when($request->id_usuario, function($query) use ($request){
-                                return $query->where('id_usuario', $request->id_usuario);
-                            })
-                            ->when($request->estado, function($query) use ($request){
-                                return $query->where('estado', $request->estado);
-                            })
-                            ->when($request->id_bodega, function($query) use ($request){
-                                return $query->where('id_bodega', $request->id_bodega);
-                            })
-                            ->orderBy('id','desc')->paginate(100000);
+        $perPage = (int) ($request->per_page ?? $request->paginate ?? 10);
+        $perPage = $perPage > 0 ? min($perPage, 100) : 10;
+
+        $salidas = Salida::when($request->inicio, function ($query) use ($request) {
+                return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
+            })
+            ->when($request->id_usuario, function ($query) use ($request) {
+                return $query->where('id_usuario', $request->id_usuario);
+            })
+            ->when($request->estado, function ($query) use ($request) {
+                return $query->where('estado', $request->estado);
+            })
+            ->when($request->id_bodega, function ($query) use ($request) {
+                return $query->where('id_bodega', $request->id_bodega);
+            })
+            ->when($request->buscador, function ($query) use ($request) {
+                return $query->where('concepto', 'like', '%' . $request->buscador . '%');
+            })
+            ->orderBy($request->orden ?? 'id', $request->direccion ?? 'desc')
+            ->paginate($perPage);
 
         return Response()->json($salidas, 200);
-
     }
 
 
