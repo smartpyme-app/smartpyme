@@ -2,53 +2,53 @@
 
 /* Cabeceras: título + buscador/botones (mismo patrón responsive que Inventario) */
 .control-cuentas-section .inv-ag-grid-toolbar {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
 }
 
 @media (min-width: 992px) {
-  .control-cuentas-section .inv-ag-grid-toolbar {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-  }
+    .control-cuentas-section .inv-ag-grid-toolbar {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+    }
 }
 
 .control-cuentas-section .inv-ag-grid-toolbar-title {
-  flex-shrink: 0;
-  line-height: 1.35;
+    flex-shrink: 0;
+    line-height: 1.35;
 }
 
 .control-cuentas-section .inv-ag-grid-toolbar-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-  width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
 }
 
 @media (min-width: 992px) {
-  .control-cuentas-section .inv-ag-grid-toolbar-actions {
-    width: auto;
-    justify-content: flex-end;
-    flex: 1;
-    min-width: 0;
-  }
+    .control-cuentas-section .inv-ag-grid-toolbar-actions {
+        width: auto;
+        justify-content: flex-end;
+        flex: 1;
+        min-width: 0;
+    }
 }
 
 .control-cuentas-section .inv-ag-grid-toolbar-search {
-  flex: 1 1 12rem;
-  min-width: min(100%, 12rem);
-  max-width: 100%;
+    flex: 1 1 200px;
+    min-width: min(100%, 200px);
+    max-width: 100%;
 }
 
 @media (min-width: 576px) {
-  .control-cuentas-section .inv-ag-grid-toolbar-search {
-    max-width: 18rem;
-  }
+    .control-cuentas-section .inv-ag-grid-toolbar-search {
+        max-width: 350px;
+    }
 }
 
 /* Estilos modernos para AG Grid - Tabla de detalle de cuentas por cobrar */
@@ -173,22 +173,37 @@
     background-color: #ffffff !important;
 }
 
-/* Fila de totales - fondo azul igual al header, texto blanco */
+/* Fila de totales - fondo blanco, texto azul, borde superior (CXC) */
 ::ng-deep .detalle-cuentas-grid .ag-row.ag-row-total {
-    background-color: #66A3FF !important;
-    border-top: none !important;
+    background-color: #ffffff !important;
+    border-top: 1px solid #dee2e6 !important;
     border-bottom: none !important;
     font-weight: 600 !important;
 }
 
 ::ng-deep .detalle-cuentas-grid .ag-row.ag-row-total .ag-cell {
     font-weight: 600 !important;
-    color: #ffffff !important;
-    background-color: #66A3FF !important;
+    color: #3366cc !important;
+    background-color: #ffffff !important;
 }
 
 ::ng-deep .detalle-cuentas-grid .ag-row.ag-row-total:hover {
-    background-color: #66A3FF !important;
+    background-color: #ffffff !important;
+}
+
+/* Hacer que la sección pinned bottom se vea exactamente como parte de la tabla (CXC) */
+::ng-deep .detalle-cuentas-grid .ag-floating-bottom {
+    background-color: #ffffff !important;
+    border-top: 1px solid #dee2e6 !important;
+}
+
+::ng-deep .detalle-cuentas-grid .ag-floating-bottom-viewport {
+    background-color: #ffffff !important;
+}
+
+::ng-deep .detalle-cuentas-grid .ag-floating-bottom .ag-row {
+    background-color: #ffffff !important;
+    border-bottom: none !important;
 }
 
 /* Iconos de ordenamiento más sutiles */
@@ -351,22 +366,37 @@
     background-color: #ffffff !important;
 }
 
-/* Fila de totales - fondo naranja igual al header, texto blanco */
+/* Fila de totales - fondo blanco, texto naranja, borde superior (CXP) */
 ::ng-deep .resumen-cuentas-pagar-grid .ag-row.ag-row-total-pagar {
-    background-color: #F19447 !important;
-    border-top: none !important;
+    background-color: #ffffff !important;
+    border-top: 1px solid #dee2e6 !important;
     border-bottom: none !important;
     font-weight: 600 !important;
 }
 
 ::ng-deep .resumen-cuentas-pagar-grid .ag-row.ag-row-total-pagar .ag-cell {
     font-weight: 600 !important;
-    color: #ffffff !important;
-    background-color: #F19447 !important;
+    color: #F19447 !important;
+    background-color: #ffffff !important;
 }
 
 ::ng-deep .resumen-cuentas-pagar-grid .ag-row.ag-row-total-pagar:hover {
-    background-color: #F19447 !important;
+    background-color: #ffffff !important;
+}
+
+/* Hacer que la sección pinned bottom se vea exactamente como parte de la tabla (CXP) */
+::ng-deep .resumen-cuentas-pagar-grid .ag-floating-bottom {
+    background-color: #ffffff !important;
+    border-top: 1px solid #dee2e6 !important;
+}
+
+::ng-deep .resumen-cuentas-pagar-grid .ag-floating-bottom-viewport {
+    background-color: #ffffff !important;
+}
+
+::ng-deep .resumen-cuentas-pagar-grid .ag-floating-bottom .ag-row {
+    background-color: #ffffff !important;
+    border-bottom: none !important;
 }
 
 /* Iconos de ordenamiento más sutiles */
@@ -377,4 +407,69 @@
 
 ::ng-deep .resumen-cuentas-pagar-grid .ag-header-cell:hover .ag-sort-indicator-container {
     opacity: 1;
+}
+
+/* Fila de métricas flex-wrap */
+.metrics-flex-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: stretch;
+}
+
+.metric-flex-col {
+    flex: 1 1 160px;
+    /* crece, se encoge, mínimo 160px */
+    min-width: 155px;
+    max-width: 100%;
+}
+
+/* Tarjeta principal de CXC con borde azul tenue y sombra suave */
+.card-performance-cxc {
+    background-color: #ffffff;
+    border: 1px solid rgba(51, 102, 204, 0.25) !important;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(51, 102, 204, 0.08) !important;
+}
+
+/* Tarjetas internas de CXC con solo borde azul tenue y sin sombra */
+.card-performance-cxc .card {
+    border: 1px solid rgba(51, 102, 204, 0.15) !important;
+    box-shadow: none !important;
+    border-radius: 8px !important;
+}
+
+/* Tarjeta principal de CXP con borde naranja y sombra suave */
+.card-performance-cxp {
+    background-color: #ffffff;
+    border: 1px solid rgba(241, 148, 71, 0.35) !important;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(241, 148, 71, 0.08) !important;
+}
+
+/* Tarjetas internas de CXP con solo borde naranja y sin sombra */
+.card-performance-cxp .card {
+    border: 1px solid rgba(241, 148, 71, 0.2) !important;
+    box-shadow: none !important;
+    border-radius: 8px !important;
+}
+
+/* Sobrescribir el color del borde de metric-card a azul en la sección de Cuentas por Cobrar (CXC) */
+::ng-deep .card-performance-cxc .metric-card {
+    border: 1px solid rgba(51, 102, 204, 0.25) !important;
+}
+
+::ng-deep .card-performance-cxc .metric-card:hover {
+    border-color: rgba(51, 102, 204, 0.45) !important;
+    box-shadow: 0 4px 12px rgba(51, 102, 204, 0.08) !important;
+}
+
+/* Sobrescribir el color del borde de metric-card a naranja en la sección de Cuentas por Pagar (CXP) */
+::ng-deep .card-performance-cxp .metric-card {
+    border: 1px solid rgba(241, 148, 71, 0.25) !important;
+}
+
+::ng-deep .card-performance-cxp .metric-card:hover {
+    border-color: rgba(241, 148, 71, 0.45) !important;
+    box-shadow: 0 4px 12px rgba(241, 148, 71, 0.08) !important;
 }

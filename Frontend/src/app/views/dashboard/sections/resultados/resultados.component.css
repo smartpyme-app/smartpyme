@@ -3,22 +3,89 @@
    ======================================== */
 
 /* ----------------------------------------
+   Selectores con diseño DMF (año / mes)
+   ---------------------------------------- */
+.dmf-select-outer {
+    min-width: 100px;
+    position: relative;
+}
+
+.dmf-select-label {
+    color: var(--bs-primary, #0d6efd);
+    line-height: 1.2;
+}
+
+.dmf-select-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: #fff;
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    cursor: pointer;
+    height: calc(1.5em + 0.75rem + 2px);
+}
+
+.dmf-select-wrap:focus-within {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+}
+
+.dmf-select-icon {
+    flex-shrink: 0;
+    padding: 0 0 0 0.75rem;
+    color: #6c757d;
+    font-size: 0.65rem;
+    pointer-events: none;
+    transition: color 0.15s ease;
+}
+
+.dmf-select-wrap:focus-within .dmf-select-icon {
+    color: #0d6efd;
+}
+
+.dmf-select {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    padding: 0 0.75rem 0 0.5rem;
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #212529;
+    background: transparent;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    /* Ocultar flecha nativa del navegador */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+/* ----------------------------------------
    Cards de Flujo de Efectivo - Responsive
    ---------------------------------------- */
 .resultados-section .card {
-    overflow: hidden; /* Evita que el contenido se salga */
-    min-width: 0; /* Permite shrinking correcto en flex */
+    overflow: hidden;
+    /* Evita que el contenido se salga */
+    min-width: 0;
+    /* Permite shrinking correcto en flex */
 }
 
 .resultados-section .card-body {
-    min-width: 0; /* Permite shrinking correcto */
-    word-break: break-word; /* Rompe palabras largas */
+    min-width: 0;
+    /* Permite shrinking correcto */
+    word-break: break-word;
+    /* Rompe palabras largas */
     overflow-wrap: break-word;
 }
 
 /* Cards de resumen (Ingresos, Egresos, Resultados) */
 .resultados-section .card-body .fw-bold {
-    font-size: clamp(1.125rem, 3vw, 1.5rem); /* Tamaño responsive */
+    font-size: clamp(1.125rem, 3vw, 1.5rem);
+    /* Tamaño responsive */
     word-break: break-word;
     overflow-wrap: break-word;
     hyphens: auto;
@@ -32,7 +99,8 @@
     hyphens: auto;
     line-height: 1.4;
     display: -webkit-box;
-    -webkit-line-clamp: 2; /* Máximo 2 líneas */
+    -webkit-line-clamp: 2;
+    /* Máximo 2 líneas */
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -49,17 +117,26 @@
     margin-bottom: 0.75rem;
 }
 
+.cashflow-card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+}
+
 /* ----------------------------------------
    Headers de Tablas - Responsive
    ---------------------------------------- */
 .resultados-section .d-flex.justify-content-between.align-items-center {
-    flex-wrap: wrap; /* Permite wrap en pantallas pequeñas */
+    flex-wrap: wrap;
+    /* Permite wrap en pantallas pequeñas */
     gap: 0.75rem;
 }
 
 .resultados-section .input-group {
-    min-width: 150px; /* Ancho mínimo para búsqueda */
-    max-width: 100%; /* No se salga del contenedor */
+    min-width: 150px;
+    /* Ancho mínimo para búsqueda */
+    max-width: 100%;
+    /* No se salga del contenedor */
 }
 
 /* ----------------------------------------
@@ -84,7 +161,7 @@
 
 .table-footer-ventas .fw-bold,
 .table-footer-gastos .fw-bold {
-    font-size: clamp(0.875rem, 2.5vw, 1rem);
+    font-size: clamp(0.50rem, 1.5vw, 0.60rem);
     word-break: break-word;
     overflow-wrap: break-word;
 }
@@ -110,11 +187,13 @@
 @media (max-width: 1200px) {
     .resultados-section .col-md-3 {
         flex: 0 0 auto;
-        width: 50%; /* 2 cards por fila */
+        width: 50%;
+        /* 2 cards por fila */
     }
 
     .resultados-section .col-md-6 {
-        width: 100%; /* Stack completo */
+        width: 100%;
+        /* Stack completo */
     }
 }
 
@@ -130,16 +209,18 @@
 
     .input-group {
         width: 100% !important;
-        max-width: 250px;
+        max-width: 350px;
     }
 }
 
 /* Tablets pequeñas */
 @media (max-width: 768px) {
+
     .resultados-section .col-md-3,
     .resultados-section .col-sm-6 {
         flex: 0 0 auto;
-        width: 100%; /* 1 card por fila en mobile */
+        width: 100%;
+        /* 1 card por fila en mobile */
     }
 
     .resultados-section .col-md-6 {
@@ -190,7 +271,8 @@
 
     .resultados-section .card-body .text-muted.small {
         font-size: clamp(0.7rem, 3vw, 0.8rem);
-        -webkit-line-clamp: 1; /* Solo 1 línea en móviles pequeños */
+        -webkit-line-clamp: 1;
+        /* Solo 1 línea en móviles pequeños */
     }
 
     .btn-section-active {
@@ -223,7 +305,8 @@
    Mejoras generales para evitar overflow
    ---------------------------------------- */
 * {
-    min-width: 0; /* Permite shrinking correcto en todos los elementos */
+    min-width: 0;
+    /* Permite shrinking correcto en todos los elementos */
 }
 
 .row {
@@ -231,7 +314,7 @@
     margin-right: -0.5rem;
 }
 
-.row > * {
+.row>* {
     padding-left: 0.5rem;
     padding-right: 0.5rem;
 }
@@ -246,4 +329,156 @@ revo-grid {
 .cash-flow-grid {
     max-width: 100%;
     overflow-x: auto;
+}
+
+/* Tarjetas internas con solo borde azul tenue y sin sombra */
+.resultados-section .card .card {
+    border: 1px solid rgba(0, 118, 227, 0.15) !important;
+    box-shadow: none !important;
+    border-radius: 8px !important;
+}
+
+/* ----------------------------------------
+   Fila de métricas flex-wrap
+   ---------------------------------------- */
+.metrics-flex-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: stretch;
+}
+
+.metric-flex-col {
+    flex: 1 1 160px;
+    /* crece, se encoge, mínimo 160px */
+    min-width: 155px;
+    max-width: 100%;
+}
+
+/* Tarjeta principal de Curva de Rendimiento y Flujo de Efectivo */
+.card-performance {
+    background-color: #ffffff;
+    border: 1px solid rgba(0, 118, 227, 0.15) !important;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 118, 227, 0.08) !important;
+}
+
+/* Barra de filtros con el mismo borde azul suave */
+.filter-bar-card {
+    border: 1px solid rgba(0, 118, 227, 0.15) !important;
+    box-shadow: 0 4px 12px rgba(0, 118, 227, 0.06) !important;
+}
+
+.card-title-performance {
+    color: #0f172a;
+    font-weight: 700;
+    font-size: 1.1rem;
+    letter-spacing: -0.01em;
+}
+
+.border-bottom-light {
+    border-bottom: 1px solid rgba(0, 118, 227, 0.15) !important;
+}
+
+/* Selector de Periodo (MONTH | WEEK | DAY) al estilo del mockup */
+.time-filter-group {
+    display: inline-flex;
+    border: 1px solid rgba(0, 118, 227, 0.15);
+    border-radius: 4px;
+    overflow: hidden;
+    background: #ffffff;
+}
+
+.btn-time-filter {
+    border: none;
+    background: #ffffff;
+    padding: 0.375rem 1rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #718096;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.15s ease;
+}
+
+.btn-time-filter:not(:last-child) {
+    border-right: 1px solid rgba(0, 118, 227, 0.15);
+}
+
+.btn-time-filter:hover {
+    background: #f8fafc;
+    color: #0076E3;
+}
+
+.btn-time-filter.active {
+    background: #eff6ff;
+    color: #0076E3;
+}
+
+/* ----------------------------------------
+   Estilos de AG Grid para Resultados
+   ---------------------------------------- */
+
+/* Header - fondo azul tema, texto blanco */
+::ng-deep .resultados-section .ag-header {
+    background-color: #66A3FF !important;
+    border-bottom: none !important;
+}
+
+::ng-deep .resultados-section .ag-header-cell {
+    background-color: #66A3FF !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.2) !important;
+    color: white !important;
+    font-weight: 600 !important;
+    font-size: 0.875rem !important;
+}
+
+::ng-deep .resultados-section .ag-header-cell-text {
+    color: white !important;
+}
+
+::ng-deep .resultados-section .ag-header-cell-label {
+    color: white !important;
+}
+
+::ng-deep .resultados-section .ag-header-cell .ag-icon {
+    color: #ffffff !important;
+}
+
+::ng-deep .resultados-section .ag-header-cell .ag-sort-indicator-container {
+    color: #ffffff !important;
+}
+
+/* Fila de totales - fondo blanco, texto azul oscuro */
+::ng-deep .resultados-section .ag-row.ag-row-total {
+    background-color: #ffffff !important;
+    border-top: none !important;
+    border-bottom: none !important;
+    font-weight: 600 !important;
+}
+
+::ng-deep .resultados-section .ag-row.ag-row-total .ag-cell {
+    font-weight: 600 !important;
+    color: #0076E3 !important;
+    background-color: #ffffff !important;
+}
+
+::ng-deep .resultados-section .ag-row.ag-row-total:hover {
+    background-color: #ffffff !important;
+}
+
+/* Hacer que la sección pinned bottom se vea exactamente como parte de la tabla */
+::ng-deep .resultados-section .ag-floating-bottom {
+    background-color: #ffffff !important;
+    border-top: 1px solid #dee2e6 !important;
+}
+
+::ng-deep .resultados-section .ag-floating-bottom-viewport {
+    background-color: #ffffff !important;
+}
+
+::ng-deep .resultados-section .ag-floating-bottom .ag-row {
+    background-color: #ffffff !important;
+    border-bottom: none !important;
 }
