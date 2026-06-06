@@ -204,9 +204,16 @@ export class TiendaVentaBuscadorComponent implements OnInit {
             // Filtrar lotes por bodega
             const lotesBodega = producto.lotes.filter((lote: any) => lote.id_bodega == this.venta.id_bodega);
             // Calcular stock total de lotes
-            const stockLotes = lotesBodega.reduce((sum: number, lote: any) => sum + (parseFloat(lote.stock) || 0), 0);
+            let stockLotes = lotesBodega.reduce((sum: number, lote: any) => sum + (parseFloat(lote.stock) || 0), 0);
+            
+            // Si es presentación, ajustar el stock de lotes al factor
+            if (producto.factor_conversion && producto.factor_conversion > 0) {
+                stockLotes = stockLotes / producto.factor_conversion;
+            }
             this.detalle.stock = stockLotes;
-        } else if(producto.tipo != 'Servicio' && producto.inventarios.length > 0){
+        } else if (producto.tipo !== 'Servicio' && producto.stock_base_actual !== undefined && producto.stock_base_actual !== null) {
+            this.detalle.stock = parseFloat(producto.stock_base_actual);
+        } else if(producto.tipo != 'Servicio' && producto.inventarios && producto.inventarios.length > 0){
             this.detalle.stock = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
         } else {
             this.detalle.stock = null;
@@ -265,9 +272,9 @@ export class TiendaVentaBuscadorComponent implements OnInit {
      */
     getNombreCompleto(producto: any): string {
         if (this.tieneShopify && producto.nombre_variante) {
-            return `${producto.nombre} ${producto.nombre_variante}`;
+            return `${producto.nombre_mostrar || producto.nombre} ${producto.nombre_variante}`;
         }
-        return producto.nombre;
+        return producto.nombre_mostrar || producto.nombre;
     }
 
     /**

@@ -49,12 +49,20 @@
       <p><em>Detalle: {{ $comanda->motivo_eliminacion_detalle }}</em></p>
     @endif
   @endif
-  <p><strong>MESA: {{ $comanda->sesion->mesa->numero ?? '-' }}</strong></p>
+  @if($comanda->sesion?->mesa)
+  <p><strong>MESA: {{ $comanda->sesion->mesa->numero }}</strong></p>
+  @endif
+  @if($comanda->pedido_id)
+  <p><strong>PEDIDO: #{{ $comanda->pedido_id }}</strong></p>
+  @if($comanda->pedido?->canal)
+  <p>Canal: {{ $comanda->pedido->canal }}</p>
+  @endif
+  @endif
   <p>Fecha: {{ $comanda->enviado_at ? $comanda->enviado_at->format('d/m/Y H:i') : now()->format('d/m/Y H:i') }}</p>
-  @if($comanda->sesion->mesero)
+  @if($comanda->sesion?->mesero)
   <p>Mesero: {{ $comanda->sesion->mesero->name ?? $comanda->sesion->mesero->email }}</p>
   @endif
-  @if($comanda->sesion->observaciones)
+  @if($comanda->sesion?->observaciones)
   <p><em>Obs: {{ $comanda->sesion->observaciones }}</em></p>
   @endif
   <hr>
@@ -70,15 +78,17 @@
       @foreach($comanda->detalles as $det)
         @php
           $od = $det->ordenDetalle ?? null;
-          $prod = $od ? ($od->producto ?? null) : null;
+          $pd = $det->pedidoDetalle ?? null;
+          $linea = $od ?? $pd;
+          $prod = $linea ? ($linea->producto ?? null) : null;
         @endphp
-        @if($od)
+        @if($linea)
         <tr>
-          <td>{{ number_format($od->cantidad ?? 1, 0) }}x</td>
+          <td>{{ number_format($linea->cantidad ?? 1, 0) }}x</td>
           <td>
             {{ $prod->nombre ?? 'Producto' }}
-            @if(!empty($od->notas))
-              <br><small><em>{{ $od->notas }}</em></small>
+            @if(!empty($linea->notas))
+              <br><small><em>{{ $linea->notas }}</em></small>
             @endif
           </td>
         </tr>

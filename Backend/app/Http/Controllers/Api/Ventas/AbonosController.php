@@ -114,23 +114,28 @@ class AbonosController extends Controller
          
         try {
 
+            $isNew = !$request->id;
+
             if($request->id)
                 $abono = Abono::findOrFail($request->id);
             else
                 $abono = new Abono;
 
-            // Obtener el documento y asignar correlativo
-            $documento = \App\Models\Admin\Documento::where('nombre', 'Abono de Venta')
-                            ->where('id_sucursal', $request->id_sucursal)
-                            ->lockForUpdate()
-                            ->first();
-
             $abono->fill($request->all());
-            if($documento){
-                $abono->id_documento = $documento->id;
-                $abono->correlativo = $documento->correlativo;
-                $documento->increment('correlativo');
+
+            if ($isNew) {
+                $documento = \App\Models\Admin\Documento::where('nombre', 'Abono de Venta')
+                                ->where('id_sucursal', $request->id_sucursal)
+                                ->lockForUpdate()
+                                ->first();
+
+                if($documento){
+                    $abono->id_documento = $documento->id;
+                    $abono->correlativo = $documento->correlativo;
+                    $documento->increment('correlativo');
+                }
             }
+
             $abono->save(); 
 
             if ($venta && $venta->saldo <= 0) {

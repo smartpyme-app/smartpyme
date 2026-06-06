@@ -168,8 +168,13 @@ export class VentaDetallesComponent implements OnInit {
     // Agregar detalle
         productoSelect(producto:any):void{
 
+            if (producto.tipo === 'Servicio') {
+                this.addDetalle(producto);
+                return;
+            }
+
             // Validar stock solo para productos (no servicios)
-            if (producto.tipo != 'Servicio' && producto.stock !== null && producto.stock !== undefined) {
+            if (producto.stock !== null && producto.stock !== undefined) {
                 // Verificar si hay suficiente stock para la cantidad solicitada
                 const stockDisponible = parseFloat(producto.stock) || 0;
                 const cantidadRequerida = parseFloat(producto.cantidad) || 1;
@@ -248,10 +253,18 @@ export class VentaDetallesComponent implements OnInit {
             this.detalle = Object.assign({}, producto);
             this.detalle.id = null;
             
-            // Verifica si el producto ya fue ingresado
+            // ── Guardar campos de presentación para el backend ───────────────────────
+            this.detalle.id_presentacion   = producto.id_presentacion  ?? null;
+            this.detalle.factor_conversion = producto.factor_conversion ?? 1;
+
+            // ── Regla de agrupación: AMBOS id_producto + id_presentacion deben coincidir
+            // Una "Caja" y una "Unidad suelta" del mismo producto son filas separadas.
             let detalle = null;
             if(this.apiService.auth_user().empresa.agrupar_detalles_venta){
-                detalle = this.venta.detalles.find((x:any) => x.id_producto == this.detalle.id_producto)
+                detalle = this.venta.detalles.find((x:any) =>
+                    x.id_producto === this.detalle.id_producto &&
+                    (x.id_presentacion ?? null) === (this.detalle.id_presentacion ?? null)
+                );
             }
                 
             if(detalle) {
@@ -275,37 +288,44 @@ export class VentaDetallesComponent implements OnInit {
                 this.detalle.cuenta_a_terceros = 0;
             }
 
-            this.detalle.sub_total = Number((parseFloat(this.detalle.cantidad) * parseFloat(this.detalle.precio)).toFixed(4));
+            // Asegurar que precio_iva existe (para compatibilidad con datos existentes). Usar % del producto.
+            if (!this.detalle.precio_iva) {
+                const pctDet = this.obtenerPorcentajeIvaDetalle(this.detalle);
+                if (pctDet > 0) {
+                    this.detalle.precio_iva = (parseFloat(this.detalle.precio) * (1 + pctDet / 100)).toFixed(4);
+                } else {
+                    this.detalle.precio_iva = this.detalle.precio;
+                }
+            }
+
+            const precioSinIva = parseFloat(this.detalle.precio || 0);
+            this.detalle.sub_total = Number((parseFloat(this.detalle.cantidad) * precioSinIva).toFixed(4));
             if(!this.detalle.total || detalle){
                 this.detalle.total = (parseFloat(this.detalle.sub_total) - parseFloat(this.detalle.descuento || 0)).toFixed(4);
             }
-
             this.aplicarTipoGravado(this.detalle);
 
             if(!this.detalle.id_vendedor){
                 this.detalle.id_vendedor = this.venta.id_vendedor;
             }
 
-            // Si el producto tiene inventario por lotes, verificar si necesita selección manual
-            if (producto.inventario_por_lotes) {
+            // Si el producto tiene inventario por lotes (y la empresa tiene lotes activos), igual que v1
+            if (producto.inventario_por_lotes && this.apiService.isLotesActivo()) {
                 const metodologia = this.getLotesMetodologia();
                 if (metodologia === 'Manual') {
-                    // Si es manual, abrir modal para seleccionar lote
                     this.detalle.inventario_por_lotes = true;
                     this.detalle.lote_id = null;
                     if (!detalle) {
                         this.venta.detalles.push(this.detalle);
                     }
                     this.update.emit(this.venta);
-                    // Abrir modal automáticamente para seleccionar lote
                     setTimeout(() => {
                         this.abrirModalLoteVenta(this.mloteVenta, this.detalle);
                     }, 100);
                     return;
                 } else {
-                    // Si es automático, el backend se encargará de seleccionar el lote
                     this.detalle.inventario_por_lotes = true;
-                    this.detalle.lote_id = null; // Se asignará automáticamente en el backend
+                    this.detalle.lote_id = null;
                 }
             } else {
                 this.detalle.inventario_por_lotes = false;

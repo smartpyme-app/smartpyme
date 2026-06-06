@@ -1,8 +1,17 @@
 <section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
     <h2 class="page-heading">Inventario</h2>
-    <button *ngIf="apiService.canCreate()" routerLink="/producto/crear" tooltip="Crear producto (F4)"
-        class="btn btn-default tcla-F4 font-weight-bold"><img src="/assets/icons/plus.png" class="icon me-2"> Añadir
-        producto</button>
+
+    <div class="d-flex">
+        <button *ngIf="apiService.canCreate() && mostrarTransformacionProductos" routerLink="/transformacion" tooltip="Convertir productos"
+            class="btn btn-default font-weight-bold me-2"> <img src="/assets/icons/plus.png" class="icon me-2">
+            Convertir Producto
+        </button>
+
+        <button *ngIf="apiService.canCreate()" routerLink="/producto/crear" tooltip="Crear producto (F4)"
+            class="btn btn-default tcla-F4 font-weight-bold">
+            <img src="/assets/icons/plus.png" class="icon me-2"> Añadir producto
+        </button>
+    </div>
     <!-- <button *ngIf="apiService.canCreate()" routerLink="/ajuste/crear" tooltip="Ajuste masivo" class="btn btn-default tcla-F4 font-weight-bold"><img src="/assets/icons/plus.png" class="icon me-2"> Ajuste masivo</button> -->
 </section>
 
@@ -45,7 +54,8 @@
                             <i class="fa fa-search text-muted"></i>
                         </div>
                         <input type="search" name="buscador" class="form-control pull-right border-start-0"
-                            [placeholder]="isComponenteQuimicoHabilitado() ? 'Buscar por nombre, código o componente químico' : 'Buscar'" [(ngModel)]="filtros.buscador">
+                            [placeholder]="isComponenteQuimicoHabilitado() ? 'Buscar por nombre, código o componente químico' : 'Buscar'"
+                            [(ngModel)]="filtros.buscador">
                     </div>
                 </form>
                 <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3"><img
@@ -57,16 +67,16 @@
         <div class="d-flex gap-2 flex-wrap">
             <button class="tcla-F3 btn" tooltip="Actualizar (F5)" routerLinkActive="btn-primary" (click)="loadAll()"
                 routerLink="/productos">Todos</button>
-            <button class="btn" routerLinkActive="btn-primary" routerLink="/ajustes" 
-                    *ngIf="apiService.canAccederOperacionesInventario()">Ajustes</button>
+            <button class="btn" routerLinkActive="btn-primary" routerLink="/ajustes"
+                *ngIf="apiService.canAccederOperacionesInventario()">Ajustes</button>
             <button class="btn" routerLinkActive="btn-primary" routerLink="/traslados"
-                    *ngIf="apiService.canAccederOperacionesInventario()">Traslados</button>
+                *ngIf="apiService.canAccederOperacionesInventario()">Traslados</button>
             <button class="btn" routerLinkActive="btn-primary" routerLink="/consignas"
-                    *ngIf="apiService.canAccederOperacionesInventario()">Consignas</button>
+                *ngIf="apiService.canAccederOperacionesInventario()">Consignas</button>
             <button class="btn" routerLinkActive="btn-primary" routerLink="/entradas"
-                    *ngIf="apiService.canAccederOperacionesInventario()">Otras Entradas</button>
+                *ngIf="apiService.canAccederOperacionesInventario()">Otras Entradas</button>
             <button class="btn" routerLinkActive="btn-primary" routerLink="/salidas"
-                    *ngIf="apiService.canAccederOperacionesInventario()">Otras Salidas</button>
+                *ngIf="apiService.canAccederOperacionesInventario()">Otras Salidas</button>
         </div>
         <div class="ms-auto d-flex gap-2 flex-wrap justify-content-end">
             <ng-select name="id_proveedor" (change)="filtrarProductos()" [(ngModel)]="filtros.id_proveedor"
@@ -76,7 +86,7 @@
                     {{ proveedor.nombre_empresa ?? proveedor.nombre_completo ?? proveedor.nombre }}
                 </ng-option>
             </ng-select>
-            <ng-select name="id_categoria" (change)="filtrarProductos()" [(ngModel)]="filtros.id_categoria" 
+            <ng-select name="id_categoria" (change)="filtrarProductos()" [(ngModel)]="filtros.id_categoria"
                 class="form-select p-0 border-0 bg-default select-width">
                 <ng-option value="">Categoria</ng-option>
                 <ng-option *ngFor="let categoria of categorias" [value]="categoria.id">
@@ -111,11 +121,14 @@
                         <th (click)="setOrden('codigo')"
                             [ngClass]="{'sorted-asc': filtros.orden == 'codigo' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'codigo' && filtros.direccion == 'desc'}"
                             class="click d-none d-md-table-cell">Código</th>
-                        <th class="d-none d-md-table-cell" *ngIf="isComponenteQuimicoHabilitado()">Componente químico</th>
+                        <th class="d-none d-md-table-cell" *ngIf="isComponenteQuimicoHabilitado()">Componente químico
+                        </th>
                         <th (click)="setOrden('precio')"
                             [ngClass]="{'sorted-asc': filtros.orden == 'precio' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'precio' && filtros.direccion == 'desc'}"
-                            class="click text-right">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'Precio sin IVA' : 'Precio sin Impuesto' }}</th>
-                        <th class="text-right">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'Precio con IVA' : 'Precio con Impuesto' }}</th>
+                            class="click text-right">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'Precio
+                            sin IVA' : 'Precio sin Impuesto' }}</th>
+                        <th class="text-right">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'Precio con
+                            IVA' : 'Precio con Impuesto' }}</th>
                         <th (click)="setOrden('stock')"
                             [ngClass]="{'sorted-asc': filtros.orden == 'stock' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'stock' && filtros.direccion == 'desc'}"
                             class="click text-center">Stock</th>
@@ -124,10 +137,12 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td [attr.colspan]="isComponenteQuimicoHabilitado() ? 9 : 8" class="text-center" *ngIf="productos?.total < 1 && !loading">
+                        <td [attr.colspan]="isComponenteQuimicoHabilitado() ? 9 : 8" class="text-center"
+                            *ngIf="productos?.total < 1 && !loading">
                             <span class="badge bg-primary">No tiene productos registrados</span>
                         </td>
-                        <td [attr.colspan]="isComponenteQuimicoHabilitado() ? 9 : 8" class="text-center" *ngIf="loading">
+                        <td [attr.colspan]="isComponenteQuimicoHabilitado() ? 9 : 8" class="text-center"
+                            *ngIf="loading">
                             <span class="badge bg-primary">Cargando...</span>
                         </td>
                     </tr>
@@ -155,7 +170,8 @@
                         </td>
                         <td class="d-none d-md-table-cell">{{ producto.nombre_categoria }}</td>
                         <td class="d-none d-md-table-cell">{{ producto.codigo }}</td>
-                        <td class="d-none d-md-table-cell" *ngIf="isComponenteQuimicoHabilitado()">{{ producto.componente_quimico || '-' }}</td>
+                        <td class="d-none d-md-table-cell" *ngIf="isComponenteQuimicoHabilitado()">{{
+                            producto.componente_quimico || '-' }}</td>
                         <td class="text-right">{{ producto.precio | currency:'USD':'symbol':'1.2' }}</td>
                         <td class="text-right">{{ (producto.precio * 1) + (producto.precio *
                             (getPorcentajeProducto(producto) / 100) ) | currency:'USD':'symbol':'1.2' }}</td>
@@ -188,16 +204,19 @@
                                             <tbody>
                                                 <tr *ngFor="let lote of producto?.lotes">
                                                     <td class="text-nowrap">{{ lote.numero_lote || 'N/A' }}</td>
-                                                    <td class="text-nowrap">{{ lote.nombre_bodega || lote.bodega?.nombre }}</td>
+                                                    <td class="text-nowrap">{{ lote.nombre_bodega || lote.bodega?.nombre
+                                                        }}</td>
                                                     <td class="text-center">
                                                         <span *ngIf="lote.fecha_vencimiento">
                                                             {{ lote.fecha_vencimiento | date:'dd/MM/yyyy' }}
                                                             <br>
-                                                            <small [ngClass]="getClaseVencimiento(lote.fecha_vencimiento)">
+                                                            <small
+                                                                [ngClass]="getClaseVencimiento(lote.fecha_vencimiento)">
                                                                 {{ getDiasVencimiento(lote.fecha_vencimiento) }}
                                                             </small>
                                                         </span>
-                                                        <span *ngIf="!lote.fecha_vencimiento" class="text-muted">Sin vencimiento</span>
+                                                        <span *ngIf="!lote.fecha_vencimiento" class="text-muted">Sin
+                                                            vencimiento</span>
                                                     </td>
                                                     <td class="text-right">{{ lote.stock | number:'1.2' }}</td>
                                                 </tr>
@@ -205,7 +224,8 @@
                                             <tfoot>
                                                 <tr>
                                                     <th colspan="3">Total</th>
-                                                    <th class="text-right">{{ producto.stock_total_lotes || 0 | number:'1.2' }}</th>
+                                                    <th class="text-right">{{ producto.stock_total_lotes || 0 |
+                                                        number:'1.2' }}</th>
                                                 </tr>
                                             </tfoot>
                                         </table>
@@ -240,7 +260,8 @@
                                                     <td class="text-nowrap">
                                                         {{ inventario.nombre_bodega}}
                                                         <br>
-                                                        <small class="text-muted">{{ inventario.nombre_sucursal}}</small>
+                                                        <small class="text-muted">{{
+                                                            inventario.nombre_sucursal}}</small>
                                                     </td>
                                                     <td class="text-right">{{ inventario.stock }}</td>
                                                 </tr>
@@ -271,7 +292,7 @@
                                         <img src="/assets/icons/file-text.png" class="icon me-2">Kardex
                                     </button>
                                     <button type="button" routerLink="/detalle-producto/{{producto.id}}"
-                                    class="btn text-start border-0 text-black">
+                                        class="btn text-start border-0 text-black">
                                         <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalle
                                     </button>
                                 </div>
@@ -330,8 +351,7 @@
                 <div class="form-group col-sm-6">
                     <label for="filtros.id_proveedor">Bodega:</label>
                     <select name="id_bodega" (change)="filtrarProductos()" [(ngModel)]="filtros.id_bodega"
-                        class="form-select"
-                        [class.border-primary]="isShopifyActive() && filtros.id_bodega">
+                        class="form-select" [class.border-primary]="isShopifyActive() && filtros.id_bodega">
                         <option value="" [disabled]="isShopifyActive()">Todas</option>
                         <option *ngFor="let bodega of bodegas" [value]="bodega.id">
                             {{bodega.nombre}}
@@ -445,16 +465,17 @@
             </div>
             <div class="d-grid">
                 <label>Descargar Kardex:</label>
-                <button [disabled]="loading || !productos?.data?.length" 
-                        tooltip="Descargar kardex de productos mostrados" (click)="openDescargarKardex(mdescargarKardex)" class="btn btn-primary">
+                <button [disabled]="loading || !productos?.data?.length"
+                    tooltip="Descargar kardex de productos mostrados" (click)="openDescargarKardex(mdescargarKardex)"
+                    class="btn btn-primary">
                     <span *ngIf="!loading">Descargar kardex ({{ productos?.data?.length || 0 }})</span>
                     <span *ngIf="loading">Descargando...</span>
                 </button>
             </div>
             <div class="d-grid my-4">
                 <label>Descargar Kardex Masivamente:</label>
-                <button [disabled]="loading" 
-                        tooltip="Descargar kardex completo por correo electrónico" (click)="openDescargarKardexMasivo(mdescargarKardexMasivo)" class="btn btn-primary">
+                <button [disabled]="loading" tooltip="Descargar kardex completo por correo electrónico"
+                    (click)="openDescargarKardexMasivo(mdescargarKardexMasivo)" class="btn btn-primary">
                     <span *ngIf="!loading">Descargar Kardex Masivamente</span>
                     <span *ngIf="loading">Procesando...</span>
                 </button>
@@ -475,21 +496,23 @@
         <div class="mb-3">
             <span class="badge bg-info">{{ productos?.data?.length || 0 }} producto(s) en el listado</span>
         </div>
-        
+
         <form autocomplete="off" (ngSubmit)="descargarKardexConFiltros()">
             <div class="row">
                 <div class="form-group col-sm-6">
                     <label for="filtrosKardex.fecha_inicio">Fecha inicio:</label>
-                    <input type="date" [(ngModel)]="filtrosKardex.fecha_inicio" class="form-control" name="fecha_inicio">
+                    <input type="date" [(ngModel)]="filtrosKardex.fecha_inicio" class="form-control"
+                        name="fecha_inicio">
                 </div>
                 <div class="form-group col-sm-6">
                     <label for="filtrosKardex.fecha_fin">Fecha fin:</label>
                     <input type="date" [(ngModel)]="filtrosKardex.fecha_fin" class="form-control" name="fecha_fin">
                 </div>
             </div>
-            
+
             <div class="d-grid mt-3">
-                <button type="submit" [disabled]="loading || !filtrosKardex.fecha_inicio || !filtrosKardex.fecha_fin" class="btn btn-primary">
+                <button type="submit" [disabled]="loading || !filtrosKardex.fecha_inicio || !filtrosKardex.fecha_fin"
+                    class="btn btn-primary">
                     <span *ngIf="!loading">Descargar Kardex</span>
                     <span *ngIf="loading">Descargando...</span>
                 </button>
@@ -508,33 +531,27 @@
     </div>
     <div class="modal-body">
         <app-notificaciones-container></app-notificaciones-container>
-        
-                <div class="alert alert-info">
-                    <i class="fa fa-info-circle me-2"></i>
-                    <strong>Información:</strong> Se generará el kardex completo de todos los productos de la empresa. 
-                    El proceso se ejecuta en segundo plano y recibirá un correo electrónico cuando esté listo.
-                </div>
-        
+
+        <div class="alert alert-info">
+            <i class="fa fa-info-circle me-2"></i>
+            <strong>Información:</strong> Se generará el kardex completo de todos los productos de la empresa.
+            El proceso se ejecuta en segundo plano y recibirá un correo electrónico cuando esté listo.
+        </div>
+
         <form autocomplete="off" (ngSubmit)="solicitarKardexMasivo()">
             <div class="row">
                 <div class="form-group col-md-12">
                     <label for="emailKardex">Correo electrónico:</label>
-                    <input type="email" 
-                           [(ngModel)]="emailKardex" 
-                           class="form-control" 
-                           name="emailKardex"
-                           placeholder="ejemplo@correo.com"
-                           required>
+                    <input type="email" [(ngModel)]="emailKardex" class="form-control" name="emailKardex"
+                        placeholder="ejemplo@correo.com" required>
                     <small class="form-text text-muted">
                         Se enviará el archivo del kardex completo a este correo electrónico.
                     </small>
                 </div>
             </div>
-            
+
             <div class="d-grid mt-3">
-                <button type="submit" 
-                        [disabled]="loading || !emailKardex" 
-                        class="btn btn-primary">
+                <button type="submit" [disabled]="loading || !emailKardex" class="btn btn-primary">
                     <span *ngIf="!loading">
                         <i class="fa fa-envelope me-2"></i>Solicitar Kardex Completo
                     </span>

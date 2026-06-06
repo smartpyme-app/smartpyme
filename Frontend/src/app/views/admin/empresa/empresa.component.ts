@@ -52,6 +52,8 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
     public canales: any = [];
     public tieneAccesoPropina: boolean = false;
     public tieneAccesoModuloRestaurantePedidos: boolean = false;
+    public tieneAccesoTransformacionProductos: boolean = false;
+    public tieneAccesoModuloPresentacionesProductos: boolean = false;
 
     public customConfig: any = {
         columnas: {
@@ -74,6 +76,8 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         this.loadAll();
         this.verificarAccesoPropina();
         this.verificarAccesoModuloRestaurantePedidos();
+        this.verificarAccesoTransformacionProductos();
+        this.verificarAccesoModuloPresentacionesProductos();
 
         this.departamentos = JSON.parse(localStorage.getItem('departamentos')!);
         this.municipios = JSON.parse(localStorage.getItem('municipios')!);
@@ -1159,13 +1163,16 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
                 lotes_metodologia: 'FIFO', // Manual, FIFO, LIFO, FEFO
                 lotes_dias_anticipacion: 30, // Días para alerta de vencimiento
                 componente_quimico_activo: false, // Habilitar campo componente químico en productos
+                modulo_presentaciones: false, // Habilitar presentaciones alternativas en productos, ventas e inventario
                 modulo_bancos: false, // Habilitar módulo de bancos (cuentas bancarias) en Finanzas
                 gastos_categorias_personalizadas: false, // Categorías de gasto BD, departamentos y áreas en gastos
                 estado_cuenta_en_facturacion: false, // Mostrar estado de cuenta del cliente al facturar
+                mostrar_nota_documento_impresion: false, // Mostrar nota del documento al imprimir en facturación
                 vista_modulo_restaurante_pedidos: 'ambos' as 'restaurante' | 'pedidos' | 'ambos', // Menú lateral: restaurante, pedidos o ambos
                 sku_correlativo_automatico: false, // obsoleto: migrar a barcode_correlativo_automatico; se lee por compatibilidad
                 barcode_correlativo_automatico: false, // Código de barras correlativo automático al crear productos
                 inventario_sumar_stock_busquedas: false, // Total de stock en listado de inventario según filtros
+                transformacion_productos_activo: false, // Módulo de transformación/conversión de productos en inventario
                 inventario_reporte_analisis_ventas_mensual: false, // Botón Excel: ventas ene→mes actual + inventario
                 cotizacion_mostrar_descripcion: true, // Mostrar descripción en PDF/vista de cotizaciones
                 cotizacion_mostrar_imagenes_productos: false, // Mostrar imágenes de productos en cotizaciones
@@ -1508,6 +1515,31 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         });
     }
 
+    // Nota del documento en impresión de facturación
+    public isMostrarNotaDocumentoImpresion(): boolean {
+        return this.getCustomConfig('configuraciones', 'mostrar_nota_documento_impresion', false);
+    }
+
+    public toggleMostrarNotaDocumentoImpresion() {
+        this.updateMostrarNotaDocumentoImpresion(!this.isMostrarNotaDocumentoImpresion());
+    }
+
+    public updateMostrarNotaDocumentoImpresion(activo: boolean) {
+        this.addCustomConfig('configuraciones', 'mostrar_nota_documento_impresion', activo);
+
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                `Nota en impresión ${activo ? 'habilitada' : 'deshabilitada'} correctamente`
+            );
+            const authUser = this.apiService.auth_user();
+            if (authUser?.empresa?.id === this.empresa?.id) {
+                authUser.empresa.custom_empresa = this.empresa.custom_empresa;
+                localStorage.setItem('SP_auth_user', JSON.stringify(authUser));
+            }
+        });
+    }
+
     // Métodos para estado de cuenta en facturación
     public isEstadoCuentaEnFacturacionHabilitado(): boolean {
         return this.getCustomConfig('configuraciones', 'estado_cuenta_en_facturacion', false);
@@ -1608,6 +1640,30 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         });
     }
 
+    public isTransformacionProductosActivo(): boolean {
+        return this.getCustomConfig('configuraciones', 'transformacion_productos_activo', false);
+    }
+
+    public toggleTransformacionProductosActivo() {
+        this.updateTransformacionProductosActivo(!this.isTransformacionProductosActivo());
+    }
+
+    public updateTransformacionProductosActivo(activo: boolean) {
+        this.addCustomConfig('configuraciones', 'transformacion_productos_activo', activo);
+
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                `Transformación de productos ${activo ? 'habilitada' : 'deshabilitada'} correctamente`
+            );
+            const authUser = this.apiService.auth_user();
+            if (authUser?.empresa?.id === this.empresa?.id) {
+                authUser.empresa.custom_empresa = this.empresa.custom_empresa;
+                localStorage.setItem('SP_auth_user', JSON.stringify(authUser));
+            }
+        });
+    }
+
     public isInventarioReporteAnalisisVentasMensual(): boolean {
         return this.getCustomConfig('configuraciones', 'inventario_reporte_analisis_ventas_mensual', false);
     }
@@ -1651,6 +1707,34 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
                 'Configuración actualizada',
                 `Campo componente químico ${activo ? 'habilitado' : 'deshabilitado'} correctamente`
             );
+        });
+    }
+
+    public isModuloPresentaciones(): boolean {
+        return this.getCustomConfig('configuraciones', 'modulo_presentaciones', false);
+    }
+
+    public toggleModuloPresentaciones() {
+        this.updateModuloPresentaciones(!this.isModuloPresentaciones());
+    }
+
+    public updateModuloPresentaciones(activo: boolean) {
+        if (!this.tieneAccesoModuloPresentacionesProductos) {
+            return;
+        }
+
+        this.addCustomConfig('configuraciones', 'modulo_presentaciones', activo);
+
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                `Módulo de presentaciones ${activo ? 'habilitado' : 'deshabilitado'} correctamente`
+            );
+            const authUser = this.apiService.auth_user();
+            if (authUser?.empresa?.id === this.empresa?.id) {
+                authUser.empresa.custom_empresa = this.empresa.custom_empresa;
+                localStorage.setItem('SP_auth_user', JSON.stringify(authUser));
+            }
         });
     }
 
@@ -1845,6 +1929,27 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
             },
             error: () => {
                 this.tieneAccesoModuloRestaurantePedidos = false;
+            }
+        });
+    }
+    public verificarAccesoTransformacionProductos() {
+        this.funcionalidadesService.verificarAcceso('transformacion-productos').subscribe({
+            next: (acceso) => {
+                this.tieneAccesoTransformacionProductos = acceso;
+            },
+            error: () => {
+                this.tieneAccesoTransformacionProductos = false;
+            }
+        });
+    }
+
+    public verificarAccesoModuloPresentacionesProductos() {
+        this.funcionalidadesService.verificarAcceso('modulo-presentaciones-productos').subscribe({
+            next: (acceso) => {
+                this.tieneAccesoModuloPresentacionesProductos = acceso;
+            },
+            error: () => {
+                this.tieneAccesoModuloPresentacionesProductos = false;
             }
         });
     }

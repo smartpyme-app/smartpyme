@@ -158,6 +158,8 @@
             </div>
         </div>
 
+        <h6 class="my-3 font-weight-bold w-100" *ngIf="producto.tipo === 'Servicio' || producto.tipo === 'Producto' || producto.tipo === 'Compuesto'">Restaurante / cocina</h6>
+
         <div class="form-group col-md-6 col-lg-5 without-label">
             <div class="form-switch bg-light-info rounded">
                 <label>Genera comanda</label>

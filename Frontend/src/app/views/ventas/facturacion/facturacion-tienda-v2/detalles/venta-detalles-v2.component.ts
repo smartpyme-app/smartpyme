@@ -6,6 +6,11 @@ import { ApiService } from '@services/api.service';
 
 import Swal from 'sweetalert2';
 
+import {
+    normalizarPorcentajeImpuestoDetalle,
+    resolverPorcentajeImpuestoVenta,
+} from '@utils/impuestos-venta.util';
+
 @Component({
   selector: 'app-venta-detalles-v2',
   templateUrl: './venta-detalles-v2.component.html'
@@ -119,12 +124,11 @@ export class VentaDetallesV2Component implements OnInit {
      * Obtiene el porcentaje de IVA para un detalle: del producto si tiene, si no el de la empresa.
      */
     private obtenerPorcentajeIvaDetalle(detalle: any): number {
-        if (!this.venta.cobrar_impuestos) {
-            return 0;
-        }
-        const pct = (detalle?.porcentaje_impuesto != null && detalle?.porcentaje_impuesto !== '')
-            ? Number(detalle.porcentaje_impuesto) : (this.apiService.auth_user()?.empresa?.iva ?? 0);
-        return Number(pct) || 0;
+        return resolverPorcentajeImpuestoVenta(
+            detalle?.porcentaje_impuesto,
+            this.apiService.auth_user()?.empresa?.iva,
+            this.venta.cobrar_impuestos
+        );
     }
 
     /** Aplica gravada/exenta/no_sujeta según tipo_gravado del detalle. Usa el % del producto. */
@@ -159,6 +163,41 @@ export class VentaDetallesV2Component implements OnInit {
         this.aplicarTipoGravado(detalle);
         this.update.emit(this.venta);
         this.sumTotal.emit();
+    }
+
+    /** Asegura lista de tarifas (v1/v2) para mostrar selector cuando hay más de un precio. */
+    private normalizarListaPreciosDetalle(detalle: any): void {
+        const pctDet = this.obtenerPorcentajeIvaDetalle(detalle);
+        const precioLinea = parseFloat(String(detalle.precio ?? 0)) || 0;
+        const itemPrecio = (sin: number, src?: any) => {
+            const con = pctDet > 0 ? sin * (1 + pctDet / 100) : sin;
+            return {
+                ...(src || {}),
+                precio: sin.toFixed(4),
+                precio_sin_iva: sin,
+                precio_con_iva: con.toFixed(4),
+            };
+        };
+        let lista = Array.isArray(detalle.precios) ? [...detalle.precios] : [];
+        if (!lista.length) {
+            detalle.precios = [itemPrecio(precioLinea)];
+            detalle.precio = precioLinea.toFixed(4);
+            return;
+        }
+        const eq = (a: number, b: number) => Math.abs(a - b) <= 5e-4;
+        lista = lista.map((p: any) =>
+            itemPrecio(parseFloat(String(p.precio_sin_iva ?? p.precio ?? 0)) || 0, p)
+        );
+        const idxBase = lista.findIndex((p: any) =>
+            eq(parseFloat(String(p.precio_sin_iva ?? p.precio)), precioLinea)
+        );
+        if (idxBase < 0) {
+            lista.unshift(itemPrecio(precioLinea));
+        } else {
+            lista[idxBase] = itemPrecio(precioLinea, lista[idxBase]);
+        }
+        detalle.precios = lista;
+        detalle.precio = precioLinea.toFixed(4);
     }
 
     /** Tras activar o desactivar "Con IVA" en la cabecera, recalcula IVA y total_iva por línea. */
@@ -279,8 +318,13 @@ export class VentaDetallesV2Component implements OnInit {
     // Agregar detalle
         productoSelect(producto:any):void{
 
+            if (producto.tipo === 'Servicio') {
+                this.addDetalle(producto);
+                return;
+            }
+
             // Validar stock solo para productos (no servicios)
-            if (producto.tipo != 'Servicio' && producto.stock !== null && producto.stock !== undefined) {
+            if (producto.stock !== null && producto.stock !== undefined) {
                 // Verificar si hay suficiente stock para la cantidad solicitada
                 const stockDisponible = parseFloat(producto.stock) || 0;
                 const cantidadRequerida = parseFloat(producto.cantidad) || 1;
@@ -359,10 +403,18 @@ export class VentaDetallesV2Component implements OnInit {
             this.detalle = Object.assign({}, producto);
             this.detalle.id = null;
             
-            // Verifica si el producto ya fue ingresado
+            // ── Guardar campos de presentación para el backend ───────────────────────
+            this.detalle.id_presentacion   = producto.id_presentacion  ?? null;
+            this.detalle.factor_conversion = producto.factor_conversion ?? 1;
+
+            // ── Regla de agrupación: AMBOS id_producto + id_presentacion deben coincidir
+            // Una "Caja" y una "Unidad suelta" del mismo producto son filas separadas.
             let detalle = null;
             if(this.apiService.auth_user().empresa.agrupar_detalles_venta){
-                detalle = this.venta.detalles.find((x:any) => x.id_producto == this.detalle.id_producto)
+                detalle = this.venta.detalles.find((x:any) =>
+                    x.id_producto === this.detalle.id_producto &&
+                    (x.id_presentacion ?? null) === (this.detalle.id_presentacion ?? null)
+                );
             }
                 
             if(detalle) {
@@ -386,14 +438,19 @@ export class VentaDetallesV2Component implements OnInit {
                 this.detalle.cuenta_a_terceros = 0;
             }
 
-            // Asegurar que precio_iva existe (para compatibilidad con datos existentes). Usar % del producto.
-            if (!this.detalle.precio_iva) {
-                const pctDet = this.obtenerPorcentajeIvaDetalle(this.detalle);
-                if (pctDet > 0) {
-                    this.detalle.precio_iva = (parseFloat(this.detalle.precio) * (1 + pctDet / 100)).toFixed(4);
-                } else {
-                    this.detalle.precio_iva = this.detalle.precio;
-                }
+            const ivaEmpresa = this.apiService.auth_user()?.empresa?.iva;
+            this.detalle.porcentaje_impuesto = normalizarPorcentajeImpuestoDetalle(
+                this.detalle.porcentaje_impuesto,
+                ivaEmpresa
+            );
+            this.normalizarListaPreciosDetalle(this.detalle);
+
+            const pctDet = this.obtenerPorcentajeIvaDetalle(this.detalle);
+            const precioSinIvaLinea = parseFloat(this.detalle.precio || 0);
+            if (pctDet > 0) {
+                this.detalle.precio_iva = (precioSinIvaLinea * (1 + pctDet / 100)).toFixed(4);
+            } else if (!this.detalle.precio_iva) {
+                this.detalle.precio_iva = this.detalle.precio;
             }
 
             const precioSinIva = parseFloat(this.detalle.precio || 0);

@@ -103,6 +103,22 @@ class VerificarSuscripcion extends Command
                 continue;
             }
 
+            // Verificar si algún usuario de la empresa ha hecho login en los últimos 45 días
+            $limiteActividad = Carbon::now()->subDays(45);
+            $usuarioActivoReciente = $empresa->usuarios()
+                ->withoutGlobalScopes()
+                ->where('ultimo_login', '>=', $limiteActividad)
+                ->exists();
+
+            if ($usuarioActivoReciente) {
+                $this->warn("Empresa {$empresa->id} tiene usuarios con actividad reciente. Se omite desactivación.");
+                Log::channel('suscripciones')->warning('Empresa omitida por actividad reciente de usuarios', [
+                    'empresa_id' => $empresa->id,
+                    'suscripcion_omitida_id' => $suscripcion->id,
+                ]);
+                continue; // Saltar a la siguiente suscripción
+            }
+
             if (!$this->empresaInactivaMasDe45Dias($empresa)) {
                 continue;
             }
@@ -180,6 +196,7 @@ class VerificarSuscripcion extends Command
             Mail::send('mails.notificacion_desactivacion', [
                 'nombre' => $usuario->name,
                 'empresa' => $usuario->empresa->nombre ?? 'su empresa'
+     
             ], function ($m) use ($usuario) {
                 $m->from(env('MAIL_FROM_ADDRESS'), 'SmartPyme')
                     ->to($usuario->email)

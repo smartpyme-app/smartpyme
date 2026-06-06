@@ -96,6 +96,9 @@
                   <a class="list-group-item list-group-item-action border-0 click" (click)="imprimir(p)">
                     <i class="fa fa-fw fa-print"></i> Imprimir ticket
                   </a>
+                  <a *ngIf="p.estado === 'borrador' || p.estado === 'pendiente_facturar'" class="list-group-item list-group-item-action border-0 click" (click)="enviarComanda(p)">
+                    <i class="fa fa-fw fa-utensils"></i> Enviar comanda cocina
+                  </a>
                   <a *ngIf="p.estado === 'borrador' && apiService.canEdit()" class="list-group-item list-group-item-action border-0 click" (click)="editar(p)">
                     <i class="fa fa-fw fa-edit"></i> Editar
                   </a>

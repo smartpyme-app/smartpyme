@@ -1,6 +1,6 @@
-import { Injectable, Inject } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
+import { Observable, of, Subject } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 
@@ -8,12 +8,17 @@ import { environment } from 'src/environments/environment';
   providedIn: 'root'
 })
 export class FuncionalidadesService {
-  // Cache para evitar peticiones repetidas
   private accesoCache: { [key: string]: boolean } = {};
+  private readonly cambiosSubject = new Subject<void>();
 
   constructor(
     private http: HttpClient
   ) { }
+
+  /** Emite cuando se invalida la caché (p. ej. tras guardar funcionalidades en Super Admin). */
+  onCambios(): Observable<void> {
+    return this.cambiosSubject.asObservable();
+  }
 
   verificarAcceso(slug: string): Observable<boolean> {
     // Si ya está en caché, devolver el resultado directamente
@@ -37,6 +42,11 @@ export class FuncionalidadesService {
 
   limpiarCache(): void {
     this.accesoCache = {};
+    this.cambiosSubject.next();
+  }
+
+  tieneAccesoCacheado(slug: string): boolean {
+    return this.accesoCache[slug] === true;
   }
 
 

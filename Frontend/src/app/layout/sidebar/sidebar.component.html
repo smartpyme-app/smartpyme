@@ -56,7 +56,7 @@
                 </div>
             </li>
             <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
-                <a [routerLink]="['/servicios']" tooltip="Servicios" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                <a [routerLink]="['/servicios']" tooltip="Servicios" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1 fw-bold">
                     <img src="/assets/icons/tool.png" class="icon me-2">Servicios
                 </a>
             </li>
@@ -126,6 +126,7 @@
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/formas-de-pago']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/coins.png" class="icon me-2">Métodos de pago</a></li>
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/impuestos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/filters-lines.png" class="icon me-2">Impuestos</a></li>
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="libroIvaRoute" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/book.png" class="icon me-2">Libros fiscales</a></li>
+                    <li *ngIf="tieneDescargaDtesHabilitada" routerLinkActive="active" [routerLinkActiveOptions]="{exact: false}"><a [routerLink]="['/dte-management/cuentas']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/inbox.png" class="icon me-2">Descarga DTEs</a></li>
                     <!-- <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/cierre-de-caja']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/inbox.png" class="icon me-2">Cierre de caja</a></li> -->
                   </ul>
                 </div>
@@ -165,6 +166,7 @@
                 <div [collapse]="restauranteIsCollapsed" [isAnimated]="true">
                   <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/restaurante']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/grid.png" class="icon me-2">Mapa de Mesas</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/restaurante/zonas']" class="link-body-emphasis d-inline-flex text-decoration-none"><i class="fa fa-layer-group me-2"></i> Zonas</a></li>
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/restaurante/cocina']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/coffee.png" class="icon me-2">Pantalla Cocina</a></li>
                   </ul>
                 </div>

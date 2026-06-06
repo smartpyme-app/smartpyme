@@ -4,7 +4,8 @@
         <span *ngIf="!loading && venta.estado == 'Pre-venta'">Cotización</span>
     </h2>
     <div>
-        <a *ngIf="venta.saldo > 0 && venta.estado == 'Pendiente'" (click)="openAbono(mabono, venta)" class="btn btn-default me-2">
+        <a *ngIf="venta.saldo > 0 && venta.estado == 'Pendiente'" (click)="openAbono(mabono, venta)"
+            class="btn btn-default me-2">
             <i class="fas fa-fw fa-hand-holding-usd"></i> Pagar
         </a>
         <button class="btn btn-light text-danger" (click)="goBack()"><i class="fa fa-arrow-left"></i> Regresar</button>
@@ -17,7 +18,8 @@
             <h6 class="col-12"> Información </h6>
             <div class="form-group col-lg-4">
                 <label class="fw-medium">Fecha</label>
-                <p tooltip="{{ venta.created_at | date:'dd/MM/yyyy hh:mm a'}}">{{ venta.fecha | date:'dd/MM/yyyy'}} {{ venta.created_at | date:'hh:mm a'}}</p>
+                <p tooltip="{{ venta.created_at | date:'dd/MM/yyyy hh:mm a'}}">{{ venta.fecha | date:'dd/MM/yyyy'}} {{
+                    venta.created_at | date:'hh:mm a'}}</p>
             </div>
             <div class="form-group col-lg-4">
                 <label class="fw-medium">Estado</label>
@@ -130,10 +132,12 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td [attr.colspan]="6 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-center" *ngIf="venta.detalles?.length < 1 && !loading">
+                        <td [attr.colspan]="6 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-center"
+                            *ngIf="venta.detalles?.length < 1 && !loading">
                             <span class="badge bg-primary">No tiene productos agregados</span>
                         </td>
-                        <td [attr.colspan]="6 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-center" *ngIf="loading">
+                        <td [attr.colspan]="6 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-center"
+                            *ngIf="loading">
                             <span class="badge bg-primary">Cargando...</span>
                         </td>
                     </tr>
@@ -141,83 +145,122 @@
                         <td *ngIf="usuario.empresa.vendedor_detalle_venta"> {{ detalle?.vendedor?.name }} </td>
                         <td class="d-flex">
                             <div>
-                                <img src="{{ apiService.baseUrl }}/img/{{ detalle.img }}" class="rounded-circle" height="50px" width="50px">
+                                <img src="{{ apiService.baseUrl }}/img/{{ detalle.img }}" class="rounded-circle"
+                                    height="50px" width="50px">
                             </div>
                             <div class="ms-3">
-                                {{ detalle.descripcion }}<span *ngIf="detalle?.producto?.nombre_variante" class="text-info"> ({{ detalle?.producto?.nombre_variante }})</span> <br>
+                                {{ detalle.descripcion }}<span *ngIf="detalle?.producto?.nombre_variante"
+                                    class="text-info"> ({{ detalle?.producto?.nombre_variante }})</span> <br>
                                 <small class="text-muted text-tiny">{{ detalle?.producto?.tipo }}</small>
                                 <ul style="font-size: 14px;">
-                                    <li class="text-muted" *ngFor="let comp of detalle?.composiciones">{{ comp.producto_nombre }} X {{ comp.cantidad }}</li>
+                                    <li class="text-muted" *ngFor="let comp of detalle?.composiciones">{{
+                                        comp.producto_nombre }} X {{ comp.cantidad }}</li>
                                 </ul>
                             </div>
                         </td>
                         <td>{{ detalle.cantidad }}</td>
-                        <td>{{ (apiService.auth_user().empresa?.currency?.currency_symbol || '$') }}{{ detalle.precio | number:'1.0-6':'en-US' }}</td>
-                        <td>{{ (apiService.auth_user().empresa?.currency?.currency_symbol || '$') }}{{ detalle.descuento | number:'1.0-6':'en-US' }}</td>
-                        <td>{{ (detalle.tipo_gravado || 'gravada') === 'gravada' ? 'Gravada' : ((detalle.tipo_gravado || '') === 'exenta' ? 'Exenta' : 'No sujeta') }}</td>
-                        <td class="text-end">{{ (apiService.auth_user().empresa?.currency?.currency_symbol || '$') }}{{ detalle.total | number:'1.0-6':'en-US' }}</td>
+                        <td>{{ (apiService.auth_user().empresa?.currency?.currency_symbol || '$') }}{{ detalle.precio |
+                            number:'1.0-6':'en-US' }}</td>
+                        <td>{{ (apiService.auth_user().empresa?.currency?.currency_symbol || '$') }}{{ detalle.descuento
+                            | number:'1.0-6':'en-US' }}</td>
+                        <td>{{ (detalle.tipo_gravado || 'gravada') === 'gravada' ? 'Gravada' : ((detalle.tipo_gravado ||
+                            '') === 'exenta' ? 'Exenta' : 'No sujeta') }}</td>
+                        <td class="text-end">{{ (apiService.auth_user().empresa?.currency?.currency_symbol || '$') }}{{
+                            detalle.total | number:'1.0-6':'en-US' }}</td>
                     </tr>
                     <tr>
-                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end"><b>Sub Total:</b></td>
-                        <td class="text-end"><b>{{ venta?.referencia_shopify ? venta?.gravada : (venta?.sub_total + venta?.descuento) | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end">
+                            <b>Sub Total:</b>
+                        </td>
+                        <td class="text-end"><b>{{ venta?.referencia_shopify ? venta?.gravada : (venta?.sub_total +
+                                venta?.descuento) | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
                     <tr *ngIf="venta.referencia_shopify">
-                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end text-info"><b>Impuestos incluidos:</b></td>
+                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)"
+                            class="text-end text-info"><b>Impuestos incluidos:</b></td>
                         <td class="text-end text-info"><b>{{ venta?.iva | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
                     <tr>
-                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end"><b>Descuento:</b></td>
+                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end">
+                            <b>Descuento:</b>
+                        </td>
                         <td class="text-end"><b>{{ venta?.descuento | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
                     <tr *ngFor="let impuesto of venta?.impuestos">
-                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end">{{ impuesto?.impuesto?.nombre }} <small class="text-muted">({{ impuesto?.impuesto?.porcentaje | number:'1.0-2' }}%)</small> </td>
+                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end">{{
+                            impuesto?.impuesto?.nombre }} <small class="text-muted">({{ impuesto?.impuesto?.porcentaje |
+                                number:'1.0-2' }}%)</small> </td>
                         <td class="text-end">{{ impuesto.monto | currency:'USD':'symbol':'1.2'}} </td>
                     </tr>
                     <tr *ngIf="venta?.iva_retenido > 0">
-                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end"><b>Retención:</b></td>
+                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end">
+                            <b>Retención:</b>
+                        </td>
                         <td class="text-end"><b>{{ venta?.iva_retenido | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
                     <tr *ngIf="venta?.renta_retenida > 0">
-                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end"><b>Renta (10%)</b></td>
+                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end">
+                            <b>Renta (10%)</b>
+                        </td>
                         <td class="text-end"><b>{{ venta?.renta_retenida | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
                     <tr *ngIf="venta?.exenta > 0">
-                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end"><b>Ventas Exentas:</b></td>
+                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end">
+                            <b>Ventas Exentas:</b>
+                        </td>
                         <td class="text-end"><b>{{ venta?.exenta | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
                     <tr *ngIf="venta?.no_sujeta > 0">
-                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end"><b>Ventas No Sujetas:</b></td>
+                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end">
+                            <b>Ventas No Sujetas:</b>
+                        </td>
                         <td class="text-end"><b>{{ venta?.no_sujeta | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
                     <tr *ngIf="venta.cuenta_a_terceros > 0">
-                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end"> <b>Cuenta a terceros</b> </td>
+                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end">
+                            <b>Cuenta a terceros</b>
+                        </td>
                         <td class="text-end"><b> {{ venta.cuenta_a_terceros | currency:'USD':'symbol':'1.2'}}</b> </td>
                     </tr>
-                    <tr *ngIf="(venta?.descuento_puntos && +venta.descuento_puntos > 0) || (venta?.puntos_canjeados && +venta.puntos_canjeados > 0)">
+                    <tr
+                        *ngIf="(venta?.descuento_puntos && +venta.descuento_puntos > 0) || (venta?.puntos_canjeados && +venta.puntos_canjeados > 0)">
                         <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end">
                             <b>Descuento por puntos</b>
-                            <small class="text-muted d-block" *ngIf="venta?.puntos_canjeados">{{ venta.puntos_canjeados }} pts canjeados</small>
+                            <small class="text-muted d-block" *ngIf="venta?.puntos_canjeados">{{ venta.puntos_canjeados
+                                }} pts canjeados</small>
                         </td>
-                        <td class="text-end text-success"><b>{{ venta?.descuento_puntos | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-end text-success"><b>{{ venta?.descuento_puntos | currency:'USD':'symbol':'1.2'
+                                }}</b></td>
                     </tr>
                     <tr *ngIf="venta.propina > 0">
-                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end"><b>Propina:</b></td>
+                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end">
+                            <b>Propina:</b>
+                        </td>
                         <td class="text-end"><b>{{ venta.propina | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
                     <tr>
-                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end"><b>Total:</b></td>
+                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end">
+                            <b>Total:</b>
+                        </td>
                         <td class="text-end"><b>{{ venta?.total | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
                     <tr *ngIf="venta.propina > 0">
-                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end"><b>Total + Propina:</b></td>
+                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end">
+                            <b>Total + Propina:</b>
+                        </td>
                         <td class="text-end"><b>{{ getTotalConPropina() | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
                     <tr *ngIf="venta?.abonos?.length > 0">
-                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end"><b>Abonos:</b></td>
-                        <td class="text-end"><b>{{ venta?.abonos | filter:'estado':'Confirmado' | sum:'total' | currency }}</b></td>
+                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end">
+                            <b>Abonos:</b>
+                        </td>
+                        <td class="text-end"><b>{{ venta?.abonos | filter:'estado':'Confirmado' | sum:'total' | currency
+                                }}</b></td>
                     </tr>
                     <tr *ngIf="venta?.abonos?.length > 0">
-                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end"><b>Saldo:</b></td>
+                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end">
+                            <b>Saldo:</b>
+                        </td>
                         <td class="text-end"><b>{{ venta.saldo | currency }}</b></td>
                     </tr>
                 </tbody>
@@ -292,10 +335,20 @@
 <ng-template #mabono>
     <div class="modal-header d-block text-center">
         <h5 class="modal-title mb-0">Recibo de pago </h5>
-    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+        <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
     </div>
     <div class="modal-body">
         <app-crear-abono-venta [venta]="venta" (update)="loadAll()"></app-crear-abono-venta>
+    </div>
+</ng-template>
+
+<ng-template #meditAbono>
+    <div class="modal-header d-block text-center">
+        <h5 class="modal-title mb-0">Editar abono</h5>
+        <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <app-editar-abono [abono]="abonoEdit" endpoint="venta/abono" (saved)="onAbonoSaved()"></app-editar-abono>
     </div>
 </ng-template>
 
@@ -311,6 +364,7 @@
             <table class="table table-borderless">
                 <thead>
                     <tr>
+                        <th>N°</th>
                         <th>Fecha</th>
                         <th>Concepto</th>
                         <th>Forma de pago</th>
@@ -322,19 +376,23 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td colspan="8" class="text-center" *ngIf="venta.abonos?.length < 1 && !loading">
+                        <td colspan="9" class="text-center" *ngIf="venta.abonos?.length < 1 && !loading">
                             <span class="badge bg-primary">No tiene abonos agregados</span>
                         </td>
-                        <td colspan="8" class="text-center" *ngIf="loading">
+                        <td colspan="9" class="text-center" *ngIf="loading">
                             <span class="badge bg-primary">Cargando...</span>
                         </td>
                     </tr>
                     <tr *ngFor="let abono of venta.abonos; let i=index">
+                        <td>{{ abono.correlativo ?? abono.id }}</td>
                         <td>{{ abono.fecha | date:'dd/MM/yyyy' }}</td>
                         <td>{{ abono.concepto }}</td>
-                        <td>{{ abono.forma_pago }} <small *ngIf="abono.detalle_banco" class="text-muted">({{ abono.detalle_banco }})</small></td>
+                        <td>{{ abono.forma_pago }} <small *ngIf="abono.detalle_banco" class="text-muted">({{
+                                abono.detalle_banco }})</small></td>
                         <td>
-                            <select name="estado" class="form-select w-auto border-0" (change)="setEstado(abono)" [(ngModel)]="abono.estado" [ngClass]="{'bg-light-danger' : abono?.estado == 'Cancelado', 'bg-light-success' : abono?.estado == 'Confirmado'}">
+                            <select name="estado" class="form-select w-auto border-0" (change)="setEstado(abono)"
+                                [(ngModel)]="abono.estado"
+                                [ngClass]="{'bg-light-danger' : abono?.estado == 'Cancelado', 'bg-light-success' : abono?.estado == 'Confirmado'}">
                                 <option value="Cancelado">Cancelado</option>
                                 <option value="Confirmado">Confirmado</option>
                             </select>
@@ -342,6 +400,9 @@
                         <td>{{ abono.usuario?.name || 'Sin usuario' }}</td>
                         <td class="text-end">{{ abono.total | currency:'USD':'symbol':'1.2' }}</td>
                         <td class="text-center">
+                            <a *ngIf="apiService.canEdit()" (click)="openModalEditAbono(meditAbono, abono)" class="btn btn-light" tooltip="Editar">
+                                <i class="fa fa-fw fa-edit"></i>
+                            </a>
                             <a (click)="imprimirRecibo(abono)" class="btn btn-light">
                                 <i class="fa fa-fw fa-print"></i>
                             </a>
@@ -391,17 +452,23 @@
                     <tr class="animated fadeIn" *ngFor=" let venta of venta?.devoluciones">
 
                         <td>{{venta.fecha | date:'dd/MM/yyyy'}}</td>
-                        <td>{{venta.nombre_cliente | truncate:30 }}<a class="float-end d-none"  tooltip="Ver información del cliente" routerLink="/cliente/{{venta.id_cliente}}"><i class="fa fa-edit"></i></a></td>
+                        <td>{{venta.nombre_cliente | truncate:30 }}<a class="float-end d-none"
+                                tooltip="Ver información del cliente" routerLink="/cliente/{{venta.id_cliente}}"><i
+                                    class="fa fa-edit"></i></a></td>
                         <td>
-                            <a class="text-decoration-none text-dark"  tooltip="Ver información de la devolución" routerLink="/devolucion/venta/{{venta.id}}">
+                            <a class="text-decoration-none text-dark" tooltip="Ver información de la devolución"
+                                routerLink="/devolucion/venta/{{venta.id}}">
                                 {{venta.nombre_documento}} #{{venta.correlativo}}
                             </a>
                         </td>
                         <td>{{venta.observaciones}}</td>
                         <td>
-                            <span class="badge py-2 position-relative text-dark" style="font-size: 0.8rem;" [ngClass]="{'bg-light-danger' : venta?.enable == 0, 'bg-light-success' : venta?.enable == 1}">
+                            <span class="badge py-2 position-relative text-dark" style="font-size: 0.8rem;"
+                                [ngClass]="{'bg-light-danger' : venta?.enable == 0, 'bg-light-success' : venta?.enable == 1}">
                                 {{ venta.enable ? 'Confirmada' : 'Anulada' }}
-                                <span title="Emitido a hacienda" style="position: absolute; top: -3px; right: -3px; font-size: 10px; color: blue;" *ngIf="apiService.auth_user().empresa.facturacion_electronica && venta.sello_mh">
+                                <span title="Emitido a hacienda"
+                                    style="position: absolute; top: -3px; right: -3px; font-size: 10px; color: blue;"
+                                    *ngIf="apiService.auth_user().empresa.facturacion_electronica && venta.sello_mh">
                                     ✅
                                 </span>
                             </span>
@@ -413,16 +480,22 @@
                             </span>
                             <ng-template #accionesTemplate>
                                 <div class="list-group border-0">
-                                    <a routerLink="/devolucion/venta/{{venta.id}}" class="list-group-item list-group-item-action border-0 click">
+                                    <a routerLink="/devolucion/venta/{{venta.id}}"
+                                        class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
                                     </a>
-                                    <a *ngIf="venta.estado == 'Pagada' && apiService.canEdit()" (click)="setEstado(venta, 'Anulada')" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="venta.estado == 'Pagada' && apiService.canEdit()"
+                                        (click)="setEstado(venta, 'Anulada')"
+                                        class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-ban"></i> Anular venta
                                     </a>
-                                    <a *ngIf="venta.estado == 'Anulada' && apiService.canEdit()" (click)="setEstado(venta, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="venta.estado == 'Anulada' && apiService.canEdit()"
+                                        (click)="setEstado(venta, 'Pagada')"
+                                        class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-check"></i> Revertir anulación
                                     </a>
-                                    <a *ngIf="apiService.canEdit()" (click)="imprimir(venta)" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="apiService.canEdit()" (click)="imprimir(venta)"
+                                        class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-print"></i> Imprimir
                                     </a>
                                 </div>
@@ -435,4 +508,3 @@
         </div>
     </div>
 </section>
-

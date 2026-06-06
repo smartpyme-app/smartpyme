@@ -11,6 +11,8 @@ class Abono extends Model {
     protected $table = 'abonos_compras';
     protected $fillable = array(
         'fecha',
+        'correlativo',
+        'id_documento',
         'concepto',
         'referencia',
         'estado',

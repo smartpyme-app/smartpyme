@@ -250,9 +250,7 @@
         @endif
     </div>
     <br><br>
-    @if ($documento->nota)
-        <p class="text-center">{!! str_replace(chr(10),"<br>",$documento->nota) !!}</p>
-    @endif
+    @include('reportes.facturacion.partials.documento-nota')
 
     <br>
     <p style="color: #fff;">.</p>

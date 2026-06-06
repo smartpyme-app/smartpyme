@@ -42,6 +42,8 @@ export class ApiService {
 
     update(url: string, id: number, model: any) {return this.http .put<any>(`${this.apiUrl}${url}/${id}`, model) .pipe(retry(0), catchError(this.handleError)); }
 
+    patch(url: string, id: number, model: any) {return this.http.patch<any>(`${this.apiUrl}${url}/${id}`, model).pipe(retry(0), catchError(this.handleError)); }
+
     putToUrl(url: string, model: any) {return this.http.put<any>(this.apiUrl + url, model).pipe(retry(0), catchError(this.handleError)); }
 
     delete(url:string, id: number) {return this.http.delete<any>(this.apiUrl + url + id).pipe(retry(0), catchError(this.handleError) )}
@@ -213,6 +215,19 @@ export class ApiService {
         return customConfig?.configuraciones?.modulo_bancos === true;
     }
 
+    /** Indica si el módulo de presentaciones de producto está activo para la empresa del usuario actual */
+    isModuloPresentaciones(): boolean {
+        const empresa = this.auth_user()?.empresa;
+        if (!empresa || !empresa.custom_empresa) {
+            return false;
+        }
+        const customConfig = typeof empresa.custom_empresa === 'string'
+            ? JSON.parse(empresa.custom_empresa)
+            : empresa.custom_empresa;
+        const cfg = customConfig?.configuraciones;
+        return cfg?.modulo_presentaciones === true || cfg?.inventario_fraccionado === true;
+    }
+
     /** Categorías de gasto personalizadas, departamentos y áreas (configuración de empresa). */
     isGastosCategoriasPersonalizadasHabilitadas(): boolean {
         const empresa = this.auth_user()?.empresa;
@@ -279,6 +294,24 @@ export class ApiService {
             ? JSON.parse(empresa.custom_empresa)
             : empresa.custom_empresa;
         return customConfig?.configuraciones?.inventario_sumar_stock_busquedas === true;
+    }
+
+    /** Preferencia en Mi cuenta → Inventario (requiere funcionalidad asignada en Super Admin). */
+    isTransformacionProductosConfigActivo(): boolean {
+        const empresa = this.auth_user()?.empresa;
+        if (!empresa || !empresa.custom_empresa) {
+            return false;
+        }
+        const customConfig = typeof empresa.custom_empresa === 'string'
+            ? JSON.parse(empresa.custom_empresa)
+            : empresa.custom_empresa;
+        return customConfig?.configuraciones?.transformacion_productos_activo === true;
+    }
+
+    /** Funcionalidad + preferencia activas (usa caché de FuncionalidadesService; llamar verificarAcceso antes). */
+    isTransformacionProductosActivo(): boolean {
+        return this.funcionalidadesService.tieneAccesoCacheado('transformacion-productos')
+            && this.isTransformacionProductosConfigActivo();
     }
 
     /** Reporte Excel inventario vs ventas (ene → mes de descarga, Mi cuenta → Preferencias → Inventario). */
@@ -509,6 +542,27 @@ export class ApiService {
             return true;
         }
         return !this.empresaRestringeGastosSupervisorLimitado();
+    }
+
+    /**
+     * Preferencia en empresa: restringe compras y órdenes de compra para Supervisor limitado.
+     * Por defecto en BD es false para no cambiar comportamiento tras la migración.
+     */
+    empresaRestringeComprasSupervisorLimitado(): boolean {
+        const e = this.auth_user()?.empresa;
+        if (!e) {
+            return false;
+        }
+        const v = (e as { restringir_compras_supervisor_limitado?: boolean | number }).restringir_compras_supervisor_limitado;
+        return v === true || v === 1;
+    }
+
+    /**
+     * Supervisor limitado con restricción activa en compras/órdenes de compra.
+     * Oculta montos, impresión, edición de estado y acciones del listado.
+     */
+    supervisorLimitadoRestringidoEnCompras(): boolean {
+        return this.isSupervisorLimitado() && this.empresaRestringeComprasSupervisorLimitado();
     }
 
     /**

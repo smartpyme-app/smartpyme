@@ -4,7 +4,7 @@
         <span *ngIf="!loading && compra.estado == 'Pre-compra'">Orden de compra</span>
     </h2>
     <div class="d-flex gap-2">
-        <button *ngIf="compra.id" (click)="imprimir()" class="btn btn-default" tooltip="Imprimir compra">
+        <button *ngIf="compra.id && !apiService.supervisorLimitadoRestringidoEnCompras()" (click)="imprimir()" class="btn btn-default" tooltip="Imprimir compra">
             <i class="fa fa-print"></i> Imprimir
         </button>
         <button class="btn btn-light text-danger" (click)="goBack()"><i class="fa fa-arrow-left"></i> Regresar</button>
@@ -86,17 +86,17 @@
                         <!-- <th>N°</th> -->
                         <th>Producto</th>
                         <th width="100">Cantidad</th>
-                        <th *ngIf="!apiService.isSupervisorLimitado()" width="100">Costo</th>
-                        <th *ngIf="!apiService.isSupervisorLimitado()" width="100">Descuento</th>
-                        <th *ngIf="!apiService.isSupervisorLimitado()" width="100" class="text-end">Total</th>
+                        <th *ngIf="!apiService.supervisorLimitadoRestringidoEnCompras()" width="100">Costo</th>
+                        <th *ngIf="!apiService.supervisorLimitadoRestringidoEnCompras()" width="100">Descuento</th>
+                        <th *ngIf="!apiService.supervisorLimitadoRestringidoEnCompras()" width="100" class="text-end">Total</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td [attr.colspan]="apiService.isSupervisorLimitado() ? 3 : 6" class="text-center" *ngIf="compra.detalles?.length < 1 && !loading">
+                        <td [attr.colspan]="apiService.supervisorLimitadoRestringidoEnCompras() ? 3 : 6" class="text-center" *ngIf="compra.detalles?.length < 1 && !loading">
                             <span class="badge bg-primary">No tiene productos agregados</span>
                         </td>
-                        <td [attr.colspan]="apiService.isSupervisorLimitado() ? 3 : 6" class="text-center" *ngIf="loading">
+                        <td [attr.colspan]="apiService.supervisorLimitadoRestringidoEnCompras() ? 3 : 6" class="text-center" *ngIf="loading">
                             <span class="badge bg-primary">Cargando...</span>
                         </td>
                     </tr>
@@ -107,39 +107,39 @@
                             {{ detalle.nombre_producto }}
                         </td>
                         <td>{{ detalle.cantidad }}</td>
-                        <td *ngIf="!apiService.isSupervisorLimitado()">{{ detalle.costo | currency:'USD':'symbol':'1.2' }}</td>
-                        <td *ngIf="!apiService.isSupervisorLimitado()">{{ detalle.descuento | currency:'USD':'symbol':'1.2' }}</td>
-                        <td *ngIf="!apiService.isSupervisorLimitado()" class="text-end">{{ detalle.total | currency:'USD':'symbol':'1.2' }}</td>
+                        <td *ngIf="!apiService.supervisorLimitadoRestringidoEnCompras()">{{ detalle.costo | currency:'USD':'symbol':'1.2' }}</td>
+                        <td *ngIf="!apiService.supervisorLimitadoRestringidoEnCompras()">{{ detalle.descuento | currency:'USD':'symbol':'1.2' }}</td>
+                        <td *ngIf="!apiService.supervisorLimitadoRestringidoEnCompras()" class="text-end">{{ detalle.total | currency:'USD':'symbol':'1.2' }}</td>
                     </tr>
                     <tr>
-                        <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"></td>
-                        <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"><b>Sub Total:</b></td>
-                        <td *ngIf="!apiService.isSupervisorLimitado()" class="text-end"><b>{{ compra?.sub_total + compra?.descuento | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td [attr.colspan]="apiService.supervisorLimitadoRestringidoEnCompras() ? 1 : 2" class="text-end"></td>
+                        <td [attr.colspan]="apiService.supervisorLimitadoRestringidoEnCompras() ? 1 : 2" class="text-end"><b>Sub Total:</b></td>
+                        <td *ngIf="!apiService.supervisorLimitadoRestringidoEnCompras()" class="text-end"><b>{{ compra?.sub_total + compra?.descuento | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
                     <tr>
-                        <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"></td>
-                        <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"><b>Descuento:</b></td>
-                        <td *ngIf="!apiService.isSupervisorLimitado()" class="text-end"><b>{{ compra?.descuento | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td [attr.colspan]="apiService.supervisorLimitadoRestringidoEnCompras() ? 1 : 2" class="text-end"></td>
+                        <td [attr.colspan]="apiService.supervisorLimitadoRestringidoEnCompras() ? 1 : 2" class="text-end"><b>Descuento:</b></td>
+                        <td *ngIf="!apiService.supervisorLimitadoRestringidoEnCompras()" class="text-end"><b>{{ compra?.descuento | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
                     <tr>
-                        <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"></td>
-                        <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"><b>IVA</b></td>
-                        <td *ngIf="!apiService.isSupervisorLimitado()" class="text-end"><b>{{ compra?.iva | currency:'USD':'symbol':'1.2'}}</b> </td>
+                        <td [attr.colspan]="apiService.supervisorLimitadoRestringidoEnCompras() ? 1 : 2" class="text-end"></td>
+                        <td [attr.colspan]="apiService.supervisorLimitadoRestringidoEnCompras() ? 1 : 2" class="text-end"><b>IVA</b></td>
+                        <td *ngIf="!apiService.supervisorLimitadoRestringidoEnCompras()" class="text-end"><b>{{ compra?.iva | currency:'USD':'symbol':'1.2'}}</b> </td>
                     </tr>
                     <tr *ngIf="compra?.percepcion > 0">
-                        <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"></td>
-                        <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"><b>Percepción (1%)</b></td>
-                        <td *ngIf="!apiService.isSupervisorLimitado()" class="text-end"><b>{{ compra?.percepcion | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td [attr.colspan]="apiService.supervisorLimitadoRestringidoEnCompras() ? 1 : 2" class="text-end"></td>
+                        <td [attr.colspan]="apiService.supervisorLimitadoRestringidoEnCompras() ? 1 : 2" class="text-end"><b>Percepción (1%)</b></td>
+                        <td *ngIf="!apiService.supervisorLimitadoRestringidoEnCompras()" class="text-end"><b>{{ compra?.percepcion | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
                     <tr *ngIf="compra?.renta_retenida > 0">
-                        <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"></td>
-                        <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"><b>Renta retenida</b></td>
-                        <td *ngIf="!apiService.isSupervisorLimitado()" class="text-end"><b>{{ compra?.renta_retenida | currency:'USD':'symbol':'1.2'}}</b> </td>
+                        <td [attr.colspan]="apiService.supervisorLimitadoRestringidoEnCompras() ? 1 : 2" class="text-end"></td>
+                        <td [attr.colspan]="apiService.supervisorLimitadoRestringidoEnCompras() ? 1 : 2" class="text-end"><b>Renta retenida</b></td>
+                        <td *ngIf="!apiService.supervisorLimitadoRestringidoEnCompras()" class="text-end"><b>{{ compra?.renta_retenida | currency:'USD':'symbol':'1.2'}}</b> </td>
                     </tr>
                     <tr>
-                        <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"></td>
-                        <td [attr.colspan]="apiService.isSupervisorLimitado() ? 1 : 2" class="text-end"><b>Total:</b></td>
-                        <td *ngIf="!apiService.isSupervisorLimitado()" class="text-end"><b>{{ compra?.total | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td [attr.colspan]="apiService.supervisorLimitadoRestringidoEnCompras() ? 1 : 2" class="text-end"></td>
+                        <td [attr.colspan]="apiService.supervisorLimitadoRestringidoEnCompras() ? 1 : 2" class="text-end"><b>Total:</b></td>
+                        <td *ngIf="!apiService.supervisorLimitadoRestringidoEnCompras()" class="text-end"><b>{{ compra?.total | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
                 </tbody>
             </table>
@@ -167,24 +167,26 @@
             <table class="table table-borderless">
                 <thead>
                     <tr>
+                        <th>N°</th>
                         <th>Fecha</th>
                         <th>Concepto</th>
                         <th>Forma de pago</th>
                         <th>Estado</th>
                         <th class="text-end">Total</th>
-                        <!-- <th class="text-center">Mas</th> -->
+                        <th class="text-center">Mas</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td colspan="5" class="text-center" *ngIf="compra.abonos?.length < 1 && !loading">
+                        <td colspan="7" class="text-center" *ngIf="compra.abonos?.length < 1 && !loading">
                             <span class="badge bg-primary">No tiene abonos agregados</span>
                         </td>
-                        <td colspan="5" class="text-center" *ngIf="loading">
+                        <td colspan="7" class="text-center" *ngIf="loading">
                             <span class="badge bg-primary">Cargando...</span>
                         </td>
                     </tr>
                     <tr *ngFor="let abono of compra.abonos; let i=index">
+                        <td>{{ abono.correlativo ?? abono.id }}</td>
                         <td>{{ abono.fecha | date:'dd/MM/yyyy' }}</td>
                         <td>{{ abono.concepto }}</td>
                         <td>{{ abono.forma_pago }} <small *ngIf="abono.detalle_banco" class="text-muted">({{ abono.detalle_banco }})</small></td>
@@ -195,11 +197,11 @@
                             </select>
                         </td>
                         <td class="text-end">{{ abono.total | currency:'USD':'symbol':'1.2' }}</td>
-                       <!--  <td class="text-center">
-                            <a (click)="imprimirRecibo(abono)" class="btn btn-light">
-                                <i class="fa fa-fw fa-print"></i>
+                        <td class="text-center">
+                            <a *ngIf="apiService.canEdit()" (click)="openModalEditAbono(meditAbono, abono)" class="btn btn-light" tooltip="Editar">
+                                <i class="fa fa-fw fa-edit"></i>
                             </a>
-                        </td> -->
+                        </td>
                     </tr>
                 </tbody>
             </table>
@@ -259,5 +261,15 @@
     </div>
     <div class="modal-body">
         <app-crear-abono-compra [compra]="compra" (update)="loadAll()"></app-crear-abono-compra>
+    </div>
+</ng-template>
+
+<ng-template #meditAbono>
+    <div class="modal-header d-block text-center">
+        <h5 class="modal-title mb-0">Editar abono</h5>
+        <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <app-editar-abono [abono]="abonoEdit" endpoint="compra/abono" (saved)="onAbonoSaved()"></app-editar-abono>
     </div>
 </ng-template>
