@@ -1,6 +1,14 @@
 import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter, ViewChild, ChangeDetectorRef, ChangeDetectionStrategy, OnDestroy } from '@angular/core';
 import { DashboardDataService } from '../../services/dashboard-data.service';
 import { ApiService } from '@services/api.service';
+import {
+  DashboardFiltrosCatalogoService,
+  DashboardFiltroCatalogoItem,
+} from '../../services/dashboard-filtros-catalogo.service';
+import {
+  DropdownMultiFiltroItem,
+  DropdownMultiFiltroSelection,
+} from '../../components/dropdown-multi-filtro/dropdown-multi-filtro.component';
 import { ColDef, GridOptions, GridApi, ColumnApi } from 'ag-grid-community';
 import { MetricCard } from '../../models/chart-config.model';
 
@@ -51,6 +59,7 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
   // AG Grid configuration - Inventario productos
   inventarioProductosColumnDefs: ColDef[] = [];
   inventarioProductosGridOptions: GridOptions = {};
+  pinnedBottomRowDataInventario: any[] = [];
   private gridApi!: GridApi;
   private gridColumnApi!: ColumnApi;
   quickFilterText: string = '';
@@ -58,6 +67,7 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
   // AG Grid configuration - Entradas y salidas
   entradasSalidasColumnDefs: ColDef[] = [];
   entradasSalidasGridOptions: GridOptions = {};
+  pinnedBottomRowDataEntradasSalidas: any[] = [];
   private entradasSalidasGridApi!: GridApi;
   private entradasSalidasGridColumnApi!: ColumnApi;
   quickFilterTextEntradasSalidas: string = '';
@@ -85,10 +95,36 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
   filtroSucursalAplicado: string = '';
   filtroProveedorAplicado: string = '';
   
-  // Opciones para filtros
-  categorias: any[] = [];
-  productos: any[] = [];
-  sucursales: any[] = [];
+  // Opciones para filtros (catálogos cargados desde el servicio)
+  catalogoSucursales: DashboardFiltroCatalogoItem[] = [];
+  catalogoCategorias: DashboardFiltroCatalogoItem[] = [];
+  catalogoProductos:  DashboardFiltroCatalogoItem[] = [];
+  catalogoProveedores: DashboardFiltroCatalogoItem[] = [];
+
+  // Estado multi-select de cada filtro adicional (borrador)
+  filtroAdSucursalTodasImplicitas  = true;
+  filtroAdSucursalSeleccionadas:   string[] = [];
+  filtroAdCategoriaTodasImplicitas = true;
+  filtroAdCategoriaSeleccionadas:  string[] = [];
+  filtroAdProductoTodasImplicitas  = true;
+  filtroAdProductoSeleccionadas:   string[] = [];
+  filtroAdProveedorTodasImplicitas = true;
+  filtroAdProveedorSeleccionadas:  string[] = [];
+
+  // Estado aplicado (para detectar cambios)
+  filtroAdSucursalTodasImplicitasAplicado  = true;
+  filtroAdSucursalSeleccionadasAplicado:   string[] = [];
+  filtroAdCategoriaTodasImplicitasAplicado = true;
+  filtroAdCategoriaSeleccionadasAplicado:  string[] = [];
+  filtroAdProductoTodasImplicitasAplicado  = true;
+  filtroAdProductoSeleccionadasAplicado:   string[] = [];
+  filtroAdProveedorTodasImplicitasAplicado = true;
+  filtroAdProveedorSeleccionadasAplicado:  string[] = [];
+
+  // Mantener strings de compatibilidad (usadas en emitirFiltros)
+  categorias:  any[] = [];
+  productos:   any[] = [];
+  sucursales:  any[] = [];
   proveedores: any[] = [];
 
   // Filtros interactivos (se aplican localmente sin recargar)
@@ -117,7 +153,8 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
   constructor(
     private cdr: ChangeDetectorRef,
     private dashboardDataService: DashboardDataService,
-    private apiService: ApiService
+    private apiService: ApiService,
+    private filtrosCatalogo: DashboardFiltrosCatalogoService
   ) { }
 
   /**
@@ -233,26 +270,104 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   cargarOpcionesFiltros(): void {
-    // Aquí cargarías las opciones desde el servicio
-    // Por ahora valores de ejemplo
-    this.categorias = [];
-    this.productos = [];
-    this.sucursales = [];
-    this.proveedores = [];
+    this.filtrosCatalogo.sucursalesParaFiltro().subscribe({
+      next: (items) => {
+        this.catalogoSucursales = items;
+        this.sucursales = items;
+        const user = this.apiService.auth_user();
+        if (items.length > 0 && user?.tipo !== 'Administrador' && user?.id_sucursal != null) {
+          this.filtroAdSucursalTodasImplicitas = false;
+          this.filtroAdSucursalSeleccionadas = [String(user.id_sucursal)];
+          this.filtroAdSucursalTodasImplicitasAplicado = false;
+          this.filtroAdSucursalSeleccionadasAplicado = [String(user.id_sucursal)];
+        }
+        this.cdr.markForCheck();
+      },
+    });
+
+    this.filtrosCatalogo.categoriasParaFiltro().subscribe({
+      next: (items) => {
+        this.catalogoCategorias = items;
+        this.categorias = items;
+        this.cdr.markForCheck();
+      },
+    });
+
+    this.filtrosCatalogo.productosParaFiltro().subscribe({
+      next: (items) => {
+        this.catalogoProductos = [...(items || [])].sort((a, b) =>
+          a.nombre.localeCompare(b.nombre, 'es')
+        );
+        this.productos = this.catalogoProductos;
+        this.cdr.markForCheck();
+      },
+    });
+
+    this.filtrosCatalogo.proveedoresParaFiltro().subscribe({
+      next: (items) => {
+        this.catalogoProveedores = items;
+        this.proveedores = items;
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  // ── Getters de items para app-dropdown-multi-filtro ──────────────────────
+  get filtroAdSucursalesItems(): DropdownMultiFiltroItem[] {
+    return this.catalogoSucursales.map((s) => ({ id: String(s.id), nombre: s.nombre ?? '' }));
+  }
+  get filtroAdCategoriasItems(): DropdownMultiFiltroItem[] {
+    return this.catalogoCategorias.map((c) => ({ id: String(c.id), nombre: c.nombre ?? '' }));
+  }
+  get filtroAdProductosItems(): DropdownMultiFiltroItem[] {
+    return this.catalogoProductos.map((p) => ({ id: String(p.id), nombre: p.nombre ?? '' }));
+  }
+  get filtroAdProveedoresItems(): DropdownMultiFiltroItem[] {
+    return this.catalogoProveedores.map((v) => ({ id: String(v.id), nombre: v.nombre ?? '' }));
+  }
+
+  // ── Handlers de cambio de selección ─────────────────────────────────────
+  onFiltroAdSucursalChange(ev: DropdownMultiFiltroSelection): void {
+    this.filtroAdSucursalTodasImplicitas = ev.todasImplicitas;
+    this.filtroAdSucursalSeleccionadas = [...ev.seleccionados];
+    this.cdr.markForCheck();
+  }
+  onFiltroAdCategoriaChange(ev: DropdownMultiFiltroSelection): void {
+    this.filtroAdCategoriaTodasImplicitas = ev.todasImplicitas;
+    this.filtroAdCategoriaSeleccionadas = [...ev.seleccionados];
+    this.cdr.markForCheck();
+  }
+  onFiltroAdProductoChange(ev: DropdownMultiFiltroSelection): void {
+    this.filtroAdProductoTodasImplicitas = ev.todasImplicitas;
+    this.filtroAdProductoSeleccionadas = [...ev.seleccionados];
+    this.cdr.markForCheck();
+  }
+  onFiltroAdProveedorChange(ev: DropdownMultiFiltroSelection): void {
+    this.filtroAdProveedorTodasImplicitas = ev.todasImplicitas;
+    this.filtroAdProveedorSeleccionadas = [...ev.seleccionados];
+    this.cdr.markForCheck();
   }
 
   private copiarFiltrosAdicionalesInventarioAplicadoABorrador(): void {
-    this.filtroCategoria = this.filtroCategoriaAplicado;
-    this.filtroProducto = this.filtroProductoAplicado;
-    this.filtroSucursal = this.filtroSucursalAplicado;
-    this.filtroProveedor = this.filtroProveedorAplicado;
+    this.filtroAdSucursalTodasImplicitas  = this.filtroAdSucursalTodasImplicitasAplicado;
+    this.filtroAdSucursalSeleccionadas    = [...this.filtroAdSucursalSeleccionadasAplicado];
+    this.filtroAdCategoriaTodasImplicitas = this.filtroAdCategoriaTodasImplicitasAplicado;
+    this.filtroAdCategoriaSeleccionadas   = [...this.filtroAdCategoriaSeleccionadasAplicado];
+    this.filtroAdProductoTodasImplicitas  = this.filtroAdProductoTodasImplicitasAplicado;
+    this.filtroAdProductoSeleccionadas    = [...this.filtroAdProductoSeleccionadasAplicado];
+    this.filtroAdProveedorTodasImplicitas = this.filtroAdProveedorTodasImplicitasAplicado;
+    this.filtroAdProveedorSeleccionadas   = [...this.filtroAdProveedorSeleccionadasAplicado];
   }
 
   private copiarFiltrosAdicionalesInventarioBorradorAAplicado(): void {
-    this.filtroCategoriaAplicado = this.filtroCategoria;
-    this.filtroProductoAplicado = this.filtroProducto;
-    this.filtroSucursalAplicado = this.filtroSucursal;
-    this.filtroProveedorAplicado = this.filtroProveedor;
+    this.filtroAdSucursalTodasImplicitasAplicado  = this.filtroAdSucursalTodasImplicitas;
+    this.filtroAdSucursalSeleccionadasAplicado    = [...this.filtroAdSucursalSeleccionadas];
+    this.filtroAdCategoriaTodasImplicitasAplicado = this.filtroAdCategoriaTodasImplicitas;
+    this.filtroAdCategoriaSeleccionadasAplicado   = [...this.filtroAdCategoriaSeleccionadas];
+    this.filtroAdProductoTodasImplicitasAplicado  = this.filtroAdProductoTodasImplicitas;
+    this.filtroAdProductoSeleccionadasAplicado    = [...this.filtroAdProductoSeleccionadas];
+    this.filtroAdProveedorTodasImplicitasAplicado = this.filtroAdProveedorTodasImplicitas;
+    this.filtroAdProveedorSeleccionadasAplicado   = [...this.filtroAdProveedorSeleccionadas];
   }
 
   toggleFiltrosAdicionales(): void {
@@ -270,68 +385,64 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
 
   get mostrarBotonAplicarOtrosFiltrosInventario(): boolean {
     if (!this.mostrarFiltrosAdicionales) return false;
+    const eq = (a: string[], b: string[]) =>
+      a.length === b.length && a.every((v, i) => v === b[i]);
     return (
-      this.filtroCategoria !== this.filtroCategoriaAplicado ||
-      this.filtroProducto !== this.filtroProductoAplicado ||
-      this.filtroSucursal !== this.filtroSucursalAplicado ||
-      this.filtroProveedor !== this.filtroProveedorAplicado
+      this.filtroAdSucursalTodasImplicitas  !== this.filtroAdSucursalTodasImplicitasAplicado  ||
+      !eq(this.filtroAdSucursalSeleccionadas,   this.filtroAdSucursalSeleccionadasAplicado)   ||
+      this.filtroAdCategoriaTodasImplicitas !== this.filtroAdCategoriaTodasImplicitasAplicado ||
+      !eq(this.filtroAdCategoriaSeleccionadas,  this.filtroAdCategoriaSeleccionadasAplicado)  ||
+      this.filtroAdProductoTodasImplicitas  !== this.filtroAdProductoTodasImplicitasAplicado  ||
+      !eq(this.filtroAdProductoSeleccionadas,   this.filtroAdProductoSeleccionadasAplicado)   ||
+      this.filtroAdProveedorTodasImplicitas !== this.filtroAdProveedorTodasImplicitasAplicado ||
+      !eq(this.filtroAdProveedorSeleccionadas,  this.filtroAdProveedorSeleccionadasAplicado)
     );
   }
 
   limpiarFiltros(): void {
     this.anio = new Date().getFullYear().toString();
     this.mes = '';
-    this.filtroCategoria = '';
-    this.filtroProducto = '';
-    this.filtroSucursal = '';
-    this.filtroProveedor = '';
+    // Resetear estado multi-select (borrador + aplicado)
+    this.filtroAdSucursalTodasImplicitas  = true;  this.filtroAdSucursalSeleccionadas   = [];
+    this.filtroAdCategoriaTodasImplicitas = true;  this.filtroAdCategoriaSeleccionadas  = [];
+    this.filtroAdProductoTodasImplicitas  = true;  this.filtroAdProductoSeleccionadas   = [];
+    this.filtroAdProveedorTodasImplicitas = true;  this.filtroAdProveedorSeleccionadas  = [];
     this.copiarFiltrosAdicionalesInventarioBorradorAAplicado();
     this.limpiarFiltrosInteractivos();
     this.aplicarFiltros();
   }
 
   aplicarFiltros(): void {
-    // No emitir durante la inicialización
-    if (!this.inicializado) {
-      return;
-    }
-    
-    if (!this.anio) {
-      this.anio = new Date().getFullYear().toString();
-    }
+    if (!this.inicializado) return;
+    if (!this.anio) this.anio = new Date().getFullYear().toString();
 
     const filtros: any = {
       anio: this.anio,
-      categoria: this.filtroCategoriaAplicado,
-      producto: this.filtroProductoAplicado,
-      sucursal: this.filtroSucursalAplicado,
-      proveedor: this.filtroProveedorAplicado,
+      // Enviar arrays multi-select al padre
+      sucursales: this.filtroAdSucursalTodasImplicitasAplicado  ? [] : this.filtroAdSucursalSeleccionadasAplicado,
+      categorias: this.filtroAdCategoriaTodasImplicitasAplicado ? [] : this.filtroAdCategoriaSeleccionadasAplicado,
+      productos:  this.filtroAdProductoTodasImplicitasAplicado  ? [] : this.filtroAdProductoSeleccionadasAplicado,
+      proveedores:this.filtroAdProveedorTodasImplicitasAplicado ? [] : this.filtroAdProveedorSeleccionadasAplicado,
+      // Compatibilidad con lógica previa (primer elemento o vacío)
+      sucursal:   this.filtroAdSucursalTodasImplicitasAplicado  ? '' : (this.filtroAdSucursalSeleccionadasAplicado[0]  || ''),
+      categoria:  this.filtroAdCategoriaTodasImplicitasAplicado ? '' : (this.filtroAdCategoriaSeleccionadasAplicado[0] || ''),
+      producto:   this.filtroAdProductoTodasImplicitasAplicado  ? '' : (this.filtroAdProductoSeleccionadasAplicado[0]  || ''),
+      proveedor:  this.filtroAdProveedorTodasImplicitasAplicado ? '' : (this.filtroAdProveedorSeleccionadasAplicado[0] || ''),
     };
-    if (this.mes) {
-      filtros.mes = this.mes;
-    }
-
+    if (this.mes) filtros.mes = this.mes;
     this.filtrosCambiados.emit(filtros);
   }
 
   get puedeLimpiarFiltrosInventario(): boolean {
     const anioActual = new Date().getFullYear().toString();
-    if (!!this.mes || this.anio !== anioActual) {
-      return true;
-    }
-    if (this.tieneFiltrosInteractivos()) {
-      return true;
-    }
-    return (
-      !!this.filtroCategoria ||
-      !!this.filtroProducto ||
-      !!this.filtroSucursal ||
-      !!this.filtroProveedor ||
-      !!this.filtroCategoriaAplicado ||
-      !!this.filtroProductoAplicado ||
-      !!this.filtroSucursalAplicado ||
-      !!this.filtroProveedorAplicado
-    );
+    if (!!this.mes || this.anio !== anioActual) return true;
+    if (this.tieneFiltrosInteractivos()) return true;
+    const tieneMulti =
+      !this.filtroAdSucursalTodasImplicitasAplicado  || this.filtroAdSucursalSeleccionadasAplicado.length  > 0 ||
+      !this.filtroAdCategoriaTodasImplicitasAplicado || this.filtroAdCategoriaSeleccionadasAplicado.length > 0 ||
+      !this.filtroAdProductoTodasImplicitasAplicado  || this.filtroAdProductoSeleccionadasAplicado.length  > 0 ||
+      !this.filtroAdProveedorTodasImplicitasAplicado || this.filtroAdProveedorSeleccionadasAplicado.length > 0;
+    return tieneMulti;
   }
 
   formatCurrency(value: number): string {
@@ -489,12 +600,8 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
         sortable: true,
         filter: true
       },
-      getRowClass: (params: any) => {
-        if (params.data?.isTotal) {
-          return 'ag-row-total';
-        }
-        return '';
-      },
+      pagination: true,
+      paginationPageSize: 15,
       enableCellTextSelection: true,
       ensureDomOrder: true,
       onCellDoubleClicked: (params: any) => {
@@ -504,8 +611,7 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
         }
       },
       onRowClicked: (params: any) => {
-        // Al hacer clic en una fila, filtrar por producto si es una columna de producto
-        if (params.data && params.data.producto && params.data.producto !== 'Total') {
+        if (params.data && params.data.producto) {
           this.onProductoClickInventario(params.data.producto);
         }
       },
@@ -519,6 +625,10 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
       onGridReady: (params: any) => {
         this.gridApi = params.api;
         this.gridColumnApi = params.columnApi;
+      },
+      onFilterChanged: () => {
+        this.recalcularTotalesInventario();
+        this.cdr.markForCheck();
       },
       suppressExcelExport: false,
       suppressCsvExport: false
@@ -547,36 +657,36 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
         inversionPromedio: item.inversionPromedio || 0,
         precio: item.precio || 0,
         ventasEsperadas: item.ventasEsperadas || 0,
-        isTotal: false
       }));
 
       // Calcular totales
       const totales = datos.detalleInventario.reduce((totals: any, item: any) => ({
         stock: totals.stock + (item.stock || 0),
         inversionPromedio: totals.inversionPromedio + (item.inversionPromedio || 0),
-        precio: totals.precio + (item.precio || 0),
         ventasEsperadas: totals.ventasEsperadas + (item.ventasEsperadas || 0)
-      }), { stock: 0, inversionPromedio: 0, precio: 0, ventasEsperadas: 0 });
+      }), { stock: 0, inversionPromedio: 0, ventasEsperadas: 0 });
 
       this._totalInventarioProductosCache = totales;
 
-      // Agregar fila de totales
+      // Pinned bottom row de totales
       if (totales.stock !== 0 || totales.inversionPromedio !== 0) {
-        rows.push({
+        this.pinnedBottomRowDataInventario = [{
           producto: 'Total',
           stock: totales.stock,
-          costo: '',
+          costo: null,
           inversionPromedio: totales.inversionPromedio,
-          precio: totales.precio,
+          precio: null,
           ventasEsperadas: totales.ventasEsperadas,
-          isTotal: true
-        });
+        }];
+      } else {
+        this.pinnedBottomRowDataInventario = [];
       }
 
       this._inventarioProductosRowsCache = rows;
     } else {
       this._inventarioProductosRowsCache = [];
-      this._totalInventarioProductosCache = { stock: 0, inversionPromedio: 0, precio: 0, ventasEsperadas: 0 };
+      this.pinnedBottomRowDataInventario = [];
+      this._totalInventarioProductosCache = { stock: 0, inversionPromedio: 0, ventasEsperadas: 0 };
     }
 
     // Recalcular entradas y salidas
@@ -592,8 +702,30 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
         salidas: item.salidas ?? null,
         valorSalidas: item.valorSalidas ?? null,
       }));
+
+      // Calcular totales para la fila fija inferior (pinned bottom row)
+      const totEntradas = this._entradasSalidasRowsCache.reduce((s: number, r: any) => s + (r.entradas || 0), 0);
+      const totValEntradas = this._entradasSalidasRowsCache.reduce((s: number, r: any) => s + (r.valorEntradas || 0), 0);
+      const totSalidas = this._entradasSalidasRowsCache.reduce((s: number, r: any) => s + (r.salidas || 0), 0);
+      const totValSalidas = this._entradasSalidasRowsCache.reduce((s: number, r: any) => s + (r.valorSalidas || 0), 0);
+
+      if (totEntradas > 0 || totSalidas > 0) {
+        this.pinnedBottomRowDataEntradasSalidas = [{
+          fecha: 'Total',
+          producto: '',
+          concepto: '',
+          referencia: '',
+          entradas: totEntradas,
+          valorEntradas: totValEntradas,
+          salidas: totSalidas,
+          valorSalidas: totValSalidas,
+        }];
+      } else {
+        this.pinnedBottomRowDataEntradasSalidas = [];
+      }
     } else {
       this._entradasSalidasRowsCache = [];
+      this.pinnedBottomRowDataEntradasSalidas = [];
     }
 
     // Recalcular ajustes
@@ -648,6 +780,72 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
   onQuickFilterChange(): void {
     if (this.gridApi) {
       this.gridApi.setQuickFilter(this.quickFilterText);
+    }
+  }
+
+  recalcularTotalesInventario(): void {
+    let stock = 0;
+    let inversionPromedio = 0;
+    let ventasEsperadas = 0;
+
+    if (this.gridApi) {
+      this.gridApi.forEachNodeAfterFilter((node: any) => {
+        if (node.data) {
+          stock += (node.data.stock || 0);
+          inversionPromedio += (node.data.inversionPromedio || 0);
+          ventasEsperadas += (node.data.ventasEsperadas || 0);
+        }
+      });
+    } else {
+      return;
+    }
+
+    if (stock > 0 || inversionPromedio > 0) {
+      this.pinnedBottomRowDataInventario = [{
+        producto: 'Total',
+        stock,
+        costo: null,
+        inversionPromedio,
+        precio: null,
+        ventasEsperadas,
+      }];
+    } else {
+      this.pinnedBottomRowDataInventario = [];
+    }
+  }
+
+  recalcularTotalesEntradasSalidas(): void {
+    let entradas = 0;
+    let valorEntradas = 0;
+    let salidas = 0;
+    let valorSalidas = 0;
+
+    if (this.entradasSalidasGridApi) {
+      this.entradasSalidasGridApi.forEachNodeAfterFilter((node: any) => {
+        if (node.data) {
+          entradas += (node.data.entradas || 0);
+          valorEntradas += (node.data.valorEntradas || 0);
+          salidas += (node.data.salidas || 0);
+          valorSalidas += (node.data.valorSalidas || 0);
+        }
+      });
+    } else {
+      return;
+    }
+
+    if (entradas > 0 || salidas > 0) {
+      this.pinnedBottomRowDataEntradasSalidas = [{
+        fecha: 'Total',
+        producto: '',
+        concepto: '',
+        referencia: '',
+        entradas,
+        valorEntradas,
+        salidas,
+        valorSalidas,
+      }];
+    } else {
+      this.pinnedBottomRowDataEntradasSalidas = [];
     }
   }
 
@@ -921,6 +1119,8 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
         sortable: true,
         filter: true
       },
+      pagination: true,
+      paginationPageSize: 15,
       enableCellTextSelection: true,
       ensureDomOrder: true,
       onCellDoubleClicked: (params: any) => {
@@ -945,6 +1145,10 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
       onGridReady: (params: any) => {
         this.entradasSalidasGridApi = params.api;
         this.entradasSalidasGridColumnApi = params.columnApi;
+      },
+      onFilterChanged: () => {
+        this.recalcularTotalesEntradasSalidas();
+        this.cdr.markForCheck();
       },
       suppressExcelExport: false,
       suppressCsvExport: false

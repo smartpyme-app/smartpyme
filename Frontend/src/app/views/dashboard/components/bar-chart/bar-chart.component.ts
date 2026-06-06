@@ -300,7 +300,11 @@ export class BarChartComponent implements OnInit, OnChanges {
           rotate: rotateLabels,
           interval: 0,
           fontSize: labelCount > 6 ? 10 : 11,
-          hideOverlap: false
+          hideOverlap: false,
+          formatter: (value: string) => {
+            const maxLen = 12;
+            return value && value.length > maxLen ? value.slice(0, maxLen) + '…' : value;
+          }
         }
       },
       yAxis: (this.config as any).horizontal ? {
@@ -308,7 +312,11 @@ export class BarChartComponent implements OnInit, OnChanges {
         data: this.config.labels || [],
         axisLabel: {
           show: true,
-          interval: 0
+          interval: 0,
+          formatter: (value: string) => {
+            const maxLen = 14;
+            return value && value.length > maxLen ? value.slice(0, maxLen) + '…' : value;
+          }
         },
         inverse: true
       } : {

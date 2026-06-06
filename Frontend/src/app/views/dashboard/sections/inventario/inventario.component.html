@@ -45,15 +45,15 @@
         <div class="col-12">
             <div class="card border-0 shadow-sm">
                 <div class="card-body">
-                    <div class="d-flex align-items-end justify-content-between gap-3 flex-wrap">
-                        <app-filtro-fecha [(anio)]="anio" [(mes)]="mes" (filtroChange)="aplicarFiltros()"
+                    <div class="d-flex align-items-end justify-content-end gap-3 flex-wrap">
+                        <!-- <app-filtro-fecha [(anio)]="anio" [(mes)]="mes" (filtroChange)="aplicarFiltros()"
                             controlId="inventario-filtro-principal">
-                        </app-filtro-fecha>
+                        </app-filtro-fecha> -->
 
                         <!-- Botones y controles a la derecha -->
                         <div class="d-flex align-items-end gap-2">
                             <button type="button" class="btn btn-outline-primary" (click)="toggleFiltrosAdicionales()">
-                                <i class="fas fa-filter me-1"></i> Ver otros filtros
+                                <i class="fas fa-filter me-1"></i> Mostrar filtros
                             </button>
                             <button type="button" class="btn btn-primary" tooltip="Aplicar otros filtros al dashboard"
                                 *ngIf="mostrarBotonAplicarOtrosFiltrosInventario"
@@ -97,44 +97,37 @@
                         </p>
                         <div class="row g-3">
                             <div class="col-12 col-md-6 col-xl-4">
-                                <label for="categoria" class="text-primary fw-medium small mb-1">Categoría</label>
-                                <select id="categoria" class="form-select" [(ngModel)]="filtroCategoria">
-                                    <option value="">Todas</option>
-                                    <option *ngFor="let categoria of categorias; trackBy: trackById"
-                                        [value]="categoria.id">
-                                        {{ categoria.nombre }}
-                                    </option>
-                                </select>
+                                <app-dropdown-multi-filtro label="Sucursal" pluralLabel="sucursales"
+                                    [items]="filtroAdSucursalesItems"
+                                    [todasImplicitas]="filtroAdSucursalTodasImplicitas"
+                                    [seleccionados]="filtroAdSucursalSeleccionadas"
+                                    (selectionChange)="onFiltroAdSucursalChange($event)">
+                                </app-dropdown-multi-filtro>
                             </div>
                             <div class="col-12 col-md-6 col-xl-4">
-                                <label for="producto" class="text-primary fw-medium small mb-1">Producto</label>
-                                <select id="producto" class="form-select" [(ngModel)]="filtroProducto">
-                                    <option value="">Todas</option>
-                                    <option *ngFor="let producto of productos; trackBy: trackById"
-                                        [value]="producto.id">
-                                        {{ producto.nombre }}
-                                    </option>
-                                </select>
+                                <app-dropdown-multi-filtro label="Categoría" pluralLabel="categorías"
+                                    [items]="filtroAdCategoriasItems"
+                                    [todasImplicitas]="filtroAdCategoriaTodasImplicitas"
+                                    [seleccionados]="filtroAdCategoriaSeleccionadas"
+                                    (selectionChange)="onFiltroAdCategoriaChange($event)">
+                                </app-dropdown-multi-filtro>
                             </div>
                             <div class="col-12 col-md-6 col-xl-4">
-                                <label for="sucursal" class="text-primary fw-medium small mb-1">Sucursal</label>
-                                <select id="sucursal" class="form-select" [(ngModel)]="filtroSucursal">
-                                    <option value="">Todas</option>
-                                    <option *ngFor="let sucursal of sucursales; trackBy: trackById"
-                                        [value]="sucursal.id">
-                                        {{ sucursal.nombre }}
-                                    </option>
-                                </select>
+                                <app-dropdown-multi-filtro label="Producto" pluralLabel="productos"
+                                    [items]="filtroAdProductosItems" [mostrarBuscador]="true" [limiteVistaInicial]="100"
+                                    buscadorPlaceholder="Buscar producto"
+                                    [todasImplicitas]="filtroAdProductoTodasImplicitas"
+                                    [seleccionados]="filtroAdProductoSeleccionadas"
+                                    (selectionChange)="onFiltroAdProductoChange($event)">
+                                </app-dropdown-multi-filtro>
                             </div>
                             <div class="col-12 col-md-6 col-xl-4">
-                                <label for="proveedor" class="text-primary fw-medium small mb-1">Proveedor</label>
-                                <select id="proveedor" class="form-select" [(ngModel)]="filtroProveedor">
-                                    <option value="">Todas</option>
-                                    <option *ngFor="let proveedor of proveedores; trackBy: trackById"
-                                        [value]="proveedor.id">
-                                        {{ proveedor.nombre }}
-                                    </option>
-                                </select>
+                                <app-dropdown-multi-filtro label="Proveedor" pluralLabel="proveedores"
+                                    [items]="filtroAdProveedoresItems"
+                                    [todasImplicitas]="filtroAdProveedorTodasImplicitas"
+                                    [seleccionados]="filtroAdProveedorSeleccionadas"
+                                    (selectionChange)="onFiltroAdProveedorChange($event)">
+                                </app-dropdown-multi-filtro>
                             </div>
                         </div>
                     </div>
@@ -198,49 +191,51 @@
 
                         <!-- Tabla de detalle de inventario (derecha) -->
                         <div class="col-md-6 mb-3">
-                            <ng-container *ngIf="datos?.detalleInventario !== undefined; else invProductosTableLoader">
-                                <div class="card h-100">
-                                    <div class="card-header bg-white border-0 py-3">
-                                        <div class="d-flex flex-column justify-content-between gap-2">
-                                            <div class="inv-card-title mb-0 text-center">Detalle de inventario de
-                                                productos</div>
-                                            <div
-                                                class="d-flex flex-wrap gap-2 align-items-center justify-content-end w-100">
-                                                <div class="input-group"
-                                                    style="flex: 1 1 200px; max-width: 350px; min-width: 200px;">
-                                                    <span class="input-group-text bg-white border-end-0">
-                                                        <i class="fas fa-search text-muted"></i>
-                                                    </span>
-                                                    <input type="text" class="form-control border-start-0"
-                                                        placeholder="Buscar..." [(ngModel)]="quickFilterText"
-                                                        (input)="onQuickFilterChange()">
-                                                </div>
-                                                <button type="button" class="btn btn-sm btn-outline-success"
-                                                    (click)="exportarExcel()" title="Exportar a Excel">
-                                                    <i class="fas fa-file-excel me-1"></i> Excel
-                                                </button>
-                                                <button type="button" class="btn btn-sm btn-outline-secondary"
-                                                    (click)="limpiarFiltrosGrid()" title="Limpiar filtros">
-                                                    <i class="fas fa-filter me-1"></i> Limpiar
-                                                </button>
+                            <div class="card h-100">
+                                <div class="card-header bg-white border-0 py-3">
+                                    <div class="d-flex flex-column justify-content-between gap-2">
+                                        <div class="inv-card-title mb-0 text-center">Detalle de inventario de
+                                            productos</div>
+                                        <div
+                                            class="d-flex flex-wrap gap-2 align-items-center justify-content-end w-100">
+                                            <div class="input-group"
+                                                style="flex: 1 1 200px; max-width: 350px; min-width: 200px;">
+                                                <span class="input-group-text bg-white border-end-0">
+                                                    <i class="fas fa-search text-muted"></i>
+                                                </span>
+                                                <input type="text" class="form-control border-start-0"
+                                                    placeholder="Buscar..." [(ngModel)]="quickFilterText"
+                                                    (input)="onQuickFilterChange()">
                                             </div>
+                                            <button class="btn btn-sm btn-outline-success"
+                                                (click)="exportarExcel()" title="Exportar a Excel">
+                                                <i class="fas fa-file-excel me-1"></i> Excel
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-secondary"
+                                                (click)="limpiarFiltrosGrid()" title="Limpiar filtros">
+                                                <i class="fas fa-filter me-1"></i> Limpiar
+                                            </button>
                                         </div>
                                     </div>
-                                    <div class="card-body px-3 py-0" style="height: 450px; overflow: hidden;">
+                                </div>
+                                <div class="card-body px-3 py-0">
+                                    <ng-container *ngIf="datos?.detalleInventario !== undefined; else invProductosTableLoader">
                                         <ag-grid-angular #inventarioProductosGrid
                                             class="ag-theme-alpine inventario-productos-grid"
                                             [rowData]="inventarioProductosRows"
+                                            [pinnedBottomRowData]="pinnedBottomRowDataInventario"
                                             [columnDefs]="inventarioProductosColumnDefs"
                                             [gridOptions]="inventarioProductosGridOptions" [defaultColDef]="{
-                                            resizable: true,
-                                            sortable: true,
-                                            filter: true
-                                        }" style="width: 100%; height: 100%;" [domLayout]="'normal'">
+                                                resizable: true,
+                                                sortable: true,
+                                                filter: true
+                                            }" style="width: 100%; height: 450px;" [domLayout]="'normal'">
                                         </ag-grid-angular>
-                                    </div>
+                                    </ng-container>
                                 </div>
-                            </ng-container>
+                            </div>
                         </div>
+
                     </div>
 
                 </div>
@@ -307,11 +302,11 @@
                                                         [(ngModel)]="quickFilterTextEntradasSalidas"
                                                         (input)="onQuickFilterChangeEntradasSalidas()">
                                                 </div>
-                                                <button type="button" class="btn btn-sm btn-outline-success"
+                                                <button class="btn btn-sm btn-outline-success"
                                                     (click)="exportarExcelEntradasSalidas()" title="Exportar a Excel">
                                                     <i class="fas fa-file-excel me-1"></i> Excel
                                                 </button>
-                                                <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                <button class="btn btn-sm btn-outline-secondary"
                                                     (click)="limpiarFiltrosGridEntradasSalidas()"
                                                     title="Limpiar filtros">
                                                     <i class="fas fa-filter me-1"></i> Limpiar
@@ -319,15 +314,17 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="card-body px-3 py-0" style="height: 450px; overflow: hidden;">
+                                    <div class="card-body px-3 py-0">
                                         <ag-grid-angular #entradasSalidasGrid
                                             class="ag-theme-alpine entradas-salidas-grid"
-                                            [rowData]="entradasSalidasRows" [columnDefs]="entradasSalidasColumnDefs"
+                                            [rowData]="entradasSalidasRows"
+                                            [pinnedBottomRowData]="pinnedBottomRowDataEntradasSalidas"
+                                            [columnDefs]="entradasSalidasColumnDefs"
                                             [gridOptions]="entradasSalidasGridOptions" [defaultColDef]="{
                                             resizable: true,
                                             sortable: true,
                                             filter: true
-                                        }" style="width: 100%; height: 100%;" [domLayout]="'normal'">
+                                        }" style="width: 100%; height: 450px;" [domLayout]="'normal'">
                                         </ag-grid-angular>
                                     </div>
                                 </div>
