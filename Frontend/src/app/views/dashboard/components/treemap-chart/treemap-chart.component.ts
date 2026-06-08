@@ -30,72 +30,55 @@ export class TreemapChartComponent implements OnInit, OnChanges {
 
     // Preparar datos para el treemap
     // Los datos pueden venir como array de objetos {name, value, children} o como array simple
-    let treemapData: any;
-    
+    let treemapData: any[] = [];
     const colors = this.config.colors || ['#F19447', '#C9732F', '#A0521F'];
-    
-    // Si el primer elemento tiene children, es una estructura jerárquica
-    if (this.config.data.length > 0 && 
-        typeof this.config.data[0] === 'object' && 
-        this.config.data[0].children) {
-      // Estructura jerárquica completa - asignar colores específicos
+
+    if (this.config.data && this.config.data.length > 0) {
       treemapData = this.config.data.map((item: any, index: number) => {
+        let name = '';
+        let value = 0;
+        let originalChildren: any[] = [];
+
+        if (typeof item === 'object' && item !== null) {
+          name = item.name || (this.config.labels && this.config.labels[index]) || '';
+          value = item.value !== undefined ? item.value : (item.amount !== undefined ? item.amount : 0);
+          originalChildren = item.children || [];
+        } else {
+          name = (this.config.labels && this.config.labels[index]) || `Item ${item}`;
+          value = Number(item) || 0;
+        }
+
+        const itemColor = colors[index % colors.length];
+
         const result: any = {
-          name: item.name,
-          value: item.value,
+          name: name,
+          value: value,
           itemStyle: {
-            color: colors[index % colors.length]
+            color: itemColor
           }
         };
-        
-        if (item.children && item.children.length > 0) {
-          result.children = item.children.map((child: any, childIndex: number) => ({
-            ...child,
-            itemStyle: {
-              color: colors[(index + childIndex + 1) % colors.length]
-            }
-          }));
-        }
-        
-        return result;
-      });
-    } else {
-      // Estructura plana - convertir a jerárquica si es necesario
-      treemapData = this.config.data.map((item: any, index: number) => {
-        if (typeof item === 'object' && item.name && item.value !== undefined) {
-          const result: any = {
-            name: item.name,
-            value: item.value,
-            itemStyle: {
-              color: colors[index % colors.length]
-            }
-          };
-          
-          if (item.children && item.children.length > 0) {
-            result.children = item.children.map((child: any, childIndex: number) => ({
-              ...child,
+
+        if (originalChildren.length > 0) {
+          result.children = originalChildren.map((child: any, childIndex: number) => {
+            const childVal = child.value !== undefined ? child.value : (child.amount !== undefined ? child.amount : 0);
+            return {
+              name: child.name || '',
+              value: childVal,
               itemStyle: {
                 color: colors[(index + childIndex + 1) % colors.length]
               }
-            }));
-          }
-          
-          return result;
+            };
+          });
         }
-        return {
-          name: `Item ${item}`,
-          value: item,
-          itemStyle: {
-            color: colors[index % colors.length]
-          }
-        };
+
+        return result;
       });
     }
 
     this.chartOption = {
       title: this.config.title ? {
         text: this.config.title,
-        left: 'center',
+        left: 'left',
         textStyle: {
           fontSize: 14,
           fontWeight: 'normal'
@@ -105,9 +88,7 @@ export class TreemapChartComponent implements OnInit, OnChanges {
         trigger: 'item',
         formatter: (params: any) => {
           const value = params.value || params.data?.value || 0;
-          const formattedValue = new Intl.NumberFormat('es-GT', {
-            style: 'currency',
-            currency: 'USD',
+          const formattedValue = '$' + new Intl.NumberFormat('es-GT', {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
           }).format(value);
@@ -129,14 +110,11 @@ export class TreemapChartComponent implements OnInit, OnChanges {
             formatter: (params: any) => {
               const name = params.name || '';
               const value = params.value || params.data?.value || 0;
-              const formattedValue = new Intl.NumberFormat('es-GT', {
-                style: 'currency',
-                currency: 'USD',
+              const formattedValue = '$' + new Intl.NumberFormat('es-GT', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
               }).format(value);
               
-              // Mostrar nombre y valor en diferentes líneas si hay espacio
               if (name.length > 15) {
                 return name.substring(0, 15) + '...\n' + formattedValue;
               }
@@ -144,11 +122,7 @@ export class TreemapChartComponent implements OnInit, OnChanges {
             },
             fontSize: 12,
             fontWeight: 'bold',
-            color: '#333'
-          },
-          upperLabel: {
-            show: true,
-            height: 30
+            color: '#fff'
           },
           itemStyle: {
             borderColor: '#fff',
@@ -164,7 +138,6 @@ export class TreemapChartComponent implements OnInit, OnChanges {
           },
           visualMin: 0,
           visualMax: this.getMaxValue(treemapData)
-          // No usar colorMappingBy, los colores ya están asignados en itemStyle de cada elemento
         }
       ]
     };

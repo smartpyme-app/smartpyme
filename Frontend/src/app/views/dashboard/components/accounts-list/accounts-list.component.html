@@ -1,5 +1,5 @@
 <div class="accounts-list-container">
-    <h6 class="list-title mb-3">{{ title }}</h6>
+    <h6 class="list-title mb-3 text-center">{{ title }}</h6>
     <div *ngIf="accounts && accounts.length > 0" class="chart-container" style="height: 400px;">
         <div echarts [options]="chartOption" (chartInit)="onChartInit($event)" class="w-100 h-100"></div>
     </div>

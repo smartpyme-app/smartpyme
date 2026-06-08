@@ -1,4 +1,19 @@
 /**
+ * Subtotal de encabezado de venta: por línea round(precio×cantidad−descuento, 2) y luego suma.
+ * Misma regla que BD y DTE MH (evita drift al sumar detalle.total vía SumPipe).
+ */
+export function sumarSubTotalEncabezadoVenta(detalles: any[]): number {
+  const suma = (detalles || []).reduce((acc, d) => {
+    const precio = parseFloat(String(d?.precio ?? 0)) || 0;
+    const cantidad = parseFloat(String(d?.cantidad ?? 0)) || 0;
+    const descuento = parseFloat(String(d?.descuento ?? 0)) || 0;
+    const linea = Math.round((precio * cantidad - descuento) * 100) / 100;
+    return acc + linea;
+  }, 0);
+  return Math.round(suma * 100) / 100;
+}
+
+/**
  * Resuelve el % de impuesto a aplicar en una línea de venta.
  * Si el producto/detalle no tiene impuesto configurado (null/undefined/''), usa el IVA de la empresa.
  */

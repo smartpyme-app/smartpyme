@@ -122,9 +122,9 @@
     background-color: #ffffff !important;
 }
 
-/* Fila de totales - fondo azul igual al header, texto blanco */
+/* Fila de totales - fondo blanco, texto azul oscuro */
 ::ng-deep .ventas-producto-grid .ag-row.ag-row-total {
-    background-color: #66A3FF !important;
+    background-color: #ffffff !important;
     border-top: none !important;
     border-bottom: none !important;
     font-weight: 600 !important;
@@ -132,12 +132,25 @@
 
 ::ng-deep .ventas-producto-grid .ag-row.ag-row-total .ag-cell {
     font-weight: 600 !important;
-    color: #ffffff !important;
-    background-color: #66A3FF !important;
+    color: #38528f !important;
+    background-color: #ffffff !important;
 }
 
 ::ng-deep .ventas-producto-grid .ag-row.ag-row-total:hover {
-    background-color: #66A3FF !important;
+    background-color: #ffffff !important;
+}
+
+/* Hacer que la sección pinned bottom se vea exactamente como parte de la tabla */
+::ng-deep .ventas-producto-grid .ag-floating-bottom {
+    background-color: #ffffff !important;
+    border-top: 1px solid #dee2e6 !important;
+}
+::ng-deep .ventas-producto-grid .ag-floating-bottom-viewport {
+    background-color: #ffffff !important;
+}
+::ng-deep .ventas-producto-grid .ag-floating-bottom .ag-row {
+    background-color: #ffffff !important;
+    border-bottom: none !important;
 }
 
 /* Iconos de ordenamiento más sutiles */
@@ -262,7 +275,6 @@
 
 /* Asegurar que el viewport tenga altura y scroll */
 ::ng-deep .ventas-cliente-grid .ag-body-viewport {
-    height: auto !important;
     overflow-y: auto !important;
     overflow-x: auto !important;
 }
@@ -271,9 +283,9 @@
     overflow-x: auto !important;
 }
 
-/* Fila de totales - fondo azul igual al header, texto blanco */
+/* Fila de totales - fondo blanco, texto azul oscuro */
 ::ng-deep .ventas-cliente-grid .ag-row.ag-row-total {
-    background-color: #66A3FF !important;
+    background-color: #ffffff !important;
     border-top: none !important;
     border-bottom: none !important;
     font-weight: 600 !important;
@@ -281,12 +293,25 @@
 
 ::ng-deep .ventas-cliente-grid .ag-row.ag-row-total .ag-cell {
     font-weight: 600 !important;
-    color: #ffffff !important;
-    background-color: #66A3FF !important;
+    color: #38528f !important;
+    background-color: #ffffff !important;
 }
 
 ::ng-deep .ventas-cliente-grid .ag-row.ag-row-total:hover {
-    background-color: #66A3FF !important;
+    background-color: #ffffff !important;
+}
+
+/* Hacer que la sección pinned bottom se vea exactamente como parte de la tabla */
+::ng-deep .ventas-cliente-grid .ag-floating-bottom {
+    background-color: #ffffff !important;
+    border-top: 1px solid #dee2e6 !important;
+}
+::ng-deep .ventas-cliente-grid .ag-floating-bottom-viewport {
+    background-color: #ffffff !important;
+}
+::ng-deep .ventas-cliente-grid .ag-floating-bottom .ag-row {
+    background-color: #ffffff !important;
+    border-bottom: none !important;
 }
 
 /* Estilos para gráficos interactivos */
@@ -310,4 +335,55 @@
     50% {
         opacity: 0.7;
     }
+}
+
+/* Reducción de espacios entre tarjetas */
+.ventas-dashboard .card {
+    margin-bottom: 0 !important;
+}
+
+/* Tarjeta principal con borde azul tenue y sombra suave */
+.card-performance {
+    background-color: #ffffff;
+    border: 1px solid rgba(0, 118, 227, 0.15) !important;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 118, 227, 0.08) !important;
+}
+
+/* Barra de filtros con borde azul suave y menor sombra */
+.filter-bar-card {
+    border: 1px solid rgba(0, 118, 227, 0.15) !important;
+    box-shadow: 0 4px 12px rgba(0, 118, 227, 0.06) !important;
+}
+
+/* Tarjetas internas con solo borde azul tenue y sin sombra */
+.ventas-dashboard .card .card {
+    border: 1px solid rgba(0, 118, 227, 0.15) !important;
+    box-shadow: none !important;
+    border-radius: 8px !important;
+}
+
+/* Fila de métricas flex-wrap */
+.metrics-flex-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: stretch;
+}
+
+.metric-flex-col {
+    flex: 1 1 160px;
+    /* crece, se encoge, mínimo 160px */
+    min-width: 155px;
+    max-width: 100%;
+}
+
+.ventas-card-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.ventas-card-title.text-white {
+    color: #ffffff !important;
 }

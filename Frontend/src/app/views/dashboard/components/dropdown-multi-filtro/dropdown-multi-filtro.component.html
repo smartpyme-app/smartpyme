@@ -4,54 +4,69 @@
     [class.dropdown-multi-filtro-outer--accent]="!!accentColor"
     [style.--dmf-accent]="accentColor || null"
     #wrap>
+
     <span class="dropdown-multi-filtro-label fw-medium small mb-1">{{ label }}</span>
+
     <div class="dropdown-multi-filtro position-relative">
-        <button
-            type="button"
-            class="dropdown-multi-filtro-trigger"
-            [disabled]="disabled || items.length === 0"
-            (click)="togglePanel($event)">
-            <span class="dropdown-multi-filtro-trigger-label text-truncate">{{ etiquetaResumen }}</span>
-            <i
-                class="fas fa-chevron-down dropdown-multi-filtro-chevron"
-                [class.dropdown-multi-filtro-chevron--open]="panelAbierto"
-                aria-hidden="true"></i>
-        </button>
+
+        <!-- ── Autocomplete trigger ─────────────────────────────── -->
+        <div class="dropdown-multi-filtro-input-wrap"
+             [class.dmf-input-wrap--disabled]="disabled || items.length === 0"
+             [class.dmf-input-wrap--open]="panelAbierto">
+
+            <!-- Icono de búsqueda / chevron -->
+            <span class="dmf-input-icon" aria-hidden="true">
+                <i class="fas" [ngClass]="panelAbierto ? 'fa-search' : 'fa-chevron-down'"></i>
+            </span>
+
+            <input
+                #autocompleteInput
+                type="text"
+                class="dmf-input"
+                [disabled]="disabled || items.length === 0"
+                [value]="panelAbierto ? buscadorTexto : etiquetaResumen"
+                [placeholder]="panelAbierto ? (buscadorPlaceholder || 'Buscar…') : etiquetaResumen"
+                (focus)="onInputFocus()"
+                (input)="onBusquedaInput($event)"
+                (keydown)="onInputKeydown($event)"
+                autocomplete="off"
+                [attr.aria-expanded]="panelAbierto"
+                [attr.aria-haspopup]="'listbox'"
+                role="combobox">
+
+            <!-- Botón limpiar (visible cuando hay texto de búsqueda) -->
+            <button
+                *ngIf="panelAbierto && buscadorTexto"
+                type="button"
+                class="dmf-clear-btn"
+                aria-label="Limpiar búsqueda"
+                (mousedown)="limpiarBuscador($event)">
+                <i class="fas fa-times-circle"></i>
+            </button>
+        </div>
+
+        <!-- ── Panel de opciones ────────────────────────────────── -->
         <div
             class="dropdown-multi-filtro-panel"
-            [class.dropdown-multi-filtro-panel--searchable]="mostrarBuscador"
             *ngIf="panelAbierto && !disabled && items.length > 0"
-            (click)="$event.stopPropagation()">
-            <div *ngIf="mostrarBuscador" class="dropdown-multi-filtro-buscar">
-                <div class="input-group input-group-sm">
-                    <span class="input-group-text dropdown-multi-filtro-buscar-icon" aria-hidden="true">
-                        <i class="fas fa-search"></i>
-                    </span>
-                    <input
-                        type="search"
-                        class="form-control"
-                        [attr.aria-label]="buscadorPlaceholder"
-                        [placeholder]="buscadorPlaceholder"
-                        [value]="buscadorTexto"
-                        (input)="onBusquedaInput($event)"
-                        (click)="$event.stopPropagation()"
-                        autocomplete="off">
-                </div>
-                <p
-                    *ngIf="mostrarAvisoLimiteVista"
-                    class="dropdown-multi-filtro-limite-aviso small text-muted mb-0 mt-2 px-1">
-                    {{ textoAyudaLimiteVista }}
-                </p>
-            </div>
+            (click)="$event.stopPropagation()"
+            role="listbox"
+            aria-multiselectable="true">
+
+            <!-- Seleccionar todo -->
             <div class="dropdown-multi-filtro-panel-scroll">
-                <label class="dropdown-multi-filtro-row">
+                <label class="dropdown-multi-filtro-row dmf-row-todo">
                     <input
                         type="checkbox"
                         class="form-check-input flex-shrink-0"
                         [checked]="seleccionarTodoChecked"
                         (change)="onSeleccionarTodoChange($event)">
-                    <span>Seleccionar todo</span>
+                    <span class="fw-medium">Seleccionar todo</span>
+                    <span class="badge dmf-badge ms-auto" *ngIf="hayBusquedaActiva">
+                        {{ itemsFiltrados.length }}
+                    </span>
                 </label>
+
                 <label
                     *ngFor="let s of itemsFiltrados; trackBy: trackById"
                     class="dropdown-multi-filtro-row">
@@ -60,14 +75,28 @@
                         class="form-check-input flex-shrink-0"
                         [checked]="isItemChecked(s.id)"
                         (change)="onItemChange(s.id, $any($event.target).checked)">
-                    <span class="text-truncate" [title]="s.nombre">{{ s.nombre }}</span>
+                    <span class="text-truncate" [title]="s.nombre">
+                        <span *ngIf="!hayBusquedaActiva">{{ s.nombre }}</span>
+                        <span *ngIf="hayBusquedaActiva" [innerHTML]="resaltarCoincidencia(s.nombre, buscadorTexto)"></span>
+                    </span>
                 </label>
+
+                <!-- Sin resultados -->
                 <div
-                    *ngIf="mostrarBuscador && hayBusquedaActiva && itemsFiltrados.length === 0"
-                    class="dropdown-multi-filtro-sin-resultados px-3 py-2 small text-muted">
-                    Sin resultados
+                    *ngIf="hayBusquedaActiva && itemsFiltrados.length === 0"
+                    class="dropdown-multi-filtro-sin-resultados px-3 py-3 small text-muted text-center">
+                    <i class="fas fa-search-minus mb-1 d-block opacity-50"></i>
+                    Sin resultados para "<strong>{{ buscadorTexto }}</strong>"
                 </div>
+
+                <!-- Aviso de límite inicial -->
+                <p
+                    *ngIf="mostrarAvisoLimiteVista"
+                    class="dropdown-multi-filtro-limite-aviso small text-muted mb-0 px-3 py-2">
+                    {{ textoAyudaLimiteVista }}
+                </p>
             </div>
         </div>
+
     </div>
 </div>

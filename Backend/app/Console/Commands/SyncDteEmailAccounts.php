@@ -28,12 +28,16 @@ class SyncDteEmailAccounts extends Command
             return 0;
         }
 
+        set_time_limit(0);
+
         foreach ($accounts as $account) {
-            ProcessEmailAccountJob::dispatch($account, $dateFrom, $dateTo);
-            $this->line("Despachado sync para: {$account->email} (id: {$account->id})");
+            $this->line("Sincronizando: {$account->email} (id: {$account->id})...");
+            ProcessEmailAccountJob::dispatchSync($account, $dateFrom, $dateTo);
+            $account->refresh();
+            $this->line("  Completado. Última sync: {$account->last_sync_at}");
         }
 
-        $this->info("Se despacharon {$accounts->count()} trabajos de sincronización.");
+        $this->info("Sincronización finalizada para {$accounts->count()} cuenta(s).");
 
         return 0;
     }

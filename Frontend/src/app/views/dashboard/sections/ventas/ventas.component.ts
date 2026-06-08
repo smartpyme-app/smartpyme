@@ -1,4 +1,5 @@
-import { Component, Input, OnInit, OnChanges, SimpleChanges, ViewChild, Output, EventEmitter, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, SimpleChanges, ViewChild, Output, EventEmitter, ChangeDetectionStrategy, ChangeDetectorRef, OnDestroy } from '@angular/core';
+import { DashboardDataService } from '../../services/dashboard-data.service';
 import { ApiService } from '@services/api.service';
 import {
   DashboardFiltrosCatalogoService,
@@ -12,6 +13,7 @@ import {
 import { RevoGrid } from '@revolist/angular-datagrid';
 import { SortingPlugin, FilterPlugin, ExportFilePlugin } from '@revolist/revogrid';
 import { ColDef, GridOptions, GridApi, ColumnApi } from 'ag-grid-community';
+import { MetricCard } from '../../models/chart-config.model';
 
 @Component({
   selector: 'app-ventas',
@@ -19,9 +21,35 @@ import { ColDef, GridOptions, GridApi, ColumnApi } from 'ag-grid-community';
   styleUrls: ['./ventas.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class VentasComponent implements OnInit, OnChanges {
+export class VentasComponent implements OnInit, OnChanges, OnDestroy {
   @Input() datos: any = {};
   @Output() filtrosCambiados = new EventEmitter<FiltrosConsultaVentasDashboard>();
+
+  get metricasCards(): MetricCard[] {
+    const m = this.datos?.metricasVentas || {};
+    return [
+      {
+        title: 'Ventas totales con IVA',
+        value: m.ventasConIVA || 0,
+        type: 'currency'
+      },
+      {
+        title: 'Ventas totales sin IVA',
+        value: m.ventasSinIVA || 0,
+        type: 'currency'
+      },
+      {
+        title: 'Transacciones',
+        value: m.transacciones || 0,
+        type: 'number'
+      },
+      {
+        title: 'Ticket promedio',
+        value: m.ticketPromedio || 0,
+        type: 'currency'
+      }
+    ];
+  }
 
   @ViewChild('ventasDetalladasGrid') ventasDetalladasGrid!: RevoGrid;
   @ViewChild('ventasPorProductoGrid') ventasPorProductoGrid: any;
@@ -40,12 +68,13 @@ export class VentasComponent implements OnInit, OnChanges {
   private clienteGridApi!: GridApi;
   private clienteGridColumnApi!: ColumnApi;
   quickFilterText: string = '';
+  quickFilterTextCliente: string = '';
   busquedaVentasDetalladas: string = '';
 
   // Filtro por año (obligatorio en API) y mes (opcional; vacío = año completo)
   anio: string = new Date().getFullYear().toString();
   mes: string = '';
-  
+
   // Filtros adicionales
   mostrarFiltrosAdicionales: boolean = false;
 
@@ -108,52 +137,52 @@ export class VentasComponent implements OnInit, OnChanges {
     cliente?: string;
     mes?: string;
   } = {};
-  
+
   // Datos originales (sin filtrar)
   datosOriginales: any = {};
-  
+
   // Datos filtrados (se muestran en la vista)
   datosFiltrados: any = {};
 
   ventasDetalladasColumns = [
-    { 
-      prop: 'fecha', 
-      name: 'Fecha', 
+    {
+      prop: 'fecha',
+      name: 'Fecha',
       size: 120,
       sortable: true,
       filterable: true
     },
-    { 
-      prop: 'cliente', 
-      name: 'Cliente', 
+    {
+      prop: 'cliente',
+      name: 'Cliente',
       size: 200,
       sortable: true,
       filterable: true
     },
-    { 
-      prop: 'factura', 
-      name: '# factura', 
+    {
+      prop: 'factura',
+      name: '# factura',
       size: 100,
       sortable: true,
       filterable: true
     },
-    { 
-      prop: 'productos', 
-      name: 'Productos', 
+    {
+      prop: 'productos',
+      name: 'Productos',
       size: 100,
       sortable: true,
       filterable: true
     },
-    { 
-      prop: 'monto', 
-      name: 'Monto', 
+    {
+      prop: 'monto',
+      name: 'Monto',
       size: 150,
       sortable: true,
       filterable: true
     },
-    { 
-      prop: 'estado', 
-      name: 'Estado', 
+    {
+      prop: 'estado',
+      name: 'Estado',
       size: 120,
       sortable: true,
       filterable: true
@@ -164,68 +193,70 @@ export class VentasComponent implements OnInit, OnChanges {
   private _ventasDetalladasRowsCache: any[] = [];
   private _ventasPorProductoRowsCache: any[] = [];
   private _ventasPorClienteRowsCache: any[] = [];
+  pinnedBottomRowDataVentasProducto: any[] = [];
+  pinnedBottomRowDataVentasCliente: any[] = [];
   private _lastDatosHash: string = '';
 
   ventasPorProductoColumns = [
-    { 
-      prop: 'categoria', 
-      name: 'Categoría', 
+    {
+      prop: 'categoria',
+      name: 'Categoría',
       size: 150,
       sortable: true,
       filterable: true
     },
-    { 
-      prop: 'producto', 
-      name: 'Producto', 
+    {
+      prop: 'producto',
+      name: 'Producto',
       size: 400,
       sortable: true,
       filterable: true
     },
-    { 
-      prop: 'formaPago', 
-      name: 'Forma de pago', 
+    {
+      prop: 'formaPago',
+      name: 'Forma de pago',
       size: 150,
       sortable: true,
       filterable: true
     },
-    { 
-      prop: 'cantidad', 
-      name: 'Cantidad', 
+    {
+      prop: 'cantidad',
+      name: 'Cantidad',
       size: 100,
       sortable: true,
       filterable: true
     },
-    { 
-      prop: 'precioUnitario', 
-      name: 'Precio unitario', 
+    {
+      prop: 'precioUnitario',
+      name: 'Precio unitario',
       size: 130,
       sortable: true,
       filterable: true
     },
-    { 
-      prop: 'descuento', 
-      name: 'Descuento', 
+    {
+      prop: 'descuento',
+      name: 'Descuento',
       size: 120,
       sortable: true,
       filterable: true
     },
-    { 
-      prop: 'ventasSinIVA', 
-      name: 'Ventas totales sin IVA', 
+    {
+      prop: 'ventasSinIVA',
+      name: 'Ventas totales sin IVA',
       size: 180,
       sortable: true,
       filterable: true
     },
-    { 
-      prop: 'costoTotal', 
-      name: 'Costo total', 
+    {
+      prop: 'costoTotal',
+      name: 'Costo total',
       size: 130,
       sortable: true,
       filterable: true
     },
-    { 
-      prop: 'utilidad', 
-      name: 'Utilidad', 
+    {
+      prop: 'utilidad',
+      name: 'Utilidad',
       size: 120,
       sortable: true,
       filterable: true
@@ -235,7 +266,8 @@ export class VentasComponent implements OnInit, OnChanges {
   constructor(
     private cdr: ChangeDetectorRef,
     private apiService: ApiService,
-    private filtrosCatalogo: DashboardFiltrosCatalogoService
+    private filtrosCatalogo: DashboardFiltrosCatalogoService,
+    private dashboardDataService: DashboardDataService
   ) { }
 
   private inicializado: boolean = false;
@@ -287,22 +319,69 @@ export class VentasComponent implements OnInit, OnChanges {
   });
 
   ngOnInit(): void {
+    const savedState = this.dashboardDataService.obtenerFiltrosUI('Ventas');
+    const tieneEstadoGuardado = !!savedState;
+    if (savedState) {
+      Object.assign(this, savedState);
+    }
+
     this.cargarOpcionesFiltros();
     this.configurarAGGrid();
     this.configurarAGGridClientes();
     // Guardar datos originales si existen
     if (this.datos && Object.keys(this.datos).length > 0) {
       this.datosOriginales = this.clonarDatos(this.datos);
-      this.datosFiltrados = this.clonarDatos(this.datos);
-      // Asegurar que los arrays estén ordenados de mayor a menor
-      this.ordenarArraysIniciales();
-      this.recalcularRowsCache();
+      if (Object.keys(this.filtrosInteractivos).length > 0) {
+        this.aplicarFiltrosInteractivos();
+      } else {
+        this.datosFiltrados = this.clonarDatos(this.datos);
+        this.ordenarArraysIniciales();
+        this.datos = this.datosFiltrados;
+        this.recalcularRowsCache();
+      }
     }
     // Marcar como inicializado después de un pequeño delay para evitar emitir durante la inicialización
     setTimeout(() => {
       this.inicializado = true;
       this.cdr.markForCheck();
     }, 100);
+  }
+
+  ngOnDestroy(): void {
+    this.dashboardDataService.guardarFiltrosUI('Ventas', {
+      anio: this.anio,
+      mes: this.mes,
+      filtroAdSucursalTodasImplicitas: this.filtroAdSucursalTodasImplicitas,
+      filtroAdSucursalSeleccionadas: this.filtroAdSucursalSeleccionadas,
+      filtroAdEstadoTodasImplicitas: this.filtroAdEstadoTodasImplicitas,
+      filtroAdEstadoSeleccionadas: this.filtroAdEstadoSeleccionadas,
+      filtroAdCanalTodasImplicitas: this.filtroAdCanalTodasImplicitas,
+      filtroAdCanalSeleccionadas: this.filtroAdCanalSeleccionadas,
+      filtroAdClienteTodasImplicitas: this.filtroAdClienteTodasImplicitas,
+      filtroAdClienteSeleccionadas: this.filtroAdClienteSeleccionadas,
+      filtroAdVendedorTodasImplicitas: this.filtroAdVendedorTodasImplicitas,
+      filtroAdVendedorSeleccionadas: this.filtroAdVendedorSeleccionadas,
+      filtroCatTodasImplicitas: this.filtroCatTodasImplicitas,
+      filtroCatSeleccionadas: this.filtroCatSeleccionadas,
+      filtroProdTodasImplicitas: this.filtroProdTodasImplicitas,
+      filtroProdSeleccionadas: this.filtroProdSeleccionadas,
+      filtroAdSucursalTodasImplicitasAplicado: this.filtroAdSucursalTodasImplicitasAplicado,
+      filtroAdSucursalSeleccionadasAplicado: this.filtroAdSucursalSeleccionadasAplicado,
+      filtroAdEstadoTodasImplicitasAplicado: this.filtroAdEstadoTodasImplicitasAplicado,
+      filtroAdEstadoSeleccionadasAplicado: this.filtroAdEstadoSeleccionadasAplicado,
+      filtroAdCanalTodasImplicitasAplicado: this.filtroAdCanalTodasImplicitasAplicado,
+      filtroAdCanalSeleccionadasAplicado: this.filtroAdCanalSeleccionadasAplicado,
+      filtroAdClienteTodasImplicitasAplicado: this.filtroAdClienteTodasImplicitasAplicado,
+      filtroAdClienteSeleccionadasAplicado: this.filtroAdClienteSeleccionadasAplicado,
+      filtroAdVendedorTodasImplicitasAplicado: this.filtroAdVendedorTodasImplicitasAplicado,
+      filtroAdVendedorSeleccionadasAplicado: this.filtroAdVendedorSeleccionadasAplicado,
+      filtroCatTodasImplicitasAplicado: this.filtroCatTodasImplicitasAplicado,
+      filtroCatSeleccionadasAplicado: this.filtroCatSeleccionadasAplicado,
+      filtroProdTodasImplicitasAplicado: this.filtroProdTodasImplicitasAplicado,
+      filtroProdSeleccionadasAplicado: this.filtroProdSeleccionadasAplicado,
+      filtrosInteractivos: this.filtrosInteractivos,
+      vistaMetricas: this.vistaMetricas
+    });
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -330,7 +409,7 @@ export class VentasComponent implements OnInit, OnChanges {
       if (v == null || v === '') return '';
       const n = Number(v);
       if (Number.isNaN(n)) return '';
-      return this.currencyFormatter.format(n);
+      return this.formatCurrency(n);
     };
 
     this.ventasPorProductoColumnDefs = [
@@ -409,104 +488,93 @@ export class VentasComponent implements OnInit, OnChanges {
       paginationPageSize: 20,
       suppressMenuHide: true,
       quickFilterText: '',
-      getRowClass: (params: any) => (params.data?.isTotal ? 'ag-row-total' : ''),
+      getRowClass: (params: any) => {
+        if (params.node.rowPinned === 'bottom') {
+          return 'ag-row-total';
+        }
+        return '';
+      },
       onGridReady: (params: any) => {
         this.gridApi = params.api;
         this.gridColumnApi = params.columnApi;
         setTimeout(() => params.api.sizeColumnsToFit(), 0);
       },
+      onFilterChanged: () => {
+        this.onFilterChangedVentasProducto();
+      }
     };
   }
 
   configurarAGGridClientes(): void {
     this.ventasPorClienteColumnDefs = [
-      { 
-        field: 'cliente', 
+      {
+        field: 'cliente',
         headerName: 'Cliente',
         width: 250,
         sortable: true,
         filter: true,
-        cellStyle: (params: any): any => {
-          if (params.data?.isTotal) {
-            return { fontWeight: '600', backgroundColor: '#66A3FF', color: '#ffffff', textAlign: 'left' };
-          }
-          return { textAlign: 'left' } as any;
-        }
+        cellStyle: { textAlign: 'left' }
       },
-      { 
-        field: 'ultimaVenta', 
+      {
+        field: 'ultimaVenta',
         headerName: 'Última venta',
         width: 120,
         sortable: true,
         filter: true,
-        cellStyle: (params: any): any => {
-          if (params.data?.isTotal) {
-            return { fontWeight: '600', backgroundColor: '#66A3FF', color: '#ffffff', textAlign: 'center' };
-          }
-          return { textAlign: 'center' } as any;
-        }
+        cellStyle: { textAlign: 'center' }
       },
-      { 
-        field: 'dias', 
+      {
+        field: 'dias',
         headerName: 'Días',
         width: 100,
         sortable: true,
         filter: true,
-        cellStyle: (params: any): any => {
-          if (params.data?.isTotal) {
-            return { fontWeight: '600', backgroundColor: '#66A3FF', color: '#ffffff', textAlign: 'right' };
-          }
-          return { textAlign: 'right' } as any;
-        },
+        cellStyle: { textAlign: 'right' },
         valueFormatter: (params: any) => {
-          if (params.data?.isTotal) {
-            return params.value ? params.value.toLocaleString('es-GT') : '';
-          }
-          return params.value ? params.value.toLocaleString('es-GT') : '';
+          return params.value !== null && params.value !== undefined ? params.value.toLocaleString('es-GT') : '';
         }
       },
-      { 
-        field: 'transacciones', 
+      {
+        field: 'transacciones',
         headerName: 'Transacciones',
         width: 120,
         sortable: true,
         filter: true,
-        cellStyle: (params: any): any => {
-          if (params.data?.isTotal) {
-            return { fontWeight: '600', backgroundColor: '#66A3FF', color: '#ffffff', textAlign: 'right' };
-          }
-          return { textAlign: 'right' } as any;
-        },
+        cellStyle: { textAlign: 'right' },
         valueFormatter: (params: any) => {
-          if (params.data?.isTotal) {
-            return params.value ? params.value.toLocaleString('es-GT') : '';
-          }
-          return params.value ? params.value.toLocaleString('es-GT') : '';
+          return params.value !== null && params.value !== undefined ? params.value.toLocaleString('es-GT') : '';
         }
       },
-      { 
-        field: 'ventas', 
-        headerName: 'Ventas',
+      {
+        field: 'ventasSinIva',
+        headerName: 'Ventas Sin IVA',
         width: 150,
         sortable: true,
         filter: true,
-        cellStyle: (params: any): any => {
-          if (params.data?.isTotal) {
-            return { fontWeight: '600', backgroundColor: '#66A3FF', color: '#ffffff', textAlign: 'right' };
-          }
-          return { textAlign: 'right' } as any;
-        }
+        cellStyle: { textAlign: 'right' }
+      },
+      {
+        field: 'ventasConIva',
+        headerName: 'Ventas Con IVA',
+        width: 150,
+        sortable: true,
+        filter: true,
+        cellStyle: { textAlign: 'right' }
       }
     ];
 
     this.ventasPorClienteGridOptions = {
+      pagination: true,
+      paginationPageSize: 20,
+      suppressMenuHide: true,
+      quickFilterText: '',
       defaultColDef: {
         resizable: true,
         sortable: true,
         filter: true
       },
       getRowClass: (params: any) => {
-        if (params.data?.isTotal) {
+        if (params.node.rowPinned === 'bottom') {
           return 'ag-row-total';
         }
         return '';
@@ -535,6 +603,9 @@ export class VentasComponent implements OnInit, OnChanges {
           params.api.sizeColumnsToFit();
         }, 100);
       },
+      onFilterChanged: () => {
+        this.onFilterChangedVentasCliente();
+      },
       suppressExcelExport: false,
       suppressCsvExport: false
     };
@@ -548,7 +619,7 @@ export class VentasComponent implements OnInit, OnChanges {
       const headers = this.ventasPorClienteColumnDefs
         .map(col => col.headerName || col.field)
         .join('\t');
-      
+
       const rows = selectedRows
         .filter((row: any) => !row.isTotal)
         .map((row: any) => {
@@ -559,7 +630,7 @@ export class VentasComponent implements OnInit, OnChanges {
             })
             .join('\t');
         });
-      
+
       const texto = [headers, ...rows].join('\n');
       this.copiarAlPortapapeles(texto);
     } else {
@@ -567,7 +638,7 @@ export class VentasComponent implements OnInit, OnChanges {
       const headers = this.ventasPorClienteColumnDefs
         .map(col => col.headerName || col.field)
         .join('\t');
-      
+
       this.clienteGridApi.forEachNodeAfterFilterAndSort((node: any) => {
         if (!node.data?.isTotal) {
           const row = this.ventasPorClienteColumnDefs
@@ -579,7 +650,7 @@ export class VentasComponent implements OnInit, OnChanges {
           allRows.push(row);
         }
       });
-      
+
       const texto = [headers, ...allRows].join('\n');
       this.copiarAlPortapapeles(texto);
     }
@@ -591,30 +662,33 @@ export class VentasComponent implements OnInit, OnChanges {
   cargarOpcionesFiltros(): void {
     this.categoriasProductos = [];
 
+    const tieneEstadoGuardado = !!this.dashboardDataService.obtenerFiltrosUI('Ventas');
     this.filtrosCatalogo.sucursalesParaFiltro().subscribe({
       next: (items) => {
         this.sucursales = items;
-        const user = this.apiService.auth_user();
-        if (items.length === 0) {
-          this.filtroAdSucursalSeleccionadas = [];
-          this.filtroAdSucursalTodasImplicitas = true;
-          this.filtroAdSucursalSeleccionadasAplicado = [];
-          this.filtroAdSucursalTodasImplicitasAplicado = true;
-        } else if (user?.tipo !== 'Administrador' && user?.id_sucursal != null) {
-          this.filtroAdSucursalTodasImplicitas = false;
-          this.filtroAdSucursalSeleccionadas = [String(user.id_sucursal)];
-          this.filtroAdSucursalTodasImplicitasAplicado = false;
-          this.filtroAdSucursalSeleccionadasAplicado = [String(user.id_sucursal)];
-          setTimeout(() => {
-            if (this.inicializado) {
-              this.refrescarDatosPorFecha();
-            }
-          }, 150);
-        } else if (user?.tipo === 'Administrador') {
-          this.filtroAdSucursalSeleccionadas = [];
-          this.filtroAdSucursalTodasImplicitas = true;
-          this.filtroAdSucursalSeleccionadasAplicado = [];
-          this.filtroAdSucursalTodasImplicitasAplicado = true;
+        if (!tieneEstadoGuardado) {
+          const user = this.apiService.auth_user();
+          if (items.length === 0) {
+            this.filtroAdSucursalSeleccionadas = [];
+            this.filtroAdSucursalTodasImplicitas = true;
+            this.filtroAdSucursalSeleccionadasAplicado = [];
+            this.filtroAdSucursalTodasImplicitasAplicado = true;
+          } else if (user?.tipo !== 'Administrador' && user?.id_sucursal != null) {
+            this.filtroAdSucursalTodasImplicitas = false;
+            this.filtroAdSucursalSeleccionadas = [String(user.id_sucursal)];
+            this.filtroAdSucursalTodasImplicitasAplicado = false;
+            this.filtroAdSucursalSeleccionadasAplicado = [String(user.id_sucursal)];
+            setTimeout(() => {
+              if (this.inicializado) {
+                this.refrescarDatosPorFecha();
+              }
+            }, 150);
+          } else if (user?.tipo === 'Administrador') {
+            this.filtroAdSucursalSeleccionadas = [];
+            this.filtroAdSucursalTodasImplicitas = true;
+            this.filtroAdSucursalSeleccionadasAplicado = [];
+            this.filtroAdSucursalTodasImplicitasAplicado = true;
+          }
         }
         this.cdr.markForCheck();
       },
@@ -1001,6 +1075,107 @@ export class VentasComponent implements OnInit, OnChanges {
   limpiarFiltros(): void {
     this.anio = new Date().getFullYear().toString();
     this.mes = '';
+    this.limpiarFiltrosInteractivos();
+    this.filtroAdSucursalTodasImplicitas = true;
+    this.filtroAdSucursalSeleccionadas = [];
+    this.filtroAdEstadoTodasImplicitas = true;
+    this.filtroAdEstadoSeleccionadas = [];
+    this.filtroAdCanalTodasImplicitas = true;
+    this.filtroAdCanalSeleccionadas = [];
+    this.filtroAdClienteTodasImplicitas = true;
+    this.filtroAdClienteSeleccionadas = [];
+    this.filtroAdVendedorTodasImplicitas = true;
+    this.filtroAdVendedorSeleccionadas = [];
+    this.filtroCatTodasImplicitas = true;
+    this.filtroCatSeleccionadas = [];
+    this.filtroProdTodasImplicitas = true;
+    this.filtroProdSeleccionadas = [];
+    this.filtroAdSucursalTodasImplicitasAplicado = true;
+    this.filtroAdSucursalSeleccionadasAplicado = [];
+    this.filtroAdEstadoTodasImplicitasAplicado = true;
+    this.filtroAdEstadoSeleccionadasAplicado = [];
+    this.filtroAdCanalTodasImplicitasAplicado = true;
+    this.filtroAdCanalSeleccionadasAplicado = [];
+    this.filtroAdClienteTodasImplicitasAplicado = true;
+    this.filtroAdClienteSeleccionadasAplicado = [];
+    this.filtroAdVendedorTodasImplicitasAplicado = true;
+    this.filtroAdVendedorSeleccionadasAplicado = [];
+    this.filtroCatTodasImplicitasAplicado = true;
+    this.filtroCatSeleccionadasAplicado = [];
+    this.filtroProdTodasImplicitasAplicado = true;
+    this.filtroProdSeleccionadasAplicado = [];
+    this.emitirFiltrosAlPadre();
+  }
+
+  get hayFiltrosAdicionalesActivos(): boolean {
+    const hayAdicionalesEnBorrador =
+      this.filtroAdicionalEstaActivo(
+        this.filtroAdSucursalTodasImplicitas,
+        this.filtroAdSucursalSeleccionadas
+      ) ||
+      this.filtroAdicionalEstaActivo(
+        this.filtroAdEstadoTodasImplicitas,
+        this.filtroAdEstadoSeleccionadas
+      ) ||
+      this.filtroAdicionalEstaActivo(
+        this.filtroAdCanalTodasImplicitas,
+        this.filtroAdCanalSeleccionadas
+      ) ||
+      this.filtroAdicionalEstaActivo(
+        this.filtroAdClienteTodasImplicitas,
+        this.filtroAdClienteSeleccionadas
+      ) ||
+      this.filtroAdicionalEstaActivo(
+        this.filtroAdVendedorTodasImplicitas,
+        this.filtroAdVendedorSeleccionadas
+      );
+    const hayAdicionalesAplicados =
+      this.filtroAdicionalEstaActivo(
+        this.filtroAdSucursalTodasImplicitasAplicado,
+        this.filtroAdSucursalSeleccionadasAplicado
+      ) ||
+      this.filtroAdicionalEstaActivo(
+        this.filtroAdEstadoTodasImplicitasAplicado,
+        this.filtroAdEstadoSeleccionadasAplicado
+      ) ||
+      this.filtroAdicionalEstaActivo(
+        this.filtroAdCanalTodasImplicitasAplicado,
+        this.filtroAdCanalSeleccionadasAplicado
+      ) ||
+      this.filtroAdicionalEstaActivo(
+        this.filtroAdClienteTodasImplicitasAplicado,
+        this.filtroAdClienteSeleccionadasAplicado
+      ) ||
+      this.filtroAdicionalEstaActivo(
+        this.filtroAdVendedorTodasImplicitasAplicado,
+        this.filtroAdVendedorSeleccionadasAplicado
+      );
+    const hayCatProd =
+      this.filtroAdicionalEstaActivo(
+        this.filtroCatTodasImplicitas,
+        this.filtroCatSeleccionadas
+      ) ||
+      this.filtroAdicionalEstaActivo(
+        this.filtroProdTodasImplicitas,
+        this.filtroProdSeleccionadas
+      ) ||
+      this.filtroAdicionalEstaActivo(
+        this.filtroCatTodasImplicitasAplicado,
+        this.filtroCatSeleccionadasAplicado
+      ) ||
+      this.filtroAdicionalEstaActivo(
+        this.filtroProdTodasImplicitasAplicado,
+        this.filtroProdSeleccionadasAplicado
+      );
+    return hayAdicionalesEnBorrador || hayAdicionalesAplicados || hayCatProd || this.tieneFiltrosInteractivos();
+  }
+
+  limpiarFiltrosAdicionales(event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.limpiarFiltrosInteractivos();
+
     this.filtroAdSucursalTodasImplicitas = true;
     this.filtroAdSucursalSeleccionadas = [];
     this.filtroAdEstadoTodasImplicitas = true;
@@ -1175,12 +1350,42 @@ export class VentasComponent implements OnInit, OnChanges {
       this.anio !== anioActual ||
       hayAdicionalesEnBorrador ||
       hayAdicionalesAplicados ||
-      hayCatProd
+      hayCatProd ||
+      this.tieneFiltrosInteractivos()
     );
   }
 
   formatCurrency(value: number): string {
-    return this.currencyFormatter.format(value);
+    if (value === null || value === undefined) {
+      value = 0;
+    }
+    const user = this.apiService.auth_user();
+    const empresa = user?.empresa;
+    const currencyCode = empresa?.moneda || 'USD';
+    const currencySymbol = empresa?.currency?.currency_symbol;
+
+    const options: Intl.NumberFormatOptions = {
+      style: 'currency',
+      currency: currencyCode,
+    };
+
+    if (currencySymbol) {
+      options.style = 'decimal';
+      options.minimumFractionDigits = 2;
+      options.maximumFractionDigits = 2;
+    }
+
+    let formattedValue = new Intl.NumberFormat('en-US', options).format(Math.abs(value));
+
+    if (currencySymbol) {
+      formattedValue = `${currencySymbol}${formattedValue}`;
+    }
+
+    if (value < 0) {
+      return `(${formattedValue})`;
+    }
+
+    return formattedValue;
   }
 
   /**
@@ -1210,9 +1415,11 @@ export class VentasComponent implements OnInit, OnChanges {
 
     // Recalcular ventas por producto
     this._ventasPorProductoRowsCache = this.calcularVentasPorProductoRows();
+    this.recalcularTotalesVentasProducto();
 
     // Recalcular ventas por cliente
     this._ventasPorClienteRowsCache = this.calcularVentasPorClienteRows();
+    this.recalcularTotalesVentasCliente();
   }
 
   get ventasDetalladasRows(): any[] {
@@ -1222,7 +1429,7 @@ export class VentasComponent implements OnInit, OnChanges {
   filtrarVentasDetalladasPorBusqueda(rows: any[]): any[] {
     if (!this.busquedaVentasDetalladas) return rows;
     const busqueda = this.busquedaVentasDetalladas.toLowerCase();
-    return rows.filter(row => 
+    return rows.filter(row =>
       (row.cliente || '').toLowerCase().includes(busqueda) ||
       (row.factura || '').toLowerCase().includes(busqueda) ||
       (row.monto || '').toLowerCase().includes(busqueda) ||
@@ -1251,7 +1458,7 @@ export class VentasComponent implements OnInit, OnChanges {
 
   private calcularVentasPorProductoRows(): any[] {
     if (!this.datos.ventasPorProducto) return [];
-    const rows = this.datos.ventasPorProducto.map((item: any) => ({
+    return this.datos.ventasPorProducto.map((item: any) => ({
       categoria: item.categoria || '-',
       producto: item.producto || '-',
       formaPago: item.formaPago || '-',
@@ -1263,24 +1470,6 @@ export class VentasComponent implements OnInit, OnChanges {
       utilidad: item.utilidad || 0,
       isTotal: false,
     }));
-
-    const totales = this.totalVentasPorProducto;
-    if (totales.cantidad > 0) {
-      rows.push({
-        categoria: 'TOTAL',
-        producto: '',
-        formaPago: '',
-        cantidad: totales.cantidad,
-        precioUnitario: null,
-        descuento: null,
-        ventasSinIVA: totales.ventasSinIVA,
-        costoTotal: totales.costoTotal,
-        utilidad: totales.utilidad,
-        isTotal: true,
-      });
-    }
-
-    return rows;
   }
 
   get ventasPorProductoRows(): any[] {
@@ -1301,31 +1490,18 @@ export class VentasComponent implements OnInit, OnChanges {
 
   private calcularVentasPorClienteRows(): any[] {
     if (!this.datos.ventasPorCliente) return [];
-    const rows = this.datos.ventasPorCliente.map((item: any) => ({
+
+    return this.datos.ventasPorCliente.map((item: any) => ({
       cliente: item.cliente || '-',
       ultimaVenta: item.ultimaVenta || '-',
       dias: item.dias || 0,
       transacciones: item.transacciones || 0,
-      ventas: this.formatCurrency(item.ventas || 0),
-      ventasOriginal: item.ventas || 0,
+      ventasSinIva: this.formatCurrency(item.ventasSinIva || 0),
+      ventasSinIvaOriginal: item.ventasSinIva || 0,
+      ventasConIva: this.formatCurrency(item.ventasConIva || 0),
+      ventasConIvaOriginal: item.ventasConIva || 0,
       isTotal: false
     }));
-
-    // Agregar fila de totales al final
-    const totales = this.totalVentasPorCliente;
-    if (totales.transacciones > 0) {
-      rows.push({
-        cliente: 'Total',
-        ultimaVenta: totales.ultimaVenta || '-',
-        dias: totales.dias || 0,
-        transacciones: totales.transacciones,
-        ventas: this.formatCurrency(totales.ventas),
-        ventasOriginal: totales.ventas,
-        isTotal: true
-      });
-    }
-
-    return rows;
   }
 
   get ventasPorClienteRows(): any[] {
@@ -1334,20 +1510,22 @@ export class VentasComponent implements OnInit, OnChanges {
 
   get totalVentasPorCliente(): any {
     if (!this.datos.ventasPorCliente || this.datos.ventasPorCliente.length === 0) {
-      return { transacciones: 0, ventas: 0, dias: 0, ultimaVenta: '' };
+      return { transacciones: 0, ventasSinIva: 0, ventasConIva: 0, ventas: 0, dias: 0, ultimaVenta: '' };
     }
     const totales = this.datos.ventasPorCliente.reduce((totals: any, item: any) => ({
       transacciones: totals.transacciones + (item.transacciones || 0),
+      ventasSinIva: totals.ventasSinIva + (item.ventasSinIva || 0),
+      ventasConIva: totals.ventasConIva + (item.ventasConIva || 0),
       ventas: totals.ventas + (item.ventas || 0),
       dias: Math.max(totals.dias || 0, item.dias || 0),
       ultimaVenta: item.ultimaVenta || totals.ultimaVenta || ''
-    }), { transacciones: 0, ventas: 0, dias: 0, ultimaVenta: '' });
-    
+    }), { transacciones: 0, ventasSinIva: 0, ventasConIva: 0, ventas: 0, dias: 0, ultimaVenta: '' });
+
     // Obtener la fecha más reciente
     const fechas = this.datos.ventasPorCliente
       .map((item: any) => item.ultimaVenta)
       .filter((fecha: string) => fecha && fecha !== '-');
-    
+
     if (fechas.length > 0) {
       // Ordenar fechas y tomar la más reciente
       fechas.sort((a: string, b: string) => {
@@ -1357,7 +1535,7 @@ export class VentasComponent implements OnInit, OnChanges {
       });
       totales.ultimaVenta = fechas[0];
     }
-    
+
     return totales;
   }
 
@@ -1378,13 +1556,13 @@ export class VentasComponent implements OnInit, OnChanges {
         return stringValue;
       }).join(',');
     });
-    
+
     const BOM = '\uFEFF';
     const csvContent = BOM + [headers, ...rows].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
-    
+
     link.setAttribute('href', url);
     link.setAttribute('download', filename);
     link.style.visibility = 'hidden';
@@ -1437,6 +1615,44 @@ export class VentasComponent implements OnInit, OnChanges {
     }
   }
 
+  onQuickFilterClienteChange(): void {
+    if (this.clienteGridApi) {
+      this.clienteGridApi.setQuickFilter(this.quickFilterTextCliente);
+    }
+  }
+
+  exportarClientesCSV(): void {
+    if (this.clienteGridApi) {
+      const fecha = new Date().toISOString().split('T')[0];
+      this.clienteGridApi.exportDataAsCsv({
+        fileName: `ventas-por-cliente-${fecha}.csv`,
+        processCellCallback: (params: any) => {
+          return params.value || '';
+        }
+      });
+    }
+  }
+
+  exportarClientesExcel(): void {
+    if (this.clienteGridApi) {
+      const fecha = new Date().toISOString().split('T')[0];
+      this.clienteGridApi.exportDataAsCsv({
+        fileName: `ventas-por-cliente-${fecha}.csv`,
+        processCellCallback: (params: any) => {
+          return params.value || '';
+        }
+      });
+    }
+  }
+
+  limpiarFiltrosClienteGrid(): void {
+    if (this.clienteGridApi) {
+      this.clienteGridApi.setFilterModel(null);
+      this.quickFilterTextCliente = '';
+      this.clienteGridApi.setQuickFilter('');
+    }
+  }
+
   // Operaciones básicas de celda
   onCellClicked(params: any): void {
     // Al hacer clic en una celda, se puede seleccionar
@@ -1453,13 +1669,13 @@ export class VentasComponent implements OnInit, OnChanges {
 
   onCellKeyDown(params: any): void {
     const event = params.event;
-    
+
     // Ctrl+C o Cmd+C: Copiar selección al portapapeles
     if ((event.ctrlKey || event.metaKey) && event.key === 'c') {
       event.preventDefault();
       this.copiarSeleccionAlPortapapeles();
     }
-    
+
     // Ctrl+A o Cmd+A: Seleccionar todas las filas visibles
     if ((event.ctrlKey || event.metaKey) && event.key === 'a') {
       event.preventDefault();
@@ -1467,7 +1683,7 @@ export class VentasComponent implements OnInit, OnChanges {
         this.gridApi.selectAll();
       }
     }
-    
+
     // Delete o Backspace: Limpiar filtro de columna si está en el header
     if ((event.key === 'Delete' || event.key === 'Backspace') && params.node.rowPinned === 'top') {
       if (params.column) {
@@ -1478,7 +1694,7 @@ export class VentasComponent implements OnInit, OnChanges {
         }
       }
     }
-    
+
     // F2: Editar celda (si fuera editable)
     if (event.key === 'F2') {
       // AG Grid Community no tiene edición inline por defecto
@@ -1492,7 +1708,6 @@ export class VentasComponent implements OnInit, OnChanges {
   copiarAlPortapapeles(texto: string): void {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(texto).then(() => {
-        console.log('Valor copiado al portapapeles');
       }).catch(err => {
         console.error('Error al copiar:', err);
         // Fallback para navegadores antiguos
@@ -1514,7 +1729,6 @@ export class VentasComponent implements OnInit, OnChanges {
     textArea.select();
     try {
       document.execCommand('copy');
-      console.log('Valor copiado al portapapeles (fallback)');
     } catch (err) {
       console.error('Error al copiar:', err);
     }
@@ -1525,12 +1739,12 @@ export class VentasComponent implements OnInit, OnChanges {
     if (!this.gridApi) return;
 
     const selectedRanges = this.gridApi.getCellRanges();
-    
+
     if (selectedRanges && selectedRanges.length > 0) {
       // Copiar rangos seleccionados
       const range = selectedRanges[0];
       const rows: string[] = [];
-      
+
       // Obtener todas las columnas usando columnApi
       const allColumns = this.gridColumnApi?.getAllColumns() || [];
       if (allColumns.length === 0) {
@@ -1543,10 +1757,10 @@ export class VentasComponent implements OnInit, OnChanges {
       const startColId = range.startColumn?.getColId() || '';
       const columns = range.columns || [];
       const endColId = columns.length > 0 ? columns[columns.length - 1]?.getColId() : startColId;
-      
+
       let startColIndex = -1;
       let endColIndex = -1;
-      
+
       allColumns.forEach((col: any, index: number) => {
         const colId = col.getColId();
         if (colId === startColId && startColIndex === -1) {
@@ -1560,7 +1774,7 @@ export class VentasComponent implements OnInit, OnChanges {
       for (let rowIndex = startRowIndex; rowIndex <= endRowIndex; rowIndex++) {
         const row: string[] = [];
         const node = this.gridApi.getDisplayedRowAtIndex(rowIndex);
-        
+
         if (node && startColIndex >= 0 && endColIndex >= 0) {
           allColumns.forEach((column: any, colIndex: number) => {
             if (colIndex >= startColIndex && colIndex <= endColIndex) {
@@ -1570,12 +1784,12 @@ export class VentasComponent implements OnInit, OnChanges {
             }
           });
         }
-        
+
         if (row.length > 0) {
           rows.push(row.join('\t'));
         }
       }
-      
+
       if (rows.length > 0) {
         this.copiarAlPortapapeles(rows.join('\n'));
       }
@@ -1586,7 +1800,7 @@ export class VentasComponent implements OnInit, OnChanges {
         const headers = this.ventasPorProductoColumnDefs
           .map(col => col.headerName || col.field)
           .join('\t');
-        
+
         const rows = selectedRows
           .filter((row: any) => !row.isTotal)
           .map((row: any) => {
@@ -1597,7 +1811,7 @@ export class VentasComponent implements OnInit, OnChanges {
               })
               .join('\t');
           });
-        
+
         const texto = [headers, ...rows].join('\n');
         this.copiarAlPortapapeles(texto);
       } else {
@@ -1606,7 +1820,7 @@ export class VentasComponent implements OnInit, OnChanges {
         const headers = this.ventasPorProductoColumnDefs
           .map(col => col.headerName || col.field)
           .join('\t');
-        
+
         this.gridApi.forEachNodeAfterFilterAndSort((node: any) => {
           if (!node.data?.isTotal) {
             const row = this.ventasPorProductoColumnDefs
@@ -1618,7 +1832,7 @@ export class VentasComponent implements OnInit, OnChanges {
             allRows.push(row);
           }
         });
-        
+
         const texto = [headers, ...allRows].join('\n');
         this.copiarAlPortapapeles(texto);
       }
@@ -1637,7 +1851,7 @@ export class VentasComponent implements OnInit, OnChanges {
     this.aplicarFiltrosInteractivos();
   }
 
-  onVendedorClick(event: { name: string; value: any; index: number }): void {
+  onVendedorClick(event: any): void {
     if (this.filtrosInteractivos.vendedor === event.name) {
       delete this.filtrosInteractivos.vendedor;
     } else {
@@ -1756,17 +1970,26 @@ export class VentasComponent implements OnInit, OnChanges {
       ventasFiltradas = ventasFiltradas.filter((v: any) => v.cliente === this.filtrosInteractivos.cliente);
     }
     if (this.filtrosInteractivos.mes) {
+      const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
       ventasFiltradas = ventasFiltradas.filter((v: any) => {
         if (!v.fecha) return false;
-        const fecha = new Date(v.fecha);
-        const mesIndex = fecha.getMonth();
-        const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
-                       'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-        const mesNombre = meses[mesIndex];
-        return mesNombre.toLowerCase() === this.filtrosInteractivos.mes?.toLowerCase() ||
-               mesNombre === this.filtrosInteractivos.mes;
+
+        // Parsear fecha en formato DD/MM/YYYY
+        const partes = v.fecha.split('/');
+        if (partes.length !== 3) return false;
+
+        const mesNum = parseInt(partes[1], 10) - 1; // Meses van de 0 a 11
+        if (mesNum < 0 || mesNum > 11) return false;
+
+        const mesNombre = meses[mesNum];
+
+        // Comparar ignorando mayúsculas/minúsculas
+        return mesNombre.toLowerCase() === this.filtrosInteractivos.mes?.toLowerCase();
       });
     }
+
     if (this.filtrosInteractivos.categoria) {
       ventasFiltradas = ventasFiltradas.filter((v: any) => v.categoria === this.filtrosInteractivos.categoria);
     }
@@ -1825,6 +2048,7 @@ export class VentasComponent implements OnInit, OnChanges {
   private ordenarArraysIniciales(): void {
     const arraysParaOrdenar = [
       'ventasPorCanal',
+      'ventasPorVendedor',
       'ventasPorCategoria',
       'topProductosVendidos',
       'topClientes'
@@ -1842,9 +2066,56 @@ export class VentasComponent implements OnInit, OnChanges {
     });
   }
 
+  get tieneCambiosOtrosFiltros(): boolean {
+    return !(
+      this.mismoEstadoFiltroMulti(
+        this.filtroAdSucursalTodasImplicitas,
+        this.filtroAdSucursalSeleccionadas,
+        this.filtroAdSucursalTodasImplicitasAplicado,
+        this.filtroAdSucursalSeleccionadasAplicado,
+      ) &&
+      this.mismoEstadoFiltroMulti(
+        this.filtroAdEstadoTodasImplicitas,
+        this.filtroAdEstadoSeleccionadas,
+        this.filtroAdEstadoTodasImplicitasAplicado,
+        this.filtroAdEstadoSeleccionadasAplicado,
+      ) &&
+      this.mismoEstadoFiltroMulti(
+        this.filtroAdCanalTodasImplicitas,
+        this.filtroAdCanalSeleccionadas,
+        this.filtroAdCanalTodasImplicitasAplicado,
+        this.filtroAdCanalSeleccionadasAplicado,
+      ) &&
+      this.mismoEstadoFiltroMulti(
+        this.filtroAdClienteTodasImplicitas,
+        this.filtroAdClienteSeleccionadas,
+        this.filtroAdClienteTodasImplicitasAplicado,
+        this.filtroAdClienteSeleccionadasAplicado,
+      ) &&
+      this.mismoEstadoFiltroMulti(
+        this.filtroAdVendedorTodasImplicitas,
+        this.filtroAdVendedorSeleccionadas,
+        this.filtroAdVendedorTodasImplicitasAplicado,
+        this.filtroAdVendedorSeleccionadasAplicado,
+      ) &&
+      this.mismoEstadoFiltroMulti(
+        this.filtroCatTodasImplicitas,
+        this.filtroCatSeleccionadas,
+        this.filtroCatTodasImplicitasAplicado,
+        this.filtroCatSeleccionadasAplicado,
+      ) &&
+      this.mismoEstadoFiltroMulti(
+        this.filtroProdTodasImplicitas,
+        this.filtroProdSeleccionadas,
+        this.filtroProdTodasImplicitasAplicado,
+        this.filtroProdSeleccionadasAplicado,
+      )
+    );
+  }
+
   recalcularVentasPorCanal(ventas: any[]): void {
     const ventasPorCanal: { [key: string]: number } = {};
-    
+
     ventas.forEach((v: any) => {
       const canal = v.canal || 'Sin canal';
       ventasPorCanal[canal] = (ventasPorCanal[canal] || 0) + (v.monto || 0);
@@ -1857,14 +2128,20 @@ export class VentasComponent implements OnInit, OnChanges {
 
   recalcularVentasPorVendedor(ventas: any[]): void {
     const ventasPorVendedor: { [key: string]: number } = {};
-    
+
     ventas.forEach((v: any) => {
       const vendedor = v.vendedor || 'Sin vendedor';
       ventasPorVendedor[vendedor] = (ventasPorVendedor[vendedor] || 0) + (v.monto || 0);
     });
 
-    const labels = Object.keys(ventasPorVendedor);
-    const data = labels.map(v => ventasPorVendedor[v]);
+    const list = Object.entries(ventasPorVendedor)
+      .map(([name, amount]) => ({ name, amount: amount as number }))
+      .sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount));
+
+    this.datosFiltrados.ventasPorVendedor = list;
+
+    const labels = list.map(x => x.name);
+    const data = list.map(x => x.amount);
 
     if (this.datosFiltrados.ventasPorVendedorChartConfig) {
       this.datosFiltrados.ventasPorVendedorChartConfig = {
@@ -1877,18 +2154,22 @@ export class VentasComponent implements OnInit, OnChanges {
 
   recalcularVentasPorFormaPago(ventas: any[]): void {
     const ventasPorFormaPago: { [key: string]: number } = {};
-    
+
     ventas.forEach((v: any) => {
       const formaPago = v.formaPago || 'Sin forma de pago';
       ventasPorFormaPago[formaPago] = (ventasPorFormaPago[formaPago] || 0) + (v.monto || 0);
     });
 
     const labels = Object.keys(ventasPorFormaPago);
-    const data = labels.map(fp => ventasPorFormaPago[fp]);
-    const total = data.reduce((s, x) => s + x, 0);
-    const porcentajes = data.map((v) =>
+    const numericData = labels.map(fp => ventasPorFormaPago[fp]);
+    const total = numericData.reduce((s, x) => s + x, 0);
+    const porcentajes = numericData.map((v) =>
       total > 0 ? (v / total) * 100 : 0
     );
+
+    const data = Object.entries(ventasPorFormaPago)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
 
     if (this.datosFiltrados.ventasPorFormaPagoConfig) {
       this.datosFiltrados.ventasPorFormaPagoConfig = {
@@ -1902,7 +2183,7 @@ export class VentasComponent implements OnInit, OnChanges {
 
   recalcularVentasPorCategoria(ventas: any[]): void {
     const ventasPorCategoria: { [key: string]: number } = {};
-    
+
     ventas.forEach((v: any) => {
       const categoria = v.categoria || 'Sin categoría';
       ventasPorCategoria[categoria] = (ventasPorCategoria[categoria] || 0) + (v.monto || 0);
@@ -1915,7 +2196,7 @@ export class VentasComponent implements OnInit, OnChanges {
 
   recalcularTopProductos(ventas: any[]): void {
     const ventasPorProducto: { [key: string]: number } = {};
-    
+
     ventas.forEach((v: any) => {
       const producto = v.producto || 'Sin producto';
       ventasPorProducto[producto] = (ventasPorProducto[producto] || 0) + (v.monto || 0);
@@ -1929,7 +2210,7 @@ export class VentasComponent implements OnInit, OnChanges {
 
   recalcularTopClientes(ventas: any[]): void {
     const ventasPorCliente: { [key: string]: { ventas: number; transacciones: number; ultimaVenta: string } } = {};
-    
+
     ventas.forEach((v: any) => {
       const cliente = v.cliente || 'Sin cliente';
       if (!ventasPorCliente[cliente]) {
@@ -1949,10 +2230,10 @@ export class VentasComponent implements OnInit, OnChanges {
   }
 
   recalcularVentasPorMes(ventas: any[]): void {
-    const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
-                   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     const ventasPorMes: { [key: string]: number } = {};
-    
+
     ventas.forEach((v: any) => {
       if (v.fecha) {
         const fecha = new Date(v.fecha);
@@ -1977,7 +2258,7 @@ export class VentasComponent implements OnInit, OnChanges {
 
   recalcularVentasPorProducto(ventas: any[]): void {
     const ventasPorProductoMap: { [key: string]: any } = {};
-    
+
     ventas.forEach((v: any) => {
       const prodKey =
         v.idProducto != null && String(v.idProducto).trim() !== ''
@@ -2010,7 +2291,7 @@ export class VentasComponent implements OnInit, OnChanges {
 
   recalcularVentasPorCliente(ventas: any[]): void {
     const ventasPorClienteMap: { [key: string]: any } = {};
-    
+
     ventas.forEach((v: any) => {
       const cliente = v.cliente || 'Sin cliente';
       if (!ventasPorClienteMap[cliente]) {
@@ -2019,11 +2300,17 @@ export class VentasComponent implements OnInit, OnChanges {
           ultimaVenta: v.fecha || '',
           dias: 0,
           transacciones: 0,
+          ventasSinIva: 0,
+          ventasConIva: 0,
           ventas: 0
         };
       }
       ventasPorClienteMap[cliente].transacciones += 1;
-      ventasPorClienteMap[cliente].ventas += (v.monto || 0);
+      const montoConIva = v.monto || 0;
+      const montoSinIva = v.ventasSinIva || v.ventasSinIVA || (montoConIva / 1.12);
+      ventasPorClienteMap[cliente].ventasSinIva += montoSinIva;
+      ventasPorClienteMap[cliente].ventasConIva += montoConIva;
+      ventasPorClienteMap[cliente].ventas += montoConIva;
       if (v.fecha && v.fecha > ventasPorClienteMap[cliente].ultimaVenta) {
         ventasPorClienteMap[cliente].ultimaVenta = v.fecha;
       }
@@ -2102,6 +2389,121 @@ export class VentasComponent implements OnInit, OnChanges {
     if (this.filtrosInteractivos.cliente) filtros.push(`Cliente: ${this.filtrosInteractivos.cliente}`);
     if (this.filtrosInteractivos.mes) filtros.push(`Mes: ${this.filtrosInteractivos.mes}`);
     return filtros.join(', ');
+  }
+
+  recalcularTotalesVentasProducto(): void {
+    let cantidad = 0;
+    let ventasSinIVA = 0;
+    let costoTotal = 0;
+    let utilidad = 0;
+
+    if (this.gridApi) {
+      this.gridApi.forEachNodeAfterFilter((node: any) => {
+        if (node.data) {
+          cantidad += (node.data.cantidad || 0);
+          ventasSinIVA += (node.data.ventasSinIVA || 0);
+          costoTotal += (node.data.costoTotal || 0);
+          utilidad += (node.data.utilidad || 0);
+        }
+      });
+    } else if (this.datos.ventasPorProducto) {
+      this.datos.ventasPorProducto.forEach((item: any) => {
+        cantidad += (item.cantidad || 0);
+        ventasSinIVA += (item.ventasSinIVA || 0);
+        costoTotal += (item.costoTotal || 0);
+        utilidad += (item.utilidad || 0);
+      });
+    }
+
+    if (cantidad > 0 || ventasSinIVA > 0) {
+      this.pinnedBottomRowDataVentasProducto = [{
+        categoria: 'TOTAL',
+        producto: '',
+        formaPago: '',
+        cantidad: cantidad,
+        precioUnitario: null,
+        descuento: null,
+        ventasSinIVA: ventasSinIVA,
+        costoTotal: costoTotal,
+        utilidad: utilidad
+      }];
+    } else {
+      this.pinnedBottomRowDataVentasProducto = [];
+    }
+  }
+
+  onFilterChangedVentasProducto(): void {
+    this.recalcularTotalesVentasProducto();
+    this.cdr.markForCheck();
+  }
+
+  recalcularTotalesVentasCliente(): void {
+    let transacciones = 0;
+    let ventasSinIvaVal = 0;
+    let ventasConIvaVal = 0;
+    let diasMax = 0;
+    let ultimaVentaStr = '';
+
+    if (this.clienteGridApi) {
+      const fechas: string[] = [];
+      this.clienteGridApi.forEachNodeAfterFilter((node: any) => {
+        if (node.data) {
+          transacciones += (node.data.transacciones || 0);
+          ventasSinIvaVal += (node.data.ventasSinIvaOriginal || 0);
+          ventasConIvaVal += (node.data.ventasConIvaOriginal || 0);
+          diasMax = Math.max(diasMax, node.data.dias || 0);
+          if (node.data.ultimaVenta && node.data.ultimaVenta !== '-') {
+            fechas.push(node.data.ultimaVenta);
+          }
+        }
+      });
+      if (fechas.length > 0) {
+        fechas.sort((a: string, b: string) => {
+          const dateA = new Date(a.split('/').reverse().join('-'));
+          const dateB = new Date(b.split('/').reverse().join('-'));
+          return dateB.getTime() - dateA.getTime();
+        });
+        ultimaVentaStr = fechas[0];
+      }
+    } else if (this.datos.ventasPorCliente) {
+      const datesList = this.datos.ventasPorCliente
+        .map((item: any) => item.ultimaVenta)
+        .filter((fecha: string) => fecha && fecha !== '-');
+      if (datesList.length > 0) {
+        datesList.sort((a: string, b: string) => {
+          const dateA = new Date(a.split('/').reverse().join('-'));
+          const dateB = new Date(b.split('/').reverse().join('-'));
+          return dateB.getTime() - dateA.getTime();
+        });
+        ultimaVentaStr = datesList[0];
+      }
+      this.datos.ventasPorCliente.forEach((item: any) => {
+        transacciones += (item.transacciones || 0);
+        ventasSinIvaVal += (item.ventasSinIva || 0);
+        ventasConIvaVal += (item.ventasConIva || 0);
+        diasMax = Math.max(diasMax, item.dias || 0);
+      });
+    }
+
+    if (transacciones > 0) {
+      this.pinnedBottomRowDataVentasCliente = [{
+        cliente: 'Total',
+        ultimaVenta: ultimaVentaStr || '-',
+        dias: diasMax,
+        transacciones: transacciones,
+        ventasSinIva: this.formatCurrency(ventasSinIvaVal),
+        ventasSinIvaOriginal: ventasSinIvaVal,
+        ventasConIva: this.formatCurrency(ventasConIvaVal),
+        ventasConIvaOriginal: ventasConIvaVal
+      }];
+    } else {
+      this.pinnedBottomRowDataVentasCliente = [];
+    }
+  }
+
+  onFilterChangedVentasCliente(): void {
+    this.recalcularTotalesVentasCliente();
+    this.cdr.markForCheck();
   }
 
   // ─────────────────────────────────────────────

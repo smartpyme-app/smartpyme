@@ -2,6 +2,7 @@
     display: block;
 }
 
+/* ── Contenedor externo ───────────────────────────────────────────────── */
 .dropdown-multi-filtro-label {
     color: var(--bs-primary, #0d6efd);
 }
@@ -13,63 +14,90 @@
     z-index: 20;
 }
 
-/* Por encima de otros filtros apilados (mismo z-index 20): el menú abierto debe ganar. */
 .dropdown-multi-filtro-outer--open {
     z-index: 1000;
 }
 
-.dropdown-multi-filtro-trigger {
+/* ── Input de autocomplete ────────────────────────────────────────────── */
+.dropdown-multi-filtro-input-wrap {
+    position: relative;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
-    width: 100%;
-    min-height: calc(1.5em + 0.75rem + 2px);
-    padding: 0.375rem 0.75rem;
-    font-size: 1rem;
-    font-weight: 400;
-    line-height: 1.5;
-    color: #212529;
-    background-color: #fff;
+    background: #fff;
     border: 1px solid #ced4da;
     border-radius: 0.375rem;
-    text-align: left;
-    cursor: pointer;
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    cursor: text;
 }
 
-.dropdown-multi-filtro-trigger:hover:not(:disabled) {
+.dropdown-multi-filtro-input-wrap:hover:not(.dmf-input-wrap--disabled) {
     border-color: #adb5bd;
 }
 
-.dropdown-multi-filtro-trigger:focus {
-    outline: 0;
+.dmf-input-wrap--open {
     border-color: #86b7fe;
     box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
 }
 
-.dropdown-multi-filtro-trigger:disabled {
-    background-color: #e9ecef;
+.dmf-input-wrap--disabled {
+    background: #e9ecef;
     cursor: not-allowed;
     opacity: 1;
 }
 
-.dropdown-multi-filtro-trigger-label {
+.dmf-input-icon {
+    flex-shrink: 0;
+    padding: 0 0 0 0.75rem;
+    color: #6c757d;
+    font-size: 0.7rem;
+    pointer-events: none;
+    transition: transform 0.2s ease, color 0.15s ease;
+}
+
+.dmf-input-wrap--open .dmf-input-icon {
+    color: #0d6efd;
+}
+
+.dmf-input {
     flex: 1;
     min-width: 0;
+    height: calc(1.5em + 0.75rem + 2px);
+    padding: 0.375rem 0.5rem;
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #212529;
+    background: transparent;
+    border: none;
+    outline: none;
+    cursor: text;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.dropdown-multi-filtro-chevron {
-    flex-shrink: 0;
-    font-size: 0.65rem;
+.dmf-input:disabled {
+    cursor: not-allowed;
     color: #6c757d;
-    transition: transform 0.2s ease;
 }
 
-.dropdown-multi-filtro-chevron--open {
-    transform: rotate(180deg);
+.dmf-clear-btn {
+    flex-shrink: 0;
+    padding: 0 0.6rem;
+    background: none;
+    border: none;
+    color: #adb5bd;
+    font-size: 0.85rem;
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.15s ease;
 }
 
+.dmf-clear-btn:hover {
+    color: #6c757d;
+}
+
+/* ── Panel de opciones ────────────────────────────────────────────────── */
 .dropdown-multi-filtro-panel {
     position: absolute;
     left: 0;
@@ -78,96 +106,117 @@
     z-index: 1080;
     display: flex;
     flex-direction: column;
-    max-height: min(320px, 70vh);
+    max-height: min(340px, 72vh);
     overflow: hidden;
     background: #fff;
     border: 1px solid #dee2e6;
     border-radius: 0.375rem;
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0.5rem 1.25rem rgba(0, 0, 0, 0.12);
+    animation: dmf-panel-in 0.12s ease;
 }
 
-.dropdown-multi-filtro-panel--searchable {
-    max-height: min(380px, 75vh);
-}
-
-.dropdown-multi-filtro-buscar {
-    flex-shrink: 0;
-    padding: 0.5rem 0.5rem 0.375rem;
-    border-bottom: 1px solid #e9ecef;
-    background: #fff;
-}
-
-.dropdown-multi-filtro-limite-aviso {
-    line-height: 1.35;
-}
-
-.dropdown-multi-filtro-buscar-icon {
-    padding: 0.25rem 0.5rem;
-    background: #fff;
-    border-color: #ced4da;
-    color: #6c757d;
+@keyframes dmf-panel-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
 .dropdown-multi-filtro-panel-scroll {
     flex: 1;
     min-height: 0;
-    max-height: 280px;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
 }
 
-.dropdown-multi-filtro-panel--searchable .dropdown-multi-filtro-panel-scroll {
-    max-height: min(300px, 55vh);
-}
-
-.dropdown-multi-filtro-sin-resultados {
-    border-top: 1px solid #f1f3f5;
-}
-
+/* ── Filas ────────────────────────────────────────────────────────────── */
 .dropdown-multi-filtro-row {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.5rem 0.75rem;
+    padding: 0.45rem 0.75rem;
     margin: 0;
     cursor: pointer;
-    font-size: 0.9rem;
+    font-size: 0.875rem;
     color: #212529;
     user-select: none;
+    transition: background-color 0.1s ease;
 }
 
 .dropdown-multi-filtro-row:hover {
-    background-color: #f8f9fa;
+    background-color: #f0f4ff;
+}
+
+.dmf-row-todo {
+    border-bottom: 1px solid #e9ecef;
+    font-size: 0.85rem;
+    color: #495057;
+    padding: 0.5rem 0.75rem;
+    background: #f8f9fa;
+}
+
+.dmf-row-todo:hover {
+    background-color: #eef2ff;
 }
 
 .dropdown-multi-filtro-row .form-check-input {
     margin-top: 0;
     cursor: pointer;
+    flex-shrink: 0;
 }
 
 .dropdown-multi-filtro-row span {
     min-width: 0;
 }
 
-/* Tema con acento (ej. dashboard gastos) */
+/* Badge contador en "Seleccionar todo" al filtrar */
+.dmf-badge {
+    font-size: 0.7rem;
+    padding: 0.15em 0.45em;
+    background: #e9ecef;
+    color: #495057;
+    border-radius: 999px;
+    font-weight: 600;
+}
+
+/* Resaltado de coincidencia de búsqueda */
+.dmf-highlight {
+    background: #fff3cd;
+    color: #856404;
+    border-radius: 2px;
+    padding: 0 1px;
+    font-weight: 700;
+}
+
+/* Sin resultados */
+.dropdown-multi-filtro-sin-resultados {
+    border-top: 1px solid #f1f3f5;
+}
+
+/* Aviso límite */
+.dropdown-multi-filtro-limite-aviso {
+    line-height: 1.35;
+    border-top: 1px solid #e9ecef;
+    background: #f8f9fa;
+}
+
+/* ── Tema con acento ──────────────────────────────────────────────────── */
 .dropdown-multi-filtro-outer--accent .dropdown-multi-filtro-label {
     color: var(--dmf-accent);
 }
 
-.dropdown-multi-filtro-outer--accent .dropdown-multi-filtro-trigger {
+.dropdown-multi-filtro-outer--accent .dropdown-multi-filtro-input-wrap {
     border-color: color-mix(in srgb, var(--dmf-accent) 42%, #ced4da);
 }
 
-.dropdown-multi-filtro-outer--accent .dropdown-multi-filtro-trigger:hover:not(:disabled) {
+.dropdown-multi-filtro-outer--accent .dropdown-multi-filtro-input-wrap:hover:not(.dmf-input-wrap--disabled) {
     border-color: var(--dmf-accent);
 }
 
-.dropdown-multi-filtro-outer--accent .dropdown-multi-filtro-trigger:focus {
+.dropdown-multi-filtro-outer--accent .dmf-input-wrap--open {
     border-color: var(--dmf-accent);
-    box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--dmf-accent) 28%, transparent);
+    box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--dmf-accent) 25%, transparent);
 }
 
-.dropdown-multi-filtro-outer--accent .dropdown-multi-filtro-chevron {
+.dropdown-multi-filtro-outer--accent .dmf-input-icon {
     color: var(--dmf-accent);
 }
 
@@ -178,18 +227,12 @@
         0 0.5rem 1rem rgba(0, 0, 0, 0.06);
 }
 
-.dropdown-multi-filtro-outer--accent .dropdown-multi-filtro-buscar {
-    background: color-mix(in srgb, var(--dmf-accent) 7%, #fff);
-    border-bottom-color: color-mix(in srgb, var(--dmf-accent) 22%, #e9ecef);
-}
-
-.dropdown-multi-filtro-outer--accent .dropdown-multi-filtro-buscar-icon {
-    border-color: color-mix(in srgb, var(--dmf-accent) 35%, #ced4da);
-    color: var(--dmf-accent);
-}
-
 .dropdown-multi-filtro-outer--accent .dropdown-multi-filtro-row:hover {
     background-color: color-mix(in srgb, var(--dmf-accent) 9%, #fff);
+}
+
+.dropdown-multi-filtro-outer--accent .dmf-row-todo:hover {
+    background-color: color-mix(in srgb, var(--dmf-accent) 12%, #f8f9fa);
 }
 
 .dropdown-multi-filtro-outer--accent .dropdown-multi-filtro-row .form-check-input:focus {
@@ -200,4 +243,9 @@
 .dropdown-multi-filtro-outer--accent .dropdown-multi-filtro-row .form-check-input:checked {
     background-color: var(--dmf-accent);
     border-color: var(--dmf-accent);
+}
+
+.dropdown-multi-filtro-outer--accent .dmf-badge {
+    background: color-mix(in srgb, var(--dmf-accent) 15%, #e9ecef);
+    color: color-mix(in srgb, var(--dmf-accent) 80%, #495057);
 }

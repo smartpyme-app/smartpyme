@@ -9,7 +9,7 @@ import { ChartConfig } from '../../models/chart-config.model';
 export class BarChartComponent implements OnInit, OnChanges {
   @Input() config!: ChartConfig;
   @Output() itemClick = new EventEmitter<{ name: string; value: any; index: number }>();
-  
+
   chartOption: any = {};
   echartsInstance: any;
 
@@ -21,6 +21,25 @@ export class BarChartComponent implements OnInit, OnChanges {
     if (changes['config'] && !changes['config'].firstChange) {
       this.initChart();
     }
+  }
+
+  private hexToRgba(hex: string, alpha: number): string {
+    if (!hex || !hex.startsWith('#')) return hex;
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+
+  private buildTooltipStyle(): Record<string, any> {
+    const primary = this.config?.colors?.[0];
+    if (!primary || !primary.startsWith('#')) return {};
+    return {
+      backgroundColor: '#ffffff',
+      borderColor: primary,
+      borderWidth: 2,
+      textStyle: { color: '#333' }
+    };
   }
 
   initChart(): void {
@@ -35,18 +54,20 @@ export class BarChartComponent implements OnInit, OnChanges {
     }
 
     // Verificar si es un gráfico de múltiples series (ventas y gastos)
-    const isMultiSeries = Array.isArray(this.config.data) && 
-                         this.config.data.length > 0 && 
-                         typeof this.config.data[0] === 'object' && 
-                         this.config.data[0].hasOwnProperty('name') &&
-                         this.config.data[0].hasOwnProperty('data');
+    const isMultiSeries = Array.isArray(this.config.data) &&
+      this.config.data.length > 0 &&
+      typeof this.config.data[0] === 'object' &&
+      this.config.data[0].hasOwnProperty('name') &&
+      this.config.data[0].hasOwnProperty('data');
 
     let series: any[] = [];
     const showBarLabels = this.config.showBarLabels !== false;
+    const barLabelPosition = this.config.barLabelPosition || 'top';
+    const isInsidePosition = barLabelPosition.startsWith('inside');
 
     const barValueLabel = showBarLabels ? {
       show: true,
-      position: 'top',
+      position: barLabelPosition,
       rotate: 0,
       formatter: (params: any) => {
         const value = params.value;
@@ -54,19 +75,19 @@ export class BarChartComponent implements OnInit, OnChanges {
 
         let formatted: string;
         if (absValue >= 1000000) {
-          formatted = `${(absValue / 1000000).toFixed(1)}M`;
+          formatted = `${(Math.floor((absValue / 1000000) * 10) / 10).toFixed(1)}M`;
         } else if (absValue >= 1000) {
-          formatted = `${(absValue / 1000).toFixed(1)}K`;
+          formatted = `${(Math.floor((absValue / 1000) * 10) / 10).toFixed(1)}K`;
         } else {
           formatted = absValue.toFixed(0);
         }
 
         return value < 0 ? `(${formatted})` : formatted;
       },
-      color: '#333',
+      color: isInsidePosition ? '#fff' : '#000',
       fontSize: 12,
       fontWeight: 'medium',
-      offset: [0, -10],
+      offset: isInsidePosition ? [0, 0] : [0, -5],
       align: 'center',
       verticalAlign: 'middle',
       padding: [4, 6, 4, 6]
@@ -83,6 +104,7 @@ export class BarChartComponent implements OnInit, OnChanges {
           borderRadius: [4, 4, 0, 0]
         },
         label: barValueLabel,
+        barMaxWidth: 60,
         emphasis: {
           itemStyle: {
             shadowBlur: 10,
@@ -96,7 +118,7 @@ export class BarChartComponent implements OnInit, OnChanges {
       const data = this.config.data as number[];
       const hasConditionalColors = (this.config as any).conditionalColors === true;
       const originalValues = (this.config as any).originalValues as number[] | undefined;
-      
+
       series = [{
         name: this.config.title || 'Datos',
         type: 'bar',
@@ -105,18 +127,41 @@ export class BarChartComponent implements OnInit, OnChanges {
           color: (params: any) => {
             // Si hay valores originales, usarlos para determinar el color
             // Si no, usar el valor mostrado (que ya es absoluto)
-            const originalValue = originalValues && originalValues[params.dataIndex] !== undefined 
-              ? originalValues[params.dataIndex] 
+            const originalValue = originalValues && originalValues[params.dataIndex] !== undefined
+              ? originalValues[params.dataIndex]
               : params.value;
             // Verde para valores positivos, rojo para negativos
             return originalValue >= 0 ? '#4caf50' : '#f44336';
           },
-          borderRadius: [4, 4, 0, 0]
+        } : (this.config.graduatedOpacity ? {
+          color: (params: any) => {
+            const baseColor = this.config.colors?.[0] || '#5470c6';
+            const maxVal = Math.max(...data);
+            if (maxVal <= 0) return baseColor;
+            const ratio = params.value / maxVal;
+            if (baseColor.toUpperCase() === '#F19447') {
+              const r = Math.round(246 + (241 - 246) * ratio);
+              const g = Math.round(193 + (148 - 193) * ratio);
+              const b = Math.round(146 + (71 - 146) * ratio);
+              return `rgb(${r}, ${g}, ${b})`;
+            }
+            const opacity = 0.35 + 0.65 * ratio;
+            return this.hexToRgba(baseColor, opacity);
+          },
+          borderRadius: (this.config as any).horizontal ? [0, 4, 4, 0] : [4, 4, 0, 0]
+        } : (this.config.highlightMaxBar ? {
+          color: (params: any) => {
+            const baseColor = this.config.colors?.[0] || '#5470c6';
+            const maxVal = Math.max(...data);
+            return params.value === maxVal ? baseColor : this.hexToRgba(baseColor, 0.4);
+          },
+          borderRadius: (this.config as any).horizontal ? [0, 4, 4, 0] : [4, 4, 0, 0]
         } : {
           color: this.config.colors?.[0] || '#5470c6',
-          borderRadius: [4, 4, 0, 0]
-        },
+          borderRadius: (this.config as any).horizontal ? [0, 4, 4, 0] : [4, 4, 0, 0]
+        })),
         label: barValueLabel,
+        barMaxWidth: 60,
         emphasis: {
           itemStyle: {
             shadowBlur: 10,
@@ -134,9 +179,37 @@ export class BarChartComponent implements OnInit, OnChanges {
 
     const labelCount = this.config.labels?.length ?? 0;
     const rotateLabels = this.config.rotateLabels ?? 0;
-    const gridBottom = this.config.gridBottom ?? (
+    const isHorizontal = !!(this.config as any).horizontal;
+    const needsDataZoom = !isHorizontal && !isMultiSeries && labelCount > 6;
+    const dataZoomBottom = needsDataZoom ? '20%' : undefined;
+    const gridBottom = this.config.gridBottom ?? dataZoomBottom ?? (
       rotateLabels >= 45 ? '16%' : rotateLabels > 0 ? '10%' : '8%'
     );
+
+    const primaryColor = this.config.colors?.[0] || '#5470c6';
+    const dataZoom = needsDataZoom ? [
+      {
+        type: 'slider',
+        xAxisIndex: 0,
+        start: 0,
+        end: Math.round((6 / labelCount) * 100),
+        bottom: 5,
+        height: 14,
+        borderColor: primaryColor,
+        fillerColor: this.hexToRgba(primaryColor, 0.15),
+        handleStyle: { color: primaryColor, borderColor: primaryColor },
+        moveHandleStyle: { color: primaryColor },
+        emphasis: { handleStyle: { color: primaryColor } },
+        textStyle: { color: '#666', fontSize: 10 },
+        brushSelect: false,
+      },
+      {
+        type: 'inside',
+        xAxisIndex: 0,
+        start: 0,
+        end: Math.round((6 / labelCount) * 100),
+      }
+    ] : undefined;
 
     const barTooltipFormatter = (params: any) => {
       const resolveLabel = (item: any) =>
@@ -169,38 +242,51 @@ export class BarChartComponent implements OnInit, OnChanges {
       } : undefined,
       tooltip: isMultiSeries
         ? {
-            trigger: 'axis',
-            axisPointer: { type: 'shadow' },
-            formatter: barTooltipFormatter,
-          }
+          trigger: 'axis',
+          axisPointer: { type: 'shadow' },
+          formatter: barTooltipFormatter,
+          ...this.buildTooltipStyle()
+        }
         : {
-            trigger: 'item',
-            axisPointer: { type: 'none' },
-            formatter: barTooltipFormatter,
-          },
+          trigger: 'item',
+          axisPointer: { type: 'none' },
+          formatter: barTooltipFormatter,
+          ...this.buildTooltipStyle()
+        },
       legend: isMultiSeries ? {
         data: (this.config.data as any[]).map((s: any) => s.name),
-        top: this.config.title ? 30 : 10,
-        left: 'left'
+        top: this.config.title ? 30 : 0,
+        left: 'left',
+        icon: 'circle',
+        itemWidth: 10,
+        itemHeight: 10,
+        itemGap: 24,
+        textStyle: {
+          fontSize: 13,
+          color: '#4a5568',
+          fontWeight: 'normal'
+        }
       } : undefined,
       grid: {
         left: (this.config as any).horizontal ? '15%' : '3%',
         right: '4%',
         bottom: gridBottom,
-        top: isMultiSeries ? (this.config.title ? '20%' : '15%') : '10%',
+        top: isMultiSeries ? (this.config.title ? 60 : 40) : 30,
         containLabel: true
       },
       xAxis: (this.config as any).horizontal ? {
         type: 'value',
         axisLabel: {
-          show: true,
+          show: this.config.showXAxisLabels !== false,
           formatter: (value: number) => {
-            if (value >= 1000000) {
-              return `$${(value / 1000000).toFixed(1)}M`;
-            } else if (value >= 1000) {
-              return `$${(value / 1000).toFixed(1)}K`;
+            const absValue = Math.abs(value);
+            const sign = value >= 0 ? '' : '-';
+            if (absValue >= 1000000) {
+              return `${sign}$${(Math.floor((absValue / 1000000) * 10) / 10).toFixed(1)}M`;
+            } else if (absValue >= 1000) {
+              return `${sign}$${(Math.floor((absValue / 1000) * 10) / 10).toFixed(1)}K`;
             }
-            return `$${value.toFixed(0)}`;
+            return `${sign}$${absValue.toFixed(0)}`;
           }
         },
         splitLine: {
@@ -210,10 +296,15 @@ export class BarChartComponent implements OnInit, OnChanges {
         type: 'category',
         data: this.config.labels || [],
         axisLabel: {
+          show: this.config.showXAxisLabels !== false,
           rotate: rotateLabels,
           interval: 0,
           fontSize: labelCount > 6 ? 10 : 11,
-          hideOverlap: false
+          hideOverlap: false,
+          formatter: (value: string) => {
+            const maxLen = 12;
+            return value && value.length > maxLen ? value.slice(0, maxLen) + '…' : value;
+          }
         }
       },
       yAxis: (this.config as any).horizontal ? {
@@ -221,7 +312,11 @@ export class BarChartComponent implements OnInit, OnChanges {
         data: this.config.labels || [],
         axisLabel: {
           show: true,
-          interval: 0
+          interval: 0,
+          formatter: (value: string) => {
+            const maxLen = 14;
+            return value && value.length > maxLen ? value.slice(0, maxLen) + '…' : value;
+          }
         },
         inverse: true
       } : {
@@ -235,17 +330,24 @@ export class BarChartComponent implements OnInit, OnChanges {
       },
       series: series.map(s => {
         if ((this.config as any).horizontal) {
-          // Para barras horizontales, ajustar el label position
+          // Para barras horizontales, ajustar el label position y rotación
+          const finalPosition = this.config.barLabelPosition || 'right';
+          const isInside = finalPosition.startsWith('inside');
           return {
             ...s,
             label: {
               ...s.label,
-              position: 'right'
+              position: finalPosition,
+              rotate: 0,
+              align: isInside ? 'center' : 'left',
+              color: isInside ? '#fff' : '#000',
+              offset: isInside ? [0, 0] : [5, 0]
             }
           };
         }
         return s;
-      })
+      }),
+      ...(dataZoom ? { dataZoom } : {})
     };
 
     this.attachItemClickHandler();

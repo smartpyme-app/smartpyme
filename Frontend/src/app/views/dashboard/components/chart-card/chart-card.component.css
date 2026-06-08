@@ -1,49 +1,78 @@
 /* Estilos para las tarjetas según el diseño */
 .metric-card {
     background-color: white;
-    border: 1px solid #e0e0e0;
+    border: 1px solid rgba(0, 118, 227, 0.15);
     border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    overflow: hidden; /* Evita que el contenido se salga */
-    min-width: 0; /* Permite shrinking correcto en flex */
+    box-shadow: none;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    overflow: hidden;
+    /* Evita que el contenido se salga */
+    min-width: 0;
+    /* Permite shrinking correcto en flex */
 }
 
 .metric-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border-color: rgba(0, 118, 227, 0.35);
+    box-shadow: 0 4px 12px rgba(0, 118, 227, 0.08);
 }
 
 .metric-card .card-body {
-    min-width: 0; /* Permite shrinking correcto */
-    overflow: hidden; /* Evita overflow */
+    min-width: 0;
+    /* Permite shrinking correcto */
+    overflow: hidden;
+    /* Evita overflow */
 }
 
 .value-text {
-    /* Tamaño responsive usando clamp: min, preferido, max */
-    /* Prioridad: mantener datos legibles siempre */
-    font-size: clamp(1.25rem, 4vw, 1.75rem);
-    font-weight: 700;
+    font-size: clamp(1rem, 2.8vw, 1.45rem);
+    text-align: left;
+    font-weight: 400;
     line-height: 1.2;
-    letter-spacing: -0.01em;
-    word-break: break-word; /* Rompe palabras largas si es necesario */
-    overflow-wrap: break-word; /* Alternativa para compatibilidad */
-    hyphens: auto; /* Agrega guiones automáticos */
-    min-width: 0; /* Permite shrinking */
-    flex-shrink: 0; /* El valor NO se encoge, tiene prioridad */
+    letter-spacing: -0.02em;
+    color: #1e293b;
+    white-space: nowrap;
+    /* El valor NO parte en líneas */
+    overflow: hidden;
+    /* Oculta lo que no entra */
+    text-overflow: ellipsis;
+    /* ... si el valor es demasiado largo */
+    min-width: 0;
+    display: block;
+}
+
+.label-text-upper {
+    font-size: 0.62rem;
+    /* Tamaño fijo pequeño para no romper el layout */
+    text-align: left;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    line-height: 1.3;
+    margin-bottom: 0.3rem;
+    white-space: nowrap;
+    /* Se queda en UNA sola línea */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    /* ... si el texto no cabe */
+    display: block;
 }
 
 .label-text {
     font-size: clamp(0.75rem, 2vw, 0.875rem);
+    text-align: left;
     font-weight: 400;
     color: #6c757d;
     line-height: 1.4;
     margin-bottom: 0.5rem;
-    word-break: break-word; /* Rompe palabras largas */
+    word-break: break-word;
+    /* Rompe palabras largas */
     overflow-wrap: break-word;
     hyphens: auto;
     display: -webkit-box;
-    -webkit-line-clamp: 2; /* Máximo 2 líneas */
+    -webkit-line-clamp: 2;
+    /* Máximo 2 líneas */
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -55,11 +84,13 @@
     overflow: hidden;
 }
 
-.trend-indicator > span {
+.trend-indicator>span {
     display: flex !important;
-    flex-wrap: wrap; /* Permite wrap en pantallas pequeñas */
+    flex-wrap: wrap;
+    /* Permite wrap en pantallas pequeñas */
     gap: 0.25rem;
     align-items: center;
+    justify-content: flex-start;
     min-width: 0;
 }
 
@@ -80,17 +111,20 @@
 }
 
 .mini-chart {
-    flex-shrink: 1; /* Permite que el gráfico se encoja si es necesario */
+    flex-shrink: 1;
+    /* Permite que el gráfico se encoja si es necesario */
     opacity: 0.8;
     display: flex;
     align-items: center;
     justify-content: flex-end;
     margin-left: 0.5rem;
-    min-width: 0; /* Permite shrinking correcto */
+    min-width: 0;
+    /* Permite shrinking correcto */
 }
 
 .chart-svg {
-    width: 60px; /* Más pequeño por defecto para priorizar datos */
+    width: 60px;
+    /* Más pequeño por defecto para priorizar datos */
     height: 30px;
     max-width: 100%;
     height: auto;
@@ -100,7 +134,8 @@
 /* Responsive breakpoints mejorados - Prioridad a los datos */
 @media (max-width: 1200px) {
     .chart-svg {
-        width: 50px; /* Gráfico aún más pequeño */
+        width: 50px;
+        /* Gráfico aún más pequeño */
         height: 25px;
     }
 }
@@ -111,7 +146,8 @@
     }
 
     .chart-svg {
-        width: 40px; /* Gráfico muy pequeño */
+        width: 40px;
+        /* Gráfico muy pequeño */
         height: 20px;
     }
 }
@@ -142,20 +178,25 @@
 
     .label-text {
         font-size: clamp(0.65rem, 3vw, 0.75rem);
-        -webkit-line-clamp: 1; /* Solo 1 línea en móviles muy pequeños */
+        -webkit-line-clamp: 1;
+        /* Solo 1 línea en móviles muy pequeños */
     }
 
     .trend-indicator .text-muted {
-        display: none; /* Oculta "comparativa anual" en móviles pequeños */
+        display: none;
+        /* Oculta "comparativa anual" en móviles pequeños */
     }
 }
 
 /* Mejoras para contenedores flex - Priorizar datos */
 .d-flex.flex-grow-1 {
-    min-width: 0; /* Importante para permitir shrinking correcto */
+    min-width: 0;
+    /* Importante para permitir shrinking correcto */
     overflow: hidden;
-    flex-grow: 1 !important; /* Asegura que los datos tomen el máximo espacio */
-    flex-shrink: 0 !important; /* Los datos NO se encogen */
+    flex-grow: 1 !important;
+    /* Asegura que los datos tomen el máximo espacio */
+    flex-shrink: 0 !important;
+    /* Los datos NO se encogen */
 }
 
 /* El contenedor de contenido debe tomar prioridad */
@@ -163,9 +204,9 @@
     gap: 0.5rem;
 }
 
-.metric-card .d-flex > div:first-child {
+.metric-card .d-flex>div:first-child {
     flex-grow: 1;
-    flex-shrink: 0; /* El área de datos NO se encoge */
+    flex-shrink: 0;
+    /* El área de datos NO se encoge */
     min-width: 0;
 }
-

@@ -9,9 +9,17 @@ import { ChartConfig } from '../../models/chart-config.model';
 export class LineChartComponent implements OnInit, OnChanges {
   @Input() config!: ChartConfig;
   @Output() itemClick = new EventEmitter<{ name: string; value: any; index: number }>();
-  
+
   chartOption: any = {};
   echartsInstance: any;
+
+  private hexToRgba(hex: string, alpha: number): string {
+    if (!hex || !hex.startsWith('#')) return hex;
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
 
   ngOnInit(): void {
     this.initChart();
@@ -24,18 +32,30 @@ export class LineChartComponent implements OnInit, OnChanges {
   }
 
   formatValue(value: number): string {
-    if (value >= 1000000) {
-      return (value / 1000000).toFixed(1) + 'M';
-    } else if (value >= 1000) {
-      return (value / 1000).toFixed(1) + 'K';
+    let formatted = '';
+    const absValue = Math.abs(value);
+    const sign = value >= 0 ? '' : '-';
+    if (absValue >= 1000000) {
+      formatted = sign + (Math.floor((absValue / 1000000) * 10) / 10).toFixed(1) + 'M';
+    } else if (absValue >= 1000) {
+      formatted = sign + (Math.floor((absValue / 1000) * 10) / 10).toFixed(1) + 'K';
+    } else {
+      formatted = value.toString();
     }
-    return value.toString();
+    return `$${formatted}`;
   }
 
   initChart(): void {
     if (!this.config) {
       return;
     }
+
+    const formatLineTooltipValue = (value: number) => {
+      const v = Number(value);
+      if (Number.isNaN(v)) return '';
+      const formatted = Math.abs(v).toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      return v < 0 ? `($${formatted})` : `$${formatted}`;
+    };
 
     this.chartOption = {
       title: this.config.title ? {
@@ -50,6 +70,23 @@ export class LineChartComponent implements OnInit, OnChanges {
         trigger: 'axis',
         axisPointer: {
           type: 'cross'
+        },
+        ...(this.config.colors?.[0] ? {
+          backgroundColor: '#ffffff',
+          borderColor: this.config.colors[0],
+          borderWidth: 2,
+          textStyle: { color: '#333' }
+        } : {}),
+        formatter: (params: any) => {
+          const resolveParams = Array.isArray(params) ? params : [params];
+          if (resolveParams.length === 0) return '';
+          const name = resolveParams[0].name;
+          let html = `<b>${name}</b><br/>`;
+          resolveParams.forEach((p: any) => {
+            const val = formatLineTooltipValue(p.value);
+            html += `${p.marker} ${p.seriesName}: ${val}<br/>`;
+          });
+          return html;
         }
       },
       grid: {
@@ -61,7 +98,13 @@ export class LineChartComponent implements OnInit, OnChanges {
       xAxis: {
         type: 'category',
         boundaryGap: false,
-        data: this.config.labels || []
+        data: this.config.labels || [],
+        axisLine: {
+          show: this.config.showXAxisLine !== false
+        },
+        axisTick: {
+          show: this.config.showXAxisLine !== false
+        }
       },
       yAxis: {
         type: 'value',
@@ -69,6 +112,7 @@ export class LineChartComponent implements OnInit, OnChanges {
           show: false
         },
         axisLabel: {
+          show: this.config.showYAxisLabels !== false,
           formatter: (value: number) => this.formatValue(value)
         }
       },
@@ -77,11 +121,33 @@ export class LineChartComponent implements OnInit, OnChanges {
           name: this.config.title || 'Datos',
           type: 'line',
           data: this.config.data,
-          smooth: true,
+          smooth: this.config.smooth !== false,
+          label: {
+            show: this.config.showLineLabels !== false,
+            position: 'top',
+            formatter: (params: any) => {
+              const value = params.value;
+              const absValue = Math.abs(value);
+
+              let formatted: string;
+              if (absValue >= 1000000) {
+                formatted = `${(Math.floor((absValue / 1000000) * 10) / 10).toFixed(1)}M`;
+              } else if (absValue >= 1000) {
+                formatted = `${(Math.floor((absValue / 1000) * 10) / 10).toFixed(1)}K`;
+              } else {
+                formatted = absValue.toFixed(0);
+              }
+
+              return value < 0 ? `(${formatted})` : formatted;
+            },
+            color: '#000',
+            fontSize: 11,
+            fontWeight: 'medium'
+          },
           itemStyle: {
             color: this.config.colors?.[0] || '#5470c6'
           },
-          areaStyle: {
+          areaStyle: this.config.showArea !== false ? {
             color: {
               type: 'linear',
               x: 0,
@@ -99,7 +165,7 @@ export class LineChartComponent implements OnInit, OnChanges {
                 }
               ]
             }
-          }
+          } : undefined
         }
       ]
     };
