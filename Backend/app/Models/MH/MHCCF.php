@@ -170,8 +170,6 @@ class MHCCF extends Model
             }
         }
 
-        $tributos = $this->buildTributosResumen();
-
         if ($this->venta->iva > 0) {
             $this->venta->gravada = $this->venta->sub_total;
         }else{
@@ -180,6 +178,11 @@ class MHCCF extends Model
         }
 
         $pagoCond = $this->condicionOperacionYPagoPlazo();
+        $cuerpoDocumento = $this->detalles();
+        $tributos = $this->buildTributosResumen();
+        $subTotal = floatval(number_format($this->venta->sub_total, 2, '.', ''));
+        $totalDescu = 0.0;
+        $montoTotalOperacion = $this->montoTotalOperacionConTributos($subTotal, $tributos, $totalDescu);
 
         return 
             [
@@ -189,25 +192,25 @@ class MHCCF extends Model
                 "receptor" => $this->receptor(),
                 "otrosDocumentos" => NULL,
                 "ventaTercero" => NULL,
-                "cuerpoDocumento" => $this->detalles(),
+                "cuerpoDocumento" => $cuerpoDocumento,
                "resumen" => [
                   "totalNoSuj" => floatval(number_format($this->venta->no_sujeta, 2, '.', '')),
                   "totalExenta" => floatval(number_format($this->venta->exenta, 2, '.', '')),
                   "totalGravada" => floatval(number_format($this->venta->gravada, 2, '.', '')),
-                  "subTotalVentas" => floatval(number_format($this->venta->sub_total, 2, '.', '')),
+                  "subTotalVentas" => $subTotal,
                   "descuNoSuj" => 0,
                   "descuExenta" => 0,
                   // "descuGravada" => floatval(number_format($this->venta->descuento, 2, '.', '')),
                   "descuGravada" => floatval(number_format(0, 2, '.', '')),
                   "porcentajeDescuento" => 0,
                   // "totalDescu" => floatval(number_format($this->venta->descuento, 2, '.', '')),
-                  "totalDescu" => floatval(number_format(0, 2, '.', '')),
+                  "totalDescu" => floatval(number_format($totalDescu, 2, '.', '')),
                   "tributos" => $tributos,
-                  "subTotal" => floatval(number_format($this->venta->sub_total, 2, '.', '')),
+                  "subTotal" => $subTotal,
                   "ivaPerci1" => floatval(number_format($this->venta->iva_percibido, 2, '.', '')),
                   "ivaRete1" => floatval(number_format($this->venta->iva_retenido, 2, '.', '')),
                   "reteRenta" => floatval(number_format($this->venta->renta_retenida ?? 0, 2, '.', '')),
-                  "montoTotalOperacion" => floatval(number_format($this->venta->total - $this->venta->cuenta_a_terceros + $this->venta->iva_retenido + $this->venta->renta_retenida, 2, '.', '')),
+                  "montoTotalOperacion" => $montoTotalOperacion,
                   "totalNoGravado" => floatval(number_format($this->venta->cuenta_a_terceros, 2, '.', '')),
                   "totalPagar" => floatval(number_format($this->venta->total, 2, '.', '')),
                   "totalLetras" => $this->venta->total_en_letras,
@@ -249,7 +252,7 @@ class MHCCF extends Model
             }
 
             if ($this->venta->iva > 0) {
-                $tributos = $this->buildTributosLineaCodesDesdeVenta();
+                $tributos = $this->buildTributosLineaCodesDesdeDocumento();
                 $this->venta->gravada = $this->venta->detalles()->sum('total');
             }else{
                 $tributos = NULL;

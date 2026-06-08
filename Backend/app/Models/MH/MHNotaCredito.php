@@ -173,14 +173,17 @@ class MHNotaCredito extends Model
 
     public function generarNotaCredito(){
 
-        $tributos = $this->buildTributosResumen();
-
         if ($this->devolucion->iva > 0) {
             $this->devolucion->gravada = $this->devolucion->sub_total;
         }else{
             $this->devolucion->gravada = 0;
             $this->devolucion->exenta = $this->devolucion->sub_total;
         }
+
+        $tributos = $this->buildTributosResumen();
+        $subTotal = floatval(number_format($this->devolucion->sub_total, 2, '.', ''));
+        $totalDescu = floatval(number_format($this->devolucion->descuento, 2, '.', ''));
+        $montoTotalOperacion = $this->montoTotalOperacionConTributos($subTotal, $tributos, $totalDescu);
 
         return 
             [
@@ -194,17 +197,17 @@ class MHNotaCredito extends Model
                   "totalNoSuj" => floatval(number_format($this->devolucion->no_sujeta, 2, '.', '')),
                   "totalExenta" => floatval(number_format($this->devolucion->exenta, 2, '.', '')),
                   "totalGravada" => floatval(number_format($this->devolucion->gravada, 2, '.', '')),
-                  "subTotalVentas" => floatval(number_format($this->devolucion->sub_total, 2, '.', '')),
+                  "subTotalVentas" => $subTotal,
                   "descuNoSuj" => 0,
                   "descuExenta" => 0,
                   "descuGravada" => floatval(number_format($this->devolucion->descuento, 2, '.', '')),
-                  "totalDescu" => floatval(number_format($this->devolucion->descuento, 2, '.', '')),
+                  "totalDescu" => $totalDescu,
                   "tributos" => $tributos,
-                  "subTotal" => floatval(number_format($this->devolucion->sub_total, 2, '.', '')),
+                  "subTotal" => $subTotal,
                   "ivaPerci1" => floatval(number_format($this->devolucion->iva_percibido, 2, '.', '')),
                   "ivaRete1" => floatval(number_format($this->devolucion->iva_retenido, 2, '.', '')),
                   "reteRenta" => 0,
-                  "montoTotalOperacion" => floatval(number_format($this->devolucion->total - $this->devolucion->cuenta_a_terceros, 2, '.', '')),
+                  "montoTotalOperacion" => $montoTotalOperacion,
                   "totalLetras" => $this->devolucion->total_en_letras,
                   // "totalIva" => floatval(number_format($this->devolucion->iva, 2, '.', '')),
                   "condicionOperacion" => $this->devolucion->cod_condicion,

@@ -178,6 +178,96 @@ trait BuildsTributosVenta
         return $this->buildTributosLineaCodesDesdeDocumento();
     }
 
+    protected function esImpuestoIva($impuesto): bool
+    {
+        if (!$impuesto) {
+            return false;
+        }
+
+        return $impuesto->codigo_mh === '20'
+            || ((float) $impuesto->porcentaje === 13.0 && empty($impuesto->codigo_mh));
+    }
+
+    /**
+     * Factura consumidor (01): cuerpoDocumento.tributos solo lleva tributos distintos al IVA (CAT-015).
+     *
+     * @return string[]|null
+     */
+    protected function buildTributosLineaCodesFacturaConsumidor($detalle): ?array
+    {
+        $doc = $this->documentoFiscal();
+
+        if ((float) $doc->iva <= 0 && (float) ($detalle->gravada ?? 0) <= 0) {
+            return null;
+        }
+
+        if ($detalle->producto) {
+            if (!$detalle->producto->relationLoaded('impuestos')) {
+                $detalle->producto->load('impuestos');
+            }
+
+            $codigos = $detalle->producto->impuestos
+                ->filter(fn ($imp) => !$this->esImpuestoIva($imp))
+                ->map(fn ($imp) => $this->resolverCodigoMhImpuesto($imp))
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+
+            if (count($codigos) > 0) {
+                return $codigos;
+            }
+        }
+
+        return $this->buildTributosLineaCodesFacturaConsumidorDesdeDocumento();
+    }
+
+    /**
+     * Códigos MH (no IVA) a nivel documento — p. ej. descripción personalizada sin producto.
+     *
+     * @return string[]|null
+     */
+    protected function buildTributosLineaCodesFacturaConsumidorDesdeDocumento(): ?array
+    {
+        $codigos = $this->filasImpuestosDocumento()
+            ->filter(fn ($vi) => !$this->esImpuestoIva($vi->impuesto))
+            ->map(fn ($vi) => $this->resolverCodigoMhImpuesto($vi->impuesto))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        return count($codigos) > 0 ? $codigos : null;
+    }
+
+    /**
+     * Factura consumidor (01): resumen.tributos con montos de gravámenes distintos al IVA.
+     * Obligatorio cuando cuerpoDocumento[].tributos lleva códigos no-IVA.
+     */
+    protected function buildTributosResumenFacturaConsumidor(): ?Collection
+    {
+        $tributos = $this->filasImpuestosDocumento()
+            ->filter(fn ($vi) => !$this->esImpuestoIva($vi->impuesto))
+            ->map(function ($vi) {
+                $impuesto = $vi->impuesto;
+                $codigo = $this->resolverCodigoMhImpuesto($impuesto);
+
+                if (!$codigo) {
+                    return null;
+                }
+
+                return [
+                    'codigo' => $codigo,
+                    'descripcion' => $impuesto ? $impuesto->nombre : 'Impuesto',
+                    'valor' => floatval(number_format($vi->monto, 2, '.', '')),
+                ];
+            })
+            ->filter()
+            ->values();
+
+        return $tributos->isEmpty() ? null : $tributos;
+    }
+
     /** Monto de IVA (código 20) a nivel documento — para totalIva / ivaItem en factura consumidor. */
     protected function montoIvaVenta(): float
     {
@@ -241,34 +331,59 @@ trait BuildsTributosVenta
         return 13.0;
     }
 
+    /**
+     * IVA por línea en factura consumidor: el MH valida ventaGravada × 13 / 113.
+     */
     protected function calcularIvaItemFactura($detalle, float $ventaItem): float
     {
-        if ($ventaItem <= 0) {
+        return $this->calcularIvaItemFacturaConsumidor($ventaItem);
+    }
+
+    protected function calcularIvaItemFacturaConsumidor(float $ventaGravada): float
+    {
+        if ($ventaGravada <= 0) {
             return 0;
         }
 
-        $doc = $this->documentoFiscal();
-
-        if ((float) ($detalle->iva ?? 0) > 0 && (float) $doc->iva > 0) {
-            $montoIvaDoc = $this->montoIvaDocumento();
-            $ratio = $montoIvaDoc / (float) $doc->iva;
-
-            return round((float) $detalle->iva * $ratio, 4);
-        }
-
-        $tasaTotal = $this->tasaImpuestosDetalle($detalle);
-        $tasaIva = $this->tasaIvaDetalle($detalle);
-
-        if ($tasaTotal <= 0) {
-            return 0;
-        }
-
-        return round($ventaItem * ($tasaIva / 100) / (1 + $tasaTotal / 100), 4);
+        return round($ventaGravada * 13 / 113, 4);
     }
 
     protected function factorImpuestosIncluidos($detalle): float
     {
         return 1 + ($this->tasaImpuestosDetalle($detalle) / 100);
+    }
+
+    /** Solo IVA embebido en ventaGravada; otros tributos van en resumen.tributos. */
+    protected function factorIvaIncluidoDetalle($detalle): float
+    {
+        return 1 + ($this->tasaIvaDetalle($detalle) / 100);
+    }
+
+    protected function montoTributosNoIvaDocumento(): float
+    {
+        return round((float) $this->filasImpuestosDocumento()
+            ->filter(fn ($vi) => !$this->esImpuestoIva($vi->impuesto))
+            ->sum(fn ($vi) => (float) $vi->monto), 2);
+    }
+
+    /** CCF / notas: subTotal neto + suma de resumen.tributos[].valor */
+    protected function sumaValoresTributosResumen(?Collection $tributos): float
+    {
+        if (!$tributos || $tributos->isEmpty()) {
+            return 0.0;
+        }
+
+        return round((float) $tributos->sum(fn ($t) => (float) ($t['valor'] ?? 0)), 2);
+    }
+
+    protected function montoTotalOperacionConTributos(float $subTotal, ?Collection $tributosResumen, float $totalDescu = 0): float
+    {
+        return floatval(number_format(
+            $subTotal - $totalDescu + $this->sumaValoresTributosResumen($tributosResumen),
+            2,
+            '.',
+            ''
+        ));
     }
 
     protected function resolverCodigoMhImpuesto($impuesto): ?string
