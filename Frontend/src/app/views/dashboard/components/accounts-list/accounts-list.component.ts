@@ -19,6 +19,13 @@ export class AccountsListComponent implements OnInit, OnChanges {
   chartOption: any = {};
   echartsInstance: any;
 
+  private hexToRgba(hex: string, alpha: number): string {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+
   ngOnInit(): void {
     this.initChart();
   }
@@ -35,14 +42,16 @@ export class AccountsListComponent implements OnInit, OnChanges {
   }
 
   initChart(): void {
-    if (!this.accounts || !Array.isArray(this.accounts) || this.accounts.length === 0) { 
+    if (!this.accounts || !Array.isArray(this.accounts) || this.accounts.length === 0) {
       return;
     }
 
     const sorted = this.sortedAccounts;
     const labels = sorted.map(a => a.name);
     const data = sorted.map(a => Math.abs(a.amount));
-    const color = this.type === 'payable' ? '#ff9800' : '#4a90e2';
+    const color = this.type === 'payable' ? '#F19447' : '#7CABFF';
+
+    const showZoom = labels.length > 10;
 
     this.chartOption = {
       tooltip: {
@@ -53,9 +62,9 @@ export class AccountsListComponent implements OnInit, OnChanges {
         formatter: (params: any) => {
           if (Array.isArray(params) && params.length > 0) {
             const value = params[0].value;
-            const formattedValue = value.toLocaleString('es-GT', { 
-              minimumFractionDigits: 2, 
-              maximumFractionDigits: 2 
+            const formattedValue = value.toLocaleString('es-GT', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2
             });
             return `${params[0].name}<br/>$${formattedValue}`;
           }
@@ -63,11 +72,11 @@ export class AccountsListComponent implements OnInit, OnChanges {
         }
       },
       grid: {
-        left: '30%',
-        right: '8%',
+        left: '3%',
+        right: showZoom ? '15%' : '8%',
         bottom: '3%',
         top: '3%',
-        containLabel: false
+        containLabel: true
       },
       xAxis: {
         type: 'value',
@@ -93,12 +102,39 @@ export class AccountsListComponent implements OnInit, OnChanges {
           }
         }
       },
+      dataZoom: showZoom ? [
+        {
+          type: 'slider',
+          yAxisIndex: 0,
+          startValue: 0,
+          endValue: 9,
+          right: '2%',
+          width: 15,
+          borderColor: 'transparent',
+          fillerColor: '#e2e8f0',
+          handleSize: 0,
+          showDetail: false,
+          zoomLock: true,
+          brushSelect: false
+        },
+        {
+          type: 'inside',
+          yAxisIndex: 0,
+          startValue: 0,
+          endValue: 9,
+          zoomOnMouseWheel: false,
+          moveOnMouseMove: true,
+          moveOnMouseWheel: true
+        }
+      ] : undefined,
       series: [{
         type: 'bar',
         data: data,
         barWidth: '80%',
         itemStyle: {
-          color: color,
+          color: (params: any) => {
+            return params.dataIndex === 0 ? color : this.hexToRgba(color, 0.4);
+          },
           borderRadius: [0, 4, 4, 0]
         },
         label: {
@@ -106,16 +142,20 @@ export class AccountsListComponent implements OnInit, OnChanges {
           position: 'right',
           formatter: (params: any) => {
             const value = params.value;
-            if (value >= 1000000) {
-              return `$${(value / 1000000).toFixed(1)}M`;
-            } else if (value >= 1000) {
-              return `$${(value / 1000).toFixed(0)}K`;
+            const absValue = Math.abs(value);
+            let formatted: string;
+            if (absValue >= 1000000) {
+              formatted = `${(Math.floor((absValue / 1000000) * 10) / 10).toFixed(1)}M`;
+            } else if (absValue >= 1000) {
+              formatted = `${(Math.floor((absValue / 1000) * 10) / 10).toFixed(1)}K`;
+            } else {
+              formatted = absValue.toLocaleString('es-GT', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
             }
-            return `$${value.toLocaleString('es-GT')}`;
+            return `$${formatted}`;
           },
-          color: '#333',
+          color: '#000',
           fontSize: 11,
-          fontWeight: 'bold'
+          fontWeight: 'normal'
         }
       }]
     };

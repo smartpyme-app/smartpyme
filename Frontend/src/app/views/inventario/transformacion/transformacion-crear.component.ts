@@ -89,6 +89,7 @@ export class TransformacionCrearComponent implements OnInit {
     
     this.productoOrigen = producto;
     this.cantidadOrigen = 1;
+    this.recalcularCantidadesDestino();
   }
 
   quitarOrigen() {
@@ -112,8 +113,32 @@ export class TransformacionCrearComponent implements OnInit {
 
     this.productosDestino.push({
       ...producto,
-      cantidad_ingreso: 1
+      factor_conversion: 1,
+      cantidad_ingreso: this.calcularCantidadIngreso(1)
     });
+  }
+
+  calcularCantidadIngreso(factor: number): number {
+    const origen = Number(this.cantidadOrigen) || 0;
+    const f = Number(factor) || 0;
+    if (origen <= 0 || f <= 0) return 0;
+    return Number((origen * f).toFixed(4));
+  }
+
+  actualizarCantidadDestino(prod: any) {
+    prod.cantidad_ingreso = this.calcularCantidadIngreso(prod.factor_conversion);
+  }
+
+  recalcularCantidadesDestino() {
+    this.productosDestino.forEach(p => this.actualizarCantidadDestino(p));
+  }
+
+  onCantidadOrigenChange() {
+    this.recalcularCantidadesDestino();
+  }
+
+  onFactorChange(prod: any) {
+    this.actualizarCantidadDestino(prod);
   }
 
   eliminarDestino(index: number) {
@@ -141,9 +166,17 @@ export class TransformacionCrearComponent implements OnInit {
       return;
     }
 
+    const factoresInvalidos = this.productosDestino.filter(p => !p.factor_conversion || p.factor_conversion <= 0);
+    if (factoresInvalidos.length > 0) {
+      this.alertService.error('Todos los productos de destino deben tener un factor de conversión mayor a 0.');
+      return;
+    }
+
+    this.recalcularCantidadesDestino();
+
     const detallesDestinoInvalidos = this.productosDestino.filter(p => !p.cantidad_ingreso || p.cantidad_ingreso <= 0);
     if (detallesDestinoInvalidos.length > 0) {
-      this.alertService.error('Todos los productos de destino deben tener una cantidad válida mayor a 0.');
+      this.alertService.error('La cantidad a ingresar debe ser mayor a 0. Verifique la cantidad de origen y el factor de conversión.');
       return;
     }
 

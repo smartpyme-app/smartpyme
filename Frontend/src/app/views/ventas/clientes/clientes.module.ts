@@ -8,6 +8,7 @@ import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { TagInputModule } from 'ngx-chips';
 import { PipesModule } from '@pipes/pipes.module';
 import { SharedModule } from '@shared/shared.module';
+import { DashboardModule } from '@views/dashboard/dashboard.module';
 import { TabsModule } from 'ngx-bootstrap/tabs';
 import { NgChartsModule } from 'ng2-charts';
 import { PopoverModule } from 'ngx-bootstrap/popover';
@@ -25,6 +26,7 @@ import { ClienteVentasComponent } from './cliente/ventas/cliente-ventas.componen
 import { ClienteDocumentosComponent } from './cliente/documentos/cliente-documentos.component';
 import { CuentasCobrarComponent } from './cuentas-cobrar/cuentas-cobrar.component';
 import { ClienteVista360Component } from './cliente-vista-360/cliente-vista-360.component';
+import { BuscadorClienteVista360Component } from './cliente-vista-360/buscador-cliente-vista360/buscador-cliente-vista360.component';
 
 @NgModule({
   imports: [
@@ -34,6 +36,7 @@ import { ClienteVista360Component } from './cliente-vista-360/cliente-vista-360.
     ReactiveFormsModule,
     RouterModule,
     SharedModule,
+    DashboardModule,
     PipesModule,
     TagInputModule,
     NgChartsModule,
@@ -55,7 +58,8 @@ import { ClienteVista360Component } from './cliente-vista-360/cliente-vista-360.
     ClienteDocumentosComponent,
     ClienteVentasComponent,
     CuentasCobrarComponent,
-    ClienteVista360Component
+    ClienteVista360Component,
+    BuscadorClienteVista360Component
   ],
   exports: [
     ClientesComponent,

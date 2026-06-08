@@ -30,19 +30,19 @@ class ShopifyProductoObserver
         }
 
         if ($empresa->shopify_sync_bidirectional) {
-            Log::info("Sincronización inversa habilitada para productos nuevos - SmartPyme -> Shopify ", [
-                'producto_id' => $producto->id,
-                'nombre' => $producto->nombre,
-                'motivo' => 'Sincronización unidireccional configurada'
-            ]);
+            // Log::info("Sincronización inversa habilitada para productos nuevos - SmartPyme -> Shopify ", [
+            //     'producto_id' => $producto->id,
+            //     'nombre' => $producto->nombre,
+            //     'motivo' => 'Sincronización unidireccional configurada'
+            // ]);
             $this->createdSyncBidirectional($producto);
         }
 
-        Log::info("Sincronización inversa deshabilitada para productos nuevos - solo Shopify -> SmartPyme", [
-            'producto_id' => $producto->id,
-            'nombre' => $producto->nombre,
-            'motivo' => 'Sincronización unidireccional configurada'
-        ]);
+        // Log::info("Sincronización inversa deshabilitada para productos nuevos - solo Shopify -> SmartPyme", [
+        //     'producto_id' => $producto->id,
+        //     'nombre' => $producto->nombre,
+        //     'motivo' => 'Sincronización unidireccional configurada'
+        // ]);
         return;
     }
 
@@ -94,11 +94,11 @@ class ShopifyProductoObserver
         }
 
         if ($empresa->shopify_sync_bidirectional) {
-            Log::info("Sincronización inversa habilitada para actualizaciones de productos - SmartPyme -> Shopify ", [
-                'producto_id' => $producto->id,
-                'nombre' => $producto->nombre,
-                'motivo' => 'Sincronización unidireccional configurada'
-            ]);
+            // Log::info("Sincronización inversa habilitada para actualizaciones de productos - SmartPyme -> Shopify ", [
+            //     'producto_id' => $producto->id,
+            //     'nombre' => $producto->nombre,
+            //     'motivo' => 'Sincronización unidireccional configurada'
+            // ]);
             $this->updatedSyncBidirectional($producto);
         }
 
@@ -114,11 +114,11 @@ class ShopifyProductoObserver
 
         // PREVENIR CICLO: No sincronizar productos que están siendo actualizados desde Shopify
         if ($producto->syncing_from_shopify) {
-            Log::info("Producto siendo sincronizado desde Shopify, omitiendo sincronización inversa", [
-                'producto_id' => $producto->id,
-                'nombre' => $producto->nombre,
-                'syncing_from_shopify' => $producto->syncing_from_shopify
-            ]);
+            // Log::info("Producto siendo sincronizado desde Shopify, omitiendo sincronización inversa", [
+            //     'producto_id' => $producto->id,
+            //     'nombre' => $producto->nombre,
+            //     'syncing_from_shopify' => $producto->syncing_from_shopify
+            // ]);
             return;
         }
 
@@ -131,12 +131,12 @@ class ShopifyProductoObserver
 
         // Verificar si solo cambió el precio (no sincronizar)
         if ($producto->isDirty('precio') && !$producto->isDirty($camposRelevantes)) {
-            Log::info("Cambio de precio detectado - no sincronizando (Shopify es fuente de verdad)", [
-                'producto_id' => $producto->id,
-                'nombre' => $producto->nombre,
-                'precio_anterior' => $producto->getOriginal('precio'),
-                'precio_nuevo' => $producto->precio
-            ]);
+            // Log::info("Cambio de precio detectado - no sincronizando (Shopify es fuente de verdad)", [
+            //     'producto_id' => $producto->id,
+            //     'nombre' => $producto->nombre,
+            //     'precio_anterior' => $producto->getOriginal('precio'),
+            //     'precio_nuevo' => $producto->precio
+            // ]);
             return;
         }
 
@@ -160,20 +160,20 @@ class ShopifyProductoObserver
         
         // Si no hay cambios en campos directos ni en imágenes, no sincronizar
         if (!$hayCambiosEnCampos && !$hayCambios) {
-            Log::info("No hay cambios relevantes en el producto", [
-                'producto_id' => $producto->id,
-                'nombre' => $producto->nombre
-            ]);
+            // Log::info("No hay cambios relevantes en el producto", [
+            //     'producto_id' => $producto->id,
+            //     'nombre' => $producto->nombre
+            // ]);
             return;
         }
 
         // Si hay cambios pero solo en imágenes, loguear para debugging
         if ($hayCambios && !$hayCambiosEnCampos) {
-            Log::info("Cambios detectados solo en imágenes del producto", [
-                'producto_id' => $producto->id,
-                'nombre' => $producto->nombre,
-                'imagenes_count' => $producto->imagenes->count()
-            ]);
+            // Log::info("Cambios detectados solo en imágenes del producto", [
+            //     'producto_id' => $producto->id,
+            //     'nombre' => $producto->nombre,
+            //     'imagenes_count' => $producto->imagenes->count()
+            // ]);
         }
 
         $empresa = Empresa::where('id', $producto->id_empresa)

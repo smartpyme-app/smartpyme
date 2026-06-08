@@ -18,6 +18,8 @@ use Illuminate\Support\Facades\Route;
 
     Route::get('/productos',         		    [ProductosController::class, 'index']);
     Route::get('/producto/{id}',     		    [ProductosController::class, 'read']);
+    Route::get('/producto/{id}/preview-migracion-lotes', [ProductosController::class, 'previewMigracionLotes']);
+    Route::post('/producto/{id}/migrar-stock-lotes', [ProductosController::class, 'migrarStockLotes']);
     Route::get('/producto/buscar-by-code/{codigo}', [ProductosController::class, 'searchByCode']);
     Route::get('/productos/list',               [ProductosController::class, 'list']);
     Route::get('/productos/siguiente-barcode-correlativo', [ProductosController::class, 'siguienteBarcodeCorrelativo']);
@@ -90,10 +92,12 @@ Route::get('/productos/kardex/estado-cola', [KardexController::class, 'estadoCol
     Route::post('/producto/imagen',        [ImagenesController::class, 'store']);
     Route::delete('/producto/imagen/{id}', [ImagenesController::class, 'delete']);
 
-// Presentaciones
-    Route::post('/producto-presentaciones',        [PresentacionesController::class, 'store']);
-    Route::put('/producto-presentaciones/{id}',    [PresentacionesController::class, 'update']);
-    Route::delete('/producto-presentaciones/{id}', [PresentacionesController::class, 'delete']);
+// Presentaciones (requiere funcionalidad asignada en Super Admin)
+    Route::middleware(['verificar.funcionalidad:modulo-presentaciones-productos'])->group(function () {
+        Route::post('/producto-presentaciones',        [PresentacionesController::class, 'store']);
+        Route::put('/producto-presentaciones/{id}',    [PresentacionesController::class, 'update']);
+        Route::delete('/producto-presentaciones/{id}', [PresentacionesController::class, 'delete']);
+    });
 
     Route::get('/producto/compras/{id}',          [ProductosController::class, 'compras']);
     Route::get('/producto/ajustes/{id}',          [ProductosController::class, 'ajustes']);

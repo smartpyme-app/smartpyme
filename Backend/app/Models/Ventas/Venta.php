@@ -53,6 +53,7 @@ class Venta extends Model {
         'total',
         'propina',
         'observaciones',
+        'observaciones_shopify',
         'recurrente',
         'cotizacion',
         'descripcion_personalizada',

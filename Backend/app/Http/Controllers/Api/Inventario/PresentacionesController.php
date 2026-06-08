@@ -4,17 +4,44 @@ namespace App\Http\Controllers\Api\Inventario;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use App\Models\Admin\Empresa;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\ProductoPresentacion;
 
 class PresentacionesController extends Controller
 {
+    private function moduloPresentacionesActivo(): bool
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return false;
+        }
+        $empresa = Empresa::find($user->id_empresa);
+
+        return $empresa ? $empresa->isModuloPresentaciones() : false;
+    }
+
+    private function denegarSiModuloInactivo()
+    {
+        if (!$this->moduloPresentacionesActivo()) {
+            return response()->json([
+                'message' => 'El módulo de presentaciones no está habilitado para esta empresa.',
+            ], 403);
+        }
+
+        return null;
+    }
     /**
      * Crea una nueva presentación para un producto.
      * POST /producto-presentaciones
      */
     public function store(Request $request)
     {
+        if ($denegado = $this->denegarSiModuloInactivo()) {
+            return $denegado;
+        }
+
         $request->validate([
             'id_producto'      => 'required|integer|exists:productos,id',
             'id_unidad_medida' => 'required|integer|exists:unidades,id',
@@ -47,6 +74,10 @@ class PresentacionesController extends Controller
      */
     public function update(Request $request, $id)
     {
+        if ($denegado = $this->denegarSiModuloInactivo()) {
+            return $denegado;
+        }
+
         $request->validate([
             'id_unidad_medida' => 'required|integer|exists:unidades,id',
             'nombre_comercial' => 'required|string|max:255',
@@ -75,6 +106,10 @@ class PresentacionesController extends Controller
      */
     public function delete($id)
     {
+        if ($denegado = $this->denegarSiModuloInactivo()) {
+            return $denegado;
+        }
+
         $presentacion = ProductoPresentacion::findOrFail($id);
         $presentacion->delete();
 

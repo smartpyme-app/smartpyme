@@ -47,7 +47,7 @@ export class GastoComponent implements OnInit {
 
   readonly TIPOS_CATEGORIA = [
     'Alquiler', 'Combustible', 'Costo de venta', 'Gastos varios', 'Insumos',
-    'Impuestos', 'Gastos Administrativos', 'Mantenimiento', 'Marketing',
+    'Impuestos', 'Activo Fijo', 'Gastos Administrativos', 'Mantenimiento', 'Marketing',
     'Materia Prima', 'Servicios', 'Pago comisión', 'Planilla', 'Préstamos', 'Publicidad'
   ];
 
@@ -734,6 +734,18 @@ export class GastoComponent implements OnInit {
       payload.varios_items = false;
     }
 
+    const codigoGen = this.gasto.codigo_generacion;
+    if (codigoGen != null && String(codigoGen).trim() !== '') {
+      payload.codigo_generacion = String(codigoGen).trim();
+    }
+    const numeroCtrl = this.gasto.numero_control;
+    if (numeroCtrl != null && String(numeroCtrl).trim() !== '') {
+      payload.numero_control = String(numeroCtrl).trim();
+    }
+    if (this.gasto.tipo_dte) {
+      payload.tipo_dte = this.gasto.tipo_dte;
+    }
+
     this.apiService.store('gasto', payload).subscribe(
       (gasto) => {
         if (!this.gasto.id) {
@@ -908,7 +920,7 @@ export class GastoComponent implements OnInit {
         this.gasto.estado = 'Confirmado';
         this.gasto.tipo_documento = 'Factura';
         this.gasto.detalle_banco = '';
-        this.gasto.tipo = 'Gastos varios'; // Categoría predeterminada
+        this.gasto.tipo = '';
         this.gasto.id_categoria = null;
         this.gasto.id_proveedor = '';
         this.gasto.fecha = this.apiService.date();
@@ -931,6 +943,7 @@ export class GastoComponent implements OnInit {
 
         // Tipo de documento
         if (jsonData.identificacion.tipoDte) {
+          this.gasto.tipo_dte = jsonData.identificacion.tipoDte;
           const tiposDte: { [key: string]: string } = {
             '01': 'Factura',
             '03': 'Crédito fiscal',
@@ -945,10 +958,17 @@ export class GastoComponent implements OnInit {
             tiposDte[jsonData.identificacion.tipoDte] || 'Factura';
         }
 
-        // Valores para DTE
-        this.gasto.codigo_generacion =
-          jsonData.identificacion.codigoGeneracion || '';
-        this.gasto.numero_control = jsonData.identificacion.numeroControl || '';
+        // Identificadores MH (se muestran en inputs de solo lectura)
+        if (jsonData.identificacion.codigoGeneracion) {
+          this.gasto.codigo_generacion = String(
+            jsonData.identificacion.codigoGeneracion
+          ).trim();
+        }
+        if (jsonData.identificacion.numeroControl) {
+          this.gasto.numero_control = String(
+            jsonData.identificacion.numeroControl
+          ).trim();
+        }
       }
 
       // Mapear datos del proveedor
@@ -993,7 +1013,7 @@ export class GastoComponent implements OnInit {
 
             return {
               concepto: item.descripcion || '',
-              tipo: 'Gastos varios',
+              tipo: '',
               tipo_gravado: esGravada ? 'gravada' : 'no_sujeta',
               cantidad: cant,
               precio_unitario: precio,
@@ -1014,11 +1034,11 @@ export class GastoComponent implements OnInit {
 
           this.recalcularTotalesDetalles();
           this.gasto.concepto = items[0].descripcion;
-          this.gasto.tipo = this.determinarCategoria(items);
+          this.aplicarTipoGastoDesdeImportacion(items);
         } else {
           this.varios_items = false;
           this.detalles = [];
-          this.gasto.tipo = this.determinarCategoria(jsonData.cuerpoDocumento);
+          this.aplicarTipoGastoDesdeImportacion(jsonData.cuerpoDocumento);
         }
       }
 
@@ -1225,10 +1245,26 @@ export class GastoComponent implements OnInit {
     }
   }
 
+  /** Asigna tipo de gasto solo si se infiere por descripción del DTE; si no, queda vacío. */
+  private aplicarTipoGastoDesdeImportacion(items: any[]): void {
+    const categoria = this.determinarCategoria(items);
+    this.gasto.tipo = categoria || '';
+    if (categoria && this.varios_items && this.detalles.length) {
+      this.detalles.forEach((d: any) => {
+        d.tipo = categoria;
+      });
+    }
+  }
+
   /**
-   * Intenta determinar la categoría del gasto basándose en las descripciones de los ítems
+   * Intenta determinar la categoría del gasto basándose en las descripciones de los ítems.
+   * Devuelve null si no hay coincidencia (no se preselecciona tipo).
    */
-  private determinarCategoria(items: any[]) {
+  private determinarCategoria(items: any[]): string | null {
+    if (!items?.length) {
+      return null;
+    }
+
     // Palabras clave para cada categoría
     const categoriasKeywords: { [key: string]: string[] } = {
       Alquiler: ['alquiler', 'renta', 'arrendamiento', 'local'],
@@ -1252,20 +1288,26 @@ export class GastoComponent implements OnInit {
       Préstamos: ['préstamo', 'crédito', 'financiamiento'],
     };
 
-    // Concatenar todas las descripciones
     const descripcionCompleta = items
-      .map((item) => item.descripcion.toLowerCase())
+      .map((item) => String(item?.descripcion || '').toLowerCase())
       .join(' ');
 
-    // Buscar coincidencias con palabras clave
+    if (!descripcionCompleta.trim()) {
+      return null;
+    }
+
     for (const [categoria, keywords] of Object.entries(categoriasKeywords)) {
+      if (!this.TIPOS_CATEGORIA.includes(categoria)) {
+        continue;
+      }
       for (const keyword of keywords) {
         if (descripcionCompleta.includes(keyword.toLowerCase())) {
-          this.gasto.tipo = categoria;
-          return;
+          return categoria;
         }
       }
     }
+
+    return null;
   }
 
   public onImpuestoValorChange() {

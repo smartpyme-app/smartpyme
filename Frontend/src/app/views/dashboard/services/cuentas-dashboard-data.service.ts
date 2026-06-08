@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { Observable, forkJoin } from 'rxjs';
-import { map, switchMap, startWith } from 'rxjs/operators';
+import { Observable, forkJoin, merge, of } from 'rxjs';
+import { map, switchMap, startWith, scan, catchError } from 'rxjs/operators';
 import { DashboardAnalyticsApiService } from './dashboard-analytics-api.service';
 
 /** Control de cuentas (CXC / CXP). */
@@ -173,30 +173,174 @@ export class CuentasDashboardDataService {
     const { p, pCXP, pEst } = this.querySuffix(filtros);
     const safe = (path: string) => this.analytics.getSafe(`${api}${path}`);
 
-    const critico$ = forkJoin({
-      cxcCards: safe(`/api/cuentas/cxc/cards?${p}${pEst}`),
-      cxcVigencia: safe(`/api/cuentas/cxc/vigencia?${p}${pEst}`),
-      cxcClientes: safe(`/api/cuentas/cxc/clientes?${p}&limite=10`),
-      cxcDetalle: safe(`/api/cuentas/cxc/detalle?${p}${pEst}`),
-    }).pipe(map((r) => this.mapearCuentasCritico(r)));
+    const cxcCards$ = safe(`/api/cuentas/cxc/cards?${p}${pEst}`).pipe(
+      map(cxcCards => ({
+        metricasCuentas: {
+          cuentasPorCobrarTotal: this.totalCxcCards(cxcCards),
+          cuentasPorCobrar30Dias: CuentasDashboardDataService.num(cxcCards?.cxc1a30 ?? cxcCards?.cxc0a30),
+          cuentasPorCobrar60Dias: CuentasDashboardDataService.num(cxcCards?.cxc31a60),
+          cuentasPorCobrar90Dias: CuentasDashboardDataService.num(cxcCards?.cxc61a90) + CuentasDashboardDataService.num(cxcCards?.cxcMas90),
+        }
+      })),
+      catchError(err => {
+        console.error('Error loading /api/cuentas/cxc/cards:', err);
+        return of({
+          metricasCuentas: {
+            cuentasPorCobrarTotal: 0,
+            cuentasPorCobrar30Dias: 0,
+            cuentasPorCobrar60Dias: 0,
+            cuentasPorCobrar90Dias: 0,
+          }
+        });
+      })
+    );
 
-    const pesado$ = forkJoin({
-      cxpCards: safe(`/api/cuentas/cxp/cards?${p}${pCXP}${pEst}`),
-      cxpVigencia: safe(`/api/cuentas/cxp/vigencia?${p}${pCXP}${pEst}`),
-      cxpProveedores: safe(
-        `/api/cuentas/cxp/proveedores?${p}${pCXP}&limite=10`,
-      ),
-      cxpCategorias: safe(`/api/cuentas/cxp/categorias?${p}${pCXP}`),
-      cxpDetalle: safe(`/api/cuentas/cxp/detalle?${p}${pCXP}${pEst}`),
-    }).pipe(map((r) => this.mapearCuentasPesado(r)));
+    const cxcVigencia$ = safe(`/api/cuentas/cxc/vigencia?${p}${pEst}`).pipe(
+      map(cxcVigencia => ({
+        cuentasPorVigenciaConfig: {
+          type: 'doughnut',
+          labels: (cxcVigencia ?? []).map((i: any) => i.estadoVigencia),
+          data: (cxcVigencia ?? []).map((i: any) => i.total),
+        }
+      })),
+      catchError(err => {
+        console.error('Error loading /api/cuentas/cxc/vigencia:', err);
+        return of({ cuentasPorVigenciaConfig: { type: 'doughnut', labels: [], data: [] } });
+      })
+    );
 
-    return critico$.pipe(
-      switchMap((c) =>
-        pesado$.pipe(
-          map((heavy) => this.mergeCuentasPayload(c, heavy)),
-          startWith(c),
-        ),
-      ),
+    const cxcClientes$ = safe(`/api/cuentas/cxc/clientes?${p}&limite=10`).pipe(
+      map(cxcClientes => ({
+        cuentasPorCobrarClientes: (cxcClientes ?? []).map((i: any) => ({ name: i.name, amount: i.amount }))
+      })),
+      catchError(err => {
+        console.error('Error loading /api/cuentas/cxc/clientes:', err);
+        return of({ cuentasPorCobrarClientes: [] });
+      })
+    );
+
+    const cxcDetalle$ = safe(`/api/cuentas/cxc/detalle?${p}${pEst}`).pipe(
+      map(cxcDetalle => ({
+        detalleCuentasPorCobrar: (cxcDetalle ?? []).map((i: any) => ({
+          cliente: i.cliente,
+          factura: i.numFactura,
+          fechaVenta: i.fechaVenta,
+          fechaPago: i.fechaPago,
+          diasVencimiento: i.diasVencimiento,
+          estado: i.estadoVigencia,
+          ventasConIVA: i.ventasConIva,
+          montoAbonado: i.montoAbonado,
+          diasAbono: i.diasAbono,
+          saldoPendiente: i.saldoPendiente,
+        }))
+      })),
+      catchError(err => {
+        console.error('Error loading /api/cuentas/cxc/detalle:', err);
+        return of({ detalleCuentasPorCobrar: [] });
+      })
+    );
+
+    const cxpCards$ = safe(`/api/cuentas/cxp/cards?${p}${pCXP}${pEst}`).pipe(
+      map(cxpCards => ({
+        metricasCuentas: {
+          cuentasPorPagarTotal: cxpCards?.cuentasPorPagar ?? 0,
+          cuentasPorPagar30Dias: cxpCards?.cxp0a30 ?? 0,
+          cuentasPorPagar60Dias: cxpCards?.cxp31a60 ?? 0,
+          cuentasPorPagar90Dias: cxpCards?.cxp61a90 ?? 0,
+        }
+      })),
+      catchError(err => {
+        console.error('Error loading /api/cuentas/cxp/cards:', err);
+        return of({
+          metricasCuentas: {
+            cuentasPorPagarTotal: 0,
+            cuentasPorPagar30Dias: 0,
+            cuentasPorPagar60Dias: 0,
+            cuentasPorPagar90Dias: 0,
+          }
+        });
+      })
+    );
+
+    const cxpVigencia$ = safe(`/api/cuentas/cxp/vigencia?${p}${pCXP}${pEst}`).pipe(
+      map(cxpVigencia => ({
+        cuentasPorPagarVigenciaConfig: {
+          type: 'doughnut',
+          labels: (cxpVigencia ?? []).map((i: any) => i.estadoVigencia),
+          data: (cxpVigencia ?? []).map((i: any) => i.total),
+        }
+      })),
+      catchError(err => {
+        console.error('Error loading /api/cuentas/cxp/vigencia:', err);
+        return of({ cuentasPorPagarVigenciaConfig: { type: 'doughnut', labels: [], data: [] } });
+      })
+    );
+
+    const cxpProveedores$ = safe(`/api/cuentas/cxp/proveedores?${p}${pCXP}&limite=10`).pipe(
+      map(cxpProveedores => ({
+        cuentasPorPagarProveedores: (cxpProveedores ?? []).map((i: any) => ({ name: i.name, amount: i.amount }))
+      })),
+      catchError(err => {
+        console.error('Error loading /api/cuentas/cxp/proveedores:', err);
+        return of({ cuentasPorPagarProveedores: [] });
+      })
+    );
+
+    const cxpCategorias$ = safe(`/api/cuentas/cxp/categorias?${p}${pCXP}`).pipe(
+      map(cxpCategorias => ({
+        cxpCategorias: cxpCategorias || []
+      })),
+      catchError(err => {
+        console.error('Error loading /api/cuentas/cxp/categorias:', err);
+        return of({ cxpCategorias: [] });
+      })
+    );
+
+    const cxpDetalle$ = safe(`/api/cuentas/cxp/detalle?${p}${pCXP}${pEst}`).pipe(
+      map(cxpDetalle => ({
+        resumenCuentasPorPagar: (cxpDetalle ?? []).map((i: any) => ({
+          proveedor: i.proveedor != null ? String(i.proveedor).trim() : '',
+          correlativo: i.correlativo != null ? String(i.correlativo).trim() : '',
+          fechaCompra: i.fechaDocumento,
+          vencimiento: i.fechaVencimiento,
+          diasVencimiento: i.diasVencimiento,
+          estado: i.estado,
+          gastosTotalesConIVA: i.gastosConIva,
+          totalAbonado: i.totalAbonado,
+          ultimoAbono: i.ultimoAbono,
+          saldoPendiente: i.saldoPendiente,
+        }))
+      })),
+      catchError(err => {
+        console.error('Error loading /api/cuentas/cxp/detalle:', err);
+        return of({ resumenCuentasPorPagar: [] });
+      })
+    );
+
+    const deepMergeScan = (acc: any, curr: any) => {
+      const result = { ...acc };
+      for (const key of Object.keys(curr)) {
+        if (curr[key] && typeof curr[key] === 'object' && !Array.isArray(curr[key])) {
+          result[key] = { ...acc[key], ...curr[key] };
+        } else {
+          result[key] = curr[key];
+        }
+      }
+      return result;
+    };
+
+    return merge(
+      cxcCards$,
+      cxcVigencia$,
+      cxcClientes$,
+      cxcDetalle$,
+      cxpCards$,
+      cxpVigencia$,
+      cxpProveedores$,
+      cxpCategorias$,
+      cxpDetalle$
+    ).pipe(
+      scan(deepMergeScan, {})
     );
   }
 

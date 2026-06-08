@@ -8,7 +8,6 @@ import { MetricCard } from '../../models/chart-config.model';
 })
 export class ChartCardComponent implements OnInit {
   @Input() data!: MetricCard;
-  barChartData: Array<{x: number, y: number, width: number, height: number}> = [];
 
   get trendIcon(): string {
     if (!this.data.trend) return '';
@@ -40,18 +39,43 @@ export class ChartCardComponent implements OnInit {
       return value;
     }
     
-    // Si es número, formatearlo
+    // Si es número, formatearlo según el tipo
     if (typeof value === 'number') {
-      // Si el valor es muy pequeño, podría ser un porcentaje
-      if (Math.abs(value) < 1 && value !== 0) {
-        const sign = value >= 0 ? '+' : '';
-        return `${sign}${(Math.abs(value) * 100).toFixed(2)}%`;
+      if (this.data.type === 'percentage') {
+        // Si el valor viene como decimal (0.125) → convertir a porcentaje
+        // Si viene como entero/flotante directo (12.5) → usarlo directo
+        const pct = Math.abs(value) <= 1 && value !== 0 ? value * 100 : value;
+        const sign = pct >= 0 ? '' : '-';
+        return `${sign}${Math.abs(pct).toFixed(2)}%`;
       }
-      
-      // Formatear números grandes con comas
+
+      if (this.data.type === 'percentage-int') {
+        const pct = Math.abs(value) <= 1 && value !== 0 ? value * 100 : value;
+        const sign = pct >= 0 ? '' : '-';
+        const rounded = Math.round(Math.abs(pct));
+        return `${sign}${rounded}%`;
+      }
+
+      if (this.data.type === 'number') {
+        // Formatear números enteros (sin decimales)
+        return new Intl.NumberFormat('es-GT', {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0
+        }).format(value);
+      }
+
+      if (this.data.type === 'currency-int') {
+        // Formatear números de moneda sin decimales
+        return new Intl.NumberFormat('es-GT', {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0
+        }).format(value);
+      }
+
+      // Formatear números de moneda con 2 decimales (nunca redondear)
       return new Intl.NumberFormat('es-GT', {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
       }).format(value);
     }
     
@@ -64,41 +88,31 @@ export class ChartCardComponent implements OnInit {
     return `${sign}${Math.abs(value).toFixed(2)}%`;
   }
 
-  getChartColor(): string {
-    // Colores para los gráficos según el tipo de métrica
-    if (this.data.color) {
-      return this.data.color;
-    }
-    // Colores por defecto según la dirección de la tendencia
-    if (this.data.trend) {
-      return this.data.trend.direction === 'up' ? '#28a745' : 
-             this.data.trend.direction === 'down' ? '#dc3545' : '#6c757d';
-    }
-    return '#4a90e2';
+  shouldShowCurrency(): boolean {
+    // Mostrar $ solo si el tipo es 'currency' o 'currency-int'
+    return this.data.type === 'currency' || this.data.type === 'currency-int';
   }
 
-  shouldShowCurrency(): boolean {
-    // Mostrar $ solo si el valor es numérico y el título no es "Growth"
-    return typeof this.data.value === 'number' && 
-           this.data.title !== 'Growth' && 
-           !this.data.title.toLowerCase().includes('growth');
+  isNegativeValue(): boolean {
+    if (!this.data || this.data.value === undefined || this.data.value === null) {
+      return false;
+    }
+    const val = this.data.value;
+    if (typeof val === 'number') {
+      return val < 0;
+    }
+    if (typeof val === 'string') {
+      const cleaned = val.replace(/[^0-9.-]/g, '');
+      const parsed = parseFloat(cleaned);
+      if (!isNaN(parsed)) {
+        return parsed < 0;
+      }
+      return val.trim().startsWith('-');
+    }
+    return false;
   }
 
   ngOnInit(): void {
-    this.generateBarChart();
-  }
-
-  generateBarChart(): void {
-    // Genera datos para el gráfico de barras
-    const numBars = 7;
-    this.barChartData = [];
-    
-    for (let i = 0; i < numBars; i++) {
-      const height = Math.random() * 25 + 8; // Altura entre 8 y 33
-      const x = i * 10 + 2;
-      const y = 40 - height;
-      this.barChartData.push({ x, y, width: 6, height });
-    }
   }
 }
 

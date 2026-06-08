@@ -5,6 +5,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
 import Swal from 'sweetalert2';
+import { copiarImpuestosProductoAlDetalle } from '@utils/impuestos-venta.util';
 
 @Component({
   selector: 'app-venta-detalles',
@@ -168,8 +169,13 @@ export class VentaDetallesComponent implements OnInit {
     // Agregar detalle
         productoSelect(producto:any):void{
 
+            if (producto.tipo === 'Servicio') {
+                this.addDetalle(producto);
+                return;
+            }
+
             // Validar stock solo para productos (no servicios)
-            if (producto.tipo != 'Servicio' && producto.stock !== null && producto.stock !== undefined) {
+            if (producto.stock !== null && producto.stock !== undefined) {
                 // Verificar si hay suficiente stock para la cantidad solicitada
                 const stockDisponible = parseFloat(producto.stock) || 0;
                 const cantidadRequerida = parseFloat(producto.cantidad) || 1;
@@ -247,6 +253,12 @@ export class VentaDetallesComponent implements OnInit {
         public addDetalle(producto:any){
             this.detalle = Object.assign({}, producto);
             this.detalle.id = null;
+
+            copiarImpuestosProductoAlDetalle(
+                this.detalle,
+                producto,
+                this.apiService.auth_user()?.empresa?.iva ?? 0
+            );
             
             // ── Guardar campos de presentación para el backend ───────────────────────
             this.detalle.id_presentacion   = producto.id_presentacion  ?? null;

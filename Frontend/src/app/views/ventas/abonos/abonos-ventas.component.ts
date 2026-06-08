@@ -107,24 +107,13 @@ export class AbonosVentasComponent implements OnInit {
     // Editar
 
     openModalEdit(template: TemplateRef<any>, abono:any) {
-        this.abono = abono;
-        
-        this.apiService.getAll('documentos').subscribe(documentos => {
-            this.documentos = documentos;
-        }, error => {this.alertService.error(error);});
-
+        this.abono = { ...abono };
         this.modalRef = this.modalService.show(template);
     }
 
-    public onSubmit() {
-        this.loading = true;            
-        this.apiService.store('venta/abono', this.abono).subscribe(abono => {
-            this.abono = {};
-            this.modalRef.hide();
-            this.loading = false;
-            this.alertService.success('Abono guardado', 'El abono fue guardada exitosamente.');
-        },error => {this.alertService.error(error); this.loading = false; });
-
+    public onAbonoSaved() {
+        this.modalRef.hide();
+        this.filtrarAbonos(false);
     }
 
     public openFilter(template: TemplateRef<any>) {

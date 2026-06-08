@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Admin\Empresa;
 use App\Models\Inventario\Bodega;
 use App\Models\Inventario\Producto;
+use App\Models\Restaurante\Comanda;
+use App\Models\Restaurante\ComandaDetalle;
 use App\Models\Restaurante\PedidoRestaurante;
 use App\Models\Restaurante\PedidoRestauranteDetalle;
 use App\Models\Ventas\Clientes\Cliente;
@@ -95,6 +97,96 @@ class PedidoRestauranteController extends Controller
                 'empresa' => $empresa,
             ])
             ->header('Content-Type', 'text/html; charset=utf-8');
+    }
+
+    public function enviarComanda(int $id): JsonResponse
+    {
+        $user = auth()->user();
+        if (! $user || ! $user->id_empresa) {
+            return response()->json(['error' => 'Usuario sin empresa asociada'], 400);
+        }
+
+        $pedido = PedidoRestaurante::where('id_empresa', $user->id_empresa)
+            ->with(['detalles.producto'])
+            ->findOrFail($id);
+
+        if (! in_array($pedido->estado, ['borrador', 'pendiente_facturar'], true)) {
+            return response()->json(['error' => 'No se puede enviar comanda en este estado'], 422);
+        }
+
+        $itemsCocina = [];
+        $itemsBarra = [];
+
+        foreach ($pedido->detalles as $item) {
+            $producto = $item->producto;
+            if (! $producto || ! $producto->genera_comanda) {
+                continue;
+            }
+            $dest = strtolower(trim((string) ($producto->destino_comanda ?? 'cocina')));
+            if (in_array($dest, ['barra', 'ambos'], true) && ! $item->enviado_barra) {
+                $itemsBarra[] = $item;
+            }
+            if (in_array($dest, ['cocina', 'ambos'], true) && ! $item->enviado_cocina) {
+                $itemsCocina[] = $item;
+            }
+        }
+
+        if ($itemsCocina === [] && $itemsBarra === []) {
+            return response()->json(['error' => 'No hay ítems pendientes por enviar a cocina/barra'], 422);
+        }
+
+        $comandasCreadas = [];
+        $base = Comanda::where('pedido_id', $pedido->id)->count();
+        $n = $base;
+
+        DB::beginTransaction();
+        try {
+            if ($itemsCocina !== []) {
+                $n++;
+                $comanda = Comanda::create([
+                    'pedido_id' => $pedido->id,
+                    'numero_comanda' => "P-{$pedido->id}-{$n}-C",
+                    'estado' => 'pendiente',
+                    'destino' => 'cocina',
+                    'enviado_at' => now(),
+                ]);
+                foreach ($itemsCocina as $item) {
+                    ComandaDetalle::create([
+                        'comanda_id' => $comanda->id,
+                        'pedido_detalle_id' => $item->id,
+                    ]);
+                    $item->update(['enviado_cocina' => true]);
+                }
+                $comandasCreadas[] = $comanda->load(['detalles.pedidoDetalle.producto']);
+            }
+            if ($itemsBarra !== []) {
+                $n++;
+                $comanda = Comanda::create([
+                    'pedido_id' => $pedido->id,
+                    'numero_comanda' => "P-{$pedido->id}-{$n}-B",
+                    'estado' => 'pendiente',
+                    'destino' => 'barra',
+                    'enviado_at' => now(),
+                ]);
+                foreach ($itemsBarra as $item) {
+                    ComandaDetalle::create([
+                        'comanda_id' => $comanda->id,
+                        'pedido_detalle_id' => $item->id,
+                    ]);
+                    $item->update(['enviado_barra' => true]);
+                }
+                $comandasCreadas[] = $comanda->load(['detalles.pedidoDetalle.producto']);
+            }
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
+        }
+
+        return response()->json([
+            'comandas' => $comandasCreadas,
+            'primera' => $comandasCreadas[0] ?? null,
+        ], 201);
     }
 
     public function confirmar(Request $request, int $id): JsonResponse
@@ -216,13 +308,24 @@ class PedidoRestauranteController extends Controller
             return response()->json(['error' => 'El pedido no tiene líneas de detalle'], 422);
         }
 
-        $detalles = $pedido->detalles->map(fn ($d) => [
-            'id_producto' => $d->producto_id,
-            'cantidad' => (float) $d->cantidad,
-            'precio' => (float) $d->precio,
-            'descripcion' => $d->producto->nombre ?? '',
-            'descuento' => (float) ($d->descuento ?? 0),
-        ])->values()->toArray();
+        $detalles = $pedido->detalles->map(function ($d) use ($user) {
+            $empresa = Empresa::find($user->id_empresa);
+            $ivaEmpresa = $empresa ? max(0, (float) ($empresa->iva ?? 0)) : 0;
+            $pct = $d->producto->porcentaje_impuesto ?? $ivaEmpresa;
+            $pct = max(0, (float) $pct);
+            $precioSinIva = (float) $d->precio;
+            $precioConIva = $pct > 0 ? round($precioSinIva * (1 + $pct / 100), 4) : $precioSinIva;
+
+            return [
+                'id_producto' => $d->producto_id,
+                'cantidad' => (float) $d->cantidad,
+                'precio' => $precioSinIva,
+                'precio_con_iva' => $precioConIva,
+                'porcentaje_impuesto' => $pct,
+                'descripcion' => $d->producto->nombre ?? '',
+                'descuento' => (float) ($d->descuento ?? 0),
+            ];
+        })->values()->toArray();
 
         return response()->json([
             'pedido_id' => $pedido->id,
@@ -232,6 +335,7 @@ class PedidoRestauranteController extends Controller
             'fecha' => $pedido->fecha?->format('Y-m-d'),
             'subtotal' => (float) $pedido->subtotal,
             'total' => (float) $pedido->total,
+            'precios_sin_iva' => true,
             'canal' => $pedido->canal,
             'referencia_externa' => $pedido->referencia_externa,
             'observaciones' => $pedido->observaciones,

@@ -1,0 +1,35 @@
+<div class="v360-buscador">
+    <div class="input-group v360-buscador-input shadow-sm">
+        <span class="input-group-text">
+            <i class="fa fa-search text-muted"></i>
+        </span>
+        <input
+            type="search"
+            class="form-control"
+            name="v360BuscadorCliente"
+            autocomplete="off"
+            placeholder="Buscar por nombre, DUI, NIT o teléfono..."
+            [(ngModel)]="term"
+            (ngModelChange)="onTermChange()"
+            (focus)="abierto = resultados.length > 0"
+        />
+        <span class="input-group-text v360-buscador-status" *ngIf="searching">
+            <i class="fas fa-circle-notch fa-spin text-primary"></i>
+        </span>
+        <span
+            class="input-group-text v360-buscador-status text-warning"
+            *ngIf="!searching && searchExecuted && resultados.length === 0 && term.length > 2">
+            <i class="fas fa-exclamation-circle"></i>
+        </span>
+    </div>
+
+    <ul class="list-group v360-buscador-resultados" *ngIf="abierto && resultados.length > 0">
+        <li
+            class="list-group-item list-group-item-action v360-buscador-item"
+            *ngFor="let cliente of resultados"
+            (mousedown)="seleccionar(cliente)">
+            <div class="v360-buscador-item-nombre">{{ nombreCliente(cliente) }}</div>
+            <small class="text-muted" *ngIf="detalleCliente(cliente)">{{ detalleCliente(cliente) }}</small>
+        </li>
+    </ul>
+</div>

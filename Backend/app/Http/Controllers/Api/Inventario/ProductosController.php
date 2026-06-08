@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
 use App\Models\Admin\Empresa;
+use App\Models\Admin\Impuesto as ImpuestoCatalogo;
 use App\Models\Admin\Sucursal;
 use App\Models\Inventario\Categorias\SubCategoria;
 use App\Models\Inventario\Producto;
@@ -30,11 +31,13 @@ use App\Exports\WooCommerceExport;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use App\Exports\PlantillaInventarioMasivoExport;
 use App\Exports\PlantillaProductosImportExport;
 use App\Exports\TrasladoLineasUiExport;
 use App\Exports\ShopifyExport;
 use App\Services\Inventario\ProductoImportacionDteService;
+use App\Services\Inventario\MigrarStockALotesService;
 use App\Services\ShopifyTransformer;
 use App\Services\ImpuestosService;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -246,7 +249,10 @@ class ProductosController extends Controller
         $empresa = Auth::user() ? Empresa::find(Auth::user()->id_empresa) : null;
         $incluirComponenteQuimico = $empresa && $empresa->isComponenteQuimicoHabilitado();
 
-        $productos = Producto::where('enable', true)->with('inventarios', 'lotes', 'composiciones.opciones', 'composiciones.compuesto.inventarios')->with('precios')
+        $productos = Producto::where('enable', true)->with(array_merge(
+            ['inventarios', 'lotes', 'composiciones.opciones', 'composiciones.compuesto.inventarios', 'precios'],
+            $this->relacionesImpuestosProducto()
+        ))
             ->where(function ($q) use ($txt, $incluirComponenteQuimico) {
                 $q->where('nombre', 'like', "%$txt%")
                     ->orWhere('barcode', 'like', "%$txt%")
@@ -256,7 +262,7 @@ class ProductosController extends Controller
                     $q->orWhere('componente_quimico', 'like', "%$txt%");
                 }
             })
-            ->take(15)
+            ->take(50)
             ->get();
 
         return Response()->json($productos, 200);
@@ -268,17 +274,23 @@ class ProductosController extends Controller
         $id_bodega = $request->query('id_bodega');
         $empresa   = Auth::user() ? Empresa::find(Auth::user()->id_empresa) : null;
         $incluirComponenteQuimico = $empresa && $empresa->isComponenteQuimicoHabilitado();
+        $incluirPresentaciones = $this->puedeCargarPresentaciones($empresa);
 
         // ── 1. Buscar productos base ──────────────────────────────────────────────
+        $with = array_merge([
+            'inventarios',
+            'lotes',
+            'composiciones.opciones',
+            'composiciones.compuesto.inventarios',
+            'precios',
+        ], $this->relacionesImpuestosProducto());
+        if ($incluirPresentaciones) {
+            $with[] = 'presentaciones';
+        }
+
         $productos = Producto::where('enable', true)
-            ->with([
-                'inventarios',
-                'lotes',
-                'composiciones.opciones',
-                'composiciones.compuesto.inventarios',
-                'precios',
-                'presentaciones',   // cargar presentaciones activas
-            ])
+            ->with($with)
+            ->whereIn('tipo', ['Producto', 'Compuesto', 'Servicio'])
             ->where(function ($q) use ($query, $incluirComponenteQuimico) {
                 $q->where('nombre',    'like', "%$query%")
                   ->orWhere('barcode', 'like', "%$query%")
@@ -288,7 +300,7 @@ class ProductosController extends Controller
                     $q->orWhere('componente_quimico', 'like', "%$query%");
                 }
             })
-            ->take(15)
+            ->take(50)
             ->get();
 
         // ── 2. Construir lista aplanada ────────────────────────────────────────────
@@ -297,9 +309,11 @@ class ProductosController extends Controller
         foreach ($productos as $producto) {
 
             // Stock base en la bodega solicitada (o total global si no se filtra)
-            $stockBase = $id_bodega
-                ? (float) $producto->inventarios->where('id_bodega', $id_bodega)->sum('stock')
-                : (float) $producto->inventarios->sum('stock');
+            $stockBase = $producto->tipo === 'Servicio'
+                ? null
+                : ($id_bodega
+                    ? (float) $producto->inventarios->where('id_bodega', $id_bodega)->sum('stock')
+                    : (float) $producto->inventarios->sum('stock'));
 
             // Fila del producto base
             $resultado[] = array_merge($producto->toArray(), [
@@ -312,25 +326,27 @@ class ProductosController extends Controller
                 'presentaciones'   => [],   // no repetir el array en cada fila
             ]);
 
-            // Filas de presentaciones (siempre, si el producto las tiene)
-            foreach ($producto->presentaciones as $pres) {
-                $factor = (float) $pres->factor_conversion ?: 1;
+            if ($incluirPresentaciones) {
+                foreach ($producto->presentaciones as $pres) {
+                    $factor = (float) $pres->factor_conversion ?: 1;
 
-                $nombreMostrar = $pres->nombre_comercial . ' (' . $producto->nombre . ')';
+                    $nombreMostrar = $pres->nombre_comercial . ' (' . $producto->nombre . ')';
 
-                // Stock expresado en unidades del empaque
-                $stockEmpaque = $factor > 0 ? round($stockBase / $factor, 4) : $stockBase;
+                    $stockEmpaque = $stockBase === null
+                        ? null
+                        : ($factor > 0 ? round($stockBase / $factor, 4) : $stockBase);
 
-                $resultado[] = array_merge($producto->toArray(), [
-                    'id_producto'      => $producto->id,
-                    'id_presentacion'  => $pres->id,
-                    'nombre_mostrar'   => $nombreMostrar,
-                    'precio'           => $pres->precio_venta,
-                    'stock_base_actual'=> $stockEmpaque,
-                    'factor_conversion'=> $factor,
-                    'codigo_barras'    => $pres->codigo_barras,
-                    'presentaciones'   => [],
-                ]);
+                    $resultado[] = array_merge($producto->toArray(), [
+                        'id_producto'      => $producto->id,
+                        'id_presentacion'  => $pres->id,
+                        'nombre_mostrar'   => $nombreMostrar,
+                        'precio'           => $pres->precio_venta,
+                        'stock_base_actual'=> $stockEmpaque,
+                        'factor_conversion'=> $factor,
+                        'codigo_barras'    => $pres->codigo_barras,
+                        'presentaciones'   => [],
+                    ]);
+                }
             }
         }
 
@@ -343,15 +359,30 @@ class ProductosController extends Controller
         $id_bodega = $request->query('id_bodega');
         $empresa = Auth::user() ? Empresa::find(Auth::user()->id_empresa) : null;
         $incluirComponenteQuimico = $empresa && $empresa->isComponenteQuimicoHabilitado();
+        $incluirPresentaciones = $this->puedeCargarPresentaciones($empresa);
 
         if ($id_bodega) {
+            $withBodega = [
+                'inventarios' => function ($q) use ($id_bodega) {
+                    $q->where('id_bodega', $id_bodega);
+                },
+                'lotes',
+            ];
+            if ($incluirPresentaciones) {
+                $withBodega[] = 'presentaciones';
+            }
+
             $productos = Producto::where('enable', true)
-                ->with(['inventarios' => function ($q) use ($id_bodega) {
-                    $q->where('id_bodega', $id_bodega);
-                }, 'lotes', 'presentaciones'])
-                ->with('composiciones.opciones', 'composiciones.compuesto.inventarios', 'precios')
-                ->whereHas('inventarios', function ($q) use ($id_bodega) {
-                    $q->where('id_bodega', $id_bodega);
+                ->with($withBodega)
+                ->with(array_merge(
+                    ['composiciones.opciones', 'composiciones.compuesto.inventarios', 'precios'],
+                    $this->relacionesImpuestosProducto()
+                ))
+                ->whereIn('tipo', ['Producto', 'Compuesto', 'Servicio'])
+                ->where(function ($q) use ($id_bodega) {
+                    $q->whereHas('inventarios', function ($iq) use ($id_bodega) {
+                        $iq->where('id_bodega', $id_bodega);
+                    })->orWhere('tipo', 'Servicio');
                 })
                 ->where(function ($q) use ($query, $incluirComponenteQuimico) {
                     $q->where('nombre', 'like', "%$query%")
@@ -362,10 +393,19 @@ class ProductosController extends Controller
                         $q->orWhere('componente_quimico', 'like', "%$query%");
                     }
                 })
-                ->take(15)
+                ->take(50)
                 ->get();
         } else {
-            $productos = Producto::where('enable', true)->with('inventarios', 'lotes', 'composiciones.opciones', 'composiciones.compuesto.inventarios', 'presentaciones')->with('precios')
+            $withGlobal = array_merge(
+                ['inventarios', 'lotes', 'composiciones.opciones', 'composiciones.compuesto.inventarios'],
+                $this->relacionesImpuestosProducto()
+            );
+            if ($incluirPresentaciones) {
+                $withGlobal[] = 'presentaciones';
+            }
+
+            $productos = Producto::where('enable', true)->with($withGlobal)->with('precios')
+                ->whereIn('tipo', ['Producto', 'Compuesto', 'Servicio'])
                 ->where(function ($q) use ($query, $incluirComponenteQuimico) {
                     $q->where('nombre', 'like', "%$query%")
                         ->orWhere('barcode', 'like', "%$query%")
@@ -375,7 +415,7 @@ class ProductosController extends Controller
                         $q->orWhere('componente_quimico', 'like', "%$query%");
                     }
                 })
-                ->take(15)
+                ->take(50)
                 ->get();
         }
 
@@ -385,9 +425,11 @@ class ProductosController extends Controller
         foreach ($productos as $producto) {
 
             // Stock base en la bodega solicitada (o total global si no se filtra)
-            $stockBase = $id_bodega
-                ? (float) $producto->inventarios->where('id_bodega', $id_bodega)->sum('stock')
-                : (float) $producto->inventarios->sum('stock');
+            $stockBase = $producto->tipo === 'Servicio'
+                ? null
+                : ($id_bodega
+                    ? (float) $producto->inventarios->where('id_bodega', $id_bodega)->sum('stock')
+                    : (float) $producto->inventarios->sum('stock'));
 
             // Fila del producto base
             $resultado[] = array_merge($producto->toArray(), [
@@ -400,25 +442,27 @@ class ProductosController extends Controller
                 'presentaciones'   => [],   // no repetir el array en cada fila
             ]);
 
-            // Filas de presentaciones (siempre, si el producto las tiene)
-            foreach ($producto->presentaciones as $pres) {
-                $factor = (float) $pres->factor_conversion ?: 1;
+            if ($incluirPresentaciones) {
+                foreach ($producto->presentaciones as $pres) {
+                    $factor = (float) $pres->factor_conversion ?: 1;
 
-                $nombreMostrar = $pres->nombre_comercial . ' (' . $producto->nombre . ')';
+                    $nombreMostrar = $pres->nombre_comercial . ' (' . $producto->nombre . ')';
 
-                // Stock expresado en unidades del empaque
-                $stockEmpaque = $factor > 0 ? round($stockBase / $factor, 4) : $stockBase;
+                    $stockEmpaque = $stockBase === null
+                        ? null
+                        : ($factor > 0 ? round($stockBase / $factor, 4) : $stockBase);
 
-                $resultado[] = array_merge($producto->toArray(), [
-                    'id_producto'      => $producto->id,
-                    'id_presentacion'  => $pres->id,
-                    'nombre_mostrar'   => $nombreMostrar,
-                    'precio'           => $pres->precio_venta,
-                    'stock_base_actual'=> $stockEmpaque,
-                    'factor_conversion'=> $factor,
-                    'codigo_barras'    => $pres->codigo_barras,
-                    'presentaciones'   => [],
-                ]);
+                    $resultado[] = array_merge($producto->toArray(), [
+                        'id_producto'      => $producto->id,
+                        'id_presentacion'  => $pres->id,
+                        'nombre_mostrar'   => $nombreMostrar,
+                        'precio'           => $pres->precio_venta,
+                        'stock_base_actual'=> $stockEmpaque,
+                        'factor_conversion'=> $factor,
+                        'codigo_barras'    => $pres->codigo_barras,
+                        'presentaciones'   => [],
+                    ]);
+                }
             }
         }
 
@@ -441,18 +485,28 @@ class ProductosController extends Controller
 
     public function read($id)
     {
+        $empresa = Auth::user() ? Empresa::find(Auth::user()->id_empresa) : null;
+
+        $with = [
+            'inventarios',
+            'composiciones.compuesto',
+            'composiciones.opciones',
+            'precios.usuarios',
+            'imagenes',
+            'proveedores.proveedor',
+            'unidad',
+        ];
+
+        if ($empresa && $empresa->isModuloPresentaciones() && Schema::hasTable('producto_presentaciones')) {
+            $with[] = 'presentaciones.unidadMedida';
+        }
+
+        if (Schema::hasTable('producto_impuestos')) {
+            $with[] = 'impuestos';
+        }
 
         $producto = Producto::where('id', $id)
-            ->with(
-                'inventarios',
-                'composiciones.compuesto',
-                'composiciones.opciones',
-                'precios.usuarios',
-                'imagenes',
-                'proveedores.proveedor',
-                'unidad',
-                'presentaciones.unidadMedida'
-            )
+            ->with($with)
             ->firstOrFail();
 
         return Response()->json($producto, 200);
@@ -460,15 +514,21 @@ class ProductosController extends Controller
 
     public function searchByCode($codigo)
     {
+        $with = [
+            'inventarios',
+            'composiciones.compuesto',
+            'composiciones.opciones',
+            'precios.usuarios',
+            'imagenes',
+            'proveedores.proveedor',
+        ];
+
+        if (Schema::hasTable('producto_impuestos')) {
+            $with[] = 'impuestos';
+        }
+
         $producto = Producto::where('codigo', $codigo)
-            ->with(
-                'inventarios',
-                'composiciones.compuesto',
-                'composiciones.opciones',
-                'precios.usuarios',
-                'imagenes',
-                'proveedores.proveedor'
-            )
+            ->with($with)
             ->firstOrFail();
 
         return Response()->json($producto, 200);
@@ -503,10 +563,12 @@ class ProductosController extends Controller
             // 'costo.required' => 'Agregue el costo.'
         ]);
 
+        $inventarioPorLotesAntes = false;
         if ($request->id) {
             $producto = Producto::findOrFail($request->id);
             $precioAnterior = $producto->precio;
             $costoAnterior = $producto->costo;
+            $inventarioPorLotesAntes = (bool) $producto->inventario_por_lotes;
         } else {
 
             $producto = new Producto;
@@ -515,6 +577,19 @@ class ProductosController extends Controller
 
         $producto->fill($request->all());
         $producto->save();
+
+        if ($request->has('id_impuestos') && Schema::hasTable('producto_impuestos')) {
+            $this->syncProductoImpuestos($producto, $request->input('id_impuestos', []));
+        }
+
+        $migracionLotes = null;
+        if (
+            $producto->tipo != 'Servicio'
+            && !$inventarioPorLotesAntes
+            && $producto->inventario_por_lotes
+        ) {
+            $migracionLotes = app(MigrarStockALotesService::class)->migrar($producto);
+        }
 
 
         // Configurar inventarios para las bodegas (firstOrCreate evita duplicados producto+bodega)
@@ -552,7 +627,126 @@ class ProductosController extends Controller
 
 
 
-        return Response()->json($producto, 200);
+        if (Schema::hasTable('producto_impuestos')) {
+            $producto->load('impuestos');
+        }
+
+        $payload = $producto->toArray();
+        if ($migracionLotes !== null) {
+            $payload['migracion_lotes'] = $migracionLotes;
+        }
+
+        return Response()->json($payload, 200);
+    }
+
+    /**
+     * Sincroniza impuestos de venta asignados al producto (tabla producto_impuestos).
+     * Actualiza porcentaje_impuesto con la suma de tasas (cálculo paralelo sobre la base).
+     */
+    protected function syncProductoImpuestos(Producto $producto, $idImpuestos): void
+    {
+        $ids = collect(is_array($idImpuestos) ? $idImpuestos : [])
+            ->filter(fn ($id) => $id !== null && $id !== '')
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        if (count($ids) === 0) {
+            $producto->impuestos()->detach();
+            $producto->porcentaje_impuesto = 0;
+            $producto->save();
+            return;
+        }
+
+        $impuestos = ImpuestoCatalogo::withoutGlobalScopes()
+            ->where('id_empresa', $producto->id_empresa)
+            ->whereIn('id', $ids)
+            ->where('aplica_ventas', true)
+            ->get();
+
+        $producto->impuestos()->sync($impuestos->pluck('id')->all());
+        $producto->porcentaje_impuesto = round((float) $impuestos->sum('porcentaje'), 2);
+        $producto->save();
+    }
+
+    protected function puedeCargarPresentaciones(?Empresa $empresa): bool
+    {
+        return $empresa
+            && $empresa->isModuloPresentaciones()
+            && Schema::hasTable('producto_presentaciones');
+    }
+
+    /** @return string[] */
+    protected function relacionesImpuestosProducto(): array
+    {
+        return Schema::hasTable('producto_impuestos') ? ['impuestos'] : [];
+    }
+
+    /**
+     * Vista previa de migración de stock a lotes al activar inventario por lotes.
+     */
+    public function previewMigracionLotes($id)
+    {
+        $producto = Producto::findOrFail($id);
+
+        if ($producto->tipo === 'Servicio') {
+            return response()->json([
+                'requiere_migracion' => false,
+                'mensaje' => 'Los servicios no manejan inventario por lotes.',
+            ], 200);
+        }
+
+        return response()->json(
+            app(MigrarStockALotesService::class)->preview($producto),
+            200
+        );
+    }
+
+    /**
+     * Migra stock de inventario tradicional a lotes STOCK-INICIAL (productos ya con lotes activos).
+     */
+    public function migrarStockLotes($id)
+    {
+        $producto = Producto::findOrFail($id);
+
+        if ($producto->tipo === 'Servicio') {
+            return response()->json(['error' => 'Los servicios no manejan inventario por lotes.'], 400);
+        }
+
+        if (!$producto->inventario_por_lotes) {
+            return response()->json([
+                'error' => 'El producto no tiene inventario por lotes habilitado.',
+            ], 400);
+        }
+
+        $migracionService = app(MigrarStockALotesService::class);
+        $preview = $migracionService->preview($producto);
+
+        if (!$preview['requiere_migracion']) {
+            return response()->json([
+                'success' => true,
+                'message' => 'No hay stock pendiente de migrar. Todas las bodegas con inventario ya tienen lotes con stock.',
+                'migracion_lotes' => [
+                    'lotes_creados' => 0,
+                    'lotes_actualizados' => 0,
+                    'unidades_migradas' => 0,
+                    'bodegas' => [],
+                ],
+            ], 200);
+        }
+
+        $migracion = $migracionService->migrar($producto);
+
+        return response()->json([
+            'success' => true,
+            'message' => sprintf(
+                'Stock migrado: %d lote(s) creado(s), %.2f unidades en total.',
+                $migracion['lotes_creados'] + $migracion['lotes_actualizados'],
+                $migracion['unidades_migradas']
+            ),
+            'migracion_lotes' => $migracion,
+        ], 200);
     }
 
     public function storeDesdeCompras(Request $request)
@@ -937,24 +1131,70 @@ class ProductosController extends Controller
         ]);
 
         $productosActualizados = 0;
+        $lotesCreados = 0;
+        $lotesActualizados = 0;
+        $unidadesMigradas = 0;
+        $productosConMigracion = 0;
+
+        $migracionService = app(MigrarStockALotesService::class);
 
         // Obtener todos los productos de las categorías seleccionadas
         $productos = Producto::whereIn('id_categoria', $request->categorias)
             ->where('tipo', '!=', 'Servicio')
             ->get();
 
-        foreach ($productos as $producto) {
-            $producto->inventario_por_lotes = $request->habilitar;
-            $producto->save();
-            $productosActualizados++;
+        DB::beginTransaction();
+        try {
+            foreach ($productos as $producto) {
+                $producto->inventario_por_lotes = $request->habilitar;
+                $producto->save();
+                $productosActualizados++;
+
+                // Al habilitar: migrar stock pendiente (nuevos y los que ya tenían flag sin lotes)
+                if ($request->habilitar) {
+                    $resultado = $migracionService->migrar($producto);
+                    $creados = (int) ($resultado['lotes_creados'] ?? 0);
+                    $actualizados = (int) ($resultado['lotes_actualizados'] ?? 0);
+                    if ($creados > 0 || $actualizados > 0) {
+                        $productosConMigracion++;
+                    }
+                    $lotesCreados += $creados;
+                    $lotesActualizados += $actualizados;
+                    $unidadesMigradas += (float) ($resultado['unidades_migradas'] ?? 0);
+                }
+            }
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return response()->json([
+                'error' => 'Error al habilitar lotes masivamente: ' . $e->getMessage(),
+            ], 500);
+        }
+
+        $message = $request->habilitar
+            ? 'Inventario por lotes habilitado masivamente'
+            : 'Inventario por lotes deshabilitado masivamente';
+
+        $lotesTrasladados = $lotesCreados + $lotesActualizados;
+        if ($request->habilitar && $lotesTrasladados > 0) {
+            $message .= sprintf(
+                '. Se trasladó stock a %d lote(s) %s (%.2f uds en %d producto(s)).',
+                $lotesTrasladados,
+                MigrarStockALotesService::NUMERO_LOTE_INICIAL,
+                $unidadesMigradas,
+                $productosConMigracion
+            );
         }
 
         return response()->json([
             'success' => true,
-            'message' => $request->habilitar
-                ? 'Inventario por lotes habilitado masivamente'
-                : 'Inventario por lotes deshabilitado masivamente',
-            'productos_actualizados' => $productosActualizados
+            'message' => $message,
+            'productos_actualizados' => $productosActualizados,
+            'lotes_creados' => $lotesCreados,
+            'lotes_actualizados' => $lotesActualizados,
+            'lotes_trasladados' => $lotesTrasladados,
+            'unidades_migradas' => round($unidadesMigradas, 2),
+            'productos_con_migracion' => $productosConMigracion,
         ]);
     }
     public function exportarWooCommerceTemplate(Request $request)

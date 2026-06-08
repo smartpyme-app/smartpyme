@@ -6,6 +6,7 @@ import { ApiService } from '@services/api.service';
 @Component({
   selector: 'app-producto-presentaciones',
   templateUrl: './producto-presentaciones.component.html',
+  styleUrls: ['./producto-presentaciones.component.scss'],
 })
 export class ProductoPresentacionesComponent implements OnInit, OnChanges {
 

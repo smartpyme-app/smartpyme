@@ -2,11 +2,13 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
+import { SLUG_DESCARGA_AUTOMATIZADA_DTES } from '@guards/funcionalidad.guard';
 
 import { FormControl } from '@angular/forms';
 import { debounceTime, switchMap, filter  } from 'rxjs/operators';
 import { Router, NavigationEnd } from '@angular/router';
 import { filter as rxFilter } from 'rxjs/operators';
+import { Subject, takeUntil } from 'rxjs';
 
 @Component({
   selector: 'app-sidebar',
@@ -29,12 +31,15 @@ export class SidebarComponent implements OnInit, OnDestroy {
     public usuario: any = {};
     public isVisible: boolean = false;
     public loading: boolean = false;
+    /** true cuando el dominio es abaco.smartpyme.site */
+    public isAbacoSite: boolean = false;
     public filtros: any = {};
     public items: any = [];
     public notificaciones: any = [];
     public authUser: any = {};
     public tieneFidelizacionHabilitada: boolean = false;
     public tieneModuloRestaurante: boolean = false;
+    public tieneDescargaDtesHabilitada: boolean = false;
     /** Menú Restaurante si la funcionalidad «Restaurantes y pedidos» está activa y la empresa lo eligió en preferencias */
     public mostrarMenuRestaurante: boolean = false;
     /** Menú Pedidos: mismas condiciones (no es el campo licencia del plan) */
@@ -42,11 +47,14 @@ export class SidebarComponent implements OnInit, OnDestroy {
     public restauranteIsCollapsed: boolean = true;
     public pedidosIsCollapsed: boolean = true;
 
+    private destroy$ = new Subject<void>();
+
     searchControl = new FormControl();
 
     constructor(public apiService: ApiService, public alertService: AlertService, private funcionalidadesService: FuncionalidadesService, private router: Router) {}
 
     ngOnInit() {
+        this.isAbacoSite = window.location.hostname === 'abaco.smartpyme.site';
         if (!localStorage.getItem('sidebarCollapsed')) {
             localStorage.setItem('sidebarCollapsed', this.sidebarCollapsed.toString());
         }else{
@@ -130,6 +138,15 @@ export class SidebarComponent implements OnInit, OnDestroy {
         this.usuarioLogueado();
         this.verificarFidelizacionHabilitada();
         this.verificarModuloRestauranteHabilitado();
+        this.verificarDescargaDtesHabilitada();
+
+        this.funcionalidadesService.onCambios()
+            .pipe(takeUntil(this.destroy$))
+            .subscribe(() => {
+                this.verificarFidelizacionHabilitada();
+                this.verificarModuloRestauranteHabilitado();
+                this.verificarDescargaDtesHabilitada();
+            });
         
         // Suscribirse a cambios de ruta para verificar funcionalidades cuando el usuario cambie
         this.router.events
@@ -140,6 +157,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
                     this.usuarioLogueado();
                     this.verificarFidelizacionHabilitada();
                     this.verificarModuloRestauranteHabilitado();
+                    this.verificarDescargaDtesHabilitada();
                 } else {
                     this.actualizarMenusRestaurantePedidos();
                 }
@@ -359,6 +377,17 @@ export class SidebarComponent implements OnInit, OnDestroy {
         });
     }
 
+    private verificarDescargaDtesHabilitada() {
+        this.funcionalidadesService.verificarAcceso(SLUG_DESCARGA_AUTOMATIZADA_DTES).subscribe({
+            next: (tieneAcceso: boolean) => {
+                this.tieneDescargaDtesHabilitada = tieneAcceso;
+            },
+            error: () => {
+                this.tieneDescargaDtesHabilitada = false;
+            }
+        });
+    }
+
     /** Funcionalidad activa en Super Admin + preferencia en empresa (custom_empresa) */
     private actualizarMenusRestaurantePedidos(): void {
         const vista = this.apiService.getVistaModuloRestaurantePedidos();
@@ -377,7 +406,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
     }
 
     ngOnDestroy() {
-        // Limpiar suscripciones si es necesario
+        this.destroy$.next();
+        this.destroy$.complete();
     }
 
     public isLotesActivo(): boolean {

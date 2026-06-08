@@ -211,8 +211,13 @@ class GastosController extends Controller
                 $gasto = new Gasto();
             }
 
-            $headerData = $request->except(['detalles', 'varios_items', 'concepto', 'sub_total', 'iva', 'renta_retenida', 'iva_retenido', 'iva_percibido', 'total', 'tipo', 'impuesto', 'renta', 'percepcion', 'retencion']);
+            $headerData = $request->except([
+                'detalles', 'varios_items', 'concepto', 'sub_total', 'iva', 'renta_retenida',
+                'iva_retenido', 'iva_percibido', 'total', 'tipo', 'impuesto', 'renta', 'percepcion',
+                'retencion', 'dte',
+            ]);
             $gasto->fill($headerData);
+            $this->aplicarIdentificadoresDteImportado($gasto, $request);
 
             if ($tieneMultiplesItems) {
                 $this->guardarConDetalles($gasto, $request->detalles, $request->input('tipo'));
@@ -686,6 +691,38 @@ class GastosController extends Controller
 
         // Categoría predeterminada
         return 'Gastos varios';
+    }
+
+    /**
+     * Persiste código de generación, número de control y DTE importado desde el frontend.
+     */
+    private function aplicarIdentificadoresDteImportado(Gasto $gasto, Request $request): void
+    {
+        if ($request->has('codigo_generacion')) {
+            $codigo = trim((string) $request->input('codigo_generacion', ''));
+            $gasto->codigo_generacion = $codigo !== '' ? $codigo : null;
+        }
+
+        if ($request->has('numero_control')) {
+            $numero = trim((string) $request->input('numero_control', ''));
+            $gasto->numero_control = $numero !== '' ? $numero : null;
+        }
+
+        if ($request->filled('tipo_dte')) {
+            $gasto->tipo_dte = $request->input('tipo_dte');
+        }
+
+        if ($request->has('dte')) {
+            $dte = $request->input('dte');
+            if (is_array($dte) && !empty($dte)) {
+                $gasto->dte = $dte;
+            } elseif (is_string($dte) && $dte !== '') {
+                $decoded = json_decode($dte, true);
+                $gasto->dte = is_array($decoded) ? $decoded : null;
+            } else {
+                $gasto->dte = null;
+            }
+        }
     }
 
     public function getNumerosIdentificacion(){

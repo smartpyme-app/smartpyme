@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             MHTableSeeder::class,
+            DteTipoMapeoSeeder::class,
             RestauranteFuncionalidadSeeder::class,
             // PaquetesTableSeeder::class,
             // EmpresaTableSeeder::class,

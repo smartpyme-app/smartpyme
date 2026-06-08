@@ -49,7 +49,9 @@
                         <label>Cantidad a sacar:</label>
                         <input type="number" class="form-control"
                             [ngClass]="{'border-danger': cantidadOrigen > (productoOrigen.stock || 0)}"
-                            [(ngModel)]="cantidadOrigen" min="0.01" step="0.01" placeholder="Ej. 1">
+                            [(ngModel)]="cantidadOrigen" (ngModelChange)="onCantidadOrigenChange()"
+                            min="0.01" step="0.01" placeholder="Ej. 1">
+                        <small class="text-muted">Unidades del producto origen que se descontarán.</small>
                         <small class="text-danger" *ngIf="cantidadOrigen > (productoOrigen.stock || 0)">La cantidad
                             supera el stock disponible.</small>
                     </div>
@@ -79,23 +81,39 @@
                 Primero selecciona una bodega para buscar un producto.
             </div>
 
+            <p class="text-muted small mb-2" *ngIf="productoOrigen && cantidadOrigen > 0">
+                <strong>Factor de conversión:</strong> unidades de destino por cada 1 unidad de origen.
+                Ej.: sacar 1 barra de 10 m con factor 10 → ingresan 10 barras de 1 m.
+            </p>
+
             <table class="table table-bordered mt-3">
                 <thead class="bg-light">
                     <tr>
                         <th>Producto</th>
-                        <th style="width: 150px;">Cantidad</th>
+                        <th style="width: 130px;">Factor</th>
+                        <th style="width: 130px;">Cant. a ingresar</th>
                         <th style="width: 50px;"></th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr *ngIf="productosDestino.length === 0">
-                        <td colspan="3" class="text-center text-muted">No hay productos de destino agregados.</td>
+                        <td colspan="4" class="text-center text-muted">No hay productos de destino agregados.</td>
                     </tr>
                     <tr *ngFor="let prod of productosDestino; let i = index">
                         <td class="align-middle">{{ prod.nombre }}</td>
                         <td>
-                            <input type="number" class="form-control border-success" [(ngModel)]="prod.cantidad_ingreso"
-                                min="0.01" step="0.01" placeholder="Ej. 1">
+                            <input type="number" class="form-control" [(ngModel)]="prod.factor_conversion"
+                                (ngModelChange)="onFactorChange(prod)" min="0.01" step="0.01" placeholder="Ej. 10"
+                                [disabled]="!productoOrigen || cantidadOrigen <= 0">
+                            <small class="text-muted" *ngIf="productoOrigen && cantidadOrigen > 0">
+                                por cada 1 u. origen
+                            </small>
+                        </td>
+                        <td class="align-middle">
+                            <strong class="text-success">{{ prod.cantidad_ingreso || 0 }}</strong>
+                            <small class="text-muted d-block" *ngIf="productoOrigen && cantidadOrigen > 0 && prod.factor_conversion">
+                                {{ cantidadOrigen }} × {{ prod.factor_conversion }}
+                            </small>
                         </td>
                         <td class="text-center align-middle">
                             <button class="btn btn-sm btn-danger" (click)="eliminarDestino(i)" tooltip="Eliminar">

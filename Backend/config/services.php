@@ -36,6 +36,13 @@ return [
         'redirect'      => env('GOOGLE_REDIRECT')
     ],
 
+    'gmail' => [
+        'client_id'     => env('GOOGLE_GMAIL_CLIENT_ID', env('GOOGLE_ID')),
+        'client_secret' => env('GOOGLE_GMAIL_CLIENT_SECRET', env('GOOGLE_SECRET')),
+        'redirect_uri'  => env('GOOGLE_GMAIL_REDIRECT_URI', null), // e.g. https://api.smartpyme.test/api/email-accounts/gmail/callback
+        'frontend_redirect' => env('DTE_FRONTEND_URL', env('APP_URL', 'http://localhost:4200')), // Redirect after OAuth (Angular app URL)
+    ],
+
     'facebook' => [
         'client_id' =>      env('FACEBOOK_ID'),
         'client_secret' =>  env('FACEBOOK_SECRET'),

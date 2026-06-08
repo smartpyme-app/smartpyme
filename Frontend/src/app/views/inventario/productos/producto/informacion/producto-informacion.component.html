@@ -96,14 +96,29 @@
                 <span class="input-group-text">%</span>
             </div>
         </div>
-        <div class="form-group col-md-4 col-lg-2">
-            <label for="porcentaje_impuesto">Impuesto</label>
-            <ng-select class="form-select p-0" [(ngModel)]="producto.porcentaje_impuesto" name="porcentaje_impuesto" (change)="calPrecioFinal()">
-                <ng-option [value]="0">Sin impuesto (0%)</ng-option>
-                <ng-option *ngFor="let impuesto of impuestos" [value]="impuesto.porcentaje">
-                    {{ impuesto.nombre }} ({{ impuesto.porcentaje }}%)
-                </ng-option>
+        <div class="form-group col-md-4 col-lg-3">
+            <label for="id_impuestos">Impuestos</label>
+            <ng-select
+                class="form-select p-0"
+                [(ngModel)]="producto.id_impuestos"
+                name="id_impuestos"
+                [items]="impuestos"
+                bindLabel="nombre"
+                bindValue="id"
+                [multiple]="true"
+                [closeOnSelect]="false"
+                placeholder="Seleccione impuestos"
+                (change)="onImpuestosChange()">
+                <ng-template ng-option-tmp let-item="item">
+                    {{ item.nombre }} ({{ item.porcentaje }}%)
+                </ng-template>
+                <ng-template ng-label-tmp let-item="item">
+                    {{ item.nombre }} ({{ item.porcentaje }}%)
+                </ng-template>
             </ng-select>
+            <small class="text-muted" *ngIf="getPorcentajeProducto() > 0">
+                Total: {{ getPorcentajeProducto() }}% sobre el precio base
+            </small>
         </div>
         <div class="form-group col-md-4 col-lg-2">
             <label class="fw-bold" for="precio_final">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'Precio con IVA:' : 'Precio con Impuesto:' }}</label>
@@ -154,15 +169,26 @@
         <div class="form-group col-md-6 col-lg-5 without-label" *ngIf="producto.tipo != 'Servicio' && isLotesActivo()">
             <div class="form-switch bg-light-info rounded">
                 <label>¿El inventario se maneja por lotes?</label>
-                <input class="form-check-input float-end" type="checkbox" role="switch" (change)=" producto.id ? onSubmit() : '' " [(ngModel)]="producto.inventario_por_lotes" name="inventario_por_lotes">
+                <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onInventarioPorLotesChange()" [(ngModel)]="producto.inventario_por_lotes" name="inventario_por_lotes">
             </div>
         </div>
+
+        <h6 class="my-3 font-weight-bold w-100" *ngIf="producto.tipo === 'Servicio' || producto.tipo === 'Producto' || producto.tipo === 'Compuesto'">Restaurante / cocina</h6>
 
         <div class="form-group col-md-6 col-lg-5 without-label">
             <div class="form-switch bg-light-info rounded">
                 <label>Genera comanda</label>
                 <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="producto.genera_comanda" name="genera_comanda">
             </div>
+        </div>
+
+        <div class="form-group col-md-6 col-lg-5 without-label" *ngIf="producto.genera_comanda">
+            <label class="small text-muted">Imprimir comanda en</label>
+            <select class="form-control form-select" [(ngModel)]="producto.destino_comanda" name="destino_comanda">
+                <option value="cocina">Cocina</option>
+                <option value="barra">Barra</option>
+                <option value="ambos">Cocina y barra</option>
+            </select>
         </div>
 
         <div class="form-group col-lg-12 mt-3">

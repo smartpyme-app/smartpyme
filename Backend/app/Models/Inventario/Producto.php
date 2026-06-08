@@ -45,6 +45,7 @@ class Producto extends Model
         'syncing_from_shopify',
         'last_shopify_sync',
         'genera_comanda',
+        'destino_comanda',
     );
 
     protected $appends = ['nombre_categoria', 'img', 'nombre_completo', 'stock_total_lotes', 'fecha_vencimiento_proxima'];
@@ -56,6 +57,7 @@ class Producto extends Model
         'imported_from_woocommerce_csv' => 'boolean',
         'inventario_por_lotes' => 'boolean',
         'genera_comanda' => 'boolean',
+        'destino_comanda' => 'string',
     ];
 
     protected static function boot()
@@ -250,5 +252,15 @@ class Producto extends Model
     public function presentaciones()
     {
         return $this->hasMany('App\Models\Inventario\ProductoPresentacion', 'id_producto');
+    }
+
+    public function impuestos()
+    {
+        return $this->belongsToMany(
+            'App\Models\Admin\Impuesto',
+            'producto_impuestos',
+            'id_producto',
+            'id_impuesto'
+        )->withTimestamps();
     }
 }

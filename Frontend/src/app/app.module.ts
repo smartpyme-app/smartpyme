@@ -11,6 +11,7 @@ import { AuthGuard } from '@guards/auth.guard';
 import { AdminGuard } from '@guards/admin.guard';
 import { CitasGuard } from '@guards/citas.guard';
 import { SuperAdminGuard } from '@guards/super-admin.guard';
+import { FuncionalidadGuard } from '@guards/funcionalidad.guard';
 import { SubscriptionGuard } from '@guards/SuscriptionGuard.guard';
 import { TourNgxBootstrapModule } from 'ngx-ui-tour-ngx-bootstrap';
 
@@ -105,7 +106,7 @@ import { ServiceWorkerModule } from '@angular/service-worker';
     }),
   ],
   providers: [{ provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true },
-    AuthGuard, AdminGuard, CitasGuard, SuperAdminGuard, SubscriptionGuard, AlertService, ApiService,
+    AuthGuard, AdminGuard, CitasGuard, SuperAdminGuard, SubscriptionGuard, FuncionalidadGuard, AlertService, ApiService,
     MHService, SumPipe, provideEnvironmentNgxMask()],
   bootstrap: [AppComponent]
 })

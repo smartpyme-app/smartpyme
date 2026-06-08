@@ -2,11 +2,12 @@ import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@an
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { of } from 'rxjs';
 import { FormControl } from '@angular/forms';
-import { debounceTime, switchMap, filter,catchError  } from 'rxjs/operators';
+import { debounceTime, switchMap, filter, catchError, tap } from 'rxjs/operators';
 
 import { SumPipe }     from '@pipes/sum.pipe';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
+import { copiarImpuestosProductoAlDetalle } from '@utils/impuestos-venta.util';
 
 @Component({
   selector: 'app-tienda-venta-buscador',
@@ -31,6 +32,9 @@ export class TiendaVentaBuscadorComponent implements OnInit {
     public tieneShopify: boolean = false;
     public descripcionesExpandidas: { [key: number]: boolean } = {};
 
+    /** Mínimo de caracteres antes de llamar a la API (facturación). */
+    readonly minCaracteresBusqueda = 2;
+
     constructor( 
         private apiService: ApiService, private alertService: AlertService,
         private modalService: BsModalService, private sumPipe:SumPipe
@@ -44,7 +48,12 @@ export class TiendaVentaBuscadorComponent implements OnInit {
         this.searchControl.valueChanges
           .pipe(
             debounceTime(500),
-            filter((query: string) => query?.trim().length > 0), // Validación para evitar errores con `null` o `undefined`.
+            tap((query: string | null) => {
+              if (String(query ?? '').trim().length < this.minCaracteresBusqueda) {
+                this.productos = [];
+              }
+            }),
+            filter((query: string | null) => String(query ?? '').trim().length >= this.minCaracteresBusqueda),
             switchMap((query: any) => {
               const q = this.normalizeBusqueda(query);
               const params: any = { query: q };
@@ -165,6 +174,11 @@ export class TiendaVentaBuscadorComponent implements OnInit {
         this.detalle.img            = producto.img;
         this.detalle.precio         = parseFloat(producto.precio);
         this.detalle.porcentaje_impuesto = producto.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
+        copiarImpuestosProductoAlDetalle(
+            this.detalle,
+            producto,
+            this.apiService.auth_user()?.empresa?.iva ?? 0
+        );
         this.detalle.precios        = producto.precios;
         this.detalle.precios.unshift({
                 'precio' : this.detalle.precio
@@ -203,7 +217,7 @@ export class TiendaVentaBuscadorComponent implements OnInit {
                 stockLotes = stockLotes / producto.factor_conversion;
             }
             this.detalle.stock = stockLotes;
-        } else if (producto.stock_base_actual !== undefined) {
+        } else if (producto.tipo !== 'Servicio' && producto.stock_base_actual !== undefined && producto.stock_base_actual !== null) {
             this.detalle.stock = parseFloat(producto.stock_base_actual);
         } else if(producto.tipo != 'Servicio' && producto.inventarios && producto.inventarios.length > 0){
             this.detalle.stock = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
@@ -246,6 +260,10 @@ export class TiendaVentaBuscadorComponent implements OnInit {
             .trim()
             .replace(/[\r\n\u0000]+/g, '')
             .replace(/~+$/g, '');
+    }
+
+    get puedeMostrarResultadosBusqueda(): boolean {
+        return String(this.searchControl.value ?? '').trim().length >= this.minCaracteresBusqueda;
     }
 
     /**

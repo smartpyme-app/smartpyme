@@ -9,7 +9,8 @@ use App\Http\Controllers\Api\Inventario\TransformacionController;
     Route::post('/inventario',                 		[InventariosController::class, 'store']);
     Route::delete('/inventario/{id}',               [InventariosController::class, 'delete']);
 
-    Route::post('/transformacion',                 		[TransformacionController::class, 'store']);
+    Route::post('/transformacion', [TransformacionController::class, 'store'])
+        ->middleware('verificar.funcionalidad:transformacion-productos');
     
     Route::get('/inventario/buscar/{txt}',          [InventariosController::class, 'inventarioSearch']);
     Route::get('/inventario/sala-venta/buscar/{txt}', [InventariosController::class, 'ventaSearch']);
@@ -19,3 +20,4 @@ use App\Http\Controllers\Api\Inventario\TransformacionController;
     Route::post('/bodega/productos/filtrar',       [InventariosController::class, 'productosFiltrar']);
 
     Route::get('/inventarios/exportar',              [InventariosController::class, 'export']);
+    Route::get('/inventarios/exportar-analisis-ventas-mensual', [InventariosController::class, 'exportAnalisisVentasMensual']);

@@ -28,6 +28,15 @@ export class PieChartComponent implements OnInit, OnChanges {
       return;
     }
 
+    const formatMoney = (value: number) => {
+      const v = Number(value) || 0;
+      const formatted = Math.abs(v).toLocaleString('es-GT', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+      return v < 0 ? `($${formatted})` : `$${formatted}`;
+    };
+
     // Preparar datos: objetos { name, value } o arrays paralelos labels[] + data[] (p. ej. CXC vigencia)
     const labels = this.config.labels ?? [];
 
@@ -84,7 +93,11 @@ export class PieChartComponent implements OnInit, OnChanges {
       } : undefined,
       tooltip: {
         trigger: 'item',
-        formatter: '{a} <br/>{b}: {c} ({d}%)'
+        formatter: (params: any) => {
+          const val = formatMoney(params.value);
+          const percent = params.percent != null ? `${Number(params.percent).toFixed(1)}%` : '';
+          return `${params.seriesName} <br/>${params.marker || ''} ${params.name}: <b>${val}</b> (${percent})`;
+        }
       },
       legend: {
         orient: 'vertical',
@@ -104,13 +117,22 @@ export class PieChartComponent implements OnInit, OnChanges {
           },
           label: {
             show: false,
-            formatter: '{b}: {d}%'
+            formatter: (params: any) => {
+              const val = formatMoney(params.value);
+              const percent = params.percent != null ? `${Number(params.percent).toFixed(1)}%` : '';
+              return `${params.name}: ${val} (${percent})`;
+            }
           },
           emphasis: {
             label: {
               show: false,
               fontSize: 14,
-              fontWeight: 'bold'
+              fontWeight: 'bold',
+              formatter: (params: any) => {
+                const val = formatMoney(params.value);
+                const percent = params.percent != null ? `${Number(params.percent).toFixed(1)}%` : '';
+                return `${params.name}: ${val} (${percent})`;
+              }
             }
           },
           data: pieData,

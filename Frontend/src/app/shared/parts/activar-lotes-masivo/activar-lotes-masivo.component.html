@@ -19,6 +19,10 @@
     <div class="alert alert-info">
         <i class="fa fa-info-circle"></i> 
         Esta acción <strong>{{ habilitarLotes ? 'habilitará' : 'deshabilitará' }}</strong> el inventario por lotes para todos los productos (excepto servicios) de las categorías seleccionadas.
+        <span *ngIf="habilitarLotes" class="d-block mt-2">
+            Al habilitar, el stock de cada bodega se trasladará a un lote inicial <strong>STOCK-INICIAL</strong>
+            (incluye productos que ya tenían lotes activos pero sin migrar). Después podrá configurar código y vencimiento en cada producto.
+        </span>
     </div>
     
     <div class="row mb-3">

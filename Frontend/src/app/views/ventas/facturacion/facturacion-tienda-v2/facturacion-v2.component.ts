@@ -10,6 +10,14 @@ import { MHService } from '@services/MH.service';
 import { RestauranteService } from '@services/restaurante.service';
 import Swal from 'sweetalert2';
 
+import {
+  acumularMontosImpuestosVenta,
+  copiarImpuestosProductoAlDetalle,
+  normalizarPorcentajeImpuestoDetalle,
+  resolverPorcentajeImpuestoVenta,
+  sumarSubTotalEncabezadoVenta,
+} from '@utils/impuestos-venta.util';
+
 import * as moment from 'moment';
 import { VentaDetallesV2Component } from './detalles/venta-detalles-v2.component';
 
@@ -364,29 +372,8 @@ export class FacturacionV2Component implements OnInit {
       this.sesionId = navState?.sesionId ?? (qp.get('sesion') ? +qp.get('sesion')! : null);
       const detalles = navState?.preCuentaData?.detalles ?? [];
       if (detalles.length) {
-        const iva = this.apiService.auth_user()?.empresa?.iva ?? 0;
         this.venta.observaciones = ((this.venta.observaciones || '') + ' Mesa ' + (navState.preCuentaData.mesa_numero || '')).trim();
-        this.venta.detalles = detalles.map((d: any) => {
-        const sub = (d.cantidad || 0) * (parseFloat(d.precio) || 0);
-        return {
-          id_producto: d.id_producto,
-          cantidad: d.cantidad,
-          precio: parseFloat(d.precio).toFixed(4),
-          descripcion: d.descripcion || '',
-          costo: 0,
-          descuento: 0,
-          descuento_porcentaje: 0,
-          sub_total: sub.toFixed(4),
-          total: sub.toFixed(4),
-          tipo_gravado: 'gravada',
-          porcentaje_impuesto: iva,
-          gravada: 0,
-          exenta: 0,
-          no_sujeta: 0,
-          iva: 0,
-        };
-      });
-        this.normalizarDetallesTipoGravado(this.venta);
+        this.venta.detalles = this.mapearDetallesConsumoExterno(detalles);
         this.sumTotal();
         const pctPropinaEmpresa = parseFloat(String(this.apiService.auth_user()?.empresa?.propina_porcentaje ?? '')) || 0;
         if (pctPropinaEmpresa > 0) {
@@ -634,28 +621,71 @@ export class FacturacionV2Component implements OnInit {
     detalles.forEach((detalleCompra: any) => {
       this.apiService.getAll('producto/buscar-by-code/'+ detalleCompra.codigo).subscribe((producto) => {
         if (producto) {
-          let detalle: any = {};
+          const detalle: any = {};
           detalle.cantidad = detalleCompra.cantidad;
           detalle.descripcion = producto.nombre;
           detalle.id_producto = producto.id;
+          detalle.img = producto.img;
+          detalle.tipo = producto.tipo;
+          detalle.tipo_gravado = 'gravada';
 
-          // En v2, el precio se muestra con IVA pero se guarda sin IVA
-          const iva = this.apiService.auth_user()?.empresa?.iva || 0;
+          detalle.stock = this.resolveStockParaDetalle(producto);
+
+          // En v2, lista sin IVA (como configuración del producto); columna Precio muestra ese valor cuando hay lista
+          const ivaEmpresa = this.apiService.auth_user()?.empresa?.iva ?? 0;
+          const pctImpuesto = resolverPorcentajeImpuestoVenta(producto.porcentaje_impuesto, ivaEmpresa);
+          detalle.porcentaje_impuesto = normalizarPorcentajeImpuestoDetalle(
+            producto.porcentaje_impuesto,
+            ivaEmpresa
+          );
+          copiarImpuestosProductoAlDetalle(detalle, producto, ivaEmpresa);
+
           const precioSinIva = parseFloat(producto.precio);
-          const precioConIva = precioSinIva * (1 + iva / 100);
-
-          // precio_iva: precio con IVA (para cálculos y visualización)
+          const precioConIva = precioSinIva * (1 + pctImpuesto / 100);
           detalle.precio_iva = precioConIva.toFixed(4);
-          // precio: precio sin IVA (para guardar en BD)
           detalle.precio = precioSinIva.toFixed(4);
 
-          detalle.costo = parseFloat(producto.costo);
+          detalle.precios = producto.precios
+            ? producto.precios.map((p: any) => {
+                const sin = parseFloat(p.precio);
+                return {
+                  ...p,
+                  precio: sin.toFixed(4),
+                  precio_sin_iva: sin,
+                };
+              })
+            : [];
+          detalle.precios.unshift({
+            precio: precioSinIva.toFixed(4),
+            precio_sin_iva: precioSinIva,
+          });
+
+          this.aplicarCoincidenciaListaPreciosOrden(detalle, detalleCompra, pctImpuesto);
+
+          if (detalle.precios?.length) {
+            detalle.precios[0] = {
+              precio: typeof detalle.precio === 'string' ? detalle.precio : parseFloat(detalle.precio).toFixed(4),
+              precio_sin_iva: parseFloat(detalle.precio),
+            };
+          }
+
+          if (
+            this.apiService.auth_user().empresa.valor_inventario == 'promedio' &&
+            producto.costo_promedio > 0
+          ) {
+            detalle.costo = parseFloat(producto.costo_promedio);
+          } else {
+            detalle.costo = parseFloat(producto.costo);
+          }
           detalle.id_vendedor = this.venta.id_vendedor;
           detalle.exenta = 0;
           detalle.no_sujeta = 0;
           detalle.cuenta_a_terceros = 0;
-          detalle.total = precioConIva * detalle.cantidad;
-          detalle.gravada = detalle.total;
+          detalle.descuento = 0;
+          detalle.descuento_porcentaje = 0;
+          detalle.descuento_monto = 0;
+          detalle.descuento_is_monto = false;
+          this.aplicarLineaGravadaDesdePrecio(detalle);
           this.venta.detalles.push(detalle);
           this.sumTotal();
         } else {
@@ -820,6 +850,124 @@ export class FacturacionV2Component implements OnInit {
     return precioConIva - this.calcularPrecioSinIva(precioConIva, porcentajeIva);
   }
 
+  /**
+   * Totales por línea (gravada), coherente con VentaDetallesV2 — usado al cargar orden de compra.
+   */
+  private aplicarLineaGravadaDesdePrecio(detalle: any): void {
+    const precioSinIva = parseFloat(detalle.precio || 0);
+    const cant = parseFloat(String(detalle.cantidad ?? 0)) || 0;
+    detalle.sub_total = Number((cant * precioSinIva).toFixed(4));
+    const desc = parseFloat(detalle.descuento || 0) || 0;
+    detalle.total = Number((detalle.sub_total - desc).toFixed(4)).toFixed(4);
+
+    let pctDetalle = 0;
+    if (this.venta.cobrar_impuestos) {
+      pctDetalle = resolverPorcentajeImpuestoVenta(
+        detalle?.porcentaje_impuesto,
+        this.apiService.auth_user()?.empresa?.iva
+      );
+    }
+
+    const totalNum = parseFloat(detalle.total) || 0;
+    detalle.gravada = 0;
+    detalle.exenta = 0;
+    detalle.no_sujeta = 0;
+    detalle.gravada = totalNum;
+    if (pctDetalle > 0) {
+      detalle.total_iva = (totalNum * (1 + pctDetalle / 100)).toFixed(4);
+      detalle.iva = parseFloat((totalNum * (pctDetalle / 100)).toFixed(4));
+    } else {
+      detalle.total_iva = detalle.total;
+      detalle.iva = 0;
+    }
+  }
+
+  /**
+   * En la orden de solicitud, `costo` es el precio unitario **con IVA**.
+   */
+  private precioConIvaReferenciaDesdeOrden(det: any): number | null {
+    const desdeCosto = Number(det?.costo);
+    return Number.isFinite(desdeCosto) && desdeCosto > 0 ? desdeCosto : null;
+  }
+
+  private igualdadPrecioMercado(a: number, b: number): boolean {
+    if (!Number.isFinite(a) || !Number.isFinite(b)) {
+      return false;
+    }
+    const diff = Math.abs(a - b);
+    return diff <= 0.015 || diff <= 1e-6 * Math.max(Math.abs(a), Math.abs(b), 1);
+  }
+
+  /**
+   * Compara solo precio unitario CON IVA (solicitud vs columna CON IVA de cada opción);
+   * al empatar guarda sin IVA de esa opción.
+   */
+  private aplicarCoincidenciaListaPreciosOrden(detalle: any, detalleCompra: any, pctImpuesto: number): void {
+    const referenciaConIva = this.precioConIvaReferenciaDesdeOrden(detalleCompra);
+    const lista = detalle?.precios;
+    if (referenciaConIva == null || !Array.isArray(lista) || lista.length === 0) {
+      return;
+    }
+    const pct = Number(pctImpuesto) || 0;
+    let mejor: any = null;
+    let mejorErr = Infinity;
+    for (const p of lista) {
+      const sinLista = parseFloat(String(p?.precio));
+      if (!Number.isFinite(sinLista)) continue;
+      const conLista = pct > 0 ? sinLista * (1 + pct / 100) : sinLista;
+      if (!this.igualdadPrecioMercado(referenciaConIva, conLista)) continue;
+      const err = Math.abs(referenciaConIva - conLista);
+      if (err < mejorErr - 1e-9) {
+        mejorErr = err;
+        mejor = p;
+      }
+    }
+    if (mejor == null || !Number.isFinite(mejorErr) || mejorErr > 0.015) return;
+
+    const sinSel =
+      mejor.precio_sin_iva !== undefined &&
+      mejor.precio_sin_iva !== null &&
+      mejor.precio_sin_iva !== ''
+        ? Number(mejor.precio_sin_iva)
+        : parseFloat(String(mejor.precio));
+    if (!Number.isFinite(sinSel)) return;
+    detalle.precio = sinSel.toFixed(4);
+    detalle.precio_iva = pct > 0 ? (sinSel * (1 + pct / 100)).toFixed(4) : sinSel.toFixed(4);
+  }
+
+  /** Stock desde producto ya cargado por bodega (misma regla que el buscador v2). */
+  private resolveStockParaDetalle(producto: any): number | null {
+    if (!producto) {
+      return null;
+    }
+    if (producto.tipo == 'Compuesto' && producto.composiciones) {
+      producto.composiciones.forEach((composicion: any) => {
+        if (!composicion.compuesto?.inventarios) {
+          return;
+        }
+        composicion.compuesto.inventarios = composicion.compuesto.inventarios.filter(
+          (item: any) => item.id_bodega == this.venta.id_bodega,
+        );
+        const stockComp = parseFloat(this.sumPipe.transform(composicion.compuesto.inventarios, 'stock'));
+        if (stockComp < composicion.cantidad) {
+          producto.inventarios = [];
+        }
+      });
+    }
+
+    producto.inventarios = producto.inventarios?.filter((item: any) => item.id_bodega == this.venta.id_bodega) || [];
+    if (producto.inventario_por_lotes && producto.lotes?.length > 0) {
+      const lotesBodega = this.venta.id_bodega
+        ? producto.lotes.filter((l: any) => l.id_bodega == this.venta.id_bodega)
+        : producto.lotes;
+      return lotesBodega.reduce((sum: number, lote: any) => sum + (parseFloat(lote.stock) || 0), 0);
+    }
+    if (producto.tipo != 'Servicio' && producto.inventarios.length > 0) {
+      return parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
+    }
+    return null;
+  }
+
   public sumTotal() {
     // Asegurar que detalles existe y es un array
     if (!this.venta.detalles || !Array.isArray(this.venta.detalles)) {
@@ -837,9 +985,7 @@ export class FacturacionV2Component implements OnInit {
       ? (this.apiService.auth_user()?.empresa?.iva || 0)
       : 0;
 
-    // 4 decimales en agregados para cuadrar con líneas; el total final sigue en 2
-    const rawSubTotal = parseFloat(this.sumPipe.transform(this.venta.detalles, 'total'));
-    this.venta.sub_total = Number(rawSubTotal).toFixed(4);
+    this.venta.sub_total = Number(sumarSubTotalEncabezadoVenta(this.venta.detalles)).toFixed(4);
 
     this.sincronizarRetencionGranContribuyente();
 
@@ -869,52 +1015,29 @@ export class FacturacionV2Component implements OnInit {
       ? Math.round(subTotalNum * (propinaPorcentaje / 100) * 100) / 100
       : 0;
 
-    // IVA por tasa: cada impuesto recibe solo el IVA de los detalles con ese porcentaje
+    // IVA por tasa: cada impuesto acumula el monto de las líneas que lo incluyen
     const empresaIva = Number(this.apiService.auth_user()?.empresa?.iva ?? 0);
-    const pctIgual = (a: number, b: number) => Math.abs(Number(a) - Number(b)) < 0.01;
-    const porcentajesImpuestos = (this.venta.impuestos || []).map((i: any) => Number(i.porcentaje));
     if (this.venta.cobrar_impuestos) {
-      this.venta.impuestos.forEach((impuesto: any) => {
-        const pctImp = Number(impuesto.porcentaje);
-        const monto = this.venta.detalles
-          .filter((d: any) => {
-            const pctDetalle = (d.porcentaje_impuesto != null && d.porcentaje_impuesto !== '')
-              ? Number(d.porcentaje_impuesto) : empresaIva;
-            return pctIgual(pctImp, pctDetalle);
-          })
-          .reduce((sum: number, d: any) => {
-            const gravada = parseFloat(d.gravada || 0);
-            const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) > 0)
-              ? parseFloat(d.iva) : gravada * (pctImp / 100);
-            return sum + ivaLinea;
-          }, 0);
-        impuesto.monto = parseFloat(Number(monto).toFixed(4));
-      });
-      // Detalles cuyo % no coincide con ningún impuesto: asignar al impuesto empresa o al primero
-      if (this.venta.detalles.length && this.venta.impuestos.length) {
-        const ivaSinAsignar = this.venta.detalles
-          .filter((d: any) => {
-            const pctDetalle = (d.porcentaje_impuesto != null && d.porcentaje_impuesto !== '')
-              ? Number(d.porcentaje_impuesto) : empresaIva;
-            return !porcentajesImpuestos.some((p: number) => pctIgual(p, pctDetalle));
-          })
-          .reduce((sum: number, d: any) => {
-            const gravada = parseFloat(d.gravada || 0);
-            const pct = (d.porcentaje_impuesto != null && d.porcentaje_impuesto !== '')
-              ? Number(d.porcentaje_impuesto) : empresaIva;
-            const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) > 0)
-              ? parseFloat(d.iva) : gravada * (pct / 100);
-            return sum + ivaLinea;
-          }, 0);
-        if (ivaSinAsignar > 0) {
-          const impuestoDestino = this.venta.impuestos.find((i: any) => pctIgual(Number(i.porcentaje), empresaIva))
-            || this.venta.impuestos[0];
-          impuestoDestino.monto = parseFloat((parseFloat(impuestoDestino.monto) + ivaSinAsignar).toFixed(4));
-        }
+      if (this.venta.impuestos.length) {
+        acumularMontosImpuestosVenta(
+          this.venta.impuestos,
+          this.venta.detalles,
+          true,
+          empresaIva
+        );
+        this.venta.iva = parseFloat(
+          this.sumPipe.transform(this.venta.impuestos, 'monto')
+        ).toFixed(4);
+      } else {
+        const ivaDesdeLineas = this.venta.detalles.reduce((sum: number, d: any) => {
+          const gravada = parseFloat(d.gravada || 0);
+          const pct = resolverPorcentajeImpuestoVenta(d.porcentaje_impuesto, empresaIva, true);
+          const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) > 0)
+            ? parseFloat(d.iva) : gravada * (pct / 100);
+          return sum + ivaLinea;
+        }, 0);
+        this.venta.iva = parseFloat(Number(ivaDesdeLineas).toFixed(4)).toFixed(4);
       }
-      this.venta.iva = parseFloat(
-        this.sumPipe.transform(this.venta.impuestos, 'monto')
-      ).toFixed(4);
     } else {
       this.venta.iva = (0).toFixed(4);
       this.venta.impuestos.forEach((impuesto: any) => { impuesto.monto = 0; });
@@ -1415,31 +1538,7 @@ export class FacturacionV2Component implements OnInit {
 
     const detalles = data.detalles || [];
     if (detalles.length) {
-      const iva = this.apiService.auth_user()?.empresa?.iva ?? 0;
-      this.venta.detalles = detalles.map((d: any) => {
-        const precio = parseFloat(String(d.precio)) || 0;
-        const cant = parseFloat(String(d.cantidad)) || 0;
-        const descLine = parseFloat(String(d.descuento ?? 0)) || 0;
-        const sub = Math.max(0, cant * precio - descLine);
-        return {
-          id_producto: d.id_producto,
-          cantidad: cant,
-          precio: precio.toFixed(4),
-          descripcion: d.descripcion || '',
-          costo: 0,
-          descuento: descLine.toFixed(4),
-          descuento_porcentaje: 0,
-          sub_total: sub.toFixed(4),
-          total: sub.toFixed(4),
-          tipo_gravado: 'gravada',
-          porcentaje_impuesto: iva,
-          gravada: 0,
-          exenta: 0,
-          no_sujeta: 0,
-          iva: 0,
-        };
-      });
-      this.normalizarDetallesTipoGravado(this.venta);
+      this.venta.detalles = this.mapearDetallesConsumoExterno(detalles);
       this.sumTotal();
     }
 
@@ -1734,6 +1833,45 @@ export class FacturacionV2Component implements OnInit {
     return this.apiService.auth_user().empresa?.custom_empresa?.columnas?.[columnName] || false;
   }
 
+
+  /** Detalles desde pre-cuenta restaurante o pedido canal: precios sin IVA, IVA desglosado en línea (v2). */
+  private mapearDetallesConsumoExterno(detalles: any[]): any[] {
+    const empresaIva = Number(this.apiService.auth_user()?.empresa?.iva ?? 0);
+    const mapped = detalles.map((d: any) => {
+      const cant = parseFloat(String(d.cantidad)) || 0;
+      const descLine = parseFloat(String(d.descuento ?? 0)) || 0;
+      const pct = resolverPorcentajeImpuestoVenta(d.porcentaje_impuesto, empresaIva);
+      const pctNum = pct;
+      let precioSinIva = parseFloat(String(d.precio)) || 0;
+      let precioConIva = d.precio_con_iva != null && d.precio_con_iva !== ''
+        ? parseFloat(String(d.precio_con_iva))
+        : (pctNum > 0 ? precioSinIva * (1 + pctNum / 100) : precioSinIva);
+
+      if (d.precios_sin_iva === false && pctNum > 0) {
+        precioConIva = precioSinIva;
+        precioSinIva = this.calcularPrecioSinIva(precioConIva, pctNum);
+      }
+
+      const detalle: any = {
+        id_producto: d.id_producto,
+        cantidad: cant,
+        precio: precioSinIva.toFixed(4),
+        precio_iva: precioConIva.toFixed(4),
+        descripcion: d.descripcion || '',
+        costo: 0,
+        descuento: descLine.toFixed(4),
+        descuento_porcentaje: 0,
+        tipo_gravado: 'gravada',
+        porcentaje_impuesto: pctNum,
+        exenta: 0,
+        no_sujeta: 0,
+        cuenta_a_terceros: 0,
+      };
+      this.aplicarLineaGravadaDesdePrecio(detalle);
+      return detalle;
+    });
+    return mapped;
+  }
 
   /** Normaliza detalles: infiere tipo_gravado y sub_total si faltan (ventas existentes). Asegura gravada/exenta/no_sujeta para que el IVA cuadre. */
   private normalizarDetallesTipoGravado(venta: any) {

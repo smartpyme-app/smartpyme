@@ -80,9 +80,10 @@ class EmpresasController extends Controller
 
     public function list()
     {
-
-        $empresas = Empresa::orderby('nombre')
+        $empresas = DB::table('empresas')
+            ->select('id', 'nombre')
             ->where('activo', true)
+            ->orderBy('nombre')
             ->get();
 
         return Response()->json($empresas, 200);
@@ -138,6 +139,22 @@ class EmpresasController extends Controller
 
         $empresa->save();
 
+        if ($request->has('forma_pago')) {
+            $metodoValidado = $request->input('forma_pago');
+            if (!in_array($metodoValidado, [config('constants.METODO_PAGO_N1CO'), config('constants.METODO_PAGO_TRANSFERENCIA')])) {
+                $metodoValidado = config('constants.METODO_PAGO_TRANSFERENCIA');
+            }
+
+            $empresa->metodo_pago = $metodoValidado;
+            $empresa->save();
+            
+            $suscripcion = Suscripcion::where('empresa_id', $empresa->id)->first();
+            if ($suscripcion) {
+                $suscripcion->metodo_pago = $metodoValidado;
+                $suscripcion->save();
+            }
+        }
+
         return $empresa;
     }
 
@@ -156,6 +173,15 @@ class EmpresasController extends Controller
         }
 
         $empresa->save();
+
+        if ($request->has('forma_pago')) {
+            $metodoValidado = $request->input('forma_pago');
+            if (!in_array($metodoValidado, [config('constants.METODO_PAGO_N1CO'), config('constants.METODO_PAGO_TRANSFERENCIA')])) {
+                $metodoValidado = config('constants.METODO_PAGO_TRANSFERENCIA');
+            }
+            $empresa->metodo_pago = $metodoValidado;
+            $empresa->save();
+        }
 
         if (!isset($request->isRegister) || $request->isRegister !== false) {
             $this->createCompanySubscription($empresa, $request);
@@ -227,6 +253,11 @@ class EmpresasController extends Controller
     {
         $plan = $this->getPlan($empresa->plan, true, $empresa->plan);
 
+        $metodoValidado = $empresa->forma_pago;
+        if (!in_array($metodoValidado, [config('constants.METODO_PAGO_N1CO'), config('constants.METODO_PAGO_TRANSFERENCIA')])) {
+            $metodoValidado = config('constants.METODO_PAGO_TRANSFERENCIA');
+        }
+
         $this->createSuscripcion([
             'empresa_id' => $empresa->id,
             'plan_id' => $plan->id,
@@ -247,7 +278,8 @@ class EmpresasController extends Controller
             'direccion_factura' => $empresa->direccion,
             'intentos_cobro' => 0,
             'ultimo_intento_cobro' => null,
-            'historial_pagos' => null
+            'historial_pagos' => null,
+            'metodo_pago' => $metodoValidado
         ]);
     }
 
@@ -362,7 +394,7 @@ class EmpresasController extends Controller
             $diasPrueba = $plan->dias_periodo_prueba;
 
             $data = array_merge($data, [
-                'estado' => config('constants.ESTADO_SUSCRIPCION_EN_PRUEBA'),
+                'estado' => config('constants.ESTADO_SUSCRIPCION_ACTIVO'),
                 'estado_ultimo_pago' => null,
                 'fecha_ultimo_pago' => null,
                 'fecha_proximo_pago' => now()->addDays($diasPrueba),
@@ -770,26 +802,33 @@ class EmpresasController extends Controller
      */
     private function validateConfiguracionConfig(array $configuraciones): array
     {
-        $validatedConfig = [];
-        $allowedConfigs = [
+        $booleanConfigs = [
             'ticket_en_pdf',
             'componente_quimico_activo',
             'dte_mostrar_descripcion_producto',
+            'modulo_presentaciones',
+            'modulo_bancos',
+            'lotes_activo',
+            'gastos_categorias_personalizadas',
+            'estado_cuenta_en_facturacion',
+            'sku_correlativo_automatico',
+            'barcode_correlativo_automatico',
+            'inventario_sumar_stock_busquedas',
+            'cotizacion_mostrar_descripcion',
+            'cotizacion_mostrar_imagenes_productos',
+            'bloquear_cotizaciones_vendedores',
+            'ventas_puede_cambiar_vendedor_facturacion',
+            'mostrar_campos_contables',
+            'inventario_fraccionado',
         ];
 
-        foreach ($configuraciones as $config => $value) {
-            // Solo permitir configuraciones válidas
-            if (in_array($config, $allowedConfigs)) {
-                // Para configuraciones booleanas
-                if (in_array($config, ['ticket_en_pdf', 'componente_quimico_activo', 'dte_mostrar_descripcion_producto'])) {
-                    $validatedConfig[$config] = (bool) $value;
-                } else {
-                    $validatedConfig[$config] = $value;
-                }
+        foreach ($booleanConfigs as $key) {
+            if (array_key_exists($key, $configuraciones)) {
+                $configuraciones[$key] = (bool) $configuraciones[$key];
             }
         }
 
-        return $validatedConfig;
+        return $configuraciones;
     }
 
     public function updateCustomConfig(Request $request)

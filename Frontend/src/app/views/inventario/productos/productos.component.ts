@@ -3,6 +3,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { FuncionalidadesService } from '@services/functionalities.service';
 
 @Component({
     selector: 'app-productos',
@@ -13,6 +14,7 @@ export class ProductosComponent implements OnInit {
     public productos: any = [];
     public loading: boolean = false;
     public downloading: boolean = false;
+    public downloadingReporteAnalisis: boolean = false;
     public filtros: any = {};
     public producto: any = {};
     public bodegas: any = [];
@@ -21,6 +23,7 @@ export class ProductosComponent implements OnInit {
     public marcas: any = [];
     /** Suma de stock de todos los productos del resultado filtrado (si está habilitado en Mi cuenta). */
     public stockTotalFiltrado: number | null = null;
+    public mostrarTransformacionProductos = false;
     public ajuste: any = {};
     public inventario: any = {};
     public filtrosKardex: any = {
@@ -32,10 +35,16 @@ export class ProductosComponent implements OnInit {
     modalRef!: BsModalRef;
 
     constructor(public apiService: ApiService, private alertService: AlertService,
-        private modalService: BsModalService, private router: Router, private route: ActivatedRoute
+        private modalService: BsModalService, private router: Router, private route: ActivatedRoute,
+        private funcionalidadesService: FuncionalidadesService
     ) { }
 
     ngOnInit() {
+        this.funcionalidadesService.verificarAcceso('transformacion-productos').subscribe((tieneFuncionalidad) => {
+            this.mostrarTransformacionProductos = tieneFuncionalidad
+                && this.apiService.isTransformacionProductosConfigActivo();
+        });
+
         // Verificar si Shopify está activo y obtener la bodega del usuario
         const empresa = this.apiService.auth_user()?.empresa;
         const usuario = this.apiService.auth_user();
@@ -210,6 +219,27 @@ export class ProductosComponent implements OnInit {
 
     public openDescargar(template: TemplateRef<any>) {
         this.modalRef = this.modalService.show(template);
+    }
+
+    public descargarReporteInventarioVentasMensual() {
+        this.downloadingReporteAnalisis = true;
+        const empresa = this.apiService.auth_user()?.empresa;
+        const params = {
+            id_empresa: empresa?.id,
+            fecha: this.apiService.date(),
+        };
+        this.apiService.export('inventarios/exportar-analisis-ventas-mensual', params).subscribe((data: Blob) => {
+            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'reporte-inventario-ventas.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            this.downloadingReporteAnalisis = false;
+        }, (error) => { this.alertService.error(error); this.downloadingReporteAnalisis = false; });
     }
 
     public descargar() {

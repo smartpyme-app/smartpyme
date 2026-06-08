@@ -12,7 +12,7 @@
 <div class="bg-white rounded p-3 mb-3">
     <div class="row mb-3">
         <div class="col-md-12">
-            <app-producto-informacion [producto]='producto'></app-producto-informacion>
+            <app-producto-informacion [producto]='producto' (productoGuardado)="onProductoGuardado($event)"></app-producto-informacion>
         </div>
     </div>
 </div>
@@ -22,7 +22,7 @@
     </div>
 </div>
 <div class="bg-white rounded p-3 mb-3"
-    *ngIf="producto.id && (producto.tipo == 'Producto' || producto.tipo == 'Compuesto')">
+    *ngIf="producto.id && (producto.tipo == 'Producto' || producto.tipo == 'Compuesto') && mostrarModuloPresentaciones">
     <div class="col-lg-12">
         <app-producto-presentaciones [producto]='producto'></app-producto-presentaciones>
     </div>
@@ -36,7 +36,7 @@
 <div class="bg-white rounded p-3 mb-3"
     *ngIf="producto.id && producto.tipo !='Servicio' && producto.inventario_por_lotes">
     <div class="col-lg-12">
-        <app-producto-lotes [producto]='producto'></app-producto-lotes>
+        <app-producto-lotes [producto]='producto' [refreshKey]="lotesRefreshKey"></app-producto-lotes>
     </div>
 </div>
 <div class="bg-white rounded p-3 mb-3" *ngIf="producto.id">

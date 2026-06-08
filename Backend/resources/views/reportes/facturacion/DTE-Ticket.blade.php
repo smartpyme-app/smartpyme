@@ -252,6 +252,8 @@
     @endif
     <br>
 
+    @include('reportes.facturacion.partials.documento-nota')
+
     <br>
     <p style="color: #fff;">.</p>
 

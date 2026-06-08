@@ -1,0 +1,19 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+  <h2 class="page-heading">Descarga de DTEs</h2>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+  <div class="d-flex flex-wrap gap-2">
+    <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/dte-management/cuentas">
+      <i class="fa fa-envelope me-2"></i>Cuentas de correo
+    </button>
+    <button class="btn" routerLinkActive="btn-primary" routerLink="/dte-management/dashboard">
+      <i class="fa fa-chart-line me-2"></i>Historial
+    </button>
+    <button class="btn" routerLinkActive="btn-primary" routerLink="/dte-management/dtes">
+      <i class="fa fa-inbox me-2"></i>Bandeja de DTEs
+    </button>
+  </div>
+</section>
+
+<router-outlet></router-outlet>

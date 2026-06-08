@@ -1,4 +1,5 @@
-import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter, ViewChild, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter, ViewChild, ChangeDetectorRef, ChangeDetectionStrategy, OnDestroy } from '@angular/core';
+import { DashboardDataService } from '../../services/dashboard-data.service';
 import { ColDef, GridOptions, GridApi, ColumnApi } from 'ag-grid-community';
 import { ApiService } from '@services/api.service';
 import {
@@ -9,6 +10,7 @@ import {
   DropdownMultiFiltroItem,
   DropdownMultiFiltroSelection,
 } from '../../components/dropdown-multi-filtro/dropdown-multi-filtro.component';
+import { MetricCard } from '../../models/chart-config.model';
 
 @Component({
   selector: 'app-control-cuentas',
@@ -16,9 +18,61 @@ import {
   styleUrls: ['./control-cuentas.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class ControlCuentasComponent implements OnInit, OnChanges {
+export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
   @Input() datos: any = {};
   @Output() filtrosCambiados = new EventEmitter<any>();
+
+  get metricasCardsCxc(): MetricCard[] {
+    const m = this.datos?.metricasCuentas || {};
+    return [
+      {
+        title: 'Cuentas por cobrar',
+        value: m.cuentasPorCobrarTotal || 0,
+        type: 'currency'
+      },
+      {
+        title: 'Cuentas por cobrar a 30 días',
+        value: m.cuentasPorCobrar30Dias || 0,
+        type: 'currency'
+      },
+      {
+        title: 'Cuentas por cobrar a 60 días',
+        value: m.cuentasPorCobrar60Dias || 0,
+        type: 'currency'
+      },
+      {
+        title: 'Cuentas por cobrar a 90 días',
+        value: m.cuentasPorCobrar90Dias || 0,
+        type: 'currency'
+      }
+    ];
+  }
+
+  get metricasCardsCxp(): MetricCard[] {
+    const m = this.datos?.metricasCuentas || {};
+    return [
+      {
+        title: 'Cuentas por pagar',
+        value: m.cuentasPorPagarTotal || 0,
+        type: 'currency'
+      },
+      {
+        title: 'Cuentas por pagar a 30 días',
+        value: m.cuentasPorPagar30Dias || 0,
+        type: 'currency'
+      },
+      {
+        title: 'Cuentas por pagar a 60 días',
+        value: m.cuentasPorPagar60Dias || 0,
+        type: 'currency'
+      },
+      {
+        title: 'Cuentas por pagar a 90 días',
+        value: m.cuentasPorPagar90Dias || 0,
+        type: 'currency'
+      }
+    ];
+  }
 
   @ViewChild('detalleCuentasGrid') detalleCuentasGrid: any;
   @ViewChild('resumenCuentasPagarGrid') resumenCuentasPagarGrid: any;
@@ -28,6 +82,8 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
   detalleCuentasGridOptions: GridOptions = {};
   resumenCuentasPagarColumnDefs: ColDef[] = [];
   resumenCuentasPagarGridOptions: GridOptions = {};
+  pinnedBottomRowDataCxc: any[] = [];
+  pinnedBottomRowDataCxp: any[] = [];
   private gridApi!: GridApi;
   private gridColumnApi!: ColumnApi;
   private resumenGridApi!: GridApi;
@@ -120,6 +176,7 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
     private cdr: ChangeDetectorRef,
     private apiService: ApiService,
     private filtrosCatalogo: DashboardFiltrosCatalogoService,
+    private dashboardDataService: DashboardDataService
   ) {}
 
   /**
@@ -194,7 +251,7 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
         isTotal: false
       }));
 
-      // Calcular totales
+      // Calcular totales para la cache
       const totales = this.datos.detalleCuentasPorCobrar.reduce((totals: any, item: any) => ({
         ventasConIVA: totals.ventasConIVA + (item.ventasConIVA || 0),
         montoAbonado: totals.montoAbonado + (item.montoAbonado || 0),
@@ -202,24 +259,6 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
       }), { ventasConIVA: 0, montoAbonado: 0, saldoPendiente: 0 });
 
       this._totalesDetalleCuentasCache = totales;
-
-      // Agregar fila de totales
-      if (totales.ventasConIVA > 0 || totales.montoAbonado > 0) {
-        rows.push({
-          cliente: 'Total',
-          factura: '',
-          fechaVenta: '',
-          fechaPago: '',
-          diasVencimiento: '',
-          estado: '',
-          ventasConIVA: totales.ventasConIVA,
-          montoAbonado: totales.montoAbonado,
-          diasAbono: '',
-          saldoPendiente: totales.saldoPendiente,
-          isTotal: true
-        });
-      }
-
       this._detalleCuentasRowsCache = rows;
     } else {
       this._detalleCuentasRowsCache = [];
@@ -253,7 +292,7 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
         isTotal: false,
       }));
 
-      // Calcular totales
+      // Calcular totales para la cache
       const totales = this.datos.resumenCuentasPorPagar.reduce((totals: any, item: any) => ({
         gastosTotalesConIVA: totals.gastosTotalesConIVA + (item.gastosTotalesConIVA || 0),
         totalAbonado: totals.totalAbonado + (item.totalAbonado || 0),
@@ -261,36 +300,23 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
       }), { gastosTotalesConIVA: 0, totalAbonado: 0, saldoPendiente: 0 });
 
       this._totalesResumenCuentasPagarCache = totales;
-
-      // Agregar fila de totales
-      if (
-        totales.gastosTotalesConIVA > 0 ||
-        totales.totalAbonado > 0 ||
-        totales.saldoPendiente > 0
-      ) {
-        rows.push({
-          proveedor: '',
-          correlativo: '',
-          fechaCompra: 'Total',
-          vencimiento: '',
-          diasVencimiento: '',
-          estado: '',
-          gastosTotalesConIVA: totales.gastosTotalesConIVA,
-          totalAbonado: totales.totalAbonado,
-          ultimoAbono: '',
-          saldoPendiente: totales.saldoPendiente,
-          isTotal: true,
-        });
-      }
-
       this._resumenCuentasPagarRowsCache = rows;
     } else {
       this._resumenCuentasPagarRowsCache = [];
       this._totalesResumenCuentasPagarCache = { gastosTotalesConIVA: 0, totalAbonado: 0, saldoPendiente: 0 };
     }
+
+    this.recalcularTotalesCxc();
+    this.recalcularTotalesCxp();
   }
 
   ngOnInit(): void {
+    const savedState = this.dashboardDataService.obtenerFiltrosUI('Control de cuentas');
+    const tieneEstadoGuardado = !!savedState;
+    if (savedState) {
+      Object.assign(this, savedState);
+    }
+
     this.cargarOpcionesFiltros();
     this.configurarAGGrid();
     this.configurarAGGridResumenPagar();
@@ -306,6 +332,38 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
       this.filtrosListosParaEmitir = true;
       this.cdr.markForCheck();
     }, 100);
+  }
+
+  ngOnDestroy(): void {
+    this.dashboardDataService.guardarFiltrosUI('Control de cuentas', {
+      anio: this.anio,
+      mes: this.mes,
+      filtroCxcSucTodasImplicitas: this.filtroCxcSucTodasImplicitas,
+      filtroCxcSucSeleccionadas: this.filtroCxcSucSeleccionadas,
+      filtroCxcCliTodasImplicitas: this.filtroCxcCliTodasImplicitas,
+      filtroCxcCliSeleccionadas: this.filtroCxcCliSeleccionadas,
+      filtroCxcVigTodasImplicitas: this.filtroCxcVigTodasImplicitas,
+      filtroCxcVigSeleccionadas: this.filtroCxcVigSeleccionadas,
+      filtroCxpProvTodasImplicitas: this.filtroCxpProvTodasImplicitas,
+      filtroCxpProvSeleccionadas: this.filtroCxpProvSeleccionadas,
+      filtroCxpVigTodasImplicitas: this.filtroCxpVigTodasImplicitas,
+      filtroCxpVigSeleccionadas: this.filtroCxpVigSeleccionadas,
+      filtroCxpCatTodasImplicitas: this.filtroCxpCatTodasImplicitas,
+      filtroCxpCatSeleccionadas: this.filtroCxpCatSeleccionadas,
+      filtroCxcSucTodasImplicitasAplicado: this.filtroCxcSucTodasImplicitasAplicado,
+      filtroCxcSucSeleccionadasAplicado: this.filtroCxcSucSeleccionadasAplicado,
+      filtroCxcCliTodasImplicitasAplicado: this.filtroCxcCliTodasImplicitasAplicado,
+      filtroCxcCliSeleccionadasAplicado: this.filtroCxcCliSeleccionadasAplicado,
+      filtroCxcVigTodasImplicitasAplicado: this.filtroCxcVigTodasImplicitasAplicado,
+      filtroCxcVigSeleccionadasAplicado: this.filtroCxcVigSeleccionadasAplicado,
+      filtroCxpProvTodasImplicitasAplicado: this.filtroCxpProvTodasImplicitasAplicado,
+      filtroCxpProvSeleccionadasAplicado: this.filtroCxpProvSeleccionadasAplicado,
+      filtroCxpVigTodasImplicitasAplicado: this.filtroCxpVigTodasImplicitasAplicado,
+      filtroCxpVigSeleccionadasAplicado: this.filtroCxpVigSeleccionadasAplicado,
+      filtroCxpCatTodasImplicitasAplicado: this.filtroCxpCatTodasImplicitasAplicado,
+      filtroCxpCatSeleccionadasAplicado: this.filtroCxpCatSeleccionadasAplicado,
+      filtrosInteractivos: this.filtrosInteractivos
+    });
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -328,16 +386,19 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
   }
 
   cargarOpcionesFiltros(): void {
+    const tieneEstadoGuardado = !!this.dashboardDataService.obtenerFiltrosUI('Control de cuentas');
     this.filtrosCatalogo.sucursalesParaFiltro().subscribe({
       next: (items) => {
         this.sucursales = items;
-        this.aplicarRestriccionSucursalCxcPorRol();
-        this.copiarTodoFiltrosAdicionalesBorradorAAplicado();
-        setTimeout(() => {
-          if (this.filtrosListosParaEmitir) {
-            this.aplicarFiltros();
-          }
-        }, 150);
+        if (!tieneEstadoGuardado) {
+          this.aplicarRestriccionSucursalCxcPorRol();
+          this.copiarTodoFiltrosAdicionalesBorradorAAplicado();
+          setTimeout(() => {
+            if (this.filtrosListosParaEmitir) {
+              this.aplicarFiltros();
+            }
+          }, 150);
+        }
         this.cdr.markForCheck();
       },
     });
@@ -837,7 +898,36 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
   }
 
   formatCurrency(value: number): string {
-    return this.currencyFormatter.format(value);
+    if (value === null || value === undefined) {
+      value = 0;
+    }
+    const user = this.apiService.auth_user();
+    const empresa = user?.empresa;
+    const currencyCode = empresa?.moneda || 'USD';
+    const currencySymbol = empresa?.currency?.currency_symbol;
+
+    const options: Intl.NumberFormatOptions = {
+      style: 'currency',
+      currency: currencyCode,
+    };
+
+    if (currencySymbol) {
+      options.style = 'decimal';
+      options.minimumFractionDigits = 2;
+      options.maximumFractionDigits = 2;
+    }
+
+    let formattedValue = new Intl.NumberFormat('en-US', options).format(Math.abs(value));
+
+    if (currencySymbol) {
+      formattedValue = `${currencySymbol}${formattedValue}`;
+    }
+
+    if (value < 0) {
+      return `(${formattedValue})`;
+    }
+
+    return formattedValue;
   }
 
   // Métodos para filtros interactivos
@@ -1175,11 +1265,9 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
       align: 'left' | 'center' | 'right',
     ): ((params: any) => any) => {
       return (params: any): any => {
-        if (params.data?.isTotal) {
+        if (params.node.rowPinned === 'bottom') {
           return {
             fontWeight: '600',
-            backgroundColor: '#F19447',
-            color: '#ffffff',
             textAlign: align,
           };
         }
@@ -1229,7 +1317,7 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
         filter: true,
         cellStyle: estiloResumen('right'),
         valueFormatter: (params: any) => {
-          if (params.data?.isTotal) {
+          if (params.node.rowPinned === 'bottom') {
             return '';
           }
           const v = params.value;
@@ -1246,7 +1334,7 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
         sortable: true,
         filter: true,
         cellRenderer: (params: any) => {
-          if (params.data?.isTotal) {
+          if (params.node.rowPinned === 'bottom') {
             return '';
           }
           const estado = params.value || '';
@@ -1316,7 +1404,7 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
         filter: true
       },
       getRowClass: (params: any) => {
-        if (params.data?.isTotal) {
+        if (params.node.rowPinned === 'bottom') {
           return 'ag-row-total-pagar';
         }
         return '';
@@ -1339,6 +1427,12 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
       onGridReady: (params: any) => {
         this.resumenGridApi = params.api;
         this.resumenGridColumnApi = params.columnApi;
+        this.recalcularTotalesCxp();
+        this.cdr.markForCheck();
+      },
+      onFilterChanged: () => {
+        this.recalcularTotalesCxp();
+        this.cdr.markForCheck();
       },
       suppressExcelExport: false,
       suppressCsvExport: false
@@ -1351,6 +1445,90 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
 
   get totalesResumenCuentasPagar(): any {
     return this._totalesResumenCuentasPagarCache;
+  }
+
+  recalcularTotalesCxc(): void {
+    let ventasConIVA = 0;
+    let montoAbonado = 0;
+    let saldoPendiente = 0;
+    let count = 0;
+
+    if (this.gridApi) {
+      this.gridApi.forEachNodeAfterFilter((node) => {
+        if (node.data) {
+          ventasConIVA += (node.data.ventasConIVA || 0);
+          montoAbonado += (node.data.montoAbonado || 0);
+          saldoPendiente += (node.data.saldoPendiente || 0);
+          count++;
+        }
+      });
+    } else if (this._detalleCuentasRowsCache && this._detalleCuentasRowsCache.length > 0) {
+      this._detalleCuentasRowsCache.forEach((item: any) => {
+        ventasConIVA += (item.ventasConIVA || 0);
+        montoAbonado += (item.montoAbonado || 0);
+        saldoPendiente += (item.saldoPendiente || 0);
+        count++;
+      });
+    }
+
+    if (count > 0) {
+      this.pinnedBottomRowDataCxc = [{
+        cliente: 'Total',
+        factura: '',
+        fechaVenta: '',
+        fechaPago: '',
+        diasVencimiento: '',
+        estado: '',
+        ventasConIVA: ventasConIVA,
+        montoAbonado: montoAbonado,
+        diasAbono: '',
+        saldoPendiente: saldoPendiente
+      }];
+    } else {
+      this.pinnedBottomRowDataCxc = [];
+    }
+  }
+
+  recalcularTotalesCxp(): void {
+    let gastosTotalesConIVA = 0;
+    let totalAbonado = 0;
+    let saldoPendiente = 0;
+    let count = 0;
+
+    if (this.resumenGridApi) {
+      this.resumenGridApi.forEachNodeAfterFilter((node) => {
+        if (node.data) {
+          gastosTotalesConIVA += (node.data.gastosTotalesConIVA || 0);
+          totalAbonado += (node.data.totalAbono || node.data.totalAbonado || 0);
+          saldoPendiente += (node.data.saldoPendiente || 0);
+          count++;
+        }
+      });
+    } else if (this._resumenCuentasPagarRowsCache && this._resumenCuentasPagarRowsCache.length > 0) {
+      this._resumenCuentasPagarRowsCache.forEach((item: any) => {
+        gastosTotalesConIVA += (item.gastosTotalesConIVA || 0);
+        totalAbonado += (item.totalAbono || item.totalAbonado || 0);
+        saldoPendiente += (item.saldoPendiente || 0);
+        count++;
+      });
+    }
+
+    if (count > 0) {
+      this.pinnedBottomRowDataCxp = [{
+        proveedor: '',
+        correlativo: '',
+        fechaCompra: 'Total',
+        vencimiento: '',
+        diasVencimiento: '',
+        estado: '',
+        gastosTotalesConIVA: gastosTotalesConIVA,
+        totalAbonado: totalAbonado,
+        ultimoAbono: '',
+        saldoPendiente: saldoPendiente
+      }];
+    } else {
+      this.pinnedBottomRowDataCxp = [];
+    }
   }
 
   onQuickFilterChangeResumen(): void {
@@ -1488,6 +1666,20 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
   }
 
   configurarAGGrid(): void {
+    const estiloCxc = (
+      align: 'left' | 'center' | 'right',
+    ): ((params: any) => any) => {
+      return (params: any): any => {
+        if (params.node.rowPinned === 'bottom') {
+          return {
+            fontWeight: '600',
+            textAlign: align,
+          };
+        }
+        return { textAlign: align } as any;
+      };
+    };
+
     this.detalleCuentasColumnDefs = [
       { 
         field: 'cliente', 
@@ -1495,12 +1687,7 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
         width: 250,
         sortable: true,
         filter: true,
-        cellStyle: (params: any): any => {
-          if (params.data?.isTotal) {
-            return { fontWeight: '600', backgroundColor: '#66A3FF', color: '#ffffff', textAlign: 'left' };
-          }
-          return { textAlign: 'left' } as any;
-        }
+        cellStyle: estiloCxc('left')
       },
       { 
         field: 'factura', 
@@ -1508,12 +1695,7 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
         width: 120,
         sortable: true,
         filter: true,
-        cellStyle: (params: any): any => {
-          if (params.data?.isTotal) {
-            return { fontWeight: '600', backgroundColor: '#66A3FF', color: '#ffffff', textAlign: 'center' };
-          }
-          return { textAlign: 'center' } as any;
-        }
+        cellStyle: estiloCxc('center')
       },
       { 
         field: 'fechaVenta', 
@@ -1521,12 +1703,7 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
         width: 130,
         sortable: true,
         filter: true,
-        cellStyle: (params: any): any => {
-          if (params.data?.isTotal) {
-            return { fontWeight: '600', backgroundColor: '#66A3FF', color: '#ffffff', textAlign: 'center' };
-          }
-          return { textAlign: 'center' } as any;
-        }
+        cellStyle: estiloCxc('center')
       },
       { 
         field: 'fechaPago', 
@@ -1534,12 +1711,7 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
         width: 130,
         sortable: true,
         filter: true,
-        cellStyle: (params: any): any => {
-          if (params.data?.isTotal) {
-            return { fontWeight: '600', backgroundColor: '#66A3FF', color: '#ffffff', textAlign: 'center' };
-          }
-          return { textAlign: 'center' } as any;
-        }
+        cellStyle: estiloCxc('center')
       },
       { 
         field: 'diasVencimiento', 
@@ -1547,16 +1719,8 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
         width: 150,
         sortable: true,
         filter: true,
-        cellStyle: (params: any): any => {
-          if (params.data?.isTotal) {
-            return { fontWeight: '600', backgroundColor: '#66A3FF', color: '#ffffff', textAlign: 'right' };
-          }
-          return { textAlign: 'right' } as any;
-        },
+        cellStyle: estiloCxc('right'),
         valueFormatter: (params: any) => {
-          if (params.data?.isTotal) {
-            return params.value ? params.value.toLocaleString('es-GT') : '';
-          }
           return params.value ? params.value.toLocaleString('es-GT') : '';
         }
       },
@@ -1567,20 +1731,15 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
         sortable: true,
         filter: true,
         cellRenderer: (params: any) => {
-          if (params.data?.isTotal) {
+          if (params.node.rowPinned === 'bottom') {
             return '';
           }
           const estado = params.value || '';
-          const iconClass = estado === 'Vigente' ? 'fas fa-circle' : 'fas fa-circle';
+          const iconClass = 'fas fa-circle';
           const color = estado === 'Vigente' ? '#28a745' : '#6c757d';
           return `<span><i class="${iconClass}" style="color: ${color}; font-size: 8px; margin-right: 5px;"></i>${estado}</span>`;
         },
-        cellStyle: (params: any): any => {
-          if (params.data?.isTotal) {
-            return { fontWeight: '600', backgroundColor: '#66A3FF', color: '#ffffff', textAlign: 'left' };
-          }
-          return { textAlign: 'left' } as any;
-        }
+        cellStyle: estiloCxc('left')
       },
       { 
         field: 'ventasConIVA', 
@@ -1588,12 +1747,7 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
         width: 150,
         sortable: true,
         filter: true,
-        cellStyle: (params: any): any => {
-          if (params.data?.isTotal) {
-            return { fontWeight: '600', backgroundColor: '#66A3FF', color: '#ffffff', textAlign: 'right' };
-          }
-          return { textAlign: 'right' } as any;
-        },
+        cellStyle: estiloCxc('right'),
         valueFormatter: (params: any) => {
           if (params.value === null || params.value === undefined) {
             return '';
@@ -1607,12 +1761,7 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
         width: 150,
         sortable: true,
         filter: true,
-        cellStyle: (params: any): any => {
-          if (params.data?.isTotal) {
-            return { fontWeight: '600', backgroundColor: '#66A3FF', color: '#ffffff', textAlign: 'right' };
-          }
-          return { textAlign: 'right' } as any;
-        },
+        cellStyle: estiloCxc('right'),
         valueFormatter: (params: any) => {
           if (params.value === null || params.value === undefined) {
             return '';
@@ -1626,14 +1775,9 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
         width: 120,
         sortable: true,
         filter: true,
-        cellStyle: (params: any): any => {
-          if (params.data?.isTotal) {
-            return { fontWeight: '600', backgroundColor: '#66A3FF', color: '#ffffff', textAlign: 'right' };
-          }
-          return { textAlign: 'right' } as any;
-        },
+        cellStyle: estiloCxc('right'),
         valueFormatter: (params: any) => {
-          if (params.data?.isTotal) {
+          if (params.node.rowPinned === 'bottom') {
             return '';
           }
           return params.value ? params.value.toLocaleString('es-GT') : '';
@@ -1645,12 +1789,7 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
         width: 200,
         sortable: true,
         filter: true,
-        cellStyle: (params: any): any => {
-          if (params.data?.isTotal) {
-            return { fontWeight: '600', backgroundColor: '#66A3FF', color: '#ffffff', textAlign: 'right' };
-          }
-          return { textAlign: 'right' } as any;
-        },
+        cellStyle: estiloCxc('right'),
         valueFormatter: (params: any) => {
           if (params.value === null || params.value === undefined) {
             return '';
@@ -1667,7 +1806,7 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
         filter: true
       },
       getRowClass: (params: any) => {
-        if (params.data?.isTotal) {
+        if (params.node.rowPinned === 'bottom') {
           return 'ag-row-total';
         }
         return '';
@@ -1690,6 +1829,12 @@ export class ControlCuentasComponent implements OnInit, OnChanges {
       onGridReady: (params: any) => {
         this.gridApi = params.api;
         this.gridColumnApi = params.columnApi;
+        this.recalcularTotalesCxc();
+        this.cdr.markForCheck();
+      },
+      onFilterChanged: () => {
+        this.recalcularTotalesCxc();
+        this.cdr.markForCheck();
       },
       suppressExcelExport: false,
       suppressCsvExport: false

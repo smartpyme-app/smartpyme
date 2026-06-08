@@ -8,13 +8,23 @@ export interface Mesa {
   id: number;
   numero: string;
   capacidad: number;
+  zona_id?: number | null;
   zona?: string;
+  zona_restaurante?: ZonaRestaurante;
   estado: 'libre' | 'ocupada' | 'pendiente_pago' | 'reservada';
   activo: boolean;
   orden: number;
   tiempo_abierta?: string;
   sesion_activa?: any;
   reservas_activas?: Reserva[];
+}
+
+export interface ZonaRestaurante {
+  id: number;
+  nombre: string;
+  orden: number;
+  activo: boolean;
+  id_sucursal?: number;
 }
 
 export interface SesionMesa {
@@ -48,12 +58,32 @@ export class RestauranteService {
     return this.api.update(BASE + 'mesas', id, data);
   }
 
+  getZonas(params?: { activo?: boolean; id_sucursal?: number }): Observable<ZonaRestaurante[]> {
+    return this.api.getAll(BASE + 'zonas', params || {});
+  }
+
+  crearZona(data: Partial<ZonaRestaurante>): Observable<ZonaRestaurante> {
+    return this.api.store(BASE + 'zonas', data);
+  }
+
+  actualizarZona(id: number, data: Partial<ZonaRestaurante>): Observable<ZonaRestaurante> {
+    return this.api.update(BASE + 'zonas', id, data);
+  }
+
+  eliminarZona(id: number): Observable<{ ok: boolean }> {
+    return this.api.delete(BASE + 'zonas/', id);
+  }
+
   abrirSesion(mesaId: number, data: { num_comensales?: number; observaciones?: string }): Observable<SesionMesa> {
     return this.api.store(BASE + 'sesiones-mesa', { mesa_id: mesaId, ...data });
   }
 
   getSesion(id: number): Observable<SesionMesa> {
     return this.api.read(BASE + 'sesiones-mesa/', id);
+  }
+
+  reactivarConsumoSesion(sesionId: number): Observable<SesionMesa> {
+    return this.api.putToUrl(`restaurante/sesiones-mesa/${sesionId}/reactivar-consumo`, {});
   }
 
   agregarItem(sesionId: number, data: { producto_id: number; cantidad: number; notas?: string }): Observable<any> {
@@ -64,19 +94,37 @@ export class RestauranteService {
     return this.api.update(BASE + `sesiones-mesa/${sesionId}/items`, itemId, data);
   }
 
-  eliminarItem(sesionId: number, itemId: number): Observable<void> {
-    return this.api.delete(BASE + `sesiones-mesa/${sesionId}/items/`, itemId);
-  }
-
-  enviarComanda(sesionId: number): Observable<any> {
+  enviarComanda(sesionId: number): Observable<{ comandas?: any[]; primera?: any }> {
     return this.api.store(BASE + `sesiones-mesa/${sesionId}/comandas`, {});
   }
 
-  solicitarCuenta(sesionId: number): Observable<any> {
-    return this.api.store(BASE + `sesiones-mesa/${sesionId}/pre-cuenta`, {});
+  eliminarItemSesion(
+    sesionId: number,
+    itemId: number,
+    body: { motivo_codigo: string; motivo_detalle?: string }
+  ): Observable<{ ok: boolean; comanda_eliminacion?: any }> {
+    return this.api.store(BASE + `sesiones-mesa/${sesionId}/items/${itemId}/eliminar`, body);
   }
 
-  dividirCuenta(preCuentaId: number, data: { tipo: 'equitativa' | 'por_items'; num_pagadores: number; asignaciones?: { orden_detalle_id: number; pagador_index: number }[] }): Observable<any[]> {
+  trasladarItems(
+    sesionId: number,
+    payload: { mesa_destino_id: number; orden_detalle_ids: number[] }
+  ): Observable<{ ok: boolean }> {
+    return this.api.store(BASE + `sesiones-mesa/${sesionId}/trasladar-items`, payload);
+  }
+
+  solicitarCuenta(sesionId: number, body: Record<string, unknown> = {}): Observable<any> {
+    return this.api.store(BASE + `sesiones-mesa/${sesionId}/pre-cuenta`, body);
+  }
+
+  dividirCuenta(
+    preCuentaId: number,
+    data: {
+      tipo: 'equitativa' | 'por_items';
+      num_pagadores: number;
+      asignaciones?: { orden_detalle_id: number; pagador_index: number; cantidad?: number }[];
+    }
+  ): Observable<any[]> {
     return this.api.store(BASE + `pre-cuentas/${preCuentaId}/dividir`, data);
   }
 
@@ -128,6 +176,10 @@ export class RestauranteService {
 
   imprimirPedidoCanal(id: number): Observable<string> {
     return this.api.getAsText(BASE + `pedidos/${id}/imprimir`);
+  }
+
+  enviarComandaPedido(id: number): Observable<{ comandas?: any[]; primera?: any }> {
+    return this.api.store(BASE + `pedidos/${id}/comandas`, {});
   }
 
   confirmarPedidoCanal(id: number, body: Record<string, unknown> = {}): Observable<PedidoCanal> {

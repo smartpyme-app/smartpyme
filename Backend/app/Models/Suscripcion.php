@@ -15,6 +15,7 @@ class Suscripcion extends Model
         'empresa_id',
         'plan_id',
         'usuario_id',
+        'id_cliente',
         'tipo_plan',
         'estado',
         'monto',
@@ -24,6 +25,7 @@ class Suscripcion extends Model
         'estado_ultimo_pago',
         'fecha_ultimo_pago',
         'fecha_proximo_pago',
+        'dia_pago',
         'acceso_temporal_hasta',
         'fin_periodo_prueba',
         'fecha_cancelacion',
@@ -32,6 +34,7 @@ class Suscripcion extends Model
         'nit',
         'nombre_factura',
         'direccion_factura',
+        'tipo_factura',
         'intentos_cobro',
         'ultimo_intento_cobro',
         'historial_pagos'
@@ -47,6 +50,25 @@ class Suscripcion extends Model
         'created_at',
         'updated_at'
     ];
+
+    /**
+     * The "booted" method of the model.
+     * Synchronizes dia_pago with the day of fecha_proximo_pago.
+     *
+     * @return void
+     */
+    protected static function booted()
+    {
+        static::saving(function ($suscripcion) {
+            if ($suscripcion->isDirty('fecha_proximo_pago')) {
+                if ($suscripcion->fecha_proximo_pago) {
+                    $suscripcion->dia_pago = Carbon::parse($suscripcion->fecha_proximo_pago)->day;
+                } else {
+                    $suscripcion->dia_pago = null;
+                }
+            }
+        });
+    }
 
     // Relaciones
     public function empresa()

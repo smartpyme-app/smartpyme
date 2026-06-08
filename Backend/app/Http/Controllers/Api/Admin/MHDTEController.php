@@ -34,7 +34,9 @@ class MHDTEController extends Controller
     
 
     public function generarDTE(Request $request){
-        $venta = Venta::where('id', $request->id)->with('detalles', 'cliente', 'empresa')->firstOrFail();
+        $venta = Venta::where('id', $request->id)
+            ->with('detalles.producto.impuestos', 'impuestos.impuesto', 'cliente', 'empresa')
+            ->firstOrFail();
 
         if (!$venta->sucursal()->pluck('cod_estable_mh')->first()) {
             return Response()->json(['error' => 'Falta configurar los datos de la sucursal.'], 400);
@@ -62,7 +64,9 @@ class MHDTEController extends Controller
     }
 
     public function generarDTENotaCredito(Request $request){
-        $devolucion = DevolucionVenta::where('id', $request->id)->with('detalles', 'cliente', 'empresa', 'venta')->firstOrFail();
+        $devolucion = DevolucionVenta::where('id', $request->id)
+            ->with('detalles.producto.impuestos', 'impuestos.impuesto', 'cliente', 'empresa', 'venta')
+            ->firstOrFail();
         
         // if (!$devolucion->venta || !$devolucion->venta->sello_mh) {
         if (!$devolucion->venta) {
@@ -338,6 +342,13 @@ class MHDTEController extends Controller
     }
 
     public function generarDTEPDF($id, $tipo, Request $request){
+
+        if ($tipo === null || $tipo === '' || $tipo === 'null') {
+            $venta = Venta::find($id);
+            $tipo = $venta
+                ? ($venta->tipo_dte ?? data_get($venta->dte, 'identificacion.tipoDte') ?? '01')
+                : (data_get(DevolucionVenta::find($id), 'dte.identificacion.tipoDte') ?? '05');
+        }
 
         if ($tipo == '01' || $tipo == '03' || $tipo == '11') {
             $registro = Venta::findOrFail($id);
