@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { Observable, forkJoin } from 'rxjs';
-import { map, switchMap, startWith } from 'rxjs/operators';
+import { Observable, forkJoin, merge, of } from 'rxjs';
+import { map, switchMap, startWith, scan, catchError } from 'rxjs/operators';
 import { DashboardAnalyticsApiService } from './dashboard-analytics-api.service';
 
 @Injectable({
@@ -80,6 +80,7 @@ export class InventarioDashboardDataService {
       stockPorCategoriaConfig: {
         type: 'bar',
         horizontal: true,
+        showXAxisLabels: false,
         labels: (porCategoria ?? []).map((i: any) => i.categoria),
         data: (porCategoria ?? []).map((i: any) => i.stockUnidades),
       },
@@ -185,27 +186,154 @@ export class InventarioDashboardDataService {
     const { pSnap, pMov } = this.buildQueryPaths(filtros);
     const safe = (path: string) => this.analytics.getSafe(`${api}${path}`);
 
-    const critico$ = forkJoin({
-      cards: safe(`/api/inventario/cards?${pSnap}`),
-      porCategoria: safe(`/api/inventario/por-categoria?${pSnap}`),
-      detalleProductos: safe(`/api/inventario/detalle-productos?${pSnap}`),
-    }).pipe(map((r) => this.mapearInventarioCritico(r)));
+    const cards$ = safe(`/api/inventario/cards?${pSnap}`).pipe(
+      map(data => ({
+        metricasInventario: {
+          productosEnStock: data?.productosEnStock ?? 0,
+          promedioInvertido: data?.promedioInvertido ?? 0,
+          ventasEsperadas: data?.ventasEsperadas ?? 0,
+          utilidadEsperada: data?.utilidadEsperada ?? 0,
+        }
+      })),
+      catchError(err => {
+        console.error('Error loading /api/inventario/cards:', err);
+        return of({ metricasInventario: { productosEnStock: 0, promedioInvertido: 0, ventasEsperadas: 0, utilidadEsperada: 0 } });
+      })
+    );
 
-    const pesado$ = forkJoin({
-      esCards: safe(`/api/inventario/es/cards?${pMov}`),
-      esPorMes: safe(`/api/inventario/es/por-mes?${pMov}`),
-      esDetalle: safe(`/api/inventario/es/detalle?${pMov}`),
-      ajustesCards: safe(`/api/inventario/ajustes/cards?${pMov}`),
-      ajustesDetalle: safe(`/api/inventario/ajustes/detalle?${pMov}`),
-    }).pipe(map((r) => this.mapearInventarioPesado(r)));
+    const porCategoria$ = safe(`/api/inventario/por-categoria?${pSnap}`).pipe(
+      map(data => ({
+        stockPorCategoriaConfig: {
+          type: 'bar',
+          horizontal: true,
+          showXAxisLabels: false,
+          labels: (data ?? []).map((i: any) => i.categoria),
+          data: (data ?? []).map((i: any) => i.stockUnidades),
+        }
+      })),
+      catchError(err => {
+        console.error('Error loading /api/inventario/por-categoria:', err);
+        return of({ stockPorCategoriaConfig: { type: 'bar', horizontal: true, labels: [], data: [] } });
+      })
+    );
 
-    return critico$.pipe(
-      switchMap((c) =>
-        pesado$.pipe(
-          map((heavy) => ({ ...c, ...heavy })),
-          startWith(c),
-        ),
-      ),
+    const detalleProductos$ = safe(`/api/inventario/detalle-productos?${pSnap}`).pipe(
+      map(data => ({
+        detalleInventario: (data ?? []).map((i: any) => ({
+          producto: i.producto,
+          stock: i.stock,
+          costo: i.costo,
+          inversionPromedio: i.inversionPromedio,
+          precio: i.precio,
+          ventasEsperadas: i.ventasEsperadas,
+          utilidadEsperada: i.utilidadEsperada,
+        }))
+      })),
+      catchError(err => {
+        console.error('Error loading /api/inventario/detalle-productos:', err);
+        return of({ detalleInventario: [] });
+      })
+    );
+
+    const esCards$ = safe(`/api/inventario/es/cards?${pMov}`).pipe(
+      map(data => ({
+        entradasSalidas: {
+          productosEnStock: data?.productosEnStock ?? 0,
+          entradas: data?.entradas ?? 0,
+          salidas: data?.salidas ?? 0,
+          utilidadEsperada: data?.utilidadEsperada ?? 0,
+        }
+      })),
+      catchError(err => {
+        console.error('Error loading /api/inventario/es/cards:', err);
+        return of({ entradasSalidas: { productosEnStock: 0, entradas: 0, salidas: 0, utilidadEsperada: 0 } });
+      })
+    );
+
+    const esPorMes$ = safe(`/api/inventario/es/por-mes?${pMov}`).pipe(
+      map(data => ({
+        entradasSalidasPorMesConfig: this.buildEntradasSalidasPorMesChart(data)
+      })),
+      catchError(err => {
+        console.error('Error loading /api/inventario/es/por-mes:', err);
+        return of({ entradasSalidasPorMesConfig: this.buildEntradasSalidasPorMesChart([]) });
+      })
+    );
+
+    const esDetalle$ = safe(`/api/inventario/es/detalle?${pMov}`).pipe(
+      map(data => {
+        const listaDetalle = Array.isArray(data)
+          ? data
+          : data?.items ?? data?.data ?? [];
+        return {
+          detalleEntradasSalidas: (listaDetalle ?? []).map((row: any) => this.mapEsDetalleItem(row))
+        };
+      }),
+      catchError(err => {
+        console.error('Error loading /api/inventario/es/detalle:', err);
+        return of({ detalleEntradasSalidas: [] });
+      })
+    );
+
+    const ajustesCards$ = safe(`/api/inventario/ajustes/cards?${pMov}`).pipe(
+      map(data => ({
+        ajustes: {
+          productosEnStock: data?.productosEnStock ?? 0,
+          unidadesPerdidas: data?.unidadesPerdidas ?? 0,
+          unidadesRecuperadas: data?.unidadesRecuperadas ?? 0,
+          montoTotalRecuperado: data?.montoRecuperado ?? 0,
+        }
+      })),
+      catchError(err => {
+        console.error('Error loading /api/inventario/ajustes/cards:', err);
+        return of({ ajustes: { productosEnStock: 0, unidadesPerdidas: 0, unidadesRecuperadas: 0, montoTotalRecuperado: 0 } });
+      })
+    );
+
+    const ajustesDetalle$ = safe(`/api/inventario/ajustes/detalle?${pMov}`).pipe(
+      map(data => ({
+        detalleAjustes: (data ?? []).map((i: any) => ({
+          mes: i.mes,
+          nombreMes: i.nombreMes,
+          producto: i.producto,
+          concepto: i.concepto,
+          stockInicial: i.stockInicial,
+          stockReal: i.stockReal,
+          ajuste: i.ajuste,
+          costoTotal: i.costoTotal,
+          unidadesPerdidas: i.unidadesPerdidas,
+          unidadesRecuperadas: i.unidadesRecuperadas,
+        }))
+      })),
+      catchError(err => {
+        console.error('Error loading /api/inventario/ajustes/detalle:', err);
+        return of({ detalleAjustes: [] });
+      })
+    );
+
+    const deepMergeScan = (acc: any, curr: any) => {
+      const result = { ...acc };
+      for (const key of Object.keys(curr)) {
+        if (curr[key] && typeof curr[key] === 'object' && !Array.isArray(curr[key])) {
+          result[key] = { ...acc[key], ...curr[key] };
+        } else {
+          result[key] = curr[key];
+        }
+      }
+      return result;
+    };
+
+    return merge(
+      cards$,
+      porCategoria$,
+      detalleProductos$,
+      esCards$,
+      esPorMes$,
+      esDetalle$,
+      ajustesCards$,
+      ajustesDetalle$
+    ).pipe(
+      scan(deepMergeScan, {})
     );
   }
 

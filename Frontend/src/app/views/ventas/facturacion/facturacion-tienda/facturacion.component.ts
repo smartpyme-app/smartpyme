@@ -31,6 +31,7 @@ import Swal from 'sweetalert2';
 import { BsModalRef, BsModalService } from 'ngx-bootstrap/modal';
 
 import * as moment from 'moment';
+import { sumarSubTotalEncabezadoVenta } from '@utils/impuestos-venta.util';
 
 @Component({
     selector: 'app-facturacion',
@@ -1045,9 +1046,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
       this.venta.impuestos = [];
     }
 
-    // 4 decimales en agregados para cuadrar con líneas (precio sin IVA + IVA por línea); el total final sigue en 2
-    const rawSubTotal = parseFloat(this.sumPipe.transform(this.venta.detalles, 'total'));
-    this.venta.sub_total = Number(rawSubTotal).toFixed(4);
+    this.venta.sub_total = Number(sumarSubTotalEncabezadoVenta(this.venta.detalles)).toFixed(4);
 
     this.sincronizarRetencionGranContribuyente();
 

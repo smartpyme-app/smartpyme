@@ -9,6 +9,7 @@ import {
   Output,
   ViewChild
 } from '@angular/core';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 export interface DropdownMultiFiltroItem {
   id: string;
@@ -51,12 +52,6 @@ export class DropdownMultiFiltroComponent {
   /** Texto cuando hay ítems pero ninguno elegido (modo explícito). Por defecto: “Elige …”. */
   @Input() elegirLabel = '';
 
-  /**
-   * Muestra campo de búsqueda arriba del panel (útil para listas muy grandes, ej. clientes).
-   * Con búsqueda activa, “Seleccionar todo” aplica solo a los ítems que coinciden con el filtro.
-   */
-  @Input() mostrarBuscador = false;
-
   /** Placeholder del input de búsqueda. */
   @Input() buscadorPlaceholder = 'Buscar';
 
@@ -85,7 +80,11 @@ export class DropdownMultiFiltroComponent {
   @ViewChild('wrap', { read: ElementRef })
   private wrap?: ElementRef<HTMLElement>;
 
-  constructor(private cdr: ChangeDetectorRef) {}
+  /** Referencia al input de autocomplete para enfocar al abrir. */
+  @ViewChild('autocompleteInput')
+  private autocompleteInput?: ElementRef<HTMLInputElement>;
+
+  constructor(private cdr: ChangeDetectorRef, private sanitizer: DomSanitizer) {}
 
   private get palabraPlural(): string {
     const p = this.pluralLabel?.trim();
@@ -126,7 +125,12 @@ export class DropdownMultiFiltroComponent {
   }
 
   get hayBusquedaActiva(): boolean {
-    return this.mostrarBuscador && this.buscadorTexto.trim().length > 0;
+    return this.buscadorTexto.trim().length > 0;
+  }
+
+  /** La búsqueda siempre está activa (el input es el disparador). */
+  get mostrarBuscador(): boolean {
+    return true;
   }
 
   /** Vista acotada: búsqueda activa o lista inicial limitada. */
@@ -182,7 +186,52 @@ export class DropdownMultiFiltroComponent {
 
   onBusquedaInput(ev: Event): void {
     this.buscadorTexto = (ev.target as HTMLInputElement).value;
+    if (!this.panelAbierto) {
+      this.panelAbierto = true;
+    }
     this.cdr.markForCheck();
+  }
+
+  /** Abre el panel al hacer foco en el input. */
+  onInputFocus(): void {
+    if (this.disabled || this.items.length === 0) return;
+    if (!this.panelAbierto) {
+      this.panelAbierto = true;
+      // Limpia el input para que el placeholder muestre la selección y se pueda escribir libremente
+      this.buscadorTexto = '';
+      this.cdr.markForCheck();
+    }
+  }
+
+  /** Cierra el panel con Escape, confirma con Enter. */
+  onInputKeydown(ev: KeyboardEvent): void {
+    if (ev.key === 'Escape') {
+      this.cerrarPanel();
+    }
+  }
+
+  /** Limpia el texto de búsqueda desde el botón ✕. */
+  limpiarBuscador(ev: MouseEvent): void {
+    ev.preventDefault(); // evita que el blur cierre el panel antes de limpiar
+    this.buscadorTexto = '';
+    this.autocompleteInput?.nativeElement.focus();
+    this.cdr.markForCheck();
+  }
+
+  /**
+   * Resalta en negrita la parte del nombre que coincide con la búsqueda.
+   * Devuelve HTML seguro.
+   */
+  resaltarCoincidencia(nombre: string, query: string): SafeHtml {
+    if (!query) return this.sanitizer.bypassSecurityTrustHtml(nombre);
+    const idx = nombre.toLowerCase().indexOf(query.toLowerCase());
+    if (idx < 0) return this.sanitizer.bypassSecurityTrustHtml(nombre);
+    const antes  = nombre.slice(0, idx);
+    const match  = nombre.slice(idx, idx + query.length);
+    const despues = nombre.slice(idx + query.length);
+    return this.sanitizer.bypassSecurityTrustHtml(
+      `${antes}<strong class="dmf-highlight">${match}</strong>${despues}`
+    );
   }
 
   isItemChecked(id: string): boolean {
@@ -206,14 +255,14 @@ export class DropdownMultiFiltroComponent {
 
   togglePanel(ev: MouseEvent): void {
     ev.stopPropagation();
-    if (this.disabled) {
-      return;
-    }
+    if (this.disabled) return;
     if (this.panelAbierto) {
       this.cerrarPanel();
     } else {
       this.panelAbierto = true;
+      this.buscadorTexto = '';
       this.cdr.markForCheck();
+      setTimeout(() => this.autocompleteInput?.nativeElement.focus(), 0);
     }
   }
 

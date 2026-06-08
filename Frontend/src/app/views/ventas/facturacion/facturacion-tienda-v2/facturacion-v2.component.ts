@@ -28,6 +28,7 @@ import Swal from 'sweetalert2';
 import {
   normalizarPorcentajeImpuestoDetalle,
   resolverPorcentajeImpuestoVenta,
+  sumarSubTotalEncabezadoVenta,
 } from '@utils/impuestos-venta.util';
 import * as moment from 'moment';
 
@@ -1079,9 +1080,7 @@ export class FacturacionV2Component implements OnInit {
       ? (this.apiService.auth_user()?.empresa?.iva || 0)
       : 0;
 
-    // 4 decimales en agregados para cuadrar con líneas; el total final sigue en 2
-    const rawSubTotal = parseFloat(this.sumPipe.transform(this.venta.detalles, 'total'));
-    this.venta.sub_total = Number(rawSubTotal).toFixed(4);
+    this.venta.sub_total = Number(sumarSubTotalEncabezadoVenta(this.venta.detalles)).toFixed(4);
 
     this.sincronizarRetencionGranContribuyente();
 

@@ -22,9 +22,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
   ]);
 
   private destroy$ = new Subject<void>();
-  
+
   loading = false;
   datos: any = {};
+  filtrosPorSeccion: { [seccion: string]: any } = {};
 
   // Finanzas: oculta hasta estar lista — añadir de nuevo `{ nombre: 'Finanzas', ... }` aquí y el *ngSwitchCase* en el HTML.
   secciones = [
@@ -55,9 +56,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.secciones.forEach(s => s.activo = false);
     seccion.activo = true;
     this.persistirSeccionActivaSiAplica();
-    // Cargar datos iniciales para la nueva sección
-    // Cada sección manejará sus propios filtros después
-    this.cargarDatos();
+    // Cargar datos usando filtros guardados de la nueva sección activa (si existen)
+    const filtrosGuardados = this.filtrosPorSeccion[this.seccionActiva] || {};
+    this.cargarDatos(filtrosGuardados);
   }
 
   private restaurarSeccionDesdeAlmacenamiento(): void {
@@ -100,21 +101,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   cargarDatos(filtrosAdicionales: any = {}): void {
     this.loading = true;
-    
+
     const filtros = {
       seccion: this.seccionActiva,
       ...filtrosAdicionales
     };
-    
+
     this.dashboardDataService.obtenerDatosPorFiltro(filtros).subscribe({
       next: (data) => {
-        console.log('Dashboard - Datos recibidos:', {
-          seccion: filtros.seccion,
-          tieneDatos: !!data,
-          keys: data ? Object.keys(data) : [],
-          tieneDetalleGastos: !!(data && (data as any).detalleGastos),
-          cantidadGastos: data && (data as any).detalleGastos ? (data as any).detalleGastos.length : 0
-        });
         // Crear nueva referencia para que OnPush detecte cambios
         this.datos = { ...(data || {}) };
         this.loading = false;
@@ -134,6 +128,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   onFiltrosResultadosCambiados(filtros: any): void {
+    this.filtrosPorSeccion['Resultados'] = filtros;
     const filtrosCompletos = {
       seccion: 'Resultados',
       ...filtros,
@@ -156,6 +151,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   onFiltrosGastosCambiados(filtros: any): void {
+    this.filtrosPorSeccion['Gastos'] = filtros;
     const filtrosCompletos = {
       seccion: 'Gastos',
       ...filtros,
@@ -178,6 +174,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   onFiltrosVentasCambiados(filtros: FiltrosConsultaVentasDashboard): void {
+    this.filtrosPorSeccion['Ventas'] = filtros;
     const filtrosCompletos = {
       seccion: 'Ventas' as const,
       ...filtros,
@@ -200,6 +197,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   onFiltrosControlCuentasCambiados(filtros: any): void {
+    this.filtrosPorSeccion['Control de cuentas'] = filtros;
     const filtrosCompletos = {
       seccion: 'Control de cuentas',
       ...filtros,
@@ -222,6 +220,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   onFiltrosInventarioCambiados(filtros: any): void {
+    this.filtrosPorSeccion['Inventario'] = filtros;
     const filtrosCompletos = {
       seccion: 'Inventario',
       ...filtros,
