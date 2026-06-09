@@ -90,31 +90,20 @@ class EmpresasController extends Controller
     public function list()
     {
         try {
-            // Intentar obtener empresas activas
-            $empresas = Empresa::select('id', 'nombre')
-                ->where(function($query) {
-                    $query->where('activo', true)
-                          ->orWhere('activo', 1);
-                })
-                ->orderBy('nombre')
-                ->get();
+            $empresas = $this->queryEmpresasList(true);
 
-            return Response()->json($empresas, 200);
+            return response()->json($empresas, 200);
         } catch (QueryException $e) {
-            // Si hay un error de SQL, puede ser que la columna no exista
             Log::error('Error SQL en EmpresasController@list: ' . $e->getMessage());
             Log::error('Código SQL: ' . $e->getCode());
 
-            // Intentar sin el filtro de activo
             try {
-                $empresas = Empresa::select('id', 'nombre')
-                    ->orderBy('nombre')
-                    ->get();
+                $empresas = $this->queryEmpresasList(false);
 
-                return Response()->json($empresas, 200);
+                return response()->json($empresas, 200);
             } catch (\Exception $e2) {
                 Log::error('Error al cargar empresas sin filtro: ' . $e2->getMessage());
-                return Response()->json([
+                return response()->json([
                     'error' => 'Error al cargar las empresas',
                     'message' => $e2->getMessage()
                 ], 500);
@@ -123,11 +112,30 @@ class EmpresasController extends Controller
             Log::error('Error en EmpresasController@list: ' . $e->getMessage());
             Log::error('Stack trace: ' . $e->getTraceAsString());
 
-            return Response()->json([
+            return response()->json([
                 'error' => 'Error al cargar las empresas',
                 'message' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Listado ligero para selects/buscadores (sin accessors ni relaciones del modelo Empresa).
+     */
+    private function queryEmpresasList(bool $soloActivas)
+    {
+        $query = DB::table('empresas')
+            ->select('id', 'nombre')
+            ->orderBy('nombre');
+
+        if ($soloActivas) {
+            $query->where(function ($q) {
+                $q->where('activo', true)
+                    ->orWhere('activo', 1);
+            });
+        }
+
+        return $query->get();
     }
 
 
