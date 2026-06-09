@@ -375,8 +375,10 @@ class MHDTEController extends Controller
 
         $registro->qr = 'https://admin.factura.gob.sv/consultaPublica?ambiente='. $DTE['identificacion']['ambiente'] .'&codGen=' . $DTE['identificacion']['codigoGeneracion'] . '&fechaEmi=' . $DTE['identificacion']['fecEmi'];
 
-        // Si esta anulado
-        if ($registro->dte_invalidacion) {
+        if ($request->query('documento') === 'anulado') {
+            if (!$registro->dte_invalidacion) {
+                return response()->json(['error' => 'El registro no tiene DTE de anulación.'], 404);
+            }
             $DTE = $registro->dte_invalidacion;
             $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Anulado', compact('registro', 'DTE'));
             $pdf->setPaper('US Letter', 'portrait');
@@ -445,10 +447,17 @@ class MHDTEController extends Controller
             return response()->json(['error' => 'No se encontró el registro correspondiente.'], 404);
         }
 
-        if ($registro->dte_invalidacion)
+        if ($request->query('documento') === 'anulado') {
+            if (!$registro->dte_invalidacion) {
+                return response()->json(['error' => 'El registro no tiene DTE de anulación.'], 404);
+            }
             $DTE = $registro->dte_invalidacion;
-        else
+        } else {
             $DTE = $registro->dte;
+            if (!$DTE) {
+                return response()->json(['error' => 'El registro no tiene DTE.'], 404);
+            }
+        }
 
         return Response()->json($DTE, 200);
 
@@ -492,8 +501,7 @@ class MHDTEController extends Controller
 
         $registro->qr = 'https://admin.factura.gob.sv/consultaPublica?ambiente='. $DTE['identificacion']['ambiente'] .'&codGen=' . $DTE['identificacion']['codigoGeneracion'] . '&fechaEmi=' . $DTE['identificacion']['fecEmi'];
 
-
-        if ($registro->dte_invalidacion) {
+        if ($request->input('documento') === 'anulado' && $registro->dte_invalidacion) {
             $DTE = $registro->dte_invalidacion;
             $nombre = $DTE['documento']['nombre'];
 
@@ -517,7 +525,7 @@ class MHDTEController extends Controller
             }
             return Response()->json(['error' => 'El cliente no tienen correo'], 400);
         }
-        
+
         if ($DTE['identificacion']['tipoDte'] == '01') {
            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Factura', compact('registro', 'DTE'));
         }

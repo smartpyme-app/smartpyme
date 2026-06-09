@@ -232,16 +232,6 @@ export class CajaVentasComponent implements OnInit {
         }
     }
 
-    imprimirDTEPDF(venta:any){
-        const tipo = venta.tipo_dte || venta.dte?.identificacion?.tipoDte;
-        window.open(this.apiService.baseUrl + '/api/reporte/dte/' + venta.id + '/' + tipo + '/?token=' + this.apiService.auth_token(), 'hola', 'width=400');
-    }
-
-    imprimirDTEJSON(venta:any){
-        const tipo = venta.tipo_dte || venta.dte?.identificacion?.tipoDte;
-        window.open(this.apiService.baseUrl + '/api/reporte/dte-json/' + venta.id + '/' + tipo + '/?token=' + this.apiService.auth_token(), 'hola', 'width=400');
-    }
-
     emitirDTE(){
         this.saving = true;
         this.mhService.emitirDTE(this.venta).then((venta) => {

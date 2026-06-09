@@ -124,7 +124,7 @@ export class VentasComponent implements OnInit, OnDestroy {
 
   constructor(
     public apiService: ApiService,
-    private mhService: MHService,
+    public mhService: MHService,
     private alertService: AlertService,
     private modalService: BsModalService,
     private router: Router,
@@ -1036,16 +1036,6 @@ export class VentasComponent implements OnInit, OnDestroy {
     abrir(venta);
   }
 
-  imprimirDTEPDF(venta: any) {
-    const tipo = venta.tipo_dte || venta.dte?.identificacion?.tipoDte;
-    window.open(this.apiService.baseUrl + '/api/reporte/dte/' + venta.id + '/' + tipo + '/?token=' + this.apiService.auth_token(), 'hola', 'width=400');
-  }
-
-  imprimirDTEJSON(venta: any) {
-    const tipo = venta.tipo_dte || venta.dte?.identificacion?.tipoDte;
-    window.open(this.apiService.baseUrl + '/api/reporte/dte-json/' + venta.id + '/' + tipo + '/?token=' + this.apiService.auth_token(), 'hola', 'width=400');
-  }
-
   emitirDTE() {
     this.saving = true;
     this.mhService.emitirDTE(this.venta).then((ventaActualizada) => {
@@ -1072,9 +1062,10 @@ export class VentasComponent implements OnInit, OnDestroy {
     });
   }
 
-  enviarDTE(venta: any) {
+  enviarDTE(venta: any, anulado = false) {
     this.sending = true;
-    this.apiService.store('enviarDTE', venta).subscribe(dte => {
+    const payload = anulado ? { ...venta, documento: 'anulado' } : venta;
+    this.apiService.store('enviarDTE', payload).subscribe(dte => {
       this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
       this.sending = false;
       setTimeout(() => {
@@ -1220,12 +1211,12 @@ export class VentasComponent implements OnInit, OnDestroy {
             // Actualizar la venta en el listado
             const index = this.ventas.data.findIndex((v: any) => v.id === this.venta.id);
             if (index !== -1) {
-              this.ventas.data[index] = { ...this.venta };
+              this.ventas.data[index] = { ...this.venta, tiene_dte_invalidacion: 1 };
             }
             
             if (this.venta.id_cliente) {
               setTimeout(() => {
-                this.enviarDTE(this.venta);
+                this.enviarDTE(this.venta, true);
               }, 3000);
             }
             
