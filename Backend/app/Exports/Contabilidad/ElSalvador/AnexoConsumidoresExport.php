@@ -9,6 +9,7 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithCustomCsvSettings;
 use Illuminate\Http\Request;
 use App\Models\Admin\Empresa;
+use App\Services\Contabilidad\LibroIvaMontosHelper;
 
 class AnexoConsumidoresExport implements FromCollection, WithMapping, WithCustomCsvSettings
 {
@@ -78,14 +79,11 @@ class AnexoConsumidoresExport implements FromCollection, WithMapping, WithCustom
             $totalPropio = max(0, (float) $venta->total - $cuentaTerceros);
 
             if ($esFacturaExportacion) {
-                $venta->exenta = 0;
-                $venta->gravada = 0;
-            } elseif ($venta->iva > 0) {
-                $venta->exenta = 0;
-                $venta->gravada = $totalPropio;
+                $ventaExenta = 0;
+                $ventaGravada = 0;
             } else {
-                $venta->gravada = 0;
-                $venta->exenta = $totalPropio;
+                $ventaExenta = LibroIvaMontosHelper::ventasExentas($venta);
+                $ventaGravada = LibroIvaMontosHelper::ventasGravadas($venta);
             }
 
            // Según guía de Hacienda:
@@ -108,10 +106,10 @@ class AnexoConsumidoresExport implements FromCollection, WithMapping, WithCustom
                 $tieneFE ? '' : $correlativo, //H Numero Control (vacío si DTE, correlativo si impreso)
                 $tieneFE ? '' : $correlativo, //I Numero Control (vacío si DTE, correlativo si impreso)
                 NULL, //J Caja registradora
-                $venta->exenta ? number_format($venta->exenta, 2, '.', '') : '0.00', //K Exentas
+                $ventaExenta ? number_format($ventaExenta, 2, '.', '') : '0.00', //K Exentas
                 '0.00', //L No Exentas no sujetas a proporcionalidad
                 $venta->no_sujeta ? number_format($venta->no_sujeta, 2, '.', '') : '0.00', //M No Sujetas
-                $esFacturaExportacion ? '0.00' : number_format($venta->gravada, 2, '.', ''), //N Gravadas'
+                $esFacturaExportacion ? '0.00' : number_format($ventaGravada, 2, '.', ''), //N Gravadas'
                 $esFacturaExportacion ? number_format(max(0, (float) $venta->total - $cuentaTerceros), 2, '.', ''): '0.00', //O Exportacion internas (propio, sin terceros)'
                 '0.00', //P Exportacion externas'
                 '0.00', //Q Exportacion servicios'

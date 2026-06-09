@@ -94,7 +94,7 @@ const routes: Routes = [
         { path: 'salidas', canActivate: [InventarioOperacionesAdminGuard], component: InventarioSalidasComponent, title: 'Salidas de Inventario' },
         { path: 'salida/:id', canActivate: [InventarioOperacionesAdminGuard], component: InventarioSalidaComponent, title: 'Salida de Inventario' },
         { path: 'salida/detalle/:id', canActivate: [InventarioOperacionesAdminGuard], component: SalidaDetalleComponent, title: 'Detalle de salida' },
-        
+
         { path: 'transformacion', canActivate: [InventarioOperacionesAdminGuard, TransformacionProductosGuard], component: TransformacionCrearComponent, title: 'Conversión de Productos' },
 
     ]

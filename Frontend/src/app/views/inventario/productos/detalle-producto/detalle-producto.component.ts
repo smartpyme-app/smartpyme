@@ -47,4 +47,13 @@ export class DetalleProductoComponent implements OnInit {
     this.location.back();
   }
 
+  getPorcentajeImpuestosProducto(): number {
+    if (Array.isArray(this.producto?.impuestos) && this.producto.impuestos.length > 0) {
+      return this.producto.impuestos.reduce((sum: number, i: any) => sum + Number(i.porcentaje || 0), 0);
+    }
+    const pct = this.producto?.porcentaje_impuesto;
+    if (pct != null && pct !== '') return Number(pct);
+    return Number(this.apiService.auth_user()?.empresa?.iva ?? 0);
+  }
+
 }

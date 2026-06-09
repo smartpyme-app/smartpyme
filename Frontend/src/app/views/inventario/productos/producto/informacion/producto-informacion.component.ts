@@ -159,6 +159,7 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
 
         this.apiService.getAll('impuestos').subscribe(impuestos => {
             this.impuestos = (impuestos || []).filter((i: any) => i.aplica_ventas);
+            this.inicializarImpuestosProducto();
         }, () => { this.impuestos = []; });
 
         this.medidas = JSON.parse(localStorage.getItem('unidades_medidas')!);
@@ -178,23 +179,13 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
       }
     );
 
-    // this.apiService.getAll('bodegas').subscribe(
-    //   (bodegas) => {
-    //     this.bodegas = bodegas;
-    //     this.loading = false;
-    //   },
-    //   (error) => {
-    //     this.alertService.error(error);
-    //     this.loading = false;
-    //   }
-    // );
-
     this.cdr.detectChanges();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['producto']) {
       this.normalizarCategoriaProducto();
+      this.inicializarImpuestosProducto();
       this.intentarCargarBarcodeSugerido();
       this.syncCabysSeleccionFromProducto();
       if (this.subcategorias?.length && this.producto?.id_categoria) {
@@ -215,6 +206,50 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
       this.producto.id_subcategoria = Number(this.producto.id_subcategoria);
     }
   }
+
+    /** Sincroniza id_impuestos desde la relación o desde porcentaje_impuesto legacy. */
+    private inicializarImpuestosProducto(): void {
+        const p = this.producto;
+        if (!p) return;
+
+        if (Array.isArray(p.impuestos) && p.impuestos.length > 0) {
+            p.id_impuestos = p.impuestos.map((i: any) => i.id);
+            return;
+        }
+
+        if (Array.isArray(p.id_impuestos) && p.id_impuestos.length > 0) {
+            return;
+        }
+
+        const pct = p.porcentaje_impuesto;
+        if (pct != null && pct !== '' && Number(pct) > 0 && this.impuestos.length > 0) {
+            const match = this.impuestos.find((i: any) => Number(i.porcentaje) === Number(pct));
+            p.id_impuestos = match ? [match.id] : [];
+            return;
+        }
+
+        if (pct === 0 || pct === '0') {
+            p.id_impuestos = [];
+            return;
+        }
+
+        const ivaEmpresa = Number(this.usuario?.empresa?.iva ?? 0);
+        if (ivaEmpresa > 0 && this.impuestos.length > 0 && (pct == null || pct === '')) {
+            const match = this.impuestos.find((i: any) => Number(i.porcentaje) === ivaEmpresa);
+            if (match) {
+                p.id_impuestos = [match.id];
+            }
+        }
+    }
+
+    public onImpuestosChange(): void {
+        this.calPrecioFinal();
+    }
+
+    public getImpuestosSeleccionados(): any[] {
+        const ids: number[] = Array.isArray(this.producto?.id_impuestos) ? this.producto.id_impuestos : [];
+        return this.impuestos.filter((i: any) => ids.includes(i.id));
+    }
 
     /** Precarga el código de barras correlativo desde la API cuando aplica (producto nuevo + opción de empresa). */
     private intentarCargarBarcodeSugerido() {
@@ -436,8 +471,12 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
         this.producto.costo = this.producto.costo_promedio;
     }
 
-    /** Porcentaje de impuesto: del producto o de la empresa. */
+    /** Suma de tasas de los impuestos seleccionados (cálculo paralelo sobre la base). */
     public getPorcentajeProducto(): number {
+        const seleccionados = this.getImpuestosSeleccionados();
+        if (seleccionados.length > 0) {
+            return seleccionados.reduce((sum: number, i: any) => sum + Number(i.porcentaje || 0), 0);
+        }
         const p = this.producto?.porcentaje_impuesto;
         if (p != null && p !== '') return Number(p);
         return Number(this.usuario?.empresa?.iva ?? 0);
@@ -529,7 +568,12 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
     this.cdr.markForCheck();
     const esNuevo = !this.producto.id;
 
-    this.apiService.store('producto', this.producto)
+    const payload = {
+      ...this.producto,
+      id_impuestos: Array.isArray(this.producto.id_impuestos) ? this.producto.id_impuestos : [],
+    };
+
+    this.apiService.store('producto', payload)
       .pipe(
         this.untilDestroyed(),
         finalize(() => {

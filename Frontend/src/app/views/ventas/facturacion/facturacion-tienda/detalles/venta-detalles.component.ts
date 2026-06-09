@@ -22,6 +22,7 @@ import {
   initFeCrExoneracionDetalle,
 } from '@shared/modals/fe-cr-exoneracion-detalle/fe-cr-exoneracion-detalle.util';
 import { FE_PAIS_CR, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
+import { copiarImpuestosProductoAlDetalle } from '@utils/impuestos-venta.util';
 
 @Component({
     selector: 'app-venta-detalles',
@@ -329,6 +330,12 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
   public addDetalle(producto: any) {
     this.detalle = Object.assign({}, producto);
     this.detalle.id = null;
+
+    copiarImpuestosProductoAlDetalle(
+      this.detalle,
+      producto,
+      this.apiService.auth_user()?.empresa?.iva ?? 0
+    );
 
     // Campos de presentación para el backend (main / producción)
     this.detalle.id_presentacion = producto.id_presentacion ?? null;

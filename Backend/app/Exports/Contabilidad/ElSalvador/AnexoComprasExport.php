@@ -10,6 +10,7 @@ use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithCustomCsvSettings;
 use Illuminate\Http\Request;
+use App\Services\Contabilidad\LibroIvaMontosHelper;
 
 class AnexoComprasExport implements FromCollection, WithMapping, WithCustomCsvSettings
 {
@@ -42,7 +43,7 @@ class AnexoComprasExport implements FromCollection, WithMapping, WithCustomCsvSe
                 return $compra;
             });
 
-        $gastos = Gasto::with('proveedor')
+        $gastos = Gasto::with('proveedor', 'detalles')
             ->where('estado', '!=', 'Cancelado')
             ->where('estado', '!=', 'Anulada')
             ->when($request->id_sucursal, function ($q) use ($request) {
@@ -86,12 +87,8 @@ class AnexoComprasExport implements FromCollection, WithMapping, WithCustomCsvSe
                 $tipo = '11';
             }
 
-            if ($compra->iva > 0) {
-                $compra->gravada = $compra->sub_total;
-            }else{
-                $compra->gravada = 0;
-                $compra->exenta = $compra->sub_total;
-            }
+            $compraExenta = LibroIvaMontosHelper::comprasExentas($compra);
+            $compraGravada = LibroIvaMontosHelper::comprasGravadas($compra);
 
             $data = [
                 \Carbon\Carbon::parse($compra->fecha)->format('d/m/Y'), //A Fecha sin ceros a la izquierda
@@ -101,9 +98,9 @@ class AnexoComprasExport implements FromCollection, WithMapping, WithCustomCsvSe
                 $proveedor->ncr ? $proveedor->ncr : $proveedor->nit,  // E - NIT o NRC
                 $compra->nombre_proveedor,  // F - NOMBRE, RAZ N SOCIAL O DENOMINACI N
                 number_format($compra->total_otros_impuestos, 2, '.', '') ?? '0',  // G - Compras internas exentas
-                number_format($compra->exenta, 2, '.', '') ?? '0' ,  // H - Internaciones exentas
+                number_format($compraExenta, 2, '.', '') ?? '0' ,  // H - Internaciones exentas
                 '0',  // I - Importaciones exentas
-                number_format($compra->gravada, 2, '.', ''),  // J - Compras gravadas
+                number_format($compraGravada, 2, '.', ''),  // J - Compras gravadas
                 '0',  // K - Internaciones gravadas
                 '0',  // l - Importaciones gravadas de bienes
                 '0',  // M - Importaciones gravadas de servicios

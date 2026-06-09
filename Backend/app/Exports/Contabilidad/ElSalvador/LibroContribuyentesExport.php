@@ -14,6 +14,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Admin\Empresa;
+use App\Services\Contabilidad\LibroIvaMontosHelper;
 
 class LibroContribuyentesExport implements FromCollection, WithMapping, WithHeadings, WithEvents
 {
@@ -216,8 +217,8 @@ class LibroContribuyentesExport implements FromCollection, WithMapping, WithHead
                 'correlativo' => trim((string) $venta->correlativo),
                 'nombre_cliente' => $venta->nombre_cliente,
                 'nrc_cliente' => $cliente->ncr ?? $cliente->nit,
-                'ventas_exentas' => $venta->iva == 0 ? (float) $venta->sub_total : 0,
-                'ventas_internas_gravadas' => $venta->iva > 0 ? (float) $venta->sub_total : 0,
+                'ventas_exentas' => LibroIvaMontosHelper::ventasExentas($venta),
+                'ventas_internas_gravadas' => LibroIvaMontosHelper::ventasGravadas($venta),
                 'debito_fiscal' => (float) $venta->iva,
                 'ventas_exentas_a_cuenta_de_terceros' => 0.0,
                 'ventas_internas_gravadas_a_cuenta_de_terceros' => (float) $venta->cuenta_a_terceros,
@@ -254,9 +255,9 @@ class LibroContribuyentesExport implements FromCollection, WithMapping, WithHead
                 'correlativo' => trim((string) $devolucion->correlativo),
                 'nombre_cliente' => $devolucion->nombre_cliente,
                 'nrc_cliente' => $cliente->ncr ?? $cliente->nit,
-                'ventas_exentas' => $devolucion->exenta > 0 ? $devolucion->exenta * -1 : $devolucion->exenta,
-                'ventas_internas_gravadas' => $devolucion->sub_total > 0 ? $devolucion->sub_total * -1 : $devolucion->sub_total,
-                'debito_fiscal' => $devolucion->iva > 0 ? $devolucion->iva * -1 : $devolucion->iva,
+                'ventas_exentas' => LibroIvaMontosHelper::ventasExentas($devolucion) * -1,
+                'ventas_internas_gravadas' => LibroIvaMontosHelper::ventasGravadas($devolucion) * -1,
+                'debito_fiscal' => (float) $devolucion->iva * -1,
                 'ventas_exentas_a_cuenta_de_terceros' => 0.0,
                 'ventas_internas_gravadas_a_cuenta_de_terceros' => $devolucion->cuenta_a_terceros > 0 ? $devolucion->cuenta_a_terceros * -1 : $devolucion->cuenta_a_terceros,
                 'debito_fiscal_por_cuenta_de_terceros' => 0.0,

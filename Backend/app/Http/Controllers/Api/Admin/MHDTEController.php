@@ -44,7 +44,9 @@ class MHDTEController extends Controller
 
     public function generarDTE(GenerarDTERequest $request)
     {
-        $venta = Venta::where('id', $request->id)->with('detalles', 'cliente', 'empresa')->firstOrFail();
+        $venta = Venta::where('id', $request->id)
+            ->with('detalles.producto.impuestos', 'impuestos.impuesto', 'cliente', 'empresa')
+            ->firstOrFail();
 
         if ($guard = FacturacionElectronicaCountryGate::ensureSvDteOrFail($venta->empresa)) {
             return $guard;
@@ -55,7 +57,13 @@ class MHDTEController extends Controller
 
     public function generarDTENotaCredito(GenerarDTENotaCreditoRequest $request)
     {
-        $devolucion = DevolucionVenta::where('id', $request->id)->with('detalles', 'cliente', 'empresa', 'venta')->firstOrFail();
+        $devolucion = DevolucionVenta::where('id', $request->id)
+            ->with('detalles.producto.impuestos', 'impuestos.impuesto', 'cliente', 'empresa', 'venta')
+            ->firstOrFail();
+
+        if (!$devolucion->venta) {
+            return response()->json(['error' => 'La devolución no tiene una venta asignada.'], 400);
+        }
 
         if ($guard = FacturacionElectronicaCountryGate::ensureSvDteOrFail($devolucion->empresa)) {
             return $guard;

@@ -353,6 +353,11 @@ class ComprasController extends Controller
 
             $compra->fill($request->except(['detalles', 'dte', 'impuestos']));
             $this->aplicarIdentificadoresDteImportado($compra, $request);
+
+            if (!$request->id && !$request->boolean('incrementar_correlativo_importacion_massiva')) {
+                $this->asignarCorrelativoSujetoExcluido($compra);
+            }
+
             $compra->save();
 
         // Impuestos (compra_impuestos)
@@ -515,10 +520,14 @@ class ComprasController extends Controller
 
         // SE CAMBIO PARA IMPORTACIÓN MASIVA JSON: Correlativo en catálogo `documentos`: (1) flujo legado sin cambios, (2) importación masiva JSON (flag explícito).
         if (! $request->id && $compra->tipo_documento) {
-            $documento = Documento::where('nombre', $compra->tipo_documento)->where('id_sucursal', $compra->id_sucursal)->first();
+            $documento = Documento::where('nombre', $compra->tipo_documento)
+                ->where('id_sucursal', $compra->id_sucursal)
+                ->where('activo', true)
+                ->lockForUpdate()
+                ->first();
             if ($documento) {
                 $porImportacionMasiva = $request->boolean('incrementar_correlativo_importacion_massiva');
-                $porFlujoLegado = in_array($compra->tipo_documento, ['Orden de compra', 'Sujeto excluido'], true);
+                $porFlujoLegado = $compra->tipo_documento === 'Orden de compra';
                 if ($porImportacionMasiva || $porFlujoLegado) {
                     $documento->increment('correlativo');
                 }
@@ -1139,6 +1148,26 @@ class ComprasController extends Controller
     /**
      * Persiste código de generación, número de control y DTE importado desde el frontend.
      */
+    private function asignarCorrelativoSujetoExcluido(Compra $compra): void
+    {
+        if ($compra->tipo_documento !== 'Sujeto excluido' || !$compra->id_sucursal) {
+            return;
+        }
+
+        $documento = Documento::where('nombre', 'Sujeto excluido')
+            ->where('id_sucursal', $compra->id_sucursal)
+            ->where('activo', true)
+            ->lockForUpdate()
+            ->first();
+
+        if (!$documento) {
+            return;
+        }
+
+        $compra->referencia = $documento->correlativo;
+        $documento->increment('correlativo');
+    }
+
     private function aplicarIdentificadoresDteImportado(Compra $compra, Request $request): void
     {
         if ($request->has('codigo_generacion')) {

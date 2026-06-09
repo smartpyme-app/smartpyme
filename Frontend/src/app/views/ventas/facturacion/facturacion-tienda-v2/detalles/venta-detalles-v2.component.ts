@@ -21,6 +21,7 @@ import Swal from 'sweetalert2';
 import {
     normalizarPorcentajeImpuestoDetalle,
     resolverPorcentajeImpuestoVenta,
+    copiarImpuestosProductoAlDetalle,
 } from '@utils/impuestos-venta.util';
 
 @Component({
@@ -455,6 +456,12 @@ export class VentaDetallesV2Component implements OnInit {
         public addDetalle(producto:any){
             this.detalle = Object.assign({}, producto);
             this.detalle.id = null;
+
+            copiarImpuestosProductoAlDetalle(
+                this.detalle,
+                producto,
+                this.apiService.auth_user()?.empresa?.iva ?? 0
+            );
             
             // ── Guardar campos de presentación para el backend ───────────────────────
             this.detalle.id_presentacion   = producto.id_presentacion  ?? null;

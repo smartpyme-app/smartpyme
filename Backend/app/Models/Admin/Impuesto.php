@@ -14,6 +14,7 @@ class Impuesto extends Model {
         'porcentaje',
         'id_cuenta_contable_ventas',
         'id_cuenta_contable_compras',
+        'codigo_mh',
         'id_empresa',
         'aplica_ventas',
         'aplica_gastos',

@@ -13,6 +13,7 @@ use Maatwebsite\Excel\Events\BeforeSheet;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Auth;
+use App\Services\Contabilidad\LibroIvaMontosHelper;
 
 class LibroComprasExport implements FromCollection, WithMapping, WithHeadings, WithEvents
 {
@@ -78,7 +79,7 @@ class LibroComprasExport implements FromCollection, WithMapping, WithHeadings, W
             ->get();
 
         // Obtener los gastos
-        $gastos = Gasto::with(['proveedor'])
+        $gastos = Gasto::with(['proveedor', 'detalles'])
             ->where('estado', '!=', 'Cancelado')
             ->where('estado', '!=', 'Anulada')
             ->when($request->id_sucursal, function ($q) use ($request) {
@@ -126,12 +127,17 @@ class LibroComprasExport implements FromCollection, WithMapping, WithHeadings, W
         ];
 
         if ($compra->tipo_documento == 'Sujeto excluido') {
-            $data[13] = $compra->total * $multiplier; // Solo asignar a sujetos excluidos
+            $data[13] = $compra->total * $multiplier;
         } else {
-            $data[8] = $compra->sub_total * $multiplier;  // COMPRAS GRAVADAS
-            $data[10] = $compra->iva * $multiplier;       // CRÉDITO FISCAL
-            $data[11] = ($compra->percepcion ?? 0) * $multiplier; // ANTICIPO IVA
-            $data[12] = $compra->total * $multiplier;     // TOTAL
+            $columnas = LibroIvaMontosHelper::columnasCompra($compra, $multiplier);
+            $data[5] = $columnas['compras_exentas'];
+            $data[6] = $columnas['no_sujeta'];
+            $data[7] = $columnas['importaciones_exentas'];
+            $data[8] = $columnas['compras_gravadas'];
+            $data[9] = $columnas['importaciones_gravadas'];
+            $data[10] = $columnas['credito_fiscal'];
+            $data[11] = ($compra->percepcion ?? 0) * $multiplier;
+            $data[12] = $columnas['total'];
         }
 
         return $data;

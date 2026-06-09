@@ -259,6 +259,10 @@ class GastosController extends Controller
             $gasto->fill($headerData);
             $this->aplicarIdentificadoresDteImportado($gasto, $request);
 
+            if (!$request->id) {
+                $this->asignarCorrelativoSujetoExcluido($gasto);
+            }
+
             if ($tieneMultiplesItems) {
                 $this->guardarConDetalles($gasto, $request->detalles, $request->input('tipo'));
             } else {
@@ -274,7 +278,7 @@ class GastosController extends Controller
                 $this->sincronizarDetalleUnico($gasto, $request);
             }
 
-            if (! $request->id && in_array($request->tipo_documento, ['Sujeto excluido', 'Compra electrónica'], true)) {
+            if (! $request->id && $request->tipo_documento === 'Compra electrónica') {
                 $documento = Documento::where('nombre', $gasto->tipo_documento)->where('id_sucursal', $gasto->id_sucursal)->first();
                 if ($documento) {
                     $documento->increment('correlativo');
@@ -587,6 +591,29 @@ class GastosController extends Controller
 
         // Categoría predeterminada
         return 'Gastos varios';
+    }
+
+    /**
+     * Asigna el correlativo activo de Sujeto excluido y lo incrementa (fuente de verdad en backend).
+     */
+    private function asignarCorrelativoSujetoExcluido(Gasto $gasto): void
+    {
+        if ($gasto->tipo_documento !== 'Sujeto excluido' || !$gasto->id_sucursal) {
+            return;
+        }
+
+        $documento = Documento::where('nombre', 'Sujeto excluido')
+            ->where('id_sucursal', $gasto->id_sucursal)
+            ->where('activo', true)
+            ->lockForUpdate()
+            ->first();
+
+        if (!$documento) {
+            return;
+        }
+
+        $gasto->referencia = $documento->correlativo;
+        $documento->increment('correlativo');
     }
 
     /**

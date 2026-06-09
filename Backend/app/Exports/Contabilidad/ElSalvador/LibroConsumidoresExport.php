@@ -13,6 +13,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Admin\Empresa;
+use App\Services\Contabilidad\LibroIvaMontosHelper;
 
     class LibroConsumidoresExport implements FromCollection, WithMapping, WithHeadings, WithEvents
     {
@@ -189,9 +190,8 @@ use App\Models\Admin\Empresa;
                     if (strtolower($documentoNombre) === 'factura de exportación') {
                         return 0;
                     }
-                    return $venta->iva == 0
-                        ? $this->montoVentaPropioSinCuentaTerceros($venta)
-                        : 0;
+
+                    return LibroIvaMontosHelper::ventasExentas($venta);
                 });
 
                 $ventasGravadas = $ventasDia->sum(function ($venta) {
@@ -199,9 +199,8 @@ use App\Models\Admin\Empresa;
                     if (strtolower($documentoNombre) === 'factura de exportación') {
                         return 0;
                     }
-                    return $venta->iva > 0
-                        ? $this->montoVentaPropioSinCuentaTerceros($venta)
-                        : 0;
+
+                    return LibroIvaMontosHelper::ventasGravadas($venta);
                 });
 
                 $ventasTerceros = $ventasDia->sum(function ($venta) {
