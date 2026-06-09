@@ -752,6 +752,17 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="col-12 col-xl-6 d-flex" *ngIf="tieneAccesoFidelizacionGlobal">
+                            <div class="empresa-pref-tile w-100">
+                                <p class="empresa-pref-desc small text-muted mb-0">Activar módulo de fidelización de clientes para configurar tipos de clientes, reglas y vista 360.</p>
+                                <div class="form-switch bg-light-info rounded">
+                                    <label for="fidelizacion_activa">Activar fidelización de clientes</label>
+                                    <input class="form-check-input float-end" type="checkbox" role="switch"
+                                        id="fidelizacion_activa" [checked]="isFidelizacionActiva()"
+                                        (change)="toggleFidelizacionActiva()" name="fidelizacion_activa">
+                                </div>
+                            </div>
+                        </div>
                         <div class="col-12 col-xl-6 d-flex">
                             <div class="empresa-pref-tile w-100">
                                 <p class="empresa-pref-desc small text-muted mb-0">Permite gestionar cuentas bancarias de la empresa en la sección Finanzas.</p>
