@@ -69,9 +69,10 @@ export class EmpresasFuncionalidadesComponent implements OnInit {
 
   cargarEmpresas() {
     this.isLoading = true;
-    this.http.get<Empresa[]>(`${environment.API_URL}/api/empresas/list`).pipe(this.untilDestroyed()).subscribe({
+    this.mensajeError = '';
+    this.apiService.getAll('empresas/list').pipe(this.untilDestroyed()).subscribe({
       next: (data) => {
-        this.empresas = data;
+        this.empresas = Array.isArray(data) ? data : [];
         this.isLoading = false;
       },
       error: (error) => {
