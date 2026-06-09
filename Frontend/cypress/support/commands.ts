@@ -10,6 +10,12 @@
 // https://on.cypress.io/custom-commands
 // ***********************************************
 
+/** Acciones de menú/contexto prohibidas en listados (emisión DTE a MH). */
+export const DTE_FORBIDDEN_MENU_LABELS = [
+  'Emitir DTE',
+  'Emitir DTE en contingencia',
+] as const
+
 declare global {
   namespace Cypress {
     interface Chainable {
@@ -24,6 +30,17 @@ declare global {
        * @example cy.logout()
        */
       logout(): Chainable<void>
+
+      /**
+       * Abre el menú de acciones de una fila sin usar opciones de emisión DTE.
+       * Permite crear/editar/ver; nunca hace clic en "Emitir DTE".
+       */
+      openRowActionsMenu(options?: { rowIndex?: number }): Chainable<JQuery<HTMLElement>>
+
+      /**
+       * Verifica que las opciones de emisión DTE no estén visibles en el menú abierto.
+       */
+      assertDteActionsNotAvailable(): Chainable<void>
     }
   }
 }
@@ -49,6 +66,17 @@ Cypress.Commands.add('logout', () => {
   cy.clearCookies()
   cy.window().then((win) => {
     win.sessionStorage.clear()
+  })
+})
+
+Cypress.Commands.add('openRowActionsMenu', (options: { rowIndex?: number } = {}) => {
+  const index = options.rowIndex ?? 0
+  cy.get('table tbody tr').eq(index).find('button, a').filter(':visible').last().click({ force: true })
+})
+
+Cypress.Commands.add('assertDteActionsNotAvailable', () => {
+  DTE_FORBIDDEN_MENU_LABELS.forEach((label) => {
+    cy.contains('a, button, .list-group-item', label).should('not.exist')
   })
 })
 

@@ -117,7 +117,7 @@ El test de registro de nueva empresa incluye:
 9. ✅ Visualización de precios al seleccionar plan
 10. ✅ Navegación a login desde registro
 
-### Test de Inventario - Productos (`cypress/e2e/inventario-productos.cy.ts`)
+### Test de Inventario - Productos (`cypress/e2e/productos/inventario-productos.cy.ts`)
 
 El test del módulo de inventario (productos) incluye:
 
@@ -137,6 +137,26 @@ El test del módulo de inventario (productos) incluye:
 14. ✅ Filtrado de productos con stock bajo
 15. ✅ Filtrado de productos compuestos
 16. ✅ Resetear filtros con botón "Todos"
+
+### Test de Inventario - Smoke módulos (`cypress/e2e/productos/inventario-modulos.cy.ts`)
+
+Cobertura ampliada con `cy.session`:
+
+**Operaciones:** ajustes, traslados, otras entradas, otras salidas, navegación entre tabs
+
+**Lotes:** listado, estadísticas, búsqueda, filtro vencidos
+
+**Kardex (UI actualizada):** typeahead de producto, bodega, tipo de movimiento, fechas, tabla ENTRADAS/SALIDAS/EXISTENCIAS, selector de lote condicional
+
+**Categorías:** búsqueda, modal de edición, configuración contable (cuentas por sucursal)
+
+**Bodegas y servicios:** smoke de listado
+
+Ejecutar suite de inventario:
+
+```bash
+npm run cypress:run -- --spec "cypress/e2e/productos/**"
+```
 
 ## Configuración de los Tests
 
@@ -205,6 +225,26 @@ El test de inventario requiere que el usuario tenga permisos para acceder al mó
 
 - Ajusta los `cy.wait()` según sea necesario
 - Considera usar `cy.intercept()` para mockear respuestas de API en tests más rápidos
+
+## Reglas de emisión DTE (entorno demo/local)
+
+En pruebas E2E **sí** se pueden crear y editar ventas, compras y gastos.
+
+**Prohibido** en listados y menús de acciones por fila:
+
+- `Emitir DTE`
+- `Emitir DTE en contingencia`
+
+Los tests deben usar otras acciones (ver, editar, anular, imprimir, etc.) y nunca confirmar modales de emisión DTE.
+
+Comandos de apoyo en `cypress/support/commands.ts`:
+
+```typescript
+cy.openRowActionsMenu({ rowIndex: 0 })
+cy.assertDteActionsNotAvailable()
+```
+
+Constantes: `DTE_FORBIDDEN_MENU_LABELS` en el mismo archivo.
 
 ## Próximos Pasos
 
