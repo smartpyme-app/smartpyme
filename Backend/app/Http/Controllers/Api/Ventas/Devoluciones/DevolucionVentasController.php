@@ -246,7 +246,6 @@ class DevolucionVentasController extends Controller
 
     public function update(UpdateDevolucionRequest $request)
     {
-
         DB::beginTransaction();
 
         try {
