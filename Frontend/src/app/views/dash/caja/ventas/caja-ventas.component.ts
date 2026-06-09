@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { MHService } from '@services/MH.service';
 import { FacturacionElectronicaService } from '@services/facturacion-electronica/facturacion-electronica.service';
 import {
   mensajeErrorHttpFeCr,
@@ -41,7 +42,8 @@ export class CajaVentasComponent extends BaseCrudComponent<any> implements OnIni
         protected override apiService: ApiService,
         private facturacionElectronica: FacturacionElectronicaService,
         protected override alertService: AlertService,
-        protected override modalManager: ModalManagerService
+        protected override modalManager: ModalManagerService,
+        public mhService: MHService
     ){
         super(apiService, alertService, modalManager, {
             endpoint: 'venta',
@@ -261,14 +263,10 @@ export class CajaVentasComponent extends BaseCrudComponent<any> implements OnIni
         window.open(this.apiService.baseUrl + '/api/reporte/dte/' + venta.id + '/' + t + '/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
     }
 
-    imprimirDTEJSON(venta: any, tipoDte?: string) {
-        const t = tipoDte ?? venta.tipo_dte;
-        window.open(this.apiService.baseUrl + '/api/reporte/dte-json/' + venta.id + '/' + t + '/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
-    }
-
     imprimirDTEXML(venta: any, tipoDte?: string) {
         const t = tipoDte ?? venta.tipo_dte;
-        window.open(this.apiService.baseUrl + '/api/reporte/dte-xml/' + venta.id + '/' + t + '/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');    }
+        window.open(this.apiService.baseUrl + '/api/reporte/dte-xml/' + venta.id + '/' + t + '/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
+    }
 
     emitirDTE(){
         this.saving = true;

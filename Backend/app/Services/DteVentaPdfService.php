@@ -10,9 +10,23 @@ use Illuminate\Support\Facades\Log;
  */
 class DteVentaPdfService
 {
-    public static function renderPdfBinary(Venta $registro): ?string
+    public static function renderPdfBinary(Venta $registro, bool $anulado = false): ?string
     {
         try {
+            if ($anulado) {
+                $DTE = $registro->dte_invalidacion;
+                if (is_string($DTE)) {
+                    $DTE = json_decode($DTE, true);
+                }
+                if (empty($DTE) || !is_array($DTE)) {
+                    return null;
+                }
+                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Anulado', compact('registro', 'DTE'));
+                $pdf->setPaper('US Letter', 'portrait');
+
+                return $pdf->output();
+            }
+
             $DTE = $registro->dte;
             if (is_string($DTE)) {
                 $DTE = json_decode($DTE, true);
@@ -27,21 +41,6 @@ class DteVentaPdfService
             $ident = $DTE['identificacion'];
             $fecEmi = $ident['fecEmi'] ?? '';
             $registro->qr = 'https://admin.factura.gob.sv/consultaPublica?ambiente=' . $ident['ambiente'] . '&codGen=' . $ident['codigoGeneracion'] . '&fechaEmi=' . $fecEmi;
-
-            if ($registro->dte_invalidacion) {
-                $inv = $registro->dte_invalidacion;
-                if (is_string($inv)) {
-                    $inv = json_decode($inv, true);
-                }
-                if (empty($inv) || !is_array($inv)) {
-                    return null;
-                }
-                $DTE = $inv;
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Anulado', compact('registro', 'DTE'));
-                $pdf->setPaper('US Letter', 'portrait');
-
-                return $pdf->output();
-            }
 
             $tipoDte = $DTE['identificacion']['tipoDte'];
             $pdf = null;

@@ -9,6 +9,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { MHService } from '@services/MH.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
 import { FacturacionElectronicaService } from '@services/facturacion-electronica/facturacion-electronica.service';
 import {
@@ -170,6 +171,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
   constructor(
     protected override apiService: ApiService,
     protected override alertService: AlertService,
+    public mhService: MHService,
     private modalService: BsModalService,
     private router: Router,
     private route: ActivatedRoute,
@@ -1281,9 +1283,10 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     });
   }
 
-  enviarDTE(venta: any) {
+  enviarDTE(venta: any, anulado = false) {
     this.sending = true;
-    this.apiService.store('enviarDTE', venta).subscribe(dte => {
+    const payload = anulado ? { ...venta, documento: 'anulado' } : venta;
+    this.apiService.store('enviarDTE', payload).subscribe(dte => {
       this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
       this.sending = false;
       setTimeout(() => {
@@ -1429,12 +1432,12 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
             // Actualizar la venta en el listado
             const index = this.ventas.data.findIndex((v: any) => v.id === this.venta.id);
             if (index !== -1) {
-              this.ventas.data[index] = { ...this.venta };
+              this.ventas.data[index] = { ...this.venta, tiene_dte_invalidacion: 1 };
             }
 
             if (this.venta.id_cliente) {
               setTimeout(() => {
-                this.enviarDTE(this.venta);
+                this.enviarDTE(this.venta, true);
               }, 3000);
             }
 

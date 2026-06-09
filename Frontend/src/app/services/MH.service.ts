@@ -399,4 +399,19 @@ export class MHService {
             );
     }
 
+    verReporteDte(registro: any, formato: 'pdf' | 'json', anulado = false): void {
+        const tipo = registro.tipo_dte || registro.dte?.identificacion?.tipoDte;
+        const ruta = formato === 'pdf' ? 'dte' : 'dte-json';
+        const doc = anulado ? '&documento=anulado' : '';
+        window.open(
+            `${this.apiService.baseUrl}/api/reporte/${ruta}/${registro.id}/${tipo}/?token=${this.apiService.auth_token()}${doc}`,
+            'hola',
+            'width=400'
+        );
+    }
+
+    tieneDteInvalidacion(registro: any): boolean {
+        return !!(registro?.tiene_dte_invalidacion || registro?.dte_invalidacion || registro?.dte_invalidacion_en_s3);
+    }
+
 }

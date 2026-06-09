@@ -324,15 +324,12 @@
             }
 
             @if (venta.sello_mh && !esFeCostaRica()) {
-                <button (click)="imprimirDTEJSON(venta)" class="mb-3 btn btn-primary btn-block">
-                    Ver JSON
-                </button>
-            }
-
-            @if (venta.sello_mh && !esFeCostaRica()) {
-                <button (click)="imprimirDTEPDF(venta)" class="mb-3 btn btn-primary btn-block">
-                    Ver PDF
-                </button>
+                <button (click)="mhService.verReporteDte(venta, 'json')" class="mb-2 btn btn-primary btn-block">Ver JSON</button>
+                <button (click)="mhService.verReporteDte(venta, 'pdf')" class="mb-2 btn btn-primary btn-block">Ver PDF</button>
+                @if (mhService.tieneDteInvalidacion(venta)) {
+                    <button (click)="mhService.verReporteDte(venta, 'json', true)" class="mb-2 btn btn-outline-danger btn-block">Ver JSON anulado</button>
+                    <button (click)="mhService.verReporteDte(venta, 'pdf', true)" class="mb-3 btn btn-outline-danger btn-block">Ver PDF anulado</button>
+                }
             }
 
             @if (venta.sello_mh && !esFeCostaRica()) {

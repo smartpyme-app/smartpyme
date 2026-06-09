@@ -128,6 +128,7 @@ class VentasController extends Controller
         if ($dteIndex !== false) {
             $columns[$dteIndex] = DB::raw("IF(COALESCE(ventas.dte_s3_key,'') <> '', NULL, ventas.dte) as dte");
         }
+        $columns[] = DB::raw("(CASE WHEN COALESCE(ventas.dte_invalidacion,'') <> '' OR COALESCE(ventas.dte_invalidacion_s3_key,'') <> '' THEN 1 ELSE 0 END) as tiene_dte_invalidacion");
 
         $ventas = Venta::select($columns)
             ->where('ventas.id_empresa', $user->id_empresa)
