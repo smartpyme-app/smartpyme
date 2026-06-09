@@ -36,6 +36,7 @@ use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Admin\Empresa;
+use App\Services\Contabilidad\LibroIvaMontosHelper;
 
 class LibrosIVAController extends Controller
 {
@@ -280,24 +281,20 @@ class LibrosIVAController extends Controller
                 // Luego clasificar las ventas restantes (excluyendo exportaciones)
                 $ventasExentas = $ventasDia->sum(function ($venta) {
                     $documentoNombre = trim(optional($venta->documento)->nombre ?? '');
-                    // Excluir exportaciones
                     if (strtolower($documentoNombre) === 'factura de exportación') {
                         return 0;
                     }
-                    return $venta->iva == 0
-                        ? $this->montoVentaPropioSinCuentaTerceros($venta)
-                        : 0;
+
+                    return LibroIvaMontosHelper::ventasExentas($venta);
                 });
 
                 $ventasGravadas = $ventasDia->sum(function ($venta) {
                     $documentoNombre = trim(optional($venta->documento)->nombre ?? '');
-                    // Excluir exportaciones
                     if (strtolower($documentoNombre) === 'factura de exportación') {
                         return 0;
                     }
-                    return $venta->iva > 0
-                    ? $this->montoVentaPropioSinCuentaTerceros($venta)
-                    : 0;
+
+                    return LibroIvaMontosHelper::ventasGravadas($venta);
                 });
 
                 $ventasTerceros = $ventasDia->sum(function ($venta) {
@@ -431,8 +428,8 @@ class LibrosIVAController extends Controller
                 'correlativo' => trim((string) $venta->correlativo),
                 'nombre_cliente' => $venta->nombre_cliente,
                 'nrc_cliente' => $cliente->ncr ?? $cliente->nit,
-                'ventas_exentas' => $venta->iva == 0 ? (float) $venta->sub_total : 0,
-                'ventas_internas_gravadas' => $venta->iva > 0 ? (float) $venta->sub_total : 0,
+                'ventas_exentas' => LibroIvaMontosHelper::ventasExentas($venta),
+                'ventas_internas_gravadas' => LibroIvaMontosHelper::ventasGravadas($venta),
                 'debito_fiscal' => (float) $venta->iva,
                 'ventas_exentas_a_cuenta_de_terceros' => 0.0,
                 'ventas_internas_gravadas_a_cuenta_de_terceros' => (float) $venta->cuenta_a_terceros,
@@ -471,9 +468,9 @@ class LibrosIVAController extends Controller
                 'correlativo' => trim((string) $devolucion->correlativo),
                 'nombre_cliente' => $devolucion->nombre_cliente,
                 'nrc_cliente' => $cliente->ncr ?? $cliente->nit,
-                'ventas_exentas' => $devolucion->exenta > 0 ? $devolucion->exenta * -1 : $devolucion->exenta,
-                'ventas_internas_gravadas' => $devolucion->sub_total > 0 ? $devolucion->sub_total * -1 : $devolucion->sub_total,
-                'debito_fiscal' => $devolucion->iva > 0 ? $devolucion->iva * -1 : $devolucion->iva,
+                'ventas_exentas' => LibroIvaMontosHelper::ventasExentas($devolucion) * -1,
+                'ventas_internas_gravadas' => LibroIvaMontosHelper::ventasGravadas($devolucion) * -1,
+                'debito_fiscal' => (float) $devolucion->iva * -1,
                 'ventas_exentas_a_cuenta_de_terceros' => 0.0,
                 'ventas_internas_gravadas_a_cuenta_de_terceros' => $devolucion->cuenta_a_terceros > 0 ? $devolucion->cuenta_a_terceros * -1 : $devolucion->cuenta_a_terceros,
                 'debito_fiscal_por_cuenta_de_terceros' => 0.0,
@@ -699,9 +696,7 @@ class LibrosIVAController extends Controller
                     $data['sujeto_excluido'] = $compra->total;
                     break;
                 default:
-                    $data['compras_gravadas'] = $compra->sub_total;
-                    $data['credito_fiscal'] = $compra->iva;
-                    $data['total'] = $compra->total;
+                    $data = array_merge($data, LibroIvaMontosHelper::columnasCompra($compra));
                     break;
             }
 
@@ -709,7 +704,7 @@ class LibrosIVAController extends Controller
         });
 
         // Obtener los gastos
-        $gastos = Gasto::with(['proveedor'])
+        $gastos = Gasto::with(['proveedor', 'detalles'])
             ->where('estado', '!=', 'Cancelado')
             ->where('estado', '!=', 'Anulada')
             ->when($request->id_sucursal, function ($q) use ($request) {
@@ -734,7 +729,7 @@ class LibrosIVAController extends Controller
                 'num_documento'         => $gasto->referencia,
                 'nit_nrc'               => $proveedor->ncr ?? $proveedor->nit,
                 'nombre_proveedor'      => $gasto->nombre_proveedor,
-                'compras_exentas'       => $gasto->total_otros_impuestos,
+                'compras_exentas'       => 0,
                 'importaciones_exentas' => 0,
                 'compras_gravadas'      => 0,
                 'importaciones_gravadas' => 0,
@@ -744,6 +739,7 @@ class LibrosIVAController extends Controller
                 'credito_cuenta_terceros' => 0,
                 'total'                 => 0,
                 'sujeto_excluido'       => 0,
+                'no_sujeta'             => 0,
                 'registro' => $gasto,
                 'origen' => $gasto->origen,
             ];
@@ -753,9 +749,7 @@ class LibrosIVAController extends Controller
                     $data['sujeto_excluido'] = $gasto->total;
                     break;
                 default:
-                    $data['compras_gravadas'] = $gasto->sub_total;
-                    $data['credito_fiscal'] = $gasto->iva;
-                    $data['total'] = $gasto->total;
+                    $data = array_merge($data, LibroIvaMontosHelper::columnasCompra($gasto));
                     break;
             }
 
@@ -807,9 +801,7 @@ class LibrosIVAController extends Controller
                     $data['sujeto_excluido'] = $devolucion->total * -1;
                     break;
                 default:
-                    $data['compras_gravadas'] = $devolucion->sub_total * -1;
-                    $data['credito_fiscal'] = $devolucion->iva * -1;
-                    $data['total'] = $devolucion->total * -1;
+                    $data = array_merge($data, LibroIvaMontosHelper::columnasCompra($devolucion, -1));
                     break;
             }
 

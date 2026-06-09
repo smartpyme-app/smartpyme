@@ -10,6 +10,7 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithCustomCsvSettings;
 use Illuminate\Http\Request;
 use App\Models\Admin\Empresa;
+use App\Services\Contabilidad\LibroIvaMontosHelper;
 
 class AnexoContribuyentesExport implements FromCollection, WithMapping, WithCustomCsvSettings
 {
@@ -137,12 +138,8 @@ class AnexoContribuyentesExport implements FromCollection, WithMapping, WithCust
                 $tipo = '06';
             }
 
-            if ($venta->iva > 0) {
-                $venta->gravada = $venta->sub_total;
-            }else{
-                $venta->gravada = 0;
-                $venta->exenta = $venta->sub_total;
-            }
+            $ventaExenta = LibroIvaMontosHelper::ventasExentas($venta);
+            $ventaGravada = LibroIvaMontosHelper::ventasGravadas($venta);
 
             $cuentaTerceros = (float) ($venta->cuenta_a_terceros ?? 0);
 
@@ -189,9 +186,9 @@ class AnexoContribuyentesExport implements FromCollection, WithMapping, WithCust
                 $tieneFE ? '' : $correlativo, //G Número Control Interno (vacío si DTE, correlativo si impreso)
                 $cliente->ncr ?? $cliente->nit, //H NIT/NRC
                 isset($venta->dte['receptor']) ? $venta->dte['receptor']['nombre'] : $venta->nombre_cliente, //I Nombre
-                number_format($venta->exenta, 2, '.', ''), //J Exentas (formato numérico con 2 decimales)
+                number_format($ventaExenta, 2, '.', ''), //J Exentas (formato numérico con 2 decimales)
                 number_format($venta->no_sujeta, 2, '.', ''), //K No sujetas (formato numérico con 2 decimales)
-                number_format($venta->gravada, 2, '.', ''), //L Gravadas (formato numérico con 2 decimales)
+                number_format($ventaGravada, 2, '.', ''), //L Gravadas (formato numérico con 2 decimales)
                 number_format($venta->iva, 2, '.', ''), //M Debido fiscal (formato numérico con 2 decimales)
                 number_format($cuentaTerceros, 2, '.', ''), //N Ventas a terceros
                 '0.00', //O Débito ventas a terceros (sin cálculo separado en sistema; coherente con libro IVA)
