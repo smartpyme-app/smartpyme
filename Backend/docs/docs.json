@@ -17,6 +17,9 @@
       "href": "https://app.smartpyme.site"
     }
   },
+  "openapi": [
+    "./openapi.yaml"
+  ],
   "navigation": {
     "tabs": [
       {
