@@ -4,7 +4,7 @@ info:
   description: |
     API Externa de SmartPYME para proveedores terceros.
     
-    Esta API permite acceso de solo lectura a datos de ventas e inventario usando autenticación por API Key.
+    Permite consultar y registrar ventas, consultar inventario y devoluciones, e importar paquetes usando autenticación por API Key.
     
     ## Autenticación
     Todas las requests requieren un API Key válido en el header Authorization:
@@ -13,15 +13,15 @@ info:
     ```
     
     ## Rate Limiting
-    - Sin filtros de fecha: 100 requests/hora
-    - Con filtros de fecha: 200 requests/hora
+    - Sin filtros de fecha: 1000 requests/hora
+    - Con filtros de fecha: 2000 requests/hora
     
     ## Paginación
     Todos los endpoints de lista soportan paginación:
     - `page`: Número de página (default: 1)
     - `per_page`: Registros por página (1-200, default: 100)
     
-  version: 1.0.0
+  version: 1.4.0
   contact:
     name: SmartPYME Support
     email: soporte@smartpyme.com
@@ -39,6 +39,24 @@ security:
   - ApiKeyAuth: []
 
 paths:
+  /system/rate-limit:
+    get:
+      tags:
+        - Sistema
+      summary: Verificar estado del rate limit
+      description: Obtiene información sobre el uso actual del rate limit de la API Key.
+      responses:
+        '200':
+          description: Estado del rate limit obtenido exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateLimitResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /sales:
     get:
       tags:
@@ -115,6 +133,66 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+    post:
+      tags:
+        - Ventas
+      summary: Crear venta (facturación)
+      description: |
+        Crea y procesa una venta usando la lógica de facturación interna.
+        
+        - Idempotencia: si se envía `referencia_externa` o `referencia` y ya existe una venta con ese valor, devuelve la venta existente (HTTP 200).
+        - Sucursal: enviar `id_sucursal` o `sucursal` (nombre).
+        - Productos: en `detalles`, usar `id_producto` o `codigo_producto`.
+        - Estados permitidos: Pagada, Completada, Pendiente, Cotizacion.
+        - Máximo 100 líneas por venta.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StoreExternalSaleRequest'
+            example:
+              referencia_externa: ORD-2025-00042
+              fecha: "2025-06-10"
+              estado: Pagada
+              sucursal: Sucursal Centro
+              id_bodega: 1
+              id_documento: 5
+              id_canal: 2
+              forma_pago: Efectivo
+              monto_pago: 150.75
+              detalles:
+                - codigo_producto: PROD-001
+                  cantidad: 2
+                  precio: 75.00
+      responses:
+        '201':
+          description: Venta creada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleCreateResponse'
+        '200':
+          description: Venta ya existente (idempotencia)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleCreateResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          description: Error de validación o regla de negocio
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /sales/{id}:
     get:
       tags:
@@ -140,6 +218,54 @@ paths:
           $ref: '#/components/responses/NotFound'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      tags:
+        - Ventas
+      summary: Actualizar venta pendiente o cotización
+      description: |
+        Actualiza una venta existente. Solo se permiten ventas en estado Pendiente, Cotizacion o Pre-venta.
+        No se pueden actualizar ventas Anuladas ni ventas con documento fiscal emitido.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID de la venta a actualizar
+          schema:
+            type: integer
+            example: 123
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateExternalSaleRequest'
+            example:
+              estado: Pendiente
+              observaciones: Actualización desde ERP
+              detalles:
+                - codigo_producto: PROD-001
+                  cantidad: 3
+                  precio: 70.00
+      responses:
+        '200':
+          description: Venta actualizada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          description: Estado no permitido o error de validación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -329,6 +455,149 @@ paths:
               schema:
                 $ref: '#/components/schemas/InventorySummaryResponse'
 
+  /returns:
+    get:
+      tags:
+        - Devoluciones
+      summary: Listar devoluciones de ventas
+      description: Obtiene una lista paginada de devoluciones con filtros opcionales.
+      parameters:
+        - name: fecha_inicio
+          in: query
+          description: Fecha de inicio (Y-m-d)
+          schema:
+            type: string
+            format: date
+            example: "2024-01-01"
+        - name: fecha_fin
+          in: query
+          description: Fecha de fin (Y-m-d)
+          schema:
+            type: string
+            format: date
+            example: "2024-12-31"
+        - name: id_venta
+          in: query
+          description: ID de la venta original
+          schema:
+            type: integer
+            example: 12345
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 100
+      responses:
+        '200':
+          description: Lista de devoluciones obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReturnsListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /returns/{id}:
+    get:
+      tags:
+        - Devoluciones
+      summary: Obtener devolución específica
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 789
+      responses:
+        '200':
+          description: Devolución obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReturnResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /returns/summary:
+    get:
+      tags:
+        - Devoluciones
+      summary: Resumen de devoluciones
+      parameters:
+        - name: fecha_inicio
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: fecha_fin
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Resumen de devoluciones obtenido exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReturnsSummaryResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /packages/import:
+    post:
+      tags:
+        - Paquetes
+      summary: Importar paquetes en lote
+      description: |
+        Crea paquetes en estado "En bodega". Por cada ítem debe enviarse `id_sucursal` o `sucursal`.
+        Si ya existe un paquete con el mismo `wr` en la empresa, el ítem se omite (skipped).
+        Máximo 500 ítems por solicitud.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PackagesImportRequest'
+      responses:
+        '200':
+          description: Procesamiento completado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PackagesImportResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          description: La empresa no tiene usuario activo para registrar paquetes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+
 components:
   securitySchemes:
     ApiKeyAuth:
@@ -407,10 +676,207 @@ components:
         - has_next
         - has_prev
 
+    # Esquemas de solicitud de ventas
+    ExternalSaleDetailInput:
+      type: object
+      required:
+        - cantidad
+      properties:
+        id:
+          type: integer
+          description: ID de línea de detalle (solo en actualización)
+        id_producto:
+          type: integer
+          description: ID del producto (obligatorio si no se envía codigo_producto)
+        codigo_producto:
+          type: string
+          description: Código/SKU del producto (obligatorio si no se envía id_producto)
+        cantidad:
+          type: number
+          minimum: 0.0001
+        precio:
+          type: number
+          minimum: 0
+          description: Precio unitario con IVA (opcional, usa precio del producto)
+        descuento:
+          type: number
+          minimum: 0
+        id_presentacion:
+          type: integer
+        porcentaje_impuesto:
+          type: number
+          minimum: 0
+          maximum: 100
+
+    StoreExternalSaleRequest:
+      type: object
+      required:
+        - fecha
+        - estado
+        - id_bodega
+        - id_documento
+        - detalles
+      properties:
+        referencia_externa:
+          type: string
+          description: Referencia del sistema externo (idempotencia)
+        referencia:
+          type: string
+          description: Alias de referencia_externa
+        fecha:
+          type: string
+          format: date
+        estado:
+          type: string
+          enum: [Pagada, Completada, Pendiente, Cotizacion]
+        id_sucursal:
+          type: integer
+          description: Obligatorio si no se envía sucursal
+        sucursal:
+          type: string
+          description: Nombre de sucursal activa. Obligatorio si no se envía id_sucursal
+        id_bodega:
+          type: integer
+        id_documento:
+          type: integer
+        id_canal:
+          type: integer
+          description: Obligatorio salvo cotizaciones
+        id_cliente:
+          type: integer
+          description: Obligatorio para ventas Pendiente
+        cotizacion:
+          type: boolean
+        fecha_expiracion:
+          type: string
+          format: date
+        forma_pago:
+          type: string
+        observaciones:
+          type: string
+          maxLength: 1000
+        monto_pago:
+          type: number
+          minimum: 0
+        cambio:
+          type: number
+          minimum: 0
+        detalles:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/ExternalSaleDetailInput'
+
+    UpdateExternalSaleRequest:
+      type: object
+      properties:
+        fecha:
+          type: string
+          format: date
+        estado:
+          type: string
+          enum: [Pagada, Completada, Pendiente, Cotizacion, Pre-venta]
+        id_sucursal:
+          type: integer
+        sucursal:
+          type: string
+        id_bodega:
+          type: integer
+        id_documento:
+          type: integer
+        id_canal:
+          type: integer
+        id_cliente:
+          type: integer
+          nullable: true
+        cotizacion:
+          type: boolean
+        fecha_expiracion:
+          type: string
+          format: date
+          nullable: true
+        forma_pago:
+          type: string
+          nullable: true
+        observaciones:
+          type: string
+          maxLength: 1000
+          nullable: true
+        monto_pago:
+          type: number
+          minimum: 0
+          nullable: true
+        cambio:
+          type: number
+          minimum: 0
+          nullable: true
+        detalles:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/ExternalSaleDetailInput'
+
+    SaleCreateResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/Sale'
+            meta:
+              type: object
+              properties:
+                empresa:
+                  type: string
+                timestamp:
+                  type: string
+                  format: date-time
+                idempotent:
+                  type: boolean
+
+    RateLimitResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                requests_used:
+                  type: integer
+                max_requests:
+                  type: integer
+                remaining_requests:
+                  type: integer
+                reset_time:
+                  type: string
+                  format: date-time
+                window_minutes:
+                  type: integer
+                limits:
+                  type: object
+                  properties:
+                    standard:
+                      type: integer
+                    with_date_filters:
+                      type: integer
+                current_limit_type:
+                  type: string
+                  enum: [standard, with_date_filters]
+                empresa_id:
+                  type: integer
+                empresa_nombre:
+                  type: string
+
     # Esquemas de Ventas
     Sale:
       type: object
       properties:
+        id:
+          type: integer
+          example: 12345
         fecha:
           type: string
           format: date
@@ -419,6 +885,17 @@ components:
           type: string
           nullable: true
           example: "FAC-001"
+        referencia:
+          type: string
+          nullable: true
+          example: "ORD-2025-00042"
+        referencia_externa:
+          type: string
+          nullable: true
+          example: "ORD-2025-00042"
+        cotizacion:
+          type: boolean
+          example: false
         estado:
           type: string
           enum: [Completada, Pendiente, Anulada, Cotizacion]
@@ -515,6 +992,224 @@ components:
         - cantidad
         - precio
         - total
+
+    # Esquemas de Devoluciones
+    Return:
+      type: object
+      properties:
+        id:
+          type: integer
+        fecha:
+          type: string
+          format: date
+        correlativo:
+          type: string
+        tipo:
+          type: string
+        sub_total:
+          type: number
+        total:
+          type: number
+        iva:
+          type: number
+        observaciones:
+          type: string
+        estado:
+          type: string
+          enum: [Confirmada, Anulada]
+        id_venta:
+          type: integer
+        nombre_cliente:
+          type: string
+        nombre_usuario:
+          type: string
+        nombre_documento:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        detalles:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReturnDetail'
+
+    ReturnDetail:
+      type: object
+      properties:
+        nombre_producto:
+          type: string
+        codigo_producto:
+          type: string
+        marca_producto:
+          type: string
+        cantidad:
+          type: number
+        precio:
+          type: number
+        total:
+          type: number
+
+    ReturnsListResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/Return'
+            pagination:
+              $ref: '#/components/schemas/Pagination'
+
+    ReturnResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/Return'
+
+    ReturnsSummaryResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                total_devoluciones:
+                  type: integer
+                total_monto:
+                  type: number
+                promedio_devolucion:
+                  type: number
+                periodo:
+                  type: object
+                  properties:
+                    fecha_inicio:
+                      type: string
+                      format: date
+                      nullable: true
+                    fecha_fin:
+                      type: string
+                      format: date
+                      nullable: true
+
+    # Esquemas de Paquetes
+    PackageImportItem:
+      type: object
+      required:
+        - cliente
+        - codigo_asesor
+        - wr
+        - guia
+        - piezas
+        - embalaje
+        - peso
+        - precio
+        - cuenta_a_terceros
+        - otros
+        - total
+      properties:
+        id_sucursal:
+          type: integer
+          description: Prioridad sobre sucursal
+        sucursal:
+          type: string
+          description: Obligatorio si no se envía id_sucursal
+        cliente:
+          type: string
+        codigo_asesor:
+          type: string
+        wr:
+          type: string
+        guia:
+          type: string
+        piezas:
+          type: number
+        embalaje:
+          type: string
+        peso:
+          type: number
+        precio:
+          type: number
+        cuenta_a_terceros:
+          type: number
+        otros:
+          type: number
+        total:
+          type: number
+        transportista:
+          type: string
+          nullable: true
+        consignatario:
+          type: string
+          nullable: true
+        transportador:
+          type: string
+          nullable: true
+        seguimiento:
+          type: string
+          nullable: true
+        volumen:
+          type: number
+          nullable: true
+        nota:
+          type: string
+          nullable: true
+
+    PackagesImportRequest:
+      type: object
+      required:
+        - packages
+      properties:
+        packages:
+          type: array
+          minItems: 1
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/PackageImportItem'
+
+    PackagesImportResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        created:
+          type: integer
+        skipped:
+          type: integer
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              index:
+                type: integer
+              wr:
+                type: string
+                nullable: true
+              message:
+                type: string
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              index:
+                type: integer
+              wr:
+                type: string
+                nullable: true
+              status:
+                type: string
+                enum: [created, skipped]
+              id:
+                type: integer
+                nullable: true
 
     # Esquemas de Inventario
     Product:
@@ -818,7 +1513,7 @@ components:
             $ref: '#/components/schemas/ErrorResponse'
           example:
             success: false
-            error: "Rate limit excedido. Máximo 1000 requests por hora (2000 con filtros de fecha)"
+            error: "Rate limit excedido. Máximo 1000 requests por hora (2000 con filtros de fecha)."
             code: 429
 
     InternalServerError:

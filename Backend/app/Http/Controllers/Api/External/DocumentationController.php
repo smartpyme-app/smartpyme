@@ -37,8 +37,8 @@ class DocumentationController extends Controller
             "openapi" => "3.0.0",
             "info" => [
                 "title" => "SmartPYME External API",
-                "description" => "API Externa para proveedores terceros - Consulta de ventas, inventario, devoluciones e importación de paquetes. Límites: 1000/2000 requests por hora.",
-                "version" => "1.3.0-" . time(),
+                "description" => "API Externa para proveedores terceros - Consulta y registro de ventas, consulta de inventario y devoluciones, e importación de paquetes. Límites: 1000/2000 requests por hora.",
+                "version" => "1.4.0-" . time(),
             ],
             "servers" => [
                 [
@@ -65,7 +65,7 @@ class DocumentationController extends Controller
                 ],
                 [
                     "name" => "Ventas",
-                    "description" => "Endpoints para consultar información de ventas"
+                    "description" => "Endpoints para consultar, crear y actualizar ventas"
                 ],
                 [
                     "name" => "Inventario",
@@ -344,6 +344,264 @@ class DocumentationController extends Controller
                                 "description" => "Rate limit excedido"
                             ]
                         ]
+                    ],
+                    "post" => [
+                        "tags" => ["Ventas"],
+                        "summary" => "Crear venta (facturación)",
+                        "description" => "Crea y procesa una venta usando la misma lógica de facturación interna. Si se envía **referencia_externa** o **referencia** y ya existe una venta con ese valor en la empresa, la solicitud es idempotente y devuelve la venta existente (HTTP 200). Debe enviarse **id_sucursal** o **sucursal** (nombre). Los productos en **detalles** se identifican por **id_producto** o **codigo_producto**. Estados permitidos al crear: Pagada, Completada, Pendiente, Cotizacion. Máximo 100 líneas por venta.",
+                        "security" => [["ApiKeyAuth" => []]],
+                        "requestBody" => [
+                            "required" => true,
+                            "content" => [
+                                "application/json" => [
+                                    "schema" => [
+                                        "type" => "object",
+                                        "required" => ["fecha", "estado", "id_bodega", "id_documento", "detalles"],
+                                        "properties" => [
+                                            "referencia_externa" => [
+                                                "type" => "string",
+                                                "nullable" => true,
+                                                "description" => "Referencia del sistema externo (idempotencia). Alias de referencia.",
+                                                "example" => "ORD-2025-00042"
+                                            ],
+                                            "referencia" => [
+                                                "type" => "string",
+                                                "nullable" => true,
+                                                "description" => "Referencia del sistema externo (idempotencia).",
+                                                "example" => "ORD-2025-00042"
+                                            ],
+                                            "fecha" => [
+                                                "type" => "string",
+                                                "format" => "date",
+                                                "description" => "Fecha de la venta (Y-m-d)",
+                                                "example" => "2025-06-10"
+                                            ],
+                                            "estado" => [
+                                                "type" => "string",
+                                                "enum" => ["Pagada", "Completada", "Pendiente", "Cotizacion"],
+                                                "example" => "Pagada"
+                                            ],
+                                            "id_sucursal" => [
+                                                "type" => "integer",
+                                                "description" => "ID de sucursal. Obligatorio si no se envía sucursal.",
+                                                "example" => 3
+                                            ],
+                                            "sucursal" => [
+                                                "type" => "string",
+                                                "description" => "Nombre de la sucursal (activa). Obligatorio si no se envía id_sucursal.",
+                                                "example" => "Sucursal Centro"
+                                            ],
+                                            "id_bodega" => [
+                                                "type" => "integer",
+                                                "description" => "ID de bodega de la empresa",
+                                                "example" => 1
+                                            ],
+                                            "id_documento" => [
+                                                "type" => "integer",
+                                                "description" => "ID del tipo de documento (factura, ticket, etc.)",
+                                                "example" => 5
+                                            ],
+                                            "id_canal" => [
+                                                "type" => "integer",
+                                                "nullable" => true,
+                                                "description" => "ID del canal de venta. Obligatorio salvo cotizaciones.",
+                                                "example" => 2
+                                            ],
+                                            "id_cliente" => [
+                                                "type" => "integer",
+                                                "nullable" => true,
+                                                "description" => "ID del cliente. Obligatorio para ventas Pendiente.",
+                                                "example" => 100
+                                            ],
+                                            "cotizacion" => [
+                                                "type" => "boolean",
+                                                "nullable" => true,
+                                                "description" => "Marcar como cotización (se fuerza si estado=Cotizacion).",
+                                                "example" => false
+                                            ],
+                                            "fecha_expiracion" => [
+                                                "type" => "string",
+                                                "format" => "date",
+                                                "nullable" => true,
+                                                "example" => "2025-07-10"
+                                            ],
+                                            "forma_pago" => [
+                                                "type" => "string",
+                                                "nullable" => true,
+                                                "example" => "Efectivo"
+                                            ],
+                                            "observaciones" => [
+                                                "type" => "string",
+                                                "nullable" => true,
+                                                "maxLength" => 1000
+                                            ],
+                                            "monto_pago" => [
+                                                "type" => "number",
+                                                "nullable" => true,
+                                                "minimum" => 0,
+                                                "example" => 150.75
+                                            ],
+                                            "cambio" => [
+                                                "type" => "number",
+                                                "nullable" => true,
+                                                "minimum" => 0,
+                                                "example" => 0
+                                            ],
+                                            "detalles" => [
+                                                "type" => "array",
+                                                "minItems" => 1,
+                                                "maxItems" => 100,
+                                                "items" => [
+                                                    "type" => "object",
+                                                    "required" => ["cantidad"],
+                                                    "properties" => [
+                                                        "id_producto" => [
+                                                            "type" => "integer",
+                                                            "description" => "ID del producto. Obligatorio si no se envía codigo_producto.",
+                                                            "example" => 456
+                                                        ],
+                                                        "codigo_producto" => [
+                                                            "type" => "string",
+                                                            "description" => "Código/SKU del producto. Obligatorio si no se envía id_producto.",
+                                                            "example" => "PROD-001"
+                                                        ],
+                                                        "cantidad" => [
+                                                            "type" => "number",
+                                                            "minimum" => 0.0001,
+                                                            "example" => 2
+                                                        ],
+                                                        "precio" => [
+                                                            "type" => "number",
+                                                            "nullable" => true,
+                                                            "minimum" => 0,
+                                                            "description" => "Precio unitario con IVA. Si se omite, usa el precio del producto.",
+                                                            "example" => 75.00
+                                                        ],
+                                                        "descuento" => [
+                                                            "type" => "number",
+                                                            "nullable" => true,
+                                                            "minimum" => 0,
+                                                            "example" => 0
+                                                        ],
+                                                        "id_presentacion" => [
+                                                            "type" => "integer",
+                                                            "nullable" => true
+                                                        ],
+                                                        "porcentaje_impuesto" => [
+                                                            "type" => "number",
+                                                            "nullable" => true,
+                                                            "minimum" => 0,
+                                                            "maximum" => 100
+                                                        ]
+                                                    ]
+                                                ]
+                                            ]
+                                        ]
+                                    ],
+                                    "example" => [
+                                        "referencia_externa" => "ORD-2025-00042",
+                                        "fecha" => "2025-06-10",
+                                        "estado" => "Pagada",
+                                        "sucursal" => "Sucursal Centro",
+                                        "id_bodega" => 1,
+                                        "id_documento" => 5,
+                                        "id_canal" => 2,
+                                        "forma_pago" => "Efectivo",
+                                        "monto_pago" => 150.75,
+                                        "detalles" => [
+                                            [
+                                                "codigo_producto" => "PROD-001",
+                                                "cantidad" => 2,
+                                                "precio" => 75.00
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ]
+                        ],
+                        "responses" => [
+                            "201" => [
+                                "description" => "Venta creada exitosamente",
+                                "content" => [
+                                    "application/json" => [
+                                        "schema" => [
+                                            "type" => "object",
+                                            "properties" => [
+                                                "success" => ["type" => "boolean", "example" => true],
+                                                "data" => [
+                                                    "type" => "object",
+                                                    "description" => "Venta creada (SaleResource)",
+                                                    "properties" => [
+                                                        "id" => ["type" => "integer", "example" => 12345],
+                                                        "fecha" => ["type" => "string", "format" => "date", "example" => "2025-06-10"],
+                                                        "correlativo" => ["type" => "string", "example" => "FAC-001234"],
+                                                        "estado" => ["type" => "string", "example" => "Pagada"],
+                                                        "total" => ["type" => "number", "example" => 150.75],
+                                                        "referencia_externa" => ["type" => "string", "example" => "ORD-2025-00042"]
+                                                    ]
+                                                ],
+                                                "meta" => [
+                                                    "type" => "object",
+                                                    "properties" => [
+                                                        "empresa" => ["type" => "string", "example" => "Mi Empresa"],
+                                                        "timestamp" => ["type" => "string", "format" => "date-time"],
+                                                        "idempotent" => ["type" => "boolean", "example" => false]
+                                                    ]
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ],
+                            "200" => [
+                                "description" => "Venta ya existente (idempotencia por referencia_externa/referencia)",
+                                "content" => [
+                                    "application/json" => [
+                                        "schema" => [
+                                            "type" => "object",
+                                            "properties" => [
+                                                "success" => ["type" => "boolean", "example" => true],
+                                                "data" => ["type" => "object"],
+                                                "meta" => [
+                                                    "type" => "object",
+                                                    "properties" => [
+                                                        "idempotent" => ["type" => "boolean", "example" => true]
+                                                    ]
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ],
+                            "400" => [
+                                "description" => "Solicitud inválida"
+                            ],
+                            "401" => [
+                                "description" => "No autorizado - API key inválido o empresa inactiva"
+                            ],
+                            "422" => [
+                                "description" => "Error de validación o regla de negocio (stock, documento fiscal, etc.)",
+                                "content" => [
+                                    "application/json" => [
+                                        "schema" => [
+                                            "type" => "object",
+                                            "properties" => [
+                                                "success" => ["type" => "boolean", "example" => false],
+                                                "error" => ["type" => "string", "example" => "Solicitud inválida"],
+                                                "details" => ["type" => "object"],
+                                                "code" => ["type" => "integer", "example" => 422]
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ],
+                            "429" => [
+                                "description" => "Rate limit excedido"
+                            ],
+                            "500" => [
+                                "description" => "Error interno del servidor"
+                            ]
+                        ]
                     ]
                 ],
                 "/sales/{id}" => [
@@ -370,6 +628,140 @@ class DocumentationController extends Controller
                             ],
                             "404" => [
                                 "description" => "Venta no encontrada"
+                            ]
+                        ]
+                    ],
+                    "put" => [
+                        "tags" => ["Ventas"],
+                        "summary" => "Actualizar venta pendiente o cotización",
+                        "description" => "Actualiza una venta existente. Solo se permiten ventas en estado **Pendiente**, **Cotizacion** o **Pre-venta**. No se pueden actualizar ventas **Anuladas** ni ventas con documento fiscal emitido. Todos los campos del cuerpo son opcionales; si se envía **detalles**, reemplaza las líneas de la venta (mínimo 1, máximo 100).",
+                        "security" => [["ApiKeyAuth" => []]],
+                        "parameters" => [
+                            [
+                                "name" => "id",
+                                "in" => "path",
+                                "required" => true,
+                                "description" => "ID de la venta a actualizar",
+                                "schema" => [
+                                    "type" => "integer",
+                                    "example" => 123
+                                ]
+                            ]
+                        ],
+                        "requestBody" => [
+                            "required" => true,
+                            "content" => [
+                                "application/json" => [
+                                    "schema" => [
+                                        "type" => "object",
+                                        "properties" => [
+                                            "fecha" => [
+                                                "type" => "string",
+                                                "format" => "date",
+                                                "example" => "2025-06-10"
+                                            ],
+                                            "estado" => [
+                                                "type" => "string",
+                                                "enum" => ["Pagada", "Completada", "Pendiente", "Cotizacion", "Pre-venta"],
+                                                "example" => "Pendiente"
+                                            ],
+                                            "id_sucursal" => ["type" => "integer", "example" => 3],
+                                            "sucursal" => ["type" => "string", "example" => "Sucursal Centro"],
+                                            "id_bodega" => ["type" => "integer", "example" => 1],
+                                            "id_documento" => ["type" => "integer", "example" => 5],
+                                            "id_canal" => ["type" => "integer", "nullable" => true, "example" => 2],
+                                            "id_cliente" => ["type" => "integer", "nullable" => true, "example" => 100],
+                                            "cotizacion" => ["type" => "boolean", "nullable" => true],
+                                            "fecha_expiracion" => ["type" => "string", "format" => "date", "nullable" => true],
+                                            "forma_pago" => ["type" => "string", "nullable" => true],
+                                            "observaciones" => ["type" => "string", "nullable" => true, "maxLength" => 1000],
+                                            "monto_pago" => ["type" => "number", "nullable" => true, "minimum" => 0],
+                                            "cambio" => ["type" => "number", "nullable" => true, "minimum" => 0],
+                                            "detalles" => [
+                                                "type" => "array",
+                                                "minItems" => 1,
+                                                "maxItems" => 100,
+                                                "items" => [
+                                                    "type" => "object",
+                                                    "required" => ["cantidad"],
+                                                    "properties" => [
+                                                        "id" => [
+                                                            "type" => "integer",
+                                                            "description" => "ID de la línea de detalle existente (opcional)",
+                                                            "example" => 9001
+                                                        ],
+                                                        "id_producto" => ["type" => "integer", "example" => 456],
+                                                        "codigo_producto" => ["type" => "string", "example" => "PROD-001"],
+                                                        "cantidad" => ["type" => "number", "minimum" => 0.0001, "example" => 3],
+                                                        "precio" => ["type" => "number", "nullable" => true, "minimum" => 0],
+                                                        "descuento" => ["type" => "number", "nullable" => true, "minimum" => 0],
+                                                        "id_presentacion" => ["type" => "integer", "nullable" => true],
+                                                        "porcentaje_impuesto" => ["type" => "number", "nullable" => true, "minimum" => 0, "maximum" => 100]
+                                                    ]
+                                                ]
+                                            ]
+                                        ]
+                                    ],
+                                    "example" => [
+                                        "estado" => "Pendiente",
+                                        "observaciones" => "Actualización desde ERP",
+                                        "detalles" => [
+                                            [
+                                                "codigo_producto" => "PROD-001",
+                                                "cantidad" => 3,
+                                                "precio" => 70.00
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ]
+                        ],
+                        "responses" => [
+                            "200" => [
+                                "description" => "Venta actualizada exitosamente",
+                                "content" => [
+                                    "application/json" => [
+                                        "schema" => [
+                                            "type" => "object",
+                                            "properties" => [
+                                                "success" => ["type" => "boolean", "example" => true],
+                                                "data" => ["type" => "object", "description" => "Venta actualizada (SaleResource)"],
+                                                "meta" => [
+                                                    "type" => "object",
+                                                    "properties" => [
+                                                        "empresa" => ["type" => "string"],
+                                                        "timestamp" => ["type" => "string", "format" => "date-time"]
+                                                    ]
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ],
+                            "401" => [
+                                "description" => "No autorizado"
+                            ],
+                            "404" => [
+                                "description" => "Venta no encontrada"
+                            ],
+                            "422" => [
+                                "description" => "Estado no permitido, venta anulada, documento fiscal emitido o error de validación",
+                                "content" => [
+                                    "application/json" => [
+                                        "schema" => [
+                                            "type" => "object",
+                                            "properties" => [
+                                                "success" => ["type" => "boolean", "example" => false],
+                                                "error" => ["type" => "string", "example" => "Solo se pueden actualizar ventas en estado Pendiente, Cotizacion o Pre-venta"],
+                                                "details" => ["type" => "object"],
+                                                "code" => ["type" => "integer", "example" => 422]
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ],
+                            "500" => [
+                                "description" => "Error interno del servidor"
                             ]
                         ]
                     ]
