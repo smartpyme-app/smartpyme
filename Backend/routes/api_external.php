@@ -27,8 +27,10 @@ Route::prefix('external/v1')->middleware(['external.api'])->group(function () {
     // Rutas de ventas
     Route::prefix('sales')->group(function () {
         Route::get('/', [SalesController::class, 'index'])->name('external.sales.index');
+        Route::post('/', [SalesController::class, 'store'])->name('external.sales.store');
         Route::get('/summary', [SalesController::class, 'summary'])->name('external.sales.summary');
         Route::get('/{id}', [SalesController::class, 'show'])->name('external.sales.show');
+        Route::put('/{id}', [SalesController::class, 'update'])->name('external.sales.update');
     });
     
     // Rutas de inventario

@@ -22,7 +22,7 @@ class IndexSalesRequest extends FormRequest
         return [
             'fecha_inicio' => ['nullable', 'date', 'date_format:Y-m-d'],
             'fecha_fin' => ['nullable', 'date', 'date_format:Y-m-d', 'after_or_equal:fecha_inicio'],
-            'estado' => ['nullable', 'string', 'in:Completada,Pendiente,Anulada,Cotizacion'],
+            'estado' => ['nullable', 'string', 'in:Completada,Pagada,Pendiente,Anulada,Cotizacion,Pre-venta,Consigna'],
             'page' => ['nullable', 'integer', 'min:1'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:200'],
             'order_by' => ['nullable', 'string', 'in:fecha,total,correlativo,created_at'],
@@ -41,7 +41,7 @@ class IndexSalesRequest extends FormRequest
             'fecha_fin.date' => 'La fecha de fin debe ser una fecha válida.',
             'fecha_fin.date_format' => 'La fecha de fin debe tener el formato Y-m-d.',
             'fecha_fin.after_or_equal' => 'La fecha de fin debe ser igual o posterior a la fecha de inicio.',
-            'estado.in' => 'El estado debe ser uno de: Completada, Pendiente, Anulada, Cotizacion.',
+            'estado.in' => 'El estado debe ser uno de: Completada, Pagada, Pendiente, Anulada, Cotizacion, Pre-venta, Consigna.',
             'page.integer' => 'El número de página debe ser un número entero.',
             'page.min' => 'El número de página debe ser al menos 1.',
             'per_page.integer' => 'Los registros por página deben ser un número entero.',
