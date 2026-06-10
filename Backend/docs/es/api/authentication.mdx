@@ -1,0 +1,76 @@
+---
+title: "Cómo autenticarte con la API externa de SmartPyme"
+sidebarTitle: "Autenticación"
+description: "Aprende cómo obtener tu API Key de SmartPyme y enviarla como token Bearer en el encabezado Authorization para autenticar cada solicitud a la API."
+---
+
+La API externa de SmartPyme usa autenticación mediante API Key. Incluyes tu clave como token Bearer en el encabezado `Authorization` de cada solicitud: no se involucran tokens de sesión, cookies ni flujos OAuth. Todas las solicitudes deben autenticarse; la API no expone ningún endpoint público.
+
+## Cómo obtener tu API Key
+
+Tu API Key se genera por empresa dentro de la aplicación web de SmartPyme. Sigue estos pasos para obtenerla:
+
+1. Inicia sesión en [app.smartpyme.site](https://app.smartpyme.site).
+2. Haz clic en el nombre de tu empresa en la esquina superior derecha y luego ve a **Configuraciones** (Settings).
+3. Navega a la pestaña **Mi cuenta → Integraciones**.
+4. Copia la API Key que se muestra en esa página.
+
+## Cómo usar tu API Key
+
+Incluye tu API Key como token Bearer en el encabezado `Authorization` de cada solicitud. No se requieren otros encabezados para la autenticación.
+
+<CodeGroup>
+
+```bash curl
+curl -H "Authorization: Bearer YOUR_API_KEY" \
+     "https://api.smartpyme.site/api/external/v1/sales"
+```
+
+```python Python
+import requests
+
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY"
+}
+
+response = requests.get(
+    "https://api.smartpyme.site/api/external/v1/sales",
+    headers=headers
+)
+print(response.json())
+```
+
+```javascript JavaScript
+const response = await fetch(
+  "https://api.smartpyme.site/api/external/v1/sales",
+  {
+    headers: {
+      "Authorization": "Bearer YOUR_API_KEY"
+    }
+  }
+);
+const data = await response.json();
+console.log(data);
+```
+
+</CodeGroup>
+
+## Respuestas de error
+
+Si tu API Key es inválida, está ausente o la empresa asociada está inactiva, la API devuelve HTTP `401` con el siguiente cuerpo:
+
+```json
+{
+  "success": false,
+  "error": "API key inválido o empresa inactiva",
+  "code": 401
+}
+```
+
+<Warning>
+  Mantén tu API Key en privado. Otorga acceso a todos los datos de ventas e inventario de tu empresa. No la incluyas en código fuente ni la expongas públicamente.
+</Warning>
+
+<Tip>
+  Cada API Key está vinculada a una única empresa. Si administras varias empresas, cada una tiene su propia clave.
+</Tip>

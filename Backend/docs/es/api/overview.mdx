@@ -1,0 +1,89 @@
+---
+title: "API externa de SmartPyme: guía de acceso a datos B2B"
+sidebarTitle: "Descripción general"
+description: "La API externa de SmartPyme ofrece a proveedores externos acceso de solo lectura a datos de ventas, inventario y devoluciones mediante autenticación con API Key."
+---
+
+La API externa de SmartPyme es una API REST diseñada para integraciones B2B: permite a proveedores, plataformas de analítica y otros terceros acceder de forma programática a los datos de ventas, inventario y devoluciones de los negocios que usan SmartPyme. Todas las solicitudes utilizan HTTPS estándar y devuelven respuestas en JSON.
+
+## Qué ofrece la API
+
+La API te da acceso de solo lectura a tres dominios de datos principales: **ventas**, **inventario** y **devoluciones**. Cada dominio expone endpoints de listado, detalle y resumen para que puedas obtener exactamente el nivel de detalle que tu integración necesite. La API está construida específicamente para escenarios como reportes de sell-through para proveedores, dashboards de analítica externos y conciliación automatizada de inventarios.
+
+## URL base
+
+Todas las solicitudes se dirigen a la siguiente URL base:
+
+```
+https://api.smartpyme.site/api/external/v1/
+```
+
+## Endpoints disponibles
+
+| Endpoint | Descripción |
+|---|---|
+| `GET /sales` | Lista ventas con filtros |
+| `GET /sales/{id}` | Obtiene una venta específica |
+| `GET /sales/summary` | Estadísticas de resumen de ventas |
+| `GET /inventory` | Lista productos con stock |
+| `GET /inventory/{id}` | Obtiene un producto específico |
+| `GET /inventory/summary` | Estadísticas de resumen de inventario |
+| `GET /returns` | Lista devoluciones |
+| `GET /returns/{id}` | Obtiene una devolución específica |
+| `GET /returns/summary` | Estadísticas de resumen de devoluciones |
+| `GET /system/rate-limit` | Consulta tu estado actual de límite de uso |
+| `POST /packages/import` | Importa datos de paquetes desde un sistema externo |
+
+## Envoltura estándar de respuesta
+
+Cada respuesta exitosa de la API envuelve su contenido en una envoltura consistente. El campo `data` contiene los registros que solicitaste, `pagination` describe la página actual de resultados y `meta` proporciona contexto sobre la empresa y los filtros aplicados.
+
+```json
+{
+  "success": true,
+  "data": [...],
+  "pagination": {
+    "current_page": 1,
+    "per_page": 100,
+    "total": 1250,
+    "total_pages": 13,
+    "has_next": true,
+    "has_prev": false,
+    "from": 1,
+    "to": 100
+  },
+  "meta": {
+    "empresa": "Mi Empresa S.A.",
+    "timestamp": "2025-01-15T10:30:00Z",
+    "filters_applied": {}
+  }
+}
+```
+
+## Formato de respuesta de error
+
+Cuando una solicitud falla, la API devuelve una envoltura con `success: false`, un mensaje `error` legible para humanos y el código HTTP `code` correspondiente.
+
+```json
+{
+  "success": false,
+  "error": "API key inválido o empresa inactiva",
+  "code": 401
+}
+```
+
+## Códigos de estado HTTP
+
+| Código | Significado |
+|---|---|
+| `200` | Éxito |
+| `400` | Bad Request — parámetros inválidos |
+| `401` | Unauthorized — API Key inválida o ausente |
+| `403` | Forbidden — empresa inactiva |
+| `404` | Not Found |
+| `429` | Too Many Requests — límite de uso excedido |
+| `500` | Internal Server Error |
+
+<Note>
+  La mayoría de los endpoints son de solo lectura. La excepción es `POST /packages/import`, que permite la importación masiva de datos de paquetes desde sistemas externos.
+</Note>

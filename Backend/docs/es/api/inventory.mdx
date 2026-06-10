@@ -1,0 +1,429 @@
+---
+title: "Inventario de SmartPyme: catálogo de productos y niveles de stock"
+sidebarTitle: "Inventario"
+description: "Lista los productos de SmartPyme filtrando por marca, categoría o estado de stock. Los registros incluyen precios, costos y niveles de stock por bodega con resúmenes."
+---
+
+Los endpoints de Inventario te dan acceso programático a tu catálogo completo de productos y a los datos de stock por bodega en SmartPyme. Puedes filtrar por categoría, marca o estado de stock para crear integraciones como alertas de stock bajo, sincronizaciones de catálogo para e-commerce o reportes de costo de mercadería. Todas las solicitudes deben incluir tu API key en el encabezado `Authorization`.
+
+---
+
+## GET /inventory
+
+Devuelve una lista paginada de productos de tu catálogo. Cada registro de producto incluye precio, costo y un arreglo `inventarios` que muestra los niveles de stock actuales desglosados por bodega y sucursal.
+
+<CodeGroup>
+
+```bash cURL
+curl --request GET \
+  --url "https://api.smartpyme.site/api/external/v1/inventory?marca=Dell&con_stock=true&per_page=50" \
+  --header "Authorization: Bearer {api_key}"
+```
+
+```python Python
+import requests
+
+url = "https://api.smartpyme.site/api/external/v1/inventory"
+headers = {"Authorization": "Bearer {api_key}"}
+params = {
+    "marca": "Dell",
+    "con_stock": True,
+    "per_page": 50,
+}
+
+response = requests.get(url, headers=headers, params=params)
+print(response.json())
+```
+
+```javascript JavaScript
+const response = await fetch(
+  "https://api.smartpyme.site/api/external/v1/inventory" +
+    "?marca=Dell&con_stock=true&per_page=50",
+  {
+    method: "GET",
+    headers: { Authorization: "Bearer {api_key}" },
+  }
+);
+const data = await response.json();
+console.log(data);
+```
+
+</CodeGroup>
+
+### Parámetros de consulta
+
+<ParamField query="codigo" type="string">
+  Filtra por SKU o código interno del producto. Realiza una coincidencia parcial.
+</ParamField>
+
+<ParamField query="nombre" type="string">
+  Filtra por nombre del producto. Realiza una coincidencia parcial sin distinguir mayúsculas y minúsculas.
+</ParamField>
+
+<ParamField query="categoria" type="string">
+  Filtra por nombre de categoría. Realiza una coincidencia parcial contra `nombre_categoria`.
+</ParamField>
+
+<ParamField query="marca" type="string">
+  Filtra por nombre de marca. Realiza una coincidencia parcial.
+</ParamField>
+
+<ParamField query="tipo" type="string">
+  Filtra por tipo de producto. Valores aceptados: `Producto`, `Servicio`.
+</ParamField>
+
+<ParamField query="enable" type="integer">
+  Filtra por estado activo. Usa `1` para productos activos y `0` para productos inactivos.
+</ParamField>
+
+<ParamField query="con_stock" type="boolean">
+  Cuando es `true`, devuelve solo los productos con stock mayor a cero en al menos una bodega.
+</ParamField>
+
+<ParamField query="stock_minimo" type="boolean">
+  Cuando es `true`, devuelve solo los productos cuyo stock actual está en o por debajo del umbral de stock mínimo configurado.
+</ParamField>
+
+<ParamField query="page" type="integer">
+  Número de página a obtener. Su valor por defecto es `1`.
+</ParamField>
+
+<ParamField query="per_page" type="integer">
+  Cantidad de registros por página. Acepta valores entre `1` y `200`. Su valor por defecto es `100`.
+</ParamField>
+
+<ParamField query="order_by" type="string">
+  Campo por el cual ordenar los resultados. Valores aceptados: `nombre`, `codigo`, `precio`, `costo`, `created_at`.
+</ParamField>
+
+<ParamField query="order_direction" type="string">
+  Dirección del orden. Valores aceptados: `asc`, `desc`.
+</ParamField>
+
+### Ejemplo de respuesta
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 301,
+      "nombre": "Laptop Dell Inspiron 15",
+      "descripcion": "Laptop 15.6\" Intel Core i5, 8GB RAM, 512GB SSD",
+      "codigo": "LAP-DELL-015",
+      "barcode": "7501234567890",
+      "nombre_categoria": "Electrónicos",
+      "precio": 850.00,
+      "costo": 620.00,
+      "costo_anterior": 610.00,
+      "costo_promedio": 615.50,
+      "marca": "Dell",
+      "tipo": "Producto",
+      "enable": 1,
+      "img": "https://cdn.smartpyme.site/products/lap-dell-015.jpg",
+      "created_at": "2024-06-01T08:00:00Z",
+      "updated_at": "2025-01-10T14:22:00Z",
+      "inventarios": [
+        {
+          "id_producto": 301,
+          "stock": 12,
+          "stock_minimo": 5,
+          "stock_maximo": 50,
+          "nota": null,
+          "nombre_bodega": "Bodega Principal",
+          "nombre_sucursal": "Sucursal Central"
+        },
+        {
+          "id_producto": 301,
+          "stock": 4,
+          "stock_minimo": 2,
+          "stock_maximo": 20,
+          "nota": "Revisar vencimiento",
+          "nombre_bodega": "Bodega Norte",
+          "nombre_sucursal": "Sucursal Norte"
+        }
+      ]
+    }
+  ],
+  "pagination": {
+    "current_page": 1,
+    "per_page": 50,
+    "total": 1,
+    "total_pages": 1,
+    "has_next": false,
+    "has_prev": false
+  },
+  "meta": {
+    "empresa": "Mi Empresa S.A.",
+    "timestamp": "2025-01-31T15:00:00Z",
+    "filters_applied": {
+      "marca": "Dell",
+      "con_stock": true
+    }
+  }
+}
+```
+
+### Campos de la respuesta
+
+<ResponseField name="success" type="boolean">
+  Indica si la solicitud se completó correctamente.
+</ResponseField>
+
+<ResponseField name="data" type="array">
+  Arreglo de objetos de producto que coinciden con los filtros aplicados.
+
+  <Expandable title="Campos del producto">
+    <ResponseField name="id" type="integer">
+      Identificador numérico único del producto.
+    </ResponseField>
+    <ResponseField name="nombre" type="string">
+      Nombre completo del producto que se muestra al usuario.
+    </ResponseField>
+    <ResponseField name="descripcion" type="string">
+      Descripción extendida opcional del producto.
+    </ResponseField>
+    <ResponseField name="codigo" type="string">
+      SKU o código interno del producto usado en tu catálogo.
+    </ResponseField>
+    <ResponseField name="barcode" type="string">
+      Código de barras o EAN asociado al producto, si está configurado.
+    </ResponseField>
+    <ResponseField name="nombre_categoria" type="string">
+      Nombre de la categoría asignada al producto.
+    </ResponseField>
+    <ResponseField name="precio" type="number">
+      Precio de venta actual del producto.
+    </ResponseField>
+    <ResponseField name="costo" type="number">
+      Costo de compra más reciente del producto.
+    </ResponseField>
+    <ResponseField name="costo_anterior" type="number">
+      Costo de compra anterior, conservado para comparar tendencias de costos.
+    </ResponseField>
+    <ResponseField name="costo_promedio" type="number">
+      Costo promedio ponderado calculado a través de todos los lotes de compra.
+    </ResponseField>
+    <ResponseField name="marca" type="string">
+      Nombre de la marca del producto.
+    </ResponseField>
+    <ResponseField name="tipo" type="string">
+      Tipo de producto: `Producto` para bienes físicos o `Servicio` para servicios.
+    </ResponseField>
+    <ResponseField name="enable" type="integer">
+      Indicador de estado activo. `1` significa que el producto está activo; `0` significa que está inactivo.
+    </ResponseField>
+    <ResponseField name="img" type="string">
+      URL de la imagen del producto, si se ha subido una.
+    </ResponseField>
+    <ResponseField name="created_at" type="string">
+      Marca de tiempo en formato ISO 8601 de cuándo se creó el registro del producto.
+    </ResponseField>
+    <ResponseField name="updated_at" type="string">
+      Marca de tiempo en formato ISO 8601 de la actualización más reciente del registro del producto.
+    </ResponseField>
+    <ResponseField name="inventarios" type="array">
+      Niveles de stock para este producto desglosados por bodega y sucursal.
+
+      <Expandable title="Stock por bodega">
+        <ResponseField name="id_producto" type="integer">
+          ID del producto al que pertenece esta entrada de stock.
+        </ResponseField>
+        <ResponseField name="stock" type="number">
+          Cantidad de stock disponible actual en esta bodega. Admite hasta tres decimales.
+        </ResponseField>
+        <ResponseField name="stock_minimo" type="number">
+          Umbral de stock mínimo configurado para este producto en esta bodega. El stock en o por debajo de este nivel coincide con el filtro `stock_minimo`.
+        </ResponseField>
+        <ResponseField name="stock_maximo" type="number">
+          Capacidad de stock máxima configurada para este producto en esta bodega.
+        </ResponseField>
+        <ResponseField name="nota" type="string">
+          Notas opcionales registradas para este producto en esta bodega (por ejemplo, `"Revisar vencimiento"`).
+        </ResponseField>
+        <ResponseField name="nombre_bodega" type="string">
+          Nombre de la bodega que contiene este stock.
+        </ResponseField>
+        <ResponseField name="nombre_sucursal" type="string">
+          Nombre de la sucursal o ubicación a la que pertenece esta bodega.
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+---
+
+## GET /inventory/\{id\}
+
+Recupera un único registro de producto por su ID numérico. La respuesta devuelve el mismo objeto Producto completo descrito anteriormente, incluido el arreglo `inventarios` con los niveles de stock por bodega.
+
+### Parámetro de ruta
+
+<ParamField path="id" type="integer" required>
+  El identificador numérico único del producto que deseas obtener.
+</ParamField>
+
+<CodeGroup>
+
+```bash cURL
+curl --request GET \
+  --url "https://api.smartpyme.site/api/external/v1/inventory/301" \
+  --header "Authorization: Bearer {api_key}"
+```
+
+```python Python
+import requests
+
+product_id = 301
+url = f"https://api.smartpyme.site/api/external/v1/inventory/{product_id}"
+headers = {"Authorization": "Bearer {api_key}"}
+
+response = requests.get(url, headers=headers)
+print(response.json())
+```
+
+```javascript JavaScript
+const productId = 301;
+const response = await fetch(
+  `https://api.smartpyme.site/api/external/v1/inventory/${productId}`,
+  {
+    method: "GET",
+    headers: { Authorization: "Bearer {api_key}" },
+  }
+);
+const data = await response.json();
+console.log(data);
+```
+
+</CodeGroup>
+
+La respuesta envuelve el objeto Producto bajo una clave `data` con `"success": true`. Todos los campos, incluido `inventarios`, son idénticos a la estructura documentada en la respuesta de [GET /inventory](#get-inventory) anterior.
+
+---
+
+## GET /inventory/summary
+
+Devuelve estadísticas agregadas para todo tu catálogo de productos y la posición combinada de stock. Usa este endpoint para obtener una vista rápida del estado del catálogo: cuántos productos están activos, el stock total disponible, el valor total del inventario y qué categorías contienen más productos.
+
+<CodeGroup>
+
+```bash cURL
+curl --request GET \
+  --url "https://api.smartpyme.site/api/external/v1/inventory/summary" \
+  --header "Authorization: Bearer {api_key}"
+```
+
+```python Python
+import requests
+
+url = "https://api.smartpyme.site/api/external/v1/inventory/summary"
+headers = {"Authorization": "Bearer {api_key}"}
+
+response = requests.get(url, headers=headers)
+print(response.json())
+```
+
+```javascript JavaScript
+const response = await fetch(
+  "https://api.smartpyme.site/api/external/v1/inventory/summary",
+  {
+    method: "GET",
+    headers: { Authorization: "Bearer {api_key}" },
+  }
+);
+const data = await response.json();
+console.log(data);
+```
+
+</CodeGroup>
+
+### Ejemplo de respuesta
+
+```json
+{
+  "success": true,
+  "data": {
+    "productos": {
+      "total": 500,
+      "activos": 480,
+      "inactivos": 20
+    },
+    "inventario": {
+      "stock_total": 15750.5,
+      "valor_total": 125000.75,
+      "productos_con_stock": 450,
+      "productos_sin_stock": 30,
+      "productos_stock_bajo": 15
+    },
+    "productos_por_categoria": [
+      { "categoria": "Electrónicos", "cantidad": 150 },
+      { "categoria": "Ropa",         "cantidad": 200 }
+    ]
+  },
+  "meta": {
+    "empresa": "Mi Empresa S.A.",
+    "timestamp": "2025-01-31T15:00:00Z",
+    "filters_applied": {}
+  }
+}
+```
+
+### Campos de la respuesta
+
+<ResponseField name="data.productos.total" type="integer">
+  Número total de productos en tu catálogo, sin importar su estado.
+</ResponseField>
+
+<ResponseField name="data.productos.activos" type="integer">
+  Número de productos actualmente marcados como activos (`enable = 1`).
+</ResponseField>
+
+<ResponseField name="data.productos.inactivos" type="integer">
+  Número de productos actualmente marcados como inactivos (`enable = 0`).
+</ResponseField>
+
+<ResponseField name="data.inventario.stock_total" type="number">
+  Suma de todas las cantidades de stock en todos los productos y bodegas.
+</ResponseField>
+
+<ResponseField name="data.inventario.valor_total" type="number">
+  Valor total del inventario calculado usando el costo promedio de cada producto (`costo_promedio`) multiplicado por su stock actual.
+</ResponseField>
+
+<ResponseField name="data.inventario.productos_con_stock" type="integer">
+  Número de productos distintos que tienen al menos una unidad en stock en alguna bodega.
+</ResponseField>
+
+<ResponseField name="data.inventario.productos_sin_stock" type="integer">
+  Número de productos distintos con stock cero en todas las bodegas.
+</ResponseField>
+
+<ResponseField name="data.inventario.productos_stock_bajo" type="integer">
+  Número de productos cuyo stock actual está en o por debajo del umbral `stock_minimo` configurado en al menos una bodega.
+</ResponseField>
+
+<ResponseField name="data.productos_por_categoria" type="array">
+  Lista de conteos de productos agrupados por categoría.
+
+  <Expandable title="Campos de productos_por_categoria">
+    <ResponseField name="categoria" type="string">
+      Nombre de la categoría de productos.
+    </ResponseField>
+    <ResponseField name="cantidad" type="integer">
+      Número de productos asignados a esta categoría.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="meta.empresa" type="string">
+  Nombre visible de la empresa asociada a tu API key.
+</ResponseField>
+
+<ResponseField name="meta.timestamp" type="string">
+  Marca de tiempo en formato ISO 8601 que indica cuándo se generó el resumen.
+</ResponseField>
+
+<ResponseField name="meta.filters_applied" type="object">
+  Eco de los filtros utilizados para calcular el resumen.
+</ResponseField>

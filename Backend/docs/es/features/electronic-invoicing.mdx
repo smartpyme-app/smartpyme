@@ -1,0 +1,62 @@
+---
+title: "Facturación electrónica (DTE): configuración y uso completos"
+sidebarTitle: "Facturación electrónica"
+description: "Emite documentos tributarios electrónicos (DTE) con validez legal en El Salvador —facturas, CCF, notas de crédito y más— directamente desde SmartPyme."
+---
+
+SmartPyme está integrado directamente con el sistema del Ministerio de Hacienda de El Salvador, lo que te permite generar, firmar y transmitir documentos tributarios electrónicos (DTE) sin salir de tu flujo de trabajo. Cada DTE se firma criptográficamente con tu certificado y se almacena junto a la venta que lo originó para una trazabilidad completa.
+
+## Tipos de documento soportados
+
+Los siguientes tipos de DTE están disponibles en SmartPyme:
+
+| Tipo | Código | Descripción |
+|------|------|-------------|
+| Factura de Consumidor Final | 01 | Ventas a consumidores finales |
+| Comprobante de Crédito Fiscal (CCF) | 03 | Ventas a contribuyentes registrados |
+| Nota de Crédito | 05 | Ajustes por crédito |
+| Nota de Débito | 06 | Ajustes por débito |
+| Factura de Exportación | 11 | Facturas de exportación |
+| Sujeto Excluido | 14 | Compras a sujetos excluidos |
+
+## Requisitos de configuración
+
+Antes de poder emitir DTE, necesitas conectar SmartPyme al portal del Ministerio de Hacienda.
+
+<Steps>
+  <Step title="Obtén tus credenciales del MH">
+    Registra tu negocio en el portal del Ministerio de Hacienda y obtén tu usuario, contraseña y certificado digital de firma (archivo `.p12` o `.pfx`).
+  </Step>
+  <Step title="Ingresa tus credenciales en SmartPyme">
+    Ve a **Configuración → Mi cuenta → Facturación electrónica** e ingresa tu usuario y contraseña del MH, y carga tu archivo de certificado.
+  </Step>
+  <Step title="Define tu ambiente">
+    Elige **Prueba** (ambiente 00) para realizar transmisiones de prueba sin efecto legal, o **Producción** (ambiente 01) para documentos en vivo con validez legal.
+  </Step>
+  <Step title="Configura tu código de establecimiento">
+    Ingresa el código de establecimiento asignado a tu negocio por el Ministerio de Hacienda. Si operas varias sucursales, configura un código separado para cada una.
+  </Step>
+</Steps>
+
+<Warning>
+  Los DTE de producción son documentos fiscales con validez legal. Prueba en el ambiente de Prueba (ambiente 00) antes de cambiar a Producción (ambiente 01).
+</Warning>
+
+## Emisión de un DTE
+
+Cuando creas una venta y el cliente tiene configurado un tipo de documento en su perfil, SmartPyme genera, firma digitalmente y transmite automáticamente el DTE al Ministerio de Hacienda. No necesitas realizar ninguna acción adicional. Una vez que el Ministerio de Hacienda confirma la recepción del documento, SmartPyme registra el sello oficial de aceptación junto a la venta como prueba de aceptación.
+
+## Anulación de un DTE
+
+Si necesitas anular un documento ya transmitido, abre la venta correspondiente y haz clic en **Anular**. SmartPyme envía la solicitud de anulación al Ministerio de Hacienda en tu nombre y actualiza el estado de la venta una vez que se confirma la cancelación.
+
+## Descarga de DTE
+
+Desde la vista de detalle de la venta puedes descargar el DTE en dos formatos:
+
+- **PDF** — una representación legible para compartir con tu cliente.
+- **JSON** — el documento firmado original en el formato aceptado por el Ministerio de Hacienda, útil para tus registros contables o auditorías.
+
+## Modo de contingencia
+
+Si los servicios del Ministerio de Hacienda no están disponibles temporalmente, SmartPyme cambia al modo de contingencia y genera DTE de contingencia localmente. Estos documentos se ponen en cola y se envían automáticamente al Ministerio de Hacienda una vez que se restaura la conectividad, garantizando que tu proceso de ventas nunca se interrumpa.
