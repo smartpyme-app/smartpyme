@@ -9,6 +9,9 @@ use App\Http\Resources\External\SaleResource;
 use Illuminate\Support\Facades\Log;
 use App\Http\Requests\External\Sales\IndexSalesRequest;
 use App\Http\Requests\External\Sales\SummarySalesRequest;
+use App\Http\Requests\External\Sales\StoreExternalSaleRequest;
+use App\Http\Requests\External\Sales\UpdateExternalSaleRequest;
+use App\Services\Ventas\VentaExternalService;
 
 /**
  * @OA\Info(
@@ -41,6 +44,11 @@ use App\Http\Requests\External\Sales\SummarySalesRequest;
 
 class SalesController extends Controller
 {
+    public function __construct(
+        private VentaExternalService $ventaExternalService
+    ) {
+    }
+
     /**
      * @OA\Get(
      *     path="/sales",
@@ -157,7 +165,12 @@ class SalesController extends Controller
             }
 
             if ($request->filled('estado')) {
-                $query->where('estado', $request->estado);
+                $estadoFiltro = $request->estado === 'Completada' ? 'Pagada' : $request->estado;
+                if ($estadoFiltro === 'Cotizacion') {
+                    $query->where('cotizacion', 1);
+                } else {
+                    $query->where('estado', $estadoFiltro);
+                }
             }
 
             // Aplicar ordenamiento
@@ -235,7 +248,7 @@ class SalesController extends Controller
             $venta = Venta::withoutGlobalScopes()
                           ->where('id_empresa', $empresa->id)
                           ->where('id', $ventaId)
-                          ->with(['detalles'])
+                          ->with(['detalles', 'cliente', 'impuestos.impuesto', 'metodos_de_pago'])
                           ->first();
 
             if (!$venta) {
@@ -277,6 +290,86 @@ class SalesController extends Controller
                 'code' => 500
             ], 500);
         }
+    }
+
+    /**
+     * Crear y procesar una venta (facturación).
+     */
+    public function store(StoreExternalSaleRequest $request)
+    {
+        $empresa = $request->attributes->get('empresa');
+        $result = $this->ventaExternalService->create((int) $empresa->id, $request->validated());
+
+        if (!$result['ok']) {
+            return response()->json([
+                'success' => false,
+                'error' => $result['error'],
+                'details' => $result['details'] ?? null,
+                'code' => $result['status'] ?? 422,
+            ], $result['status'] ?? 422);
+        }
+
+        $venta = $result['venta'];
+        if ($venta instanceof Venta) {
+            $venta->makeHidden(['nombre_proyecto']);
+        }
+
+        Log::info('API externa: venta creada', [
+            'empresa_id' => $empresa->id,
+            'venta_id' => $venta instanceof Venta ? $venta->id : null,
+            'idempotent' => !empty($result['idempotent']),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'data' => $venta instanceof Venta ? new SaleResource($venta) : $venta,
+            'meta' => [
+                'empresa' => $empresa->nombre,
+                'timestamp' => now()->toISOString(),
+                'idempotent' => !empty($result['idempotent']),
+            ],
+        ], !empty($result['idempotent']) ? 200 : 201);
+    }
+
+    /**
+     * Actualizar una venta pendiente o cotización.
+     */
+    public function update(UpdateExternalSaleRequest $request, $ventaId)
+    {
+        $empresa = $request->attributes->get('empresa');
+        $result = $this->ventaExternalService->update(
+            (int) $empresa->id,
+            (int) $ventaId,
+            $request->validated()
+        );
+
+        if (!$result['ok']) {
+            return response()->json([
+                'success' => false,
+                'error' => $result['error'],
+                'details' => $result['details'] ?? null,
+                'code' => $result['status'] ?? 422,
+            ], $result['status'] ?? 422);
+        }
+
+        $venta = $result['venta'];
+        if ($venta instanceof Venta) {
+            $venta->makeHidden(['nombre_proyecto']);
+        }
+
+        Log::info('API externa: venta actualizada', [
+            'empresa_id' => $empresa->id,
+            'venta_id' => $ventaId,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'data' => $venta instanceof Venta ? new SaleResource($venta) : $venta,
+            'meta' => [
+                'empresa' => $empresa->nombre,
+                'timestamp' => now()->toISOString(),
+            ],
+        ]);
     }
 
     /**
