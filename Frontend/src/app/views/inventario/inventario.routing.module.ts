@@ -11,6 +11,7 @@ import { ProductoComponent } from '@views/inventario/productos/producto/producto
 import { PromocionesComponent } from '@views/inventario/promociones/promociones.component';
 
 import { ProductosConsignasComponent } from '@views/inventario/consignas/productos-consignas.component';
+import { ProductosConsignasComprasComponent } from '@views/inventario/consignas-compras/productos-consignas-compras.component';
 
 import { MateriasPrimaComponent } from '@views/inventario/materias-prima/materias-prima.component';
 import { MateriaPrimaComponent } from '@views/inventario/materias-prima/materia-prima/materia-prima.component';
@@ -53,6 +54,7 @@ const routes: Routes = [
         
 
         { path: 'consignas', canActivate: [InventarioOperacionesAdminGuard], component: ProductosConsignasComponent, title: 'Productos en consigna' },
+        { path: 'consignas-compras', canActivate: [InventarioOperacionesAdminGuard], component: ProductosConsignasComprasComponent, title: 'Consignas (compras)' },
         
         { path: 'materias-primas', component: MateriasPrimaComponent, title: 'Materias primas' },
         { path: 'materia-primas', component: MateriasPrimaComponent, title: 'Materias primas' },

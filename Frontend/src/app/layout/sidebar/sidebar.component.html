@@ -46,6 +46,7 @@
                 <div [collapse]="productosIsCollapsed" [isAnimated]="true" id="productos">
                   <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/productos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/package.png" class="icon me-2">Inventario</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/consignas-compras']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/package.png" class="icon me-2">Consignas (compras)</a></li>
                     <li *ngIf="isLotesActivo()" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/lotes']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/2-layers.png" class="icon me-2">Lotes</a></li>
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/bodegas']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/box.png" class="icon me-2">Bodegas</a></li>
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/kardex']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/file-text.png" class="icon me-2">Kardex</a></li>
