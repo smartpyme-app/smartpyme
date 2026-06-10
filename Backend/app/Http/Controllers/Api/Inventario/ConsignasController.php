@@ -46,6 +46,7 @@ class ConsignasController extends Controller
 
             if ($producto) {
                 $detalles->push([
+                    'id'                 => $producto->id,
                     'nombre'             => $producto->nombre,
                     'img'                => $producto->img,
                     'nombre_categoria'   => $producto->nombre_categoria,
@@ -155,6 +156,60 @@ class ConsignasController extends Controller
         $consignas->filter($request);
 
         return Excel::download($consignas, 'consignas.xlsx');
+    }
+
+    public function indexCompras() {
+
+        $detallesDeCompra = DetalleCompra::whereHas('compra', function($query){
+                                $query->where('estado', 'Consigna');
+                            })
+                            ->with('producto.categoria', 'compra.proveedor', 'compra.bodega', 'compra.sucursal')
+                            ->get()
+                            ->groupBy('id_producto');
+
+        $detalles = collect();
+
+        foreach ($detallesDeCompra as $detallesGroup) {
+            $compras = collect();
+            
+            foreach ($detallesGroup as $detalle) {
+                $compras->push([
+                    'fecha'             => $detalle->compra->fecha,
+                    'proveedor'         => $detalle->compra->nombre_proveedor,
+                    'cantidad'          => $detalle->cantidad,
+                    'id'                => $detalle->compra->id,
+                    'tipo_documento'    => $detalle->compra->tipo_documento,
+                    'referencia'        => $detalle->compra->referencia,
+                    'fecha_pago'        => $detalle->compra->fecha_pago,
+                    'bodega'            => $detalle->compra->bodega ? $detalle->compra->bodega->nombre : '',
+                    'sucursal'          => $detalle->compra->sucursal ? $detalle->compra->sucursal->nombre : '',
+                    'uuid'              => Crypt::encrypt($detalle->compra->id)
+                ]);
+            }
+            $producto = $detallesGroup[0]->producto()->first();
+
+            if ($producto) {
+                $detalles->push([
+                    'id'                 => $producto->id,
+                    'nombre'             => $producto->nombre,
+                    'img'                => $producto->img,
+                    'nombre_categoria'   => $producto->nombre_categoria,
+                    'costo'              => $detallesGroup[0]->costo,
+                    'codigo'             => $producto->codigo,
+                    'stock'              => $detallesGroup->sum('cantidad'),
+                    'compras'            => $compras,
+                ]); 
+            }
+        }
+
+        return Response()->json($detalles, 200);
+    }
+
+    public function exportCompras(Request $request){
+        $consignas = new \App\Exports\ConsignasComprasExport();
+        $consignas->filter($request);
+
+        return Excel::download($consignas, 'consignas-compras.xlsx');
     }
 
 
