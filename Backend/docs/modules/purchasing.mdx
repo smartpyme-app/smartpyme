@@ -1,0 +1,135 @@
+---
+title: "Purchases, Expenses, and Supplier Management"
+sidebarTitle: "Purchasing"
+description: "Track supplier purchases, manage accounts payable, record expenses, and issue purchase orders to keep your supply chain organized in SmartPyme."
+---
+
+The Purchasing module keeps your supply chain and spending under control. Record every purchase, track what you owe each supplier, manage recurring expenses by category, and process purchase returns — all with full audit trails and one-click Excel exports.
+
+## Purchase Orders (Órdenes de Compra)
+
+A purchase order (PO) is a formal request to a supplier before goods or services are received. Creating POs helps you document what was ordered and at what price before committing to a purchase.
+
+To create a purchase order, go to **Purchasing → Purchase Orders → New Purchase Order**. Select the **supplier**, add each product line with the expected **quantity** and **unit cost**, and set an optional **delivery date**. Save the PO to share it with your supplier via PDF or email.
+
+Once the goods arrive and you're ready to record the purchase:
+
+1. Open the purchase order from the list.
+2. Verify received quantities and adjust if there are any discrepancies.
+3. Click **Convert to Purchase** — SmartPyme carries over all lines, costs, and supplier details automatically.
+
+<Note>
+  Purchase orders do not update stock or accounts payable until they are converted to a confirmed purchase.
+</Note>
+
+---
+
+## Recording a Purchase
+
+<Steps>
+  <Step title="Open the New Purchase form">
+    Navigate to **Purchasing → New Purchase** from the left sidebar.
+  </Step>
+  <Step title="Select a supplier">
+    Search for the supplier by name or NIT. If the supplier is new, click **+ New Supplier** to create the record without leaving the form.
+  </Step>
+  <Step title="Add product lines">
+    Use the product search bar to add each item you received. SmartPyme auto-populates the last purchase cost — update it if the price has changed.
+  </Step>
+  <Step title="Enter unit costs and quantities">
+    Confirm the **unit cost** and **received quantity** for each line. SmartPyme calculates the line total and overall purchase total automatically.
+  </Step>
+  <Step title="Save the purchase">
+    Click **Save**. SmartPyme posts the purchase, updates stock in your selected warehouse, and records the amount as accounts payable (CXP) under the supplier's balance.
+  </Step>
+</Steps>
+
+---
+
+## Suppliers (Proveedores)
+
+Your supplier directory is the backbone of the Purchasing module.
+
+- **Add a supplier** — go to **Suppliers → New Supplier** and fill in the company name, **NIT**, address, contact person, email, and phone.
+- **Edit a supplier** — open the supplier record, click **Edit**, update the details, and save.
+- **Search by NIT** — use the NIT field in the search bar to look up a supplier instantly by their tax identification number.
+- **Track accounts payable (CXP)** — inside each supplier record, the **Account Payable** tab shows every open balance, due date, and payment history. This view updates in real time as you record purchases and payments.
+- **Purchase history** — the **History** tab lists every purchase, return, and payment associated with the supplier, with links to the original documents.
+
+---
+
+## Expenses (Gastos)
+
+Record non-inventory business expenses — rent, utilities, salaries, marketing, and more — to get a complete picture of your operating costs.
+
+To record an expense, go to **Purchasing → Expenses → New Expense** and fill in:
+
+- **Category** — assign the expense to a category (e.g., *Utilities*, *Marketing*, *Office Supplies*) and optionally a **department**.
+- **Amount and date** — enter the total amount and the date the expense was incurred.
+- **Receipt attachment** — click **Attach** to upload a scanned receipt or invoice image for documentation.
+- **Supplier** — optionally link the expense to a supplier in your directory.
+
+<Tip>
+  Use expense categories to get a clear picture of where your money goes in the Dashboard. The spending breakdown widget on the Dashboard groups expenses by category so you can spot trends at a glance.
+</Tip>
+
+---
+
+## Accounts Payable (CXP)
+
+Keep track of every amount you owe to suppliers from one central view.
+
+Go to **Purchasing → Accounts Payable** to see:
+
+- **Outstanding balance per supplier** — the total unpaid amount for each supplier.
+- **Due dates** — color-coded flags highlight overdue and upcoming payments.
+- **Aging report** — filter balances by 30, 60, 90, and 90+ days overdue.
+
+To record a **partial payment (abono)**:
+
+1. Open the supplier's CXP record or the specific purchase document.
+2. Click **Record Payment**.
+3. Enter the amount paid, the payment method, and the date.
+4. Save — SmartPyme reduces the outstanding balance and logs the transaction in the payment history.
+
+---
+
+## Purchase Returns (Devoluciones de Compra)
+
+If you need to return goods to a supplier, SmartPyme adjusts your stock and accounts payable automatically.
+
+<Steps>
+  <Step title="Navigate to Purchase Returns">
+    Go to **Purchasing → Purchase Returns → New Return**.
+  </Step>
+  <Step title="Select the original purchase">
+    Search for the original purchase by document number, date, or supplier name.
+  </Step>
+  <Step title="Choose items to return">
+    SmartPyme loads all line items from the original purchase. Select the items being returned and adjust quantities if the return is partial.
+  </Step>
+  <Step title="Confirm the return">
+    Click **Process Return**. Stock is removed from your warehouse and the supplier's CXP balance is reduced by the return amount.
+  </Step>
+</Steps>
+
+---
+
+## Reports and Exports
+
+SmartPyme provides flexible reporting tools to analyze your purchasing activity.
+
+<CardGroup cols={2}>
+  <Card title="Export to Excel" icon="file-excel" href="help/faq">
+    From the Purchases list, apply your **date range**, **supplier**, and **status** filters, then click **Export → Excel** to download the results as a formatted spreadsheet.
+  </Card>
+  <Card title="Purchases by Supplier" icon="chart-bar" href="help/faq">
+    Go to **Reports → Purchases by Supplier** to see totals, returns, and net purchases per supplier over any period.
+  </Card>
+  <Card title="Expense Report" icon="receipt" href="help/faq">
+    Go to **Reports → Expenses** to view spending by category, department, or date range, with drill-down to individual transactions.
+  </Card>
+  <Card title="CXP Aging Report" icon="calendar-clock" href="help/faq">
+    Go to **Reports → Accounts Payable Aging** for a snapshot of all outstanding supplier balances grouped by how overdue they are.
+  </Card>
+</CardGroup>

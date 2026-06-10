@@ -1,0 +1,66 @@
+---
+title: "Payroll Management and Employee Administration Guide"
+sidebarTitle: "Payroll"
+description: "Manage employees, calculate salaries, process payroll runs, handle bonuses and loans, and generate payslips with SmartPyme's payroll module."
+---
+
+SmartPyme's payroll module gives you a single place to manage your entire workforce — from onboarding employees and organizing departments, to calculating salaries, processing payroll runs, handling loans, and generating legally compliant payslips. All calculations follow El Salvador's labor regulations, including ISSS, AFP, and income tax withholding rules.
+
+## Employee Management
+
+Add each employee with their complete profile: personal information, department, position, contract type, and base salary. You can also upload supporting documents (contracts, ID copies, etc.) directly to the employee record, and maintain a full contract history so you always have an audit trail of any changes to their terms.
+
+## Departments and Positions
+
+Keep your organizational structure tidy by creating **departments** (departamentos) and **job titles** (cargos) under **Payroll → Configuration**. Assigning every employee to a department and position makes it easy to filter payroll reports and compare costs by team.
+
+## Running Payroll
+
+<Steps>
+  <Step title="Create a new payroll run">
+    Go to **Payroll → Payrolls** and click **New Payroll**.
+  </Step>
+  <Step title="Select the period">
+    Choose the payroll period — for example, monthly (mensual) or bi-weekly (quincenal) — to determine which employees and salary components are included.
+  </Step>
+  <Step title="Review calculations">
+    SmartPyme calculates each employee's gross salary, applicable deductions, and net pay. Review the figures line by line before proceeding. You can also recalculate income tax (renta) for any employee directly from the payroll detail if needed.
+  </Step>
+  <Step title="Approve the payroll">
+    Once you are satisfied with the calculations, click **Approve** to lock the payroll run. Approved payrolls cannot be edited, preserving an accurate record. If you need to make corrections after approving, use the **Revert** option to re-open the run.
+  </Step>
+  <Step title="Export payslips">
+    Download individual or bulk **payslips** (boletas de pago) as **PDF** or **Excel** to distribute to employees or file for your records.
+  </Step>
+</Steps>
+
+## Salary Components
+
+SmartPyme computes each payslip from the following components:
+
+- **Base salary** — the fixed monthly or period amount agreed in the contract.
+- **Overtime** — extra hours worked, calculated at the applicable legal rate.
+- **Bonuses** — one-time or recurring incentive payments.
+- **ISSS deduction** — employee contribution to El Salvador's social security institute.
+- **AFP deduction** — employee contribution to their pension fund administrator.
+- **Income tax (renta) withholding** — monthly withholding calculated from the official tax tables.
+
+## Aguinaldo (Christmas Bonus)
+
+SmartPyme automatically calculates aguinaldo entitlements based on each employee's seniority. Navigate to **Payroll → Aguinaldo**, add the employees you want to include, review the calculated amounts, and export the final report to **PDF** or **Excel** for payment and filing. You can also request a preview of the calculated amount before committing, and use the suggested amounts that SmartPyme generates based on each employee's service time.
+
+## Employee Loans (Préstamos)
+
+Record any loan granted to an employee, define the total amount, and set a repayment schedule (number of installments and frequency). SmartPyme tracks the outstanding balance and automatically deducts each installment from the employee's payslip during the corresponding payroll run, so you never have to adjust it manually.
+
+## Employee Termination and Reinstatement
+
+When an employee leaves, record their **termination** (baja) by selecting the reason and exit date. SmartPyme calculates any severance (liquidación) owed based on seniority and applicable law, and generates a settlement document. If an employee returns, you can **reinstate** them and their full historical record — including previous contracts and termination history — is preserved.
+
+## Importing Employee Data
+
+To onboard a large team at once, use the **Import** feature under **Payroll → Employees**. Download the Excel template, fill in the required columns, and upload the file. SmartPyme validates each row and reports any errors before saving.
+
+<Note>
+  Payroll configuration — including tax tables, ISSS and AFP rates, and overtime rules — is managed under **Payroll → Configuration**. Keep these values up to date whenever the government publishes new rates.
+</Note>

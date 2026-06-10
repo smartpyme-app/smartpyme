@@ -1,0 +1,150 @@
+---
+title: "Inventory Management: Products, Stock, and Warehouses"
+sidebarTitle: "Inventory"
+description: "Manage products, track stock levels, handle batch lots with expiry dates, set reorder points, and transfer inventory between locations in SmartPyme."
+---
+
+The Inventory module gives you full control over everything you buy, store, and sell. Track stock levels across multiple warehouses, manage batch lots with expiry dates, move products between branches, and get alerts before you run out — all from a single, unified view.
+
+## Products and Services
+
+Every item you sell starts as a product or service record in SmartPyme.
+
+To create a new product, go to **Inventory → Products → New Product** and fill in the following fields:
+
+- **Name** — the display name used in sales, purchases, and reports.
+- **SKU** — your internal stock-keeping unit code.
+- **Barcode** — scan or enter the EAN/UPC barcode for point-of-sale scanning.
+- **Category** — assign the product to a category and optional subcategory.
+- **Unit price and cost** — set the default selling price and purchase cost. SmartPyme uses these as defaults on sales and purchase documents.
+- **Unit of measure** — choose units, kilograms, liters, boxes, or any custom unit you configure.
+- **Product type** — select **Physical Good** if the product has trackable stock, or **Service** if it doesn't reduce inventory when sold.
+- **Image** — upload a product photo to display at the point of sale and in catalogs.
+
+<Tip>
+  Use the **Duplicate** button to quickly create variants of an existing product without re-entering shared fields.
+</Tip>
+
+---
+
+## Stock and Warehouses (Bodegas)
+
+SmartPyme tracks stock independently per warehouse, so you always know exactly where your inventory is.
+
+To view stock levels, go to **Inventory → Stock**. Use the **Warehouse** filter to isolate a specific location. Each product row shows:
+
+- **Current stock** — the live quantity on hand.
+- **Minimum stock** — when stock falls to or below this level, SmartPyme triggers a low-stock alert.
+- **Maximum stock** — your target ceiling for replenishment orders.
+
+To update the minimum and maximum levels for a product, open the product record, go to the **Stock** tab, select the warehouse, and edit the values.
+
+**Kardex** — to see the full movement history for a product at a specific warehouse, open the product record and click **Kardex**. Every entry, exit, transfer, and adjustment is listed chronologically with user, date, and document reference.
+
+<Note>
+  Consignment (consigna) products are tracked separately and don't reduce your stock until sold.
+</Note>
+
+---
+
+## Inventory Entries and Exits
+
+Record stock movements that aren't tied to a sale or purchase — such as initial stock loads, corrections, or losses.
+
+- **Entry (Entrada)** — go to **Inventory → Entries → New Entry**. Select the warehouse, add product lines with quantities, enter the reason (e.g., *Initial load*, *Supplier adjustment*), and save. The entry goes through an approval workflow before stock is updated.
+- **Exit (Salida)** — go to **Inventory → Exits → New Exit**. Select the warehouse and the products being removed. Enter the reason (e.g., *Damaged goods*, *Internal use*) and submit for approval.
+
+<Warning>
+  Only users with the **Inventory Manager** role can approve entries and exits. Unapproved documents do not affect stock levels.
+</Warning>
+
+---
+
+## Batch Lots (Lotes)
+
+If you sell products that require lot tracking — such as food, pharmaceuticals, or serialized goods — activate batch lots for each product.
+
+To enable lot tracking, open a product record, go to the **Settings** tab, and toggle on **Track by Lot**. From that point on, every entry and sale requires you to assign a lot number.
+
+To manage lots, go to **Inventory → Lots**. Here you can:
+
+- View all active lots and their remaining quantities.
+- Set or edit **expiry dates** for each lot.
+- Filter by the **Expiring Soon** preset to see lots expiring in the next 30, 60, or 90 days.
+
+<Warning>
+  SmartPyme sells from the oldest lot first (FEFO — First Expired, First Out) by default. You can override this manually at the point of sale if needed.
+</Warning>
+
+---
+
+## Product Transfers (Traslados)
+
+Move stock between your warehouses or branch locations without creating a sale or purchase.
+
+<Steps>
+  <Step title="Start a new transfer">
+    Go to **Inventory → Transfers → New Transfer**.
+  </Step>
+  <Step title="Select origin and destination">
+    Choose the **source warehouse** and the **destination warehouse** from the dropdowns.
+  </Step>
+  <Step title="Add products">
+    Search for each product and enter the quantity to transfer. SmartPyme validates that sufficient stock exists at the origin.
+  </Step>
+  <Step title="Save and approve">
+    Save the transfer and submit it for approval. Once approved, stock decreases at the origin and increases at the destination.
+  </Step>
+  <Step title="Generate the transfer document">
+    Click **Print** to generate a PDF transfer document you can send with the shipment for receiving confirmation.
+  </Step>
+</Steps>
+
+---
+
+## Product Transformations
+
+If you manufacture or assemble products from raw materials, use the Transformations feature to convert components into finished goods.
+
+<Note>
+  Product Transformations must be activated by your SmartPyme administrator under **Settings → Features → Transformación** before this menu appears.
+</Note>
+
+To record a transformation, go to **Inventory → Transformations → New Transformation**. Select the **output product** (the finished good), then add the **input materials** (components) with their quantities. When you save and approve the transformation, SmartPyme decreases component stock and increases finished-goods stock accordingly.
+
+---
+
+## Categories and Subcategories
+
+Organize your product catalog with a two-level hierarchy to make searching, filtering, and reporting easier.
+
+To manage categories, go to **Inventory → Categories**. Click **New Category** to create a top-level group (e.g., *Electronics*). To add a subcategory, open the parent category and click **Add Subcategory** (e.g., *Laptops*, *Accessories*).
+
+Assign a category to a product from the product's **General** tab. Sales and inventory reports can be filtered and grouped by category.
+
+---
+
+## Promotions
+
+Create time-limited price promotions for individual products or entire categories.
+
+Go to **Inventory → Promotions → New Promotion** and configure:
+
+- **Product or category** — apply the promotion to one product or all products in a category.
+- **Promotional price** — the discounted selling price during the promotion.
+- **Date range** — set a start and end date. SmartPyme activates and deactivates the promotion automatically.
+
+During an active promotion, the promotional price appears automatically at the point of sale, overriding the standard price.
+
+---
+
+## Import and Export
+
+<CardGroup cols={2}>
+  <Card title="Import Products" icon="file-arrow-up" href="help/faq">
+    Go to **Inventory → Products → Import**, download the Excel template, fill in your product data, and upload the file. SmartPyme validates each row and reports any errors before importing.
+  </Card>
+  <Card title="Export Inventory Reports" icon="file-arrow-down" href="help/faq">
+    From **Inventory → Stock**, apply your filters and click **Export → Excel** to download a snapshot of current stock levels, costs, and valuation for all products.
+  </Card>
+</CardGroup>

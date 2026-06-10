@@ -1,0 +1,122 @@
+---
+title: "Manage Sales, Invoices, and Customers in SmartPyme"
+sidebarTitle: "Sales"
+description: "Create sales, issue invoices, manage customer accounts, process returns, and track revenue — all from the SmartPyme sales module."
+---
+
+The Sales module is your central hub for every customer-facing transaction. From issuing invoices and processing payments to managing customer accounts and tracking revenue, SmartPyme keeps your entire sales operation organized and auditable in one place.
+
+## Creating a Sale
+
+<Steps>
+  <Step title="Open the New Sale form">
+    Navigate to **Sales → New Sale** from the left sidebar.
+  </Step>
+  <Step title="Select or create a customer">
+    Search for an existing customer by name, NIT, or phone number. If the customer is new, click **+ New Customer** to create a record on the spot without leaving the sale.
+  </Step>
+  <Step title="Add products or services">
+    Use the product search bar to add each line item. Enter the **quantity** and confirm or adjust the **unit price**. SmartPyme auto-populates the price from the product catalog.
+  </Step>
+  <Step title="Apply discounts">
+    To apply a discount, click the **%** icon on any line item and enter a percentage, or apply a global discount to the entire sale at the bottom of the form.
+  </Step>
+  <Step title="Choose a payment method">
+    Select one or more payment methods: **Efectivo**, **Tarjeta**, **Transferencia**, **Cheque**, or **Crédito**. For split payments, add multiple methods and assign an amount to each.
+  </Step>
+  <Step title="Save and issue the document">
+    Click **Save** to post the sale and generate the invoice. SmartPyme updates your revenue totals, adjusts inventory, and records the customer's balance automatically.
+  </Step>
+</Steps>
+
+---
+
+## Quotations
+
+A quotation lets you send a price proposal to a customer before committing to a sale.
+
+To create a quote, go to **Sales → Quotations → New Quotation**. Fill in the customer, products, quantities, and prices exactly as you would for a sale. Set an **expiry date** so the customer knows how long the pricing is valid, then click **Save & Send** to share it via email or print it as a PDF.
+
+When the customer confirms, open the quotation and click **Convert to Sale**. SmartPyme carries over all line items, discounts, and customer details — no re-entry required.
+
+<Tip>
+  Keep your quotation pipeline visible by filtering the Quotations list by status: **Draft**, **Sent**, **Accepted**, or **Expired**.
+</Tip>
+
+---
+
+## Returns (Devoluciones)
+
+Processing a sales return correctly keeps your inventory and revenue figures accurate.
+
+<Steps>
+  <Step title="Go to Returns">
+    Navigate to **Sales → Returns** and click **New Return**.
+  </Step>
+  <Step title="Select the original sale">
+    Search for the original invoice by number, date, or customer name and select it.
+  </Step>
+  <Step title="Choose items to return">
+    SmartPyme loads all line items from the original sale. Check each item being returned and adjust the quantity if the return is partial.
+  </Step>
+  <Step title="Confirm and save">
+    Click **Process Return**. Stock is added back to your warehouse and the customer's balance is credited automatically.
+  </Step>
+</Steps>
+
+<Warning>
+  You cannot process a return against a cancelled invoice. Verify the original sale is in **Posted** status before starting.
+</Warning>
+
+---
+
+## Customer Management
+
+Your customer directory gives you a complete picture of every account.
+
+- **Add a customer** — go to **Customers → New Customer** and fill in the name, NIT/DUI, address, email, and phone.
+- **Edit a customer** — open the customer record, click **Edit**, make your changes, and save.
+- **View purchase history** — inside any customer record, the **History** tab lists every sale, return, and payment, sortable by date.
+- **Outstanding balance (CXC)** — the **Account Receivable** tab shows the running balance, credit limit, and overdue days for each customer.
+- **Import customers via Excel** — go to **Customers → Import**, download the Excel template, fill in your customer list, and upload the file. SmartPyme validates each row before importing.
+
+<Tip>
+  Use the **360° Customer View** to see full history, loyalty points, and pending payments — all on one screen. Access it by clicking the **360°** button inside any customer record.
+</Tip>
+
+---
+
+## Payment Methods
+
+SmartPyme supports the following payment methods out of the box:
+
+<CardGroup cols={3}>
+  <Card title="Efectivo" icon="money-bill" href="help/faq">
+    Cash payments with automatic change calculation at the point of sale.
+  </Card>
+  <Card title="Tarjeta" icon="credit-card" href="help/faq">
+    Debit and credit card payments. Record card type and last four digits for reconciliation.
+  </Card>
+  <Card title="Transferencia" icon="arrow-right-arrow-left" href="help/faq">
+    Bank transfers. Attach the transfer reference number for audit purposes.
+  </Card>
+  <Card title="Cheque" icon="money-check" href="help/faq">
+    Cheque payments. Enter the cheque number, bank, and due date.
+  </Card>
+  <Card title="Crédito" icon="clock" href="help/faq">
+    Credit sales posted to the customer's CXC balance with a configurable due date.
+  </Card>
+</CardGroup>
+
+To add, rename, or disable a payment method, go to **Settings → Payment Methods**.
+
+---
+
+## Sales Reports and Exports
+
+SmartPyme gives you real-time visibility into your sales performance.
+
+- **Export to Excel** — from the Sales list, apply your filters (date range, customer, seller, payment method) and click **Export → Excel**.
+- **Daily summary** — go to **Reports → Daily Summary** to see total sales, returns, and net revenue for any given day.
+- **Cash cut (Corte de caja)** — go to **Reports → Cash Cut** to generate an end-of-shift report showing totals by payment method, ideal for reconciling your cash drawer.
+- **Sales by product** — go to **Reports → Sales by Product** to identify your best and worst performers over any period.

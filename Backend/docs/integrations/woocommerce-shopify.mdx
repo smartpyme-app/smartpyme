@@ -1,0 +1,99 @@
+---
+title: "Sync Products and Orders with WooCommerce and Shopify"
+sidebarTitle: "WooCommerce & Shopify"
+description: "Connect SmartPyme to your WooCommerce or Shopify store to automatically sync orders as sales and keep inventory updated across both platforms."
+---
+
+SmartPyme integrates with WooCommerce and Shopify to automatically process orders and keep your inventory in sync. Once connected, every new order flows into SmartPyme as a sale — complete with customer details, line items, and totals — so you never have to enter data twice.
+
+## WooCommerce Integration
+
+<Steps>
+  <Step title="Find your WooCommerce webhook token">
+    In SmartPyme, go to **Settings → Users → your user → Integrations**. Copy the WooCommerce webhook token displayed there — you will need it in the next steps.
+  </Step>
+  <Step title="Open WooCommerce Webhooks">
+    In your WordPress dashboard, navigate to **WooCommerce → Settings → Advanced → Webhooks**.
+  </Step>
+  <Step title="Create an Order Created webhook">
+    Click **Add webhook** and configure it as follows:
+
+    - **Name:** SmartPyme Order Created
+    - **Status:** Active
+    - **Topic:** Order created
+    - **Delivery URL:**
+
+    <CodeGroup>
+      ```text Webhook URL
+      https://api.smartpyme.site/api/webhook/woocommerce/{your_token}
+      ```
+    </CodeGroup>
+
+    Replace `{your_token}` with the token you copied from SmartPyme.
+  </Step>
+  <Step title="Create a Product Updated webhook">
+    Add a second webhook with the following settings:
+
+    - **Name:** SmartPyme Product Updated
+    - **Status:** Active
+    - **Topic:** Product updated
+    - **Delivery URL:**
+
+    <CodeGroup>
+      ```text Webhook URL
+      https://api.smartpyme.site/api/webhook/woocommerce/{your_token}/producto
+      ```
+    </CodeGroup>
+  </Step>
+  <Step title="Save and test the connection">
+    Save both webhooks, then place a test order in WooCommerce. Open SmartPyme and confirm the order appears as a new sale under **Sales**.
+  </Step>
+</Steps>
+
+## Shopify Integration
+
+<Steps>
+  <Step title="Find your Shopify webhook token">
+    In SmartPyme, go to **Settings → Users → your user → Integrations**. Copy the Shopify webhook token shown on that page.
+  </Step>
+  <Step title="Open Shopify Webhooks">
+    In your Shopify Admin, navigate to **Settings → Notifications → Webhooks**.
+  </Step>
+  <Step title="Create an Order Payment webhook">
+    Click **Create webhook** and fill in the details:
+
+    - **Event:** Order payment
+    - **Format:** JSON
+    - **URL:**
+
+    <CodeGroup>
+      ```text Webhook URL
+      https://api.smartpyme.site/api/webhook/shopify/{your_token}
+      ```
+    </CodeGroup>
+
+    Replace `{your_token}` with the token you copied from SmartPyme.
+  </Step>
+  <Step title="Test with a draft order">
+    Create a draft order in Shopify Admin and mark it as paid. Verify that a corresponding sale appears in SmartPyme.
+  </Step>
+</Steps>
+
+## Exporting Products to Shopify
+
+To push your SmartPyme product catalogue to Shopify, go to **Inventory → Products** and select **Export to Shopify**. SmartPyme queues the export in the background — monitor its progress in the **Export Status** panel on the same page. Large catalogues may take a few minutes to complete.
+
+## What Syncs
+
+When an order webhook arrives, SmartPyme automatically creates a sale that includes:
+
+- **Customer information** — name, email, and address from the order.
+- **Line items** — products, quantities, and unit prices.
+- **Totals** — subtotal, taxes, shipping, and grand total.
+- **Payment method** — as recorded in WooCommerce or Shopify.
+
+Product information flows from SmartPyme outward to your store when you trigger an export or when a product is updated and a sync is configured.
+
+<Note>
+  To disconnect your WooCommerce integration, go to **Settings → Users → your user → Disconnect WooCommerce**. Existing sales already imported into SmartPyme are not affected.
+</Note>

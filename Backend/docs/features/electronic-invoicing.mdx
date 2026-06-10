@@ -1,0 +1,62 @@
+---
+title: "Electronic Invoicing (DTE): Complete Setup and Usage"
+sidebarTitle: "E-Invoicing"
+description: "Issue legally valid electronic tax documents (DTEs) in El Salvador — facturas, CCF, credit notes, and more — directly from SmartPyme."
+---
+
+SmartPyme is directly integrated with El Salvador's Ministry of Finance (Ministerio de Hacienda) system, allowing you to generate, sign, and transmit electronic tax documents (DTEs) without leaving your workflow. Every DTE is cryptographically signed with your certificate and stored alongside the originating sale for full traceability.
+
+## Supported Document Types
+
+The following DTE types are available in SmartPyme:
+
+| Type | Code | Description |
+|------|------|-------------|
+| Factura de Consumidor Final | 01 | Sales to end consumers |
+| Comprobante de Crédito Fiscal (CCF) | 03 | Sales to registered taxpayers |
+| Nota de Crédito | 05 | Credit adjustments |
+| Nota de Débito | 06 | Debit adjustments |
+| Factura de Exportación | 11 | Export invoices |
+| Sujeto Excluido | 14 | Purchases from excluded subjects |
+
+## Setup Requirements
+
+Before you can issue DTEs, you need to connect SmartPyme to the Ministry of Finance portal.
+
+<Steps>
+  <Step title="Obtain your MH credentials">
+    Register your business on the Ministry of Finance portal and obtain your MH username, password, and digital signing certificate (`.p12` or `.pfx` file).
+  </Step>
+  <Step title="Enter your credentials in SmartPyme">
+    Go to **Settings → My Account → Electronic Invoicing** and enter your MH username, password, and upload your certificate file.
+  </Step>
+  <Step title="Set your environment">
+    Choose **Test** (ambiente 00) to run trial transmissions without legal effect, or **Production** (ambiente 01) for live, legally binding documents.
+  </Step>
+  <Step title="Configure your establishment code">
+    Enter the establishment code (código de establecimiento) assigned to your business by the Ministry of Finance. If you operate multiple branches, configure a separate code for each one.
+  </Step>
+</Steps>
+
+<Warning>
+  Production DTEs are legally binding fiscal documents. Test in the Test environment (ambiente 00) before switching to Production (ambiente 01).
+</Warning>
+
+## Issuing a DTE
+
+When you create a sale and the customer has a document type configured on their profile, SmartPyme automatically generates, digitally signs, and transmits the DTE to the Ministry of Finance. You do not need to take any additional action. Once the Ministry of Finance acknowledges the document, SmartPyme records the official acceptance stamp alongside the sale as proof of acceptance.
+
+## Annulling a DTE
+
+If you need to void an already-transmitted document, navigate to the relevant sale, then click **Annul**. SmartPyme sends the annulment request to the Ministry of Finance on your behalf and updates the sale status once the cancellation is confirmed.
+
+## Downloading DTEs
+
+From the sale detail view you can download the DTE in two formats:
+
+- **PDF** — a human-readable representation suitable for sharing with your customer.
+- **JSON** — the original signed document in the format accepted by the Ministry of Finance, useful for your accounting records or audits.
+
+## Contingency Mode
+
+If the Ministry of Finance services are temporarily unavailable, SmartPyme switches to contingency mode and generates contingency DTEs locally. These documents are queued and automatically submitted to the Ministry of Finance once connectivity is restored, ensuring your sales process is never interrupted.

@@ -1,0 +1,76 @@
+---
+title: "How to Authenticate with the SmartPyme External API"
+sidebarTitle: "Authentication"
+description: "Learn how to get your SmartPyme API Key and send it as a Bearer token in the Authorization header to authenticate every API request."
+---
+
+The SmartPyme External API uses API Key authentication. You include your key as a Bearer token in the `Authorization` header of every request — there are no session tokens, cookies, or OAuth flows involved. Every request must be authenticated; the API does not expose any public endpoints.
+
+## Getting your API Key
+
+Your API Key is generated per company inside the SmartPyme web application. Follow these steps to retrieve it:
+
+1. Log in to [app.smartpyme.site](https://app.smartpyme.site).
+2. Click your company name in the top-right corner, then go to **Settings** (Configuraciones).
+3. Navigate to **My Account → Integrations** tab.
+4. Copy the API Key shown on that page.
+
+## Using your API Key
+
+Include your API Key as a Bearer token in the `Authorization` header of every request. No other headers are required for authentication.
+
+<CodeGroup>
+
+```bash curl
+curl -H "Authorization: Bearer YOUR_API_KEY" \
+     "https://api.smartpyme.site/api/external/v1/sales"
+```
+
+```python Python
+import requests
+
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY"
+}
+
+response = requests.get(
+    "https://api.smartpyme.site/api/external/v1/sales",
+    headers=headers
+)
+print(response.json())
+```
+
+```javascript JavaScript
+const response = await fetch(
+  "https://api.smartpyme.site/api/external/v1/sales",
+  {
+    headers: {
+      "Authorization": "Bearer YOUR_API_KEY"
+    }
+  }
+);
+const data = await response.json();
+console.log(data);
+```
+
+</CodeGroup>
+
+## Error responses
+
+If your API Key is invalid, missing, or the associated company is inactive, the API returns HTTP `401` with the following body:
+
+```json
+{
+  "success": false,
+  "error": "API key inválido o empresa inactiva",
+  "code": 401
+}
+```
+
+<Warning>
+  Keep your API Key private. It provides access to all of your company's sales and inventory data. Do not commit it to source code or expose it publicly.
+</Warning>
+
+<Tip>
+  Each API Key is scoped to a single company. If you manage multiple companies, each has its own key.
+</Tip>

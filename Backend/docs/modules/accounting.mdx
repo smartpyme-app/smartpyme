@@ -1,0 +1,117 @@
+---
+title: "Accounting Tools: IVA Books, Assets, and Projects"
+sidebarTitle: "Accounting"
+description: "Generate IVA books, manage fixed assets, track petty cash funds, control project budgets, and export accounting reports directly from SmartPyme."
+---
+
+The Accounting module bridges your day-to-day transactions with the legal and financial reporting your business requires. Generate the IVA books required by El Salvador's tax authority, track the value of your fixed assets, manage petty cash funds, and keep project spending on budget — all from one module.
+
+## IVA Books (Libros de IVA)
+
+SmartPyme generates the complete set of IVA books required by the Ministerio de Hacienda of El Salvador, directly from your posted sales and purchase documents.
+
+Go to **Accounting → IVA Books** and select the **period** (month and year) you need to generate. SmartPyme produces the following books:
+
+<CardGroup cols={2}>
+  <Card title="Libro de Ventas a Consumidores" icon="users" href="features/electronic-invoicing">
+    Sales to end consumers (consumidores finales). Includes ticket and invoice totals, grouped by day. Download the official book or the annex file for submission.
+  </Card>
+  <Card title="Libro de Ventas a Contribuyentes" icon="building" href="features/electronic-invoicing">
+    Sales to registered taxpayers (contribuyentes). Lists each CCF (Comprobante de Crédito Fiscal) individually, with credit notes and debit notes as a separate download.
+  </Card>
+  <Card title="Libro de Compras" icon="cart-shopping" href="features/electronic-invoicing">
+    Purchases from suppliers with IVA credit. Includes each supplier invoice with NIT, amount, and IVA breakdown. A separate annex covers purchases from excluded taxpayers (sujetos excluidos).
+  </Card>
+  <Card title="Annulments, Retentions, and Perceptions" icon="file-circle-xmark" href="features/electronic-invoicing">
+    Books for annulled documents, IVA retentions, and IVA perceptions — all required annexes for a complete monthly filing.
+  </Card>
+</CardGroup>
+
+Once you select the period, click **Generate** to compile the book, then **Export → Excel** to download the file in the format required for official submission.
+
+<Note>
+  IVA books are generated from your posted sales and purchase documents. Ensure all transactions are complete before downloading the official book.
+</Note>
+
+---
+
+## Fixed Assets (Activos Fijos)
+
+Track the value and location of every asset your company owns, organized by category.
+
+To register a new asset, go to **Accounting → Fixed Assets → New Asset** and enter:
+
+- **Name and description** — identify the asset clearly (e.g., *Delivery vehicle — plate ABC-123*).
+- **Category** — group assets by type (e.g., *Vehicles*, *Machinery*, *IT Equipment*).
+- **Acquisition cost** — the original purchase price.
+- **Acquisition date** — when the asset was purchased or put into service.
+
+Once registered, you can filter and report on your asset portfolio by category, acquisition date, or cost range. Open any asset record to review its details and update information as needed.
+
+<Tip>
+  Run the **Asset Report** under **Reports → Fixed Assets** at year-end to get a summary table of all assets and their values — useful for your annual financial statements.
+</Tip>
+
+---
+
+## Petty Cash (Caja Chica)
+
+Manage small discretionary funds with a dedicated petty cash register for each fund.
+
+To set up a petty cash fund, go to **Accounting → Petty Cash → New Fund**. Give the fund a name (e.g., *Main Office Petty Cash*), assign a **responsible user**, and set an **initial balance**.
+
+To record a petty cash disbursement:
+
+<Steps>
+  <Step title="Open the fund">
+    Go to **Accounting → Petty Cash** and click the fund you want to record against.
+  </Step>
+  <Step title="Add a new entry">
+    Click **New Entry**, enter the amount, date, description, and expense category.
+  </Step>
+  <Step title="Attach a receipt">
+    Upload a photo or scan of the supporting receipt for documentation.
+  </Step>
+  <Step title="Save">
+    Save the entry. SmartPyme deducts the amount from the fund's running balance.
+  </Step>
+</Steps>
+
+At the end of each period, go to **Accounting → Petty Cash** and open the fund, then click **Report** to generate a summary of all disbursements, totals by category, and the closing balance — ready to support a replenishment request.
+
+---
+
+## Projects and Budgets
+
+If your business tracks spending by project, client engagement, or cost center, use the Projects feature to assign transactions and monitor budget consumption in real time.
+
+To create a project, go to **Accounting → Projects → New Project** and fill in:
+
+- **Project name and code** — used to tag transactions to this project.
+- **Client** — optionally link the project to a customer in your directory.
+- **Start and end date** — the expected project timeline.
+- **Total budget** — the approved spending limit for this project.
+
+Once a project is active, you can tag **expenses**, **purchases**, and **sales** to it by selecting the project in the document's **Project** field. SmartPyme accumulates actuals in real time so you can compare spending against budget at any point.
+
+<Warning>
+  Transactions can only be assigned to projects with **Active** status. Archive a completed project to prevent accidental tagging.
+</Warning>
+
+---
+
+## Cash Flow Report
+
+Get a clear picture of money moving in and out of your business over any period.
+
+Go to **Reports → Cash Flow** to view your cash flow statement. The report is divided into three sections:
+
+- **Operating activities** — cash from sales and cash paid to suppliers and for expenses.
+- **Investing activities** — cash spent on or received from fixed asset transactions.
+- **Financing activities** — loan disbursements, repayments, and capital contributions.
+
+Use the **date range** selector to view cash flow for any custom period — weekly, monthly, quarterly, or year-to-date. Click **Export → Excel** to download the statement for your accountant or financial review.
+
+<Tip>
+  Combine the Cash Flow report with the **Accounts Receivable Aging** and **Accounts Payable Aging** reports for a full picture of your short-term liquidity position.
+</Tip>

@@ -1,0 +1,429 @@
+---
+title: "SmartPyme Inventory: Product Catalog and Stock Levels"
+sidebarTitle: "Inventory"
+description: "List SmartPyme products filtered by brand, category, or stock status. Records include pricing, costs, and per-warehouse stock levels with summaries."
+---
+
+The Inventory endpoints give you programmatic access to your full product catalog and warehouse stock data in SmartPyme. You can filter by category, brand, or stock status to build integrations such as low-stock alerts, e-commerce catalog syncs, or cost-of-goods reports. All requests must include your API key in the `Authorization` header.
+
+---
+
+## GET /inventory
+
+Returns a paginated list of products from your catalog. Each product record includes pricing, cost, and an `inventarios` array showing current stock levels broken down by warehouse and branch.
+
+<CodeGroup>
+
+```bash cURL
+curl --request GET \
+  --url "https://api.smartpyme.site/api/external/v1/inventory?marca=Dell&con_stock=true&per_page=50" \
+  --header "Authorization: Bearer {api_key}"
+```
+
+```python Python
+import requests
+
+url = "https://api.smartpyme.site/api/external/v1/inventory"
+headers = {"Authorization": "Bearer {api_key}"}
+params = {
+    "marca": "Dell",
+    "con_stock": True,
+    "per_page": 50,
+}
+
+response = requests.get(url, headers=headers, params=params)
+print(response.json())
+```
+
+```javascript JavaScript
+const response = await fetch(
+  "https://api.smartpyme.site/api/external/v1/inventory" +
+    "?marca=Dell&con_stock=true&per_page=50",
+  {
+    method: "GET",
+    headers: { Authorization: "Bearer {api_key}" },
+  }
+);
+const data = await response.json();
+console.log(data);
+```
+
+</CodeGroup>
+
+### Query parameters
+
+<ParamField query="codigo" type="string">
+  Filter by product SKU or internal code. Performs a partial match.
+</ParamField>
+
+<ParamField query="nombre" type="string">
+  Filter by product name. Performs a partial, case-insensitive match.
+</ParamField>
+
+<ParamField query="categoria" type="string">
+  Filter by category name. Performs a partial match against `nombre_categoria`.
+</ParamField>
+
+<ParamField query="marca" type="string">
+  Filter by brand name. Performs a partial match.
+</ParamField>
+
+<ParamField query="tipo" type="string">
+  Filter by product type. Accepted values: `Producto`, `Servicio`.
+</ParamField>
+
+<ParamField query="enable" type="integer">
+  Filter by active status. Use `1` for active products and `0` for inactive products.
+</ParamField>
+
+<ParamField query="con_stock" type="boolean">
+  When `true`, returns only products that have stock greater than zero across at least one warehouse.
+</ParamField>
+
+<ParamField query="stock_minimo" type="boolean">
+  When `true`, returns only products whose current stock is at or below their configured minimum stock threshold.
+</ParamField>
+
+<ParamField query="page" type="integer">
+  Page number to retrieve. Defaults to `1`.
+</ParamField>
+
+<ParamField query="per_page" type="integer">
+  Number of records per page. Accepts values between `1` and `200`. Defaults to `100`.
+</ParamField>
+
+<ParamField query="order_by" type="string">
+  Field to sort results by. Accepted values: `nombre`, `codigo`, `precio`, `costo`, `created_at`.
+</ParamField>
+
+<ParamField query="order_direction" type="string">
+  Sort direction. Accepted values: `asc`, `desc`.
+</ParamField>
+
+### Response example
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 301,
+      "nombre": "Laptop Dell Inspiron 15",
+      "descripcion": "Laptop 15.6\" Intel Core i5, 8GB RAM, 512GB SSD",
+      "codigo": "LAP-DELL-015",
+      "barcode": "7501234567890",
+      "nombre_categoria": "Electrónicos",
+      "precio": 850.00,
+      "costo": 620.00,
+      "costo_anterior": 610.00,
+      "costo_promedio": 615.50,
+      "marca": "Dell",
+      "tipo": "Producto",
+      "enable": 1,
+      "img": "https://cdn.smartpyme.site/products/lap-dell-015.jpg",
+      "created_at": "2024-06-01T08:00:00Z",
+      "updated_at": "2025-01-10T14:22:00Z",
+      "inventarios": [
+        {
+          "id_producto": 301,
+          "stock": 12,
+          "stock_minimo": 5,
+          "stock_maximo": 50,
+          "nota": null,
+          "nombre_bodega": "Bodega Principal",
+          "nombre_sucursal": "Sucursal Central"
+        },
+        {
+          "id_producto": 301,
+          "stock": 4,
+          "stock_minimo": 2,
+          "stock_maximo": 20,
+          "nota": "Revisar vencimiento",
+          "nombre_bodega": "Bodega Norte",
+          "nombre_sucursal": "Sucursal Norte"
+        }
+      ]
+    }
+  ],
+  "pagination": {
+    "current_page": 1,
+    "per_page": 50,
+    "total": 1,
+    "total_pages": 1,
+    "has_next": false,
+    "has_prev": false
+  },
+  "meta": {
+    "empresa": "Mi Empresa S.A.",
+    "timestamp": "2025-01-31T15:00:00Z",
+    "filters_applied": {
+      "marca": "Dell",
+      "con_stock": true
+    }
+  }
+}
+```
+
+### Response fields
+
+<ResponseField name="success" type="boolean">
+  Indicates whether the request completed successfully.
+</ResponseField>
+
+<ResponseField name="data" type="array">
+  Array of product objects matching the applied filters.
+
+  <Expandable title="Product fields">
+    <ResponseField name="id" type="integer">
+      Unique numeric identifier for the product.
+    </ResponseField>
+    <ResponseField name="nombre" type="string">
+      Full display name of the product.
+    </ResponseField>
+    <ResponseField name="descripcion" type="string">
+      Optional long-form description of the product.
+    </ResponseField>
+    <ResponseField name="codigo" type="string">
+      Internal SKU or product code used across your catalog.
+    </ResponseField>
+    <ResponseField name="barcode" type="string">
+      Barcode or EAN associated with the product, if configured.
+    </ResponseField>
+    <ResponseField name="nombre_categoria" type="string">
+      Category name assigned to the product.
+    </ResponseField>
+    <ResponseField name="precio" type="number">
+      Current retail price of the product.
+    </ResponseField>
+    <ResponseField name="costo" type="number">
+      Most recent purchase cost of the product.
+    </ResponseField>
+    <ResponseField name="costo_anterior" type="number">
+      Previous purchase cost, retained for cost-trend comparisons.
+    </ResponseField>
+    <ResponseField name="costo_promedio" type="number">
+      Weighted average cost calculated across all purchase batches.
+    </ResponseField>
+    <ResponseField name="marca" type="string">
+      Brand name of the product.
+    </ResponseField>
+    <ResponseField name="tipo" type="string">
+      Product type: `Producto` for physical goods or `Servicio` for services.
+    </ResponseField>
+    <ResponseField name="enable" type="integer">
+      Active status flag. `1` means the product is active; `0` means it is inactive.
+    </ResponseField>
+    <ResponseField name="img" type="string">
+      URL of the product image, if one has been uploaded.
+    </ResponseField>
+    <ResponseField name="created_at" type="string">
+      ISO 8601 timestamp of when the product record was created.
+    </ResponseField>
+    <ResponseField name="updated_at" type="string">
+      ISO 8601 timestamp of the most recent update to the product record.
+    </ResponseField>
+    <ResponseField name="inventarios" type="array">
+      Stock levels for this product broken down by warehouse and branch.
+
+      <Expandable title="Stock per warehouse">
+        <ResponseField name="id_producto" type="integer">
+          ID of the product this stock entry belongs to.
+        </ResponseField>
+        <ResponseField name="stock" type="number">
+          Current available stock quantity in this warehouse. Supports up to three decimal places.
+        </ResponseField>
+        <ResponseField name="stock_minimo" type="number">
+          Minimum stock threshold configured for this product in this warehouse. Stock at or below this level matches the `stock_minimo` filter.
+        </ResponseField>
+        <ResponseField name="stock_maximo" type="number">
+          Maximum stock capacity configured for this product in this warehouse.
+        </ResponseField>
+        <ResponseField name="nota" type="string">
+          Optional notes recorded for this product in this warehouse (e.g. `"Revisar vencimiento"`).
+        </ResponseField>
+        <ResponseField name="nombre_bodega" type="string">
+          Name of the warehouse holding this stock.
+        </ResponseField>
+        <ResponseField name="nombre_sucursal" type="string">
+          Name of the branch or location to which this warehouse belongs.
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+---
+
+## GET /inventory/\{id\}
+
+Retrieves a single product record by its numeric ID. The response returns the same full Product object described above, including the `inventarios` array with stock levels per warehouse.
+
+### Path parameter
+
+<ParamField path="id" type="integer" required>
+  The unique numeric identifier of the product you want to retrieve.
+</ParamField>
+
+<CodeGroup>
+
+```bash cURL
+curl --request GET \
+  --url "https://api.smartpyme.site/api/external/v1/inventory/301" \
+  --header "Authorization: Bearer {api_key}"
+```
+
+```python Python
+import requests
+
+product_id = 301
+url = f"https://api.smartpyme.site/api/external/v1/inventory/{product_id}"
+headers = {"Authorization": "Bearer {api_key}"}
+
+response = requests.get(url, headers=headers)
+print(response.json())
+```
+
+```javascript JavaScript
+const productId = 301;
+const response = await fetch(
+  `https://api.smartpyme.site/api/external/v1/inventory/${productId}`,
+  {
+    method: "GET",
+    headers: { Authorization: "Bearer {api_key}" },
+  }
+);
+const data = await response.json();
+console.log(data);
+```
+
+</CodeGroup>
+
+The response wraps the Product object under a `data` key with `"success": true`. All fields, including `inventarios`, are identical to the structure documented in the [GET /inventory](#get-inventory) response above.
+
+---
+
+## GET /inventory/summary
+
+Returns aggregate statistics for your entire product catalog and combined stock position. Use this endpoint to get a quick overview of catalog health — how many products are active, total stock on hand, total inventory value, and which categories contain the most products.
+
+<CodeGroup>
+
+```bash cURL
+curl --request GET \
+  --url "https://api.smartpyme.site/api/external/v1/inventory/summary" \
+  --header "Authorization: Bearer {api_key}"
+```
+
+```python Python
+import requests
+
+url = "https://api.smartpyme.site/api/external/v1/inventory/summary"
+headers = {"Authorization": "Bearer {api_key}"}
+
+response = requests.get(url, headers=headers)
+print(response.json())
+```
+
+```javascript JavaScript
+const response = await fetch(
+  "https://api.smartpyme.site/api/external/v1/inventory/summary",
+  {
+    method: "GET",
+    headers: { Authorization: "Bearer {api_key}" },
+  }
+);
+const data = await response.json();
+console.log(data);
+```
+
+</CodeGroup>
+
+### Response example
+
+```json
+{
+  "success": true,
+  "data": {
+    "productos": {
+      "total": 500,
+      "activos": 480,
+      "inactivos": 20
+    },
+    "inventario": {
+      "stock_total": 15750.5,
+      "valor_total": 125000.75,
+      "productos_con_stock": 450,
+      "productos_sin_stock": 30,
+      "productos_stock_bajo": 15
+    },
+    "productos_por_categoria": [
+      { "categoria": "Electrónicos", "cantidad": 150 },
+      { "categoria": "Ropa",         "cantidad": 200 }
+    ]
+  },
+  "meta": {
+    "empresa": "Mi Empresa S.A.",
+    "timestamp": "2025-01-31T15:00:00Z",
+    "filters_applied": {}
+  }
+}
+```
+
+### Response fields
+
+<ResponseField name="data.productos.total" type="integer">
+  Total number of products in your catalog, regardless of status.
+</ResponseField>
+
+<ResponseField name="data.productos.activos" type="integer">
+  Number of products currently marked as active (`enable = 1`).
+</ResponseField>
+
+<ResponseField name="data.productos.inactivos" type="integer">
+  Number of products currently marked as inactive (`enable = 0`).
+</ResponseField>
+
+<ResponseField name="data.inventario.stock_total" type="number">
+  Sum of all stock quantities across every product and warehouse.
+</ResponseField>
+
+<ResponseField name="data.inventario.valor_total" type="number">
+  Total inventory value calculated using each product's average cost (`costo_promedio`) multiplied by its current stock.
+</ResponseField>
+
+<ResponseField name="data.inventario.productos_con_stock" type="integer">
+  Number of distinct products that have at least one unit in stock across any warehouse.
+</ResponseField>
+
+<ResponseField name="data.inventario.productos_sin_stock" type="integer">
+  Number of distinct products with zero stock across all warehouses.
+</ResponseField>
+
+<ResponseField name="data.inventario.productos_stock_bajo" type="integer">
+  Number of products whose current stock is at or below their configured `stock_minimo` threshold in at least one warehouse.
+</ResponseField>
+
+<ResponseField name="data.productos_por_categoria" type="array">
+  List of product counts grouped by category.
+
+  <Expandable title="productos_por_categoria fields">
+    <ResponseField name="categoria" type="string">
+      Name of the product category.
+    </ResponseField>
+    <ResponseField name="cantidad" type="integer">
+      Number of products assigned to this category.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="meta.empresa" type="string">
+  Display name of the company associated with your API key.
+</ResponseField>
+
+<ResponseField name="meta.timestamp" type="string">
+  ISO 8601 timestamp indicating when the summary was generated.
+</ResponseField>
+
+<ResponseField name="meta.filters_applied" type="object">
+  Echo of any filters used to compute the summary.
+</ResponseField>

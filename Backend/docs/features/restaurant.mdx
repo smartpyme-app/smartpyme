@@ -1,0 +1,81 @@
+---
+title: "Restaurant Module: Tables, Orders, and Kitchen Management"
+sidebarTitle: "Restaurant"
+description: "Manage restaurant tables, take orders, send kitchen tickets, split bills, handle reservations, and invoice dine-in customers with SmartPyme."
+---
+
+SmartPyme's Restaurant module transforms the platform into a full point-of-sale system purpose-built for restaurants and food service businesses. It connects your front-of-house operations — table management, ordering, and billing — with your back-of-house kitchen workflow and SmartPyme's invoicing and inventory modules, all in one unified interface.
+
+## Activating the Module
+
+The Restaurant module must be enabled by your account administrator before it appears in the navigation menu. If you do not see it, contact SmartPyme support and request activation for your account.
+
+## Table Map (Mapa de Mesas)
+
+The table map gives you a real-time visual overview of your entire floor. Tables are grouped by **zone** (zona), and their color indicates current availability:
+
+- **Green** — available and ready to seat guests.
+- **Orange** — occupied with an active session.
+
+Click any table to open its active session or start a new one.
+
+## Zones (Zonas)
+
+Organize your floor plan into logical areas — for example, *Terraza*, *Salón principal*, or *Barra*. Create, rename, and reorder zones under **Restaurant → Zones**. Each zone appears as a labeled group on the table map.
+
+## Taking an Order
+
+<Steps>
+  <Step title="Select a table">
+    Click an available (green) table on the map to open it.
+  </Step>
+  <Step title="Open a session">
+    Start a new **session** (sesión) for the table. The table color changes to orange on the map so your team knows it is occupied.
+  </Step>
+  <Step title="Add items">
+    Browse the menu and add products or services to the order. Menu items are pulled from your **Inventory** module, so prices and availability are always in sync.
+  </Step>
+  <Step title="Send to the kitchen">
+    Click **Send Comanda** to transmit the order to the kitchen as a preparation ticket (comanda). The kitchen view updates immediately.
+  </Step>
+</Steps>
+
+## Kitchen Orders (Comandas)
+
+Each comanda appears on the kitchen display with the table number and ordered items. Kitchen staff can update the status of each comanda as work progresses:
+
+**Pending → In Preparation → Ready**
+
+Once a comanda is marked **Ready**, front-of-house staff are notified that the order can be served. You can also print a comanda ticket at any time from the comanda detail view.
+
+## Moving Items Between Tables
+
+If a group of guests moves to a different table or wants to split onto separate tables, use the **Transfer Items** action on the active session to reassign any ordered items to another open session. This keeps each table's bill accurate without having to re-enter orders.
+
+## Reactivating a Closed Session
+
+If a table session was closed by mistake before billing, you can **Reactivate** it directly from the session detail. The table returns to an active state on the map and the items remain intact, so service can continue without any data loss.
+
+## Pre-Bill and Splitting
+
+When a table is ready to pay, generate a **pre-bill** (pre-cuenta) to show customers the itemized total before finalizing. If the bill needs to be divided, use the **Split** feature to distribute items or amounts across multiple customers — each portion can then be settled and invoiced independently.
+
+## Billing and DTE
+
+Convert the pre-bill to a confirmed **sale** with a single click. If the customer requires a fiscal document, follow the standard invoicing flow to issue the appropriate DTE (Factura de Consumidor Final, CCF, etc.). See the [Electronic Invoicing](/features/electronic-invoicing) guide for full details.
+
+## Reservations
+
+Plan ahead by recording table reservations with the customer's name, date and time, party size, and preferred table. Upcoming reservations are visible directly on the table map so your team can prepare in advance. When the party arrives, convert the reservation to an active session in one click. You can also cancel a reservation if plans change, keeping your reservation list accurate.
+
+## Orders (Pedidos)
+
+The **Orders** section lets you manage delivery orders or orders from external platforms. Each order moves through the following lifecycle:
+
+**Draft → Confirmed → Pending Billing → Billed**
+
+You can confirm a pending order, send its items to the kitchen as a comanda, and void (anular) an order if it needs to be cancelled before billing. Convert any order to a sale when it is ready to invoice, keeping your revenue records complete regardless of the channel.
+
+<Tip>
+  Configure your menu items in the **Inventory** module as products or services before using the Restaurant module. Prices, descriptions, and stock levels set there will appear automatically in the ordering interface.
+</Tip>

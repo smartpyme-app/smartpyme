@@ -1,0 +1,57 @@
+---
+title: "SmartPyme FAQ: Accounts, Invoicing, and Integrations"
+sidebarTitle: "FAQ"
+description: "Answers to the most common SmartPyme questions about accounts, billing, electronic invoicing, API integrations, and data management."
+---
+
+Whether you're just getting started or managing an established operation, you'll find answers to the most common questions about SmartPyme below. If you don't see what you're looking for, reach out to our support team at soporte@smartpyme.com.
+
+<AccordionGroup>
+  <Accordion title="How do I reset my password?">
+    Go to the login page at [app.smartpyme.site](https://app.smartpyme.site) and click **Forgot password**. Enter the email address associated with your account and follow the reset link sent to your inbox.
+  </Accordion>
+
+  <Accordion title="Can I have multiple branches?">
+    Yes. SmartPyme supports multiple branches (sucursales). Add them under **Settings → Branches**. Each branch operates independently with its own users, cash registers, and warehouses.
+  </Accordion>
+
+  <Accordion title="How do I add more users?">
+    Go to **Settings → Users** and click **New User**. Enter the user's details, assign a role — **admin**, **cashier**, **seller**, or **supervisor** — and select the branch they belong to.
+  </Accordion>
+
+  <Accordion title="Is electronic invoicing (DTE) supported?">
+    Yes, SmartPyme supports electronic invoicing (DTE) for El Salvador. You need valid credentials from the Ministry of Finance (Ministerio de Hacienda) to activate this feature. See the [Electronic Invoicing guide](/features/electronic-invoicing) for full setup steps.
+  </Accordion>
+
+  <Accordion title="Can I import my existing products and customers?">
+    Yes. To import products, go to **Inventory → Products → Import** and upload an Excel file using the provided template. To import customers, navigate to **Sales → Customers → Import** and follow the same process with the customer template.
+  </Accordion>
+
+  <Accordion title="What payment methods does SmartPyme support?">
+    SmartPyme includes the following built-in payment methods:
+
+    - **Efectivo** (Cash)
+    - **Tarjeta** (Card)
+    - **Transferencia** (Bank transfer)
+    - **Cheque** (Check)
+    - **Crédito** (Credit)
+
+    You can also add custom payment methods under **Settings → Payment Methods**.
+  </Accordion>
+
+  <Accordion title="How do I get my API Key for the external API?">
+    Go to **Settings → My Account** and open the **Integrations** tab. Your API Key is displayed there. Keep it confidential — treat it like a password.
+  </Accordion>
+
+  <Accordion title="What happens if I exceed the API rate limit?">
+    Your request returns an **HTTP 429 Too Many Requests** response. The rate limit resets at the top of the next hour. While waiting, avoid retrying the same request in a loop. See the [Rate Limits documentation](/api/rate-limits) for details on limits and optimization strategies.
+  </Accordion>
+
+  <Accordion title="Can I connect my WooCommerce store?">
+    Yes. Set up the webhook under **Settings → My Account → Integrations** using your SmartPyme token. See the [WooCommerce & Shopify integration guide](/integrations/woocommerce-shopify) for step-by-step instructions.
+  </Accordion>
+
+  <Accordion title="How do I cancel my subscription?">
+    Contact SmartPyme support at [soporte@smartpyme.com](mailto:soporte@smartpyme.com) to request cancellation. Your data remains fully accessible until the end of your current billing period.
+  </Accordion>
+</AccordionGroup>

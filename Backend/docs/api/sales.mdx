@@ -1,0 +1,484 @@
+---
+title: "SmartPyme Sales API: Query, Filter, and Summarize"
+sidebarTitle: "Sales"
+description: "Query paginated SmartPyme sales by date range, status, or sort field. Each record includes payment details, line items, and aggregate summaries."
+---
+
+The Sales endpoints let you retrieve your full transaction history from SmartPyme, including individual line items, customer details, and payment information. Use these endpoints to build reporting dashboards, sync data to external systems, or audit completed and pending transactions. All requests must include your API key in the `Authorization` header.
+
+---
+
+## GET /sales
+
+Returns a paginated list of sales records. Apply query parameters to narrow results by date range, status, or sort order. Each record in the response includes the full sale object with its associated `detalles` line items.
+
+<CodeGroup>
+
+```bash cURL
+curl --request GET \
+  --url "https://api.smartpyme.site/api/external/v1/sales?fecha_inicio=2025-01-01&fecha_fin=2025-01-31&estado=Completada&per_page=50" \
+  --header "Authorization: Bearer {api_key}"
+```
+
+```python Python
+import requests
+
+url = "https://api.smartpyme.site/api/external/v1/sales"
+headers = {"Authorization": "Bearer {api_key}"}
+params = {
+    "fecha_inicio": "2025-01-01",
+    "fecha_fin": "2025-01-31",
+    "estado": "Completada",
+    "per_page": 50,
+}
+
+response = requests.get(url, headers=headers, params=params)
+print(response.json())
+```
+
+```javascript JavaScript
+const response = await fetch(
+  "https://api.smartpyme.site/api/external/v1/sales" +
+    "?fecha_inicio=2025-01-01&fecha_fin=2025-01-31&estado=Completada&per_page=50",
+  {
+    method: "GET",
+    headers: { Authorization: "Bearer {api_key}" },
+  }
+);
+const data = await response.json();
+console.log(data);
+```
+
+</CodeGroup>
+
+### Query parameters
+
+<ParamField query="fecha_inicio" type="string">
+  Start date for filtering sales, in `Y-m-d` format (e.g. `2025-01-01`). Used together with `fecha_fin` to define a date range.
+</ParamField>
+
+<ParamField query="fecha_fin" type="string">
+  End date for filtering sales, in `Y-m-d` format (e.g. `2025-01-31`). Used together with `fecha_inicio` to define a date range.
+</ParamField>
+
+<ParamField query="estado" type="string">
+  Filter by sale status. Accepted values: `Completada`, `Pendiente`, `Anulada`, `Cotizacion`.
+</ParamField>
+
+<ParamField query="page" type="integer">
+  Page number to retrieve. Defaults to `1`.
+</ParamField>
+
+<ParamField query="per_page" type="integer">
+  Number of records per page. Accepts values between `1` and `200`. Defaults to `100`.
+</ParamField>
+
+<ParamField query="order_by" type="string">
+  Field to sort results by. Accepted values: `fecha`, `total`, `correlativo`, `created_at`.
+</ParamField>
+
+<ParamField query="order_direction" type="string">
+  Sort direction. Accepted values: `asc`, `desc`.
+</ParamField>
+
+### Response example
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 10421,
+      "fecha": "2025-01-15",
+      "correlativo": "FAC-002501",
+      "estado": "Completada",
+      "forma_pago": "Efectivo",
+      "monto_pago": 200.00,
+      "cambio": 20.00,
+      "iva_percibido": 16.25,
+      "iva_retenido": 0.00,
+      "renta_retenida": 0.00,
+      "iva": 16.25,
+      "total_costo": 120.00,
+      "descuento": 10.00,
+      "sub_total": 163.75,
+      "no_sujeta": 0.00,
+      "exenta": 0.00,
+      "gravada": 163.75,
+      "cuenta_a_terceros": 0.00,
+      "total": 180.00,
+      "propina": 0.00,
+      "observaciones": "Entrega en tienda",
+      "recurrente": false,
+      "cotizacion": false,
+      "saldo": 0.00,
+      "nombre_cliente": "María López",
+      "nombre_usuario": "admin",
+      "nombre_vendedor": "Carlos Díaz",
+      "nombre_sucursal": "Sucursal Central",
+      "nombre_canal": "Mostrador",
+      "nombre_documento": "Factura",
+      "created_at": "2025-01-15T10:35:00Z",
+      "updated_at": "2025-01-15T10:35:00Z",
+      "detalles": [
+        {
+          "nombre_producto": "Laptop Dell Inspiron 15",
+          "codigo_producto": "LAP-DELL-015",
+          "marca_producto": "Dell",
+          "cantidad": 1,
+          "precio": 163.75,
+          "costo": 120.00,
+          "descuento": 10.00,
+          "total_costo": 120.00,
+          "total": 163.75,
+          "iva": 16.25
+        }
+      ]
+    }
+  ],
+  "pagination": {
+    "current_page": 1,
+    "per_page": 50,
+    "total": 120,
+    "total_pages": 3,
+    "has_next": true,
+    "has_prev": false
+  },
+  "meta": {
+    "empresa": "Mi Empresa S.A.",
+    "timestamp": "2025-01-31T15:00:00Z",
+    "filters_applied": {
+      "fecha_inicio": "2025-01-01",
+      "fecha_fin": "2025-01-31",
+      "estado": "Completada"
+    }
+  }
+}
+```
+
+### Response fields
+
+<ResponseField name="success" type="boolean">
+  Indicates whether the request completed successfully.
+</ResponseField>
+
+<ResponseField name="data" type="array">
+  Array of sale objects matching the applied filters.
+
+  <Expandable title="Sale fields">
+    <ResponseField name="id" type="integer">
+      Unique numeric identifier for the sale.
+    </ResponseField>
+    <ResponseField name="fecha" type="string">
+      Date the sale was made, in `Y-m-d` format.
+    </ResponseField>
+    <ResponseField name="correlativo" type="string">
+      Human-readable document number assigned to the sale (e.g. `FAC-002501`).
+    </ResponseField>
+    <ResponseField name="estado" type="string">
+      Current status of the sale: `Completada`, `Pendiente`, `Anulada`, or `Cotizacion`.
+    </ResponseField>
+    <ResponseField name="forma_pago" type="string">
+      Payment method used (e.g. `Efectivo`, `Tarjeta`, `Transferencia`).
+    </ResponseField>
+    <ResponseField name="monto_pago" type="number">
+      Amount tendered by the customer.
+    </ResponseField>
+    <ResponseField name="cambio" type="number">
+      Change returned to the customer. Applies to cash payments.
+    </ResponseField>
+    <ResponseField name="iva_percibido" type="number">
+      IVA collected on the transaction.
+    </ResponseField>
+    <ResponseField name="iva_retenido" type="number">
+      IVA withheld on the transaction, when applicable.
+    </ResponseField>
+    <ResponseField name="renta_retenida" type="number">
+      Income tax withheld on the transaction, when applicable.
+    </ResponseField>
+    <ResponseField name="iva" type="number">
+      Total tax amount applied to the sale.
+    </ResponseField>
+    <ResponseField name="total_costo" type="number">
+      Sum of costs for all products sold in this transaction.
+    </ResponseField>
+    <ResponseField name="descuento" type="number">
+      Total discount amount applied to the sale.
+    </ResponseField>
+    <ResponseField name="sub_total" type="number">
+      Pre-tax subtotal of all line items.
+    </ResponseField>
+    <ResponseField name="no_sujeta" type="number">
+      Portion of the sale not subject to tax classification.
+    </ResponseField>
+    <ResponseField name="exenta" type="number">
+      Tax-exempt portion of the sale amount.
+    </ResponseField>
+    <ResponseField name="gravada" type="number">
+      Taxable base amount of the sale.
+    </ResponseField>
+    <ResponseField name="cuenta_a_terceros" type="number">
+      Amount invoiced on behalf of third parties, when applicable.
+    </ResponseField>
+    <ResponseField name="total" type="number">
+      Final total charged to the customer, including taxes and after discounts.
+    </ResponseField>
+    <ResponseField name="propina" type="number">
+      Tip amount included in the transaction, if any.
+    </ResponseField>
+    <ResponseField name="observaciones" type="string">
+      Free-text notes or observations recorded at the time of sale.
+    </ResponseField>
+    <ResponseField name="recurrente" type="boolean">
+      Indicates whether this is a recurring sale.
+    </ResponseField>
+    <ResponseField name="cotizacion" type="boolean">
+      Indicates whether this record is a quotation rather than a confirmed sale.
+    </ResponseField>
+    <ResponseField name="saldo" type="number">
+      Outstanding balance remaining on the sale, for credit transactions.
+    </ResponseField>
+    <ResponseField name="nombre_cliente" type="string">
+      Display name of the customer associated with the sale.
+    </ResponseField>
+    <ResponseField name="nombre_usuario" type="string">
+      Username of the operator who created the sale record.
+    </ResponseField>
+    <ResponseField name="nombre_vendedor" type="string">
+      Name of the salesperson credited with the transaction.
+    </ResponseField>
+    <ResponseField name="nombre_sucursal" type="string">
+      Branch or location where the sale was processed.
+    </ResponseField>
+    <ResponseField name="nombre_canal" type="string">
+      Sales channel through which the transaction was made (e.g. `Mostrador`, `En línea`).
+    </ResponseField>
+    <ResponseField name="nombre_documento" type="string">
+      Document type used for the transaction (e.g. `Factura`, `Ticket`).
+    </ResponseField>
+    <ResponseField name="created_at" type="string">
+      ISO 8601 timestamp of when the record was created.
+    </ResponseField>
+    <ResponseField name="updated_at" type="string">
+      ISO 8601 timestamp of the most recent update to the record.
+    </ResponseField>
+    <ResponseField name="detalles" type="array">
+      Line items included in the sale.
+
+      <Expandable title="Sale detail fields">
+        <ResponseField name="nombre_producto" type="string">
+          Full name of the product sold.
+        </ResponseField>
+        <ResponseField name="codigo_producto" type="string">
+          Internal SKU or product code.
+        </ResponseField>
+        <ResponseField name="marca_producto" type="string">
+          Brand name of the product.
+        </ResponseField>
+        <ResponseField name="cantidad" type="number">
+          Quantity sold in this line item. Supports up to three decimal places for fractional units.
+        </ResponseField>
+        <ResponseField name="precio" type="number">
+          Unit price of the product at time of sale.
+        </ResponseField>
+        <ResponseField name="costo" type="number">
+          Unit cost of the product at time of sale, used for margin calculations.
+        </ResponseField>
+        <ResponseField name="descuento" type="number">
+          Discount amount applied to this line item.
+        </ResponseField>
+        <ResponseField name="total_costo" type="number">
+          Total cost for this line item, calculated as `costo × cantidad`.
+        </ResponseField>
+        <ResponseField name="total" type="number">
+          Line item total after applying quantity, discount, and tax.
+        </ResponseField>
+        <ResponseField name="iva" type="number">
+          Tax amount applied to this line item.
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+---
+
+## GET /sales/\{id\}
+
+Retrieves a single sale record by its numeric ID. The response returns the same full Sale object described above, including the `detalles` array of line items.
+
+### Path parameter
+
+<ParamField path="id" type="integer" required>
+  The unique numeric identifier of the sale you want to retrieve.
+</ParamField>
+
+<CodeGroup>
+
+```bash cURL
+curl --request GET \
+  --url "https://api.smartpyme.site/api/external/v1/sales/10421" \
+  --header "Authorization: Bearer {api_key}"
+```
+
+```python Python
+import requests
+
+sale_id = 10421
+url = f"https://api.smartpyme.site/api/external/v1/sales/{sale_id}"
+headers = {"Authorization": "Bearer {api_key}"}
+
+response = requests.get(url, headers=headers)
+print(response.json())
+```
+
+```javascript JavaScript
+const saleId = 10421;
+const response = await fetch(
+  `https://api.smartpyme.site/api/external/v1/sales/${saleId}`,
+  {
+    method: "GET",
+    headers: { Authorization: "Bearer {api_key}" },
+  }
+);
+const data = await response.json();
+console.log(data);
+```
+
+</CodeGroup>
+
+The response wraps the Sale object under a `data` key with `"success": true`. All fields, including `detalles`, are identical to the structure documented in the [GET /sales](#get-sales) response above.
+
+---
+
+## GET /sales/summary
+
+Returns aggregate statistics for your sales data over an optional date range. Use this endpoint to build high-level reporting widgets — total revenue, average transaction value, tax collected, and a breakdown of transaction counts and totals by status.
+
+<CodeGroup>
+
+```bash cURL
+curl --request GET \
+  --url "https://api.smartpyme.site/api/external/v1/sales/summary?fecha_inicio=2025-01-01&fecha_fin=2025-01-31" \
+  --header "Authorization: Bearer {api_key}"
+```
+
+```python Python
+import requests
+
+url = "https://api.smartpyme.site/api/external/v1/sales/summary"
+headers = {"Authorization": "Bearer {api_key}"}
+params = {
+    "fecha_inicio": "2025-01-01",
+    "fecha_fin": "2025-01-31",
+}
+
+response = requests.get(url, headers=headers, params=params)
+print(response.json())
+```
+
+```javascript JavaScript
+const response = await fetch(
+  "https://api.smartpyme.site/api/external/v1/sales/summary" +
+    "?fecha_inicio=2025-01-01&fecha_fin=2025-01-31",
+  {
+    method: "GET",
+    headers: { Authorization: "Bearer {api_key}" },
+  }
+);
+const data = await response.json();
+console.log(data);
+```
+
+</CodeGroup>
+
+### Query parameters
+
+<ParamField query="fecha_inicio" type="string">
+  Start date for the summary period, in `Y-m-d` format. Omit to include all records from the beginning.
+</ParamField>
+
+<ParamField query="fecha_fin" type="string">
+  End date for the summary period, in `Y-m-d` format. Omit to include all records up to the current date.
+</ParamField>
+
+<ParamField query="estado" type="string">
+  Limit the summary to a specific sale status. Accepted values: `Completada`, `Pendiente`, `Anulada`, `Cotizacion`.
+</ParamField>
+
+### Response example
+
+```json
+{
+  "success": true,
+  "data": {
+    "cantidad_ventas": 125,
+    "total_ventas": 18750.50,
+    "total_iva": 1687.55,
+    "total_descuentos": 250.00,
+    "promedio_venta": 150.00,
+    "ventas_por_estado": [
+      { "estado": "Completada", "cantidad": 120, "total": 18000.00 },
+      { "estado": "Anulada",    "cantidad": 5,   "total": 750.50   }
+    ]
+  },
+  "meta": {
+    "empresa": "Mi Empresa S.A.",
+    "timestamp": "2025-01-31T23:59:00Z",
+    "filters_applied": {
+      "fecha_inicio": "2025-01-01",
+      "fecha_fin": "2025-01-31"
+    }
+  }
+}
+```
+
+### Response fields
+
+<ResponseField name="data.cantidad_ventas" type="integer">
+  Total number of sale records within the requested period.
+</ResponseField>
+
+<ResponseField name="data.total_ventas" type="number">
+  Gross revenue across all sales in the period.
+</ResponseField>
+
+<ResponseField name="data.total_iva" type="number">
+  Total tax collected across all sales in the period.
+</ResponseField>
+
+<ResponseField name="data.total_descuentos" type="number">
+  Total discount amount applied across all sales in the period.
+</ResponseField>
+
+<ResponseField name="data.promedio_venta" type="number">
+  Average sale value for the period, calculated as `total_ventas / cantidad_ventas`.
+</ResponseField>
+
+<ResponseField name="data.ventas_por_estado" type="array">
+  Breakdown of sales count and total revenue grouped by status.
+
+  <Expandable title="ventas_por_estado fields">
+    <ResponseField name="estado" type="string">
+      The sale status group (e.g. `Completada`, `Pendiente`, `Anulada`, `Cotizacion`).
+    </ResponseField>
+    <ResponseField name="cantidad" type="integer">
+      Number of sales in this status group.
+    </ResponseField>
+    <ResponseField name="total" type="number">
+      Combined total value of sales in this status group.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="meta.empresa" type="string">
+  Display name of the company associated with your API key.
+</ResponseField>
+
+<ResponseField name="meta.timestamp" type="string">
+  ISO 8601 timestamp indicating when the summary was generated.
+</ResponseField>
+
+<ResponseField name="meta.filters_applied" type="object">
+  Echo of the filters used to compute the summary, useful for confirming the request parameters.
+</ResponseField>

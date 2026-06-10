@@ -1,0 +1,164 @@
+---
+title: "SmartPyme Troubleshooting Guide: Fix Common Issues"
+sidebarTitle: "Troubleshooting"
+description: "Solutions for common SmartPyme problems including login errors, DTE submission failures, sync issues, and API authentication errors."
+---
+
+If something isn't working as expected in SmartPyme, this guide walks you through the most common problems and how to resolve them. Work through the relevant section below, and contact support if the issue persists.
+
+## Login and access issues
+
+<AccordionGroup>
+  <Accordion title="I can't log in">
+    Follow these steps to restore access:
+
+    <Steps>
+      <Step title="Check your credentials">
+        Make sure your email address and password are correct. Passwords are case-sensitive.
+      </Step>
+      <Step title="Clear your browser cache">
+        Stale session data can cause login failures. Clear your browser's cache and cookies, then try again.
+      </Step>
+      <Step title="Reset your password">
+        If you're still unable to log in, go to [app.smartpyme.site](https://app.smartpyme.site), click **Forgot password**, and follow the reset link sent to your email.
+      </Step>
+    </Steps>
+  </Accordion>
+
+  <Accordion title="I get a 403 error after login">
+    A **403 Forbidden** error typically means your account is inactive or your subscription has lapsed. Contact your company administrator to verify your account status, or reach out directly to [soporte@smartpyme.com](mailto:soporte@smartpyme.com) for subscription assistance.
+  </Accordion>
+</AccordionGroup>
+
+## Electronic invoicing (DTE) errors
+
+<AccordionGroup>
+  <Accordion title="DTE submission fails with an authentication error">
+    Your Ministry of Finance (MH) credentials may be expired or incorrect. To update them:
+
+    <Steps>
+      <Step title="Open the Electronic Invoicing settings">
+        Go to **Settings → My Account → Electronic Invoicing**.
+      </Step>
+      <Step title="Re-enter your MH credentials">
+        Update your MH username and password, then save the changes.
+      </Step>
+      <Step title="Retry the submission">
+        Return to the sale record and resubmit the DTE document.
+      </Step>
+    </Steps>
+  </Accordion>
+
+  <Accordion title="DTE is stuck in 'pending' status">
+    The MH servers may be temporarily unavailable. Wait a few minutes, then resubmit the document from the sale record.
+
+    <Warning>
+      If the pending status persists for more than 30 minutes, switch to **Contingency mode** to continue issuing documents without interrupting your operations.
+    </Warning>
+  </Accordion>
+
+  <Accordion title="DTE shows 'rejected' by MH">
+    A rejection means the document contains one or more validation errors. Open the sale record and review the error detail provided by MH. Common causes include:
+
+    - **Invalid NIT** — verify the customer's NIT is correctly entered.
+    - **Incorrect economic activity code** — confirm your company's registered activity code under Settings → My Account.
+    - **Missing required fields** — ensure all mandatory fields on the document are complete.
+
+    Correct the errors on the sale record and resubmit.
+  </Accordion>
+</AccordionGroup>
+
+## Inventory and sales issues
+
+<AccordionGroup>
+  <Accordion title="Stock isn't updating after a sale">
+    Check that the product is linked to the correct warehouse (bodega) for the branch where the sale was made. To verify:
+
+    <Steps>
+      <Step title="Open the product record">
+        Go to **Inventory → Products** and open the affected product.
+      </Step>
+      <Step title="Confirm the warehouse assignment">
+        Make sure the product is assigned to the right warehouse for the branch.
+      </Step>
+      <Step title="Review the movement history">
+        Go to **Inventory → Kardex** and search for the product to see its full movement history and confirm whether the sale was recorded.
+      </Step>
+    </Steps>
+  </Accordion>
+
+  <Accordion title="I can't find a sale">
+    Use the search and filter tools in the **Sales** module. You can filter sales by:
+
+    - **Date range**
+    - **Status** (e.g., completed, pending, cancelled)
+    - **Customer**
+    - **Document number**
+
+    <Tip>
+      If you're searching across multiple branches, make sure you have the correct branch selected in the top navigation.
+    </Tip>
+  </Accordion>
+</AccordionGroup>
+
+## API and integration issues
+
+<AccordionGroup>
+  <Accordion title="API returns 401 Unauthorized">
+    Your API Key may be invalid, or your company account may be inactive. To resolve this:
+
+    <Steps>
+      <Step title="Retrieve a fresh API Key">
+        Go to **Settings → My Account → Integrations** and copy your current API Key.
+      </Step>
+      <Step title="Update your integration">
+        Replace the old key in your application or integration with the new one.
+      </Step>
+      <Step title="Verify your account status">
+        If the error persists, confirm with your administrator that the company account is active.
+      </Step>
+    </Steps>
+  </Accordion>
+
+  <Accordion title="API returns 429 Too Many Requests">
+    You've exceeded the hourly rate limit. SmartPyme enforces the following limits:
+
+    - **Standard:** 1,000 requests per hour
+    - **With date filters:** 2,000 requests per hour
+
+    Wait for the next hourly reset before making additional requests. To avoid hitting the limit, apply date filters to your queries and batch requests where possible.
+
+    <Note>
+      See the [Rate Limits documentation](/api/rate-limits) for full details and best practices.
+    </Note>
+  </Accordion>
+
+  <Accordion title="WooCommerce webhook not creating sales">
+    Follow these steps to diagnose the issue:
+
+    <Steps>
+      <Step title="Verify the webhook URL">
+        Make sure the webhook URL configured in WooCommerce includes your correct SmartPyme token.
+      </Step>
+      <Step title="Check the webhook events">
+        Confirm that the webhook is set to trigger on **Order Created** and **Order Payment** events.
+      </Step>
+      <Step title="Review the delivery log">
+        In WooCommerce, go to **WooCommerce → Settings → Advanced → Webhooks**, open your webhook, and check the delivery log for error responses from SmartPyme.
+      </Step>
+    </Steps>
+
+    See the [WooCommerce & Shopify integration guide](/integrations/woocommerce-shopify) for full configuration details.
+  </Accordion>
+</AccordionGroup>
+
+## Getting more help
+
+If you've worked through the steps above and still need assistance, contact the SmartPyme support team:
+
+- **Email:** [soporte@smartpyme.com](mailto:soporte@smartpyme.com)
+- **App:** [app.smartpyme.site](https://app.smartpyme.site)
+
+<Tip>
+  Include your company ID and a description of the steps that led to the issue when contacting support. This helps the team reproduce and resolve your problem faster.
+</Tip>

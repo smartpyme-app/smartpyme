@@ -1,0 +1,99 @@
+---
+title: "Paginate Large Datasets in the SmartPyme External API"
+sidebarTitle: "Pagination"
+description: "All SmartPyme External API list endpoints support page-based pagination using page and per_page parameters, returning up to 200 records per request."
+---
+
+All list endpoints in the SmartPyme External API return paginated results. You control which page to retrieve and how many records to include per page using query parameters. The response envelope always includes a `pagination` object so your integration can determine whether more pages exist and navigate through them programmatically.
+
+## Parameters
+
+<ParamField query="page" type="integer" default="1">
+  The page number to retrieve. Must be 1 or greater. Defaults to `1` if omitted.
+</ParamField>
+
+<ParamField query="per_page" type="integer" default="100">
+  The number of records to include per page. Accepts values from `1` to `200`. Defaults to `100` if omitted.
+</ParamField>
+
+## Pagination response fields
+
+Every list response includes a `pagination` object at the top level of the response envelope with the following fields:
+
+<ResponseField name="current_page" type="integer">
+  The page number of the results currently returned.
+</ResponseField>
+
+<ResponseField name="per_page" type="integer">
+  The number of records included on this page.
+</ResponseField>
+
+<ResponseField name="total" type="integer">
+  The total number of records matching your query across all pages.
+</ResponseField>
+
+<ResponseField name="total_pages" type="integer">
+  The total number of pages available given the current `per_page` value.
+</ResponseField>
+
+<ResponseField name="has_next" type="boolean">
+  `true` if there is a page after the current one; `false` if this is the last page.
+</ResponseField>
+
+<ResponseField name="has_prev" type="boolean">
+  `true` if there is a page before the current one; `false` if this is the first page.
+</ResponseField>
+
+<ResponseField name="from" type="integer">
+  The index of the first record on the current page (1-based, relative to the full result set).
+</ResponseField>
+
+<ResponseField name="to" type="integer">
+  The index of the last record on the current page (1-based, relative to the full result set).
+</ResponseField>
+
+## Example request
+
+The following request fetches the second page of sales results with 50 records per page:
+
+```bash
+curl -H "Authorization: Bearer YOUR_API_KEY" \
+     "https://api.smartpyme.site/api/external/v1/sales?page=2&per_page=50"
+```
+
+## Iterating all pages
+
+To retrieve every record in a dataset, loop through pages until `has_next` is `false`. The example below fetches all sales for January 2025 using the maximum page size to minimize the number of requests:
+
+<CodeGroup>
+
+```python Python
+import requests
+
+def get_all_sales(api_key):
+    headers = {"Authorization": f"Bearer {api_key}"}
+    base_url = "https://api.smartpyme.site/api/external/v1/sales"
+    page = 1
+    all_sales = []
+
+    while True:
+        resp = requests.get(
+            base_url,
+            headers=headers,
+            params={"page": page, "per_page": 200, "fecha_inicio": "2025-01-01", "fecha_fin": "2025-01-31"}
+        )
+        data = resp.json()
+        all_sales.extend(data["data"])
+
+        if not data["pagination"]["has_next"]:
+            break
+        page += 1
+
+    return all_sales
+```
+
+</CodeGroup>
+
+<Tip>
+  Use `per_page=200` to minimize the number of requests and stay within your rate limit budget.
+</Tip>

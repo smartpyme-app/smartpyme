@@ -1,0 +1,96 @@
+---
+title: "Receive Real-Time WooCommerce and Shopify Webhooks"
+sidebarTitle: "Webhooks"
+description: "Configure SmartPyme webhooks to automatically capture WooCommerce and Shopify orders as sales and keep your inventory updated in real time."
+---
+
+SmartPyme exposes webhook endpoints that accept incoming events from WooCommerce and Shopify, forwarding them into your SmartPyme account as sales and inventory updates. You register these URLs inside each external platform, and SmartPyme handles everything from there — no manual imports required.
+
+## Available Webhook Endpoints
+
+| Endpoint | Method | Source | Description |
+|---|---|---|---|
+| `/api/webhook/woocommerce/{token}` | POST | WooCommerce | Process an incoming order as a SmartPyme sale |
+| `/api/webhook/woocommerce/{token}/producto` | POST | WooCommerce | Update a product from WooCommerce |
+| `/api/webhook/shopify/{token}` | POST | Shopify | Process a Shopify order as a SmartPyme sale |
+
+All endpoints are hosted at the base URL `https://api.smartpyme.site`.
+
+## Finding Your Webhook Token
+
+Each SmartPyme user has a unique token that authenticates incoming webhook calls. To locate yours:
+
+1. Go to **Settings → Users** and open your user profile.
+2. Click the **Integrations** tab.
+3. Copy the token displayed — you will paste it into the webhook URL when configuring the external platform.
+
+## Security
+
+The `{token}` segment in each webhook URL acts as a per-user secret that authorizes requests to your SmartPyme account. Treat it like a password:
+
+- **Do not share** your token in public repositories, documentation, or client-side code.
+- **Do not expose** it in screenshots or support tickets.
+- If you believe your token has been compromised, contact your SmartPyme administrator immediately to rotate your credentials.
+
+## Payload Handling
+
+When SmartPyme receives a valid webhook event, it automatically:
+
+- **Creates a new sale** from the order data, including customer details, line items, totals, and payment method.
+- **Deducts inventory** for each product sold, keeping your stock levels accurate.
+- **Links the external order ID** to the SmartPyme sale record so you can trace any transaction back to its source.
+
+No additional configuration is required — SmartPyme parses the standard WooCommerce and Shopify payload formats out of the box.
+
+## Testing Webhooks
+
+Before going live, verify that your webhook endpoint is working correctly by sending a sample payload.
+
+<CodeGroup>
+  ```bash cURL
+  curl -X POST https://api.smartpyme.site/api/webhook/woocommerce/{your_token} \
+    -H "Content-Type: application/json" \
+    -d '{
+      "id": 9999,
+      "status": "processing",
+      "billing": {
+        "first_name": "Jane",
+        "last_name": "Doe",
+        "email": "jane@example.com"
+      },
+      "line_items": [
+        {
+          "product_id": 42,
+          "name": "Sample Product",
+          "quantity": 1,
+          "total": "19.99"
+        }
+      ],
+      "total": "19.99",
+      "payment_method": "stripe"
+    }'
+  ```
+  ```json Sample Shopify Payload
+  {
+    "id": 820982911946154500,
+    "email": "jon@example.com",
+    "financial_status": "paid",
+    "line_items": [
+      {
+        "id": 866550311766439000,
+        "title": "Sample Product",
+        "quantity": 1,
+        "price": "19.99"
+      }
+    ],
+    "total_price": "19.99",
+    "gateway": "shopify_payments"
+  }
+  ```
+</CodeGroup>
+
+After sending the request, open SmartPyme and confirm that a new sale record was created with the correct details.
+
+<Tip>
+  For WooCommerce, you can trigger a webhook replay without placing a real order. Go to **WooCommerce Admin → Settings → Webhooks**, select the webhook you want to test, and click **Deliver**. This resends the most recent event to your SmartPyme endpoint.
+</Tip>

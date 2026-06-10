@@ -1,0 +1,111 @@
+---
+title: "Configure Your SmartPyme Account and Company Profile"
+sidebarTitle: "Account Setup"
+description: "Learn how to complete your SmartPyme company profile, manage branches, set up users and roles, and configure cash registers and billing documents."
+---
+
+After you've created your SmartPyme account, take a few minutes to complete your configuration before you start operating. A properly set-up account ensures your invoices are legally compliant, your team has the right permissions, and your cash registers are ready for daily use. This guide covers each configuration area in detail.
+
+## Company profile
+
+Go to **Settings → My Account** to fill in your company information. This data appears on every document you issue — invoices, tickets, purchase orders, and payslips — so accuracy is essential.
+
+Complete the following fields:
+
+- **Company name** — your legal business name exactly as registered.
+- **NIT / NRC** — your tax identification numbers for El Salvador. Required for issuing fiscal documents (CCF, Factura).
+- **Economic activity code** — the CIIU code that corresponds to your primary business activity, as assigned by the tax authority.
+- **Address fields** — department, municipality, and street address of your registered business location.
+- **Logo upload** — upload a PNG or JPG of your logo (recommended size: 300 × 300 px minimum). It appears at the top of all printed and digital documents.
+
+Save your changes before moving to the next section.
+
+## Branches (Sucursales)
+
+SmartPyme supports multiple branches under a single account, letting you manage several physical locations without switching between separate systems. Each branch operates independently with its own cash registers and warehouse, while all data rolls up to your central reports and dashboard.
+
+**To add a new branch:**
+
+1. Go to **Settings → Branches** and click **New Branch**.
+2. Enter the branch name, address, and contact phone number.
+3. Save the branch — it immediately becomes available for assignment to users, cash registers, and inventory.
+
+Each branch you create automatically gets:
+
+- Its own **cash registers (cajas)** — which you configure separately (see below).
+- Its own **warehouse (bodega)** — for tracking stock levels specific to that location.
+
+You can assign users to one or more branches, and their Dashboard and reports will filter data to the branches they're assigned to.
+
+## Users and roles
+
+Add your team members under **Settings → Users** so each person can log in with their own credentials and work within their assigned permissions.
+
+**To add a new user:**
+
+1. Click **New User** and enter their name, email address, and a temporary password.
+2. Select their **role** from the options below.
+3. Assign them to one or more **branches** they'll work in.
+4. Save — the user can log in immediately with the credentials you provided.
+
+SmartPyme includes four built-in roles:
+
+| Role | Access level |
+|------|-------------|
+| **Admin** | Full access to all modules, settings, reports, and configuration. |
+| **Supervisor** | Access to sales, inventory, purchasing, and reports — but not system settings or user management. |
+| **Seller** | Can create sales, manage customers, and view their own sales history. |
+| **Cashier** | Limited to the point-of-sale screen, payment processing, and cash register operations. |
+
+Each role controls which modules appear in the sidebar and which actions (create, edit, delete, view) are permitted within each module.
+
+<Tip>
+  You can add multiple users with different roles so each person only sees what they need — keeping sensitive financial data and settings visible only to the right people.
+</Tip>
+
+## Cash registers (Cajas)
+
+Cash registers represent the physical or virtual till at each branch. Set them up under **Settings → Cash Registers** before your team starts processing sales.
+
+**To create a cash register:**
+
+1. Go to **Settings → Cash Registers** and click **New Register**.
+2. Select the **branch** this register belongs to.
+3. Give it a descriptive name (e.g., "Caja 1 — Sucursal Centro").
+4. Save.
+
+**Opening and closing (Cortes):**
+
+At the start of each shift, the cashier opens the register by entering the opening cash amount. Throughout the day, all sales processed on that register are tracked automatically. At the end of the shift, the cashier performs a **corte** (cash cut) — counting the physical cash, comparing it to the system total, and closing the register. SmartPyme generates a corte report you can print or export for your records.
+
+## Billing documents
+
+Under **Settings → Documents**, you configure which types of billing documents your business issues and how they're numbered.
+
+SmartPyme supports the following document types:
+
+<Accordion title="Ticket">
+  A simplified sales receipt with no customer tax information required. Ideal for quick retail transactions. Numbering is sequential and resets per register or per day, according to your configuration.
+</Accordion>
+
+<Accordion title="Factura (Consumer Invoice)">
+  A standard invoice issued to end consumers. Includes your company's NIT and the transaction detail, but does not transfer tax credit to the buyer.
+</Accordion>
+
+<Accordion title="CCF (Comprobante de Crédito Fiscal)">
+  A tax credit receipt issued to registered businesses. Transfers IVA credit to the buyer. Requires both your NIT/NRC and the buyer's NIT/NRC. This is the document type most B2B transactions use.
+</Accordion>
+
+<Accordion title="Nota de Crédito / Débito">
+  Used to adjust or reverse a previously issued CCF or Factura — for returns, corrections, or price adjustments.
+</Accordion>
+
+For each document type, set:
+
+- **Correlative series** — the alphanumeric prefix for your document numbers (e.g., `A`, `B`, or a branch code).
+- **Starting number** — the first number in the sequence if you're migrating from another system.
+- **Print format** — choose between full-page, half-page, or thermal (80 mm) ticket formats.
+
+<Warning>
+  For electronic invoicing (DTE), additional credentials from the Ministry of Finance (Ministerio de Hacienda) are required — including your digital certificate and API token from the Hacienda portal. These are not configured here. See the [Electronic Invoicing guide](features/electronic-invoicing) for the full DTE setup process.
+</Warning>

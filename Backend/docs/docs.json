@@ -1,0 +1,93 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "name": "SmartPyme",
+  "theme": "almond",
+  "logo": {
+    "light": "https://media.brand.dev/70f0afda-5398-40bd-949f-5e29cf9feafa.svg",
+    "dark": "https://media.brand.dev/70f0afda-5398-40bd-949f-5e29cf9feafa.svg"
+  },
+  "favicon": "https://media.brand.dev/78efe76f-7fd8-4b28-819b-622b9f1fbb7a.webp",
+  "colors": {
+    "primary": "#2c97eb"
+  },
+  "navbar": {
+    "primary": {
+      "type": "button",
+      "label": "Iniciar Sesión",
+      "href": "https://app.smartpyme.site"
+    }
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "account-setup"
+            ]
+          },
+          {
+            "group": "Core Modules",
+            "pages": [
+              "modules/sales",
+              "modules/inventory",
+              "modules/purchasing",
+              "modules/accounting"
+            ]
+          },
+          {
+            "group": "Advanced Features",
+            "pages": [
+              "features/electronic-invoicing",
+              "features/payroll",
+              "features/restaurant",
+              "features/loyalty",
+              "features/reports-dashboard"
+            ]
+          },
+          {
+            "group": "Integrations",
+            "pages": [
+              "integrations/woocommerce-shopify",
+              "integrations/whatsapp",
+              "integrations/webhooks"
+            ]
+          },
+          {
+            "group": "Help",
+            "pages": [
+              "help/faq",
+              "help/troubleshooting"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "api/overview",
+              "api/authentication",
+              "api/rate-limits",
+              "api/pagination"
+            ]
+          },
+          {
+            "group": "Endpoints",
+            "pages": [
+              "api/sales",
+              "api/inventory",
+              "api/returns"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

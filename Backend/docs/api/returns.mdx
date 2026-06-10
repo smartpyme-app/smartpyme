@@ -1,0 +1,425 @@
+---
+title: "SmartPyme Returns API: List, Retrieve, and Summarize"
+sidebarTitle: "Returns"
+description: "Query SmartPyme return records filtered by date range. Each record includes header fields, originating sale ID, line items, and aggregate summaries."
+---
+
+The Returns endpoints expose all sales return transactions recorded in SmartPyme, allowing you to reconcile inventory adjustments, audit customer refund activity, and track returned merchandise at the line-item level. Each return record links back to its originating sale via `id_venta` and includes a full `detalles` breakdown of returned products. All requests must include your API key in the `Authorization` header.
+
+---
+
+## GET /returns
+
+Returns a paginated list of sales return records. Filter by date range to scope the results to a specific period. Each record includes header-level return information and a `detalles` array of the individual products that were returned.
+
+<CodeGroup>
+
+```bash cURL
+curl --request GET \
+  --url "https://api.smartpyme.site/api/external/v1/returns?fecha_inicio=2025-01-01&fecha_fin=2025-01-31&per_page=50" \
+  --header "Authorization: Bearer {api_key}"
+```
+
+```python Python
+import requests
+
+url = "https://api.smartpyme.site/api/external/v1/returns"
+headers = {"Authorization": "Bearer {api_key}"}
+params = {
+    "fecha_inicio": "2025-01-01",
+    "fecha_fin": "2025-01-31",
+    "per_page": 50,
+}
+
+response = requests.get(url, headers=headers, params=params)
+print(response.json())
+```
+
+```javascript JavaScript
+const response = await fetch(
+  "https://api.smartpyme.site/api/external/v1/returns" +
+    "?fecha_inicio=2025-01-01&fecha_fin=2025-01-31&per_page=50",
+  {
+    method: "GET",
+    headers: { Authorization: "Bearer {api_key}" },
+  }
+);
+const data = await response.json();
+console.log(data);
+```
+
+</CodeGroup>
+
+### Query parameters
+
+<ParamField query="fecha_inicio" type="string">
+  Start date for filtering returns, in `Y-m-d` format (e.g. `2025-01-01`). Use together with `fecha_fin` to define a date range.
+</ParamField>
+
+<ParamField query="fecha_fin" type="string">
+  End date for filtering returns, in `Y-m-d` format (e.g. `2025-01-31`). Use together with `fecha_inicio` to define a date range.
+</ParamField>
+
+<ParamField query="page" type="integer">
+  Page number to retrieve. Defaults to `1`.
+</ParamField>
+
+<ParamField query="per_page" type="integer">
+  Number of records per page. Accepts values between `1` and `200`. Defaults to `100`.
+</ParamField>
+
+### Response example
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 789,
+      "fecha": "2025-01-20",
+      "correlativo": "DEV-001234",
+      "tipo": "Devolucion",
+      "sub_total": 130.00,
+      "no_sujeta": 0.00,
+      "exenta": 0.00,
+      "cuenta_a_terceros": 0.00,
+      "total": 149.50,
+      "iva": 19.50,
+      "iva_retenido": 0.00,
+      "observaciones": "Producto defectuoso",
+      "enable": 1,
+      "id_venta": 12345,
+      "nombre_cliente": "Juan Pérez",
+      "nombre_usuario": "admin",
+      "nombre_documento": "Nota de Crédito",
+      "created_at": "2025-01-20T14:00:00Z",
+      "updated_at": "2025-01-20T14:00:00Z",
+      "detalles": [
+        {
+          "nombre_producto": "Laptop Dell Inspiron",
+          "codigo_producto": "LAP-DELL-001",
+          "marca_producto": "Dell",
+          "descripcion": "Laptop Dell Inspiron 15",
+          "cantidad": 1,
+          "precio": 130.00,
+          "costo": 100.00,
+          "descuento": 0.00,
+          "no_sujeta": 0.00,
+          "cuenta_a_terceros": 0.00,
+          "exenta": 0.00,
+          "total": 149.50,
+          "medida": "Unidad"
+        }
+      ]
+    }
+  ],
+  "pagination": {
+    "current_page": 1,
+    "per_page": 50,
+    "total": 45,
+    "total_pages": 1,
+    "has_next": false,
+    "has_prev": false
+  },
+  "meta": {
+    "empresa": "Mi Empresa S.A.",
+    "timestamp": "2025-01-31T15:00:00Z",
+    "filters_applied": {
+      "fecha_inicio": "2025-01-01",
+      "fecha_fin": "2025-01-31"
+    }
+  }
+}
+```
+
+### Response fields
+
+<ResponseField name="success" type="boolean">
+  Indicates whether the request completed successfully.
+</ResponseField>
+
+<ResponseField name="data" type="array">
+  Array of return objects matching the applied filters.
+
+  <Expandable title="Return fields">
+    <ResponseField name="id" type="integer">
+      Unique numeric identifier for the return record.
+    </ResponseField>
+    <ResponseField name="fecha" type="string">
+      Date the return was processed, in `Y-m-d` format.
+    </ResponseField>
+    <ResponseField name="correlativo" type="string">
+      Human-readable document number assigned to the return (e.g. `DEV-001234`).
+    </ResponseField>
+    <ResponseField name="tipo" type="string">
+      Type of return document (e.g. `Devolucion`).
+    </ResponseField>
+    <ResponseField name="sub_total" type="number">
+      Pre-tax subtotal of all returned line items.
+    </ResponseField>
+    <ResponseField name="no_sujeta" type="number">
+      Portion of the return amount not subject to tax classification.
+    </ResponseField>
+    <ResponseField name="exenta" type="number">
+      Tax-exempt portion of the return amount.
+    </ResponseField>
+    <ResponseField name="cuenta_a_terceros" type="number">
+      Amount invoiced on behalf of third parties, when applicable.
+    </ResponseField>
+    <ResponseField name="total" type="number">
+      Final total of the return including tax and after any discounts.
+    </ResponseField>
+    <ResponseField name="iva" type="number">
+      Tax amount included in the return total.
+    </ResponseField>
+    <ResponseField name="iva_retenido" type="number">
+      IVA withheld on the return transaction, when applicable.
+    </ResponseField>
+    <ResponseField name="observaciones" type="string">
+      Free-text notes recorded at the time the return was processed (e.g. reason for return).
+    </ResponseField>
+    <ResponseField name="enable" type="integer">
+      Active status of the return record. `1` is active; `0` is voided or inactive.
+    </ResponseField>
+    <ResponseField name="id_venta" type="integer">
+      The ID of the originating sale that this return is associated with. Use this to cross-reference the [GET /sales/\{id\}](/api/sales) endpoint.
+    </ResponseField>
+    <ResponseField name="nombre_cliente" type="string">
+      Display name of the customer who made the return.
+    </ResponseField>
+    <ResponseField name="nombre_usuario" type="string">
+      Username of the operator who processed the return.
+    </ResponseField>
+    <ResponseField name="nombre_documento" type="string">
+      Document type associated with the return (e.g. `Nota de Crédito`).
+    </ResponseField>
+    <ResponseField name="created_at" type="string">
+      ISO 8601 timestamp of when the return record was created.
+    </ResponseField>
+    <ResponseField name="updated_at" type="string">
+      ISO 8601 timestamp of the most recent update to the return record.
+    </ResponseField>
+    <ResponseField name="detalles" type="array">
+      Line items included in this return.
+
+      <Expandable title="Return detail fields">
+        <ResponseField name="nombre_producto" type="string">
+          Full name of the returned product.
+        </ResponseField>
+        <ResponseField name="codigo_producto" type="string">
+          Internal SKU or product code of the returned item.
+        </ResponseField>
+        <ResponseField name="marca_producto" type="string">
+          Brand name of the returned product.
+        </ResponseField>
+        <ResponseField name="descripcion" type="string">
+          Detailed description of the returned product.
+        </ResponseField>
+        <ResponseField name="cantidad" type="number">
+          Quantity of units returned in this line item. Supports up to three decimal places.
+        </ResponseField>
+        <ResponseField name="precio" type="number">
+          Unit price of the product at the time of the original sale.
+        </ResponseField>
+        <ResponseField name="costo" type="number">
+          Unit cost of the product, used for margin and inventory value adjustments.
+        </ResponseField>
+        <ResponseField name="descuento" type="number">
+          Discount amount applied to this returned line item.
+        </ResponseField>
+        <ResponseField name="no_sujeta" type="number">
+          Portion of this line item's amount not subject to tax classification.
+        </ResponseField>
+        <ResponseField name="cuenta_a_terceros" type="number">
+          Amount for this line item invoiced on behalf of third parties, when applicable.
+        </ResponseField>
+        <ResponseField name="exenta" type="number">
+          Tax-exempt portion of this line item's amount.
+        </ResponseField>
+        <ResponseField name="total" type="number">
+          Line item return total after applying quantity and discount.
+        </ResponseField>
+        <ResponseField name="medida" type="string">
+          Unit of measure for the returned product (e.g. `Unidad`, `Kg`, `Litro`).
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+---
+
+## GET /returns/\{id\}
+
+Retrieves a single return record by its numeric ID. The response returns the same full Return object described above, including the `detalles` array of returned line items.
+
+### Path parameter
+
+<ParamField path="id" type="integer" required>
+  The unique numeric identifier of the return record you want to retrieve.
+</ParamField>
+
+<CodeGroup>
+
+```bash cURL
+curl --request GET \
+  --url "https://api.smartpyme.site/api/external/v1/returns/789" \
+  --header "Authorization: Bearer {api_key}"
+```
+
+```python Python
+import requests
+
+return_id = 789
+url = f"https://api.smartpyme.site/api/external/v1/returns/{return_id}"
+headers = {"Authorization": "Bearer {api_key}"}
+
+response = requests.get(url, headers=headers)
+print(response.json())
+```
+
+```javascript JavaScript
+const returnId = 789;
+const response = await fetch(
+  `https://api.smartpyme.site/api/external/v1/returns/${returnId}`,
+  {
+    method: "GET",
+    headers: { Authorization: "Bearer {api_key}" },
+  }
+);
+const data = await response.json();
+console.log(data);
+```
+
+</CodeGroup>
+
+The response wraps the Return object under a `data` key with `"success": true`. All fields, including `detalles`, are identical to the structure documented in the [GET /returns](#get-returns) response above.
+
+---
+
+## GET /returns/summary
+
+Returns aggregate statistics for your return activity over an optional date range. Use this endpoint to measure the volume and value of merchandise being returned, identify high-return periods, and quantify the financial impact of returns on your revenue.
+
+<CodeGroup>
+
+```bash cURL
+curl --request GET \
+  --url "https://api.smartpyme.site/api/external/v1/returns/summary?fecha_inicio=2025-01-01&fecha_fin=2025-01-31" \
+  --header "Authorization: Bearer {api_key}"
+```
+
+```python Python
+import requests
+
+url = "https://api.smartpyme.site/api/external/v1/returns/summary"
+headers = {"Authorization": "Bearer {api_key}"}
+params = {
+    "fecha_inicio": "2025-01-01",
+    "fecha_fin": "2025-01-31",
+}
+
+response = requests.get(url, headers=headers, params=params)
+print(response.json())
+```
+
+```javascript JavaScript
+const response = await fetch(
+  "https://api.smartpyme.site/api/external/v1/returns/summary" +
+    "?fecha_inicio=2025-01-01&fecha_fin=2025-01-31",
+  {
+    method: "GET",
+    headers: { Authorization: "Bearer {api_key}" },
+  }
+);
+const data = await response.json();
+console.log(data);
+```
+
+</CodeGroup>
+
+### Query parameters
+
+<ParamField query="fecha_inicio" type="string">
+  Start date for the summary period, in `Y-m-d` format. Omit to include all return records from the beginning.
+</ParamField>
+
+<ParamField query="fecha_fin" type="string">
+  End date for the summary period, in `Y-m-d` format. Omit to include all records up to the current date.
+</ParamField>
+
+### Response example
+
+```json
+{
+  "success": true,
+  "data": {
+    "cantidad_devoluciones": 45,
+    "total_devuelto": 6750.00,
+    "total_iva": 607.50,
+    "total_descuentos": 125.00,
+    "promedio_devolucion": 150.00,
+    "devoluciones_por_tipo": [
+      { "tipo": "Devolucion", "cantidad": 45, "total": 6750.00 }
+    ]
+  },
+  "meta": {
+    "empresa": "Mi Empresa S.A.",
+    "timestamp": "2025-01-31T23:59:00Z",
+    "filters_applied": {
+      "fecha_inicio": "2025-01-01",
+      "fecha_fin": "2025-01-31"
+    }
+  }
+}
+```
+
+### Response fields
+
+<ResponseField name="data.cantidad_devoluciones" type="integer">
+  Total number of return transactions processed within the requested period.
+</ResponseField>
+
+<ResponseField name="data.total_devuelto" type="number">
+  Gross monetary value of all returns in the period, including tax.
+</ResponseField>
+
+<ResponseField name="data.total_iva" type="number">
+  Total tax amount included across all return records in the period.
+</ResponseField>
+
+<ResponseField name="data.total_descuentos" type="number">
+  Sum of all discounts applied to returned line items in the period.
+</ResponseField>
+
+<ResponseField name="data.promedio_devolucion" type="number">
+  Average value per return transaction, calculated as `total_devuelto / cantidad_devoluciones`.
+</ResponseField>
+
+<ResponseField name="data.devoluciones_por_tipo" type="array">
+  Breakdown of return count and total value grouped by document type.
+
+  <Expandable title="devoluciones_por_tipo fields">
+    <ResponseField name="tipo" type="string">
+      The return document type (e.g. `Devolucion`).
+    </ResponseField>
+    <ResponseField name="cantidad" type="integer">
+      Number of return records with this document type.
+    </ResponseField>
+    <ResponseField name="total" type="number">
+      Combined total value of returns with this document type.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="meta.empresa" type="string">
+  Display name of the company associated with your API key.
+</ResponseField>
+
+<ResponseField name="meta.timestamp" type="string">
+  ISO 8601 timestamp indicating when the summary was generated.
+</ResponseField>
+
+<ResponseField name="meta.filters_applied" type="object">
+  Echo of the date filters used to compute the summary, useful for confirming the request parameters.
+</ResponseField>

@@ -1,0 +1,89 @@
+---
+title: "SmartPyme External API: B2B Data Access Guide"
+sidebarTitle: "Overview"
+description: "The SmartPyme External API gives third-party providers read-only access to sales, inventory, and returns data via API Key authentication."
+---
+
+The SmartPyme External API is a REST API designed for B2B integrations — enabling suppliers, analytics platforms, and other third-party providers to programmatically access sales, inventory, and returns data from SmartPyme-powered businesses. All requests use standard HTTPS and return JSON responses.
+
+## What the API provides
+
+The API gives you read-only access to three core data domains: **sales**, **inventory**, and **returns**. Each domain exposes list, detail, and summary endpoints so you can fetch exactly the level of detail your integration needs. The API is purpose-built for scenarios such as supplier sell-through reporting, external analytics dashboards, and automated inventory reconciliation.
+
+## Base URL
+
+Every request goes to the following base URL:
+
+```
+https://api.smartpyme.site/api/external/v1/
+```
+
+## Available endpoints
+
+| Endpoint | Description |
+|---|---|
+| `GET /sales` | List sales with filters |
+| `GET /sales/{id}` | Get a specific sale |
+| `GET /sales/summary` | Sales summary statistics |
+| `GET /inventory` | List products with stock |
+| `GET /inventory/{id}` | Get a specific product |
+| `GET /inventory/summary` | Inventory summary statistics |
+| `GET /returns` | List returns |
+| `GET /returns/{id}` | Get a specific return |
+| `GET /returns/summary` | Returns summary statistics |
+| `GET /system/rate-limit` | Check your current rate limit status |
+| `POST /packages/import` | Import package data from an external system |
+
+## Standard response envelope
+
+Every successful response from the API wraps its payload in a consistent envelope. The `data` field holds the records you requested, `pagination` describes the current page of results, and `meta` provides context about the company and the filters that were applied.
+
+```json
+{
+  "success": true,
+  "data": [...],
+  "pagination": {
+    "current_page": 1,
+    "per_page": 100,
+    "total": 1250,
+    "total_pages": 13,
+    "has_next": true,
+    "has_prev": false,
+    "from": 1,
+    "to": 100
+  },
+  "meta": {
+    "empresa": "Mi Empresa S.A.",
+    "timestamp": "2025-01-15T10:30:00Z",
+    "filters_applied": {}
+  }
+}
+```
+
+## Error response format
+
+When a request fails, the API returns a `success: false` envelope with a human-readable `error` message and the corresponding HTTP status `code`.
+
+```json
+{
+  "success": false,
+  "error": "API key inválido o empresa inactiva",
+  "code": 401
+}
+```
+
+## HTTP status codes
+
+| Code | Meaning |
+|---|---|
+| `200` | Success |
+| `400` | Bad Request — invalid parameters |
+| `401` | Unauthorized — invalid or missing API Key |
+| `403` | Forbidden — company inactive |
+| `404` | Not Found |
+| `429` | Too Many Requests — rate limit exceeded |
+| `500` | Internal Server Error |
+
+<Note>
+  Most endpoints are read-only. The exception is `POST /packages/import`, which allows bulk-importing package data from external systems.
+</Note>

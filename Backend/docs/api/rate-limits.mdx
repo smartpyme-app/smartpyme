@@ -1,0 +1,77 @@
+---
+title: "Rate Limits and Usage Quotas for the SmartPyme API"
+sidebarTitle: "Rate Limits"
+description: "SmartPyme External API allows 1,000 requests per hour standard or 2,000 per hour with date filters. Limits reset at the top of each hour."
+---
+
+The SmartPyme External API enforces hourly rate limits to ensure fair usage and platform stability. Your quota depends on whether you include date filters in your requests — adding `fecha_inicio` and `fecha_fin` doubles your allowance. Understanding how limits work helps you design integrations that stay well within quota.
+
+## Limits
+
+| Request type | Limit |
+|---|---|
+| Without date filters | 1,000 requests/hour |
+| With `fecha_inicio` + `fecha_fin` | 2,000 requests/hour |
+
+## Reset window
+
+Rate limits operate on **fixed hourly windows**. The counter resets exactly at the top of each hour — for example, at 14:00, 15:00, 16:00, and so on. Requests made between 14:00 and 14:59 all count against the same window, and the counter starts fresh at 15:00 regardless of when you first made a request during that hour.
+
+## Rate limit headers
+
+Every API response includes the following headers so you can track your current usage in real time:
+
+| Header | Description |
+|---|---|
+| `X-RateLimit-Limit` | Your current limit for this window |
+| `X-RateLimit-Remaining` | Requests remaining in the current window |
+| `X-RateLimit-Reset` | Unix timestamp when the limit resets |
+
+## Checking your status
+
+You can query your current rate limit status at any time by calling `GET /system/rate-limit`. This endpoint counts against your quota but returns a full picture of your usage for the current window.
+
+```bash
+curl -H "Authorization: Bearer YOUR_API_KEY" \
+     "https://api.smartpyme.site/api/external/v1/system/rate-limit"
+```
+
+```json
+{
+  "success": true,
+  "data": {
+    "requests_used": 25,
+    "max_requests": 1000,
+    "remaining_requests": 975,
+    "reset_time": "2024-01-01T15:00:01Z",
+    "window_minutes": 60,
+    "limits": {
+      "standard": 1000,
+      "with_date_filters": 2000
+    },
+    "current_limit_type": "standard",
+    "empresa_nombre": "Mi Empresa"
+  }
+}
+```
+
+## Handling HTTP 429
+
+When you exceed your rate limit, the API returns HTTP `429 Too Many Requests`. To recover and avoid hitting the limit again, follow these recommendations:
+
+1. Check the `X-RateLimit-Reset` header to determine exactly when your quota refreshes, then wait until that timestamp before retrying.
+2. Add `fecha_inicio` and `fecha_fin` date filters to your requests — this doubles your hourly quota to 2,000 requests.
+3. Use `per_page=200` to fetch more records per request and reduce the total number of calls your integration makes.
+4. Use summary endpoints (e.g. `GET /sales/summary`) to retrieve aggregate data instead of paginating through all individual records.
+
+```json
+{
+  "success": false,
+  "error": "Rate limit exceeded",
+  "code": 429
+}
+```
+
+<Tip>
+  Always add `fecha_inicio` and `fecha_fin` to your requests — it doubles your hourly quota to 2,000 and often reduces the total number of requests needed by scoping results to a specific time range.
+</Tip>
