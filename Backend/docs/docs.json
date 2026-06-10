@@ -17,9 +17,6 @@
       "href": "https://app.smartpyme.site"
     }
   },
-  "openapi": [
-    "./openapi.yaml"
-  ],
   "navigation": {
     "languages": [
       {
@@ -160,11 +157,7 @@
               },
               {
                 "group": "Endpoints",
-                "pages": [
-                  "es/api/sales",
-                  "es/api/inventory",
-                  "es/api/returns"
-                ]
+                "openapi": "./openapi.yaml"
               }
             ]
           }
