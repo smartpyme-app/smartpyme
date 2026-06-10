@@ -1,0 +1,111 @@
+---
+title: "Configura tu cuenta de SmartPyme y el perfil de tu empresa"
+sidebarTitle: "Configuración de cuenta"
+description: "Aprende a completar el perfil de tu empresa en SmartPyme, gestionar sucursales, configurar usuarios y roles, y definir cajas y documentos de facturación."
+---
+
+Después de crear tu cuenta de SmartPyme, dedica unos minutos a completar la configuración antes de empezar a operar. Una cuenta bien configurada garantiza que tus facturas cumplan la normativa, que tu equipo tenga los permisos correctos y que tus cajas estén listas para el uso diario. Esta guía cubre cada área de configuración en detalle.
+
+## Perfil de la empresa
+
+Ve a **Configuración → Mi cuenta** para completar la información de tu empresa. Estos datos aparecen en cada documento que emites —facturas, tickets, órdenes de compra y boletas de pago—, por lo que la precisión es esencial.
+
+Completa los siguientes campos:
+
+- **Nombre de la empresa**: tu razón social exactamente como está registrada.
+- **NIT / NRC**: tus números de identificación tributaria para El Salvador. Obligatorios para emitir documentos fiscales (CCF, Factura).
+- **Código de actividad económica**: el código CIIU que corresponde a tu actividad principal, según lo asignado por la autoridad tributaria.
+- **Datos de dirección**: departamento, municipio y dirección de tu domicilio fiscal registrado.
+- **Carga de logo**: sube un PNG o JPG con tu logo (tamaño recomendado: 300 × 300 px mínimo). Aparecerá en la parte superior de todos los documentos impresos y digitales.
+
+Guarda los cambios antes de pasar a la siguiente sección.
+
+## Sucursales
+
+SmartPyme admite múltiples sucursales bajo una sola cuenta, lo que te permite administrar varias ubicaciones físicas sin cambiar entre sistemas. Cada sucursal opera de forma independiente con sus propias cajas y bodega, mientras que toda la información se consolida en tus reportes centrales y dashboard.
+
+**Para agregar una nueva sucursal:**
+
+1. Ve a **Configuración → Sucursales** y haz clic en **Nueva sucursal**.
+2. Ingresa el nombre, la dirección y el teléfono de contacto de la sucursal.
+3. Guarda la sucursal; quedará inmediatamente disponible para asignarla a usuarios, cajas e inventario.
+
+Cada sucursal que crees obtiene automáticamente:
+
+- Sus propias **cajas**, que se configuran por separado (ver más abajo).
+- Su propia **bodega**, para llevar el control de existencias específicas de esa ubicación.
+
+Puedes asignar usuarios a una o más sucursales, y su Dashboard y reportes filtrarán los datos a las sucursales que tengan asignadas.
+
+## Usuarios y roles
+
+Agrega a los miembros de tu equipo en **Configuración → Usuarios** para que cada persona pueda iniciar sesión con sus propias credenciales y trabajar dentro de los permisos asignados.
+
+**Para agregar un nuevo usuario:**
+
+1. Haz clic en **Nuevo usuario** e ingresa nombre, correo electrónico y una contraseña temporal.
+2. Selecciona su **rol** entre las opciones siguientes.
+3. Asígnalo a una o más **sucursales** donde trabajará.
+4. Guarda. El usuario podrá iniciar sesión inmediatamente con las credenciales que proporcionaste.
+
+SmartPyme incluye cuatro roles predefinidos:
+
+| Rol | Nivel de acceso |
+|------|-------------|
+| **Admin** | Acceso completo a todos los módulos, configuración, reportes y ajustes. |
+| **Supervisor** | Acceso a ventas, inventario, compras y reportes, pero no a la configuración del sistema ni a la gestión de usuarios. |
+| **Vendedor** | Puede crear ventas, gestionar clientes y ver su propio historial de ventas. |
+| **Cajero** | Limitado a la pantalla del punto de venta, procesamiento de pagos y operación de la caja. |
+
+Cada rol controla qué módulos aparecen en la barra lateral y qué acciones (crear, editar, eliminar, ver) están permitidas dentro de cada módulo.
+
+<Tip>
+  Puedes agregar varios usuarios con distintos roles para que cada persona vea solo lo que necesita, manteniendo los datos financieros sensibles y la configuración visibles solo para las personas correctas.
+</Tip>
+
+## Cajas
+
+Las cajas representan el punto de cobro físico o virtual de cada sucursal. Configúralas en **Configuración → Cajas** antes de que tu equipo empiece a procesar ventas.
+
+**Para crear una caja:**
+
+1. Ve a **Configuración → Cajas** y haz clic en **Nueva caja**.
+2. Selecciona la **sucursal** a la que pertenece esta caja.
+3. Dale un nombre descriptivo (por ejemplo, "Caja 1 — Sucursal Centro").
+4. Guarda.
+
+**Apertura y cierre (cortes):**
+
+Al iniciar cada turno, el cajero abre la caja ingresando el monto inicial en efectivo. Durante el día, todas las ventas procesadas en esa caja se registran automáticamente. Al cerrar el turno, el cajero realiza un **corte** de caja: cuenta el efectivo físico, lo compara con el total del sistema y cierra la caja. SmartPyme genera un reporte de corte que puedes imprimir o exportar para tus registros.
+
+## Documentos de facturación
+
+En **Configuración → Documentos** configuras qué tipos de documentos de facturación emite tu negocio y cómo se numeran.
+
+SmartPyme admite los siguientes tipos de documento:
+
+<Accordion title="Ticket">
+  Un recibo de venta simplificado que no requiere información tributaria del cliente. Ideal para transacciones rápidas al detalle. La numeración es secuencial y se reinicia por caja o por día, según tu configuración.
+</Accordion>
+
+<Accordion title="Factura (consumidor final)">
+  Una factura estándar emitida a consumidores finales. Incluye el NIT de tu empresa y el detalle de la transacción, pero no traslada crédito fiscal al comprador.
+</Accordion>
+
+<Accordion title="CCF (Comprobante de Crédito Fiscal)">
+  Un comprobante de crédito fiscal emitido a empresas registradas. Traslada el crédito de IVA al comprador. Requiere tanto tu NIT/NRC como el NIT/NRC del comprador. Es el tipo de documento que utilizan la mayoría de las transacciones B2B.
+</Accordion>
+
+<Accordion title="Nota de Crédito / Débito">
+  Se usa para ajustar o revertir un CCF o Factura emitido previamente, ya sea por devoluciones, correcciones o ajustes de precio.
+</Accordion>
+
+Para cada tipo de documento define:
+
+- **Serie correlativa**: el prefijo alfanumérico de los números de documento (por ejemplo, `A`, `B` o un código de sucursal).
+- **Número inicial**: el primer número de la secuencia si estás migrando desde otro sistema.
+- **Formato de impresión**: elige entre hoja completa, media hoja o formato térmico de ticket (80 mm).
+
+<Warning>
+  Para facturación electrónica (DTE) se requieren credenciales adicionales del Ministerio de Hacienda, incluidos tu certificado digital y el token de la API del portal de Hacienda. Estos no se configuran aquí. Consulta la [guía de facturación electrónica](features/electronic-invoicing) para el proceso completo de configuración de DTE.
+</Warning>

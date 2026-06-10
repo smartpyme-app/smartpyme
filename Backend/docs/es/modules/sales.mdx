@@ -1,0 +1,122 @@
+---
+title: "Gestiona ventas, facturas y clientes en SmartPyme"
+sidebarTitle: "Ventas"
+description: "Crea ventas, emite facturas, gestiona cuentas de clientes, procesa devoluciones y haz seguimiento a tus ingresos, todo desde el módulo de ventas de SmartPyme."
+---
+
+El módulo de Ventas es tu centro de operaciones para cada transacción con el cliente. Desde emitir facturas y procesar pagos hasta gestionar cuentas de clientes y dar seguimiento a los ingresos, SmartPyme mantiene toda tu operación de ventas organizada y auditable en un solo lugar.
+
+## Crear una venta
+
+<Steps>
+  <Step title="Abre el formulario de nueva venta">
+    Ve a **Ventas → Nueva venta** desde la barra lateral izquierda.
+  </Step>
+  <Step title="Selecciona o crea un cliente">
+    Busca un cliente existente por nombre, NIT o número de teléfono. Si el cliente es nuevo, haz clic en **+ Nuevo cliente** para crear el registro al instante sin salir de la venta.
+  </Step>
+  <Step title="Agrega productos o servicios">
+    Usa la barra de búsqueda de productos para agregar cada línea. Ingresa la **cantidad** y confirma o ajusta el **precio unitario**. SmartPyme completa el precio automáticamente desde el catálogo de productos.
+  </Step>
+  <Step title="Aplica descuentos">
+    Para aplicar un descuento, haz clic en el ícono **%** en cualquier línea e ingresa un porcentaje, o aplica un descuento global a toda la venta al final del formulario.
+  </Step>
+  <Step title="Elige un método de pago">
+    Selecciona uno o más métodos de pago: **Efectivo**, **Tarjeta**, **Transferencia**, **Cheque** o **Crédito**. Para pagos divididos, agrega varios métodos y asigna un monto a cada uno.
+  </Step>
+  <Step title="Guarda y emite el documento">
+    Haz clic en **Guardar** para registrar la venta y generar la factura. SmartPyme actualiza tus totales de ingresos, ajusta el inventario y registra el saldo del cliente automáticamente.
+  </Step>
+</Steps>
+
+---
+
+## Cotizaciones
+
+Una cotización te permite enviar una propuesta de precio a un cliente antes de concretar una venta.
+
+Para crear una cotización, ve a **Ventas → Cotizaciones → Nueva cotización**. Llena el cliente, productos, cantidades y precios igual que en una venta. Define una **fecha de vencimiento** para que el cliente sepa hasta cuándo es válida la propuesta, y haz clic en **Guardar y enviar** para compartirla por correo o imprimirla como PDF.
+
+Cuando el cliente confirma, abre la cotización y haz clic en **Convertir a venta**. SmartPyme traslada todas las líneas, descuentos y datos del cliente, sin necesidad de volver a capturar la información.
+
+<Tip>
+  Mantén tu pipeline de cotizaciones a la vista filtrando la lista de cotizaciones por estado: **Borrador**, **Enviada**, **Aceptada** o **Vencida**.
+</Tip>
+
+---
+
+## Devoluciones
+
+Procesar correctamente una devolución de venta mantiene precisos tus números de inventario e ingresos.
+
+<Steps>
+  <Step title="Ve a Devoluciones">
+    Navega a **Ventas → Devoluciones** y haz clic en **Nueva devolución**.
+  </Step>
+  <Step title="Selecciona la venta original">
+    Busca la factura original por número, fecha o nombre del cliente y selecciónala.
+  </Step>
+  <Step title="Elige los artículos a devolver">
+    SmartPyme carga todas las líneas de la venta original. Marca cada artículo que se devuelve y ajusta la cantidad si la devolución es parcial.
+  </Step>
+  <Step title="Confirma y guarda">
+    Haz clic en **Procesar devolución**. El stock vuelve a tu bodega y el saldo del cliente se acredita automáticamente.
+  </Step>
+</Steps>
+
+<Warning>
+  No puedes procesar una devolución contra una factura anulada. Verifica que la venta original esté en estado **Posteada** antes de comenzar.
+</Warning>
+
+---
+
+## Gestión de clientes
+
+Tu directorio de clientes te da una visión completa de cada cuenta.
+
+- **Agregar un cliente**: ve a **Clientes → Nuevo cliente** y completa nombre, NIT/DUI, dirección, correo y teléfono.
+- **Editar un cliente**: abre el registro del cliente, haz clic en **Editar**, realiza los cambios y guarda.
+- **Ver historial de compras**: dentro de cualquier registro de cliente, la pestaña **Historial** lista todas las ventas, devoluciones y pagos, ordenables por fecha.
+- **Saldo pendiente (CXC)**: la pestaña **Cuenta por cobrar** muestra el saldo actual, el límite de crédito y los días de mora para cada cliente.
+- **Importar clientes vía Excel**: ve a **Clientes → Importar**, descarga la plantilla en Excel, llena tu lista de clientes y carga el archivo. SmartPyme valida cada fila antes de importar.
+
+<Tip>
+  Usa la **Vista 360° del cliente** para ver historial completo, puntos de lealtad y pagos pendientes en una sola pantalla. Accede haciendo clic en el botón **360°** dentro de cualquier registro de cliente.
+</Tip>
+
+---
+
+## Métodos de pago
+
+SmartPyme admite los siguientes métodos de pago de forma nativa:
+
+<CardGroup cols={3}>
+  <Card title="Efectivo" icon="money-bill" href="help/faq">
+    Pagos en efectivo con cálculo automático del vuelto en el punto de venta.
+  </Card>
+  <Card title="Tarjeta" icon="credit-card" href="help/faq">
+    Pagos con tarjeta de débito y crédito. Registra el tipo de tarjeta y los últimos cuatro dígitos para la conciliación.
+  </Card>
+  <Card title="Transferencia" icon="arrow-right-arrow-left" href="help/faq">
+    Transferencias bancarias. Adjunta el número de referencia de la transferencia para fines de auditoría.
+  </Card>
+  <Card title="Cheque" icon="money-check" href="help/faq">
+    Pagos con cheque. Ingresa el número de cheque, banco y fecha de vencimiento.
+  </Card>
+  <Card title="Crédito" icon="clock" href="help/faq">
+    Ventas a crédito registradas en el saldo de CXC del cliente con una fecha de vencimiento configurable.
+  </Card>
+</CardGroup>
+
+Para agregar, renombrar o desactivar un método de pago, ve a **Configuración → Métodos de pago**.
+
+---
+
+## Reportes y exportaciones de ventas
+
+SmartPyme te ofrece visibilidad en tiempo real del desempeño de tus ventas.
+
+- **Exportar a Excel**: desde la lista de Ventas, aplica tus filtros (rango de fechas, cliente, vendedor, método de pago) y haz clic en **Exportar → Excel**.
+- **Resumen diario**: ve a **Reportes → Resumen diario** para ver el total de ventas, devoluciones e ingresos netos de un día específico.
+- **Corte de caja**: ve a **Reportes → Corte de caja** para generar un reporte de fin de turno con totales por método de pago, ideal para conciliar la caja.
+- **Ventas por producto**: ve a **Reportes → Ventas por producto** para identificar tus productos con mejor y peor desempeño en cualquier periodo.

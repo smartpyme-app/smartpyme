@@ -1,0 +1,117 @@
+---
+title: "Herramientas contables: libros de IVA, activos y proyectos"
+sidebarTitle: "Contabilidad"
+description: "Genera libros de IVA, gestiona activos fijos, controla cajas chicas, administra presupuestos de proyectos y exporta reportes contables directamente desde SmartPyme."
+---
+
+El módulo de Contabilidad conecta tus transacciones diarias con los reportes legales y financieros que tu negocio necesita. Genera los libros de IVA exigidos por la autoridad tributaria de El Salvador, lleva el control del valor de tus activos fijos, gestiona cajas chicas y mantén el gasto de tus proyectos dentro del presupuesto, todo desde un solo módulo.
+
+## Libros de IVA
+
+SmartPyme genera el conjunto completo de libros de IVA exigidos por el Ministerio de Hacienda de El Salvador, directamente a partir de tus documentos de venta y compra registrados.
+
+Ve a **Contabilidad → Libros de IVA** y selecciona el **periodo** (mes y año) que necesitas generar. SmartPyme produce los siguientes libros:
+
+<CardGroup cols={2}>
+  <Card title="Libro de Ventas a Consumidores" icon="users" href="features/electronic-invoicing">
+    Ventas a consumidores finales. Incluye totales de tickets y facturas, agrupados por día. Descarga el libro oficial o el archivo anexo para su presentación.
+  </Card>
+  <Card title="Libro de Ventas a Contribuyentes" icon="building" href="features/electronic-invoicing">
+    Ventas a contribuyentes registrados. Lista cada CCF (Comprobante de Crédito Fiscal) de forma individual, con las notas de crédito y notas de débito como descarga separada.
+  </Card>
+  <Card title="Libro de Compras" icon="cart-shopping" href="features/electronic-invoicing">
+    Compras a proveedores con crédito de IVA. Incluye cada factura de proveedor con NIT, monto y desglose de IVA. Un anexo aparte cubre las compras a sujetos excluidos.
+  </Card>
+  <Card title="Anulaciones, retenciones y percepciones" icon="file-circle-xmark" href="features/electronic-invoicing">
+    Libros para documentos anulados, retenciones de IVA y percepciones de IVA, todos los anexos requeridos para una presentación mensual completa.
+  </Card>
+</CardGroup>
+
+Una vez que selecciones el periodo, haz clic en **Generar** para compilar el libro y luego en **Exportar → Excel** para descargar el archivo en el formato requerido para la presentación oficial.
+
+<Note>
+  Los libros de IVA se generan a partir de tus documentos de venta y compra ya registrados. Asegúrate de que todas las transacciones estén completas antes de descargar el libro oficial.
+</Note>
+
+---
+
+## Activos fijos
+
+Lleva el control del valor y ubicación de cada activo que posee tu empresa, organizado por categoría.
+
+Para registrar un nuevo activo, ve a **Contabilidad → Activos fijos → Nuevo activo** e ingresa:
+
+- **Nombre y descripción**: identifica el activo con claridad (por ejemplo, *Vehículo de reparto — placa ABC-123*).
+- **Categoría**: agrupa los activos por tipo (por ejemplo, *Vehículos*, *Maquinaria*, *Equipo de TI*).
+- **Costo de adquisición**: el precio original de compra.
+- **Fecha de adquisición**: cuando el activo se compró o se puso en servicio.
+
+Una vez registrado, puedes filtrar y reportar sobre tu portafolio de activos por categoría, fecha de adquisición o rango de costo. Abre cualquier registro de activo para revisar sus detalles y actualizar la información cuando sea necesario.
+
+<Tip>
+  Corre el **Reporte de activos** en **Reportes → Activos fijos** al cierre del año para obtener una tabla resumen de todos los activos y sus valores, útil para tus estados financieros anuales.
+</Tip>
+
+---
+
+## Caja chica
+
+Administra fondos pequeños discrecionales con una caja chica dedicada por cada fondo.
+
+Para configurar una caja chica, ve a **Contabilidad → Caja chica → Nuevo fondo**. Dale un nombre al fondo (por ejemplo, *Caja chica oficina central*), asigna un **usuario responsable** y define un **saldo inicial**.
+
+Para registrar un desembolso de caja chica:
+
+<Steps>
+  <Step title="Abre el fondo">
+    Ve a **Contabilidad → Caja chica** y haz clic en el fondo contra el que deseas registrar.
+  </Step>
+  <Step title="Agrega un nuevo movimiento">
+    Haz clic en **Nuevo movimiento**, ingresa el monto, fecha, descripción y categoría de gasto.
+  </Step>
+  <Step title="Adjunta un recibo">
+    Sube una foto o escaneo del recibo de respaldo para fines de documentación.
+  </Step>
+  <Step title="Guarda">
+    Guarda el movimiento. SmartPyme descuenta el monto del saldo del fondo.
+  </Step>
+</Steps>
+
+Al final de cada periodo, ve a **Contabilidad → Caja chica**, abre el fondo y haz clic en **Reporte** para generar un resumen de todos los desembolsos, totales por categoría y el saldo de cierre, listo para sustentar una solicitud de reposición.
+
+---
+
+## Proyectos y presupuestos
+
+Si tu negocio lleva el control del gasto por proyecto, cliente o centro de costo, usa la funcionalidad de Proyectos para asignar transacciones y monitorear el consumo del presupuesto en tiempo real.
+
+Para crear un proyecto, ve a **Contabilidad → Proyectos → Nuevo proyecto** y completa:
+
+- **Nombre y código del proyecto**: se usan para etiquetar transacciones a este proyecto.
+- **Cliente**: opcionalmente, vincula el proyecto a un cliente de tu directorio.
+- **Fecha de inicio y fin**: el cronograma esperado del proyecto.
+- **Presupuesto total**: el límite de gasto aprobado para este proyecto.
+
+Una vez que un proyecto está activo, puedes etiquetar **gastos**, **compras** y **ventas** al mismo seleccionando el proyecto en el campo **Proyecto** del documento. SmartPyme acumula los valores reales en tiempo real para que puedas comparar el gasto contra el presupuesto en cualquier momento.
+
+<Warning>
+  Solo pueden asignarse transacciones a proyectos en estado **Activo**. Archiva un proyecto completado para evitar etiquetados accidentales.
+</Warning>
+
+---
+
+## Reporte de flujo de caja
+
+Obtén una foto clara del dinero que entra y sale de tu negocio en cualquier periodo.
+
+Ve a **Reportes → Flujo de caja** para ver tu estado de flujo de caja. El reporte se divide en tres secciones:
+
+- **Actividades de operación**: efectivo proveniente de ventas y efectivo pagado a proveedores y por gastos.
+- **Actividades de inversión**: efectivo gastado o recibido por transacciones de activos fijos.
+- **Actividades de financiamiento**: desembolsos de préstamos, pagos y aportes de capital.
+
+Usa el selector de **rango de fechas** para ver el flujo de caja en cualquier periodo personalizado: semanal, mensual, trimestral o acumulado del año. Haz clic en **Exportar → Excel** para descargar el estado para tu contador o revisión financiera.
+
+<Tip>
+  Combina el reporte de Flujo de caja con los reportes de **Antigüedad de cuentas por cobrar** y **Antigüedad de cuentas por pagar** para tener una visión completa de tu posición de liquidez de corto plazo.
+</Tip>

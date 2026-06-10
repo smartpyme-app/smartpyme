@@ -1,0 +1,425 @@
+---
+title: "API de devoluciones de SmartPyme: listar, obtener y resumir"
+sidebarTitle: "Devoluciones"
+description: "Consulta los registros de devoluciones de SmartPyme filtrados por rango de fechas. Cada registro incluye campos de cabecera, ID de la venta original, líneas de detalle y resúmenes agregados."
+---
+
+Los endpoints de Devoluciones exponen todas las transacciones de devolución de ventas registradas en SmartPyme, permitiéndote conciliar ajustes de inventario, auditar la actividad de reembolsos a clientes y rastrear la mercadería devuelta a nivel de línea de detalle. Cada registro de devolución se vincula con su venta original mediante `id_venta` e incluye un desglose completo en `detalles` de los productos devueltos. Todas las solicitudes deben incluir tu API key en el encabezado `Authorization`.
+
+---
+
+## GET /returns
+
+Devuelve una lista paginada de registros de devoluciones de ventas. Filtra por rango de fechas para acotar los resultados a un período específico. Cada registro incluye la información de cabecera de la devolución y un arreglo `detalles` con los productos individuales que fueron devueltos.
+
+<CodeGroup>
+
+```bash cURL
+curl --request GET \
+  --url "https://api.smartpyme.site/api/external/v1/returns?fecha_inicio=2025-01-01&fecha_fin=2025-01-31&per_page=50" \
+  --header "Authorization: Bearer {api_key}"
+```
+
+```python Python
+import requests
+
+url = "https://api.smartpyme.site/api/external/v1/returns"
+headers = {"Authorization": "Bearer {api_key}"}
+params = {
+    "fecha_inicio": "2025-01-01",
+    "fecha_fin": "2025-01-31",
+    "per_page": 50,
+}
+
+response = requests.get(url, headers=headers, params=params)
+print(response.json())
+```
+
+```javascript JavaScript
+const response = await fetch(
+  "https://api.smartpyme.site/api/external/v1/returns" +
+    "?fecha_inicio=2025-01-01&fecha_fin=2025-01-31&per_page=50",
+  {
+    method: "GET",
+    headers: { Authorization: "Bearer {api_key}" },
+  }
+);
+const data = await response.json();
+console.log(data);
+```
+
+</CodeGroup>
+
+### Parámetros de consulta
+
+<ParamField query="fecha_inicio" type="string">
+  Fecha de inicio para filtrar devoluciones, en formato `Y-m-d` (por ejemplo, `2025-01-01`). Úsala junto con `fecha_fin` para definir un rango de fechas.
+</ParamField>
+
+<ParamField query="fecha_fin" type="string">
+  Fecha de fin para filtrar devoluciones, en formato `Y-m-d` (por ejemplo, `2025-01-31`). Úsala junto con `fecha_inicio` para definir un rango de fechas.
+</ParamField>
+
+<ParamField query="page" type="integer">
+  Número de página a obtener. Su valor por defecto es `1`.
+</ParamField>
+
+<ParamField query="per_page" type="integer">
+  Cantidad de registros por página. Acepta valores entre `1` y `200`. Su valor por defecto es `100`.
+</ParamField>
+
+### Ejemplo de respuesta
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 789,
+      "fecha": "2025-01-20",
+      "correlativo": "DEV-001234",
+      "tipo": "Devolucion",
+      "sub_total": 130.00,
+      "no_sujeta": 0.00,
+      "exenta": 0.00,
+      "cuenta_a_terceros": 0.00,
+      "total": 149.50,
+      "iva": 19.50,
+      "iva_retenido": 0.00,
+      "observaciones": "Producto defectuoso",
+      "enable": 1,
+      "id_venta": 12345,
+      "nombre_cliente": "Juan Pérez",
+      "nombre_usuario": "admin",
+      "nombre_documento": "Nota de Crédito",
+      "created_at": "2025-01-20T14:00:00Z",
+      "updated_at": "2025-01-20T14:00:00Z",
+      "detalles": [
+        {
+          "nombre_producto": "Laptop Dell Inspiron",
+          "codigo_producto": "LAP-DELL-001",
+          "marca_producto": "Dell",
+          "descripcion": "Laptop Dell Inspiron 15",
+          "cantidad": 1,
+          "precio": 130.00,
+          "costo": 100.00,
+          "descuento": 0.00,
+          "no_sujeta": 0.00,
+          "cuenta_a_terceros": 0.00,
+          "exenta": 0.00,
+          "total": 149.50,
+          "medida": "Unidad"
+        }
+      ]
+    }
+  ],
+  "pagination": {
+    "current_page": 1,
+    "per_page": 50,
+    "total": 45,
+    "total_pages": 1,
+    "has_next": false,
+    "has_prev": false
+  },
+  "meta": {
+    "empresa": "Mi Empresa S.A.",
+    "timestamp": "2025-01-31T15:00:00Z",
+    "filters_applied": {
+      "fecha_inicio": "2025-01-01",
+      "fecha_fin": "2025-01-31"
+    }
+  }
+}
+```
+
+### Campos de la respuesta
+
+<ResponseField name="success" type="boolean">
+  Indica si la solicitud se completó correctamente.
+</ResponseField>
+
+<ResponseField name="data" type="array">
+  Arreglo de objetos de devolución que coinciden con los filtros aplicados.
+
+  <Expandable title="Campos de la devolución">
+    <ResponseField name="id" type="integer">
+      Identificador numérico único del registro de devolución.
+    </ResponseField>
+    <ResponseField name="fecha" type="string">
+      Fecha en que se procesó la devolución, en formato `Y-m-d`.
+    </ResponseField>
+    <ResponseField name="correlativo" type="string">
+      Número de documento legible asignado a la devolución (por ejemplo, `DEV-001234`).
+    </ResponseField>
+    <ResponseField name="tipo" type="string">
+      Tipo de documento de devolución (por ejemplo, `Devolucion`).
+    </ResponseField>
+    <ResponseField name="sub_total" type="number">
+      Subtotal antes de impuestos de todas las líneas de detalle devueltas.
+    </ResponseField>
+    <ResponseField name="no_sujeta" type="number">
+      Porción del monto de la devolución no sujeta a clasificación tributaria.
+    </ResponseField>
+    <ResponseField name="exenta" type="number">
+      Porción exenta de impuestos del monto de la devolución.
+    </ResponseField>
+    <ResponseField name="cuenta_a_terceros" type="number">
+      Monto facturado por cuenta de terceros, cuando aplique.
+    </ResponseField>
+    <ResponseField name="total" type="number">
+      Total final de la devolución incluyendo impuestos y luego de aplicar descuentos.
+    </ResponseField>
+    <ResponseField name="iva" type="number">
+      Monto de impuesto incluido en el total de la devolución.
+    </ResponseField>
+    <ResponseField name="iva_retenido" type="number">
+      IVA retenido en la transacción de devolución, cuando aplique.
+    </ResponseField>
+    <ResponseField name="observaciones" type="string">
+      Notas de texto libre registradas al momento de procesar la devolución (por ejemplo, motivo de la devolución).
+    </ResponseField>
+    <ResponseField name="enable" type="integer">
+      Estado activo del registro de devolución. `1` es activo; `0` es anulado o inactivo.
+    </ResponseField>
+    <ResponseField name="id_venta" type="integer">
+      El ID de la venta original con la cual está asociada esta devolución. Úsalo para hacer referencia cruzada con el endpoint [GET /sales/\{id\}](/api/sales).
+    </ResponseField>
+    <ResponseField name="nombre_cliente" type="string">
+      Nombre visible del cliente que realizó la devolución.
+    </ResponseField>
+    <ResponseField name="nombre_usuario" type="string">
+      Nombre de usuario del operador que procesó la devolución.
+    </ResponseField>
+    <ResponseField name="nombre_documento" type="string">
+      Tipo de documento asociado a la devolución (por ejemplo, `Nota de Crédito`).
+    </ResponseField>
+    <ResponseField name="created_at" type="string">
+      Marca de tiempo en formato ISO 8601 de cuándo se creó el registro de devolución.
+    </ResponseField>
+    <ResponseField name="updated_at" type="string">
+      Marca de tiempo en formato ISO 8601 de la actualización más reciente del registro de devolución.
+    </ResponseField>
+    <ResponseField name="detalles" type="array">
+      Líneas de detalle incluidas en esta devolución.
+
+      <Expandable title="Campos del detalle de la devolución">
+        <ResponseField name="nombre_producto" type="string">
+          Nombre completo del producto devuelto.
+        </ResponseField>
+        <ResponseField name="codigo_producto" type="string">
+          SKU o código interno del artículo devuelto.
+        </ResponseField>
+        <ResponseField name="marca_producto" type="string">
+          Nombre de la marca del producto devuelto.
+        </ResponseField>
+        <ResponseField name="descripcion" type="string">
+          Descripción detallada del producto devuelto.
+        </ResponseField>
+        <ResponseField name="cantidad" type="number">
+          Cantidad de unidades devueltas en esta línea de detalle. Admite hasta tres decimales.
+        </ResponseField>
+        <ResponseField name="precio" type="number">
+          Precio unitario del producto en el momento de la venta original.
+        </ResponseField>
+        <ResponseField name="costo" type="number">
+          Costo unitario del producto, utilizado para ajustes de margen y valor del inventario.
+        </ResponseField>
+        <ResponseField name="descuento" type="number">
+          Monto de descuento aplicado a esta línea de detalle devuelta.
+        </ResponseField>
+        <ResponseField name="no_sujeta" type="number">
+          Porción del monto de esta línea no sujeta a clasificación tributaria.
+        </ResponseField>
+        <ResponseField name="cuenta_a_terceros" type="number">
+          Monto de esta línea facturado por cuenta de terceros, cuando aplique.
+        </ResponseField>
+        <ResponseField name="exenta" type="number">
+          Porción exenta de impuestos del monto de esta línea.
+        </ResponseField>
+        <ResponseField name="total" type="number">
+          Total de la línea de devolución luego de aplicar cantidad y descuento.
+        </ResponseField>
+        <ResponseField name="medida" type="string">
+          Unidad de medida del producto devuelto (por ejemplo, `Unidad`, `Kg`, `Litro`).
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+---
+
+## GET /returns/\{id\}
+
+Recupera un único registro de devolución por su ID numérico. La respuesta devuelve el mismo objeto Devolución completo descrito anteriormente, incluido el arreglo `detalles` con las líneas devueltas.
+
+### Parámetro de ruta
+
+<ParamField path="id" type="integer" required>
+  El identificador numérico único del registro de devolución que deseas obtener.
+</ParamField>
+
+<CodeGroup>
+
+```bash cURL
+curl --request GET \
+  --url "https://api.smartpyme.site/api/external/v1/returns/789" \
+  --header "Authorization: Bearer {api_key}"
+```
+
+```python Python
+import requests
+
+return_id = 789
+url = f"https://api.smartpyme.site/api/external/v1/returns/{return_id}"
+headers = {"Authorization": "Bearer {api_key}"}
+
+response = requests.get(url, headers=headers)
+print(response.json())
+```
+
+```javascript JavaScript
+const returnId = 789;
+const response = await fetch(
+  `https://api.smartpyme.site/api/external/v1/returns/${returnId}`,
+  {
+    method: "GET",
+    headers: { Authorization: "Bearer {api_key}" },
+  }
+);
+const data = await response.json();
+console.log(data);
+```
+
+</CodeGroup>
+
+La respuesta envuelve el objeto Devolución bajo una clave `data` con `"success": true`. Todos los campos, incluido `detalles`, son idénticos a la estructura documentada en la respuesta de [GET /returns](#get-returns) anterior.
+
+---
+
+## GET /returns/summary
+
+Devuelve estadísticas agregadas para tu actividad de devoluciones sobre un rango de fechas opcional. Usa este endpoint para medir el volumen y el valor de la mercadería que se está devolviendo, identificar períodos con altas devoluciones y cuantificar el impacto financiero de las devoluciones sobre tus ingresos.
+
+<CodeGroup>
+
+```bash cURL
+curl --request GET \
+  --url "https://api.smartpyme.site/api/external/v1/returns/summary?fecha_inicio=2025-01-01&fecha_fin=2025-01-31" \
+  --header "Authorization: Bearer {api_key}"
+```
+
+```python Python
+import requests
+
+url = "https://api.smartpyme.site/api/external/v1/returns/summary"
+headers = {"Authorization": "Bearer {api_key}"}
+params = {
+    "fecha_inicio": "2025-01-01",
+    "fecha_fin": "2025-01-31",
+}
+
+response = requests.get(url, headers=headers, params=params)
+print(response.json())
+```
+
+```javascript JavaScript
+const response = await fetch(
+  "https://api.smartpyme.site/api/external/v1/returns/summary" +
+    "?fecha_inicio=2025-01-01&fecha_fin=2025-01-31",
+  {
+    method: "GET",
+    headers: { Authorization: "Bearer {api_key}" },
+  }
+);
+const data = await response.json();
+console.log(data);
+```
+
+</CodeGroup>
+
+### Parámetros de consulta
+
+<ParamField query="fecha_inicio" type="string">
+  Fecha de inicio del período de resumen, en formato `Y-m-d`. Omítela para incluir todos los registros de devoluciones desde el inicio.
+</ParamField>
+
+<ParamField query="fecha_fin" type="string">
+  Fecha de fin del período de resumen, en formato `Y-m-d`. Omítela para incluir todos los registros hasta la fecha actual.
+</ParamField>
+
+### Ejemplo de respuesta
+
+```json
+{
+  "success": true,
+  "data": {
+    "cantidad_devoluciones": 45,
+    "total_devuelto": 6750.00,
+    "total_iva": 607.50,
+    "total_descuentos": 125.00,
+    "promedio_devolucion": 150.00,
+    "devoluciones_por_tipo": [
+      { "tipo": "Devolucion", "cantidad": 45, "total": 6750.00 }
+    ]
+  },
+  "meta": {
+    "empresa": "Mi Empresa S.A.",
+    "timestamp": "2025-01-31T23:59:00Z",
+    "filters_applied": {
+      "fecha_inicio": "2025-01-01",
+      "fecha_fin": "2025-01-31"
+    }
+  }
+}
+```
+
+### Campos de la respuesta
+
+<ResponseField name="data.cantidad_devoluciones" type="integer">
+  Número total de transacciones de devolución procesadas dentro del período solicitado.
+</ResponseField>
+
+<ResponseField name="data.total_devuelto" type="number">
+  Valor monetario bruto de todas las devoluciones en el período, incluyendo impuestos.
+</ResponseField>
+
+<ResponseField name="data.total_iva" type="number">
+  Monto total de impuesto incluido en todos los registros de devolución del período.
+</ResponseField>
+
+<ResponseField name="data.total_descuentos" type="number">
+  Suma de todos los descuentos aplicados a las líneas devueltas en el período.
+</ResponseField>
+
+<ResponseField name="data.promedio_devolucion" type="number">
+  Valor promedio por transacción de devolución, calculado como `total_devuelto / cantidad_devoluciones`.
+</ResponseField>
+
+<ResponseField name="data.devoluciones_por_tipo" type="array">
+  Desglose del conteo y valor total de devoluciones agrupado por tipo de documento.
+
+  <Expandable title="Campos de devoluciones_por_tipo">
+    <ResponseField name="tipo" type="string">
+      El tipo de documento de devolución (por ejemplo, `Devolucion`).
+    </ResponseField>
+    <ResponseField name="cantidad" type="integer">
+      Número de registros de devolución con este tipo de documento.
+    </ResponseField>
+    <ResponseField name="total" type="number">
+      Valor total combinado de las devoluciones con este tipo de documento.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="meta.empresa" type="string">
+  Nombre visible de la empresa asociada a tu API key.
+</ResponseField>
+
+<ResponseField name="meta.timestamp" type="string">
+  Marca de tiempo en formato ISO 8601 que indica cuándo se generó el resumen.
+</ResponseField>
+
+<ResponseField name="meta.filters_applied" type="object">
+  Eco de los filtros de fecha utilizados para calcular el resumen, útil para confirmar los parámetros de la solicitud.
+</ResponseField>

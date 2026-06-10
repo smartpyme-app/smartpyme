@@ -1,0 +1,77 @@
+---
+title: "Límites de uso y cuotas para la API de SmartPyme"
+sidebarTitle: "Límites de uso"
+description: "La API externa de SmartPyme permite 1.000 solicitudes por hora en modo estándar o 2.000 por hora con filtros de fecha. Los límites se reinician al comienzo de cada hora."
+---
+
+La API externa de SmartPyme aplica límites de uso por hora para garantizar el uso justo y la estabilidad de la plataforma. Tu cuota depende de si incluyes filtros de fecha en tus solicitudes: agregar `fecha_inicio` y `fecha_fin` duplica tu permiso. Entender cómo funcionan los límites te ayuda a diseñar integraciones que se mantengan cómodamente dentro de la cuota.
+
+## Límites
+
+| Tipo de solicitud | Límite |
+|---|---|
+| Sin filtros de fecha | 1.000 solicitudes/hora |
+| Con `fecha_inicio` + `fecha_fin` | 2.000 solicitudes/hora |
+
+## Ventana de reinicio
+
+Los límites de uso operan en **ventanas horarias fijas**. El contador se reinicia exactamente al comienzo de cada hora; por ejemplo, a las 14:00, 15:00, 16:00, y así sucesivamente. Las solicitudes hechas entre las 14:00 y las 14:59 cuentan todas dentro de la misma ventana, y el contador comienza nuevamente a las 15:00, sin importar cuándo hiciste tu primera solicitud durante esa hora.
+
+## Encabezados de límite de uso
+
+Cada respuesta de la API incluye los siguientes encabezados para que puedas rastrear tu uso actual en tiempo real:
+
+| Encabezado | Descripción |
+|---|---|
+| `X-RateLimit-Limit` | Tu límite actual para esta ventana |
+| `X-RateLimit-Remaining` | Solicitudes restantes en la ventana actual |
+| `X-RateLimit-Reset` | Marca de tiempo Unix de cuándo se reinicia el límite |
+
+## Cómo consultar tu estado
+
+Puedes consultar tu estado actual de límite de uso en cualquier momento llamando a `GET /system/rate-limit`. Este endpoint cuenta dentro de tu cuota, pero devuelve un panorama completo de tu uso para la ventana actual.
+
+```bash
+curl -H "Authorization: Bearer YOUR_API_KEY" \
+     "https://api.smartpyme.site/api/external/v1/system/rate-limit"
+```
+
+```json
+{
+  "success": true,
+  "data": {
+    "requests_used": 25,
+    "max_requests": 1000,
+    "remaining_requests": 975,
+    "reset_time": "2024-01-01T15:00:01Z",
+    "window_minutes": 60,
+    "limits": {
+      "standard": 1000,
+      "with_date_filters": 2000
+    },
+    "current_limit_type": "standard",
+    "empresa_nombre": "Mi Empresa"
+  }
+}
+```
+
+## Manejo del HTTP 429
+
+Cuando excedes tu límite de uso, la API devuelve HTTP `429 Too Many Requests`. Para recuperarte y evitar alcanzar el límite nuevamente, sigue estas recomendaciones:
+
+1. Revisa el encabezado `X-RateLimit-Reset` para determinar exactamente cuándo se renueva tu cuota, luego espera hasta esa marca de tiempo antes de reintentar.
+2. Agrega los filtros de fecha `fecha_inicio` y `fecha_fin` a tus solicitudes: esto duplica tu cuota por hora a 2.000 solicitudes.
+3. Usa `per_page=200` para obtener más registros por solicitud y reducir la cantidad total de llamadas que hace tu integración.
+4. Usa endpoints de resumen (por ejemplo, `GET /sales/summary`) para obtener datos agregados en lugar de paginar a través de todos los registros individuales.
+
+```json
+{
+  "success": false,
+  "error": "Rate limit exceeded",
+  "code": 429
+}
+```
+
+<Tip>
+  Agrega siempre `fecha_inicio` y `fecha_fin` a tus solicitudes: duplica tu cuota por hora a 2.000 y suele reducir la cantidad total de solicitudes necesarias al acotar los resultados a un rango de tiempo específico.
+</Tip>

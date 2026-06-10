@@ -1,0 +1,99 @@
+---
+title: "Sincroniza productos y pedidos con WooCommerce y Shopify"
+sidebarTitle: "WooCommerce y Shopify"
+description: "Conecta SmartPyme a tu tienda de WooCommerce o Shopify para sincronizar automáticamente pedidos como ventas y mantener el inventario actualizado en ambas plataformas."
+---
+
+SmartPyme se integra con WooCommerce y Shopify para procesar pedidos automáticamente y mantener tu inventario sincronizado. Una vez conectado, cada nuevo pedido fluye a SmartPyme como una venta — con los datos del cliente, las líneas de detalle y los totales — así nunca tienes que ingresar datos dos veces.
+
+## Integración con WooCommerce
+
+<Steps>
+  <Step title="Encuentra tu token de webhook de WooCommerce">
+    En SmartPyme, ve a **Configuración → Usuarios → tu usuario → Integraciones**. Copia el token de webhook de WooCommerce que aparece allí — lo necesitarás en los siguientes pasos.
+  </Step>
+  <Step title="Abre los webhooks de WooCommerce">
+    En tu panel de WordPress, ve a **WooCommerce → Settings → Advanced → Webhooks**.
+  </Step>
+  <Step title="Crea un webhook de Order Created">
+    Haz clic en **Add webhook** y configúralo así:
+
+    - **Name:** SmartPyme Order Created
+    - **Status:** Active
+    - **Topic:** Order created
+    - **Delivery URL:**
+
+    <CodeGroup>
+      ```text Webhook URL
+      https://api.smartpyme.site/api/webhook/woocommerce/{your_token}
+      ```
+    </CodeGroup>
+
+    Reemplaza `{your_token}` con el token que copiaste de SmartPyme.
+  </Step>
+  <Step title="Crea un webhook de Product Updated">
+    Agrega un segundo webhook con la siguiente configuración:
+
+    - **Name:** SmartPyme Product Updated
+    - **Status:** Active
+    - **Topic:** Product updated
+    - **Delivery URL:**
+
+    <CodeGroup>
+      ```text Webhook URL
+      https://api.smartpyme.site/api/webhook/woocommerce/{your_token}/producto
+      ```
+    </CodeGroup>
+  </Step>
+  <Step title="Guarda y prueba la conexión">
+    Guarda ambos webhooks y luego realiza un pedido de prueba en WooCommerce. Abre SmartPyme y confirma que el pedido aparece como una nueva venta en **Ventas**.
+  </Step>
+</Steps>
+
+## Integración con Shopify
+
+<Steps>
+  <Step title="Encuentra tu token de webhook de Shopify">
+    En SmartPyme, ve a **Configuración → Usuarios → tu usuario → Integraciones**. Copia el token de webhook de Shopify que se muestra en esa página.
+  </Step>
+  <Step title="Abre los webhooks de Shopify">
+    En tu Shopify Admin, ve a **Settings → Notifications → Webhooks**.
+  </Step>
+  <Step title="Crea un webhook de Order Payment">
+    Haz clic en **Create webhook** y completa los detalles:
+
+    - **Event:** Order payment
+    - **Format:** JSON
+    - **URL:**
+
+    <CodeGroup>
+      ```text Webhook URL
+      https://api.smartpyme.site/api/webhook/shopify/{your_token}
+      ```
+    </CodeGroup>
+
+    Reemplaza `{your_token}` con el token que copiaste de SmartPyme.
+  </Step>
+  <Step title="Prueba con un pedido borrador">
+    Crea un pedido borrador en Shopify Admin y márcalo como pagado. Verifica que aparezca la venta correspondiente en SmartPyme.
+  </Step>
+</Steps>
+
+## Exportar productos a Shopify
+
+Para enviar tu catálogo de productos de SmartPyme a Shopify, ve a **Inventario → Productos** y selecciona **Exportar a Shopify**. SmartPyme pone la exportación en cola en segundo plano — monitorea su progreso en el panel **Estado de exportación** de la misma página. Los catálogos grandes pueden tardar varios minutos en completarse.
+
+## Qué se sincroniza
+
+Cuando llega un webhook de pedido, SmartPyme crea automáticamente una venta que incluye:
+
+- **Información del cliente** — nombre, correo y dirección del pedido.
+- **Líneas de detalle** — productos, cantidades y precios unitarios.
+- **Totales** — subtotal, impuestos, envío y total general.
+- **Método de pago** — según se registre en WooCommerce o Shopify.
+
+La información de productos fluye desde SmartPyme hacia tu tienda cuando ejecutas una exportación o cuando se actualiza un producto y hay una sincronización configurada.
+
+<Note>
+  Para desconectar tu integración con WooCommerce, ve a **Configuración → Usuarios → tu usuario → Desconectar WooCommerce**. Las ventas ya importadas a SmartPyme no se ven afectadas.
+</Note>

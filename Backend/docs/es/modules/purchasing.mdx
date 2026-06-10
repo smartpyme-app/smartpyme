@@ -1,0 +1,135 @@
+---
+title: "Compras, gastos y gestión de proveedores"
+sidebarTitle: "Compras"
+description: "Lleva el control de compras a proveedores, gestiona cuentas por pagar, registra gastos y emite órdenes de compra para mantener tu cadena de suministro organizada en SmartPyme."
+---
+
+El módulo de Compras mantiene tu cadena de suministro y gasto bajo control. Registra cada compra, lleva el control de lo que debes a cada proveedor, gestiona gastos recurrentes por categoría y procesa devoluciones de compra, todo con trazabilidad completa y exportaciones a Excel con un solo clic.
+
+## Órdenes de compra
+
+Una orden de compra (OC) es una solicitud formal a un proveedor antes de recibir los bienes o servicios. Crear OC te ayuda a documentar qué se pidió y a qué precio antes de concretar la compra.
+
+Para crear una orden de compra, ve a **Compras → Órdenes de compra → Nueva orden de compra**. Selecciona el **proveedor**, agrega cada línea de producto con la **cantidad** y el **costo unitario** esperado, y define una **fecha de entrega** opcional. Guarda la OC para compartirla con tu proveedor por PDF o correo.
+
+Una vez que llegan los bienes y estás listo para registrar la compra:
+
+1. Abre la orden de compra desde la lista.
+2. Verifica las cantidades recibidas y ajusta si hay discrepancias.
+3. Haz clic en **Convertir a compra**. SmartPyme traslada automáticamente todas las líneas, costos y datos del proveedor.
+
+<Note>
+  Las órdenes de compra no actualizan el stock ni las cuentas por pagar hasta que se convierten en una compra confirmada.
+</Note>
+
+---
+
+## Registrar una compra
+
+<Steps>
+  <Step title="Abre el formulario de nueva compra">
+    Ve a **Compras → Nueva compra** desde la barra lateral izquierda.
+  </Step>
+  <Step title="Selecciona un proveedor">
+    Busca el proveedor por nombre o NIT. Si el proveedor es nuevo, haz clic en **+ Nuevo proveedor** para crear el registro sin salir del formulario.
+  </Step>
+  <Step title="Agrega líneas de producto">
+    Usa la barra de búsqueda de productos para agregar cada artículo que recibiste. SmartPyme completa el último costo de compra automáticamente; actualízalo si el precio cambió.
+  </Step>
+  <Step title="Ingresa costos unitarios y cantidades">
+    Confirma el **costo unitario** y la **cantidad recibida** de cada línea. SmartPyme calcula el total de la línea y el total general de la compra automáticamente.
+  </Step>
+  <Step title="Guarda la compra">
+    Haz clic en **Guardar**. SmartPyme registra la compra, actualiza el stock en la bodega seleccionada y registra el monto como cuenta por pagar (CXP) en el saldo del proveedor.
+  </Step>
+</Steps>
+
+---
+
+## Proveedores
+
+Tu directorio de proveedores es la columna vertebral del módulo de Compras.
+
+- **Agregar un proveedor**: ve a **Proveedores → Nuevo proveedor** y completa el nombre de la empresa, **NIT**, dirección, contacto, correo y teléfono.
+- **Editar un proveedor**: abre el registro del proveedor, haz clic en **Editar**, actualiza los datos y guarda.
+- **Buscar por NIT**: usa el campo de NIT en la barra de búsqueda para encontrar un proveedor al instante por su número de identificación tributaria.
+- **Llevar control de cuentas por pagar (CXP)**: dentro de cada registro de proveedor, la pestaña **Cuenta por pagar** muestra cada saldo abierto, fecha de vencimiento e historial de pagos. Esta vista se actualiza en tiempo real conforme registras compras y pagos.
+- **Historial de compras**: la pestaña **Historial** lista cada compra, devolución y pago asociados al proveedor, con enlaces a los documentos originales.
+
+---
+
+## Gastos
+
+Registra los gastos de tu negocio que no son de inventario —alquiler, servicios, salarios, marketing y más— para obtener una foto completa de tus costos operativos.
+
+Para registrar un gasto, ve a **Compras → Gastos → Nuevo gasto** y completa:
+
+- **Categoría**: asigna el gasto a una categoría (por ejemplo, *Servicios*, *Marketing*, *Suministros de oficina*) y, opcionalmente, un **departamento**.
+- **Monto y fecha**: ingresa el monto total y la fecha en que se incurrió el gasto.
+- **Adjunto de recibo**: haz clic en **Adjuntar** para subir una imagen escaneada del recibo o factura para fines de respaldo.
+- **Proveedor**: opcionalmente, vincula el gasto a un proveedor de tu directorio.
+
+<Tip>
+  Usa categorías de gastos para tener una foto clara de en qué se gasta el dinero en el Dashboard. El widget de desglose de gastos del Dashboard agrupa los gastos por categoría para que detectes tendencias de un vistazo.
+</Tip>
+
+---
+
+## Cuentas por pagar (CXP)
+
+Lleva el control de cada monto que debes a tus proveedores desde una vista central.
+
+Ve a **Compras → Cuentas por pagar** para ver:
+
+- **Saldo pendiente por proveedor**: el total no pagado a cada proveedor.
+- **Fechas de vencimiento**: banderas con código de color resaltan los pagos vencidos y próximos.
+- **Reporte de antigüedad**: filtra los saldos por 30, 60, 90 y más de 90 días vencidos.
+
+Para registrar un **abono** (pago parcial):
+
+1. Abre el registro de CXP del proveedor o el documento de compra específico.
+2. Haz clic en **Registrar pago**.
+3. Ingresa el monto pagado, el método de pago y la fecha.
+4. Guarda. SmartPyme reduce el saldo pendiente y registra la transacción en el historial de pagos.
+
+---
+
+## Devoluciones de compra
+
+Si necesitas devolver bienes a un proveedor, SmartPyme ajusta tu stock y cuentas por pagar automáticamente.
+
+<Steps>
+  <Step title="Navega a Devoluciones de compra">
+    Ve a **Compras → Devoluciones de compra → Nueva devolución**.
+  </Step>
+  <Step title="Selecciona la compra original">
+    Busca la compra original por número de documento, fecha o nombre del proveedor.
+  </Step>
+  <Step title="Elige los artículos a devolver">
+    SmartPyme carga todas las líneas de la compra original. Selecciona los artículos que se devuelven y ajusta las cantidades si la devolución es parcial.
+  </Step>
+  <Step title="Confirma la devolución">
+    Haz clic en **Procesar devolución**. El stock sale de tu bodega y el saldo de CXP del proveedor se reduce por el monto de la devolución.
+  </Step>
+</Steps>
+
+---
+
+## Reportes y exportaciones
+
+SmartPyme ofrece herramientas de reporte flexibles para analizar tu actividad de compras.
+
+<CardGroup cols={2}>
+  <Card title="Exportar a Excel" icon="file-excel" href="help/faq">
+    Desde la lista de Compras, aplica tus filtros de **rango de fechas**, **proveedor** y **estado**, luego haz clic en **Exportar → Excel** para descargar los resultados como hoja de cálculo formateada.
+  </Card>
+  <Card title="Compras por proveedor" icon="chart-bar" href="help/faq">
+    Ve a **Reportes → Compras por proveedor** para ver totales, devoluciones y compras netas por proveedor en cualquier periodo.
+  </Card>
+  <Card title="Reporte de gastos" icon="receipt" href="help/faq">
+    Ve a **Reportes → Gastos** para ver el gasto por categoría, departamento o rango de fechas, con desglose hasta el detalle de transacciones individuales.
+  </Card>
+  <Card title="Antigüedad de CXP" icon="calendar-clock" href="help/faq">
+    Ve a **Reportes → Antigüedad de cuentas por pagar** para ver una foto de todos los saldos pendientes a proveedores agrupados por su nivel de vencimiento.
+  </Card>
+</CardGroup>

@@ -1,0 +1,99 @@
+---
+title: "Paginar grandes conjuntos de datos en la API externa de SmartPyme"
+sidebarTitle: "Paginación"
+description: "Todos los endpoints de lista de la API externa de SmartPyme admiten paginación por página usando los parámetros page y per_page, devolviendo hasta 200 registros por solicitud."
+---
+
+Todos los endpoints de lista en la API externa de SmartPyme devuelven resultados paginados. Tú controlas qué página obtener y cuántos registros incluir por página usando parámetros de consulta. La envoltura de la respuesta siempre incluye un objeto `pagination` para que tu integración pueda determinar si hay más páginas y navegar entre ellas de forma programática.
+
+## Parámetros
+
+<ParamField query="page" type="integer" default="1">
+  El número de página a obtener. Debe ser 1 o mayor. Su valor por defecto es `1` si se omite.
+</ParamField>
+
+<ParamField query="per_page" type="integer" default="100">
+  La cantidad de registros a incluir por página. Acepta valores de `1` a `200`. Su valor por defecto es `100` si se omite.
+</ParamField>
+
+## Campos de respuesta de paginación
+
+Cada respuesta de lista incluye un objeto `pagination` en el nivel superior de la envoltura de la respuesta con los siguientes campos:
+
+<ResponseField name="current_page" type="integer">
+  El número de página de los resultados que se devuelven actualmente.
+</ResponseField>
+
+<ResponseField name="per_page" type="integer">
+  La cantidad de registros incluidos en esta página.
+</ResponseField>
+
+<ResponseField name="total" type="integer">
+  La cantidad total de registros que coinciden con tu consulta en todas las páginas.
+</ResponseField>
+
+<ResponseField name="total_pages" type="integer">
+  La cantidad total de páginas disponibles según el valor actual de `per_page`.
+</ResponseField>
+
+<ResponseField name="has_next" type="boolean">
+  `true` si hay una página después de la actual; `false` si esta es la última página.
+</ResponseField>
+
+<ResponseField name="has_prev" type="boolean">
+  `true` si hay una página antes de la actual; `false` si esta es la primera página.
+</ResponseField>
+
+<ResponseField name="from" type="integer">
+  El índice del primer registro en la página actual (basado en 1, relativo al conjunto completo de resultados).
+</ResponseField>
+
+<ResponseField name="to" type="integer">
+  El índice del último registro en la página actual (basado en 1, relativo al conjunto completo de resultados).
+</ResponseField>
+
+## Ejemplo de solicitud
+
+La siguiente solicitud obtiene la segunda página de resultados de ventas con 50 registros por página:
+
+```bash
+curl -H "Authorization: Bearer YOUR_API_KEY" \
+     "https://api.smartpyme.site/api/external/v1/sales?page=2&per_page=50"
+```
+
+## Iterar sobre todas las páginas
+
+Para recuperar todos los registros de un conjunto de datos, recorre las páginas hasta que `has_next` sea `false`. El siguiente ejemplo obtiene todas las ventas de enero de 2025 usando el tamaño máximo de página para minimizar la cantidad de solicitudes:
+
+<CodeGroup>
+
+```python Python
+import requests
+
+def get_all_sales(api_key):
+    headers = {"Authorization": f"Bearer {api_key}"}
+    base_url = "https://api.smartpyme.site/api/external/v1/sales"
+    page = 1
+    all_sales = []
+
+    while True:
+        resp = requests.get(
+            base_url,
+            headers=headers,
+            params={"page": page, "per_page": 200, "fecha_inicio": "2025-01-01", "fecha_fin": "2025-01-31"}
+        )
+        data = resp.json()
+        all_sales.extend(data["data"])
+
+        if not data["pagination"]["has_next"]:
+            break
+        page += 1
+
+    return all_sales
+```
+
+</CodeGroup>
+
+<Tip>
+  Usa `per_page=200` para minimizar la cantidad de solicitudes y mantenerte dentro de tu cupo de límite de uso.
+</Tip>
