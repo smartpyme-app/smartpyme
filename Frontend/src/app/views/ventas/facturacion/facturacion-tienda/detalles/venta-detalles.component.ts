@@ -3,6 +3,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { calcularMontosLineaDetalle } from '@utils/impuestos-venta.util';
 
 import Swal from 'sweetalert2';
 
@@ -98,24 +99,13 @@ export class VentaDetallesComponent implements OnInit {
         return Number(pct) || 0;
     }
 
-    /** Aplica gravada/exenta/no_sujeta según tipo_gravado del detalle. IVA por línea según %; respeta cobrar_impuestos. */
+    /** Aplica gravada/exenta/no_sujeta; IVA alineado con total con IVA redondeado por línea. */
     private aplicarTipoGravado(detalle: any) {
-        const total = parseFloat(detalle.total) || 0;
-        detalle.gravada = 0;
-        detalle.exenta = 0;
-        detalle.no_sujeta = 0;
-        const tipo = (detalle.tipo_gravado || 'gravada').toLowerCase();
-        if (tipo === 'gravada') {
-            detalle.gravada = total;
-            const pct = this.obtenerPorcentajeIvaDetalle(detalle);
-            detalle.iva = pct > 0 ? parseFloat((total * (pct / 100)).toFixed(4)) : 0;
-        } else if (tipo === 'exenta') {
-            detalle.exenta = total;
-            detalle.iva = 0;
-        } else {
-            detalle.no_sujeta = total;
-            detalle.iva = 0;
-        }
+        calcularMontosLineaDetalle(
+            detalle,
+            !!this.venta.cobrar_impuestos,
+            this.apiService.auth_user()?.empresa?.iva
+        );
     }
 
     public updateTotal(detalle:any){
@@ -130,9 +120,7 @@ export class VentaDetallesComponent implements OnInit {
             detalle.descuento = 0;
         }
 
-        detalle.sub_total = Number((parseFloat(detalle.cantidad) * parseFloat(detalle.precio)).toFixed(4));
         detalle.total_costo  = (parseFloat(detalle.cantidad) * parseFloat(detalle.costo)).toFixed(4);
-        detalle.total  = (parseFloat(detalle.sub_total) - parseFloat(detalle.descuento)).toFixed(4);
         this.aplicarTipoGravado(detalle);
         this.update.emit(this.venta);
         this.sumTotal.emit();
@@ -298,11 +286,6 @@ export class VentaDetallesComponent implements OnInit {
                 }
             }
 
-            const precioSinIva = parseFloat(this.detalle.precio || 0);
-            this.detalle.sub_total = Number((parseFloat(this.detalle.cantidad) * precioSinIva).toFixed(4));
-            if(!this.detalle.total || detalle){
-                this.detalle.total = (parseFloat(this.detalle.sub_total) - parseFloat(this.detalle.descuento || 0)).toFixed(4);
-            }
             this.aplicarTipoGravado(this.detalle);
 
             if(!this.detalle.id_vendedor){

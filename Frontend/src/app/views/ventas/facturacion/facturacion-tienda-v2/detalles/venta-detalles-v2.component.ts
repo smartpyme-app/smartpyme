@@ -7,6 +7,7 @@ import { ApiService } from '@services/api.service';
 import Swal from 'sweetalert2';
 
 import {
+    calcularMontosLineaDetalle,
     normalizarPorcentajeImpuestoDetalle,
     resolverPorcentajeImpuestoVenta,
 } from '@utils/impuestos-venta.util';
@@ -131,32 +132,13 @@ export class VentaDetallesV2Component implements OnInit {
         );
     }
 
-    /** Aplica gravada/exenta/no_sujeta según tipo_gravado del detalle. Usa el % del producto. */
+    /** Aplica gravada/exenta/no_sujeta; IVA alineado con total con IVA redondeado por línea. */
     private aplicarTipoGravado(detalle: any) {
-        const total = parseFloat(detalle.total) || 0;
-        detalle.gravada = 0;
-        detalle.exenta = 0;
-        detalle.no_sujeta = 0;
-        const tipo = (detalle.tipo_gravado || 'gravada').toLowerCase();
-        const pctDetalle = this.obtenerPorcentajeIvaDetalle(detalle);
-        if (tipo === 'gravada') {
-            detalle.gravada = total;
-            if (pctDetalle > 0) {
-                detalle.total_iva = (total * (1 + pctDetalle / 100)).toFixed(4);
-                detalle.iva = parseFloat((total * (pctDetalle / 100)).toFixed(4));
-            } else {
-                detalle.total_iva = detalle.total;
-                detalle.iva = 0;
-            }
-        } else if (tipo === 'exenta') {
-            detalle.exenta = total;
-            detalle.total_iva = detalle.total;
-            detalle.iva = 0;
-        } else {
-            detalle.no_sujeta = total;
-            detalle.total_iva = detalle.total;
-            detalle.iva = 0;
-        }
+        calcularMontosLineaDetalle(
+            detalle,
+            !!this.venta.cobrar_impuestos,
+            this.apiService.auth_user()?.empresa?.iva
+        );
     }
 
     public onTipoGravadoChange(detalle: any) {
@@ -286,9 +268,7 @@ export class VentaDetallesV2Component implements OnInit {
             detalle.descuento = 0;
         }
 
-        detalle.sub_total = Number((parseFloat(detalle.cantidad) * precioSinIva).toFixed(4));
         detalle.total_costo  = (parseFloat(detalle.cantidad) * parseFloat(detalle.costo)).toFixed(4);
-        detalle.total  = (parseFloat(detalle.sub_total) - parseFloat(detalle.descuento)).toFixed(4);
         this.aplicarTipoGravado(detalle);
         this.update.emit(this.venta);
         this.sumTotal.emit();

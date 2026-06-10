@@ -13,7 +13,9 @@ import Swal from 'sweetalert2';
 import {
   normalizarPorcentajeImpuestoDetalle,
   resolverPorcentajeImpuestoVenta,
+  calcularMontosLineaDetalle,
   sumarSubTotalEncabezadoVenta,
+  sumarTotalConIvaEncabezadoVenta,
 } from '@utils/impuestos-venta.util';
 
 import * as moment from 'moment';
@@ -982,6 +984,11 @@ export class FacturacionV2Component implements OnInit {
       ? (this.apiService.auth_user()?.empresa?.iva || 0)
       : 0;
 
+    const empresaIva = Number(this.apiService.auth_user()?.empresa?.iva ?? 0);
+    this.venta.detalles.forEach((d: any) => {
+      calcularMontosLineaDetalle(d, !!this.venta.cobrar_impuestos, empresaIva);
+    });
+
     this.venta.sub_total = Number(sumarSubTotalEncabezadoVenta(this.venta.detalles)).toFixed(4);
 
     this.sincronizarRetencionGranContribuyente();
@@ -1013,7 +1020,6 @@ export class FacturacionV2Component implements OnInit {
       : 0;
 
     // IVA por tasa: cada impuesto recibe solo el IVA de los detalles con ese porcentaje
-    const empresaIva = Number(this.apiService.auth_user()?.empresa?.iva ?? 0);
     const pctIgual = (a: number, b: number) => Math.abs(Number(a) - Number(b)) < 0.01;
     const porcentajesImpuestos = (this.venta.impuestos || []).map((i: any) => Number(i.porcentaje));
     if (this.venta.cobrar_impuestos) {
@@ -1076,11 +1082,10 @@ export class FacturacionV2Component implements OnInit {
     const rawTotalCosto = parseFloat(this.sumPipe.transform(this.venta.detalles, 'total_costo'));
     this.venta.total_costo = Number(rawTotalCosto).toFixed(4);
 
-    // El total NO incluye la propina; incluir descuento por puntos si aplica
+    // Total desde suma de líneas con IVA (redondeo por línea); evita centavos de más/menos
     const descuentoPuntos = parseFloat(this.venta.descuento_puntos || 0) || 0;
     const totalNum =
-      parseFloat(this.venta.sub_total) +
-      parseFloat(this.venta.iva) +
+      sumarTotalConIvaEncabezadoVenta(this.venta.detalles) +
       parseFloat(this.venta.cuenta_a_terceros) +
       parseFloat(String(this.venta.iva_percibido)) -
       parseFloat(String(this.venta.iva_retenido)) -
