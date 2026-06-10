@@ -61,6 +61,7 @@ import { AlertsHaciendaComponent } from './parts/alerts-hacienda/alerts-hacienda
 
 import { SelectSearchComponent } from './parts/select-search/select-search.component';
 import { ActivarLotesMasivoComponent } from './parts/activar-lotes-masivo/activar-lotes-masivo.component';
+import { BoxfulShippingSelectorComponent } from './parts/boxful-shipping-selector/boxful-shipping-selector.component';
 
 @NgModule({
   imports: [
@@ -118,7 +119,8 @@ import { ActivarLotesMasivoComponent } from './parts/activar-lotes-masivo/activa
     ThreedsModalComponent,
     AlertsHaciendaComponent,
     SelectSearchComponent,
-    ActivarLotesMasivoComponent
+    ActivarLotesMasivoComponent,
+    BoxfulShippingSelectorComponent
   ],
   exports: [
     BusquedaClienteComponent,
@@ -161,7 +163,8 @@ import { ActivarLotesMasivoComponent } from './parts/activar-lotes-masivo/activa
     AlertsHaciendaComponent,
     SelectSearchComponent,
     NgxEchartsModule,
-    ActivarLotesMasivoComponent
+    ActivarLotesMasivoComponent,
+    BoxfulShippingSelectorComponent
   ],
   providers: [AlertService],
 })

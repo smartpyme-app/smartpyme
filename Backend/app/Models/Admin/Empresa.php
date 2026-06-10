@@ -38,11 +38,6 @@ class Empresa extends Model
         'direccion',
         'telefono',
         'correo',
-        'boxful_email',
-        'boxful_password',
-        'boxful_access_token',
-        'boxful_token_expires_at',
-        'boxful_status',
         'municipio',
         'departamento',
         'logo',
@@ -168,16 +163,10 @@ class Empresa extends Model
         'custom_empresa' => 'json',
         'importacion_productos_shopify' => 'boolean',
         'shopify_sync_bidirectional' => 'boolean',
-        'restringir_gastos_supervisor_limitado' => 'boolean',
         'restringir_compras_supervisor_limitado' => 'boolean',
-        'boxful_token_expires_at' => 'datetime',
-        'boxful_password' => 'encrypted',
-        'boxful_access_token' => 'encrypted',
     ];
 
     protected $hidden = [
-        'boxful_password',
-        'boxful_access_token',
     ];
 
     protected $appends = [
@@ -194,6 +183,9 @@ class Empresa extends Model
         'is_current_user_connected_to_shopify',
         'frecuencia_pago_label',
         'has_boxful_password',
+        'boxful_email',
+        'boxful_client_id',
+        'boxful_status',
     ];
 
     public function limiteUsuarios()
@@ -764,23 +756,57 @@ class Empresa extends Model
     }
 
     /**
-     * Set/encrypt the Boxful password if a value is provided.
+     * Relación con las integraciones de la empresa (hasOne).
      */
-    public function setBoxfulPasswordAttribute($value)
+    public function integracion()
     {
-        if (is_null($value) || $value === '') {
-            return;
-        }
-
-        $this->attributes['boxful_password'] = encrypt($value, false);
+        return $this->hasOne(Integracion::class, 'id_empresa');
     }
 
     /**
-     * Determine if a Boxful password has been configured for the company.
+     * Obtiene o crea el registro de integración de la empresa.
+     */
+    public function obtenerOcrearIntegracion()
+    {
+        if (!$this->relationLoaded('integracion') || !$this->integracion) {
+            $integracion = $this->integracion()->firstOrCreate([
+                'id_empresa' => $this->id
+            ]);
+            $this->setRelation('integracion', $integracion);
+        }
+        return $this->integracion;
+    }
+
+    /**
+     * Accesor dinámico para obtener el correo de Boxful.
+     */
+    public function getBoxfulEmailAttribute()
+    {
+        return $this->integracion ? $this->integracion->boxful_email : null;
+    }
+
+    /**
+     * Accesor dinámico para obtener el clientId de Boxful.
+     */
+    public function getBoxfulClientIdAttribute()
+    {
+        return $this->integracion ? $this->integracion->boxful_client_id : null;
+    }
+
+    /**
+     * Accesor dinámico para obtener el estado de conexión con Boxful.
+     */
+    public function getBoxfulStatusAttribute()
+    {
+        return $this->integracion ? ($this->integracion->boxful_status ?? 'disconnected') : 'disconnected';
+    }
+
+    /**
+     * Accesor dinámico para determinar si la contraseña de Boxful está configurada.
      */
     public function getHasBoxfulPasswordAttribute(): bool
     {
-        return !empty($this->attributes['boxful_password']);
+        return $this->integracion ? (bool) ($this->integracion->has_boxful_password) : false;
     }
 
     /**

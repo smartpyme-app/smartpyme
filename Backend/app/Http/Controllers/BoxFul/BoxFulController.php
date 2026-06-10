@@ -1,39 +1,25 @@
 <?php
 
-namespace App\Http\Controllers\BoxFull;
+namespace App\Http\Controllers\BoxFul;
 
 use App\Http\Controllers\Controller;
-use App\Services\BoxFull\BoxFullService;
+use App\Services\BoxFul\BoxFulService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
-class BoxFullController extends Controller
+class BoxFulController extends Controller
 {
-    /**
-     * @var BoxFullService
-     */
     protected $boxfulService;
 
-    /**
-     * BoxFullController constructor.
-     *
-     * @param BoxFullService $boxfulService
-     */
-    public function __construct(BoxFullService $boxfulService)
+    public function __construct(BoxFulService $boxfulService)
     {
         $this->boxfulService = $boxfulService;
     }
 
-    /**
-     * Test the Boxful API connection and authentication.
-     *
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function testConnection(Request $request)
+    public function testConnection()
     {
         try {
-            // 1. Attempt to retrieve access token (will fetch from cache or authenticate)
+            // 1. Intentar obtener el token de acceso (se recuperará de la caché o se autenticará)
             $token = $this->boxfulService->getAccessToken();
 
             if (empty($token)) {
@@ -47,10 +33,10 @@ class BoxFullController extends Controller
                 ], 400);
             }
 
-            // Obfuscated token for safety
+            // Token ofuscado por seguridad
             $obfuscatedToken = substr($token, 0, 15) . '...' . substr($token, -15);
 
-            // 2. Attempt to query Boxful's /auth/user-info endpoint to verify token validity
+            // 2. Intentar consultar el endpoint /auth/user-info de Boxful para verificar la validez del token
             $response = $this->boxfulService->get('auth/user-info');
 
             if ($response->failed()) {

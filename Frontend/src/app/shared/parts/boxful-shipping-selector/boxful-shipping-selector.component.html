@@ -1,0 +1,117 @@
+<div class="boxful-shipping-container bg-light p-3 rounded border">
+    <!-- Encabezado / Selección de modo -->
+    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-3 gap-2">
+        <label class="fw-bold text-dark mb-0"><i class="fa fa-truck me-2 text-primary"></i> Dirección de Envío (Boxful)</label>
+        
+        <div class="d-flex gap-3">
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="boxfulModeSelector" id="boxfulModeSaved" [checked]="mode === 'saved'" (change)="onModeChange('saved')">
+                <label class="form-check-label fw-semibold text-muted" for="boxfulModeSaved">
+                    Usar guardada
+                </label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="boxfulModeSelector" id="boxfulModeNew" [checked]="mode === 'new'" (change)="onModeChange('new')">
+                <label class="form-check-label fw-semibold text-muted" for="boxfulModeNew">
+                    Ingresar nueva
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alerta de Errores Básicos -->
+    <div class="alert alert-danger py-2 mb-3" role="alert" *ngIf="errorMessage">
+        <i class="fa fa-exclamation-triangle me-2"></i> {{ errorMessage }}
+    </div>
+
+    <!-- Modo: Dirección Guardada -->
+    <div *ngIf="mode === 'saved'">
+        <div class="mb-2" *ngIf="!loading">
+            <select class="form-select border" [(ngModel)]="selectedAddressId" (change)="onSelectSavedAddress()">
+                <option [ngValue]="null" disabled>-- Seleccione una dirección de Boxful --</option>
+                <option *ngFor="let addr of addresses" [value]="addr.id">
+                    {{ addr.address }} ({{ addr.addressAreaCode ? '+' + addr.addressAreaCode : '' }} {{ addr.addressPhone }})
+                </option>
+            </select>
+            <div class="form-text text-muted mt-1" *ngIf="addresses.length === 0">
+                No tienes direcciones registradas en tu cuenta de Boxful. Selecciona "Ingresar nueva" para registrar una.
+            </div>
+        </div>
+        <div class="py-2 text-center" *ngIf="loading">
+            <span class="spinner-border spinner-border-sm text-primary me-2" role="status" aria-hidden="true"></span>
+            <span class="text-muted small">Cargando direcciones guardadas...</span>
+        </div>
+    </div>
+
+    <!-- Modo: Ingresar Nueva Dirección -->
+    <div *ngIf="mode === 'new'">
+        <form [formGroup]="addressForm" (ngSubmit)="onSubmitNewAddress()" autocomplete="off">
+            <div class="mb-3">
+                <label class="form-label fw-semibold text-muted mb-1 small">Dirección de Entrega <span class="text-danger">*</span></label>
+                <textarea formControlName="address" rows="2" class="form-control form-control-sm" placeholder="Calle, número de casa/local, colonia, etc." [class.is-invalid]="addressForm.get('address')?.touched && addressForm.get('address')?.invalid"></textarea>
+                <div class="invalid-feedback">La dirección es requerida.</div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold text-muted mb-1 small">Punto de Referencia</label>
+                <input type="text" formControlName="referencePoint" class="form-control form-control-sm" placeholder="Frente a parque, portón negro, etc.">
+            </div>
+
+            <!-- TODO: Integrar mapa (Leaflet/Google Maps) para seleccionar pin y auto-llenar lat/lng -->
+            <div class="row">
+                <div class="col-6 mb-3">
+                    <label class="form-label fw-semibold text-muted mb-1 small">Latitud <span class="text-danger">*</span></label>
+                    <input type="number" step="any" formControlName="latitude" class="form-control form-control-sm" placeholder="Ej: 13.6893" [class.is-invalid]="addressForm.get('latitude')?.touched && addressForm.get('latitude')?.invalid">
+                    <div class="invalid-feedback">Requerido (numérico).</div>
+                </div>
+                <div class="col-6 mb-3">
+                    <label class="form-label fw-semibold text-muted mb-1 small">Longitud <span class="text-danger">*</span></label>
+                    <input type="number" step="any" formControlName="longitude" class="form-control form-control-sm" placeholder="Ej: -89.1871" [class.is-invalid]="addressForm.get('longitude')?.touched && addressForm.get('longitude')?.invalid">
+                    <div class="invalid-feedback">Requerido (numérico).</div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-6 mb-3">
+                    <label class="form-label fw-semibold text-muted mb-1 small">Estado/Depto <span class="text-danger">*</span></label>
+                    <select formControlName="stateId" (change)="onStateChange()" class="form-select form-select-sm" [class.is-invalid]="addressForm.get('stateId')?.touched && addressForm.get('stateId')?.invalid">
+                        <option [ngValue]="null" disabled>Seleccione...</option>
+                        <option *ngFor="let state of states" [value]="state.id">{{ state.name }}</option>
+                    </select>
+                    <div class="invalid-feedback">Seleccione un estado.</div>
+                </div>
+                <div class="col-6 mb-3">
+                    <label class="form-label fw-semibold text-muted mb-1 small">Ciudad/Municipio <span class="text-danger">*</span></label>
+                    <select formControlName="cityId" class="form-select form-select-sm" [class.is-invalid]="addressForm.get('cityId')?.touched && addressForm.get('cityId')?.invalid" [attr.disabled]="filteredCities.length === 0 ? true : null">
+                        <option [ngValue]="null" disabled>Seleccione...</option>
+                        <option *ngFor="let city of filteredCities" [value]="city.id">{{ city.name }}</option>
+                    </select>
+                    <div class="invalid-feedback">Seleccione una ciudad.</div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-4 mb-3">
+                    <label class="form-label fw-semibold text-muted mb-1 small">Cód. Área <span class="text-danger">*</span></label>
+                    <input type="text" formControlName="addressAreaCode" class="form-control form-control-sm" placeholder="503" [class.is-invalid]="addressForm.get('addressAreaCode')?.touched && addressForm.get('addressAreaCode')?.invalid">
+                    <div class="invalid-feedback">Requerido.</div>
+                </div>
+                <div class="col-8 mb-3">
+                    <label class="form-label fw-semibold text-muted mb-1 small">Teléfono de Contacto <span class="text-danger">*</span></label>
+                    <input type="text" formControlName="addressPhone" class="form-control form-control-sm" placeholder="70001234" [class.is-invalid]="addressForm.get('addressPhone')?.touched && addressForm.get('addressPhone')?.invalid">
+                    <div class="invalid-feedback">Teléfono requerido.</div>
+                </div>
+            </div>
+
+            <div class="d-grid mt-1">
+                <button type="submit" [disabled]="saving || loading" class="btn btn-primary btn-sm">
+                    <span *ngIf="saving">
+                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        Guardando dirección...
+                    </span>
+                    <span *ngIf="!saving"><i class="fa fa-save me-1"></i> Guardar y Seleccionar</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

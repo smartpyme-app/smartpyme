@@ -1763,7 +1763,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
      */
     public onTabChange(event: any) {
         console.log('onTabChange llamado con evento:', event); // Debug
-        
+
         // Usar setTimeout para asegurar que el tab ya esté activo
         setTimeout(() => {
             if (!this.tabset || !this.tabset.tabs) {
@@ -1774,7 +1774,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
             // Buscar el tab activo
             const activeTab = this.tabset.tabs.find(tab => tab.active);
             console.log('Tab activo encontrado:', activeTab); // Debug
-            
+
             if (activeTab && activeTab.heading) {
                 this.actualizarUrlDesdeTab(activeTab);
             }
@@ -1787,15 +1787,15 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
      */
     public onTabSelect(tab: any) {
         console.log('onTabSelect llamado con tab:', tab); // Debug
-        
+
         if (tab && tab.heading) {
             const tabName = this.getTabNameByHeading(tab.heading);
             console.log('Tab name mapeado:', tabName); // Debug
-            
+
             if (tabName) {
                 const currentTab = this.route.snapshot.queryParams['tab'];
                 console.log('Tab actual en URL:', currentTab, 'Nuevo tab:', tabName); // Debug
-                
+
                 if (currentTab !== tabName) {
                     console.log('Actualizando URL...'); // Debug
                     this.router.navigate([], {
@@ -1852,7 +1852,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
             'Integraciones': 'integraciones',
             'WooCommerce': 'woocommerce',
             'Shopify': 'shopify',
-            'Integración BoxFull': 'boxfull'
+            'Integración BoxFul': 'boxful'
         };
         return headingMap[heading] ?? null;
     }
@@ -1873,7 +1873,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
             'integraciones': 'Integraciones',
             'woocommerce': 'WooCommerce',
             'shopify': 'Shopify',
-            'boxfull': 'Integración BoxFull'
+            'boxful': 'Integración BoxFul'
         };
 
         const heading = tabHeadingMap[tabName.toLowerCase()];
@@ -1985,17 +1985,17 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
             if (result.isConfirmed) {
                 // Limpiar cache del servicio de funcionalidades
                 this.funcionalidadesService.limpiarCache();
-                
+
                 // Limpiar localStorage y sessionStorage
                 localStorage.clear();
                 sessionStorage.clear();
-                
+
                 // Cerrar sesión en el backend
                 this.apiService.logout();
-                
+
                 // Redirigir al login
                 this.router.navigate(['/login']);
-                
+
                 Swal.fire('Cache limpiado', 'El cache ha sido limpiado y la sesión cerrada. Por favor, inicia sesión nuevamente.', 'success');
             }
         });

@@ -1,13 +1,14 @@
 <?php
 
-namespace App\Services\BoxFull;
+namespace App\Services\BoxFul;
 
 use App\Models\Admin\Empresa;
+use App\Models\Admin\Integracion;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
-class BoxFullService
+class BoxFulService
 {
     /**
      * Modelo de la empresa activa.
@@ -30,7 +31,7 @@ class BoxFullService
     protected $cacheKey;
 
     /**
-     * Constructor de BoxFullService.
+     * Constructor de BoxFulService.
      */
     public function __construct(?Empresa $empresa = null)
     {
@@ -97,23 +98,25 @@ class BoxFullService
             return $token;
         }
 
+        $integracion = $empresa->obtenerOcrearIntegracion();
+
         // 2. Si no está en caché, intentar obtenerlo de la base de datos y verificar si sigue vigente (con buffer de 5 minutos)
-        if ($empresa->boxful_access_token && 
-            $empresa->boxful_token_expires_at && 
-            $empresa->boxful_token_expires_at->gt(now()->addMinutes(5))) {
+        if ($integracion->boxful_access_token && 
+            $integracion->boxful_token_expires_at && 
+            $integracion->boxful_token_expires_at->gt(now()->addMinutes(5))) {
             
             // Repoblar la caché para futuras peticiones rápidas
-            $secondsRemaining = max(0, $empresa->boxful_token_expires_at->diffInSeconds(now()));
+            $secondsRemaining = max(0, $integracion->boxful_token_expires_at->diffInSeconds(now()));
             if ($secondsRemaining > 0) {
-                Cache::put($this->cacheKey, $empresa->boxful_access_token, $secondsRemaining);
+                Cache::put($this->cacheKey, $integracion->boxful_access_token, $secondsRemaining);
             }
             
-            return $empresa->boxful_access_token;
+            return $integracion->boxful_access_token;
         }
 
         // El token no está en BD o expiró, realizar petición de autenticación
-        $email = $empresa->boxful_email;
-        $password = $empresa->boxful_password;
+        $email = $integracion->boxful_email;
+        $password = $integracion->boxful_password;
 
         if (empty($email) || empty($password)) {
             Log::error('Autenticación de API Boxful fallida: Credenciales no configuradas en BD para la empresa ID: ' . $empresa->id);
@@ -142,8 +145,8 @@ class BoxFullService
                 ]);
 
                 // Actualizar estado en la base de datos a error
-                $empresa->boxful_status = 'error';
-                $empresa->save();
+                $integracion->boxful_status = 'error';
+                $integracion->save();
 
                 throw new \Exception('Error de autenticación con Boxful: ' . ($response->json('message') ?? 'Error desconocido'));
             }
@@ -154,21 +157,24 @@ class BoxFullService
                 Log::error('La respuesta de API Boxful no contiene un accessToken', ['response' => $response->json()]);
 
                 // Actualizar estado en la base de datos a error
-                $empresa->boxful_status = 'error';
-                $empresa->save();
+                $integracion->boxful_status = 'error';
+                $integracion->save();
 
                 throw new \Exception('Respuesta de autenticación inválida desde Boxful.');
             }
 
             // Guardar token y expiración en la base de datos (válido por 23 horas)
-            $empresa->boxful_access_token = $accessToken;
-            $empresa->boxful_token_expires_at = now()->addHours(23);
-            $empresa->boxful_status = 'connected';
+            $integracion->boxful_access_token = $accessToken;
+            $integracion->boxful_token_expires_at = now()->addHours(23);
+            $integracion->boxful_status = 'connected';
 
             // Obtener y guardar el clientId desde /auth/user-info
-            $this->fetchAndSaveClientId($accessToken, $empresa);
+            $this->fetchAndSaveClientId($accessToken, $integracion);
 
-            $empresa->save();
+            $integracion->save();
+
+            // Crear o actualizar el canal de ventas para Boxful
+            $this->updateOrCreateChannel($empresa);
 
             // Guardar en caché por 23 horas para reducir el tráfico a la base de datos
             Cache::put($this->cacheKey, $accessToken, now()->addHours(23));
@@ -179,17 +185,33 @@ class BoxFullService
             Log::error('Excepción al autenticar con Boxful', ['error' => $e->getMessage()]);
             
             // Actualizar estado en la base de datos a error
-            $empresa->boxful_status = 'error';
-            $empresa->save();
+            $integracion->boxful_status = 'error';
+            $integracion->save();
 
             throw $e;
         }
     }
 
+    private function updateOrCreateChannel($empresa)
+    {
+             \App\Models\Admin\Canal::withoutGlobalScopes()->updateOrCreate(
+                [
+                    'id_empresa' => $empresa->id,
+                    'nombre' => 'Boxful'
+                ],
+                [
+                    'descripcion' => 'Canal de venta para integración con Boxful',
+                    'enable' => true,
+                    'cobra_propina' => false,
+                    'envios' => true
+                ]
+            );
+    }
+
     /**
      * Obtener el clientId desde /auth/user-info y guardarlo en la base de datos.
      */
-    protected function fetchAndSaveClientId(string $accessToken, Empresa $empresa): void
+    protected function fetchAndSaveClientId(string $accessToken, Integracion $integracion): void
     {
         try {
             $url = rtrim($this->baseUrl, '/') . '/auth/user-info';
@@ -203,9 +225,9 @@ class BoxFullService
             if ($response->successful()) {
                 $clientId = $response->json('clientId') ?? $response->json('id') ?? $response->json('data.clientId');
                 if ($clientId) {
-                    $empresa->boxful_client_id = $clientId;
+                    $integracion->boxful_client_id = $clientId;
                     Log::info('clientId de Boxful guardado correctamente', [
-                        'company_id' => $empresa->id,
+                        'company_id' => $integracion->id_empresa,
                         'clientId' => $clientId,
                     ]);
                 } else {
@@ -264,10 +286,11 @@ class BoxFullService
 
             // Limpiar token en la BD
             if ($this->empresa) {
-                $this->empresa->boxful_access_token = null;
-                $this->empresa->boxful_token_expires_at = null;
-                $this->empresa->boxful_status = 'disconnected';
-                $this->empresa->save();
+                $integracion = $this->empresa->obtenerOcrearIntegracion();
+                $integracion->boxful_access_token = null;
+                $integracion->boxful_token_expires_at = null;
+                $integracion->boxful_status = 'disconnected';
+                $integracion->save();
             }
 
             // Reintentar la petición con el nuevo token
@@ -300,6 +323,14 @@ class BoxFullService
     public function put(string $endpoint, array $data = []): \Illuminate\Http\Client\Response
     {
         return $this->request('put', $endpoint, $data);
+    }
+
+    /**
+     * Realizar una petición PATCH.
+     */
+    public function patch(string $endpoint, array $data = []): \Illuminate\Http\Client\Response
+    {
+        return $this->request('patch', $endpoint, $data);
     }
 
     /**

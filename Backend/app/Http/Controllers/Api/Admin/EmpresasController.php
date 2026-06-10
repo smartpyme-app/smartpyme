@@ -121,7 +121,6 @@ class EmpresasController extends Controller
         $this->handleUserAccountStatus($empresa, $request);
 
         $woocommerceValues = $this->preserveWoocommerceSettings($empresa);
-        $boxfulValues = $this->preserveBoxfulSettings($empresa);
 
         $this->handleCustomEmpresa($request, $empresa); // Maneja la personalización de la empresa
 
@@ -137,9 +136,10 @@ class EmpresasController extends Controller
         }
 
         $this->restoreWoocommerceSettings($empresa, $woocommerceValues);
-        $this->restoreBoxfulSettings($empresa, $boxfulValues);
 
         $empresa->save();
+
+        $this->updateBoxfulSettings($empresa, $request);
 
         if ($request->has('forma_pago')) {
             $metodoValidado = $request->input('forma_pago');
@@ -175,6 +175,8 @@ class EmpresasController extends Controller
         }
 
         $empresa->save();
+
+        $this->updateBoxfulSettings($empresa, $request);
 
         if ($request->has('forma_pago')) {
             $metodoValidado = $request->input('forma_pago');
@@ -236,27 +238,29 @@ class EmpresasController extends Controller
         }
     }
 
-    private function preserveBoxfulSettings(Empresa $empresa)
+    private function updateBoxfulSettings(Empresa $empresa, Request $request)
     {
-        $boxfulFields = [
-            'boxful_client_id',
-            'boxful_access_token',
-            'boxful_token_expires_at',
-            'boxful_status'
-        ];
-
-        $boxfulValues = [];
-        foreach ($boxfulFields as $field) {
-            $boxfulValues[$field] = $empresa->$field;
-        }
-
-        return $boxfulValues;
-    }
-
-    private function restoreBoxfulSettings(Empresa $empresa, array $boxfulValues)
-    {
-        foreach ($boxfulValues as $field => $value) {
-            $empresa->$field = $value;
+        if ($request->has('boxful_email') || $request->has('boxful_password') || $request->has('boxful_client_id')) {
+            $integracion = $empresa->obtenerOcrearIntegracion();
+            
+            $integracionData = [];
+            if ($request->has('boxful_email')) {
+                $integracionData['boxful_email'] = $request->boxful_email;
+            }
+            if ($request->has('boxful_client_id')) {
+                $integracionData['boxful_client_id'] = $request->boxful_client_id;
+            }
+            if ($request->has('boxful_password') && !empty($request->boxful_password)) {
+                $integracionData['boxful_password'] = $request->boxful_password;
+                $integracionData['boxful_status'] = 'disconnected';
+                $integracionData['boxful_access_token'] = null;
+                $integracionData['boxful_token_expires_at'] = null;
+            }
+            
+            if (!empty($integracionData)) {
+                $integracion->update($integracionData);
+                $empresa->load('integracion');
+            }
         }
     }
 
