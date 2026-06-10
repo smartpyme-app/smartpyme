@@ -49,6 +49,9 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
 
     public showpassword: boolean = false;
     public showpassword2: boolean = false;
+    public showBoxfulPassword: boolean = false;
+    public testingConnection: boolean = false;
+    public savingBoxful: boolean = false;
     public canales: any = [];
     public tieneAccesoPropina: boolean = false;
     public tieneAccesoModuloRestaurantePedidos: boolean = false;
@@ -1848,7 +1851,8 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
             'Facturación electrónica': 'facturacion-electronica',
             'Integraciones': 'integraciones',
             'WooCommerce': 'woocommerce',
-            'Shopify': 'shopify'
+            'Shopify': 'shopify',
+            'Integración BoxFull': 'boxfull'
         };
         return headingMap[heading] ?? null;
     }
@@ -1868,7 +1872,8 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
             'facturacion-electronica': 'Facturación electrónica',
             'integraciones': 'Integraciones',
             'woocommerce': 'WooCommerce',
-            'shopify': 'Shopify'
+            'shopify': 'Shopify',
+            'boxfull': 'Integración BoxFull'
         };
 
         const heading = tabHeadingMap[tabName.toLowerCase()];
@@ -1993,6 +1998,65 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
                 
                 Swal.fire('Cache limpiado', 'El cache ha sido limpiado y la sesión cerrada. Por favor, inicia sesión nuevamente.', 'success');
             }
+        });
+    }
+
+    public toggleBoxfulPassword() {
+        this.showBoxfulPassword = !this.showBoxfulPassword;
+    }
+
+    public saveBoxfulCredentials() {
+        if (!this.empresa.boxful_email || this.empresa.boxful_email.trim() === '') {
+            this.alertService.error('El correo de la cuenta de Boxful es requerido');
+            return;
+        }
+        if (!this.empresa.has_boxful_password && (!this.empresa.boxful_password || this.empresa.boxful_password.trim() === '')) {
+            this.alertService.error('La contraseña de la cuenta de Boxful es requerida');
+            return;
+        }
+
+        this.savingBoxful = true;
+        this.onSubmit().then(() => {
+            this.savingBoxful = false;
+        }).catch(err => {
+            this.savingBoxful = false;
+            this.alertService.error(err?.message || err || 'Error al guardar credenciales de Boxful');
+        });
+    }
+
+    public testBoxfulConnection() {
+        if (!this.empresa.boxful_email || this.empresa.boxful_email.trim() === '') {
+            this.alertService.error('El correo de la cuenta de Boxful es requerido');
+            return;
+        }
+        if (!this.empresa.has_boxful_password && (!this.empresa.boxful_password || this.empresa.boxful_password.trim() === '')) {
+            this.alertService.error('La contraseña de la cuenta de Boxful es requerida');
+            return;
+        }
+
+        this.testingConnection = true;
+
+        this.onSubmit().then(() => {
+            this.apiService.getAll('boxful/test-connection').subscribe(
+                (response: any) => {
+                    this.testingConnection = false;
+                    Swal.fire({
+                        title: 'Conexión Exitosa',
+                        text: response.message || 'Conexión con Boxful establecida correctamente.',
+                        icon: 'success',
+                        confirmButtonText: 'Aceptar'
+                    });
+                },
+                (error: any) => {
+                    this.testingConnection = false;
+                    Swal.fire({
+                        title: 'Error de Conexión',
+                        text: error.error && error.error.message ? error.error.message : 'No se pudo conectar a la API de Boxful.',
+                        icon: 'error',
+                        confirmButtonText: 'Aceptar'
+                    });
+                }
+            );
         });
     }
 

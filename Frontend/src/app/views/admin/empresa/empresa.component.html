@@ -1480,6 +1480,71 @@
         </section>
     </tab>
 
+    <tab heading="Integración BoxFull" *ngIf="empresa.modulo_paquetes" (selectTab)="onTabSelect($event)">
+        <section class="bg-white p-4 rounded mb-3 shadow-sm border border-light">
+            <div class="d-flex align-items-center mb-4 pb-2 border-bottom">
+                <div class="bg-light-primary rounded-circle p-2 me-3 d-inline-flex justify-content-center align-items-center" style="width: 45px; height: 45px; background-color: #e3f2fd;">
+                    <i class="fa fa-cubes text-primary fs-4" style="color: #007bff;"></i>
+                </div>
+                <div>
+                    <h5 class="mb-1 fw-bold">Integración con Boxful</h5>
+                    <p class="text-muted mb-0 small">Gestione la conexión automática con el servicio de envíos de Boxful.</p>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <!-- Email Input -->
+                <div class="col-md-6">
+                    <div class="form-group mb-3">
+                        <label for="boxful_email" class="form-label fw-semibold mb-2">Correo de Cuenta Boxful</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0">
+                                <i class="fa fa-envelope-o text-muted"></i>
+                            </span>
+                            <input type="email" class="form-control border-start-0 ps-0" id="boxful_email" 
+                                [(ngModel)]="empresa.boxful_email" name="boxful_email"
+                                placeholder="ejemplo@correo.com">
+                        </div>
+                        <small class="text-muted d-block mt-1">El correo registrado en su cuenta de Boxful.</small>
+                    </div>
+                </div>
+
+                <!-- Password Input -->
+                <div class="col-md-6">
+                    <div class="form-group mb-3">
+                        <label for="boxful_password" class="form-label fw-semibold mb-2">Contraseña Boxful</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0">
+                                <i class="fa fa-key text-muted"></i>
+                            </span>
+                            <input [type]="showBoxfulPassword ? 'text' : 'password'" class="form-control border-start-0 border-end-0 ps-0" 
+                                id="boxful_password" [(ngModel)]="empresa.boxful_password" name="boxful_password"
+                                [placeholder]="empresa.has_boxful_password ? '••••••••' : 'Escriba la contraseña de su cuenta'">
+                            <button class="btn btn-outline-secondary border-start-0" type="button" (click)="toggleBoxfulPassword()" style="border: 1px solid #ced4da;">
+                                <i class="fa" [ngClass]="showBoxfulPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
+                            </button>
+                        </div>
+                        <small class="text-muted d-block mt-1">La contraseña correspondiente a su cuenta de Boxful.</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-12 d-flex justify-content-end">
+                    <button class="btn btn-light text-info me-2" type="button" 
+                        [disabled]="testingConnection || !empresa.boxful_email || (!empresa.has_boxful_password && !empresa.boxful_password)" (click)="testBoxfulConnection()">
+                        <i class="fa me-2" [ngClass]="testingConnection ? 'fa-spinner fa-spin' : 'fa-plug'"></i>
+                        Probar Conexión
+                    </button>
+                    <button class="btn btn-primary" type="button" 
+                        [disabled]="savingBoxful" (click)="saveBoxfulCredentials()">
+                        <i class="fa me-2" [ngClass]="savingBoxful ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+                        Guardar Credenciales
+                    </button>
+                </div>
+            </div>
+        </section>
+    </tab>
 
 </tabset>
 

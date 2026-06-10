@@ -121,6 +121,7 @@ class EmpresasController extends Controller
         $this->handleUserAccountStatus($empresa, $request);
 
         $woocommerceValues = $this->preserveWoocommerceSettings($empresa);
+        $boxfulValues = $this->preserveBoxfulSettings($empresa);
 
         $this->handleCustomEmpresa($request, $empresa); // Maneja la personalización de la empresa
 
@@ -136,6 +137,7 @@ class EmpresasController extends Controller
         }
 
         $this->restoreWoocommerceSettings($empresa, $woocommerceValues);
+        $this->restoreBoxfulSettings($empresa, $boxfulValues);
 
         $empresa->save();
 
@@ -230,6 +232,30 @@ class EmpresasController extends Controller
     private function restoreWoocommerceSettings(Empresa $empresa, array $woocommerceValues)
     {
         foreach ($woocommerceValues as $field => $value) {
+            $empresa->$field = $value;
+        }
+    }
+
+    private function preserveBoxfulSettings(Empresa $empresa)
+    {
+        $boxfulFields = [
+            'boxful_client_id',
+            'boxful_access_token',
+            'boxful_token_expires_at',
+            'boxful_status'
+        ];
+
+        $boxfulValues = [];
+        foreach ($boxfulFields as $field) {
+            $boxfulValues[$field] = $empresa->$field;
+        }
+
+        return $boxfulValues;
+    }
+
+    private function restoreBoxfulSettings(Empresa $empresa, array $boxfulValues)
+    {
+        foreach ($boxfulValues as $field => $value) {
             $empresa->$field = $value;
         }
     }

@@ -38,6 +38,11 @@ class Empresa extends Model
         'direccion',
         'telefono',
         'correo',
+        'boxful_email',
+        'boxful_password',
+        'boxful_access_token',
+        'boxful_token_expires_at',
+        'boxful_status',
         'municipio',
         'departamento',
         'logo',
@@ -163,9 +168,16 @@ class Empresa extends Model
         'custom_empresa' => 'json',
         'importacion_productos_shopify' => 'boolean',
         'shopify_sync_bidirectional' => 'boolean',
-        'webhook_paquete_venta_enabled' => 'boolean',
         'restringir_gastos_supervisor_limitado' => 'boolean',
         'restringir_compras_supervisor_limitado' => 'boolean',
+        'boxful_token_expires_at' => 'datetime',
+        'boxful_password' => 'encrypted',
+        'boxful_access_token' => 'encrypted',
+    ];
+
+    protected $hidden = [
+        'boxful_password',
+        'boxful_access_token',
     ];
 
     protected $appends = [
@@ -181,6 +193,7 @@ class Empresa extends Model
         'status_conexion_shopify',
         'is_current_user_connected_to_shopify',
         'frecuencia_pago_label',
+        'has_boxful_password',
     ];
 
     public function limiteUsuarios()
@@ -748,6 +761,26 @@ class Empresa extends Model
         $this->save();
 
         return $defaultConfig;
+    }
+
+    /**
+     * Set/encrypt the Boxful password if a value is provided.
+     */
+    public function setBoxfulPasswordAttribute($value)
+    {
+        if (is_null($value) || $value === '') {
+            return;
+        }
+
+        $this->attributes['boxful_password'] = encrypt($value, false);
+    }
+
+    /**
+     * Determine if a Boxful password has been configured for the company.
+     */
+    public function getHasBoxfulPasswordAttribute(): bool
+    {
+        return !empty($this->attributes['boxful_password']);
     }
 
     /**
