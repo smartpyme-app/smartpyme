@@ -1,0 +1,150 @@
+---
+title: "Gestión de inventario: productos, stock y bodegas"
+sidebarTitle: "Inventario"
+description: "Gestiona productos, controla niveles de stock, maneja lotes con fechas de caducidad, define puntos de reorden y transfiere inventario entre ubicaciones en SmartPyme."
+---
+
+El módulo de Inventario te da control total sobre todo lo que compras, almacenas y vendes. Lleva el control del stock en varias bodegas, gestiona lotes con fechas de caducidad, mueve productos entre sucursales y recibe alertas antes de quedarte sin existencias, todo desde una vista unificada.
+
+## Productos y servicios
+
+Cada artículo que vendes empieza como un registro de producto o servicio en SmartPyme.
+
+Para crear un nuevo producto, ve a **Inventario → Productos → Nuevo producto** y completa los siguientes campos:
+
+- **Nombre**: el nombre con que aparece en ventas, compras y reportes.
+- **SKU**: tu código interno de inventario.
+- **Código de barras**: escanea o ingresa el código EAN/UPC para escanearlo en el punto de venta.
+- **Categoría**: asigna el producto a una categoría y, opcionalmente, a una subcategoría.
+- **Precio unitario y costo**: define el precio de venta y costo de compra por defecto. SmartPyme los usa como valores predeterminados en documentos de venta y compra.
+- **Unidad de medida**: elige unidades, kilogramos, litros, cajas o cualquier unidad personalizada que configures.
+- **Tipo de producto**: selecciona **Bien físico** si el producto tiene stock rastreable, o **Servicio** si no reduce inventario al venderse.
+- **Imagen**: sube una foto del producto para mostrarla en el punto de venta y en catálogos.
+
+<Tip>
+  Usa el botón **Duplicar** para crear rápidamente variantes de un producto existente sin volver a capturar los campos compartidos.
+</Tip>
+
+---
+
+## Stock y bodegas
+
+SmartPyme controla el stock de manera independiente por bodega, de modo que siempre sabes exactamente dónde está tu inventario.
+
+Para ver los niveles de stock, ve a **Inventario → Stock**. Usa el filtro **Bodega** para aislar una ubicación específica. Cada fila de producto muestra:
+
+- **Stock actual**: la cantidad disponible en tiempo real.
+- **Stock mínimo**: cuando el stock baja a este nivel o menos, SmartPyme dispara una alerta de stock bajo.
+- **Stock máximo**: tu límite objetivo para órdenes de reabastecimiento.
+
+Para actualizar los niveles mínimo y máximo de un producto, abre el registro del producto, ve a la pestaña **Stock**, selecciona la bodega y edita los valores.
+
+**Kardex**: para ver el historial completo de movimientos de un producto en una bodega específica, abre el registro del producto y haz clic en **Kardex**. Cada entrada, salida, traslado y ajuste aparece en orden cronológico con usuario, fecha y documento de referencia.
+
+<Note>
+  Los productos en consigna se registran por separado y no reducen tu stock hasta que se venden.
+</Note>
+
+---
+
+## Entradas y salidas de inventario
+
+Registra movimientos de stock que no están ligados a una venta o compra, como cargas iniciales, correcciones o pérdidas.
+
+- **Entrada**: ve a **Inventario → Entradas → Nueva entrada**. Selecciona la bodega, agrega líneas de productos con cantidades, ingresa el motivo (por ejemplo, *Carga inicial*, *Ajuste de proveedor*) y guarda. La entrada pasa por un flujo de aprobación antes de actualizar el stock.
+- **Salida**: ve a **Inventario → Salidas → Nueva salida**. Selecciona la bodega y los productos que se retiran. Ingresa el motivo (por ejemplo, *Mercadería dañada*, *Uso interno*) y envía a aprobación.
+
+<Warning>
+  Solo los usuarios con el rol de **Gerente de Inventario** pueden aprobar entradas y salidas. Los documentos no aprobados no afectan los niveles de stock.
+</Warning>
+
+---
+
+## Lotes
+
+Si vendes productos que requieren seguimiento por lote —como alimentos, medicamentos o bienes con número de serie—, activa los lotes para cada producto.
+
+Para habilitar el seguimiento por lote, abre un registro de producto, ve a la pestaña **Configuración** y activa **Llevar por lote**. A partir de ese momento, cada entrada y venta requerirá que asignes un número de lote.
+
+Para gestionar los lotes, ve a **Inventario → Lotes**. Aquí puedes:
+
+- Ver todos los lotes activos y sus cantidades restantes.
+- Definir o editar las **fechas de caducidad** de cada lote.
+- Filtrar por el preset **Por caducar** para ver los lotes que vencen en los próximos 30, 60 o 90 días.
+
+<Warning>
+  Por defecto, SmartPyme vende primero del lote más antiguo (FEFO — First Expired, First Out). Si lo necesitas, puedes anular este comportamiento manualmente en el punto de venta.
+</Warning>
+
+---
+
+## Traslados de productos
+
+Mueve stock entre tus bodegas o sucursales sin crear una venta o compra.
+
+<Steps>
+  <Step title="Inicia un nuevo traslado">
+    Ve a **Inventario → Traslados → Nuevo traslado**.
+  </Step>
+  <Step title="Selecciona origen y destino">
+    Elige la **bodega origen** y la **bodega destino** desde los menús desplegables.
+  </Step>
+  <Step title="Agrega productos">
+    Busca cada producto e ingresa la cantidad a trasladar. SmartPyme valida que exista suficiente stock en el origen.
+  </Step>
+  <Step title="Guarda y aprueba">
+    Guarda el traslado y envíalo a aprobación. Una vez aprobado, el stock disminuye en el origen y aumenta en el destino.
+  </Step>
+  <Step title="Genera el documento de traslado">
+    Haz clic en **Imprimir** para generar un PDF del documento de traslado que puedes enviar con el envío para la confirmación de recepción.
+  </Step>
+</Steps>
+
+---
+
+## Transformaciones de productos
+
+Si fabricas o ensamblas productos a partir de materias primas, usa la funcionalidad de Transformaciones para convertir componentes en productos terminados.
+
+<Note>
+  Las Transformaciones de productos deben ser activadas por tu administrador de SmartPyme en **Configuración → Funcionalidades → Transformación** antes de que este menú aparezca.
+</Note>
+
+Para registrar una transformación, ve a **Inventario → Transformaciones → Nueva transformación**. Selecciona el **producto de salida** (el bien terminado) y luego agrega los **materiales de entrada** (componentes) con sus cantidades. Al guardar y aprobar la transformación, SmartPyme disminuye el stock de los componentes y aumenta el del producto terminado.
+
+---
+
+## Categorías y subcategorías
+
+Organiza tu catálogo de productos con una jerarquía de dos niveles para facilitar la búsqueda, los filtros y los reportes.
+
+Para gestionar las categorías, ve a **Inventario → Categorías**. Haz clic en **Nueva categoría** para crear un grupo de nivel superior (por ejemplo, *Electrónica*). Para agregar una subcategoría, abre la categoría padre y haz clic en **Agregar subcategoría** (por ejemplo, *Laptops*, *Accesorios*).
+
+Asigna una categoría a un producto desde la pestaña **General** del producto. Los reportes de ventas e inventario se pueden filtrar y agrupar por categoría.
+
+---
+
+## Promociones
+
+Crea promociones de precio por tiempo limitado para productos individuales o categorías completas.
+
+Ve a **Inventario → Promociones → Nueva promoción** y configura:
+
+- **Producto o categoría**: aplica la promoción a un producto o a todos los productos de una categoría.
+- **Precio promocional**: el precio de venta con descuento durante la promoción.
+- **Rango de fechas**: define una fecha de inicio y fin. SmartPyme activa y desactiva la promoción automáticamente.
+
+Durante una promoción activa, el precio promocional aparece automáticamente en el punto de venta, reemplazando el precio estándar.
+
+---
+
+## Importar y exportar
+
+<CardGroup cols={2}>
+  <Card title="Importar productos" icon="file-arrow-up" href="help/faq">
+    Ve a **Inventario → Productos → Importar**, descarga la plantilla en Excel, llena los datos de tus productos y carga el archivo. SmartPyme valida cada fila y reporta cualquier error antes de importar.
+  </Card>
+  <Card title="Exportar reportes de inventario" icon="file-arrow-down" href="help/faq">
+    Desde **Inventario → Stock**, aplica tus filtros y haz clic en **Exportar → Excel** para descargar una foto de los niveles de stock actuales, costos y valuación de todos los productos.
+  </Card>
+</CardGroup>

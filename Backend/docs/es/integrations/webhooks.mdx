@@ -1,0 +1,96 @@
+---
+title: "Recibe webhooks de WooCommerce y Shopify en tiempo real"
+sidebarTitle: "Webhooks"
+description: "Configura los webhooks de SmartPyme para capturar automáticamente pedidos de WooCommerce y Shopify como ventas y mantener tu inventario actualizado en tiempo real."
+---
+
+SmartPyme expone endpoints de webhook que aceptan eventos entrantes de WooCommerce y Shopify, reenviándolos a tu cuenta de SmartPyme como ventas y actualizaciones de inventario. Tú registras estas URLs dentro de cada plataforma externa y SmartPyme se encarga de todo a partir de ahí — sin importaciones manuales.
+
+## Endpoints de webhook disponibles
+
+| Endpoint | Método | Origen | Descripción |
+|---|---|---|---|
+| `/api/webhook/woocommerce/{token}` | POST | WooCommerce | Procesa un pedido entrante como venta de SmartPyme |
+| `/api/webhook/woocommerce/{token}/producto` | POST | WooCommerce | Actualiza un producto desde WooCommerce |
+| `/api/webhook/shopify/{token}` | POST | Shopify | Procesa un pedido de Shopify como venta de SmartPyme |
+
+Todos los endpoints están alojados en la URL base `https://api.smartpyme.site`.
+
+## Cómo encontrar tu token de webhook
+
+Cada usuario de SmartPyme tiene un token único que autentica las llamadas entrantes de webhook. Para ubicar el tuyo:
+
+1. Ve a **Configuración → Usuarios** y abre tu perfil de usuario.
+2. Haz clic en la pestaña **Integraciones**.
+3. Copia el token mostrado — lo pegarás en la URL del webhook al configurar la plataforma externa.
+
+## Seguridad
+
+El segmento `{token}` en cada URL de webhook actúa como un secreto único por usuario que autoriza las solicitudes a tu cuenta de SmartPyme. Trátalo como una contraseña:
+
+- **No compartas** tu token en repositorios públicos, documentación ni código del lado del cliente.
+- **No lo expongas** en capturas de pantalla ni tickets de soporte.
+- Si crees que tu token está comprometido, contacta de inmediato al administrador de SmartPyme para rotar tus credenciales.
+
+## Procesamiento del payload
+
+Cuando SmartPyme recibe un evento de webhook válido, automáticamente:
+
+- **Crea una nueva venta** a partir de los datos del pedido, incluyendo detalles del cliente, líneas de detalle, totales y método de pago.
+- **Descuenta inventario** por cada producto vendido, manteniendo precisos los niveles de stock.
+- **Vincula el ID del pedido externo** al registro de la venta en SmartPyme para que puedas rastrear cualquier transacción hasta su origen.
+
+No se requiere configuración adicional — SmartPyme interpreta los formatos estándar de payload de WooCommerce y Shopify de fábrica.
+
+## Pruebas de webhooks
+
+Antes de pasar a producción, verifica que tu endpoint de webhook funciona correctamente enviando un payload de muestra.
+
+<CodeGroup>
+  ```bash cURL
+  curl -X POST https://api.smartpyme.site/api/webhook/woocommerce/{your_token} \
+    -H "Content-Type: application/json" \
+    -d '{
+      "id": 9999,
+      "status": "processing",
+      "billing": {
+        "first_name": "Jane",
+        "last_name": "Doe",
+        "email": "jane@example.com"
+      },
+      "line_items": [
+        {
+          "product_id": 42,
+          "name": "Sample Product",
+          "quantity": 1,
+          "total": "19.99"
+        }
+      ],
+      "total": "19.99",
+      "payment_method": "stripe"
+    }'
+  ```
+  ```json Sample Shopify Payload
+  {
+    "id": 820982911946154500,
+    "email": "jon@example.com",
+    "financial_status": "paid",
+    "line_items": [
+      {
+        "id": 866550311766439000,
+        "title": "Sample Product",
+        "quantity": 1,
+        "price": "19.99"
+      }
+    ],
+    "total_price": "19.99",
+    "gateway": "shopify_payments"
+  }
+  ```
+</CodeGroup>
+
+Después de enviar la solicitud, abre SmartPyme y confirma que se creó un nuevo registro de venta con los detalles correctos.
+
+<Tip>
+  En WooCommerce puedes reenviar un webhook sin hacer un pedido real. Ve a **WooCommerce Admin → Settings → Webhooks**, selecciona el webhook que quieres probar y haz clic en **Deliver**. Esto reenvía el evento más reciente a tu endpoint de SmartPyme.
+</Tip>

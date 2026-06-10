@@ -1,0 +1,164 @@
+---
+title: "Guía de resolución de problemas de SmartPyme: soluciona problemas comunes"
+sidebarTitle: "Resolución de problemas"
+description: "Soluciones a problemas comunes de SmartPyme, incluyendo errores de inicio de sesión, fallas de envío de DTE, problemas de sincronización y errores de autenticación de la API."
+---
+
+Si algo no funciona como esperas en SmartPyme, esta guía te lleva paso a paso por los problemas más comunes y cómo resolverlos. Revisa la sección que corresponda más abajo y contacta a soporte si el problema persiste.
+
+## Problemas de inicio de sesión y acceso
+
+<AccordionGroup>
+  <Accordion title="No puedo iniciar sesión">
+    Sigue estos pasos para restaurar el acceso:
+
+    <Steps>
+      <Step title="Verifica tus credenciales">
+        Asegúrate de que tu correo y contraseña sean correctos. Las contraseñas distinguen entre mayúsculas y minúsculas.
+      </Step>
+      <Step title="Limpia la caché del navegador">
+        Los datos de sesión viejos pueden causar fallas de inicio de sesión. Limpia la caché y las cookies de tu navegador y vuelve a intentarlo.
+      </Step>
+      <Step title="Restablece tu contraseña">
+        Si aún no puedes iniciar sesión, ve a [app.smartpyme.site](https://app.smartpyme.site), haz clic en **Olvidé mi contraseña** y sigue el enlace de restablecimiento enviado a tu correo.
+      </Step>
+    </Steps>
+  </Accordion>
+
+  <Accordion title="Recibo un error 403 después de iniciar sesión">
+    Un error **403 Forbidden** suele indicar que tu cuenta está inactiva o que tu suscripción venció. Contacta al administrador de tu empresa para verificar el estado de tu cuenta, o escribe directamente a [soporte@smartpyme.com](mailto:soporte@smartpyme.com) para asistencia con la suscripción.
+  </Accordion>
+</AccordionGroup>
+
+## Errores de facturación electrónica (DTE)
+
+<AccordionGroup>
+  <Accordion title="El envío del DTE falla con error de autenticación">
+    Tus credenciales del Ministerio de Hacienda (MH) pueden estar vencidas o ser incorrectas. Para actualizarlas:
+
+    <Steps>
+      <Step title="Abre la configuración de Facturación electrónica">
+        Ve a **Configuración → Mi cuenta → Facturación electrónica**.
+      </Step>
+      <Step title="Vuelve a ingresar tus credenciales del MH">
+        Actualiza tu usuario y contraseña del MH y guarda los cambios.
+      </Step>
+      <Step title="Reintenta el envío">
+        Vuelve al registro de la venta y reenvía el documento DTE.
+      </Step>
+    </Steps>
+  </Accordion>
+
+  <Accordion title="El DTE queda atascado en estado 'pendiente'">
+    Los servidores del MH pueden estar temporalmente fuera de servicio. Espera unos minutos y reenvía el documento desde el registro de la venta.
+
+    <Warning>
+      Si el estado pendiente persiste más de 30 minutos, cambia al **modo de contingencia** para seguir emitiendo documentos sin interrumpir tus operaciones.
+    </Warning>
+  </Accordion>
+
+  <Accordion title="El DTE aparece como 'rechazado' por el MH">
+    Un rechazo significa que el documento contiene uno o más errores de validación. Abre el registro de la venta y revisa el detalle del error proporcionado por el MH. Las causas comunes incluyen:
+
+    - **NIT inválido** — verifica que el NIT del cliente esté correctamente ingresado.
+    - **Código de actividad económica incorrecto** — confirma el código de actividad registrado de tu empresa en Configuración → Mi cuenta.
+    - **Campos requeridos faltantes** — asegúrate de que todos los campos obligatorios del documento estén completos.
+
+    Corrige los errores en el registro de la venta y reenvíalo.
+  </Accordion>
+</AccordionGroup>
+
+## Problemas de inventario y ventas
+
+<AccordionGroup>
+  <Accordion title="El stock no se actualiza después de una venta">
+    Verifica que el producto esté vinculado a la bodega correcta para la sucursal donde se realizó la venta. Para verificarlo:
+
+    <Steps>
+      <Step title="Abre el registro del producto">
+        Ve a **Inventario → Productos** y abre el producto afectado.
+      </Step>
+      <Step title="Confirma la asignación de bodega">
+        Asegúrate de que el producto esté asignado a la bodega correcta para la sucursal.
+      </Step>
+      <Step title="Revisa el historial de movimientos">
+        Ve a **Inventario → Kardex** y busca el producto para ver su historial completo de movimientos y confirmar si la venta se registró.
+      </Step>
+    </Steps>
+  </Accordion>
+
+  <Accordion title="No encuentro una venta">
+    Usa las herramientas de búsqueda y filtros del módulo **Ventas**. Puedes filtrar las ventas por:
+
+    - **Rango de fechas**
+    - **Estado** (por ejemplo, completada, pendiente, cancelada)
+    - **Cliente**
+    - **Número de documento**
+
+    <Tip>
+      Si estás buscando en varias sucursales, asegúrate de tener la sucursal correcta seleccionada en la navegación superior.
+    </Tip>
+  </Accordion>
+</AccordionGroup>
+
+## Problemas de API e integraciones
+
+<AccordionGroup>
+  <Accordion title="La API devuelve 401 Unauthorized">
+    Tu API Key puede ser inválida o tu cuenta de empresa puede estar inactiva. Para resolverlo:
+
+    <Steps>
+      <Step title="Obtén una API Key actualizada">
+        Ve a **Configuración → Mi cuenta → Integraciones** y copia tu API Key actual.
+      </Step>
+      <Step title="Actualiza tu integración">
+        Reemplaza la clave antigua en tu aplicación o integración por la nueva.
+      </Step>
+      <Step title="Verifica el estado de tu cuenta">
+        Si el error persiste, confirma con tu administrador que la cuenta de empresa esté activa.
+      </Step>
+    </Steps>
+  </Accordion>
+
+  <Accordion title="La API devuelve 429 Too Many Requests">
+    Has superado el límite por hora. SmartPyme aplica los siguientes límites:
+
+    - **Estándar:** 1,000 solicitudes por hora
+    - **Con filtros de fecha:** 2,000 solicitudes por hora
+
+    Espera al próximo reinicio de hora antes de realizar más solicitudes. Para evitar alcanzar el límite, aplica filtros de fecha a tus consultas y agrupa solicitudes cuando sea posible.
+
+    <Note>
+      Consulta la [documentación de límites de uso](/api/rate-limits) para conocer todos los detalles y las buenas prácticas.
+    </Note>
+  </Accordion>
+
+  <Accordion title="El webhook de WooCommerce no crea ventas">
+    Sigue estos pasos para diagnosticar el problema:
+
+    <Steps>
+      <Step title="Verifica la URL del webhook">
+        Asegúrate de que la URL del webhook configurada en WooCommerce incluya tu token correcto de SmartPyme.
+      </Step>
+      <Step title="Revisa los eventos del webhook">
+        Confirma que el webhook esté configurado para dispararse con los eventos **Order Created** y **Order Payment**.
+      </Step>
+      <Step title="Revisa el registro de entregas">
+        En WooCommerce, ve a **WooCommerce → Settings → Advanced → Webhooks**, abre tu webhook y revisa el registro de entregas en busca de respuestas de error de SmartPyme.
+      </Step>
+    </Steps>
+
+    Consulta la [guía de integración con WooCommerce y Shopify](/integrations/woocommerce-shopify) para todos los detalles de configuración.
+  </Accordion>
+</AccordionGroup>
+
+## Más ayuda
+
+Si ya seguiste los pasos anteriores y aún necesitas ayuda, contacta al equipo de soporte de SmartPyme:
+
+- **Correo:** [soporte@smartpyme.com](mailto:soporte@smartpyme.com)
+- **App:** [app.smartpyme.site](https://app.smartpyme.site)
+
+<Tip>
+  Incluye tu ID de empresa y una descripción de los pasos que llevaron al problema cuando contactes a soporte. Esto ayuda al equipo a reproducir y resolver tu problema más rápido.
+</Tip>

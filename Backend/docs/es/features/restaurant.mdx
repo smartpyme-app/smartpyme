@@ -1,0 +1,81 @@
+---
+title: "Módulo de restaurante: mesas, pedidos y gestión de cocina"
+sidebarTitle: "Restaurante"
+description: "Gestiona mesas, toma pedidos, envía comandas a cocina, divide cuentas, administra reservas y factura a clientes en el local con SmartPyme."
+---
+
+El módulo Restaurante de SmartPyme transforma la plataforma en un sistema de punto de venta completo diseñado para restaurantes y negocios de comida. Conecta tus operaciones de salón —gestión de mesas, toma de pedidos y facturación— con el flujo de trabajo de cocina y los módulos de facturación e inventario de SmartPyme, todo en una sola interfaz unificada.
+
+## Activación del módulo
+
+El módulo Restaurante debe ser habilitado por el administrador de tu cuenta antes de que aparezca en el menú de navegación. Si no lo ves, contacta al soporte de SmartPyme y solicita la activación para tu cuenta.
+
+## Mapa de mesas
+
+El mapa de mesas te da una vista visual en tiempo real de todo tu salón. Las mesas se agrupan por **zona** y su color indica la disponibilidad actual:
+
+- **Verde** — disponible y lista para recibir clientes.
+- **Naranja** — ocupada con una sesión activa.
+
+Haz clic en cualquier mesa para abrir su sesión activa o iniciar una nueva.
+
+## Zonas
+
+Organiza tu plano del local en áreas lógicas — por ejemplo, *Terraza*, *Salón principal* o *Barra*. Crea, renombra y reordena las zonas en **Restaurante → Zonas**. Cada zona aparece como un grupo etiquetado en el mapa de mesas.
+
+## Toma de un pedido
+
+<Steps>
+  <Step title="Selecciona una mesa">
+    Haz clic en una mesa disponible (verde) en el mapa para abrirla.
+  </Step>
+  <Step title="Abre una sesión">
+    Inicia una nueva **sesión** para la mesa. El color de la mesa cambia a naranja en el mapa para que tu equipo sepa que está ocupada.
+  </Step>
+  <Step title="Agrega ítems">
+    Recorre el menú y agrega productos o servicios al pedido. Los ítems del menú provienen de tu módulo de **Inventario**, así que los precios y la disponibilidad siempre están sincronizados.
+  </Step>
+  <Step title="Envía a cocina">
+    Haz clic en **Enviar comanda** para transmitir el pedido a la cocina como ticket de preparación (comanda). La vista de cocina se actualiza de inmediato.
+  </Step>
+</Steps>
+
+## Comandas de cocina
+
+Cada comanda aparece en la pantalla de cocina con el número de mesa y los ítems pedidos. El personal de cocina puede actualizar el estado de cada comanda a medida que avanza el trabajo:
+
+**Pendiente → En preparación → Listo**
+
+Una vez que una comanda se marca como **Listo**, se notifica al personal de salón para que se pueda servir el pedido. También puedes imprimir un ticket de comanda en cualquier momento desde el detalle de la comanda.
+
+## Mover ítems entre mesas
+
+Si un grupo de clientes se mueve a otra mesa o quiere dividirse en mesas separadas, usa la acción **Transferir ítems** en la sesión activa para reasignar los ítems pedidos a otra sesión abierta. Esto mantiene precisa la cuenta de cada mesa sin tener que volver a ingresar los pedidos.
+
+## Reactivar una sesión cerrada
+
+Si una sesión de mesa se cerró por error antes de facturar, puedes **Reactivarla** directamente desde el detalle de la sesión. La mesa vuelve a un estado activo en el mapa y los ítems se conservan intactos, así que el servicio puede continuar sin pérdida de datos.
+
+## Pre-cuenta y división
+
+Cuando una mesa está lista para pagar, genera una **pre-cuenta** para mostrarle al cliente el total detallado antes de finalizar. Si hay que dividir la cuenta, usa la función **Dividir** para repartir ítems o montos entre varios clientes — cada parte se puede cobrar y facturar de forma independiente.
+
+## Facturación y DTE
+
+Convierte la pre-cuenta en una **venta** confirmada con un solo clic. Si el cliente requiere un documento fiscal, sigue el flujo estándar de facturación para emitir el DTE correspondiente (Factura de Consumidor Final, CCF, etc.). Consulta la guía de [Facturación electrónica](/features/electronic-invoicing) para todos los detalles.
+
+## Reservas
+
+Planifica con antelación registrando reservas de mesas con el nombre del cliente, la fecha y hora, el tamaño del grupo y la mesa preferida. Las próximas reservas son visibles directamente en el mapa de mesas para que tu equipo se prepare con anticipación. Cuando llega el grupo, convierte la reserva en una sesión activa con un clic. También puedes cancelar una reserva si los planes cambian, manteniendo precisa tu lista de reservas.
+
+## Pedidos
+
+La sección **Pedidos** te permite gestionar pedidos de delivery o pedidos de plataformas externas. Cada pedido recorre el siguiente ciclo de vida:
+
+**Borrador → Confirmado → Pendiente de facturar → Facturado**
+
+Puedes confirmar un pedido pendiente, enviar sus ítems a cocina como comanda y anular un pedido si necesita cancelarse antes de facturar. Convierte cualquier pedido en una venta cuando esté listo para facturar, manteniendo completos tus registros de ingresos sin importar el canal.
+
+<Tip>
+  Configura los ítems del menú en el módulo de **Inventario** como productos o servicios antes de usar el módulo Restaurante. Los precios, las descripciones y los niveles de stock que definas allí aparecerán automáticamente en la interfaz de toma de pedidos.
+</Tip>

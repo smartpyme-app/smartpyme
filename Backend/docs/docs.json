@@ -18,72 +18,151 @@
     }
   },
   "navigation": {
-    "tabs": [
+    "languages": [
       {
-        "tab": "Documentation",
-        "groups": [
+        "language": "en",
+        "tabs": [
           {
-            "group": "Get Started",
-            "pages": [
-              "introduction",
-              "quickstart",
-              "account-setup"
+            "tab": "Documentation",
+            "groups": [
+              {
+                "group": "Get Started",
+                "pages": [
+                  "introduction",
+                  "quickstart",
+                  "account-setup"
+                ]
+              },
+              {
+                "group": "Core Modules",
+                "pages": [
+                  "modules/sales",
+                  "modules/inventory",
+                  "modules/purchasing",
+                  "modules/accounting"
+                ]
+              },
+              {
+                "group": "Advanced Features",
+                "pages": [
+                  "features/electronic-invoicing",
+                  "features/payroll",
+                  "features/restaurant",
+                  "features/loyalty",
+                  "features/reports-dashboard"
+                ]
+              },
+              {
+                "group": "Integrations",
+                "pages": [
+                  "integrations/woocommerce-shopify",
+                  "integrations/whatsapp",
+                  "integrations/webhooks"
+                ]
+              },
+              {
+                "group": "Help",
+                "pages": [
+                  "help/faq",
+                  "help/troubleshooting"
+                ]
+              }
             ]
           },
           {
-            "group": "Core Modules",
-            "pages": [
-              "modules/sales",
-              "modules/inventory",
-              "modules/purchasing",
-              "modules/accounting"
-            ]
-          },
-          {
-            "group": "Advanced Features",
-            "pages": [
-              "features/electronic-invoicing",
-              "features/payroll",
-              "features/restaurant",
-              "features/loyalty",
-              "features/reports-dashboard"
-            ]
-          },
-          {
-            "group": "Integrations",
-            "pages": [
-              "integrations/woocommerce-shopify",
-              "integrations/whatsapp",
-              "integrations/webhooks"
-            ]
-          },
-          {
-            "group": "Help",
-            "pages": [
-              "help/faq",
-              "help/troubleshooting"
+            "tab": "API Reference",
+            "groups": [
+              {
+                "group": "Overview",
+                "pages": [
+                  "api/overview",
+                  "api/authentication",
+                  "api/rate-limits",
+                  "api/pagination"
+                ]
+              },
+              {
+                "group": "Endpoints",
+                "pages": [
+                  "api/sales",
+                  "api/inventory",
+                  "api/returns"
+                ]
+              }
             ]
           }
         ]
       },
       {
-        "tab": "API Reference",
-        "groups": [
+        "language": "es",
+        "tabs": [
           {
-            "group": "Overview",
-            "pages": [
-              "api/overview",
-              "api/authentication",
-              "api/rate-limits",
-              "api/pagination"
+            "tab": "Documentación",
+            "groups": [
+              {
+                "group": "Primeros pasos",
+                "pages": [
+                  "es/introduction",
+                  "es/quickstart",
+                  "es/account-setup"
+                ]
+              },
+              {
+                "group": "Módulos principales",
+                "pages": [
+                  "es/modules/sales",
+                  "es/modules/inventory",
+                  "es/modules/purchasing",
+                  "es/modules/accounting"
+                ]
+              },
+              {
+                "group": "Funcionalidades avanzadas",
+                "pages": [
+                  "es/features/electronic-invoicing",
+                  "es/features/payroll",
+                  "es/features/restaurant",
+                  "es/features/loyalty",
+                  "es/features/reports-dashboard"
+                ]
+              },
+              {
+                "group": "Integraciones",
+                "pages": [
+                  "es/integrations/woocommerce-shopify",
+                  "es/integrations/whatsapp",
+                  "es/integrations/webhooks"
+                ]
+              },
+              {
+                "group": "Ayuda",
+                "pages": [
+                  "es/help/faq",
+                  "es/help/troubleshooting"
+                ]
+              }
             ]
           },
           {
-            "group": "Endpoints",
-            "pages": [
-              "api/sales",
-              "api/inventory",
-              "api/returns"
+            "tab": "Referencia API",
+            "groups": [
+              {
+                "group": "Visión general",
+                "pages": [
+                  "es/api/overview",
+                  "es/api/authentication",
+                  "es/api/rate-limits",
+                  "es/api/pagination"
+                ]
+              },
+              {
+                "group": "Endpoints",
+                "pages": [
+                  "es/api/sales",
+                  "es/api/inventory",
+                  "es/api/returns"
+                ]
+              }
             ]
           }
         ]
