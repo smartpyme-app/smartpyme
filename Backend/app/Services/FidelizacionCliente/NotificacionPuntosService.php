@@ -107,7 +107,9 @@ class NotificacionPuntosService
         if (!$empresa || !$empresa->tieneFidelizacionHabilitada()) {
             return false;
         }
-        return true;
+
+        // Verificar si tiene activo el envío automático de correos
+        return (bool) $empresa->getCustomConfigValue('configuraciones', 'fidelizacion_enviar_correos', false);
     }
 
     /**

@@ -23,6 +23,29 @@ class EmpresaFuncionalidad extends Model
         'activo' => 'boolean'
     ];
 
+    protected static function booted()
+    {
+        static::saved(function ($empresaFuncionalidad) {
+            $empresaFuncionalidad->clearFidelizacionCache();
+        });
+
+        static::deleted(function ($empresaFuncionalidad) {
+            $empresaFuncionalidad->clearFidelizacionCache();
+        });
+    }
+
+    /**
+     * Limpiar el cache de fidelización de la empresa
+     */
+    public function clearFidelizacionCache()
+    {
+        // Si no está cargada la relación, la cargamos para verificar el slug
+        $funcionalidad = $this->funcionalidad;
+        if ($funcionalidad && $funcionalidad->slug === 'fidelizacion-clientes') {
+            cache()->forget("empresa_fidelizacion_{$this->id_empresa}");
+        }
+    }
+
     /**
      * Relación con la empresa
      */
