@@ -986,7 +986,7 @@ export class FacturacionV2Component implements OnInit {
 
     const empresaIva = Number(this.apiService.auth_user()?.empresa?.iva ?? 0);
     this.venta.detalles.forEach((d: any) => {
-      calcularMontosLineaDetalle(d, !!this.venta.cobrar_impuestos, empresaIva);
+      calcularMontosLineaDetalle(d, !!this.venta.cobrar_impuestos, empresaIva, { preservePrecioIva: true });
     });
 
     this.venta.sub_total = Number(sumarSubTotalEncabezadoVenta(this.venta.detalles)).toFixed(4);

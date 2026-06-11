@@ -14,7 +14,8 @@ export function redondear4(n: number): number {
 export function calcularMontosLineaDetalle(
   detalle: any,
   cobrarImpuestos: boolean,
-  ivaEmpresa: unknown
+  ivaEmpresa: unknown,
+  options?: { preservePrecioIva?: boolean }
 ): void {
   const cantidad = parseFloat(String(detalle?.cantidad ?? 0)) || 0;
   const precioSinIva = parseFloat(String(detalle?.precio ?? 0)) || 0;
@@ -30,10 +31,15 @@ export function calcularMontosLineaDetalle(
 
   const factorIva = pct > 0 ? 1 + pct / 100 : 1;
   const precioConIva = pct > 0 ? precioSinIva * factorIva : precioSinIva;
-  if (pct > 0) {
-    detalle.precio_iva = redondear4(precioConIva).toFixed(4);
+  const preservePrecioIva = options?.preservePrecioIva ?? false;
+  if (!preservePrecioIva) {
+    if (pct > 0) {
+      detalle.precio_iva = redondear4(precioConIva).toFixed(4);
+    } else if (detalle.precio_iva == null || detalle.precio_iva === '') {
+      detalle.precio_iva = precioSinIva.toFixed(4);
+    }
   } else if (detalle.precio_iva == null || detalle.precio_iva === '') {
-    detalle.precio_iva = precioSinIva.toFixed(4);
+    detalle.precio_iva = redondear4(precioConIva).toFixed(4);
   }
   const descuentoConIva = pct > 0 ? descuento * factorIva : descuento;
   const totalConIva = redondearMoneda(cantidad * precioConIva - descuentoConIva);

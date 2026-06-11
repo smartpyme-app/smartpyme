@@ -137,7 +137,8 @@ export class VentaDetallesV2Component implements OnInit {
         calcularMontosLineaDetalle(
             detalle,
             !!this.venta.cobrar_impuestos,
-            this.apiService.auth_user()?.empresa?.iva
+            this.apiService.auth_user()?.empresa?.iva,
+            { preservePrecioIva: true }
         );
     }
 
@@ -188,6 +189,12 @@ export class VentaDetallesV2Component implements OnInit {
             return;
         }
         for (const detalle of this.venta.detalles) {
+            const pctDet = this.obtenerPorcentajeIvaDetalle(detalle);
+            const precioSinIva = parseFloat(String(detalle.precio ?? 0)) || 0;
+            detalle.precio_iva =
+                pctDet > 0
+                    ? (precioSinIva * (1 + pctDet / 100)).toFixed(4)
+                    : precioSinIva.toFixed(4);
             this.aplicarTipoGravado(detalle);
         }
     }
@@ -235,8 +242,8 @@ export class VentaDetallesV2Component implements OnInit {
         // Porcentaje del detalle (producto) o empresa
         const pctDetalle = this.obtenerPorcentajeIvaDetalle(detalle);
 
-        // Asegurar que precio_iva existe (para compatibilidad con datos existentes)
-        if (!detalle.precio_iva) {
+        // Inicializar precio_iva solo si falta (no al borrar el campo mientras se edita)
+        if (detalle.precio_iva == null || detalle.precio_iva === undefined) {
             if (pctDetalle > 0) {
                 detalle.precio_iva = (parseFloat(detalle.precio) * (1 + pctDetalle / 100)).toFixed(4);
             } else {
@@ -245,14 +252,15 @@ export class VentaDetallesV2Component implements OnInit {
         }
 
         // Si se editó precio_iva manualmente, recalcular precio sin IVA
-        if (detalle.precio_iva && pctDetalle > 0) {
-            const precioSinIvaCalculado = this.calcularPrecioSinIva(parseFloat(detalle.precio_iva), pctDetalle);
+        const precioIvaNum = parseFloat(String(detalle.precio_iva));
+        if (Number.isFinite(precioIvaNum) && pctDetalle > 0) {
+            const precioSinIvaCalculado = this.calcularPrecioSinIva(precioIvaNum, pctDetalle);
             const diferencia = Math.abs(parseFloat(detalle.precio) - precioSinIvaCalculado);
             if (diferencia > 0.01) {
                 detalle.precio = precioSinIvaCalculado.toFixed(4);
             }
-        } else if (pctDetalle === 0) {
-            detalle.precio = detalle.precio_iva;
+        } else if (pctDetalle === 0 && Number.isFinite(precioIvaNum)) {
+            detalle.precio = precioIvaNum.toFixed(4);
         }
 
         // Usar precio sin IVA para cálculos
