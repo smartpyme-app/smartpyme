@@ -1,14 +1,14 @@
 ---
 title: "SmartPyme External API: B2B Data Access Guide"
 sidebarTitle: "Overview"
-description: "The SmartPyme External API gives third-party providers read-only access to sales, inventory, and returns data via API Key authentication."
+description: "The SmartPyme External API gives third-party providers access to sales, inventory, and returns data — and lets you create and update sales — via API Key authentication."
 ---
 
-The SmartPyme External API is a REST API designed for B2B integrations — enabling suppliers, analytics platforms, and other third-party providers to programmatically access sales, inventory, and returns data from SmartPyme-powered businesses. All requests use standard HTTPS and return JSON responses.
+The SmartPyme External API is a REST API designed for B2B integrations — enabling suppliers, analytics platforms, and other third-party providers to programmatically access sales, inventory, and returns data from SmartPyme-powered businesses, and to create or update sales from external systems. All requests use standard HTTPS and return JSON responses.
 
 ## What the API provides
 
-The API gives you read-only access to three core data domains: **sales**, **inventory**, and **returns**. Each domain exposes list, detail, and summary endpoints so you can fetch exactly the level of detail your integration needs. The API is purpose-built for scenarios such as supplier sell-through reporting, external analytics dashboards, and automated inventory reconciliation.
+The API gives you access to three core data domains: **sales**, **inventory**, and **returns**. Read endpoints expose list, detail, and summary views so you can fetch exactly the level of detail your integration needs. Write endpoints on `sales` let external systems (POS, e-commerce, marketplaces) push transactions into SmartPyme and update pending sales or quotations. The API is purpose-built for scenarios such as supplier sell-through reporting, external analytics dashboards, automated inventory reconciliation, and bidirectional sales sync.
 
 ## Base URL
 
@@ -23,7 +23,9 @@ https://api.smartpyme.site/api/external/v1/
 | Endpoint | Description |
 |---|---|
 | `GET /sales` | List sales with filters |
+| `POST /sales` | Create and process a sale (or quotation) |
 | `GET /sales/{id}` | Get a specific sale |
+| `PUT /sales/{id}` | Update a pending sale or quotation |
 | `GET /sales/summary` | Sales summary statistics |
 | `GET /inventory` | List products with stock |
 | `GET /inventory/{id}` | Get a specific product |
@@ -85,5 +87,5 @@ When a request fails, the API returns a `success: false` envelope with a human-r
 | `500` | Internal Server Error |
 
 <Note>
-  Most endpoints are read-only. The exception is `POST /packages/import`, which allows bulk-importing package data from external systems.
+  Most endpoints are read-only. Write operations are limited to `POST /sales` and `PUT /sales/{id}` (create and update sales or quotations) and `POST /packages/import` (bulk-import package data from external systems).
 </Note>
