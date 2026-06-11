@@ -1087,6 +1087,9 @@ export class FacturacionV2Component implements OnInit {
 
     const empresaIva = Number(this.apiService.auth_user()?.empresa?.iva ?? 0);
     this.venta.detalles.forEach((d: any) => {
+      if (String(d?.tipo_gravado || '').toLowerCase() === 'exonerada') {
+        return;
+      }
       calcularMontosLineaDetalle(d, !!this.venta.cobrar_impuestos, empresaIva, { preservePrecioIva: true });
     });
 
@@ -1121,7 +1124,6 @@ export class FacturacionV2Component implements OnInit {
       : 0;
 
     // IVA por tasa: cada impuesto acumula el monto de las líneas que lo incluyen
-    const empresaIva = Number(this.apiService.auth_user()?.empresa?.iva ?? 0);
     if (this.venta.cobrar_impuestos) {
       if (this.venta.impuestos.length) {
         acumularMontosImpuestosVenta(

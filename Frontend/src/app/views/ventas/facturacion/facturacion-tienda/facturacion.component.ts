@@ -32,6 +32,7 @@ import { BsModalRef, BsModalService } from 'ngx-bootstrap/modal';
 
 import * as moment from 'moment';
 import {
+  calcularMontosLineaDetalle,
   sumarSubTotalEncabezadoVenta,
   sumarTotalConIvaEncabezadoVenta,
   acumularMontosImpuestosVenta,
@@ -1063,6 +1064,9 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
 
     const empresaIva = Number(this.apiService.auth_user()?.empresa?.iva ?? 0);
     this.venta.detalles.forEach((d: any) => {
+      if (String(d?.tipo_gravado || '').toLowerCase() === 'exonerada') {
+        return;
+      }
       calcularMontosLineaDetalle(d, !!this.venta.cobrar_impuestos, empresaIva);
     });
 
@@ -1097,7 +1101,6 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
       : 0;
 
     // IVA por tasa: cada impuesto acumula el monto de las líneas que lo incluyen
-    const empresaIva = Number(this.apiService.auth_user()?.empresa?.iva ?? 0);
     if (this.venta.cobrar_impuestos) {
       acumularMontosImpuestosVenta(
         this.venta.impuestos,
