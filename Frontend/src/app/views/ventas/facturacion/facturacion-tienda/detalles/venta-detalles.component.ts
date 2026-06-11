@@ -109,18 +109,18 @@ export class VentaDetallesComponent implements OnInit {
     }
 
     public updateTotal(detalle:any){
-        if(!detalle.cantidad){
-            detalle.cantidad = 0;
-        }
+        const cantidad = parseFloat(detalle.cantidad ?? 0) || 0;
+        const precio = parseFloat(detalle.precio ?? 0) || 0;
+
         if(detalle.descuento_porcentaje){
-            detalle.descuento = Number((detalle.cantidad * (detalle.precio * (detalle.descuento_porcentaje / 100))).toFixed(4));
+            detalle.descuento = Number((cantidad * (precio * (detalle.descuento_porcentaje / 100))).toFixed(4));
         }else if(detalle.descuento_monto){
-            detalle.descuento = Number((detalle.cantidad * detalle.descuento_monto).toFixed(4));
+            detalle.descuento = Number((cantidad * detalle.descuento_monto).toFixed(4));
         }else{
             detalle.descuento = 0;
         }
 
-        detalle.total_costo  = (parseFloat(detalle.cantidad) * parseFloat(detalle.costo)).toFixed(4);
+        detalle.total_costo  = (cantidad * parseFloat(detalle.costo ?? 0)).toFixed(4);
         this.aplicarTipoGravado(detalle);
         this.update.emit(this.venta);
         this.sumTotal.emit();

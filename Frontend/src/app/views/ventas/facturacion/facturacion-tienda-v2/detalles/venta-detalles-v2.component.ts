@@ -235,48 +235,36 @@ export class VentaDetallesV2Component implements OnInit {
     }
 
     public updateTotal(detalle:any){
-        if(!detalle.cantidad){
-            detalle.cantidad = 0;
-        }
-
-        // Porcentaje del detalle (producto) o empresa
+        const cantidad = parseFloat(detalle.cantidad ?? 0) || 0;
         const pctDetalle = this.obtenerPorcentajeIvaDetalle(detalle);
 
-        // Inicializar precio_iva solo si falta (no al borrar el campo mientras se edita)
-        if (detalle.precio_iva == null || detalle.precio_iva === undefined) {
+        const precioIvaNum = parseFloat(String(detalle.precio_iva ?? ''));
+        const tienePrecioIvaValido = Number.isFinite(precioIvaNum);
+
+        // Sincronizar precio sin IVA solo si hay un valor numérico en el input (no mientras está vacío).
+        if (tienePrecioIvaValido) {
             if (pctDetalle > 0) {
-                detalle.precio_iva = (parseFloat(detalle.precio) * (1 + pctDetalle / 100)).toFixed(4);
+                const precioSinIvaCalculado = this.calcularPrecioSinIva(precioIvaNum, pctDetalle);
+                const precioActual = parseFloat(String(detalle.precio ?? 0)) || 0;
+                if (Math.abs(precioActual - precioSinIvaCalculado) > 0.01) {
+                    detalle.precio = precioSinIvaCalculado.toFixed(4);
+                }
             } else {
-                detalle.precio_iva = detalle.precio;
+                detalle.precio = precioIvaNum.toFixed(4);
             }
         }
 
-        // Si se editó precio_iva manualmente, recalcular precio sin IVA
-        const precioIvaNum = parseFloat(String(detalle.precio_iva));
-        if (Number.isFinite(precioIvaNum) && pctDetalle > 0) {
-            const precioSinIvaCalculado = this.calcularPrecioSinIva(precioIvaNum, pctDetalle);
-            const diferencia = Math.abs(parseFloat(detalle.precio) - precioSinIvaCalculado);
-            if (diferencia > 0.01) {
-                detalle.precio = precioSinIvaCalculado.toFixed(4);
-            }
-        } else if (pctDetalle === 0 && Number.isFinite(precioIvaNum)) {
-            detalle.precio = precioIvaNum.toFixed(4);
-        }
+        const precioSinIva = parseFloat(String(detalle.precio ?? 0)) || 0;
 
-        // Usar precio sin IVA para cálculos
-        const precioSinIva = parseFloat(detalle.precio || 0);
-        
         if(detalle.descuento_porcentaje){
-            // Descuento porcentual sobre precio sin IVA
-            detalle.descuento = Number((detalle.cantidad * (precioSinIva * (detalle.descuento_porcentaje / 100))).toFixed(4));
+            detalle.descuento = Number((cantidad * (precioSinIva * (detalle.descuento_porcentaje / 100))).toFixed(4));
         }else if(detalle.descuento_monto){
-            // Descuento monto sobre precio sin IVA
-            detalle.descuento = Number((detalle.cantidad * detalle.descuento_monto).toFixed(4));
+            detalle.descuento = Number((cantidad * detalle.descuento_monto).toFixed(4));
         }else{
             detalle.descuento = 0;
         }
 
-        detalle.total_costo  = (parseFloat(detalle.cantidad) * parseFloat(detalle.costo)).toFixed(4);
+        detalle.total_costo  = (cantidad * parseFloat(String(detalle.costo ?? 0))).toFixed(4);
         this.aplicarTipoGravado(detalle);
         this.update.emit(this.venta);
         this.sumTotal.emit();
