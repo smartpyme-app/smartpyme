@@ -30,8 +30,8 @@ class DireccionEnvio extends Model
         'latitud' => 'decimal:7',
         'longitud' => 'decimal:7',
         'es_predeterminada' => 'boolean',
-        'boxful_state_id' => 'integer',
-        'boxful_city_id' => 'integer'
+        'boxful_state_id' => 'string',
+        'boxful_city_id' => 'string'
     ];
 
     protected static function boot()

@@ -27,8 +27,8 @@ class CreateDireccionesEnvioTable extends Migration
             $table->decimal('latitud', 10, 7)->nullable();
             $table->decimal('longitud', 11, 7)->nullable();
             
-            $table->unsignedInteger('boxful_state_id');
-            $table->unsignedInteger('boxful_city_id');
+            $table->string('boxful_state_id');
+            $table->string('boxful_city_id');
             $table->string('boxful_address_id')->nullable(); // ID retornado por Boxful
             
             $table->boolean('es_predeterminada')->default(false);

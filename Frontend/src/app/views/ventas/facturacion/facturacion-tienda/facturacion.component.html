@@ -515,6 +515,54 @@
     </div>
 </section>
 
+<!-- Sección de Envío Boxful (Se muestra de forma reactiva si el canal es Boxful) -->
+<section class="card border-0 p-4 mb-3" *ngIf="esCanalBoxful()">
+    <div class="d-flex align-items-center gap-2 mb-3">
+        <div class="bg-primary bg-opacity-10 p-2 rounded text-primary">
+            <i class="fa fa-truck fa-lg"></i>
+        </div>
+        <h5 class="fw-bold mb-0 text-dark">Envío Boxful</h5>
+    </div>
+
+    <div *ngIf="!venta.cliente?.id" class="alert alert-warning py-3 mb-0 rounded-3 border-0">
+        <i class="fa fa-exclamation-triangle me-2"></i> Debe seleccionar un cliente primero para habilitar el selector de envíos de Boxful.
+    </div>
+    
+    <div *ngIf="venta.cliente?.id">
+        <!-- Inputs de dimensiones del paquete para cotizar -->
+        <div class="row g-3 mb-4 bg-light p-3 rounded-3 border border-light">
+            <div class="col-12">
+                <h6 class="fw-bold mb-1 text-muted small">Dimensiones del Paquete para Cotizar</h6>
+                <p class="text-muted mb-0 small" style="font-size: 11px;">Especifique las dimensiones reales del paquete a enviar.</p>
+            </div>
+            <div class="col-6 col-sm-3">
+                <label for="paquetePeso" class="form-label small fw-bold text-dark mb-1">Peso (kg) <span class="text-danger">*</span></label>
+                <input type="number" step="any" min="0.1" class="form-control form-control-sm border-2 rounded-2" id="paquetePeso" [(ngModel)]="paqueteData.peso" name="paquetePeso" placeholder="Ej: 1.5">
+            </div>
+            <div class="col-6 col-sm-3">
+                <label for="paqueteAlto" class="form-label small fw-bold text-dark mb-1">Alto (cm)</label>
+                <input type="number" min="1" class="form-control form-control-sm border-2 rounded-2" id="paqueteAlto" [(ngModel)]="paqueteData.alto" name="paqueteAlto" placeholder="Ej: 10">
+            </div>
+            <div class="col-6 col-sm-3">
+                <label for="paqueteAncho" class="form-label small fw-bold text-dark mb-1">Ancho (cm)</label>
+                <input type="number" min="1" class="form-control form-control-sm border-2 rounded-2" id="paqueteAncho" [(ngModel)]="paqueteData.ancho" name="paqueteAncho" placeholder="Ej: 10">
+            </div>
+            <div class="col-6 col-sm-3">
+                <label for="paqueteLargo" class="form-label small fw-bold text-dark mb-1">Largo (cm)</label>
+                <input type="number" min="1" class="form-control form-control-sm border-2 rounded-2" id="paqueteLargo" [(ngModel)]="paqueteData.largo" name="paqueteLargo" placeholder="Ej: 10">
+            </div>
+        </div>
+
+        <!-- Componente selector de Boxful -->
+        <app-boxful-shipping-selector 
+            [clienteId]="venta.cliente.id" 
+            [paqueteData]="paqueteData"
+            (guiaGenerada)="onBoxfulGuiaGenerada($event)"
+            (cerrar)="venta.id_canal = ''">
+        </app-boxful-shipping-selector>
+    </div>
+</section>
+
 <ng-template #mfacturar>
   <div class="modal-header">
     <div class="modal-title text-center w-100">

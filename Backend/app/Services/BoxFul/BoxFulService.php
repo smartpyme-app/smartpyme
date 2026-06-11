@@ -92,13 +92,29 @@ class BoxFulService
             throw new \Exception('No se ha definido una empresa para la integración con Boxful.');
         }
 
+        $integracion = $empresa->obtenerOcrearIntegracion();
+
+        // Autorecuperación: Si boxful_client_id está vacío pero hay un token en caché o BD
+        if (empty($integracion->boxful_client_id)) {
+            $existingToken = Cache::get($this->cacheKey) ?? $integracion->boxful_access_token;
+            if (!empty($existingToken)) {
+                $this->fetchAndSaveClientId($existingToken, $integracion);
+                if (!empty($integracion->boxful_client_id)) {
+                    $integracion->boxful_access_token = $existingToken;
+                    if (empty($integracion->boxful_token_expires_at)) {
+                        $integracion->boxful_token_expires_at = now()->addHours(23);
+                    }
+                    $integracion->boxful_status = 'connected';
+                    $integracion->save();
+                }
+            }
+        }
+
         // 1. Intentar obtener el token desde la caché (Memcached/Redis/etc.)
         $token = Cache::get($this->cacheKey);
         if ($token) {
             return $token;
         }
-
-        $integracion = $empresa->obtenerOcrearIntegracion();
 
         // 2. Si no está en caché, intentar obtenerlo de la base de datos y verificar si sigue vigente (con buffer de 5 minutos)
         if ($integracion->boxful_access_token && 
@@ -213,6 +229,37 @@ class BoxFulService
      */
     protected function fetchAndSaveClientId(string $accessToken, Integracion $integracion): void
     {
+        // 1. Intentar decodificar el JWT primero (rápido, sin peticiones HTTP)
+        try {
+            $tokenParts = explode('.', $accessToken);
+            if (count($tokenParts) >= 2) {
+                // El payload del JWT es la segunda parte (índice 1)
+                $payloadJson = base64_decode(str_replace(['-', '_'], ['+', '/'], $tokenParts[1]));
+                if ($payloadJson) {
+                    $payload = json_decode($payloadJson, true);
+                    
+                    // Buscar clientId o id en el payload
+                    $clientId = $payload['clientId'] ?? 
+                                $payload['id'] ?? 
+                                $payload['user']['clientId'] ?? 
+                                $payload['client']['id'] ?? 
+                                ($payload['client']['clientId'] ?? null);
+                                
+                    if ($clientId) {
+                        $integracion->boxful_client_id = $clientId;
+                        Log::info('clientId de Boxful decodificado del JWT correctamente', [
+                            'company_id' => $integracion->id_empresa,
+                            'clientId' => $clientId,
+                        ]);
+                        return; // Éxito rápido, evitamos petición HTTP
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            Log::warning('No se pudo decodificar el JWT para extraer clientId: ' . $e->getMessage());
+        }
+
+        // 2. Fallback: Hacer petición HTTP a /auth/user-info
         try {
             $url = rtrim($this->baseUrl, '/') . '/auth/user-info';
 
@@ -223,10 +270,10 @@ class BoxFulService
                 ->get($url);
 
             if ($response->successful()) {
-                $clientId = $response->json('clientId') ?? $response->json('id') ?? $response->json('data.clientId');
+                $clientId = $response->json('response.clientId') ?? $response->json('response.id') ?? $response->json('clientId') ?? $response->json('id') ?? $response->json('data.clientId');
                 if ($clientId) {
                     $integracion->boxful_client_id = $clientId;
-                    Log::info('clientId de Boxful guardado correctamente', [
+                    Log::info('clientId de Boxful obtenido de /auth/user-info correctamente', [
                         'company_id' => $integracion->id_empresa,
                         'clientId' => $clientId,
                     ]);

@@ -112,6 +112,30 @@ export class FacturacionV2Component implements OnInit {
     };
   }
 
+  // Integración Boxful
+  public paqueteData: any = { peso: 1, alto: 10, ancho: 10, largo: 10 };
+
+  esCanalBoxful(): boolean {
+    if (!this.venta.id_canal || !this.canales) return false;
+    const canal = this.canales.find((c: any) => c.id == this.venta.id_canal);
+    return canal && canal.nombre === 'Boxful';
+  }
+
+  onBoxfulGuiaGenerada(guia: any): void {
+    console.log('Guía de Boxful generada:', guia);
+    const numGuia = guia.shipmentNumber || guia.data?.shipmentNumber || '';
+    const labelUrl = guia.labelUrl || guia.data?.labelUrl || '';
+    const trackingUrl = guia.trackingUrl || guia.data?.trackingUrl || '';
+    
+    const textToAdd = `Envío Boxful #${numGuia}. Guía PDF: ${labelUrl}. Rastreo: ${trackingUrl}`;
+    if (this.venta.observaciones) {
+      this.venta.observaciones += ` | ${textToAdd}`;
+    } else {
+      this.venta.observaciones = textToAdd;
+    }
+    this.alertService.success('Logística Boxful', `Guía #${numGuia} vinculada a las observaciones de la venta.`);
+  }
+
   ngOnInit() {
     this.cargarDatosIniciales();
     this.loadData();

@@ -760,7 +760,7 @@ class Empresa extends Model
      */
     public function integracion()
     {
-        return $this->hasOne(Integracion::class, 'id_empresa');
+        return $this->hasOne(Integracion::class, 'id_empresa')->where('proveedor', 'boxful');
     }
 
     /**
@@ -770,7 +770,8 @@ class Empresa extends Model
     {
         if (!$this->relationLoaded('integracion') || !$this->integracion) {
             $integracion = $this->integracion()->firstOrCreate([
-                'id_empresa' => $this->id
+                'id_empresa' => $this->id,
+                'proveedor' => 'boxful'
             ]);
             $this->setRelation('integracion', $integracion);
         }
@@ -790,7 +791,17 @@ class Empresa extends Model
      */
     public function getBoxfulClientIdAttribute()
     {
-        return $this->integracion ? $this->integracion->boxful_client_id : null;
+        $integracion = $this->integracion;
+        if ($integracion && empty($integracion->boxful_client_id)) {
+            try {
+                $service = new \App\Services\BoxFul\BoxFulService($this);
+                $service->getAccessToken(); // Dispara la autorecuperación en BoxFulService
+                $integracion->refresh();
+            } catch (\Exception $e) {
+                // Silencioso si falla (por ejemplo, si no hay credenciales o token válido aún)
+            }
+        }
+        return $integracion ? $integracion->boxful_client_id : null;
     }
 
     /**

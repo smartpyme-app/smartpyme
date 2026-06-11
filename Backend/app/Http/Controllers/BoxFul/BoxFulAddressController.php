@@ -114,8 +114,8 @@ class BoxFulAddressController extends Controller
                 'referencePoint' => 'nullable|string|max:500',
                 'latitude' => 'required|numeric',
                 'longitude' => 'required|numeric',
-                'stateId' => 'required|integer',
-                'cityId' => 'required|integer',
+                'stateId' => 'required|string',
+                'cityId' => 'required|string',
                 'addressPhone' => 'required|string|max:20',
                 'addressAreaCode' => 'required|string|max:10',
             ]);
@@ -174,8 +174,8 @@ class BoxFulAddressController extends Controller
                 'referencePoint' => 'nullable|string|max:500',
                 'latitude' => 'sometimes|required|numeric',
                 'longitude' => 'sometimes|required|numeric',
-                'stateId' => 'sometimes|required|integer',
-                'cityId' => 'sometimes|required|integer',
+                'stateId' => 'sometimes|required|string',
+                'cityId' => 'sometimes|required|string',
                 'addressPhone' => 'sometimes|required|string|max:20',
                 'addressAreaCode' => 'sometimes|required|string|max:10',
             ]);
