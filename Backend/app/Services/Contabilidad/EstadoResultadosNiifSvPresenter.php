@@ -136,7 +136,7 @@ class EstadoResultadosNiifSvPresenter
     {
         $this->prefijosEstadoResultados = $this->resolvePrefijosEstadoResultados($empresaId);
 
-        $cuentas = Cuenta::withoutGlobalScopes()
+        $cuentas = Cuenta::withoutGlobalScope('empresa')
             ->where('id_empresa', $empresaId)
             ->orderBy('codigo')
             ->get();

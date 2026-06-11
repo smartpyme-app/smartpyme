@@ -45,7 +45,7 @@ class BalanceGeneralNiifSvPresenter
     {
         $this->lines = $this->emptyLineKeys();
 
-        $cuentasJerarquicas = Cuenta::withoutGlobalScopes()
+        $cuentasJerarquicas = Cuenta::withoutGlobalScope('empresa')
             ->where('id_empresa', $empresaId)
             ->orderBy('codigo')
             ->get();
