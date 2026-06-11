@@ -338,6 +338,42 @@ export class ApiService {
         return customConfig?.configuraciones?.ventas_puede_cambiar_vendedor_facturacion === true;
     }
 
+    /** Indica si la fidelización está activa a nivel de empresa para acceso a configuraciones/sidebar */
+    isFidelizacionActiva(): boolean {
+        const empresa = this.auth_user()?.empresa;
+        if (!empresa || !empresa.custom_empresa) {
+            return false;
+        }
+        const customConfig = typeof empresa.custom_empresa === 'string'
+            ? JSON.parse(empresa.custom_empresa)
+            : empresa.custom_empresa;
+        return customConfig?.configuraciones?.fidelizacion_activa === true;
+    }
+
+    /** Indica si la fidelización está completamente activa para el consumo/obtención de puntos */
+    isFidelizacionCompleta(): boolean {
+        const empresa = this.auth_user()?.empresa;
+        if (!empresa || !empresa.custom_empresa) {
+            return false;
+        }
+        const customConfig = typeof empresa.custom_empresa === 'string'
+            ? JSON.parse(empresa.custom_empresa)
+            : empresa.custom_empresa;
+        return customConfig?.configuraciones?.fidelizacion_completa === true;
+    }
+
+    /** Indica si se envían correos automáticos de fidelización al acumular puntos */
+    isFidelizacionEnviarCorreos(): boolean {
+        const empresa = this.auth_user()?.empresa;
+        if (!empresa || !empresa.custom_empresa) {
+            return false;
+        }
+        const customConfig = typeof empresa.custom_empresa === 'string'
+            ? JSON.parse(empresa.custom_empresa)
+            : empresa.custom_empresa;
+        return customConfig?.configuraciones?.fidelizacion_enviar_correos === true;
+    }
+
     auth_token(){ return JSON.parse(localStorage.getItem('SP_token')!); }
 
     date():string{let today = new Date(); let dd = today.getDate(); let mm = today.getMonth()+1; let d; let m; var yyyy = today.getFullYear(); if(dd<10){d='0'+dd;}else{d= dd;} if(mm<10){m='0'+mm;} else{m=mm;} let date:string = yyyy+'-'+m+'-'+d; return date; }

@@ -2107,7 +2107,7 @@ export class FacturacionComponent implements OnInit {
     private verificarFidelizacionHabilitada() {
         this.funcionalidadesService.verificarAcceso('fidelizacion-clientes').subscribe({
             next: (tieneAcceso: boolean) => {
-                this.tieneFidelizacionHabilitada = tieneAcceso;
+                this.tieneFidelizacionHabilitada = tieneAcceso && this.apiService.isFidelizacionCompleta();
             },
             error: (error) => {
                 console.error('Error al verificar acceso a fidelización:', error);

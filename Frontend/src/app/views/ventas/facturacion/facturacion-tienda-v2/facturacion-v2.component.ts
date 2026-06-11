@@ -2148,7 +2148,9 @@ public getTotalConPropina(): number {
 
   private verificarFidelizacionHabilitada(): void {
     this.funcionalidadesService.verificarAcceso('fidelizacion-clientes').subscribe({
-      next: (tieneAcceso: boolean) => { this.tieneFidelizacionHabilitada = tieneAcceso; },
+      next: (tieneAcceso: boolean) => {
+        this.tieneFidelizacionHabilitada = tieneAcceso && this.apiService.isFidelizacionCompleta();
+      },
       error: () => { this.tieneFidelizacionHabilitada = false; }
     });
   }

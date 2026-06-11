@@ -110,11 +110,13 @@
 <body>
     <div class="container">
         <div class="header">
-            <!-- Logo de SmartPyme -->
-            <div style="text-align: center; padding: 20px 0;">
-                <img width="150px" src="https://www.smartpyme.sv/wp-content/uploads/2022/09/logo-web-smartpyme-2022-new.png" alt="Logo SmartPyme">
-                <div style="margin-top: 15px; border-bottom: 1px solid #cecece;"></div>
-            </div>
+            <!-- Logo de la Empresa -->
+            @if($empresa->logo)
+                <div style="text-align: center; padding: 20px 0;">
+                    <img class="logo" src="{{ asset('img/'.$empresa->logo) }}" alt="Logo {{ $empresa->nombre }}">
+                    <div style="margin-top: 15px; border-bottom: 1px solid #cecece;"></div>
+                </div>
+            @endif
             <div class="empresa-nombre">{{ $empresa->nombre }}</div>
         </div>
 
@@ -157,12 +159,16 @@
 
         <div class="footer">
             <p style="margin: 5px;">{{ $empresa->nombre }} &copy; {{ date('Y') }}</p>
-            @if($empresa->telefono)
+            <!-- Logo de SmartPyme -->
+            <div style="text-align: center; padding: 20px 0; margin-top: 10px;">
+                <img width="120px" src="https://www.smartpyme.sv/wp-content/uploads/2022/09/logo-web-smartpyme-2022-new.png" alt="Logo SmartPyme">
+            </div>
+            <!-- @if($empresa->telefono)
                 <p><b>Teléfono: </b>{{ $empresa->telefono }}</p>
             @endif
             @if($empresa->correo)
                 <p><b>Correo: </b>{{ $empresa->correo }}</p>
-            @endif
+            @endif -->
         </div>
     </div>
 </body>
