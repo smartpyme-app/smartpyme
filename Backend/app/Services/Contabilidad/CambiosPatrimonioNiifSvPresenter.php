@@ -401,7 +401,7 @@ class CambiosPatrimonioNiifSvPresenter
      */
     private function aggregateLedgerMovements(int $empresaId, Carbon $fi, Carbon $ff): array
     {
-        $cuentas = Cuenta::withoutGlobalScopes()
+        $cuentas = Cuenta::withoutGlobalScope('empresa')
             ->where('id_empresa', $empresaId)
             ->get()
             ->keyBy('id');
