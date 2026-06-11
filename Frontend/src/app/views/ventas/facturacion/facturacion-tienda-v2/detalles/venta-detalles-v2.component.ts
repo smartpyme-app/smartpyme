@@ -227,8 +227,8 @@ export class VentaDetallesV2Component implements OnInit {
         this.updateTotal(detalle);
     }
 
-    public updateTotal(detalle:any){
-        if(!detalle.cantidad){
+    public updateTotal(detalle: any, campoEditado?: string) {
+        if (!detalle.cantidad) {
             detalle.cantidad = 0;
         }
 
@@ -245,14 +245,12 @@ export class VentaDetallesV2Component implements OnInit {
         }
 
         // Si se editó precio_iva manualmente, recalcular precio sin IVA
-        if (detalle.precio_iva && pctDetalle > 0) {
-            const precioSinIvaCalculado = this.calcularPrecioSinIva(parseFloat(detalle.precio_iva), pctDetalle);
-            const diferencia = Math.abs(parseFloat(detalle.precio) - precioSinIvaCalculado);
-            if (diferencia > 0.01) {
-                detalle.precio = precioSinIvaCalculado.toFixed(4);
+        if (campoEditado === 'precio_iva') {
+            if (detalle.precio_iva && pctDetalle > 0) {
+                detalle.precio = this.calcularPrecioSinIva(parseFloat(detalle.precio_iva), pctDetalle).toFixed(6);
+            } else {
+                detalle.precio = detalle.precio_iva;
             }
-        } else if (pctDetalle === 0) {
-            detalle.precio = detalle.precio_iva;
         }
 
         // Usar precio sin IVA para cálculos
