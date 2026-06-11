@@ -1,14 +1,14 @@
 ---
 title: "API externa de SmartPyme: guía de acceso a datos B2B"
 sidebarTitle: "Descripción general"
-description: "La API externa de SmartPyme ofrece a proveedores externos acceso de solo lectura a datos de ventas, inventario y devoluciones mediante autenticación con API Key."
+description: "La API externa de SmartPyme ofrece a proveedores externos acceso a datos de ventas, inventario y devoluciones, y permite crear y actualizar ventas mediante autenticación con API Key."
 ---
 
-La API externa de SmartPyme es una API REST diseñada para integraciones B2B: permite a proveedores, plataformas de analítica y otros terceros acceder de forma programática a los datos de ventas, inventario y devoluciones de los negocios que usan SmartPyme. Todas las solicitudes utilizan HTTPS estándar y devuelven respuestas en JSON.
+La API externa de SmartPyme es una API REST diseñada para integraciones B2B: permite a proveedores, plataformas de analítica y otros terceros acceder de forma programática a los datos de ventas, inventario y devoluciones de los negocios que usan SmartPyme, y crear o actualizar ventas desde sistemas externos. Todas las solicitudes utilizan HTTPS estándar y devuelven respuestas en JSON.
 
 ## Qué ofrece la API
 
-La API te da acceso de solo lectura a tres dominios de datos principales: **ventas**, **inventario** y **devoluciones**. Cada dominio expone endpoints de listado, detalle y resumen para que puedas obtener exactamente el nivel de detalle que tu integración necesite. La API está construida específicamente para escenarios como reportes de sell-through para proveedores, dashboards de analítica externos y conciliación automatizada de inventarios.
+La API te da acceso a tres dominios de datos principales: **ventas**, **inventario** y **devoluciones**. Los endpoints de lectura exponen vistas de listado, detalle y resumen para que puedas obtener exactamente el nivel de detalle que tu integración necesite. Los endpoints de escritura sobre `sales` permiten que sistemas externos (POS, e-commerce, marketplaces) registren transacciones en SmartPyme y actualicen ventas o cotizaciones pendientes. La API está construida específicamente para escenarios como reportes de sell-through para proveedores, dashboards de analítica externos, conciliación automatizada de inventarios y sincronización bidireccional de ventas.
 
 ## URL base
 
@@ -23,7 +23,9 @@ https://api.smartpyme.site/api/external/v1/
 | Endpoint | Descripción |
 |---|---|
 | `GET /sales` | Lista ventas con filtros |
+| `POST /sales` | Crea y procesa una venta (o cotización) |
 | `GET /sales/{id}` | Obtiene una venta específica |
+| `PUT /sales/{id}` | Actualiza una venta pendiente o cotización |
 | `GET /sales/summary` | Estadísticas de resumen de ventas |
 | `GET /inventory` | Lista productos con stock |
 | `GET /inventory/{id}` | Obtiene un producto específico |
@@ -85,5 +87,5 @@ Cuando una solicitud falla, la API devuelve una envoltura con `success: false`, 
 | `500` | Internal Server Error |
 
 <Note>
-  La mayoría de los endpoints son de solo lectura. La excepción es `POST /packages/import`, que permite la importación masiva de datos de paquetes desde sistemas externos.
+  La mayoría de los endpoints son de solo lectura. Las operaciones de escritura se limitan a `POST /sales` y `PUT /sales/{id}` (crear y actualizar ventas o cotizaciones) y `POST /packages/import` (importación masiva de datos de paquetes desde sistemas externos).
 </Note>

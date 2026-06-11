@@ -1,10 +1,10 @@
 ---
-title: "SmartPyme Sales API: Query, Filter, and Summarize"
+title: "SmartPyme Sales API: Query, Create, and Update Sales"
 sidebarTitle: "Sales"
-description: "Query paginated SmartPyme sales by date range, status, or sort field. Each record includes payment details, line items, and aggregate summaries."
+description: "Query, create, and update SmartPyme sales. Filter paginated transactions, push new sales or quotations from external systems, and amend pending records."
 ---
 
-The Sales endpoints let you retrieve your full transaction history from SmartPyme, including individual line items, customer details, and payment information. Use these endpoints to build reporting dashboards, sync data to external systems, or audit completed and pending transactions. All requests must include your API key in the `Authorization` header.
+The Sales endpoints let you retrieve your full transaction history from SmartPyme — including individual line items, customer details, and payment information — and create or update sales from external systems such as e-commerce sites, marketplaces, or POS integrations. Use them to build reporting dashboards, sync transactions bidirectionally, audit completed and pending records, or generate quotations programmatically. All requests must include your API key in the `Authorization` header.
 
 ---
 
@@ -303,6 +303,248 @@ console.log(data);
 
 ---
 
+## POST /sales
+
+Creates and processes a sale through the same invoicing logic the SmartPyme UI uses. Use this endpoint to push transactions into SmartPyme from external POS, e-commerce, or marketplace systems, or to generate quotations programmatically. The endpoint runs the full business pipeline — stock movements, tax breakdown, document correlatives, and document of sale generation — so the sale you create here is indistinguishable from one entered manually in the app.
+
+### When to use it
+
+- A confirmed sale needs to be registered immediately and marked as paid (`Pagada` or `Completada`).
+- A pending sale needs to be opened and finalized later from the SmartPyme UI (`Pendiente`).
+- A quotation needs to be created from an external quoting tool (`Cotizacion`).
+
+### Idempotency
+
+Pass an external identifier through `referencia_externa` (or `referencia`) to make the request idempotent. If a sale with the same `referencia` already exists for your company, the API returns the existing record with HTTP `200` and `meta.idempotent: true` instead of creating a duplicate. New sales return HTTP `201`. Always set this field when retrying requests or syncing from systems that may resend the same transaction.
+
+<CodeGroup>
+
+```bash cURL
+curl --request POST \
+  --url "https://api.smartpyme.site/api/external/v1/sales" \
+  --header "Authorization: Bearer {api_key}" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "referencia_externa": "ORDER-9001",
+    "fecha": "2025-01-15",
+    "estado": "Pagada",
+    "id_sucursal": 3,
+    "id_bodega": 7,
+    "id_documento": 12,
+    "id_canal": 2,
+    "id_cliente": 45,
+    "forma_pago": "Efectivo",
+    "monto_pago": 180.00,
+    "cambio": 20.00,
+    "observaciones": "Pedido web",
+    "detalles": [
+      {
+        "id_producto": 312,
+        "cantidad": 1,
+        "precio": 163.75,
+        "descuento": 10.00,
+        "porcentaje_impuesto": 13
+      }
+    ]
+  }'
+```
+
+```python Python
+import requests
+
+url = "https://api.smartpyme.site/api/external/v1/sales"
+headers = {
+    "Authorization": "Bearer {api_key}",
+    "Content-Type": "application/json",
+}
+payload = {
+    "referencia_externa": "ORDER-9001",
+    "fecha": "2025-01-15",
+    "estado": "Pagada",
+    "id_sucursal": 3,
+    "id_bodega": 7,
+    "id_documento": 12,
+    "id_canal": 2,
+    "id_cliente": 45,
+    "forma_pago": "Efectivo",
+    "monto_pago": 180.00,
+    "cambio": 20.00,
+    "observaciones": "Pedido web",
+    "detalles": [
+        {
+            "id_producto": 312,
+            "cantidad": 1,
+            "precio": 163.75,
+            "descuento": 10.00,
+            "porcentaje_impuesto": 13,
+        }
+    ],
+}
+
+response = requests.post(url, headers=headers, json=payload)
+print(response.status_code, response.json())
+```
+
+```javascript JavaScript
+const response = await fetch(
+  "https://api.smartpyme.site/api/external/v1/sales",
+  {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer {api_key}",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      referencia_externa: "ORDER-9001",
+      fecha: "2025-01-15",
+      estado: "Pagada",
+      id_sucursal: 3,
+      id_bodega: 7,
+      id_documento: 12,
+      id_canal: 2,
+      id_cliente: 45,
+      forma_pago: "Efectivo",
+      monto_pago: 180.0,
+      cambio: 20.0,
+      observaciones: "Pedido web",
+      detalles: [
+        {
+          id_producto: 312,
+          cantidad: 1,
+          precio: 163.75,
+          descuento: 10.0,
+          porcentaje_impuesto: 13,
+        },
+      ],
+    }),
+  }
+);
+const data = await response.json();
+console.log(data);
+```
+
+</CodeGroup>
+
+### Body parameters
+
+<ParamField body="referencia_externa" type="string">
+  External identifier from your system. When provided, the endpoint becomes idempotent for this value (see [Idempotency](#idempotency)). Alias: `referencia`. Maximum 255 characters.
+</ParamField>
+
+<ParamField body="fecha" type="string" required>
+  Sale date, in `Y-m-d` format (e.g. `2025-01-15`).
+</ParamField>
+
+<ParamField body="estado" type="string" required>
+  Initial state of the sale. Accepted values: `Pagada`, `Completada`, `Pendiente`, `Cotizacion`. Use `Pendiente` for sales that will be finalized later; `Pendiente` requires `id_cliente`. `Cotizacion` creates a quotation rather than a confirmed sale.
+</ParamField>
+
+<ParamField body="id_sucursal" type="integer">
+  Branch identifier. Required if `sucursal` is not provided.
+</ParamField>
+
+<ParamField body="sucursal" type="string">
+  Branch name. Resolved server-side to the matching `id_sucursal`. Required if `id_sucursal` is not provided.
+</ParamField>
+
+<ParamField body="id_bodega" type="integer" required>
+  Warehouse identifier that stock movements will be applied to. Must belong to your company.
+</ParamField>
+
+<ParamField body="id_documento" type="integer" required>
+  Sales document type identifier (e.g. invoice, ticket). The correlativo is taken from this document.
+</ParamField>
+
+<ParamField body="id_canal" type="integer">
+  Sales channel identifier (e.g. counter, online). Required unless `estado` is `Cotizacion`.
+</ParamField>
+
+<ParamField body="id_cliente" type="integer">
+  Customer identifier. Required when `estado` is `Pendiente`. Optional for other states.
+</ParamField>
+
+<ParamField body="forma_pago" type="string">
+  Payment method (e.g. `Efectivo`, `Tarjeta`, `Transferencia`). Defaults to `Efectivo`. Maximum 100 characters.
+</ParamField>
+
+<ParamField body="monto_pago" type="number">
+  Amount tendered by the customer. Defaults to the sale total when `estado` is `Pagada`.
+</ParamField>
+
+<ParamField body="cambio" type="number">
+  Change returned to the customer. Defaults to `0`.
+</ParamField>
+
+<ParamField body="fecha_expiracion" type="string">
+  Expiration date for the sale or quotation, in `Y-m-d` format.
+</ParamField>
+
+<ParamField body="observaciones" type="string">
+  Free-text notes recorded on the sale. Maximum 1000 characters.
+</ParamField>
+
+<ParamField body="cotizacion" type="boolean">
+  Marks the sale as a quotation. Automatically set to `true` when `estado` is `Cotizacion`.
+</ParamField>
+
+<ParamField body="detalles" type="array" required>
+  Line items for the sale. Must contain at least 1 and at most **100** entries.
+
+  <Expandable title="detalles entry">
+    <ParamField body="id_producto" type="integer">
+      Product identifier. Required if `codigo_producto` is not provided.
+    </ParamField>
+    <ParamField body="codigo_producto" type="string">
+      Product SKU or code. Required if `id_producto` is not provided. Resolved server-side to the matching product in your company.
+    </ParamField>
+    <ParamField body="cantidad" type="number" required>
+      Quantity sold. Must be at least `0.0001`.
+    </ParamField>
+    <ParamField body="precio" type="number">
+      Unit price (tax-inclusive). When omitted, the product's current sale price is used.
+    </ParamField>
+    <ParamField body="descuento" type="number">
+      Discount amount applied to this line.
+    </ParamField>
+    <ParamField body="id_presentacion" type="integer">
+      Optional product presentation identifier for products sold in multiple presentations.
+    </ParamField>
+    <ParamField body="porcentaje_impuesto" type="number">
+      Tax percentage applied to the line. Range `0`–`100`.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+### Response
+
+On success, the response wraps the full Sale object under `data` — identical to the structure returned by [GET /sales](#get-sales). The `meta.idempotent` flag indicates whether the record was newly created or returned from a prior request:
+
+- `201 Created` — a new sale was created (`meta.idempotent: false`).
+- `200 OK` — the request matched an existing `referencia` and the previously created sale is returned (`meta.idempotent: true`).
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": 10422,
+    "fecha": "2025-01-15",
+    "correlativo": "FAC-002502",
+    "estado": "Completada",
+    "total": 180.00,
+    "detalles": [ /* ... */ ]
+  },
+  "meta": {
+    "empresa": "Mi Empresa S.A.",
+    "timestamp": "2025-01-15T10:42:00Z",
+    "idempotent": false
+  }
+}
+```
+
+Validation or business-rule failures return the standard error envelope with HTTP `422` and a `details` object listing the failing fields.
+
+---
+
 ## GET /sales/\{id\}
 
 Retrieves a single sale record by its numeric ID. The response returns the same full Sale object described above, including the `detalles` array of line items.
@@ -348,6 +590,183 @@ console.log(data);
 </CodeGroup>
 
 The response wraps the Sale object under a `data` key with `"success": true`. All fields, including `detalles`, are identical to the structure documented in the [GET /sales](#get-sales) response above.
+
+---
+
+## PUT /sales/\{id\}
+
+Updates an existing sale or quotation that has not yet been finalized. Use this endpoint to adjust line items, change the customer, switch the branch or warehouse, or transition a quotation into a confirmed sale.
+
+### When to use it
+
+- Edit a `Pendiente`, `Cotizacion`, or `Pre-venta` record before it is finalized — for example, to add or remove items, fix the customer, or update the payment method.
+- Convert a quotation into a sale by sending `estado: "Pagada"` or `"Completada"` together with the final line items.
+
+### Restrictions
+
+- Only sales in state `Pendiente`, `Cotizacion`, or `Pre-venta` can be updated. Attempting to update a sale in any other state returns HTTP `422`.
+- Sales that already have a fiscal document emitted cannot be updated and return HTTP `422`.
+- Annulled sales (`Anulada`) cannot be updated and return HTTP `422`.
+- The same 100-line maximum applies to the `detalles` array.
+
+### Path parameter
+
+<ParamField path="id" type="integer" required>
+  The numeric identifier of the sale to update.
+</ParamField>
+
+### Body parameters
+
+All body fields are optional. Send only the fields you want to change; omitted fields keep their current value. If `detalles` is omitted, the existing line items are preserved.
+
+<ParamField body="fecha" type="string">
+  Sale date, in `Y-m-d` format.
+</ParamField>
+
+<ParamField body="estado" type="string">
+  New state for the sale. Accepted values: `Pagada`, `Completada`, `Pendiente`, `Cotizacion`, `Pre-venta`.
+</ParamField>
+
+<ParamField body="id_sucursal" type="integer">
+  Branch identifier.
+</ParamField>
+
+<ParamField body="sucursal" type="string">
+  Branch name. Resolved server-side to the matching `id_sucursal`.
+</ParamField>
+
+<ParamField body="id_bodega" type="integer">
+  Warehouse identifier.
+</ParamField>
+
+<ParamField body="id_documento" type="integer">
+  Sales document type identifier.
+</ParamField>
+
+<ParamField body="id_canal" type="integer">
+  Sales channel identifier.
+</ParamField>
+
+<ParamField body="id_cliente" type="integer">
+  Customer identifier. Required when transitioning the sale to `Pendiente`.
+</ParamField>
+
+<ParamField body="forma_pago" type="string">
+  Payment method.
+</ParamField>
+
+<ParamField body="monto_pago" type="number">
+  Amount tendered by the customer.
+</ParamField>
+
+<ParamField body="cambio" type="number">
+  Change returned to the customer.
+</ParamField>
+
+<ParamField body="fecha_expiracion" type="string">
+  Expiration date, in `Y-m-d` format.
+</ParamField>
+
+<ParamField body="observaciones" type="string">
+  Free-text notes. Maximum 1000 characters.
+</ParamField>
+
+<ParamField body="cotizacion" type="boolean">
+  Marks the sale as a quotation.
+</ParamField>
+
+<ParamField body="detalles" type="array">
+  Replacement line items. When provided, must contain between 1 and 100 entries. Pass an existing line's `id` to update it in place; omit the `id` to add a new line. Lines not included in the new array are removed.
+
+  <Expandable title="detalles entry">
+    <ParamField body="id" type="integer">
+      Existing line item identifier. Include to update the matching line; omit to create a new one.
+    </ParamField>
+    <ParamField body="id_producto" type="integer">
+      Product identifier. Required if `codigo_producto` is not provided.
+    </ParamField>
+    <ParamField body="codigo_producto" type="string">
+      Product SKU or code. Required if `id_producto` is not provided.
+    </ParamField>
+    <ParamField body="cantidad" type="number">
+      Quantity sold. Required when `detalles` is provided. Must be at least `0.0001`.
+    </ParamField>
+    <ParamField body="precio" type="number">
+      Unit price (tax-inclusive).
+    </ParamField>
+    <ParamField body="descuento" type="number">
+      Discount amount applied to this line.
+    </ParamField>
+    <ParamField body="id_presentacion" type="integer">
+      Product presentation identifier.
+    </ParamField>
+    <ParamField body="porcentaje_impuesto" type="number">
+      Tax percentage applied to the line. Range `0`–`100`.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<CodeGroup>
+
+```bash cURL
+curl --request PUT \
+  --url "https://api.smartpyme.site/api/external/v1/sales/10422" \
+  --header "Authorization: Bearer {api_key}" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "estado": "Pagada",
+    "forma_pago": "Tarjeta",
+    "detalles": [
+      { "id_producto": 312, "cantidad": 2, "precio": 163.75 }
+    ]
+  }'
+```
+
+```python Python
+import requests
+
+sale_id = 10422
+url = f"https://api.smartpyme.site/api/external/v1/sales/{sale_id}"
+headers = {
+    "Authorization": "Bearer {api_key}",
+    "Content-Type": "application/json",
+}
+payload = {
+    "estado": "Pagada",
+    "forma_pago": "Tarjeta",
+    "detalles": [
+        {"id_producto": 312, "cantidad": 2, "precio": 163.75},
+    ],
+}
+
+response = requests.put(url, headers=headers, json=payload)
+print(response.json())
+```
+
+```javascript JavaScript
+const saleId = 10422;
+const response = await fetch(
+  `https://api.smartpyme.site/api/external/v1/sales/${saleId}`,
+  {
+    method: "PUT",
+    headers: {
+      Authorization: "Bearer {api_key}",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      estado: "Pagada",
+      forma_pago: "Tarjeta",
+      detalles: [{ id_producto: 312, cantidad: 2, precio: 163.75 }],
+    }),
+  }
+);
+const data = await response.json();
+console.log(data);
+```
+
+</CodeGroup>
+
+On success, the endpoint returns HTTP `200` and the updated Sale object under `data`, using the same structure as [GET /sales](#get-sales).
 
 ---
 
