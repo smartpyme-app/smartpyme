@@ -3,7 +3,11 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { calcularMontosLineaDetalle } from '@utils/impuestos-venta.util';
+import {
+    calcularMontosLineaDetalle,
+    limpiarExentaPorSinIvaSiTipoManual,
+    sincronizarTipoGravadoPorCobroIva,
+} from '@utils/impuestos-venta.util';
 
 import Swal from 'sweetalert2';
 
@@ -127,6 +131,7 @@ export class VentaDetallesComponent implements OnInit {
     }
 
     public onTipoGravadoChange(detalle: any) {
+        limpiarExentaPorSinIvaSiTipoManual(detalle);
         this.aplicarTipoGravado(detalle);
         this.update.emit(this.venta);
         this.sumTotal.emit();
@@ -409,11 +414,12 @@ export class VentaDetallesComponent implements OnInit {
         this.sumTotal.emit();
     }
 
-    /** Tras activar o desactivar "Con IVA" en la cabecera, recalcula IVA por línea. */
+    /** Tras activar o desactivar "Con IVA" en la cabecera, recalcula IVA y tipo por línea. */
     public sincronizarIvasDetalles(): void {
         if (!this.venta?.detalles?.length) {
             return;
         }
+        sincronizarTipoGravadoPorCobroIva(this.venta.detalles, !!this.venta.cobrar_impuestos);
         for (const detalle of this.venta.detalles) {
             this.aplicarTipoGravado(detalle);
         }

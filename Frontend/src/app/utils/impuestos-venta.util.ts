@@ -1,9 +1,62 @@
+export type TipoGravadoVenta = 'gravada' | 'exenta' | 'no_sujeta';
+
 export function redondearMoneda(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
 export function redondear4(n: number): number {
   return Math.round(n * 10000) / 10000;
+}
+
+/**
+ * Tipo gravado efectivo por línea.
+ * Sin IVA en cabecera, una línea gravada se trata como exenta (no como no_sujeta).
+ */
+export function resolverTipoGravadoEfectivo(
+  detalle: any,
+  cobrarImpuestos: boolean,
+  pctImpuesto: number
+): TipoGravadoVenta {
+  const tipo = String(detalle?.tipo_gravado || 'gravada').toLowerCase();
+  if (tipo === 'no_sujeta') {
+    return 'no_sujeta';
+  }
+  if (tipo === 'exenta') {
+    return 'exenta';
+  }
+  if (cobrarImpuestos && pctImpuesto > 0) {
+    return 'gravada';
+  }
+  return 'exenta';
+}
+
+/**
+ * Al activar/desactivar "Con IVA" en cabecera, ajusta tipo_gravado de las líneas.
+ * Gravada sin IVA → exenta; al reactivar IVA solo revierte líneas marcadas automáticamente.
+ */
+export function sincronizarTipoGravadoPorCobroIva(
+  detalles: any[],
+  cobrarImpuestos: boolean
+): void {
+  for (const detalle of detalles || []) {
+    const tipo = String(detalle?.tipo_gravado || 'gravada').toLowerCase();
+    if (!cobrarImpuestos) {
+      if (tipo === 'gravada') {
+        detalle.tipo_gravado = 'exenta';
+        detalle.exenta_por_sin_iva = true;
+      }
+      continue;
+    }
+    if (detalle.exenta_por_sin_iva && tipo === 'exenta') {
+      detalle.tipo_gravado = 'gravada';
+      detalle.exenta_por_sin_iva = false;
+    }
+  }
+}
+
+/** Usuario cambió el tipo manualmente: no revertir a gravada al reactivar IVA. */
+export function limpiarExentaPorSinIvaSiTipoManual(detalle: any): void {
+  detalle.exenta_por_sin_iva = false;
 }
 
 /**
@@ -21,7 +74,8 @@ export function calcularMontosLineaDetalle(
   const precioSinIva = parseFloat(String(detalle?.precio ?? 0)) || 0;
   const descuento = parseFloat(String(detalle?.descuento ?? 0)) || 0;
   const pct = resolverPorcentajeImpuestoVenta(detalle?.porcentaje_impuesto, ivaEmpresa, cobrarImpuestos);
-  const tipo = String(detalle?.tipo_gravado || 'gravada').toLowerCase();
+  const tipo = resolverTipoGravadoEfectivo(detalle, cobrarImpuestos, pct);
+  detalle.tipo_gravado = tipo;
 
   const subTotalSinIva = redondear4(cantidad * precioSinIva);
   const totalSinIva = redondear4(subTotalSinIva - descuento);
@@ -46,21 +100,32 @@ export function calcularMontosLineaDetalle(
   detalle.exenta = 0;
   detalle.no_sujeta = 0;
 
-  if (tipo === 'gravada' && cobrarImpuestos && pct > 0) {
-    const gravadaMoneda = redondearMoneda(totalSinIva);
-    detalle.gravada = gravadaMoneda;
-    detalle.total_iva = totalConIva.toFixed(4);
-    detalle.iva = redondear4(totalConIva - gravadaMoneda);
-  } else if (tipo === 'exenta') {
-    const monto = redondearMoneda(totalSinIva);
-    detalle.exenta = monto;
-    detalle.total_iva = monto.toFixed(4);
-    detalle.iva = 0;
-  } else {
-    const monto = redondearMoneda(totalSinIva);
-    detalle.no_sujeta = monto;
-    detalle.total_iva = monto.toFixed(4);
-    detalle.iva = 0;
+  switch (tipo) {
+    case 'gravada': {
+      const gravadaMoneda = redondearMoneda(totalSinIva);
+      detalle.gravada = gravadaMoneda;
+      detalle.total_iva = totalConIva.toFixed(4);
+      detalle.iva = redondear4(totalConIva - gravadaMoneda);
+      break;
+    }
+    case 'exenta': {
+      const monto = redondearMoneda(totalSinIva);
+      detalle.exenta = monto;
+      detalle.total_iva = monto.toFixed(4);
+      detalle.iva = 0;
+      break;
+    }
+    case 'no_sujeta': {
+      const monto = redondearMoneda(totalSinIva);
+      detalle.no_sujeta = monto;
+      detalle.total_iva = monto.toFixed(4);
+      detalle.iva = 0;
+      break;
+    }
+    default: {
+      const _exhaustive: never = tipo;
+      return _exhaustive;
+    }
   }
 }
 

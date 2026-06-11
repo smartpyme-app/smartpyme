@@ -195,13 +195,6 @@ class MHFactura extends Model
             }
         }
 
-        if ($this->venta->iva > 0) {
-            $this->venta->gravada = $this->venta->sub_total;
-        }else{
-            $this->venta->gravada = 0;
-            $this->venta->exenta = $this->venta->sub_total;
-        }
-
         $pagoCond = $this->condicionOperacionYPagoPlazo();
 
         return 
@@ -319,18 +312,7 @@ class MHFactura extends Model
                 $detalle->codigo = null;
             }
 
-            if ($this->venta->iva > 0) {
-                // Agregar IVA
-                    $detalle->precio = round($detalle->precio * 1.13, 4);
-                    $detalle->descuento = round($detalle->descuento * 1.13, 2);
-                    $detalle->iva = ($detalle->total * 0.13);
-                    $detalle->gravada = ($detalle->cantidad * $detalle->precio) - $detalle->descuento;
-            }else{
-                // Sin IVA
-                    $detalle->gravada = 0;
-                    $detalle->exenta = $detalle->total;
-                    $detalle->iva = 0;
-            }
+            $this->aplicarClasificacionFiscalDetalle($detalle);
 
             if ($detalle->cuenta_a_terceros > 0) {
 
@@ -405,6 +387,42 @@ class MHFactura extends Model
         }
 
         return $detalles;
+    }
+
+    /**
+     * Usa gravada/exenta/no_sujeta persistidos por línea; solo recalcula precio con IVA en líneas gravadas.
+     */
+    private function aplicarClasificacionFiscalDetalle($detalle): void
+    {
+        $gravada = floatval($detalle->gravada ?? 0);
+        $exenta = floatval($detalle->exenta ?? 0);
+        $noSujeta = floatval($detalle->no_sujeta ?? 0);
+
+        if ($gravada <= 0 && $exenta <= 0 && $noSujeta <= 0) {
+            $tipo = strtolower((string) ($detalle->tipo_gravado ?? 'gravada'));
+            if ($tipo === 'no_sujeta') {
+                $detalle->no_sujeta = floatval($detalle->total);
+            } elseif ($tipo === 'exenta' || !($this->venta->iva > 0)) {
+                $detalle->exenta = floatval($detalle->total);
+            } else {
+                $gravada = floatval($detalle->total);
+                $detalle->gravada = $gravada;
+            }
+        } else {
+            $detalle->gravada = $gravada;
+            $detalle->exenta = $exenta;
+            $detalle->no_sujeta = $noSujeta;
+        }
+
+        if (floatval($detalle->gravada ?? 0) > 0 && $this->venta->iva > 0) {
+            $detalle->precio = round($detalle->precio * 1.13, 4);
+            $detalle->descuento = round($detalle->descuento * 1.13, 2);
+            $detalle->iva = floatval($detalle->total) * 0.13;
+            $detalle->gravada = ($detalle->cantidad * $detalle->precio) - $detalle->descuento;
+        } else {
+            $detalle->gravada = floatval($detalle->gravada ?? 0);
+            $detalle->iva = floatval($detalle->iva ?? 0);
+        }
     }
 
     /**
