@@ -237,24 +237,12 @@ export class VentaDetallesV2Component implements OnInit {
     public updateTotal(detalle:any){
         const cantidad = parseFloat(detalle.cantidad ?? 0) || 0;
         const pctDetalle = this.obtenerPorcentajeIvaDetalle(detalle);
+        const precioIva = parseFloat(detalle.precio_iva ?? 0) || 0;
+        const precioSinIva = pctDetalle > 0
+            ? this.calcularPrecioSinIva(precioIva, pctDetalle)
+            : precioIva;
 
-        const precioIvaNum = parseFloat(String(detalle.precio_iva ?? ''));
-        const tienePrecioIvaValido = Number.isFinite(precioIvaNum);
-
-        // Sincronizar precio sin IVA solo si hay un valor numérico en el input (no mientras está vacío).
-        if (tienePrecioIvaValido) {
-            if (pctDetalle > 0) {
-                const precioSinIvaCalculado = this.calcularPrecioSinIva(precioIvaNum, pctDetalle);
-                const precioActual = parseFloat(String(detalle.precio ?? 0)) || 0;
-                if (Math.abs(precioActual - precioSinIvaCalculado) > 0.01) {
-                    detalle.precio = precioSinIvaCalculado.toFixed(4);
-                }
-            } else {
-                detalle.precio = precioIvaNum.toFixed(4);
-            }
-        }
-
-        const precioSinIva = parseFloat(String(detalle.precio ?? 0)) || 0;
+        detalle.precio = precioSinIva.toFixed(4);
 
         if(detalle.descuento_porcentaje){
             detalle.descuento = Number((cantidad * (precioSinIva * (detalle.descuento_porcentaje / 100))).toFixed(4));
@@ -264,7 +252,7 @@ export class VentaDetallesV2Component implements OnInit {
             detalle.descuento = 0;
         }
 
-        detalle.total_costo  = (cantidad * parseFloat(String(detalle.costo ?? 0))).toFixed(4);
+        detalle.total_costo  = (cantidad * parseFloat(detalle.costo ?? 0)).toFixed(4);
         this.aplicarTipoGravado(detalle);
         this.update.emit(this.venta);
         this.sumTotal.emit();

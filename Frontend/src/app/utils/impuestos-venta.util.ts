@@ -38,8 +38,6 @@ export function calcularMontosLineaDetalle(
     } else if (detalle.precio_iva == null || detalle.precio_iva === '') {
       detalle.precio_iva = precioSinIva.toFixed(4);
     }
-  } else if (detalle.precio_iva == null || detalle.precio_iva === '') {
-    detalle.precio_iva = redondear4(precioConIva).toFixed(4);
   }
   const descuentoConIva = pct > 0 ? descuento * factorIva : descuento;
   const totalConIva = redondearMoneda(cantidad * precioConIva - descuentoConIva);
