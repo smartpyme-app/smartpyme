@@ -13,6 +13,10 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { BsModalService } from 'ngx-bootstrap/modal';
+import {
+    limpiarExentaPorSinIvaSiTipoManual,
+    sincronizarTipoGravadoPorCobroIva,
+} from '@utils/impuestos-venta.util';
 
 import Swal from 'sweetalert2';
 import { LazyImageDirective } from '../../../../../directives/lazy-image.directive';
@@ -151,7 +155,7 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
         return Number(pct) || 0;
     }
 
-    /** Aplica gravada/exenta/no_sujeta según tipo_gravado del detalle. IVA por línea según %; respeta cobrar_impuestos. */
+    /** Aplica gravada/exenta/no_sujeta; IVA alineado con total con IVA redondeado por línea. */
     private aplicarTipoGravado(detalle: any) {
         const total = parseFloat(detalle.total) || 0;
         detalle.gravada = 0;
@@ -175,20 +179,18 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
     }
 
     public updateTotal(detalle:any){
-        if(!detalle.cantidad){
-            detalle.cantidad = 0;
-        }
+        const cantidad = parseFloat(detalle.cantidad ?? 0) || 0;
+        const precio = parseFloat(detalle.precio ?? 0) || 0;
+
         if(detalle.descuento_porcentaje){
-            detalle.descuento = Number((detalle.cantidad * (detalle.precio * (detalle.descuento_porcentaje / 100))).toFixed(4));
+            detalle.descuento = Number((cantidad * (precio * (detalle.descuento_porcentaje / 100))).toFixed(4));
         }else if(detalle.descuento_monto){
-            detalle.descuento = Number((detalle.cantidad * detalle.descuento_monto).toFixed(4));
+            detalle.descuento = Number((cantidad * detalle.descuento_monto).toFixed(4));
         }else{
             detalle.descuento = 0;
         }
 
-        detalle.sub_total = Number((parseFloat(detalle.cantidad) * parseFloat(detalle.precio)).toFixed(4));
-        detalle.total_costo  = (parseFloat(detalle.cantidad) * parseFloat(detalle.costo)).toFixed(4);
-        detalle.total  = (parseFloat(detalle.sub_total) - parseFloat(detalle.descuento)).toFixed(4);
+        detalle.total_costo  = (cantidad * parseFloat(detalle.costo ?? 0)).toFixed(4);
         this.aplicarTipoGravado(detalle);
         this.update.emit(this.venta);
         this.sumTotal.emit();
@@ -204,6 +206,7 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
         } else if (detalle.fe_cr_exoneracion?.aplica && tipo !== 'exonerada') {
             detalle.fe_cr_exoneracion.aplica = false;
         }
+        limpiarExentaPorSinIvaSiTipoManual(detalle);
         this.aplicarTipoGravado(detalle);
         this.update.emit(this.venta);
         this.sumTotal.emit();
@@ -525,11 +528,12 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
     this.sumTotal.emit();
   }
 
-    /** Tras activar o desactivar "Con IVA" en la cabecera, recalcula IVA por línea. */
+    /** Tras activar o desactivar "Con IVA" en la cabecera, recalcula IVA y tipo por línea. */
     public sincronizarIvasDetalles(): void {
         if (!this.venta?.detalles?.length) {
             return;
         }
+        sincronizarTipoGravadoPorCobroIva(this.venta.detalles, !!this.venta.cobrar_impuestos);
         for (const detalle of this.venta.detalles) {
             this.aplicarTipoGravado(detalle);
         }

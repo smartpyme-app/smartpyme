@@ -867,6 +867,9 @@ class EmpresasController extends Controller
             'ventas_puede_cambiar_vendedor_facturacion',
             'mostrar_campos_contables',
             'inventario_fraccionado',
+            'fidelizacion_activa',
+            'fidelizacion_completa',
+            'fidelizacion_enviar_correos',
         ];
 
         foreach ($booleanConfigs as $key) {
@@ -882,7 +885,7 @@ class EmpresasController extends Controller
     {
         $empresa = Auth::user()->empresa;
 
-        if ($request->input('section') === 'configuraciones' && in_array($request->input('key'), ['ticket_en_pdf', 'componente_quimico_activo', 'sku_correlativo_automatico', 'barcode_correlativo_automatico', 'ventas_puede_cambiar_vendedor_facturacion', 'dte_mostrar_descripcion_producto'])) {
+        if ($request->input('section') === 'configuraciones' && in_array($request->input('key'), ['ticket_en_pdf', 'componente_quimico_activo', 'sku_correlativo_automatico', 'barcode_correlativo_automatico', 'ventas_puede_cambiar_vendedor_facturacion', 'dte_mostrar_descripcion_producto', 'fidelizacion_activa', 'fidelizacion_completa', 'fidelizacion_enviar_correos'])) {
             $request->validate([
                 'value' => 'boolean'
             ]);

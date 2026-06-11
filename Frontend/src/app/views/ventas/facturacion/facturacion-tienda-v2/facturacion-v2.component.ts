@@ -30,7 +30,9 @@ import {
   copiarImpuestosProductoAlDetalle,
   normalizarPorcentajeImpuestoDetalle,
   resolverPorcentajeImpuestoVenta,
+  calcularMontosLineaDetalle,
   sumarSubTotalEncabezadoVenta,
+  sumarTotalConIvaEncabezadoVenta,
 } from '@utils/impuestos-venta.util';
 import * as moment from 'moment';
 
@@ -1083,6 +1085,11 @@ export class FacturacionV2Component implements OnInit {
       ? (this.apiService.auth_user()?.empresa?.iva || 0)
       : 0;
 
+    const empresaIva = Number(this.apiService.auth_user()?.empresa?.iva ?? 0);
+    this.venta.detalles.forEach((d: any) => {
+      calcularMontosLineaDetalle(d, !!this.venta.cobrar_impuestos, empresaIva, { preservePrecioIva: true });
+    });
+
     this.venta.sub_total = Number(sumarSubTotalEncabezadoVenta(this.venta.detalles)).toFixed(4);
 
     this.sincronizarRetencionGranContribuyente();
@@ -1146,11 +1153,10 @@ export class FacturacionV2Component implements OnInit {
     const rawTotalCosto = parseFloat(this.sumPipe.transform(this.venta.detalles, 'total_costo'));
     this.venta.total_costo = Number(rawTotalCosto).toFixed(4);
 
-    // El total NO incluye la propina; incluir descuento por puntos si aplica
+    // Total desde suma de líneas con IVA (redondeo por línea); evita centavos de más/menos
     const descuentoPuntos = parseFloat(this.venta.descuento_puntos || 0) || 0;
     const totalNum =
-      parseFloat(this.venta.sub_total) +
-      parseFloat(this.venta.iva) +
+      sumarTotalConIvaEncabezadoVenta(this.venta.detalles) +
       parseFloat(this.venta.cuenta_a_terceros) +
       parseFloat(String(this.venta.iva_percibido)) -
       parseFloat(String(this.venta.iva_retenido)) -
@@ -2278,7 +2284,9 @@ public getTotalConPropina(): number {
 
   private verificarFidelizacionHabilitada(): void {
     this.funcionalidadesService.verificarAcceso('fidelizacion-clientes').subscribe({
-      next: (tieneAcceso: boolean) => { this.tieneFidelizacionHabilitada = tieneAcceso; },
+      next: (tieneAcceso: boolean) => {
+        this.tieneFidelizacionHabilitada = tieneAcceso && this.apiService.isFidelizacionCompleta();
+      },
       error: () => { this.tieneFidelizacionHabilitada = false; }
     });
   }

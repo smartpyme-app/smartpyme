@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AlertService } from '@services/alert.service';
 import { FidelizacionService } from '@services/fidelizacion.service';
+import { ApiService } from '@services/api.service';
 import { 
   TipoClienteEmpresa, 
   TipoClienteBase, 
@@ -69,6 +70,7 @@ export class ConfiguracionClienteComponent implements OnInit {
   // Propiedades para gestión de reglas de upgrade
   public showUpgradeRulesModal: boolean = false;
   public showReglaModal: boolean = false;
+  public showActivacionModal: boolean = false;
   public editingRegla: ReglaUpgrade | null = null;
   public currentTipoForRules: TipoClienteEmpresa | null = null;
   public reglaForm: ReglaUpgrade = {
@@ -85,7 +87,8 @@ export class ConfiguracionClienteComponent implements OnInit {
     private fidelizacionService: FidelizacionService,
     private alertService: AlertService,
     private modalService: BsModalService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    public apiService: ApiService
   ) { }
 
   ngOnInit(): void {
@@ -963,5 +966,81 @@ export class ConfiguracionClienteComponent implements OnInit {
       return this.formatValorPuntoDecimal(fromRoot);
     }
     return 0.01;
+  }
+
+  isFidelizacionCompleta(): boolean {
+    return this.apiService.isFidelizacionCompleta();
+  }
+
+  toggleFidelizacionCompleta(): void {
+    const enabled = !this.isFidelizacionCompleta();
+    this.loading = true;
+    this.apiService.store('empresa/update-custom-config', {
+      section: 'configuraciones',
+      key: 'fidelizacion_completa',
+      value: enabled
+    }).subscribe({
+      next: () => {
+        this.apiService.refreshEmpresaEnSesion().subscribe({
+          next: () => {
+            this.loading = false;
+            this.alertService.success(
+              'Configuración actualizada',
+              enabled ? 'Obtención y canje de puntos activado.' : 'Obtención y canje de puntos desactivado.'
+            );
+          },
+          error: (err) => {
+            this.loading = false;
+            this.alertService.error(err?.message || 'Error al refrescar sesión de la empresa');
+          }
+        });
+      },
+      error: (err) => {
+        this.loading = false;
+        this.alertService.error(err?.message || err || 'Error al actualizar configuración');
+      }
+    });
+  }
+
+  isFidelizacionEnviarCorreos(): boolean {
+    return this.apiService.isFidelizacionEnviarCorreos();
+  }
+
+  toggleFidelizacionEnviarCorreos(): void {
+    const enabled = !this.isFidelizacionEnviarCorreos();
+    this.loading = true;
+    this.apiService.store('empresa/update-custom-config', {
+      section: 'configuraciones',
+      key: 'fidelizacion_enviar_correos',
+      value: enabled
+    }).subscribe({
+      next: () => {
+        this.apiService.refreshEmpresaEnSesion().subscribe({
+          next: () => {
+            this.loading = false;
+            this.alertService.success(
+              'Configuración actualizada',
+              enabled ? 'Envío automático de correos activado.' : 'Envío automático de correos desactivado.'
+            );
+          },
+          error: (err) => {
+            this.loading = false;
+            this.alertService.error(err?.message || 'Error al refrescar sesión de la empresa');
+          }
+        });
+      },
+      error: (err) => {
+        this.loading = false;
+        this.alertService.error(err?.message || err || 'Error al actualizar configuración');
+      }
+    });
+  }
+
+  openActivacionModal(): void {
+    this.showActivacionModal = true;
+  }
+
+  closeActivacionModal(): void {
+    this.showActivacionModal = false;
   }
 }

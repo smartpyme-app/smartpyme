@@ -187,7 +187,7 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit, OnDe
 
     private verificarFidelizacionHabilitada(): void {
         this.funcionalidadesService.verificarAcceso('fidelizacion-clientes').subscribe({
-            next: (tieneAcceso) => { this.tieneFidelizacionHabilitada = tieneAcceso; },
+            next: (tieneAcceso) => { this.tieneFidelizacionHabilitada = tieneAcceso && this.apiService.isFidelizacionActiva(); },
             error: () => { this.tieneFidelizacionHabilitada = false; }
         });
     }

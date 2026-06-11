@@ -306,14 +306,8 @@ class MHCCF extends Model
                 $detalle->codigo = null;
             }
 
-            if ($this->venta->iva > 0) {
-                $tributos = $this->buildTributosLineaCodes($detalle);
-                $detalle->gravada = $detalle->total;
-            }else{
-                $tributos = NULL;
-                $detalle->gravada = 0;
-                $detalle->exenta = $detalle->total;
-            }
+            $tributos = null;
+            $this->aplicarClasificacionFiscalDetalle($detalle, $tributos);
 
 
             // Producto no Gravado
@@ -388,6 +382,37 @@ class MHCCF extends Model
         }
 
         return $detalles;
+    }
+
+    /**
+     * Usa gravada/exenta/no_sujeta persistidos por línea para el cuerpo del DTE.
+     */
+    private function aplicarClasificacionFiscalDetalle($detalle, &$tributos): void
+    {
+        $gravada = floatval($detalle->gravada ?? 0);
+        $exenta = floatval($detalle->exenta ?? 0);
+        $noSujeta = floatval($detalle->no_sujeta ?? 0);
+
+        if ($gravada <= 0 && $exenta <= 0 && $noSujeta <= 0) {
+            $tipo = strtolower((string) ($detalle->tipo_gravado ?? 'gravada'));
+            if ($tipo === 'no_sujeta') {
+                $detalle->no_sujeta = floatval($detalle->total);
+            } elseif ($tipo === 'exenta' || !($this->venta->iva > 0)) {
+                $detalle->exenta = floatval($detalle->total);
+            } else {
+                $detalle->gravada = floatval($detalle->total);
+            }
+        } else {
+            $detalle->gravada = $gravada;
+            $detalle->exenta = $exenta;
+            $detalle->no_sujeta = $noSujeta;
+        }
+
+        if (floatval($detalle->gravada ?? 0) > 0 && $this->venta->iva > 0) {
+            $tributos = ['20'];
+        } else {
+            $tributos = null;
+        }
     }
 
     /**

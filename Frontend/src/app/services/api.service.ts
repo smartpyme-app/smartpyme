@@ -486,6 +486,42 @@ export class ApiService {
     return Number(id) === ApiService.EMPRESA_ID_INVENTARIO_OPERACIONES_SOLO_ADMIN;
   }
 
+    /** Indica si la fidelización está activa a nivel de empresa para acceso a configuraciones/sidebar */
+    isFidelizacionActiva(): boolean {
+        const empresa = this.auth_user()?.empresa;
+        if (!empresa || !empresa.custom_empresa) {
+            return false;
+        }
+        const customConfig = typeof empresa.custom_empresa === 'string'
+            ? JSON.parse(empresa.custom_empresa)
+            : empresa.custom_empresa;
+        return customConfig?.configuraciones?.fidelizacion_activa === true;
+    }
+
+    /** Indica si la fidelización está completamente activa para el consumo/obtención de puntos */
+    isFidelizacionCompleta(): boolean {
+        const empresa = this.auth_user()?.empresa;
+        if (!empresa || !empresa.custom_empresa) {
+            return false;
+        }
+        const customConfig = typeof empresa.custom_empresa === 'string'
+            ? JSON.parse(empresa.custom_empresa)
+            : empresa.custom_empresa;
+        return customConfig?.configuraciones?.fidelizacion_completa === true;
+    }
+
+    /** Indica si se envían correos automáticos de fidelización al acumular puntos */
+    isFidelizacionEnviarCorreos(): boolean {
+        const empresa = this.auth_user()?.empresa;
+        if (!empresa || !empresa.custom_empresa) {
+            return false;
+        }
+        const customConfig = typeof empresa.custom_empresa === 'string'
+            ? JSON.parse(empresa.custom_empresa)
+            : empresa.custom_empresa;
+        return customConfig?.configuraciones?.fidelizacion_enviar_correos === true;
+    }
+
   /**
    * Pestañas y guard de rutas: para empresa 324 solo Administrador; en el resto de empresas sin restricción extra.
    */

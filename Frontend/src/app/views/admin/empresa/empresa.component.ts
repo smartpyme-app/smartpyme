@@ -84,6 +84,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
     public tieneAccesoModuloRestaurantePedidos: boolean = false;
     public tieneAccesoTransformacionProductos: boolean = false;
     public tieneAccesoModuloPresentacionesProductos: boolean = false;
+    public tieneAccesoFidelizacionGlobal: boolean = false;
 
     public customConfig: any = {
         columnas: {
@@ -129,6 +130,11 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         this.verificarAccesoModuloRestaurantePedidos();
         this.verificarAccesoTransformacionProductos();
         this.verificarAccesoModuloPresentacionesProductos();
+        
+        this.funcionalidadesService.verificarAcceso('fidelizacion-clientes').subscribe({
+            next: (tieneAcceso) => { this.tieneAccesoFidelizacionGlobal = tieneAcceso; },
+            error: () => { this.tieneAccesoFidelizacionGlobal = false; }
+        });
 
         this.cargarArraysUbicacionDesdeStorage();
         if (resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR) {
@@ -1718,6 +1724,8 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
                 bloquear_cotizaciones_vendedores: false, // Restringir cotizaciones a usuarios Ventas / Ventas Limitado (solo propias, sin facturar/editar desde listado)
                 ventas_puede_cambiar_vendedor_facturacion: false, // Ventas/Limitado pueden elegir vendedor al facturar
                 dte_mostrar_descripcion_producto: true, // Descripción extendida del catálogo en PDF de factura y CCF (DTE)
+                fidelizacion_activa: false, // Activar fidelización de clientes para configurar
+                fidelizacion_completa: false, // Activar completamente la fidelización (ganar/consumir puntos)
             },
             campos_personalizados: {}
         };
@@ -1854,6 +1862,26 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
 
     public toggleDteMostrarDescripcionProducto() {
         this.updateDteMostrarDescripcionProducto(!this.isDteMostrarDescripcionProductoEnabled());
+    }
+
+    public isFidelizacionActiva(): boolean {
+        return this.getCustomConfig('configuraciones', 'fidelizacion_activa', false);
+    }
+
+    public toggleFidelizacionActiva() {
+        const enabled = !this.isFidelizacionActiva();
+        this.addCustomConfig('configuraciones', 'fidelizacion_activa', enabled);
+        if (!enabled) {
+            this.addCustomConfig('configuraciones', 'fidelizacion_completa', false);
+        }
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                enabled
+                    ? 'Fidelización de clientes habilitada. Ahora puede acceder a configurarla en el menú lateral.'
+                    : 'Fidelización de clientes deshabilitada correctamente.'
+            );
+        });
     }
 
     // Método para obtener la versión de facturación configurada

@@ -102,8 +102,26 @@
                       [dropSpecialCharacters]="false"
                       placeholder="00000000-0"
                     />
+                    <div class="form-check mt-2 d-flex align-items-center gap-1">
+                      <input
+                        class="form-check-input mt-0 flex-shrink-0"
+                        type="checkbox"
+                        id="dui_homologado"
+                        [(ngModel)]="empleado.dui_homologado"
+                        name="dui_homologado"
+                        (change)="onDuiHomologadoChange()"
+                      />
+                      <label class="form-check-label mb-0" for="dui_homologado">
+                        DUI homologado
+                      </label>
+                      <i
+                        class="fa fa-question-circle text-muted"
+                        style="cursor: help; font-size: 0.8rem;"
+                        tooltip="El DUI funciona como NIT; no necesitas ingresar identificación fiscal aparte."
+                      ></i>
+                    </div>
                   </div>
-                  <div class="form-group col-md-3">
+                  <div class="form-group col-md-3" *ngIf="!empleado.dui_homologado">
                     <label for="nit">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'NIT:' : 'Identificación fiscal:' }}</label>
                     <input
                       type="text"
@@ -516,7 +534,8 @@
                         saving ||
                         !empleado.nombres ||
                         !empleado.apellidos ||
-                        !empleado.dui
+                        !empleado.dui ||
+                        (!empleado.dui_homologado && !empleado.nit)
                       "
                       class="btn btn-primary btn-lg"
                     >

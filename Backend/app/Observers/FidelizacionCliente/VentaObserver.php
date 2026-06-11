@@ -369,20 +369,14 @@ class VentaObserver
         // Primero intentar obtener del cache
         $cachedValue = cache()->get($cacheKey);
         
-        // Si no hay cache o es false, verificar directamente en la base de datos
+        // Si no hay cache o es false, verificar directamente llamando a tieneFidelizacionHabilitada del modelo Empresa
         if ($cachedValue === null || $cachedValue === false) {
-            Log::info("Consultando EmpresaFuncionalidad para empresa (sin cache)", ['empresa_id' => $empresaId]);
+            Log::info("Consultando tieneFidelizacionHabilitada de Empresa (sin cache)", ['empresa_id' => $empresaId]);
             
-            $query = \App\Models\Admin\EmpresaFuncionalidad::where('id_empresa', $empresaId)
-                ->whereHas('funcionalidad', function($query) {
-                    Log::info("Filtrando funcionalidad por slug 'fidelizacion-clientes'");
-                    $query->where('slug', 'fidelizacion-clientes');
-                })
-                ->where('activo', true);
-
-            $existe = $query->exists();
+            $empresa = \App\Models\Admin\Empresa::find($empresaId);
+            $existe = $empresa ? $empresa->tieneFidelizacionHabilitada() : false;
             
-            Log::info("Resultado de existencia de funcionalidad de fidelización", [
+            Log::info("Resultado de tieneFidelizacionHabilitada", [
                 'empresa_id' => $empresaId,
                 'existe' => $existe
             ]);
