@@ -4,8 +4,10 @@ namespace App\Http\Controllers\BoxFul;
 
 use App\Http\Controllers\Controller;
 use App\Services\BoxFul\BoxFulService;
+use App\Models\Admin\Integracion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class BoxFulController extends Controller
 {
@@ -16,6 +18,9 @@ class BoxFulController extends Controller
         $this->boxfulService = $boxfulService;
     }
 
+    /**
+     * Prueba la conexión de la empresa con Boxful.
+     */
     public function testConnection()
     {
         try {
@@ -53,7 +58,6 @@ class BoxFulController extends Controller
                 ], $response->status());
             }
 
-            
             return response()->json([
                 'status' => 'success',
                 'message' => '¡Se ha conectado exitosamente a Boxful!',
@@ -78,6 +82,165 @@ class BoxFulController extends Controller
                     'env' => $this->boxfulService->getEnv(),
                     'base_url' => $this->boxfulService->getBaseUrl(),
                 ]
+            ], 500);
+        }
+    }
+
+    /**
+     * Registra la dirección de origen (bodega) en Boxful y la guarda en la configuración.
+     */
+    public function configurarOrigen(Request $request)
+    {
+        try {
+            $user = auth()->user();
+            $empresa = $user ? $user->empresa : null;
+
+            if (!$empresa) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'No se pudo verificar el contexto de la empresa.'
+                ], 400);
+            }
+
+            $request->validate([
+                'address' => 'required|string|max:500',
+                'referencePoint' => 'nullable|string|max:500',
+                'latitude' => 'required|numeric',
+                'longitude' => 'required|numeric',
+                'stateId' => 'required|string',
+                'cityId' => 'required|string',
+                'addressPhone' => 'required|string|max:20',
+                'addressAreaCode' => 'required|string|max:10',
+            ]);
+
+            // Filtrar estrictamente para enviar solo los campos requeridos a Boxful
+            $payload = $request->only([
+                'address', 'referencePoint', 'latitude', 'longitude', 'stateId', 'cityId', 'addressPhone', 'addressAreaCode'
+            ]);
+
+            $response = $this->boxfulService->post('addresses', $payload);
+
+            if ($response->failed()) {
+                $status = $response->status();
+                $body = $response->json();
+                Log::error('Error de API Boxful al configurar dirección de origen', [
+                    'status' => $status,
+                    'response' => $body,
+                ]);
+
+                return response()->json([
+                    'status' => 'error',
+                    'message' => is_array($body) ? ($body['message'] ?? $body['error'] ?? 'Error al registrar la dirección de origen en Boxful.') : 'Error de respuesta de la API de Boxful.',
+                    'errors' => is_array($body) ? ($body['errors'] ?? null) : null
+                ], $status);
+            }
+
+            $boxfulAddressId = $response->json('id') ?? $response->json('data.id') ?? $response->json('addressId');
+
+            if (empty($boxfulAddressId)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'La API de Boxful no devolvió un ID de dirección válido para la dirección de origen.'
+                ], 500);
+            }
+
+            // Guardar en la configuración de la integración
+            $integracion = $empresa->obtenerOcrearIntegracion();
+            $integracion->setConfig(['direccion_origen_id' => $boxfulAddressId]);
+            $integracion->save();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Dirección de origen configurada exitosamente.',
+                'direccion_origen_id' => $boxfulAddressId,
+                'data' => $response->json()
+            ], 200);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Los datos proporcionados no son válidos para Boxful.',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Excepción en BoxFulController@configurarOrigen', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Ocurrió un error al configurar la dirección de origen: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Registra el webhook de SmartPyme en la API de Boxful.
+     */
+    public function registrarWebhook(Request $request)
+    {
+        try {
+            $user = auth()->user();
+            $empresa = $user ? $user->empresa : null;
+
+            if (!$empresa) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'No se pudo verificar el contexto de la empresa.'
+                ], 400);
+            }
+
+            $integracion = $empresa->obtenerOcrearIntegracion();
+
+            // Generar un secret aleatorio de 32 caracteres
+            $secret = Str::random(32);
+            $integracion->setConfig(['webhook_secret' => $secret]);
+            $integracion->save();
+
+            // Construir URL pública para el webhook
+            $webhookUrl = url('/api/webhook/boxful/' . $integracion->id_empresa);
+
+            // Llamar a la API de Boxful para registrar el webhook
+            $payload = [
+                'url' => $webhookUrl,
+                'secret' => $secret
+            ];
+
+            $response = $this->boxfulService->post('client-webhook', $payload);
+
+            if ($response->failed()) {
+                $status = $response->status();
+                $body = $response->json();
+                Log::error('Error de API Boxful al registrar webhook', [
+                    'status' => $status,
+                    'response' => $body,
+                ]);
+
+                return response()->json([
+                    'status' => 'error',
+                    'message' => is_array($body) ? ($body['message'] ?? $body['error'] ?? 'Error al registrar el webhook en Boxful.') : 'Error de respuesta de la API de Boxful.',
+                    'errors' => is_array($body) ? ($body['errors'] ?? null) : null
+                ], $status);
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Webhook registrado correctamente en Boxful.',
+                'webhook_url' => $webhookUrl,
+                'webhook_secret' => $secret,
+                'data' => $response->json()
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Excepción en BoxFulController@registrarWebhook', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Ocurrió un error al registrar el webhook: ' . $e->getMessage()
             ], 500);
         }
     }

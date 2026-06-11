@@ -237,8 +237,11 @@ class Integracion extends Model
      */
     public static function boxful(): ?self
     {
+        $user = Auth::guard('api')->user() ?: Auth::user();
+        $idEmpresa = $user ? $user->id_empresa : null;
+
         return self::withoutGlobalScope('empresa')
-            ->where('id_empresa', Auth::guard('api')->user()?->id_empresa ?? Auth::user()?->id_empresa)
+            ->where('id_empresa', $idEmpresa)
             ->where('proveedor', 'boxful')
             ->first();
     }

@@ -36,6 +36,11 @@ class Paquete extends Model {
         'id_usuario',
         'id_sucursal',
         'id_empresa',
+        'boxful_shipment_id',
+        'boxful_courier_id',
+        'boxful_courier_name',
+        'boxful_label_url',
+        'boxful_tracking_url',
     );
 
     protected $appends = ['nombre_cliente', 'nombre_asesor', 'nombre_usuario'];

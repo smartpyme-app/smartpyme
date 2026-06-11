@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Services\BoxFul\BoxFulService;
 use App\Models\Ventas\Clientes\Cliente;
 use App\Models\Ventas\Clientes\DireccionEnvio;
+use App\Models\Admin\Integracion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -192,12 +193,17 @@ class BoxFulShippingController extends Controller
                 ], 422);
             }
 
-            $clientId = $empresa->boxful_client_id;
+            $integracion = $this->boxfulService->getIntegracion();
+            if (!$integracion) {
+                $integracion = $empresa->obtenerOcrearIntegracion();
+            }
+
+            $clientId = $integracion->getCredential('client_id');
             if (empty($clientId)) {
                 // Autorecuperar si es null
                 $this->boxfulService->getAccessToken();
-                $empresa->refresh();
-                $clientId = $empresa->boxful_client_id;
+                $integracion->refresh();
+                $clientId = $integracion->getCredential('client_id');
             }
 
             if (empty($clientId)) {
@@ -257,39 +263,50 @@ class BoxFulShippingController extends Controller
                 'customerAddress' => $customerAddress,
             ];
 
-            $origen = $request->input('origen');
+            // Obtener dirección de origen de la bodega/tienda
+            $origenInput = $request->input('origen');
+            $direccionOrigenId = null;
 
-            // Grupo Pickup (Mutuamente excluyentes)
-            if (!empty($origen)) {
-                if (!empty($origen['id']) || !empty($origen['recolectionAddressId'])) {
-                    $boxfulPayload['recolectionAddressId'] = $origen['id'] ?? $origen['recolectionAddressId'];
-                } else {
-                    $boxfulPayload['recolectionAddress'] = [
-                        'address' => $origen['direccion'] ?? $origen['address'] ?? '',
-                        'referencePoint' => $origen['referencia'] ?? $origen['referencePoint'] ?? '',
-                        'latitude' => (float) ($origen['latitud'] ?? $origen['latitude'] ?? 0.0),
-                        'longitude' => (float) ($origen['longitud'] ?? $origen['longitude'] ?? 0.0),
-                        'stateId' => $origen['stateId'] ?? $origen['boxful_state_id'] ?? '',
-                        'cityId' => $origen['cityId'] ?? $origen['boxful_city_id'] ?? '',
-                        'addressPhone' => $origen['telefono'] ?? $origen['addressPhone'] ?? '',
-                        'addressAreaCode' => $origen['codigo_area'] ?? $origen['addressAreaCode'] ?? '503',
-                    ];
-                }
-            } else {
-                // Fallback: si no viene origen, intentar buscar las direcciones registradas de la empresa en Boxful y tomar la primera
+            if (!empty($origenInput)) {
+                $direccionOrigenId = $origenInput['id'] ?? $origenInput['recolectionAddressId'] ?? null;
+            }
+
+            if (empty($direccionOrigenId)) {
+                // Fallback a la configuración de la integración
+                $direccionOrigenId = $integracion->getConfig('direccion_origen_id');
+            }
+
+            if (empty($direccionOrigenId)) {
+                // Fallback: si no está configurada, intentar buscar las direcciones registradas de la empresa en Boxful y tomar la primera
                 try {
                     $addrResponse = $this->boxfulService->get('addresses');
-                    if ($addrResponse->successful() && !empty($addrResponse->json())) {
+                    if ($addrResponse->successful()) {
                         $addresses = $addrResponse->json();
-                        $addressList = isset($addresses['data']) ? $addresses['data'] : (isset($addresses['addresses']) ? $addresses['addresses'] : $addresses);
+                        $addressList = isset($addresses['addresses']) ? $addresses['addresses'] : (isset($addresses['data']) ? $addresses['data'] : $addresses);
                         if (is_array($addressList) && count($addressList) > 0) {
-                            $boxfulPayload['recolectionAddressId'] = $addressList[0]['id'] ?? $addressList[0]['addressId'] ?? null;
+                            $firstAddr = $addressList[0];
+                            $direccionOrigenId = $firstAddr['id'] ?? $firstAddr['addressId'] ?? null;
+                            
+                            if (!empty($direccionOrigenId)) {
+                                // Guardar en configuración para no repetir la llamada HTTP en el futuro
+                                $integracion->setConfig(['direccion_origen_id' => $direccionOrigenId]);
+                                $integracion->save();
+                            }
                         }
                     }
                 } catch (\Exception $e) {
-                    Log::warning('No se pudo autodetectar dirección de origen de la empresa: ' . $e->getMessage());
+                    Log::warning('No se pudo autodetectar dirección de origen de la empresa para disponible: ' . $e->getMessage());
                 }
             }
+
+            if (empty($direccionOrigenId)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Dirección de bodega de origen no configurada. Por favor, configure la dirección de origen en Ajustes de Empresa.'
+                ], 400);
+            }
+
+            $boxfulPayload['recolectionAddressId'] = $direccionOrigenId;
 
             $response = $this->boxfulService->post('courier/available', $boxfulPayload);
 
@@ -363,17 +380,21 @@ class BoxFulShippingController extends Controller
                 ], 422);
             }
 
-            $origen = $request->input('origen');
             $destino = $request->input('destino');
             $clienteInput = $request->input('cliente') ?? [];
             $clienteId = $request->input('clienteId') ?? ($clienteInput['id'] ?? ($paqueteModel ? $paqueteModel->id_cliente : null));
             $courierId = $request->input('courierId');
 
-            $clientId = $empresa->boxful_client_id;
+            $integracion = $this->boxfulService->getIntegracion();
+            if (!$integracion) {
+                $integracion = $empresa->obtenerOcrearIntegracion();
+            }
+
+            $clientId = $integracion->getCredential('client_id');
             if (empty($clientId)) {
                 $this->boxfulService->getAccessToken();
-                $empresa->refresh();
-                $clientId = $empresa->boxful_client_id;
+                $integracion->refresh();
+                $clientId = $integracion->getCredential('client_id');
             }
 
             if (empty($clientId)) {
@@ -466,37 +487,50 @@ class BoxFulShippingController extends Controller
                 $boxfulPayload['orderNumber'] = $orderNumber;
             }
 
-            // Grupo Pickup (Mutuamente excluyentes)
-            if (!empty($origen)) {
-                if (!empty($origen['id']) || !empty($origen['recolectionAddressId'])) {
-                    $boxfulPayload['recolectionAddressId'] = $origen['id'] ?? $origen['recolectionAddressId'];
-                } else {
-                    $boxfulPayload['recolectionAddress'] = [
-                        'address' => $origen['direccion'] ?? $origen['address'] ?? '',
-                        'referencePoint' => $origen['referencia'] ?? $origen['referencePoint'] ?? '',
-                        'latitude' => (float) ($origen['latitud'] ?? $origen['latitude'] ?? 0.0),
-                        'longitude' => (float) ($origen['longitud'] ?? $origen['longitude'] ?? 0.0),
-                        'stateId' => $origen['stateId'] ?? $origen['boxful_state_id'] ?? '',
-                        'cityId' => $origen['cityId'] ?? $origen['boxful_city_id'] ?? '',
-                        'addressPhone' => $origen['telefono'] ?? $origen['addressPhone'] ?? '',
-                        'addressAreaCode' => $origen['codigo_area'] ?? $origen['addressAreaCode'] ?? '503',
-                    ];
-                }
-            } else {
-                // Fallback: si no viene origen, intentar buscar las direcciones registradas de la empresa en Boxful y tomar la primera
+            // Obtener dirección de origen de la bodega/tienda
+            $origenInput = $request->input('origen');
+            $direccionOrigenId = null;
+
+            if (!empty($origenInput)) {
+                $direccionOrigenId = $origenInput['id'] ?? $origenInput['recolectionAddressId'] ?? null;
+            }
+
+            if (empty($direccionOrigenId)) {
+                // Fallback a la configuración de la integración
+                $direccionOrigenId = $integracion->getConfig('direccion_origen_id');
+            }
+
+            if (empty($direccionOrigenId)) {
+                // Fallback: si no está configurada, intentar buscar las direcciones registradas de la empresa en Boxful y tomar la primera
                 try {
                     $addrResponse = $this->boxfulService->get('addresses');
-                    if ($addrResponse->successful() && !empty($addrResponse->json())) {
+                    if ($addrResponse->successful()) {
                         $addresses = $addrResponse->json();
-                        $addressList = isset($addresses['data']) ? $addresses['data'] : (isset($addresses['addresses']) ? $addresses['addresses'] : $addresses);
+                        $addressList = isset($addresses['addresses']) ? $addresses['addresses'] : (isset($addresses['data']) ? $addresses['data'] : $addresses);
                         if (is_array($addressList) && count($addressList) > 0) {
-                            $boxfulPayload['recolectionAddressId'] = $addressList[0]['id'] ?? $addressList[0]['addressId'] ?? null;
+                            $firstAddr = $addressList[0];
+                            $direccionOrigenId = $firstAddr['id'] ?? $firstAddr['addressId'] ?? null;
+                            
+                            if (!empty($direccionOrigenId)) {
+                                // Guardar en configuración para no repetir la llamada HTTP en el futuro
+                                $integracion->setConfig(['direccion_origen_id' => $direccionOrigenId]);
+                                $integracion->save();
+                            }
                         }
                     }
                 } catch (\Exception $e) {
                     Log::warning('No se pudo autodetectar dirección de origen de la empresa para envío: ' . $e->getMessage());
                 }
             }
+
+            if (empty($direccionOrigenId)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Dirección de bodega de origen no configurada. Por favor, configure la dirección de origen en Ajustes de Empresa.'
+                ], 400);
+            }
+
+            $boxfulPayload['recolectionAddressId'] = $direccionOrigenId;
 
             $response = $this->boxfulService->post('shipment', $boxfulPayload);
 
@@ -517,10 +551,19 @@ class BoxFulShippingController extends Controller
 
             $shipmentData = $response->json();
             $shipmentNumber = $shipmentData['shipmentNumber'] ?? $shipmentData['data']['shipmentNumber'] ?? $shipmentData['response']['shipmentNumber'] ?? null;
+            $shipmentId = $shipmentData['id'] ?? $shipmentData['data']['id'] ?? $shipmentData['response']['id'] ?? null;
+            $labelUrl = $shipmentData['labelUrl'] ?? $shipmentData['data']['labelUrl'] ?? $shipmentData['response']['labelUrl'] ?? null;
+            $trackingUrl = $shipmentData['trackingUrl'] ?? $shipmentData['data']['trackingUrl'] ?? $shipmentData['response']['trackingUrl'] ?? null;
 
             if ($shipmentNumber && $paqueteModel) {
                 $paqueteModel->num_guia = $shipmentNumber;
+                $paqueteModel->boxful_shipment_id = $shipmentId;
+                $paqueteModel->boxful_courier_id = $courierId;
+                $paqueteModel->boxful_courier_name = $shipmentData['courierName'] ?? $shipmentData['data']['courierName'] ?? $shipmentData['response']['courierName'] ?? null;
+                $paqueteModel->boxful_label_url = $labelUrl;
+                $paqueteModel->boxful_tracking_url = $trackingUrl;
                 $paqueteModel->save();
+
                 Log::info('Guía de Boxful guardada en el paquete local correctamente', [
                     'paqueteId' => $paqueteModel->id,
                     'num_guia' => $shipmentNumber

@@ -10,6 +10,8 @@ Route::post('clientes/{cliente}/direcciones-envio', [BoxFulShippingController::c
 
 Route::prefix('boxful')->group(function () {
     Route::get('test-connection', [BoxFulController::class, 'testConnection']);
+    Route::post('configurar-origen', [BoxFulController::class, 'configurarOrigen']);
+    Route::post('registrar-webhook', [BoxFulController::class, 'registrarWebhook']);
 
     // Estados y Ciudades
     Route::get('states', [BoxFulAddressController::class, 'getStates']);

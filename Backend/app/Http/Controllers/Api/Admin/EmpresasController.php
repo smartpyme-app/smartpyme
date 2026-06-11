@@ -243,25 +243,41 @@ class EmpresasController extends Controller
         if ($request->has('boxful_email') || $request->has('boxful_password') || $request->has('boxful_client_id')) {
             $integracion = $empresa->obtenerOcrearIntegracion();
             
-            $integracionData = [];
+            $credenciales = [];
             if ($request->has('boxful_email')) {
-                $integracionData['boxful_email'] = $request->boxful_email;
+                $credenciales['email'] = $request->boxful_email;
             }
             if ($request->has('boxful_client_id')) {
-                $integracionData['boxful_client_id'] = $request->boxful_client_id;
+                $credenciales['client_id'] = $request->boxful_client_id;
             }
             if ($request->has('boxful_password') && !empty($request->boxful_password)) {
-                $integracionData['boxful_password'] = $request->boxful_password;
-                $integracionData['boxful_status'] = 'disconnected';
-                $integracionData['boxful_access_token'] = null;
-                $integracionData['boxful_token_expires_at'] = null;
+                $credenciales['password'] = $request->boxful_password;
+                $integracion->estado = 'disconnected';
+                $integracion->access_token = null;
+                $integracion->token_expires_at = null;
             }
             
-            if (!empty($integracionData)) {
-                $integracion->update($integracionData);
-                $empresa->load('integracion');
+            if (!empty($credenciales)) {
+                $integracion->setCredentials($credenciales);
             }
+            
+            $integracion->save();
+            $empresa->load('integracion');
         }
+    }
+
+    /**
+     * Extrae el clientId desde la parte media de un token JWT.
+     */
+    private function extractClientIdFromJwt(string $token): ?string
+    {
+        $parts = explode('.', $token);
+        if (count($parts) !== 3) {
+            return null;
+        }
+        
+        $payload = json_decode(base64_decode(str_replace(['-', '_'], ['+', '/'], $parts[1])), true);
+        return $payload['clientId'] ?? $payload['id'] ?? null;
     }
 
     private function handleLogoUpload(Request $request, Empresa $empresa)

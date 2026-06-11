@@ -25,6 +25,11 @@ export class BoxfulShippingSelectorComponent implements OnInit {
   mode: 'saved' | 'new' = 'saved';
   selectedAddressId: number | null = null;
 
+  // Datos de Bodega/Origen de la Empresa
+  originAddresses: any[] = [];
+  selectedOriginAddressId: string | null = null;
+  loadingOriginAddresses = false;
+
   // Datos del Destinatario
   clienteNombre: string = '';
   clienteApellido: string = '';
@@ -52,6 +57,7 @@ export class BoxfulShippingSelectorComponent implements OnInit {
   ngOnInit(): void {
     this.initForm();
     this.loadStates();
+    this.loadOriginAddresses();
     if (this.clienteId) {
       this.loadAddresses();
       this.loadClientDetails();
@@ -94,9 +100,18 @@ export class BoxfulShippingSelectorComponent implements OnInit {
     this.loading = true;
     this.boxfulService.getStates().subscribe({
       next: (res: any) => {
-        this.states = res.states || res;
         this.loading = false;
-        this.errorMessage = null;
+        if (res && Array.isArray(res.states)) {
+          this.states = res.states;
+          this.errorMessage = null;
+        } else if (Array.isArray(res)) {
+          this.states = res;
+          this.errorMessage = null;
+        } else {
+          console.error('La respuesta de estados no es un arreglo válido:', res);
+          this.states = [];
+          this.errorMessage = res?.message || res?.error || 'No se pudieron cargar los estados de Boxful (respuesta inválida).';
+        }
       },
       error: (err: any) => {
         console.error('Error cargando estados de Boxful:', err);
@@ -106,20 +121,68 @@ export class BoxfulShippingSelectorComponent implements OnInit {
     });
   }
 
+  loadOriginAddresses(): void {
+    this.loadingOriginAddresses = true;
+    this.boxfulService.getAddresses().subscribe({
+      next: (res: any) => {
+        this.loadingOriginAddresses = false;
+        
+        let list: any[] = [];
+        if (Array.isArray(res)) {
+          list = res;
+        } else if (res && Array.isArray(res.addresses)) {
+          list = res.addresses;
+        } else if (res && Array.isArray(res.data)) {
+          list = res.data;
+        }
+        
+        this.originAddresses = list;
+
+        if (this.originAddresses.length > 0) {
+          this.selectedOriginAddressId = this.originAddresses[0].id || this.originAddresses[0].addressId;
+        } else {
+          this.selectedOriginAddressId = null;
+        }
+      },
+      error: (err: any) => {
+        console.error('Error cargando direcciones de origen de Boxful:', err);
+        this.loadingOriginAddresses = false;
+      }
+    });
+  }
+
   loadAddresses(): void {
     if (!this.clienteId) return;
     this.loading = true;
     this.boxfulService.getClientAddresses(this.clienteId).subscribe({
-      next: (addresses: any[]) => {
-        this.addresses = addresses;
+      next: (res: any) => {
         this.loading = false;
-        this.errorMessage = null;
-        // Seleccionar la predeterminada si existe
-        const defaultAddr = addresses.find(a => a.es_predeterminada);
-        if (defaultAddr) {
-          this.selectedAddressId = defaultAddr.boxful_address_id;
-        } else if (addresses.length > 0) {
-          this.selectedAddressId = addresses[0].boxful_address_id;
+        
+        let addressesList: any[] = [];
+        if (Array.isArray(res)) {
+          addressesList = res;
+        } else if (res && Array.isArray(res.addresses)) {
+          addressesList = res.addresses;
+        } else if (res && Array.isArray(res.data)) {
+          addressesList = res.data;
+        } else if (res && (res.message || res.error)) {
+          this.errorMessage = res.message || res.error;
+          console.error('Respuesta con error al obtener direcciones del cliente:', res);
+        }
+
+        this.addresses = addressesList;
+        this.errorMessage = this.errorMessage || null;
+
+        if (this.addresses.length > 0) {
+          // Seleccionar la predeterminada si existe
+          const defaultAddr = this.addresses.find(a => a.es_predeterminada);
+          if (defaultAddr) {
+            this.selectedAddressId = defaultAddr.boxful_address_id;
+          } else {
+            this.selectedAddressId = this.addresses[0].boxful_address_id;
+          }
+        } else {
+          this.selectedAddressId = null;
         }
       },
       error: (err: any) => {
@@ -175,7 +238,22 @@ export class BoxfulShippingSelectorComponent implements OnInit {
   }
 
   private getDireccionOrigen(): any {
-    // Retornamos null para dejar que el backend de Laravel autodetecte la dirección predeterminada de la empresa
+    if (this.selectedOriginAddressId) {
+      const selected = this.originAddresses.find(a => String(a.id || a.addressId) === String(this.selectedOriginAddressId));
+      if (selected) {
+        return {
+          id: selected.id || selected.addressId,
+          direccion: selected.address,
+          referencia: selected.referencePoint || '',
+          latitud: selected.latitude,
+          longitud: selected.longitude,
+          stateId: selected.stateId,
+          cityId: selected.cityId,
+          telefono: selected.addressPhone,
+          codigo_area: selected.addressAreaCode
+        };
+      }
+    }
     return null;
   }
 
@@ -211,6 +289,13 @@ export class BoxfulShippingSelectorComponent implements OnInit {
   // Paso 1: Cotizar envío
   cotizarEnvio(): void {
     this.errorMessage = null;
+
+    // Validar dirección de origen
+    if (!this.selectedOriginAddressId) {
+      this.errorMessage = 'Debe seleccionar una dirección de origen.';
+      this.alertService.error(this.errorMessage);
+      return;
+    }
 
     // Validar dirección
     if (this.mode === 'saved') {
@@ -252,13 +337,28 @@ export class BoxfulShippingSelectorComponent implements OnInit {
 
     this.boxfulService.getCouriersAvailable(payload).subscribe({
       next: (res: any) => {
-        this.couriers = Array.isArray(res) ? res : (res.data || []);
         this.loadingCouriers = false;
+        
+        let couriersList: any[] = [];
+        if (Array.isArray(res)) {
+          couriersList = res;
+        } else if (res && Array.isArray(res.data)) {
+          couriersList = res.data;
+        } else if (res && Array.isArray(res.couriers)) {
+          couriersList = res.couriers;
+        } else if (res && (res.message || res.error)) {
+          this.errorMessage = res.message || res.error;
+          this.alertService.error(this.errorMessage);
+          return;
+        }
+
+        this.couriers = couriersList;
+
         if (this.couriers.length > 0) {
           this.selectedCourierId = this.couriers[0].id || this.couriers[0].courierId;
           this.step = 2;
         } else {
-          this.errorMessage = 'No se encontraron paqueterías disponibles para esta dirección y dimensiones.';
+          this.errorMessage = this.errorMessage || 'No se encontraron paqueterías disponibles para esta dirección y dimensiones.';
           this.alertService.warning('Atención', this.errorMessage);
         }
       },
@@ -362,6 +462,7 @@ export class BoxfulShippingSelectorComponent implements OnInit {
     this.selectedCourierId = null;
     this.shipmentResult = null;
     this.errorMessage = null;
+    this.loadOriginAddresses();
     if (this.mode === 'new') {
       this.addressForm.reset({
         direccion: '',
