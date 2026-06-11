@@ -56,6 +56,27 @@
             <tag-input theme='bootstrap' [placeholder]="'Escribe aquí'" secondaryPlaceholder="Escribe aquí" [separatorKeyCodes]="[32]" [(ngModel)]="producto.etiquetas" name="etiquetas"></tag-input>
         </div>
 
+        <div class="form-group col-12" *ngIf="esEmpresaCostaRica()">
+            <label for="cabys_buscar">Código CABYS</label>
+            <ng-select
+                id="cabys_buscar"
+                name="cabys_buscar"
+                appendTo="body"
+                class="form-select p-0"
+                [(ngModel)]="cabysSeleccionado"
+                (change)="onCabysSelectChange($event)"
+                [compareWith]="compareCabys"
+                [typeahead]="cabysInput$"
+                typeaheadMinLength="3"
+                [loading]="cabysLoading"
+                [clearable]="true"
+                notFoundText="Sin resultados"
+                placeholder="Escriba al menos 3 letras para buscar (catálogo Hacienda)">
+                <ng-option *ngFor="let opt of cabysItems" [value]="opt">{{ opt.label }}</ng-option>
+            </ng-select>
+            <small class="text-muted">Requerido para facturación electrónica en Costa Rica (productos y servicios).</small>
+        </div>
+
         <h6 class="my-3 font-weight-bold">Precio</h6>
         <div class="form-group col-md-4 col-lg-2" *ngIf="!loading && producto.tipo != 'Materia prima'">
             <label for="precio">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'Precio sin IVA' : 'Precio sin Impuesto' }}</label>
@@ -96,7 +117,7 @@
                 <span class="input-group-text">%</span>
             </div>
         </div>
-        <div class="form-group col-md-4 col-lg-3">
+        <div class="form-group col-md-4 col-lg-2">
             <label for="id_impuestos">Impuestos</label>
             <ng-select
                 class="form-select p-0"
