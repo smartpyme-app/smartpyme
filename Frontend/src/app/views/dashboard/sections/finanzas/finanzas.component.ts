@@ -1,11 +1,21 @@
 import { Component, Input, OnInit, OnChanges, Output, EventEmitter, ViewChild } from '@angular/core';
-import { ColDef, GridOptions, GridApi, ColumnApi } from 'ag-grid-community';
+import { ColDef, GridOptions, GridApi } from 'ag-grid-community';
 import { AgGridAngular } from 'ag-grid-angular';
+
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { AgGridModule } from 'ag-grid-angular';
 
 @Component({
   selector: 'app-finanzas',
   templateUrl: './finanzas.component.html',
-  styleUrls: ['./finanzas.component.css']
+  styleUrls: ['./finanzas.component.css'],
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    AgGridModule
+  ]
 })
 export class FinanzasComponent implements OnInit, OnChanges {
   @Input() datos: any = {};
@@ -165,7 +175,7 @@ export class FinanzasComponent implements OnInit, OnChanges {
       onGridReady: (params: any) => {
         this.estadoResultadosGridApi = params.api;
         if (this.estadoResultadosTreeData && this.estadoResultadosTreeData.length > 0) {
-          this.estadoResultadosGridApi.setRowData(this.estadoResultadosTreeData);
+          this.estadoResultadosGridApi.setGridOption('rowData', this.estadoResultadosTreeData);
         }
       }
     };
@@ -330,19 +340,19 @@ export class FinanzasComponent implements OnInit, OnChanges {
 
   onQuickFilterChangeVertical(): void {
     if (this.analisisVerticalGridApi) {
-      this.analisisVerticalGridApi.setQuickFilter(this.quickFilterTextVertical);
+      this.analisisVerticalGridApi.setGridOption('quickFilterText', this.quickFilterTextVertical);
     }
   }
 
   onQuickFilterChangeHorizontal(): void {
     if (this.analisisHorizontalGridApi) {
-      this.analisisHorizontalGridApi.setQuickFilter(this.quickFilterTextHorizontal);
+      this.analisisHorizontalGridApi.setGridOption('quickFilterText', this.quickFilterTextHorizontal);
     }
   }
 
   onQuickFilterChangeFlujo(): void {
     if (this.flujoEfectivoGridApi) {
-      this.flujoEfectivoGridApi.setQuickFilter(this.quickFilterTextFlujo);
+      this.flujoEfectivoGridApi.setGridOption('quickFilterText', this.quickFilterTextFlujo);
     }
   }
 
@@ -404,7 +414,7 @@ export class FinanzasComponent implements OnInit, OnChanges {
     if (this.analisisVerticalGridApi) {
       this.analisisVerticalGridApi.setFilterModel(null);
       this.quickFilterTextVertical = '';
-      this.analisisVerticalGridApi.setQuickFilter('');
+      this.analisisVerticalGridApi.setGridOption('quickFilterText', '');
     }
   }
 
@@ -412,7 +422,7 @@ export class FinanzasComponent implements OnInit, OnChanges {
     if (this.analisisHorizontalGridApi) {
       this.analisisHorizontalGridApi.setFilterModel(null);
       this.quickFilterTextHorizontal = '';
-      this.analisisHorizontalGridApi.setQuickFilter('');
+      this.analisisHorizontalGridApi.setGridOption('quickFilterText', '');
     }
   }
 
@@ -420,7 +430,7 @@ export class FinanzasComponent implements OnInit, OnChanges {
     if (this.flujoEfectivoGridApi) {
       this.flujoEfectivoGridApi.setFilterModel(null);
       this.quickFilterTextFlujo = '';
-      this.flujoEfectivoGridApi.setQuickFilter('');
+      this.flujoEfectivoGridApi.setGridOption('quickFilterText', '');
     }
   }
 
@@ -500,7 +510,7 @@ export class FinanzasComponent implements OnInit, OnChanges {
     
     // Actualizar grid si está listo
     if (this.estadoResultadosGridApi) {
-      this.estadoResultadosGridApi.setRowData(this.estadoResultadosTreeData);
+      this.estadoResultadosGridApi.setGridOption('rowData', this.estadoResultadosTreeData);
     }
   }
 
@@ -1342,13 +1352,13 @@ export class FinanzasComponent implements OnInit, OnChanges {
   onGridReadyEstadoResultados(params: any): void {
     this.estadoResultadosGridApi = params.api;
     if (this.estadoResultadosTreeData && this.estadoResultadosTreeData.length > 0) {
-      this.estadoResultadosGridApi.setRowData(this.estadoResultadosTreeData);
+      this.estadoResultadosGridApi.setGridOption('rowData', this.estadoResultadosTreeData);
     }
   }
 
   onQuickFilterChangeEstadoResultados(): void {
     if (this.estadoResultadosGridApi) {
-      this.estadoResultadosGridApi.setQuickFilter(this.quickFilterTextEstadoResultados);
+      this.estadoResultadosGridApi.setGridOption('quickFilterText', this.quickFilterTextEstadoResultados);
     }
   }
 
@@ -1374,7 +1384,7 @@ export class FinanzasComponent implements OnInit, OnChanges {
     if (this.estadoResultadosGridApi) {
       this.estadoResultadosGridApi.setFilterModel(null);
       this.quickFilterTextEstadoResultados = '';
-      this.estadoResultadosGridApi.setQuickFilter('');
+      this.estadoResultadosGridApi.setGridOption('quickFilterText', '');
     }
   }
 

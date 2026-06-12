@@ -1,9 +1,14 @@
 import { Component, Input, OnInit, OnChanges, SimpleChanges } from '@angular/core';
 
+import { CommonModule } from '@angular/common';
+import { NgxEchartsModule } from 'ngx-echarts';
+
 @Component({
   selector: 'app-cash-flow-gauge',
   templateUrl: './cash-flow-gauge.component.html',
-  styleUrls: ['./cash-flow-gauge.component.css']
+  styleUrls: ['./cash-flow-gauge.component.css'],
+  standalone: true,
+  imports: [CommonModule, NgxEchartsModule]
 })
 export class CashFlowGaugeComponent implements OnInit, OnChanges {
   @Input() minRequired: number = 0;

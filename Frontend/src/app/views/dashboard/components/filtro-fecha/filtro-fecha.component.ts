@@ -1,9 +1,14 @@
 import { Component, EventEmitter, HostBinding, Input, OnInit, Output } from '@angular/core';
 
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+
 @Component({
   selector: 'app-filtro-fecha',
   templateUrl: './filtro-fecha.component.html',
-  styleUrls: ['./filtro-fecha.component.css']
+  styleUrls: ['./filtro-fecha.component.css'],
+  standalone: true,
+  imports: [CommonModule, FormsModule]
 })
 export class FiltroFechaComponent implements OnInit {
   /** Valor del año (string, p. ej. año actual). Vacío = opción "Seleccionar". */

@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, OnInit, OnChanges, SimpleChanges, Output, ViewChild, ChangeDetectorRef, ChangeDetectionStrategy, OnDestroy } from '@angular/core';
 import { DashboardDataService } from '../../services/dashboard-data.service';
-import { ColDef, GridOptions, GridApi, ColumnApi } from 'ag-grid-community';
+import { ColDef, GridOptions, GridApi } from 'ag-grid-community';
 import { AgGridAngular } from 'ag-grid-angular';
 import { ApiService } from '@services/api.service';
 import {
@@ -13,11 +13,35 @@ import {
 } from '../../components/dropdown-multi-filtro/dropdown-multi-filtro.component';
 import { MetricCard } from '../../models/chart-config.model';
 
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { AgGridModule } from 'ag-grid-angular';
+import { SharedModule } from '@shared/shared.module';
+import { PipesModule } from '@pipes/pipes.module';
+import { FiltroFechaComponent } from '../../components/filtro-fecha/filtro-fecha.component';
+import { DropdownMultiFiltroComponent } from '../../components/dropdown-multi-filtro/dropdown-multi-filtro.component';
+import { ChartCardComponent } from '../../components/chart-card/chart-card.component';
+import { TreemapChartComponent } from '../../components/treemap-chart/treemap-chart.component';
+import { PieChartComponent } from '../../components/pie-chart/pie-chart.component';
+
 @Component({
   selector: 'app-gastos',
   templateUrl: './gastos.component.html',
   styleUrls: ['./gastos.component.css'],
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    AgGridModule,
+    SharedModule,
+    PipesModule,
+    FiltroFechaComponent,
+    DropdownMultiFiltroComponent,
+    ChartCardComponent,
+    TreemapChartComponent,
+    PieChartComponent
+  ]
 })
 export class GastosComponent implements OnInit, OnChanges, OnDestroy {
   @Input() datos: any = {};
@@ -632,7 +656,7 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
 
   onQuickFilterChangeGastos(): void {
     if (this.detalleGastosGridApi) {
-      this.detalleGastosGridApi.setQuickFilter(this.quickFilterTextGastos);
+      this.detalleGastosGridApi.setGridOption('quickFilterText', this.quickFilterTextGastos);
       this.cdr.markForCheck();
     }
   }
@@ -659,7 +683,7 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
     if (this.detalleGastosGridApi) {
       this.detalleGastosGridApi.setFilterModel(null);
       this.quickFilterTextGastos = '';
-      this.detalleGastosGridApi.setQuickFilter('');
+      this.detalleGastosGridApi.setGridOption('quickFilterText', '');
     }
   }
 

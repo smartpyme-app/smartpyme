@@ -4,10 +4,26 @@ import { takeUntil } from 'rxjs/operators';
 import { DashboardDataService } from './services/dashboard-data.service';
 import { FiltrosConsultaVentasDashboard } from './models/filtros-consulta-ventas-dashboard.model';
 
+import { CommonModule } from '@angular/common';
+import { ResultadosComponent } from './sections/resultados/resultados.component';
+import { VentasComponent } from './sections/ventas/ventas.component';
+import { GastosComponent } from './sections/gastos/gastos.component';
+import { ControlCuentasComponent } from './sections/control-cuentas/control-cuentas.component';
+import { InventarioComponent } from './sections/inventario/inventario.component';
+
 @Component({
   selector: 'app-dashboard',
   templateUrl: './dashboard.component.html',
-  styleUrls: ['./dashboard.component.css']
+  styleUrls: ['./dashboard.component.css'],
+  standalone: true,
+  imports: [
+    CommonModule,
+    ResultadosComponent,
+    VentasComponent,
+    GastosComponent,
+    ControlCuentasComponent,
+    InventarioComponent
+  ]
 })
 export class DashboardComponent implements OnInit, OnDestroy {
   private static readonly SECCION_GUARDADA_KEY = 'smartpyme.dashboard.seccionActiva';

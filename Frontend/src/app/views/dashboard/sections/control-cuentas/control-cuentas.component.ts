@@ -1,6 +1,6 @@
 import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter, ViewChild, ChangeDetectorRef, ChangeDetectionStrategy, OnDestroy } from '@angular/core';
 import { DashboardDataService } from '../../services/dashboard-data.service';
-import { ColDef, GridOptions, GridApi, ColumnApi } from 'ag-grid-community';
+import { ColDef, GridOptions, GridApi } from 'ag-grid-community';
 import { ApiService } from '@services/api.service';
 import {
   DashboardFiltrosCatalogoService,
@@ -12,11 +12,35 @@ import {
 } from '../../components/dropdown-multi-filtro/dropdown-multi-filtro.component';
 import { MetricCard } from '../../models/chart-config.model';
 
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { AgGridModule } from 'ag-grid-angular';
+import { SharedModule } from '@shared/shared.module';
+import { PipesModule } from '@pipes/pipes.module';
+import { FiltroFechaComponent } from '../../components/filtro-fecha/filtro-fecha.component';
+import { DropdownMultiFiltroComponent } from '../../components/dropdown-multi-filtro/dropdown-multi-filtro.component';
+import { ChartCardComponent } from '../../components/chart-card/chart-card.component';
+import { PieChartComponent } from '../../components/pie-chart/pie-chart.component';
+import { AccountsListComponent } from '../../components/accounts-list/accounts-list.component';
+
 @Component({
   selector: 'app-control-cuentas',
   templateUrl: './control-cuentas.component.html',
   styleUrls: ['./control-cuentas.component.css'],
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    AgGridModule,
+    SharedModule,
+    PipesModule,
+    FiltroFechaComponent,
+    DropdownMultiFiltroComponent,
+    ChartCardComponent,
+    PieChartComponent,
+    AccountsListComponent
+  ]
 })
 export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
   @Input() datos: any = {};
@@ -85,9 +109,9 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
   pinnedBottomRowDataCxc: any[] = [];
   pinnedBottomRowDataCxp: any[] = [];
   private gridApi!: GridApi;
-  private gridColumnApi!: ColumnApi;
+  private gridColumnApi!: any;
   private resumenGridApi!: GridApi;
-  private resumenGridColumnApi!: ColumnApi;
+  private resumenGridColumnApi!: any;
   quickFilterText: string = '';
   quickFilterTextResumen: string = '';
 
@@ -1426,7 +1450,7 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
       },
       onGridReady: (params: any) => {
         this.resumenGridApi = params.api;
-        this.resumenGridColumnApi = params.columnApi;
+        this.resumenGridColumnApi = params.api;
         this.recalcularTotalesCxp();
         this.cdr.markForCheck();
       },
@@ -1533,7 +1557,7 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
 
   onQuickFilterChangeResumen(): void {
     if (this.resumenGridApi) {
-      this.resumenGridApi.setQuickFilter(this.quickFilterTextResumen);
+      this.resumenGridApi.setGridOption('quickFilterText', this.quickFilterTextResumen);
     }
   }
 
@@ -1565,7 +1589,7 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
     if (this.resumenGridApi) {
       this.resumenGridApi.setFilterModel(null);
       this.quickFilterTextResumen = '';
-      this.resumenGridApi.setQuickFilter('');
+      this.resumenGridApi.setGridOption('quickFilterText', '');
     }
   }
 
@@ -1577,7 +1601,7 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
     if (selectedRanges && selectedRanges.length > 0) {
       const range = selectedRanges[0];
       const rows: string[] = [];
-      const allColumns = this.resumenGridColumnApi?.getAllColumns() || [];
+      const allColumns = this.resumenGridColumnApi?.getColumns() || [];
       if (allColumns.length === 0) return;
 
       const startRowIndex = range.startRow?.rowIndex || 0;
@@ -1828,7 +1852,7 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
       },
       onGridReady: (params: any) => {
         this.gridApi = params.api;
-        this.gridColumnApi = params.columnApi;
+        this.gridColumnApi = params.api;
         this.recalcularTotalesCxc();
         this.cdr.markForCheck();
       },
@@ -1851,7 +1875,7 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
 
   onQuickFilterChange(): void {
     if (this.gridApi) {
-      this.gridApi.setQuickFilter(this.quickFilterText);
+      this.gridApi.setGridOption('quickFilterText', this.quickFilterText);
     }
   }
 
@@ -1883,7 +1907,7 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
     if (this.gridApi) {
       this.gridApi.setFilterModel(null);
       this.quickFilterText = '';
-      this.gridApi.setQuickFilter('');
+      this.gridApi.setGridOption('quickFilterText', '');
     }
   }
 
@@ -1926,7 +1950,7 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
     if (selectedRanges && selectedRanges.length > 0) {
       const range = selectedRanges[0];
       const rows: string[] = [];
-      const allColumns = this.gridColumnApi?.getAllColumns() || [];
+      const allColumns = this.gridColumnApi?.getColumns() || [];
       if (allColumns.length === 0) return;
 
       const startRowIndex = range.startRow?.rowIndex || 0;

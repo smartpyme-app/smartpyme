@@ -13,19 +13,49 @@ import {
 } from '@angular/core';
 import { DashboardDataService } from '../../services/dashboard-data.service';
 import { CashFlowItem } from '../../models/chart-config.model';
-import { RevoGrid } from '@revolist/angular-datagrid';
-import { SortingPlugin, FilterPlugin, ExportFilePlugin } from '@revolist/revogrid';
+
+
 import { WebdatarocksComponent } from '@webdatarocks/ngx-webdatarocks';
 import { ApiService } from '@services/api.service';
 import { DropdownMultiFiltroSelection } from '../../components/dropdown-multi-filtro/dropdown-multi-filtro.component';
 import { DashboardFiltrosCatalogoService } from '../../services/dashboard-filtros-catalogo.service';
 import { ColDef, GridOptions, GridApi } from 'ag-grid-community';
 
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { AgGridModule } from 'ag-grid-angular';
+import { WebdatarocksPivotModule } from '@webdatarocks/ngx-webdatarocks';
+import { SharedModule } from '@shared/shared.module';
+import { PipesModule } from '@pipes/pipes.module';
+import { FiltroFechaComponent } from '../../components/filtro-fecha/filtro-fecha.component';
+import { DropdownMultiFiltroComponent } from '../../components/dropdown-multi-filtro/dropdown-multi-filtro.component';
+import { LineChartComponent } from '../../components/line-chart/line-chart.component';
+import { BarChartComponent } from '../../components/bar-chart/bar-chart.component';
+import { PieChartComponent } from '../../components/pie-chart/pie-chart.component';
+import { AccountsListComponent } from '../../components/accounts-list/accounts-list.component';
+import { CashFlowGaugeComponent } from '../../components/cash-flow-gauge/cash-flow-gauge.component';
+
 @Component({
   selector: 'app-resultados',
   templateUrl: './resultados.component.html',
   styleUrls: ['./resultados.component.css'],
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    AgGridModule,
+    WebdatarocksPivotModule,
+    SharedModule,
+    PipesModule,
+    FiltroFechaComponent,
+    DropdownMultiFiltroComponent,
+    LineChartComponent,
+    BarChartComponent,
+    PieChartComponent,
+    AccountsListComponent,
+    CashFlowGaugeComponent
+  ]
 })
 export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
   @Input() datos: any = {};
@@ -232,8 +262,8 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
   @ViewChild('pagar30Pivot') pagar30PivotRef!: WebdatarocksComponent;
 
   // Plugins para revo-grid legacy (CXC/CXP aún en uso si los hay)
-  cobrar30Plugins = [SortingPlugin, FilterPlugin, ExportFilePlugin];
-  pagar30Plugins = [SortingPlugin, FilterPlugin, ExportFilePlugin];
+  cobrar30Plugins = [];
+  pagar30Plugins = [];
 
   // ── WebDataRocks: Ventas del mes ──────────────────────────────────────────
   private _ventasPivotInstance: any = null;

@@ -21,11 +21,16 @@ export interface DropdownMultiFiltroSelection {
   seleccionados: string[];
 }
 
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+
 @Component({
   selector: 'app-dropdown-multi-filtro',
   templateUrl: './dropdown-multi-filtro.component.html',
   styleUrls: ['./dropdown-multi-filtro.component.css'],
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: true,
+  imports: [CommonModule, FormsModule]
 })
 export class DropdownMultiFiltroComponent {
   /** Texto encima del disparador (ej. Sucursales, Estados). */
@@ -129,9 +134,7 @@ export class DropdownMultiFiltroComponent {
   }
 
   /** La búsqueda siempre está activa (el input es el disparador). */
-  get mostrarBuscador(): boolean {
-    return true;
-  }
+  @Input() mostrarBuscador = true;
 
   /** Vista acotada: búsqueda activa o lista inicial limitada. */
   get usaAlcanceParcialEnPanel(): boolean {

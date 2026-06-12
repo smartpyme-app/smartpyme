@@ -1,4 +1,9 @@
 import { bootstrapApplication } from '@angular/platform-browser';
+import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
+
+// Register AG Grid Community modules
+ModuleRegistry.registerModules([ AllCommunityModule ]);
+
 import { importProvidersFrom } from '@angular/core';
 import { provideRouter, withPreloading } from '@angular/router';
 import { provideHttpClient, withInterceptorsFromDi, HTTP_INTERCEPTORS } from '@angular/common/http';

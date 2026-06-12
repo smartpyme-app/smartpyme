@@ -5,10 +5,15 @@ export interface AccountItem {
   amount: number;
 }
 
+import { CommonModule } from '@angular/common';
+import { NgxEchartsModule } from 'ngx-echarts';
+
 @Component({
   selector: 'app-accounts-list',
   templateUrl: './accounts-list.component.html',
-  styleUrls: ['./accounts-list.component.css']
+  styleUrls: ['./accounts-list.component.css'],
+  standalone: true,
+  imports: [CommonModule, NgxEchartsModule]
 })
 export class AccountsListComponent implements OnInit, OnChanges {
   @Input() title: string = '';
