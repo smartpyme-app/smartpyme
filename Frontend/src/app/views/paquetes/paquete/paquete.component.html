@@ -59,10 +59,32 @@
                 <input type="text" class="form-control" name="nota" [(ngModel)]="paquete.nota" placeholder="Escriba aquí" />
             </div>
         </div>
-     </div>
-     <div class="bg-white rounded p-3 mb-3">
+    </div>
+    <div class="bg-white rounded p-3 mb-3">
         <h6>Detalle del paquete</h6>
         <div class="row">
+            <!-- Campos de integración Boxful (Visibles solo si Boxful está configurado) -->
+            <ng-container *ngIf="hasBoxful">
+                <div class="form-group col-md-3 col-lg-2">
+                    <label for="alto">Alto (cm):</label>
+                    <input type="number" min="1" class="form-control" name="alto" [(ngModel)]="paquete.alto" placeholder="Ej: 10" />
+                </div>
+                <div class="form-group col-md-3 col-lg-2">
+                    <label for="ancho">Ancho (cm):</label>
+                    <input type="number" min="1" class="form-control" name="ancho" [(ngModel)]="paquete.ancho" placeholder="Ej: 10" />
+                </div>
+                <div class="form-group col-md-3 col-lg-2">
+                    <label for="largo">Largo (cm):</label>
+                    <input type="number" min="1" class="form-control" name="largo" [(ngModel)]="paquete.largo" placeholder="Ej: 10" />
+                </div>
+                <div class="form-group col-md-3 col-lg-2 d-flex align-items-center">
+                    <div class="form-check form-switch mt-4 ms-3">
+                        <input class="form-check-input" type="checkbox" id="es_fragil" name="es_fragil" [(ngModel)]="paquete.es_fragil">
+                        <label class="form-check-label fw-bold cursor-pointer" for="es_fragil">¿Es frágil?</label>
+                    </div>
+                </div>
+            </ng-container>
+
             <div class="form-group col-md-3 col-lg-2">
                 <label for="wr">WR:</label>
                 <input type="text" class="form-control" name="wr" [(ngModel)]="paquete.wr" placeholder="Escriba aquí" />
@@ -82,6 +104,7 @@
                 <label for="volumen">Volumen:</label>
                 <input type="number" class="form-control" name="volumen" [(ngModel)]="paquete.volumen" placeholder="Escriba aquí" />
             </div>
+
             <div class="form-group col-md-4">
                 <label for="num_seguimiento">Num. seguimiento:</label>
                 <input type="text" class="form-control" name="num_seguimiento" [(ngModel)]="paquete.num_seguimiento" placeholder="Escriba aquí" />

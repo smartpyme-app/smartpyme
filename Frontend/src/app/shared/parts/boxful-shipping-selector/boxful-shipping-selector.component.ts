@@ -329,10 +329,13 @@ export class BoxfulShippingSelectorComponent implements OnInit {
         alto: parseFloat(this.paqueteData.alto || 0),
         ancho: parseFloat(this.paqueteData.ancho || 0),
         largo: parseFloat(this.paqueteData.largo || 0),
-        valor: parseFloat(this.paqueteData.valor || 50)
+        valor: parseFloat(this.paqueteData.valor || 50),
+        es_fragil: !!this.paqueteData.es_fragil,
+        isFragile: !!this.paqueteData.es_fragil
       },
       destino: this.getDireccionDestino(),
-      origen: this.getDireccionOrigen()
+      origen: this.getDireccionOrigen(),
+      paqueteId: this.paqueteData.id || null
     };
 
     this.boxfulService.getCouriersAvailable(payload).subscribe({
@@ -392,7 +395,9 @@ export class BoxfulShippingSelectorComponent implements OnInit {
         alto: parseFloat(this.paqueteData.alto || 0),
         ancho: parseFloat(this.paqueteData.ancho || 0),
         largo: parseFloat(this.paqueteData.largo || 0),
-        valor: parseFloat(this.paqueteData.valor || 50)
+        valor: parseFloat(this.paqueteData.valor || 50),
+        es_fragil: !!this.paqueteData.es_fragil,
+        isFragile: !!this.paqueteData.es_fragil
       },
       destino: destino,
       origen: this.getDireccionOrigen(),
@@ -403,7 +408,8 @@ export class BoxfulShippingSelectorComponent implements OnInit {
         telefono: destino.telefono || '',
         codigo_area: destino.codigo_area || '503'
       },
-      clienteId: this.clienteId
+      clienteId: this.clienteId,
+      paqueteId: this.paqueteData.id || null
     };
 
     this.boxfulService.createShipment(payload).subscribe({
@@ -479,6 +485,51 @@ export class BoxfulShippingSelectorComponent implements OnInit {
     } else {
       this.loadAddresses();
     }
+  }
+
+  getRecolectionDateInfo(courier: any): { label: string, time: string } {
+    const now = new Date();
+    const isEarly = now.getHours() < 11;
+    return {
+      label: isEarly ? 'Hoy' : 'Mañana',
+      time: '08:00 - 18:00'
+    };
+  }
+
+  getDeliveryDateInfo(courier: any): { dateFormatted: string, relativeLabel: string } {
+    const deliveryStr = courier.estimatedDelivery || courier.deliveryTime;
+    if (!deliveryStr) {
+      return { dateFormatted: 'N/A', relativeLabel: 'N/A' };
+    }
+    
+    const normalizedStr = deliveryStr.replace(' ', 'T');
+    const deliveryDate = new Date(normalizedStr);
+    
+    if (isNaN(deliveryDate.getTime())) {
+      return { dateFormatted: deliveryStr, relativeLabel: 'Próximamente' };
+    }
+
+    const day = String(deliveryDate.getDate()).padStart(2, '0');
+    const month = String(deliveryDate.getMonth() + 1).padStart(2, '0');
+    const year = deliveryDate.getFullYear();
+    const dateFormatted = `${day} / ${month} / ${year}`;
+
+    const now = new Date();
+    const d1 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const d2 = new Date(deliveryDate.getFullYear(), deliveryDate.getMonth(), deliveryDate.getDate());
+    const diffTime = d2.getTime() - d1.getTime();
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+    let relativeLabel = '';
+    if (diffDays <= 0) {
+      relativeLabel = 'Hoy mismo';
+    } else if (diffDays === 1) {
+      relativeLabel = 'En 1 día';
+    } else {
+      relativeLabel = `En ${diffDays} días`;
+    }
+
+    return { dateFormatted, relativeLabel };
   }
 
   closeSelector(): void {

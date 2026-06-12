@@ -23,6 +23,10 @@ class Paquete extends Model {
         'num_guia',
         'piezas',
         'peso',
+        'alto',
+        'ancho',
+        'largo',
+        'es_fragil',
         'precio',
         'volumen',
         'cuenta_a_terceros',
@@ -41,7 +45,17 @@ class Paquete extends Model {
         'boxful_courier_name',
         'boxful_label_url',
         'boxful_tracking_url',
+        'boxful_status',
+        'direccion_envio_id',
     );
+
+    protected $casts = [
+        'es_fragil' => 'boolean',
+        'boxful_status' => 'integer',
+        'alto' => 'float',
+        'ancho' => 'float',
+        'largo' => 'float',
+    ];
 
     protected $appends = ['nombre_cliente', 'nombre_asesor', 'nombre_usuario'];
 

@@ -113,7 +113,8 @@ export class FacturacionV2Component implements OnInit {
   }
 
   // Integración Boxful
-  public paqueteData: any = { peso: 1, alto: 10, ancho: 10, largo: 10 };
+  public paqueteData: any = { peso: 1, alto: 10, ancho: 10, largo: 10, es_fragil: false, id: null };
+  private lastSyncedPaqueteId: number | null = null;
 
   esCanalBoxful(): boolean {
     if (!this.venta.id_canal || !this.canales) return false;
@@ -989,7 +990,33 @@ export class FacturacionV2Component implements OnInit {
     return null;
   }
 
+  private syncPaqueteData(): void {
+    if (!this.venta || !this.venta.detalles || !Array.isArray(this.venta.detalles)) {
+      this.lastSyncedPaqueteId = null;
+      this.paqueteData.id = null;
+      return;
+    }
+    const pkgDetail = this.venta.detalles.find((d: any) => d.id_paquete);
+    if (pkgDetail) {
+      const pkgId = pkgDetail.id_paquete;
+      if (pkgId !== this.lastSyncedPaqueteId) {
+        this.lastSyncedPaqueteId = pkgId;
+        this.paqueteData.id = pkgId;
+        this.paqueteData.peso = parseFloat(pkgDetail.peso || pkgDetail.cantidad || 1);
+        this.paqueteData.alto = parseFloat(pkgDetail.alto || 10);
+        this.paqueteData.ancho = parseFloat(pkgDetail.ancho || 10);
+        this.paqueteData.largo = parseFloat(pkgDetail.largo || 10);
+        this.paqueteData.es_fragil = !!pkgDetail.es_fragil;
+        this.paqueteData.valor = parseFloat(pkgDetail.total || 50);
+      }
+    } else {
+      this.lastSyncedPaqueteId = null;
+      this.paqueteData.id = null;
+    }
+  }
+
   public sumTotal() {
+    this.syncPaqueteData();
     // Asegurar que detalles existe y es un array
     if (!this.venta.detalles || !Array.isArray(this.venta.detalles)) {
       this.venta.detalles = [];

@@ -165,8 +165,12 @@ export class TiendaVentaPaquetesComponent implements OnInit {
             this.detalle.descripcion = 'Número: ' + paquete.wr + ' Guia: ' + paquete.num_guia;
             this.detalle.img            = this.servicio.img;
             this.detalle.porcentaje_impuesto = this.servicio.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
-            // this.detalle.precio         = parseFloat(this.servicio.precio);
             this.detalle.id_paquete    = paquete.id;
+            this.detalle.alto          = paquete.alto;
+            this.detalle.ancho         = paquete.ancho;
+            this.detalle.largo         = paquete.largo;
+            this.detalle.es_fragil     = paquete.es_fragil;
+            this.detalle.peso          = paquete.peso;
             this.detalle.precio        = ((parseFloat(paquete.precio) + parseFloat(paquete.otros)) / 1.13).toFixed(4);
             this.detalle.total         = (parseFloat(paquete.total) / 1.13).toFixed(4);
             // this.detalle.total         = parseFloat(paquete.total);

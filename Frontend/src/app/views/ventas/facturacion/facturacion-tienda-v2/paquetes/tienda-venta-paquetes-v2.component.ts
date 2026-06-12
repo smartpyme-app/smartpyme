@@ -186,6 +186,11 @@ export class TiendaVentaPaquetesV2Component implements OnInit {
             this.detalle.descripcion = 'Número: ' + paquete.wr + ' Guia: ' + paquete.num_guia;
             this.detalle.img            = this.servicio.img;
             this.detalle.id_paquete    = paquete.id;
+            this.detalle.alto          = paquete.alto;
+            this.detalle.ancho         = paquete.ancho;
+            this.detalle.largo         = paquete.largo;
+            this.detalle.es_fragil     = paquete.es_fragil;
+            this.detalle.peso          = paquete.peso;
             
             // En v2, el precio del paquete ya incluye IVA, pero debemos guardarlo sin IVA
             const iva = this.apiService.auth_user()?.empresa?.iva || 0;

@@ -215,11 +215,12 @@ class BoxFulShippingController extends Controller
 
             // Datos del paquete
             $peso = (float) ($paqueteInput['peso'] ?? $paqueteInput['weight'] ?? ($paqueteModel ? $paqueteModel->peso : 1.0));
-            $alto = (float) ($paqueteInput['alto'] ?? $paqueteInput['height'] ?? 10.0);
-            $ancho = (float) ($paqueteInput['ancho'] ?? $paqueteInput['width'] ?? 10.0);
-            $largo = (float) ($paqueteInput['largo'] ?? $paqueteInput['length'] ?? 10.0);
+            $alto = (float) ($paqueteInput['alto'] ?? $paqueteInput['height'] ?? ($paqueteModel && $paqueteModel->alto ? $paqueteModel->alto : 10.0));
+            $ancho = (float) ($paqueteInput['ancho'] ?? $paqueteInput['width'] ?? ($paqueteModel && $paqueteModel->ancho ? $paqueteModel->ancho : 10.0));
+            $largo = (float) ($paqueteInput['largo'] ?? $paqueteInput['length'] ?? ($paqueteModel && $paqueteModel->largo ? $paqueteModel->largo : 10.0));
             $valor = (float) ($paqueteInput['valor'] ?? $paqueteInput['price'] ?? ($paqueteModel ? ($paqueteModel->precio ?? $paqueteModel->total) : 10.00));
             $contenido = $paqueteInput['contenido'] ?? $paqueteInput['content'] ?? 'Productos varios';
+            $isFragile = (bool) ($paqueteInput['es_fragil'] ?? $paqueteInput['isFragile'] ?? ($paqueteModel ? $paqueteModel->es_fragil : false));
 
             // Evitar valores no positivos para evitar errores de validación de Boxful
             if ($peso <= 0) $peso = 1.0;
@@ -237,7 +238,8 @@ class BoxFulShippingController extends Controller
                     'content' => $contenido,
                     'price' => $valor,
                     'cod' => false,
-                    'codAmount' => 0
+                    'codAmount' => 0,
+                    'isFragile' => $isFragile
                 ]
             ];
 
@@ -406,11 +408,12 @@ class BoxFulShippingController extends Controller
 
             // Datos del paquete
             $peso = (float) ($paqueteInput['peso'] ?? $paqueteInput['weight'] ?? ($paqueteModel ? $paqueteModel->peso : 1.0));
-            $alto = (float) ($paqueteInput['alto'] ?? $paqueteInput['height'] ?? 10.0);
-            $ancho = (float) ($paqueteInput['ancho'] ?? $paqueteInput['width'] ?? 10.0);
-            $largo = (float) ($paqueteInput['largo'] ?? $paqueteInput['length'] ?? 10.0);
+            $alto = (float) ($paqueteInput['alto'] ?? $paqueteInput['height'] ?? ($paqueteModel && $paqueteModel->alto ? $paqueteModel->alto : 10.0));
+            $ancho = (float) ($paqueteInput['ancho'] ?? $paqueteInput['width'] ?? ($paqueteModel && $paqueteModel->ancho ? $paqueteModel->ancho : 10.0));
+            $largo = (float) ($paqueteInput['largo'] ?? $paqueteInput['length'] ?? ($paqueteModel && $paqueteModel->largo ? $paqueteModel->largo : 10.0));
             $valor = (float) ($paqueteInput['valor'] ?? $paqueteInput['price'] ?? ($paqueteModel ? ($paqueteModel->precio ?? $paqueteModel->total) : 10.00));
             $contenido = $paqueteInput['contenido'] ?? $paqueteInput['content'] ?? 'Productos varios';
+            $isFragile = (bool) ($paqueteInput['es_fragil'] ?? $paqueteInput['isFragile'] ?? ($paqueteModel ? $paqueteModel->es_fragil : false));
 
             if ($peso <= 0) $peso = 1.0;
             if ($alto <= 0) $alto = 10.0;
@@ -426,7 +429,7 @@ class BoxFulShippingController extends Controller
                     'length' => $largo,
                     'content' => $contenido,
                     'price' => $valor,
-                    'isFragile' => false
+                    'isFragile' => $isFragile
                 ]
             ];
 
