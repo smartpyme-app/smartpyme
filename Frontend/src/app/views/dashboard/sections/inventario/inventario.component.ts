@@ -9,7 +9,7 @@ import {
   DropdownMultiFiltroItem,
   DropdownMultiFiltroSelection,
 } from '../../components/dropdown-multi-filtro/dropdown-multi-filtro.component';
-import { ColDef, GridOptions, GridApi } from 'ag-grid-community';
+import { ColDef, GridOptions, GridApi, themeQuartz, AllCommunityModule } from 'ag-grid-community';
 import { MetricCard } from '../../models/chart-config.model';
 
 import { CommonModule } from '@angular/common';
@@ -17,9 +17,9 @@ import { FormsModule } from '@angular/forms';
 import { AgGridModule } from 'ag-grid-angular';
 import { SharedModule } from '@shared/shared.module';
 import { PipesModule } from '@pipes/pipes.module';
-import { FiltroFechaComponent } from '../../components/filtro-fecha/filtro-fecha.component';
 import { DropdownMultiFiltroComponent } from '../../components/dropdown-multi-filtro/dropdown-multi-filtro.component';
 import { ChartCardComponent } from '../../components/chart-card/chart-card.component';
+import { BarChartComponent } from '../../components/bar-chart/bar-chart.component';
 
 @Component({
   selector: 'app-inventario',
@@ -33,12 +33,15 @@ import { ChartCardComponent } from '../../components/chart-card/chart-card.compo
     AgGridModule,
     SharedModule,
     PipesModule,
-    FiltroFechaComponent,
     DropdownMultiFiltroComponent,
-    ChartCardComponent
+    ChartCardComponent,
+    BarChartComponent
   ]
 })
 export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
+  public miTema = themeQuartz;
+  public modules: any[] = [AllCommunityModule];
+
   @Input() datos: any = {};
   @Output() filtrosCambiados = new EventEmitter<any>();
 
@@ -622,6 +625,7 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
       },
       pagination: true,
       paginationPageSize: 15,
+      paginationPageSizeSelector: [15, 30, 50, 100],
       enableCellTextSelection: true,
       ensureDomOrder: true,
       onCellDoubleClicked: (params: any) => {
@@ -808,7 +812,7 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
     let inversionPromedio = 0;
     let ventasEsperadas = 0;
 
-    if (this.gridApi) {
+    if (this.gridApi && !this.gridApi.isDestroyed()) {
       this.gridApi.forEachNodeAfterFilter((node: any) => {
         if (node.data) {
           stock += (node.data.stock || 0);
@@ -840,7 +844,7 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
     let salidas = 0;
     let valorSalidas = 0;
 
-    if (this.entradasSalidasGridApi) {
+    if (this.entradasSalidasGridApi && !this.entradasSalidasGridApi.isDestroyed()) {
       this.entradasSalidasGridApi.forEachNodeAfterFilter((node: any) => {
         if (node.data) {
           entradas += (node.data.entradas || 0);
@@ -1141,6 +1145,7 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
       },
       pagination: true,
       paginationPageSize: 15,
+      paginationPageSizeSelector: [15, 30, 50, 100],
       enableCellTextSelection: true,
       ensureDomOrder: true,
       onCellDoubleClicked: (params: any) => {

@@ -19,7 +19,7 @@ import { WebdatarocksComponent } from '@webdatarocks/ngx-webdatarocks';
 import { ApiService } from '@services/api.service';
 import { DropdownMultiFiltroSelection } from '../../components/dropdown-multi-filtro/dropdown-multi-filtro.component';
 import { DashboardFiltrosCatalogoService } from '../../services/dashboard-filtros-catalogo.service';
-import { ColDef, GridOptions, GridApi } from 'ag-grid-community';
+import { ColDef, GridOptions, GridApi, themeQuartz, AllCommunityModule } from 'ag-grid-community';
 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -27,13 +27,11 @@ import { AgGridModule } from 'ag-grid-angular';
 import { WebdatarocksPivotModule } from '@webdatarocks/ngx-webdatarocks';
 import { SharedModule } from '@shared/shared.module';
 import { PipesModule } from '@pipes/pipes.module';
-import { FiltroFechaComponent } from '../../components/filtro-fecha/filtro-fecha.component';
 import { DropdownMultiFiltroComponent } from '../../components/dropdown-multi-filtro/dropdown-multi-filtro.component';
-import { LineChartComponent } from '../../components/line-chart/line-chart.component';
 import { BarChartComponent } from '../../components/bar-chart/bar-chart.component';
-import { PieChartComponent } from '../../components/pie-chart/pie-chart.component';
 import { AccountsListComponent } from '../../components/accounts-list/accounts-list.component';
-import { CashFlowGaugeComponent } from '../../components/cash-flow-gauge/cash-flow-gauge.component';
+import { ChartCardComponent } from '../../components/chart-card/chart-card.component';
+import { BudgetCardComponent } from '../../components/budget-card/budget-card.component';
 
 @Component({
   selector: 'app-resultados',
@@ -48,16 +46,17 @@ import { CashFlowGaugeComponent } from '../../components/cash-flow-gauge/cash-fl
     WebdatarocksPivotModule,
     SharedModule,
     PipesModule,
-    FiltroFechaComponent,
     DropdownMultiFiltroComponent,
-    LineChartComponent,
     BarChartComponent,
-    PieChartComponent,
     AccountsListComponent,
-    CashFlowGaugeComponent
+    ChartCardComponent,
+    BudgetCardComponent
   ]
 })
 export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
+  public miTema = themeQuartz;
+  public modules: any[] = [AllCommunityModule];
+
   @Input() datos: any = {};
   @Output() filtrosCambiados = new EventEmitter<any>();
 
@@ -493,6 +492,7 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
       ensureDomOrder: true,
       pagination: true,
       paginationPageSize: 10,
+      paginationPageSizeSelector: [10, 20, 50, 100],
       getRowClass: getRowClassCallback,
       onGridReady: (params: any) => {
         this.ventasGridApi = params.api;
@@ -511,6 +511,7 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
       ensureDomOrder: true,
       pagination: true,
       paginationPageSize: 10,
+      paginationPageSizeSelector: [10, 20, 50, 100],
       getRowClass: getRowClassCallback,
       onGridReady: (params: any) => {
         this.gastosGridApi = params.api;
@@ -529,6 +530,7 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
       ensureDomOrder: true,
       pagination: true,
       paginationPageSize: 10,
+      paginationPageSizeSelector: [10, 20, 50, 100],
       onGridReady: (params: any) => {
         this.cobrar30GridApi = params.api;
         sizeToFit(params.api);
@@ -543,6 +545,7 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
       ensureDomOrder: true,
       pagination: true,
       paginationPageSize: 10,
+      paginationPageSizeSelector: [10, 20, 50, 100],
       onGridReady: (params: any) => {
         this.pagar30GridApi = params.api;
         sizeToFit(params.api);
@@ -558,6 +561,7 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
       ensureDomOrder: true,
       pagination: true,
       paginationPageSize: 10,
+      paginationPageSizeSelector: [10, 20, 50, 100],
       getRowClass: getRowClassCallback,
       onGridReady: (params: any) => {
         this.abonosCxcGridApi = params.api;
@@ -576,6 +580,7 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
       ensureDomOrder: true,
       pagination: true,
       paginationPageSize: 10,
+      paginationPageSizeSelector: [10, 20, 50, 100],
       getRowClass: getRowClassCallback,
       onGridReady: (params: any) => {
         this.abonosCxpGridApi = params.api;
@@ -1335,7 +1340,7 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
 
   recalcularTotalesVentas(): void {
     let total = 0;
-    if (this.ventasGridApi) {
+    if (this.ventasGridApi && !this.ventasGridApi.isDestroyed()) {
       this.ventasGridApi.forEachNodeAfterFilter((node: any) => {
         if (node.data) {
           total += (node.data.monto || 0);
@@ -1358,7 +1363,7 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
 
   recalcularTotalesGastos(): void {
     let total = 0;
-    if (this.gastosGridApi) {
+    if (this.gastosGridApi && !this.gastosGridApi.isDestroyed()) {
       this.gastosGridApi.forEachNodeAfterFilter((node: any) => {
         if (node.data) {
           total += (node.data.monto || 0);
@@ -1381,7 +1386,7 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
 
   recalcularTotalesAbonosCxc(): void {
     let total = 0;
-    if (this.abonosCxcGridApi) {
+    if (this.abonosCxcGridApi && !this.abonosCxcGridApi.isDestroyed()) {
       this.abonosCxcGridApi.forEachNodeAfterFilter((node: any) => {
         if (node.data) {
           total += (node.data.monto || 0);
@@ -1406,7 +1411,7 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
 
   recalcularTotalesAbonosCxp(): void {
     let total = 0;
-    if (this.abonosCxpGridApi) {
+    if (this.abonosCxpGridApi && !this.abonosCxpGridApi.isDestroyed()) {
       this.abonosCxpGridApi.forEachNodeAfterFilter((node: any) => {
         if (node.data) {
           total += (node.data.monto || 0);

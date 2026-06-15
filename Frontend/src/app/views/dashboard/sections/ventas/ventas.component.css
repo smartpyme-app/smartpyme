@@ -1,7 +1,7 @@
 /* Estilos específicos para la sección de Ventas */
 
 /* Estilos modernos para AG Grid - Tabla de ventas por producto */
-::ng-deep .ventas-producto-grid.ag-theme-alpine {
+::ng-deep .ventas-producto-grid {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     border: none !important;
     box-shadow: none !important;
@@ -115,7 +115,7 @@
 }
 
 /* Eliminar bordes gruesos y sombras */
-::ng-deep .ventas-producto-grid.ag-theme-alpine,
+::ng-deep .ventas-producto-grid,
 ::ng-deep .ventas-producto-grid .ag-root-wrapper {
     border: none !important;
     box-shadow: none !important;
@@ -180,7 +180,7 @@
 }
 
 /* Estilos para la tabla de ventas por cliente */
-::ng-deep .ventas-cliente-grid.ag-theme-alpine {
+::ng-deep .ventas-cliente-grid {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     border: none !important;
     box-shadow: none !important;
@@ -265,7 +265,7 @@
 }
 
 /* Eliminar bordes gruesos y sombras */
-::ng-deep .ventas-cliente-grid.ag-theme-alpine,
+::ng-deep .ventas-cliente-grid,
 ::ng-deep .ventas-cliente-grid .ag-root-wrapper {
     border: none !important;
     box-shadow: none !important;

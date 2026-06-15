@@ -94,7 +94,7 @@
 }
 
 /* ─── AG Grid: Inventario Productos ─────────────────────────────────────── */
-::ng-deep .inventario-productos-grid.ag-theme-alpine {
+::ng-deep .inventario-productos-grid {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   border: none !important;
   box-shadow: none !important;
@@ -152,7 +152,7 @@
   line-height: 1.5 !important;
 }
 
-::ng-deep .inventario-productos-grid.ag-theme-alpine,
+::ng-deep .inventario-productos-grid,
 ::ng-deep .inventario-productos-grid .ag-root-wrapper {
   border: none !important;
   box-shadow: none !important;
@@ -189,7 +189,7 @@
 }
 
 /* ─── AG Grid: Entradas y Salidas ────────────────────────────────────────── */
-::ng-deep .entradas-salidas-grid.ag-theme-alpine {
+::ng-deep .entradas-salidas-grid {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   border: none !important;
   box-shadow: none !important;
@@ -242,7 +242,7 @@
   line-height: 1.5 !important;
 }
 
-::ng-deep .entradas-salidas-grid.ag-theme-alpine,
+::ng-deep .entradas-salidas-grid,
 ::ng-deep .entradas-salidas-grid .ag-root-wrapper {
   border: none !important;
   box-shadow: none !important;
@@ -294,7 +294,7 @@
 }
 
 /* ─── AG Grid: Ajustes ───────────────────────────────────────────────────── */
-::ng-deep .ajustes-grid.ag-theme-alpine {
+::ng-deep .ajustes-grid {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   border: none !important;
   box-shadow: none !important;
@@ -346,7 +346,7 @@
   line-height: 1.5 !important;
 }
 
-::ng-deep .ajustes-grid.ag-theme-alpine,
+::ng-deep .ajustes-grid,
 ::ng-deep .ajustes-grid .ag-root-wrapper {
   border: none !important;
   box-shadow: none !important;

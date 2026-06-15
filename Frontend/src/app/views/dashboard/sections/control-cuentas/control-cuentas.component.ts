@@ -1,6 +1,6 @@
 import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter, ViewChild, ChangeDetectorRef, ChangeDetectionStrategy, OnDestroy } from '@angular/core';
 import { DashboardDataService } from '../../services/dashboard-data.service';
-import { ColDef, GridOptions, GridApi } from 'ag-grid-community';
+import { ColDef, GridOptions, GridApi, themeQuartz, AllCommunityModule } from 'ag-grid-community';
 import { ApiService } from '@services/api.service';
 import {
   DashboardFiltrosCatalogoService,
@@ -43,6 +43,9 @@ import { AccountsListComponent } from '../../components/accounts-list/accounts-l
   ]
 })
 export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
+  public miTema = themeQuartz;
+  public modules: any[] = [AllCommunityModule];
+
   @Input() datos: any = {};
   @Output() filtrosCambiados = new EventEmitter<any>();
 
@@ -1477,7 +1480,7 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
     let saldoPendiente = 0;
     let count = 0;
 
-    if (this.gridApi) {
+    if (this.gridApi && !this.gridApi.isDestroyed()) {
       this.gridApi.forEachNodeAfterFilter((node) => {
         if (node.data) {
           ventasConIVA += (node.data.ventasConIVA || 0);
@@ -1519,7 +1522,7 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
     let saldoPendiente = 0;
     let count = 0;
 
-    if (this.resumenGridApi) {
+    if (this.resumenGridApi && !this.resumenGridApi.isDestroyed()) {
       this.resumenGridApi.forEachNodeAfterFilter((node) => {
         if (node.data) {
           gastosTotalesConIVA += (node.data.gastosTotalesConIVA || 0);

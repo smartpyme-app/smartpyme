@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter, OnDestroy } from '@angular/core';
 import { ChartConfig } from '../../models/chart-config.model';
 
 import { CommonModule } from '@angular/common';
@@ -11,7 +11,7 @@ import { NgxEchartsModule } from 'ngx-echarts';
   standalone: true,
   imports: [CommonModule, NgxEchartsModule]
 })
-export class BarChartComponent implements OnInit, OnChanges {
+export class BarChartComponent implements OnInit, OnChanges, OnDestroy {
   @Input() config!: ChartConfig;
   @Output() itemClick = new EventEmitter<{ name: string; value: any; index: number }>();
 
@@ -26,6 +26,10 @@ export class BarChartComponent implements OnInit, OnChanges {
     if (changes['config'] && !changes['config'].firstChange) {
       this.initChart();
     }
+  }
+
+  ngOnDestroy(): void {
+    this.echartsInstance = null;
   }
 
   private hexToRgba(hex: string, alpha: number): string {
@@ -89,7 +93,7 @@ export class BarChartComponent implements OnInit, OnChanges {
 
         return value < 0 ? `(${formatted})` : formatted;
       },
-      color: isInsidePosition ? '#fff' : '#000',
+      color: isInsidePosition ? '#fff' : '#878c94ff',
       fontSize: 12,
       fontWeight: 'medium',
       offset: isInsidePosition ? [0, 0] : [0, -5],
@@ -185,7 +189,7 @@ export class BarChartComponent implements OnInit, OnChanges {
     const labelCount = this.config.labels?.length ?? 0;
     const rotateLabels = this.config.rotateLabels ?? 0;
     const isHorizontal = !!(this.config as any).horizontal;
-    const needsDataZoom = !isHorizontal && !isMultiSeries && labelCount > 6;
+    const needsDataZoom = !isHorizontal && labelCount > 6;
     const dataZoomBottom = needsDataZoom ? '20%' : undefined;
     const gridBottom = this.config.gridBottom ?? dataZoomBottom ?? (
       rotateLabels >= 45 ? '16%' : rotateLabels > 0 ? '10%' : '8%'
@@ -207,12 +211,17 @@ export class BarChartComponent implements OnInit, OnChanges {
         emphasis: { handleStyle: { color: primaryColor } },
         textStyle: { color: '#666', fontSize: 10 },
         brushSelect: false,
+        zoomLock: true
       },
       {
         type: 'inside',
         xAxisIndex: 0,
         start: 0,
         end: Math.round((6 / labelCount) * 100),
+        zoomLock: true,
+        zoomOnMouseWheel: false,
+        moveOnMouseMove: true,
+        moveOnMouseWheel: true
       }
     ] : undefined;
 
@@ -283,6 +292,7 @@ export class BarChartComponent implements OnInit, OnChanges {
         type: 'value',
         axisLabel: {
           show: this.config.showXAxisLabels !== false,
+          color: '#878c94ff',
           formatter: (value: number) => {
             const absValue = Math.abs(value);
             const sign = value >= 0 ? '' : '-';
@@ -296,12 +306,19 @@ export class BarChartComponent implements OnInit, OnChanges {
         },
         splitLine: {
           show: false
+        },
+        axisLine: {
+          show: false
+        },
+        axisTick: {
+          show: false
         }
       } : {
         type: 'category',
         data: this.config.labels || [],
         axisLabel: {
           show: this.config.showXAxisLabels !== false,
+          color: '#878c94ff',
           rotate: rotateLabels,
           interval: 0,
           fontSize: labelCount > 6 ? 10 : 11,
@@ -310,6 +327,12 @@ export class BarChartComponent implements OnInit, OnChanges {
             const maxLen = 12;
             return value && value.length > maxLen ? value.slice(0, maxLen) + '…' : value;
           }
+        },
+        axisLine: {
+          show: false
+        },
+        axisTick: {
+          show: false
         }
       },
       yAxis: (this.config as any).horizontal ? {
@@ -317,6 +340,7 @@ export class BarChartComponent implements OnInit, OnChanges {
         data: this.config.labels || [],
         axisLabel: {
           show: true,
+          color: '#8e949dff',
           interval: 0,
           formatter: (value: string) => {
             const maxLen = 14;
@@ -345,7 +369,7 @@ export class BarChartComponent implements OnInit, OnChanges {
               position: finalPosition,
               rotate: 0,
               align: isInside ? 'center' : 'left',
-              color: isInside ? '#fff' : '#000',
+              color: isInside ? '#fff' : '#878c94ff',
               offset: isInside ? [0, 0] : [5, 0]
             }
           };
@@ -360,10 +384,14 @@ export class BarChartComponent implements OnInit, OnChanges {
   }
 
   private refreshChartSize(): void {
-    if (!this.echartsInstance) {
+    if (!this.echartsInstance || this.echartsInstance.isDisposed()) {
       return;
     }
-    requestAnimationFrame(() => this.echartsInstance?.resize());
+    requestAnimationFrame(() => {
+      if (this.echartsInstance && !this.echartsInstance.isDisposed()) {
+        this.echartsInstance.resize();
+      }
+    });
   }
 
   /**
@@ -468,7 +496,7 @@ export class BarChartComponent implements OnInit, OnChanges {
   }
 
   private attachItemClickHandler(): void {
-    if (!this.echartsInstance) {
+    if (!this.echartsInstance || this.echartsInstance.isDisposed()) {
       return;
     }
     this.echartsInstance.off('click');
@@ -485,7 +513,7 @@ export class BarChartComponent implements OnInit, OnChanges {
 
   onChartInit(ec: any): void {
     this.echartsInstance = ec;
-    if (this.echartsInstance && this.chartOption) {
+    if (this.echartsInstance && !this.echartsInstance.isDisposed() && this.chartOption) {
       this.attachItemClickHandler();
     }
     setTimeout(() => this.refreshChartSize(), 0);

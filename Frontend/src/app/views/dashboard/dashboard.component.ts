@@ -5,6 +5,7 @@ import { DashboardDataService } from './services/dashboard-data.service';
 import { FiltrosConsultaVentasDashboard } from './models/filtros-consulta-ventas-dashboard.model';
 
 import { CommonModule } from '@angular/common';
+import { themeQuartz, AllCommunityModule } from 'ag-grid-community';
 import { ResultadosComponent } from './sections/resultados/resultados.component';
 import { VentasComponent } from './sections/ventas/ventas.component';
 import { GastosComponent } from './sections/gastos/gastos.component';
@@ -27,6 +28,9 @@ import { InventarioComponent } from './sections/inventario/inventario.component'
 })
 export class DashboardComponent implements OnInit, OnDestroy {
   private static readonly SECCION_GUARDADA_KEY = 'smartpyme.dashboard.seccionActiva';
+
+  public miTema = themeQuartz;
+  public modules: any[] = [AllCommunityModule];
 
   /** Pestañas con vista en `ngSwitch` y persistencia en localStorage. */
   private readonly seccionesConVista = new Set<string>([

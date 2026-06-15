@@ -262,7 +262,7 @@
 }
 
 /* Estilos para AG Grid - Análisis Vertical */
-::ng-deep .analisis-vertical-grid.ag-theme-alpine {
+::ng-deep .analisis-vertical-grid {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     border: none !important;
     box-shadow: none !important;
@@ -296,7 +296,7 @@
 }
 
 /* Estilos para AG Grid - Análisis Horizontal */
-::ng-deep .analisis-horizontal-grid.ag-theme-alpine {
+::ng-deep .analisis-horizontal-grid {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     border: none !important;
     box-shadow: none !important;
@@ -330,7 +330,7 @@
 }
 
 /* Estilos para AG Grid - Flujo de Efectivo */
-::ng-deep .flujo-efectivo-grid.ag-theme-alpine {
+::ng-deep .flujo-efectivo-grid {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     border: none !important;
     box-shadow: none !important;

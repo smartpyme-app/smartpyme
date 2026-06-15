@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter, OnDestroy } from '@angular/core';
 import { ChartConfig } from '../../models/chart-config.model';
 
 import { CommonModule } from '@angular/common';
@@ -11,7 +11,7 @@ import { NgxEchartsModule } from 'ngx-echarts';
   standalone: true,
   imports: [CommonModule, NgxEchartsModule]
 })
-export class PieChartComponent implements OnInit, OnChanges {
+export class PieChartComponent implements OnInit, OnChanges, OnDestroy {
   @Input() config!: ChartConfig;
   @Output() itemClick = new EventEmitter<{ name: string; value: any; index: number }>();
   
@@ -26,6 +26,10 @@ export class PieChartComponent implements OnInit, OnChanges {
     if (changes['config'] && !changes['config'].firstChange) {
       this.initChart();
     }
+  }
+
+  ngOnDestroy(): void {
+    this.echartsInstance = null;
   }
 
   initChart(): void {
@@ -107,7 +111,10 @@ export class PieChartComponent implements OnInit, OnChanges {
       legend: {
         orient: 'vertical',
         left: 'left',
-        top: 'middle'
+        top: 'middle',
+        textStyle: {
+          color: '#878c94ff'
+        }
       },
       series: [
         {
@@ -122,6 +129,7 @@ export class PieChartComponent implements OnInit, OnChanges {
           },
           label: {
             show: false,
+            color: '#878c94ff',
             formatter: (params: any) => {
               const val = formatMoney(params.value);
               const percent = params.percent != null ? `${Number(params.percent).toFixed(1)}%` : '';
@@ -133,6 +141,7 @@ export class PieChartComponent implements OnInit, OnChanges {
               show: false,
               fontSize: 14,
               fontWeight: 'bold',
+              color: '#878c94ff',
               formatter: (params: any) => {
                 const val = formatMoney(params.value);
                 const percent = params.percent != null ? `${Number(params.percent).toFixed(1)}%` : '';

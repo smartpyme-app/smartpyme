@@ -83,7 +83,7 @@ label {
 }
 
 /* Estilos para AG Grid - Detalle de gastos */
-::ng-deep .detalle-gastos-grid.ag-theme-alpine {
+::ng-deep .detalle-gastos-grid {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   border: none !important;
   box-shadow: none !important;

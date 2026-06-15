@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, OnInit, OnChanges, SimpleChanges, Output, ViewChild, ChangeDetectorRef, ChangeDetectionStrategy, OnDestroy } from '@angular/core';
 import { DashboardDataService } from '../../services/dashboard-data.service';
-import { ColDef, GridOptions, GridApi } from 'ag-grid-community';
+import { ColDef, GridOptions, GridApi, themeQuartz, AllCommunityModule } from 'ag-grid-community';
 import { AgGridAngular } from 'ag-grid-angular';
 import { ApiService } from '@services/api.service';
 import {
@@ -22,7 +22,9 @@ import { FiltroFechaComponent } from '../../components/filtro-fecha/filtro-fecha
 import { DropdownMultiFiltroComponent } from '../../components/dropdown-multi-filtro/dropdown-multi-filtro.component';
 import { ChartCardComponent } from '../../components/chart-card/chart-card.component';
 import { TreemapChartComponent } from '../../components/treemap-chart/treemap-chart.component';
-import { PieChartComponent } from '../../components/pie-chart/pie-chart.component';
+import { LineChartComponent } from '../../components/line-chart/line-chart.component';
+import { BarChartComponent } from '../../components/bar-chart/bar-chart.component';
+import { AccountsListComponent } from '../../components/accounts-list/accounts-list.component';
 
 @Component({
   selector: 'app-gastos',
@@ -40,10 +42,15 @@ import { PieChartComponent } from '../../components/pie-chart/pie-chart.componen
     DropdownMultiFiltroComponent,
     ChartCardComponent,
     TreemapChartComponent,
-    PieChartComponent
+    LineChartComponent,
+    BarChartComponent,
+    AccountsListComponent
   ]
 })
 export class GastosComponent implements OnInit, OnChanges, OnDestroy {
+  public miTema = themeQuartz;
+  public modules: any[] = [AllCommunityModule];
+
   @Input() datos: any = {};
   @Output() filtrosCambiados = new EventEmitter<any>();
 
@@ -603,6 +610,7 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
     this.detalleGastosGridOptions = {
       pagination: true,
       paginationPageSize: 20,
+      paginationPageSizeSelector: [20, 50, 100],
       defaultColDef: {
         resizable: true,
         sortable: true,
@@ -632,7 +640,7 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
 
   /** Recalcula el total pinned basándose en las filas visibles tras filtrar */
   onFilterChangedGastos(): void {
-    if (!this.detalleGastosGridApi) return;
+    if (!this.detalleGastosGridApi || this.detalleGastosGridApi.isDestroyed()) return;
 
     let total = 0;
     this.detalleGastosGridApi.forEachNodeAfterFilter((node: any) => {

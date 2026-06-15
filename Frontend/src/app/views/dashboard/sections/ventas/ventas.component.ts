@@ -12,7 +12,7 @@ import {
 } from '../../components/dropdown-multi-filtro/dropdown-multi-filtro.component';
 
 
-import { ColDef, GridOptions, GridApi } from 'ag-grid-community';
+import { ColDef, GridOptions, GridApi, themeQuartz, AllCommunityModule } from 'ag-grid-community';
 import { MetricCard } from '../../models/chart-config.model';
 
 import { CommonModule } from '@angular/common';
@@ -25,7 +25,8 @@ import { DropdownMultiFiltroComponent } from '../../components/dropdown-multi-fi
 import { ChartCardComponent } from '../../components/chart-card/chart-card.component';
 import { LineChartComponent } from '../../components/line-chart/line-chart.component';
 import { BarChartComponent } from '../../components/bar-chart/bar-chart.component';
-import { PieChartComponent } from '../../components/pie-chart/pie-chart.component';
+import { AccountsListComponent } from '../../components/accounts-list/accounts-list.component';
+import { TreemapChartComponent } from '../../components/treemap-chart/treemap-chart.component';
 
 @Component({
   selector: 'app-ventas',
@@ -44,10 +45,14 @@ import { PieChartComponent } from '../../components/pie-chart/pie-chart.componen
     ChartCardComponent,
     LineChartComponent,
     BarChartComponent,
-    PieChartComponent
+    AccountsListComponent,
+    TreemapChartComponent
   ]
 })
 export class VentasComponent implements OnInit, OnChanges, OnDestroy {
+  public miTema = themeQuartz;
+  public modules: any[] = [AllCommunityModule];
+
   @Input() datos: any = {};
   @Output() filtrosCambiados = new EventEmitter<FiltrosConsultaVentasDashboard>();
 
@@ -512,6 +517,7 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
     this.ventasPorProductoGridOptions = {
       pagination: true,
       paginationPageSize: 20,
+      paginationPageSizeSelector: [20, 50, 100],
       suppressMenuHide: true,
       quickFilterText: '',
       getRowClass: (params: any) => {
@@ -592,6 +598,7 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
     this.ventasPorClienteGridOptions = {
       pagination: true,
       paginationPageSize: 20,
+      paginationPageSizeSelector: [20, 50, 100],
       suppressMenuHide: true,
       quickFilterText: '',
       defaultColDef: {
@@ -2421,7 +2428,7 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
     let costoTotal = 0;
     let utilidad = 0;
 
-    if (this.gridApi) {
+    if (this.gridApi && !this.gridApi.isDestroyed()) {
       this.gridApi.forEachNodeAfterFilter((node: any) => {
         if (node.data) {
           cantidad += (node.data.cantidad || 0);
@@ -2468,7 +2475,7 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
     let diasMax = 0;
     let ultimaVentaStr = '';
 
-    if (this.clienteGridApi) {
+    if (this.clienteGridApi && !this.clienteGridApi.isDestroyed()) {
       const fechas: string[] = [];
       this.clienteGridApi.forEachNodeAfterFilter((node: any) => {
         if (node.data) {
