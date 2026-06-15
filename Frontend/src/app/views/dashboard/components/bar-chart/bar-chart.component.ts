@@ -347,6 +347,12 @@ export class BarChartComponent implements OnInit, OnChanges, OnDestroy {
             return value && value.length > maxLen ? value.slice(0, maxLen) + '…' : value;
           }
         },
+        axisLine: {
+          show: false
+        },
+        axisTick: {
+          show: false
+        },
         inverse: true
       } : {
         type: 'value',
