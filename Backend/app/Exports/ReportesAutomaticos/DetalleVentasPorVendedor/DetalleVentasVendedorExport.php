@@ -79,8 +79,9 @@ class DetalleVentasVendedorExport implements WithMultipleSheets
                 'dv.cantidad',
                 'dv.precio',
                 'dv.descuento',
+                DB::raw('COALESCE(dv.iva, 0) as iva'),
                 DB::raw('(dv.cantidad * dv.precio) as subtotal'),
-                DB::raw('(dv.cantidad * dv.precio - COALESCE(dv.descuento, 0)) as total_con_descuento')
+                DB::raw('(dv.cantidad * dv.precio - COALESCE(dv.descuento, 0) + COALESCE(dv.iva, 0)) as total_con_descuento')
             )
                 ->orderBy('us.name')
                 ->orderBy('vv.fecha')
