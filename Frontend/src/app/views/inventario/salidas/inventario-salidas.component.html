@@ -42,10 +42,6 @@
                     *ngIf="apiService.canAccederOperacionesInventario()">Ajustes</button>
             <button class="btn" routerLinkActive="btn-primary" routerLink="/traslados"
                     *ngIf="apiService.canAccederOperacionesInventario()">Traslados</button>
-            <button class="btn" routerLinkActive="btn-primary" routerLink="/consignas"
-                    *ngIf="apiService.canAccederOperacionesInventario()">Consignas</button>
-            <button class="btn" routerLinkActive="btn-primary" routerLink="/consignas-compras"
-                    *ngIf="apiService.canAccederOperacionesInventario()">Consignas (compras)</button>
             <button class="btn" routerLinkActive="btn-primary" routerLink="/entradas"
                     *ngIf="apiService.canAccederOperacionesInventario()">Otras Entradas</button>
             <button class="btn tcla-F3" tooltip="Actualizar (F5)" (click)="loadAll()" routerLinkActive="btn-primary" routerLink="/salidas"

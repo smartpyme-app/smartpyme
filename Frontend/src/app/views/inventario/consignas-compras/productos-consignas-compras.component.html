@@ -1,5 +1,5 @@
 <section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
-    <h2 class="page-heading">Inventario</h2>
+    <h2 class="page-heading">Consignas</h2>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
@@ -21,19 +21,8 @@
     </div>
     <div class="d-flex flex-wrap gap-2 mb-3">
         <div class="d-flex gap-2 flex-wrap">
-            <button class="btn" routerLinkActive="btn-primary" routerLink="/productos">Todos</button>
-            <button class="btn" routerLinkActive="btn-primary" routerLink="/ajustes" 
-                    *ngIf="apiService.canAccederOperacionesInventario()">Ajustes</button>
-            <button class="btn" routerLinkActive="btn-primary" routerLink="/traslados"
-                    *ngIf="apiService.canAccederOperacionesInventario()">Traslados</button>
-            <button class="btn" routerLinkActive="btn-primary" routerLink="/consignas"
-                    *ngIf="apiService.canAccederOperacionesInventario()">Consignas</button>
-            <button class="btn" routerLinkActive="btn-primary" (click)="loadAll()" routerLink="/consignas-compras"
-                    *ngIf="apiService.canAccederOperacionesInventario()">Consignas (compras)</button>
-            <button class="btn" routerLinkActive="btn-primary" routerLink="/entradas"
-                    *ngIf="apiService.canAccederOperacionesInventario()">Otras Entradas</button>
-            <button class="btn" routerLinkActive="btn-primary" routerLink="/salidas"
-                    *ngIf="apiService.canAccederOperacionesInventario()">Otras Salidas</button>
+            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/consignas">Compras</button>
+            <button class="btn" routerLinkActive="btn-primary" routerLink="/consignas/ventas">Ventas</button>
         </div>
         <div class="ms-auto d-flex gap-2">
             <ng-select name="categoria" [(ngModel)]="filtros.categoria" class="form-select p-0 border-0 bg-default">
@@ -88,11 +77,16 @@
                                 <div class="d-flex flex-column">
                                     <button *ngIf="apiService.canEdit()" type="button"
                                         routerLink="/producto/editar/{{prod.id}}" class="btn text-start border-0 text-black">
-                                        <img src="/assets/icons/edit.png" class="icon me-2">Editar
+                                        <img src="/assets/icons/edit.png" class="icon me-2">Editar producto
                                     </button>
                                     <button type="button" (click)="openModal(mdetalles, prod)"
                                         class="btn text-start border-0 text-black">
                                         <i class="fa fa-fw fa-magnifying-glass me-2"></i>Ver detalles
+                                    </button>
+                                    <button *ngFor="let comp of prod.compras" type="button"
+                                        routerLink="/compra/{{ comp.id }}"
+                                        class="btn text-start border-0 text-black">
+                                        <i class="fa fa-fw fa-file-lines me-2"></i>Ver detalles de la compra<span *ngIf="prod.compras?.length > 1"> ({{ comp.referencia || comp.proveedor }})</span>
                                     </button>
                                 </div>
                             </ng-template>
@@ -121,11 +115,9 @@
                     <th>Fecha</th>
                     <th>Proveedor</th>
                     <th>Vencimiento/Pago</th>
-                    <th>Documento</th>
                     <th>Bodega</th>
                     <th>Sucursal</th>
                     <th class="text-right">Cantidad</th>
-                    <th class="text-right">Más</th>
                 </tr>
             </thead>
             <tbody>
@@ -133,20 +125,14 @@
                     <td>{{ comp.fecha | date:'dd/MM/yyyy' }}</td>
                     <td>{{ comp.proveedor }}</td>
                     <td>{{ comp.fecha_pago | date:'dd/MM/yyyy' }}</td>
-                    <td>{{ comp.tipo_documento }} # {{ comp.referencia }}</td>
                     <td>{{ comp.bodega }}</td>
                     <td>{{ comp.sucursal }}</td>
                     <td class="text-end">{{ comp.cantidad }}</td>
-                    <td class="text-end">
-                        <a class="btn btn-default" tooltip="Ver información de la compra" routerLink="/compra/{{comp.id}}">
-                            <img src="/assets/icons/search.png" class="icon">
-                        </a>
-                    </td>
                 </tr>
             </tbody>
             <tfoot>
                 <tr>
-                    <td colspan="6" class="text-end"><b>Total</b></td>
+                    <td colspan="5" class="text-end"><b>Total</b></td>
                     <td class="text-end"><b>{{ producto.compras | sum:'cantidad' }}</b></td>
                     <td></td>
                 </tr>

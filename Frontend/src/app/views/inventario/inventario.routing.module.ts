@@ -53,8 +53,9 @@ const routes: Routes = [
         { path: 'producto/editar/:id', component: ProductoComponent, title: 'Producto' },
         
 
-        { path: 'consignas', canActivate: [InventarioOperacionesAdminGuard], component: ProductosConsignasComponent, title: 'Productos en consigna' },
-        { path: 'consignas-compras', canActivate: [InventarioOperacionesAdminGuard], component: ProductosConsignasComprasComponent, title: 'Consignas (compras)' },
+        { path: 'consignas', canActivate: [InventarioOperacionesAdminGuard], component: ProductosConsignasComprasComponent, title: 'Consignas' },
+        { path: 'consignas/ventas', canActivate: [InventarioOperacionesAdminGuard], component: ProductosConsignasComponent, title: 'Consignas' },
+        { path: 'consignas-compras', redirectTo: 'consignas', pathMatch: 'full' },
         
         { path: 'materias-primas', component: MateriasPrimaComponent, title: 'Materias primas' },
         { path: 'materia-primas', component: MateriasPrimaComponent, title: 'Materias primas' },

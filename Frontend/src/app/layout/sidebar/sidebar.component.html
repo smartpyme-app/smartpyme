@@ -46,7 +46,6 @@
                 <div [collapse]="productosIsCollapsed" [isAnimated]="true" id="productos">
                   <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/productos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/package.png" class="icon me-2">Inventario</a></li>
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/consignas-compras']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/package.png" class="icon me-2">Consignas (compras)</a></li>
                     <li *ngIf="isLotesActivo()" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/lotes']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/2-layers.png" class="icon me-2">Lotes</a></li>
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/bodegas']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/box.png" class="icon me-2">Bodegas</a></li>
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/kardex']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/file-text.png" class="icon me-2">Kardex</a></li>
@@ -55,6 +54,11 @@
                     <!-- <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/materias-primas']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/droplet.png" class="icon me-2">Materia prima</a></li> -->
                   </ul>
                 </div>
+            </li>
+            <li *ngIf="apiService.canAccederOperacionesInventario()" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: false}">
+                <a [routerLink]="['/consignas']" tooltip="Consignas" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1 fw-bold">
+                    <img src="/assets/icons/package.png" class="icon me-2">Consignas
+                </a>
             </li>
             <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
                 <a [routerLink]="['/servicios']" tooltip="Servicios" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1 fw-bold">

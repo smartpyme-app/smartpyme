@@ -13,6 +13,7 @@ use Maatwebsite\Excel\Events\BeforeSheet;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use App\Constants\DocumentoConstants;
 
 /**
  * Libro de compras - Formato Honduras (SAR).
@@ -64,6 +65,7 @@ class LibroComprasExport implements FromCollection, WithMapping, WithHeadings, W
         $compras = Compra::with(['proveedor'])
             ->where('estado', '!=', 'Anulada')
             ->where('cotizacion', 0)
+            ->whereNotIn('tipo_documento', DocumentoConstants::TIPOS_COMPRA_SIN_IVA_FISCAL)
             ->when($request->id_sucursal, fn($q) => $q->where('id_sucursal', $request->id_sucursal))
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->get()
@@ -72,6 +74,7 @@ class LibroComprasExport implements FromCollection, WithMapping, WithHeadings, W
         $gastos = Gasto::with(['proveedor'])
             ->where('estado', '!=', 'Cancelado')
             ->where('estado', '!=', 'Anulada')
+            ->whereNotIn('tipo_documento', DocumentoConstants::TIPOS_COMPRA_SIN_IVA_FISCAL)
             ->when($request->id_sucursal, fn($q) => $q->where('id_sucursal', $request->id_sucursal))
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->get()
@@ -79,6 +82,7 @@ class LibroComprasExport implements FromCollection, WithMapping, WithHeadings, W
 
         $devoluciones = DevolucionCompra::with(['proveedor'])
             ->where('enable', true)
+            ->whereNotIn('tipo_documento', DocumentoConstants::TIPOS_COMPRA_SIN_IVA_FISCAL)
             ->when($request->id_sucursal, fn($q) => $q->where('id_sucursal', $request->id_sucursal))
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->get()
@@ -107,13 +111,14 @@ class LibroComprasExport implements FromCollection, WithMapping, WithHeadings, W
         $tipo = $r->tipo_documento ?? '';
         $esImportacion = stripos($tipo, 'Importación') !== false;
         $esSujetoExcluido = $tipo === 'Sujeto excluido';
+        $esSinIvaFiscal = DocumentoConstants::esCompraSinIvaFiscal($tipo);
 
         $fechaDoc = $r->fecha;
         $fechaContab = isset($r->created_at) ? $r->created_at : $r->fecha;
 
-        $importeExenta = $esSujetoExcluido ? (float) $r->total * $m : ($r->iva == 0 ? (float) $r->sub_total * $m : 0);
-        $importeGravada = !$esSujetoExcluido ? (float) $r->sub_total * $m : 0;
-        $impuestoVentas = !$esSujetoExcluido ? (float) $r->iva * $m : 0;
+        $importeExenta = ($esSujetoExcluido || $esSinIvaFiscal) ? (float) $r->total * $m : ($r->iva == 0 ? (float) $r->sub_total * $m : 0);
+        $importeGravada = (!$esSujetoExcluido && !$esSinIvaFiscal) ? (float) $r->sub_total * $m : 0;
+        $impuestoVentas = (!$esSujetoExcluido && !$esSinIvaFiscal) ? (float) $r->iva * $m : 0;
         $importeImportacion = $esImportacion ? (float) $r->total * $m : 0;
 
         return [

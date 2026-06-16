@@ -29,6 +29,7 @@ use App\Services\ShopifyStockService;
 use App\Services\Inventario\ConversionInventarioService;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
+use App\Constants\DocumentoConstants;
 
 class ComprasController extends Controller
 {
@@ -303,6 +304,7 @@ class ComprasController extends Controller
                 $compra = new Compra;
 
             $compra->fill($request->except(['detalles', 'dte']));
+            $this->aplicarReglasCompraSinIvaFiscal($compra);
             $this->aplicarIdentificadoresDteImportado($compra, $request);
             $compra->save();
 
@@ -320,6 +322,10 @@ class ComprasController extends Controller
                 // Aseguramos la asignación del id_presentacion
                 if (array_key_exists('id_presentacion', $det)) {
                     $det['id_presentacion'] = $det['id_presentacion'] ?: null;
+                }
+
+                if (DocumentoConstants::esCompraSinIvaFiscal($compra->tipo_documento)) {
+                    $det['iva'] = 0;
                 }
                 
                 $detalle->fill($det);
@@ -465,7 +471,7 @@ class ComprasController extends Controller
             $documento = Documento::where('nombre', $compra->tipo_documento)->where('id_sucursal', $compra->id_sucursal)->first();
             if ($documento) {
                 $porImportacionMasiva = $request->boolean('incrementar_correlativo_importacion_massiva');
-                $porFlujoLegado = in_array($compra->tipo_documento, ['Orden de compra', 'Sujeto excluido'], true);
+                $porFlujoLegado = in_array($compra->tipo_documento, ['Orden de compra', 'Sujeto excluido', DocumentoConstants::FACTURA_REMISION], true);
                 if ($porImportacionMasiva || $porFlujoLegado) {
                     $documento->increment('correlativo');
                 }
@@ -631,6 +637,7 @@ class ComprasController extends Controller
         $end = $request->fin;
 
         $compras = Compra::with('proveedor')->where('estado', '!=', 'Anulada')
+                            ->whereNotIn('tipo_documento', DocumentoConstants::TIPOS_COMPRA_SIN_IVA_FISCAL)
                             ->when($request->tipo_documento, function($query) use ($request){
                                 return $query->whereHas('documento', function($q) use ($request) {
                                         $q->where('nombre', $request->tipo_documento);
@@ -1036,6 +1043,20 @@ class ComprasController extends Controller
         }
 
         return null;
+    }
+
+    private function aplicarReglasCompraSinIvaFiscal(Compra $compra): void
+    {
+        if (! DocumentoConstants::esCompraSinIvaFiscal($compra->tipo_documento)) {
+            return;
+        }
+
+        $compra->iva = 0;
+        $compra->iva_retenido = 0;
+        $compra->percepcion = 0;
+        $compra->retencion = 0;
+        $compra->tipo_operacion = 'No Gravada';
+        $compra->total = round((float) $compra->sub_total, 2);
     }
 
 
