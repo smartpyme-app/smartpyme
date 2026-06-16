@@ -29,6 +29,10 @@ export class BoxfulShippingSelectorComponent implements OnInit {
   originAddresses: any[] = [];
   selectedOriginAddressId: string | null = null;
   loadingOriginAddresses = false;
+  originMode: 'saved' | 'new' = 'saved';
+  originAddressForm!: FormGroup;
+  savingOriginAddress = false;
+  filteredOriginCities: BoxfulCity[] = [];
 
   // Datos del Destinatario
   clienteNombre: string = '';
@@ -94,6 +98,17 @@ export class BoxfulShippingSelectorComponent implements OnInit {
       longitud: [null, [Validators.required, Validators.pattern(/^-?[0-9]+(\.[0-9]+)?$/)]],
       guardarDireccion: [true] // Opción para guardar la dirección en el cliente al final
     });
+
+    this.originAddressForm = this.fb.group({
+      direccion: ['', [Validators.required, Validators.maxLength(500)]],
+      referencia: ['', [Validators.required, Validators.maxLength(500)]], // Requerido por la especificación de origen
+      telefono: ['', [Validators.required, Validators.pattern(/^[0-9+ ]{8,20}$/)]],
+      codigo_area: ['503', [Validators.required, Validators.maxLength(10)]],
+      stateId: [null, [Validators.required]],
+      cityId: [null, [Validators.required]],
+      latitud: [null, [Validators.required, Validators.pattern(/^-?[0-9]+(\.[0-9]+)?$/)]],
+      longitud: [null, [Validators.required, Validators.pattern(/^-?[0-9]+(\.[0-9]+)?$/)]]
+    });
   }
 
   loadStates(): void {
@@ -126,7 +141,7 @@ export class BoxfulShippingSelectorComponent implements OnInit {
     this.boxfulService.getAddresses().subscribe({
       next: (res: any) => {
         this.loadingOriginAddresses = false;
-        
+
         let list: any[] = [];
         if (Array.isArray(res)) {
           list = res;
@@ -135,13 +150,15 @@ export class BoxfulShippingSelectorComponent implements OnInit {
         } else if (res && Array.isArray(res.data)) {
           list = res.data;
         }
-        
+
         this.originAddresses = list;
 
         if (this.originAddresses.length > 0) {
           this.selectedOriginAddressId = this.originAddresses[0].id || this.originAddresses[0].addressId;
+          this.originMode = 'saved';
         } else {
           this.selectedOriginAddressId = null;
+          this.originMode = 'new';
         }
       },
       error: (err: any) => {
@@ -157,7 +174,7 @@ export class BoxfulShippingSelectorComponent implements OnInit {
     this.boxfulService.getClientAddresses(this.clienteId).subscribe({
       next: (res: any) => {
         this.loading = false;
-        
+
         let addressesList: any[] = [];
         if (Array.isArray(res)) {
           addressesList = res;
@@ -225,6 +242,115 @@ export class BoxfulShippingSelectorComponent implements OnInit {
         longitud: null
       });
     }
+  }
+
+  toggleOriginMode(): void {
+    this.originMode = this.originMode === 'saved' ? 'new' : 'saved';
+    this.errorMessage = null;
+    if (this.originMode === 'new') {
+      this.originAddressForm.reset({
+        direccion: '',
+        referencia: '',
+        telefono: '',
+        codigo_area: '503',
+        stateId: null,
+        cityId: null,
+        latitud: null,
+        longitud: null
+      });
+      this.filteredOriginCities = [];
+    }
+  }
+
+  onOriginStateChange(): void {
+    const stateId = this.originAddressForm.get('stateId')?.value;
+    const selectedState = this.states.find(s => String(s.id) === String(stateId));
+
+    if (selectedState && selectedState.Cities) {
+      this.filteredOriginCities = selectedState.Cities;
+    } else {
+      this.filteredOriginCities = [];
+    }
+
+    this.originAddressForm.get('cityId')?.setValue(null);
+    this.originAddressForm.patchValue({
+      latitud: null,
+      longitud: null
+    });
+  }
+
+  onOriginCityChange(): void {
+    const cityId = this.originAddressForm.get('cityId')?.value;
+    const selectedCity = this.filteredOriginCities.find(c => String(c.id) === String(cityId));
+
+    if (selectedCity && selectedCity.latitude !== undefined && selectedCity.longitude !== undefined) {
+      this.originAddressForm.patchValue({
+        latitud: selectedCity.latitude,
+        longitud: selectedCity.longitude
+      });
+    } else {
+      this.originAddressForm.patchValue({
+        latitud: null,
+        longitud: null
+      });
+    }
+  }
+
+  guardarNuevaDireccionOrigen(): void {
+    if (this.originAddressForm.invalid) {
+      this.originAddressForm.markAllAsTouched();
+      this.alertService.error('Por favor complete todos los campos de la dirección de origen correctamente.');
+      return;
+    }
+
+    this.savingOriginAddress = true;
+    this.errorMessage = null;
+
+    const formVal = this.originAddressForm.value;
+    const payload = {
+      address: formVal.direccion,
+      referencePoint: formVal.referencia,
+      latitude: parseFloat(formVal.latitud),
+      longitude: parseFloat(formVal.longitud),
+      stateId: formVal.stateId,
+      cityId: formVal.cityId,
+      addressPhone: formVal.telefono,
+      addressAreaCode: formVal.codigo_area
+    };
+
+    this.boxfulService.createAddress(payload).subscribe({
+      next: (res: any) => {
+        this.savingOriginAddress = false;
+        this.alertService.success("success", 'Dirección de origen guardada exitosamente.');
+
+        // La API devuelve la dirección creada en res.address o directamente en res
+        const createdAddr = res.address || res;
+        if (createdAddr) {
+          this.originAddresses.push(createdAddr);
+          this.selectedOriginAddressId = createdAddr.id || createdAddr.addressId;
+          this.originMode = 'saved';
+          this.originAddressForm.reset({
+            direccion: '',
+            referencia: '',
+            telefono: '',
+            codigo_area: '503',
+            stateId: null,
+            cityId: null,
+            latitud: null,
+            longitud: null
+          });
+          this.filteredOriginCities = [];
+        } else {
+          this.loadOriginAddresses();
+        }
+      },
+      error: (err: any) => {
+        console.error('Error al guardar dirección de origen:', err);
+        this.errorMessage = err.error?.message || 'Ocurrió un error al guardar la dirección de origen en Boxful.';
+        this.alertService.error(this.errorMessage);
+        this.savingOriginAddress = false;
+      }
+    });
   }
 
   onModeChange(newMode: 'saved' | 'new'): void {
@@ -341,7 +467,7 @@ export class BoxfulShippingSelectorComponent implements OnInit {
     this.boxfulService.getCouriersAvailable(payload).subscribe({
       next: (res: any) => {
         this.loadingCouriers = false;
-        
+
         let couriersList: any[] = [];
         if (Array.isArray(res)) {
           couriersList = res;
@@ -469,6 +595,18 @@ export class BoxfulShippingSelectorComponent implements OnInit {
     this.shipmentResult = null;
     this.errorMessage = null;
     this.loadOriginAddresses();
+    this.originMode = 'saved';
+    this.originAddressForm.reset({
+      direccion: '',
+      referencia: '',
+      telefono: '',
+      codigo_area: '503',
+      stateId: null,
+      cityId: null,
+      latitud: null,
+      longitud: null
+    });
+    this.filteredOriginCities = [];
     if (this.mode === 'new') {
       this.addressForm.reset({
         direccion: '',
@@ -501,10 +639,10 @@ export class BoxfulShippingSelectorComponent implements OnInit {
     if (!deliveryStr) {
       return { dateFormatted: 'N/A', relativeLabel: 'N/A' };
     }
-    
+
     const normalizedStr = deliveryStr.replace(' ', 'T');
     const deliveryDate = new Date(normalizedStr);
-    
+
     if (isNaN(deliveryDate.getTime())) {
       return { dateFormatted: deliveryStr, relativeLabel: 'Próximamente' };
     }

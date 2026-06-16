@@ -115,21 +115,55 @@ class BoxFulAddressController extends Controller
         try {
             $request->validate([
                 'address' => 'required|string|max:500',
-                'referencePoint' => 'nullable|string|max:500',
+                'referencePoint' => 'required|string|max:500', // Requerido según la especificación
                 'latitude' => 'required|numeric',
                 'longitude' => 'required|numeric',
                 'stateId' => 'required|string',
                 'cityId' => 'required|string',
                 'addressPhone' => 'required|string|max:20',
                 'addressAreaCode' => 'required|string|max:10',
+                '_params' => 'nullable|array',
             ]);
 
-            // Filtrar estrictamente para enviar solo los campos requeridos (evitando _params u otros)
+            // Filtrar y preparar el payload para enviar a la API de Boxful
             $payload = $request->only([
                 'address', 'referencePoint', 'latitude', 'longitude', 'stateId', 'cityId', 'addressPhone', 'addressAreaCode'
             ]);
 
-            $response = $this->boxfulService->post('addresses', $payload);
+            // Incluir _params si viene en la petición, de lo contrario construir uno por defecto
+            if ($request->has('_params')) {
+                $payload['_params'] = $request->input('_params');
+            } else {
+                $payload['_params'] = [
+                    'address' => [
+                        'required' => true,
+                        'description' => 'Address name'
+                    ],
+                    'referencePoint' => [
+                        'required' => true
+                    ],
+                    'latitude' => [
+                        'required' => true
+                    ],
+                    'longitude' => [
+                        'required' => true
+                    ],
+                    'stateC807Id' => [
+                        'required' => true
+                    ],
+                    'cityC807Id' => [
+                        'required' => true
+                    ],
+                    'addressPhone' => [
+                        'required' => true
+                    ],
+                    'addressAreaCode' => [
+                        'required' => true
+                    ]
+                ];
+            }
+
+            $response = $this->boxfulService->createAddress($payload);
 
             if ($response->failed()) {
                 $status = $response->status();
@@ -240,7 +274,7 @@ class BoxFulAddressController extends Controller
     public function destroyAddress($id)
     {
         try {
-            $response = $this->boxfulService->delete("addresses/{$id}");
+            $response = $this->boxfulService->deleteAddress($id);
 
             if ($response->failed()) {
                 $status = $response->status();
@@ -271,6 +305,46 @@ class BoxFulAddressController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Ocurrió un error al eliminar la dirección: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Obtiene los detalles de una dirección en Boxful por su ID.
+     */
+    public function showAddress($id)
+    {
+        try {
+            $response = $this->boxfulService->getAddress($id);
+
+            if ($response->failed()) {
+                $status = $response->status();
+                $body = $response->json();
+                Log::error('Error de API Boxful en showAddress', [
+                    'id' => $id,
+                    'status' => $status,
+                    'response' => $body,
+                ]);
+
+                return response()->json([
+                    'status' => 'error',
+                    'message' => is_array($body) ? ($body['message'] ?? $body['error'] ?? 'Error al obtener la dirección de Boxful.') : 'Error de respuesta de la API de Boxful.',
+                    'errors' => is_array($body) ? ($body['errors'] ?? null) : null
+                ], $status);
+            }
+
+            return response()->json($response->json(), 200);
+
+        } catch (\Exception $e) {
+            Log::error('Excepción en BoxFulAddressController@showAddress', [
+                'id' => $id,
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Ocurrió un error al obtener la dirección: ' . $e->getMessage()
             ], 500);
         }
     }

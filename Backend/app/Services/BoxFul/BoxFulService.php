@@ -157,7 +157,77 @@ class BoxFulService
             return $integracion->access_token;
         }
 
-        // El token no está en BD o expiró, realizar petición de autenticación
+        // 3. Si el token de acceso expiró o no está disponible, intentar renovarlo con el refresh token (si existe y no está expirado)
+        $refreshToken = $integracion->refresh_token;
+        $refreshTokenExpiresAt = $integracion->getConfig('refresh_token_expires_at');
+        $isRefreshTokenExpired = false;
+        if ($refreshTokenExpiresAt) {
+            $isRefreshTokenExpired = now()->timestamp >= $refreshTokenExpiresAt;
+        }
+
+        if (!empty($refreshToken) && !$isRefreshTokenExpired) {
+            try {
+                $urlRefresh = rtrim($this->baseUrl, '/') . '/auth/v2/refresh';
+                Log::info('Intentando refrescar token con la API de Boxful (v2)', [
+                    'url' => $urlRefresh,
+                    'company_id' => $empresa->id
+                ]);
+
+                $responseRefresh = Http::withHeaders([
+                    'Content-Type' => 'application/json',
+                    'Accept' => 'application/json',
+                ])->post($urlRefresh, [
+                    'refreshToken' => $refreshToken,
+                ]);
+
+                if ($responseRefresh->successful()) {
+                    $accessToken = $responseRefresh->json('accessToken');
+                    $newRefreshToken = $responseRefresh->json('refreshToken');
+                    $accessTokenExpiresAt = $responseRefresh->json('accessTokenExpiresAt');
+                    $refreshTokenExpiresAt = $responseRefresh->json('refreshTokenExpiresAt');
+
+                    if (!empty($accessToken)) {
+                        $integracion->access_token = $accessToken;
+                        if (!empty($newRefreshToken)) {
+                            $integracion->refresh_token = $newRefreshToken;
+                        }
+                        
+                        $expiresAt = $accessTokenExpiresAt ? \Carbon\Carbon::createFromTimestamp($accessTokenExpiresAt) : now()->addHours(23);
+                        $integracion->token_expires_at = $expiresAt;
+                        $integracion->estado = 'connected';
+
+                        if ($refreshTokenExpiresAt) {
+                            $integracion->setConfig(['refresh_token_expires_at' => $refreshTokenExpiresAt]);
+                        }
+
+                        $this->fetchAndSaveClientId($accessToken, $integracion);
+                        $integracion->save();
+                        $this->integracion = $integracion;
+
+                        $this->updateOrCreateChannel($empresa);
+
+                        $secondsRemaining = max(0, $expiresAt->diffInSeconds(now()));
+                        if ($secondsRemaining > 0) {
+                            Cache::put($this->cacheKey, $accessToken, $secondsRemaining);
+                        }
+
+                        Log::info('Token de Boxful refrescado exitosamente.', ['company_id' => $empresa->id]);
+                        return $accessToken;
+                    }
+                } else {
+                    Log::warning('Intento de refrescar token de Boxful falló. Procediendo con autenticación por credenciales.', [
+                        'status' => $responseRefresh->status(),
+                        'response' => $responseRefresh->json(),
+                    ]);
+                }
+            } catch (\Exception $e) {
+                Log::warning('Excepción al intentar refrescar token de Boxful. Procediendo con autenticación por credenciales.', [
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
+        // 4. Fallback: El token no está en BD/expiró y la renovación falló o no estaba disponible, realizar petición de autenticación completa
         $email = $integracion->getCredential('email');
         $password = $integracion->getCredential('password');
 
@@ -166,13 +236,23 @@ class BoxFulService
             throw new \Exception('Las credenciales de API Boxful no están configuradas para la empresa: ' . $empresa->nombre);
         }
 
-        $url = rtrim($this->baseUrl, '/') . '/auth/client';
+        $url = rtrim($this->baseUrl, '/') . '/auth/v2/client';
         $payload = [
             'email' => $email,
             'password' => $password,
+            '_params' => [
+                'password' => [
+                    'description' => 'Correo',
+                    'required' => true,
+                ],
+                'email' => [
+                    'description' => 'Contraseña',
+                    'required' => true,
+                ],
+            ],
         ];
 
-        Log::info('Autenticando con la API de Boxful', ['url' => $url, 'company_id' => $empresa->id]);
+        Log::info('Autenticando con la API de Boxful (v2)', ['url' => $url, 'company_id' => $empresa->id]);
 
         try {
             $response = Http::withHeaders([
@@ -181,7 +261,7 @@ class BoxFulService
             ])->post($url, $payload);
 
             if ($response->failed()) {
-                Log::error('Inicio de sesión fallido en API Boxful', [
+                Log::error('Inicio de sesión fallido en API Boxful (v2)', [
                     'company_id' => $empresa->id,
                     'status' => $response->status(),
                     'response' => $response->json(),
@@ -193,19 +273,31 @@ class BoxFulService
             }
 
             $accessToken = $response->json('accessToken');
+            $refreshToken = $response->json('refreshToken');
+            $accessTokenExpiresAt = $response->json('accessTokenExpiresAt');
+            $refreshTokenExpiresAt = $response->json('refreshTokenExpiresAt');
 
             if (empty($accessToken)) {
-                Log::error('La respuesta de API Boxful no contiene un accessToken', ['response' => $response->json()]);
+                Log::error('La respuesta de API Boxful (v2) no contiene un accessToken', ['response' => $response->json()]);
 
                 // Actualizar estado en la base de datos a error
                 $integracion->markAsError('Respuesta de autenticación inválida desde Boxful.');
                 throw new \Exception('Respuesta de autenticación inválida desde Boxful.');
             }
 
-            // Guardar token y expiración en la base de datos (válido por 23 horas)
+            // Guardar token, refresh token y expiración
             $integracion->access_token = $accessToken;
-            $integracion->token_expires_at = now()->addHours(23);
+            $integracion->refresh_token = $refreshToken;
+            
+            // Establecer expiración del token de acceso
+            $expiresAt = $accessTokenExpiresAt ? \Carbon\Carbon::createFromTimestamp($accessTokenExpiresAt) : now()->addHours(23);
+            $integracion->token_expires_at = $expiresAt;
             $integracion->estado = 'connected';
+
+            // Guardar expiración del refresh token en la configuración
+            if ($refreshTokenExpiresAt) {
+                $integracion->setConfig(['refresh_token_expires_at' => $refreshTokenExpiresAt]);
+            }
 
             // Obtener y guardar el clientId
             $this->fetchAndSaveClientId($accessToken, $integracion);
@@ -216,8 +308,11 @@ class BoxFulService
             // Crear o actualizar el canal de ventas para Boxful
             $this->updateOrCreateChannel($empresa);
 
-            // Guardar en caché por 23 horas para reducir el tráfico a la base de datos
-            Cache::put($this->cacheKey, $accessToken, now()->addHours(23));
+            // Guardar en caché por el tiempo restante para reducir el tráfico a la base de datos
+            $secondsRemaining = max(0, $expiresAt->diffInSeconds(now()));
+            if ($secondsRemaining > 0) {
+                Cache::put($this->cacheKey, $accessToken, $secondsRemaining);
+            }
 
             return $accessToken;
 
@@ -230,7 +325,7 @@ class BoxFulService
         }
     }
 
-    private function updateOrCreateChannel($empresa)
+    protected function updateOrCreateChannel($empresa)
     {
          \App\Models\Admin\Canal::withoutGlobalScopes()->updateOrCreate(
             [
@@ -444,5 +539,137 @@ class BoxFulService
                 ->first();
         }
         return $this->integracion;
+    }
+
+    /**
+     * Registra una nueva dirección en la API de Boxful.
+     *
+     * @param array $data
+     * @return \Illuminate\Http\Client\Response
+     */
+    public function createAddress(array $data): \Illuminate\Http\Client\Response
+    {
+        return $this->post('addresses', $data);
+    }
+
+    /**
+     * Obtiene los detalles de un envío específico por su ID.
+     *
+     * @param string $id
+     * @return \Illuminate\Http\Client\Response
+     */
+    public function getShipment(string $id): \Illuminate\Http\Client\Response
+    {
+        return $this->get("shipment/{$id}");
+    }
+
+    /**
+     * Obtiene los detalles de una dirección específica por su ID.
+     *
+     * @param string $id
+     * @return \Illuminate\Http\Client\Response
+     */
+    public function getAddress(string $id): \Illuminate\Http\Client\Response
+    {
+        return $this->get("addresses/{$id}");
+    }
+
+    /**
+     * Elimina una dirección específica por su ID.
+     *
+     * @param string $id
+     * @return \Illuminate\Http\Client\Response
+     */
+    public function deleteAddress(string $id): \Illuminate\Http\Client\Response
+    {
+        return $this->delete("addresses/{$id}");
+    }
+
+    /**
+     * Obtiene la lista de paqueterías (couriers) disponibles en Shiphero.
+     *
+     * @param array $query
+     * @return \Illuminate\Http\Client\Response
+     */
+    public function getShipheroCouriers(array $query = []): \Illuminate\Http\Client\Response
+    {
+        return $this->get('courier/shiphero', $query);
+    }
+
+    /**
+     * Obtiene cotización de paqueterías (quoter) basadas en ciudad de origen y destino.
+     *
+     * @param array $data
+     * @return \Illuminate\Http\Client\Response
+     */
+    public function getQuote(array $data): \Illuminate\Http\Client\Response
+    {
+        return $this->post('quoter', $data);
+    }
+
+    /**
+     * Crea una orden/envío en Shiphero.
+     *
+     * @param array $data
+     * @return \Illuminate\Http\Client\Response
+     */
+    public function createShipheroOrder(array $data): \Illuminate\Http\Client\Response
+    {
+        return $this->post('shiphero/orders', $data);
+    }
+
+    /**
+     * Busca órdenes existentes en Shiphero.
+     *
+     * @param array $data
+     * @return \Illuminate\Http\Client\Response
+     */
+    public function searchShipheroOrders(array $data): \Illuminate\Http\Client\Response
+    {
+        return $this->post('shiphero/orders/search', $data);
+    }
+
+    /**
+     * Obtiene la lista de productos de Shiphero.
+     *
+     * @param array $query
+     * @return \Illuminate\Http\Client\Response
+     */
+    public function getShipheroProducts(array $query = []): \Illuminate\Http\Client\Response
+    {
+        return $this->get('shiphero/products', $query);
+    }
+
+    /**
+     * Obtiene los lockers disponibles.
+     *
+     * @param array $data
+     * @return \Illuminate\Http\Client\Response
+     */
+    public function getAvailableLockers(array $data): \Illuminate\Http\Client\Response
+    {
+        return $this->post('locker/available', $data);
+    }
+
+    /**
+     * Obtiene la información de rastreo de un envío por su ID.
+     *
+     * @param string $id
+     * @return \Illuminate\Http\Client\Response
+     */
+    public function getTracking(string $id): \Illuminate\Http\Client\Response
+    {
+        return $this->get("tracking/{$id}");
+    }
+
+    /**
+     * Registra un webhook de cliente en Boxful.
+     *
+     * @param array $data
+     * @return \Illuminate\Http\Client\Response
+     */
+    public function registerClientWebhook(array $data): \Illuminate\Http\Client\Response
+    {
+        return $this->post('client-webhook', $data);
     }
 }

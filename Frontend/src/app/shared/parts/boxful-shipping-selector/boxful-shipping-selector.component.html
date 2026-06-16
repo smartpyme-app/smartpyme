@@ -34,13 +34,21 @@
         <!-- ==================== PASO 1: SELECCIÓN DE DIRECCIÓN ==================== -->
         <div *ngIf="step === 1">
           <!-- Dirección de Origen (Bodega) -->
+          <!-- Dirección de Origen (Bodega) -->
           <div class="mb-3 pb-3 border-bottom">
             <label for="direccionOrigenSelect"
-              class="fw-bold text-dark mb-1 d-flex justify-content-between align-items-center">
+              class="fw-bold text-dark mb-1 d-flex justify-content-between align-items-center w-100">
               <span><i class="fa fa-building me-1"></i> Bodega / Dirección de origen de despacho <span
                   class="text-danger">*</span></span>
+              <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none fw-bold"
+                *ngIf="originAddresses.length > 0 && !loadingOriginAddresses"
+                (click)="toggleOriginMode()">
+                {{ originMode === 'saved' ? '+ Agregar bodega/origen' : 'Ver bodegas guardadas' }}
+              </button>
             </label>
-            <div *ngIf="!loadingOriginAddresses">
+
+            <!-- MODO ORIGEN 1: Bodega Guardada -->
+            <div *ngIf="originMode === 'saved' && !loadingOriginAddresses">
               <select id="direccionOrigenSelect" class="form-select" [(ngModel)]="selectedOriginAddressId">
                 <option [ngValue]="null" disabled>-- Seleccione una dirección de origen --</option>
                 <option *ngFor="let addr of originAddresses" [value]="addr.id || addr.addressId">
@@ -48,9 +56,88 @@
                 </option>
               </select>
               <div class="form-text text-muted mt-1 small" *ngIf="originAddresses.length === 0">
-                <i class="fa fa-info-circle me-1"></i> No tiene direcciones de origen registradas en Boxful. Confiúrelas
-                en Ajustes de Empresa.
+                <i class="fa fa-info-circle me-1"></i> No tiene direcciones de origen registradas en Boxful.
               </div>
+            </div>
+
+            <!-- MODO ORIGEN 2: Nueva Bodega/Origen -->
+            <div *ngIf="originMode === 'new' && !loadingOriginAddresses" class="p-3 bg-light rounded border mb-2 mt-2">
+              <h6 class="fw-bold text-dark mb-3"><i class="fa fa-plus-circle me-1"></i> Nueva dirección de origen (Bodega)</h6>
+              <form [formGroup]="originAddressForm" autocomplete="off">
+                <div class="form-group mb-3">
+                  <label for="origenDireccion" class="form-label mb-1 small">Dirección de Despacho <span class="text-danger">*</span></label>
+                  <textarea id="origenDireccion" formControlName="direccion" rows="2" class="form-control form-control-sm"
+                    placeholder="Calle, número de local, bodega, etc."
+                    [class.is-invalid]="originAddressForm.get('direccion')?.touched && originAddressForm.get('direccion')?.invalid"></textarea>
+                  <div class="text-danger mt-1" style="font-size: 11px;"
+                    *ngIf="originAddressForm.get('direccion')?.touched && originAddressForm.get('direccion')?.invalid">La dirección es requerida.</div>
+                </div>
+
+                <div class="form-group mb-3">
+                  <label for="origenReferencia" class="form-label mb-1 small">Punto de Referencia <span class="text-danger">*</span></label>
+                  <input id="origenReferencia" type="text" formControlName="referencia" class="form-control form-control-sm"
+                    placeholder="Ej: portón azul, al lado de gasolinera"
+                    [class.is-invalid]="originAddressForm.get('referencia')?.touched && originAddressForm.get('referencia')?.invalid">
+                  <div class="text-danger mt-1" style="font-size: 11px;"
+                    *ngIf="originAddressForm.get('referencia')?.touched && originAddressForm.get('referencia')?.invalid">La referencia es requerida.</div>
+                </div>
+
+                <input type="hidden" formControlName="latitud">
+                <input type="hidden" formControlName="longitud">
+
+                <div class="row">
+                  <div class="form-group col-6 mb-3">
+                    <label for="origenEstado" class="form-label mb-1 small">Estado/Depto <span class="text-danger">*</span></label>
+                    <select id="origenEstado" formControlName="stateId" (change)="onOriginStateChange()" class="form-select form-select-sm"
+                      [class.is-invalid]="originAddressForm.get('stateId')?.touched && originAddressForm.get('stateId')?.invalid">
+                      <option [ngValue]="null" disabled>Seleccione...</option>
+                      <option *ngFor="let state of states" [value]="state.id">{{ state.name }}</option>
+                    </select>
+                    <div class="text-danger mt-1" style="font-size: 11px;"
+                      *ngIf="originAddressForm.get('stateId')?.touched && originAddressForm.get('stateId')?.invalid">Seleccione depto.</div>
+                  </div>
+                  <div class="form-group col-6 mb-3">
+                    <label for="origenCiudad" class="form-label mb-1 small">Ciudad/Municipio <span class="text-danger">*</span></label>
+                    <select id="origenCiudad" formControlName="cityId" (change)="onOriginCityChange()" class="form-select form-select-sm"
+                      [class.is-invalid]="originAddressForm.get('cityId')?.touched && originAddressForm.get('cityId')?.invalid"
+                      [attr.disabled]="filteredOriginCities.length === 0 ? true : null">
+                      <option [ngValue]="null" disabled>Seleccione...</option>
+                      <option *ngFor="let city of filteredOriginCities" [value]="city.id">{{ city.name }}</option>
+                    </select>
+                    <div class="text-danger mt-1" style="font-size: 11px;"
+                      *ngIf="originAddressForm.get('cityId')?.touched && originAddressForm.get('cityId')?.invalid">Seleccione municipio.</div>
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div class="form-group col-4 mb-3">
+                    <label for="origenCodArea" class="form-label mb-1 small">Cód. Área <span class="text-danger">*</span></label>
+                    <input id="origenCodArea" type="text" formControlName="codigo_area" class="form-control form-control-sm"
+                      placeholder="503"
+                      [class.is-invalid]="originAddressForm.get('codigo_area')?.touched && originAddressForm.get('codigo_area')?.invalid">
+                    <div class="text-danger mt-1" style="font-size: 11px;"
+                      *ngIf="originAddressForm.get('codigo_area')?.touched && originAddressForm.get('codigo_area')?.invalid">Requerido.</div>
+                  </div>
+                  <div class="form-group col-8 mb-3">
+                    <label for="origenTelefono" class="form-label mb-1 small">Teléfono de Bodega <span class="text-danger">*</span></label>
+                    <input id="origenTelefono" type="text" formControlName="telefono" class="form-control form-control-sm"
+                      placeholder="70001234"
+                      [class.is-invalid]="originAddressForm.get('telefono')?.touched && originAddressForm.get('telefono')?.invalid">
+                    <div class="text-danger mt-1" style="font-size: 11px;"
+                      *ngIf="originAddressForm.get('telefono')?.touched && originAddressForm.get('telefono')?.invalid">Teléfono requerido.</div>
+                  </div>
+                </div>
+
+                <div class="d-flex justify-content-end mt-2">
+                  <button type="button" class="btn btn-sm btn-light me-2" *ngIf="originAddresses.length > 0" (click)="toggleOriginMode()">
+                    Cancelar
+                  </button>
+                  <button type="button" class="btn btn-sm btn-primary" [disabled]="savingOriginAddress" (click)="guardarNuevaDireccionOrigen()">
+                    <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true" *ngIf="savingOriginAddress"></span>
+                    <i class="fa fa-save me-1" *ngIf="!savingOriginAddress"></i> Guardar Bodega
+                  </button>
+                </div>
+              </form>
             </div>
 
             <div class="py-2 text-center" *ngIf="loadingOriginAddresses">

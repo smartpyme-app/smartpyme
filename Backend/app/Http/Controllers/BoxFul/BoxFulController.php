@@ -203,11 +203,21 @@ class BoxFulController extends Controller
 
             // Llamar a la API de Boxful para registrar el webhook
             $payload = [
-                'url' => $webhookUrl,
-                'secret' => $secret
+                'webhook' => $webhookUrl,
+                'accessToken' => $secret,
+                '_params' => [
+                    'webhook' => [
+                        'required' => true,
+                        'description' => 'URL a la que Boxful enviará las notificaciones del cliente. Debe aceptar POST requests.'
+                    ],
+                    'accessToken' => [
+                        'required' => false,
+                        'description' => 'Token opcional para validar la autenticidad de los requests del webhook.'
+                    ]
+                ]
             ];
 
-            $response = $this->boxfulService->post('client-webhook', $payload);
+            $response = $this->boxfulService->registerClientWebhook($payload);
 
             if ($response->failed()) {
                 $status = $response->status();
@@ -238,6 +248,68 @@ class BoxFulController extends Controller
                 'trace' => $e->getTraceAsString(),
             ]);
 
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Ocurrió un error al registrar el webhook: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Proxy a Boxful POST /client-webhook.
+     */
+    public function storeClientWebhook(Request $request)
+    {
+        try {
+            $request->validate([
+                'webhook' => 'required|url',
+                'accessToken' => 'nullable|string',
+            ]);
+
+            $payload = $request->only(['webhook', 'accessToken']);
+
+            if ($request->has('_params')) {
+                $payload['_params'] = $request->input('_params');
+            } else {
+                $payload['_params'] = [
+                    'webhook' => [
+                        'required' => true,
+                        'description' => 'URL a la que Boxful enviará las notificaciones del cliente. Debe aceptar POST requests.'
+                    ],
+                    'accessToken' => [
+                        'required' => false,
+                        'description' => 'Token opcional para validar la autenticidad de los requests del webhook.'
+                    ]
+                ];
+            }
+
+            $response = $this->boxfulService->registerClientWebhook($payload);
+
+            if ($response->failed()) {
+                $status = $response->status();
+                $body = $response->json();
+                Log::error('Error de API Boxful en storeClientWebhook', [
+                    'status' => $status,
+                    'response' => $body
+                ]);
+
+                return response()->json([
+                    'status' => 'error',
+                    'message' => is_array($body) ? ($body['message'] ?? $body['error'] ?? 'Error de Boxful al registrar el webhook.') : 'Error de respuesta de la API de Boxful.',
+                    'errors' => is_array($body) ? ($body['errors'] ?? null) : null
+                ], $status);
+            }
+
+            return response()->json($response->json(), 201);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validación local fallida.',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('BoxFulController@storeClientWebhook exception: ' . $e->getMessage());
             return response()->json([
                 'status' => 'error',
                 'message' => 'Ocurrió un error al registrar el webhook: ' . $e->getMessage()

@@ -589,4 +589,409 @@ class BoxFulShippingController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * E) Obtiene los detalles de un envío en Boxful por su ID.
+     */
+    public function getShipment($id)
+    {
+        try {
+            $response = $this->boxfulService->getShipment($id);
+
+            if ($response->failed()) {
+                $status = $response->status();
+                $body = $response->json();
+                Log::error('Error de API Boxful en getShipment', [
+                    'id' => $id,
+                    'status' => $status,
+                    'response' => $body
+                ]);
+
+                return response()->json([
+                    'status' => 'error',
+                    'message' => is_array($body) ? ($body['message'] ?? $body['error'] ?? 'Error al consultar el envío en Boxful.') : 'Error de respuesta de la API de Boxful.',
+                    'errors' => is_array($body) ? ($body['errors'] ?? null) : null
+                ], $status);
+            }
+
+            return response()->json($response->json(), 200);
+
+        } catch (\Exception $e) {
+            Log::error('BoxFulShippingController@getShipment exception: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Ocurrió un error al consultar el envío: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * F) Obtiene los transportistas (couriers) disponibles de Shiphero en Boxful.
+     */
+    public function getShipheroCouriers(Request $request)
+    {
+        try {
+            $response = $this->boxfulService->getShipheroCouriers($request->query());
+
+            if ($response->failed()) {
+                $status = $response->status();
+                $body = $response->json();
+                Log::error('Error de API Boxful en getShipheroCouriers', [
+                    'status' => $status,
+                    'response' => $body
+                ]);
+
+                return response()->json([
+                    'status' => 'error',
+                    'message' => is_array($body) ? ($body['message'] ?? $body['error'] ?? 'Error al obtener transportistas de Shiphero.') : 'Error de respuesta de la API de Boxful.',
+                    'errors' => is_array($body) ? ($body['errors'] ?? null) : null
+                ], $status);
+            }
+
+            return response()->json($response->json(), 200);
+
+        } catch (\Exception $e) {
+            Log::error('BoxFulShippingController@getShipheroCouriers exception: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Ocurrió un error al obtener los transportistas: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * G) Proxy a Boxful POST /quoter.
+     */
+    public function getQuote(Request $request)
+    {
+        try {
+            $request->validate([
+                'recollectionCityId' => 'required|string',
+                'customerCityId' => 'required|string',
+            ]);
+
+            $payload = $request->only(['recollectionCityId', 'customerCityId']);
+
+            $response = $this->boxfulService->getQuote($payload);
+
+            if ($response->failed()) {
+                $status = $response->status();
+                $body = $response->json();
+                Log::error('Error de API Boxful en getQuote', [
+                    'status' => $status,
+                    'response' => $body
+                ]);
+
+                return response()->json([
+                    'status' => 'error',
+                    'message' => is_array($body) ? ($body['message'] ?? $body['error'] ?? 'Error de Boxful al cotizar.') : 'Error de respuesta de la API de Boxful.',
+                    'errors' => is_array($body) ? ($body['errors'] ?? null) : null
+                ], $status);
+            }
+
+            return response()->json($response->json(), 201);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validación local fallida.',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('BoxFulShippingController@getQuote exception: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Ocurrió un error al cotizar: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * H) Proxy a Boxful POST /shiphero/orders.
+     */
+    public function createShipheroOrder(Request $request)
+    {
+        try {
+            $request->validate([
+                'cityId' => 'required|string',
+                'completeName' => 'required|string',
+                'customerAreaCode' => 'required|string',
+                'customerPhone' => 'required|string',
+                'customerAddress' => 'required|string',
+                'customerReferencePoint' => 'required|string',
+                'cod' => 'required|boolean',
+                'courierId' => 'required|string',
+                'totalTax' => 'required|numeric',
+                'subtotal' => 'required|numeric',
+                'totalDiscounts' => 'required|numeric',
+                'totalPrice' => 'required|numeric',
+                'shippingCost' => 'required|numeric',
+                'products' => 'required|array',
+                'products.*.sku' => 'required|string',
+                'products.*.quantity' => 'required|numeric',
+                'products.*.price' => 'required|numeric',
+                'products.*.productName' => 'required|string',
+                'isFragile' => 'required|boolean',
+            ]);
+
+            $payload = $request->only([
+                'cityId', 'completeName', 'email', 'customerAreaCode', 'customerPhone',
+                'customerAddress', 'customerReferencePoint', 'cod', 'courierId',
+                'totalTax', 'subtotal', 'totalDiscounts', 'totalPrice', 'shippingCost',
+                'products', 'makeCustomerFavorite', 'isFavoriteCustomerSelected',
+                'favoriteCustomerId', 'isFragile'
+            ]);
+
+            if ($request->has('_params')) {
+                $payload['_params'] = $request->input('_params');
+            } else {
+                $payload['_params'] = [
+                    'cityId' => ['required' => true],
+                    'completeName' => ['required' => true],
+                    'customerAreaCode' => ['required' => true],
+                    'customerPhone' => ['required' => true],
+                    'customerAddress' => ['required' => true],
+                    'customerReferencePoint' => ['required' => true],
+                    'cod' => ['required' => true],
+                    'courierId' => ['required' => true],
+                    'totalTax' => ['required' => true],
+                    'subtotal' => ['required' => true],
+                    'totalDiscounts' => ['required' => true],
+                    'totalPrice' => ['required' => true],
+                    'shippingCost' => ['required' => true],
+                    'products.sku' => ['required' => true],
+                    'products.quantity' => ['required' => true],
+                    'products.price' => ['required' => true],
+                    'products.productName' => ['required' => true],
+                    'isFragile' => ['required' => true],
+                ];
+            }
+
+            $response = $this->boxfulService->createShipheroOrder($payload);
+
+            if ($response->failed()) {
+                $status = $response->status();
+                $body = $response->json();
+                Log::error('Error de API Boxful en createShipheroOrder', [
+                    'status' => $status,
+                    'response' => $body
+                ]);
+
+                return response()->json([
+                    'status' => 'error',
+                    'message' => is_array($body) ? ($body['message'] ?? $body['error'] ?? 'Error de Boxful al crear la orden de Shiphero.') : 'Error de respuesta de la API de Boxful.',
+                    'errors' => is_array($body) ? ($body['errors'] ?? null) : null
+                ], $status);
+            }
+
+            return response()->json($response->json(), 201);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validación local fallida.',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('BoxFulShippingController@createShipheroOrder exception: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Ocurrió un error al crear la orden de Shiphero: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * I) Proxy a Boxful POST /shiphero/orders/search.
+     */
+    public function searchShipheroOrders(Request $request)
+    {
+        try {
+            $request->validate([
+                'startDate' => 'nullable|string',
+                'endDate' => 'nullable|string',
+                'orderNumber' => 'nullable|string',
+            ]);
+
+            $payload = $request->only(['startDate', 'endDate', 'orderNumber']);
+
+            if ($request->has('_params')) {
+                $payload['_params'] = $request->input('_params');
+            } else {
+                $payload['_params'] = [
+                    'startDate' => ['required' => false],
+                    'endDate' => ['required' => false],
+                    'orderNumber' => ['required' => false],
+                ];
+            }
+
+            $response = $this->boxfulService->searchShipheroOrders($payload);
+
+            if ($response->failed()) {
+                $status = $response->status();
+                $body = $response->json();
+                Log::error('Error de API Boxful en searchShipheroOrders', [
+                    'status' => $status,
+                    'response' => $body
+                ]);
+
+                return response()->json([
+                    'status' => 'error',
+                    'message' => is_array($body) ? ($body['message'] ?? $body['error'] ?? 'Error de Boxful al buscar la orden de Shiphero.') : 'Error de respuesta de la API de Boxful.',
+                    'errors' => is_array($body) ? ($body['errors'] ?? null) : null
+                ], $status);
+            }
+
+            return response()->json($response->json(), 200);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validación local fallida.',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('BoxFulShippingController@searchShipheroOrders exception: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Ocurrió un error al buscar la orden de Shiphero: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * J) Proxy a Boxful GET /shiphero/products.
+     */
+    public function getShipheroProducts(Request $request)
+    {
+        try {
+            $response = $this->boxfulService->getShipheroProducts($request->query());
+
+            if ($response->failed()) {
+                $status = $response->status();
+                $body = $response->json();
+                Log::error('Error de API Boxful en getShipheroProducts', [
+                    'status' => $status,
+                    'response' => $body
+                ]);
+
+                return response()->json([
+                    'status' => 'error',
+                    'message' => is_array($body) ? ($body['message'] ?? $body['error'] ?? 'Error al obtener productos de Shiphero.') : 'Error de respuesta de la API de Boxful.',
+                    'errors' => is_array($body) ? ($body['errors'] ?? null) : null
+                ], $status);
+            }
+
+            return response()->json($response->json(), 200);
+
+        } catch (\Exception $e) {
+            Log::error('BoxFulShippingController@getShipheroProducts exception: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Ocurrió un error al obtener los productos de Shiphero: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * K) Proxy a Boxful POST /locker/available.
+     */
+    public function getAvailableLockers(Request $request)
+    {
+        try {
+            $request->validate([
+                'weight' => 'required|numeric',
+                'volume' => 'required|numeric',
+                'cityId' => 'required|string',
+            ]);
+
+            $payload = $request->only(['weight', 'volume', 'cityId']);
+
+            if ($request->has('_params')) {
+                $payload['_params'] = $request->input('_params');
+            } else {
+                $payload['_params'] = [
+                    'weight' => [
+                        'description' => 'Expressed in pounds',
+                        'required' => true
+                    ],
+                    'volume' => [
+                        'description' => 'Expressed in pounds',
+                        'required' => true
+                    ],
+                    'cityId' => [
+                        'cityId' => 'cityId on /states',
+                        'required' => true
+                    ]
+                ];
+            }
+
+            $response = $this->boxfulService->getAvailableLockers($payload);
+
+            if ($response->failed()) {
+                $status = $response->status();
+                $body = $response->json();
+                Log::error('Error de API Boxful en getAvailableLockers', [
+                    'status' => $status,
+                    'response' => $body
+                ]);
+
+                return response()->json([
+                    'status' => 'error',
+                    'message' => is_array($body) ? ($body['message'] ?? $body['error'] ?? 'Error de Boxful al buscar lockers disponibles.') : 'Error de respuesta de la API de Boxful.',
+                    'errors' => is_array($body) ? ($body['errors'] ?? null) : null
+                ], $status);
+            }
+
+            return response()->json($response->json(), 201);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validación local fallida.',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('BoxFulShippingController@getAvailableLockers exception: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Ocurrió un error al buscar lockers disponibles: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * L) Proxy a Boxful GET /tracking/{id}.
+     */
+    public function getTracking($id)
+    {
+        try {
+            $response = $this->boxfulService->getTracking($id);
+
+            if ($response->failed()) {
+                $status = $response->status();
+                $body = $response->json();
+                Log::error('Error de API Boxful en getTracking', [
+                    'id' => $id,
+                    'status' => $status,
+                    'response' => $body
+                ]);
+
+                return response()->json([
+                    'status' => 'error',
+                    'message' => is_array($body) ? ($body['message'] ?? $body['error'] ?? 'Error al obtener la información de rastreo en Boxful.') : 'Error de respuesta de la API de Boxful.',
+                    'errors' => is_array($body) ? ($body['errors'] ?? null) : null
+                ], $status);
+            }
+
+            return response()->json($response->json(), 200);
+
+        } catch (\Exception $e) {
+            Log::error('BoxFulShippingController@getTracking exception: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Ocurrió un error al consultar el rastreo: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }
