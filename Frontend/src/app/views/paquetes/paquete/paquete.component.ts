@@ -24,10 +24,6 @@ export class PaqueteComponent implements OnInit {
     public saving = false;
     modalRef?: BsModalRef;
 
-    get hasBoxful(): boolean {
-        const empresa = this.apiService.auth_user()?.empresa;
-        return !!(empresa && empresa.modulo_paquetes && empresa.boxful_status === 'connected');
-    }
 
 	constructor( 
 	    private apiService: ApiService, private alertService: AlertService,

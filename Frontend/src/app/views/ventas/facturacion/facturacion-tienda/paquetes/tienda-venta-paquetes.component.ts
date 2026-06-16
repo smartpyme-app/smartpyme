@@ -18,6 +18,7 @@ export class TiendaVentaPaquetesComponent implements OnInit {
     @Output() productoSelect = new EventEmitter();
     /** Si en la grilla (pág. actual) hay al menos un paquete con cuenta a terceros &gt; 0. */
     @Output() alMenosUnPaqueteConCuentaTerceros = new EventEmitter<void>();
+    @Output() selectCliente = new EventEmitter<any>();
     modalRef!: BsModalRef;
 
     public paquetes:any = [];
@@ -122,6 +123,12 @@ export class TiendaVentaPaquetesComponent implements OnInit {
 
 
     selectProducto(paquete:any){
+        if (paquete.id_cliente && this.venta.id_cliente !== paquete.id_cliente) {
+            // ponytail: auto-select client on package selection
+            this.apiService.read('cliente/', paquete.id_cliente).subscribe((cliente: any) => {
+                this.selectCliente.emit(cliente);
+            });
+        }
         this.detalle = Object.assign({}, paquete);
         this.detalle.id_paquete    = paquete.id;
         this.detalle.descripcion   = 'Número: ' + paquete.wr + ' Guia: ' + paquete.num_guia;
@@ -157,8 +164,12 @@ export class TiendaVentaPaquetesComponent implements OnInit {
             if ((parseFloat(String(paquete.cuenta_a_terceros ?? 0)) || 0) > 0.0001) {
                 this.alMenosUnPaqueteConCuentaTerceros.emit();
             }
-            if(!this.venta.id_cliente && paquete.id_cliente){
+            if(paquete.id_cliente && this.venta.id_cliente !== paquete.id_cliente){
                 this.venta.id_cliente = paquete.id_cliente;
+                // ponytail: auto-select client on package checking
+                this.apiService.read('cliente/', paquete.id_cliente).subscribe((cliente: any) => {
+                    this.selectCliente.emit(cliente);
+                });
             }
             this.detalle = Object.assign({}, this.servicio);
             this.detalle.id_producto    = this.servicio.id;

@@ -559,13 +559,61 @@ class BoxFulShippingController extends Controller
             $trackingUrl = $shipmentData['trackingUrl'] ?? $shipmentData['data']['trackingUrl'] ?? $shipmentData['response']['trackingUrl'] ?? null;
 
             if ($shipmentNumber && $paqueteModel) {
+                // ponytail: save shipment & parcel data to separate boxful tables
                 $paqueteModel->num_guia = $shipmentNumber;
-                $paqueteModel->boxful_shipment_id = $shipmentId;
-                $paqueteModel->boxful_courier_id = $courierId;
-                $paqueteModel->boxful_courier_name = $shipmentData['courierName'] ?? $shipmentData['data']['courierName'] ?? $shipmentData['response']['courierName'] ?? null;
-                $paqueteModel->boxful_label_url = $labelUrl;
-                $paqueteModel->boxful_tracking_url = $trackingUrl;
                 $paqueteModel->save();
+
+                $localOrigenId = null;
+                if (!empty($direccionOrigenId)) {
+                    $localOrigen = \App\Models\Admin\DireccionOrigen::where('boxful_address_id', $direccionOrigenId)->first();
+                    if ($localOrigen) {
+                        $localOrigenId = $localOrigen->id;
+                    } else {
+                        // Create a skeleton local record so foreign key is satisfied
+                        $localOrigen = \App\Models\Admin\DireccionOrigen::create([
+                            'id_empresa' => $empresa->id,
+                            'alias' => 'Dirección autogenerada',
+                            'direccion' => $destino['direccion'] ?? 'Dirección',
+                            'referencia' => $destino['referencia'] ?? 'Autogenerado',
+                            'telefono' => $destino['telefono'] ?? '70000000',
+                            'boxful_state_id' => $destino['stateId'] ?? '0',
+                            'boxful_city_id' => $destino['cityId'] ?? '0',
+                            'boxful_address_id' => $direccionOrigenId,
+                            'latitud' => 0,
+                            'longitud' => 0,
+                        ]);
+                        $localOrigenId = $localOrigen->id;
+                    }
+                }
+
+                $boxfulShipment = \App\Models\Inventario\BoxfulShipment::create([
+                    'paquete_id' => $paqueteModel->id,
+                    'direccion_origen_id' => $localOrigenId,
+                    'fecha_recoleccion' => now(),
+                    'cod' => false,
+                    'cod_monto' => 0,
+                    'boxful_shipment_id' => $shipmentId,
+                    'shipment_number' => $shipmentNumber,
+                    'boxful_courier_id' => $courierId,
+                    'boxful_courier_name' => $shipmentData['courierName'] ?? $shipmentData['data']['courierName'] ?? $shipmentData['response']['courierName'] ?? null,
+                    'boxful_label_url' => $labelUrl,
+                    'boxful_tracking_url' => $trackingUrl,
+                    'boxful_status' => $shipmentData['status'] ?? null,
+                    'boxful_status_description' => $shipmentData['statusDescription'] ?? null,
+                ]);
+
+                if ($boxfulShipment) {
+                    \App\Models\Inventario\BoxfulParcel::create([
+                        'boxful_shipment_id' => $boxfulShipment->id,
+                        'contenido' => $contenido,
+                        'alto' => $alto,
+                        'ancho' => $ancho,
+                        'largo' => $largo,
+                        'peso' => $peso,
+                        'valor_declarado' => $valor,
+                        'es_fragil' => $isFragile,
+                    ]);
+                }
 
                 Log::info('Guía de Boxful guardada en el paquete local correctamente', [
                     'paqueteId' => $paqueteModel->id,

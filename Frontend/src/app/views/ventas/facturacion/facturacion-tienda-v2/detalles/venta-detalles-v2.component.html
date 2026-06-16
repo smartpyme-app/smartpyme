@@ -6,7 +6,8 @@
             (productoSelect)="productoSelect($event)"></app-tienda-venta-producto>
         <app-tienda-venta-paquetes-v2 *ngIf="usuario.empresa.modulo_paquetes && venta.cotizacion != 1" [venta]="venta"
             (productoSelect)="productoSelect($event)"
-            (alMenosUnPaqueteConCuentaTerceros)="onAlMenosUnPaqueteCuentaTercerosEnListado()"></app-tienda-venta-paquetes-v2>
+            (alMenosUnPaqueteConCuentaTerceros)="onAlMenosUnPaqueteCuentaTercerosEnListado()"
+            (selectCliente)="selectCliente.emit($event)"></app-tienda-venta-paquetes-v2>
         <app-tienda-venta-citas *ngIf="usuario.empresa.modulo_citas && venta.cotizacion != 1" [venta]="venta"
             (productoSelect)="productoSelect($event)"></app-tienda-venta-citas>
     </div>

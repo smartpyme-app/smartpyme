@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, OnChanges, SimpleChanges } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { BoxfulApiService, BoxfulState, BoxfulCity } from '@services/boxful/boxful-api.service';
 import { AlertService } from '@services/alert.service';
@@ -8,14 +8,28 @@ import { AlertService } from '@services/alert.service';
   templateUrl: './boxful-shipping-selector.component.html',
   styleUrls: ['./boxful-shipping-selector.component.css']
 })
-export class BoxfulShippingSelectorComponent implements OnInit {
+export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
   @Input() clienteId!: number;
   @Input() paqueteData: any; // peso, alto, ancho, largo
   @Output() guiaGenerada = new EventEmitter<any>();
   @Output() cerrar = new EventEmitter<void>();
 
+  public clientData: any = null;
+
   // Asistente (Wizard)
   step: number = 1;
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['clienteId'] && !changes['clienteId'].firstChange) {
+      this.resetWizard();
+      if (this.clienteId) {
+        this.loadAddresses();
+        this.loadClientDetails();
+      } else {
+        this.mode = 'new';
+      }
+    }
+  }
 
   // Paso 1
   addressForm!: FormGroup;
@@ -75,9 +89,12 @@ export class BoxfulShippingSelectorComponent implements OnInit {
     this.boxfulService.getClientDetails(this.clienteId).subscribe({
       next: (client: any) => {
         if (client) {
+          this.clientData = client;
           this.clienteNombre = client.nombre || '';
           this.clienteApellido = client.apellido || '';
           this.clienteEmail = client.correo || client.email || '';
+          
+          this.fillAddressFormFromClient();
         }
       },
       error: (err: any) => {
@@ -127,6 +144,7 @@ export class BoxfulShippingSelectorComponent implements OnInit {
           this.states = [];
           this.errorMessage = res?.message || res?.error || 'No se pudieron cargar los estados de Boxful (respuesta inválida).';
         }
+        this.tryMatchClientLocation();
       },
       error: (err: any) => {
         console.error('Error cargando estados de Boxful:', err);
@@ -672,5 +690,64 @@ export class BoxfulShippingSelectorComponent implements OnInit {
 
   closeSelector(): void {
     this.cerrar.emit();
+  }
+
+  private fillAddressFormFromClient(): void {
+    if (!this.clientData) return;
+
+    const clientAddress = this.clientData.tipo === 'Empresa' ? this.clientData.empresa_direccion : this.clientData.direccion;
+    const clientPhone = this.clientData.tipo === 'Empresa' ? this.clientData.empresa_telefono : this.clientData.telefono;
+
+    if (clientAddress && !this.addressForm.get('direccion')?.value) {
+      // ponytail: pre-fill shipping selector address from client profile
+      this.addressForm.patchValue({
+        direccion: clientAddress
+      });
+    }
+
+    if (clientPhone && !this.addressForm.get('telefono')?.value) {
+      // ponytail: clean phone format and pre-fill phone
+      const cleanedPhone = String(clientPhone).replace(/[^0-9+ ]/g, '');
+      this.addressForm.patchValue({
+        telefono: cleanedPhone
+      });
+    }
+
+    this.tryMatchClientLocation();
+  }
+
+  private tryMatchClientLocation(): void {
+    if (!this.clientData || !this.states || this.states.length === 0) return;
+
+    const clientState = this.clientData.departamento;
+    const clientCity = this.clientData.municipio;
+
+    if (!clientState) return;
+
+    // ponytail: case-insensitive match for department name to auto-fill select dropdown
+    const matchedState = this.states.find(s =>
+      s.name.toLowerCase().trim() === clientState.toLowerCase().trim()
+    );
+
+    if (matchedState) {
+      this.addressForm.patchValue({
+        stateId: matchedState.id
+      });
+
+      this.onStateChange();
+
+      if (clientCity && this.filteredCities.length > 0) {
+        // ponytail: case-insensitive match for municipality name to auto-fill select dropdown
+        const matchedCity = this.filteredCities.find(c =>
+          c.name.toLowerCase().trim() === clientCity.toLowerCase().trim()
+        );
+        if (matchedCity) {
+          this.addressForm.patchValue({
+            cityId: matchedCity.id
+          });
+          this.onCityChange();
+        }
+      }
+    }
   }
 }

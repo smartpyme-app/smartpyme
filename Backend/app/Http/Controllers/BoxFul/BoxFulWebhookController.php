@@ -69,10 +69,12 @@ class BoxFulWebhookController extends Controller
 
         $paquete = null;
         if ($shipmentId) {
-            $paquete = Paquete::withoutGlobalScope('empresa')
-                ->where('id_empresa', $empresaId)
-                ->where('boxful_shipment_id', $shipmentId)
-                ->first();
+            $shipment = \App\Models\Inventario\BoxfulShipment::where('boxful_shipment_id', $shipmentId)->first();
+            if ($shipment) {
+                $paquete = Paquete::withoutGlobalScope('empresa')
+                    ->where('id_empresa', $empresaId)
+                    ->find($shipment->paquete_id);
+            }
         }
         if (!$paquete && $shipmentNumber) {
             $paquete = Paquete::withoutGlobalScope('empresa')
@@ -85,6 +87,14 @@ class BoxFulWebhookController extends Controller
             if ($status) {
                 $paquete->estado = $status;
                 $paquete->save();
+
+                // ponytail: also update status description in boxful_shipments
+                if ($shipmentId) {
+                    \App\Models\Inventario\BoxfulShipment::where('boxful_shipment_id', $shipmentId)
+                        ->update([
+                            'boxful_status_description' => $status,
+                        ]);
+                }
 
                 Log::info('Webhook de Boxful: Paquete actualizado correctamente', [
                     'paquete_id' => $paquete->id,
