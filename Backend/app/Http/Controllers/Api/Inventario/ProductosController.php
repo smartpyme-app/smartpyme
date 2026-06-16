@@ -756,6 +756,192 @@ class ProductosController extends Controller
         return Response()->json($producto, 201);
     }
 
+    /**
+     * Serie histórica de precio (ventas) y costo (compras) para gráfica de tendencia.
+     */
+    public function historialPrecioCosto(Request $request, $id)
+    {
+        $request->validate([
+            'inicio'     => 'required|date',
+            'fin'        => 'required|date|after_or_equal:inicio',
+            'id_usuario' => 'nullable|integer',
+        ]);
+
+        $producto = Producto::findOrFail($id);
+        $inicio = $request->inicio;
+        $fin = $request->fin;
+        $idUsuario = $request->id_usuario;
+
+        $detallesVentas = DetalleVenta::where('id_producto', $producto->id)
+            ->whereHas('venta', function ($q) use ($inicio, $fin) {
+                $q->where('estado', 'Pagada')
+                    ->whereBetween('fecha', [$inicio, $fin]);
+            })
+            ->when($idUsuario, function ($q) use ($idUsuario) {
+                $q->where(function ($q2) use ($idUsuario) {
+                    $q2->where('id_vendedor', $idUsuario)
+                        ->orWhereHas('venta', function ($v) use ($idUsuario) {
+                            $v->where('id_usuario', $idUsuario);
+                        });
+                });
+            })
+            ->with(['venta:id,fecha,id_usuario,correlativo', 'vendedor:id,name'])
+            ->get()
+            ->sortBy(function ($d) {
+                return ($d->venta->fecha ?? '') . '-' . str_pad((string) $d->id, 10, '0', STR_PAD_LEFT);
+            })
+            ->values();
+
+        $detallesCompras = DetalleCompra::where('id_producto', $producto->id)
+            ->whereHas('compra', function ($q) use ($inicio, $fin, $idUsuario) {
+                $q->where('estado', 'Pagada')
+                    ->whereBetween('fecha', [$inicio, $fin]);
+                if ($idUsuario) {
+                    $q->where('id_usuario', $idUsuario);
+                }
+            })
+            ->with(['compra:id,fecha,id_usuario,referencia', 'compra.usuario:id,name'])
+            ->get()
+            ->sortBy(function ($d) {
+                return ($d->compra->fecha ?? '') . '-' . str_pad((string) $d->id, 10, '0', STR_PAD_LEFT);
+            })
+            ->values();
+
+        $eventosPrecio = [];
+        $ultimoPrecio = null;
+        foreach ($detallesVentas as $detalle) {
+            $precio = round((float) ($detalle->precio_sin_iva ?? $detalle->precio), 4);
+            if ($ultimoPrecio === null || $precio != $ultimoPrecio) {
+                $venta = $detalle->venta;
+                $eventosPrecio[] = [
+                    'fecha'      => $venta->fecha,
+                    'valor'      => $precio,
+                    'tipo'       => 'precio',
+                    'referencia' => 'Venta #' . ($venta->correlativo ?? $venta->id),
+                    'id_documento' => $venta->id,
+                    'usuario'    => $detalle->vendedor->name ?? ($venta->nombre_usuario ?? null),
+                ];
+                $ultimoPrecio = $precio;
+            }
+        }
+
+        $eventosCosto = [];
+        $ultimoCosto = null;
+        foreach ($detallesCompras as $detalle) {
+            $costo = round((float) $detalle->costo, 4);
+            if ($ultimoCosto === null || $costo != $ultimoCosto) {
+                $compra = $detalle->compra;
+                $ref = $compra->referencia ?: ('Compra #' . $compra->id);
+                $eventosCosto[] = [
+                    'fecha'      => $compra->fecha,
+                    'valor'      => $costo,
+                    'tipo'       => 'costo',
+                    'referencia' => $ref,
+                    'id_documento' => $compra->id,
+                    'usuario'    => $compra->nombre_usuario ?? null,
+                ];
+                $ultimoCosto = $costo;
+            }
+        }
+
+        $fechas = collect($eventosPrecio)->pluck('fecha')
+            ->merge(collect($eventosCosto)->pluck('fecha'))
+            ->unique()
+            ->sort()
+            ->values();
+
+        $mapaPrecio = collect($eventosPrecio)->keyBy('fecha');
+        $mapaCosto = collect($eventosCosto)->keyBy('fecha');
+
+        $labels = [];
+        $seriePrecios = [];
+        $serieCostos = [];
+        $precioAcum = null;
+        $costoAcum = null;
+
+        foreach ($fechas as $fecha) {
+            $labels[] = \Carbon\Carbon::parse($fecha)->format('d/m/Y');
+            if ($mapaPrecio->has($fecha)) {
+                $precioAcum = $mapaPrecio->get($fecha)['valor'];
+            }
+            if ($mapaCosto->has($fecha)) {
+                $costoAcum = $mapaCosto->get($fecha)['valor'];
+            }
+            $seriePrecios[] = $precioAcum;
+            $serieCostos[] = $costoAcum;
+        }
+
+        $eventos = collect($eventosPrecio)->merge($eventosCosto)
+            ->sortBy('fecha')
+            ->values()
+            ->all();
+
+        return Response()->json([
+            'producto' => [
+                'id'     => $producto->id,
+                'nombre' => $producto->nombre,
+                'codigo' => $producto->codigo,
+                'precio' => (float) $producto->precio,
+                'costo'  => (float) $producto->costo,
+            ],
+            'labels'            => $labels,
+            'precios'           => $seriePrecios,
+            'costos'            => $serieCostos,
+            'tendencia_precio'  => $this->calcularTendenciaSerie($seriePrecios),
+            'tendencia_costo'   => $this->calcularTendenciaSerie($serieCostos),
+            'variacion_precio'  => $this->calcularVariacionPorcentual($seriePrecios),
+            'variacion_costo'   => $this->calcularVariacionPorcentual($serieCostos),
+            'eventos'           => $eventos,
+            'total_ventas'      => $detallesVentas->count(),
+            'total_compras'     => $detallesCompras->count(),
+        ], 200);
+    }
+
+    private function calcularTendenciaSerie(array $valores): string
+    {
+        $numericos = array_values(array_filter($valores, function ($v) {
+            return $v !== null;
+        }));
+
+        if (count($numericos) < 2) {
+            return count($numericos) === 1 ? 'estable' : 'sin_datos';
+        }
+
+        $primero = (float) $numericos[0];
+        $ultimo = (float) $numericos[count($numericos) - 1];
+
+        if ($primero == 0.0) {
+            return $ultimo > 0 ? 'subiendo' : 'estable';
+        }
+
+        $variacion = (($ultimo - $primero) / abs($primero)) * 100;
+        if (abs($variacion) < 0.5) {
+            return 'estable';
+        }
+
+        return $ultimo > $primero ? 'subiendo' : 'bajando';
+    }
+
+    private function calcularVariacionPorcentual(array $valores): ?float
+    {
+        $numericos = array_values(array_filter($valores, function ($v) {
+            return $v !== null;
+        }));
+
+        if (count($numericos) < 2) {
+            return null;
+        }
+
+        $primero = (float) $numericos[0];
+        $ultimo = (float) $numericos[count($numericos) - 1];
+
+        if ($primero == 0.0) {
+            return null;
+        }
+
+        return round((($ultimo - $primero) / abs($primero)) * 100, 2);
+    }
+
 
     public function analisis(Request $request)
     {

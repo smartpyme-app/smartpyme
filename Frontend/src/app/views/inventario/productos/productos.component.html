@@ -291,6 +291,12 @@
                                         class="btn text-start border-0">
                                         <img src="/assets/icons/file-text.png" class="icon me-2">Kardex
                                     </button>
+                                    <button type="button"
+                                        [routerLink]="['/detalle-producto', producto.id]"
+                                        fragment="historial-precio-costo"
+                                        class="btn text-start border-0">
+                                        <img src="/assets/icons/trending-up.png" class="icon me-2">Precio y costo
+                                    </button>
                                     <button type="button" routerLink="/detalle-producto/{{producto.id}}"
                                         class="btn text-start border-0 text-black">
                                         <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalle
