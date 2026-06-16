@@ -6,6 +6,39 @@ description: "Set up customer loyalty tiers, award points on purchases, let cust
 
 SmartPyme's loyalty module helps you turn one-time buyers into returning customers by rewarding them for every purchase. You define the tiers, earning rates, and redemption rules — SmartPyme handles the points math automatically at the point of sale so your team never has to calculate anything by hand.
 
+## Activating the Loyalty Program
+
+The loyalty module ships disabled. There are three independent switches that control how it behaves — turn them on in the order below as you move from setup to a live program.
+
+### 1. Enable the Module (Launch to Production)
+
+The master switch lives in **Admin → Company → Preferences**, under **Activate customer loyalty**. Turn it on once you're ready to start configuring tiers and enrolling customers.
+
+While this switch is off:
+
+- The **Loyalty** menu is hidden from the sidebar for every user.
+- Loyalty routes are blocked, even from a direct URL.
+
+Turning this switch back off automatically also turns off **earning and redemption** (see below), so you can safely pause the program without losing any data.
+
+### 2. Enable Earning and Redemption
+
+Once the module is on, go to **Loyalty → Customer Types** and click the **Module Active / Module Inactive** button at the top of the page to open the loyalty configuration modal. Toggle **Activate loyalty module** on when you're ready for customers to actually start earning and redeeming points.
+
+While this switch is off:
+
+- Sales recorded in the point of sale will **not** accrue points, even for enrolled customers.
+- The loyalty shortcut and **Redeem Points** action are hidden during invoicing.
+- You can still configure tiers, enroll customers, and review history — nothing in the back office is blocked.
+
+This separation lets you finish setup (tiers, earning rates, customer enrollment) in production without affecting live sales, then flip the switch when you're ready to go live.
+
+### 3. Automatic Points Confirmation Email
+
+In the same configuration modal, toggle **Automatic email delivery** on to send each enrolled customer an email after every sale, summarizing the points they just earned and their new balance.
+
+While this switch is off, points are still awarded normally — only the automatic email is suppressed. Turn it on once you've reviewed the email content and are ready to start notifying customers.
+
 ## Customer Types (Tipos de Cliente)
 
 Loyalty tiers in SmartPyme are called **customer types**. Create and manage them under **Loyalty → Customer Types**. Each tier you define can have its own:
