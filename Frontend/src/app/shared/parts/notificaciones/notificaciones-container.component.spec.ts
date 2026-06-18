@@ -3,8 +3,8 @@ import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 import { NotificacionesContainerComponent } from './notificaciones-container.component';
 
 describe('NotificacionesContainerComponent', () => {
-  let NotificacionAlertasComponent;
-  let fixture: ComponeNotificacionAlertasComponent>;
+  let component: NotificacionesContainerComponent;
+  let fixture: ComponentFixture<NotificacionesContainerComponent>;
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({

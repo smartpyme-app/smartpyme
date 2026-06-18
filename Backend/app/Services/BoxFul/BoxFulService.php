@@ -92,19 +92,29 @@ class BoxFulService
     }
 
     /**
+     * Resuelve el contexto de la empresa y la integración si no están establecidos pero el usuario está autenticado.
+     */
+    protected function resolveEmpresaIfNeeded(): void
+    {
+        if (!$this->empresa && auth()->check()) {
+            $this->empresa = auth()->user()->empresa;
+            if ($this->empresa) {
+                $this->integracion = Integracion::where('id_empresa', $this->empresa->id)
+                    ->where('proveedor', 'boxful')
+                    ->where('estado', 'connected')
+                    ->first();
+                $this->updateCacheKey();
+            }
+        }
+    }
+
+    /**
      * Obtener o refrescar el token de acceso desde las credenciales de la empresa.
      */
     public function getAccessToken(): string
     {
         // Resolver el contexto de la empresa dinámicamente si aún no se ha establecido (ej. si se instanció antes de ejecutar el middleware de auth)
-        if (!$this->empresa && auth()->check()) {
-            $this->empresa = auth()->user()->empresa;
-            $this->integracion = Integracion::where('id_empresa', $this->empresa->id)
-                ->where('proveedor', 'boxful')
-                ->where('estado', 'connected')
-                ->first();
-            $this->updateCacheKey();
-        }
+        $this->resolveEmpresaIfNeeded();
 
         $empresa = $this->empresa;
         if (!$empresa) {
@@ -423,7 +433,9 @@ class BoxFulService
 
         Log::info("Enviando petición a la API de Boxful", ['method' => $method, 'url' => $url]);
 
-        $request = Http::withToken($token)
+        //retry up to 3 times with 150ms delay on connection issues or 5xx server errors
+        $request = Http::retry(3, 150)
+            ->withToken($token)
             ->withHeaders([
                 'Accept' => 'application/json',
                 'Content-Type' => 'application/json'
@@ -522,6 +534,7 @@ class BoxFulService
      */
     public function getEmpresa(): ?Empresa
     {
+        $this->resolveEmpresaIfNeeded();
         return $this->empresa;
     }
 
@@ -532,6 +545,7 @@ class BoxFulService
      */
     public function getIntegracion(): ?Integracion
     {
+        $this->resolveEmpresaIfNeeded();
         if (!$this->integracion && $this->empresa) {
             $this->integracion = Integracion::where('id_empresa', $this->empresa->id)
                 ->where('proveedor', 'boxful')
@@ -671,5 +685,121 @@ class BoxFulService
     public function registerClientWebhook(array $data): \Illuminate\Http\Client\Response
     {
         return $this->post('client-webhook', $data);
+    }
+
+    /**
+     * Sincroniza las direcciones de origen locales con las registradas en Boxful.
+     * Si una dirección local o la dirección configurada de la empresa no existe en Boxful,
+     * se elimina localmente y se desvincula.
+     *
+     * @return array Resumen de la sincronización
+     */
+    public function syncOriginAddresses(): array
+    {
+        $resultados = [
+            'sincronizados' => 0,
+            'eliminados_localmente' => 0,
+            'desvinculados_config' => false,
+            'errores' => null
+        ];
+
+        $this->resolveEmpresaIfNeeded();
+
+        //check company context. If empty, sync cannot proceed
+        if (!$this->empresa) {
+            return $resultados;
+        }
+
+        try {
+            $response = $this->get('addresses');
+            if (!$response->successful()) {
+                $resultados['errores'] = 'La llamada a la API de Boxful falló con estado: ' . $response->status();
+                return $resultados;
+            }
+
+            $addresses = $response->json();
+            $addressList = isset($addresses['addresses']) ? $addresses['addresses'] : (isset($addresses['data']) ? $addresses['data'] : $addresses);
+
+            if (!is_array($addressList)) {
+                $resultados['errores'] = 'La respuesta de Boxful no tiene un formato de lista válido.';
+                return $resultados;
+            }
+
+            // Mapear los IDs de dirección válidos en Boxful e importar las que falten localmente
+            $validBoxfulIds = [];
+            foreach ($addressList as $addr) {
+                $addrId = $addr['id'] ?? $addr['addressId'] ?? null;
+                if ($addrId) {
+                    $validBoxfulIds[] = (string) $addrId;
+
+                    $localAddr = \App\Models\Admin\DireccionOrigen::where('id_empresa', $this->empresa->id)
+                        ->where('boxful_address_id', $addrId)
+                        ->first();
+
+                    if (!$localAddr) {
+                        Log::info("Importando dirección de origen faltante desde Boxful. ID: {$addrId}", [
+                            'empresa_id' => $this->empresa->id
+                        ]);
+
+                        \App\Models\Admin\DireccionOrigen::create([
+                            'id_empresa' => $this->empresa->id,
+                            'alias' => $addr['alias'] ?? 'Dirección Boxful',
+                            'direccion' => $addr['address'] ?? $addr['direccion'] ?? 'Sin dirección',
+                            'referencia' => $addr['referencePoint'] ?? $addr['referencia'] ?? 'Sin referencia',
+                            'telefono' => $addr['addressPhone'] ?? $addr['telefono'] ?? '70000000',
+                            'codigo_area' => $addr['addressAreaCode'] ?? $addr['codigo_area'] ?? '503',
+                            'latitud' => (float) ($addr['latitude'] ?? $addr['latitud'] ?? 0.0),
+                            'longitud' => (float) ($addr['longitude'] ?? $addr['longitud'] ?? 0.0),
+                            'boxful_state_id' => $addr['stateId'] ?? $addr['boxful_state_id'] ?? '0',
+                            'boxful_city_id' => $addr['cityId'] ?? $addr['boxful_city_id'] ?? '0',
+                            'boxful_address_id' => $addrId,
+                            'es_predeterminada' => false
+                        ]);
+                    }
+                }
+            }
+
+            // 1. Sincronizar direcciones locales de origen
+            $localAddresses = \App\Models\Admin\DireccionOrigen::where('id_empresa', $this->empresa->id)->get();
+            foreach ($localAddresses as $localAddr) {
+                if ($localAddr->boxful_address_id) {
+                    if (in_array((string)$localAddr->boxful_address_id, $validBoxfulIds)) {
+                        $resultados['sincronizados']++;
+                    } else {
+                        //delete local origin address if it no longer exists on Boxful (soft limit: cascading on boxful_shipments is nullOnDelete)
+                        Log::warning("Desincronización de dirección origen local detectada. Boxful ID {$localAddr->boxful_address_id} no existe en Boxful. Eliminando localmente.", [
+                            'empresa_id' => $this->empresa->id,
+                            'alias' => $localAddr->alias
+                        ]);
+                        $localAddr->delete();
+                        $resultados['eliminados_localmente']++;
+                    }
+                }
+            }
+
+            // 2. Sincronizar dirección de origen configurada en la integración
+            $integracion = $this->getIntegracion();
+            if ($integracion) {
+                $configuredOriginId = $integracion->getConfig('direccion_origen_id');
+                if ($configuredOriginId && !in_array((string)$configuredOriginId, $validBoxfulIds)) {
+                    Log::warning("Desincronización de dirección origen configurada detectada. ID {$configuredOriginId} no existe en Boxful. Desvinculando de la configuración de la integración.", [
+                        'empresa_id' => $this->empresa->id
+                    ]);
+
+                    $config = $integracion->config ?? [];
+                    unset($config['direccion_origen_id']);
+                    $integracion->config = $config;
+                    $integracion->save();
+
+                    $resultados['desvinculados_config'] = true;
+                }
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Error en syncOriginAddresses: ' . $e->getMessage());
+            $resultados['errores'] = $e->getMessage();
+        }
+
+        return $resultados;
     }
 }

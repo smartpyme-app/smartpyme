@@ -23,10 +23,7 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
     if (changes['clienteId'] && !changes['clienteId'].firstChange) {
       this.resetWizard();
       if (this.clienteId) {
-        this.loadAddresses();
         this.loadClientDetails();
-      } else {
-        this.mode = 'new';
       }
     }
   }
@@ -35,9 +32,7 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
   addressForm!: FormGroup;
   states: BoxfulState[] = [];
   filteredCities: BoxfulCity[] = [];
-  addresses: any[] = []; // Direcciones del cliente de la BD local
-  mode: 'saved' | 'new' = 'saved';
-  selectedAddressId: number | null = null;
+  mode: 'new' = 'new';
 
   // Datos de Bodega/Origen de la Empresa
   originAddresses: any[] = [];
@@ -66,6 +61,9 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
   generatingGuide = false;
   errorMessage: string | null = null;
 
+  fechaRecoleccion: string = '';
+  minFechaRecoleccion: string = '';
+
   constructor(
     private fb: FormBuilder,
     private boxfulService: BoxfulApiService,
@@ -76,12 +74,19 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
     this.initForm();
     this.loadStates();
     this.loadOriginAddresses();
+    this.minFechaRecoleccion = this.getTodayString();
+    this.fechaRecoleccion = this.getTodayString();
     if (this.clienteId) {
-      this.loadAddresses();
       this.loadClientDetails();
-    } else {
-      this.mode = 'new';
     }
+  }
+
+  private getTodayString(): string {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
   }
 
   loadClientDetails(): void {
@@ -93,7 +98,7 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
           this.clienteNombre = client.nombre || '';
           this.clienteApellido = client.apellido || '';
           this.clienteEmail = client.correo || client.email || '';
-          
+
           this.fillAddressFormFromClient();
         }
       },
@@ -107,6 +112,7 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
     this.addressForm = this.fb.group({
       direccion: ['', [Validators.required, Validators.maxLength(500)]],
       referencia: ['', [Validators.maxLength(500)]],
+      contenido: ['', [Validators.required, Validators.maxLength(200)]],
       telefono: ['', [Validators.required, Validators.pattern(/^[0-9+ ]{8,20}$/)]],
       codigo_area: ['503', [Validators.required, Validators.maxLength(10)]],
       stateId: [null, [Validators.required]],
@@ -117,6 +123,7 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
     });
 
     this.originAddressForm = this.fb.group({
+      alias: ['', [Validators.required, Validators.maxLength(100)]],
       direccion: ['', [Validators.required, Validators.maxLength(500)]],
       referencia: ['', [Validators.required, Validators.maxLength(500)]], // Requerido por la especificación de origen
       telefono: ['', [Validators.required, Validators.pattern(/^[0-9+ ]{8,20}$/)]],
@@ -156,7 +163,7 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
 
   loadOriginAddresses(): void {
     this.loadingOriginAddresses = true;
-    this.boxfulService.getAddresses().subscribe({
+    this.boxfulService.getLocalOriginAddresses().subscribe({
       next: (res: any) => {
         this.loadingOriginAddresses = false;
 
@@ -172,7 +179,9 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
         this.originAddresses = list;
 
         if (this.originAddresses.length > 0) {
-          this.selectedOriginAddressId = this.originAddresses[0].id || this.originAddresses[0].addressId;
+          const defaultAddr = this.originAddresses.find(a => a.es_predeterminada);
+          const selectedAddr = defaultAddr || this.originAddresses[0];
+          this.selectedOriginAddressId = selectedAddr.boxful_address_id || selectedAddr.id || selectedAddr.addressId;
           this.originMode = 'saved';
         } else {
           this.selectedOriginAddressId = null;
@@ -180,50 +189,8 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
         }
       },
       error: (err: any) => {
-        console.error('Error cargando direcciones de origen de Boxful:', err);
+        console.error('Error cargando direcciones de origen:', err);
         this.loadingOriginAddresses = false;
-      }
-    });
-  }
-
-  loadAddresses(): void {
-    if (!this.clienteId) return;
-    this.loading = true;
-    this.boxfulService.getClientAddresses(this.clienteId).subscribe({
-      next: (res: any) => {
-        this.loading = false;
-
-        let addressesList: any[] = [];
-        if (Array.isArray(res)) {
-          addressesList = res;
-        } else if (res && Array.isArray(res.addresses)) {
-          addressesList = res.addresses;
-        } else if (res && Array.isArray(res.data)) {
-          addressesList = res.data;
-        } else if (res && (res.message || res.error)) {
-          this.errorMessage = res.message || res.error;
-          console.error('Respuesta con error al obtener direcciones del cliente:', res);
-        }
-
-        this.addresses = addressesList;
-        this.errorMessage = this.errorMessage || null;
-
-        if (this.addresses.length > 0) {
-          // Seleccionar la predeterminada si existe
-          const defaultAddr = this.addresses.find(a => a.es_predeterminada);
-          if (defaultAddr) {
-            this.selectedAddressId = defaultAddr.boxful_address_id;
-          } else {
-            this.selectedAddressId = this.addresses[0].boxful_address_id;
-          }
-        } else {
-          this.selectedAddressId = null;
-        }
-      },
-      error: (err: any) => {
-        console.error('Error cargando direcciones de Boxful del cliente:', err);
-        this.errorMessage = 'No se pudieron cargar las direcciones guardadas del cliente.';
-        this.loading = false;
       }
     });
   }
@@ -267,6 +234,7 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
     this.errorMessage = null;
     if (this.originMode === 'new') {
       this.originAddressForm.reset({
+        alias: '',
         direccion: '',
         referencia: '',
         telefono: '',
@@ -326,28 +294,36 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
 
     const formVal = this.originAddressForm.value;
     const payload = {
-      address: formVal.direccion,
-      referencePoint: formVal.referencia,
+      alias: formVal.alias || 'Bodega',
+      direccion: formVal.direccion,
+      referencia: formVal.referencia,
       latitude: parseFloat(formVal.latitud),
       longitude: parseFloat(formVal.longitud),
+      latitud: parseFloat(formVal.latitud),
+      longitud: parseFloat(formVal.longitud),
       stateId: formVal.stateId,
       cityId: formVal.cityId,
+      boxful_state_id: formVal.stateId,
+      boxful_city_id: formVal.cityId,
+      telefono: formVal.telefono,
       addressPhone: formVal.telefono,
-      addressAreaCode: formVal.codigo_area
+      codigo_area: formVal.codigo_area,
+      addressAreaCode: formVal.codigo_area,
+      es_predeterminada: false
     };
 
-    this.boxfulService.createAddress(payload).subscribe({
+    this.boxfulService.storeLocalOriginAddress(payload).subscribe({
       next: (res: any) => {
         this.savingOriginAddress = false;
-        this.alertService.success("success", 'Dirección de origen guardada exitosamente.');
+        this.alertService.success('Éxito', 'Dirección de origen guardada exitosamente.');
 
-        // La API devuelve la dirección creada en res.address o directamente en res
         const createdAddr = res.address || res;
         if (createdAddr) {
           this.originAddresses.push(createdAddr);
-          this.selectedOriginAddressId = createdAddr.id || createdAddr.addressId;
+          this.selectedOriginAddressId = createdAddr.boxful_address_id || createdAddr.id || createdAddr.addressId;
           this.originMode = 'saved';
           this.originAddressForm.reset({
+            alias: '',
             direccion: '',
             referencia: '',
             telefono: '',
@@ -364,37 +340,27 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
       },
       error: (err: any) => {
         console.error('Error al guardar dirección de origen:', err);
-        this.errorMessage = err.error?.message || 'Ocurrió un error al guardar la dirección de origen en Boxful.';
+        this.errorMessage = err.error?.message || 'Ocurrió un error al guardar la dirección de origen.';
         this.alertService.error(this.errorMessage);
         this.savingOriginAddress = false;
       }
     });
   }
 
-  onModeChange(newMode: 'saved' | 'new'): void {
-    this.mode = newMode;
-    this.errorMessage = null;
-    if (newMode === 'saved') {
-      if (this.addresses.length === 0) {
-        this.loadAddresses();
-      }
-    }
-  }
-
   private getDireccionOrigen(): any {
     if (this.selectedOriginAddressId) {
-      const selected = this.originAddresses.find(a => String(a.id || a.addressId) === String(this.selectedOriginAddressId));
+      const selected = this.originAddresses.find(a => String(a.boxful_address_id || a.id || a.addressId) === String(this.selectedOriginAddressId));
       if (selected) {
         return {
-          id: selected.id || selected.addressId,
-          direccion: selected.address,
-          referencia: selected.referencePoint || '',
-          latitud: selected.latitude,
-          longitud: selected.longitude,
-          stateId: selected.stateId,
-          cityId: selected.cityId,
-          telefono: selected.addressPhone,
-          codigo_area: selected.addressAreaCode
+          id: selected.boxful_address_id || selected.id || selected.addressId,
+          direccion: selected.direccion || selected.address,
+          referencia: selected.referencia || selected.referencePoint || '',
+          latitud: selected.latitud || selected.latitude,
+          longitud: selected.longitud || selected.longitude,
+          stateId: selected.boxful_state_id || selected.stateId,
+          cityId: selected.boxful_city_id || selected.cityId,
+          telefono: selected.telefono || selected.addressPhone,
+          codigo_area: selected.codigo_area || selected.addressAreaCode
         };
       }
     }
@@ -402,32 +368,17 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
   }
 
   private getDireccionDestino(): any {
-    const destino: any = {};
-    if (this.mode === 'saved') {
-      const selected = this.addresses.find(a => String(a.boxful_address_id) === String(this.selectedAddressId));
-      if (selected) {
-        destino.direccion = selected.direccion;
-        destino.referencia = selected.referencia || '';
-        destino.latitud = parseFloat(selected.latitud);
-        destino.longitud = parseFloat(selected.longitud);
-        destino.stateId = selected.boxful_state_id;
-        destino.cityId = selected.boxful_city_id;
-        destino.id = selected.boxful_address_id;
-        destino.telefono = selected.telefono;
-        destino.codigo_area = selected.codigo_area || '503';
-      }
-    } else {
-      const formVal = this.addressForm.value;
-      destino.direccion = formVal.direccion;
-      destino.referencia = formVal.referencia || '';
-      destino.latitud = parseFloat(formVal.latitud);
-      destino.longitud = parseFloat(formVal.longitud);
-      destino.stateId = formVal.stateId;
-      destino.cityId = formVal.cityId;
-      destino.telefono = formVal.telefono;
-      destino.codigo_area = formVal.codigo_area || '503';
-    }
-    return destino;
+    const formVal = this.addressForm.value;
+    return {
+      direccion: formVal.direccion,
+      referencia: formVal.referencia || '',
+      latitud: parseFloat(formVal.latitud),
+      longitud: parseFloat(formVal.longitud),
+      stateId: formVal.stateId,
+      cityId: formVal.cityId,
+      telefono: formVal.telefono,
+      codigo_area: formVal.codigo_area || '503'
+    };
   }
 
   // Paso 1: Cotizar envío
@@ -442,19 +393,11 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
     }
 
     // Validar dirección
-    if (this.mode === 'saved') {
-      if (!this.selectedAddressId) {
-        this.errorMessage = 'Debe seleccionar una dirección guardada.';
-        this.alertService.error(this.errorMessage);
-        return;
-      }
-    } else {
-      if (this.addressForm.invalid) {
-        this.addressForm.markAllAsTouched();
-        this.errorMessage = 'Por favor complete todos los campos de la dirección correctamente.';
-        this.alertService.error(this.errorMessage);
-        return;
-      }
+    if (this.addressForm.invalid) {
+      this.addressForm.markAllAsTouched();
+      this.errorMessage = 'Por favor complete todos los campos de la dirección correctamente.';
+      this.alertService.error(this.errorMessage);
+      return;
     }
 
     // Validar paqueteData
@@ -469,17 +412,19 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
     // Construir payload según la nueva arquitectura normalizada
     const payload = {
       paquete: {
-        peso: parseFloat(this.paqueteData.peso || 0),
-        alto: parseFloat(this.paqueteData.alto || 0),
-        ancho: parseFloat(this.paqueteData.ancho || 0),
-        largo: parseFloat(this.paqueteData.largo || 0),
-        valor: parseFloat(this.paqueteData.valor || 50),
+        peso: parseFloat(this.paqueteData.weight || this.paqueteData.peso || 0),
+        alto: parseFloat(this.paqueteData.height || this.paqueteData.alto || 0),
+        ancho: parseFloat(this.paqueteData.width || this.paqueteData.ancho || 0),
+        largo: parseFloat(this.paqueteData.length || this.paqueteData.largo || 0),
+        valor: parseFloat(this.paqueteData.price || this.paqueteData.valor || 50),
         es_fragil: !!this.paqueteData.es_fragil,
-        isFragile: !!this.paqueteData.es_fragil
+        isFragile: !!this.paqueteData.es_fragil,
+        contenido: this.addressForm.value.contenido || 'Productos varios'
       },
       destino: this.getDireccionDestino(),
       origen: this.getDireccionOrigen(),
-      paqueteId: this.paqueteData.id || null
+      paqueteId: this.paqueteData.id || null,
+      fecha_recoleccion: this.fechaRecoleccion
     };
 
     this.boxfulService.getCouriersAvailable(payload).subscribe({
@@ -535,13 +480,14 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
     const payload = {
       courierId: this.selectedCourierId,
       paquete: {
-        peso: parseFloat(this.paqueteData.peso || 0),
-        alto: parseFloat(this.paqueteData.alto || 0),
-        ancho: parseFloat(this.paqueteData.ancho || 0),
-        largo: parseFloat(this.paqueteData.largo || 0),
-        valor: parseFloat(this.paqueteData.valor || 50),
+        peso: parseFloat(this.paqueteData.weight || this.paqueteData.peso || 0),
+        alto: parseFloat(this.paqueteData.height || this.paqueteData.alto || 0),
+        ancho: parseFloat(this.paqueteData.width || this.paqueteData.ancho || 0),
+        largo: parseFloat(this.paqueteData.length || this.paqueteData.largo || 0),
+        valor: parseFloat(this.paqueteData.price || this.paqueteData.valor || 50),
         es_fragil: !!this.paqueteData.es_fragil,
-        isFragile: !!this.paqueteData.es_fragil
+        isFragile: !!this.paqueteData.es_fragil,
+        contenido: this.addressForm.value.contenido || 'Productos varios'
       },
       destino: destino,
       origen: this.getDireccionOrigen(),
@@ -553,7 +499,8 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
         codigo_area: destino.codigo_area || '503'
       },
       clienteId: this.clienteId,
-      paqueteId: this.paqueteData.id || null
+      paqueteId: this.paqueteData.id || null,
+      fecha_recoleccion: this.fechaRecoleccion
     };
 
     this.boxfulService.createShipment(payload).subscribe({
@@ -563,44 +510,12 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
         this.step = 3;
         this.guiaGenerada.emit(res);
 
-        // Si es una dirección nueva y se marcó para guardar
-        if (this.mode === 'new' && this.addressForm.value.guardarDireccion) {
-          this.guardarNuevaDireccionEnCliente();
-        }
       },
       error: (err: any) => {
         console.error('Error al generar la guía en Boxful:', err);
         this.errorMessage = err.error?.message || 'Ocurrió un error al generar la guía en Boxful.';
         this.alertService.error(this.errorMessage);
         this.generatingGuide = false;
-      }
-    });
-  }
-
-  // Guardar dirección localmente en cliente y Boxful
-  private guardarNuevaDireccionEnCliente(): void {
-    const formVal = this.addressForm.value;
-    const savePayload = {
-      alias: 'Dirección de envío',
-      direccion: formVal.direccion,
-      referencia: formVal.referencia || '',
-      telefono: formVal.telefono,
-      codigo_area: formVal.codigo_area,
-      latitud: parseFloat(formVal.latitud),
-      longitud: parseFloat(formVal.longitud),
-      boxful_state_id: formVal.stateId,
-      boxful_city_id: formVal.cityId,
-      es_predeterminada: false
-    };
-
-    this.boxfulService.storeClientAddress(this.clienteId, savePayload).subscribe({
-      next: (savedAddr: any) => {
-        console.log('Dirección guardada exitosamente en el cliente:', savedAddr);
-        // Recargar las direcciones guardadas
-        this.loadAddresses();
-      },
-      error: (err: any) => {
-        console.error('Error al guardar dirección en el cliente en segundo plano:', err);
       }
     });
   }
@@ -614,7 +529,9 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
     this.errorMessage = null;
     this.loadOriginAddresses();
     this.originMode = 'saved';
+    this.fechaRecoleccion = this.getTodayString();
     this.originAddressForm.reset({
+      alias: '',
       direccion: '',
       referencia: '',
       telefono: '',
@@ -625,22 +542,19 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
       longitud: null
     });
     this.filteredOriginCities = [];
-    if (this.mode === 'new') {
-      this.addressForm.reset({
-        direccion: '',
-        referencia: '',
-        telefono: '',
-        codigo_area: '503',
-        stateId: null,
-        cityId: null,
-        latitud: null,
-        longitud: null,
-        guardarDireccion: true
-      });
-      this.filteredCities = [];
-    } else {
-      this.loadAddresses();
-    }
+    this.addressForm.reset({
+      direccion: '',
+      referencia: '',
+      contenido: '',
+      telefono: '',
+      codigo_area: '503',
+      stateId: null,
+      cityId: null,
+      latitud: null,
+      longitud: null,
+      guardarDireccion: true
+    });
+    this.filteredCities = [];
   }
 
   getRecolectionDateInfo(courier: any): { label: string, time: string } {
@@ -699,14 +613,14 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
     const clientPhone = this.clientData.tipo === 'Empresa' ? this.clientData.empresa_telefono : this.clientData.telefono;
 
     if (clientAddress && !this.addressForm.get('direccion')?.value) {
-      // ponytail: pre-fill shipping selector address from client profile
+      //pre-fill shipping selector address from client profile
       this.addressForm.patchValue({
         direccion: clientAddress
       });
     }
 
     if (clientPhone && !this.addressForm.get('telefono')?.value) {
-      // ponytail: clean phone format and pre-fill phone
+      //clean phone format and pre-fill phone
       const cleanedPhone = String(clientPhone).replace(/[^0-9+ ]/g, '');
       this.addressForm.patchValue({
         telefono: cleanedPhone
@@ -724,7 +638,7 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
 
     if (!clientState) return;
 
-    // ponytail: case-insensitive match for department name to auto-fill select dropdown
+    //case-insensitive match for department name to auto-fill select dropdown
     const matchedState = this.states.find(s =>
       s.name.toLowerCase().trim() === clientState.toLowerCase().trim()
     );
@@ -737,7 +651,7 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
       this.onStateChange();
 
       if (clientCity && this.filteredCities.length > 0) {
-        // ponytail: case-insensitive match for municipality name to auto-fill select dropdown
+        //case-insensitive match for municipality name to auto-fill select dropdown
         const matchedCity = this.filteredCities.find(c =>
           c.name.toLowerCase().trim() === clientCity.toLowerCase().trim()
         );

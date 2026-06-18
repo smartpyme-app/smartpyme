@@ -58,6 +58,9 @@ class BoxFulController extends Controller
                 ], $response->status());
             }
 
+            //synchronize local origin addresses to auto-heal desynchronization during connection test
+            $syncResults = $this->boxfulService->syncOriginAddresses();
+
             return response()->json([
                 'status' => 'success',
                 'message' => '¡Se ha conectado exitosamente a Boxful!',
@@ -66,6 +69,7 @@ class BoxFulController extends Controller
                     'base_url' => $this->boxfulService->getBaseUrl(),
                     'obfuscated_token' => $obfuscatedToken,
                     'user_info' => $response->json(),
+                    'sync_origin_addresses' => $syncResults
                 ]
             ], 200);
 
@@ -82,6 +86,36 @@ class BoxFulController extends Controller
                     'env' => $this->boxfulService->getEnv(),
                     'base_url' => $this->boxfulService->getBaseUrl(),
                 ]
+            ], 500);
+        }
+    }
+
+    /**
+     * Sincroniza explícitamente las direcciones de origen locales con Boxful.
+     */
+    public function sincronizarDirecciones(Request $request)
+    {
+        try {
+            $user = auth()->user();
+            if (!$user) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'No autorizado.'
+                ], 401);
+            }
+
+            $syncResults = $this->boxfulService->syncOriginAddresses();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Direcciones sincronizadas con Boxful correctamente.',
+                'data' => $syncResults
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('BoxFulController@sincronizarDirecciones exception: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Error al sincronizar direcciones: ' . $e->getMessage()
             ], 500);
         }
     }

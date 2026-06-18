@@ -5,11 +5,12 @@ use App\Http\Controllers\BoxFul\BoxFulAddressController;
 use App\Http\Controllers\BoxFul\BoxFulShippingController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('clientes/{cliente}/direcciones-envio', [BoxFulShippingController::class, 'getClientAddresses']);
-Route::post('clientes/{cliente}/direcciones-envio', [BoxFulShippingController::class, 'storeClientAddress']);
+Route::get('boxful/direcciones-origen', [BoxFulShippingController::class, 'getOriginAddresses']);
+Route::post('boxful/direcciones-origen', [BoxFulShippingController::class, 'storeOriginAddress']);
 
 Route::prefix('boxful')->group(function () {
     Route::get('test-connection', [BoxFulController::class, 'testConnection']);
+    Route::post('sincronizar-direcciones', [BoxFulController::class, 'sincronizarDirecciones']);
     Route::post('configurar-origen', [BoxFulController::class, 'configurarOrigen']);
     Route::post('registrar-webhook', [BoxFulController::class, 'registrarWebhook']);
     Route::post('client-webhook', [BoxFulController::class, 'storeClientWebhook']);

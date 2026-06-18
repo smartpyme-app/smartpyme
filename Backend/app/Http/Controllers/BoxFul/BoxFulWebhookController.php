@@ -88,7 +88,7 @@ class BoxFulWebhookController extends Controller
                 $paquete->estado = $status;
                 $paquete->save();
 
-                // ponytail: also update status description in boxful_shipments
+                // also update status description in boxful_shipments
                 if ($shipmentId) {
                     \App\Models\Inventario\BoxfulShipment::where('boxful_shipment_id', $shipmentId)
                         ->update([

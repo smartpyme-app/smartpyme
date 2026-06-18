@@ -5,7 +5,6 @@ namespace App\Http\Controllers\BoxFul;
 use App\Http\Controllers\Controller;
 use App\Services\BoxFul\BoxFulService;
 use App\Models\Ventas\Clientes\Cliente;
-use App\Models\Ventas\Clientes\DireccionEnvio;
 use App\Models\Admin\Integracion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -20,41 +19,55 @@ class BoxFulShippingController extends Controller
     }
 
     /**
-     * A) Devuelve las direcciones locales de envío del cliente.
+     * A) Devuelve las direcciones locales de origen de la empresa.
      */
-    public function getClientAddresses($clienteId)
+    public function getOriginAddresses()
     {
         try {
-            $cliente = Cliente::findOrFail($clienteId);
-            $direcciones = $cliente->direccionesEnvio()->get();
+            $user = auth()->user();
+            if (!$user) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'No autorizado.'
+                ], 401);
+            }
+
+            //synchronize with Boxful on demand when origin addresses are requested
+            $this->boxfulService->syncOriginAddresses();
+
+            //query local origin addresses filtered by empresa
+            $direcciones = \App\Models\Admin\DireccionOrigen::where('id_empresa', $user->id_empresa)->get();
 
             return response()->json($direcciones, 200);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Cliente no encontrado.'
-            ], 404);
         } catch (\Exception $e) {
-            Log::error('BoxFulShippingController@getClientAddresses error: ' . $e->getMessage());
+            Log::error('BoxFulShippingController@getOriginAddresses error: ' . $e->getMessage());
             return response()->json([
                 'status' => 'error',
-                'message' => 'Error al obtener direcciones de envío: ' . $e->getMessage()
+                'message' => 'Error al obtener direcciones de origen: ' . $e->getMessage()
             ], 500);
         }
     }
 
     /**
-     * B) Guarda una dirección de envío localmente y en Boxful.
+     * B) Guarda una dirección de origen localmente y en Boxful.
      */
-    public function storeClientAddress($clienteId, Request $request)
+    public function storeOriginAddress(Request $request)
     {
         try {
-            $cliente = Cliente::findOrFail($clienteId);
+            $user = auth()->user();
+            $empresa = $user ? $user->empresa : null;
+
+            if (!$empresa) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'No se pudo verificar el contexto de la empresa.'
+                ], 400);
+            }
 
             $request->validate([
-                'alias' => 'nullable|string|max:100',
+                'alias' => 'required|string|max:100',
                 'direccion' => 'required|string|max:500',
-                'referencia' => 'nullable|string|max:500',
+                'referencia' => 'required|string|max:500',
                 'telefono' => 'required|string|max:20',
                 'codigo_area' => 'required|string|max:10',
                 'latitud' => 'required|numeric',
@@ -64,7 +77,7 @@ class BoxFulShippingController extends Controller
                 'es_predeterminada' => 'boolean'
             ]);
 
-            // Payload limpio para Boxful (EXCLUYENDO _params u otros campos locales)
+            // Payload para Boxful
             $boxfulPayload = [
                 'address' => $request->direccion,
                 'referencePoint' => $request->referencia,
@@ -82,7 +95,7 @@ class BoxFulShippingController extends Controller
             if ($response->failed()) {
                 $status = $response->status();
                 $body = $response->json();
-                Log::error('Error de API Boxful al registrar dirección en storeClientAddress', [
+                Log::error('Error de API Boxful al registrar dirección en storeOriginAddress', [
                     'status' => $status,
                     'response' => $body
                 ]);
@@ -103,16 +116,15 @@ class BoxFulShippingController extends Controller
                 ], 500);
             }
 
-            // Si se marca como predeterminada, quitar predeterminada de las demás del mismo cliente
             if ($request->es_predeterminada) {
-                $cliente->direccionesEnvio()->update(['es_predeterminada' => false]);
+                \App\Models\Admin\DireccionOrigen::where('id_empresa', $empresa->id)->update(['es_predeterminada' => false]);
             }
 
             // Guardar localmente
-            $direccionLocal = new DireccionEnvio([
-                'id_cliente' => $cliente->id,
-                'id_empresa' => $cliente->id_empresa,
-                'alias' => $request->alias ?? 'Dirección de envío',
+            //save origin address to local DB and reference Boxful address ID
+            $direccionLocal = new \App\Models\Admin\DireccionOrigen([
+                'id_empresa' => $empresa->id,
+                'alias' => $request->alias,
                 'direccion' => $request->direccion,
                 'referencia' => $request->referencia,
                 'telefono' => $request->telefono,
@@ -129,11 +141,6 @@ class BoxFulShippingController extends Controller
 
             return response()->json($direccionLocal, 201);
 
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Cliente no encontrado.'
-            ], 404);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'status' => 'error',
@@ -141,10 +148,10 @@ class BoxFulShippingController extends Controller
                 'errors' => $e->errors()
             ], 422);
         } catch (\Exception $e) {
-            Log::error('BoxFulShippingController@storeClientAddress exception: ' . $e->getMessage());
+            Log::error('BoxFulShippingController@storeOriginAddress exception: ' . $e->getMessage());
             return response()->json([
                 'status' => 'error',
-                'message' => 'Error al guardar la dirección de envío: ' . $e->getMessage()
+                'message' => 'Error al guardar la dirección de origen: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -169,6 +176,7 @@ class BoxFulShippingController extends Controller
             $request->validate([
                 'paquete' => 'nullable|array',
                 'paqueteId' => 'nullable|integer',
+                'paquetes' => 'nullable|array',
                 'destino' => 'nullable|array',
                 'direccionDestino' => 'nullable|array',
                 'origen' => 'nullable|array',
@@ -182,14 +190,15 @@ class BoxFulShippingController extends Controller
                 ], 422);
             }
 
+            $paquetesInput = $request->input('paquetes');
             $paqueteInput = $request->input('paquete') ?? [];
             $paqueteId = $request->input('paqueteId') ?? ($paqueteInput['id'] ?? null);
             $paqueteModel = $paqueteId ? \App\Models\Inventario\Paquete::find($paqueteId) : null;
 
-            if (empty($paqueteInput) && empty($paqueteModel)) {
+            if (empty($paquetesInput) && empty($paqueteInput) && empty($paqueteModel)) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Debe proporcionar un paqueteId válido o los datos del paquete.'
+                    'message' => 'Debe proporcionar un paqueteId válido, los datos del paquete o el listado de paquetes.'
                 ], 422);
             }
 
@@ -213,24 +222,54 @@ class BoxFulShippingController extends Controller
                 ], 400);
             }
 
-            // Datos del paquete
-            $peso = (float) ($paqueteInput['peso'] ?? $paqueteInput['weight'] ?? ($paqueteModel ? $paqueteModel->peso : 1.0));
-            $alto = (float) ($paqueteInput['alto'] ?? $paqueteInput['height'] ?? ($paqueteModel && $paqueteModel->alto ? $paqueteModel->alto : 10.0));
-            $ancho = (float) ($paqueteInput['ancho'] ?? $paqueteInput['width'] ?? ($paqueteModel && $paqueteModel->ancho ? $paqueteModel->ancho : 10.0));
-            $largo = (float) ($paqueteInput['largo'] ?? $paqueteInput['length'] ?? ($paqueteModel && $paqueteModel->largo ? $paqueteModel->largo : 10.0));
-            $valor = (float) ($paqueteInput['valor'] ?? $paqueteInput['price'] ?? ($paqueteModel ? ($paqueteModel->precio ?? $paqueteModel->total) : 10.00));
-            $contenido = $paqueteInput['contenido'] ?? $paqueteInput['content'] ?? 'Productos varios';
-            $isFragile = (bool) ($paqueteInput['es_fragil'] ?? $paqueteInput['isFragile'] ?? ($paqueteModel ? $paqueteModel->es_fragil : false));
+            $packages = [];
 
-            // Evitar valores no positivos para evitar errores de validación de Boxful
-            if ($peso <= 0) $peso = 1.0;
-            if ($alto <= 0) $alto = 10.0;
-            if ($ancho <= 0) $ancho = 10.0;
-            if ($largo <= 0) $largo = 10.0;
-            if ($valor <= 0) $valor = 10.0;
+            if (is_array($paquetesInput) && count($paquetesInput) > 0) {
+                foreach ($paquetesInput as $p) {
+                    $pWeight = (float) ($p['peso'] ?? $p['weight'] ?? 1.0);
+                    $pHeight = (float) ($p['alto'] ?? $p['height'] ?? 10.0);
+                    $pWidth = (float) ($p['ancho'] ?? $p['width'] ?? 10.0);
+                    $pLength = (float) ($p['largo'] ?? $p['length'] ?? 10.0);
+                    $pValue = (float) ($p['valor'] ?? $p['price'] ?? 10.00);
+                    $pContent = $p['contenido'] ?? $p['content'] ?? 'Productos varios';
+                    $pFragile = (bool) ($p['es_fragil'] ?? $p['isFragile'] ?? false);
 
-            $packages = [
-                [
+                    if ($pWeight <= 0) $pWeight = 1.0;
+                    if ($pHeight <= 0) $pHeight = 10.0;
+                    if ($pWidth <= 0) $pWidth = 10.0;
+                    if ($pLength <= 0) $pLength = 10.0;
+                    if ($pValue <= 0) $pValue = 10.0;
+
+                    $packages[] = [
+                        'weight' => $pWeight,
+                        'height' => $pHeight,
+                        'width' => $pWidth,
+                        'length' => $pLength,
+                        'content' => $pContent,
+                        'price' => $pValue,
+                        'cod' => false,
+                        'codAmount' => 0,
+                        'isFragile' => $pFragile
+                    ];
+                }
+            } else {
+                // Datos del paquete único
+                $peso = (float) ($paqueteInput['peso'] ?? $paqueteInput['weight'] ?? ($paqueteModel ? $paqueteModel->peso : 1.0));
+                $alto = (float) ($paqueteInput['alto'] ?? $paqueteInput['height'] ?? ($paqueteModel && $paqueteModel->alto ? $paqueteModel->alto : 10.0));
+                $ancho = (float) ($paqueteInput['ancho'] ?? $paqueteInput['width'] ?? ($paqueteModel && $paqueteModel->ancho ? $paqueteModel->ancho : 10.0));
+                $largo = (float) ($paqueteInput['largo'] ?? $paqueteInput['length'] ?? ($paqueteModel && $paqueteModel->largo ? $paqueteModel->largo : 10.0));
+                $valor = (float) ($paqueteInput['valor'] ?? $paqueteInput['price'] ?? ($paqueteModel ? ($paqueteModel->precio ?? $paqueteModel->total) : 10.00));
+                $contenido = $paqueteInput['contenido'] ?? $paqueteInput['content'] ?? 'Productos varios';
+                $isFragile = (bool) ($paqueteInput['es_fragil'] ?? $paqueteInput['isFragile'] ?? ($paqueteModel ? $paqueteModel->es_fragil : false));
+
+                // Evitar valores no positivos para evitar errores de validación de Boxful
+                if ($peso <= 0) $peso = 1.0;
+                if ($alto <= 0) $alto = 10.0;
+                if ($ancho <= 0) $ancho = 10.0;
+                if ($largo <= 0) $largo = 10.0;
+                if ($valor <= 0) $valor = 10.0;
+
+                $packages[] = [
                     'weight' => $peso,
                     'height' => $alto,
                     'width' => $ancho,
@@ -240,8 +279,20 @@ class BoxFulShippingController extends Controller
                     'cod' => false,
                     'codAmount' => 0,
                     'isFragile' => $isFragile
-                ]
-            ];
+                ];
+            }
+
+            // Calcular totales del envío
+            $totalWeight = 0;
+            $maxHeight = 0;
+            $maxWidth = 0;
+            $maxLength = 0;
+            foreach ($packages as $p) {
+                $totalWeight += $p['weight'];
+                $maxHeight = max($maxHeight, $p['height']);
+                $maxWidth = max($maxWidth, $p['width']);
+                $maxLength = max($maxLength, $p['length']);
+            }
 
             // Datos del destino (customerAddress)
             $customerAddress = [
@@ -254,11 +305,11 @@ class BoxFulShippingController extends Controller
             // Construir payload oficial para Boxful
             $boxfulPayload = [
                 'clientId' => $clientId,
-                'recolectionDateTime' => now()->toIso8601String(),
-                'weight' => $peso,
-                'height' => $alto,
-                'width' => $ancho,
-                'length' => $largo,
+                'recolectionDateTime' => $request->input('fecha_recoleccion') ?? $request->input('recolectionDateTime') ?? now()->toIso8601String(),
+                'weight' => $totalWeight,
+                'height' => $maxHeight,
+                'width' => $maxWidth,
+                'length' => $maxLength,
                 'packages' => $packages,
                 'cod' => false,
                 'codAmount' => 0,
@@ -364,6 +415,7 @@ class BoxFulShippingController extends Controller
             $request->validate([
                 'paquete' => 'nullable|array',
                 'paqueteId' => 'nullable|integer',
+                'paquetes' => 'nullable|array',
                 'destino' => 'required|array',
                 'courierId' => 'required',
                 'clienteId' => 'nullable|integer',
@@ -371,14 +423,15 @@ class BoxFulShippingController extends Controller
                 'origen' => 'nullable|array',
             ]);
 
+            $paquetesInput = $request->input('paquetes');
             $paqueteInput = $request->input('paquete') ?? [];
             $paqueteId = $request->input('paqueteId') ?? ($paqueteInput['id'] ?? null);
             $paqueteModel = $paqueteId ? \App\Models\Inventario\Paquete::find($paqueteId) : null;
 
-            if (empty($paqueteInput) && empty($paqueteModel)) {
+            if (empty($paquetesInput) && empty($paqueteInput) && empty($paqueteModel)) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Debe proporcionar un paqueteId válido o los datos del paquete.'
+                    'message' => 'Debe proporcionar un paqueteId válido, los datos del paquete o el listado de paquetes.'
                 ], 422);
             }
 
@@ -406,23 +459,51 @@ class BoxFulShippingController extends Controller
                 ], 400);
             }
 
-            // Datos del paquete
-            $peso = (float) ($paqueteInput['peso'] ?? $paqueteInput['weight'] ?? ($paqueteModel ? $paqueteModel->peso : 1.0));
-            $alto = (float) ($paqueteInput['alto'] ?? $paqueteInput['height'] ?? ($paqueteModel && $paqueteModel->alto ? $paqueteModel->alto : 10.0));
-            $ancho = (float) ($paqueteInput['ancho'] ?? $paqueteInput['width'] ?? ($paqueteModel && $paqueteModel->ancho ? $paqueteModel->ancho : 10.0));
-            $largo = (float) ($paqueteInput['largo'] ?? $paqueteInput['length'] ?? ($paqueteModel && $paqueteModel->largo ? $paqueteModel->largo : 10.0));
-            $valor = (float) ($paqueteInput['valor'] ?? $paqueteInput['price'] ?? ($paqueteModel ? ($paqueteModel->precio ?? $paqueteModel->total) : 10.00));
-            $contenido = $paqueteInput['contenido'] ?? $paqueteInput['content'] ?? 'Productos varios';
-            $isFragile = (bool) ($paqueteInput['es_fragil'] ?? $paqueteInput['isFragile'] ?? ($paqueteModel ? $paqueteModel->es_fragil : false));
+            $parcels = [];
 
-            if ($peso <= 0) $peso = 1.0;
-            if ($alto <= 0) $alto = 10.0;
-            if ($ancho <= 0) $ancho = 10.0;
-            if ($largo <= 0) $largo = 10.0;
-            if ($valor <= 0) $valor = 10.0;
+            if (is_array($paquetesInput) && count($paquetesInput) > 0) {
+                foreach ($paquetesInput as $p) {
+                    $pWeight = (float) ($p['peso'] ?? $p['weight'] ?? 1.0);
+                    $pHeight = (float) ($p['alto'] ?? $p['height'] ?? 10.0);
+                    $pWidth = (float) ($p['ancho'] ?? $p['width'] ?? 10.0);
+                    $pLength = (float) ($p['largo'] ?? $p['length'] ?? 10.0);
+                    $pValue = (float) ($p['valor'] ?? $p['price'] ?? 10.00);
+                    $pContent = $p['contenido'] ?? $p['content'] ?? 'Productos varios';
+                    $pFragile = (bool) ($p['es_fragil'] ?? $p['isFragile'] ?? false);
 
-            $parcels = [
-                [
+                    if ($pWeight <= 0) $pWeight = 1.0;
+                    if ($pHeight <= 0) $pHeight = 10.0;
+                    if ($pWidth <= 0) $pWidth = 10.0;
+                    if ($pLength <= 0) $pLength = 10.0;
+                    if ($pValue <= 0) $pValue = 10.0;
+
+                    $parcels[] = [
+                        'weight' => $pWeight,
+                        'height' => $pHeight,
+                        'width' => $pWidth,
+                        'length' => $pLength,
+                        'content' => $pContent,
+                        'price' => $pValue,
+                        'isFragile' => $pFragile
+                    ];
+                }
+            } else {
+                // Datos del paquete único
+                $peso = (float) ($paqueteInput['peso'] ?? $paqueteInput['weight'] ?? ($paqueteModel ? $paqueteModel->peso : 1.0));
+                $alto = (float) ($paqueteInput['alto'] ?? $paqueteInput['height'] ?? ($paqueteModel && $paqueteModel->alto ? $paqueteModel->alto : 10.0));
+                $ancho = (float) ($paqueteInput['ancho'] ?? $paqueteInput['width'] ?? ($paqueteModel && $paqueteModel->ancho ? $paqueteModel->ancho : 10.0));
+                $largo = (float) ($paqueteInput['largo'] ?? $paqueteInput['length'] ?? ($paqueteModel && $paqueteModel->largo ? $paqueteModel->largo : 10.0));
+                $valor = (float) ($paqueteInput['valor'] ?? $paqueteInput['price'] ?? ($paqueteModel ? ($paqueteModel->precio ?? $paqueteModel->total) : 10.00));
+                $contenido = $paqueteInput['contenido'] ?? $paqueteInput['content'] ?? 'Productos varios';
+                $isFragile = (bool) ($paqueteInput['es_fragil'] ?? $paqueteInput['isFragile'] ?? ($paqueteModel ? $paqueteModel->es_fragil : false));
+
+                if ($peso <= 0) $peso = 1.0;
+                if ($alto <= 0) $alto = 10.0;
+                if ($ancho <= 0) $ancho = 10.0;
+                if ($largo <= 0) $largo = 10.0;
+                if ($valor <= 0) $valor = 10.0;
+
+                $parcels[] = [
                     'weight' => $peso,
                     'height' => $alto,
                     'width' => $ancho,
@@ -430,8 +511,20 @@ class BoxFulShippingController extends Controller
                     'content' => $contenido,
                     'price' => $valor,
                     'isFragile' => $isFragile
-                ]
-            ];
+                ];
+            }
+
+            // Calcular totales del envío
+            $totalWeight = 0;
+            $maxHeight = 0;
+            $maxWidth = 0;
+            $maxLength = 0;
+            foreach ($parcels as $p) {
+                $totalWeight += $p['weight'];
+                $maxHeight = max($maxHeight, $p['height']);
+                $maxWidth = max($maxWidth, $p['width']);
+                $maxLength = max($maxLength, $p['length']);
+            }
 
             // Cargar datos del cliente de BD para mayor robustez
             $clienteModel = $clienteId ? Cliente::find($clienteId) : null;
@@ -458,12 +551,12 @@ class BoxFulShippingController extends Controller
             // Construir el payload oficial para POST /shipment
             $boxfulPayload = [
                 'clientId' => $clientId,
-                'recolectionDate' => now()->toIso8601String(),
+                'recolectionDate' => $request->input('fecha_recoleccion') ?? $request->input('recolectionDate') ?? now()->toIso8601String(),
                 'courierId' => (string) $courierId,
-                'weight' => $peso,
-                'height' => $alto,
-                'width' => $ancho,
-                'length' => $largo,
+                'weight' => $totalWeight,
+                'height' => $maxHeight,
+                'width' => $maxWidth,
+                'length' => $maxLength,
                 'parcels' => $parcels,
                 'cod' => false,
                 'codAmount' => 0,
@@ -559,7 +652,7 @@ class BoxFulShippingController extends Controller
             $trackingUrl = $shipmentData['trackingUrl'] ?? $shipmentData['data']['trackingUrl'] ?? $shipmentData['response']['trackingUrl'] ?? null;
 
             if ($shipmentNumber && $paqueteModel) {
-                // ponytail: save shipment & parcel data to separate boxful tables
+                //save shipment & parcel data to separate boxful tables
                 $paqueteModel->num_guia = $shipmentNumber;
                 $paqueteModel->save();
 
@@ -589,7 +682,7 @@ class BoxFulShippingController extends Controller
                 $boxfulShipment = \App\Models\Inventario\BoxfulShipment::create([
                     'paquete_id' => $paqueteModel->id,
                     'direccion_origen_id' => $localOrigenId,
-                    'fecha_recoleccion' => now(),
+                    'fecha_recoleccion' => $request->input('fecha_recoleccion') ?? $request->input('recolectionDate') ?? now(),
                     'cod' => false,
                     'cod_monto' => 0,
                     'boxful_shipment_id' => $shipmentId,
@@ -603,16 +696,18 @@ class BoxFulShippingController extends Controller
                 ]);
 
                 if ($boxfulShipment) {
-                    \App\Models\Inventario\BoxfulParcel::create([
-                        'boxful_shipment_id' => $boxfulShipment->id,
-                        'contenido' => $contenido,
-                        'alto' => $alto,
-                        'ancho' => $ancho,
-                        'largo' => $largo,
-                        'peso' => $peso,
-                        'valor_declarado' => $valor,
-                        'es_fragil' => $isFragile,
-                    ]);
+                    foreach ($parcels as $p) {
+                        \App\Models\Inventario\BoxfulParcel::create([
+                            'boxful_shipment_id' => $boxfulShipment->id,
+                            'contenido' => $p['content'],
+                            'alto' => $p['height'],
+                            'ancho' => $p['width'],
+                            'largo' => $p['length'],
+                            'peso' => $p['weight'],
+                            'valor_declarado' => $p['price'],
+                            'es_fragil' => $p['isFragile'],
+                        ]);
+                    }
                 }
 
                 Log::info('Guía de Boxful guardada en el paquete local correctamente', [

@@ -180,6 +180,30 @@ class BoxFulAddressController extends Controller
                 ], $status);
             }
 
+            // automatically sync newly created Boxful address to local DB
+            $boxfulData = $response->json();
+            $boxfulAddressId = $boxfulData['id'] ?? $boxfulData['data']['id'] ?? $boxfulData['addressId'] ?? null;
+
+            if ($boxfulAddressId) {
+                $user = auth()->user();
+                if ($user && $user->id_empresa) {
+                    \App\Models\Admin\DireccionOrigen::create([
+                        'id_empresa' => $user->id_empresa,
+                        'alias' => 'Dirección Boxful',
+                        'direccion' => $request->address,
+                        'referencia' => $request->referencePoint,
+                        'telefono' => $request->addressPhone,
+                        'codigo_area' => $request->addressAreaCode,
+                        'latitud' => $request->latitude,
+                        'longitud' => $request->longitude,
+                        'boxful_state_id' => $request->stateId,
+                        'boxful_city_id' => $request->cityId,
+                        'boxful_address_id' => $boxfulAddressId,
+                        'es_predeterminada' => false
+                    ]);
+                }
+            }
+
             return response()->json($response->json(), 201);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -246,6 +270,21 @@ class BoxFulAddressController extends Controller
                 ], $status);
             }
 
+            // update local origin address model if it exists
+            $localAddr = \App\Models\Admin\DireccionOrigen::where('boxful_address_id', $id)->first();
+            if ($localAddr) {
+                $localAddr->update([
+                    'direccion' => $request->address ?? $localAddr->direccion,
+                    'referencia' => $request->referencePoint ?? $localAddr->referencia,
+                    'latitud' => $request->latitude ?? $localAddr->latitud,
+                    'longitud' => $request->longitude ?? $localAddr->longitud,
+                    'boxful_state_id' => $request->stateId ?? $localAddr->boxful_state_id,
+                    'boxful_city_id' => $request->cityId ?? $localAddr->boxful_city_id,
+                    'telefono' => $request->addressPhone ?? $localAddr->telefono,
+                    'codigo_area' => $request->addressAreaCode ?? $localAddr->codigo_area,
+                ]);
+            }
+
             return response()->json($response->json(), 200);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -291,6 +330,9 @@ class BoxFulAddressController extends Controller
                     'errors' => is_array($body) ? ($body['errors'] ?? null) : null
                 ], $status);
             }
+
+            // delete local origin address if successfully deleted on Boxful
+            \App\Models\Admin\DireccionOrigen::where('boxful_address_id', $id)->delete();
 
             $body = $response->json();
             return response()->json($body ?? ['status' => 'success', 'message' => 'Dirección eliminada correctamente.'], $response->status());

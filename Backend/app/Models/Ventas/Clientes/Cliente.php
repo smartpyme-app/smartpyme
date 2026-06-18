@@ -133,10 +133,6 @@ class Cliente extends Model {
         return $this->hasMany('App\Models\Cotizaciones\Cotizacion', 'id_cliente');
     }
 
-    public function direccionesEnvio()
-    {
-        return $this->hasMany(DireccionEnvio::class, 'id_cliente');
-    }
 
     public function eventos()
     {

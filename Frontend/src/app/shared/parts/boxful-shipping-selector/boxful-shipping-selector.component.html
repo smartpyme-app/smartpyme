@@ -41,8 +41,7 @@
               <span><i class="fa fa-building me-1"></i> Bodega / Dirección de origen de despacho <span
                   class="text-danger">*</span></span>
               <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none fw-bold"
-                *ngIf="originAddresses.length > 0 && !loadingOriginAddresses"
-                (click)="toggleOriginMode()">
+                *ngIf="originAddresses.length > 0 && !loadingOriginAddresses" (click)="toggleOriginMode()">
                 {{ originMode === 'saved' ? '+ Agregar bodega/origen' : 'Ver bodegas guardadas' }}
               </button>
             </label>
@@ -51,8 +50,9 @@
             <div *ngIf="originMode === 'saved' && !loadingOriginAddresses">
               <select id="direccionOrigenSelect" class="form-select" [(ngModel)]="selectedOriginAddressId">
                 <option [ngValue]="null" disabled>-- Seleccione una dirección de origen --</option>
-                <option *ngFor="let addr of originAddresses" [value]="addr.id || addr.addressId">
-                  {{ addr.address }}
+                <option *ngFor="let addr of originAddresses"
+                  [value]="addr.boxful_address_id || addr.id || addr.addressId">
+                  {{ addr.direccion || addr.address }}
                 </option>
               </select>
               <div class="form-text text-muted mt-1 small" *ngIf="originAddresses.length === 0">
@@ -62,24 +62,40 @@
 
             <!-- MODO ORIGEN 2: Nueva Bodega/Origen -->
             <div *ngIf="originMode === 'new' && !loadingOriginAddresses" class="p-3 bg-light rounded border mb-2 mt-2">
-              <h6 class="fw-bold text-dark mb-3"><i class="fa fa-plus-circle me-1"></i> Nueva dirección de origen (Bodega)</h6>
+              <h6 class="fw-bold text-dark mb-3"><i class="fa fa-plus-circle me-1"></i> Nueva dirección de origen
+                (Bodega)</h6>
               <form [formGroup]="originAddressForm" autocomplete="off">
                 <div class="form-group mb-3">
-                  <label for="origenDireccion" class="form-label mb-1 small">Dirección de Despacho <span class="text-danger">*</span></label>
-                  <textarea id="origenDireccion" formControlName="direccion" rows="2" class="form-control form-control-sm"
-                    placeholder="Calle, número de local, bodega, etc."
-                    [class.is-invalid]="originAddressForm.get('direccion')?.touched && originAddressForm.get('direccion')?.invalid"></textarea>
+                  <label for="origenAlias" class="form-label mb-1 small">Alias de la Bodega <span
+                      class="text-danger">*</span></label>
+                  <input id="origenAlias" type="text" formControlName="alias" class="form-control form-control-sm"
+                    placeholder="Ej: Bodega Central, Sucursal Escalón"
+                    [class.is-invalid]="originAddressForm.get('alias')?.touched && originAddressForm.get('alias')?.invalid">
                   <div class="text-danger mt-1" style="font-size: 11px;"
-                    *ngIf="originAddressForm.get('direccion')?.touched && originAddressForm.get('direccion')?.invalid">La dirección es requerida.</div>
+                    *ngIf="originAddressForm.get('alias')?.touched && originAddressForm.get('alias')?.invalid">El alias
+                    es requerido.</div>
                 </div>
 
                 <div class="form-group mb-3">
-                  <label for="origenReferencia" class="form-label mb-1 small">Punto de Referencia <span class="text-danger">*</span></label>
-                  <input id="origenReferencia" type="text" formControlName="referencia" class="form-control form-control-sm"
-                    placeholder="Ej: portón azul, al lado de gasolinera"
+                  <label for="origenDireccion" class="form-label mb-1 small">Dirección de Despacho <span
+                      class="text-danger">*</span></label>
+                  <textarea id="origenDireccion" formControlName="direccion" rows="2"
+                    class="form-control form-control-sm" placeholder="Calle, número de local, bodega, etc."
+                    [class.is-invalid]="originAddressForm.get('direccion')?.touched && originAddressForm.get('direccion')?.invalid"></textarea>
+                  <div class="text-danger mt-1" style="font-size: 11px;"
+                    *ngIf="originAddressForm.get('direccion')?.touched && originAddressForm.get('direccion')?.invalid">
+                    La dirección es requerida.</div>
+                </div>
+
+                <div class="form-group mb-3">
+                  <label for="origenReferencia" class="form-label mb-1 small">Punto de Referencia <span
+                      class="text-danger">*</span></label>
+                  <input id="origenReferencia" type="text" formControlName="referencia"
+                    class="form-control form-control-sm" placeholder="Ej: portón azul, al lado de gasolinera"
                     [class.is-invalid]="originAddressForm.get('referencia')?.touched && originAddressForm.get('referencia')?.invalid">
                   <div class="text-danger mt-1" style="font-size: 11px;"
-                    *ngIf="originAddressForm.get('referencia')?.touched && originAddressForm.get('referencia')?.invalid">La referencia es requerida.</div>
+                    *ngIf="originAddressForm.get('referencia')?.touched && originAddressForm.get('referencia')?.invalid">
+                    La referencia es requerida.</div>
                 </div>
 
                 <input type="hidden" formControlName="latitud">
@@ -87,53 +103,66 @@
 
                 <div class="row">
                   <div class="form-group col-6 mb-3">
-                    <label for="origenEstado" class="form-label mb-1 small">Estado/Depto <span class="text-danger">*</span></label>
-                    <select id="origenEstado" formControlName="stateId" (change)="onOriginStateChange()" class="form-select form-select-sm"
+                    <label for="origenEstado" class="form-label mb-1 small">Estado/Depto <span
+                        class="text-danger">*</span></label>
+                    <select id="origenEstado" formControlName="stateId" (change)="onOriginStateChange()"
+                      class="form-select form-select-sm"
                       [class.is-invalid]="originAddressForm.get('stateId')?.touched && originAddressForm.get('stateId')?.invalid">
                       <option [ngValue]="null" disabled>Seleccione...</option>
                       <option *ngFor="let state of states" [value]="state.id">{{ state.name }}</option>
                     </select>
                     <div class="text-danger mt-1" style="font-size: 11px;"
-                      *ngIf="originAddressForm.get('stateId')?.touched && originAddressForm.get('stateId')?.invalid">Seleccione depto.</div>
+                      *ngIf="originAddressForm.get('stateId')?.touched && originAddressForm.get('stateId')?.invalid">
+                      Seleccione depto.</div>
                   </div>
                   <div class="form-group col-6 mb-3">
-                    <label for="origenCiudad" class="form-label mb-1 small">Ciudad/Municipio <span class="text-danger">*</span></label>
-                    <select id="origenCiudad" formControlName="cityId" (change)="onOriginCityChange()" class="form-select form-select-sm"
+                    <label for="origenCiudad" class="form-label mb-1 small">Ciudad/Municipio <span
+                        class="text-danger">*</span></label>
+                    <select id="origenCiudad" formControlName="cityId" (change)="onOriginCityChange()"
+                      class="form-select form-select-sm"
                       [class.is-invalid]="originAddressForm.get('cityId')?.touched && originAddressForm.get('cityId')?.invalid"
                       [attr.disabled]="filteredOriginCities.length === 0 ? true : null">
                       <option [ngValue]="null" disabled>Seleccione...</option>
                       <option *ngFor="let city of filteredOriginCities" [value]="city.id">{{ city.name }}</option>
                     </select>
                     <div class="text-danger mt-1" style="font-size: 11px;"
-                      *ngIf="originAddressForm.get('cityId')?.touched && originAddressForm.get('cityId')?.invalid">Seleccione municipio.</div>
+                      *ngIf="originAddressForm.get('cityId')?.touched && originAddressForm.get('cityId')?.invalid">
+                      Seleccione municipio.</div>
                   </div>
                 </div>
 
                 <div class="row">
                   <div class="form-group col-4 mb-3">
-                    <label for="origenCodArea" class="form-label mb-1 small">Cód. Área <span class="text-danger">*</span></label>
-                    <input id="origenCodArea" type="text" formControlName="codigo_area" class="form-control form-control-sm"
-                      placeholder="503"
+                    <label for="origenCodArea" class="form-label mb-1 small">Cód. Área <span
+                        class="text-danger">*</span></label>
+                    <input id="origenCodArea" type="text" formControlName="codigo_area"
+                      class="form-control form-control-sm" placeholder="503"
                       [class.is-invalid]="originAddressForm.get('codigo_area')?.touched && originAddressForm.get('codigo_area')?.invalid">
                     <div class="text-danger mt-1" style="font-size: 11px;"
-                      *ngIf="originAddressForm.get('codigo_area')?.touched && originAddressForm.get('codigo_area')?.invalid">Requerido.</div>
+                      *ngIf="originAddressForm.get('codigo_area')?.touched && originAddressForm.get('codigo_area')?.invalid">
+                      Requerido.</div>
                   </div>
                   <div class="form-group col-8 mb-3">
-                    <label for="origenTelefono" class="form-label mb-1 small">Teléfono de Bodega <span class="text-danger">*</span></label>
-                    <input id="origenTelefono" type="text" formControlName="telefono" class="form-control form-control-sm"
-                      placeholder="70001234"
+                    <label for="origenTelefono" class="form-label mb-1 small">Teléfono de Bodega <span
+                        class="text-danger">*</span></label>
+                    <input id="origenTelefono" type="text" formControlName="telefono"
+                      class="form-control form-control-sm" placeholder="70001234"
                       [class.is-invalid]="originAddressForm.get('telefono')?.touched && originAddressForm.get('telefono')?.invalid">
                     <div class="text-danger mt-1" style="font-size: 11px;"
-                      *ngIf="originAddressForm.get('telefono')?.touched && originAddressForm.get('telefono')?.invalid">Teléfono requerido.</div>
+                      *ngIf="originAddressForm.get('telefono')?.touched && originAddressForm.get('telefono')?.invalid">
+                      Teléfono requerido.</div>
                   </div>
                 </div>
 
                 <div class="d-flex justify-content-end mt-2">
-                  <button type="button" class="btn btn-sm btn-light me-2" *ngIf="originAddresses.length > 0" (click)="toggleOriginMode()">
+                  <button type="button" class="btn btn-sm btn-light me-2" *ngIf="originAddresses.length > 0"
+                    (click)="toggleOriginMode()">
                     Cancelar
                   </button>
-                  <button type="button" class="btn btn-sm btn-primary" [disabled]="savingOriginAddress" (click)="guardarNuevaDireccionOrigen()">
-                    <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true" *ngIf="savingOriginAddress"></span>
+                  <button type="button" class="btn btn-sm btn-primary" [disabled]="savingOriginAddress"
+                    (click)="guardarNuevaDireccionOrigen()">
+                    <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"
+                      *ngIf="savingOriginAddress"></span>
                     <i class="fa fa-save me-1" *ngIf="!savingOriginAddress"></i> Guardar Bodega
                   </button>
                 </div>
@@ -146,49 +175,8 @@
             </div>
           </div>
 
-          <!-- Selector de Modo de Dirección -->
-          <div class="d-flex gap-3 mb-3 pb-2 border-bottom">
-            <div class="form-check">
-              <input class="form-check-input" type="radio" name="boxfulModeSelector" id="boxfulModeSaved"
-                [checked]="mode === 'saved'" (change)="onModeChange('saved')">
-              <label class="form-check-label fw-bold text-dark" for="boxfulModeSaved">
-                Usar dirección guardada
-              </label>
-            </div>
-            <div class="form-check">
-              <input class="form-check-input" type="radio" name="boxfulModeSelector" id="boxfulModeNew"
-                [checked]="mode === 'new'" (change)="onModeChange('new')">
-              <label class="form-check-label fw-bold text-dark" for="boxfulModeNew">
-                Ingresar nueva dirección
-              </label>
-            </div>
-          </div>
-
-          <!-- MODO 1A: Dirección Guardada -->
-          <div *ngIf="mode === 'saved'" class="mb-3">
-            <div *ngIf="!loading">
-              <label for="direccion_guardada" class="fw-bold text-dark mb-1">Dirección de envío guardada</label>
-              <select id="direccion_guardada" class="form-select" [(ngModel)]="selectedAddressId">
-                <option [ngValue]="null" disabled>-- Seleccione una dirección del cliente --</option>
-                <option *ngFor="let addr of addresses" [value]="addr.boxful_address_id">
-                  {{ addr.alias || 'Dirección de envío' }} - {{ addr.direccion }} ({{ addr.codigo_area ? '+' +
-                  addr.codigo_area : '' }} {{ addr.telefono }})
-                </option>
-              </select>
-              <div class="form-text text-muted mt-1 small" *ngIf="addresses.length === 0">
-                <i class="fa fa-info-circle me-1"></i> El cliente no tiene direcciones registradas. Seleccione "Ingresar
-                nueva dirección" para registrar una.
-              </div>
-            </div>
-
-            <div class="py-4 text-center" *ngIf="loading">
-              <span class="spinner-border spinner-border-sm text-primary me-2" role="status" aria-hidden="true"></span>
-              <span class="text-muted small">Cargando catálogo de direcciones...</span>
-            </div>
-          </div>
-
-          <!-- MODO 1B: Nueva Dirección -->
-          <div *ngIf="mode === 'new'" class="mb-3">
+          <!-- Dirección de Entrega -->
+          <div class="mb-3">
             <form [formGroup]="addressForm" autocomplete="off">
               <div class="form-group mb-3">
                 <label for="nuevaDireccion">Dirección de Entrega <span class="text-danger">*</span></label>
@@ -206,7 +194,15 @@
                   placeholder="Escriba aquí (ej: portón negro, frente a parque)">
               </div>
 
-              <!-- TODO: Integrar mapa (Leaflet/Google Maps) para seleccionar pin -->
+              <div class="form-group mb-3">
+                <label for="contenidoPaquete">Contenido del Paquete <span class="text-danger">*</span></label>
+                <input id="contenidoPaquete" type="text" formControlName="contenido" class="form-control"
+                  placeholder="Ej: Calzado, Ropa, Repuestos"
+                  [class.is-invalid]="addressForm.get('contenido')?.touched && addressForm.get('contenido')?.invalid">
+                <div class="text-danger mt-1" style="font-size: 11px;"
+                  *ngIf="addressForm.get('contenido')?.touched && addressForm.get('contenido')?.invalid">El contenido
+                  del paquete es requerido.</div>
+              </div>
 
               <input type="hidden" formControlName="latitud">
               <input type="hidden" formControlName="longitud">
@@ -257,15 +253,6 @@
                     requerido.</div>
                 </div>
               </div>
-
-              <!-- Guardar en base de datos -->
-              <div class="form-check form-switch mt-2">
-                <input class="form-check-input" type="checkbox" id="guardarDireccionSwitch"
-                  formControlName="guardarDireccion">
-                <label class="form-check-label fw-bold cursor-pointer" for="guardarDireccionSwitch">
-                  Guardar esta dirección en el historial del cliente
-                </label>
-              </div>
             </form>
           </div>
 
@@ -285,6 +272,16 @@
 
         <!-- ==================== PASO 2: SELECCIÓN DE PAQUETERÍA ==================== -->
         <div *ngIf="step === 2">
+          <!-- Fecha de Recolección -->
+          <div class="mb-3 p-3 bg-light rounded border">
+            <label for="fechaRecoleccion" class="fw-bold text-dark mb-1"><i class="fa fa-calendar me-1"></i> Fecha de
+              Recolección para Despacho <span class="text-danger">*</span></label>
+            <input id="fechaRecoleccion" type="date" class="form-control" [min]="minFechaRecoleccion"
+              [(ngModel)]="fechaRecoleccion">
+            <div class="form-text text-muted small mt-1">Seleccione la fecha en que la paquetería pasará a retirar el
+              paquete por su bodega.</div>
+          </div>
+
           <label class="fw-bold text-dark mb-2">Seleccione una opción de paquetería</label>
 
           <div class="row g-2">
@@ -293,38 +290,49 @@
                 [class.selected]="selectedCourierId === (courier.id || courier.courierId)"
                 (click)="selectedCourierId = (courier.id || courier.courierId)">
                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-                  
+
                   <!-- Brand & Name -->
                   <div class="d-flex align-items-center gap-3" style="flex: 1; min-width: 180px;">
-                    <div class="rounded-circle bg-white border d-flex align-items-center justify-content-center p-1" style="width: 48px; height: 48px; min-width: 48px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-                      <img *ngIf="courier.logo || courier.courierLogo" [src]="courier.logo || courier.courierLogo" [alt]="courier.name || courier.courierName" class="rounded-circle" style="width: 100%; height: 100%; object-fit: contain;">
+                    <div class="rounded-circle bg-white border d-flex align-items-center justify-content-center p-1"
+                      style="width: 48px; height: 48px; min-width: 48px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                      <img *ngIf="courier.logo || courier.courierLogo" [src]="courier.logo || courier.courierLogo"
+                        [alt]="courier.name || courier.courierName" class="rounded-circle"
+                        style="width: 100%; height: 100%; object-fit: contain;">
                       <i *ngIf="!(courier.logo || courier.courierLogo)" class="fa fa-truck text-muted fa-lg"></i>
                     </div>
                     <div>
-                      <h6 class="fw-bold mb-0 text-dark" style="font-size: 16px;">{{ courier.name || courier.courierName }}</h6>
+                      <h6 class="fw-bold mb-0 text-dark" style="font-size: 16px;">{{ courier.name || courier.courierName
+                        }}</h6>
                     </div>
                   </div>
 
                   <!-- Fecha de Recolección -->
                   <div class="text-center" style="min-width: 140px;">
-                    <span class="d-block text-muted mb-1" style="font-size: 12px; font-weight: 500;">Fecha de recolección</span>
-                    <span class="d-block fw-bold mb-1" style="font-size: 15px; color: #1a237e;">{{ getRecolectionDateInfo(courier).label }}</span>
-                    <span class="d-block text-muted" style="font-size: 12px;">{{ getRecolectionDateInfo(courier).time }}</span>
+                    <span class="d-block text-muted mb-1" style="font-size: 12px; font-weight: 500;">Fecha de
+                      recolección</span>
+                    <span class="d-block fw-bold mb-1" style="font-size: 15px; color: #1a237e;">{{
+                      getRecolectionDateInfo(courier).label }}</span>
+                    <span class="d-block text-muted" style="font-size: 12px;">{{ getRecolectionDateInfo(courier).time
+                      }}</span>
                   </div>
 
                   <!-- Fecha de Entrega -->
                   <div class="text-center" style="min-width: 140px;">
-                    <span class="d-block text-muted mb-1" style="font-size: 12px; font-weight: 500;">Fecha de entrega</span>
-                    <span class="d-block fw-bold mb-1" style="font-size: 15px; color: #1a237e;">{{ getDeliveryDateInfo(courier).dateFormatted }}</span>
-                    <span class="d-block text-muted" style="font-size: 12px;">{{ getDeliveryDateInfo(courier).relativeLabel }}</span>
+                    <span class="d-block text-muted mb-1" style="font-size: 12px; font-weight: 500;">Fecha de
+                      entrega</span>
+                    <span class="d-block fw-bold mb-1" style="font-size: 15px; color: #1a237e;">{{
+                      getDeliveryDateInfo(courier).dateFormatted }}</span>
+                    <span class="d-block text-muted" style="font-size: 12px;">{{
+                      getDeliveryDateInfo(courier).relativeLabel }}</span>
                   </div>
 
                   <!-- Precio -->
                   <div class="text-end" style="min-width: 110px; padding-right: 15px;">
                     <span class="d-block text-muted mb-1" style="font-size: 12px; font-weight: 500;">Precio</span>
-                    <span class="d-block fw-bold text-primary" style="font-size: 20px; color: #2563eb !important;">$ {{ courier.price | number:'1.2-2' }}</span>
+                    <span class="d-block fw-bold text-primary" style="font-size: 20px; color: #2563eb !important;">$ {{
+                      courier.price | number:'1.2-2' }}</span>
                   </div>
-                  
+
                 </div>
               </div>
             </div>

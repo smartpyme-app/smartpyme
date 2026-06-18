@@ -72,10 +72,10 @@ export class BoxfulApiService {
   }
 
   /**
-   * Obtiene las direcciones de envío locales guardadas del cliente.
+   * Obtiene las direcciones de origen locales de la empresa.
    */
-  getClientAddresses(clienteId: number): Observable<any[]> {
-    return this.api.getAll(`clientes/${clienteId}/direcciones-envio`);
+  getLocalOriginAddresses(): Observable<any[]> {
+    return this.api.getAll('boxful/direcciones-origen');
   }
 
   /**
@@ -86,10 +86,10 @@ export class BoxfulApiService {
   }
 
   /**
-   * Guarda una dirección de envío localmente y en Boxful para un cliente.
+   * Guarda una dirección de origen localmente y en Boxful.
    */
-  storeClientAddress(clienteId: number, data: any): Observable<any> {
-    return this.api.store(`clientes/${clienteId}/direcciones-envio`, data);
+  storeLocalOriginAddress(data: any): Observable<any> {
+    return this.api.store('boxful/direcciones-origen', data);
   }
 
   /**
