@@ -126,21 +126,28 @@ class CobrosPorVendedorExport implements FromCollection, WithHeadings, WithMappi
             return collect();
         }
 
-        $query = DB::table('detalles_venta as dv')
-            ->join('ventas as v', 'v.id', '=', 'dv.id_venta')
-            ->whereIn('dv.id_venta', $ventaIds)
+        $exprVendedor = VentaMontosPorVendedorService::sqlIdVendedorEfectivo('dv', 'v');
+
+        $query = DB::query()
+            ->fromSub(function ($sub) use ($ventaIds, $exprVendedor) {
+                $sub->from('detalles_venta as dv')
+                    ->join('ventas as v', 'v.id', '=', 'dv.id_venta')
+                    ->whereIn('dv.id_venta', $ventaIds)
+                    ->select(
+                        'dv.id_venta',
+                        DB::raw("{$exprVendedor} as id_vendedor_efectivo"),
+                        DB::raw('COALESCE(dv.total, 0) + COALESCE(dv.iva, 0) as total_linea')
+                    );
+            }, 'lineas')
             ->select(
-                'dv.id_venta',
-                DB::raw(VentaMontosPorVendedorService::sqlIdVendedorEfectivo('dv', 'v') . ' as id_vendedor_efectivo'),
-                DB::raw('SUM(COALESCE(dv.total, 0) + COALESCE(dv.iva, 0)) as total_vendedor')
+                'id_venta',
+                'id_vendedor_efectivo',
+                DB::raw('SUM(total_linea) as total_vendedor')
             )
-            ->groupByRaw('dv.id_venta, ' . VentaMontosPorVendedorService::sqlIdVendedorEfectivo('dv', 'v'));
+            ->groupBy('id_venta', 'id_vendedor_efectivo');
 
         if ($idVendedorFiltro !== null && $idVendedorFiltro > 0) {
-            $query->havingRaw(
-                VentaMontosPorVendedorService::sqlIdVendedorEfectivo('dv', 'v') . ' = ?',
-                [$idVendedorFiltro]
-            );
+            $query->where('id_vendedor_efectivo', $idVendedorFiltro);
         }
 
         return $query->get();
