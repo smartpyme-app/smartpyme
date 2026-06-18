@@ -47,6 +47,58 @@ Para actualizar los niveles mínimo y máximo de un producto, abre el registro d
 
 ---
 
+## Historial de precio y costo
+
+Visualiza cómo han evolucionado el precio de venta y el costo de compra de cada producto a lo largo del tiempo, con base en ventas y compras reales. Usa esta vista para detectar variaciones de precio, validar que las compras recientes no hayan subido tu costo en silencio y revisar quién registró cada cambio.
+
+Para abrirla tienes dos opciones:
+
+- Desde **Inventario → Productos**, abre el menú de acciones de la fila del producto y haz clic en **Precio y costo**.
+- Desde la página de detalle del producto, baja a la sección **Historial de precio y costo** (o abre el producto con el fragmento `#historial-precio-costo` en la URL para saltar directamente).
+
+### Filtros
+
+- **Del / Al**: el rango de fechas a analizar. La vista inicia con el último mes por defecto.
+- **Usuario**: limita los documentos a un vendedor (para ventas) o usuario que registró la compra. Déjalo en **Todos** para incluir a todos.
+
+Haz clic en **Filtrar** para actualizar la vista.
+
+### Tarjetas de resumen
+
+En la parte superior verás cuatro tarjetas:
+
+- **Precio actual**: el precio del producto tal como está configurado hoy en su registro.
+- **Costo actual**: el costo actual del producto (o el costo promedio, si no hay un costo fijo).
+- **Tendencia precio**: una insignia que indica si el precio está **Subiendo**, **Bajando**, **Estable** (menos de ±0.5% de variación) o **Sin datos**, junto con la variación porcentual total del período.
+- **Tendencia costo**: el mismo indicador para el costo.
+
+### Gráfica
+
+La gráfica de líneas dibuja dos series sobre el rango seleccionado:
+
+- **Precio en ventas** (azul): el precio unitario registrado en las líneas de ventas en estado **Pagada**.
+- **Costo en compras** (rojo): el costo unitario registrado en las líneas de compras en estado **Pagada**.
+
+Solo se grafican los puntos donde el precio o costo **cambió** respecto al valor anterior, así que una línea plana significa que el valor se mantuvo, no que no hubo actividad. El pie de la gráfica muestra cuántas líneas de venta y de compra hubo en el período.
+
+<Note>
+  Solo los documentos en estado **Pagada** alimentan el historial. Las ventas y compras en borrador, pendientes o anuladas se ignoran.
+</Note>
+
+### Tabla de eventos
+
+Bajo la gráfica se listan todos los cambios de precio o costo del período en orden cronológico:
+
+- **Fecha**: la fecha de la venta o compra que originó el cambio.
+- **Tipo**: **Precio** (de una venta) o **Costo** (de una compra).
+- **Valor**: el nuevo precio o costo.
+- **Documento**: el documento origen, por ejemplo `Venta #1234` o la referencia de la compra.
+- **Usuario**: el vendedor que registró la línea de la venta o el usuario que registró la compra.
+
+Si no aparecen filas, no se registraron cambios de precio o costo en el rango seleccionado para documentos pagados.
+
+---
+
 ## Entradas y salidas de inventario
 
 Registra movimientos de stock que no están ligados a una venta o compra, como cargas iniciales, correcciones o pérdidas.

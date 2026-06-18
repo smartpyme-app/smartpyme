@@ -47,6 +47,58 @@ To update the minimum and maximum levels for a product, open the product record,
 
 ---
 
+## Price and Cost History
+
+See how each product's selling price and purchase cost have evolved over time, based on real sales and purchases. Use this view to spot price drift, validate that recent purchase orders haven't quietly raised your cost, and review who changed what.
+
+To open it, you have two paths:
+
+- From **Inventory → Products**, open the actions dropdown on a product row and click **Precio y costo**.
+- From a product detail page, scroll to the **Price and cost history** tab (or open the product with the `#historial-precio-costo` URL fragment to jump straight to it).
+
+### Filters
+
+- **Del / Al** — the date range to analyze. The view defaults to the last month.
+- **User** — restrict to documents created by a specific seller (for sales) or purchaser (for purchases). Leave as **Todos** to include everyone.
+
+Click **Filtrar** to refresh the view.
+
+### Summary cards
+
+The top of the view shows four cards:
+
+- **Current price** — the product's price as set on its record today.
+- **Current cost** — the product's current cost (or average cost, if cost is not set explicitly).
+- **Price trend** — a badge showing whether price is **Subiendo** (up), **Bajando** (down), **Estable** (flat, less than ±0.5% variation), or **Sin datos**, along with the total percentage variation across the period.
+- **Cost trend** — the same indicator for cost.
+
+### Chart
+
+The line chart plots two series across the selected range:
+
+- **Precio en ventas** (blue) — the unit price recorded on sale lines from **paid** sales.
+- **Costo en compras** (red) — the unit cost recorded on purchase lines from **paid** purchases.
+
+Only points where the price or cost **changed** versus the previous value are plotted, so a flat line means the value held steady, not that there was no activity. The caption under the chart shows how many sale lines and purchase lines were processed in the period.
+
+<Note>
+  Only documents in **Pagada** (paid) status contribute to the history. Draft, pending, or cancelled sales and purchases are ignored.
+</Note>
+
+### Events table
+
+Below the chart, every price or cost change in the period is listed in chronological order:
+
+- **Date** — the date of the sale or purchase that triggered the change.
+- **Type** — **Precio** (price, from a sale) or **Costo** (cost, from a purchase).
+- **Value** — the new price or cost value.
+- **Document** — the source document, such as `Venta #1234` or the purchase reference.
+- **User** — the seller who created the sale line, or the user who registered the purchase.
+
+If no rows appear, no price or cost changes were recorded in the selected range for paid documents.
+
+---
+
 ## Inventory Entries and Exits
 
 Record stock movements that aren't tied to a sale or purchase — such as initial stock loads, corrections, or losses.
