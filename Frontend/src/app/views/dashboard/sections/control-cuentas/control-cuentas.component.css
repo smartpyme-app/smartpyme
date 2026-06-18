@@ -52,7 +52,7 @@
 }
 
 /* Estilos modernos para AG Grid - Tabla de detalle de cuentas por cobrar */
-::ng-deep .detalle-cuentas-grid.ag-theme-alpine {
+::ng-deep .detalle-cuentas-grid {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     border: none !important;
     box-shadow: none !important;
@@ -166,7 +166,7 @@
 }
 
 /* Eliminar bordes gruesos y sombras */
-::ng-deep .detalle-cuentas-grid.ag-theme-alpine,
+::ng-deep .detalle-cuentas-grid,
 ::ng-deep .detalle-cuentas-grid .ag-root-wrapper {
     border: none !important;
     box-shadow: none !important;
@@ -245,7 +245,7 @@
 }
 
 /* Estilos modernos para AG Grid - Tabla de resumen de cuentas por pagar */
-::ng-deep .resumen-cuentas-pagar-grid.ag-theme-alpine {
+::ng-deep .resumen-cuentas-pagar-grid {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     border: none !important;
     box-shadow: none !important;
@@ -359,7 +359,7 @@
 }
 
 /* Eliminar bordes gruesos y sombras */
-::ng-deep .resumen-cuentas-pagar-grid.ag-theme-alpine,
+::ng-deep .resumen-cuentas-pagar-grid,
 ::ng-deep .resumen-cuentas-pagar-grid .ag-root-wrapper {
     border: none !important;
     box-shadow: none !important;

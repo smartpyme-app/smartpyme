@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { NgxEchartsModule } from 'ngx-echarts';
 import * as echarts from 'echarts';
-import { RevoGrid } from '@revolist/angular-datagrid';
+
 import { AgGridModule } from 'ag-grid-angular';
 import { WebdatarocksPivotModule } from '@webdatarocks/ngx-webdatarocks';
 
@@ -37,13 +37,10 @@ import { PipesModule } from '@pipes/pipes.module';
     FormsModule,
     RouterModule,
     NgxEchartsModule.forRoot({ echarts }),
-    RevoGrid,
     AgGridModule,
     WebdatarocksPivotModule,
     SharedModule,
-    PipesModule
-  ],
-  declarations: [
+    PipesModule,
     DashboardComponent,
     ChartCardComponent,
     LineChartComponent,
@@ -55,6 +52,21 @@ import { PipesModule } from '@pipes/pipes.module';
     BudgetCardComponent,
     FiltroFechaComponent,
     DropdownMultiFiltroComponent,
+    DashboardComponent,
+    ChartCardComponent,
+    LineChartComponent,
+    BarChartComponent,
+    PieChartComponent,
+    TreemapChartComponent,
+    AccountsListComponent,
+    CashFlowGaugeComponent,
+    BudgetCardComponent,
+    ResultadosComponent,
+    VentasComponent,
+    FinanzasComponent,
+    GastosComponent,
+    ControlCuentasComponent,
+    InventarioComponent,
     ResultadosComponent,
     VentasComponent,
     FinanzasComponent,
@@ -62,6 +74,7 @@ import { PipesModule } from '@pipes/pipes.module';
     ControlCuentasComponent,
     InventarioComponent
   ],
+
   exports: [
     DashboardComponent,
     ChartCardComponent,
@@ -74,7 +87,21 @@ import { PipesModule } from '@pipes/pipes.module';
     BudgetCardComponent,
     FiltroFechaComponent,
     DropdownMultiFiltroComponent,
-    RevoGrid
+    DashboardComponent,
+    ChartCardComponent,
+    LineChartComponent,
+    BarChartComponent,
+    PieChartComponent,
+    TreemapChartComponent,
+    AccountsListComponent,
+    CashFlowGaugeComponent,
+    BudgetCardComponent,
+    ResultadosComponent,
+    VentasComponent,
+    FinanzasComponent,
+    GastosComponent,
+    ControlCuentasComponent,
+    InventarioComponent
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })

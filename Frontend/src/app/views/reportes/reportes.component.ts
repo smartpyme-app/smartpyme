@@ -7,6 +7,7 @@ import { AlertService } from '@services/alert.service';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { FuncionalidadesService } from '@services/functionalities.service';
+import { DashboardModule } from '@views/dashboard/dashboard.module';
 
 /** Debe coincidir con el slug en Backend (FuncionalidadesSeeder / VerificarAccesoFuncionalidad). */
 const SLUG_INTELIGENCIA_NEGOCIOS_V2 = 'inteligencia-negocios-v2';
@@ -15,16 +16,15 @@ const SLUG_INTELIGENCIA_NEGOCIOS_V2 = 'inteligencia-negocios-v2';
     selector: 'app-reportes',
     templateUrl: './reportes.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule],
+    imports: [CommonModule, RouterModule, DashboardModule],
     changeDetection: ChangeDetectionStrategy.OnPush,
-
 })
 export class ReportesComponent implements OnInit {
 
-    public usuario:any = {};
-    public indicadores:any = {};
-    public dashboards:any = [];
-    public filtros:any = {};
+    public usuario: any = {};
+    public indicadores: any = {};
+    public dashboards: any = [];
+    public filtros: any = {};
     /** Si es false, solo se muestra el dashboard V1 (embeds); si es true, pestañas V1/V2. */
     public tieneInteligenciaNegociosV2 = false;
     /** Evita mostrar V1 solo un instante antes de las pestañas cuando V2 sí aplica. */
@@ -34,20 +34,21 @@ export class ReportesComponent implements OnInit {
     private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor(
-      public apiService: ApiService,
-      public alertService: AlertService,
-      private sanitizer: DomSanitizer,
-      private cdr: ChangeDetectorRef,
-      private funcionalidadesService: FuncionalidadesService
-    ) {}
+        public apiService: ApiService,
+        public alertService: AlertService,
+        private sanitizer: DomSanitizer,
+        private cdr: ChangeDetectorRef,
+        private funcionalidadesService: FuncionalidadesService
+    ) { }
 
-    ngOnInit(){
+    ngOnInit() {
         this.usuario = this.apiService.auth_user();
         this.loadAll();
         this.funcionalidadesService.verificarAcceso(SLUG_INTELIGENCIA_NEGOCIOS_V2).subscribe({
             next: (acceso) => {
                 this.tieneInteligenciaNegociosV2 = acceso;
                 this.verificacionFuncionalidadLista = true;
+                this.cdr.markForCheck();
             }
         });
     }

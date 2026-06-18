@@ -9,16 +9,39 @@ import {
   DropdownMultiFiltroItem,
   DropdownMultiFiltroSelection,
 } from '../../components/dropdown-multi-filtro/dropdown-multi-filtro.component';
-import { ColDef, GridOptions, GridApi, ColumnApi } from 'ag-grid-community';
+import { ColDef, GridOptions, GridApi, themeQuartz, AllCommunityModule } from 'ag-grid-community';
 import { MetricCard } from '../../models/chart-config.model';
+
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { AgGridModule } from 'ag-grid-angular';
+import { SharedModule } from '@shared/shared.module';
+import { PipesModule } from '@pipes/pipes.module';
+import { DropdownMultiFiltroComponent } from '../../components/dropdown-multi-filtro/dropdown-multi-filtro.component';
+import { ChartCardComponent } from '../../components/chart-card/chart-card.component';
+import { BarChartComponent } from '../../components/bar-chart/bar-chart.component';
 
 @Component({
   selector: 'app-inventario',
   templateUrl: './inventario.component.html',
   styleUrls: ['./inventario.component.css'],
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    AgGridModule,
+    SharedModule,
+    PipesModule,
+    DropdownMultiFiltroComponent,
+    ChartCardComponent,
+    BarChartComponent
+  ]
 })
 export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
+  public miTema = themeQuartz;
+  public modules: any[] = [AllCommunityModule];
+
   @Input() datos: any = {};
   @Output() filtrosCambiados = new EventEmitter<any>();
 
@@ -61,7 +84,7 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
   inventarioProductosGridOptions: GridOptions = {};
   pinnedBottomRowDataInventario: any[] = [];
   private gridApi!: GridApi;
-  private gridColumnApi!: ColumnApi;
+  private gridColumnApi!: any;
   quickFilterText: string = '';
 
   // AG Grid configuration - Entradas y salidas
@@ -69,14 +92,14 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
   entradasSalidasGridOptions: GridOptions = {};
   pinnedBottomRowDataEntradasSalidas: any[] = [];
   private entradasSalidasGridApi!: GridApi;
-  private entradasSalidasGridColumnApi!: ColumnApi;
+  private entradasSalidasGridColumnApi!: any;
   quickFilterTextEntradasSalidas: string = '';
 
   // AG Grid configuration - Ajustes
   ajustesColumnDefs: ColDef[] = [];
   ajustesGridOptions: GridOptions = {};
   private ajustesGridApi!: GridApi;
-  private ajustesGridColumnApi!: ColumnApi;
+  private ajustesGridColumnApi!: any;
   quickFilterTextAjustes: string = '';
 
   anio: string = new Date().getFullYear().toString();
@@ -602,6 +625,7 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
       },
       pagination: true,
       paginationPageSize: 15,
+      paginationPageSizeSelector: [15, 30, 50, 100],
       enableCellTextSelection: true,
       ensureDomOrder: true,
       onCellDoubleClicked: (params: any) => {
@@ -624,7 +648,7 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
       },
       onGridReady: (params: any) => {
         this.gridApi = params.api;
-        this.gridColumnApi = params.columnApi;
+        this.gridColumnApi = params.api;
       },
       onFilterChanged: () => {
         this.recalcularTotalesInventario();
@@ -779,7 +803,7 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
 
   onQuickFilterChange(): void {
     if (this.gridApi) {
-      this.gridApi.setQuickFilter(this.quickFilterText);
+      this.gridApi.setGridOption('quickFilterText', this.quickFilterText);
     }
   }
 
@@ -788,7 +812,7 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
     let inversionPromedio = 0;
     let ventasEsperadas = 0;
 
-    if (this.gridApi) {
+    if (this.gridApi && !this.gridApi.isDestroyed()) {
       this.gridApi.forEachNodeAfterFilter((node: any) => {
         if (node.data) {
           stock += (node.data.stock || 0);
@@ -820,7 +844,7 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
     let salidas = 0;
     let valorSalidas = 0;
 
-    if (this.entradasSalidasGridApi) {
+    if (this.entradasSalidasGridApi && !this.entradasSalidasGridApi.isDestroyed()) {
       this.entradasSalidasGridApi.forEachNodeAfterFilter((node: any) => {
         if (node.data) {
           entradas += (node.data.entradas || 0);
@@ -878,7 +902,7 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
     if (this.gridApi) {
       this.gridApi.setFilterModel(null);
       this.quickFilterText = '';
-      this.gridApi.setQuickFilter('');
+      this.gridApi.setGridOption('quickFilterText', '');
     }
   }
 
@@ -922,7 +946,7 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
       const range = selectedRanges[0];
       const rows: string[] = [];
       
-      const allColumns = this.gridColumnApi?.getAllColumns() || [];
+      const allColumns = this.gridColumnApi?.getColumns() || [];
       if (allColumns.length === 0) {
         return;
       }
@@ -1121,6 +1145,7 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
       },
       pagination: true,
       paginationPageSize: 15,
+      paginationPageSizeSelector: [15, 30, 50, 100],
       enableCellTextSelection: true,
       ensureDomOrder: true,
       onCellDoubleClicked: (params: any) => {
@@ -1144,7 +1169,7 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
       },
       onGridReady: (params: any) => {
         this.entradasSalidasGridApi = params.api;
-        this.entradasSalidasGridColumnApi = params.columnApi;
+        this.entradasSalidasGridColumnApi = params.api;
       },
       onFilterChanged: () => {
         this.recalcularTotalesEntradasSalidas();
@@ -1161,7 +1186,7 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
 
   onQuickFilterChangeEntradasSalidas(): void {
     if (this.entradasSalidasGridApi) {
-      this.entradasSalidasGridApi.setQuickFilter(this.quickFilterTextEntradasSalidas);
+      this.entradasSalidasGridApi.setGridOption('quickFilterText', this.quickFilterTextEntradasSalidas);
     }
   }
 
@@ -1193,7 +1218,7 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
     if (this.entradasSalidasGridApi) {
       this.entradasSalidasGridApi.setFilterModel(null);
       this.quickFilterTextEntradasSalidas = '';
-      this.entradasSalidasGridApi.setQuickFilter('');
+      this.entradasSalidasGridApi.setGridOption('quickFilterText', '');
     }
   }
 
@@ -1206,7 +1231,7 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
       const range = selectedRanges[0];
       const rows: string[] = [];
       
-      const allColumns = this.entradasSalidasGridColumnApi?.getAllColumns() || [];
+      const allColumns = this.entradasSalidasGridColumnApi?.getColumns() || [];
       if (allColumns.length === 0) {
         return;
       }
@@ -1708,7 +1733,7 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
       },
       onGridReady: (params: any) => {
         this.ajustesGridApi = params.api;
-        this.ajustesGridColumnApi = params.columnApi;
+        this.ajustesGridColumnApi = params.api;
       },
       suppressExcelExport: false,
       suppressCsvExport: false
@@ -1725,7 +1750,7 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
 
   onQuickFilterChangeAjustes(): void {
     if (this.ajustesGridApi) {
-      this.ajustesGridApi.setQuickFilter(this.quickFilterTextAjustes);
+      this.ajustesGridApi.setGridOption('quickFilterText', this.quickFilterTextAjustes);
     }
   }
 
@@ -1757,7 +1782,7 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
     if (this.ajustesGridApi) {
       this.ajustesGridApi.setFilterModel(null);
       this.quickFilterTextAjustes = '';
-      this.ajustesGridApi.setQuickFilter('');
+      this.ajustesGridApi.setGridOption('quickFilterText', '');
     }
   }
 
@@ -1770,7 +1795,7 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
       const range = selectedRanges[0];
       const rows: string[] = [];
       
-      const allColumns = this.ajustesGridColumnApi?.getAllColumns() || [];
+      const allColumns = this.ajustesGridColumnApi?.getColumns() || [];
       if (allColumns.length === 0) {
         return;
       }

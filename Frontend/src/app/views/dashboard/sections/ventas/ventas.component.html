@@ -403,7 +403,8 @@
                                     <ng-container
                                         *ngIf="datos.ventasPorProducto !== undefined; else ventasListPlaceholder">
                                         <ag-grid-angular #ventasPorProductoGrid
-                                            class="ag-theme-alpine ventas-producto-grid"
+                                            [theme]="miTema" [modules]="modules"
+                                            class="ventas-producto-grid"
                                             [rowData]="ventasPorProductoRows"
                                             [pinnedBottomRowData]="pinnedBottomRowDataVentasProducto"
                                             [columnDefs]="ventasPorProductoColumnDefs"
@@ -487,7 +488,8 @@
                                     <ng-container
                                         *ngIf="datos.ventasPorCliente !== undefined; else ventasListPlaceholder">
                                         <ag-grid-angular #ventasPorClienteGrid
-                                            class="ag-theme-alpine ventas-cliente-grid" [rowData]="ventasPorClienteRows"
+                                            [theme]="miTema" [modules]="modules"
+                                            class="ventas-cliente-grid" [rowData]="ventasPorClienteRows"
                                             [pinnedBottomRowData]="pinnedBottomRowDataVentasCliente"
                                             [columnDefs]="ventasPorClienteColumnDefs"
                                             [gridOptions]="ventasPorClienteGridOptions" [defaultColDef]="{

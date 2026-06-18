@@ -227,7 +227,7 @@
                         <div class="card-body px-3 py-0">
                             <ng-container
                                 *ngIf="datos.detalleCuentasPorCobrar !== undefined; else cuentasCxcTableLoader">
-                                <ag-grid-angular #detalleCuentasGrid class="ag-theme-alpine detalle-cuentas-grid"
+                                <ag-grid-angular #detalleCuentasGrid [theme]="miTema" [modules]="modules" class="detalle-cuentas-grid"
                                     [rowData]="detalleCuentasRows" [pinnedBottomRowData]="pinnedBottomRowDataCxc"
                                     [columnDefs]="detalleCuentasColumnDefs" [gridOptions]="detalleCuentasGridOptions"
                                     [defaultColDef]="{
@@ -416,7 +416,8 @@
                             <ng-container
                                 *ngIf="datos.resumenCuentasPorPagar !== undefined; else cuentasCxpTableLoader">
                                 <ag-grid-angular #resumenCuentasPagarGrid
-                                    class="ag-theme-alpine resumen-cuentas-pagar-grid"
+                                    [theme]="miTema" [modules]="modules"
+                                    class="resumen-cuentas-pagar-grid"
                                     [rowData]="resumenCuentasPagarRows" [pinnedBottomRowData]="pinnedBottomRowDataCxp"
                                     [columnDefs]="resumenCuentasPagarColumnDefs"
                                     [gridOptions]="resumenCuentasPagarGridOptions" [defaultColDef]="{

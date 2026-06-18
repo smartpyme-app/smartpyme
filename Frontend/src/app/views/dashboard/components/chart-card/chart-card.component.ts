@@ -1,10 +1,14 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { MetricCard } from '../../models/chart-config.model';
 
+import { CommonModule } from '@angular/common';
+
 @Component({
   selector: 'app-chart-card',
   templateUrl: './chart-card.component.html',
-  styleUrls: ['./chart-card.component.css']
+  styleUrls: ['./chart-card.component.css'],
+  standalone: true,
+  imports: [CommonModule]
 })
 export class ChartCardComponent implements OnInit {
   @Input() data!: MetricCard;

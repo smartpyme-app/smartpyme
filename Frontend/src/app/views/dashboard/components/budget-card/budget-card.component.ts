@@ -1,10 +1,15 @@
 import { Component, Input, OnInit, OnChanges, SimpleChanges } from '@angular/core';
 import { BudgetMetric } from '../../models/chart-config.model';
 
+import { CommonModule } from '@angular/common';
+import { NgxEchartsModule } from 'ngx-echarts';
+
 @Component({
   selector: 'app-budget-card',
   templateUrl: './budget-card.component.html',
-  styleUrls: ['./budget-card.component.css']
+  styleUrls: ['./budget-card.component.css'],
+  standalone: true,
+  imports: [CommonModule, NgxEchartsModule]
 })
 export class BudgetCardComponent implements OnInit, OnChanges {
   @Input() data!: BudgetMetric;

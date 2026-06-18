@@ -1,16 +1,21 @@
-import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter, OnDestroy } from '@angular/core';
 
 export interface AccountItem {
   name: string;
   amount: number;
 }
 
+import { CommonModule } from '@angular/common';
+import { NgxEchartsModule } from 'ngx-echarts';
+
 @Component({
   selector: 'app-accounts-list',
   templateUrl: './accounts-list.component.html',
-  styleUrls: ['./accounts-list.component.css']
+  styleUrls: ['./accounts-list.component.css'],
+  standalone: true,
+  imports: [CommonModule, NgxEchartsModule]
 })
-export class AccountsListComponent implements OnInit, OnChanges {
+export class AccountsListComponent implements OnInit, OnChanges, OnDestroy {
   @Input() title: string = '';
   @Input() accounts: AccountItem[] = [];
   @Input() type: 'receivable' | 'payable' = 'receivable';
@@ -34,6 +39,10 @@ export class AccountsListComponent implements OnInit, OnChanges {
     if (changes['accounts'] && !changes['accounts'].firstChange) {
       this.initChart();
     }
+  }
+
+  ngOnDestroy(): void {
+    this.echartsInstance = null;
   }
 
   get sortedAccounts(): AccountItem[] {
@@ -85,15 +94,28 @@ export class AccountsListComponent implements OnInit, OnChanges {
         },
         splitLine: {
           show: false
+        },
+        axisLine: {
+          show: false
+        },
+        axisTick: {
+          show: false
         }
       },
       yAxis: {
         type: 'category',
         data: labels,
         inverse: true,
+        axisLine: {
+          show: false
+        },
+        axisTick: {
+          show: false
+        },
         axisLabel: {
           interval: 0,
           fontSize: 11,
+          color: '#878c94ff',
           formatter: (value: string) => {
             if (value.length > 25) {
               return value.substring(0, 25) + '...';
@@ -153,7 +175,7 @@ export class AccountsListComponent implements OnInit, OnChanges {
             }
             return `$${formatted}`;
           },
-          color: '#000',
+          color: '#878c94ff',
           fontSize: 11,
           fontWeight: 'normal'
         }
@@ -161,7 +183,7 @@ export class AccountsListComponent implements OnInit, OnChanges {
     };
 
     // Agregar evento de clic
-    if (this.echartsInstance) {
+    if (this.echartsInstance && !this.echartsInstance.isDisposed()) {
       this.echartsInstance.off('click');
       this.echartsInstance.on('click', (params: any) => {
         if (params && params.name !== undefined) {
@@ -180,7 +202,7 @@ export class AccountsListComponent implements OnInit, OnChanges {
   onChartInit(ec: any): void {
     this.echartsInstance = ec;
     // Configurar evento de clic después de inicializar
-    if (this.echartsInstance && this.chartOption) {
+    if (this.echartsInstance && !this.echartsInstance.isDisposed() && this.chartOption) {
       this.echartsInstance.on('click', (params: any) => {
         if (params && params.name !== undefined) {
           const sorted = this.sortedAccounts;

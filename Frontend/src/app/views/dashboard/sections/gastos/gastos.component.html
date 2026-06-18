@@ -300,7 +300,7 @@
                                 </div>
                                 <div class="card-body px-3 py-0 gastos-detalle-grid-body">
                                     <ng-container *ngIf="datos.detalleGastos !== undefined; else gastosTableLoader">
-                                        <ag-grid-angular #detalleGastosGrid class="ag-theme-alpine detalle-gastos-grid"
+                                        <ag-grid-angular #detalleGastosGrid [theme]="miTema" [modules]="modules" class="detalle-gastos-grid"
                                             [rowData]="detalleGastosRows"
                                             [pinnedBottomRowData]="pinnedBottomRowDataGastos"
                                             [columnDefs]="detalleGastosColumnDefs"

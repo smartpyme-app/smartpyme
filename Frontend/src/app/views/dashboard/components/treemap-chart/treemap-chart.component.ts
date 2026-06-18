@@ -1,10 +1,15 @@
 import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter } from '@angular/core';
 import { ChartConfig } from '../../models/chart-config.model';
 
+import { CommonModule } from '@angular/common';
+import { NgxEchartsModule } from 'ngx-echarts';
+
 @Component({
   selector: 'app-treemap-chart',
   templateUrl: './treemap-chart.component.html',
-  styleUrls: ['./treemap-chart.component.css']
+  styleUrls: ['./treemap-chart.component.css'],
+  standalone: true,
+  imports: [CommonModule, NgxEchartsModule]
 })
 export class TreemapChartComponent implements OnInit, OnChanges {
   @Input() config!: ChartConfig;

@@ -221,7 +221,8 @@
                                 <div class="card-body px-3 py-0">
                                     <ng-container *ngIf="datos?.detalleInventario !== undefined; else invProductosTableLoader">
                                         <ag-grid-angular #inventarioProductosGrid
-                                            class="ag-theme-alpine inventario-productos-grid"
+                                            [theme]="miTema" [modules]="modules"
+                                            class="inventario-productos-grid"
                                             [rowData]="inventarioProductosRows"
                                             [pinnedBottomRowData]="pinnedBottomRowDataInventario"
                                             [columnDefs]="inventarioProductosColumnDefs"
@@ -316,7 +317,8 @@
                                     </div>
                                     <div class="card-body px-3 py-0">
                                         <ag-grid-angular #entradasSalidasGrid
-                                            class="ag-theme-alpine entradas-salidas-grid"
+                                            [theme]="miTema" [modules]="modules"
+                                            class="entradas-salidas-grid"
                                             [rowData]="entradasSalidasRows"
                                             [pinnedBottomRowData]="pinnedBottomRowDataEntradasSalidas"
                                             [columnDefs]="entradasSalidasColumnDefs"
@@ -388,7 +390,7 @@
                                         </div>
                                     </div>
                                     <div class="card-body px-3 py-0" style="height: 450px; overflow: hidden;">
-                                        <ag-grid-angular #ajustesGrid class="ag-theme-alpine ajustes-grid"
+                                        <ag-grid-angular #ajustesGrid [theme]="miTema" [modules]="modules" class="ajustes-grid"
                                             [rowData]="ajustesRows" [columnDefs]="ajustesColumnDefs"
                                             [gridOptions]="ajustesGridOptions" [defaultColDef]="{
                                             resizable: true,

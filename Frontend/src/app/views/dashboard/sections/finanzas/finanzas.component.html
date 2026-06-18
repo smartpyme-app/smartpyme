@@ -184,7 +184,9 @@
                 <div class="card-body p-0">
                     <ag-grid-angular
                         #estadoResultadosGrid
-                        class="ag-theme-alpine estado-resultados-grid"
+                        class="estado-resultados-grid"
+                        [theme]="miTema"
+                        [modules]="modules"
                         [rowData]="estadoResultadosTreeData"
                         [columnDefs]="estadoResultadosColumnDefs"
                         [gridOptions]="estadoResultadosGridOptions"
@@ -248,7 +250,9 @@
                 <div class="card-body px-3 py-0">
                     <ag-grid-angular
                         #analisisVerticalGrid
-                        class="ag-theme-alpine analisis-vertical-grid"
+                        class="analisis-vertical-grid"
+                        [theme]="miTema"
+                        [modules]="modules"
                         [rowData]="analisisVerticalData"
                         [columnDefs]="analisisVerticalColumnDefs"
                         [gridOptions]="analisisVerticalGridOptions"
@@ -309,7 +313,9 @@
                 <div class="card-body px-3 py-0">
                     <ag-grid-angular
                         #analisisHorizontalGrid
-                        class="ag-theme-alpine analisis-horizontal-grid"
+                        class="analisis-horizontal-grid"
+                        [theme]="miTema"
+                        [modules]="modules"
                         [rowData]="analisisHorizontalData"
                         [columnDefs]="analisisHorizontalColumnDefs"
                         [gridOptions]="analisisHorizontalGridOptions"
@@ -376,7 +382,9 @@
                 <div class="card-body px-3 py-0">
                     <ag-grid-angular
                         #flujoEfectivoGrid
-                        class="ag-theme-alpine flujo-efectivo-grid"
+                        class="flujo-efectivo-grid"
+                        [theme]="miTema"
+                        [modules]="modules"
                         [rowData]="flujoEfectivoData"
                         [columnDefs]="flujoEfectivoColumnDefs"
                         [gridOptions]="flujoEfectivoGridOptions"

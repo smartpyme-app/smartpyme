@@ -10,18 +10,49 @@ import {
   DropdownMultiFiltroItem,
   DropdownMultiFiltroSelection,
 } from '../../components/dropdown-multi-filtro/dropdown-multi-filtro.component';
-import { RevoGrid } from '@revolist/angular-datagrid';
-import { SortingPlugin, FilterPlugin, ExportFilePlugin } from '@revolist/revogrid';
-import { ColDef, GridOptions, GridApi, ColumnApi } from 'ag-grid-community';
+
+
+import { ColDef, GridOptions, GridApi, themeQuartz, AllCommunityModule } from 'ag-grid-community';
 import { MetricCard } from '../../models/chart-config.model';
+
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { AgGridModule } from 'ag-grid-angular';
+import { SharedModule } from '@shared/shared.module';
+import { PipesModule } from '@pipes/pipes.module';
+import { FiltroFechaComponent } from '../../components/filtro-fecha/filtro-fecha.component';
+import { DropdownMultiFiltroComponent } from '../../components/dropdown-multi-filtro/dropdown-multi-filtro.component';
+import { ChartCardComponent } from '../../components/chart-card/chart-card.component';
+import { LineChartComponent } from '../../components/line-chart/line-chart.component';
+import { BarChartComponent } from '../../components/bar-chart/bar-chart.component';
+import { AccountsListComponent } from '../../components/accounts-list/accounts-list.component';
+import { TreemapChartComponent } from '../../components/treemap-chart/treemap-chart.component';
 
 @Component({
   selector: 'app-ventas',
   templateUrl: './ventas.component.html',
   styleUrls: ['./ventas.component.css'],
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    AgGridModule,
+    SharedModule,
+    PipesModule,
+    FiltroFechaComponent,
+    DropdownMultiFiltroComponent,
+    ChartCardComponent,
+    LineChartComponent,
+    BarChartComponent,
+    AccountsListComponent,
+    TreemapChartComponent
+  ]
 })
 export class VentasComponent implements OnInit, OnChanges, OnDestroy {
+  public miTema = themeQuartz;
+  public modules: any[] = [AllCommunityModule];
+
   @Input() datos: any = {};
   @Output() filtrosCambiados = new EventEmitter<FiltrosConsultaVentasDashboard>();
 
@@ -51,12 +82,12 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
     ];
   }
 
-  @ViewChild('ventasDetalladasGrid') ventasDetalladasGrid!: RevoGrid;
+  @ViewChild('ventasDetalladasGrid') ventasDetalladasGrid!: any;
   @ViewChild('ventasPorProductoGrid') ventasPorProductoGrid: any;
   @ViewChild('ventasPorClienteGrid') ventasPorClienteGrid: any;
 
-  ventasDetalladasPlugins = [SortingPlugin, FilterPlugin, ExportFilePlugin];
-  ventasPorProductoPlugins = [SortingPlugin, FilterPlugin, ExportFilePlugin];
+  ventasDetalladasPlugins = [];
+  ventasPorProductoPlugins = [];
 
   // AG Grid configuration
   ventasPorProductoColumnDefs: ColDef[] = [];
@@ -64,9 +95,9 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
   ventasPorClienteColumnDefs: ColDef[] = [];
   ventasPorClienteGridOptions: GridOptions = {};
   private gridApi!: GridApi;
-  private gridColumnApi!: ColumnApi;
+  private gridColumnApi!: any;
   private clienteGridApi!: GridApi;
-  private clienteGridColumnApi!: ColumnApi;
+  private clienteGridColumnApi!: any;
   quickFilterText: string = '';
   quickFilterTextCliente: string = '';
   busquedaVentasDetalladas: string = '';
@@ -486,6 +517,7 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
     this.ventasPorProductoGridOptions = {
       pagination: true,
       paginationPageSize: 20,
+      paginationPageSizeSelector: [20, 50, 100],
       suppressMenuHide: true,
       quickFilterText: '',
       getRowClass: (params: any) => {
@@ -496,7 +528,7 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
       },
       onGridReady: (params: any) => {
         this.gridApi = params.api;
-        this.gridColumnApi = params.columnApi;
+        this.gridColumnApi = params.api;
         setTimeout(() => params.api.sizeColumnsToFit(), 0);
       },
       onFilterChanged: () => {
@@ -566,6 +598,7 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
     this.ventasPorClienteGridOptions = {
       pagination: true,
       paginationPageSize: 20,
+      paginationPageSizeSelector: [20, 50, 100],
       suppressMenuHide: true,
       quickFilterText: '',
       defaultColDef: {
@@ -597,7 +630,7 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
       },
       onGridReady: (params: any) => {
         this.clienteGridApi = params.api;
-        this.clienteGridColumnApi = params.columnApi;
+        this.clienteGridColumnApi = params.api;
         // Asegurar que el scroll funcione correctamente
         setTimeout(() => {
           params.api.sizeColumnsToFit();
@@ -1575,7 +1608,7 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
   // Métodos para AG Grid
   onQuickFilterChange(): void {
     if (this.gridApi) {
-      this.gridApi.setQuickFilter(this.quickFilterText);
+      this.gridApi.setGridOption('quickFilterText', this.quickFilterText);
     }
   }
 
@@ -1611,13 +1644,13 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
     if (this.gridApi) {
       this.gridApi.setFilterModel(null);
       this.quickFilterText = '';
-      this.gridApi.setQuickFilter('');
+      this.gridApi.setGridOption('quickFilterText', '');
     }
   }
 
   onQuickFilterClienteChange(): void {
     if (this.clienteGridApi) {
-      this.clienteGridApi.setQuickFilter(this.quickFilterTextCliente);
+      this.clienteGridApi.setGridOption('quickFilterText', this.quickFilterTextCliente);
     }
   }
 
@@ -1649,7 +1682,7 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
     if (this.clienteGridApi) {
       this.clienteGridApi.setFilterModel(null);
       this.quickFilterTextCliente = '';
-      this.clienteGridApi.setQuickFilter('');
+      this.clienteGridApi.setGridOption('quickFilterText', '');
     }
   }
 
@@ -1687,11 +1720,9 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
     // Delete o Backspace: Limpiar filtro de columna si está en el header
     if ((event.key === 'Delete' || event.key === 'Backspace') && params.node.rowPinned === 'top') {
       if (params.column) {
-        const filterInstance = this.gridApi.getFilterInstance(params.column.colId);
-        if (filterInstance) {
-          filterInstance.setModel(null);
+        this.gridApi.setColumnFilterModel(params.column.colId, null).then(() => {
           this.gridApi.onFilterChanged();
-        }
+        });
       }
     }
 
@@ -1746,7 +1777,7 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
       const rows: string[] = [];
 
       // Obtener todas las columnas usando columnApi
-      const allColumns = this.gridColumnApi?.getAllColumns() || [];
+      const allColumns = this.gridColumnApi?.getColumns() || [];
       if (allColumns.length === 0) {
         return;
       }
@@ -2397,7 +2428,7 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
     let costoTotal = 0;
     let utilidad = 0;
 
-    if (this.gridApi) {
+    if (this.gridApi && !this.gridApi.isDestroyed()) {
       this.gridApi.forEachNodeAfterFilter((node: any) => {
         if (node.data) {
           cantidad += (node.data.cantidad || 0);
@@ -2444,7 +2475,7 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
     let diasMax = 0;
     let ultimaVentaStr = '';
 
-    if (this.clienteGridApi) {
+    if (this.clienteGridApi && !this.clienteGridApi.isDestroyed()) {
       const fechas: string[] = [];
       this.clienteGridApi.forEachNodeAfterFilter((node: any) => {
         if (node.data) {

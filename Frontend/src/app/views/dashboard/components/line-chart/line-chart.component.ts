@@ -1,12 +1,17 @@
-import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter, OnDestroy } from '@angular/core';
 import { ChartConfig } from '../../models/chart-config.model';
+
+import { CommonModule } from '@angular/common';
+import { NgxEchartsModule } from 'ngx-echarts';
 
 @Component({
   selector: 'app-line-chart',
   templateUrl: './line-chart.component.html',
-  styleUrls: ['./line-chart.component.css']
+  styleUrls: ['./line-chart.component.css'],
+  standalone: true,
+  imports: [CommonModule, NgxEchartsModule]
 })
-export class LineChartComponent implements OnInit, OnChanges {
+export class LineChartComponent implements OnInit, OnChanges, OnDestroy {
   @Input() config!: ChartConfig;
   @Output() itemClick = new EventEmitter<{ name: string; value: any; index: number }>();
 
@@ -29,6 +34,10 @@ export class LineChartComponent implements OnInit, OnChanges {
     if (changes['config'] && !changes['config'].firstChange) {
       this.initChart();
     }
+  }
+
+  ngOnDestroy(): void {
+    this.echartsInstance = null;
   }
 
   formatValue(value: number): string {
@@ -100,10 +109,13 @@ export class LineChartComponent implements OnInit, OnChanges {
         boundaryGap: false,
         data: this.config.labels || [],
         axisLine: {
-          show: this.config.showXAxisLine !== false
+          show: false
         },
         axisTick: {
-          show: this.config.showXAxisLine !== false
+          show: false
+        },
+        axisLabel: {
+          color: '#878c94ff'
         }
       },
       yAxis: {
@@ -113,7 +125,14 @@ export class LineChartComponent implements OnInit, OnChanges {
         },
         axisLabel: {
           show: this.config.showYAxisLabels !== false,
+          color: '#878c94ff',
           formatter: (value: number) => this.formatValue(value)
+        },
+        axisLine: {
+          show: false
+        },
+        axisTick: {
+          show: false
         }
       },
       series: [
@@ -140,7 +159,7 @@ export class LineChartComponent implements OnInit, OnChanges {
 
               return value < 0 ? `(${formatted})` : formatted;
             },
-            color: '#000',
+            color: '#878c94ff',
             fontSize: 11,
             fontWeight: 'medium'
           },
@@ -171,7 +190,7 @@ export class LineChartComponent implements OnInit, OnChanges {
     };
 
     // Agregar evento de clic
-    if (this.echartsInstance) {
+    if (this.echartsInstance && !this.echartsInstance.isDisposed()) {
       this.echartsInstance.off('click');
       this.echartsInstance.on('click', (params: any) => {
         if (params && params.name !== undefined) {
@@ -188,7 +207,7 @@ export class LineChartComponent implements OnInit, OnChanges {
   onChartInit(ec: any): void {
     this.echartsInstance = ec;
     // Configurar evento de clic después de inicializar
-    if (this.echartsInstance && this.chartOption) {
+    if (this.echartsInstance && !this.echartsInstance.isDisposed() && this.chartOption) {
       this.echartsInstance.on('click', (params: any) => {
         if (params && params.name !== undefined) {
           this.itemClick.emit({
