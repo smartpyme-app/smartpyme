@@ -213,8 +213,17 @@
                         @if($empresa->telefono)<p style="margin: 0px;">Teléfono: {{ $empresa->telefono }}</p>@endif
                         @if($empresa->email)<p style="margin: 0px;">E-mail: {{ $empresa->email }}</p>@endif
                         @endif
-                        @if ($venta->id_cliente && $cliente && $cliente->tipo === 'Empresa')
-                            <p style="margin-top: 5px;"><b>RTN:</b> {{ $cliente->nit ?? '' }}</p>
+                        @php
+                            $rtnCliente = '';
+                            if ($venta->id_cliente && $cliente) {
+                                $rtnCliente = trim((string) ($cliente->nit ?? ''));
+                                if ($rtnCliente === '') {
+                                    $rtnCliente = trim((string) ($cliente->dui ?? ''));
+                                }
+                            }
+                        @endphp
+                        @if ($rtnCliente !== '')
+                            <p style="margin-top: 5px;"><b>RTN:</b> {{ $rtnCliente }}</p>
                         @endif
                         <p style="margin-top: 5px;"><b>Cliente: </b> {{ $venta->nombre_cliente }}</p>
                         <p><b>Dirección: </b> {{ $venta->id_cliente ? $cliente->direccion : '' }}</p>
