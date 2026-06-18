@@ -538,6 +538,9 @@ class VentasController extends Controller
             ], 403);
         }
 
+        $consignaDisponibleService = app(ConsignaDisponibleService::class);
+        $consignaDisponibleService->normalizarRequestVentaConsigna($request);
+
         // Validar límite de crédito del cliente (si aplica)
         if ($request->estado === 'Pendiente' && $request->id_cliente) {
             $cliente = Cliente::find($request->id_cliente);
@@ -594,7 +597,6 @@ class VentasController extends Controller
             'fecha_expiracion.required_if' => 'La fecha de expiracion es obligatorio cuando es cotización.',
         ]);
 
-        $consignaDisponibleService = app(ConsignaDisponibleService::class);
         if ($errorConsigna = $consignaDisponibleService->validarVentaConsigna($request)) {
             return response()->json(['error' => $errorConsigna], 422);
         }

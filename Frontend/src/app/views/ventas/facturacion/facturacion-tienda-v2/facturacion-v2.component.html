@@ -349,7 +349,7 @@
             <div class="form-switch border rounded">
                 <label for="consigna">Consigna</label>
                 <input [disabled]="!venta.credito" class="form-check-input float-end" type="checkbox" role="switch"
-                    (change)="setConsigna()" [(ngModel)]="venta.consigna" name="venta.credito">
+                    (change)="setConsigna()" [(ngModel)]="venta.consigna" name="venta.consigna">
             </div>
         </div>
         <div class="form-group col-md-4 col-lg-3" *ngIf="venta.cotizacion == 1">

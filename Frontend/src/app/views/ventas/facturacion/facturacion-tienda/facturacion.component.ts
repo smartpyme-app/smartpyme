@@ -16,7 +16,7 @@ import {
   sumarSubTotalEncabezadoVenta,
   sumarTotalConIvaEncabezadoVenta,
 } from '@utils/impuestos-venta.util';
-import { esVentaPorConsigna, sincronizarFlagConsignaVenta } from '@utils/venta-consigna.util';
+import { esVentaPorConsigna, sincronizarFlagConsignaVenta, aplicarEstadoConsignaEnVenta } from '@utils/venta-consigna.util';
 import { VentaDetallesComponent } from './detalles/venta-detalles.component';
 
 @Component({
@@ -1026,10 +1026,14 @@ export class FacturacionComponent implements OnInit {
             // Si el cliente tiene crédito habilitado, aplicar venta al crédito automáticamente
             if (cliente.habilita_credito && cliente.dias_credito) {
                 this.venta.credito = true;
-                this.venta.estado = 'Pendiente';
                 this.venta.condicion = 'Crédito';
                 const fechaVenta = this.venta.fecha || this.apiService.date();
                 this.venta.fecha_pago = moment(fechaVenta).add(cliente.dias_credito, 'days').format('YYYY-MM-DD');
+                if (this.venta.consigna) {
+                    this.venta.estado = 'Consigna';
+                } else {
+                    this.venta.estado = 'Pendiente';
+                }
             }
 
             // Obtener saldo pendiente: siempre si pref "estado de cuenta en facturación" activa, o solo si tiene límite de crédito
@@ -1073,10 +1077,11 @@ export class FacturacionComponent implements OnInit {
             return;
         }
         if (this.venta.credito) {
-            this.venta.estado = 'Pendiente';
             this.venta.condicion = 'Crédito';
             this.venta.fecha_pago = moment().add(1, 'month').format('YYYY-MM-DD');
+            this.venta.estado = this.venta.consigna ? 'Consigna' : 'Pendiente';
         } else {
+            this.venta.consigna = false;
             this.venta.estado = 'Pagada';
             this.venta.condicion = 'Contado';
             this.venta.fecha_pago = moment().format('YYYY-MM-DD');
@@ -1197,6 +1202,8 @@ export class FacturacionComponent implements OnInit {
                 this.sumTotal();
             }
             this.venta.estado = 'Consigna';
+            this.venta.credito = true;
+            this.venta.condicion = 'Crédito';
         } else {
             if (this.venta.detalles?.length) {
                 this.venta.detalles = [];
@@ -1436,9 +1443,10 @@ export class FacturacionComponent implements OnInit {
     ) {
       if (!this.venta.recibido) this.venta.recibido = this.venta.total;
 
-      if (this.venta.forma_pago == 'Wompi') {
+      if (this.venta.forma_pago == 'Wompi' && !this.venta.consigna) {
         this.venta.estado = 'Pendiente';
       }
+      aplicarEstadoConsignaEnVenta(this.venta);
       this.onSubmit();
     }
   }
@@ -1513,9 +1521,7 @@ export class FacturacionComponent implements OnInit {
       (this.venta as any).id_pedido_canal = this.pedidoCanalId;
     }
 
-    if (this.venta.consigna) {
-      this.venta.estado = 'Consigna';
-    }
+    aplicarEstadoConsignaEnVenta(this.venta);
 
     // Asegurar que usuarios "Ventas Limitado" siempre tengan ventas al contado
     if (this.apiService.auth_user().tipo === 'Ventas Limitado') {

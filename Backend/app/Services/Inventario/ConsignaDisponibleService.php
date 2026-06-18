@@ -52,9 +52,21 @@ class ConsignaDisponibleService
      * Valida una venta por consigna. Retorna mensaje de error o null si es válida.
      * La consigna es el tipo de venta (toda la factura); no restringe productos por pool de compras.
      */
+    public function esVentaConsigna(Request $request): bool
+    {
+        return $request->input('estado') === 'Consigna' || $request->boolean('consigna');
+    }
+
+    public function normalizarRequestVentaConsigna(Request $request): void
+    {
+        if ($this->esVentaConsigna($request)) {
+            $request->merge(['estado' => 'Consigna']);
+        }
+    }
+
     public function validarVentaConsigna(Request $request): ?string
     {
-        if ($request->estado !== 'Consigna') {
+        if (!$this->esVentaConsigna($request)) {
             return null;
         }
 
