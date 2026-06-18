@@ -6,6 +6,39 @@ description: "Configura niveles de fidelización, otorga puntos por compras, per
 
 El módulo de fidelización de SmartPyme te ayuda a convertir compradores ocasionales en clientes recurrentes recompensándolos por cada compra. Tú defines los niveles, las tasas de acumulación y las reglas de canje — SmartPyme se encarga automáticamente del cálculo de los puntos en el punto de venta para que tu equipo nunca tenga que hacer cuentas a mano.
 
+## Activación del programa de fidelización
+
+El módulo de fidelización viene desactivado de fábrica. Hay tres interruptores independientes que controlan su comportamiento — actívalos en el orden que se describe a continuación a medida que pasas de la configuración inicial al lanzamiento en producción.
+
+### 1. Habilitar el módulo (lanzamiento a producción)
+
+El interruptor principal está en **Administración → Empresa → Preferencias**, en la opción **Activar fidelización de clientes**. Actívalo cuando estés listo para empezar a configurar niveles e inscribir clientes.
+
+Mientras este interruptor esté apagado:
+
+- El menú **Fidelización** queda oculto en la barra lateral para todos los usuarios.
+- Las rutas de fidelización están bloqueadas, incluso accediendo por URL directa.
+
+Al apagar este interruptor también se desactiva automáticamente la **acumulación y canje de puntos** (ver más abajo), por lo que puedes pausar el programa de forma segura sin perder datos.
+
+### 2. Habilitar acumulación y canje de puntos
+
+Una vez activado el módulo, ve a **Fidelización → Tipos de cliente** y pulsa el botón **Módulo Activo / Módulo Inactivo** en la parte superior de la página para abrir el modal de configuración de fidelización. Activa **Activar módulo de fidelización** cuando estés listo para que los clientes empiecen a acumular y canjear puntos de verdad.
+
+Mientras este interruptor esté apagado:
+
+- Las ventas registradas en el punto de venta **no** acumularán puntos, ni siquiera para clientes inscritos.
+- El acceso directo de fidelización y la acción **Canjear puntos** se ocultan durante la facturación.
+- Aún puedes configurar niveles, inscribir clientes y consultar el historial — nada en el back office queda bloqueado.
+
+Esta separación te permite terminar la configuración (niveles, tasas de acumulación, inscripción de clientes) en producción sin afectar las ventas en curso, y luego activar el interruptor cuando todo esté listo.
+
+### 3. Envío automático del correo de confirmación de puntos
+
+En el mismo modal de configuración, activa **Envío automático de correos** para que SmartPyme envíe a cada cliente inscrito un correo electrónico después de cada venta, con los puntos ganados y su nuevo saldo.
+
+Mientras este interruptor esté apagado, los puntos se otorgan con normalidad — solo se suprime el correo automático. Actívalo una vez que hayas revisado el contenido del correo y estés listo para empezar a notificar a tus clientes.
+
 ## Tipos de cliente
 
 Los niveles de fidelización en SmartPyme se llaman **tipos de cliente**. Créalos y gestiónalos en **Fidelización → Tipos de cliente**. Cada nivel que definas puede tener su propia:
