@@ -37,6 +37,7 @@ use Luecano\NumeroALetras\NumeroALetras;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use App\Exports\VentasExport;
+use App\Exports\VentasDesglosadasPorVendedorExport;
 use App\Exports\VentasDetallesExport;
 use App\Exports\ReportesAutomaticos\VentasPorCategoriaPorVendedor\VentasPorCategoriaVendedorExport;
 use App\Exports\ReportesAutomaticos\VentasPorVendedor\VentasPorVendedorExport;
@@ -1869,7 +1870,7 @@ class VentasController extends Controller
                     'id_empresa' => $empresa->id,
                     'sucursales' => $configuracion->sucursales ?? [],
                 ]);
-                $export = new VentasExport($requestVentasTotales);
+                $export = new VentasDesglosadasPorVendedorExport($requestVentasTotales);
             } elseif ($configuracion->tipo_reporte === 'detalle-ventas-por-producto') {
                 $requestDetalleProducto = new Request([
                     'inicio' => $fechaInicio,
@@ -2046,7 +2047,7 @@ class VentasController extends Controller
                     'id_empresa' => $configuracion->id_empresa,
                     'sucursales' => $configuracion->sucursales ?? [],
                 ]);
-                $export = new VentasExport($requestVentasTotales);
+                $export = new VentasDesglosadasPorVendedorExport($requestVentasTotales);
                 $filename = "detalle-ventas-totales-prueba-{$fechaInicio}-{$fechaFin}-" . time() . ".xlsx";
             } elseif ($configuracion->tipo_reporte === 'detalle-ventas-por-producto') {
                 $requestDetalleProducto = new Request([
@@ -2237,7 +2238,7 @@ class VentasController extends Controller
                     'id_empresa' => $configuracion->id_empresa,
                     'sucursales' => $configuracion->sucursales ?? [],
                 ]);
-                $export = new VentasExport($requestVentasTotales);
+                $export = new VentasDesglosadasPorVendedorExport($requestVentasTotales);
                 break;
             case 'detalle-ventas-por-producto':
                 $requestDetalleProducto = new Request([
