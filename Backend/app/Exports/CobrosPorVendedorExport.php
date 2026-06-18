@@ -2,11 +2,13 @@
 
 namespace App\Exports;
 
+use App\Models\User;
 use App\Models\Ventas\Venta;
 use App\Services\Ventas\VentaMontosPorVendedorService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -39,13 +41,11 @@ class CobrosPorVendedorExport implements FromCollection, WithHeadings, WithMappi
             'Fecha Último Abono',
             'Días de Crédito hasta Pago',
             'Total Abonado',
-            'Sucursal'
+            'Sucursal',
         ];
     }
 
     /**
-     * Un solo valor escalar (evita arrays duplicados en query string GET).
-     *
      * @param  mixed  $value
      * @return mixed|null
      */
@@ -61,14 +61,11 @@ class CobrosPorVendedorExport implements FromCollection, WithHeadings, WithMappi
         return $value;
     }
 
-    public function collection()
+    private function buildVentaQuery(Request $request)
     {
-        $request = $this->request;
-
         $query = Venta::with([
             'vendedor',
             'cliente',
-            'detalles.vendedor',
             'abonos' => function ($q) {
                 $q->where('estado', 'Confirmado')->orderBy('fecha', 'desc');
             },
@@ -111,38 +108,126 @@ class CobrosPorVendedorExport implements FromCollection, WithHeadings, WithMappi
             });
         }
 
-        $ventas = $query
+        return $query
             ->where('cotizacion', 0)
             ->orderBy('id_vendedor')
-            ->orderBy('fecha', 'desc')
-            ->get();
+            ->orderBy('fecha', 'desc');
+    }
 
-        return $ventas->flatMap(function (Venta $venta) use ($idVendedor) {
-            $grupos = VentaMontosPorVendedorService::montosPorVendedor($venta);
+    /**
+     * Totales por venta y vendedor efectivo desde detalles_venta.
+     *
+     * @param  \Illuminate\Support\Collection<int, int|string>  $ventaIds
+     * @return \Illuminate\Support\Collection<int, object>
+     */
+    private function totalesPorVentaVendedor($ventaIds, ?int $idVendedorFiltro = null)
+    {
+        if ($ventaIds->isEmpty()) {
+            return collect();
+        }
 
-            if ($idVendedor !== null && $idVendedor !== '' && (int) $idVendedor > 0) {
-                $idV = (int) $idVendedor;
-                $grupos = array_values(array_filter(
-                    $grupos,
-                    static fn (array $grupo) => (int) $grupo['vendedor_id'] === $idV
-                ));
+        $query = DB::table('detalles_venta as dv')
+            ->join('ventas as v', 'v.id', '=', 'dv.id_venta')
+            ->whereIn('dv.id_venta', $ventaIds)
+            ->select(
+                'dv.id_venta',
+                DB::raw(VentaMontosPorVendedorService::sqlIdVendedorEfectivo('dv', 'v') . ' as id_vendedor_efectivo'),
+                DB::raw('SUM(COALESCE(dv.total, 0) + COALESCE(dv.iva, 0)) as total_vendedor')
+            )
+            ->groupByRaw('dv.id_venta, ' . VentaMontosPorVendedorService::sqlIdVendedorEfectivo('dv', 'v'));
+
+        if ($idVendedorFiltro !== null && $idVendedorFiltro > 0) {
+            $query->havingRaw(
+                VentaMontosPorVendedorService::sqlIdVendedorEfectivo('dv', 'v') . ' = ?',
+                [$idVendedorFiltro]
+            );
+        }
+
+        return $query->get();
+    }
+
+    public function collection()
+    {
+        $request = $this->request;
+        $idVendedor = $this->primerEscalar($request->input('id_vendedor'));
+        $idVendedorFiltro = ($idVendedor !== null && $idVendedor !== '' && (int) $idVendedor > 0)
+            ? (int) $idVendedor
+            : null;
+
+        $ventas = $this->buildVentaQuery($request)->get()->keyBy('id');
+        if ($ventas->isEmpty()) {
+            return collect();
+        }
+
+        $totalesDetalle = $this->totalesPorVentaVendedor($ventas->keys(), $idVendedorFiltro);
+
+        $totalesPorVenta = $totalesDetalle
+            ->groupBy('id_venta')
+            ->map(fn ($grupos) => (float) $grupos->sum('total_vendedor'));
+
+        $vendedorIds = $totalesDetalle->pluck('id_vendedor_efectivo')
+            ->filter()
+            ->unique()
+            ->values();
+
+        $nombresVendedores = User::query()
+            ->whereIn('id', $vendedorIds)
+            ->pluck('name', 'id');
+
+        $filas = collect();
+
+        foreach ($totalesDetalle as $totalDetalle) {
+            $venta = $ventas->get($totalDetalle->id_venta);
+            if (! $venta) {
+                continue;
             }
 
-            return collect($grupos)->map(function (array $grupo) use ($venta) {
-                return (object) [
+            $totalVentaDetalle = (float) ($totalesPorVenta->get($venta->id) ?? 0);
+            $totalVendedor = (float) $totalDetalle->total_vendedor;
+            $share = $totalVentaDetalle > 0 ? $totalVendedor / $totalVentaDetalle : 1.0;
+            $idVendedorEfectivo = (int) $totalDetalle->id_vendedor_efectivo;
+
+            $filas->push([
+                'venta' => $venta,
+                'vendedor_nombre' => $nombresVendedores->get($idVendedorEfectivo)
+                    ?? $venta->vendedor?->name
+                    ?? 'Sin vendedor',
+                'total_vendedor' => $totalVendedor,
+                'share' => $share,
+            ]);
+        }
+
+        $ventasConDetalle = $totalesDetalle->pluck('id_venta')->unique();
+
+        foreach ($ventas as $venta) {
+            if ($ventasConDetalle->contains($venta->id)) {
+                continue;
+            }
+
+            $grupos = VentaMontosPorVendedorService::montosPorVendedor($venta);
+            foreach ($grupos as $grupo) {
+                if ($idVendedorFiltro !== null && (int) $grupo['vendedor_id'] !== $idVendedorFiltro) {
+                    continue;
+                }
+
+                $filas->push([
                     'venta' => $venta,
-                    'grupo' => $grupo,
-                ];
-            });
-        });
+                    'vendedor_nombre' => $grupo['vendedor_nombre'],
+                    'total_vendedor' => (float) $grupo['total'],
+                    'share' => (float) $grupo['share'],
+                ]);
+            }
+        }
+
+        return $filas
+            ->sortBy(fn ($row) => $row['vendedor_nombre'] . '|' . $row['venta']->fecha)
+            ->values();
     }
 
     public function map($row): array
     {
-        /** @var Venta $venta */
-        $venta = $row->venta;
-        /** @var array $grupo */
-        $grupo = $row->grupo;
+        $venta = $row['venta'];
+        $share = (float) ($row['share'] ?? 1);
 
         $fechaActual = Carbon::now();
         $fechaVenta = Carbon::parse($venta->fecha);
@@ -156,7 +241,6 @@ class CobrosPorVendedorExport implements FromCollection, WithHeadings, WithMappi
             $fechaVencimiento = $fechaVenta->copy()->addDays(30);
         }
 
-        $diasVencimiento = $fechaActual->diffInDays($fechaVencimiento, false);
         if ($fechaActual->greaterThan($fechaVencimiento)) {
             $diasVencimiento = $fechaVencimiento->diffInDays($fechaActual);
         } else {
@@ -172,7 +256,6 @@ class CobrosPorVendedorExport implements FromCollection, WithHeadings, WithMappi
         }
 
         $totalAbonado = $venta->abonos->sum('total');
-        $share = (float) ($grupo['share'] ?? 1);
 
         $cliente = $venta->cliente;
         $nombreCliente = 'Consumidor Final';
@@ -186,12 +269,12 @@ class CobrosPorVendedorExport implements FromCollection, WithHeadings, WithMappi
         $nombreSucursal = $venta->sucursal ? $venta->sucursal->nombre : 'N/A';
 
         return [
-            $grupo['vendedor_nombre'],
+            $row['vendedor_nombre'],
             $nombreCliente,
             $venta->fecha,
             $venta->correlativo,
             $nombreDocumento,
-            round($grupo['total'], 2),
+            round((float) $row['total_vendedor'], 2),
             round((float) $venta->saldo * $share, 2),
             $venta->estado,
             $fechaVencimiento ? $fechaVencimiento->format('Y-m-d') : 'N/A',
