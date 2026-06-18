@@ -4,6 +4,7 @@ namespace App\Exports\ReportesAutomaticos\DetalleVentasPorVendedor;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Services\Ventas\VentaMontosPorVendedorService;
 use Exception;
 use Mpdf\Mpdf;
 use Mpdf\Config\ConfigVariables;
@@ -549,8 +550,10 @@ class DetalleVentasVendedorPdfExport
             // Consulta principal para obtener los detalles de ventas
             $query = DB::table('detalles_venta as dv')
                 ->join('productos as pro', 'dv.id_producto', '=', 'pro.id')
-                ->join('users as us', 'dv.id_vendedor', '=', 'us.id')
                 ->join('ventas as vv', 'dv.id_venta', '=', 'vv.id')
+                ->join('users as us', function ($join) {
+                    $join->on('us.id', '=', DB::raw(VentaMontosPorVendedorService::sqlIdVendedorEfectivo('dv', 'vv')));
+                })
                 ->where('vv.estado', '!=', 'Anulada')
                 ->where('vv.id_empresa', $this->id_empresa)
                 ->whereBetween('vv.fecha', [$this->fechaInicio, $this->fechaFin]);

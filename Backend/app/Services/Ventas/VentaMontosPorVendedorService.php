@@ -7,6 +7,14 @@ use App\Models\Ventas\Venta;
 class VentaMontosPorVendedorService
 {
     /**
+     * Expresión SQL: vendedor del detalle, o el de la venta si el detalle no tiene uno.
+     */
+    public static function sqlIdVendedorEfectivo(string $aliasDetalle = 'dv', string $aliasVenta = 'v'): string
+    {
+        return "COALESCE(NULLIF({$aliasDetalle}.id_vendedor, 0), {$aliasVenta}.id_vendedor)";
+    }
+
+    /**
      * Agrupa los montos de una venta por vendedor efectivo (detalle o venta).
      *
      * @return array<int, array{
@@ -24,15 +32,14 @@ class VentaMontosPorVendedorService
      */
     public static function montosPorVendedor(Venta $venta): array
     {
-        $venta->loadMissing(['detalles.vendedor', 'vendedor']);
+        $venta->loadMissing(['vendedor']);
+        $detalles = $venta->detalles()->with('vendedor:id,name')->get();
 
         $grupos = [];
 
-        foreach ($venta->detalles as $detalle) {
-            $idVendedor = (int) ($detalle->id_vendedor ?: $venta->id_vendedor ?: 0);
-            $nombreVendedor = $detalle->vendedor?->name
-                ?? $venta->vendedor?->name
-                ?? 'Sin vendedor';
+        foreach ($detalles as $detalle) {
+            $idVendedor = self::idVendedorEfectivo($detalle, $venta);
+            $nombreVendedor = self::nombreVendedorEfectivo($detalle, $venta);
 
             if (!isset($grupos[$idVendedor])) {
                 $grupos[$idVendedor] = self::grupoVacio($idVendedor, $nombreVendedor);
@@ -77,6 +84,31 @@ class VentaMontosPorVendedorService
         unset($grupo);
 
         return array_values($grupos);
+    }
+
+    private static function idVendedorEfectivo($detalle, Venta $venta): int
+    {
+        if ($detalle->id_vendedor !== null && (int) $detalle->id_vendedor > 0) {
+            return (int) $detalle->id_vendedor;
+        }
+
+        return (int) ($venta->id_vendedor ?? 0);
+    }
+
+    private static function nombreVendedorEfectivo($detalle, Venta $venta): string
+    {
+        if ($detalle->relationLoaded('vendedor') && $detalle->vendedor) {
+            return $detalle->vendedor->name;
+        }
+
+        if ($detalle->id_vendedor !== null && (int) $detalle->id_vendedor > 0) {
+            $nombre = $detalle->vendedor()->value('name');
+            if ($nombre) {
+                return $nombre;
+            }
+        }
+
+        return $venta->vendedor?->name ?? 'Sin vendedor';
     }
 
     /**
