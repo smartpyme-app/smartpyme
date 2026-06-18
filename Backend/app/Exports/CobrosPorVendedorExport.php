@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\Models\Ventas\Venta;
+use App\Services\Ventas\VentaMontosPorVendedorService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -64,14 +65,20 @@ class CobrosPorVendedorExport implements FromCollection, WithHeadings, WithMappi
     {
         $request = $this->request;
 
-        $query = Venta::with(['vendedor', 'cliente', 'abonos' => function ($q) {
-            $q->where('estado', 'Confirmado')->orderBy('fecha', 'desc');
-        }, 'documento', 'sucursal', 'devoluciones' => function ($q) {
-            $q->where('enable', 1);
-        }]);
+        $query = Venta::with([
+            'vendedor',
+            'cliente',
+            'detalles.vendedor',
+            'abonos' => function ($q) {
+                $q->where('estado', 'Confirmado')->orderBy('fecha', 'desc');
+            },
+            'documento',
+            'sucursal',
+            'devoluciones' => function ($q) {
+                $q->where('enable', 1);
+            },
+        ]);
 
-        // Con usuario logueado, Venta ya limita por id_empresa (scope global).
-        // Aplicar id_empresa del request solo sin sesión (p. ej. reportes programados), y solo si es válido.
         if (! Auth::check() && $request->filled('id_empresa') && (int) $request->id_empresa > 0) {
             $query->where('ventas.id_empresa', (int) $request->id_empresa);
         }
@@ -104,87 +111,95 @@ class CobrosPorVendedorExport implements FromCollection, WithHeadings, WithMappi
             });
         }
 
-        return $query
+        $ventas = $query
             ->where('cotizacion', 0)
             ->orderBy('id_vendedor')
             ->orderBy('fecha', 'desc')
             ->get();
+
+        return $ventas->flatMap(function (Venta $venta) use ($idVendedor) {
+            $grupos = VentaMontosPorVendedorService::montosPorVendedor($venta);
+
+            if ($idVendedor !== null && $idVendedor !== '' && (int) $idVendedor > 0) {
+                $idV = (int) $idVendedor;
+                $grupos = array_values(array_filter(
+                    $grupos,
+                    static fn (array $grupo) => (int) $grupo['vendedor_id'] === $idV
+                ));
+            }
+
+            return collect($grupos)->map(function (array $grupo) use ($venta) {
+                return (object) [
+                    'venta' => $venta,
+                    'grupo' => $grupo,
+                ];
+            });
+        });
     }
 
-    public function map($venta): array
+    public function map($row): array
     {
+        /** @var Venta $venta */
+        $venta = $row->venta;
+        /** @var array $grupo */
+        $grupo = $row->grupo;
+
         $fechaActual = Carbon::now();
         $fechaVenta = Carbon::parse($venta->fecha);
-        
-        // Calcular fecha de vencimiento
+
         $fechaVencimiento = null;
         if ($venta->fecha_pago) {
             $fechaVencimiento = Carbon::parse($venta->fecha_pago);
         } elseif ($venta->fecha_expiracion) {
             $fechaVencimiento = Carbon::parse($venta->fecha_expiracion);
         } else {
-            // Por defecto, 30 días desde la fecha de la venta
             $fechaVencimiento = $fechaVenta->copy()->addDays(30);
         }
 
-        // Calcular días de vencimiento
-        // Si la fecha actual es mayor que la de vencimiento, está vencido (días positivos)
-        // Si la fecha actual es menor, aún no vence (días negativos)
         $diasVencimiento = $fechaActual->diffInDays($fechaVencimiento, false);
-        // diffInDays con false ya devuelve negativo si la primera fecha es menor
-        // Necesitamos invertir para que positivo = vencido, negativo = no vencido
         if ($fechaActual->greaterThan($fechaVencimiento)) {
-            // Está vencido: días positivos
             $diasVencimiento = $fechaVencimiento->diffInDays($fechaActual);
         } else {
-            // Aún no vence: días negativos (restantes)
             $diasVencimiento = -$fechaActual->diffInDays($fechaVencimiento);
         }
 
-        // Obtener último abono confirmado
         $ultimoAbono = $venta->abonos->first();
         $fechaUltimoAbono = $ultimoAbono ? Carbon::parse($ultimoAbono->fecha) : null;
-        
-        // Calcular días de crédito hasta el pago
+
         $diasCreditoHastaPago = null;
         if ($ultimoAbono) {
             $diasCreditoHastaPago = $fechaVenta->diffInDays($fechaUltimoAbono);
         }
 
-        // Calcular total abonado
         $totalAbonado = $venta->abonos->sum('total');
+        $share = (float) ($grupo['share'] ?? 1);
 
-        // Obtener nombre del vendedor
-        $nombreVendedor = $venta->vendedor ? $venta->vendedor->name : 'Sin vendedor';
-        
-        // Obtener nombre del cliente
         $cliente = $venta->cliente;
         $nombreCliente = 'Consumidor Final';
         if ($cliente) {
-            $nombreCliente = $cliente->tipo == 'Empresa' ? $cliente->nombre_empresa : $cliente->nombre . ' ' . $cliente->apellido;
+            $nombreCliente = $cliente->tipo == 'Empresa'
+                ? $cliente->nombre_empresa
+                : $cliente->nombre . ' ' . $cliente->apellido;
         }
 
-        // Obtener nombre del documento
         $nombreDocumento = $venta->documento ? $venta->documento->nombre : 'N/A';
-
-        // Obtener nombre de la sucursal
         $nombreSucursal = $venta->sucursal ? $venta->sucursal->nombre : 'N/A';
 
         return [
-            $nombreVendedor,
+            $grupo['vendedor_nombre'],
             $nombreCliente,
             $venta->fecha,
             $venta->correlativo,
             $nombreDocumento,
-            round($venta->total, 2),
-            round($venta->saldo, 2),
+            round($grupo['total'], 2),
+            round((float) $venta->saldo * $share, 2),
             $venta->estado,
             $fechaVencimiento ? $fechaVencimiento->format('Y-m-d') : 'N/A',
             $diasVencimiento,
             $fechaUltimoAbono ? $fechaUltimoAbono->format('Y-m-d') : 'Sin abonos',
             $diasCreditoHastaPago !== null ? $diasCreditoHastaPago : 'N/A',
-            round($totalAbonado, 2),
-            $nombreSucursal
+            round($totalAbonado * $share, 2),
+            $nombreSucursal,
         ];
     }
 }
