@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Crypt;
 
 use App\Exports\ConsignasExport;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Services\Inventario\ConsignaDisponibleService;
 
 class ConsignasController extends Controller
 {
@@ -210,6 +211,27 @@ class ConsignasController extends Controller
         $consignas->filter($request);
 
         return Excel::download($consignas, 'consignas-compras.xlsx');
+    }
+
+    public function disponible(Request $request, ConsignaDisponibleService $consignaDisponibleService)
+    {
+        $request->validate([
+            'id_producto' => 'required|integer',
+            'id_bodega' => 'required|integer',
+            'excluir_venta_id' => 'nullable|integer',
+        ]);
+
+        $disponible = $consignaDisponibleService->calcularDisponible(
+            (int) $request->id_producto,
+            (int) $request->id_bodega,
+            $request->filled('excluir_venta_id') ? (int) $request->excluir_venta_id : null
+        );
+
+        return response()->json([
+            'id_producto' => (int) $request->id_producto,
+            'id_bodega' => (int) $request->id_bodega,
+            'disponible' => round($disponible, 4),
+        ], 200);
     }
 
 

@@ -83,6 +83,7 @@ Route::get('/productos/kardex/estado-cola', [KardexController::class, 'estadoCol
     Route::get('/productos/consignas/exportar',        [ConsignasController::class, 'export']);
     Route::get('/productos/consignas-compras',         [ConsignasController::class, 'indexCompras']);
     Route::get('/productos/consignas-compras/exportar', [ConsignasController::class, 'exportCompras']);
+    Route::get('/productos/consigna-disponible',      [ConsignasController::class, 'disponible']);
 
 // Promociones
     Route::get('promociones',        [PromocionesController::class, 'index']);

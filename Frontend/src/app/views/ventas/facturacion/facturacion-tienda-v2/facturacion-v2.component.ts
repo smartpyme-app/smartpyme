@@ -17,6 +17,7 @@ import {
   sumarSubTotalEncabezadoVenta,
   sumarTotalConIvaEncabezadoVenta,
 } from '@utils/impuestos-venta.util';
+import { esVentaPorConsigna, sincronizarFlagConsignaVenta } from '@utils/venta-consigna.util';
 
 import * as moment from 'moment';
 import { VentaDetallesV2Component } from './detalles/venta-detalles-v2.component';
@@ -417,6 +418,7 @@ export class FacturacionV2Component implements OnInit {
         .subscribe(
           (venta) => {
             this.venta = venta;
+            sincronizarFlagConsignaVenta(this.venta);
             this.retencionIvaGcUsuarioDecidio = true;
             this.normalizarDetallesTipoGravado(this.venta);
             this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
@@ -1364,14 +1366,32 @@ export class FacturacionV2Component implements OnInit {
 
     public setConsigna() {
         if (this.venta.consigna) {
+            if (!this.venta.id_cliente) {
+                this.alertService.warning('Consigna', 'Seleccione un cliente para ventas por consigna.');
+                this.venta.consigna = false;
+                return;
+            }
+            if (this.venta.detalles?.length) {
+                this.venta.detalles = [];
+                this.alertService.warning(
+                    'Consigna',
+                    'Se vació el detalle. Toda la factura quedará en consigna; no puede mezclar líneas de venta normal y consigna.'
+                );
+                this.sumTotal();
+            }
             this.venta.estado = 'Consigna';
         } else {
+            if (this.venta.detalles?.length) {
+                this.venta.detalles = [];
+                this.sumTotal();
+            }
             this.setCredito();
         }
     }
 
     public updateVenta(venta: any) {
         this.venta = venta;
+        sincronizarFlagConsignaVenta(this.venta);
         this.sumTotal();
     }
 
@@ -1512,6 +1532,13 @@ export class FacturacionV2Component implements OnInit {
       return true;
     }
 
+    if (esVentaPorConsigna(this.venta)) {
+      if (!this.venta.id_cliente) {
+        this.alertService.error('Debe seleccionar un cliente para ventas por consigna.');
+        return true;
+      }
+    }
+
     return false;
   }
 
@@ -1643,6 +1670,10 @@ export class FacturacionV2Component implements OnInit {
 
     if (this.pedidoCanalId) {
       (this.venta as any).id_pedido_canal = this.pedidoCanalId;
+    }
+
+    if (this.venta.consigna) {
+      this.venta.estado = 'Consigna';
     }
 
     // Asegurar que usuarios "Ventas Limitado" siempre tengan ventas al contado

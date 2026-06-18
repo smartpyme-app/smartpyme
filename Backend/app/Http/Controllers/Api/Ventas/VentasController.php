@@ -33,6 +33,7 @@ use App\Models\Eventos\Evento;
 use App\Models\Restaurante\PedidoRestaurante;
 use App\Services\Restaurante\PedidoCanalInventarioService;
 use App\Services\Inventario\ConversionInventarioService;
+use App\Services\Inventario\ConsignaDisponibleService;
 use Luecano\NumeroALetras\NumeroALetras;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -573,7 +574,7 @@ class VentasController extends Controller
             // 'correlativo'       => 'required|numeric|unique:ventas,correlativo,'.$request->id.',id,id_sucursal,'.$request->id_sucursal.',id_documento,'.$request->id_documento,
             'id_documento'      => 'required|max:255',
             'id_canal'          => 'required|max:255',
-            'id_cliente'        => 'required_if:estado,"Pendiente"',
+            'id_cliente'        => 'required_if:estado,"Pendiente"|required_if:estado,"Consigna"',
             'detalles'          => 'required',
             'fecha_expiracion'  => 'required_if:cotizacion,1',
             'descripcion_impresion'  => 'required_if:descripcion_personalizada,1',
@@ -589,9 +590,14 @@ class VentasController extends Controller
             'id_sucursal'       => 'required|numeric',
         ], [
             'detalles.required' => 'Tiene que agregar productos',
-            'id_cliente.required_if' => 'El cliente es requerido para los creditos y la facturación.',
+            'id_cliente.required_if' => 'El cliente es requerido para créditos, consignas y facturación.',
             'fecha_expiracion.required_if' => 'La fecha de expiracion es obligatorio cuando es cotización.',
         ]);
+
+        $consignaDisponibleService = app(ConsignaDisponibleService::class);
+        if ($errorConsigna = $consignaDisponibleService->validarVentaConsigna($request)) {
+            return response()->json(['error' => $errorConsigna], 422);
+        }
 
         DB::beginTransaction();
 

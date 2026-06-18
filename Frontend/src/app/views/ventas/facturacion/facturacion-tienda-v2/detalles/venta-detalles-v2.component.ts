@@ -239,27 +239,31 @@ export class VentaDetallesV2Component implements OnInit {
     }
 
     public updateTotal(detalle:any){
-        const cantidad = parseFloat(detalle.cantidad ?? 0) || 0;
-        const pctDetalle = this.obtenerPorcentajeIvaDetalle(detalle);
-        const precioIva = parseFloat(detalle.precio_iva ?? 0) || 0;
-        const precioSinIva = pctDetalle > 0
-            ? this.calcularPrecioSinIva(precioIva, pctDetalle)
-            : precioIva;
+        const aplicar = () => {
+            const cantidad = parseFloat(detalle.cantidad ?? 0) || 0;
+            const pctDetalle = this.obtenerPorcentajeIvaDetalle(detalle);
+            const precioIva = parseFloat(detalle.precio_iva ?? 0) || 0;
+            const precioSinIva = pctDetalle > 0
+                ? this.calcularPrecioSinIva(precioIva, pctDetalle)
+                : precioIva;
 
-        detalle.precio = precioSinIva.toFixed(4);
+            detalle.precio = precioSinIva.toFixed(4);
 
-        if(detalle.descuento_porcentaje){
-            detalle.descuento = Number((cantidad * (precioSinIva * (detalle.descuento_porcentaje / 100))).toFixed(4));
-        }else if(detalle.descuento_monto){
-            detalle.descuento = Number((cantidad * detalle.descuento_monto).toFixed(4));
-        }else{
-            detalle.descuento = 0;
-        }
+            if(detalle.descuento_porcentaje){
+                detalle.descuento = Number((cantidad * (precioSinIva * (detalle.descuento_porcentaje / 100))).toFixed(4));
+            }else if(detalle.descuento_monto){
+                detalle.descuento = Number((cantidad * detalle.descuento_monto).toFixed(4));
+            }else{
+                detalle.descuento = 0;
+            }
 
-        detalle.total_costo  = (cantidad * parseFloat(detalle.costo ?? 0)).toFixed(4);
-        this.aplicarTipoGravado(detalle);
-        this.update.emit(this.venta);
-        this.sumTotal.emit();
+            detalle.total_costo  = (cantidad * parseFloat(detalle.costo ?? 0)).toFixed(4);
+            this.aplicarTipoGravado(detalle);
+            this.update.emit(this.venta);
+            this.sumTotal.emit();
+        };
+
+        aplicar();
     }
 
     public modalSupervisor(detalle:any){
@@ -285,6 +289,10 @@ export class VentaDetallesV2Component implements OnInit {
 
     // Agregar detalle
         productoSelect(producto:any):void{
+            this.procesarProductoSelect(producto);
+        }
+
+        private procesarProductoSelect(producto:any):void{
 
             if (producto.tipo === 'Servicio') {
                 this.addDetalle(producto);
