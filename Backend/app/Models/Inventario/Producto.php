@@ -93,15 +93,24 @@ class Producto extends Model
 
     public function getImgAttribute()
     {
+        if ($this->relationLoaded('imagenes')) {
+            $img = $this->imagenes->first();
+            return $img ? $img->img : 'productos/default.jpg';
+        }
+
         if ($this->imagenes()->count() > 0) {
             return $this->imagenes->pluck('img')->first();
-        } else {
-            return 'productos/default.jpg';
         }
+
+        return 'productos/default.jpg';
     }
 
     public function getNombreCategoriaAttribute()
     {
+        if ($this->relationLoaded('categoria') && $this->categoria) {
+            return $this->categoria->nombre;
+        }
+
         return $this->categoria()->pluck('nombre')->first();
     }
 

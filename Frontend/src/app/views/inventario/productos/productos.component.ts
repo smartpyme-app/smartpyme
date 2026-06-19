@@ -12,6 +12,7 @@ import { FuncionalidadesService } from '@services/functionalities.service';
 import { ImportarExcelComponent } from '@shared/parts/importar-excel/importar-excel.component';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
+import { SumPipe } from '@pipes/sum.pipe';
 
 @Component({
     selector: 'app-productos',
@@ -27,6 +28,7 @@ import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/n
         ImportarExcelComponent,
         PaginationComponent,
         NotificacionesContainerComponent,
+        SumPipe,
     ],
 })
 export class ProductosComponent implements OnInit {
@@ -101,14 +103,6 @@ export class ProductosComponent implements OnInit {
 
         this.apiService.getAll('bodegas/list').subscribe(bodegas => {
             this.bodegas = bodegas;
-        }, error => { this.alertService.error(error); });
-
-        this.apiService.getAll('proveedores/list').subscribe(proveedores => {
-            this.proveedores = proveedores;
-        }, error => { this.alertService.error(error); });
-
-        this.apiService.getAll('productos/marca-productos').subscribe(marcas => {
-            this.marcas = marcas;
         }, error => { this.alertService.error(error); });
 
     }
@@ -280,9 +274,17 @@ export class ProductosComponent implements OnInit {
     }
 
     public openFilter(template: TemplateRef<any>) {
-        this.apiService.getAll('proveedores/list').subscribe(proveedores => {
-            this.proveedores = proveedores;
-        }, error => { this.alertService.error(error); });
+        if (!this.proveedores?.length) {
+            this.apiService.getAll('proveedores/list').subscribe(proveedores => {
+                this.proveedores = proveedores;
+            }, error => { this.alertService.error(error); });
+        }
+
+        if (!this.marcas?.length) {
+            this.apiService.getAll('productos/marca-productos').subscribe(marcas => {
+                this.marcas = marcas;
+            }, error => { this.alertService.error(error); });
+        }
 
         this.modalRef = this.modalService.show(template);
     }
@@ -522,6 +524,30 @@ export class ProductosComponent implements OnInit {
 
     public isInventarioSumarStockBusquedas(): boolean {
         return this.apiService.isInventarioSumarStockBusquedas();
+    }
+
+    public getStockTotal(producto: any): number {
+        if (producto?.inventario_por_lotes) {
+            return Number(producto?.stock_total_lotes) || 0;
+        }
+
+        const inventarios = producto?.inventarios;
+        if (!Array.isArray(inventarios) || inventarios.length === 0) {
+            return 0;
+        }
+
+        return inventarios.reduce(
+            (total: number, inventario: any) => total + (parseFloat(inventario?.stock) || 0),
+            0
+        );
+    }
+
+    public tieneInventarios(producto: any): boolean {
+        return Array.isArray(producto?.inventarios) && producto.inventarios.length > 0;
+    }
+
+    public tieneLotes(producto: any): boolean {
+        return Array.isArray(producto?.lotes) && producto.lotes.length > 0;
     }
 
 }

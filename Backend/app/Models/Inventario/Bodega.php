@@ -37,6 +37,10 @@ class Bodega extends Model {
     
     public function getNombreSucursalAttribute()
     {
+        if ($this->relationLoaded('sucursal') && $this->sucursal) {
+            return $this->sucursal->nombre;
+        }
+
         return $this->sucursal()->pluck('nombre')->first();
     }
 

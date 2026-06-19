@@ -119,15 +119,26 @@ class ProductosController extends Controller
         $query = Producto::query()->whereIn('tipo', ['Producto', 'Compuesto']);
 
         if ($withRelations) {
-            $query->with(['inventarios' => function ($q) use ($request) {
-                if ($request->id_bodega) {
-                    $q->where('id_bodega', $request->id_bodega);
-                }
-            }, 'precios', 'lotes' => function ($q) use ($request) {
-                if ($request->id_bodega) {
-                    $q->where('id_bodega', $request->id_bodega);
-                }
-            }]);
+            $query->with([
+                'categoria',
+                'imagenes' => function ($q) {
+                    $q->select('id', 'id_producto', 'img')->limit(1);
+                },
+                'inventarios' => function ($q) use ($request) {
+                    if ($request->id_bodega) {
+                        $q->where('id_bodega', $request->id_bodega);
+                    }
+                    $q->with(['bodega' => function ($bq) {
+                        $bq->select('id', 'nombre', 'id_sucursal')
+                            ->with(['sucursal:id,nombre']);
+                    }]);
+                },
+                'lotes' => function ($q) use ($request) {
+                    if ($request->id_bodega) {
+                        $q->where('id_bodega', $request->id_bodega);
+                    }
+                },
+            ]);
         }
 
         $query->when($request->id_categoria, function ($q) use ($request) {

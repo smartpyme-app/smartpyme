@@ -180,15 +180,15 @@
                             <div *ngIf="producto.inventario_por_lotes">
                                 <div class="click" tooltip="Ver lotes" *ngIf="filtros.id_bodega"
                                     routerLink="/producto/editar/{{producto.id}}">
-                                    {{ producto.stock_total_lotes || 0 | number:'1.2' }}
+                                    {{ getStockTotal(producto) | number:'1.2' }}
                                 </div>
                                 <div *ngIf="!filtros.id_bodega">
-                                    <span *ngIf="producto?.lotes?.length > 0"
+                                    <span *ngIf="tieneLotes(producto)"
                                         style="display: block; height: 40px; line-height: 40px;" class="click"
                                         placement="left" [popover]="popTemplateLotes" triggers="mouseenter:mouseleave">
-                                        {{ producto.stock_total_lotes || 0 | number:'1.2' }}
+                                        {{ getStockTotal(producto) | number:'1.2' }}
                                     </span>
-                                    <span *ngIf="producto?.lotes?.length == 0">
+                                    <span *ngIf="!tieneLotes(producto)">
                                         0
                                     </span>
                                     <ng-template #popTemplateLotes>
@@ -224,7 +224,7 @@
                                             <tfoot>
                                                 <tr>
                                                     <th colspan="3">Total</th>
-                                                    <th class="text-right">{{ producto.stock_total_lotes || 0 |
+                                                    <th class="text-right">{{ getStockTotal(producto) |
                                                         number:'1.2' }}</th>
                                                 </tr>
                                             </tfoot>
@@ -236,15 +236,15 @@
                             <div *ngIf="!producto.inventario_por_lotes">
                                 <div class="click" tooltip="Realizar ajuste de stock" *ngIf="filtros.id_bodega"
                                     (click)="openModalAjuste(majuste, producto)">
-                                    {{ producto.inventarios | sum:'stock' }}
+                                    {{ getStockTotal(producto) | number:'1.2' }}
                                 </div>
                                 <div *ngIf="!filtros.id_bodega">
-                                    <span *ngIf="producto?.inventarios?.length > 0"
+                                    <span *ngIf="tieneInventarios(producto)"
                                         style="display: block; height: 40px; line-height: 40px;" class="click"
                                         placement="left" [popover]="popTemplate" triggers="mouseenter:mouseleave">
-                                        {{ producto.inventarios | sum:'stock' }}
+                                        {{ getStockTotal(producto) | number:'1.2' }}
                                     </span>
-                                    <span *ngIf="producto?.inventarios?.length == 0">
+                                    <span *ngIf="!tieneInventarios(producto)">
                                         Sin control
                                     </span>
                                     <ng-template #popTemplate>
@@ -269,7 +269,7 @@
                                             <tfoot>
                                                 <tr>
                                                     <th colspan="2">Total</th>
-                                                    <th class="text-right">{{ producto.inventarios | sum:'stock' }}</th>
+                                                    <th class="text-right">{{ getStockTotal(producto) | number:'1.2' }}</th>
                                                 </tr>
                                             </tfoot>
                                         </table>
