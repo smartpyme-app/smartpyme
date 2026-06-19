@@ -6,6 +6,7 @@ import { TooltipModule } from 'ngx-bootstrap/tooltip';
 
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
+import { PermissionService } from '@services/permission.service';
 import { EncryptService } from '@services/encryption/encrypt.service';
 import { Router } from '@angular/router';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
@@ -33,21 +34,23 @@ export class HeaderComponent implements OnInit {
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
 
-     constructor(public apiService: ApiService, private alertService: AlertService, public encryptService: EncryptService, private router: Router, @Inject(DOCUMENT) private document: any) { }
+     constructor(
+        public apiService: ApiService,
+        private alertService: AlertService,
+        private permissionService: PermissionService,
+        public encryptService: EncryptService,
+        private router: Router,
+        @Inject(DOCUMENT) private document: any
+     ) { }
 
     ngOnInit() {
         // $('.drop-down').dropdown();
         this.usuario = this.apiService.auth_user() ?? {};
+        this.refreshDisplayRole();
 
-        let user = localStorage.getItem('SP_user_permissions');
-        if (user) {
-            this.rol = JSON.parse(user).role;
-            this.rol = this.rol?.replace(/_/g, ' ').replace(/\b\w/g, (char: string) => char.toUpperCase()) ?? '';
-        } else {
-            const roles = this.usuario?.roles;
-            const roleName = Array.isArray(roles) && roles.length > 0 ? roles[0].name : this.usuario?.tipo;
-            this.rol = (roleName ?? 'Usuario').replace(/_/g, ' ').replace(/\b\w/g, (char: string) => char.toUpperCase());
-        }
+        this.permissionService.onPermissionsUpdated()
+            .pipe(this.untilDestroyed())
+            .subscribe(() => this.refreshDisplayRole());
 
 
 
@@ -56,6 +59,10 @@ export class HeaderComponent implements OnInit {
         this.elem = document.documentElement;
 
         this.loadNotificaciones();
+    }
+
+    private refreshDisplayRole(): void {
+        this.rol = this.permissionService.getDisplayRoleName();
     }
 
     irAPerfil() {

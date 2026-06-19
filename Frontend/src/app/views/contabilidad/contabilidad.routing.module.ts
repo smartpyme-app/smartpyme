@@ -4,7 +4,7 @@ import { RouterModule, Routes } from '@angular/router';
 
 import { LayoutComponent } from '@layout/layout.component';
 
-
+import { FuncionalidadGuard } from '@guards/funcionalidad.guard';
 
 import { PresupuestosComponent } from '@views/contabilidad/presupuestos/presupuestos.component';
 
@@ -18,7 +18,10 @@ import { CuentasComponent } from '@views/contabilidad/bancos/cuentas/cuentas.com
 
 import { CuentaComponent } from '@views/contabilidad/bancos/cuentas/cuenta/cuenta.component';
 
-
+const CONTABILIDAD_FUNCIONALIDAD = {
+  canActivate: [FuncionalidadGuard],
+  data: { funcionalidadSlug: 'contabilidad' },
+};
 
 const routes: Routes = [
 
@@ -396,7 +399,9 @@ const routes: Routes = [
 
           loadComponent: () => import('@views/contabilidad/catalogo-cuentas/catalogo-cuentas.component').then(m => m.CatalogoCuentasComponent),
 
-          title: 'Catálogo de cuentas'
+          title: 'Catálogo de cuentas',
+
+          ...CONTABILIDAD_FUNCIONALIDAD,
 
         },
 
@@ -406,7 +411,9 @@ const routes: Routes = [
 
           loadComponent: () => import('@views/contabilidad/catalogo-cuentas/catalogo-cuenta/catalogo-cuenta.component').then(m => m.CatalogoCuentaComponent),
 
-          title: 'Catálogo cuenta'
+          title: 'Catálogo cuenta',
+
+          ...CONTABILIDAD_FUNCIONALIDAD,
 
         },
 
@@ -416,7 +423,9 @@ const routes: Routes = [
 
           loadComponent: () => import('@views/contabilidad/partidas/partidas.component').then(m => m.PartidasComponent),
 
-          title: 'Partidas'
+          title: 'Partidas',
+
+          ...CONTABILIDAD_FUNCIONALIDAD,
 
         },
 
@@ -426,7 +435,9 @@ const routes: Routes = [
 
           loadComponent: () => import('@views/contabilidad/partidas/partida/partida.component').then(m => m.PartidaComponent),
 
-          title: 'Partida'
+          title: 'Partida',
+
+          ...CONTABILIDAD_FUNCIONALIDAD,
 
         },
 
@@ -436,7 +447,9 @@ const routes: Routes = [
 
           loadComponent: () => import('@views/contabilidad/cierre-mes/cierre-mes.component').then(m => m.CierreMesComponent),
 
-          title: 'Cierre de Mes'
+          title: 'Cierre de Mes',
+
+          ...CONTABILIDAD_FUNCIONALIDAD,
 
         },
 
@@ -446,7 +459,9 @@ const routes: Routes = [
 
           loadComponent: () => import('@views/contabilidad/cierre-ejercicio-fiscal/cierre-ejercicio-fiscal.component').then(m => m.CierreEjercicioFiscalComponent),
 
-          title: 'Cierre de ejercicio fiscal'
+          title: 'Cierre de ejercicio fiscal',
+
+          ...CONTABILIDAD_FUNCIONALIDAD,
 
         },
 
@@ -456,7 +471,9 @@ const routes: Routes = [
 
           loadComponent: () => import('@views/contabilidad/configuracion/contabilidad-configuracion.component').then(m => m.ContabilidadConfiguracionComponent),
 
-          title: 'Configuración'
+          title: 'Configuración',
+
+          ...CONTABILIDAD_FUNCIONALIDAD,
 
         },
 

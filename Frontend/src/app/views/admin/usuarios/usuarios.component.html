@@ -108,7 +108,7 @@
                   <tr>
                     <td>{{usuario.name}}</td>
                     <td>{{usuario.email}}</td>
-                    <td>{{getRolName(usuario.rol_id)}}</td>
+                    <td>{{ usuario.rol_name }}</td>
                     <td>{{usuario.sucursal?.nombre}}
                         <small class="text-muted"> <br>{{usuario.bodega?.nombre ?? 'Sin bodega'}}</small>
                     </td>

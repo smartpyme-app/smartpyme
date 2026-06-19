@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Ventas;
 
+use App\Http\Controllers\Controller;
 use App\Exports\ReportesAutomaticos\EstadoFinancieroConsolidadoSucursales\EstadoFinancieroConsolidadoSucursalesExport;
 use App\Exports\ReportesAutomaticos\DetalleVentasPorVendedor\DetalleVentasVendedorExport;
 use App\Exports\ReportesAutomaticos\InventarioPorSucursal\InventarioExport;

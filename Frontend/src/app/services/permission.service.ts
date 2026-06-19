@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { Subject } from 'rxjs';
 import { HttpService } from '@services/http.service';
 
 export interface UserPermissions {
@@ -20,10 +21,45 @@ export class PermissionService {
     effectivePermissions: [],
     role: '',
   };
+  private readonly permissionsUpdated = new Subject<void>();
 
   constructor(
     private httpService: HttpService
   ) {}
+
+  onPermissionsUpdated() {
+    return this.permissionsUpdated.asObservable();
+  }
+
+  formatRoleName(name: string): string {
+    return name.replace(/_/g, ' ').replace(/\b\w/g, (char: string) => char.toUpperCase());
+  }
+
+  getDisplayRoleName(): string {
+    const storedPermissions = localStorage.getItem('SP_user_permissions');
+    if (storedPermissions) {
+      try {
+        const role = JSON.parse(storedPermissions).role;
+        if (typeof role === 'string' && role && role !== 'Sin rol asignado') {
+          return this.formatRoleName(role);
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+
+    const usuario = this.getAuthUser();
+    const roles = usuario?.roles;
+    if (Array.isArray(roles) && roles.length > 0 && roles[0]?.name) {
+      return this.formatRoleName(roles[0].name);
+    }
+
+    if (usuario?.tipo) {
+      return usuario.tipo;
+    }
+
+    return 'Usuario';
+  }
 
   private getAuthUser(): any {
     const user = localStorage.getItem('SP_auth_user');
@@ -63,6 +99,7 @@ export class PermissionService {
 
         localStorage.setItem('SP_user_permissions', JSON.stringify(permissions));
         this.currentUserPermissions = permissions;
+        this.permissionsUpdated.next();
       },
       error: () => {
         /* Mantiene SP_user_permissions previo si el request falla */

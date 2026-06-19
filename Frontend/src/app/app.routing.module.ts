@@ -122,10 +122,9 @@ export const routes: Routes = [
           path: '',
           loadChildren: () => import('./views/fidelizacion/fidelizacion.module').then(m => m.FidelizacionModule),
         },
-        // DTE Management
+        // DTE Management (acceso por funcionalidad, no solo rol admin)
         {
           path: '',
-          canActivate: [AdminGuard],
           loadChildren: () => import('./views/dte-management/dte-management.module').then(m => m.DteManagementModule),
         },
         // Restaurante

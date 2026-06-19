@@ -192,6 +192,7 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
         this.funcionalidadesService.onCambios()
             .pipe(takeUntil(this.destroy$))
             .subscribe(() => {
+                this.verificarAccesoContabilidad();
                 this.verificarFidelizacionHabilitada();
                 this.verificarModuloRestauranteHabilitado();
                 this.verificarDescargaDtesHabilitada();
@@ -203,10 +204,13 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
                 const currentUser = this.apiService.auth_user();
                 if (currentUser && (!this.authUser || this.authUser.id !== currentUser.id)) {
                     this.usuarioLogueado();
+                    this.verificarAccesoContabilidad();
                     this.verificarFidelizacionHabilitada();
                     this.verificarModuloRestauranteHabilitado();
                     this.verificarDescargaDtesHabilitada();
                 } else {
+                    this.verificarAccesoContabilidad();
+                    this.verificarDescargaDtesHabilitada();
                     this.actualizarMenusRestaurantePedidos();
                 }
             });

@@ -177,15 +177,7 @@ export class UsuariosComponent extends BaseCrudComponent<any> implements OnInit 
       .pipe(this.untilDestroyed())
       .subscribe(usuarios => {
       this.usuarios = usuarios;
-      this.usuarios.data.forEach((usuario:any) => {
-        if (usuario.roles && usuario.roles.length > 0) {
-          usuario.rol_id = usuario.roles[0].id;
-          usuario.rol_name = usuario.roles[0].name;
-        } else {
-          usuario.rol_name = 'Sin rol asignado';
-        }
-        usuario.encrypted_id = this.encryptService.encrypt(usuario.id);
-      });
+      this.mapUsuariosRoles();
       this.contarActivos();
       this.loading = false;
       this.cdr.markForCheck();
@@ -280,6 +272,7 @@ export class UsuariosComponent extends BaseCrudComponent<any> implements OnInit 
       .subscribe(
       (usuarios) => {
         this.usuarios = usuarios;
+        this.mapUsuariosRoles();
         this.loading = false;
         this.modalRef?.hide();
         this.cdr.markForCheck();
@@ -424,9 +417,27 @@ public changePhoneNumber(event: any) {
     window.location.href = `/usuario/${encryptedId}`;
   }
 
-  getRolName(rolId: number): string {
-    const rol = this.roles.find((r: any) => r.id === rolId);
-    return rol ? rol.name : 'Sin rol asignado';
+  private formatRoleName(name: string): string {
+    return name
+      .split('_')
+      .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  }
+
+  private mapUsuariosRoles(): void {
+    if (!this.usuarios?.data) {
+      return;
+    }
+
+    this.usuarios.data.forEach((usuario: any) => {
+      if (usuario.roles?.length > 0) {
+        usuario.rol_id = usuario.roles[0].id;
+        usuario.rol_name = this.formatRoleName(usuario.roles[0].name);
+      } else {
+        usuario.rol_name = 'Sin rol asignado';
+      }
+      usuario.encrypted_id = this.encryptService.encrypt(usuario.id);
+    });
   }
 
 }

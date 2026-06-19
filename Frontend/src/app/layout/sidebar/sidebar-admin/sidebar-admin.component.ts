@@ -162,6 +162,7 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit, OnDe
         this.funcionalidadesService.onCambios()
             .pipe(takeUntil(this.destroy$))
             .subscribe(() => {
+                this.verificarAccesoContabilidad();
                 this.verificarFidelizacionHabilitada();
                 this.verificarModuloRestauranteHabilitado();
                 this.verificarDescargaDtesHabilitada();
@@ -173,6 +174,7 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit, OnDe
                 takeUntil(this.destroy$)
             )
             .subscribe(() => {
+                this.verificarAccesoContabilidad();
                 this.verificarFidelizacionHabilitada();
                 this.verificarModuloRestauranteHabilitado();
                 this.verificarDescargaDtesHabilitada();

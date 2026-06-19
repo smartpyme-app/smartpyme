@@ -184,7 +184,7 @@
                     <div [collapse]="finanzasIsCollapsed" [isAnimated]="true">
                         <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
                             @if (apiService.hasPermission('finanzas.libro_iva.ver')) {
-                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="libroIvaRoute" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/book.png" class="icon me-2">Libros de IVA</a></li>
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="libroIvaRoute" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/book.png" class="icon me-2">Libros fiscales</a></li>
                             }
                             @if (apiService.hasPermission('finanzas.presupuestos.ver')) {
                                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/presupuestos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/coin-stack.png" class="icon me-2">Presupuestos</a></li>
@@ -204,7 +204,6 @@
                             @if (apiService.hasPermission('ventas.formas_pago.ver')) {
                                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/formas-de-pago']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/coins.png" class="icon me-2">Métodos de pago</a></li>
                             }
-                            <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="libroIvaRoute" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/book.png" class="icon me-2">Libros fiscales</a></li>
                         </ul>
                     </div>
                 </li>

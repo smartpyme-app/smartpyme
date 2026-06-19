@@ -46,7 +46,7 @@ class UsuariosController extends Controller
     {
 
         $usuarios = Usuario::where('id_empresa', JWTAuth::parseToken()->authenticate()->id_empresa)
-            ->with('sucursal', 'bodega')
+            ->with('sucursal', 'bodega', 'roles')
             ->when($request->estado !== null, function ($q) use ($request) {
                 $q->where('enable', !!$request->estado);
             })

@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\Api\Ventas\VentasController;
-use App\Http\Controllers\Api\Ventas\EntradasController;
 use App\Http\Controllers\Api\Ventas\VentasImportController;
 use App\Http\Controllers\Api\WompiController;
 use Illuminate\Support\Facades\Route;
