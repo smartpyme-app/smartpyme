@@ -5,6 +5,7 @@ import { AuthGuard } from './guards/auth.guard';
 import { AdminGuard } from './guards/admin.guard';
 import { SupervisorLimitadoGuard } from './guards/supervisor-limitado.guard';
 import { SubscriptionGuard } from './guards/SuscriptionGuard.guard';
+import { FuncionalidadGuard, SLUG_DESCARGA_AUTOMATIZADA_DTES } from './guards/funcionalidad.guard';
 import { NotFoundComponent } from './shared/404/not-found.component';
 import { LoginEntryComponent } from './auth/login/login-entry.component';
 import { RegisterEntryComponent } from './auth/register/register-entry.component';
@@ -122,9 +123,11 @@ export const routes: Routes = [
           path: '',
           loadChildren: () => import('./views/fidelizacion/fidelizacion.module').then(m => m.FidelizacionModule),
         },
-        // DTE Management (acceso por funcionalidad, no solo rol admin)
+        // DTE Management (ruta explícita; evita colisión con otros lazy modules en path '')
         {
-          path: '',
+          path: 'dte-management',
+          canActivate: [FuncionalidadGuard],
+          data: { funcionalidadSlug: SLUG_DESCARGA_AUTOMATIZADA_DTES },
           loadChildren: () => import('./views/dte-management/dte-management.module').then(m => m.DteManagementModule),
         },
         // Restaurante

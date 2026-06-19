@@ -25,6 +25,7 @@ import { AdminGuard } from './app/guards/admin.guard';
 import { CitasGuard } from './app/guards/citas.guard';
 import { SuperAdminGuard } from './app/guards/super-admin.guard';
 import { SubscriptionGuard } from './app/guards/SuscriptionGuard.guard';
+import { FuncionalidadGuard } from './app/guards/funcionalidad.guard';
 import { UsuariosGuard } from './app/guards/usuarios.guard';
 import { RoleGuard } from './app/guards/role.guard';
 import { PermissionGuard } from './app/guards/permission.guard';
@@ -61,6 +62,7 @@ bootstrapApplication(AppComponent, {
     CitasGuard,
     SuperAdminGuard,
     SubscriptionGuard,
+    FuncionalidadGuard,
     RoleGuard,
     PermissionGuard,
     UsuariosGuard,
