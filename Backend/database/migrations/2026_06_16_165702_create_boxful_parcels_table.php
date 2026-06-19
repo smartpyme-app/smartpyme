@@ -15,7 +15,7 @@ return new class extends Migration
             $table->unsignedBigInteger('boxful_shipment_id');
 
             // Dimensiones Físicas (Lo que Boxful pide en el array 'parcels')
-            $table->string('contenido'); // content (Ej. "Ropa, documentos")
+            $table->text('contenido'); // content (Ej. "Ropa, documentos")
             $table->decimal('alto', 8, 2);   // height
             $table->decimal('ancho', 8, 2);  // width
             $table->decimal('largo', 8, 2);  // length

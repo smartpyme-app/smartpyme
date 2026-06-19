@@ -5,7 +5,7 @@
       <!-- Encabezado de Modal del Sistema -->
       <div class="modal-header justify-content-between">
         <h3 class="modal-title">
-          <span>Logística Boxful</span>
+          <span>Logística Boxful <strong *ngIf="pedidoId">| Pedido #{{ pedidoId }}</strong></span>
           <small class="text-muted d-block mt-1" style="font-size: 12px; font-weight: normal;">Paso {{ step }} de 3 -
             Cotización y generación de guías</small>
         </h3>
@@ -33,6 +33,33 @@
 
         <!-- ==================== PASO 1: SELECCIÓN DE DIRECCIÓN ==================== -->
         <div *ngIf="step === 1">
+          <!-- Datos de Dimensiones del Paquete -->
+          <div class="mb-3 pb-3 border-bottom bg-light p-3 rounded-3 border">
+            <h6 class="fw-bold text-dark mb-2"><i class="fa fa-cube me-1"></i> Dimensiones del Paquete para Cotizar</h6>
+            <div class="row g-2">
+              <div class="col-6 col-sm-3">
+                <label for="paquetePeso" class="form-label small fw-bold text-dark mb-1">Peso (lb) <span
+                    class="text-danger">*</span></label>
+                <input type="number" step="any" min="0.1" class="form-control form-control-sm border-2 rounded-2"
+                  id="paquetePeso" [(ngModel)]="paqueteData.peso" name="paquetePeso" placeholder="Ej: 1.5">
+              </div>
+              <div class="col-6 col-sm-3">
+                <label for="paqueteAlto" class="form-label small fw-bold text-dark mb-1">Alto (cm)</label>
+                <input type="number" min="1" class="form-control form-control-sm border-2 rounded-2" id="paqueteAlto"
+                  [(ngModel)]="paqueteData.alto" name="paqueteAlto" placeholder="Ej: 10">
+              </div>
+              <div class="col-6 col-sm-3">
+                <label for="paqueteAncho" class="form-label small fw-bold text-dark mb-1">Ancho (cm)</label>
+                <input type="number" min="1" class="form-control form-control-sm border-2 rounded-2" id="paqueteAncho"
+                  [(ngModel)]="paqueteData.ancho" name="paqueteAncho" placeholder="Ej: 10">
+              </div>
+              <div class="col-6 col-sm-3">
+                <label for="paqueteLargo" class="form-label small fw-bold text-dark mb-1">Largo (cm)</label>
+                <input type="number" min="1" class="form-control form-control-sm border-2 rounded-2" id="paqueteLargo"
+                  [(ngModel)]="paqueteData.largo" name="paqueteLargo" placeholder="Ej: 10">
+              </div>
+            </div>
+          </div>
           <!-- Dirección de Origen (Bodega) -->
           <!-- Dirección de Origen (Bodega) -->
           <div class="mb-3 pb-3 border-bottom">
@@ -196,9 +223,9 @@
 
               <div class="form-group mb-3">
                 <label for="contenidoPaquete">Contenido del Paquete <span class="text-danger">*</span></label>
-                <input id="contenidoPaquete" type="text" formControlName="contenido" class="form-control"
+                <textarea id="contenidoPaquete" formControlName="contenido" rows="4" cols="2" class="form-control"
                   placeholder="Ej: Calzado, Ropa, Repuestos"
-                  [class.is-invalid]="addressForm.get('contenido')?.touched && addressForm.get('contenido')?.invalid">
+                  [class.is-invalid]="addressForm.get('contenido')?.touched && addressForm.get('contenido')?.invalid"></textarea>
                 <div class="text-danger mt-1" style="font-size: 11px;"
                   *ngIf="addressForm.get('contenido')?.touched && addressForm.get('contenido')?.invalid">El contenido
                   del paquete es requerido.</div>
@@ -277,14 +304,20 @@
             <label for="fechaRecoleccion" class="fw-bold text-dark mb-1"><i class="fa fa-calendar me-1"></i> Fecha de
               Recolección para Despacho <span class="text-danger">*</span></label>
             <input id="fechaRecoleccion" type="date" class="form-control" [min]="minFechaRecoleccion"
-              [(ngModel)]="fechaRecoleccion">
+              [(ngModel)]="fechaRecoleccion" (change)="cotizarEnvio()">
             <div class="form-text text-muted small mt-1">Seleccione la fecha en que la paquetería pasará a retirar el
               paquete por su bodega.</div>
           </div>
 
-          <label class="fw-bold text-dark mb-2">Seleccione una opción de paquetería</label>
+          <label class="fw-bold text-dark mb-2" *ngIf="!loadingCouriers">Seleccione una opción de paquetería</label>
 
-          <div class="row g-2">
+          <!-- Cargando paqueterías -->
+          <div class="py-4 text-center" *ngIf="loadingCouriers">
+            <span class="spinner-border spinner-border-sm text-primary me-2" role="status" aria-hidden="true"></span>
+            <span class="text-muted">Actualizando opciones de paquetería para la nueva fecha...</span>
+          </div>
+
+          <div class="row g-2" *ngIf="!loadingCouriers">
             <div class="col-12" *ngFor="let courier of couriers">
               <div class="courier-card p-3 mb-2"
                 [class.selected]="selectedCourierId === (courier.id || courier.courierId)"

@@ -1,0 +1,60 @@
+/* Timeline Estilo Premium */
+.tracking-timeline {
+  position: relative;
+  padding: 10px 0;
+  list-style: none;
+}
+
+.tracking-timeline:before {
+  content: " ";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 20px;
+  width: 2px;
+  background-color: #e9ecef;
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 20px;
+  padding-left: 45px;
+}
+
+.timeline-badge {
+  position: absolute;
+  top: 6px;
+  left: 14px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background-color: #007bff;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 2px #007bff;
+  z-index: 10;
+}
+
+.timeline-panel {
+  padding: 12px 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  transition: all 0.2s ease-in-out;
+}
+
+.timeline-panel:hover {
+  background: #f1f3f5;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.font-weight-bold {
+  font-weight: 700;
+}
+
+.gap-2 {
+  gap: 0.5rem;
+}
+
+.gap-3 {
+  gap: 1rem;
+}

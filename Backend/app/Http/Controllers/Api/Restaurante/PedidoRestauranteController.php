@@ -46,7 +46,7 @@ class PedidoRestauranteController extends Controller
         $direccion = strtolower((string) $request->get('direccion', 'desc')) === 'asc' ? 'asc' : 'desc';
 
         $query = PedidoRestaurante::where('restaurante_pedidos.id_empresa', $user->id_empresa)
-            ->with(['cliente', 'usuario'])
+            ->with(['cliente', 'usuario', 'boxfulShipment'])
             ->when($request->estado, fn ($q) => $q->where('restaurante_pedidos.estado', $request->estado))
             ->when($request->filled('canal'), fn ($q) => $q->where('restaurante_pedidos.canal', 'like', '%' . $request->canal . '%'))
             ->when($request->fecha_desde, fn ($q) => $q->whereDate('restaurante_pedidos.fecha', '>=', $request->fecha_desde))
@@ -332,7 +332,7 @@ class PedidoRestauranteController extends Controller
             'cliente_id' => $pedido->cliente_id,
             'id_sucursal' => $pedido->id_sucursal,
             'id_bodega' => $pedido->id_bodega,
-            'fecha' => $pedido->fecha?->format('Y-m-d'),
+            'fecha' => $pedido->fecha ? $pedido->fecha->format('Y-m-d') : null,
             'subtotal' => (float) $pedido->subtotal,
             'total' => (float) $pedido->total,
             'precios_sin_iva' => true,

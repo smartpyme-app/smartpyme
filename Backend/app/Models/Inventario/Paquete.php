@@ -107,6 +107,11 @@ class Paquete extends Model {
         return $this->belongsTo('App\Models\User', 'id_asesor');
     }
 
+    public function boxfulShipment()
+    {
+        return $this->hasOne(BoxfulShipment::class, 'paquete_id');
+    }
+
 
 }
 

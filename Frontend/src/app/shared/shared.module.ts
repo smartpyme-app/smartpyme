@@ -62,6 +62,7 @@ import { AlertsHaciendaComponent } from './parts/alerts-hacienda/alerts-hacienda
 import { SelectSearchComponent } from './parts/select-search/select-search.component';
 import { ActivarLotesMasivoComponent } from './parts/activar-lotes-masivo/activar-lotes-masivo.component';
 import { BoxfulShippingSelectorComponent } from './parts/boxful-shipping-selector/boxful-shipping-selector.component';
+import { BoxfulShipmentDetailsComponent } from './parts/boxful-shipment-details/boxful-shipment-details.component';
 
 @NgModule({
   imports: [
@@ -120,7 +121,8 @@ import { BoxfulShippingSelectorComponent } from './parts/boxful-shipping-selecto
     AlertsHaciendaComponent,
     SelectSearchComponent,
     ActivarLotesMasivoComponent,
-    BoxfulShippingSelectorComponent
+    BoxfulShippingSelectorComponent,
+    BoxfulShipmentDetailsComponent
   ],
   exports: [
     BusquedaClienteComponent,
@@ -164,7 +166,8 @@ import { BoxfulShippingSelectorComponent } from './parts/boxful-shipping-selecto
     SelectSearchComponent,
     NgxEchartsModule,
     ActivarLotesMasivoComponent,
-    BoxfulShippingSelectorComponent
+    BoxfulShippingSelectorComponent,
+    BoxfulShipmentDetailsComponent
   ],
   providers: [AlertService],
 })

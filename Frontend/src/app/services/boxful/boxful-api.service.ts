@@ -105,4 +105,18 @@ export class BoxfulApiService {
   createShipment(data: any): Observable<any> {
     return this.api.store('boxful/shipment', data);
   }
+
+  /**
+   * Obtiene los detalles de un envío en Boxful por su ID.
+   */
+  getShipment(id: string): Observable<any> {
+    return this.api.getAll(`boxful/shipment/${id}`);
+  }
+
+  /**
+   * Obtiene la información de rastreo en Boxful por el shipment number.
+   */
+  getTracking(id: string): Observable<any> {
+    return this.api.getAll(`boxful/tracking/${id}`);
+  }
 }

@@ -9,6 +9,7 @@ Route::get('boxful/direcciones-origen', [BoxFulShippingController::class, 'getOr
 Route::post('boxful/direcciones-origen', [BoxFulShippingController::class, 'storeOriginAddress']);
 
 Route::prefix('boxful')->group(function () {
+    Route::get('status', [BoxFulController::class, 'getStatus']);
     Route::get('test-connection', [BoxFulController::class, 'testConnection']);
     Route::post('sincronizar-direcciones', [BoxFulController::class, 'sincronizarDirecciones']);
     Route::post('configurar-origen', [BoxFulController::class, 'configurarOrigen']);

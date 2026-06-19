@@ -32,16 +32,51 @@ export class PedidoFormComponent implements OnInit {
   cargando = false;
   enviandoComanda = false;
 
+  mostrarModalBoxful = false;
+  pedidoRecienCreado: any = null;
+  generandoGuiaBoxful = false;
+
   fecha = '';
   canal = '';
   referenciaExterna = '';
-  clienteId: number | null = null;
   observaciones = '';
   clientes: any[] = [];
+  canales: any[] = [];
 
   lineas: LineaLocal[] = [];
   bodegas: any[] = [];
   idBodega: number | null = null;
+
+  venta: any = {
+    id_cliente: null,
+    id_sucursal: null,
+    id_vendedor: null,
+    detalles: []
+  };
+
+  ventaPaquetes: any = {
+    id_cliente: '',
+    id_sucursal: null,
+    id_vendedor: null,
+    detalles: []
+  };
+
+  paqueteData: any = { peso: 1, alto: 10, ancho: 10, largo: 10, es_fragil: false, id: null };
+
+  private _clienteId: number | null = null;
+
+  get clienteId(): number | null {
+    return this._clienteId;
+  }
+
+  set clienteId(value: number | null) {
+    this._clienteId = value;
+    this.venta.id_cliente = value;
+  }
+
+  get usuario(): any {
+    return this.apiService.auth_user();
+  }
 
   constructor(
     private route: ActivatedRoute,
@@ -52,6 +87,8 @@ export class PedidoFormComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.venta.id_sucursal = this.apiService.auth_user()?.id_sucursal;
+    this.ventaPaquetes.id_sucursal = this.apiService.auth_user()?.id_sucursal;
     const idParam = this.route.snapshot.paramMap.get('id');
     this.modoEdicion = !!idParam;
     if (idParam) {
@@ -64,6 +101,15 @@ export class PedidoFormComponent implements OnInit {
       },
       error: () => {
         this.clientes = [];
+      }
+    });
+
+    this.apiService.getAll('canales/list').subscribe({
+      next: (c: any) => {
+        this.canales = Array.isArray(c) ? c : [];
+      },
+      error: () => {
+        this.canales = [];
       }
     });
 
@@ -142,14 +188,78 @@ export class PedidoFormComponent implements OnInit {
     const precio = parseFloat(
       producto.precio ?? producto.precio_publico ?? producto.precio_venta ?? 0
     );
+    let notas = producto.notas ?? '';
+    let nombre = producto.nombre_mostrar || producto.nombre || producto.descripcion || 'Producto';
+    if (producto.id_paquete && producto.descripcion) {
+      notas = producto.descripcion;
+      nombre = `${nombre} (${producto.descripcion})`;
+    }
     this.lineas.push({
-      producto_id: producto.id,
-      nombre: producto.nombre_mostrar || producto.nombre || producto.descripcion || 'Producto',
-      cantidad: 1,
+      producto_id: producto.id ?? producto.id_producto,
+      nombre: nombre,
+      cantidad: producto.cantidad ?? 1,
       precio: precio,
-      descuento: 0,
-      notas: ''
+      descuento: producto.descuento ?? 0,
+      notas: notas
     });
+  }
+
+  onSelectCliente(cliente: any): void {
+    if (cliente && cliente.id) {
+      this.clienteId = cliente.id;
+    }
+  }
+
+  esCanalBoxful(): boolean {
+    return this.canal === 'Boxful';
+  }
+
+  onBoxfulGuiaGenerada(guia: any): void {
+    this.generandoGuiaBoxful = true;
+    const numGuia = guia.shipmentNumber || guia.data?.shipmentNumber || guia.id || guia.data?.id || '';
+    const labelUrl = guia.labelUrl || guia.data?.labelUrl || '';
+    const trackingUrl = guia.trackingUrl || guia.data?.trackingUrl || '';
+    
+    const textToAdd = `Envío Boxful #${numGuia}. Guía PDF: ${labelUrl}. Rastreo: ${trackingUrl}`;
+    const obsActual = this.observaciones
+      ? `${this.observaciones} | ${textToAdd}`
+      : textToAdd;
+
+    const updatePayload = {
+      observaciones: obsActual
+    };
+
+    this.restauranteService.actualizarPedido(this.pedidoId!, updatePayload).subscribe({
+      next: () => {
+        // Automatically confirm order to transition status to 'pendiente_facturar' and discount inventory
+        this.restauranteService.confirmarPedidoCanal(this.pedidoId!).subscribe({
+          next: () => {
+            this.generandoGuiaBoxful = false;
+            this.mostrarModalBoxful = false;
+            this.alertService.success('Guía vinculada y pedido confirmado', `Envío Boxful #${numGuia} vinculado al pedido.`);
+            this.router.navigate(['/pedidos']);
+          },
+          error: (err) => {
+            console.error('Error al confirmar pedido:', err);
+            this.generandoGuiaBoxful = false;
+            this.mostrarModalBoxful = false;
+            this.alertService.warning('Guía vinculada', `Envío Boxful #${numGuia} vinculado. Pero no se pudo confirmar el pedido: ${err}`);
+            this.router.navigate(['/pedidos']);
+          }
+        });
+      },
+      error: (err) => {
+        this.generandoGuiaBoxful = false;
+        this.alertService.error(err);
+        this.router.navigate(['/pedidos']);
+      }
+    });
+  }
+
+  cerrarModalBoxful(): void {
+    this.mostrarModalBoxful = false;
+    this.alertService.info('Guía no generada', 'Puede generar la guía después desde el listado de pedidos.');
+    this.router.navigate(['/pedidos']);
   }
 
   quitarLinea(i: number): void {
@@ -240,10 +350,18 @@ export class PedidoFormComponent implements OnInit {
       : this.restauranteService.crearPedido(payload);
 
     obs.subscribe({
-      next: () => {
+      next: (pedidoGuardado: any) => {
         this.guardando = false;
-        this.alertService.success('Pedido guardado', '');
-        this.router.navigate(['/pedidos']);
+        
+        if (this.esCanalBoxful() && this.clienteId) {
+          this.pedidoRecienCreado = pedidoGuardado;
+          this.pedidoId = pedidoGuardado.id;
+          this.mostrarModalBoxful = true;
+          this.alertService.info('Pedido guardado', 'Ahora genere la guía de envío.');
+        } else {
+          this.alertService.success('Pedido guardado', '');
+          this.router.navigate(['/pedidos']);
+        }
       },
       error: (err) => {
         this.guardando = false;

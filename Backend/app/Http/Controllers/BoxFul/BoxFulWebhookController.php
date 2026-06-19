@@ -86,22 +86,33 @@ class BoxFulWebhookController extends Controller
         if ($paquete) {
             if ($status) {
                 $paquete->estado = $status;
-                $paquete->save();
-
-                // also update status description in boxful_shipments
-                if ($shipmentId) {
-                    \App\Models\Inventario\BoxfulShipment::where('boxful_shipment_id', $shipmentId)
-                        ->update([
-                            'boxful_status_description' => $status,
-                        ]);
-                }
-
-                Log::info('Webhook de Boxful: Paquete actualizado correctamente', [
-                    'paquete_id' => $paquete->id,
-                    'num_guia' => $paquete->num_guia,
-                    'nuevo_estado' => $status
-                ]);
             }
+            if ($shipmentNumber && (empty($paquete->num_guia) || $paquete->num_guia === $shipmentId || str_starts_with($paquete->num_guia, 'BOXFUL-'))) {
+                $paquete->num_guia = $shipmentNumber;
+            }
+            $paquete->save();
+
+            // also update status description and shipment number in boxful_shipments
+            if ($shipmentId) {
+                $updateFields = [];
+                if ($status) {
+                    $updateFields['boxful_status_description'] = $status;
+                }
+                if ($shipmentNumber) {
+                    $updateFields['shipment_number'] = $shipmentNumber;
+                }
+                if (!empty($updateFields)) {
+                    \App\Models\Inventario\BoxfulShipment::where('boxful_shipment_id', $shipmentId)
+                        ->update($updateFields);
+                }
+            }
+
+            Log::info('Webhook de Boxful: Paquete actualizado correctamente', [
+                'paquete_id' => $paquete->id,
+                'num_guia' => $paquete->num_guia,
+                'nuevo_estado' => $status ?? 'sin cambios'
+            ]);
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Webhook procesado y paquete actualizado.'

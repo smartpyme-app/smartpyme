@@ -18,6 +18,14 @@ class BoxFulController extends Controller
         $this->boxfulService = $boxfulService;
     }
 
+    public function getStatus()
+    {
+        $integracion = Integracion::boxful();
+        return response()->json([
+            'connected' => $integracion && $integracion->estado === 'connected'
+        ]);
+    }
+
     /**
      * Prueba la conexión de la empresa con Boxful.
      */

@@ -18,7 +18,20 @@
       </div>
       <div class="col-md-4 col-lg-3">
         <label class="form-label" for="pf_canal">Canal</label>
-        <input id="pf_canal" type="text" class="form-control" [(ngModel)]="canal" name="canal" placeholder="Ej. Pedidos Ya">
+        <ng-select
+          id="pf_canal"
+          name="canal"
+          [(ngModel)]="canal"
+          [items]="canales"
+          bindLabel="nombre"
+          bindValue="nombre"
+          [addTag]="true"
+          addTagText="Agregar canal: "
+          [clearable]="true"
+          [searchable]="true"
+          placeholder="Seleccione o escriba..."
+          class="form-select p-0 w-100">
+        </ng-select>
       </div>
       <div class="col-md-4 col-lg-3">
         <label class="form-label" for="pf_ref">Referencia externa</label>
@@ -53,11 +66,26 @@
     </div>
   </section>
 
+  <!-- Indicador visual si es Boxful -->
+  <div *ngIf="esCanalBoxful() && clienteId" class="alert alert-info mb-3">
+    <i class="fa fa-truck me-2"></i>
+    <strong>Canal Boxful:</strong> Después de guardar el pedido, se le solicitará generar la guía de envío.
+  </div>
+
   <section class="bg-white p-4 rounded mb-3">
     <h6 class="mb-3">Productos y servicios</h6>
-    <div class="mb-3">
-      <label class="form-label">Agregar producto o servicio</label>
-      <app-buscador-productos (selectProducto)="onProductoSelect($event)"></app-buscador-productos>
+    <div class="mb-3 d-flex gap-2 align-items-end">
+      <div class="flex-grow-1">
+        <label class="form-label">Agregar producto o servicio</label>
+        <app-buscador-productos (selectProducto)="onProductoSelect($event)"></app-buscador-productos>
+      </div>
+      <div *ngIf="usuario?.empresa?.modulo_paquetes">
+        <app-tienda-venta-paquetes
+          [venta]="ventaPaquetes"
+          (productoSelect)="onProductoSelect($event)"
+          (selectCliente)="onSelectCliente($event)">
+        </app-tienda-venta-paquetes>
+      </div>
     </div>
 
     <div class="table-responsive">
@@ -110,10 +138,19 @@
       <span *ngIf="!guardando">Guardar</span>
       <span *ngIf="guardando">Guardando...</span>
     </button>
-    <button type="button" class="btn btn-default" *ngIf="modoEdicion && pedidoId" [disabled]="enviandoComanda || !lineas.length" (click)="enviarComanda()">
+    <button type="button" class="btn btn-default" *ngIf="modoEdicion && pedidoId && !esCanalBoxful()" [disabled]="enviandoComanda || !lineas.length" (click)="enviarComanda()">
       <span *ngIf="!enviandoComanda"><i class="fa fa-utensils me-1"></i> Enviar comanda</span>
       <span *ngIf="enviandoComanda">Enviando...</span>
     </button>
     <button type="button" class="btn btn-default" [disabled]="guardando" (click)="volver()">Cancelar</button>
   </section>
 </ng-container>
+
+<!-- Selector de Boxful en Modal -->
+<app-boxful-shipping-selector *ngIf="mostrarModalBoxful"
+  [clienteId]="clienteId!"
+  [pedidoId]="pedidoId"
+  [paqueteData]="paqueteData"
+  (guiaGenerada)="onBoxfulGuiaGenerada($event)"
+  (cerrar)="cerrarModalBoxful()">
+</app-boxful-shipping-selector>

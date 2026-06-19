@@ -546,6 +546,8 @@ class BoxFulShippingController extends Controller
                 $orderNumber = $paqueteModel->wr;
             } elseif (!empty($paqueteInput['wr']) || !empty($paqueteInput['orderNumber'])) {
                 $orderNumber = $paqueteInput['wr'] ?? $paqueteInput['orderNumber'];
+            } else {
+                $orderNumber = $request->input('storeOrderNumber') ?? $request->input('orderNumber') ?? null;
             }
 
             // Construir el payload oficial para POST /shipment
@@ -646,15 +648,63 @@ class BoxFulShippingController extends Controller
             }
 
             $shipmentData = $response->json();
-            $shipmentNumber = $shipmentData['shipmentNumber'] ?? $shipmentData['data']['shipmentNumber'] ?? $shipmentData['response']['shipmentNumber'] ?? null;
-            $shipmentId = $shipmentData['id'] ?? $shipmentData['data']['id'] ?? $shipmentData['response']['id'] ?? null;
-            $labelUrl = $shipmentData['labelUrl'] ?? $shipmentData['data']['labelUrl'] ?? $shipmentData['response']['labelUrl'] ?? null;
-            $trackingUrl = $shipmentData['trackingUrl'] ?? $shipmentData['data']['trackingUrl'] ?? $shipmentData['response']['trackingUrl'] ?? null;
+            $shipment = null;
+            if (isset($shipmentData['shipmentData']) && is_array($shipmentData['shipmentData'])) {
+                $shipment = $shipmentData['shipmentData'];
+            } elseif (isset($shipmentData['data']) && is_array($shipmentData['data'])) {
+                $shipment = $shipmentData['data'];
+            } elseif (isset($shipmentData['response']) && is_array($shipmentData['response'])) {
+                $shipment = $shipmentData['response'];
+            } else {
+                $shipment = $shipmentData;
+            }
 
-            if ($shipmentNumber && $paqueteModel) {
-                //save shipment & parcel data to separate boxful tables
-                $paqueteModel->num_guia = $shipmentNumber;
-                $paqueteModel->save();
+            $shipmentNumber = $shipment['shipmentNumber'] ?? null;
+            $shipmentId = $shipment['id'] ?? null;
+            $labelUrl = $shipment['labelUrl'] ?? null;
+            $trackingUrl = $shipment['trackingUrl'] ?? null;
+            $courierName = $shipment['Courier']['name'] ?? $shipment['courierName'] ?? ($shipment['courier_name'] ?? null);
+            $statusDesc = $shipment['statusDescription'] ?? ($shipment['status_description'] ?? null);
+            $shipmentStatus = $shipment['status'] ?? null;
+
+            if ($shipmentId || $shipmentNumber) {
+                // ponytail: dynamically create a local package stub if none exists to satisfy database schema and link the shipment correctly
+                if (!$paqueteModel) {
+                    $paqueteModel = new \App\Models\Inventario\Paquete();
+                    $paqueteModel->id_empresa = $empresa->id;
+                    $paqueteModel->id_usuario = $user->id;
+                    $paqueteModel->id_sucursal = $user->id_sucursal ?? ($empresa->sucursales()->first()->id ?? null);
+                    
+                    // If there's an associated Pedido, find it and associate id_venta if available
+                    $pedidoId = $request->input('storeOrderNumber') ?? $request->input('orderNumber') ?? null;
+                    if ($pedidoId) {
+                        $pedido = \App\Models\Restaurante\PedidoRestaurante::find($pedidoId);
+                        if ($pedido) {
+                            if ($pedido->id_venta) {
+                                $paqueteModel->id_venta = $pedido->id_venta;
+                            }
+                            if (empty($clienteId) && $pedido->cliente_id) {
+                                $clienteId = $pedido->cliente_id;
+                            }
+                            $paqueteModel->nota = "Creado desde pedido #" . $pedido->id;
+                        }
+                    }
+                    
+                    $paqueteModel->id_cliente = $clienteId;
+                    $paqueteModel->fecha = now();
+                    $paqueteModel->wr = $orderNumber ?? ('BOXFUL-' . strtoupper(\Illuminate\Support\Str::random(8)));
+                    $paqueteModel->transportista = 'Boxful';
+                    $paqueteModel->consignatario = $nombre . ' ' . $apellido;
+                    $paqueteModel->estado = 'Pendiente';
+                    $paqueteModel->peso = $totalWeight;
+                    $paqueteModel->precio = $valor ?? 0;
+                    $paqueteModel->piezas = count($parcels);
+                    $paqueteModel->num_guia = $shipmentNumber ?? $shipmentId;
+                    $paqueteModel->save();
+                } else {
+                    $paqueteModel->num_guia = $shipmentNumber ?? $shipmentId;
+                    $paqueteModel->save();
+                }
 
                 $localOrigenId = null;
                 if (!empty($direccionOrigenId)) {
@@ -688,11 +738,11 @@ class BoxFulShippingController extends Controller
                     'boxful_shipment_id' => $shipmentId,
                     'shipment_number' => $shipmentNumber,
                     'boxful_courier_id' => $courierId,
-                    'boxful_courier_name' => $shipmentData['courierName'] ?? $shipmentData['data']['courierName'] ?? $shipmentData['response']['courierName'] ?? null,
+                    'boxful_courier_name' => $courierName,
                     'boxful_label_url' => $labelUrl,
                     'boxful_tracking_url' => $trackingUrl,
-                    'boxful_status' => $shipmentData['status'] ?? null,
-                    'boxful_status_description' => $shipmentData['statusDescription'] ?? null,
+                    'boxful_status' => $shipmentStatus,
+                    'boxful_status_description' => $statusDesc,
                 ]);
 
                 if ($boxfulShipment) {

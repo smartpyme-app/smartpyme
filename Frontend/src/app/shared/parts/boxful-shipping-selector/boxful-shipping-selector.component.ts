@@ -11,6 +11,7 @@ import { AlertService } from '@services/alert.service';
 export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
   @Input() clienteId!: number;
   @Input() paqueteData: any; // peso, alto, ancho, largo
+  @Input() pedidoId: number | null = null;
   @Output() guiaGenerada = new EventEmitter<any>();
   @Output() cerrar = new EventEmitter<void>();
 
@@ -76,6 +77,14 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
     this.loadOriginAddresses();
     this.minFechaRecoleccion = this.getTodayString();
     this.fechaRecoleccion = this.getTodayString();
+    if (!this.paqueteData) {
+      this.paqueteData = { peso: 1, alto: 10, ancho: 10, largo: 10, es_fragil: false, id: null };
+    } else {
+      if (this.paqueteData.peso === undefined || this.paqueteData.peso === null) this.paqueteData.peso = 1;
+      if (this.paqueteData.alto === undefined || this.paqueteData.alto === null) this.paqueteData.alto = 10;
+      if (this.paqueteData.ancho === undefined || this.paqueteData.ancho === null) this.paqueteData.ancho = 10;
+      if (this.paqueteData.largo === undefined || this.paqueteData.largo === null) this.paqueteData.largo = 10;
+    }
     if (this.clienteId) {
       this.loadClientDetails();
     }
@@ -479,6 +488,8 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
     // Construir payload final para shipment
     const payload = {
       courierId: this.selectedCourierId,
+      storeOrderNumber: this.pedidoId ? String(this.pedidoId) : undefined,
+      orderNumber: this.pedidoId ? String(this.pedidoId) : undefined,
       paquete: {
         peso: parseFloat(this.paqueteData.weight || this.paqueteData.peso || 0),
         alto: parseFloat(this.paqueteData.height || this.paqueteData.alto || 0),
