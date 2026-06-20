@@ -189,6 +189,32 @@ class ProductosController extends Controller
         return $sumInventario + $sumLotes;
     }
 
+    /**
+     * Stock base para buscadores de ventas/compras: lotes si el producto los usa, inventario tradicional si no.
+     */
+    protected function calcularStockBaseParaBusqueda(Producto $producto, ?int $id_bodega, ?Empresa $empresa): ?float
+    {
+        if ($producto->tipo === 'Servicio') {
+            return null;
+        }
+
+        $lotesActivo = $empresa && $empresa->isLotesActivo();
+
+        if ($producto->inventario_por_lotes && $lotesActivo) {
+            $lotes = $producto->lotes;
+            if ($id_bodega) {
+                $lotes = $lotes->where('id_bodega', $id_bodega);
+            }
+            return (float) $lotes->sum('stock');
+        }
+
+        if ($id_bodega) {
+            return (float) $producto->inventarios->where('id_bodega', $id_bodega)->sum('stock');
+        }
+
+        return (float) $producto->inventarios->sum('stock');
+    }
+
     public function list()
     {
 
@@ -303,12 +329,7 @@ class ProductosController extends Controller
 
         foreach ($productos as $producto) {
 
-            // Stock base en la bodega solicitada (o total global si no se filtra)
-            $stockBase = $producto->tipo === 'Servicio'
-                ? null
-                : ($id_bodega
-                    ? (float) $producto->inventarios->where('id_bodega', $id_bodega)->sum('stock')
-                    : (float) $producto->inventarios->sum('stock'));
+            $stockBase = $this->calcularStockBaseParaBusqueda($producto, $id_bodega ? (int) $id_bodega : null, $empresa);
 
             // Fila del producto base
             $resultado[] = array_merge($producto->toArray(), [
@@ -374,7 +395,11 @@ class ProductosController extends Controller
                 ->where(function ($q) use ($id_bodega) {
                     $q->whereHas('inventarios', function ($iq) use ($id_bodega) {
                         $iq->where('id_bodega', $id_bodega);
-                    })->orWhere('tipo', 'Servicio');
+                    })
+                    ->orWhereHas('lotes', function ($lq) use ($id_bodega) {
+                        $lq->where('id_bodega', $id_bodega)->where('stock', '>', 0);
+                    })
+                    ->orWhere('tipo', 'Servicio');
                 })
                 ->where(function ($q) use ($query, $incluirComponenteQuimico) {
                     $q->where('nombre', 'like', "%$query%")
@@ -413,12 +438,7 @@ class ProductosController extends Controller
 
         foreach ($productos as $producto) {
 
-            // Stock base en la bodega solicitada (o total global si no se filtra)
-            $stockBase = $producto->tipo === 'Servicio'
-                ? null
-                : ($id_bodega
-                    ? (float) $producto->inventarios->where('id_bodega', $id_bodega)->sum('stock')
-                    : (float) $producto->inventarios->sum('stock'));
+            $stockBase = $this->calcularStockBaseParaBusqueda($producto, $id_bodega ? (int) $id_bodega : null, $empresa);
 
             // Fila del producto base
             $resultado[] = array_merge($producto->toArray(), [
