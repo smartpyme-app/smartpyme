@@ -78,16 +78,61 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
     this.minFechaRecoleccion = this.getTodayString();
     this.fechaRecoleccion = this.getTodayString();
     if (!this.paqueteData) {
-      this.paqueteData = { peso: 1, alto: 10, ancho: 10, largo: 10, es_fragil: false, id: null };
+      this.paqueteData = { peso: 1, alto: 11, ancho: 43, largo: 47.5, es_fragil: false, id: null, contenido: '' };
     } else {
-      if (this.paqueteData.peso === undefined || this.paqueteData.peso === null) this.paqueteData.peso = 1;
-      if (this.paqueteData.alto === undefined || this.paqueteData.alto === null) this.paqueteData.alto = 10;
-      if (this.paqueteData.ancho === undefined || this.paqueteData.ancho === null) this.paqueteData.ancho = 10;
-      if (this.paqueteData.largo === undefined || this.paqueteData.largo === null) this.paqueteData.largo = 10;
+      if (this.paqueteData.peso === undefined || this.paqueteData.peso === null) this.paqueteData.peso = this.paqueteData.weight || this.paqueteData.peso || 1;
+      if (this.paqueteData.alto === undefined || this.paqueteData.alto === null) this.paqueteData.alto = this.paqueteData.height || this.paqueteData.alto || 11;
+      if (this.paqueteData.ancho === undefined || this.paqueteData.ancho === null) this.paqueteData.ancho = this.paqueteData.width || this.paqueteData.ancho || 43;
+      if (this.paqueteData.largo === undefined || this.paqueteData.largo === null) this.paqueteData.largo = this.paqueteData.length || this.paqueteData.largo || 47.5;
     }
+    
+    // Ensure all parcels have contenido initialized
+    const parcels = this.getParcels();
+    parcels.forEach(p => {
+      if (p.contenido === undefined || p.contenido === null) {
+        p.contenido = p.content || '';
+      }
+    });
+
     if (this.clienteId) {
       this.loadClientDetails();
     }
+  }
+
+  getParcels(): any[] {
+    if (this.paqueteData) {
+      if (this.paqueteData.parcels && this.paqueteData.parcels.length > 0) {
+        return this.paqueteData.parcels;
+      }
+      if (this.paqueteData.boxful_shipment && this.paqueteData.boxful_shipment.parcels && this.paqueteData.boxful_shipment.parcels.length > 0) {
+        return this.paqueteData.boxful_shipment.parcels;
+      }
+    }
+    return [this.paqueteData];
+  }
+
+  getTipoPaquete(p: any): 'S' | 'M' | 'L' | null {
+    const a = Number(p.alto || p.height || 0);
+    const w = Number(p.ancho || p.width || 0);
+    const l = Number(p.largo || p.length || 0);
+
+    if (a === 11 && w === 43 && l === 47.5) {
+      return 'S';
+    } else if (a === 22 && w === 43 && l === 47.5) {
+      return 'M';
+    } else if (a === 34 && w === 43 && l === 47.5) {
+      return 'L';
+    }
+    return null;
+  }
+
+  seleccionarTipoPaquete(p: any, tipo: 'S' | 'M' | 'L', alto: number, ancho: number, largo: number): void {
+    p.alto = alto;
+    p.height = alto;
+    p.ancho = ancho;
+    p.width = ancho;
+    p.largo = largo;
+    p.length = largo;
   }
 
   private getTodayString(): string {
@@ -121,7 +166,6 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
     this.addressForm = this.fb.group({
       direccion: ['', [Validators.required, Validators.maxLength(500)]],
       referencia: ['', [Validators.maxLength(500)]],
-      contenido: ['', [Validators.required, Validators.maxLength(200)]],
       telefono: ['', [Validators.required, Validators.pattern(/^[0-9+ ]{8,20}$/)]],
       codigo_area: ['503', [Validators.required, Validators.maxLength(10)]],
       stateId: [null, [Validators.required]],
@@ -410,26 +454,51 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
     }
 
     // Validar paqueteData
-    if (!this.paqueteData || !this.paqueteData.peso) {
-      this.errorMessage = 'Los datos del paquete (peso) son obligatorios para cotizar.';
+    if (!this.paqueteData) {
+      this.errorMessage = 'Los datos del paquete son obligatorios para cotizar.';
       this.alertService.error(this.errorMessage);
       return;
     }
 
+    const parcelsList = this.getParcels();
+    for (let j = 0; j < parcelsList.length; j++) {
+      const p = parcelsList[j];
+      if (!p.contenido || !p.contenido.trim()) {
+        this.errorMessage = `El contenido del paquete ${parcelsList.length > 1 ? '#' + (j + 1) : ''} es obligatorio.`;
+        this.alertService.error(this.errorMessage);
+        return;
+      }
+    }
+
     this.loadingCouriers = true;
+
+    const paquetesPayload = parcelsList.map(p => ({
+      id: p.id || null,
+      peso: parseFloat(p.weight || p.peso || 1.0),
+      alto: parseFloat(p.height || p.alto || 11.0),
+      ancho: parseFloat(p.width || p.ancho || 43.0),
+      largo: parseFloat(p.length || p.largo || 47.5),
+      valor: parseFloat(p.price || p.valor || 50.0),
+      es_fragil: !!(p.es_fragil || p.isFragile),
+      isFragile: !!(p.es_fragil || p.isFragile),
+      contenido: p.contenido || p.content || 'Productos varios'
+    }));
+
+    const firstParcel = paquetesPayload[0] || {
+      peso: 1.0,
+      alto: 11.0,
+      ancho: 43.0,
+      largo: 47.5,
+      valor: 50.0,
+      es_fragil: false,
+      isFragile: false,
+      contenido: 'Productos varios'
+    };
 
     // Construir payload según la nueva arquitectura normalizada
     const payload = {
-      paquete: {
-        peso: parseFloat(this.paqueteData.weight || this.paqueteData.peso || 0),
-        alto: parseFloat(this.paqueteData.height || this.paqueteData.alto || 0),
-        ancho: parseFloat(this.paqueteData.width || this.paqueteData.ancho || 0),
-        largo: parseFloat(this.paqueteData.length || this.paqueteData.largo || 0),
-        valor: parseFloat(this.paqueteData.price || this.paqueteData.valor || 50),
-        es_fragil: !!this.paqueteData.es_fragil,
-        isFragile: !!this.paqueteData.es_fragil,
-        contenido: this.addressForm.value.contenido || 'Productos varios'
-      },
+      paquete: firstParcel,
+      paquetes: paquetesPayload,
       destino: this.getDireccionDestino(),
       origen: this.getDireccionOrigen(),
       paqueteId: this.paqueteData.id || null,
@@ -480,26 +549,51 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
       return;
     }
 
+    const parcelsList = this.getParcels();
+    for (let j = 0; j < parcelsList.length; j++) {
+      const p = parcelsList[j];
+      if (!p.contenido || !p.contenido.trim()) {
+        this.errorMessage = `El contenido del paquete ${parcelsList.length > 1 ? '#' + (j + 1) : ''} es obligatorio.`;
+        this.alertService.error(this.errorMessage);
+        return;
+      }
+    }
+
     this.generatingGuide = true;
     this.errorMessage = null;
 
     const destino = this.getDireccionDestino();
+
+    const paquetesPayload = parcelsList.map(p => ({
+      id: p.id || null,
+      peso: parseFloat(p.weight || p.peso || 1.0),
+      alto: parseFloat(p.height || p.alto || 11.0),
+      ancho: parseFloat(p.width || p.ancho || 43.0),
+      largo: parseFloat(p.length || p.largo || 47.5),
+      valor: parseFloat(p.price || p.valor || 50.0),
+      es_fragil: !!(p.es_fragil || p.isFragile),
+      isFragile: !!(p.es_fragil || p.isFragile),
+      contenido: p.contenido || p.content || 'Productos varios'
+    }));
+
+    const firstParcel = paquetesPayload[0] || {
+      peso: 1.0,
+      alto: 11.0,
+      ancho: 43.0,
+      largo: 47.5,
+      valor: 50.0,
+      es_fragil: false,
+      isFragile: false,
+      contenido: 'Productos varios'
+    };
 
     // Construir payload final para shipment
     const payload = {
       courierId: this.selectedCourierId,
       storeOrderNumber: this.pedidoId ? String(this.pedidoId) : undefined,
       orderNumber: this.pedidoId ? String(this.pedidoId) : undefined,
-      paquete: {
-        peso: parseFloat(this.paqueteData.weight || this.paqueteData.peso || 0),
-        alto: parseFloat(this.paqueteData.height || this.paqueteData.alto || 0),
-        ancho: parseFloat(this.paqueteData.width || this.paqueteData.ancho || 0),
-        largo: parseFloat(this.paqueteData.length || this.paqueteData.largo || 0),
-        valor: parseFloat(this.paqueteData.price || this.paqueteData.valor || 50),
-        es_fragil: !!this.paqueteData.es_fragil,
-        isFragile: !!this.paqueteData.es_fragil,
-        contenido: this.addressForm.value.contenido || 'Productos varios'
-      },
+      paquete: firstParcel,
+      paquetes: paquetesPayload,
       destino: destino,
       origen: this.getDireccionOrigen(),
       cliente: {
@@ -556,7 +650,6 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
     this.addressForm.reset({
       direccion: '',
       referencia: '',
-      contenido: '',
       telefono: '',
       codigo_area: '503',
       stateId: null,

@@ -35,28 +35,62 @@
         <div *ngIf="step === 1">
           <!-- Datos de Dimensiones del Paquete -->
           <div class="mb-3 pb-3 border-bottom bg-light p-3 rounded-3 border">
-            <h6 class="fw-bold text-dark mb-2"><i class="fa fa-cube me-1"></i> Dimensiones del Paquete para Cotizar</h6>
-            <div class="row g-2">
-              <div class="col-6 col-sm-3">
-                <label for="paquetePeso" class="form-label small fw-bold text-dark mb-1">Peso (lb) <span
-                    class="text-danger">*</span></label>
-                <input type="number" step="any" min="0.1" class="form-control form-control-sm border-2 rounded-2"
-                  id="paquetePeso" [(ngModel)]="paqueteData.peso" name="paquetePeso" placeholder="Ej: 1.5">
+            <h6 class="fw-bold text-dark mb-3"><i class="fa fa-cube me-1"></i> Dimensiones del Paquete para Cotizar</h6>
+            
+            <div *ngFor="let p of getParcels(); let i = index" class="mb-3 p-3 bg-white rounded-3 border shadow-sm">
+              <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                <span class="fw-bold text-primary"><i class="fa fa-box me-1"></i> Paquete {{ getParcels().length > 1 ? '#' + (i + 1) : '' }}</span>
+                <span class="badge bg-secondary text-dark" style="font-size: 11px;">
+                  Medidas: {{ p.alto || p.height || 0 }} x {{ p.ancho || p.width || 0 }} x {{ p.largo || p.length || 0 }} cm
+                </span>
               </div>
-              <div class="col-6 col-sm-3">
-                <label for="paqueteAlto" class="form-label small fw-bold text-dark mb-1">Alto (cm)</label>
-                <input type="number" min="1" class="form-control form-control-sm border-2 rounded-2" id="paqueteAlto"
-                  [(ngModel)]="paqueteData.alto" name="paqueteAlto" placeholder="Ej: 10">
+              
+              <div class="row g-2 align-items-center">
+                <!-- Peso -->
+                <div class="col-sm-3 col-6">
+                  <label [for]="'paquetePeso_' + i" class="form-label small fw-bold text-dark mb-1">Peso (lb) <span class="text-danger">*</span></label>
+                  <input type="number" step="any" min="0.1" class="form-control form-control-sm border-2 rounded-2"
+                    [id]="'paquetePeso_' + i" [(ngModel)]="p.peso" [name]="'paquetePeso_' + i" placeholder="Ej: 1.5">
+                </div>
+                
+                <!-- Tamaño Preset Selector (S, M, L) -->
+                <div class="col-sm-9 col-12 mt-2 mt-sm-0">
+                  <label class="form-label small fw-bold text-dark mb-1">Tamaño de Caja</label>
+                  <div class="d-flex gap-2">
+                    <!-- S -->
+                    <button type="button" class="btn btn-sm flex-fill d-flex flex-column align-items-center justify-content-center p-2 rounded-3 size-selector-btn"
+                      [class.active]="getTipoPaquete(p) === 'S'"
+                      style="min-height: 48px;"
+                      (click)="seleccionarTipoPaquete(p, 'S', 11, 43, 47.5)">
+                      <span class="fw-bold">S</span>
+                      <small style="font-size: 9px; opacity: 0.85;">11x43x47.5</small>
+                    </button>
+                    <!-- M -->
+                    <button type="button" class="btn btn-sm flex-fill d-flex flex-column align-items-center justify-content-center p-2 rounded-3 size-selector-btn"
+                      [class.active]="getTipoPaquete(p) === 'M'"
+                      style="min-height: 48px;"
+                      (click)="seleccionarTipoPaquete(p, 'M', 22, 43, 47.5)">
+                      <span class="fw-bold">M</span>
+                      <small style="font-size: 9px; opacity: 0.85;">22x43x47.5</small>
+                    </button>
+                    <!-- L -->
+                    <button type="button" class="btn btn-sm flex-fill d-flex flex-column align-items-center justify-content-center p-2 rounded-3 size-selector-btn"
+                      [class.active]="getTipoPaquete(p) === 'L'"
+                      style="min-height: 48px;"
+                      (click)="seleccionarTipoPaquete(p, 'L', 34, 43, 47.5)">
+                      <span class="fw-bold">L</span>
+                      <small style="font-size: 9px; opacity: 0.85;">34x43x47.5</small>
+                    </button>
+                  </div>
+                </div>
               </div>
-              <div class="col-6 col-sm-3">
-                <label for="paqueteAncho" class="form-label small fw-bold text-dark mb-1">Ancho (cm)</label>
-                <input type="number" min="1" class="form-control form-control-sm border-2 rounded-2" id="paqueteAncho"
-                  [(ngModel)]="paqueteData.ancho" name="paqueteAncho" placeholder="Ej: 10">
-              </div>
-              <div class="col-6 col-sm-3">
-                <label for="paqueteLargo" class="form-label small fw-bold text-dark mb-1">Largo (cm)</label>
-                <input type="number" min="1" class="form-control form-control-sm border-2 rounded-2" id="paqueteLargo"
-                  [(ngModel)]="paqueteData.largo" name="paqueteLargo" placeholder="Ej: 10">
+
+              <!-- Contenido / Descripción de la Caja -->
+              <div class="mt-3">
+                <label [for]="'paqueteContenido_' + i" class="form-label small fw-bold text-dark mb-1">Contenido / Descripción <span class="text-danger">*</span></label>
+                <textarea [id]="'paqueteContenido_' + i" [(ngModel)]="p.contenido" [name]="'paqueteContenido_' + i"
+                  rows="2" class="form-control form-control-sm border-2 rounded-2"
+                  placeholder="Ej: Calzado, Ropa, Repuestos"></textarea>
               </div>
             </div>
           </div>
@@ -221,15 +255,6 @@
                   placeholder="Escriba aquí (ej: portón negro, frente a parque)">
               </div>
 
-              <div class="form-group mb-3">
-                <label for="contenidoPaquete">Contenido del Paquete <span class="text-danger">*</span></label>
-                <textarea id="contenidoPaquete" formControlName="contenido" rows="4" cols="2" class="form-control"
-                  placeholder="Ej: Calzado, Ropa, Repuestos"
-                  [class.is-invalid]="addressForm.get('contenido')?.touched && addressForm.get('contenido')?.invalid"></textarea>
-                <div class="text-danger mt-1" style="font-size: 11px;"
-                  *ngIf="addressForm.get('contenido')?.touched && addressForm.get('contenido')?.invalid">El contenido
-                  del paquete es requerido.</div>
-              </div>
 
               <input type="hidden" formControlName="latitud">
               <input type="hidden" formControlName="longitud">

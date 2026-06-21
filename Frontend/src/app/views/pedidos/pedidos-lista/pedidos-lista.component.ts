@@ -395,6 +395,24 @@ export class PedidosListaComponent implements OnInit, OnDestroy {
     this.pedidoId = pedido.id;
     this.clienteId = pedido.cliente_id;
     this.pedidoRecienCreado = pedido;
+    // ponytail: one parcel per order line – Boxful prices per-box
+    const detalles = pedido.detalles || [];
+    const parcels = detalles.length > 0
+      ? detalles.map((d: any) => {
+          const bp = d.paquete?.boxful_shipment?.parcels?.[0] || d.paquete?.boxfulShipment?.parcels?.[0];
+          return {
+            id: bp?.id || null,
+            peso: bp?.peso ?? 1,
+            alto: bp?.alto ?? 11,
+            ancho: bp?.ancho ?? 43,
+            largo: bp?.largo ?? 47.5,
+            es_fragil: bp?.es_fragil ?? false,
+            contenido: bp?.contenido ?? '',
+            valor: parseFloat(bp?.valor_declarado || d.total || d.precio || 50)
+          };
+        })
+      : [{ peso: 1, alto: 11, ancho: 43, largo: 47.5, es_fragil: false, contenido: '', valor: 50 }];
+    this.paqueteData = { id: null, parcels };
     this.mostrarModalBoxful = true;
   }
 

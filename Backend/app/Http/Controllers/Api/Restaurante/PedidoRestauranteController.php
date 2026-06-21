@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Restaurante;
 use App\Http\Controllers\Controller;
 use App\Models\Admin\Empresa;
 use App\Models\Inventario\Bodega;
+use App\Models\Inventario\Paquete;
 use App\Models\Inventario\Producto;
 use App\Models\Restaurante\Comanda;
 use App\Models\Restaurante\ComandaDetalle;
@@ -46,7 +47,7 @@ class PedidoRestauranteController extends Controller
         $direccion = strtolower((string) $request->get('direccion', 'desc')) === 'asc' ? 'asc' : 'desc';
 
         $query = PedidoRestaurante::where('restaurante_pedidos.id_empresa', $user->id_empresa)
-            ->with(['cliente', 'usuario', 'boxfulShipment'])
+            ->with(['cliente', 'usuario', 'detalles'])
             ->when($request->estado, fn ($q) => $q->where('restaurante_pedidos.estado', $request->estado))
             ->when($request->filled('canal'), fn ($q) => $q->where('restaurante_pedidos.canal', 'like', '%' . $request->canal . '%'))
             ->when($request->fecha_desde, fn ($q) => $q->whereDate('restaurante_pedidos.fecha', '>=', $request->fecha_desde))
@@ -391,7 +392,9 @@ class PedidoRestauranteController extends Controller
             ->with(['detalles.producto', 'cliente', 'usuario', 'venta'])
             ->findOrFail($id);
 
-        return response()->json($pedido);
+        $response = $this->enrichDetallesWithPaquetes($pedido->toArray(), $user->id_empresa);
+
+        return response()->json($response);
     }
 
     public function store(Request $request): JsonResponse
@@ -411,6 +414,7 @@ class PedidoRestauranteController extends Controller
             'id_bodega' => 'nullable|integer',
             'detalles' => 'required|array|min:1',
             'detalles.*.producto_id' => 'required|integer',
+            'detalles.*.id_paquete' => 'nullable|integer',
             'detalles.*.cantidad' => 'required|numeric|min:0.0001',
             'detalles.*.precio' => 'required|numeric|min:0',
             'detalles.*.descuento' => 'nullable|numeric|min:0',
@@ -460,10 +464,12 @@ class PedidoRestauranteController extends Controller
 
             $this->recalcularTotales($pedido);
 
-            return $pedido->fresh(['detalles.producto', 'cliente', 'usuario']);
+            return $pedido->fresh(['detalles.producto', 'cliente', 'usuario', 'venta']);
         });
 
-        return response()->json($pedido, 201);
+        $response = $this->enrichDetallesWithPaquetes($pedido->toArray(), $user->id_empresa);
+
+        return response()->json($response, 201);
     }
 
     public function update(Request $request, int $id): JsonResponse
@@ -489,6 +495,7 @@ class PedidoRestauranteController extends Controller
             'id_bodega' => 'nullable|integer',
             'detalles' => 'sometimes|array|min:1',
             'detalles.*.producto_id' => 'required_with:detalles|integer',
+            'detalles.*.id_paquete' => 'nullable|integer',
             'detalles.*.cantidad' => 'required_with:detalles|numeric|min:0.0001',
             'detalles.*.precio' => 'required_with:detalles|numeric|min:0',
             'detalles.*.descuento' => 'nullable|numeric|min:0',
@@ -551,9 +558,11 @@ class PedidoRestauranteController extends Controller
             $this->recalcularTotales($pedido);
         });
 
-        $pedido->load(['detalles.producto', 'cliente', 'usuario']);
+        $pedido->load(['detalles.producto', 'cliente', 'usuario', 'venta']);
 
-        return response()->json($pedido);
+        $response = $this->enrichDetallesWithPaquetes($pedido->toArray(), $user->id_empresa);
+
+        return response()->json($response);
     }
 
     public function destroy(int $id): JsonResponse
@@ -582,15 +591,30 @@ class PedidoRestauranteController extends Controller
         $subtotal = round($cantidad * $precio, 4);
         $total = round(max(0, $subtotal - $descuento), 4);
 
+        $idPaquete = $row['id_paquete'] ?? null;
+        $notas = $row['notas'] ?? null;
+
+        // ponytail: auto-resolve id_paquete if empty but notes has WR code
+        if (empty($idPaquete) && !empty($notas)) {
+            if (preg_match('/Número:\s*(\S+)/', $notas, $m)) {
+                $wr = $m[1];
+                $paquete = Paquete::where('wr', $wr)->first();
+                if ($paquete) {
+                    $idPaquete = $paquete->id;
+                }
+            }
+        }
+
         PedidoRestauranteDetalle::create([
             'pedido_id' => $pedido->id,
             'producto_id' => (int) $row['producto_id'],
+            'id_paquete' => $idPaquete,
             'cantidad' => $cantidad,
             'precio' => $precio,
             'descuento' => $descuento,
             'subtotal' => $subtotal,
             'total' => $total,
-            'notas' => $row['notas'] ?? null,
+            'notas' => $notas,
         ]);
     }
 
@@ -634,5 +658,48 @@ class PedidoRestauranteController extends Controller
         }
 
         return null;
+    }
+
+    private function enrichDetallesWithPaquetes(array $response, int $idEmpresa): array
+    {
+        // ponytail: enrich detalles with paquete → boxfulShipment → parcels via id_paquete or fallback to WR number in notas
+        $wrMap = []; // detalle index => wr
+        $paqueteIds = []; // detalle index => id_paquete
+
+        foreach ($response['detalles'] as $i => $det) {
+            if (!empty($det['id_paquete'])) {
+                $paqueteIds[$i] = $det['id_paquete'];
+            } elseif (preg_match('/Número:\s*(\S+)/', $det['notas'] ?? '', $m)) {
+                $wrMap[$i] = $m[1];
+            }
+        }
+
+        if (!empty($paqueteIds) || !empty($wrMap)) {
+            $paquetesMap = collect();
+
+            if (!empty($paqueteIds)) {
+                $paquetesById = Paquete::whereIn('id', array_values($paqueteIds))
+                    ->where('id_empresa', $idEmpresa)
+                    ->with('boxfulShipment.parcels')
+                    ->get()
+                    ->keyBy('id');
+                foreach ($paqueteIds as $i => $id) {
+                    $response['detalles'][$i]['paquete'] = $paquetesById[$id] ?? null;
+                }
+            }
+
+            if (!empty($wrMap)) {
+                $paquetesByWr = Paquete::whereIn('wr', array_values($wrMap))
+                    ->where('id_empresa', $idEmpresa)
+                    ->with('boxfulShipment.parcels')
+                    ->get()
+                    ->keyBy('wr');
+                foreach ($wrMap as $i => $wr) {
+                    $response['detalles'][$i]['paquete'] = $paquetesByWr[$wr] ?? null;
+                }
+            }
+        }
+
+        return $response;
     }
 }

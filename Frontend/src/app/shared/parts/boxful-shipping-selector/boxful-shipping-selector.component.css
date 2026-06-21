@@ -143,3 +143,24 @@
   background-color: #007bff;
   color: white;
 }
+
+/* Size selector button custom styling */
+.size-selector-btn {
+  border: 2px solid #e0e0e0;
+  background-color: #ffffff;
+  color: #495057;
+  transition: all 0.2s ease-in-out;
+}
+
+.size-selector-btn:hover {
+  border-color: #007bff;
+  color: #007bff;
+}
+
+.size-selector-btn.active {
+  border-color: #007bff;
+  background-color: #f0f7ff;
+  color: #007bff;
+  font-weight: bold;
+  box-shadow: 0 2px 6px rgba(0, 123, 255, 0.15);
+}
