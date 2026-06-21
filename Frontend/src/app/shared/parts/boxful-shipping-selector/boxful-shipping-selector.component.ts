@@ -497,7 +497,6 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
 
     // Construir payload según la nueva arquitectura normalizada
     const payload = {
-      paquete: firstParcel,
       paquetes: paquetesPayload,
       destino: this.getDireccionDestino(),
       origen: this.getDireccionOrigen(),
@@ -592,7 +591,6 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
       courierId: this.selectedCourierId,
       storeOrderNumber: this.pedidoId ? String(this.pedidoId) : undefined,
       orderNumber: this.pedidoId ? String(this.pedidoId) : undefined,
-      paquete: firstParcel,
       paquetes: paquetesPayload,
       destino: destino,
       origen: this.getDireccionOrigen(),

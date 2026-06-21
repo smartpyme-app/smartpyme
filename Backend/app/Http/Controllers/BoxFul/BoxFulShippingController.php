@@ -302,10 +302,21 @@ class BoxFulShippingController extends Controller
                 'cityId' => $destino['cityId'] ?? $destino['boxful_city_id'] ?? '',
             ];
 
+            $fechaRecoleccion = $request->input('fecha_recoleccion') ?? $request->input('recolectionDateTime') ?? $request->input('recolectionDate') ?? now()->toIso8601String();
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $fechaRecoleccion)) {
+                $fechaRecoleccion = \Carbon\Carbon::parse($fechaRecoleccion . ' 08:00:00')->toIso8601String();
+            } else {
+                try {
+                    $fechaRecoleccion = \Carbon\Carbon::parse($fechaRecoleccion)->toIso8601String();
+                } catch (\Exception $e) {
+                    $fechaRecoleccion = now()->toIso8601String();
+                }
+            }
+
             // Construir payload oficial para Boxful
             $boxfulPayload = [
                 'clientId' => $clientId,
-                'recolectionDateTime' => $request->input('fecha_recoleccion') ?? $request->input('recolectionDateTime') ?? now()->toIso8601String(),
+                'recolectionDateTime' => $fechaRecoleccion,
                 'weight' => $totalWeight,
                 'height' => $maxHeight,
                 'width' => $maxWidth,
@@ -322,6 +333,12 @@ class BoxFulShippingController extends Controller
 
             if (!empty($origenInput)) {
                 $direccionOrigenId = $origenInput['id'] ?? $origenInput['recolectionAddressId'] ?? null;
+                if (!empty($direccionOrigenId) && (!is_string($direccionOrigenId) || strlen($direccionOrigenId) !== 24 || !ctype_xdigit($direccionOrigenId))) {
+                    $localOrigen = \App\Models\Admin\DireccionOrigen::find($direccionOrigenId);
+                    if ($localOrigen && !empty($localOrigen->boxful_address_id)) {
+                        $direccionOrigenId = $localOrigen->boxful_address_id;
+                    }
+                }
             }
 
             if (empty($direccionOrigenId)) {
@@ -550,10 +567,35 @@ class BoxFulShippingController extends Controller
                 $orderNumber = $request->input('storeOrderNumber') ?? $request->input('orderNumber') ?? null;
             }
 
+            $fechaRecoleccion = $request->input('fecha_recoleccion') ?? $request->input('recolectionDate') ?? $request->input('recolectionDateTime') ?? now()->toIso8601String();
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $fechaRecoleccion)) {
+                $fechaRecoleccion = \Carbon\Carbon::parse($fechaRecoleccion . ' 08:00:00')->toIso8601String();
+            } else {
+                try {
+                    $fechaRecoleccion = \Carbon\Carbon::parse($fechaRecoleccion)->toIso8601String();
+                } catch (\Exception $e) {
+                    $fechaRecoleccion = now()->toIso8601String();
+                }
+            }
+
+            // Obtener dirección de origen de la bodega/tienda
+            $origenInput = $request->input('origen');
+            $direccionOrigenId = null;
+
+            if (!empty($origenInput)) {
+                $direccionOrigenId = $origenInput['id'] ?? $origenInput['recolectionAddressId'] ?? null;
+                if (!empty($direccionOrigenId) && (!is_string($direccionOrigenId) || strlen($direccionOrigenId) !== 24 || !ctype_xdigit($direccionOrigenId))) {
+                    $localOrigen = \App\Models\Admin\DireccionOrigen::find($direccionOrigenId);
+                    if ($localOrigen && !empty($localOrigen->boxful_address_id)) {
+                        $direccionOrigenId = $localOrigen->boxful_address_id;
+                    }
+                }
+            }
+
             // Construir el payload oficial para POST /shipment
             $boxfulPayload = [
                 'clientId' => $clientId,
-                'recolectionDate' => $request->input('fecha_recoleccion') ?? $request->input('recolectionDate') ?? now()->toIso8601String(),
+                'recolectionDate' => $fechaRecoleccion,
                 'courierId' => (string) $courierId,
                 'weight' => $totalWeight,
                 'height' => $maxHeight,
@@ -570,7 +612,7 @@ class BoxFulShippingController extends Controller
                 'customerPhone' => $telefono,
                 'customerPhoneAreaCode' => $codigoArea,
                 
-                // Grupo Delivery (Envío a domicilio)
+                // Root-level delivery fields (backward compatibility fallback)
                 'customerAddress' => $destino['direccion'] ?? $destino['address'] ?? 'Dirección de destino',
                 'customerState' => $destino['stateId'] ?? $destino['boxful_state_id'] ?? '',
                 'customerCity' => $destino['cityId'] ?? $destino['boxful_city_id'] ?? '',
@@ -578,19 +620,26 @@ class BoxFulShippingController extends Controller
                 'instructions' => $destino['instrucciones'] ?? $destino['instructions'] ?? 'Entregar en dirección indicada',
                 'customerAddressLatitude' => (float) ($destino['latitud'] ?? $destino['latitude'] ?? $destino['lat'] ?? 0.0),
                 'customerAddressLongitude' => (float) ($destino['longitud'] ?? $destino['longitude'] ?? $destino['lng'] ?? 0.0),
+                'recolectionAddressId' => $direccionOrigenId,
+
+                // Structured delivery/pickup objects (new API specification)
+                'delivery' => [
+                    'customerAddress' => $destino['direccion'] ?? $destino['address'] ?? 'Dirección de destino',
+                    'customerState' => $destino['stateId'] ?? $destino['boxful_state_id'] ?? '',
+                    'customerCity' => $destino['cityId'] ?? $destino['boxful_city_id'] ?? '',
+                    'customerAddressReferencePoint' => $destino['referencia'] ?? $destino['referencePoint'] ?? 'Sin referencias',
+                    'instructions' => $destino['instrucciones'] ?? $destino['instructions'] ?? 'Entregar en dirección indicada',
+                    'customerAddressLatitude' => (float) ($destino['latitud'] ?? $destino['latitude'] ?? $destino['lat'] ?? 0.0),
+                    'customerAddressLongitude' => (float) ($destino['longitud'] ?? $destino['longitude'] ?? $destino['lng'] ?? 0.0),
+                ],
+                'pickup' => [
+                    'recolectionAddressId' => $direccionOrigenId
+                ]
             ];
 
             if ($orderNumber) {
                 $boxfulPayload['storeOrderNumber'] = $orderNumber;
                 $boxfulPayload['orderNumber'] = $orderNumber;
-            }
-
-            // Obtener dirección de origen de la bodega/tienda
-            $origenInput = $request->input('origen');
-            $direccionOrigenId = null;
-
-            if (!empty($origenInput)) {
-                $direccionOrigenId = $origenInput['id'] ?? $origenInput['recolectionAddressId'] ?? null;
             }
 
             if (empty($direccionOrigenId)) {
