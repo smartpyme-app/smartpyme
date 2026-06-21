@@ -248,7 +248,7 @@ class BoxFulShippingController extends Controller
                         'content' => $pContent,
                         'price' => $pValue,
                         'cod' => false,
-                        'codAmount' => 0,
+                        'codAmount' => null,
                         'isFragile' => $pFragile
                     ];
                 }
@@ -277,7 +277,7 @@ class BoxFulShippingController extends Controller
                     'content' => $contenido,
                     'price' => $valor,
                     'cod' => false,
-                    'codAmount' => 0,
+                    'codAmount' => null,
                     'isFragile' => $isFragile
                 ];
             }
@@ -304,7 +304,7 @@ class BoxFulShippingController extends Controller
 
             $fechaRecoleccion = $request->input('fecha_recoleccion') ?? $request->input('recolectionDateTime') ?? $request->input('recolectionDate') ?? now()->toIso8601String();
             if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $fechaRecoleccion)) {
-                $fechaRecoleccion = \Carbon\Carbon::parse($fechaRecoleccion . ' 08:00:00')->toIso8601String();
+                $fechaRecoleccion = \Carbon\Carbon::parse($fechaRecoleccion . ' 15:00:00')->toIso8601String();
             } else {
                 try {
                     $fechaRecoleccion = \Carbon\Carbon::parse($fechaRecoleccion)->toIso8601String();
@@ -323,7 +323,7 @@ class BoxFulShippingController extends Controller
                 'length' => $maxLength,
                 'packages' => $packages,
                 'cod' => false,
-                'codAmount' => 0,
+                'codAmount' => null,
                 'customerAddress' => $customerAddress,
             ];
 

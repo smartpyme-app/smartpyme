@@ -248,9 +248,11 @@ class PedidoRestauranteController extends Controller
             return response()->json(['error' => $e->getMessage()], 400);
         }
 
-        $pedido->load(['cliente', 'usuario']);
+        $pedido->load(['detalles.producto', 'cliente', 'usuario', 'venta']);
 
-        return response()->json($pedido->fresh(['detalles.producto', 'cliente', 'usuario']));
+        $response = $this->enrichDetallesWithPaquetes($pedido->toArray(), $user->id_empresa);
+
+        return response()->json($response);
     }
 
     public function anular(int $id): JsonResponse
@@ -278,9 +280,11 @@ class PedidoRestauranteController extends Controller
             return response()->json(['error' => $e->getMessage()], 400);
         }
 
-        $pedido->load(['cliente', 'usuario']);
+        $pedido->load(['detalles.producto', 'cliente', 'usuario', 'venta']);
 
-        return response()->json($pedido->fresh(['detalles.producto', 'cliente', 'usuario']));
+        $response = $this->enrichDetallesWithPaquetes($pedido->toArray(), $user->id_empresa);
+
+        return response()->json($response);
     }
 
     /**
@@ -378,7 +382,11 @@ class PedidoRestauranteController extends Controller
             'estado' => 'facturado',
         ]);
 
-        return response()->json($pedido->fresh(['detalles.producto', 'cliente', 'usuario', 'venta']));
+        $pedido->load(['detalles.producto', 'cliente', 'usuario', 'venta']);
+
+        $response = $this->enrichDetallesWithPaquetes($pedido->toArray(), $user->id_empresa);
+
+        return response()->json($response);
     }
 
     public function show(int $id): JsonResponse
