@@ -78,6 +78,16 @@ class FacturacionService
                 }
             }
         }
+
+        if ((int) $request->cotizacion !== 1 && $request->filled('id_documento')) {
+            $documento = Documento::find($request->id_documento);
+            if ($documento && in_array($documento->nombre, Venta::DOCUMENTOS_NO_CONTABLES, true)) {
+                throw new FacturacionException(
+                    'Debe seleccionar un documento fiscal válido. No se puede facturar con el documento "' . $documento->nombre . '".',
+                    400
+                );
+            }
+        }
     }
 
     /**
