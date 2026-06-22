@@ -2,56 +2,73 @@
 
 namespace App\Services\Inventario;
 
+use App\Constants\OrigenStockVentaConstants;
 use App\Models\Compras\Detalle as DetalleCompra;
+use App\Models\Compras\Compra;
 use App\Models\Inventario\Inventario;
+use App\Models\Inventario\Producto;
+use App\Models\Inventario\ProductoPresentacion;
 use App\Models\Ventas\Detalle as DetalleVenta;
+use App\Services\Inventario\ConversionInventarioService;
 use Illuminate\Http\Request;
 
 class ConsignaDisponibleService
 {
     /**
-     * Stock en consigna disponible para venta al cliente:
-     * compras en consigna (proveedor) − ventas en consigna (cliente), por bodega.
+     * Pool virtual de compras en consigna (proveedor) menos ventas que descontaron de ese pool.
+     * El inventario físico sigue siendo uno solo; esto solo rastrea el origen contable.
      */
     public function calcularDisponible(int $idProducto, int $idBodega, ?int $excluirVentaId = null): float
     {
-        $entrada = (float) DetalleCompra::query()
-            ->where('id_producto', $idProducto)
-            ->whereHas('compra', function ($query) use ($idBodega) {
-                $query->where('estado', 'Consigna')
-                    ->where('id_bodega', $idBodega)
-                    ->where('cotizacion', 0);
-            })
-            ->sum('cantidad');
-
-        $salidaQuery = DetalleVenta::query()
-            ->where('id_producto', $idProducto)
-            ->whereHas('venta', function ($query) use ($idBodega, $excluirVentaId) {
-                $query->where('estado', 'Consigna')
-                    ->where('id_bodega', $idBodega);
-                if ($excluirVentaId) {
-                    $query->where('id', '!=', $excluirVentaId);
-                }
-            });
-
-        $salida = (float) $salidaQuery->sum('cantidad');
+        $entrada = $this->sumEntradaComprasConsigna($idProducto, $idBodega);
+        $salida = $this->sumSalidaVentasDesdeConsignaCompra($idProducto, $idBodega, $excluirVentaId);
 
         $disponible = max(0, $entrada - $salida);
-
-        $inventario = Inventario::query()
-            ->where('id_producto', $idProducto)
-            ->where('id_bodega', $idBodega)
-            ->first();
-
-        $stockFisico = $inventario ? (float) $inventario->stock : 0;
+        $stockFisico = $this->obtenerStockFisico($idProducto, $idBodega);
 
         return min($disponible, $stockFisico);
     }
 
     /**
-     * Valida una venta por consigna. Retorna mensaje de error o null si es válida.
-     * La consigna es el tipo de venta (toda la factura); no restringe productos por pool de compras.
+     * @return array{consigna_disponible: float, stock_fisico: float, stock_normal: float, tiene_consigna_compra: bool}
      */
+    public function obtenerResumenStock(int $idProducto, int $idBodega, ?int $excluirVentaId = null): array
+    {
+        $consignaDisponible = $this->calcularDisponible($idProducto, $idBodega, $excluirVentaId);
+        $stockFisico = $this->obtenerStockFisico($idProducto, $idBodega);
+        $entrada = $this->sumEntradaComprasConsigna($idProducto, $idBodega);
+
+        return [
+            'id_producto' => $idProducto,
+            'id_bodega' => $idBodega,
+            'consigna_disponible' => round($consignaDisponible, 4),
+            'disponible' => round($consignaDisponible, 4),
+            'stock_fisico' => round($stockFisico, 4),
+            'stock_normal' => round(max(0, $stockFisico - $consignaDisponible), 4),
+            'tiene_consigna_compra' => $entrada > 0,
+        ];
+    }
+
+    public function calcularDisponibleAgregadoProducto(int $idProducto, ?int $excluirVentaId = null): float
+    {
+        $bodegaIds = Compra::query()
+            ->where('estado', 'Consigna')
+            ->where('cotizacion', 0)
+            ->whereHas('detalles', function ($query) use ($idProducto) {
+                $query->where('id_producto', $idProducto);
+            })
+            ->pluck('id_bodega')
+            ->unique()
+            ->filter();
+
+        $total = 0.0;
+        foreach ($bodegaIds as $idBodega) {
+            $total += $this->calcularDisponible($idProducto, (int) $idBodega, $excluirVentaId);
+        }
+
+        return $total;
+    }
+
     public function esVentaConsigna(Request $request): bool
     {
         return $request->input('estado') === 'Consigna' || $request->boolean('consigna');
@@ -75,5 +92,129 @@ class ConsignaDisponibleService
         }
 
         return null;
+    }
+
+    public function validarOrigenStockEnFacturacion(Request $request): ?string
+    {
+        if ($request->cotizacion == 1) {
+            return null;
+        }
+
+        $idBodega = (int) $request->id_bodega;
+        $excluirVentaId = $request->id ? (int) $request->id : null;
+        $cantidadesPorProducto = $this->agruparCantidadesConsignaCompra($request->detalles ?? []);
+
+        foreach ($cantidadesPorProducto as $idProducto => $cantidadRequerida) {
+            $disponible = $this->calcularDisponible((int) $idProducto, $idBodega, $excluirVentaId);
+            $producto = Producto::find($idProducto);
+            $nombre = $producto ? $producto->nombre : "producto #{$idProducto}";
+
+            if ($disponible <= 0) {
+                return "No hay stock en consigna de compra disponible para \"{$nombre}\" en esta bodega.";
+            }
+
+            if ($cantidadRequerida > $disponible + 0.0001) {
+                return "Stock en consigna de compra insuficiente para \"{$nombre}\". Disponible: "
+                    . round($disponible, 2) . ', solicitado: ' . round($cantidadRequerida, 2) . '.';
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array<int, float>
+     */
+    private function agruparCantidadesConsignaCompra(array $detalles): array
+    {
+        $cantidades = [];
+
+        foreach ($detalles as $det) {
+            if (empty($det['id_producto'])) {
+                continue;
+            }
+
+            if (!OrigenStockVentaConstants::esConsignaCompra($det['origen_stock'] ?? null)) {
+                continue;
+            }
+
+            $idProducto = (int) $det['id_producto'];
+            $cantidadBase = $this->cantidadDetalleEnBase($det);
+
+            if (!isset($cantidades[$idProducto])) {
+                $cantidades[$idProducto] = 0;
+            }
+            $cantidades[$idProducto] += $cantidadBase;
+        }
+
+        return $cantidades;
+    }
+
+    private function cantidadDetalleEnBase(array $det): float
+    {
+        $factor = 1.0;
+        if (!empty($det['id_presentacion'])) {
+            $presentacion = ProductoPresentacion::find($det['id_presentacion']);
+            if ($presentacion) {
+                $factor = (float) $presentacion->factor_conversion;
+            }
+        }
+
+        return ConversionInventarioService::calcularCantidadBase(
+            (float) ($det['cantidad'] ?? 0),
+            $factor
+        );
+    }
+
+    private function sumEntradaComprasConsigna(int $idProducto, int $idBodega): float
+    {
+        return (float) DetalleCompra::query()
+            ->where('id_producto', $idProducto)
+            ->whereHas('compra', function ($query) use ($idBodega) {
+                $query->where('estado', 'Consigna')
+                    ->where('id_bodega', $idBodega)
+                    ->where('cotizacion', 0);
+            })
+            ->sum('cantidad');
+    }
+
+    private function sumSalidaVentasDesdeConsignaCompra(int $idProducto, int $idBodega, ?int $excluirVentaId = null): float
+    {
+        $query = DetalleVenta::query()
+            ->where('id_producto', $idProducto)
+            ->where('origen_stock', OrigenStockVentaConstants::CONSIGNA_COMPRA)
+            ->whereHas('venta', function ($query) use ($idBodega, $excluirVentaId) {
+                $query->where('id_bodega', $idBodega)
+                    ->where(function ($q) {
+                        $q->where('cotizacion', 0)->orWhereNull('cotizacion');
+                    });
+                if ($excluirVentaId) {
+                    $query->where('id', '!=', $excluirVentaId);
+                }
+            });
+
+        $total = 0.0;
+        foreach ($query->get() as $detalle) {
+            $factor = 1.0;
+            if ($detalle->id_presentacion) {
+                $presentacion = ProductoPresentacion::find($detalle->id_presentacion);
+                if ($presentacion) {
+                    $factor = (float) $presentacion->factor_conversion;
+                }
+            }
+            $total += ConversionInventarioService::calcularCantidadBase((float) $detalle->cantidad, $factor);
+        }
+
+        return $total;
+    }
+
+    private function obtenerStockFisico(int $idProducto, int $idBodega): float
+    {
+        $inventario = Inventario::query()
+            ->where('id_producto', $idProducto)
+            ->where('id_bodega', $idBodega)
+            ->first();
+
+        return $inventario ? (float) $inventario->stock : 0;
     }
 }

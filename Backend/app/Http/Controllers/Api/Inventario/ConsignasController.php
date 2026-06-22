@@ -161,6 +161,8 @@ class ConsignasController extends Controller
 
     public function indexCompras() {
 
+        $consignaDisponibleService = app(ConsignaDisponibleService::class);
+
         $detallesDeCompra = DetalleCompra::whereHas('compra', function($query){
                                 $query->where('estado', 'Consigna');
                             })
@@ -190,6 +192,7 @@ class ConsignasController extends Controller
             $producto = $detallesGroup[0]->producto()->first();
 
             if ($producto) {
+                $stockConsignaDisponible = $consignaDisponibleService->calcularDisponibleAgregadoProducto((int) $producto->id);
                 $detalles->push([
                     'id'                 => $producto->id,
                     'nombre'             => $producto->nombre,
@@ -197,7 +200,7 @@ class ConsignasController extends Controller
                     'nombre_categoria'   => $producto->nombre_categoria,
                     'costo'              => $detallesGroup[0]->costo,
                     'codigo'             => $producto->codigo,
-                    'stock'              => $detallesGroup->sum('cantidad'),
+                    'stock'              => round($stockConsignaDisponible, 4),
                     'compras'            => $compras,
                 ]); 
             }
@@ -221,17 +224,13 @@ class ConsignasController extends Controller
             'excluir_venta_id' => 'nullable|integer',
         ]);
 
-        $disponible = $consignaDisponibleService->calcularDisponible(
+        $disponible = $consignaDisponibleService->obtenerResumenStock(
             (int) $request->id_producto,
             (int) $request->id_bodega,
             $request->filled('excluir_venta_id') ? (int) $request->excluir_venta_id : null
         );
 
-        return response()->json([
-            'id_producto' => (int) $request->id_producto,
-            'id_bodega' => (int) $request->id_bodega,
-            'disponible' => round($disponible, 4),
-        ], 200);
+        return response()->json($disponible, 200);
     }
 
 

@@ -8,6 +8,13 @@ import {
     limpiarExentaPorSinIvaSiTipoManual,
     sincronizarTipoGravadoPorCobroIva,
 } from '@utils/impuestos-venta.util';
+import {
+    ORIGEN_STOCK_NORMAL,
+    normalizarOrigenStock,
+    preguntarOrigenStockSiAplica,
+    validarCantidadOrigenConsignaCompra,
+    esOrigenConsignaCompra,
+} from '@utils/venta-consigna.util';
 
 import Swal from 'sweetalert2';
 
@@ -131,6 +138,16 @@ export class VentaDetallesComponent implements OnInit {
             this.sumTotal.emit();
         };
 
+        if (esOrigenConsignaCompra(detalle.origen_stock)) {
+            validarCantidadOrigenConsignaCompra(this.apiService, this.alertService, this.venta, detalle)
+                .subscribe((ok) => {
+                    if (ok) {
+                        aplicar();
+                    }
+                });
+            return;
+        }
+
         aplicar();
     }
 
@@ -164,7 +181,22 @@ export class VentaDetallesComponent implements OnInit {
 
     // Agregar detalle
         productoSelect(producto:any):void{
-            this.procesarProductoSelect(producto);
+            preguntarOrigenStockSiAplica(this.apiService, this.venta, producto).subscribe((origen) => {
+                if (origen === null) {
+                    return;
+                }
+                const productoConOrigen = { ...producto, origen_stock: origen };
+                if (esOrigenConsignaCompra(origen)) {
+                    validarCantidadOrigenConsignaCompra(this.apiService, this.alertService, this.venta, productoConOrigen)
+                        .subscribe((ok) => {
+                            if (ok) {
+                                this.procesarProductoSelect(productoConOrigen);
+                            }
+                        });
+                    return;
+                }
+                this.procesarProductoSelect(productoConOrigen);
+            });
         }
 
         private procesarProductoSelect(producto:any):void{
@@ -257,14 +289,15 @@ export class VentaDetallesComponent implements OnInit {
             // ── Guardar campos de presentación para el backend ───────────────────────
             this.detalle.id_presentacion   = producto.id_presentacion  ?? null;
             this.detalle.factor_conversion = producto.factor_conversion ?? 1;
+            this.detalle.origen_stock = normalizarOrigenStock(producto.origen_stock ?? ORIGEN_STOCK_NORMAL);
 
-            // ── Regla de agrupación: AMBOS id_producto + id_presentacion deben coincidir
-            // Una "Caja" y una "Unidad suelta" del mismo producto son filas separadas.
+            // ── Regla de agrupación: producto + presentación + origen de stock
             let detalle = null;
             if(this.apiService.auth_user().empresa.agrupar_detalles_venta){
                 detalle = this.venta.detalles.find((x:any) =>
                     x.id_producto === this.detalle.id_producto &&
-                    (x.id_presentacion ?? null) === (this.detalle.id_presentacion ?? null)
+                    (x.id_presentacion ?? null) === (this.detalle.id_presentacion ?? null) &&
+                    normalizarOrigenStock(x.origen_stock) === this.detalle.origen_stock
                 );
             }
                 

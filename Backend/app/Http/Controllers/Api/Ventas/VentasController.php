@@ -34,6 +34,7 @@ use App\Models\Restaurante\PedidoRestaurante;
 use App\Services\Restaurante\PedidoCanalInventarioService;
 use App\Services\Inventario\ConversionInventarioService;
 use App\Services\Inventario\ConsignaDisponibleService;
+use App\Constants\OrigenStockVentaConstants;
 use Luecano\NumeroALetras\NumeroALetras;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -602,6 +603,10 @@ class VentasController extends Controller
             return response()->json(['error' => $errorConsigna], 422);
         }
 
+        if ($errorOrigen = $consignaDisponibleService->validarOrigenStockEnFacturacion($request)) {
+            return response()->json(['error' => $errorOrigen], 422);
+        }
+
         DB::beginTransaction();
 
         try {
@@ -663,6 +668,10 @@ class VentasController extends Controller
                 else
                     $detalle = new Detalle;
                 $det['id_venta'] = $venta->id;
+
+                if (!OrigenStockVentaConstants::esConsignaCompra($det['origen_stock'] ?? null)) {
+                    $det['origen_stock'] = OrigenStockVentaConstants::NORMAL;
+                }
 
                 // ── Cálculos de Costos con Presentaciones ──
                 $factorDet = 1;
