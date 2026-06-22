@@ -105,7 +105,7 @@ class VentasPorVendedorExport implements FromCollection, WithHeadings, WithMappi
         $fechaFin = $this->fechaFin;
         $id_empresa = $this->id_empresa;
 
-        $detalles = Detalle::whereHas('venta', function ($query) use ($fechaInicio, $fechaFin, $id_empresa) {
+        return Detalle::whereHas('venta', function ($query) use ($fechaInicio, $fechaFin, $id_empresa) {
             $query->where('fecha', '>=', $fechaInicio)
                 ->where('fecha', '<=', $fechaFin)
                 ->where('cotizacion', 0)
@@ -114,18 +114,18 @@ class VentasPorVendedorExport implements FromCollection, WithHeadings, WithMappi
             if ($id_empresa) {
                 $query->where('id_empresa', $id_empresa);
             }
-
-            $query->orderBy('id_vendedor', 'asc')
-                ->orderBy('id', 'asc');
-        })->get();
-
-        return $detalles;
+        })
+            ->orderBy('id_vendedor', 'asc')
+            ->orderBy('id', 'asc')
+            ->get();
     }
 
     public function map($row): array
     {
         $venta = $row->venta()->first();
         $hora = $venta ? Carbon::parse($venta->created_at)->format('H:i:s') : '';
+        $iva = $this->calcularIvaDetalle($row, $venta);
+        $totalConIva = $row->total + $iva;
 
         $fields = [
             $venta ? $venta->fecha : '',
@@ -146,16 +146,60 @@ class VentasPorVendedorExport implements FromCollection, WithHeadings, WithMappi
             round($row->costo, 2),
             round($row->precio, 2),
             round($row->descuento, 2),
-            round($venta && $venta->iva ? $row->total * 0.13 : 0, 2),
+            round($iva, 2),
             round($row->total - ($row->costo * $row->cantidad), 2),
-            round($row->total + ($venta && $venta->iva ? $row->total * 0.13 : 0), 2),
+            round($totalConIva, 2),
             $venta && $venta->sucursal && $venta->sucursal->empresa ? $venta->sucursal->empresa->nombre : '',
             $venta ? $venta->observaciones : '',
             $venta && $venta->usuario ? $venta->usuario->name : '',
-            $venta && $venta->vendedor ? $venta->vendedor->name : 'Sin vendedor',
+            $this->nombreVendedorDetalle($row, $venta),
             $hora,
         ];
 
         return $fields;
+    }
+
+    private function nombreVendedorDetalle(Detalle $row, $venta): string
+    {
+        if ($row->vendedor) {
+            return $row->vendedor->name;
+        }
+
+        if ($venta && $venta->vendedor) {
+            return $venta->vendedor->name;
+        }
+
+        return 'Sin vendedor';
+    }
+
+    private function calcularIvaDetalle(Detalle $row, $venta): float
+    {
+        if (!$venta || $venta->iva <= 0) {
+            return 0;
+        }
+
+        $documentoNombre = $venta->documento ? $venta->documento->nombre : null;
+        if (strtolower((string) $documentoNombre) === 'factura de exportación') {
+            return 0;
+        }
+
+        $ivaDetalle = $row->iva ?? 0;
+        if ($ivaDetalle > 0) {
+            return (float) $ivaDetalle;
+        }
+
+        $gravadaVenta = $venta->gravada ?? 0;
+        $gravadaDetalle = $row->gravada ?? 0;
+        $subTotalVenta = $venta->sub_total ?? 0;
+
+        if ($gravadaVenta > 0 && $gravadaDetalle > 0) {
+            return (float) (($gravadaDetalle / $gravadaVenta) * $venta->iva);
+        }
+
+        if ($subTotalVenta > 0 && $row->total > 0) {
+            return (float) (($row->total / $subTotalVenta) * $venta->iva);
+        }
+
+        return 0;
     }
 }

@@ -186,7 +186,8 @@ export class FacturacionCompraComponent implements OnInit {
             'Recibo',
             'Sujeto excluido',
             'Recibo',
-            'Factura de exportación'
+            'Factura de exportación',
+            'Documento contable de liquidación'
         ];
 
         this.apiService.getAll('documentos/list').subscribe(documentos => {

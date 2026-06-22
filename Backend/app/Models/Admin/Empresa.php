@@ -835,6 +835,10 @@ class Empresa extends Model
         $this->custom_empresa = $config;
         $this->save();
 
+        if ($section === 'configuraciones' && in_array($key, ['fidelizacion_activa', 'fidelizacion_completa', 'fidelizacion_enviar_correos'])) {
+            cache()->forget("empresa_fidelizacion_{$this->id}");
+        }
+
         return $this;
     }
 
@@ -1016,12 +1020,18 @@ class Empresa extends Model
      */
     public function tieneFidelizacionHabilitada()
     {
-        return $this->hasMany(\App\Models\Admin\EmpresaFuncionalidad::class, 'id_empresa')
+        $globalEnabled = $this->hasMany(\App\Models\Admin\EmpresaFuncionalidad::class, 'id_empresa')
                     ->whereHas('funcionalidad', function($query) {
                         $query->where('slug', 'fidelizacion-clientes');
                     })
                     ->where('activo', true)
                     ->exists();
+
+        if (!$globalEnabled) {
+            return false;
+        }
+
+        return (bool) $this->getCustomConfigValue('configuraciones', 'fidelizacion_completa', false);
     }
 
     /**
