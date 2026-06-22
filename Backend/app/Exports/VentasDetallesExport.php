@@ -145,6 +145,7 @@ class VentasDetallesExport implements FromQuery, WithHeadings, WithMapping, With
             'venta.sucursal:id,nombre,id_empresa',
             'venta.sucursal.empresa:id,nombre',
             'venta.usuario:id,name',
+            'venta.vendedor:id,name',
             'producto' => static function ($q) {
                 $q->withoutGlobalScopes()->select('id', 'nombre', 'codigo', 'marca', 'id_categoria');
             },
@@ -197,14 +198,6 @@ class VentasDetallesExport implements FromQuery, WithHeadings, WithMapping, With
                                 $query->where('nombre', $request->forma_pago);
                             });
                     })
-                    ->when($request->id_vendedor, function ($query) use ($request) {
-                        return $query->where(function ($q) use ($request) {
-                            $q->where('id_vendedor', $request->id_vendedor)
-                                ->orWhereHas('detalles', function ($sub) use ($request) {
-                                    $sub->where('id_vendedor', $request->id_vendedor);
-                                });
-                        });
-                    })
                     ->when($request->id_canal, function ($query) use ($request) {
                         return $query->where('id_canal', $request->id_canal);
                     })
@@ -254,6 +247,16 @@ class VentasDetallesExport implements FromQuery, WithHeadings, WithMapping, With
                                 ->orWhere('forma_pago', 'like', $buscador);
                         });
                     });
+            })
+            ->when($request->id_vendedor, function ($query) use ($request) {
+                $idV = (int) $request->id_vendedor;
+                $query->where(function ($q) use ($idV) {
+                    $q->where('detalles_venta.id_vendedor', $idV)
+                        ->orWhere(function ($q2) use ($idV) {
+                            $q2->whereNull('detalles_venta.id_vendedor')
+                                ->whereHas('venta', fn ($v) => $v->where('id_vendedor', $idV));
+                        });
+                });
             })
             ->orderBy($ordenVentasSub, $direccion)
             ->orderBy($idVentaSub, 'desc')
@@ -320,7 +323,9 @@ class VentasDetallesExport implements FromQuery, WithHeadings, WithMapping, With
             ($venta && $venta->sucursal && $venta->sucursal->empresa) ? $venta->sucursal->empresa->nombre : null,
             $venta ? $venta->observaciones : null,
             ($venta && $venta->usuario) ? $venta->usuario->name : null,
-            $row->vendedor ? $row->vendedor->name : null,
+            $row->vendedor
+                ? $row->vendedor->name
+                : (($venta && $venta->vendedor) ? $venta->vendedor->name : 'Sin vendedor'),
             ($venta && $venta->sucursal) ? $venta->sucursal->nombre : null,
         ];
         if ($this->incluirPaquetes) {

@@ -252,7 +252,11 @@ export class VentaDetallesV2Component implements OnInit {
             if(detalle.descuento_porcentaje){
                 detalle.descuento = Number((cantidad * (precioSinIva * (detalle.descuento_porcentaje / 100))).toFixed(4));
             }else if(detalle.descuento_monto){
-                detalle.descuento = Number((cantidad * detalle.descuento_monto).toFixed(4));
+                const descuentoMontoConIva = parseFloat(detalle.descuento_monto) || 0;
+                const descuentoMontoSinIva = pctDetalle > 0
+                    ? this.calcularPrecioSinIva(descuentoMontoConIva, pctDetalle)
+                    : descuentoMontoConIva;
+                detalle.descuento = Number((cantidad * descuentoMontoSinIva).toFixed(4));
             }else{
                 detalle.descuento = 0;
             }

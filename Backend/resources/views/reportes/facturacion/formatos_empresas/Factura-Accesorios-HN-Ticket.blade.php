@@ -179,8 +179,17 @@
         <tr>
             <td class="left" style="width:58%;">
                 <p><span class="b">{{ $etiquetaNumero }}:</span> {{ $numFacturaDisplay }}</p>
-                @if ($venta->id_cliente && $cliente && $cliente->tipo === 'Empresa')
-                    <p class="mt1"><span class="b">RTN:</span> {{ $cliente->nit ?? '' }}</p>
+                @php
+                    $rtnCliente = '';
+                    if ($venta->id_cliente && $cliente) {
+                        $rtnCliente = trim((string) ($cliente->nit ?? ''));
+                        if ($rtnCliente === '') {
+                            $rtnCliente = trim((string) ($cliente->dui ?? ''));
+                        }
+                    }
+                @endphp
+                @if ($rtnCliente !== '')
+                    <p class="mt1"><span class="b">RTN:</span> {{ $rtnCliente }}</p>
                 @endif
                 <p class="mt1"><span class="b">CLIENTE:</span> {{ $codCliente }} - {{ $nombreClienteFactura }}</p>
                 @if ($terminos !== '')

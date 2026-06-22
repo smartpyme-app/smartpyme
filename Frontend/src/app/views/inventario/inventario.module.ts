@@ -42,6 +42,7 @@ import { MateriaPrimaComponent } from './materias-prima/materia-prima/materia-pr
 import { MateriaPrimaInformacionComponent } from './materias-prima/materia-prima/informacion/materia-prima-informacion.component';
 
 import { KardexComponent } from './kardex/kardex.component';
+import { HistorialPrecioCostoComponent } from './historial-precio-costo/historial-precio-costo.component';
 import { TrasladosComponent } from './traslados/traslados.component';
 import { TrasladoComponent } from './traslados/traslado/traslado.component';
 import { TrasladoDetalleComponent } from './traslados/traslado-detalle/traslado-detalle.component';
@@ -96,6 +97,7 @@ import { ProductoPresentacionesComponent } from './productos/producto/presentaci
     DetalleProductoComponent,
     ProductoComponent,
     KardexComponent,
+    HistorialPrecioCostoComponent,
     PromocionesComponent,
     ProductoInformacionComponent,
     ProductoInventariosComponent,
@@ -142,6 +144,7 @@ import { ProductoPresentacionesComponent } from './productos/producto/presentaci
     DetalleProductoComponent,
     ProductoComponent,
     KardexComponent,
+    HistorialPrecioCostoComponent,
     PromocionesComponent,
     ProductoInformacionComponent,
     ProductoInventariosComponent,
