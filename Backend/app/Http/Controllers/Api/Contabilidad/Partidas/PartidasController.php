@@ -608,7 +608,8 @@ class PartidasController extends Controller
             
             // OPTIMIZACIÓN 1: Eager loading optimizado - solo campos necesarios
             // NOTA: nombre_documento es un accessor, no una columna, por eso cargamos la relación 'documento'
-            $ventas = Venta::where('estado','!=', 'Anulada')
+            $ventas = Venta::contabilizable()
+                        ->where('estado','!=', 'Anulada')
                         ->where('fecha', $request->fecha)
                         ->where('id_empresa', auth()->user()->id_empresa)
                         ->select(['id', 'fecha', 'correlativo', 'id_documento', 'forma_pago', 
@@ -834,6 +835,8 @@ class PartidasController extends Controller
             $cuenta_cxc = $cuentas[$configuracion->id_cuenta_cxc] ?? null;
 
             foreach ($ingresos as $ingreso) {
+                $refDoc = $this->referenciaDocumentoIngreso($ingreso);
+
                 // Usar forma de pago desde el cache
                 $formapago = $formasPago[$ingreso->forma_pago] ?? null;
                 
@@ -842,7 +845,7 @@ class PartidasController extends Controller
                     'formapago_encontrada' => $formapago ? true : false,
                     'tiene_banco' => $formapago && $formapago->banco ? true : false,
                     'id_cuenta_contable' => $formapago && $formapago->banco ? $formapago->banco->id_cuenta_contable : null,
-                    'venta' => ($ingreso->nombre_documento ?? 'N/A') . ' #' . ($ingreso->correlativo ?? 'N/A')
+                    'venta' => $refDoc
                 ]);
 
                 if(!$formapago){
@@ -880,7 +883,7 @@ class PartidasController extends Controller
                     'id_cuenta' => $cuenta->id,
                     'codigo' => $cuenta->codigo,
                     'nombre_cuenta' => $cuenta->nombre,
-                    'concepto' => 'Ingresos por ' . $ingreso->tipo . ' ' . $ingreso->nombre_documento . '#' . $ingreso->correlativo,
+                    'concepto' => 'Ingresos por ' . $ingreso->tipo . ' ' . $refDoc,
                     'debe' => $ingreso->total,
                     'haber' => NULL,
                     'saldo' => 0,
@@ -912,7 +915,7 @@ class PartidasController extends Controller
                                 'id_cuenta' => $cuenta->id,
                                 'codigo' => $cuenta->codigo,
                                 'nombre_cuenta' => $cuenta->nombre,
-                                'concepto' => 'Inventarios ' . $ingreso->nombre_documento . '#' . $ingreso->correlativo,
+                                'concepto' => 'Ingresos por ventas ' . $refDoc,
                                 'debe' => NULL,
                                 'haber' => $detalle->total,
                                 'saldo' => 0,
@@ -922,7 +925,7 @@ class PartidasController extends Controller
                                 'id_cuenta' => $cuenta_ventas->id,
                                 'codigo' => $cuenta_ventas->codigo,
                                 'nombre_cuenta' => $cuenta_ventas->nombre,
-                                'concepto' => 'Inventarios ' . $ingreso->nombre_documento . '#' . $ingreso->correlativo,
+                                'concepto' => 'Ingresos por ventas ' . $refDoc,
                                 'debe' => NULL,
                                 'haber' => $ingreso->sub_total,
                                 'saldo' => 0,
@@ -937,7 +940,7 @@ class PartidasController extends Controller
                             'id_cuenta' => $cuenta_iva->id,
                             'codigo' => $cuenta_iva->codigo,
                             'nombre_cuenta' => $cuenta_iva->nombre,
-                            'concepto' => '  ' . $ingreso->nombre_documento . '#' . $ingreso->correlativo,
+                            'concepto' => 'IVA Débito Fiscal ' . $refDoc,
                             'debe' => NULL,
                             'haber' => $ingreso->iva,
                             'saldo' => 0,
@@ -949,8 +952,7 @@ class PartidasController extends Controller
                             'id_cuenta' => $cuenta_iva_retenido->id,
                             'codigo' => $cuenta_iva_retenido->codigo,
                             'nombre_cuenta' => $cuenta_iva_retenido->nombre,
-                            'concepto' => '  ' . $ingreso->nombre_documento . '#' . $ingreso->correlativo,
-                            'debe' => $ingreso->iva_retenido,
+                            'concepto' => 'IVA retenido ' . $refDoc,
                             'haber' => NULL,
                             'saldo' => 0,
                         ];
@@ -961,7 +963,7 @@ class PartidasController extends Controller
                         'id_cuenta' => $cuenta_cxc->id,
                         'codigo' => $cuenta_cxc->codigo,
                         'nombre_cuenta' => $cuenta_cxc->nombre,
-                        'concepto' => 'Ingreso por abono ' . $ingreso->nombre_documento . '#' . $ingreso->correlativo,
+                        'concepto' => 'Ingreso por abono ' . $refDoc,
                         'debe' => NULL,
                         'haber' => $ingreso->total,
                         'saldo' => 0,
@@ -997,7 +999,7 @@ class PartidasController extends Controller
                                 'id_cuenta' => $cuenta_costos->id,
                                 'codigo' => $cuenta_costos->codigo,
                                 'nombre_cuenta' => $cuenta_costos->nombre,
-                                'concepto' => 'Ingreso por costo de ventas ' . $ingreso->nombre_documento . '#' . $ingreso->correlativo,
+                                'concepto' => 'Ingreso por costo de ventas ' . $refDoc,
                                 'debe' => $this->normalizeDecimal($detalle->costo * $detalle->cantidad),
                                 'haber' => NULL,
                                 'saldo' => 0,
@@ -1014,7 +1016,7 @@ class PartidasController extends Controller
                                 'id_cuenta' => $cuenta_inventarios->id,
                                 'codigo' => $cuenta_inventarios->codigo,
                                 'nombre_cuenta' => $cuenta_inventarios->nombre,
-                                'concepto' => 'Inventarios  ' . $ingreso->nombre_documento . '#' . $ingreso->correlativo,
+                                'concepto' => 'Inventarios ' . $refDoc,
                                 'debe' => NULL,
                                 'haber' => $this->normalizeDecimal($detalle->costo * $detalle->cantidad),
                                 'saldo' => 0,
@@ -1024,7 +1026,7 @@ class PartidasController extends Controller
                                 'id_cuenta' => $cuenta_costos->id,
                                 'codigo' => $cuenta_costos->codigo,
                                 'nombre_cuenta' => $cuenta_costos->nombre,
-                                'concepto' => 'Ingreso por costo de ventas ' . $ingreso->nombre_documento . '#' . $ingreso->correlativo,
+                                'concepto' => 'Ingreso por costo de ventas ' . $refDoc,
                                 'debe' => $ingreso->total_costo,
                                 'haber' => NULL,
                                 'saldo' => 0,
@@ -1033,7 +1035,7 @@ class PartidasController extends Controller
                                 'id_cuenta' => $cuenta_inventarios->id,
                                 'codigo' => $cuenta_inventarios->codigo,
                                 'nombre_cuenta' => $cuenta_inventarios->nombre,
-                                'concepto' => 'Inventarios ' . $ingreso->nombre_documento . '#' . $ingreso->correlativo,
+                                'concepto' => 'Inventarios ' . $refDoc,
                                 'debe' => NULL,
                                 'haber' => $ingreso->total_costo,
                                 'saldo' => 0,
@@ -1140,7 +1142,8 @@ class PartidasController extends Controller
 
         $configuracion = Configuracion::first();
         // Fecha del documento de venta (no la del abono). whereDate evita fallos si el campo es datetime.
-        $ventas = Venta::where('estado', 'Pendiente')
+        $ventas = Venta::contabilizable()
+            ->where('estado', 'Pendiente')
             ->whereDate('fecha', $request->fecha)
             ->get();
 
@@ -1166,12 +1169,13 @@ class PartidasController extends Controller
                 : null;
 
             foreach ($ventas as $venta) {
+                $refDoc = $venta->referenciaDocumentoContable();
 
                 $detalles[] = [
                     'id_cuenta' => $cuenta_cxc->id,
                     'codigo' => $cuenta_cxc->codigo,
                     'nombre_cuenta' => $cuenta_cxc->nombre,
-                    'concepto' => 'Ingresos por cxc ' . $venta->nombre_documento . '#' . $venta->correlativo,
+                    'concepto' => 'Ingresos por cxc ' . $refDoc,
                     'debe' => $venta->total,
                     'haber' => NULL,
                     'saldo' => 0,
@@ -1198,7 +1202,7 @@ class PartidasController extends Controller
                             'id_cuenta' => $cuenta->id,
                             'codigo' => $cuenta->codigo,
                             'nombre_cuenta' => $cuenta->nombre,
-                            'concepto' => 'Ingresos por ventas ' . $venta->nombre_documento . ' #' . $venta->correlativo,
+                            'concepto' => 'Ingresos por ventas ' . $refDoc,
                             'debe' => NULL,
                             'haber' => $detalle->total,
                             'saldo' => 0,
@@ -1211,7 +1215,7 @@ class PartidasController extends Controller
                             'id_cuenta' => $cuenta_ventas_general->id,
                             'codigo' => $cuenta_ventas_general->codigo,
                             'nombre_cuenta' => $cuenta_ventas_general->nombre,
-                            'concepto' => 'Ingresos por ventas ' . $venta->nombre_documento . ' #' . $venta->correlativo,
+                            'concepto' => 'Ingresos por ventas ' . $refDoc,
                             'debe' => NULL,
                             'haber' => $venta->sub_total,
                             'saldo' => 0,
@@ -1226,7 +1230,7 @@ class PartidasController extends Controller
                         'id_cuenta' => $cuenta_iva->id,
                         'codigo' => $cuenta_iva->codigo,
                         'nombre_cuenta' => $cuenta_iva->nombre,
-                        'concepto' => 'Ingresos por cxc ' . $venta->nombre_documento . '#' . $venta->correlativo,
+                        'concepto' => 'IVA Débito Fiscal ' . $refDoc,
                         'debe' => NULL,
                         'haber' => $venta->iva,
                         'saldo' => 0,
@@ -1238,7 +1242,7 @@ class PartidasController extends Controller
                         'id_cuenta' => $cuenta_iva_retenido->id,
                         'codigo' => $cuenta_iva_retenido->codigo,
                         'nombre_cuenta' => $cuenta_iva_retenido->nombre,
-                        'concepto' => 'Ingresos por cxc ' . $venta->nombre_documento . '#' . $venta->correlativo,
+                        'concepto' => 'IVA retenido ' . $refDoc,
                         'debe' => $venta->iva_retenido,
                         'haber' => NULL,
                         'saldo' => 0,
@@ -2121,6 +2125,15 @@ class PartidasController extends Controller
             COALESCE(SUM(partida_detalles.haber), 0) as gran_total_haber,
             COUNT(DISTINCT partidas.id) as total_registros_filtrados
         ')->first();
+    }
+
+    private function referenciaDocumentoIngreso($ingreso): string
+    {
+        if ($ingreso instanceof Venta) {
+            return $ingreso->referenciaDocumentoContable();
+        }
+
+        return ($ingreso->nombre_documento ?? 'Documento') . ' #' . ($ingreso->correlativo ?? '');
     }
 
     /**

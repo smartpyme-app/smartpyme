@@ -437,7 +437,7 @@
   </div>
   <div class="row mt-5">
     <div class="col-md-12">
-      <button type="submit" (click)="onFacturar()" [disabled]="saving || emiting"
+      <button type="submit" (click)="onFacturar()" [disabled]="saving || emiting || (facturarCotizacion && !documentoFiscalListo)"
               class="ml-3 btn btn-primary float-end tcla-F8" title="Procesar venta (F8)">
                 <span *ngIf="!saving && !emiting">
                     Procesar
