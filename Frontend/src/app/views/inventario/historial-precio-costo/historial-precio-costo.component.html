@@ -1,0 +1,113 @@
+<div *ngIf="producto?.id">
+    <form name="formHistorialPrecioCosto" (ngSubmit)="loadAll()" class="row g-2 mb-3 align-items-end">
+        <div class="col-6 col-md-3">
+            <label class="form-label small mb-1">Del</label>
+            <input type="date" class="form-control form-control-sm" [(ngModel)]="filtros.inicio" name="inicio" required>
+        </div>
+        <div class="col-6 col-md-3">
+            <label class="form-label small mb-1">Al</label>
+            <input type="date" class="form-control form-control-sm" [(ngModel)]="filtros.fin" name="fin" required>
+        </div>
+        <div class="col-6 col-md-3">
+            <label class="form-label small mb-1">Usuario</label>
+            <select class="form-select form-select-sm" [(ngModel)]="filtros.id_usuario" name="id_usuario">
+                <option value="">Todos</option>
+                <option *ngFor="let u of usuarios" [ngValue]="u.id">{{ u.name }}</option>
+            </select>
+        </div>
+        <div class="col-6 col-md-3">
+            <button type="submit" class="btn btn-primary btn-sm w-100" [disabled]="loading">
+                <i class="fa fa-search" *ngIf="!loading"></i>
+                <i class="fa fa-ellipsis-h" *ngIf="loading"></i>
+                Filtrar
+            </button>
+        </div>
+    </form>
+
+    <div class="text-center py-3" *ngIf="loading">
+        <span class="badge bg-primary">Cargando...</span>
+    </div>
+
+    <ng-container *ngIf="!loading">
+        <div class="row g-2 mb-3">
+            <div class="col-6 col-lg-3">
+                <div class="border rounded px-2 py-2 h-100">
+                    <small class="text-muted d-block">Precio actual</small>
+                    <strong class="small">{{ producto.precio | currency:'USD':'symbol':'1.2-4' }}</strong>
+                </div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="border rounded px-2 py-2 h-100">
+                    <small class="text-muted d-block">Costo actual</small>
+                    <strong class="small">{{ (producto.costo ?? producto.costo_promedio) | currency:'USD':'symbol':'1.2-4' }}</strong>
+                </div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="border rounded px-2 py-2 h-100">
+                    <small class="text-muted d-block">Tendencia precio</small>
+                    <span class="badge" [ngClass]="claseTendencia(datos.tendencia_precio)">
+                        <i class="fa" [ngClass]="iconoTendencia(datos.tendencia_precio)"></i>
+                        {{ etiquetaTendencia(datos.tendencia_precio) }}
+                        <span *ngIf="datos.variacion_precio !== null"> ({{ datos.variacion_precio | number:'1.1-2' }}%)</span>
+                    </span>
+                </div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="border rounded px-2 py-2 h-100">
+                    <small class="text-muted d-block">Tendencia costo</small>
+                    <span class="badge" [ngClass]="claseTendencia(datos.tendencia_costo)">
+                        <i class="fa" [ngClass]="iconoTendencia(datos.tendencia_costo)"></i>
+                        {{ etiquetaTendencia(datos.tendencia_costo) }}
+                        <span *ngIf="datos.variacion_costo !== null"> ({{ datos.variacion_costo | number:'1.1-2' }}%)</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="border rounded p-2 mb-3" *ngIf="chartLabels.length">
+            <div style="position: relative; height: 380px; width: 100%;">
+                <canvas baseChart
+                    [datasets]="chartDatasets"
+                    [labels]="chartLabels"
+                    [options]="chartOptions"
+                    [type]="'line'">
+                </canvas>
+            </div>
+            <p class="text-muted small mb-0 mt-2">
+                {{ datos.total_ventas || 0 }} líneas de venta · {{ datos.total_compras || 0 }} líneas de compra en el período.
+                Solo se grafican cambios de precio/costo respecto al valor anterior.
+            </p>
+        </div>
+
+        <div class="alert alert-warning border-0" *ngIf="!chartLabels.length">
+            No hay cambios de precio o costo en ventas/compras pagadas para este producto en el rango seleccionado.
+        </div>
+
+        <div class="table-responsive" *ngIf="datos.eventos?.length">
+            <table class="table table-hover table-sm">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Tipo</th>
+                        <th class="text-end">Valor</th>
+                        <th>Documento</th>
+                        <th>Usuario</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let ev of datos.eventos">
+                        <td>{{ ev.fecha | date:'dd/MM/yyyy' }}</td>
+                        <td>
+                            <span class="badge" [ngClass]="ev.tipo === 'precio' ? 'bg-primary' : 'bg-danger'">
+                                {{ ev.tipo === 'precio' ? 'Precio' : 'Costo' }}
+                            </span>
+                        </td>
+                        <td class="text-end">{{ ev.valor | currency:'USD':'symbol':'1.2-4' }}</td>
+                        <td>{{ ev.referencia }}</td>
+                        <td>{{ ev.usuario || '—' }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </ng-container>
+</div>

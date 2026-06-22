@@ -10,6 +10,12 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { NgSelectModule } from '@ng-select/ng-select';
+import {
+  MAX_DIAS_EXPORT_GENERAL,
+  esErrorTimeoutExport,
+  mensajeErrorTimeoutExport,
+  validarPeriodoExport,
+} from '../../../helpers/export-period.helper';
 
 @Component({
     selector: 'app-kardex',
@@ -26,6 +32,7 @@ export class KardexComponent implements OnInit, OnDestroy {
   public lotes: any[] = [];
   public filtros: any = {};
   public loading = false;
+  public readonly maxDiasKardexExport = MAX_DIAS_EXPORT_GENERAL;
 
   /** Producto seleccionado en el buscador (mismo flujo que facturación compras) */
   public productoSeleccionado: any = null;
@@ -251,6 +258,15 @@ export class KardexComponent implements OnInit, OnDestroy {
       this.alertService.warning('Kardex', 'Seleccione un producto para exportar.');
       return;
     }
+    const check = validarPeriodoExport(
+      this.filtros.inicio,
+      this.filtros.fin,
+      MAX_DIAS_EXPORT_GENERAL
+    );
+    if (!check.valid) {
+      this.alertService.error(check.error);
+      return;
+    }
     this.apiService.export('productos/kardex/exportar', this.filtros).subscribe((data: Blob) => {
       const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       const url = window.URL.createObjectURL(blob);
@@ -261,6 +277,12 @@ export class KardexComponent implements OnInit, OnDestroy {
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
-    }, (error) => { console.error('Error al exportar kardex:', error); });
+    }, (error) => {
+      if (esErrorTimeoutExport(error)) {
+        this.alertService.error(mensajeErrorTimeoutExport(MAX_DIAS_EXPORT_GENERAL));
+      } else {
+        this.alertService.error(error);
+      }
+    });
   }
 }

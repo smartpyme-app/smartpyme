@@ -9,6 +9,22 @@ import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { TruncatePipe } from '@pipes/truncate.pipe';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
+import {
+  ExportLimiteTipo,
+  ExportPeriodoState,
+  MESES_EXPORT_PERIODO,
+  MAX_DIAS_EXPORT_DETALLES,
+  MAX_DIAS_EXPORT_VENTAS,
+  aniosDisponiblesExportDesde,
+  buildFechasExportValidadas,
+  crearEstadoExportPeriodoDefault,
+  diasEntreFechasIso,
+  esErrorTimeoutExport,
+  maxDiasExportPorTipo,
+  mensajeErrorTimeoutExport,
+  prefillExportPeriodoDesdeFiltros,
+  validarPeriodoExport,
+} from '../../../../helpers/export-period.helper';
 
 declare var $:any;
 
@@ -30,6 +46,14 @@ export class GastosRecurrentesComponent extends BaseCrudComponent<any> implement
     public usuarios:any = [];
     public sucursales:any = [];
     public buscador:any = '';
+    public downloadingGastos = false;
+    public downloadingDetalles = false;
+
+    public reporteSeleccionado = '';
+    public exportPeriodo: ExportPeriodoState = crearEstadoExportPeriodoDefault();
+    public readonly mesesExportPeriodo = MESES_EXPORT_PERIODO;
+    public readonly aniosDisponiblesExport = aniosDisponiblesExportDesde();
+    public readonly maxDiasExportPorTipoFn = maxDiasExportPorTipo;
 
     constructor(
         apiService: ApiService, 
@@ -211,11 +235,71 @@ export class GastosRecurrentesComponent extends BaseCrudComponent<any> implement
     }
 
     public openDescargar(template: TemplateRef<any>) {
+        this.reporteSeleccionado = '';
+        this.exportPeriodo = crearEstadoExportPeriodoDefault();
         this.openModal(template);
     }
 
-    public descargarGastos(){
-        this.apiService.export('gastos/exportar', this.filtros)
+    public cerrarModalDescargar(): void {
+        if (this.modalRef) {
+            this.modalRef.hide();
+        }
+    }
+
+    public get anioEnCursoParaMes(): number {
+        return new Date().getFullYear();
+    }
+
+    public seleccionarReporteGastos(reporte: string): void {
+        this.reporteSeleccionado = reporte;
+        this.exportPeriodo = crearEstadoExportPeriodoDefault();
+        prefillExportPeriodoDesdeFiltros(this.filtros, this.exportPeriodo);
+    }
+
+    public get tipoLimiteExportGastos(): ExportLimiteTipo | null {
+        if (!this.reporteSeleccionado) return null;
+        if (this.reporteSeleccionado === 'detalles') return 'detalles';
+        return 'ventas';
+    }
+
+    public get puedeDescargarReporteGastos(): boolean {
+        const tipo = this.tipoLimiteExportGastos;
+        return !!tipo && buildFechasExportValidadas(this.exportPeriodo, tipo) !== null;
+    }
+
+    public rangoExportSuperaLimiteGastos(tipo: ExportLimiteTipo): boolean {
+        if (buildFechasExportValidadas(this.exportPeriodo, tipo)) return false;
+        const ini = this.exportPeriodo.rangoInicio?.trim();
+        const fin = this.exportPeriodo.rangoFin?.trim();
+        if (this.exportPeriodo.tipo === 'rango' && ini && fin && ini <= fin) {
+            return diasEntreFechasIso(ini, fin) > maxDiasExportPorTipo(tipo);
+        }
+        return false;
+    }
+
+    public descargarReporteGastosSeleccionado(): void {
+        const tipo = this.tipoLimiteExportGastos;
+        if (!tipo) return;
+        const fechas = buildFechasExportValidadas(this.exportPeriodo, tipo);
+        if (!fechas) {
+            const max = maxDiasExportPorTipo(tipo);
+            const check = validarPeriodoExport(this.exportPeriodo.rangoInicio, this.exportPeriodo.rangoFin, max);
+            this.alertService.error(check.error ?? 'Período inválido.');
+            return;
+        }
+        const filtrosExport = { ...this.filtros, inicio: fechas.inicio, fin: fechas.fin };
+        if (this.reporteSeleccionado === 'detalles') {
+            this.descargarDetalles(filtrosExport);
+        } else {
+            this.descargarGastos(filtrosExport);
+        }
+    }
+
+    public descargarGastos(filtrosExport?: Record<string, unknown>){
+        const filtros = filtrosExport ?? { ...this.filtros };
+        this.downloadingGastos = true;
+        this.saving = true;
+        this.apiService.export('gastos/exportar', filtros)
           .pipe(this.untilDestroyed())
           .subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -227,12 +311,26 @@ export class GastosRecurrentesComponent extends BaseCrudComponent<any> implement
             a.click();
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
-          }, (error) => {console.error('Error al exportar gastos:', error); }
+            this.downloadingGastos = false;
+            this.saving = false;
+            this.cerrarModalDescargar();
+          }, (error) => {
+            if (esErrorTimeoutExport(error)) {
+                this.alertService.error(mensajeErrorTimeoutExport(MAX_DIAS_EXPORT_VENTAS));
+            } else {
+                this.alertService.error(error);
+            }
+            this.downloadingGastos = false;
+            this.saving = false;
+          }
         );
     }
 
-    public descargarDetalles(){
-        this.apiService.export('gastos-detalles/exportar', this.filtros)
+    public descargarDetalles(filtrosExport?: Record<string, unknown>){
+        const filtros = filtrosExport ?? { ...this.filtros };
+        this.downloadingDetalles = true;
+        this.saving = true;
+        this.apiService.export('gastos-detalles/exportar', filtros)
           .pipe(this.untilDestroyed())
           .subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -244,7 +342,18 @@ export class GastosRecurrentesComponent extends BaseCrudComponent<any> implement
             a.click();
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
-          }, (error) => {console.error('Error al exportar gastos:', error); }
+            this.downloadingDetalles = false;
+            this.saving = false;
+            this.cerrarModalDescargar();
+          }, (error) => {
+            if (esErrorTimeoutExport(error)) {
+                this.alertService.error(mensajeErrorTimeoutExport(MAX_DIAS_EXPORT_DETALLES));
+            } else {
+                this.alertService.error(error);
+            }
+            this.downloadingDetalles = false;
+            this.saving = false;
+          }
         );
     }
 

@@ -4,6 +4,7 @@ namespace App\Exports\ReportesAutomaticos\DetalleVentasPorVendedor;
 
 use App\Exports\ReportesAutomaticos\DetalleVentasPorVendedor\DetalleVentasResumenSheet;
 use App\Exports\ReportesAutomaticos\DetalleVentasPorVendedor\DetalleVentasVendedorSheet;
+use App\Services\Ventas\VentaMontosPorVendedorService;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -51,8 +52,10 @@ class DetalleVentasVendedorExport implements WithMultipleSheets
             $query = DB::table('detalles_venta as dv')
                 ->join('productos as pro', 'dv.id_producto', '=', 'pro.id')
                 ->join('categorias as cat', 'pro.id_categoria', '=', 'cat.id')
-                ->join('users as us', 'dv.id_vendedor', '=', 'us.id')
                 ->join('ventas as vv', 'dv.id_venta', '=', 'vv.id')
+                ->join('users as us', function ($join) {
+                    $join->on('us.id', '=', DB::raw(VentaMontosPorVendedorService::sqlIdVendedorEfectivo('dv', 'vv')));
+                })
                 ->leftJoin('clientes as cl', 'vv.id_cliente', '=', 'cl.id')
                 ->leftJoin('sucursales as suc', 'vv.id_sucursal', '=', 'suc.id')
                 ->leftJoin('documentos as doc', 'vv.id_documento', '=', 'doc.id')
@@ -79,8 +82,9 @@ class DetalleVentasVendedorExport implements WithMultipleSheets
                 'dv.cantidad',
                 'dv.precio',
                 'dv.descuento',
+                DB::raw('COALESCE(dv.iva, 0) as iva'),
                 DB::raw('(dv.cantidad * dv.precio) as subtotal'),
-                DB::raw('(dv.cantidad * dv.precio - COALESCE(dv.descuento, 0)) as total_con_descuento')
+                DB::raw('(dv.cantidad * dv.precio - COALESCE(dv.descuento, 0) + COALESCE(dv.iva, 0)) as total_con_descuento')
             )
                 ->orderBy('us.name')
                 ->orderBy('vv.fecha')

@@ -13,6 +13,20 @@ import { ImportarExcelComponent } from '@shared/parts/importar-excel/importar-ex
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
 import { SumPipe } from '@pipes/sum.pipe';
+import {
+  ExportPeriodoState,
+  MESES_EXPORT_PERIODO,
+  MAX_DIAS_EXPORT_GENERAL,
+  aniosDisponiblesExportDesde,
+  buildFechasExportValidadas,
+  crearEstadoExportPeriodoDefault,
+  diasEntreFechasIso,
+  esErrorTimeoutExport,
+  maxDiasExportPorTipo,
+  mensajeErrorTimeoutExport,
+  prefillExportPeriodoDesdeFiltros,
+  validarPeriodoExport,
+} from '../../../helpers/export-period.helper';
 
 @Component({
     selector: 'app-productos',
@@ -48,11 +62,12 @@ export class ProductosComponent implements OnInit {
     public mostrarTransformacionProductos = false;
     public ajuste: any = {};
     public inventario: any = {};
-    public filtrosKardex: any = {
-        fecha_inicio: '',
-        fecha_fin: ''
-    };
+    public exportPeriodoKardex: ExportPeriodoState = crearEstadoExportPeriodoDefault();
+    public readonly mesesExportPeriodo = MESES_EXPORT_PERIODO;
+    public readonly aniosDisponiblesExport = aniosDisponiblesExportDesde();
+    public readonly maxDiasExportPorTipo = maxDiasExportPorTipo;
     public emailKardex: string = '';
+    public readonly maxDiasKardexExport = MAX_DIAS_EXPORT_GENERAL;
 
     modalRef!: BsModalRef;
 
@@ -235,6 +250,12 @@ export class ProductosComponent implements OnInit {
         this.modalRef = this.modalService.show(template);
     }
 
+    public cerrarModalDescargar(): void {
+        if (this.modalRef) {
+            this.modalRef.hide();
+        }
+    }
+
     public descargarReporteInventarioVentasMensual() {
         this.downloadingReporteAnalisis = true;
         const empresa = this.apiService.auth_user()?.empresa;
@@ -321,85 +342,57 @@ export class ProductosComponent implements OnInit {
 
     }
 
-    public descargarKardex() {
-        this.loading = true;
+    public get anioEnCursoParaMes(): number {
+        return new Date().getFullYear();
+    }
 
-        // Debug: verificar estructura de datos
-        console.log('Estructura completa de productos:', this.productos);
-        console.log('Productos.data:', this.productos.data);
-        console.log('Tipo de productos.data:', typeof this.productos.data);
-        console.log('Es array:', Array.isArray(this.productos.data));
+    public get puedeDescargarKardex(): boolean {
+        return buildFechasExportValidadas(this.exportPeriodoKardex, 'general') !== null;
+    }
 
-        // Usar directamente los productos de la página actual
-        const productoIds = this.productos.data.map((p: any) => p.id);
-        console.log('Productos en página actual:', this.productos.data.length);
-        console.log('IDs de productos a enviar:', productoIds);
-        console.log('Tipo de productoIds:', typeof productoIds);
-        console.log('Es array productoIds:', Array.isArray(productoIds));
-
-        const filtrosConProductos = {
-            producto_ids: productoIds.join(','), // Enviar como string separado por comas
-            inicio: undefined, // Sin filtro de fecha
-            fin: undefined // Sin filtro de fecha
-        };
-
-        // console.log('Filtros con productos:', filtrosConProductos);
-        // console.log('Tipo de filtrosConProductos.producto_ids:', typeof filtrosConProductos.producto_ids);
-
-        this.apiService.export('productos/kardex/exportar-filtrado', filtrosConProductos).subscribe((data: Blob) => {
-            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'kardex-filtrado.xlsx';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-            this.loading = false;
-        }, (error) => {
-            this.alertService.error(error);
-            this.loading = false;
-        });
+    public rangoExportSuperaLimiteKardex(): boolean {
+        const fechas = buildFechasExportValidadas(this.exportPeriodoKardex, 'general');
+        if (fechas) return false;
+        const ini = this.exportPeriodoKardex.rangoInicio?.trim();
+        const fin = this.exportPeriodoKardex.rangoFin?.trim();
+        if (this.exportPeriodoKardex.tipo === 'rango' && ini && fin && ini <= fin) {
+            return diasEntreFechasIso(ini, fin) > maxDiasExportPorTipo('general');
+        }
+        return false;
     }
 
     public openDescargarKardex(template: TemplateRef<any>) {
-        // Cerrar el modal actual (modal de descarga)
         if (this.modalRef) {
             this.modalRef.hide();
         }
 
-        // Resetear filtros de kardex
-        this.filtrosKardex = {
-            fecha_inicio: '',
-            fecha_fin: ''
-        };
+        this.exportPeriodoKardex = crearEstadoExportPeriodoDefault();
+        prefillExportPeriodoDesdeFiltros(this.filtros, this.exportPeriodoKardex);
 
-        // Abrir el modal de kardex
         this.modalRef = this.modalService.show(template);
     }
 
     public descargarKardexConFiltros() {
-        // Validar que las fechas estén completas
-        if (!this.filtrosKardex.fecha_inicio || !this.filtrosKardex.fecha_fin) {
-            this.alertService.error('Debe seleccionar fecha de inicio y fecha fin');
+        const fechas = buildFechasExportValidadas(this.exportPeriodoKardex, 'general');
+        if (!fechas) {
+            const check = validarPeriodoExport(
+                this.exportPeriodoKardex.rangoInicio,
+                this.exportPeriodoKardex.rangoFin,
+                MAX_DIAS_EXPORT_GENERAL
+            );
+            this.alertService.error(check.error ?? 'Período inválido.');
             return;
         }
 
         this.loading = true;
 
-        // Usar directamente los productos de la página actual
         const productoIds = this.productos.data.map((p: any) => p.id);
-        console.log('Productos en página actual:', this.productos.data.length);
-        console.log('IDs de productos a enviar:', productoIds);
 
         const filtrosConProductos = {
-            producto_ids: productoIds.join(','), // Enviar como string separado por comas
-            inicio: this.filtrosKardex.fecha_inicio,
-            fin: this.filtrosKardex.fecha_fin
+            producto_ids: productoIds.join(','),
+            inicio: fechas.inicio,
+            fin: fechas.fin
         };
-
-        console.log('Filtros con productos:', filtrosConProductos);
 
         this.apiService.export('productos/kardex/exportar-filtrado', filtrosConProductos).subscribe((data: Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -412,9 +405,13 @@ export class ProductosComponent implements OnInit {
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
             this.loading = false;
-            this.modalRef.hide();
+            this.cerrarModalDescargar();
         }, (error) => {
-            this.alertService.error(error);
+            if (esErrorTimeoutExport(error)) {
+                this.alertService.error(mensajeErrorTimeoutExport(MAX_DIAS_EXPORT_GENERAL));
+            } else {
+                this.alertService.error(error);
+            }
             this.loading = false;
         });
     }

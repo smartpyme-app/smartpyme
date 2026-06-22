@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, TemplateRef, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PipesModule } from '@pipes/pipes.module';
 import { FormsModule } from '@angular/forms';
@@ -8,6 +8,7 @@ import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { TruncatePipe } from '@pipes/truncate.pipe';
+import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
@@ -33,6 +34,23 @@ const SLUG_IMPORTACION_MASIVA_COMPRAS_JSON = 'importacion-masiva-compras-json';
 import { debounceTime, distinctUntilChanged, switchMap, takeUntil, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { esTipoFacturaElectronicaCompraCr } from '@views/ventas/documentos/documento-nombre-options';
+import {
+  ExportLimiteTipo,
+  ExportPeriodoState,
+  MESES_EXPORT_PERIODO,
+  MAX_DIAS_EXPORT_DETALLES,
+  MAX_DIAS_EXPORT_GENERAL,
+  MAX_DIAS_EXPORT_VENTAS,
+  aniosDisponiblesExportDesde,
+  buildFechasExportValidadas,
+  crearEstadoExportPeriodoDefault,
+  diasEntreFechasIso,
+  esErrorTimeoutExport,
+  maxDiasExportPorTipo,
+  mensajeErrorTimeoutExport,
+  prefillExportPeriodoDesdeFiltros,
+  validarPeriodoExport,
+} from '../../helpers/export-period.helper';
 
 declare var $:any;
 
@@ -76,10 +94,17 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
     public numeros_ids:any = [];
     public downloadingRentabilidad:boolean = false;
     public contabilidadHabilitada: boolean = false;
+    public reporteSeleccionado = '';
+    public exportPeriodo: ExportPeriodoState = crearEstadoExportPeriodoDefault();
+    public readonly mesesExportPeriodo = MESES_EXPORT_PERIODO;
+    public readonly aniosDisponiblesExport = aniosDisponiblesExportDesde();
 
     protected aplicarFiltros(): void {
         this.filtrarCompras();
     }
+
+    @ViewChild('mfiltrosAcumulado')
+    public mfiltrosRentabilidadTpl!: TemplateRef<any>;
 
     /** Importación masiva JSON (listado de compras) */
     public bulkModalRef!: BsModalRef;
@@ -472,15 +497,119 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
     }
 
     public openDescargar(template: TemplateRef<any>) {
+        this.reporteSeleccionado = '';
+        this.exportPeriodo = crearEstadoExportPeriodoDefault();
         this.openModal(template);
     }
 
-    public descargarCompras(){
+    public cerrarModalDescargar(): void {
+        if (this.modalRef) {
+            this.modalRef.hide();
+        }
+        if (this.modalRefRentabilidad) {
+            this.modalRefRentabilidad.hide();
+        }
+    }
+
+    public get tipoLimiteExportCompras(): ExportLimiteTipo | null {
+        if (!this.reporteSeleccionado) return null;
+        if (this.reporteSeleccionado === 'detalles') return 'detalles';
+        return 'general';
+    }
+
+    public maxDiasExportCompras(tipo: ExportLimiteTipo): number {
+        return maxDiasExportPorTipo(tipo);
+    }
+
+    public get anioEnCursoParaMes(): number {
+        return new Date().getFullYear();
+    }
+
+    public seleccionarReporteCompras(reporte: string): void {
+        this.reporteSeleccionado = reporte;
+        this.exportPeriodo = crearEstadoExportPeriodoDefault();
+        prefillExportPeriodoDesdeFiltros(this.filtros, this.exportPeriodo);
+    }
+
+    public rangoExportSuperaLimiteCompras(tipo: ExportLimiteTipo): boolean {
+        const fechas = buildFechasExportValidadas(this.exportPeriodo, tipo);
+        if (!fechas) {
+            const raw = this.exportPeriodo;
+            const ini = raw.rangoInicio?.trim();
+            const fin = raw.rangoFin?.trim();
+            if (raw.tipo === 'rango' && ini && fin && ini <= fin) {
+                return diasEntreFechasIso(ini, fin) > this.maxDiasExportCompras(tipo);
+            }
+        }
+        return false;
+    }
+
+    public get puedeDescargarReporteCompras(): boolean {
+        const tipo = this.tipoLimiteExportCompras;
+        return !!tipo && buildFechasExportValidadas(this.exportPeriodo, tipo) !== null;
+    }
+
+    public get reporteComprasRequiereFiltrosAdicionales(): boolean {
+        return this.reporteSeleccionado === 'rentabilidad';
+    }
+
+    private filtrosExportCompras(): Record<string, unknown> | null {
+        const tipo = this.tipoLimiteExportCompras;
+        if (!tipo) return null;
+        const fechas = buildFechasExportValidadas(this.exportPeriodo, tipo);
+        if (!fechas) return null;
+        return { ...this.filtros, inicio: fechas.inicio, fin: fechas.fin };
+    }
+
+    private alertPeriodoExportInvalidoCompras(tipo: ExportLimiteTipo): void {
+        const max = this.maxDiasExportCompras(tipo);
+        const fechas = buildFechasExportValidadas(this.exportPeriodo, tipo);
+        if (!fechas) {
+            const check = validarPeriodoExport(
+                this.exportPeriodo.rangoInicio,
+                this.exportPeriodo.rangoFin,
+                max
+            );
+            if (!check.valid && check.error) {
+                this.alertService.error(check.error);
+                return;
+            }
+        }
+        this.alertService.error(`Debe indicar un período válido (máximo ${max} días).`);
+    }
+
+    public descargarReporteComprasSeleccionado(): void {
+        const tipo = this.tipoLimiteExportCompras;
+        if (!tipo) return;
+        const filtrosExport = this.filtrosExportCompras();
+        if (!filtrosExport) {
+            this.alertPeriodoExportInvalidoCompras(tipo);
+            return;
+        }
+        if (this.reporteSeleccionado === 'rentabilidad') {
+            this.filtrosRentabilidad.inicio = String(filtrosExport['inicio'] ?? '');
+            this.filtrosRentabilidad.fin = String(filtrosExport['fin'] ?? '');
+            this.abrirModalFiltrosRentabilidad(this.mfiltrosRentabilidadTpl);
+            return;
+        }
+        if (this.reporteSeleccionado === 'detalles') {
+            this.descargarDetalles(filtrosExport);
+        } else if (this.reporteSeleccionado === 'compras') {
+            this.descargarCompras(filtrosExport);
+        }
+    }
+
+    public descargarCompras(filtrosExport?: Record<string, unknown>){
+        const filtros = filtrosExport ?? this.filtrosExportCompras();
+        if (!filtros) {
+            this.alertPeriodoExportInvalidoCompras('general');
+            return;
+        }
         this.downloadingCompras = true; this.saving = true;
-        this.apiService.export('compras/exportar', this.filtrosParaApi())
+        this.apiService.export('compras/exportar', filtros)
             .pipe(this.untilDestroyed())
-            .subscribe((data) => {
-            const blob = new Blob([data as Blob], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            .subscribe((data: Blob) => {
+            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -491,16 +620,28 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
             window.URL.revokeObjectURL(url);
             this.downloadingCompras = false; this.saving = false;
             this.cdr.markForCheck();
-          }, (error) => {this.alertService.error(error); this.downloadingCompras = false; this.saving = false; this.cdr.markForCheck();}
+          }, (error) => {
+            if (esErrorTimeoutExport(error)) {
+                this.alertService.error(mensajeErrorTimeoutExport(MAX_DIAS_EXPORT_VENTAS));
+            } else {
+                this.alertService.error(error);
+            }
+            this.downloadingCompras = false; this.saving = false; this.cdr.markForCheck();
+          }
         );
     }
 
-    public descargarDetalles(){
+    public descargarDetalles(filtrosExport?: Record<string, unknown>){
+        const filtros = filtrosExport ?? this.filtrosExportCompras();
+        if (!filtros) {
+            this.alertPeriodoExportInvalidoCompras('detalles');
+            return;
+        }
         this.downloadingDetalles = true; this.saving = true;
-        this.apiService.export('compras-detalles/exportar', this.filtrosParaApi())
+        this.apiService.export('compras-detalles/exportar', filtros)
             .pipe(this.untilDestroyed())
-            .subscribe((data) => {
-            const blob = new Blob([data as Blob], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            .subscribe((data: Blob) => {
+            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -511,7 +652,12 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
             window.URL.revokeObjectURL(url);
             this.downloadingDetalles = false; this.saving = false;
             this.cdr.markForCheck();
-          }, (error) => {this.alertService.error(error); this.downloadingDetalles = false; this.saving = false; this.cdr.markForCheck(); }
+          }, (error) => {
+            } else {
+                this.alertService.error(error);
+            }
+            this.downloadingDetalles = false; this.saving = false; this.cdr.markForCheck();
+          }
         );
     }
 
@@ -884,6 +1030,16 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
 
 
   public descargarReporteRentabilidad() {
+    const check = validarPeriodoExport(
+      this.filtrosRentabilidad.inicio,
+      this.filtrosRentabilidad.fin,
+      MAX_DIAS_EXPORT_GENERAL
+    );
+    if (!check.valid) {
+      this.alertService.error(check.error);
+      return;
+    }
+
     this.downloadingRentabilidad = true;
     this.saving = true;
 
@@ -907,6 +1063,9 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
         if (this.modalRefRentabilidad) {
           this.modalManager.closeModal(this.modalRefRentabilidad);
           this.modalRefRentabilidad = undefined;
+        }
+        if (this.modalRef) {
+          this.modalRef.hide();
         }
 
         this.downloadingRentabilidad = false;

@@ -4,6 +4,7 @@ namespace App\Exports\ReportesAutomaticos\VentasPorCategoriaPorVendedor;
 
 use App\Models\Admin\Sucursal;
 use Illuminate\Support\Facades\DB;
+use App\Services\Ventas\VentaMontosPorVendedorService;
 use Illuminate\Support\Facades\Log;
 
 class VentasPorCategoriaVendedorPdfExport
@@ -85,8 +86,10 @@ class VentasPorCategoriaVendedorPdfExport
             $query = DB::table('detalles_venta as dv')
                 ->join('productos as pro', 'dv.id_producto', '=', 'pro.id')
                 ->join('categorias as cat', 'pro.id_categoria', '=', 'cat.id')
-                ->join('users as us', 'dv.id_vendedor', '=', 'us.id')
                 ->join('ventas as vv', 'dv.id_venta', '=', 'vv.id')
+                ->join('users as us', function ($join) {
+                    $join->on('us.id', '=', DB::raw(VentaMontosPorVendedorService::sqlIdVendedorEfectivo('dv', 'vv')));
+                })
                 ->where('vv.estado', '!=', 'Anulada')
                 ->where('vv.id_empresa', $this->id_empresa)
                 ->whereBetween('vv.fecha', [$this->fechaInicio, $this->fechaFin]);

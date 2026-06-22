@@ -14,6 +14,13 @@ import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { ImportarExcelComponent } from '@shared/parts/importar-excel/importar-excel.component';
 import { AlertsHaciendaComponent } from '@shared/parts/alerts-hacienda/alerts-hacienda.component';
+import {
+  MAX_DIAS_EXPORT_DETALLES,
+  MAX_DIAS_EXPORT_VENTAS,
+  validarPeriodoExport,
+  esErrorTimeoutExport,
+  mensajeErrorTimeoutExport,
+} from '../../../../helpers/export-period.helper';
 
 @Component({
     selector: 'app-caja-ventas',
@@ -201,7 +208,18 @@ export class CajaVentasComponent extends BaseCrudComponent<any> implements OnIni
     }
 
     public descargarVentas(){
-        this.apiService.export('ventas/exportar', this.filtros)
+        const hoy = new Date().toISOString().split('T')[0];
+        const filtrosExport = {
+            ...this.filtros,
+            inicio: this.filtros.inicio || hoy,
+            fin: this.filtros.fin || hoy,
+        };
+        const check = validarPeriodoExport(filtrosExport.inicio, filtrosExport.fin, MAX_DIAS_EXPORT_VENTAS);
+        if (!check.valid) {
+            this.alertService.error(check.error);
+            return;
+        }
+        this.apiService.export('ventas/exportar', filtrosExport)
           .pipe(this.untilDestroyed())
           .subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -213,12 +231,29 @@ export class CajaVentasComponent extends BaseCrudComponent<any> implements OnIni
             a.click();
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
-          }, (error) => {console.error('Error al exportar ventas:', error); }
+          }, (error) => {
+            if (esErrorTimeoutExport(error)) {
+                this.alertService.error(mensajeErrorTimeoutExport(MAX_DIAS_EXPORT_VENTAS));
+            } else {
+                this.alertService.error(error);
+            }
+          }
         );
     }
 
     public descargarDetalles(){
-        this.apiService.export('ventas-detalles/exportar', this.filtros)
+        const hoy = new Date().toISOString().split('T')[0];
+        const filtrosExport = {
+            ...this.filtros,
+            inicio: this.filtros.inicio || hoy,
+            fin: this.filtros.fin || hoy,
+        };
+        const check = validarPeriodoExport(filtrosExport.inicio, filtrosExport.fin, MAX_DIAS_EXPORT_DETALLES);
+        if (!check.valid) {
+            this.alertService.error(check.error);
+            return;
+        }
+        this.apiService.export('ventas-detalles/exportar', filtrosExport)
           .pipe(this.untilDestroyed())
           .subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -230,7 +265,13 @@ export class CajaVentasComponent extends BaseCrudComponent<any> implements OnIni
             a.click();
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
-          }, (error) => {console.error('Error al exportar ventas:', error); }
+          }, (error) => {
+            if (esErrorTimeoutExport(error)) {
+                this.alertService.error(mensajeErrorTimeoutExport(MAX_DIAS_EXPORT_DETALLES));
+            } else {
+                this.alertService.error(error);
+            }
+          }
         );
     }
 
@@ -335,7 +376,7 @@ export class CajaVentasComponent extends BaseCrudComponent<any> implements OnIni
             this.venta = venta;
             this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
             this.saving = false;
-        }).catch((error) => {
+        }).catch((error: unknown) => {
             this.saving = false;
             this.alertService.warning('Hubo un problema', error);
         });
@@ -454,19 +495,20 @@ export class CajaVentasComponent extends BaseCrudComponent<any> implements OnIni
                             }
 
                             this.alertService.success('DTE anulado.', 'El DTE fue anulado exitosamente.');
-                        },error => {
-                            if(error.error.descripcionMsg){
-                                this.alertService.warning('Hubo un problema', error.error.descripcionMsg);
+                        }, (error: unknown) => {
+                            const err = error as { error?: { descripcionMsg?: string; observaciones?: unknown[] } };
+                            if (err.error?.descripcionMsg) {
+                                this.alertService.warning('Hubo un problema', err.error.descripcionMsg);
                             }
-                            if(error.error.observaciones.length > 0){
-                                this.alertService.warning('Hubo un problema', error.error.observaciones);
+                            if (err.error?.observaciones && err.error.observaciones.length > 0) {
+                                this.alertService.warning('Hubo un problema', err.error.observaciones);
                             }
                             this.saving = false;
                         });
 
-                    },error => {this.alertService.error(error);this.saving = false; });
+                    }, (error: unknown) => {this.alertService.error(error);this.saving = false; });
 
-                },error => {this.alertService.error(error);this.saving = false; });
+                }, (error: unknown) => {this.alertService.error(error);this.saving = false; });
             }
         }
         else{

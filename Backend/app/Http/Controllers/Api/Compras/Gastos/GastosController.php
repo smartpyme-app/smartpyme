@@ -17,6 +17,7 @@ use App\Models\Compras\Gastos\DetalleEgreso;
 use Illuminate\Support\Facades\DB;
 
 use App\Exports\GastosExport;
+use App\Helpers\ExportPeriodHelper;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Models\Compras\Proveedores\Proveedor as ProveedorToGasto;
 use Illuminate\Support\Facades\Log;
@@ -460,10 +461,29 @@ class GastosController extends Controller
 
     public function export(Request $request)
     {
-        $gastos = new GastosExport();
-        $gastos->filter($request);
+        ExportPeriodHelper::assertValidPeriod($request, ExportPeriodHelper::MAX_DIAS_VENTAS_TOTALES);
 
-        return Excel::download($gastos, 'gastos.xlsx');
+        try {
+            ini_set('memory_limit', '512M');
+            set_time_limit(300);
+
+            $gastos = new GastosExport();
+            $gastos->filter($request);
+
+            return Excel::download($gastos, 'gastos.xlsx');
+        } catch (\Throwable $e) {
+            if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpException) {
+                throw $e;
+            }
+
+            Log::error('Error al exportar gastos: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'error' => 'Error al generar el reporte. Intente con un rango de fechas más corto.',
+            ], 500);
+        }
     }
 
     /**

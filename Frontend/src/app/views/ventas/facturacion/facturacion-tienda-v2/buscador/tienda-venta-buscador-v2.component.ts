@@ -257,9 +257,34 @@ export class TiendaVentaBuscadorV2Component implements OnInit {
             this.detalle.factor_conversion = producto.factor_conversion ?? 1;
             this.detalle.descripcion       = producto.nombre_mostrar;
             this.detalle.tipo              = producto.tipo;
-            this.detalle.stock             = producto.tipo === 'Servicio'
-                ? null
-                : (producto.stock_base_actual ?? null);
+
+            if (producto.tipo === 'Servicio') {
+                this.detalle.stock                = null;
+                this.detalle.inventario_por_lotes = false;
+                this.detalle.lote_id              = null;
+            } else if (
+                producto.inventario_por_lotes &&
+                producto.lotes?.length > 0 &&
+                this.apiService.isLotesActivo()
+            ) {
+                const lotesBodega = this.venta.id_bodega
+                    ? producto.lotes.filter((l: any) => l.id_bodega == this.venta.id_bodega)
+                    : producto.lotes;
+                let stockLotes = lotesBodega.reduce(
+                    (sum: number, lote: any) => sum + (parseFloat(lote.stock) || 0), 0
+                );
+                const factor = parseFloat(String(producto.factor_conversion ?? 1)) || 1;
+                if (factor > 0) {
+                    stockLotes = stockLotes / factor;
+                }
+                this.detalle.stock                = stockLotes;
+                this.detalle.inventario_por_lotes = true;
+                this.detalle.lote_id              = null;
+            } else {
+                this.detalle.stock                = producto.stock_base_actual ?? null;
+                this.detalle.inventario_por_lotes = false;
+                this.detalle.lote_id              = null;
+            }
         } else {
             this.detalle.id_producto       = producto.id;
             this.detalle.id_presentacion   = null;

@@ -49,6 +49,7 @@ Route::get('/productos/kardex/estado-cola', [KardexController::class, 'estadoCol
 
     Route::post('/productos/analisis',          [ProductosController::class, 'analisis']);
     Route::get('/producto/precios/historicos/{id}', [ProductosController::class, 'precios']);
+    Route::get('/producto/historial-precio-costo/{id}', [ProductosController::class, 'historialPrecioCosto']);
 
     // Rutas para búsqueda dinámica en facturación de compras
     Route::post('/productos/buscar-modal',      [ProductosController::class, 'buscarModal']);

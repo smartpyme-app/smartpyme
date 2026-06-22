@@ -115,6 +115,9 @@ export class LibroComprasSujetosExcluidosComponent extends BaseModalComponent im
             case 'libro_excel':
                 this.descargarLibro();
                 break;
+            case 'libro_pdf':
+                this.descargarLibroPDF();
+                break;
             case 'anexo_csv':
                 this.descargarAnexo();
                 break;
@@ -162,6 +165,15 @@ export class LibroComprasSujetosExcluidosComponent extends BaseModalComponent im
             this.cdr.markForCheck();
           }, (error) => { this.manejarErrorDescarga(error); this.cdr.markForCheck(); }
         );
+    }
+
+    public descargarLibroPDF(): void {
+        this.filtros.formato = 'pdf';
+        const filtros = new URLSearchParams(this.filtros).toString();
+        const token = this.apiService.auth_token();
+
+        const url = `${this.apiService.baseUrl}/api/libro-iva/compras-sujetos-excluidos?${filtros}&token=${token}`;
+        window.open(url, '_blank');
     }
 
     public descargarAnexo() {

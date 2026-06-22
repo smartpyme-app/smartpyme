@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Inventario;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Helpers\ExportPeriodHelper;
 
 use App\Models\Inventario\Kardex;
 use App\Models\Inventario\Producto;
@@ -119,20 +120,47 @@ class KardexController extends Controller
 
     public function export(Request $request)
     {
-        $kardex = new KardexFarmaciasExport();
-        $kardex->filter($request);
+        ExportPeriodHelper::assertValidPeriod($request, ExportPeriodHelper::MAX_DIAS_GENERAL);
 
-        return Excel::download($kardex, 'kardex.xlsx');
+        try {
+            ini_set('memory_limit', '512M');
+            set_time_limit(300);
+
+            $kardex = new KardexFarmaciasExport();
+            $kardex->filter($request);
+
+            return Excel::download($kardex, 'kardex.xlsx');
+        } catch (\Throwable $e) {
+            if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpException) {
+                throw $e;
+            }
+
+            Log::error('Error al exportar kardex: ' . $e->getMessage());
+            Log::error('Trace: ' . $e->getTraceAsString());
+
+            return Response()->json([
+                'error' => 'Error al generar el reporte. Intente con un rango de fechas más corto.',
+            ], 500);
+        }
     }
 
     public function exportFiltrado(Request $request)
     {
+        ExportPeriodHelper::assertValidPeriod($request, ExportPeriodHelper::MAX_DIAS_GENERAL);
+
         try {
+            ini_set('memory_limit', '512M');
+            set_time_limit(300);
+
             $kardex = new \App\Exports\Inventario\KardexFiltradoExport();
             $kardex->filter($request);
 
             return Excel::download($kardex, 'kardex-filtrado.xlsx');
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpException) {
+                throw $e;
+            }
+
             Log::error('Error al exportar kardex filtrado: ' . $e->getMessage());
             Log::error('Trace: ' . $e->getTraceAsString());
             return Response()->json(['error' => 'No se pudo exportar el kardex filtrado. Verifica que los datos sean correctos.'], 500);

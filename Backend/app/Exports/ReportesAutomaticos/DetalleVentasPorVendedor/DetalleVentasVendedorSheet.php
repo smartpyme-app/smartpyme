@@ -44,6 +44,7 @@ class DetalleVentasVendedorSheet implements FromCollection, WithHeadings, WithMa
                     'cantidad' => $venta->cantidad,
                     'precio' => $venta->precio,
                     'descuento' => $venta->descuento,
+                    'iva' => $venta->iva,
                     'subtotal' => $venta->subtotal,
                     'total_con_descuento' => $venta->total_con_descuento,
                     'es_resumen' => false,
@@ -54,6 +55,7 @@ class DetalleVentasVendedorSheet implements FromCollection, WithHeadings, WithMa
             $ventasFormateadas->push($this->emptyRow());
             
             $totalVentas = $this->ventas->sum('total_con_descuento');
+            $totalIva = $this->ventas->sum('iva');
             $totalProductos = $this->ventas->sum('cantidad');
             $totalTransacciones = $this->ventas->pluck('correlativo')->unique()->count();
             
@@ -70,6 +72,7 @@ class DetalleVentasVendedorSheet implements FromCollection, WithHeadings, WithMa
                 'cantidad' => '',
                 'precio' => '',
                 'descuento' => '',
+                'iva' => $totalIva,
                 'subtotal' => '',
                 'total_con_descuento' => $totalVentas,
                 'es_resumen' => true,
@@ -121,6 +124,7 @@ class DetalleVentasVendedorSheet implements FromCollection, WithHeadings, WithMa
             'Precio',
             'Descuento',
             'Subtotal',
+            'IVA',
             'Total',
             'Transacciones'
         ];
@@ -149,6 +153,7 @@ class DetalleVentasVendedorSheet implements FromCollection, WithHeadings, WithMa
                     '', // Precio
                     '', // Descuento
                     '', // Subtotal
+                    is_numeric($fila['iva']) ? number_format(round($fila['iva'], 2), 2) : '', // IVA
                     is_numeric($fila['total_con_descuento']) ? number_format(round($fila['total_con_descuento'], 2), 2) : $fila['total_con_descuento'], // Total
                     $fila['total_transacciones'] // Transacciones
                 ];
@@ -169,6 +174,7 @@ class DetalleVentasVendedorSheet implements FromCollection, WithHeadings, WithMa
                 is_numeric($fila['precio']) ? number_format(round($fila['precio'], 2), 2) : '', // Precio
                 is_numeric($fila['descuento']) ? number_format(round($fila['descuento'], 2), 2) : '', // Descuento
                 is_numeric($fila['subtotal']) ? number_format(round($fila['subtotal'], 2), 2) : '', // Subtotal
+                is_numeric($fila['iva']) ? number_format(round($fila['iva'], 2), 2) : '', // IVA
                 is_numeric($fila['total_con_descuento']) ? number_format(round($fila['total_con_descuento'], 2), 2) : '', // Total
                 $fila['total_transacciones'] // Transacciones
             ];
@@ -179,7 +185,7 @@ class DetalleVentasVendedorSheet implements FromCollection, WithHeadings, WithMa
             ]);
             
             return [
-                'Error al formatear: ' . $e->getMessage(), '', '', '', '', '', '', '', '', '', '', '', '', '', ''
+                'Error al formatear: ' . $e->getMessage(), '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''
             ];
         }
     }
@@ -217,6 +223,7 @@ class DetalleVentasVendedorSheet implements FromCollection, WithHeadings, WithMa
             'cantidad' => '',
             'precio' => '',
             'descuento' => '',
+            'iva' => '',
             'subtotal' => '',
             'total_con_descuento' => '',
             'es_resumen' => false,

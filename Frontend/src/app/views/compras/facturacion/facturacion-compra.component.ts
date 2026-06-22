@@ -283,7 +283,8 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
         'Recibo',
         'Sujeto excluido',
         'Recibo',
-        'Factura de exportación'
+        'Factura de exportación',
+        'Documento contable de liquidación'
       ];
       if (resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR) {
         documentosPermitidos.push(
