@@ -75,6 +75,12 @@ class FuncionalidadesSeeder extends Seeder
                 'descripcion' => 'Permite gestionar presentaciones de productos',
                 'orden' => 8
             ],
+            [
+                'nombre' => 'Integración BoxFul',
+                'slug' => 'integracion-boxful',
+                'descripcion' => 'Permite integrar con el servicio de envíos BoxFul',
+                'orden' => 9
+            ],
             //Se pueden agregar mas funcionalidades con el mismo formato
         ];
 

@@ -1933,6 +1933,7 @@ export class FacturacionV2Component implements OnInit {
 
       const detalle: any = {
         id_producto: d.id_producto,
+        id_paquete: d.id_paquete || null,
         cantidad: cant,
         precio: precioSinIva.toFixed(4),
         precio_iva: precioConIva.toFixed(4),

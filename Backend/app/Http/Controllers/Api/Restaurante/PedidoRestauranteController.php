@@ -323,6 +323,7 @@ class PedidoRestauranteController extends Controller
 
             return [
                 'id_producto' => $d->producto_id,
+                'id_paquete' => $d->id_paquete,
                 'cantidad' => (float) $d->cantidad,
                 'precio' => $precioSinIva,
                 'precio_con_iva' => $precioConIva,
@@ -381,6 +382,15 @@ class PedidoRestauranteController extends Controller
             'id_venta' => $validated['venta_id'],
             'estado' => 'facturado',
         ]);
+
+        // ponytail: mark associated packages as Facturado
+        $paqueteIds = $pedido->detalles()->whereNotNull('id_paquete')->pluck('id_paquete');
+        if ($paqueteIds->isNotEmpty()) {
+            Paquete::whereIn('id', $paqueteIds)->update([
+                'estado' => 'Facturado',
+                'id_venta' => $validated['venta_id']
+            ]);
+        }
 
         $pedido->load(['detalles.producto', 'cliente', 'usuario', 'venta']);
 

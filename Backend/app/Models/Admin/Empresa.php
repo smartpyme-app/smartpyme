@@ -792,7 +792,7 @@ class Empresa extends Model
     public function getBoxfulClientIdAttribute()
     {
         $integracion = $this->integracion;
-        if ($integracion && empty($integracion->boxful_client_id)) {
+        if ($integracion && $integracion->estado !== 'disconnected' && empty($integracion->boxful_client_id)) {
             try {
                 $service = new \App\Services\BoxFul\BoxFulService($this);
                 $service->getAccessToken(); // Dispara la autorecuperación en BoxFulService

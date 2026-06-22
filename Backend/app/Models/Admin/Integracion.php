@@ -55,6 +55,12 @@ class Integracion extends Model
                 $builder->where('integraciones.id_empresa', $user->id_empresa);
             }
         });
+
+        static::saved(function ($model) {
+            if ($model->proveedor === 'boxful' && in_array($model->estado, ['disconnected', 'error'])) {
+                \Illuminate\Support\Facades\Cache::forget('boxful_access_token_empresa_' . $model->id_empresa);
+            }
+        });
     }
 
     public function empresa()

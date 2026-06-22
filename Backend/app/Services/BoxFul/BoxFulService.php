@@ -130,7 +130,7 @@ class BoxFulService
 
         // Autorecuperación: Si el client_id está vacío pero hay un token en caché o BD
         $clientId = $integracion->getCredential('client_id');
-        if (empty($clientId)) {
+        if (empty($clientId) && $integracion->estado !== 'disconnected') {
             $existingToken = Cache::get($this->cacheKey) ?? $integracion->access_token;
             if (!empty($existingToken)) {
                 $this->fetchAndSaveClientId($existingToken, $integracion);

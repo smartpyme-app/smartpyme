@@ -1524,7 +1524,7 @@
         </section>
     </tab>
 
-    <tab heading="Integración BoxFul" *ngIf="empresa.modulo_paquetes" (selectTab)="onTabSelect($event)">
+    <tab heading="Integración BoxFul" *ngIf="tieneAccesoBoxFul" (selectTab)="onTabSelect($event)">
         <section class="bg-white p-4 rounded mb-3 shadow-sm border border-light">
             <div class="d-flex align-items-center mb-4 pb-2 border-bottom">
                 <div class="bg-light-primary rounded-circle p-2 me-3 d-inline-flex justify-content-center align-items-center"
@@ -1579,6 +1579,13 @@
 
             <div class="row mt-4">
                 <div class="col-12 d-flex justify-content-end">
+                    <button class="btn btn-light text-danger me-2" type="button"
+                        *ngIf="empresa.boxful_email || empresa.has_boxful_password"
+                        [disabled]="disconnectingBoxful"
+                        (click)="disconnectBoxful()">
+                        <i class="fa me-2" [ngClass]="disconnectingBoxful ? 'fa-spinner fa-spin' : 'fa-unlink'"></i>
+                        Desconectar Boxful
+                    </button>
                     <button class="btn btn-light text-info me-2" type="button"
                         [disabled]="testingConnection || !empresa.boxful_email || (!empresa.has_boxful_password && !empresa.boxful_password)"
                         (click)="testBoxfulConnection()">

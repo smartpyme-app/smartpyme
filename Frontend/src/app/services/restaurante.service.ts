@@ -235,6 +235,7 @@ export interface PedidoCanalDetalle {
   id?: number;
   pedido_id?: number;
   producto_id: number;
+  id_paquete?: number;
   cantidad: number;
   precio: number;
   descuento?: number;
@@ -275,6 +276,7 @@ export interface PedidoCanalPayload {
   id_bodega?: number;
   detalles: Array<{
     producto_id: number;
+    id_paquete?: number;
     cantidad: number;
     precio: number;
     descuento?: number;

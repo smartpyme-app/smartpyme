@@ -1380,6 +1380,7 @@ export class FacturacionComponent implements OnInit {
         const sub = Math.max(0, cant * precio - descLine);
         return {
           id_producto: d.id_producto,
+          id_paquete: d.id_paquete || null,
           cantidad: cant,
           precio: precio.toFixed(4),
           descripcion: d.descripcion || '',

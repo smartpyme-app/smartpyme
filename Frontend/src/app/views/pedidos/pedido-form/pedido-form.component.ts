@@ -13,6 +13,7 @@ import { AlertService } from '@services/alert.service';
 
 interface LineaLocal {
   producto_id: number;
+  id_paquete?: number | null;
   nombre: string;
   cantidad: number;
   precio: number;
@@ -35,6 +36,7 @@ export class PedidoFormComponent implements OnInit {
   mostrarModalBoxful = false;
   pedidoRecienCreado: any = null;
   generandoGuiaBoxful = false;
+  tieneBoxful = false;
 
   fecha = '';
   canal = '';
@@ -84,7 +86,7 @@ export class PedidoFormComponent implements OnInit {
     private restauranteService: RestauranteService,
     private apiService: ApiService,
     private alertService: AlertService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.venta.id_sucursal = this.apiService.auth_user()?.id_sucursal;
@@ -127,6 +129,18 @@ export class PedidoFormComponent implements OnInit {
       }
     });
 
+    if (this.usuario?.empresa?.modulo_paquetes) {
+      this.apiService.getAll('boxful/status').subscribe({
+        next: (res: any) => {
+          this.tieneBoxful = res && res.connected;
+          console.log(this.tieneBoxful);
+        },
+        error: () => {
+          this.tieneBoxful = false;
+        }
+      });
+    }
+
     if (this.modoEdicion && this.pedidoId) {
       this.cargarPedido(this.pedidoId);
     } else {
@@ -152,6 +166,7 @@ export class PedidoFormComponent implements OnInit {
         this.idBodega = p.id_bodega ?? this.apiService.auth_user().id_bodega ?? null;
         this.lineas = (p.detalles || []).map((d) => ({
           producto_id: d.producto_id,
+          id_paquete: d.id_paquete || null,
           nombre: d.producto?.nombre || 'Producto #' + d.producto_id,
           cantidad: +d.cantidad,
           precio: +d.precio,
@@ -196,6 +211,7 @@ export class PedidoFormComponent implements OnInit {
     }
     this.lineas.push({
       producto_id: producto.id ?? producto.id_producto,
+      id_paquete: producto.id_paquete || null,
       nombre: nombre,
       cantidad: producto.cantidad ?? 1,
       precio: precio,
@@ -211,7 +227,7 @@ export class PedidoFormComponent implements OnInit {
   }
 
   esCanalBoxful(): boolean {
-    return this.canal === 'Boxful';
+    return this.canal === 'Boxful' && !!this.usuario?.empresa?.modulo_paquetes && this.tieneBoxful;
   }
 
   onBoxfulGuiaGenerada(guia: any): void {
@@ -219,7 +235,7 @@ export class PedidoFormComponent implements OnInit {
     const numGuia = guia.shipmentNumber || guia.data?.shipmentNumber || guia.id || guia.data?.id || '';
     const labelUrl = guia.labelUrl || guia.data?.labelUrl || '';
     const trackingUrl = guia.trackingUrl || guia.data?.trackingUrl || '';
-    
+
     const textToAdd = `Envío Boxful #${numGuia}. Guía PDF: ${labelUrl}. Rastreo: ${trackingUrl}`;
     const obsActual = this.observaciones
       ? `${this.observaciones} | ${textToAdd}`
@@ -328,6 +344,7 @@ export class PedidoFormComponent implements OnInit {
 
     const detalles = this.lineas.map((l) => ({
       producto_id: l.producto_id,
+      id_paquete: l.id_paquete || undefined,
       cantidad: l.cantidad,
       precio: l.precio,
       descuento: l.descuento || 0,
@@ -352,7 +369,7 @@ export class PedidoFormComponent implements OnInit {
     obs.subscribe({
       next: (pedidoGuardado: any) => {
         this.guardando = false;
-        
+
         if (this.esCanalBoxful() && this.clienteId) {
           this.pedidoRecienCreado = pedidoGuardado;
           this.pedidoId = pedidoGuardado.id;
@@ -360,18 +377,18 @@ export class PedidoFormComponent implements OnInit {
           const detalles = pedidoGuardado.detalles || [];
           const parcels = detalles.length > 0
             ? detalles.map((d: any) => {
-                const bp = d.paquete?.boxful_shipment?.parcels?.[0] || d.paquete?.boxfulShipment?.parcels?.[0];
-                return {
-                  id: bp?.id || null,
-                  peso: bp?.peso ?? 1,
-                  alto: bp?.alto ?? 11,
-                  ancho: bp?.ancho ?? 43,
-                  largo: bp?.largo ?? 47.5,
-                  es_fragil: bp?.es_fragil ?? false,
-                  contenido: bp?.contenido ?? '',
-                  valor: parseFloat(bp?.valor_declarado || d.total || d.precio || 50)
-                };
-              })
+              const bp = d.paquete?.boxful_shipment?.parcels?.[0] || d.paquete?.boxfulShipment?.parcels?.[0];
+              return {
+                id: bp?.id || null,
+                peso: bp?.peso ?? 1,
+                alto: bp?.alto ?? 11,
+                ancho: bp?.ancho ?? 43,
+                largo: bp?.largo ?? 47.5,
+                es_fragil: bp?.es_fragil ?? false,
+                contenido: bp?.contenido ?? '',
+                valor: parseFloat(bp?.valor_declarado || d.total || d.precio || 50)
+              };
+            })
             : [{ peso: 1, alto: 11, ancho: 43, largo: 47.5, es_fragil: false, contenido: '', valor: 50 }];
           this.paqueteData = { id: null, parcels };
           this.mostrarModalBoxful = true;

@@ -26,6 +26,41 @@ class BoxFulController extends Controller
         ]);
     }
 
+    public function disconnect()
+    {
+        $user = auth()->user();
+        if (!$user || !$user->id_empresa) {
+            return response()->json(['error' => 'Usuario sin empresa asociada'], 400);
+        }
+
+        Log::info('Desconectando de Boxful', [
+            'user' => $user,
+            'user_id' => $user->id,
+            'user_email' => $user->email,
+            'user_id_empresa' => $user->id_empresa,
+            'user_empresa' => $user->empresa
+        ]);
+
+        $integracion = Integracion::boxful();
+        Log::info('Integracion', [
+            'integracion' => $integracion,
+        ]);
+        if ($integracion) {
+            $integracion->estado = 'disconnected';
+            $integracion->credenciales = null;
+            $integracion->access_token = null;
+            $integracion->refresh_token = null;
+            $integracion->token_expires_at = null;
+            $integracion->save();
+
+            Log::info('Integracion actualizada', [
+                'integracion' => $integracion,
+            ]);
+        }
+
+        return response()->json(['message' => 'Desconectado de Boxful correctamente.']);
+    }
+
     /**
      * Prueba la conexión de la empresa con Boxful.
      */
