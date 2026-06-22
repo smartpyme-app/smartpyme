@@ -345,210 +345,93 @@
 
 <ng-template #mdescargar>
     <div class="modal-header">
-        <h4 class="modal-title text-center">Descargar reporte de registros de ventas</h4>
-        <!-- <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button> -->
+        <h4 class="modal-title">Descargar reporte</h4>
         <button type="button" class="btn-close" (click)="modalRefDescargar.hide()" aria-label="Close"></button>
     </div>
     <div class="modal-body">
         <app-notificaciones-container></app-notificaciones-container>
-        <p class="alert bg-info">Al seleccionar el reporte, se mostrará un boton para descargar los datos.</p>
+
+        <p class="text-muted small mb-3">
+            <ng-container *ngIf="!reporteSeleccionado">
+                Seleccione un reporte, elija el período y descargue el Excel.
+            </ng-container>
+            <ng-container *ngIf="tipoLimiteExportActual as tipoLimite">
+                Elija el período (rango, mes o año y mes). Máximo {{ maxDiasExport(tipoLimite) }} días.
+                Para más histórico, use
+                <a routerLink="/reportes-automaticos" (click)="cerrarModalDescargar()">Reportes automáticos</a>.
+            </ng-container>
+        </p>
+
         <div class="mb-3">
-            <label class="form-label">Seleccione el reporte a descargar:</label>
+            <label class="form-label">Reporte</label>
             <select class="form-select" [(ngModel)]="reporteSeleccionado" (ngModelChange)="seleccionarReporte($event)">
-                <option value="">Seleccione una opción</option>
-                <option value="detalles">Detalles de ventas por producto</option>
-                <option value="ventas">Detalles de ventas totales</option>
+                <option value="">Seleccione…</option>
+                <option value="detalles">Detalles por producto</option>
+                <option value="ventas">Ventas totales</option>
                 <option value="acumulado">Acumulado por producto</option>
-                <option value="marca">Detalles de ventas por marca</option>
-                <option value="utilidades">Detalles de ventas utilidades</option>
+                <option value="marca">Por marca</option>
+                <option value="utilidades">Utilidades</option>
                 <option value="cobros-vendedor">Cobros por vendedor</option>
             </select>
         </div>
 
-        <div class="d-grid mt-4" *ngIf="reporteSeleccionado == 'detalles'">
-            <p>Descargar los detalles de ventas por producto.</p>
-            <div *ngIf="tieneRangoFechaEnListado" class="alert alert-secondary small mb-3">
-                Se usará el rango de fechas del listado: <strong>{{ filtros.inicio }}</strong> al <strong>{{ filtros.fin }}</strong>.
-                Los demás filtros (sucursal, cliente, estado, etc.) también se aplican.
+        <ng-container *ngIf="reporteSeleccionado && tipoLimiteExportActual as tipoLimite">
+            <div class="mb-3">
+                <label class="form-label">Período</label>
+                <select class="form-select" name="tipoPeriodoExport" [(ngModel)]="tipoPeriodoExport">
+                    <option value="rango">Rango de fechas</option>
+                    <option value="mes">Mes ({{ anioEnCursoParaMes }})</option>
+                    <option value="anio_mes">Año y mes</option>
+                </select>
             </div>
-            <ng-container *ngIf="!tieneRangoFechaEnListado">
-                <p class="text-muted small mb-2">
-                    Para evitar exportar todo el histórico, elija un período acotado:
-                </p>
-                <div class="mb-3">
-                    <label class="form-label">Tipo de período</label>
-                    <select class="form-select" name="tipoPeriodoExport"
-                        [(ngModel)]="tipoPeriodoExport">
-                        <option value="rango">Rango de fechas</option>
-                        <option value="anio">Año completo</option>
-                        <option value="mes">Mes (año en curso)</option>
-                        <option value="anio_mes">Año y mes</option>
-                    </select>
+            <div class="row" *ngIf="tipoPeriodoExport === 'rango'">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Desde</label>
+                    <input type="date" class="form-control" name="exportPeriodoRangoInicio"
+                        [(ngModel)]="exportPeriodoRangoInicio">
                 </div>
-                <div class="row" *ngIf="tipoPeriodoExport === 'rango'">
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">Desde</label>
-                        <input type="date" class="form-control" name="exportPeriodoRangoInicio"
-                            [(ngModel)]="exportPeriodoRangoInicio">
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">Hasta</label>
-                        <input type="date" class="form-control" name="exportPeriodoRangoFin"
-                            [(ngModel)]="exportPeriodoRangoFin">
-                    </div>
-                    <div class="col-12">
-                        <small class="text-muted d-block mb-1">
-                            Entre inicio y fin puede haber como máximo 365 días (no más de un año).
-                        </small>
-                        <div *ngIf="exportPeriodoRangoSuperaUnAnio" class="text-danger small">
-                            Este rango supera un año. Acorte las fechas o use otra opción de período.
-                        </div>
-                    </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Hasta</label>
+                    <input type="date" class="form-control" name="exportPeriodoRangoFin"
+                        [(ngModel)]="exportPeriodoRangoFin">
                 </div>
-                <div class="mb-3" *ngIf="tipoPeriodoExport === 'anio'">
+            </div>
+            <div class="mb-3" *ngIf="tipoPeriodoExport === 'mes'">
+                <label class="form-label">Mes</label>
+                <select class="form-select" name="exportPeriodoMesSolo" [(ngModel)]="exportPeriodoMes">
+                    <option *ngFor="let m of mesesExportPeriodo" [ngValue]="m.v">{{ m.n }}</option>
+                </select>
+            </div>
+            <div class="row" *ngIf="tipoPeriodoExport === 'anio_mes'">
+                <div class="col-md-6 mb-3">
                     <label class="form-label">Año</label>
-                    <select class="form-select" name="exportPeriodoAnioSolo"
-                        [(ngModel)]="exportPeriodoAnio">
+                    <select class="form-select" name="exportPeriodoAnioMes" [(ngModel)]="exportPeriodoAnio">
                         <option *ngFor="let y of aniosDisponiblesExportVentas" [ngValue]="y">{{ y }}</option>
                     </select>
                 </div>
-                <div class="mb-3" *ngIf="tipoPeriodoExport === 'mes'">
-                    <label class="form-label">Mes (año {{ anioEnCursoParaMes }})</label>
-                    <select class="form-select" name="exportPeriodoMesSolo"
-                        [(ngModel)]="exportPeriodoMes">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Mes</label>
+                    <select class="form-select" name="exportPeriodoMesMes" [(ngModel)]="exportPeriodoMes">
                         <option *ngFor="let m of mesesExportPeriodo" [ngValue]="m.v">{{ m.n }}</option>
                     </select>
                 </div>
-                <div class="row" *ngIf="tipoPeriodoExport === 'anio_mes'">
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">Año</label>
-                        <select class="form-select" name="exportPeriodoAnioMes"
-                            [(ngModel)]="exportPeriodoAnio">
-                            <option *ngFor="let y of aniosDisponiblesExportVentas" [ngValue]="y">{{ y }}</option>
-                        </select>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">Mes</label>
-                        <select class="form-select" name="exportPeriodoMesMes"
-                            [(ngModel)]="exportPeriodoMes">
-                            <option *ngFor="let m of mesesExportPeriodo" [ngValue]="m.v">{{ m.n }}</option>
-                        </select>
-                    </div>
-                </div>
-            </ng-container>
-            <button [disabled]="saving || !puedeDescargarConPeriodoExport" (click)="descargarDetalles()"
-                class="btn btn-primary btn-block">
-                <span *ngIf="!downloadingDetalles">Descargar Detalles</span>
-                <span *ngIf="downloadingDetalles">Descargando...</span>
-            </button>
-        </div>
-
-        <div class="d-grid mt-4" *ngIf="reporteSeleccionado == 'ventas'">
-            <p>Descargar los detalles de ventas totales.</p>
-            <div *ngIf="tieneRangoFechaEnListado" class="alert alert-secondary small mb-3">
-                Se usará el rango de fechas del listado: <strong>{{ filtros.inicio }}</strong> al <strong>{{ filtros.fin }}</strong>.
-                Los demás filtros (sucursal, cliente, estado, etc.) también se aplican.
             </div>
-            <ng-container *ngIf="!tieneRangoFechaEnListado">
-                <p class="text-muted small mb-2">
-                    Para evitar exportar todo el histórico, elija un período acotado:
-                </p>
-                <div class="mb-3">
-                    <label class="form-label">Tipo de período</label>
-                    <select class="form-select" name="tipoPeriodoExportVentasTot"
-                        [(ngModel)]="tipoPeriodoExport">
-                        <option value="rango">Rango de fechas</option>
-                        <option value="anio">Año completo</option>
-                        <option value="mes">Mes (año en curso)</option>
-                        <option value="anio_mes">Año y mes</option>
-                    </select>
-                </div>
-                <div class="row" *ngIf="tipoPeriodoExport === 'rango'">
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">Desde</label>
-                        <input type="date" class="form-control" name="exportVentasTotRangoIni"
-                            [(ngModel)]="exportPeriodoRangoInicio">
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">Hasta</label>
-                        <input type="date" class="form-control" name="exportVentasTotRangoFin"
-                            [(ngModel)]="exportPeriodoRangoFin">
-                    </div>
-                    <div class="col-12">
-                        <small class="text-muted d-block mb-1">
-                            Entre inicio y fin puede haber como máximo 365 días (no más de un año).
-                        </small>
-                        <div *ngIf="exportPeriodoRangoSuperaUnAnio" class="text-danger small">
-                            Este rango supera un año. Acorte las fechas o use otra opción de período.
-                        </div>
-                    </div>
-                </div>
-                <div class="mb-3" *ngIf="tipoPeriodoExport === 'anio'">
-                    <label class="form-label">Año</label>
-                    <select class="form-select" name="exportVentasTotAnioSolo"
-                        [(ngModel)]="exportPeriodoAnio">
-                        <option *ngFor="let y of aniosDisponiblesExportVentas" [ngValue]="y">{{ y }}</option>
-                    </select>
-                </div>
-                <div class="mb-3" *ngIf="tipoPeriodoExport === 'mes'">
-                    <label class="form-label">Mes (año {{ anioEnCursoParaMes }})</label>
-                    <select class="form-select" name="exportVentasTotMesSolo"
-                        [(ngModel)]="exportPeriodoMes">
-                        <option *ngFor="let m of mesesExportPeriodo" [ngValue]="m.v">{{ m.n }}</option>
-                    </select>
-                </div>
-                <div class="row" *ngIf="tipoPeriodoExport === 'anio_mes'">
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">Año</label>
-                        <select class="form-select" name="exportVentasTotAnioMes"
-                            [(ngModel)]="exportPeriodoAnio">
-                            <option *ngFor="let y of aniosDisponiblesExportVentas" [ngValue]="y">{{ y }}</option>
-                        </select>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">Mes</label>
-                        <select class="form-select" name="exportVentasTotMesMes"
-                            [(ngModel)]="exportPeriodoMes">
-                            <option *ngFor="let m of mesesExportPeriodo" [ngValue]="m.v">{{ m.n }}</option>
-                        </select>
-                    </div>
-                </div>
-            </ng-container>
-            <button [disabled]="saving || !puedeDescargarConPeriodoExport" (click)="descargarVentas()"
-                class="btn btn-primary btn-block">
-                <span *ngIf="!downloadingVentas">Descargar Ventas</span>
-                <span *ngIf="downloadingVentas">Descargando...</span>
-            </button>
-        </div>
+            <div *ngIf="rangoExportSuperaLimite(tipoLimite)" class="text-danger small mb-3">
+                El período supera {{ maxDiasExport(tipoLimite) }} días.
+                Acorte el rango o use
+                <a routerLink="/reportes-automaticos" (click)="cerrarModalDescargar()">Reportes automáticos</a>.
+            </div>
 
-        <div class="d-grid mt-4" *ngIf="reporteSeleccionado == 'acumulado'">
-            <p>Descarga acumulado por producto.</p>
-            <button [disabled]="saving" (click)="abrirModalFiltrosAcumulado(mfiltrosAcumulado)"
-                class="btn btn-primary btn-block">
-                Descargar Acumulado
-            </button>
-        </div>
-
-        <div class="d-grid mt-4" *ngIf="reporteSeleccionado == 'marca'">
-            <p>Descarga detalles de ventas por marca.</p>
-            <button class="btn btn-primary" (click)="abrirModalFiltrosPorMarca(mfiltrosPorMarca)">
-                Descargar por Marca
-            </button>
-        </div>
-
-        <div class="d-grid mt-4" *ngIf="reporteSeleccionado == 'utilidades'">
-            <p>Descarga detalles de ventas utilidades.</p>
-            <button class="btn btn-primary" (click)="abrirModalFiltrosPorUtilidades(mfiltrosPorMarca)">
-                Descargar por Utilidades
-            </button>
-        </div>
-
-        <div class="d-grid mt-4" *ngIf="reporteSeleccionado == 'cobros-vendedor'">
-            <p>Descarga reporte de cobros por vendedor (facturas pagadas y pendientes con días de vencimiento y crédito).</p>
-            <button class="btn btn-primary" (click)="abrirModalFiltrosCobrosVendedor(mfiltrosCobrosVendedor)">
-                Descargar Cobros por Vendedor
-            </button>
-        </div>
+            <div class="d-grid">
+                <button [disabled]="saving || !puedeDescargarReporte" (click)="descargarReporteSeleccionado()"
+                    class="btn btn-primary">
+                    <span *ngIf="!descargandoReporte">
+                        {{ reporteRequiereFiltrosAdicionales ? 'Continuar' : 'Descargar Excel' }}
+                    </span>
+                    <span *ngIf="descargandoReporte">Descargando…</span>
+                </button>
+            </div>
+        </ng-container>
     </div>
 </ng-template>
 
@@ -918,17 +801,10 @@
         <app-notificaciones-container></app-notificaciones-container>
 
         <form (ngSubmit)="descargarAcumulado()">
+            <p class="text-muted small mb-3">
+                Período: <strong>{{ filtrosAcumulado.inicio }}</strong> – <strong>{{ filtrosAcumulado.fin }}</strong>
+            </p>
             <div class="row">
-                <!-- Fechas -->
-                <div class="form-group col-sm-6">
-                    <label>Del:</label>
-                    <input type="date" class="form-control" [(ngModel)]="filtrosAcumulado.inicio" name="inicio">
-                </div>
-                <div class="form-group col-sm-6">
-                    <label>Al:</label>
-                    <input type="date" class="form-control" [(ngModel)]="filtrosAcumulado.fin" name="fin">
-                </div>
-
                 <!-- Sucursales -->
                 <div class="form-group col-12 mt-3">
                     <label>Sucursales:</label>
@@ -967,9 +843,9 @@
             </div>
 
             <div class="d-grid mt-4">
-                <button type="submit" class="btn btn-primary" [disabled]="downloadingAcumulado">
-                    <span *ngIf="!downloadingAcumulado">Descargar Reporte</span>
-                    <span *ngIf="downloadingAcumulado">Descargando...</span>
+                <button type="submit" class="btn btn-primary" [disabled]="downloadingVentas">
+                    <span *ngIf="!downloadingVentas">Descargar Reporte</span>
+                    <span *ngIf="downloadingVentas">Descargando...</span>
                 </button>
             </div>
         </form>
@@ -1021,19 +897,9 @@
         <app-notificaciones-container></app-notificaciones-container>
 
         <form (ngSubmit)="descargarCobrosPorVendedor()">
-            <div class="row">
-                <!-- Fechas -->
-                <div class="form-group col-12">
-                    <label>Desde:</label>
-                    <input type="date" class="form-control" [(ngModel)]="filtrosCobrosVendedor.inicio" name="inicio" required>
-                </div>
-            </div>
-            <div class="row">
-                <div class="form-group col-12">
-                    <label>Hasta:</label>
-                    <input type="date" class="form-control" [(ngModel)]="filtrosCobrosVendedor.fin" name="fin" required>
-                </div>
-            </div>
+            <p class="text-muted small mb-3">
+                Período: <strong>{{ filtrosCobrosVendedor.inicio }}</strong> – <strong>{{ filtrosCobrosVendedor.fin }}</strong>
+            </p>
             <div class="row">
                 <div class="form-group col-12">
                     <label>Sucursal:</label>
@@ -1059,7 +925,7 @@
 
             <div class="d-grid mt-4">
                 <button type="submit" class="btn btn-primary"
-                    [disabled]="downloadingCobrosVendedor || !filtrosCobrosVendedor.inicio || !filtrosCobrosVendedor.fin">
+                    [disabled]="downloadingCobrosVendedor">
                     <span *ngIf="!downloadingCobrosVendedor">Descargar Reporte</span>
                     <span *ngIf="downloadingCobrosVendedor">Descargando...</span>
                 </button>

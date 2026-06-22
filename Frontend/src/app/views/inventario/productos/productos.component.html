@@ -449,40 +449,40 @@
 
 <ng-template #mdescargar>
     <div class="modal-header">
-        <h4 class="modal-title text-center">Descargar registro de inventario</h4>
-        <!-- <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button> -->
-        <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+        <h4 class="modal-title">Descargar reporte</h4>
+        <button type="button" class="btn-close" (click)="cerrarModalDescargar()" aria-label="Close"></button>
     </div>
     <div class="modal-body">
         <app-notificaciones-container></app-notificaciones-container>
-        <p class="alert bg-info">Acá puedes descargar los registros de inventario en un archivo de Excel.</p>
+        <p class="text-muted small mb-3">
+            Descargue el listado de productos o el kardex con un período acotado (máximo {{ maxDiasKardexExport }} días en kardex).
+            Para históricos largos, use
+            <a routerLink="/reportes-automaticos" (click)="cerrarModalDescargar()">Reportes automáticos</a>.
+        </p>
         <div class="row">
-            <div class="d-grid mt-4">
-                <label>Descargar detalle de productos:</label>
-                <button [disabled]="downloading" tooltip="Descargar productos" (click)="descargar()"
-                    class="btn btn-primary">
+            <div class="d-grid mt-2">
+                <label class="form-label">Detalle de productos (listado actual)</label>
+                <button [disabled]="downloading" (click)="descargar()" class="btn btn-primary">
                     <span *ngIf="!downloading">Descargar productos</span>
                     <span *ngIf="downloading">Descargando...</span>
                 </button>
             </div>
             <div class="d-grid my-4">
-                <label>Descargar detalle de inventario:</label>
+                <label class="form-label">Detalle de inventario</label>
                 <app-descargar-inventario></app-descargar-inventario>
             </div>
             <div class="d-grid">
-                <label>Descargar Kardex:</label>
+                <label class="form-label">Kardex (productos del listado)</label>
                 <button [disabled]="loading || !productos?.data?.length"
-                    tooltip="Descargar kardex de productos mostrados" (click)="openDescargarKardex(mdescargarKardex)"
-                    class="btn btn-primary">
-                    <span *ngIf="!loading">Descargar kardex ({{ productos?.data?.length || 0 }})</span>
+                    (click)="openDescargarKardex(mdescargarKardex)" class="btn btn-primary">
+                    <span *ngIf="!loading">Configurar kardex ({{ productos?.data?.length || 0 }})</span>
                     <span *ngIf="loading">Descargando...</span>
                 </button>
             </div>
             <div class="d-grid my-4">
-                <label>Descargar Kardex Masivamente:</label>
-                <button [disabled]="loading" tooltip="Descargar kardex completo por correo electrónico"
-                    (click)="openDescargarKardexMasivo(mdescargarKardexMasivo)" class="btn btn-primary">
-                    <span *ngIf="!loading">Descargar Kardex Masivamente</span>
+                <label class="form-label">Kardex masivo por correo</label>
+                <button [disabled]="loading" (click)="openDescargarKardexMasivo(mdescargarKardexMasivo)" class="btn btn-primary">
+                    <span *ngIf="!loading">Solicitar por correo</span>
                     <span *ngIf="loading">Procesando...</span>
                 </button>
             </div>
@@ -504,20 +504,56 @@
         </div>
 
         <form autocomplete="off" (ngSubmit)="descargarKardexConFiltros()">
-            <div class="row">
-                <div class="form-group col-sm-6">
-                    <label for="filtrosKardex.fecha_inicio">Fecha inicio:</label>
-                    <input type="date" [(ngModel)]="filtrosKardex.fecha_inicio" class="form-control"
-                        name="fecha_inicio">
+            <p class="text-muted small mb-3">
+                Elija el período (rango, mes o año y mes). Máximo {{ maxDiasKardexExport }} días.
+                Para más histórico, use
+                <a routerLink="/reportes-automaticos" (click)="cerrarModalDescargar()">Reportes automáticos</a>.
+            </p>
+            <div class="mb-3">
+                <label class="form-label">Período</label>
+                <select class="form-select" name="tipoPeriodoExportKardex" [(ngModel)]="exportPeriodoKardex.tipo">
+                    <option value="rango">Rango de fechas</option>
+                    <option value="mes">Mes ({{ anioEnCursoParaMes }})</option>
+                    <option value="anio_mes">Año y mes</option>
+                </select>
+            </div>
+            <div class="row" *ngIf="exportPeriodoKardex.tipo === 'rango'">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Desde</label>
+                    <input type="date" class="form-control" name="kardexRangoInicio" [(ngModel)]="exportPeriodoKardex.rangoInicio">
                 </div>
-                <div class="form-group col-sm-6">
-                    <label for="filtrosKardex.fecha_fin">Fecha fin:</label>
-                    <input type="date" [(ngModel)]="filtrosKardex.fecha_fin" class="form-control" name="fecha_fin">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Hasta</label>
+                    <input type="date" class="form-control" name="kardexRangoFin" [(ngModel)]="exportPeriodoKardex.rangoFin">
                 </div>
+            </div>
+            <div class="mb-3" *ngIf="exportPeriodoKardex.tipo === 'mes'">
+                <label class="form-label">Mes</label>
+                <select class="form-select" name="kardexMes" [(ngModel)]="exportPeriodoKardex.mes">
+                    <option *ngFor="let m of mesesExportPeriodo" [ngValue]="m.v">{{ m.n }}</option>
+                </select>
+            </div>
+            <div class="row" *ngIf="exportPeriodoKardex.tipo === 'anio_mes'">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Año</label>
+                    <select class="form-select" name="kardexAnio" [(ngModel)]="exportPeriodoKardex.anio">
+                        <option *ngFor="let y of aniosDisponiblesExport" [ngValue]="y">{{ y }}</option>
+                    </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Mes</label>
+                    <select class="form-select" name="kardexAnioMes" [(ngModel)]="exportPeriodoKardex.mes">
+                        <option *ngFor="let m of mesesExportPeriodo" [ngValue]="m.v">{{ m.n }}</option>
+                    </select>
+                </div>
+            </div>
+            <div *ngIf="rangoExportSuperaLimiteKardex()" class="text-danger small mb-3">
+                El período supera {{ maxDiasKardexExport }} días.
+                <a routerLink="/reportes-automaticos" (click)="cerrarModalDescargar()">Reportes automáticos</a> para históricos.
             </div>
 
             <div class="d-grid mt-3">
-                <button type="submit" [disabled]="loading || !filtrosKardex.fecha_inicio || !filtrosKardex.fecha_fin"
+                <button type="submit" [disabled]="loading || !puedeDescargarKardex"
                     class="btn btn-primary">
                     <span *ngIf="!loading">Descargar Kardex</span>
                     <span *ngIf="loading">Descargando...</span>

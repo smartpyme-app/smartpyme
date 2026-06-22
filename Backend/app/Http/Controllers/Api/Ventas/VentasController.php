@@ -39,6 +39,7 @@ use Illuminate\Support\Facades\Schema;
 use App\Exports\VentasExport;
 use App\Exports\VentasDesglosadasPorVendedorExport;
 use App\Exports\VentasDetallesExport;
+use App\Helpers\ExportPeriodHelper;
 use App\Exports\ReportesAutomaticos\VentasPorCategoriaPorVendedor\VentasPorCategoriaVendedorExport;
 use App\Exports\ReportesAutomaticos\VentasPorVendedor\VentasPorVendedorExport;
 use App\Exports\VentasPorUtilidadesExport;
@@ -1648,21 +1649,64 @@ class VentasController extends Controller
 
     public function export(Request $request)
     {
-        $ventas = new VentasExport();
-        $ventas->filter($request);
+        return $this->downloadVentasExcel(
+            $request,
+            ExportPeriodHelper::MAX_DIAS_VENTAS_TOTALES,
+            function () use ($request) {
+                $ventas = new VentasExport();
+                $ventas->filter($request);
 
-        $anio = VentasExport::anioDesdeRequest($request);
-        $nombreArchivo = $anio !== null ? "ventas-{$anio}.xlsx" : 'ventas.xlsx';
+                $anio = VentasExport::anioDesdeRequest($request);
+                $nombreArchivo = $anio !== null ? "ventas-{$anio}.xlsx" : 'ventas.xlsx';
 
-        return Excel::download($ventas, $nombreArchivo);
+                return [$ventas, $nombreArchivo];
+            }
+        );
     }
 
     public function exportDetalles(Request $request)
     {
-        $ventas = new VentasDetallesExport();
-        $ventas->filter($request);
+        return $this->downloadVentasExcel(
+            $request,
+            ExportPeriodHelper::MAX_DIAS_DETALLES,
+            function () use ($request) {
+                $ventas = new VentasDetallesExport();
+                $ventas->filter($request);
 
-        return Excel::download($ventas, 'ventas-detalles.xlsx');
+                return [$ventas, 'ventas-detalles.xlsx'];
+            }
+        );
+    }
+
+    /**
+     * Descarga Excel de ventas con validación de período, memoria y tiempo de ejecución.
+     *
+     * @param  callable(): array{0: object, 1: string}  $exportFactory
+     */
+    private function downloadVentasExcel(Request $request, int $maxDias, callable $exportFactory)
+    {
+        ExportPeriodHelper::assertValidPeriod($request, $maxDias);
+
+        try {
+            ini_set('memory_limit', '512M');
+            set_time_limit(300);
+
+            [$export, $nombreArchivo] = $exportFactory();
+
+            return Excel::download($export, $nombreArchivo);
+        } catch (\Throwable $e) {
+            if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpException) {
+                throw $e;
+            }
+
+            \Log::error('Error al exportar ventas: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'error' => 'Error al generar el reporte. Intente con un rango de fechas más corto.',
+            ], 500);
+        }
     }
 
 
@@ -1715,36 +1759,60 @@ class VentasController extends Controller
 
     public function acumuladoExport(Request $request)
     {
+        return $this->downloadVentasExcel(
+            $request,
+            ExportPeriodHelper::MAX_DIAS_GENERAL,
+            function () use ($request) {
+                $user = JWTAuth::parseToken()->authenticate();
+                $request->request->add(['id_empresa' => $user->id_empresa]);
+                $ventas = new VentasAcumuladoExport();
+                $ventas->filter($request);
 
-        //enviar id de la empresa en el request
-
-        $user = JWTAuth::parseToken()->authenticate();
-        $request->request->add(['id_empresa' => $user->id_empresa]);
-        $ventas = new VentasAcumuladoExport();
-        $ventas->filter($request);
-
-        return Excel::download($ventas, 'corte.xlsx');
+                return [$ventas, 'corte.xlsx'];
+            }
+        );
     }
 
     public function porMarcasExport(Request $request)
     {
-        $ventas = new VentasPorMarcasExport();
-        $ventas->filter($request);
-        return Excel::download($ventas, 'ventas-por-marcas.xlsx');
+        return $this->downloadVentasExcel(
+            $request,
+            ExportPeriodHelper::MAX_DIAS_GENERAL,
+            function () use ($request) {
+                $ventas = new VentasPorMarcasExport();
+                $ventas->filter($request);
+
+                return [$ventas, 'ventas-por-marcas.xlsx'];
+            }
+        );
     }
 
     public function porUtilidadesExport(Request $request)
     {
-        $ventas = new VentasPorUtilidadesExport();
-        $ventas->filter($request);
-        return Excel::download($ventas, 'ventas-por-utilidades.xlsx');
+        return $this->downloadVentasExcel(
+            $request,
+            ExportPeriodHelper::MAX_DIAS_GENERAL,
+            function () use ($request) {
+                $ventas = new VentasPorUtilidadesExport();
+                $ventas->filter($request);
+
+                return [$ventas, 'ventas-por-utilidades.xlsx'];
+            }
+        );
     }
 
     public function cobrosPorVendedorExport(Request $request)
     {
-        $cobros = new CobrosPorVendedorExport();
-        $cobros->filter($request);
-        return Excel::download($cobros, 'cobros-por-vendedor.xlsx');
+        return $this->downloadVentasExcel(
+            $request,
+            ExportPeriodHelper::MAX_DIAS_GENERAL,
+            function () use ($request) {
+                $cobros = new CobrosPorVendedorExport();
+                $cobros->filter($request);
+
+                return [$cobros, 'cobros-por-vendedor.xlsx'];
+            }
+        );
     }
 
     public function enviarReporteDiario()
