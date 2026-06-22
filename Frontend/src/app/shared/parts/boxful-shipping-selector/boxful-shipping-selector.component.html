@@ -1,0 +1,482 @@
+<div class="modal fade show d-block" tabindex="-1" role="dialog"
+  style="background-color: rgba(0, 0, 0, 0.5); z-index: 1050; overflow-y: auto;">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content border-0 rounded">
+      <!-- Encabezado de Modal del Sistema -->
+      <div class="modal-header justify-content-between">
+        <h3 class="modal-title">
+          <span>Logística Boxful <strong *ngIf="pedidoId">| Pedido #{{ pedidoId }}</strong></span>
+          <small class="text-muted d-block mt-1" style="font-size: 12px; font-weight: normal;">Paso {{ step }} de 3 -
+            Cotización y generación de guías</small>
+        </h3>
+        <button class="btn btn-light text-danger" (click)="closeSelector()">
+          Cancelar <i class="fa fa-close"></i>
+        </button>
+      </div>
+
+      <!-- Cuerpo del Modal del Sistema -->
+      <div class="modal-body p-3">
+        <!-- Barra de Progreso del Wizard -->
+        <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+          <span class="fw-bold text-dark"><i class="fa fa-truck me-1"></i> Progreso de envío:</span>
+          <div class="d-flex gap-2">
+            <span class="badge" [class.bg-primary]="step === 1" [class.bg-secondary]="step !== 1">1. Dirección</span>
+            <span class="badge" [class.bg-primary]="step === 2" [class.bg-secondary]="step !== 2">2. Paquetería</span>
+            <span class="badge" [class.bg-primary]="step === 3" [class.bg-secondary]="step !== 3">3. Confirmación</span>
+          </div>
+        </div>
+
+        <!-- Alerta de Error -->
+        <div class="alert alert-danger py-2 mb-3" role="alert" *ngIf="errorMessage">
+          <i class="fa fa-exclamation-triangle me-2"></i> {{ errorMessage }}
+        </div>
+
+        <!-- ==================== PASO 1: SELECCIÓN DE DIRECCIÓN ==================== -->
+        <div *ngIf="step === 1">
+          <!-- Datos de Dimensiones del Paquete -->
+          <div class="mb-3 pb-3 border-bottom bg-light p-3 rounded-3 border">
+            <h6 class="fw-bold text-dark mb-3"><i class="fa fa-cube me-1"></i> Dimensiones del Paquete para Cotizar</h6>
+            
+            <div *ngFor="let p of getParcels(); let i = index" class="mb-3 p-3 bg-white rounded-3 border shadow-sm">
+              <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                <span class="fw-bold text-primary"><i class="fa fa-box me-1"></i> Paquete {{ getParcels().length > 1 ? '#' + (i + 1) : '' }}</span>
+                <span class="badge bg-secondary text-dark" style="font-size: 11px;">
+                  Medidas: {{ p.alto || p.height || 0 }} x {{ p.ancho || p.width || 0 }} x {{ p.largo || p.length || 0 }} cm
+                </span>
+              </div>
+              
+              <div class="row g-2 align-items-center">
+                <!-- Peso -->
+                <div class="col-sm-3 col-6">
+                  <label [for]="'paquetePeso_' + i" class="form-label small fw-bold text-dark mb-1">Peso (lb) <span class="text-danger">*</span></label>
+                  <input type="number" step="any" min="0.1" class="form-control form-control-sm border-2 rounded-2"
+                    [id]="'paquetePeso_' + i" [(ngModel)]="p.peso" [name]="'paquetePeso_' + i" placeholder="Ej: 1.5">
+                </div>
+                
+                <!-- Tamaño Preset Selector (S, M, L) -->
+                <div class="col-sm-9 col-12 mt-2 mt-sm-0">
+                  <label class="form-label small fw-bold text-dark mb-1">Tamaño de Caja</label>
+                  <div class="d-flex gap-2">
+                    <!-- S -->
+                    <button type="button" class="btn btn-sm flex-fill d-flex flex-column align-items-center justify-content-center p-2 rounded-3 size-selector-btn"
+                      [class.active]="getTipoPaquete(p) === 'S'"
+                      style="min-height: 48px;"
+                      (click)="seleccionarTipoPaquete(p, 'S', 11, 43, 47.5)">
+                      <span class="fw-bold">S</span>
+                      <small style="font-size: 9px; opacity: 0.85;">11x43x47.5</small>
+                    </button>
+                    <!-- M -->
+                    <button type="button" class="btn btn-sm flex-fill d-flex flex-column align-items-center justify-content-center p-2 rounded-3 size-selector-btn"
+                      [class.active]="getTipoPaquete(p) === 'M'"
+                      style="min-height: 48px;"
+                      (click)="seleccionarTipoPaquete(p, 'M', 22, 43, 47.5)">
+                      <span class="fw-bold">M</span>
+                      <small style="font-size: 9px; opacity: 0.85;">22x43x47.5</small>
+                    </button>
+                    <!-- L -->
+                    <button type="button" class="btn btn-sm flex-fill d-flex flex-column align-items-center justify-content-center p-2 rounded-3 size-selector-btn"
+                      [class.active]="getTipoPaquete(p) === 'L'"
+                      style="min-height: 48px;"
+                      (click)="seleccionarTipoPaquete(p, 'L', 34, 43, 47.5)">
+                      <span class="fw-bold">L</span>
+                      <small style="font-size: 9px; opacity: 0.85;">34x43x47.5</small>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Contenido / Descripción de la Caja -->
+              <div class="mt-3">
+                <label [for]="'paqueteContenido_' + i" class="form-label small fw-bold text-dark mb-1">Contenido / Descripción <span class="text-danger">*</span></label>
+                <textarea [id]="'paqueteContenido_' + i" [(ngModel)]="p.contenido" [name]="'paqueteContenido_' + i"
+                  rows="2" class="form-control form-control-sm border-2 rounded-2"
+                  placeholder="Ej: Calzado, Ropa, Repuestos"></textarea>
+              </div>
+            </div>
+          </div>
+          <!-- Dirección de Origen (Bodega) -->
+          <!-- Dirección de Origen (Bodega) -->
+          <div class="mb-3 pb-3 border-bottom">
+            <label for="direccionOrigenSelect"
+              class="fw-bold text-dark mb-1 d-flex justify-content-between align-items-center w-100">
+              <span><i class="fa fa-building me-1"></i> Bodega / Dirección de origen de despacho <span
+                  class="text-danger">*</span></span>
+              <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none fw-bold"
+                *ngIf="originAddresses.length > 0 && !loadingOriginAddresses" (click)="toggleOriginMode()">
+                {{ originMode === 'saved' ? '+ Agregar bodega/origen' : 'Ver bodegas guardadas' }}
+              </button>
+            </label>
+
+            <!-- MODO ORIGEN 1: Bodega Guardada -->
+            <div *ngIf="originMode === 'saved' && !loadingOriginAddresses">
+              <select id="direccionOrigenSelect" class="form-select" [(ngModel)]="selectedOriginAddressId">
+                <option [ngValue]="null" disabled>-- Seleccione una dirección de origen --</option>
+                <option *ngFor="let addr of originAddresses"
+                  [value]="addr.boxful_address_id || addr.id || addr.addressId">
+                  {{ addr.direccion || addr.address }}
+                </option>
+              </select>
+              <div class="form-text text-muted mt-1 small" *ngIf="originAddresses.length === 0">
+                <i class="fa fa-info-circle me-1"></i> No tiene direcciones de origen registradas en Boxful.
+              </div>
+            </div>
+
+            <!-- MODO ORIGEN 2: Nueva Bodega/Origen -->
+            <div *ngIf="originMode === 'new' && !loadingOriginAddresses" class="p-3 bg-light rounded border mb-2 mt-2">
+              <h6 class="fw-bold text-dark mb-3"><i class="fa fa-plus-circle me-1"></i> Nueva dirección de origen
+                (Bodega)</h6>
+              <form [formGroup]="originAddressForm" autocomplete="off">
+                <div class="form-group mb-3">
+                  <label for="origenAlias" class="form-label mb-1 small">Alias de la Bodega <span
+                      class="text-danger">*</span></label>
+                  <input id="origenAlias" type="text" formControlName="alias" class="form-control form-control-sm"
+                    placeholder="Ej: Bodega Central, Sucursal Escalón"
+                    [class.is-invalid]="originAddressForm.get('alias')?.touched && originAddressForm.get('alias')?.invalid">
+                  <div class="text-danger mt-1" style="font-size: 11px;"
+                    *ngIf="originAddressForm.get('alias')?.touched && originAddressForm.get('alias')?.invalid">El alias
+                    es requerido.</div>
+                </div>
+
+                <div class="form-group mb-3">
+                  <label for="origenDireccion" class="form-label mb-1 small">Dirección de Despacho <span
+                      class="text-danger">*</span></label>
+                  <textarea id="origenDireccion" formControlName="direccion" rows="2"
+                    class="form-control form-control-sm" placeholder="Calle, número de local, bodega, etc."
+                    [class.is-invalid]="originAddressForm.get('direccion')?.touched && originAddressForm.get('direccion')?.invalid"></textarea>
+                  <div class="text-danger mt-1" style="font-size: 11px;"
+                    *ngIf="originAddressForm.get('direccion')?.touched && originAddressForm.get('direccion')?.invalid">
+                    La dirección es requerida.</div>
+                </div>
+
+                <div class="form-group mb-3">
+                  <label for="origenReferencia" class="form-label mb-1 small">Punto de Referencia <span
+                      class="text-danger">*</span></label>
+                  <input id="origenReferencia" type="text" formControlName="referencia"
+                    class="form-control form-control-sm" placeholder="Ej: portón azul, al lado de gasolinera"
+                    [class.is-invalid]="originAddressForm.get('referencia')?.touched && originAddressForm.get('referencia')?.invalid">
+                  <div class="text-danger mt-1" style="font-size: 11px;"
+                    *ngIf="originAddressForm.get('referencia')?.touched && originAddressForm.get('referencia')?.invalid">
+                    La referencia es requerida.</div>
+                </div>
+
+                <input type="hidden" formControlName="latitud">
+                <input type="hidden" formControlName="longitud">
+
+                <div class="row">
+                  <div class="form-group col-6 mb-3">
+                    <label for="origenEstado" class="form-label mb-1 small">Estado/Depto <span
+                        class="text-danger">*</span></label>
+                    <select id="origenEstado" formControlName="stateId" (change)="onOriginStateChange()"
+                      class="form-select form-select-sm"
+                      [class.is-invalid]="originAddressForm.get('stateId')?.touched && originAddressForm.get('stateId')?.invalid">
+                      <option [ngValue]="null" disabled>Seleccione...</option>
+                      <option *ngFor="let state of states" [value]="state.id">{{ state.name }}</option>
+                    </select>
+                    <div class="text-danger mt-1" style="font-size: 11px;"
+                      *ngIf="originAddressForm.get('stateId')?.touched && originAddressForm.get('stateId')?.invalid">
+                      Seleccione depto.</div>
+                  </div>
+                  <div class="form-group col-6 mb-3">
+                    <label for="origenCiudad" class="form-label mb-1 small">Ciudad/Municipio <span
+                        class="text-danger">*</span></label>
+                    <select id="origenCiudad" formControlName="cityId" (change)="onOriginCityChange()"
+                      class="form-select form-select-sm"
+                      [class.is-invalid]="originAddressForm.get('cityId')?.touched && originAddressForm.get('cityId')?.invalid"
+                      [attr.disabled]="filteredOriginCities.length === 0 ? true : null">
+                      <option [ngValue]="null" disabled>Seleccione...</option>
+                      <option *ngFor="let city of filteredOriginCities" [value]="city.id">{{ city.name }}</option>
+                    </select>
+                    <div class="text-danger mt-1" style="font-size: 11px;"
+                      *ngIf="originAddressForm.get('cityId')?.touched && originAddressForm.get('cityId')?.invalid">
+                      Seleccione municipio.</div>
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div class="form-group col-4 mb-3">
+                    <label for="origenCodArea" class="form-label mb-1 small">Cód. Área <span
+                        class="text-danger">*</span></label>
+                    <input id="origenCodArea" type="text" formControlName="codigo_area"
+                      class="form-control form-control-sm" placeholder="503"
+                      [class.is-invalid]="originAddressForm.get('codigo_area')?.touched && originAddressForm.get('codigo_area')?.invalid">
+                    <div class="text-danger mt-1" style="font-size: 11px;"
+                      *ngIf="originAddressForm.get('codigo_area')?.touched && originAddressForm.get('codigo_area')?.invalid">
+                      Requerido.</div>
+                  </div>
+                  <div class="form-group col-8 mb-3">
+                    <label for="origenTelefono" class="form-label mb-1 small">Teléfono de Bodega <span
+                        class="text-danger">*</span></label>
+                    <input id="origenTelefono" type="text" formControlName="telefono"
+                      class="form-control form-control-sm" placeholder="70001234"
+                      [class.is-invalid]="originAddressForm.get('telefono')?.touched && originAddressForm.get('telefono')?.invalid">
+                    <div class="text-danger mt-1" style="font-size: 11px;"
+                      *ngIf="originAddressForm.get('telefono')?.touched && originAddressForm.get('telefono')?.invalid">
+                      Teléfono requerido.</div>
+                  </div>
+                </div>
+
+                <div class="d-flex justify-content-end mt-2">
+                  <button type="button" class="btn btn-sm btn-light me-2" *ngIf="originAddresses.length > 0"
+                    (click)="toggleOriginMode()">
+                    Cancelar
+                  </button>
+                  <button type="button" class="btn btn-sm btn-primary" [disabled]="savingOriginAddress"
+                    (click)="guardarNuevaDireccionOrigen()">
+                    <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"
+                      *ngIf="savingOriginAddress"></span>
+                    <i class="fa fa-save me-1" *ngIf="!savingOriginAddress"></i> Guardar Bodega
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <div class="py-2 text-center" *ngIf="loadingOriginAddresses">
+              <span class="spinner-border spinner-border-sm text-primary me-2" role="status" aria-hidden="true"></span>
+              <span class="text-muted small">Cargando direcciones de origen...</span>
+            </div>
+          </div>
+
+          <!-- Dirección de Entrega -->
+          <div class="mb-3">
+            <form [formGroup]="addressForm" autocomplete="off">
+              <div class="form-group mb-3">
+                <label for="nuevaDireccion">Dirección de Entrega <span class="text-danger">*</span></label>
+                <textarea id="nuevaDireccion" formControlName="direccion" rows="2" class="form-control"
+                  placeholder="Escriba aquí la calle, casa/local, colonia, etc."
+                  [class.is-invalid]="addressForm.get('direccion')?.touched && addressForm.get('direccion')?.invalid"></textarea>
+                <div class="text-danger mt-1" style="font-size: 11px;"
+                  *ngIf="addressForm.get('direccion')?.touched && addressForm.get('direccion')?.invalid">La dirección es
+                  requerida.</div>
+              </div>
+
+              <div class="form-group mb-3">
+                <label for="nuevaReferencia">Punto de Referencia</label>
+                <input id="nuevaReferencia" type="text" formControlName="referencia" class="form-control"
+                  placeholder="Escriba aquí (ej: portón negro, frente a parque)">
+              </div>
+
+
+              <input type="hidden" formControlName="latitud">
+              <input type="hidden" formControlName="longitud">
+
+              <div class="row">
+                <div class="form-group col-6 col-md-6 mb-3">
+                  <label for="nuevoEstado">Estado/Depto <span class="text-danger">*</span></label>
+                  <select id="nuevoEstado" formControlName="stateId" (change)="onStateChange()" class="form-select"
+                    [class.is-invalid]="addressForm.get('stateId')?.touched && addressForm.get('stateId')?.invalid">
+                    <option [ngValue]="null" disabled>Seleccione...</option>
+                    <option *ngFor="let state of states" [value]="state.id">{{ state.name }}</option>
+                  </select>
+                  <div class="text-danger mt-1" style="font-size: 11px;"
+                    *ngIf="addressForm.get('stateId')?.touched && addressForm.get('stateId')?.invalid">Seleccione un
+                    departamento.</div>
+                </div>
+                <div class="form-group col-6 col-md-6 mb-3">
+                  <label for="nuevaCiudad">Ciudad/Municipio <span class="text-danger">*</span></label>
+                  <select id="nuevaCiudad" formControlName="cityId" (change)="onCityChange()" class="form-select"
+                    [class.is-invalid]="addressForm.get('cityId')?.touched && addressForm.get('cityId')?.invalid"
+                    [attr.disabled]="filteredCities.length === 0 ? true : null">
+                    <option [ngValue]="null" disabled>Seleccione...</option>
+                    <option *ngFor="let city of filteredCities" [value]="city.id">{{ city.name }}</option>
+                  </select>
+                  <div class="text-danger mt-1" style="font-size: 11px;"
+                    *ngIf="addressForm.get('cityId')?.touched && addressForm.get('cityId')?.invalid">Seleccione un
+                    municipio.</div>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="form-group col-4 col-md-4 mb-3">
+                  <label for="nuevoCodArea">Cód. Área <span class="text-danger">*</span></label>
+                  <input id="nuevoCodArea" type="text" formControlName="codigo_area" class="form-control"
+                    placeholder="503"
+                    [class.is-invalid]="addressForm.get('codigo_area')?.touched && addressForm.get('codigo_area')?.invalid">
+                  <div class="text-danger mt-1" style="font-size: 11px;"
+                    *ngIf="addressForm.get('codigo_area')?.touched && addressForm.get('codigo_area')?.invalid">
+                    Requerido.</div>
+                </div>
+                <div class="form-group col-8 col-md-8 mb-3">
+                  <label for="nuevoTelefono">Teléfono de Contacto <span class="text-danger">*</span></label>
+                  <input id="nuevoTelefono" type="text" formControlName="telefono" class="form-control"
+                    placeholder="70001234"
+                    [class.is-invalid]="addressForm.get('telefono')?.touched && addressForm.get('telefono')?.invalid">
+                  <div class="text-danger mt-1" style="font-size: 11px;"
+                    *ngIf="addressForm.get('telefono')?.touched && addressForm.get('telefono')?.invalid">Teléfono
+                    requerido.</div>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          <!-- Botón de Cotización -->
+          <div class="d-grid mt-4">
+            <button (click)="cotizarEnvio()" [disabled]="loadingCouriers" class="btn btn-primary">
+              <span *ngIf="loadingCouriers">
+                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Cotizando envíos...
+              </span>
+              <span *ngIf="!loadingCouriers">
+                <i class="fa fa-calculator me-2"></i> Cotizar Envío
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <!-- ==================== PASO 2: SELECCIÓN DE PAQUETERÍA ==================== -->
+        <div *ngIf="step === 2">
+          <!-- Fecha de Recolección -->
+          <div class="mb-3 p-3 bg-light rounded border">
+            <label for="fechaRecoleccion" class="fw-bold text-dark mb-1"><i class="fa fa-calendar me-1"></i> Fecha de
+              Recolección para Despacho <span class="text-danger">*</span></label>
+            <input id="fechaRecoleccion" type="date" class="form-control" [min]="minFechaRecoleccion"
+              [(ngModel)]="fechaRecoleccion" (change)="cotizarEnvio()">
+            <div class="form-text text-muted small mt-1">Seleccione la fecha en que la paquetería pasará a retirar el
+              paquete por su bodega.</div>
+          </div>
+
+          <label class="fw-bold text-dark mb-2" *ngIf="!loadingCouriers">Seleccione una opción de paquetería</label>
+
+          <!-- Cargando paqueterías -->
+          <div class="py-4 text-center" *ngIf="loadingCouriers">
+            <span class="spinner-border spinner-border-sm text-primary me-2" role="status" aria-hidden="true"></span>
+            <span class="text-muted">Actualizando opciones de paquetería para la nueva fecha...</span>
+          </div>
+
+          <div class="row g-2" *ngIf="!loadingCouriers">
+            <div class="col-12" *ngFor="let courier of couriers">
+              <div class="courier-card p-3 mb-2"
+                [class.selected]="selectedCourierId === (courier.id || courier.courierId)"
+                (click)="selectedCourierId = (courier.id || courier.courierId)">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+
+                  <!-- Brand & Name -->
+                  <div class="d-flex align-items-center gap-3" style="flex: 1; min-width: 180px;">
+                    <div class="rounded-circle bg-white border d-flex align-items-center justify-content-center p-1"
+                      style="width: 48px; height: 48px; min-width: 48px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                      <img *ngIf="courier.logo || courier.courierLogo" [src]="courier.logo || courier.courierLogo"
+                        [alt]="courier.name || courier.courierName" class="rounded-circle"
+                        style="width: 100%; height: 100%; object-fit: contain;">
+                      <i *ngIf="!(courier.logo || courier.courierLogo)" class="fa fa-truck text-muted fa-lg"></i>
+                    </div>
+                    <div>
+                      <h6 class="fw-bold mb-0 text-dark" style="font-size: 16px;">{{ courier.name || courier.courierName
+                        }}</h6>
+                    </div>
+                  </div>
+
+                  <!-- Fecha de Recolección -->
+                  <div class="text-center" style="min-width: 140px;">
+                    <span class="d-block text-muted mb-1" style="font-size: 12px; font-weight: 500;">Fecha de
+                      recolección</span>
+                    <span class="d-block fw-bold mb-1" style="font-size: 15px; color: #1a237e;">{{
+                      getRecolectionDateInfo(courier).label }}</span>
+                    <span class="d-block text-muted" style="font-size: 12px;">{{ getRecolectionDateInfo(courier).time
+                      }}</span>
+                  </div>
+
+                  <!-- Fecha de Entrega -->
+                  <div class="text-center" style="min-width: 140px;">
+                    <span class="d-block text-muted mb-1" style="font-size: 12px; font-weight: 500;">Fecha de
+                      entrega</span>
+                    <span class="d-block fw-bold mb-1" style="font-size: 15px; color: #1a237e;">{{
+                      getDeliveryDateInfo(courier).dateFormatted }}</span>
+                    <span class="d-block text-muted" style="font-size: 12px;">{{
+                      getDeliveryDateInfo(courier).relativeLabel }}</span>
+                  </div>
+
+                  <!-- Precio -->
+                  <div class="text-end" style="min-width: 110px; padding-right: 15px;">
+                    <span class="d-block text-muted mb-1" style="font-size: 12px; font-weight: 500;">Precio</span>
+                    <span class="d-block fw-bold text-primary" style="font-size: 20px; color: #2563eb !important;">$ {{
+                      courier.price | number:'1.2-2' }}</span>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Controles Paso 2 -->
+          <div class="row mt-4 pt-3 border-top">
+            <div class="col-6">
+              <button (click)="step = 1" [disabled]="generatingGuide" class="btn btn-light w-100">
+                <i class="fa fa-chevron-left me-2"></i> Atrás
+              </button>
+            </div>
+            <div class="col-6">
+              <button (click)="generarGuia()" [disabled]="generatingGuide || !selectedCourierId"
+                class="btn btn-primary w-100">
+                <span *ngIf="generatingGuide">
+                  <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                  Generando...
+                </span>
+                <span *ngIf="!generatingGuide">
+                  <i class="fa fa-barcode me-2"></i> Generar Guía
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== PASO 3: ÉXITO ==================== -->
+        <div *ngIf="step === 3" class="text-center py-3">
+          <div class="mb-3 text-success">
+            <i class="fa fa-check-circle fa-4x"></i>
+          </div>
+
+          <h4 class="fw-bold text-success mb-2">¡Guía Generada Exitosamente!</h4>
+          <p class="text-muted mb-3">Los datos de la guía se han agregado a las observaciones de la venta.</p>
+
+          <!-- Tabla de Datos Básicos -->
+          <div class="table-responsive max-width-md mx-auto mb-4 border rounded bg-light" style="max-width: 450px;">
+            <table class="table table-sm table-borderless mb-0 text-start">
+              <tbody>
+                <tr class="border-bottom">
+                  <td class="p-2 fw-bold text-muted" style="width: 45%;">Número de Guía:</td>
+                  <td class="p-2 fw-bold font-monospace">{{ shipmentResult?.shipmentNumber ||
+                    shipmentResult?.data?.shipmentNumber || 'N/A' }}</td>
+                </tr>
+                <tr class="border-bottom" *ngIf="shipmentResult?.courierName || shipmentResult?.data?.courierName">
+                  <td class="p-2 fw-bold text-muted">Paquetería:</td>
+                  <td class="p-2 fw-bold">{{ shipmentResult?.courierName || shipmentResult?.data?.courierName }}</td>
+                </tr>
+                <tr>
+                  <td class="p-2 fw-bold text-muted">Costo de Envío:</td>
+                  <td class="p-2 fw-bold text-primary font-monospace">${{ (shipmentResult?.price ||
+                    shipmentResult?.data?.price || 0) | number:'1.2-2' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Botones de Acción PDF / Tracking -->
+          <div class="d-flex flex-column flex-sm-row gap-2 justify-content-center mb-3">
+            <a [href]="shipmentResult?.labelUrl || shipmentResult?.data?.labelUrl" target="_blank"
+              class="btn btn-primary px-4">
+              <i class="fa fa-file-pdf-o me-2"></i> Imprimir Guía (PDF)
+            </a>
+            <a [href]="shipmentResult?.trackingUrl || shipmentResult?.data?.trackingUrl" target="_blank"
+              class="btn btn-light px-4">
+              <i class="fa fa-location-arrow me-2"></i> Rastrear Envío
+            </a>
+          </div>
+
+          <div class="mt-4 pt-2 border-top d-flex justify-content-center gap-3">
+            <button (click)="resetWizard()" class="btn btn-link text-decoration-none text-muted">
+              <i class="fa fa-refresh me-1"></i> Crear otro envío
+            </button>
+            <span class="text-muted py-1">|</span>
+            <button (click)="closeSelector()" class="btn btn-link text-decoration-none text-primary fw-bold">
+              <i class="fa fa-times me-1"></i> Cerrar Modal
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="modal-footer border-top bg-light py-2 px-3" *ngIf="step < 3">
+        <button type="button" class="btn btn-light border" (click)="closeSelector()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>

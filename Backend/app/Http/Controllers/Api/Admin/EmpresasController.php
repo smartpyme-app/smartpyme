@@ -139,6 +139,8 @@ class EmpresasController extends Controller
 
         $empresa->save();
 
+        $this->updateBoxfulSettings($empresa, $request);
+
         if ($request->has('forma_pago')) {
             $metodoValidado = $request->input('forma_pago');
             if (!in_array($metodoValidado, [config('constants.METODO_PAGO_N1CO'), config('constants.METODO_PAGO_TRANSFERENCIA')])) {
@@ -173,6 +175,8 @@ class EmpresasController extends Controller
         }
 
         $empresa->save();
+
+        $this->updateBoxfulSettings($empresa, $request);
 
         if ($request->has('forma_pago')) {
             $metodoValidado = $request->input('forma_pago');
@@ -232,6 +236,48 @@ class EmpresasController extends Controller
         foreach ($woocommerceValues as $field => $value) {
             $empresa->$field = $value;
         }
+    }
+
+    private function updateBoxfulSettings(Empresa $empresa, Request $request)
+    {
+        if ($request->has('boxful_email') || $request->has('boxful_password') || $request->has('boxful_client_id')) {
+            $integracion = $empresa->obtenerOcrearIntegracion();
+            
+            $credenciales = [];
+            if ($request->has('boxful_email')) {
+                $credenciales['email'] = $request->boxful_email;
+            }
+            if ($request->has('boxful_client_id')) {
+                $credenciales['client_id'] = $request->boxful_client_id;
+            }
+            if ($request->has('boxful_password') && !empty($request->boxful_password)) {
+                $credenciales['password'] = $request->boxful_password;
+                $integracion->estado = 'disconnected';
+                $integracion->access_token = null;
+                $integracion->token_expires_at = null;
+            }
+            
+            if (!empty($credenciales)) {
+                $integracion->setCredentials($credenciales);
+            }
+            
+            $integracion->save();
+            $empresa->load('integracion');
+        }
+    }
+
+    /**
+     * Extrae el clientId desde la parte media de un token JWT.
+     */
+    private function extractClientIdFromJwt(string $token): ?string
+    {
+        $parts = explode('.', $token);
+        if (count($parts) !== 3) {
+            return null;
+        }
+        
+        $payload = json_decode(base64_decode(str_replace(['-', '_'], ['+', '/'], $parts[1])), true);
+        return $payload['clientId'] ?? $payload['id'] ?? null;
     }
 
     private function handleLogoUpload(Request $request, Empresa $empresa)
