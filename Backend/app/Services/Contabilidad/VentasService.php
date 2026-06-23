@@ -7,6 +7,7 @@ use App\Models\Contabilidad\Partidas\Partida;
 use App\Models\Contabilidad\Partidas\Detalle;
 use App\Models\Contabilidad\Catalogo\Cuenta;
 use App\Models\Admin\FormaDePago;
+use App\Models\Ventas\Venta;
 use App\Models\Ventas\Detalle as DetalleVenta;
 use App\Models\Inventario\Categorias\Cuenta as CuentaCategoria;
 use Illuminate\Support\Facades\DB;
@@ -39,7 +40,17 @@ class VentasService
             throw new Exception('La venta no tiene sucursal asignada', 400);
         }
 
+        if (in_array($venta->nombre_documento, Venta::DOCUMENTOS_NO_CONTABLES, true)) {
+            throw new Exception('No se puede contabilizar una venta con documento "' . $venta->nombre_documento . '". Debe facturarse con un documento fiscal.', 400);
+        }
+
+        if ($venta->cotizacion == 1) {
+            throw new Exception('No se puede contabilizar una cotización. Debe facturarla primero.', 400);
+        }
+
         Partida::assertNoExisteParaOrigen('Venta', $venta->id, 'Ya existen partidas contables generadas para esta venta.');
+
+        $refDocumento = $venta->referenciaDocumentoContable();
 
         DB::beginTransaction();
 
@@ -48,7 +59,7 @@ class VentasService
             $partida_ingresos = Partida::create([
                 'fecha' => $venta->fecha,
                 'tipo' => 'Ingreso',
-                'concepto' => 'Ingresos por ventas. ' . ($venta->nombre_documento ?? 'Documento') . ' #' . ($venta->correlativo ?? 'Sin correlativo'),
+                'concepto' => 'Ingresos por ventas. ' . $refDocumento,
                 'estado' => 'Pendiente',
                 'referencia' => 'Venta',
                 'id_referencia' => $venta->id,
@@ -244,7 +255,7 @@ class VentasService
             $partida_costos = Partida::create([
                 'fecha' => $venta->fecha,
                 'tipo' => 'Ingreso',
-                'concepto' => 'Costo de ventas. ' . ($venta->nombre_documento ?? 'Documento') . ' #' . ($venta->correlativo ?? 'Sin correlativo'),
+                'concepto' => 'Costo de ventas. ' . $refDocumento,
                 'estado' => 'Pendiente',
                 'referencia' => 'Venta',
                 'id_referencia' => $venta->id,

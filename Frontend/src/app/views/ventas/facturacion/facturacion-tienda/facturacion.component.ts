@@ -41,6 +41,7 @@ export class FacturacionComponent implements OnInit {
   public emiting = false;
   public duplicarventa = false;
   public facturarCotizacion = false;
+  public documentoFiscalListo = true;
   public api: boolean = false;
   public opAvanzadas = false;
   public opAvanzadasFacturacion = false;
@@ -492,6 +493,7 @@ if (
   this.route.snapshot.queryParamMap.get('id_venta')
 ) {
   this.facturarCotizacion = true;
+  this.documentoFiscalListo = false;
 
   console.log('facturar cotizacion');
   
@@ -515,6 +517,9 @@ if (
           this.venta.cotizacion = 0;
           this.venta.num_cotizacion = this.venta.id;
           this.venta.id = null;
+          this.venta.id_documento = null;
+          this.venta.correlativo = null;
+          this.venta.nombre_documento = null;
           
 
           if (!this.venta.impuestos || this.venta.impuestos.length === 0) {
@@ -559,10 +564,17 @@ if (
                 this.venta.id_documento = documentoFactura.id;
                 this.venta.correlativo = documentoFactura.correlativo;
                 this.venta.nombre_documento = documentoFactura.nombre;
+                this.documentoFiscalListo = true;
               } else if (docsFiltrados.length > 0) {
                 this.venta.id_documento = docsFiltrados[0].id;
                 this.venta.correlativo = docsFiltrados[0].correlativo;
                 this.venta.nombre_documento = docsFiltrados[0].nombre;
+                this.documentoFiscalListo = true;
+              } else {
+                this.documentoFiscalListo = false;
+                this.alertService.error(
+                  'Debe configurar un documento fiscal (Factura o Crédito fiscal) en la sucursal antes de facturar la cotización.'
+                );
               }
               
               // Actualizar la lista de documentos
@@ -830,9 +842,22 @@ if (
 
   public setDocumento(id_documento: any) {
     let documento = this.documentos.find((x: any) => x.id == id_documento);
+    if (
+      this.facturarCotizacion &&
+      (documento?.nombre === 'Cotización' ||
+        documento?.nombre === 'Orden de compra')
+    ) {
+      this.alertService.error(
+        'Debe seleccionar un documento fiscal válido para facturar la cotización.'
+      );
+      return;
+    }
     this.venta.nombre_documento = documento.nombre;
     this.venta.id_documento = documento.id;
     this.venta.correlativo = documento.correlativo;
+    if (this.facturarCotizacion) {
+      this.documentoFiscalListo = true;
+    }
 
     if (this.venta.nombre_documento == 'Factura de exportación') {
       this.apiService.getAll('recintos').subscribe(
@@ -878,6 +903,18 @@ if (
   }
 
   public onFacturar() {
+    if (
+      this.facturarCotizacion &&
+      (!this.documentoFiscalListo ||
+        !this.venta.id_documento ||
+        this.venta.nombre_documento === 'Cotización')
+    ) {
+      this.alertService.error(
+        'Espere a que se asigne el documento fiscal o seleccione un documento válido (Factura o Crédito fiscal).'
+      );
+      return;
+    }
+
     if (
       this.venta.cobrar_impuestos &&
       (!this.venta.impuestos || this.venta.impuestos.length === 0)

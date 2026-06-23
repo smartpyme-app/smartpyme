@@ -335,11 +335,21 @@ class VentasController extends Controller
                 $quote = $this->saveQuotation($request);
                 return Response()->json($quote, 200);
             }
+            $documentoVenta = Documento::findOrFail($request->id_documento);
+            if (in_array($documentoVenta->nombre, Venta::DOCUMENTOS_NO_CONTABLES, true)) {
+                return Response()->json([
+                    'error' => 'Debe seleccionar un documento fiscal válido. No se puede facturar con el documento "' . $documentoVenta->nombre . '".',
+                ], 400);
+            }
+
             if ($request->id)
                 $venta = Venta::findOrFail($request->id);
             else
                 $venta = new Venta;
             $venta->fill($request->all());
+            if (!$request->id) {
+                $venta->correlativo = $documentoVenta->correlativo;
+            }
             $venta->save();
 
             // Guardamos los detalles
@@ -490,9 +500,8 @@ class VentasController extends Controller
             }
 
 
-            // Incrementar el correlarivo
-            $documento = Documento::findOrfail($venta->id_documento);
-            $documento->increment('correlativo');
+            // Incrementar el correlativo del documento fiscal
+            $documentoVenta->increment('correlativo');
             if ($request->num_cotizacion) {
                 $cotizacion = CotizacionVenta::find($request->num_cotizacion);
                 $cotizacion->estado = 'Facturada';
