@@ -86,7 +86,7 @@
             <td>
               <span class="badge" [ngClass]="claseEstado(p.estado)">{{ etiquetaEstado(p.estado) }}</span>
             </td>
-            <td class="text-end">{{ p.total | number:'1.2-2' }}</td>
+            <td class="text-end">{{ p.total | currency }}</td>
             <td class="text-center">
               <span class="btn" [popover]="accionesPedido" [outsideClick]="true" tooltip="Acciones">
                 <i class="fa fa-ellipsis-vertical fa-fw"></i>

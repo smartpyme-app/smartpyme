@@ -2,6 +2,7 @@
 
 namespace App\Exports\Planillas;
 
+use App\Helpers\CurrencyHelper;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -17,11 +18,13 @@ class DescuentosPatronalesExport implements FromCollection, WithHeadings, WithMa
 {
     protected $planilla;
     protected $detalles;
+    protected $moneyFormat;
 
     public function __construct($planilla, $detalles)
     {
-        $this->planilla = $planilla;
+        $this->planilla = $planilla->loadMissing('empresa.currency');
         $this->detalles = $detalles;
+        $this->moneyFormat = CurrencyHelper::excelFormat($this->planilla->empresa);
     }
 
     public function collection()
@@ -116,7 +119,7 @@ class DescuentosPatronalesExport implements FromCollection, WithHeadings, WithMa
         $moneyColumns = ['I', 'J', 'K', 'L', 'M'];
         foreach ($moneyColumns as $col) {
             if ($col !== 'N') { // N es porcentaje
-                $sheet->getStyle($col . '2:' . $col . $lastRow)->getNumberFormat()->setFormatCode('$#,##0.00');
+                $sheet->getStyle($col . '2:' . $col . $lastRow)->getNumberFormat()->setFormatCode($this->moneyFormat);
             }
         }
 

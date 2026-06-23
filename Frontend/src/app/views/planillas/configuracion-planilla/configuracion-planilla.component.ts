@@ -9,6 +9,7 @@ import {
 } from '../../../services/configuracion-planilla.service';
 import { AlertService } from '../../../services/alert.service';
 import { ApiService } from '../../../services/api.service';
+import { formatEmpresaCurrency } from '@helpers/currency-format.helper';
 
 @Component({
   selector: 'app-configuracion-planilla',
@@ -538,11 +539,7 @@ guardarConcepto(): void {
   }
 
   formatearMonto(monto: number): string {
-    return new Intl.NumberFormat('es-SV', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2
-    }).format(monto);
+    return formatEmpresaCurrency(monto, this.apiService.auth_user()?.empresa);
   }
 
   formatearPorcentaje(porcentaje: number): string {
