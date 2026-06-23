@@ -177,7 +177,7 @@
                 <div>
                     <strong>Atención:</strong> {{ formatNumber(cliente.puntos_vencidos || 0) }} puntos vencen pronto
                     <div class="small mt-1">
-                        Equivalente a ${{ (cliente.puntos_vencidos || 0) }}.00 en descuentos
+                        Equivalente a {{ formatCurrency(cliente.puntos_vencidos || 0) }} en descuentos
                     </div>
                 </div>
             </div>
@@ -283,8 +283,7 @@
                         </div>
                         <div class="col-6 col-md-3 text-center mb-3">
                             <div class="p-3 rounded" style="background: #f8fafc; border: 1px solid #e2e8f0;">
-                                <div class="fw-bold text-success fs-4">${{ formatNumber(cliente.puntos_canjeados || 0)
-                                    }}.00</div>
+                                <div class="fw-bold text-success fs-4">{{ formatCurrency(cliente.puntos_canjeados || 0) }}</div>
                                 <div class="small text-muted">Ahorro Total</div>
                             </div>
                         </div>
@@ -421,7 +420,7 @@
                                                 <div class="small text-muted">
                                                     <i class="fa fa-target me-1"></i>
                                                     Umbral: {{ formatNumber(regla.umbral) }}
-                                                    <span *ngIf="regla.tipo === 'gasto_total'"> USD</span>
+                                                    <span *ngIf="regla.tipo === 'gasto_total'"> {{ monedaEmpresa }}</span>
                                                     <span *ngIf="regla.tipo === 'puntos_acumulados'"> puntos</span>
                                                     <span *ngIf="regla.tipo === 'compras_periodo'"> compras</span>
                                                 </div>
