@@ -16,7 +16,6 @@ import { CompraJsonBulkService } from '@services/compra-json-bulk.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
 import { FacturacionElectronicaService } from '@services/facturacion-electronica/facturacion-electronica.service';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import {
   mensajeErrorHttpFeCr,
   type FeCrErrorEmisionPayload,
@@ -653,6 +652,8 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
             this.downloadingDetalles = false; this.saving = false;
             this.cdr.markForCheck();
           }, (error) => {
+            if (esErrorTimeoutExport(error)) {
+                this.alertService.error(mensajeErrorTimeoutExport(MAX_DIAS_EXPORT_DETALLES));
             } else {
                 this.alertService.error(error);
             }
