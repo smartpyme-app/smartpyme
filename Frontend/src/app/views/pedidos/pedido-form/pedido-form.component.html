@@ -88,7 +88,7 @@
             <td>
               <input type="number" class="form-control form-control-sm" min="0" step="any" [(ngModel)]="l.descuento" [name]="'d'+i">
             </td>
-            <td class="text-end">{{ totalLinea(l) | number:'1.2-2' }}</td>
+            <td class="text-end">{{ totalLinea(l) | currency }}</td>
             <td>
               <input type="text" class="form-control form-control-sm" [(ngModel)]="l.notas" [name]="'n'+i" placeholder="Notas / ID pedido">
             </td>
@@ -101,7 +101,7 @@
     </div>
 
     <div class="text-end mt-3 fw-bold" *ngIf="lineas.length">
-      Total: {{ totalPedido() | number:'1.2-2' }}
+      Total: {{ totalPedido() | currency }}
     </div>
   </section>
 

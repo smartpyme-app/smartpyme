@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { AlertService } from '@services/alert.service';
 import { FidelizacionService } from '@services/fidelizacion.service';
 import { ApiService } from '@services/api.service';
+import { formatEmpresaCurrency } from '@helpers/currency-format.helper';
 import { 
   TipoClienteEmpresa, 
   TipoClienteBase, 

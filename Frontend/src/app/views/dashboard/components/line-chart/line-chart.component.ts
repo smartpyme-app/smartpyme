@@ -1,5 +1,6 @@
 import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter, OnDestroy } from '@angular/core';
 import { ChartConfig } from '../../models/chart-config.model';
+import { CurrencyFormatService } from '@services/currency-format.service';
 
 import { CommonModule } from '@angular/common';
 import { NgxEchartsModule } from 'ngx-echarts';
@@ -17,6 +18,8 @@ export class LineChartComponent implements OnInit, OnChanges, OnDestroy {
 
   chartOption: any = {};
   echartsInstance: any;
+
+  constructor(private currencyFormat: CurrencyFormatService) {}
 
   private hexToRgba(hex: string, alpha: number): string {
     if (!hex || !hex.startsWith('#')) return hex;
@@ -51,7 +54,7 @@ export class LineChartComponent implements OnInit, OnChanges, OnDestroy {
     } else {
       formatted = value.toString();
     }
-    return `$${formatted}`;
+    return `${this.currencyFormat.getSymbol()}${formatted}`;
   }
 
   initChart(): void {

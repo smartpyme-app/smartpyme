@@ -6,6 +6,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { BuscadorClienteVista360Component } from './buscador-cliente-vista360/buscador-cliente-vista360.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { formatEmpresaCurrency } from '@helpers/currency-format.helper';
 import { FidelizacionService } from '@services/fidelizacion.service';
 import { ClienteNotaModalComponent } from '@shared/modals/cliente-nota-modal/cliente-nota-modal.component';
 import { ChartConfig } from '@views/dashboard/models/chart-config.model';
@@ -799,11 +800,10 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
   }
 
   formatCurrency(value: number): string {
-    if (typeof value !== 'number' || isNaN(value)) return '$0.00';
-    return new Intl.NumberFormat('es-ES', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(value);
+    if (typeof value !== 'number' || isNaN(value)) {
+      return formatEmpresaCurrency(0, this.apiService.auth_user()?.empresa);
+    }
+    return formatEmpresaCurrency(value, this.apiService.auth_user()?.empresa);
   }
 
   formatDate(dateString: string): string {

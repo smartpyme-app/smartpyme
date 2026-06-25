@@ -5,6 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { FidelizacionService } from '@services/fidelizacion.service';
 import { ApiService } from '@services/api.service';
+import { formatEmpresaCurrency, getEmpresaCurrencyCode } from '@helpers/currency-format.helper';
 import { 
   TipoClienteEmpresa, 
   PaginatedResponse
@@ -155,11 +156,11 @@ export class ClienteDetallesFidelizacionComponent implements OnInit {
    * Formatear moneda
    */
   formatCurrency(amount: number): string {
-    if (!amount) return '$0.00';
-    return new Intl.NumberFormat('es-ES', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
+    return formatEmpresaCurrency(amount, this.apiService.auth_user()?.empresa);
+  }
+
+  get monedaEmpresa(): string {
+    return getEmpresaCurrencyCode(this.apiService.auth_user()?.empresa);
   }
 
   /**

@@ -339,6 +339,12 @@ class GenerarDocumentosController extends Controller
                 $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Factura-Inversiones-Andre', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
             }
+            elseif(Auth::user()->id_empresa == 614 ){ //614 Demo SP 2 - Honduras
+                $venta->load('detalles.producto');
+                $centavos = str_pad(isset($n[1]) ? $n[1] : '00', 2, '0', STR_PAD_LEFT);
+                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Factura-Accesorios-Honduras', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos', 'documento'));
+                $pdf->setPaper('US Letter', 'portrait');
+            }
             elseif(Auth::user()->id_empresa == 700 ){ //700 Lilian Ohle
                 $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Factura-Lilian-Ohle', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos', 'documento'));
                 $pdf->setPaper('US Letter', 'portrait');

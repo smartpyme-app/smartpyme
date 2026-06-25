@@ -89,6 +89,12 @@ export class PlanillaDetalleComponent implements OnInit {
     private cdr: ChangeDetectorRef
   ) { }
 
+  get currencySymbol(): string {
+    const empresa = this.apiService.auth_user()?.empresa;
+    return empresa?.currency?.currency_symbol
+      || (empresa?.moneda === 'HNL' ? 'L' : '$');
+  }
+
   ngOnInit() {
     this.route.params.pipe(this.untilDestroyed()).subscribe((params) => {
 

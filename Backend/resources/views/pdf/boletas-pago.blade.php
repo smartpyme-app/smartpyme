@@ -28,6 +28,9 @@
     </style>
 </head>
 <body>
+    @php
+        $simbolo = \App\Helpers\CurrencyHelper::symbol($empresa);
+    @endphp
     @foreach($detalles as $detalle)
     <div class="boleta">
         <div class="header">
@@ -51,59 +54,59 @@
             </tr>
             <tr>
                 <td>Salario Base</td>
-                <td>${{ number_format($detalle->salario_base, 2) }}</td>
+                <td>{{ $simbolo }}{{ number_format($detalle->salario_base, 2) }}</td>
                 <td>ISSS (3%)</td>
-                <td>${{ number_format($detalle->isss_empleado, 2) }}</td>
+                <td>{{ $simbolo }}{{ number_format($detalle->isss_empleado, 2) }}</td>
             </tr>
             <tr>
                 <td>Horas Extra</td>
-                <td>${{ number_format($detalle->monto_horas_extra, 2) }}</td>
+                <td>{{ $simbolo }}{{ number_format($detalle->monto_horas_extra, 2) }}</td>
                 <td>AFP (7.25%)</td>
-                <td>${{ number_format($detalle->afp_empleado, 2) }}</td>
+                <td>{{ $simbolo }}{{ number_format($detalle->afp_empleado, 2) }}</td>
             </tr>
             <tr>
                 <td>Comisiones</td>
-                <td>${{ number_format($detalle->comisiones, 2) }}</td>
+                <td>{{ $simbolo }}{{ number_format($detalle->comisiones, 2) }}</td>
                 <td>Renta</td>
-                <td>${{ number_format($detalle->renta, 2) }}</td>
+                <td>{{ $simbolo }}{{ number_format($detalle->renta, 2) }}</td>
             </tr>
             <tr>
                 <td>Bonificaciones</td>
-                <td>${{ number_format($detalle->bonificaciones, 2) }}</td>
+                <td>{{ $simbolo }}{{ number_format($detalle->bonificaciones, 2) }}</td>
                 <td>Préstamos</td>
-                <td>${{ number_format($detalle->prestamos, 2) }}</td>
+                <td>{{ $simbolo }}{{ number_format($detalle->prestamos, 2) }}</td>
             </tr>
             @if($detalle->anticipos > 0)
             <tr>
                 <td></td>
                 <td></td>
                 <td>Anticipos</td>
-                <td>${{ number_format($detalle->anticipos, 2) }}</td>
+                <td>{{ $simbolo }}{{ number_format($detalle->anticipos, 2) }}</td>
             </tr>
             @endif
             <tr>
                 <td>Otros Ingresos</td>
-                <td>${{ number_format($detalle->otros_ingresos, 2) }}</td>
+                <td>{{ $simbolo }}{{ number_format($detalle->otros_ingresos, 2) }}</td>
                 <td>Otros Descuentos</td>
-                <td>${{ number_format($detalle->otros_descuentos, 2) }}</td>
+                <td>{{ $simbolo }}{{ number_format($detalle->otros_descuentos, 2) }}</td>
             </tr>
             @if(($detalle->viaticos ?? 0) > 0)
             <tr>
                 <td>Viáticos</td>
-                <td>${{ number_format($detalle->viaticos ?? 0, 2) }}</td>
+                <td>{{ $simbolo }}{{ number_format($detalle->viaticos ?? 0, 2) }}</td>
                 <td colspan="2"></td>
             </tr>
             @endif
         </table>
 
         <div class="totals">
-            <p><strong>Total Ingresos:</strong> ${{ number_format($detalle->total_ingresos, 2) }}</p>
-            <p><strong>Total Deducciones:</strong> ${{ number_format($detalle->total_descuentos, 2) }}</p>
-            <p><strong>Sueldo Neto:</strong> ${{ number_format($detalle->sueldo_neto, 2) }}</p>
+            <p><strong>Total Ingresos:</strong> {{ $simbolo }}{{ number_format($detalle->total_ingresos, 2) }}</p>
+            <p><strong>Total Deducciones:</strong> {{ $simbolo }}{{ number_format($detalle->total_descuentos, 2) }}</p>
+            <p><strong>Sueldo Neto:</strong> {{ $simbolo }}{{ number_format($detalle->sueldo_neto, 2) }}</p>
             @if(($detalle->viaticos ?? 0) > 0)
-            <p><strong>Viáticos:</strong> ${{ number_format($detalle->viaticos ?? 0, 2) }}</p>
+            <p><strong>Viáticos:</strong> {{ $simbolo }}{{ number_format($detalle->viaticos ?? 0, 2) }}</p>
             @endif
-            <p><strong>Total a Pagar:</strong> ${{ number_format(($detalle->sueldo_neto ?? 0) + ($detalle->viaticos ?? 0), 2) }}</p>
+            <p><strong>Total a Pagar:</strong> {{ $simbolo }}{{ number_format(($detalle->sueldo_neto ?? 0) + ($detalle->viaticos ?? 0), 2) }}</p>
         </div>
 
         <div class="signature-line">

@@ -533,7 +533,7 @@ class AuthJWTController extends Controller
         $user->ultimo_login = Carbon::now();
         $user->save();
 
-        $user->empresa = $user->empresa()->with('licencia')->first();
+        $user->empresa = $user->empresa()->with(['licencia', 'currency'])->first();
 
         // Agregar información sobre el tipo de empresa (padre/hija)
         if ($user->empresa) {

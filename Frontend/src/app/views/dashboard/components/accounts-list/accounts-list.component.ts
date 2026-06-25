@@ -1,4 +1,5 @@
 import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter, OnDestroy } from '@angular/core';
+import { CurrencyFormatService } from '@services/currency-format.service';
 
 export interface AccountItem {
   name: string;
@@ -23,6 +24,8 @@ export class AccountsListComponent implements OnInit, OnChanges, OnDestroy {
 
   chartOption: any = {};
   echartsInstance: any;
+
+  constructor(private currencyFormat: CurrencyFormatService) {}
 
   private hexToRgba(hex: string, alpha: number): string {
     const r = parseInt(hex.slice(1, 3), 16);
@@ -219,11 +222,6 @@ export class AccountsListComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   formatAmount(amount: number): string {
-    return new Intl.NumberFormat('es-GT', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(amount);
+    return this.currencyFormat.format(amount);
   }
 }

@@ -567,33 +567,31 @@
                     </small>
                     @if (planilla.tipo_planilla === 'quincenal' && detalleSeleccionado?.empleado?.tipo_contrato !== 3 && detalleSeleccionado?.empleado?.tipo_contrato !== 4) {
                       <small class="text-info">
-                        Salario quincenal: ${{
-                          detalleSeleccionado.salario_base / 2 | number : "1.2-2"
+                        Salario quincenal: {{
+                          detalleSeleccionado.salario_base / 2 | currency
                         }}
                       </small>
                     }
                     @if (planilla.tipo_planilla === 'semanal' && detalleSeleccionado?.empleado?.tipo_contrato !== 3 && detalleSeleccionado?.empleado?.tipo_contrato !== 4) {
                       <small class="text-info">
-                        Salario semanal: ${{
-                          detalleSeleccionado.salario_base / 4.33
-                            | number : "1.2-2"
+                        Salario semanal: {{
+                          detalleSeleccionado.salario_base / 4.33 | currency
                         }}
                       </small>
                     }
                     @if (planilla.tipo_planilla === 'quincenal' && detalleSeleccionado?.empleado?.tipo_contrato === 4) {
-                    <small class="text-info">
-                      Salario quincenal: ${{
-                        detalleSeleccionado.salario_base / 2 | number : "1.2-2"
-                      }}
-                    </small>
+                      <small class="text-info">
+                        Salario quincenal: {{
+                          detalleSeleccionado.salario_base / 2 | currency
+                        }}
+                      </small>
                     }
                     @if (planilla.tipo_planilla === 'semanal' && detalleSeleccionado?.empleado?.tipo_contrato === 4) {
-                    <small class="text-info">
-                      Salario semanal: ${{
-                        detalleSeleccionado.salario_base / 4.33
-                          | number : "1.2-2"
-                      }}
-                    </small>
+                      <small class="text-info">
+                        Salario semanal: {{
+                          detalleSeleccionado.salario_base / 4.33 | currency
+                        }}
+                      </small>
                     }
                   </div>
 
@@ -669,7 +667,7 @@
                   <ng-container *ngIf="esElSalvador && detalleSeleccionado?.empleado?.tipo_contrato !== 4">
                     <div class="mb-3">
                       <label class="d-block mb-2"><i class="fa fa-clock me-1"></i> Horas extra (El Salvador)</label>
-                      <p class="text-muted small mb-2">Valor hora ordinaria: ${{ getValorHoraNormalES() | number : "1.2-2" }}. Agregue filas eligiendo tipo y cantidad de horas.</p>
+                      <p class="text-muted small mb-2">Valor hora ordinaria: {{ getValorHoraNormalES() | currency }}. Agregue filas eligiendo tipo y cantidad de horas.</p>
                       <div class="border rounded p-2 bg-light mb-2">
                         <div *ngFor="let fila of listaHorasExtraES; let i = index" class="d-flex align-items-center gap-2 mb-2 flex-wrap">
                           <select class="form-select form-select-sm" style="min-width: 180px;"
@@ -688,7 +686,7 @@
                             [disabled]="planilla.estado !== 2 && planilla.estado !== 3" />
                           <span class="text-muted small">hrs</span>
                           <span class="text-success fw-bold small">
-                            ${{ getMontoFilaHoraExtra(fila) | number : "1.2-2" }}
+                            {{ getMontoFilaHoraExtra(fila) | currency }}
                             <span *ngIf="fila.tipo === 'dia_descanso'" class="text-muted fw-normal" title="Solo horas con 50% recargo; el día compensatorio se suma al total">(solo horas)</span>
                           </span>
                           <button type="button" class="btn btn-outline-danger btn-sm ms-1"
@@ -705,9 +703,9 @@
                         </button>
                       </div>
                       <small class="text-muted d-block">
-                        Total: {{ detalleSeleccionado.horas_extra | number : "1.2-2" }} hrs — Monto total: ${{ detalleSeleccionado.monto_horas_extra | number : "1.2-2" }}
+                        Total: {{ detalleSeleccionado.horas_extra | number : "1.2-2" }} hrs — Monto total: {{ detalleSeleccionado.monto_horas_extra | currency }}
                         <span *ngIf="getDetalleHorasExtraDesdeLista().dia_descanso_dias > 0" class="d-block mt-1 text-info">
-                          <strong>Desglose (Art. 175):</strong> horas trabajadas ${{ getDesgloseMontoHorasExtraES().montoHoras | number : "1.2-2" }} + {{ getDetalleHorasExtraDesdeLista().dia_descanso_dias }} día(s) compensatorio(s) remunerado(s) ${{ getDesgloseMontoHorasExtraES().montoDiaCompensatorio | number : "1.2-2" }} = ${{ detalleSeleccionado.monto_horas_extra | number : "1.2-2" }}
+                          <strong>Desglose (Art. 175):</strong> horas trabajadas {{ getDesgloseMontoHorasExtraES().montoHoras | currency }} + {{ getDetalleHorasExtraDesdeLista().dia_descanso_dias }} día(s) compensatorio(s) remunerado(s) {{ getDesgloseMontoHorasExtraES().montoDiaCompensatorio | currency }} = {{ detalleSeleccionado.monto_horas_extra | currency }}
                         </span>
                       </small>
                     </div>
@@ -726,10 +724,10 @@
                       <span class="input-group-text">hrs</span>
                     </div>
                     <small class="text-muted">
-                      Monto: ${{ detalleSeleccionado.monto_horas_extra | number : "1.2-2" }}
+                      Monto: {{ detalleSeleccionado.monto_horas_extra | currency }}
                       @if (detalleSeleccionado.horas_extra > 0) {
                         <span class="text-info">
-                          (Valor hora: ${{ calcularValorHora() | number : "1.2-2" }})
+                          (Valor hora: {{ calcularValorHora() | currency }})
                         </span>
                       }
                     </small>
@@ -829,8 +827,8 @@
                   </div>
 
                   <div class="alert alert-primary">
-                    <strong>Total Ingresos:</strong> ${{
-                    detalleSeleccionado.total_ingresos | number : "1.2-2"
+                    <strong>Total Ingresos:</strong> {{
+                    detalleSeleccionado.total_ingresos | currency
                     }}
                   </div>
                 </div>
@@ -860,15 +858,14 @@
                                          'N/A - Contrato sin prestaciones' : ''" />
                       </div>
                       @if (detalleSeleccionado?.empleado?.tipo_contrato !== 4 && detalleSeleccionado?.empleado?.tipo_contrato !== 3 && detalleSeleccionado?.empleado?.configuracion_descuentos?.aplicar_isss === false) {
-                        <!-- Mensaje cuando ISSS está desactivado por configuración -->
                         <div class="alert alert-warning py-2 px-3 mt-2 mb-0 text-alert-descuentos">
                           <i class="fa fa-exclamation-triangle me-2"></i>
                           <strong>ISSS desactivado:</strong> Este descuento no se calcula porque está desactivado en la configuración del empleado.
                         </div>
                       }
-                      @if (detalleSeleccionado?.empleado?.tipo_contrato !== 4 && detalleSeleccionado?.empleado?.tipo_contrato !== 3 && detalleSeleccionado?.empleado?.configuracion_descuentos?.aplicar_isss === false) {
+                      @if (detalleSeleccionado?.empleado?.tipo_contrato !== 4 && detalleSeleccionado?.empleado?.tipo_contrato !== 3 && detalleSeleccionado?.empleado?.configuracion_descuentos?.aplicar_isss !== false) {
                         <small class="text-muted">
-                          Patronal (7.5%): ${{ detalleSeleccionado.isss_patronal | number : "1.2-2" }}
+                          Patronal (7.5%): {{ detalleSeleccionado.isss_patronal | currency }}
                         </small>
                       }
                       @if (detalleSeleccionado?.empleado?.tipo_contrato === 4 || detalleSeleccionado?.empleado?.tipo_contrato === 3) {
@@ -889,20 +886,19 @@
                                          'N/A - Contrato sin prestaciones' : ''" />
                       </div>
                       @if (detalleSeleccionado?.empleado?.tipo_contrato !== 4 && detalleSeleccionado?.empleado?.tipo_contrato !== 3 && detalleSeleccionado?.empleado?.configuracion_descuentos?.aplicar_afp === false) {
-                        <!-- Mensaje cuando AFP está desactivado por configuración -->
                         <div class="alert alert-warning py-2 px-3 mt-2 mb-0 text-alert-descuentos">
                           <i class="fa fa-exclamation-triangle me-2"></i>
                           <strong>AFP desactivado:</strong> Este descuento no se calcula porque está desactivado en la configuración del empleado.
                         </div>
                       }
-                      @if (detalleSeleccionado?.empleado?.tipo_contrato !== 4 && detalleSeleccionado?.empleado?.tipo_contrato !== 3) {
+                      @if (detalleSeleccionado?.empleado?.tipo_contrato !== 4 && detalleSeleccionado?.empleado?.tipo_contrato !== 3 && detalleSeleccionado?.empleado?.configuracion_descuentos?.aplicar_afp !== false) {
                         <small class="text-muted">
-                          Patronal (8.75%): ${{ detalleSeleccionado.afp_patronal | number : "1.2-2" }}
+                          Patronal (8.75%): {{ detalleSeleccionado.afp_patronal | currency }}
                         </small>
                       }
                       @if (detalleSeleccionado?.empleado?.tipo_contrato === 4 || detalleSeleccionado?.empleado?.tipo_contrato === 3) {
                         <small class="text-info">
-                         No aplica para este tipo de contrato
+                          No aplica para este tipo de contrato
                         </small>
                       }
                     </div>
@@ -1094,8 +1090,8 @@ class="accordion-collapse"
 
                   <!-- Total descuentos -->
                   <div class="alert alert-warning">
-                    <strong>Total Descuentos:</strong> ${{
-                    detalleSeleccionado.total_descuentos | number : "1.2-2"
+                    <strong>Total Descuentos:</strong> {{
+                    detalleSeleccionado.total_descuentos | currency
                     }}
                   </div>
                 </div>
@@ -1106,12 +1102,12 @@ class="accordion-collapse"
             <!-- Sueldo Neto y Total a Pagar -->
             <div class="col-12">
               <div class="alert alert-success">
-                <strong>Sueldo Neto:</strong> ${{
-                detalleSeleccionado.sueldo_neto | number : "1.2-2"
+                <strong>Sueldo Neto:</strong> {{
+                detalleSeleccionado.sueldo_neto | currency
                 }}
                 <span *ngIf="(detalleSeleccionado.viaticos || 0) > 0" class="ms-3">
-                  | <strong>Viáticos:</strong> ${{ detalleSeleccionado.viaticos | number : "1.2-2" }}
-                  | <strong>Total a Pagar:</strong> ${{ getTotalAPagar(detalleSeleccionado) | number : "1.2-2" }}
+                  | <strong>Viáticos:</strong> {{ detalleSeleccionado.viaticos | currency }}
+                  | <strong>Total a Pagar:</strong> {{ getTotalAPagar(detalleSeleccionado) | currency }}
                 </span>
               </div>
             </div>

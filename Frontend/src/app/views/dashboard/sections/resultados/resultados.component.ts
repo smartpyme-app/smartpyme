@@ -20,6 +20,7 @@ import { ApiService } from '@services/api.service';
 import { DropdownMultiFiltroSelection } from '../../components/dropdown-multi-filtro/dropdown-multi-filtro.component';
 import { DashboardFiltrosCatalogoService } from '../../services/dashboard-filtros-catalogo.service';
 import { ColDef, GridOptions, GridApi, themeQuartz, AllCommunityModule } from 'ag-grid-community';
+import { formatEmpresaCurrency, getEmpresaCurrencySymbol } from '@helpers/currency-format.helper';
 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -414,12 +415,6 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
   /**
    * Formateador con caché
    */
-  private currencyFormatter = new Intl.NumberFormat('es-GT', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  });
 
   /**
    * Recalcula todas las filas cacheadas
@@ -735,33 +730,17 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
     if (value === null || value === undefined) {
       value = 0;
     }
-    const user = this.apiService.auth_user();
-    const empresa = user?.empresa;
-    const currencyCode = empresa?.moneda || 'USD';
-    const currencySymbol = empresa?.currency?.currency_symbol;
+    return formatEmpresaCurrency(value, this.apiService.auth_user()?.empresa);
+  }
 
-    const options: Intl.NumberFormatOptions = {
-      style: 'currency',
-      currency: currencyCode,
-    };
-
-    if (currencySymbol) {
-      options.style = 'decimal';
-      options.minimumFractionDigits = 2;
-      options.maximumFractionDigits = 2;
-    }
-
-    let formattedValue = new Intl.NumberFormat('en-US', options).format(Math.abs(value));
-
-    if (currencySymbol) {
-      formattedValue = `${currencySymbol}${formattedValue}`;
-    }
-
-    if (value < 0) {
-      return `(${formattedValue})`;
-    }
-
-    return formattedValue;
+  private getPivotCurrencyFormats() {
+    return [{
+      name: 'currency',
+      currencySymbol: getEmpresaCurrencySymbol(this.apiService.auth_user()?.empresa),
+      currencySymbolAlign: 'left',
+      decimalPlaces: 2,
+      thousandsSeparator: ',',
+    }];
   }
 
   ventasColumns = [
@@ -1010,7 +989,7 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
         columns: [{ uniqueName: '[Measures]' }],
         measures: [{ uniqueName: 'Monto', aggregation: 'sum', format: 'currency', caption: 'Monto' }]
       },
-      formats: [{ name: 'currency', currencySymbol: '$', currencySymbolAlign: 'left', decimalPlaces: 2, thousandsSeparator: ',' }],
+      formats: this.getPivotCurrencyFormats(),
       options: { grid: { showGrandTotals: 'on', showTotals: 'on' } }
     });
   }
@@ -1044,7 +1023,7 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
         columns: [{ uniqueName: '[Measures]' }],
         measures: [{ uniqueName: 'Monto', aggregation: 'sum', format: 'currency', caption: 'Monto' }]
       },
-      formats: [{ name: 'currency', currencySymbol: '$', currencySymbolAlign: 'left', decimalPlaces: 2, thousandsSeparator: ',' }],
+      formats: this.getPivotCurrencyFormats(),
       options: { grid: { showGrandTotals: 'on', showTotals: 'on' } }
     });
   }
@@ -1080,7 +1059,7 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
         columns: [{ uniqueName: '[Measures]' }],
         measures: [{ uniqueName: 'Monto', aggregation: 'sum', format: 'currency', caption: 'Monto' }]
       },
-      formats: [{ name: 'currency', currencySymbol: '$', currencySymbolAlign: 'left', decimalPlaces: 2, thousandsSeparator: ',' }],
+      formats: this.getPivotCurrencyFormats(),
       options: { grid: { showGrandTotals: 'on', showTotals: 'on' } }
     });
   }
@@ -1116,7 +1095,7 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
         columns: [{ uniqueName: '[Measures]' }],
         measures: [{ uniqueName: 'Monto', aggregation: 'sum', format: 'currency', caption: 'Monto' }]
       },
-      formats: [{ name: 'currency', currencySymbol: '$', currencySymbolAlign: 'left', decimalPlaces: 2, thousandsSeparator: ',' }],
+      formats: this.getPivotCurrencyFormats(),
       options: { grid: { showGrandTotals: 'on', showTotals: 'on' } }
     });
   }

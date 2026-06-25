@@ -10,6 +10,7 @@ import {
   DropdownMultiFiltroSelection,
 } from '../../components/dropdown-multi-filtro/dropdown-multi-filtro.component';
 import { ColDef, GridOptions, GridApi, themeQuartz, AllCommunityModule } from 'ag-grid-community';
+import { formatEmpresaCurrency, getEmpresaCurrencySymbol } from '@helpers/currency-format.helper';
 import { MetricCard } from '../../models/chart-config.model';
 
 import { CommonModule } from '@angular/common';
@@ -219,13 +220,6 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
   /**
    * Formateadores con caché
    */
-  private currencyFormatter = new Intl.NumberFormat('es-GT', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  });
-
   private numberFormatter = new Intl.NumberFormat('es-GT', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0
@@ -472,33 +466,7 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
     if (value === null || value === undefined) {
       value = 0;
     }
-    const user = this.apiService.auth_user();
-    const empresa = user?.empresa;
-    const currencyCode = empresa?.moneda || 'USD';
-    const currencySymbol = empresa?.currency?.currency_symbol;
-
-    const options: Intl.NumberFormatOptions = {
-      style: 'currency',
-      currency: currencyCode,
-    };
-
-    if (currencySymbol) {
-      options.style = 'decimal';
-      options.minimumFractionDigits = 2;
-      options.maximumFractionDigits = 2;
-    }
-
-    let formattedValue = new Intl.NumberFormat('en-US', options).format(Math.abs(value));
-
-    if (currencySymbol) {
-      formattedValue = `${currencySymbol}${formattedValue}`;
-    }
-
-    if (value < 0) {
-      return `(${formattedValue})`;
-    }
-
-    return formattedValue;
+    return formatEmpresaCurrency(value, this.apiService.auth_user()?.empresa);
   }
 
   formatNumber(value: number): string {
@@ -1689,7 +1657,8 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
           if (params.value !== null && params.value !== undefined) {
             const value = params.value;
             if (value < 0) {
-              return `(${this.formatCurrency(Math.abs(value)).replace('$', '')})`;
+              const symbol = getEmpresaCurrencySymbol(this.apiService.auth_user()?.empresa);
+              return `(${this.formatCurrency(Math.abs(value)).replace(symbol, '')})`;
             }
             return this.formatCurrency(value);
           }

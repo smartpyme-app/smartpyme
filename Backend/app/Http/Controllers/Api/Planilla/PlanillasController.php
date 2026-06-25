@@ -1505,7 +1505,7 @@ class PlanillasController extends Controller
         try {
             $planilla = Planilla::with(['detalles' => function($query) {
                     $query->where('estado', '!=', 0);
-                }, 'detalles.empleado', 'empresa', 'sucursal'])
+                }, 'detalles.empleado', 'empresa.currency', 'sucursal'])
                 ->findOrFail($id);
 
             $pdf = app('dompdf.wrapper')->loadView('pdf.boletas-pago', [
@@ -1717,7 +1717,7 @@ class PlanillasController extends Controller
     public function generarBoletaIndividual($id_detalle)
     {
         try {
-            $detalle = PlanillaDetalle::with(['empleado', 'planilla'])->findOrFail($id_detalle);
+            $detalle = PlanillaDetalle::with(['empleado', 'planilla.empresa.currency'])->findOrFail($id_detalle);
 
             // Calcular totales
             $totalIngresos = $detalle->salario_devengado +

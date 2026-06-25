@@ -1,5 +1,6 @@
 import { Component, Input, OnInit, OnChanges, SimpleChanges } from '@angular/core';
 import { BudgetMetric } from '../../models/chart-config.model';
+import { CurrencyFormatService } from '@services/currency-format.service';
 
 import { CommonModule } from '@angular/common';
 import { NgxEchartsModule } from 'ngx-echarts';
@@ -15,6 +16,8 @@ export class BudgetCardComponent implements OnInit, OnChanges {
   @Input() data!: BudgetMetric;
   
   chartOption: any = {};
+
+  constructor(private currencyFormat: CurrencyFormatService) {}
 
   ngOnInit(): void {
     this.initChart();
@@ -104,12 +107,7 @@ export class BudgetCardComponent implements OnInit, OnChanges {
   }
 
   formatCurrency(value: number): string {
-    return new Intl.NumberFormat('es-GT', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(value);
+    return this.currencyFormat.format(value);
   }
 
   formatPercentage(value: number): string {

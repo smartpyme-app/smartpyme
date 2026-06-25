@@ -2,20 +2,22 @@
 // app/Exports/PlanillaExport.php
 namespace App\Exports;
 
+use App\Helpers\CurrencyHelper;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithColumnFormatting;
-use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class PlanillaExport implements FromCollection, WithHeadings, WithStyles, WithColumnFormatting
 {
     protected $planilla;
+    protected $moneyFormat;
     
     public function __construct($planilla)
     {
-        $this->planilla = $planilla;
+        $this->planilla = $planilla->loadMissing('empresa.currency');
+        $this->moneyFormat = CurrencyHelper::excelFormat($this->planilla->empresa);
     }
 
     public function collection()
@@ -91,23 +93,13 @@ class PlanillaExport implements FromCollection, WithHeadings, WithStyles, WithCo
 
     public function columnFormats(): array
     {
-        return [
-            'C' => NumberFormat::FORMAT_CURRENCY_USD_SIMPLE,
-            'F' => NumberFormat::FORMAT_CURRENCY_USD_SIMPLE,
-            'G' => NumberFormat::FORMAT_CURRENCY_USD_SIMPLE,
-            'H' => NumberFormat::FORMAT_CURRENCY_USD_SIMPLE,
-            'I' => NumberFormat::FORMAT_CURRENCY_USD_SIMPLE,
-            'J' => NumberFormat::FORMAT_CURRENCY_USD_SIMPLE,
-            'K' => NumberFormat::FORMAT_CURRENCY_USD_SIMPLE,
-            'L' => NumberFormat::FORMAT_CURRENCY_USD_SIMPLE,
-            'M' => NumberFormat::FORMAT_CURRENCY_USD_SIMPLE,
-            'N' => NumberFormat::FORMAT_CURRENCY_USD_SIMPLE,
-            'O' => NumberFormat::FORMAT_CURRENCY_USD_SIMPLE,
-            'P' => NumberFormat::FORMAT_CURRENCY_USD_SIMPLE,
-            'Q' => NumberFormat::FORMAT_CURRENCY_USD_SIMPLE,
-            'R' => NumberFormat::FORMAT_CURRENCY_USD_SIMPLE,
-            'S' => NumberFormat::FORMAT_CURRENCY_USD_SIMPLE,
-            'T' => NumberFormat::FORMAT_CURRENCY_USD_SIMPLE
-        ];
+        $moneyColumns = ['C', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T'];
+        $formats = [];
+
+        foreach ($moneyColumns as $column) {
+            $formats[$column] = $this->moneyFormat;
+        }
+
+        return $formats;
     }
 }

@@ -1,5 +1,6 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { MetricCard } from '../../models/chart-config.model';
+import { CurrencyFormatService } from '@services/currency-format.service';
 
 import { CommonModule } from '@angular/common';
 
@@ -12,6 +13,8 @@ import { CommonModule } from '@angular/common';
 })
 export class ChartCardComponent implements OnInit {
   @Input() data!: MetricCard;
+
+  constructor(private currencyFormat: CurrencyFormatService) {}
 
   get trendIcon(): string {
     if (!this.data.trend) return '';
@@ -69,17 +72,22 @@ export class ChartCardComponent implements OnInit {
       }
 
       if (this.data.type === 'currency-int') {
-        // Formatear números de moneda sin decimales
-        return new Intl.NumberFormat('es-GT', {
+        return new Intl.NumberFormat('en-US', {
           minimumFractionDigits: 0,
-          maximumFractionDigits: 0
-        }).format(value);
+          maximumFractionDigits: 0,
+        }).format(Math.abs(value));
       }
 
-      // Formatear números de moneda con 2 decimales (nunca redondear)
-      return new Intl.NumberFormat('es-GT', {
+      if (this.data.type === 'currency' || this.shouldShowCurrency()) {
+        return new Intl.NumberFormat('en-US', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }).format(Math.abs(value));
+      }
+
+      return new Intl.NumberFormat('en-US', {
         minimumFractionDigits: 2,
-        maximumFractionDigits: 2
+        maximumFractionDigits: 2,
       }).format(value);
     }
     
@@ -90,6 +98,10 @@ export class ChartCardComponent implements OnInit {
   formatTrendValue(value: number): string {
     const sign = value >= 0 ? '+' : '';
     return `${sign}${Math.abs(value).toFixed(2)}%`;
+  }
+
+  get currencySymbol(): string {
+    return this.currencyFormat.getSymbol();
   }
 
   shouldShowCurrency(): boolean {
