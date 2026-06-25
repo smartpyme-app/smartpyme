@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, forwardRef, OnInit, OnDestroy, OnChanges, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, forwardRef, OnInit, OnDestroy, OnChanges } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { Subject, Observable, of } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/operators';
@@ -37,11 +37,18 @@ export class SelectSearchComponent implements ControlValueAccessor, OnInit, OnDe
   searchTerm$ = new Subject<string>();
   searchTerm: string = '';
   isLoading = false;
-
+  
+  // Getter para los items procesados que usa ng-select
+  get processedItems() {
+    return this.filteredItems.map(item => ({
+      value: this.getItemValue(item),
+      display: this.getDisplayText(item),
+      original: item
+    }));
+  }
+  
   private onChange = (value: any) => {};
   private onTouched = () => {};
-
-  constructor(private cdr: ChangeDetectorRef) {}
 
   ngOnInit() {
     this.searchTerm$.pipe(
@@ -50,7 +57,6 @@ export class SelectSearchComponent implements ControlValueAccessor, OnInit, OnDe
       switchMap(term => {
         if (this.searchFunction && term && term.length > 0) {
           this.isLoading = true;
-          this.cdr.markForCheck();
           return this.searchFunction(term).pipe(
             catchError(() => of([]))
           );
@@ -64,21 +70,35 @@ export class SelectSearchComponent implements ControlValueAccessor, OnInit, OnDe
       })
     ).subscribe(results => {
       this.filteredItems = results;
-      this.ensureSelectedOptionVisible();
       this.isLoading = false;
-      this.cdr.markForCheck();
     });
 
     // Inicializar: si hay searchFunction, empezar vacío; si no, mostrar todos
     this.filteredItems = this.searchFunction ? [] : (this.items || []);
-    this.ensureSelectedOptionVisible();
+    
+    // Si tenemos un valor inicial pero no está en los items filtrados, 
+    // buscar el item correspondiente en los items originales
+    if (this.value && this.items && this.items.length > 0) {
+      const selectedItem = this.items.find(item => this.getItemValue(item) === this.value);
+      if (selectedItem && !this.filteredItems.find(item => this.getItemValue(item) === this.value)) {
+        this.filteredItems.push(selectedItem);
+      }
+    }
   }
 
   ngOnChanges() {
+    // Actualizar items filtrados cuando cambien los items de entrada (solo si no hay searchFunction)
     if (this.items && !this.searchFunction) {
       this.filteredItems = this.items;
     }
-    this.ensureSelectedOptionVisible();
+    
+    // Si tenemos un valor pero no está en los items filtrados, agregarlo
+    if (this.value && this.items && this.items.length > 0) {
+      const selectedItem = this.items.find(item => this.getItemValue(item) === this.value);
+      if (selectedItem && !this.filteredItems.find(item => this.getItemValue(item) === this.value)) {
+        this.filteredItems.push(selectedItem);
+      }
+    }
   }
 
   ngOnDestroy() {
@@ -97,11 +117,10 @@ export class SelectSearchComponent implements ControlValueAccessor, OnInit, OnDe
     this.onTouched();
     
     // Encontrar el item completo para emitir
-    const selectedItem = this.filteredItems.find(item =>
-      this.valuesMatch(this.getItemValue(item), selectedValue)
+    const selectedItem = this.filteredItems.find(item => 
+      this.getItemValue(item) === selectedValue
     );
     this.selectionChange.emit(selectedItem);
-    this.cdr.markForCheck();
   }
 
   private filterLocal(term: string): any[] {
@@ -114,7 +133,6 @@ export class SelectSearchComponent implements ControlValueAccessor, OnInit, OnDe
   }
 
   getDisplayText(item: any): string {
-    if (!item) return '';
     if (this.customDisplayFunction) {
       return this.customDisplayFunction(item);
     }
@@ -122,35 +140,20 @@ export class SelectSearchComponent implements ControlValueAccessor, OnInit, OnDe
   }
 
   getItemValue(item: any): any {
-    if (!item) return null;
     return item[this.valueProperty];
-  }
-
-  /** Con búsqueda remota, ng-select necesita la opción en filteredItems para mostrarla seleccionada. */
-  private ensureSelectedOptionVisible(): void {
-    if (this.value == null || this.value === '') {
-      return;
-    }
-    if (this.filteredItems.some(item => this.valuesMatch(this.getItemValue(item), this.value))) {
-      return;
-    }
-    const pools = [...(this.items || []), ...(this.filteredItems || [])];
-    const selectedItem = pools.find(item => this.valuesMatch(this.getItemValue(item), this.value));
-    if (selectedItem) {
-      this.filteredItems = [...this.filteredItems, selectedItem];
-    }
-    this.cdr.markForCheck();
-  }
-
-  private valuesMatch(a: any, b: any): boolean {
-    return a == b;
   }
 
   // ControlValueAccessor implementation
   writeValue(value: any): void {
     this.value = value;
-    this.ensureSelectedOptionVisible();
-    this.cdr.markForCheck();
+    
+    // Si tenemos un valor pero no está en los items filtrados, buscar el item correspondiente
+    if (value && this.items && this.items.length > 0) {
+      const selectedItem = this.items.find(item => this.getItemValue(item) === value);
+      if (selectedItem && !this.filteredItems.find(item => this.getItemValue(item) === value)) {
+        this.filteredItems.push(selectedItem);
+      }
+    }
   }
 
   registerOnChange(fn: any): void {
@@ -163,6 +166,5 @@ export class SelectSearchComponent implements ControlValueAccessor, OnInit, OnDe
 
   setDisabledState(isDisabled: boolean): void {
     this.disabled = isDisabled;
-    this.cdr.markForCheck();
   }
 }

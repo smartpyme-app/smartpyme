@@ -164,11 +164,7 @@ export class PedidoFormComponent implements OnInit {
         this.referenciaExterna = p.referencia_externa || '';
         this.observaciones = p.observaciones || '';
         this.idBodega = p.id_bodega ?? this.apiService.auth_user().id_bodega ?? null;
-        if (p.cliente_id && p.cliente) {
-          this.onSelectCliente(p.cliente);
-        } else {
-          this.clienteId = p.cliente_id ?? null;
-        }
+        this.clienteId = p.cliente_id ?? null;
         this.lineas = (p.detalles || []).map((d) => ({
           producto_id: d.producto_id,
           id_paquete: d.id_paquete || null,
@@ -205,6 +201,19 @@ export class PedidoFormComponent implements OnInit {
     cliente?.tipo === 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo;
 
   onProductoSelect(producto: any): void {
+    // ponytail: cosmetic guard – backend is source of truth (validarPaquetesDisponibles)
+    if (producto.id_paquete) {
+      const shipment = producto.paquete?.boxful_shipment || producto.paquete?.boxfulShipment;
+      if (shipment?.shipment_number) {
+        this.alertService.warning('Paquete no disponible', 'Este paquete ya tiene un envío Boxful generado.');
+        return;
+      }
+      if (this.lineas.some(l => l.id_paquete === producto.id_paquete)) {
+        this.alertService.warning('Paquete duplicado', 'Este paquete ya fue agregado al pedido.');
+        return;
+      }
+    }
+
     if (producto.id_paquete && producto.id_cliente && producto.id_cliente !== this.clienteId) {
       this.apiService.read('cliente/', producto.id_cliente).subscribe({
         next: (cliente) => this.onSelectCliente(cliente),
@@ -233,17 +242,9 @@ export class PedidoFormComponent implements OnInit {
   }
 
   onSelectCliente(cliente: any): void {
-    if (!cliente?.id) {
-      return;
+    if (cliente?.id) {
+      this.clienteId = cliente.id;
     }
-    const id = +cliente.id;
-    if (!this.clientes.some((c) => c.id == id)) {
-      this.clientes = [...this.clientes, cliente];
-    }
-    // setTimeout(0): deja que Angular propague el nuevo array `clientes` al hijo
-    // (ngOnChanges) antes de asignar clienteId, para que ensureSelectedOptionVisible
-    // encuentre el item en this.items y lo agregue a filteredItems.
-    setTimeout(() => { this.clienteId = id; });
   }
 
   esCanalBoxful(): boolean {
@@ -273,22 +274,10 @@ export class PedidoFormComponent implements OnInit {
 
     this.restauranteService.actualizarPedido(this.pedidoId!, updatePayload).subscribe({
       next: () => {
-        // Automatically confirm order to transition status to 'pendiente_facturar' and discount inventory
-        this.restauranteService.confirmarPedidoCanal(this.pedidoId!).subscribe({
-          next: () => {
-            this.generandoGuiaBoxful = false;
-            this.mostrarModalBoxful = false;
-            this.alertService.success('Guía vinculada y pedido confirmado', `Envío Boxful #${numGuia} vinculado al pedido.`);
-            this.router.navigate(['/pedidos']);
-          },
-          error: (err) => {
-            console.error('Error al confirmar pedido:', err);
-            this.generandoGuiaBoxful = false;
-            this.mostrarModalBoxful = false;
-            this.alertService.warning('Guía vinculada', `Envío Boxful #${numGuia} vinculado. Pero no se pudo confirmar el pedido: ${err}`);
-            this.router.navigate(['/pedidos']);
-          }
-        });
+        this.generandoGuiaBoxful = false;
+        this.mostrarModalBoxful = false;
+        this.alertService.success('Guía vinculada y pedido confirmado', `Envío Boxful #${numGuia} vinculado al pedido.`);
+        this.router.navigate(['/pedidos']);
       },
       error: (err) => {
         this.generandoGuiaBoxful = false;

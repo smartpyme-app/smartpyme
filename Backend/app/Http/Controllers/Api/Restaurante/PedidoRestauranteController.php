@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Restaurante;
 use App\Http\Controllers\Controller;
 use App\Models\Admin\Empresa;
 use App\Models\Inventario\Bodega;
+use App\Models\Inventario\BoxfulShipment;
 use App\Models\Inventario\Paquete;
 use App\Models\Inventario\Producto;
 use App\Models\Restaurante\Comanda;
@@ -459,6 +460,11 @@ class PedidoRestauranteController extends Controller
             }
         }
 
+        $err = $this->validarPaquetesDisponibles($validated['detalles']);
+        if ($err) {
+            return $err;
+        }
+
         $pedido = DB::transaction(function () use ($validated, $user) {
             $pedido = PedidoRestaurante::create([
                 'id_empresa' => $user->id_empresa,
@@ -537,6 +543,13 @@ class PedidoRestauranteController extends Controller
 
         if (!empty($validated['id_bodega'])) {
             $err = $this->validarBodegaEmpresa((int) $validated['id_bodega'], (int) $user->id_empresa);
+            if ($err) {
+                return $err;
+            }
+        }
+
+        if (isset($validated['detalles'])) {
+            $err = $this->validarPaquetesDisponibles($validated['detalles'], $pedido->id);
             if ($err) {
                 return $err;
             }
@@ -769,6 +782,54 @@ class PedidoRestauranteController extends Controller
         }
         if (is_object($paquete) && method_exists($paquete, 'toArray')) {
             return $paquete->toArray();
+        }
+
+        return null;
+    }
+
+    /**
+     * ponytail: guard – reject paquetes that already have a Boxful shipment or belong to another active pedido.
+     * Ceiling: O(n) query per paquete batch; fine for typical order sizes (<50 lines).
+     */
+    private function validarPaquetesDisponibles(array $detalles, ?int $pedidoIdActual = null): ?JsonResponse
+    {
+        $paqueteIds = collect($detalles)
+            ->pluck('id_paquete')
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($paqueteIds->isEmpty()) {
+            return null;
+        }
+
+        // 1. Paquetes con envío Boxful ya generado
+        $conEnvio = BoxfulShipment::whereIn('paquete_id', $paqueteIds)
+            ->whereNotNull('shipment_number')
+            ->pluck('paquete_id');
+
+        if ($conEnvio->isNotEmpty()) {
+            $wrs = Paquete::whereIn('id', $conEnvio)->pluck('wr');
+            return response()->json([
+                'error' => 'Los siguientes paquetes ya tienen envío generado: ' . $wrs->implode(', ')
+            ], 422);
+        }
+
+        // 2. Paquetes ya en otro pedido activo (estado != borrador)
+        $query = PedidoRestauranteDetalle::whereIn('id_paquete', $paqueteIds)
+            ->whereHas('pedido', fn($q) => $q->where('estado', '!=', 'borrador'));
+
+        if ($pedidoIdActual) {
+            $query->where('pedido_id', '!=', $pedidoIdActual);
+        }
+
+        $enOtroPedido = $query->pluck('id_paquete')->unique();
+
+        if ($enOtroPedido->isNotEmpty()) {
+            $wrs = Paquete::whereIn('id', $enOtroPedido)->pluck('wr');
+            return response()->json([
+                'error' => 'Los siguientes paquetes ya están asignados a otro pedido activo: ' . $wrs->implode(', ')
+            ], 422);
         }
 
         return null;

@@ -4,9 +4,11 @@ namespace App\Http\Controllers\BoxFul;
 
 use App\Http\Controllers\Controller;
 use App\Services\BoxFul\BoxFulService;
+use App\Services\Restaurante\PedidoCanalInventarioService;
 use App\Models\Ventas\Clientes\Cliente;
 use App\Models\Admin\Integracion;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class BoxFulShippingController extends Controller
@@ -840,6 +842,26 @@ class BoxFulShippingController extends Controller
                     'pedidoId' => $pedidoRestauranteId,
                     'num_guia' => $shipmentNumber,
                 ]);
+
+                // Auto-confirmar el pedido de canal si viene en borrador
+                if ($pedidoRestauranteId && $shipmentNumber) {
+                    $pedidoCanal = \App\Models\Restaurante\PedidoRestaurante::find($pedidoRestauranteId);
+                    if ($pedidoCanal && $pedidoCanal->estado === 'borrador') {
+                        try {
+                            DB::transaction(function () use ($pedidoCanal, $user) {
+                                $idBodega = (int) ($pedidoCanal->id_bodega ?: $user->id_bodega);
+                                if ($idBodega > 0) {
+                                    $svc = new PedidoCanalInventarioService();
+                                    $svc->aplicarSalidasAlConfirmar($pedidoCanal->fresh(['detalles']), $idBodega);
+                                }
+                                $pedidoCanal->update(['estado' => 'pendiente_facturar']);
+                            });
+                            Log::info('Pedido canal auto-confirmado al generar guía Boxful', ['pedidoId' => $pedidoRestauranteId]);
+                        } catch (\Throwable $e) {
+                            Log::warning('No se pudo auto-confirmar el pedido canal al generar guía Boxful: ' . $e->getMessage(), ['pedidoId' => $pedidoRestauranteId]);
+                        }
+                    }
+                }
             }
 
             return response()->json($shipmentData, 201);

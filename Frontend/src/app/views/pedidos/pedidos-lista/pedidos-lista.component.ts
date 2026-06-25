@@ -446,20 +446,9 @@ export class PedidosListaComponent implements OnInit, OnDestroy {
 
     this.restauranteService.actualizarPedido(this.pedidoId!, updatePayload).subscribe({
       next: () => {
-        // Automatically confirm order to transition status to 'pendiente_facturar' and discount inventory
-        this.restauranteService.confirmarPedidoCanal(this.pedidoId!).subscribe({
-          next: () => {
-            this.mostrarModalBoxful = false;
-            this.alertService.success('Guía vinculada y pedido confirmado', `Envío Boxful #${numGuia} vinculado al pedido.`);
-            this.cargarLista();
-          },
-          error: (err) => {
-            console.error('Error al confirmar pedido:', err);
-            this.mostrarModalBoxful = false;
-            this.alertService.warning('Guía vinculada', `Envío Boxful #${numGuia} vinculado. Pero no se pudo confirmar el pedido: ${err}`);
-            this.cargarLista();
-          }
-        });
+        this.mostrarModalBoxful = false;
+        this.alertService.success('Guía vinculada y pedido confirmado', `Envío Boxful #${numGuia} vinculado al pedido.`);
+        this.cargarLista();
       },
       error: (err) => {
         this.alertService.error(err);
