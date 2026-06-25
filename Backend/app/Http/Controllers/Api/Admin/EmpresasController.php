@@ -17,6 +17,7 @@ use App\Models\Plan;
 use App\Models\Suscripcion;
 use App\Models\Transaccion;
 use App\Models\User;
+use App\Support\Admin\DocumentosDefaultPorPais;
 use App\Services\Suscripcion\SuscripcionService;
 use Illuminate\Support\Facades\Storage;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
@@ -416,17 +417,9 @@ class EmpresasController extends Controller
 
     private function createDocuments(Sucursal $sucursal, Empresa $empresa)
     {
-        $documentTypes = [
-            'TIPO_DOCUMENTO_TICKET',
-            'TIPO_DOCUMENTO_FACTURA',
-            'TIPO_DOCUMENTO_CREDITO_FISCAL',
-            'TIPO_DOCUMENTO_COTIZACION',
-            'TIPO_DOCUMENTO_ORDEN_COMPRA'
-        ];
-
-        foreach ($documentTypes as $type) {
+        foreach (DocumentosDefaultPorPais::nombres($empresa) as $nombre) {
             Documento::create([
-                'nombre' => config('constants.' . $type),
+                'nombre' => $nombre,
                 'correlativo' => 1,
                 'activo' => 1,
                 'id_sucursal' => $sucursal->id,

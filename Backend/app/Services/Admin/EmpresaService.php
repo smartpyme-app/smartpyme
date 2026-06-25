@@ -5,6 +5,7 @@ namespace App\Services\Admin;
 use App\Models\Admin\Empresa;
 use App\Models\Admin\Canal;
 use App\Models\Admin\Documento;
+use App\Support\Admin\DocumentosDefaultPorPais;
 use App\Models\Admin\FormaDePago;
 use App\Models\Admin\Impuesto;
 use App\Models\Admin\Sucursal;
@@ -235,17 +236,9 @@ class EmpresaService
      */
     public function crearDocumentos(Sucursal $sucursal, Empresa $empresa): void
     {
-        $tiposDocumento = [
-            'TIPO_DOCUMENTO_TICKET',
-            'TIPO_DOCUMENTO_FACTURA',
-            'TIPO_DOCUMENTO_CREDITO_FISCAL',
-            'TIPO_DOCUMENTO_COTIZACION',
-            'TIPO_DOCUMENTO_ORDEN_COMPRA'
-        ];
-
-        foreach ($tiposDocumento as $tipo) {
+        foreach (DocumentosDefaultPorPais::nombres($empresa) as $nombre) {
             Documento::create([
-                'nombre' => config('constants.' . $tipo),
+                'nombre' => $nombre,
                 'correlativo' => 1,
                 'activo' => 1,
                 'id_sucursal' => $sucursal->id,
