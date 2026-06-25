@@ -1,15 +1,18 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject, Injector } from '@angular/core';
 import { HttpResponse } from '@angular/common/http';
 import { map } from 'rxjs/operators';
 import { Observable } from 'rxjs';
 import { HttpService } from '@services/http.service';
 import { PermissionService } from '@services/permission.service';
 import { ConstantsService } from '@services/constants.service';
+import { CountryI18nService } from '@services/country-i18n.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
+  private injector = inject(Injector);
+
   constructor(
     private httpService: HttpService,
     private permissionService: PermissionService,
@@ -23,6 +26,9 @@ export class AuthService {
         if (data.token && data.user) {
           localStorage.setItem('SP_token', JSON.stringify(data.token));
           localStorage.setItem('SP_auth_user', JSON.stringify(data.user));
+
+          // Locale según empresa (sin esto queda el idioma de la sesión anterior en memoria)
+          this.injector.get(CountryI18nService).applyForEmpresa(data.user.empresa);
 
           // Cargar permisos después del login
           this.permissionService.loadUserPermissions(data.user.id);
@@ -60,6 +66,7 @@ export class AuthService {
     }
     localStorage.clear();
     this.permissionService.clearPermissions();
+    this.injector.get(CountryI18nService).applyForEmpresa(null);
   }
 
   autenticated(): boolean {
