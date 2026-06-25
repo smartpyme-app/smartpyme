@@ -110,7 +110,7 @@
             <strong>{{ subtotal() | currency }}</strong>
           </div>
           <div class="d-flex justify-content-between mb-2 small" *ngIf="ivaPorcentajeEmpresa() > 0">
-            <span>IVA ({{ ivaPorcentajeEmpresa() | number:'1.0-2' }}%)</span>
+            <span>{{ 'country.tax.taxRateLabel' | translate:{ rate: (ivaPorcentajeEmpresa() | number:'1.0-2') } }}</span>
             <strong>{{ impuestoMontoOrdenAbierta() | currency }}</strong>
           </div>
           <div class="d-flex justify-content-between mb-2 small" *ngIf="propinaPorcentajeEmpresa() > 0">

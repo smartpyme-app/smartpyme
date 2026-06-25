@@ -1,6 +1,6 @@
 <ng-template #tpl>
   <div class="modal-header">
-    <h4 class="modal-title">Exoneración de IVA — {{ detalleEdit?.descripcion || 'Línea' }}</h4>
+    <h4 class="modal-title">{{ 'country.tax.taxExemptionModalTitle' | translate:{ line: (detalleEdit?.descripcion || 'Línea') } }}</h4>
     <button type="button" class="btn-close" (click)="cerrar()" aria-label="Cerrar"></button>
   </div>
   <div class="modal-body">

@@ -1,5 +1,6 @@
 import { Component, OnInit, TemplateRef, Input, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { TranslatePipe } from '@ngx-translate/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -26,6 +27,7 @@ import { CrearProveedorComponent } from '@shared/modals/crear-proveedor/crear-pr
         TooltipModule,
         TruncatePipe,
         CrearProveedorComponent,
+        TranslatePipe,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })

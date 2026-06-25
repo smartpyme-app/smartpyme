@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
@@ -7,14 +7,18 @@ import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { AlertService } from '@services/alert.service';
 import { DteDocumentService, DteDocument } from '@services/dte-management/dte-document.service';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { CountryI18nService } from '@services/country-i18n.service';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-dte-detail',
   templateUrl: './dte-detail.component.html',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, TooltipModule],
+  imports: [CommonModule, FormsModule, RouterModule, TooltipModule, TranslatePipe],
 })
 export class DteDetailComponent implements OnInit {
+  private readonly countryI18n = inject(CountryI18nService);
+
   document: DteDocument | null = null;
   loading = false;
   downloading = false;
@@ -180,7 +184,7 @@ export class DteDetailComponent implements OnInit {
       this.dteService.procesar(this.document!.id).subscribe({
         next: (res) => {
           this.document = res.document || this.document!;
-          this.alertService.success('Éxito', res.message || 'DTE procesado correctamente');
+          this.alertService.success('Éxito', res.message || this.countryI18n.fe('processedDefault'));
           this.procesando = false;
         },
         error: (err) => {

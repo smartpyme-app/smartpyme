@@ -10,12 +10,13 @@ import { GastosCategoriasComponent } from '../../compras/gastos/categorias/gasto
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { BaseComponent } from '@shared/base/base.component';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
     selector: 'app-contabilidad-configuracion',
     templateUrl: './contabilidad-configuracion.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, GastosCategoriasComponent, TooltipModule],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, GastosCategoriasComponent, TooltipModule, TranslatePipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ContabilidadConfiguracionComponent extends BaseComponent implements OnInit {

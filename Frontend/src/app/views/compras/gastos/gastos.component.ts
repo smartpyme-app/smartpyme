@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+﻿import { Component, OnInit, TemplateRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
@@ -12,6 +12,7 @@ import { PipesModule } from '@pipes/pipes.module';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
+import { CountryI18nService } from '@services/country-i18n.service';
 import {
   ExportPeriodoState,
   MESES_EXPORT_PERIODO,
@@ -45,6 +46,8 @@ import {
 })
 
 export class GastosComponent implements OnInit {
+
+    private readonly countryI18n = inject(CountryI18nService);
 
     public gastos:any = [];
     public gasto:any = {};
@@ -334,7 +337,7 @@ export class GastosComponent implements OnInit {
         this.saving = true;
         this.mhService.emitirDTESujetoExcluidoGasto(this.gasto).then((gasto) => {
             this.gasto = gasto;
-            this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
+            this.alertService.success(this.countryI18n.fe('emitSuccessTitle'), this.countryI18n.fe('emitSuccessBody'));
             this.saving = false;
         }).catch((error) => {
             this.saving = false;
@@ -347,7 +350,7 @@ export class GastosComponent implements OnInit {
         this.sending = true;
         this.gasto.tipo = 'gasto';
         this.apiService.store('enviarDTE', this.gasto).subscribe(dte => {
-            this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
+            this.alertService.success(this.countryI18n.fe('sendSuccessTitle'), this.countryI18n.fe('sendSuccessBody'));
             this.sending = false;
             setTimeout(()=>{
                 this.modalRef?.hide();
@@ -358,7 +361,7 @@ export class GastosComponent implements OnInit {
     anularDTE(gasto:any){
         this.gasto = gasto;
         if(gasto.dte){
-            if (confirm('¿Confirma anular la gasto y el DTE?')) {
+            if (confirm(this.countryI18n.fe('annulExpenseConfirm'))) {
                 this.gasto = gasto;
                 this.saving = true;
                 this.apiService.store('generarDTEAnuladoSujetoExcluidoGasto', this.gasto).subscribe(dte => {
@@ -377,7 +380,7 @@ export class GastosComponent implements OnInit {
                                 },error => {this.alertService.error(error); this.saving = false; });
                             }
 
-                            this.alertService.success('DTE anulado.', 'El DTE fue anulado exitosamente.');
+                            this.alertService.success(this.countryI18n.fe('annulSuccessTitle'), this.countryI18n.fe('annulSuccessBody'));
                         },error => {
                             if(error.error.descripcionMsg){
                                 this.alertService.warning('Hubo un problema', error.error.descripcionMsg);

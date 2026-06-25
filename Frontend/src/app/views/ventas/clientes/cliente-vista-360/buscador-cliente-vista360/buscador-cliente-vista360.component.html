@@ -8,7 +8,7 @@
             class="form-control"
             name="v360BuscadorCliente"
             autocomplete="off"
-            placeholder="Buscar por nombre, DUI, NIT o teléfono..."
+            [placeholder]="'country.identity.searchPlaceholder' | translate"
             [(ngModel)]="term"
             (ngModelChange)="onTermChange()"
             (focus)="abierto = resultados.length > 0"

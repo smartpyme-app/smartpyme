@@ -6,16 +6,18 @@ import {
   Output,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { TranslatePipe } from '@ngx-translate/core';
 import { FormsModule } from '@angular/forms';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { CountryI18nService } from '@services/country-i18n.service';
 import { of, Subject, Subscription } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, filter, switchMap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-buscador-cliente-vista360',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, TranslatePipe],
   templateUrl: './buscador-cliente-vista360.component.html',
   styleUrls: ['./buscador-cliente-vista360.component.css'],
 })
@@ -34,7 +36,8 @@ export class BuscadorClienteVista360Component implements OnDestroy {
 
   constructor(
     private apiService: ApiService,
-    private alertService: AlertService
+    private alertService: AlertService,
+    private countryI18n: CountryI18nService
   ) {
     this.searchSub = this.search$
       .pipe(
@@ -97,7 +100,7 @@ export class BuscadorClienteVista360Component implements OnDestroy {
   detalleCliente(cliente: any): string {
     const partes: string[] = [];
     if (cliente?.dui) {
-      partes.push(`DUI: ${cliente.dui}`);
+      partes.push(`${this.countryI18n.t('country.identity.displayPrefix')} ${cliente.dui}`);
     }
     if (cliente?.nit) {
       partes.push(`NIT: ${cliente.nit}`);

@@ -1,5 +1,6 @@
 import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { TranslatePipe } from '@ngx-translate/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { PopoverModule } from 'ngx-bootstrap/popover';
@@ -16,7 +17,7 @@ import { BaseCrudComponent } from '@shared/base/base-crud.component';
     selector: 'app-proveedores',
     templateUrl: './proveedores.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, TruncatePipe, PopoverModule, TooltipModule, PaginationComponent, ImportarExcelComponent],
+    imports: [CommonModule, RouterModule, FormsModule, TruncatePipe, PopoverModule, TooltipModule, PaginationComponent, ImportarExcelComponent, TranslatePipe],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProveedoresComponent extends BaseCrudComponent<any> implements OnInit {

@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { TranslatePipe } from '@ngx-translate/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { FidelizacionService } from '@services/fidelizacion.service';
@@ -17,7 +18,7 @@ import {
 @Component({
   selector: 'app-cliente-detalles-fidelizacion',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, TranslatePipe],
   templateUrl: './cliente-detalles-fidelizacion.component.html',
   styleUrls: ['./cliente-detalles-fidelizacion.component.css']
 })

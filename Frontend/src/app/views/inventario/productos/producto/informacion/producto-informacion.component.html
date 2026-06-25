@@ -1,4 +1,4 @@
-<form name="form" (ngSubmit)="onSubmit()">
+﻿<form name="form" (ngSubmit)="onSubmit()">
     <div class="row">
         <h6 class="mb-3 font-weight-bold">Detalles</h6>
         <div class="form-group col-md-12 col-lg-4">
@@ -79,7 +79,7 @@
 
         <h6 class="my-3 font-weight-bold">Precio</h6>
         <div class="form-group col-md-4 col-lg-2" *ngIf="!loading && producto.tipo != 'Materia prima'">
-            <label for="precio">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'Precio sin IVA' : 'Precio sin Impuesto' }}</label>
+            <label for="precio">{{ 'country.tax.priceWithoutTax' | translate }}</label>
             <div class="input-group">
                 <!-- <span class="input-group-text">$</span> -->
                 <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
@@ -142,7 +142,7 @@
             </small>
         </div>
         <div class="form-group col-md-4 col-lg-2">
-            <label class="fw-bold" for="precio_final">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'Precio con IVA:' : 'Precio con Impuesto:' }}</label>
+            <label class="fw-bold" for="precio_final">{{ 'country.tax.priceWithTaxColon' | translate }}</label>
             <div class="input-group">
                 <!-- <span class="input-group-text">$</span> -->
                 <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>

@@ -2,8 +2,8 @@
     <div class="card-body">
         <div class="row">
             <div class="col-md-6 col-lg-9">
-                <h3 class="mb-1" (click)="onFiltrar()">Hola, {{ usuario.name.split(' ')[0] }}, ¿Cómo va el negocio?</h3>
-                <p class="text-muted">¡Aquí podrás gestionar {{ usuario.empresa.nombre }} de mejor manera!</p>
+                <h3 class="mb-1" (click)="onFiltrar()">{{ 'ui.home.greeting' | translate:{ name: primerNombre } }}</h3>
+                <p class="text-muted">{{ 'ui.home.subtitle' | translate:{ company: usuario.empresa.nombre } }}</p>
             </div>
             <div class="col-md-6 col-lg-3">
                 <select [(ngModel)]="filtro.id_sucursal" (change)="onFiltrar()"  class="float-end form-select bg-default w-100" name="filtro.id_sucursal">

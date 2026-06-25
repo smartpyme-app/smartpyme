@@ -1,4 +1,4 @@
-<button type="button" class="btn btn-default tcla-F1" (click)="openModal(mproducto)">
+﻿<button type="button" class="btn btn-default tcla-F1" (click)="openModal(mproducto)">
     <i [tooltip]="permitirElegirTipo ? 'Crear producto o servicio (F1)' : 'Crear nuevo producto (F1)'" class="fa fa-plus"></i>
 </button>
 
@@ -84,7 +84,7 @@
                 <h6 class="my-3 font-weight-bold">Precio</h6>
                 @if (!loading && producto.tipo != 'Materia prima') {
                   <div class="form-group col-md-4 col-lg-3">
-                    <label for="precio">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'Precio sin IVA' : 'Precio sin Impuesto' }}</label>
+                    <label for="precio">{{ 'country.tax.priceWithoutTax' | translate }}</label>
                     <div class="input-group">
                         <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                         <input type="number" class="form-control" (change)="calPrecioFinal()" (keyup)="calPrecioFinal()" [(ngModel)]="producto.precio" name="precio" placeholder="$0.00" required>
@@ -130,7 +130,7 @@
                 }
                 @if (usuario.empresa.iva > 0) {
                   <div class="form-group col-md-4 col-lg-3">
-                    <label class="fw-bold" for="precio_final">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'Precio con IVA:' : 'Precio con Impuesto:' }}</label>
+                    <label class="fw-bold" for="precio_final">{{ 'country.tax.priceWithTaxColon' | translate }}</label>
                     <div class="input-group">
                         <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                         <input type="number" placeholder="Escribe aquí" class="form-control" (change)="calPrecioBase()" (keyup)="calPrecioBase()" [(ngModel)]="producto.precio_final" name="precio_final">

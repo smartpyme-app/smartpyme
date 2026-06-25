@@ -1,4 +1,4 @@
-<section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
+﻿<section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
     <h2 class="page-heading">Devolución de venta</h2>
     <button class="btn btn-light text-danger" routerLink="/devoluciones/ventas">Cancelar <i class="fa fa-close"></i></button>
 </section>
@@ -91,7 +91,7 @@
                     </tr>
                     <tr>
                         <td colspan="4" class="text-end"></td>
-                        <td class="text-end"><b>IVA:</b></td>
+                        <td class="text-end"><b>{{ 'country.tax.taxLabelColon' | translate }}</b></td>
                         <td class="text-end"><b>{{ devolucion?.iva | currency }}</b></td>
                     </tr>
                     @if (devolucion?.descuento > 0) {

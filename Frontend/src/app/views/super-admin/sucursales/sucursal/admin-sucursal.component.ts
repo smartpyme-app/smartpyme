@@ -8,12 +8,13 @@ import { TabsetComponent } from 'ngx-bootstrap/tabs';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
     selector: 'app-admin-sucursal',
     templateUrl: './admin-sucursal.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule],
+    imports: [CommonModule, RouterModule, FormsModule, TranslatePipe],
     
 })
 export class AdminSucursalComponent implements OnInit {

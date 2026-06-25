@@ -12,12 +12,13 @@ import { SumPipe } from '@pipes/sum.pipe';
 
 import * as moment from 'moment';
 import { LazyImageDirective } from '../../../../directives/lazy-image.directive';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
     selector: 'app-libro-compras',
     templateUrl: './libro-compras.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, SumPipe, LazyImageDirective],
+    imports: [CommonModule, RouterModule, FormsModule, SumPipe, LazyImageDirective, TranslatePipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 

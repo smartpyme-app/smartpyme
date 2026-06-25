@@ -112,11 +112,11 @@
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/documentos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/file-text.png" class="icon me-2">Documentos</a></li>
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/formas-de-pago']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/coins.png" class="icon me-2">Métodos de pago</a></li>
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/impuestos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/filters-lines.png" class="icon me-2">Impuestos</a></li>
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="libroIvaRoute" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/book.png" class="icon me-2">Libros fiscales</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="libroIvaRoute" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/book.png" class="icon me-2">{{ 'country.tax.libroIva.menuLabel' | translate }}</a></li>
                     <li *ngIf="tieneDescargaDtesHabilitada" routerLinkActive="active"
                             [routerLinkActiveOptions]="{exact: false}"><a [routerLink]="['/dte-management/cuentas']"
                                 class="link-body-emphasis d-inline-flex text-decoration-none"><img
-                                    src="/assets/icons/inbox.png" class="icon me-2">Descarga DTEs</a></li>
+                                    src="/assets/icons/inbox.png" class="icon me-2">{{ 'country.tax.fe.downloadSidebarLabel' | translate }}</a></li>
                     <!-- <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/cierre-de-caja']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/inbox.png" class="icon me-2">Cierre de caja</a></li> -->
                   </ul>
                 </div>

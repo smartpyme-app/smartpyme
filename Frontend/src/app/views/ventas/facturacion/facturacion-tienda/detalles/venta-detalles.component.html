@@ -65,7 +65,7 @@
                                   }
                                 </small>
                                 @if (esFeCostaRicaActivo && detalleTieneExoneracionCr(detalle)) {
-                                  <br><span class="badge bg-info mt-1">Exoneración IVA</span>
+                                  <br><span class="badge bg-info mt-1">{{ 'country.tax.taxExemptionBadge' | translate }}</span>
                                 }
                                 <br>
                                 <small class="text-muted" *ngIf="detalle.inventario_por_lotes">
@@ -184,7 +184,7 @@
                                 type="button"
                                 class="btn btn-light"
                                 (click)="abrirModalExoneracionCr(detalle)"
-                                [attr.title]="detalleTieneExoneracionCr(detalle) ? 'Editar exoneración de IVA' : 'Configurar exoneración de IVA'"
+                                [attr.title]="detalleTieneExoneracionCr(detalle) ? editTaxExemptionTitle : configureTaxExemptionTitle"
                               >
                                 <i class="fa fa-fw fa-file-invoice" [class.text-info]="detalleTieneExoneracionCr(detalle)"></i>
                               </button>

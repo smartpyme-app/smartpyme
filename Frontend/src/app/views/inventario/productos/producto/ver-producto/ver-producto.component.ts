@@ -1,5 +1,6 @@
 import { Component, OnInit, TemplateRef, Input, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { TranslatePipe } from '@ngx-translate/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -17,7 +18,7 @@ import { FE_PAIS_CR, resolveCodigoPaisFe } from '@services/facturacion-electroni
     templateUrl: './ver-producto.component.html',
     styleUrls: ['./ver-producto.component.css'],
     standalone: true,
-    imports: [CommonModule, RouterModule, LazyImageDirective],
+    imports: [CommonModule, RouterModule, LazyImageDirective, TranslatePipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class VerProductoComponent {

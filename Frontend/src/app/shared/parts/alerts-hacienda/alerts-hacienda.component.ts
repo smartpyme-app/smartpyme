@@ -2,6 +2,7 @@ import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { TranslatePipe } from '@ngx-translate/core';
 import {
   HaciendaCrErrorVista,
   parsearRespuestaErrorHaciendaCr,
@@ -12,7 +13,7 @@ import {
     selector: 'app-alerts-hacienda',
     templateUrl: './alerts-hacienda.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule],
+    imports: [CommonModule, RouterModule, FormsModule, TranslatePipe],
     
 })
 export class AlertsHaciendaComponent {

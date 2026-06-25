@@ -1,5 +1,6 @@
 import { Component, OnInit, TemplateRef, Output, Input, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { TranslatePipe } from '@ngx-translate/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 
@@ -23,7 +24,7 @@ import { finalize } from 'rxjs/operators';
     selector: 'app-crear-proveedor',
     templateUrl: './crear-proveedor.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TagInputModule, FilterPipe],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TagInputModule, FilterPipe, TranslatePipe],
     
 })
 export class CrearProveedorComponent extends BaseModalComponent implements OnInit {

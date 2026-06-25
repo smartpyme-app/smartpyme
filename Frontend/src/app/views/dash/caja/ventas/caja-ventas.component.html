@@ -1,4 +1,4 @@
-<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+﻿<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Registros</h2>
     <button routerLink="/venta/crear" tooltip="Crear venta (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir venta</button>
 </section>
@@ -103,13 +103,13 @@
                             <ng-template #accionesTemplate>
                                 <div class="list-group border-0">
                                     @if (apiService.auth_user().empresa.facturacion_electronica && venta.estado != 'Anulada' && !venta.sello_mh) {
-                                        <a class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, venta)" tooltip="Emitir DTE">
-                                            <i class="fa fa-fw fa-file-invoice"></i> Emitir DTE
+                                        <a class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, venta)" [tooltip]="'country.tax.fe.emit' | translate">
+                                            <i class="fa fa-fw fa-file-invoice"></i> {{ 'country.tax.fe.emit' | translate }}
                                         </a>
                                     }
                                     @if (apiService.auth_user().empresa.facturacion_electronica && venta.sello_mh) {
-                                        <a class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, venta)" tooltip="Ver DTE">
-                                            <i class="fa fa-fw fa-file-invoice"></i> Ver DTE
+                                        <a class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, venta)" [tooltip]="'country.tax.fe.view' | translate">
+                                            <i class="fa fa-fw fa-file-invoice"></i> {{ 'country.tax.fe.view' | translate }}
                                         </a>
                                     }
                                     @if (venta.estado == 'Pendiente') {
@@ -306,7 +306,7 @@
 
 <ng-template #mDTE>
     <div class="modal-header d-block text-center">
-        <h5 class="modal-title mb-0">{{ esFeCostaRica() ? 'Comprobante electrónico (CR)' : 'DTE' }}</h5>
+        <h5 class="modal-title mb-0">{{ 'country.tax.fe.modalTitle' | translate }}</h5>
         <button type="button" class="btn-close" (click)="modalRef.hide(); alertService.modal = false;" aria-label="Close"></button>
     </div>
   <div class="modal-body">
@@ -346,7 +346,7 @@
             @if (!venta.sello_mh && !(esFeCostaRica() && venta.codigo_generacion)) {
                 <button [disabled]="saving" (click)="emitirDTE()" class="mb-3 btn btn-primary btn-block">
                     @if (!saving) {
-                        <span>{{ esFeCostaRica() ? 'Emitir comprobante' : 'Emitir' }}</span>
+                        <span>{{ 'country.tax.fe.emitButton' | translate }}</span>
                     }
                     @if (saving) {
                         <span>Emitiendo...</span>

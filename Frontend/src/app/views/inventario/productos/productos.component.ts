@@ -12,7 +12,6 @@ import { FuncionalidadesService } from '@services/functionalities.service';
 import { ImportarExcelComponent } from '@shared/parts/importar-excel/importar-excel.component';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
-import { SumPipe } from '@pipes/sum.pipe';
 import {
   ExportPeriodoState,
   MESES_EXPORT_PERIODO,
@@ -27,6 +26,7 @@ import {
   prefillExportPeriodoDesdeFiltros,
   validarPeriodoExport,
 } from '../../../helpers/export-period.helper';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
     selector: 'app-productos',
@@ -42,7 +42,7 @@ import {
         ImportarExcelComponent,
         PaginationComponent,
         NotificacionesContainerComponent,
-        SumPipe,
+        TranslatePipe,
     ],
 })
 export class ProductosComponent implements OnInit {

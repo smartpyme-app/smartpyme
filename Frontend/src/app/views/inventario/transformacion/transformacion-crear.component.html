@@ -1,4 +1,4 @@
-<section class="bg-white p-2 p-md-4 rounded mb-3">
+﻿<section class="bg-white p-2 p-md-4 rounded mb-3">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="page-heading mb-0">Conversión de Productos</h2>
         <button class="btn btn-primary font-weight-bold" (click)="guardar()" [disabled]="saving">
@@ -184,7 +184,7 @@
                     </ng-select>
                 </div>
                 <div class="form-group col-sm-6">
-                    <label>{{ usuario?.empresa?.pais == 'El Salvador' ? 'Precio sin IVA' : 'Precio sin Impuesto'
+                    <label>{{ 'country.tax.priceWithoutTax' | translate
                         }}</label>
                     <div class="input-group">
                         <span class="input-group-text">{{ usuario?.empresa?.currency?.currency_symbol || '$' }}</span>
@@ -193,7 +193,7 @@
                     </div>
                 </div>
                 <div class="form-group col-sm-6">
-                    <label>{{ usuario?.empresa?.pais == 'El Salvador' ? 'Precio con IVA' : 'Precio con Impuesto'
+                    <label>{{ 'country.tax.priceWithTax' | translate
                         }}</label>
                     <div class="input-group">
                         <span class="input-group-text">{{ usuario?.empresa?.currency?.currency_symbol || '$' }}</span>

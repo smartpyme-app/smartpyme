@@ -8,12 +8,13 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
     selector: 'app-sucursales',
     templateUrl: './sucursales.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule],
+    imports: [CommonModule, RouterModule, FormsModule, TranslatePipe],
     changeDetection: ChangeDetectionStrategy.OnPush,
     
 })

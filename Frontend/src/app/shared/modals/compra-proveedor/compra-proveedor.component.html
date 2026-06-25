@@ -1,4 +1,4 @@
-<div class="text-center">
+﻿<div class="text-center">
     <form name="form" class="form-inline mr-top">
         <div class="form-group">
             <label for="" style="margin-left: 10px;">Proveedor:</label>
@@ -47,15 +47,15 @@
         </div>
 
         <div class="form-group col-sm-4">
-            <label for="registro">* Registro tributario:</label>
+            <label for="registro">* {{ 'country.tax.ncrColon' | translate }}</label>
             <input type="text" class="form-control" [(ngModel)]="proveedor.registro" name="registro" placeholder="xxxx-x"> 
         </div>
         <div class="form-group col-xs-6 col-sm-4">
-            <label for="nit">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'NIT:' : 'Identificación fiscal:' }}</label>
+            <label for="nit">{{ 'country.tax.nitColon' | translate }}</label>
             <input type="text" class="form-control" [(ngModel)]="proveedor.nit" name="nit" [dropSpecialCharacters]="false" mask='0000-000000-000-0' placeholder="xxxx-xxxxxx-xxx-x">
         </div>
         <div class="form-group col-xs-6 col-sm-4">
-            <label for="dui">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'DUI:' : 'Número de identificación:' }}</label>
+            <label for="dui">{{ 'country.identity.nameColon' | translate }}</label>
             <input type="text" class="form-control" [(ngModel)]="proveedor.dui" name="dui" [dropSpecialCharacters]="false" mask='00000000-0' placeholder="xxxxxxx-x">
         </div>
         <div class="form-group col-xs-6 col-sm-4">
@@ -67,11 +67,11 @@
             <input type="text" class="form-control" [(ngModel)]="proveedor.telefono" name="telefono" [dropSpecialCharacters]="false" mask='0000-0000' placeholder="0000-0000">
         </div>
         <div class="form-group col-xs-6 col-sm-4">
-            <label for="municipio">Municipio:</label>
+            <label for="municipio">{{ 'country.location.municipalityColon' | translate }}</label>
             <input type="text" class="form-control" [(ngModel)]="proveedor.municipio" name="municipio" placeholder="Municipio">
         </div>
         <div class="form-group col-xs-6 col-sm-4">
-            <label for="departamento">Departamento:</label>
+            <label for="departamento">{{ 'country.location.departmentColon' | translate }}</label>
             <input type="text" class="form-control" [(ngModel)]="proveedor.departamento" name="departamento" placeholder="Departamento">
         </div>
         <div class="form-group col-sm-8">

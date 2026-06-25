@@ -11,12 +11,13 @@ import { ComboDetallesComponent } from './detalles/combo-detalles.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { BaseComponent } from '@shared/base/base.component';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
     selector: 'app-producto-combo',
     templateUrl: './producto-combo.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, ComboDetallesComponent],
+    imports: [CommonModule, RouterModule, FormsModule, ComboDetallesComponent, TranslatePipe],
     providers: [SumPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })

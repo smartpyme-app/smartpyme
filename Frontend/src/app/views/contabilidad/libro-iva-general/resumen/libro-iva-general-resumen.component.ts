@@ -13,6 +13,7 @@ import {
   crearFiltrosLibroIvaIniciales,
 } from '@views/contabilidad/libro-iva-shared/libro-iva-filtros.util';
 import { LibroIvaResumenDescargasComponent } from '@views/contabilidad/libro-iva-shared/libro-iva-resumen-descargas.component';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-libro-iva-general-resumen',
@@ -23,6 +24,7 @@ import { LibroIvaResumenDescargasComponent } from '@views/contabilidad/libro-iva
     LibroIvaPeriodoFiltrosComponent,
     LibroIvaResumenPanelComponent,
     LibroIvaResumenDescargasComponent,
+    TranslatePipe,
   ],
   templateUrl: './libro-iva-general-resumen.component.html',
 })

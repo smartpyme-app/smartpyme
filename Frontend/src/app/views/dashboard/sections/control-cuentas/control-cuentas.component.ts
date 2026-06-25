@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter, ViewChild, ChangeDetectorRef, ChangeDetectionStrategy, OnDestroy } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter, ViewChild, ChangeDetectorRef, ChangeDetectionStrategy, OnDestroy, inject } from '@angular/core';
 import { DashboardDataService } from '../../services/dashboard-data.service';
 import { ColDef, GridOptions, GridApi, themeQuartz, AllCommunityModule } from 'ag-grid-community';
 import { ApiService } from '@services/api.service';
@@ -11,6 +11,7 @@ import {
   DropdownMultiFiltroSelection,
 } from '../../components/dropdown-multi-filtro/dropdown-multi-filtro.component';
 import { MetricCard } from '../../models/chart-config.model';
+import { CountryI18nService } from '@services/country-i18n.service';
 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -43,6 +44,7 @@ import { AccountsListComponent } from '../../components/accounts-list/accounts-l
   ]
 })
 export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
+  private readonly countryI18n = inject(CountryI18nService);
   public miTema = themeQuartz;
   public modules: any[] = [AllCommunityModule];
 
@@ -1374,7 +1376,7 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
       },
       {
         field: 'gastosTotalesConIVA',
-        headerName: 'Gastos totales con IVA',
+        headerName: this.countryI18n.tax('expensesTotalWithTax'),
         width: 175,
         sortable: true,
         filter: true,
@@ -1410,7 +1412,7 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
       },
       {
         field: 'saldoPendiente',
-        headerName: 'Saldo pendiente (con IVA)',
+        headerName: this.countryI18n.tax('pendingBalanceWithTax'),
         width: 190,
         sortable: true,
         filter: true,
@@ -1770,7 +1772,7 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
       },
       { 
         field: 'ventasConIVA', 
-        headerName: 'Ventas con IVA',
+        headerName: this.countryI18n.tax('salesWithTax'),
         width: 150,
         sortable: true,
         filter: true,
@@ -1812,7 +1814,7 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
       },
       { 
         field: 'saldoPendiente', 
-        headerName: 'Saldo pendiente (con IVA)',
+        headerName: this.countryI18n.tax('pendingBalanceWithTax'),
         width: 200,
         sortable: true,
         filter: true,

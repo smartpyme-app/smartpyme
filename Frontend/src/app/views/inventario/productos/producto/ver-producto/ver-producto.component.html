@@ -70,7 +70,7 @@
     <h5 class="my-3 font-weight-bold">Precio</h5>
     
     <div class="form-group col-md-4 col-lg-2">
-      <label for="precio">Precio sin IVA</label>
+      <label for="precio">{{ 'country.tax.priceWithoutTax' | translate }}</label>
       <p>${{producto.precio}}</p>
     </div>
     <div class="form-group col-md-4 col-lg-2">
@@ -86,7 +86,7 @@
       <p>${{ ((producto.precio - producto.costo) / producto.precio * 100).toFixed(2) }}</p>
     </div>
     <div class="form-group col-md-4 col-lg-2">
-      <label class="fw-bold" for="precio_final">Precio con IVA:</label>
+      <label class="fw-bold" for="precio_final">{{ 'country.tax.priceWithTaxColon' | translate }}</label>
       <p>{{producto.precio_final}}</p>
       <!-- <div class="input-group">
         <span class="input-group-text">$</span>
@@ -231,8 +231,8 @@
         <table class="table table-borderless table-hover">
             <thead>
                 <tr>
-                    <th width="30%">Precio sin IVA</th>
-                    <th width="30%">Precio con IVA</th>
+                    <th width="30%">{{ 'country.tax.priceWithoutTax' | translate }}</th>
+                    <th width="30%">{{ 'country.tax.priceWithTax' | translate }}</th>
                     <th>Usuarios autorizados</th>
                 </tr>
             </thead>
@@ -279,8 +279,8 @@
                     <th>Proveedor</th>
                     <th>Correo</th>
                     <th>Teléfono</th>
-                    <th class="d-none d-md-table-cell">DUI</th>
-                    <th class="d-none d-md-table-cell">NCR</th>
+                    <th class="d-none d-md-table-cell">{{ 'country.identity.name' | translate }}</th>
+                    <th class="d-none d-md-table-cell">{{ 'country.tax.ncr' | translate }}</th>
 
                 </tr>
             </thead>

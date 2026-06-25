@@ -1,5 +1,6 @@
 import { Component, OnInit,TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { TranslatePipe } from '@ngx-translate/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -15,7 +16,7 @@ import { BaseComponent } from '@shared/base/base.component';
     selector: 'app-proveedor-detalles',
     templateUrl: './proveedor-detalles.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, TagInputModule],
+    imports: [CommonModule, RouterModule, FormsModule, TagInputModule, TranslatePipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ProveedorDetallesComponent extends BaseComponent implements OnInit {

@@ -1,4 +1,4 @@
-<div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
+﻿<div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
     <h3 (click)="loadAll()">{{ empresa.id ? 'Editar ' : 'Crear ' }} Empresa</h3>
     <button class="btn btn-light text-danger" routerLink="/admin/empresas"><i class="fa fa-arrow-left"></i>
         Regresar</button>
@@ -26,7 +26,7 @@
                     <input type="email" class="form-control" [(ngModel)]="empresa.correo" name="correo" placeholder="Escriba aquí">
                 </div>
                 <div class="form-group col-md-6 col-lg-4">
-                    <label for="departamento">Departamento:</label>
+                    <label for="departamento">{{ 'country.location.departmentColon' | translate }}</label>
                     <ng-select [(ngModel)]="empresa.cod_departamento" (change)="setDepartamento()" class="form-select p-0" name="empresa.departamento">
                         @for (departamento of departamentos; track departamento.cod) {
                             <ng-option [value]="departamento.cod">
@@ -36,7 +36,7 @@
                     </ng-select>
                 </div>
                 <div class="form-group col-md-6 col-lg-4">
-                    <label for="municipio">Municipio:</label>
+                    <label for="municipio">{{ 'country.location.municipalityColon' | translate }}</label>
                     <ng-select [(ngModel)]="empresa.cod_municipio" (change)="setMunicipio()" class="form-select p-0" name="empresa.municipio">
                         @for (municipio of municipios | filter:'nombre_departamento':empresa.departamento; track municipio.cod) {
                             <ng-option [value]="municipio.cod">
@@ -50,11 +50,11 @@
                     <input type="text" class="form-control" [(ngModel)]="empresa.direccion" name="direccion" placeholder="Escriba aquí">
                 </div>
                 <div class="form-group col-md-6 col-lg-4">
-                    <label for="nit">{{ (apiService.auth_user()?.empresa?.pais == 'El Salvador') ? 'NIT' : 'Identificación fiscal' }}</label>
+                    <label for="nit">{{ 'country.tax.nit' | translate }}</label>
                     <input type="text" class="form-control" [(ngModel)]="empresa.nit" name="nit" placeholder="Escriba aquí" [dropSpecialCharacters]="false" mask='0000-000000-000-0'>
                 </div>
                 <div class="form-group col-md-6 col-lg-4">
-                    <label for="ncr">{{ (apiService.auth_user()?.empresa?.pais == 'El Salvador') ? 'NCR' : 'Registro tributario' }}</label>
+                    <label for="ncr">{{ 'country.tax.ncr' | translate }}</label>
                     <input type="text" class="form-control" [(ngModel)]="empresa.ncr" name="ncr" placeholder="Escriba aquí">
                 </div>
                 <div class="form-group col-md-6 col-lg-4">
@@ -113,7 +113,7 @@
                     </select>
                 </div>
                 <div class="form-group col-md-6 col-lg-4">
-                    <label for="iva">IVA</label>
+                    <label for="iva">{{ 'country.tax.taxLabel' | translate }}</label>
                     <div class="input-group">
                         <input type="number" class="form-control" [(ngModel)]="empresa.iva" name="iva" placeholder="Escriba aquí">
                         <span class="input-group-text">%</span>                    </div>
@@ -211,7 +211,7 @@
 
                     <div class="form-group col-md-6 col-xl-6 without-label">
                         <div class="form-switch bg-light-info rounded">
-                            <label for="cobrar_iva">Cobrar IVA</label>
+                            <label for="cobrar_iva">{{ 'country.tax.chargeTax' | translate }}</label>
                             <input class="form-check-input float-end" type="checkbox" (change)="setCobrarIVA()"
                                 role="switch" [checked]="empresa.cobra_iva == 'Si'">
                         </div>
@@ -280,7 +280,7 @@
 
                 <div class="form-group col-md-6 col-xl-6 without-label">
                     <div class="form-switch bg-light-info rounded">
-                      <label for="cobrar_iva">Cobrar IVA</label>
+                      <label for="cobrar_iva">{{ 'country.tax.chargeTax' | translate }}</label>
                       <input class="form-check-input float-end" type="checkbox" (change)="setCobrarIVA()" role="switch" [checked]="empresa.cobra_iva == 'Si'">
                     </div>
                 </div>

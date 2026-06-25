@@ -13,11 +13,12 @@ import {
   crearFiltrosLibroIvaIniciales,
 } from '@views/contabilidad/libro-iva-shared/libro-iva-filtros.util';
 import { descargarBlob, manejarErrorDescargaLibroIva } from '@views/contabilidad/libro-iva-shared/libro-iva-descarga.util';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-libro-iva-cr-ventas',
   standalone: true,
-  imports: [CommonModule, LibroIvaCrNavComponent, LibroIvaPeriodoFiltrosComponent, LibroIvaCrDetalleTableComponent],
+  imports: [CommonModule, LibroIvaCrNavComponent, LibroIvaPeriodoFiltrosComponent, LibroIvaCrDetalleTableComponent, TranslatePipe],
   templateUrl: './libro-iva-cr-ventas.component.html',
 })
 export class LibroIvaCrVentasComponent implements OnInit {

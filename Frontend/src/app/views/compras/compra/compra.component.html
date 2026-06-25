@@ -1,4 +1,4 @@
-<section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
+﻿<section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
     <h2 class="page-heading" (click)="loadAll()">
         @if (!loading && compra.estado != 'Pre-compra') {
           <span>{{ compra.tipo_documento }}</span>
@@ -64,7 +64,7 @@
                 <p>{{ compra?.proveedor?.giro  || 'N/A' }}</p>
             </div>
             <div class="form-group col-lg-3">
-                <label class="fw-medium">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'NIT' : 'Identificación fiscal' }}</label>
+                <label class="fw-medium">{{ 'country.tax.nit' | translate }}</label>
                 <p>{{ compra?.proveedor?.nit || 'N/A' }}</p>
             </div>
             <div class="form-group col-lg-3" *ngIf="compra.codigo_generacion">
@@ -167,7 +167,7 @@
                     } @else if (compra?.iva > 0) {
                       <tr>
                         <td [attr.colspan]="apiService.supervisorLimitadoRestringidoEnCompras() ? 1 : 2" class="text-end"></td>
-                        <td [attr.colspan]="apiService.supervisorLimitadoRestringidoEnCompras() ? 1 : 2" class="text-end"><b>IVA</b></td>
+                        <td class="text-end"><b>{{ 'country.tax.taxLabel' | translate }}</b></td>
                         @if (!apiService.supervisorLimitadoRestringidoEnCompras()) {
                           <td class="text-end"><b>{{ compra?.iva | currency }}</b></td>
                         }

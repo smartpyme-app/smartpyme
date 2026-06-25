@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, OnChanges, SimpleChanges, Output, ViewChild, ChangeDetectorRef, ChangeDetectionStrategy, OnDestroy } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, OnChanges, SimpleChanges, Output, ViewChild, ChangeDetectorRef, ChangeDetectionStrategy, OnDestroy, inject } from '@angular/core';
 import { DashboardDataService } from '../../services/dashboard-data.service';
 import { ColDef, GridOptions, GridApi, themeQuartz, AllCommunityModule } from 'ag-grid-community';
 import { AgGridAngular } from 'ag-grid-angular';
@@ -25,6 +25,7 @@ import { TreemapChartComponent } from '../../components/treemap-chart/treemap-ch
 import { LineChartComponent } from '../../components/line-chart/line-chart.component';
 import { BarChartComponent } from '../../components/bar-chart/bar-chart.component';
 import { AccountsListComponent } from '../../components/accounts-list/accounts-list.component';
+import { CountryI18nService } from '@services/country-i18n.service';
 
 @Component({
   selector: 'app-gastos',
@@ -48,6 +49,7 @@ import { AccountsListComponent } from '../../components/accounts-list/accounts-l
   ]
 })
 export class GastosComponent implements OnInit, OnChanges, OnDestroy {
+  private readonly countryI18n = inject(CountryI18nService);
   public miTema = themeQuartz;
   public modules: any[] = [AllCommunityModule];
 
@@ -202,7 +204,7 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
     },
     {
       field: 'gastosConIVA',
-      headerName: 'Gastos con IVA',
+      headerName: this.countryI18n.tax('expensesWithTax'),
       width: 150,
       sortable: true,
       filter: true,

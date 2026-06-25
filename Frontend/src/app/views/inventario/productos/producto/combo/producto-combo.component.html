@@ -56,7 +56,7 @@
           <h5 class="my-3 font-weight-bold">Precio</h5>
           @if (!loading && producto.tipo != 'Materia prima') {
               <div class="form-group col-md-4 col-lg-2">
-                  <label for="precio">Precio sin IVA</label>
+                  <label for="precio">{{ 'country.tax.priceWithoutTax' | translate }}</label>
                   <div class="input-group">
                       <span class="input-group-text">$</span>
                       <input type="number" class="form-control" (change)="calPrecioFinal()" (keyup)="calPrecioFinal()" [(ngModel)]="producto.precio" name="precio" placeholder="$0.00" required>
@@ -90,7 +90,7 @@
           }
           @if (usuario.empresa.iva > 0) {
               <div class="form-group col-md-4 col-lg-2">
-                  <label class="fw-bold" for="precio_final">Precio con IVA:</label>
+                  <label class="fw-bold" for="precio_final">{{ 'country.tax.priceWithTaxColon' | translate }}</label>
                   <div class="input-group">
                       <span class="input-group-text">$</span>
                       <input type="number" placeholder="Escribe aquí" class="form-control" (change)="calPrecioBase()" (keyup)="calPrecioBase()" [(ngModel)]="producto.precio_final" name="precio_final">

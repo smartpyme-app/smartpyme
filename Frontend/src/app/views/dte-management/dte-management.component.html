@@ -1,17 +1,17 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
-  <h2 class="page-heading">Descarga de DTEs</h2>
+  <h2 class="page-heading">{{ 'country.tax.fe.downloadPageTitle' | translate }}</h2>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
   <div class="d-flex flex-wrap gap-2">
     <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/dte-management/cuentas">
-      <i class="fa fa-envelope me-2"></i>Cuentas de correo
+      <i class="fa fa-envelope me-2"></i>{{ 'country.tax.fe.emailAccountsNav' | translate }}
     </button>
     <button class="btn" routerLinkActive="btn-primary" routerLink="/dte-management/dashboard">
-      <i class="fa fa-chart-line me-2"></i>Historial
+      <i class="fa fa-chart-line me-2"></i>{{ 'country.tax.fe.syncHistoryNav' | translate }}
     </button>
     <button class="btn" routerLinkActive="btn-primary" routerLink="/dte-management/dtes">
-      <i class="fa fa-inbox me-2"></i>Bandeja de DTEs
+      <i class="fa fa-inbox me-2"></i>{{ 'country.tax.fe.inboxNavLabel' | translate }}
     </button>
   </div>
 </section>

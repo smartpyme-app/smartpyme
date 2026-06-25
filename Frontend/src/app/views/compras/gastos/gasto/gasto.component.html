@@ -1,4 +1,4 @@
-<div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
+﻿<div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
   <h3 (click)="loadAll()">{{ gasto.id ? 'Editar ' : 'Crear ' }} Gasto</h3>
 
   <div class="d-flex align-items-center float-end gap-3">
@@ -210,7 +210,7 @@
                 name="num_identificacion"
                 class="form-control"
                 id="num_identificacion"
-                placeholder="Número de identificación">
+                [placeholder]="'country.identity.placeholder' | translate">
             </div>
             <div *ngIf="apiService.auth_user().empresa.modulo_proyectos" class="form-group col-md-12 col-lg-3">
                 <label for="">Proyecto</label>
@@ -281,7 +281,7 @@
                         <input type="number" step="0.01" class="form-control" [(ngModel)]="d.sub_total" (change)="recalcularDetalleLinea(i)" [name]="'det_sub_'+i">
                     </div>
                     <div class="form-group col-md-4 col-lg-2">
-                        <label>IVA:</label>
+                        <label>{{ 'country.tax.taxLabelColon' | translate }}</label>
                         <input type="number" step="0.01" class="form-control" [(ngModel)]="d.iva" [name]="'det_iva_'+i" readonly>
                     </div>
                     <div class="form-group col-md-4 col-lg-2">
@@ -304,7 +304,7 @@
                         </div>
                         <div class="form-check form-check-inline">
                             <input type="checkbox" class="form-check-input" [(ngModel)]="d.aplica_retencion_iva" (change)="recalcularDetalleLinea(i)" [name]="'det_aplica_retencion_iva_'+i" id="det_ret_iva_{{i}}">
-                            <label class="form-check-label" for="det_ret_iva_{{i}}">Ret. IVA</label>
+                            <label class="form-check-label" for="det_ret_iva_{{i}}">{{ 'country.tax.taxRetainedShort' | translate }}</label>
                         </div>
                     </div>
                 </div>
@@ -313,8 +313,8 @@
                 <button type="button" class="btn btn-default" (click)="addDetalle()"><i class="fa fa-plus"></i> Agregar ítem</button>
                 <div class="text-end d-flex flex-wrap align-items-center justify-content-end gap-2">
                     <span class="text-muted">Sub total: <strong>{{ gasto.sub_total | number:'1.2-2' }}</strong></span>
-                    <span class="text-muted">IVA: <strong>{{ gasto.iva | number:'1.2-2' }}</strong></span>
-                    <span class="text-muted" *ngIf="gasto.iva_retenido > 0">IVA retenido: <strong>{{ gasto.iva_retenido | number:'1.2-2' }}</strong></span>
+                    <span class="text-muted">{{ 'country.tax.taxLabelColon' | translate }} <strong>{{ gasto.iva | number:'1.2-2' }}</strong></span>
+                    <span class="text-muted" *ngIf="gasto.iva_retenido > 0">{{ 'country.tax.taxRetainedColon' | translate }} <strong>{{ gasto.iva_retenido | number:'1.2-2' }}</strong></span>
                     <label class="text-muted mb-0">Otros cargos:
                         <input type="number" min="0" step="0.01" class="form-control form-control-sm d-inline-block text-end"
                             style="width: 100px;" name="otros_cargos_items" [(ngModel)]="gasto.otros_cargos"
@@ -336,11 +336,11 @@
                 <input type='number' class="form-control" name="sub_total" (change)="setTotal()" [(ngModel)]="gasto.sub_total"/>
             </div>
             <div class="form-group col-md-4 col-lg-2">
-                <label for="">IVA:</label>
+                <label for="">{{ 'country.tax.taxLabelColon' | translate }}</label>
                 <input type='number' disabled class="form-control" name="iva" [(ngModel)]="gasto.iva"/>
             </div>
             <div class="form-group col-md-4 col-lg-2">
-                <label for="">IVA percibido:</label>
+                <label for="">{{ 'country.tax.taxPerceivedColon' | translate }}</label>
                 <input type='number' disabled class="form-control" name="iva_percibido" [(ngModel)]="gasto.iva_percibido"/>
             </div>
             <div class="form-group col-md-4 col-lg-2">
@@ -348,7 +348,7 @@
                 <input type='number' disabled class="form-control" name="renta_retenida" [(ngModel)]="gasto.renta_retenida"/>
             </div>
             <div class="form-group col-md-4 col-lg-2">
-                <label for="">IVA retenido:</label>
+                <label for="">{{ 'country.tax.taxRetainedColon' | translate }}</label>
                 <input type='number' disabled class="form-control" name="iva_retenido" [(ngModel)]="gasto.iva_retenido"/>
             </div>
             <div class="form-group col-md-4 col-lg-2">
@@ -404,7 +404,7 @@
             </div>
             <div class="form-group col-md-4 col-lg-3 without-label " *ngIf="!varios_items">
                 <div class="form-switch bg-light-info rounded">
-                  <label for="impuesto">IVA ({{ apiService.auth_user().empresa.iva | number:'1.0' }}%)</label>
+                  <label for="impuesto">{{ 'country.tax.taxRateLabel' | translate:{ rate: (apiService.auth_user().empresa.iva | number:'1.0') } }}</label>
                   <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setTotal()" [(ngModel)]="gasto.impuesto" name="impuesto">
                 </div>
             </div>

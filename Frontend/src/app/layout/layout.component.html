@@ -281,12 +281,11 @@
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">DTEs pendientes de revisión</h5>
+        <h5 class="modal-title">{{ 'country.tax.fe.pendingReviewTitle' | translate }}</h5>
       </div>
       <div class="modal-body">
         <p class="mb-0">
-          Hay <strong>{{ dtePendingReviewCount }}</strong>
-          {{ dtePendingReviewCount === 1 ? 'DTE' : 'DTEs' }} válido(s) pendiente(s) de revisión o procesamiento.
+          {{ 'country.tax.fe.pendingReviewMessage' | translate:{ count: dtePendingReviewCount } }}
         </p>
       </div>
       <div class="modal-footer">

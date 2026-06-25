@@ -1,4 +1,4 @@
-<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+﻿<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Sucursales</h2>
     @if (apiService.canCreateTest('administracion.sucursales.crear')) {
         <button (click)="openModal(msucursal, {})"  tooltip="Crear sucursal (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir sucursal</button>
@@ -150,11 +150,11 @@
                 <input type="email" class="form-control" name="sucursal.correo" [(ngModel)]="sucursal.correo"/>
             </div>
             <div class="form-group col-lg-6">
-                <label for="">Municipio:</label>
+                <label for="">{{ 'country.location.municipalityColon' | translate }}</label>
                 <input type="text" class="form-control" name="sucursal.municipio" [(ngModel)]="sucursal.municipio"/>
             </div>
             <div class="form-group col-lg-6">
-                <label for="">Departamento:</label>
+                <label for="">{{ 'country.location.departmentColon' | translate }}</label>
                 <input type="text" class="form-control" name="sucursal.departamento" [(ngModel)]="sucursal.departamento"/>
             </div>
             <div class="form-group col-lg-12">

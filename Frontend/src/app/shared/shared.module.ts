@@ -9,6 +9,7 @@ import { PipesModule } from '@pipes/pipes.module';
 import { TagInputModule } from 'ngx-chips';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { NgxMaskDirective, NgxMaskPipe } from 'ngx-mask';
+import { TranslatePipe } from '@ngx-translate/core';
 import { BusquedaClienteComponent } from './modals/busqueda-cliente/busqueda-cliente.component';
 import { BusquedaProductoComponent } from './modals/busqueda-producto/busqueda-producto.component';
 import { ClienteDireccionComponent } from './modals/cliente-direccion/cliente-direccion.component';
@@ -58,6 +59,7 @@ import { CrearAreaEmpresaComponent } from './modals/crear-area-empresa/crear-are
     NgSelectModule,
     NgxMaskDirective,
     NgxMaskPipe,
+    TranslatePipe,
     TooltipModule.forRoot(),
     PopoverModule.forRoot(),
     BusquedaClienteComponent,
@@ -128,6 +130,7 @@ import { CrearAreaEmpresaComponent } from './modals/crear-area-empresa/crear-are
     AuthorizationViewComponent,
     CrearDepartamentoComponent,
     CrearAreaEmpresaComponent,
+    TranslatePipe,
   ],
   providers: [AlertService],
 })

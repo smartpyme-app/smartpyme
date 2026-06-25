@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { BsModalRef, BsModalService } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { CostaRicaFacturacionElectronicaService } from '@services/facturacion-electronica/costa-rica-facturacion-electronica.service';
+import { TranslatePipe } from '@ngx-translate/core';
 import {
   FE_CR_INSTITUCIONES_EXONERACION,
   FE_CR_TIPOS_DOCUMENTO_EXONERACION,
@@ -19,7 +20,7 @@ import {
 @Component({
   selector: 'app-fe-cr-exoneracion-detalle-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, TranslatePipe],
   templateUrl: './fe-cr-exoneracion-detalle-modal.component.html',
 })
 export class FeCrExoneracionDetalleModalComponent {

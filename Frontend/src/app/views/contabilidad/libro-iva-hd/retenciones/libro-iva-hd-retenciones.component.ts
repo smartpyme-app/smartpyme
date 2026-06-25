@@ -12,11 +12,12 @@ import {
   crearFiltrosLibroIvaIniciales,
 } from '@views/contabilidad/libro-iva-shared/libro-iva-filtros.util';
 import { descargarBlob, manejarErrorDescargaLibroIva } from '@views/contabilidad/libro-iva-shared/libro-iva-descarga.util';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-libro-iva-hd-retenciones',
   standalone: true,
-  imports: [CommonModule, LibroIvaHdNavComponent, LibroIvaPeriodoFiltrosComponent],
+  imports: [CommonModule, LibroIvaHdNavComponent, LibroIvaPeriodoFiltrosComponent, TranslatePipe],
   templateUrl: './libro-iva-hd-retenciones.component.html',
 })
 export class LibroIvaHdRetencionesComponent implements OnInit {

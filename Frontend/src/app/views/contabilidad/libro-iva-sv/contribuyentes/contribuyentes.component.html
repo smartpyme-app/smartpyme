@@ -78,8 +78,8 @@
                             <th class="text-end">Ventas Exentas a Cuenta de Terceros</th>
                             <th class="text-end">Ventas Internas Gravadas a Cuenta de Terceros</th>
                             <th class="text-end">Débito Fiscal por Cuenta de Terceros</th>
-                            <th class="text-end">IVA Retenido</th>
-                            <th class="text-end">IVA Percibido</th>
+                            <th class="text-end">{{ 'country.tax.libroIva.taxRetainedColumn' | translate }}</th>
+                            <th class="text-end">{{ 'country.tax.libroIva.taxPerceivedColumn' | translate }}</th>
                             <th class="text-end">Total</th>
                         </tr>
                     </thead>
@@ -204,8 +204,8 @@
         <label class="form-label" for="selTipoDescarga">Tipo de archivo</label>
         <select id="selTipoDescarga" class="form-select" [(ngModel)]="tipoDescarga" name="tipoDescarga">
             <option value="">Seleccione</option>
-            <option value="libro_excel">Libro de IVA (Excel)</option>
-            <option value="libro_pdf">Libro de IVA (PDF)</option>
+            <option value="libro_excel">{{ 'country.tax.libroIva.downloadBookExcel' | translate }}</option>
+            <option value="libro_pdf">{{ 'country.tax.libroIva.downloadBookPdf' | translate }}</option>
             <option *ngIf="isElSalvador" value="anexo_csv">Anexo CSV</option>
             <option value="retencion_excel">Libro de retención 1% (Excel)</option>
             <option *ngIf="isElSalvador" value="anexo_retencion_csv">Anexo de retención 1% (CSV)</option>

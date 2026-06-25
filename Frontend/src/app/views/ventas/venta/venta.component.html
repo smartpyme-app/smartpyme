@@ -181,7 +181,7 @@
                                     } <br>
                                     <small class="text-muted text-tiny">{{ detalle?.producto?.tipo }}</small>
                                     @if (esFeCostaRica() && detalleTieneExoneracionCr(detalle)) {
-                                      <br><span class="badge bg-info mt-1">Exoneración IVA</span>
+                                      <br><span class="badge bg-info mt-1">{{ 'country.tax.taxExemptionBadge' | translate }}</span>
                                       @if (detalle.fe_cr_exoneracion?.numero_documento) {
                                         <br><small class="text-muted">{{ detalle.fe_cr_exoneracion.numero_documento }}</small>
                                       }
@@ -303,7 +303,7 @@
     <div class="card border-0">
         <div class="card-body">
             <div class="row">
-                <h6 class="col-12">{{ venta.dte?.pais === 'CR' ? 'Comprobante electrónico (Costa Rica)' : 'Detalles de DTE' }}</h6>
+                <h6 class="col-12">{{ 'country.tax.fe.detailSectionTitle' | translate }}</h6>
                 <div class="form-group col-lg-4">
                     <label class="fw-medium">Tipo de dte</label>
                     <p>{{ venta.tipo_dte }}</p>

@@ -1,4 +1,4 @@
-<div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
+﻿<div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
     @if (compra.cotizacion == 1) {
       <h3>Orden de compra</h3>
     }
@@ -266,7 +266,7 @@
         }
         <div class="form-group col-md-6 col-lg-3 without-label">
             <div class="form-switch bg-light-info rounded">
-              <label for="cobrar_impuestos">Con IVA ({{ apiService.auth_user().empresa.iva | number:'1.0' }}%)</label>
+              <label for="cobrar_impuestos">{{ 'country.tax.taxWithRate' | translate:{ rate: (apiService.auth_user().empresa.iva | number:'1.0') } }}</label>
               <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="compra.cobrar_impuestos" name="compra.cobrar_impuestos">
             </div>
         </div>
@@ -501,7 +501,7 @@
 
       <!-- Botón para crear nuevos productos/servicios -->
       <div class="d-flex justify-content-between align-items-center mb-3">
-        <h6 class="mb-0">Productos del DTE</h6>
+        <h6 class="mb-0">{{ 'country.tax.fe.importProductsTitle' | translate }}</h6>
         <button type="button" class="btn btn-success btn-sm" (click)="openModalCrearProducto(mcrearProducto)">
           <i class="fa fa-plus"></i> Crear Nuevo Producto/Servicio
         </button>
@@ -512,8 +512,8 @@
           <thead>
             <tr>
               <th style="width: 60px;">Item</th>
-              <th style="width: 120px;">Código DTE</th>
-              <th style="width: 200px;">Descripción DTE</th>
+              <th style="width: 120px;">{{ 'country.tax.fe.importCodeColumn' | translate }}</th>
+              <th style="width: 200px;">{{ 'country.tax.fe.importDescriptionColumn' | translate }}</th>
               <th style="width: 80px;">Cant.</th>
               <th *ngIf="!apiService.supervisorLimitadoRestringidoEnCompras()" style="width: 100px;">Precio Unit.</th>
               <th>Producto a Asignar</th>
@@ -905,7 +905,7 @@
 
         <div class="alert alert-info">
           <i class="fa fa-info-circle"></i>
-          <strong>Nota:</strong> El producto/servicio se creará y estará disponible para asignar en la consolidación, pero NO se agregará automáticamente al DTE.
+          <strong>Nota:</strong> {{ 'country.tax.fe.importCreateProductNote' | translate }}
         </div>
       </form>
     </div>

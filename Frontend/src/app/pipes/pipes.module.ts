@@ -6,6 +6,7 @@ import { TruncatePipe } from './truncate.pipe';
 import { FilterPipe } from './filter.pipe';
 import { SortPipe } from './sort.pipe';
 import { CurrencyPipe } from './currency-format.pipe';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @NgModule({
   imports: [
@@ -16,6 +17,7 @@ import { CurrencyPipe } from './currency-format.pipe';
     FilterPipe,
     SortPipe,
     CurrencyPipe,
+    TranslatePipe,
   ],
   declarations: [],
   exports: [
@@ -26,6 +28,7 @@ import { CurrencyPipe } from './currency-format.pipe';
     FilterPipe,
     SortPipe,
     CurrencyPipe,
+    TranslatePipe,
     DatePipe,
   ],
   providers: [

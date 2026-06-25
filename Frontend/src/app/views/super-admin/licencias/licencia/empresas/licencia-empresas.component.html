@@ -15,8 +15,8 @@
                     <th>Empresa</th>
                     <th>Correo</th>
                     <th>Teléfono</th>
-                    <th class="d-none d-md-table-cell">{{ apiService.auth_user()?.empresa?.pais == 'El Salvador' ? 'DUI' : 'Número de identificación' }}</th>
-                    <th class="d-none d-md-table-cell">{{ apiService.auth_user()?.empresa?.pais == 'El Salvador' ? 'NCR' : 'Registro tributario' }}</th>
+                    <th class="d-none d-md-table-cell">{{ 'country.identity.name' | translate }}</th>
+                    <th class="d-none d-md-table-cell">{{ 'country.tax.ncr' | translate }}</th>
                     <th class="text-end text-nowrap" style="width: 4.5rem"><i class="fa fa-cog"></i> </th>
                 </tr>
             </thead>

@@ -251,18 +251,18 @@
                                 <div class="list-group border-0">
 
                                     @if (apiService.auth_user().empresa.facturacion_electronica && venta.estado != 'Anulada' && !venta.sello_mh) {
-                                        <a class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, venta)" tooltip="Emitir DTE">
-                                            <i class="fa fa-fw fa-file-invoice"></i> Emitir DTE
+                                        <a class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, venta)" [tooltip]="'country.tax.fe.emit' | translate">
+                                            <i class="fa fa-fw fa-file-invoice"></i> {{ 'country.tax.fe.emit' | translate }}
                                         </a>
                                     }
                                     @if (!esFeCostaRica() && apiService.auth_user().empresa.fe_ambiente == '00' && apiService.auth_user().empresa.facturacion_electronica && venta.estado != 'Anulada' && !venta.sello_mh) {
-                                        <a class="list-group-item list-group-item-action border-0 click" (click)="emitirEnContingencia(venta)" tooltip="Emitir DTE en contingencia">
-                                            <i class="fa fa-fw fa-file-invoice"></i> Emitir DTE en contingencia
+                                        <a class="list-group-item list-group-item-action border-0 click" (click)="emitirEnContingencia(venta)" [tooltip]="'country.tax.fe.emitContingency' | translate">
+                                            <i class="fa fa-fw fa-file-invoice"></i> {{ 'country.tax.fe.emitContingency' | translate }}
                                         </a>
                                     }
                                     @if (apiService.auth_user().empresa.facturacion_electronica && venta.sello_mh) {
-                                        <a class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, venta)" tooltip="Ver DTE">
-                                            <i class="fa fa-fw fa-file-invoice"></i> Ver DTE
+                                        <a class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, venta)" [tooltip]="'country.tax.fe.view' | translate">
+                                            <i class="fa fa-fw fa-file-invoice"></i> {{ 'country.tax.fe.view' | translate }}
                                         </a>
                                     }
 
@@ -607,7 +607,7 @@
                 <div class="form-group col-md-4" *ngIf="isColumnEnabled('columna_proyecto')">
                     <label for="num_identificacion">Número identificación:</label>
                     <input type="text" [(ngModel)]="venta.num_identificacion" name="num_identificacion"
-                        class="form-control" id="num_identificacion" placeholder="Número de identificación">
+                        class="form-control" id="num_identificacion" [placeholder]="'country.identity.placeholder' | translate">
                 </div>
                 <div *ngIf="apiService.auth_user().empresa.editar_descripcion_venta">
                     <div class="form-group col-md-12 without-label">
@@ -646,7 +646,7 @@
 
 <ng-template #mDTE>
     <div class="modal-header d-block text-center">
-        <h5 class="modal-title mb-0">{{ esFeCostaRica() ? 'Comprobante electrónico (Costa Rica)' : 'DTE' }}</h5>
+        <h5 class="modal-title mb-0">{{ 'country.tax.fe.modalTitle' | translate }}</h5>
         <button type="button" class="btn-close" (click)="modalRef.hide(); alertService.modal = false;"
             aria-label="Close"></button>
     </div>
@@ -723,12 +723,11 @@
             @if (!venta?.sello_mh && !(esFeCostaRica() && venta.codigo_generacion)) {
                 <div class="w-100">
                     @if (consulting) {
-                        <p class="alert alert-info">El DTE ya fue emitido, se consultará por el sello
-                            correspondiente.</p>
+                        <p class="alert alert-info">{{ 'country.tax.fe.alreadyEmittedInfo' | translate }}</p>
                     }
                     <button [disabled]="saving" (click)="emitirDTE()" class="mb-3 btn btn-primary w-100">
                         @if (!saving && !consulting) {
-                            <span>{{ esFeCostaRica() ? 'Emitir comprobante' : 'Emitir' }}</span>
+                            <span>{{ 'country.tax.fe.emitButton' | translate }}</span>
                         }
                         @if (saving) {
                             <span>Emitiendo...</span>
@@ -880,7 +879,7 @@
             }
             @if (apiService.auth_user().empresa.facturacion_electronica) {
                 <div class="form-group col-sm-6">
-                    <label for="filtro.dte">Facturación electrónica (DTE):</label>
+                    <label for="filtro.dte">{{ 'country.tax.fe.filterLabel' | translate }}</label>
                     <select name="dts" class="form-select" [(ngModel)]="filtros.dte">
                         <option value="">Todos</option>
                         <option value="1">Sin emitir</option>
@@ -1070,7 +1069,7 @@
 
 <ng-template #modalAnulacion>
     <div class="modal-header">
-        <h4 class="modal-title">Anular Venta y DTE</h4>
+        <h4 class="modal-title">{{ 'country.tax.fe.annulSaleTitle' | translate }}</h4>
         <button type="button" class="btn-close" (click)="modalRef.hide(); venta.errores = null;" [disabled]="saving" aria-label="Close"></button>
     </div>
     <div class="modal-body">
@@ -1140,7 +1139,7 @@
             <div class="spinner-border text-primary mb-3" role="status">
                 <span class="visually-hidden">Anulando...</span>
             </div>
-            <p class="mb-0">Anulando DTE...</p>
+            <p class="mb-0">{{ 'country.tax.fe.annullingProgress' | translate }}</p>
         </div>
     </div>
 </ng-template>

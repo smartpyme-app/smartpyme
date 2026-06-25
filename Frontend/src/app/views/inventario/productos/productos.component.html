@@ -125,10 +125,8 @@
                         </th>
                         <th (click)="setOrden('precio')"
                             [ngClass]="{'sorted-asc': filtros.orden == 'precio' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'precio' && filtros.direccion == 'desc'}"
-                            class="click text-right">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'Precio
-                            sin IVA' : 'Precio sin Impuesto' }}</th>
-                        <th class="text-right">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'Precio con
-                            IVA' : 'Precio con Impuesto' }}</th>
+                            class="click text-right">{{ 'country.tax.priceWithoutTax' | translate }}</th>
+                        <th class="text-right">{{ 'country.tax.priceWithTax' | translate }}</th>
                         <th (click)="setOrden('stock')"
                             [ngClass]="{'sorted-asc': filtros.orden == 'stock' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'stock' && filtros.direccion == 'desc'}"
                             class="click text-center">Stock</th>

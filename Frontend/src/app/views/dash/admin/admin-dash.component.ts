@@ -9,6 +9,7 @@ import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
+import { TranslatePipe } from '@ngx-translate/core';
 
 import * as moment from 'moment';
 
@@ -16,7 +17,7 @@ import * as moment from 'moment';
     selector: 'app-admin-dash',
     templateUrl: './admin-dash.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, DatosComponent, TopsComponent],
+    imports: [CommonModule, RouterModule, FormsModule, DatosComponent, TopsComponent, TranslatePipe],
     changeDetection: ChangeDetectionStrategy.OnPush,
     
 })
@@ -29,7 +30,11 @@ export class AdminDashComponent extends BaseModalComponent implements OnInit {
     public usuario:any = {};
     public override loading:boolean = false;
 
-    constructor( 
+    get primerNombre(): string {
+        return (this.usuario?.name ?? '').split(' ')[0] ?? '';
+    }
+
+    constructor(
         public apiService: ApiService,
         protected override alertService: AlertService,
         protected override modalManager: ModalManagerService,

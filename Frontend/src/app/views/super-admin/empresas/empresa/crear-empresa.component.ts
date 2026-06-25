@@ -13,12 +13,13 @@ import { CrearClienteComponent } from '@shared/modals/crear-cliente/crear-client
 import { FilterPipe } from '@pipes/filter.pipe';
 import { NgxMaskDirective } from 'ngx-mask';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
     selector: 'app-crear-empresa',
     templateUrl: './crear-empresa.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, CrearClienteComponent, FilterPipe, NgxMaskDirective],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, CrearClienteComponent, FilterPipe, NgxMaskDirective, TranslatePipe],
 
 })
 

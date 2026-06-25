@@ -11,12 +11,13 @@ import { ModalManagerService } from '@services/modal-manager.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
     selector: 'app-servicios',
     templateUrl: './servicios.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, ImportarExcelComponent, PaginationComponent, LazyImageDirective],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, ImportarExcelComponent, PaginationComponent, LazyImageDirective, TranslatePipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ServiciosComponent extends BaseCrudComponent<any> implements OnInit {

@@ -9,6 +9,7 @@ import { ApiService } from '@services/api.service';
 import { ConstantsService } from '@services/constants.service';
 import { ChatService } from '@services/chat/chat.service';
 import { SharedDataService } from '@services/shared-data.service';
+import { CountryI18nService } from '@services/country-i18n.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 // Tour deshabilitado temporalmente por incompatibilidad con Angular 20
@@ -46,7 +47,8 @@ export class AppComponent implements OnInit {
         private modalService: BsModalService, 
         private chatService: ChatService,
         private constantsService: ConstantsService,
-        private sharedDataService: SharedDataService
+        private sharedDataService: SharedDataService,
+        private countryI18n: CountryI18nService
     ) {
 
         if (this.updates.isEnabled) {
@@ -68,7 +70,10 @@ export class AppComponent implements OnInit {
 
         this.chatService.resetChat();
         this.usuario = this.apiService.auth_user();
-        
+        if (this.apiService.autenticated()) {
+            this.countryI18n.applyForEmpresa(this.usuario?.empresa);
+        }
+
         // Cargar constantes si no están disponibles
         // this.loadConstantsIfNeeded();
         

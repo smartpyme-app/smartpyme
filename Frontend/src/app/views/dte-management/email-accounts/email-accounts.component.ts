@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
@@ -9,6 +9,8 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { EmailAccountService, EmailAccount } from '@services/dte-management/email-account.service';
+import { CountryI18nService } from '@services/country-i18n.service';
+import { TranslatePipe } from '@ngx-translate/core';
 
 const SYNC_COOLDOWN_MS = 10 * 60 * 1000;
 
@@ -16,9 +18,10 @@ const SYNC_COOLDOWN_MS = 10 * 60 * 1000;
   selector: 'app-email-accounts',
   templateUrl: './email-accounts.component.html',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, NgSelectModule, TooltipModule, PopoverModule],
+  imports: [CommonModule, FormsModule, RouterModule, NgSelectModule, TooltipModule, PopoverModule, TranslatePipe],
 })
 export class EmailAccountsComponent implements OnInit {
+  private readonly countryI18n = inject(CountryI18nService);
   @ViewChild('syncModal') syncModalTpl!: TemplateRef<any>;
 
   accounts: EmailAccount[] = [];
@@ -308,7 +311,7 @@ export class EmailAccountsComponent implements OnInit {
         this.syncingAccountId = null;
         this.alertService.success(
           res.message,
-          `Rango: ${res.date_from} - ${res.date_to}. Revise el Dashboard de sincronización y la bandeja de DTEs.`
+          this.countryI18n.fe('syncSuccessDetail', { from: res.date_from, to: res.date_to })
         );
         this.loadAccounts();
       },

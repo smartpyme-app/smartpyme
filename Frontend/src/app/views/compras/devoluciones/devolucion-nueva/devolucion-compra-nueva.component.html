@@ -78,7 +78,7 @@
                             <td width="70px" class="text-right"> {{ devolucion.sub_total | currency}} </td>
                         </tr>
                         <tr>
-                            <td class="text-right"> IVA: </td>
+                            <td class="text-right"> {{ 'country.tax.taxLabelColon' | translate }} </td>
                             <td width="70px" class="text-right"> {{ devolucion.iva | currency}} </td>
                         </tr>
                         <tr *ngIf="devolucion.cobrar_percepcion">
@@ -94,7 +94,7 @@
                                 <div class="form-check form-switch w-100">
                                     <label class="form-check-label" for="devolucion.retencion">
                                         <input id="devolucion.retencion" class="form-check-input" type="checkbox" (change)="sumTotal()" [(ngModel)]="compra.retencion" name="compra.retencion" *ngIf="!loading">
-                                        IVA retenido:
+                                        {{ 'country.tax.taxRetainedColon' | translate }}
                                     </label>
                                 </div>
                             </td>
@@ -128,7 +128,7 @@
             <h6 class="mt-3">Detalles de facturación</h6>
             <div class="form-group col-md-6 col-lg-3 without-label">
                 <div class="form-switch bg-light-info rounded">
-                  <label for="cobrar_impuestos">Con IVA ({{ apiService.auth_user().empresa.iva | number:'1.0' }}%)</label>
+                  <label for="cobrar_impuestos">{{ 'country.tax.taxWithRate' | translate:{ rate: (apiService.auth_user().empresa.iva | number:'1.0') } }}</label>
                   <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="devolucion.cobrar_impuestos" name="devolucion.cobrar_impuestos">
                 </div>
             </div>

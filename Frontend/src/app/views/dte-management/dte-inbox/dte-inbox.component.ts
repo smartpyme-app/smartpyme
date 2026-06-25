@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
@@ -9,6 +9,8 @@ import { AlertService } from '@services/alert.service';
 import { DteDocumentService, DteDocument, DteDocumentsResponse } from '@services/dte-management/dte-document.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { TruncatePipe } from '@pipes/truncate.pipe';
+import { CountryI18nService } from '@services/country-i18n.service';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-dte-inbox',
@@ -22,9 +24,12 @@ import { TruncatePipe } from '@pipes/truncate.pipe';
     PopoverModule,
     PaginationComponent,
     TruncatePipe,
+    TranslatePipe,
   ],
 })
 export class DteInboxComponent implements OnInit {
+  private readonly countryI18n = inject(CountryI18nService);
+
   documents: DteDocumentsResponse | null = null;
   loading = false;
   filtros: any = {};
@@ -112,7 +117,7 @@ export class DteInboxComponent implements OnInit {
     const doProcesar = () => {
       this.dteService.procesar(doc.id).subscribe({
         next: (res) => {
-          this.alertService.success('Éxito', res.message || 'DTE procesado correctamente');
+          this.alertService.success('Éxito', res.message || this.countryI18n.fe('processedDefault'));
           this.modalProcesarRef?.hide();
           this.documentoProcesar = null;
           this.procesando = false;
@@ -153,12 +158,15 @@ export class DteInboxComponent implements OnInit {
     if (!this.puedeAnular(doc)) {
       return;
     }
-    if (!confirm(`¿Anular el DTE ${doc.dte_number || doc.dte_uuid}? No aparecerá en la bandeja de revisión.`)) {
+    if (!confirm(this.countryI18n.fe('annulInboxConfirm', {
+      label: this.countryI18n.fe('label'),
+      number: doc.dte_number || doc.dte_uuid,
+    }))) {
       return;
     }
     this.dteService.anular(doc.id).subscribe({
       next: (res) => {
-        this.alertService.success('Éxito', res.message || 'DTE anulado');
+        this.alertService.success('Éxito', res.message || this.countryI18n.fe('annulDefault'));
         this.loadDocuments();
       },
       error: (err) => this.alertService.error(err)
