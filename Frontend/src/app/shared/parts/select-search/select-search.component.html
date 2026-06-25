@@ -9,30 +9,16 @@
   [loading]="isLoading || loading"
   [searchable]="true"
   [notFoundText]="'Buscar registros...'"
+  [items]="filteredItems"
+  [bindValue]="valueProperty"
   (search)="onSearch($event.term)"
   (ngModelChange)="onSelectionChange($event)">
   
-  <!-- Solo mostrar opciones cuando hay datos -->
-  <ng-option 
-    *ngFor="let item of filteredItems" 
-    [value]="getItemValue(item)">
+  <ng-template ng-label-tmp let-item="item">
     {{ getDisplayText(item) }}
-  </ng-option>
-  
-  <!-- Mensaje personalizado cuando no hay resultados Y no está cargando -->
-  <ng-option 
-    *ngIf="filteredItems.length === 0 && !isLoading && searchTerm.length > 0" 
-    [value]="null" 
-    [disabled]="true">
-    Buscar registros
-  </ng-option>
-  
-  <!-- Mensaje cuando está cargando -->
-  <ng-option 
-    *ngIf="isLoading" 
-    [value]="null" 
-    [disabled]="true">
-    Buscando...
-  </ng-option>
-  
+  </ng-template>
+
+  <ng-template ng-option-tmp let-item="item">
+    {{ getDisplayText(item) }}
+  </ng-template>
 </ng-select>

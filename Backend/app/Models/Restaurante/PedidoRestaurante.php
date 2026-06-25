@@ -62,16 +62,4 @@ class PedidoRestaurante extends Model
     {
         return $this->belongsTo(VentaModel::class, 'id_venta');
     }
-
-    public function boxfulShipment()
-    {
-        return $this->hasOneThrough(
-            \App\Models\Inventario\BoxfulShipment::class,
-            \App\Models\Inventario\Paquete::class,
-            'wr', // Key on Paquete table
-            'paquete_id', // Key on BoxfulShipment table
-            'id', // Key on restaurante_pedidos table
-            'id' // Key on Paquete table
-        );
-    }
 }

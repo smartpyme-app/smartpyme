@@ -438,12 +438,23 @@ class BoxFulShippingController extends Controller
                 'clienteId' => 'nullable|integer',
                 'cliente' => 'nullable|array',
                 'origen' => 'nullable|array',
+                'pedidoId' => 'nullable|integer',
             ]);
 
             $paquetesInput = $request->input('paquetes');
             $paqueteInput = $request->input('paquete') ?? [];
             $paqueteId = $request->input('paqueteId') ?? ($paqueteInput['id'] ?? null);
             $paqueteModel = $paqueteId ? \App\Models\Inventario\Paquete::find($paqueteId) : null;
+            $pedidoRestauranteId = $request->input('pedidoId');
+
+            if (! $paqueteModel && $pedidoRestauranteId) {
+                $detallePaquete = \App\Models\Restaurante\PedidoRestauranteDetalle::where('pedido_id', $pedidoRestauranteId)
+                    ->whereNotNull('id_paquete')
+                    ->value('id_paquete');
+                if ($detallePaquete) {
+                    $paqueteModel = \App\Models\Inventario\Paquete::withoutGlobalScopes()->find($detallePaquete);
+                }
+            }
 
             if (empty($paquetesInput) && empty($paqueteInput) && empty($paqueteModel)) {
                 return response()->json([
@@ -717,17 +728,18 @@ class BoxFulShippingController extends Controller
             $shipmentStatus = $shipment['status'] ?? null;
 
             if ($shipmentId || $shipmentNumber) {
-                // ponytail: dynamically create a local package stub if none exists to satisfy database schema and link the shipment correctly
-                if (!$paqueteModel) {
+                if (! $pedidoRestauranteId) {
+                    $pedidoRestauranteId = $request->input('storeOrderNumber') ?? $request->input('orderNumber') ?? null;
+                }
+
+                if (! $paqueteModel) {
                     $paqueteModel = new \App\Models\Inventario\Paquete();
                     $paqueteModel->id_empresa = $empresa->id;
                     $paqueteModel->id_usuario = $user->id;
                     $paqueteModel->id_sucursal = $user->id_sucursal ?? ($empresa->sucursales()->first()->id ?? null);
-                    
-                    // If there's an associated Pedido, find it and associate id_venta if available
-                    $pedidoId = $request->input('storeOrderNumber') ?? $request->input('orderNumber') ?? null;
-                    if ($pedidoId) {
-                        $pedido = \App\Models\Restaurante\PedidoRestaurante::find($pedidoId);
+
+                    if ($pedidoRestauranteId) {
+                        $pedido = \App\Models\Restaurante\PedidoRestaurante::find($pedidoRestauranteId);
                         if ($pedido) {
                             if ($pedido->id_venta) {
                                 $paqueteModel->id_venta = $pedido->id_venta;
@@ -735,13 +747,14 @@ class BoxFulShippingController extends Controller
                             if (empty($clienteId) && $pedido->cliente_id) {
                                 $clienteId = $pedido->cliente_id;
                             }
-                            $paqueteModel->nota = "Creado desde pedido #" . $pedido->id;
+                            $paqueteModel->nota = 'Creado desde pedido #' . $pedido->id;
                         }
                     }
-                    
+
                     $paqueteModel->id_cliente = $clienteId;
                     $paqueteModel->fecha = now();
-                    $paqueteModel->wr = $orderNumber ?? ('BOXFUL-' . strtoupper(\Illuminate\Support\Str::random(8)));
+                    // ponytail: never use pedido id as WR — collides with hasOneThrough-style lookups
+                    $paqueteModel->wr = ($paqueteModel->wr ?? null) ?: ('BOXFUL-' . strtoupper(\Illuminate\Support\Str::random(8)));
                     $paqueteModel->transportista = 'Boxful';
                     $paqueteModel->consignatario = $nombre . ' ' . $apellido;
                     $paqueteModel->estado = 'Pendiente';
@@ -755,13 +768,17 @@ class BoxFulShippingController extends Controller
                     $paqueteModel->save();
                 }
 
+                if ($pedidoRestauranteId) {
+                    \App\Models\Restaurante\PedidoRestauranteDetalle::where('pedido_id', $pedidoRestauranteId)
+                        ->update(['id_paquete' => $paqueteModel->id]);
+                }
+
                 $localOrigenId = null;
                 if (!empty($direccionOrigenId)) {
                     $localOrigen = \App\Models\Admin\DireccionOrigen::where('boxful_address_id', $direccionOrigenId)->first();
                     if ($localOrigen) {
                         $localOrigenId = $localOrigen->id;
                     } else {
-                        // Create a skeleton local record so foreign key is satisfied
                         $localOrigen = \App\Models\Admin\DireccionOrigen::create([
                             'id_empresa' => $empresa->id,
                             'alias' => 'Dirección autogenerada',
@@ -778,8 +795,7 @@ class BoxFulShippingController extends Controller
                     }
                 }
 
-                $boxfulShipment = \App\Models\Inventario\BoxfulShipment::create([
-                    'paquete_id' => $paqueteModel->id,
+                $shipmentFields = [
                     'direccion_origen_id' => $localOrigenId,
                     'fecha_recoleccion' => $request->input('fecha_recoleccion') ?? $request->input('recolectionDate') ?? now(),
                     'cod' => false,
@@ -792,7 +808,17 @@ class BoxFulShippingController extends Controller
                     'boxful_tracking_url' => $trackingUrl,
                     'boxful_status' => $shipmentStatus,
                     'boxful_status_description' => $statusDesc,
-                ]);
+                ];
+
+                $boxfulShipment = \App\Models\Inventario\BoxfulShipment::where('paquete_id', $paqueteModel->id)->first();
+                if ($boxfulShipment) {
+                    $boxfulShipment->update($shipmentFields);
+                    \App\Models\Inventario\BoxfulParcel::where('boxful_shipment_id', $boxfulShipment->id)->delete();
+                } else {
+                    $boxfulShipment = \App\Models\Inventario\BoxfulShipment::create(
+                        array_merge(['paquete_id' => $paqueteModel->id], $shipmentFields)
+                    );
+                }
 
                 if ($boxfulShipment) {
                     foreach ($parcels as $p) {
@@ -811,7 +837,8 @@ class BoxFulShippingController extends Controller
 
                 Log::info('Guía de Boxful guardada en el paquete local correctamente', [
                     'paqueteId' => $paqueteModel->id,
-                    'num_guia' => $shipmentNumber
+                    'pedidoId' => $pedidoRestauranteId,
+                    'num_guia' => $shipmentNumber,
                 ]);
             }
 

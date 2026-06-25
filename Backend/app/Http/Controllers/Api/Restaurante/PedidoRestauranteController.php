@@ -76,7 +76,7 @@ class PedidoRestauranteController extends Controller
 
         $pedidos = $query->paginate($paginate, ['restaurante_pedidos.*'], 'page', $page);
 
-        return response()->json($pedidos);
+        return response()->json($this->enrichPaginatedPayload($pedidos->toArray(), (int) $user->id_empresa));
     }
 
     public function imprimir(int $id): Response
@@ -678,6 +678,15 @@ class PedidoRestauranteController extends Controller
         return null;
     }
 
+    private function enrichPaginatedPayload(array $payload, int $idEmpresa): array
+    {
+        foreach ($payload['data'] as $i => $row) {
+            $payload['data'][$i] = $this->enrichDetallesWithPaquetes($row, $idEmpresa);
+        }
+
+        return $payload;
+    }
+
     private function enrichDetallesWithPaquetes(array $response, int $idEmpresa): array
     {
         // ponytail: enrich detalles with paquete → boxfulShipment → parcels via id_paquete or fallback to WR number in notas
@@ -718,6 +727,50 @@ class PedidoRestauranteController extends Controller
             }
         }
 
+        $response['boxful_shipment'] = $this->resolveBoxfulShipmentFromDetalles($response['detalles'] ?? []);
+
         return $response;
+    }
+
+    /** Primer envío Boxful válido ligado a paquetes del pedido (vía detalles). */
+    private function resolveBoxfulShipmentFromDetalles(array $detalles): ?array
+    {
+        $fallback = null;
+
+        foreach ($detalles as $det) {
+            $paquete = $this->paqueteToArray($det['paquete'] ?? null);
+            if (! $paquete) {
+                continue;
+            }
+            $bs = $paquete['boxful_shipment'] ?? $paquete['boxfulShipment'] ?? null;
+            if (! $bs) {
+                continue;
+            }
+            $row = is_array($bs) ? $bs : (method_exists($bs, 'toArray') ? $bs->toArray() : null);
+            if (! $row) {
+                continue;
+            }
+            if (! empty($row['shipment_number']) || ! empty($row['boxful_shipment_id'])) {
+                return $row;
+            }
+            $fallback ??= $row;
+        }
+
+        return $fallback;
+    }
+
+    private function paqueteToArray($paquete): ?array
+    {
+        if ($paquete === null) {
+            return null;
+        }
+        if (is_array($paquete)) {
+            return $paquete;
+        }
+        if (is_object($paquete) && method_exists($paquete, 'toArray')) {
+            return $paquete->toArray();
+        }
+
+        return null;
     }
 }

@@ -118,11 +118,11 @@
                     class="list-group-item list-group-item-action border-0 click" (click)="enviarComanda(p)">
                     <i class="fa fa-fw fa-utensils"></i> Enviar comanda cocina
                   </a>
-                  <a *ngIf="p.canal === 'Boxful' && p.cliente_id && p.estado === 'borrador' && (!p.observaciones || p.observaciones.toLowerCase().indexOf('envío boxful #') === -1)"
+                  <a *ngIf="puedeGenerarGuiaBoxful(p)"
                     class="list-group-item list-group-item-action border-0 click" (click)="generarGuiaBoxful(p)">
                     <i class="fa fa-fw fa-truck"></i> Generar Guía Boxful
                   </a>
-                  <a *ngIf="tieneBoxful && p.boxful_shipment?.boxful_shipment_id"
+                  <a *ngIf="tieneBoxful && tieneBoxfulShipmentValido(p)"
                     class="list-group-item list-group-item-action border-0 click"
                     (click)="verDetallesEnvio(p.boxful_shipment.boxful_shipment_id)">
                     <i class="fa fa-fw fa-info-circle"></i> Detalles Envío Boxful
@@ -132,11 +132,11 @@
                     (click)="verTrackingPaquete(p.boxful_shipment.shipment_number, mTracking)">
                     <i class="fa fa-fw fa-map-marker-alt"></i> Rastrear Paquete
                   </a>
-                  <a *ngIf="p.estado === 'borrador' && apiService.canEdit()"
+                  <a *ngIf="puedeEditarPedido(p) && apiService.canEdit()"
                     class="list-group-item list-group-item-action border-0 click" (click)="editar(p)">
                     <i class="fa fa-fw fa-edit"></i> Editar
                   </a>
-                  <a *ngIf="p.estado === 'borrador' && apiService.canEdit()"
+                  <a *ngIf="puedeEditarPedido(p) && apiService.canEdit()"
                     class="list-group-item list-group-item-action border-0 click" (click)="confirmar(p)">
                     <i class="fa fa-fw fa-check"></i> Confirmar pedido
                   </a>
@@ -144,7 +144,7 @@
                     class="list-group-item list-group-item-action border-0 click" (click)="irAFacturar(p)">
                     <i class="fa fa-fw fa-file-invoice-dollar"></i> Facturar
                   </a>
-                  <a *ngIf="p.estado === 'borrador' && apiService.canEdit()"
+                  <a *ngIf="puedeEditarPedido(p) && apiService.canEdit()"
                     class="list-group-item list-group-item-action border-0 click" (click)="eliminar(p)">
                     <i class="fa fa-fw fa-trash"></i> Eliminar
                   </a>

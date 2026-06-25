@@ -74,6 +74,7 @@ export class PedidoFormComponent implements OnInit {
   set clienteId(value: number | null) {
     this._clienteId = value;
     this.venta.id_cliente = value;
+    this.ventaPaquetes.id_cliente = value ?? '';
   }
 
   get usuario(): any {
@@ -161,9 +162,13 @@ export class PedidoFormComponent implements OnInit {
         this.fecha = typeof p.fecha === 'string' ? p.fecha.slice(0, 10) : String(p.fecha).slice(0, 10);
         this.canal = p.canal || '';
         this.referenciaExterna = p.referencia_externa || '';
-        this.clienteId = p.cliente_id ?? null;
         this.observaciones = p.observaciones || '';
         this.idBodega = p.id_bodega ?? this.apiService.auth_user().id_bodega ?? null;
+        if (p.cliente_id && p.cliente) {
+          this.onSelectCliente(p.cliente);
+        } else {
+          this.clienteId = p.cliente_id ?? null;
+        }
         this.lineas = (p.detalles || []).map((d) => ({
           producto_id: d.producto_id,
           id_paquete: d.id_paquete || null,
@@ -200,6 +205,13 @@ export class PedidoFormComponent implements OnInit {
     cliente?.tipo === 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo;
 
   onProductoSelect(producto: any): void {
+    if (producto.id_paquete && producto.id_cliente && producto.id_cliente !== this.clienteId) {
+      this.apiService.read('cliente/', producto.id_cliente).subscribe({
+        next: (cliente) => this.onSelectCliente(cliente),
+        error: () => {}
+      });
+    }
+
     const precio = parseFloat(
       producto.precio ?? producto.precio_publico ?? producto.precio_venta ?? 0
     );
@@ -221,9 +233,17 @@ export class PedidoFormComponent implements OnInit {
   }
 
   onSelectCliente(cliente: any): void {
-    if (cliente && cliente.id) {
-      this.clienteId = cliente.id;
+    if (!cliente?.id) {
+      return;
     }
+    const id = +cliente.id;
+    if (!this.clientes.some((c) => c.id == id)) {
+      this.clientes = [...this.clientes, cliente];
+    }
+    // setTimeout(0): deja que Angular propague el nuevo array `clientes` al hijo
+    // (ngOnChanges) antes de asignar clienteId, para que ensureSelectedOptionVisible
+    // encuentre el item en this.items y lo agregue a filteredItems.
+    setTimeout(() => { this.clienteId = id; });
   }
 
   esCanalBoxful(): boolean {
@@ -235,6 +255,12 @@ export class PedidoFormComponent implements OnInit {
     const numGuia = guia.shipmentNumber || guia.data?.shipmentNumber || guia.id || guia.data?.id || '';
     const labelUrl = guia.labelUrl || guia.data?.labelUrl || '';
     const trackingUrl = guia.trackingUrl || guia.data?.trackingUrl || '';
+
+    if (!numGuia) {
+      this.generandoGuiaBoxful = false;
+      this.alertService.error('Boxful no devolvió número de guía. El pedido no se actualizó.');
+      return;
+    }
 
     const textToAdd = `Envío Boxful #${numGuia}. Guía PDF: ${labelUrl}. Rastreo: ${trackingUrl}`;
     const obsActual = this.observaciones
@@ -390,7 +416,7 @@ export class PedidoFormComponent implements OnInit {
               };
             })
             : [{ peso: 1, alto: 11, ancho: 43, largo: 47.5, es_fragil: false, contenido: '', valor: 50 }];
-          this.paqueteData = { id: null, parcels };
+          this.paqueteData = { id: this.primerPaqueteIdDeDetalles(detalles), parcels };
           this.mostrarModalBoxful = true;
           this.alertService.info('Pedido guardado', 'Ahora genere la guía de envío.');
         } else {
@@ -403,5 +429,17 @@ export class PedidoFormComponent implements OnInit {
         this.alertService.error(err);
       }
     });
+  }
+
+  private primerPaqueteIdDeDetalles(detalles: any[]): number | null {
+    for (const d of detalles) {
+      if (d?.id_paquete) {
+        return d.id_paquete;
+      }
+      if (d?.paquete?.id) {
+        return d.paquete.id;
+      }
+    }
+    return null;
   }
 }

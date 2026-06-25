@@ -603,6 +603,7 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
       },
       clienteId: this.clienteId,
       paqueteId: this.paqueteData.id || null,
+      pedidoId: this.pedidoId || null,
       fecha_recoleccion: this.fechaRecoleccion
     };
 

@@ -415,7 +415,7 @@ export class PedidosListaComponent implements OnInit, OnDestroy {
               };
             })
           : [{ peso: 1, alto: 11, ancho: 43, largo: 47.5, es_fragil: false, contenido: '', valor: 50 }];
-        this.paqueteData = { id: null, parcels };
+        this.paqueteData = { id: this.primerPaqueteIdDeDetalles(detalles), parcels };
         this.mostrarModalBoxful = true;
       },
       error: (err) => {
@@ -429,6 +429,11 @@ export class PedidosListaComponent implements OnInit, OnDestroy {
     const numGuia = guia.shipmentNumber || guia.data?.shipmentNumber || guia.id || guia.data?.id || '';
     const labelUrl = guia.labelUrl || guia.data?.labelUrl || '';
     const trackingUrl = guia.trackingUrl || guia.data?.trackingUrl || '';
+
+    if (!numGuia) {
+      this.alertService.error('Boxful no devolvió número de guía. El pedido no se actualizó.');
+      return;
+    }
 
     const textToAdd = `Envío Boxful #${numGuia}. Guía PDF: ${labelUrl}. Rastreo: ${trackingUrl}`;
     const obsActual = this.pedidoRecienCreado?.observaciones
@@ -630,5 +635,43 @@ export class PedidosListaComponent implements OnInit, OnDestroy {
       .nombre_empresa ||
       (c as { nombre_completo?: string }).nombre_completo ||
       '—';
+  }
+
+  tieneBoxfulShipmentValido(p: any): boolean {
+    return !!p?.boxful_shipment?.shipment_number;
+  }
+
+  tieneGuiaBoxfulEnObservaciones(p: any): boolean {
+    const obs = (p?.observaciones || '').toLowerCase();
+    const match = obs.match(/envío boxful #([^.\s|]+)/);
+    return !!(match && match[1]);
+  }
+
+  /** Borrador sin guía Boxful ya creada → se puede editar/confirmar/eliminar. */
+  puedeEditarPedido(p: any): boolean {
+    if (p.estado !== 'borrador') return false;
+    if (p.canal === 'Boxful' && this.tieneBoxfulShipmentValido(p)) return false;
+    return true;
+  }
+
+  puedeGenerarGuiaBoxful(p: any): boolean {
+    return p.canal === 'Boxful'
+      && !!p.cliente_id
+      && p.estado === 'borrador'
+      && this.tieneBoxful
+      && !this.tieneGuiaBoxfulEnObservaciones(p)
+      && !this.tieneBoxfulShipmentValido(p);
+  }
+
+  private primerPaqueteIdDeDetalles(detalles: any[]): number | null {
+    for (const d of detalles) {
+      if (d?.id_paquete) {
+        return d.id_paquete;
+      }
+      if (d?.paquete?.id) {
+        return d.paquete.id;
+      }
+    }
+    return null;
   }
 }
