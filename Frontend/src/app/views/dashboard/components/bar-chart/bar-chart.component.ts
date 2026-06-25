@@ -23,6 +23,24 @@ export class BarChartComponent implements OnInit, OnChanges {
     }
   }
 
+  private formatCompactBarLabel(value: number, exactUnder1000 = false): string {
+    const absValue = Math.abs(value);
+    let formatted: string;
+    if (absValue >= 1000000) {
+      formatted = `${(Math.floor((absValue / 1000000) * 10) / 10).toFixed(1)}M`;
+    } else if (absValue >= 1000) {
+      formatted = `${(Math.floor((absValue / 1000) * 10) / 10).toFixed(1)}K`;
+    } else if (exactUnder1000) {
+      formatted = absValue.toLocaleString('es-GT', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+    } else {
+      formatted = absValue.toFixed(0);
+    }
+    return value < 0 ? `(${formatted})` : formatted;
+  }
+
   private hexToRgba(hex: string, alpha: number): string {
     if (!hex || !hex.startsWith('#')) return hex;
     const r = parseInt(hex.slice(1, 3), 16);
@@ -69,21 +87,8 @@ export class BarChartComponent implements OnInit, OnChanges {
       show: true,
       position: barLabelPosition,
       rotate: 0,
-      formatter: (params: any) => {
-        const value = params.value;
-        const absValue = Math.abs(value);
-
-        let formatted: string;
-        if (absValue >= 1000000) {
-          formatted = `${(Math.floor((absValue / 1000000) * 10) / 10).toFixed(1)}M`;
-        } else if (absValue >= 1000) {
-          formatted = `${(Math.floor((absValue / 1000) * 10) / 10).toFixed(1)}K`;
-        } else {
-          formatted = absValue.toFixed(0);
-        }
-
-        return value < 0 ? `(${formatted})` : formatted;
-      },
+      formatter: (params: any) =>
+        this.formatCompactBarLabel(params.value, !!this.config.barLabelExactUnder1000),
       color: isInsidePosition ? '#fff' : '#000',
       fontSize: 12,
       fontWeight: 'medium',

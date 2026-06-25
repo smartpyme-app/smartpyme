@@ -35,17 +35,40 @@ export class LineChartComponent implements OnInit, OnChanges {
   }
 
   formatValue(value: number): string {
-    let formatted = '';
     const absValue = Math.abs(value);
     const sign = value >= 0 ? '' : '-';
+    let formatted: string;
     if (absValue >= 1000000) {
       formatted = sign + (Math.floor((absValue / 1000000) * 10) / 10).toFixed(1) + 'M';
     } else if (absValue >= 1000) {
       formatted = sign + (Math.floor((absValue / 1000) * 10) / 10).toFixed(1) + 'K';
+    } else if (this.config?.barLabelExactUnder1000) {
+      formatted = sign + absValue.toLocaleString('es-GT', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
     } else {
       formatted = value.toString();
     }
     return `${this.currencyFormat.getSymbol()}${formatted}`;
+  }
+
+  private formatCompactLineLabel(value: number): string {
+    const absValue = Math.abs(value);
+    let formatted: string;
+    if (absValue >= 1000000) {
+      formatted = `${(Math.floor((absValue / 1000000) * 10) / 10).toFixed(1)}M`;
+    } else if (absValue >= 1000) {
+      formatted = `${(Math.floor((absValue / 1000) * 10) / 10).toFixed(1)}K`;
+    } else if (this.config?.barLabelExactUnder1000) {
+      formatted = absValue.toLocaleString('es-GT', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+    } else {
+      formatted = absValue.toFixed(0);
+    }
+    return value < 0 ? `(${formatted})` : formatted;
   }
 
   initChart(): void {
@@ -128,21 +151,7 @@ export class LineChartComponent implements OnInit, OnChanges {
           label: {
             show: this.config.showLineLabels !== false,
             position: 'top',
-            formatter: (params: any) => {
-              const value = params.value;
-              const absValue = Math.abs(value);
-
-              let formatted: string;
-              if (absValue >= 1000000) {
-                formatted = `${(Math.floor((absValue / 1000000) * 10) / 10).toFixed(1)}M`;
-              } else if (absValue >= 1000) {
-                formatted = `${(Math.floor((absValue / 1000) * 10) / 10).toFixed(1)}K`;
-              } else {
-                formatted = absValue.toFixed(0);
-              }
-
-              return value < 0 ? `(${formatted})` : formatted;
-            },
+            formatter: (params: any) => this.formatCompactLineLabel(params.value),
             color: '#000',
             fontSize: 11,
             fontWeight: 'medium'

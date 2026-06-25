@@ -19,6 +19,8 @@ export interface ChartConfig {
   showXAxisLabels?: boolean; // Opcional: si es false, oculta los montos/etiquetas en el eje X
   showXAxisLine?: boolean; // Opcional: si es false, oculta la línea del eje X
   barLabelPosition?: string; // Opcional: posición de las etiquetas de barra ('inside', 'top', etc.)
+  /** Si es true, montos menores a 1000 en etiquetas de barra se muestran con 2 decimales (sin abreviar ni redondear a entero). */
+  barLabelExactUnder1000?: boolean;
   highlightMaxBar?: boolean; // Opcional: resaltar la barra con el valor máximo con color completo y las demás con opacidad
   graduatedOpacity?: boolean; // Opcional: si es true, la opacidad de las barras se gradúa según su monto
   showLineLabels?: boolean; // Opcional: si es false, oculta las etiquetas en los puntos de las líneas (default: true)

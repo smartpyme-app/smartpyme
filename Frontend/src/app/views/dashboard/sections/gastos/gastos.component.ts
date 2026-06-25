@@ -139,20 +139,23 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
       field: 'fecha',
       headerName: 'Fecha',
       width: 120,
+      minWidth: 120,
       sortable: true,
       filter: true
     },
     {
       field: 'proveedor',
       headerName: 'Proveedor',
-      width: 180,
+      width: 200,
+      minWidth: 200,
       sortable: true,
       filter: true
     },
     {
       field: 'concepto',
       headerName: 'Concepto',
-      width: 220,
+      width: 260,
+      minWidth: 260,
       sortable: true,
       filter: true
     },
@@ -160,20 +163,23 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
       field: 'documento',
       headerName: 'Doc.',
       width: 100,
+      minWidth: 100,
       sortable: true,
       filter: true
     },
     {
       field: 'correlativo',
       headerName: 'Corr.',
-      width: 100,
+      width: 110,
+      minWidth: 110,
       sortable: true,
       filter: true
     },
     {
       field: 'gastosConIVA',
       headerName: 'Gastos con IVA',
-      width: 150,
+      width: 160,
+      minWidth: 160,
       sortable: true,
       filter: true,
       valueFormatter: (params: any) => {
@@ -577,7 +583,8 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
       defaultColDef: {
         resizable: true,
         sortable: true,
-        filter: true
+        filter: true,
+        suppressSizeToFit: true,
       },
       getRowClass: (params: any) => {
         if (params.node.rowPinned === 'bottom') {
@@ -598,7 +605,6 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
 
   onGridReadyGastos(params: any): void {
     this.detalleGastosGridApi = params.api;
-    this.detalleGastosGridApi.sizeColumnsToFit();
   }
 
   /** Recalcula el total pinned basándose en las filas visibles tras filtrar */
@@ -1122,7 +1128,8 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
       showXAxisLine: false,
       labels,
       data,
-      colors: ['#F19447']
+      colors: ['#F19447'],
+      barLabelExactUnder1000: true,
     };
   }
 
@@ -1158,7 +1165,8 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
       colors: ['#F19447'],
       horizontal: true,
       showXAxisLabels: false,
-      graduatedOpacity: true
+      graduatedOpacity: true,
+      barLabelExactUnder1000: true,
     };
   }
 
@@ -1193,7 +1201,8 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
       data,
       colors: ['#F19447'],
       rotateLabels: 45,
-      graduatedOpacity: true
+      graduatedOpacity: true,
+      barLabelExactUnder1000: true,
     };
   }
 
@@ -1313,7 +1322,8 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
           data: dataPresupuesto
         }
       ],
-      colors: ['#F19447', '#d3d3d3']
+      colors: ['#F19447', '#d3d3d3'],
+      barLabelExactUnder1000: true,
     };
   }
 
@@ -1375,7 +1385,8 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
           data: dataGastosAnterior
         }
       ],
-      colors: ['#F19447', '#d3d3d3']
+      colors: ['#F19447', '#d3d3d3'],
+      barLabelExactUnder1000: true,
     };
   }
 

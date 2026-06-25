@@ -101,6 +101,10 @@ label {
   overflow-x: auto !important;
 }
 
+::ng-deep .detalle-gastos-grid .ag-body-horizontal-scroll {
+  overflow-x: auto !important;
+}
+
 ::ng-deep .detalle-gastos-grid .ag-header {
   background-color: #F19447 !important;
   border-bottom: none !important;

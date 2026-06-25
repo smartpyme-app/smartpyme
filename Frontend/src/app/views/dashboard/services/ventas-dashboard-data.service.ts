@@ -56,6 +56,7 @@ export class VentasDashboardDataService {
         labels: (porMes ?? []).map((f: any) => this.obtenerNombreMes(f.anioMes)),
         data: (porMes ?? []).map((f: any) => f.ventas),
         colors: ['#7CABFF'],
+        barLabelExactUnder1000: true,
       },
       ventasVsPresupuestoConfig: {
         type: 'bar',
@@ -71,6 +72,8 @@ export class VentasDashboardDataService {
           }
         ],
         colors: ['#7CABFF', 'rgba(124, 171, 255, 0.4)'],
+        dataExtra: (vsPresupuesto ?? []).map((f: any) => f.presupuesto || 0),
+        barLabelExactUnder1000: true,
       },
       ventasVsAnioAnteriorConfig: {
         type: 'bar',
@@ -86,6 +89,8 @@ export class VentasDashboardDataService {
           }
         ],
         colors: ['#7CABFF', 'rgba(124, 171, 255, 0.4)'],
+        dataExtra: (vsAnioAnterior ?? []).map((f: any) => f.anioAnterior || 0),
+        barLabelExactUnder1000: true,
       },
     };
   }
@@ -196,6 +201,7 @@ export class VentasDashboardDataService {
           labels: (data ?? []).map((f: any) => this.obtenerNombreMes(f.anioMes)),
           data: (data ?? []).map((f: any) => f.ventas),
           colors: ['#7CABFF'],
+          barLabelExactUnder1000: true,
         }
       })),
       catchError(err => {
@@ -214,6 +220,8 @@ export class VentasDashboardDataService {
             { name: 'Presupuesto', data: (data ?? []).map((f: any) => f.presupuesto || 0) }
           ],
           colors: ['#7CABFF', 'rgba(124, 171, 255, 0.4)'],
+          dataExtra: (data ?? []).map((f: any) => f.presupuesto || 0),
+          barLabelExactUnder1000: true,
         }
       })),
       catchError(err => {
@@ -232,6 +240,8 @@ export class VentasDashboardDataService {
             { name: 'Año anterior', data: (data ?? []).map((f: any) => f.anioAnterior || 0) }
           ],
           colors: ['#7CABFF', 'rgba(124, 171, 255, 0.4)'],
+          dataExtra: (data ?? []).map((f: any) => f.anioAnterior || 0),
+          barLabelExactUnder1000: true,
         }
       })),
       catchError(err => {
