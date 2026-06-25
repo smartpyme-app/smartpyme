@@ -1,5 +1,6 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ApiService } from '@services/api.service';
+import { getEmpresaCurrencySymbol } from '@helpers/currency-format.helper';
 import { AlertService } from '@services/alert.service';
 import { WebdatarocksComponent } from '@webdatarocks/ngx-webdatarocks';
 
@@ -103,7 +104,7 @@ export class FlujoEfectivoComponent implements OnInit {
             formats: [
                 {
                     name: 'currency',
-                    currencySymbol: '$',
+                    currencySymbol: getEmpresaCurrencySymbol(this.apiService.auth_user()?.empresa),
                     currencySymbolAlign: 'left',
                     decimalPlaces: 2,
                     thousandsSeparator: ','

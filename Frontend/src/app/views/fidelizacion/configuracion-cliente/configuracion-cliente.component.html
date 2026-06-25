@@ -621,7 +621,7 @@
                   </span>
                 </td>
                 <td>
-                  <span *ngIf="regla.tipo === 'gasto_total'">${{ regla.umbral | number:'1.2-2' }}</span>
+                  <span *ngIf="regla.tipo === 'gasto_total'">{{ regla.umbral | currency }}</span>
                   <span *ngIf="regla.tipo === 'puntos_acumulados'">{{ regla.umbral }} pts</span>
                   <span *ngIf="regla.tipo === 'compras_periodo'">{{ regla.umbral }} compras</span>
                 </td>

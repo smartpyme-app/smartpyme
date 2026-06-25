@@ -2,11 +2,11 @@
 
 namespace App\Exports;
 
+use App\Helpers\CurrencyHelper;
 use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithColumnFormatting;
-use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class PlanillaExportTemplate implements FromArray, WithHeadings, WithStyles, WithColumnFormatting
@@ -48,23 +48,14 @@ class PlanillaExportTemplate implements FromArray, WithHeadings, WithStyles, Wit
 
     public function columnFormats(): array
     {
-        return [
-            'C' => NumberFormat::FORMAT_CURRENCY_USD_SIMPLE,
-            'E' => NumberFormat::FORMAT_CURRENCY_USD_SIMPLE,
-            'F' => NumberFormat::FORMAT_CURRENCY_USD_SIMPLE,
-            'G' => NumberFormat::FORMAT_CURRENCY_USD_SIMPLE,
-            'H' => NumberFormat::FORMAT_CURRENCY_USD_SIMPLE,
-            'I' => NumberFormat::FORMAT_CURRENCY_USD_SIMPLE,
-            'J' => NumberFormat::FORMAT_CURRENCY_USD_SIMPLE,
-            'K' => NumberFormat::FORMAT_CURRENCY_USD_SIMPLE,
-            'L' => NumberFormat::FORMAT_CURRENCY_USD_SIMPLE,
-            'M' => NumberFormat::FORMAT_CURRENCY_USD_SIMPLE,
-            'N' => NumberFormat::FORMAT_CURRENCY_USD_SIMPLE,
-            'O' => NumberFormat::FORMAT_CURRENCY_USD_SIMPLE,
-            'P' => NumberFormat::FORMAT_CURRENCY_USD_SIMPLE,
-            'Q' => NumberFormat::FORMAT_CURRENCY_USD_SIMPLE,
-            'R' => NumberFormat::FORMAT_CURRENCY_USD_SIMPLE,
-            'T' => NumberFormat::FORMAT_CURRENCY_USD_SIMPLE,
-        ];
+        $moneyFormat = CurrencyHelper::excelFormat();
+        $moneyColumns = ['C', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'T'];
+        $formats = [];
+
+        foreach ($moneyColumns as $column) {
+            $formats[$column] = $moneyFormat;
+        }
+
+        return $formats;
     }
 }

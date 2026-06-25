@@ -2,6 +2,7 @@
 
 namespace App\Exports\Planillas;
 
+use App\Helpers\CurrencyHelper;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -17,11 +18,13 @@ class PlanillaDetallesExport implements FromCollection, WithHeadings, WithMappin
 {
     protected $planilla;
     protected $detalles;
+    protected $moneyFormat;
 
     public function __construct($planilla, $detalles)
     {
-        $this->planilla = $planilla;
+        $this->planilla = $planilla->loadMissing('empresa.currency');
         $this->detalles = $detalles;
+        $this->moneyFormat = CurrencyHelper::excelFormat($this->planilla->empresa);
     }
 
     public function collection()
@@ -187,7 +190,7 @@ class PlanillaDetallesExport implements FromCollection, WithHeadings, WithMappin
         // Formato numérico para columnas de dinero
         $moneyColumns = ['K', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'AA', 'AB', 'AC', 'AD'];
         foreach ($moneyColumns as $col) {
-            $sheet->getStyle($col . '2:' . $col . $lastRow)->getNumberFormat()->setFormatCode('$#,##0.00');
+            $sheet->getStyle($col . '2:' . $col . $lastRow)->getNumberFormat()->setFormatCode($this->moneyFormat);
         }
 
         // Ajustar altura de la fila de encabezados

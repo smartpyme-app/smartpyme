@@ -22,6 +22,7 @@ use App\Exports\ComprasExport;
 use App\Exports\ComprasDetallesExport;
 use App\Exports\CuentasPagarExport;
 use App\Exports\RentabilidadSucursalExport;
+use App\Helpers\ExportPeriodHelper;
 use Maatwebsite\Excel\Facades\Excel;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Auth;
@@ -800,17 +801,56 @@ class ComprasController extends Controller
     }
 
     public function export(Request $request){
-        $compras = new ComprasExport();
-        $compras->filter($request);
-
-        return Excel::download($compras, 'compras.xlsx');
+        return $this->downloadComprasExcel(
+            $request,
+            ExportPeriodHelper::MAX_DIAS_VENTAS_TOTALES,
+            function () use ($request) {
+                $compras = new ComprasExport();
+                $compras->filter($request);
+                return [$compras, 'compras.xlsx'];
+            }
+        );
     }
 
     public function exportDetalles(Request $request){
-        $compras = new ComprasDetallesExport();
-        $compras->filter($request);
+        return $this->downloadComprasExcel(
+            $request,
+            ExportPeriodHelper::MAX_DIAS_DETALLES,
+            function () use ($request) {
+                $compras = new ComprasDetallesExport();
+                $compras->filter($request);
+                return [$compras, 'compras-detalles.xlsx'];
+            }
+        );
+    }
 
-        return Excel::download($compras, 'compras-detalles.xlsx');
+    /**
+     * @param  callable(): array{0: object, 1: string}  $exportFactory
+     */
+    private function downloadComprasExcel(Request $request, int $maxDias, callable $exportFactory)
+    {
+        ExportPeriodHelper::assertValidPeriod($request, $maxDias);
+
+        try {
+            ini_set('memory_limit', '512M');
+            set_time_limit(300);
+
+            [$export, $nombreArchivo] = $exportFactory();
+
+            return Excel::download($export, $nombreArchivo);
+        } catch (\Throwable $e) {
+            if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpException) {
+                throw $e;
+            }
+
+            \Log::error('Error al exportar compras: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'error' => 'Error al generar el reporte. Intente con un rango de fechas más corto.',
+            ], 500);
+        }
     }
 
     public function sinDevolucion(){
@@ -833,15 +873,17 @@ class ComprasController extends Controller
 
     public function exportRentabilidad(Request $request)
     {
-
-        //enviar id de la empresa en el request
-
-        $user = JWTAuth::parseToken()->authenticate();
-        $request->request->add(['id_empresa' => $user->id_empresa]);
-        $ventas = new RentabilidadSucursalExport();
-        $ventas->filter($request);
-
-        return Excel::download($ventas, 'corte.xlsx');
+        return $this->downloadComprasExcel(
+            $request,
+            ExportPeriodHelper::MAX_DIAS_GENERAL,
+            function () use ($request) {
+                $user = JWTAuth::parseToken()->authenticate();
+                $request->request->add(['id_empresa' => $user->id_empresa]);
+                $ventas = new RentabilidadSucursalExport();
+                $ventas->filter($request);
+                return [$ventas, 'compras-rentabilidad.xlsx'];
+            }
+        );
     }
 
 
