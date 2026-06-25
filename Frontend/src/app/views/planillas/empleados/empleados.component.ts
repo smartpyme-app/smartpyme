@@ -1,5 +1,6 @@
 import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { TranslatePipe } from '@ngx-translate/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { PopoverModule } from 'ngx-bootstrap/popover';
@@ -19,7 +20,7 @@ import { LazyImageDirective } from '../../../directives/lazy-image.directive';
     selector: 'app-empleados',
     templateUrl: './empleados.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, PopoverModule, TooltipModule, PaginationComponent, VerHistorialButtonComponent, NotificacionesContainerComponent, LazyImageDirective],
+    imports: [CommonModule, RouterModule, FormsModule, PopoverModule, TooltipModule, PaginationComponent, VerHistorialButtonComponent, NotificacionesContainerComponent, LazyImageDirective, TranslatePipe],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EmpleadosComponent extends BaseCrudComponent<any> implements OnInit {

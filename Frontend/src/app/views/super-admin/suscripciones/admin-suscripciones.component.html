@@ -1,4 +1,4 @@
-<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+﻿<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
   <h2 class="page-heading">Estado de empresas</h2>
   <button routerLink="/admin/empresa/crear" tooltip="Crear empresa (F4)" class="btn btn-default tcla-F4">
     <i class="fa fa-plus"></i> Añadir empresa
@@ -668,8 +668,7 @@
         </div>
 
         <div class="form-group col-md-6 mb-3">
-          <label class="form-label">{{ (apiService.auth_user()?.empresa?.pais == 'El Salvador') ? 'NIT:' :
-            'Identificación fiscal:' }}</label>
+          <label class="form-label">{{ 'country.tax.nitColon' | translate }}</label>
           <input type="text" class="form-control" [(ngModel)]="suscripcion.nit" name="nit" />
         </div>
 
@@ -881,7 +880,7 @@
         </div>
 
         <div class="form-group col-md-6 mb-3">
-          <label class="form-label">{{ (apiService.auth_user()?.empresa?.pais == 'El Salvador') ? 'NIT:' : 'Identificación fiscal:' }}</label>
+          <label class="form-label">{{ 'country.tax.nitColon' | translate }}</label>
           <input
             type="text"
             class="form-control"
@@ -891,7 +890,7 @@
           />
           @if (nuevaSuscripcion.nit) {
             <small class="text-muted">
-          {{ (apiService.auth_user()?.empresa?.pais == 'El Salvador') ? 'NIT' : 'Identificación fiscal' }} de la empresa
+          {{ 'country.tax.nit' | translate }} de la empresa
             </small>
           }        </div>
 
@@ -1820,7 +1819,7 @@
             <input type="text" class="form-control" name="nit" [(ngModel)]="clienteSeleccionado.nit">
           </div>
           <div class="form-group col-md-3" *ngIf="clienteSeleccionado.tipo == 'Persona'">
-            <label class="form-label small">DUI / Identificación</label>
+            <label class="form-label small">{{ 'country.identity.nameSlashId' | translate }}</label>
             <input type="text" class="form-control" name="dui" [(ngModel)]="clienteSeleccionado.dui">
           </div>
 
@@ -1862,14 +1861,14 @@
             </ng-select>
           </div>
           <div class="form-group col-md-3">
-            <label class="form-label small">Departamento</label>
+            <label class="form-label small">{{ 'country.location.department' | translate }}</label>
             <ng-select [(ngModel)]="clienteSeleccionado.cod_departamento" (change)="setDepartamento()"
               class="form-select p-0 border-0" name="cod_departamento">
               <ng-option *ngFor="let d of departamentos" [value]="d.cod">{{ d.nombre }}</ng-option>
             </ng-select>
           </div>
           <div class="form-group col-md-3">
-            <label class="form-label small">Municipio</label>
+            <label class="form-label small">{{ 'country.location.municipality' | translate }}</label>
             <ng-select [(ngModel)]="clienteSeleccionado.cod_municipio" (change)="setMunicipio()"
               class="form-select p-0 border-0" name="cod_municipio">
               <ng-option *ngFor="let m of municipios | filter:'nombre_departamento':clienteSeleccionado.departamento"
@@ -1877,7 +1876,7 @@
             </ng-select>
           </div>
           <div class="form-group col-md-3">
-            <label class="form-label small">Distrito</label>
+            <label class="form-label small">{{ 'country.location.district' | translate }}</label>
             <ng-select [(ngModel)]="clienteSeleccionado.cod_distrito" (change)="setDistrito()"
               class="form-select p-0 border-0" name="cod_distrito">
               <ng-option *ngFor="let dist of distritos | filter:'cod_departamento':clienteSeleccionado.cod_departamento"

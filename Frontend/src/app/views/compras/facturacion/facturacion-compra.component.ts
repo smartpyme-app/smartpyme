@@ -1,4 +1,4 @@
-import { Component, ElementRef,OnInit, TemplateRef, ViewChild, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+﻿import { Component, ElementRef,OnInit, TemplateRef, ViewChild, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -17,6 +17,7 @@ import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/
 import { of } from 'rxjs';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { PipesModule } from '@pipes/pipes.module';
+import { CountryI18nService } from '@services/country-i18n.service';
 import { CrearProveedorComponent } from '@shared/modals/crear-proveedor/crear-proveedor.component';
 import { CrearProyectoComponent } from '@shared/modals/crear-proyecto/crear-proyecto.component';
 import { CompraDetallesComponent } from './detalles/compra-detalles.component';
@@ -80,7 +81,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
     public showAuthModal = false;
     public jsonContent: string = '';
     /** Etiqueta para el bloque de conciliación (nombre de archivo o texto pegado). */
-    public jsonImportEtiqueta = 'DTE importado';
+    public jsonImportEtiqueta = '';
     /** DTE en curso de importación (para totales y otros cargos al confirmar productos). */
     private dteImportadoActivo: any = null;
     public processingJson: boolean = false;
@@ -125,6 +126,10 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
 
 
     private cdr = inject(ChangeDetectorRef);
+    private readonly countryI18n = inject(CountryI18nService);
+    private get importedLabelDefault(): string {
+        return this.countryI18n.fe('importedLabel');
+    }
     public documentoImportService = inject(DocumentoImportService);
     private proveedorDesdeEmisor = inject(ProveedorDesdeEmisorService);
 
@@ -174,6 +179,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
     }
 
     ngOnInit() {
+        this.jsonImportEtiqueta = this.importedLabelDefault;
 
         this.cargarDatosIniciales();
         this.verificarAccesoContabilidad();
@@ -666,7 +672,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
 
     if (this.compra.cobrar_impuestos && (!this.compra.impuestos || this.compra.impuestos.length === 0)) {
       this.alertService.error(
-        'Debe configurar los impuestos en el módulo de finanzas antes de poder incluir IVA'
+        this.countryI18n.tax('configureTaxBeforeInclude')
       );
       return;
     }
@@ -924,7 +930,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
 
   openJsonImport(template: TemplateRef<any>) {
     this.jsonContent = '';
-    this.jsonImportEtiqueta = 'DTE importado';
+    this.jsonImportEtiqueta = this.importedLabelDefault;
     setTimeout(() => {
       if (this.jsonFileInput?.nativeElement) {
         this.jsonFileInput.nativeElement.value = '';
@@ -963,7 +969,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
             }
 
             const etiqueta =
-                this.jsonImportEtiqueta && this.jsonImportEtiqueta !== 'DTE importado'
+                this.jsonImportEtiqueta && this.jsonImportEtiqueta !== this.importedLabelDefault
                     ? this.jsonImportEtiqueta
                     : 'Contenido pegado';
 
@@ -990,7 +996,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
             if (this.jsonFileInput?.nativeElement) {
                 this.jsonFileInput.nativeElement.value = '';
             }
-            this.jsonImportEtiqueta = 'DTE importado';
+            this.jsonImportEtiqueta = this.importedLabelDefault;
             if (!this.ajusteBloques.length) {
                 this.alertService.success('Datos importados', 'El documento se importó correctamente.');
             }

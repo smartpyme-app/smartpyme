@@ -12,14 +12,14 @@ import { CrearClienteComponent } from '@shared/modals/crear-cliente/crear-client
 import { CrearProyectoComponent } from '@shared/modals/crear-proyecto/crear-proyecto.component';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { BaseComponent } from '@shared/base/base.component';
-import { LazyImageDirective } from '../../../../../directives/lazy-image.directive';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
     selector: 'app-cotizacion-form',
     templateUrl: './cotizacion-form.component.html',
     styleUrls: ['./cotizacion-form.component.css'],
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, VentaDetallesComponent, CrearClienteComponent, CrearProyectoComponent, LazyImageDirective],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, VentaDetallesComponent, CrearClienteComponent, CrearProyectoComponent, LazyImageDirective, TranslatePipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CotizacionFormComponent extends BaseComponent implements OnInit {

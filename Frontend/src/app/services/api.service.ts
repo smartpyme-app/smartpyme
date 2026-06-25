@@ -8,7 +8,7 @@
  *
  * Este servicio se mantiene por compatibilidad hacia atrás y delega a los servicios específicos.
  */
-import { Injectable } from '@angular/core';
+import { Injectable, Injector } from '@angular/core';
 import { HttpService } from '@services/http.service';
 import { AuthService } from '@services/auth.service';
 import { PermissionService } from '@services/permission.service';
@@ -20,6 +20,7 @@ import { AlertService } from '@services/alert.service';
 import { environment } from './../../environments/environment';
 import { ChatService } from '@services/chat/chat.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
+import { CountryI18nService } from '@services/country-i18n.service';
 
 export const GUARD_TYPES = {
   ADMIN: 'admin',
@@ -50,7 +51,8 @@ export class ApiService {
     private permissionService: PermissionService,
     private utilityService: UtilityService,
     private alertService: AlertService,
-    private funcionalidadesService: FuncionalidadesService
+    private funcionalidadesService: FuncionalidadesService,
+    private injector: Injector
   ) {}
 
   // ========== Métodos HTTP (delegados a HttpService) ==========
@@ -614,6 +616,8 @@ export class ApiService {
             map((empresa: any) => {
                 u.empresa = empresa;
                 localStorage.setItem('SP_auth_user', JSON.stringify(u));
+                // Lazy: evita ciclo HTTP_INTERCEPTORS → ApiService → TranslateService → HttpClient
+                this.injector.get(CountryI18nService).applyForEmpresa(empresa);
                 return undefined;
             }),
             catchError(() => of(undefined))

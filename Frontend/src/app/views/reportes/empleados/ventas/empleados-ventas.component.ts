@@ -7,12 +7,15 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { FilterPipe } from '@pipes/filter.pipe';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { TranslatePipe } from '@ngx-translate/core';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
+import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 
 @Component({
     selector: 'app-empleados-ventas',
     templateUrl: './empleados-ventas.component.html',
     standalone: true,
-    imports: [CommonModule, FormsModule, FilterPipe],
+    imports: [CommonModule, FormsModule, FilterPipe, TranslatePipe, TooltipModule, PaginationComponent],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 

@@ -1,5 +1,6 @@
 import { Component, AfterViewInit, OnInit, OnDestroy, OnChanges, SimpleChanges, EventEmitter, Output, Input, ViewChild, ElementRef, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { TranslatePipe } from '@ngx-translate/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { AlertService } from '@services/alert.service';
@@ -12,7 +13,7 @@ import { debounceTime, distinctUntilChanged, filter, map } from 'rxjs/operators'
     selector: 'app-buscador-clientes',
     templateUrl: './buscador-clientes.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule],
+    imports: [CommonModule, RouterModule, FormsModule, TranslatePipe],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BuscadorClientesComponent implements OnInit, AfterViewInit, OnDestroy, OnChanges {

@@ -1,5 +1,6 @@
 import { Component, OnInit, TemplateRef, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { TranslatePipe } from '@ngx-translate/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
@@ -13,7 +14,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     selector: 'app-boleta-pago',
     templateUrl: './boleta-pago.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule],
+    imports: [CommonModule, RouterModule, FormsModule, TranslatePipe],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BoletaPagoComponent implements OnInit {

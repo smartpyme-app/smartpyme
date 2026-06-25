@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+﻿import { Component, OnInit, TemplateRef, ViewChild, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PipesModule } from '@pipes/pipes.module';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
@@ -12,6 +12,7 @@ import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { DevolucionVentaDetallesComponent } from './detalles/devolucion-venta-detalles.component';
 import { MHService } from '@services/MH.service';
+import { CountryI18nService } from '@services/country-i18n.service';
 
 @Component({
     selector: 'app-devolucion-nueva',
@@ -34,6 +35,7 @@ export class DevolucionVentaNuevaComponent extends BaseModalComponent implements
     public emiting:boolean = false;
     public imprimir:boolean = true;
     private cdr = inject(ChangeDetectorRef);
+    private readonly countryI18n = inject(CountryI18nService);
 
 	constructor(
         public apiService: ApiService,
@@ -234,7 +236,7 @@ export class DevolucionVentaNuevaComponent extends BaseModalComponent implements
         this.emiting = true;
         this.cdr.markForCheck();
         this.mhService.emitirDTENotaCredito(devolucion).then((d) => {
-            this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
+            this.alertService.success(this.countryI18n.fe('emitSuccessTitle'), this.countryI18n.fe('emitSuccessBody'));
             if (d.id_cliente) {
                 this.enviarDteCorreo(d);
             }
@@ -277,10 +279,10 @@ export class DevolucionVentaNuevaComponent extends BaseModalComponent implements
     private enviarDteCorreo(devolucion: any): void {
         this.apiService.store('enviarDTE', devolucion).pipe(this.untilDestroyed()).subscribe({
             next: () => {
-                this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
+                this.alertService.success(this.countryI18n.fe('sendSuccessTitle'), this.countryI18n.fe('sendSuccessBody'));
             },
             error: () => {
-                this.alertService.error('DTE no pudo ser enviado por correo.');
+                this.alertService.error(this.countryI18n.fe('sendError'));
             }
         });
     }

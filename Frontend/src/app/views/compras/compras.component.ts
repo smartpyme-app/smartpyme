@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, TemplateRef, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+﻿import { Component, OnInit, OnDestroy, TemplateRef, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PipesModule } from '@pipes/pipes.module';
 import { FormsModule } from '@angular/forms';
@@ -16,6 +16,7 @@ import { CompraJsonBulkService } from '@services/compra-json-bulk.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
 import { FacturacionElectronicaService } from '@services/facturacion-electronica/facturacion-electronica.service';
+import { CountryI18nService } from '@services/country-i18n.service';
 import {
   mensajeErrorHttpFeCr,
   type FeCrErrorEmisionPayload,
@@ -64,6 +65,7 @@ declare var $:any;
 export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   private searchSubject$ = new Subject<void>();
+  private readonly countryI18n = inject(CountryI18nService);
 
     public compras:any = [];
     public compra:any = {};
@@ -863,7 +865,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
                 this.compras.data[idx] = { ...compra };
             }
             if (this.facturacionElectronica.requiereFlujoEnviarDteSeparado()) {
-                this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
+                this.alertService.success(this.countryI18n.fe('emitSuccessTitle'), this.countryI18n.fe('emitSuccessBody'));
                 this.saving = false;
                 this.enviarDTE();
             } else {
@@ -936,7 +938,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
         this.apiService.store('enviarDTE', this.compra)
             .pipe(this.untilDestroyed())
             .subscribe(dte => {
-            this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
+            this.alertService.success(this.countryI18n.fe('sendSuccessTitle'), this.countryI18n.fe('sendSuccessBody'));
             this.sending = false;
             setTimeout(()=>{
                 this.closeModal();
@@ -956,7 +958,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
             return;
           }
             if(c.sello_mh){
-                if (confirm('¿Confirma anular la compra y el DTE?')) {
+                if (confirm(this.countryI18n.fe('annulPurchaseConfirm'))) {
                     this.compra = c;
                     this.saving = true;
                     this.apiService.store('generarDTEAnuladoSujetoExcluidoCompra', this.compra).subscribe(dte => {
@@ -972,7 +974,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
                                     },error => {this.alertService.error(error); this.saving = false; });
                                 }
 
-                                this.alertService.success('DTE anulado.', 'El DTE fue anulado exitosamente.');
+                                this.alertService.success(this.countryI18n.fe('annulSuccessTitle'), this.countryI18n.fe('annulSuccessBody'));
                             },error => {
                                 if(error.error.descripcionMsg){
                                     this.alertService.warning('Hubo un problema', error.error.descripcionMsg);

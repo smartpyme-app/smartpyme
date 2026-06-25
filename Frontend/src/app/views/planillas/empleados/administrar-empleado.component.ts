@@ -1,6 +1,7 @@
 // nuevo-empleado.component.ts
 import { Component, OnInit, OnDestroy, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { TranslatePipe } from '@ngx-translate/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -11,6 +12,7 @@ import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { TemplateRef, ChangeDetectorRef } from '@angular/core';
 import { PlanillaConstants } from '../../../constants/planilla.constants';
 import { createDuration } from '@fullcalendar/core/internal';
+import { CountryI18nService } from '@services/country-i18n.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
@@ -30,7 +32,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     ],
     templateUrl: './administrar-empleado.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule],
+    imports: [CommonModule, RouterModule, FormsModule, TranslatePipe],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AdministrarEmpleadoComponent extends BaseModalComponent implements OnInit {
@@ -87,7 +89,8 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
     protected override modalManager: ModalManagerService,
     private route: ActivatedRoute,
     private router: Router,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private countryI18n: CountryI18nService
   ) {
     super(modalManager, alertService);
     this.eventListener = () => {
@@ -180,7 +183,7 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
       case TIPO_DOCUMENTO_ALTA:
         return 'Alta';
       case TIPO_DOCUMENTO_DUI:
-        return 'DUI';
+        return this.countryI18n.k('country.identity.name');
       case TIPO_DOCUMENTO_NIT:
         return 'NIT';
       case TIPO_DOCUMENTO_ISSS:

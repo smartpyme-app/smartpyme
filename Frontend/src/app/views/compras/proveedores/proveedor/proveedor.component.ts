@@ -1,5 +1,6 @@
 import { Component, OnInit,TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { TranslatePipe } from '@ngx-translate/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -26,7 +27,7 @@ import { finalize } from 'rxjs/operators';
     selector: 'app-proveedor',
     templateUrl: './proveedor.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TagInputModule, FilterPipe],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TagInputModule, FilterPipe, TranslatePipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ProveedorComponent extends BaseComponent implements OnInit {

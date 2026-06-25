@@ -37,9 +37,20 @@ import { SumPipe } from './app/pipes/sum.pipe';
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import { SharedModule } from './app/shared/shared.module';
 import { LayoutModule } from './app/layout/layout.module';
+import { provideTranslateService } from '@ngx-translate/core';
+import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
+import { CountryI18nService } from './app/services/country-i18n.service';
 
 bootstrapApplication(AppComponent, {
   providers: [
+    provideTranslateService({
+      fallbackLang: CountryI18nService.FALLBACK_LOCALE,
+      lang: CountryI18nService.FALLBACK_LOCALE,
+      loader: provideTranslateHttpLoader({
+        prefix: './assets/i18n/',
+        suffix: '.json',
+      }),
+    }),
     importProvidersFrom(
       ModalModule.forRoot(),
       SharedModule,

@@ -6,6 +6,7 @@ import { formatDate } from '@angular/common';
 import Swal from 'sweetalert2';
 import { AppConstants } from '../../../../app/constants/app.constants';
 import { CommonModule } from '@angular/common';
+import { TranslatePipe } from '@ngx-translate/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
@@ -74,7 +75,7 @@ interface VentaBusquedaSuscripcion {
     selector: 'app-admin-suscripciones',
     templateUrl: './admin-suscripciones.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, PaginationComponent, LazyImageDirective, PopoverModule, TooltipModule],
+    imports: [CommonModule, RouterModule, FormsModule, PaginationComponent, LazyImageDirective, PopoverModule, TooltipModule, TranslatePipe],
 })
 export class AdminSuscripcionesComponent extends BasePaginatedComponent implements OnInit {
   public suscripciones: PaginatedResponse<any> = {} as PaginatedResponse;

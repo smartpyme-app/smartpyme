@@ -1,5 +1,6 @@
 import { Component, OnInit, TemplateRef, ViewChild, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -29,6 +30,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { FidelizacionService, PuntosDisponiblesInfo, ConfiguracionCliente } from '@services/fidelizacion.service';
 import Swal from 'sweetalert2';
 import { BsModalRef, BsModalService } from 'ngx-bootstrap/modal';
+import { CountryI18nService } from '@services/country-i18n.service';
 
 import * as moment from 'moment';
 import {
@@ -54,7 +56,8 @@ import {
         MetodosDePagoComponent,
         CrearClienteComponent,
         BuscadorClientesComponent,
-        CrearProyectoComponent
+        CrearProyectoComponent,
+        TranslatePipe
     ],
     providers: [SumPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
@@ -151,6 +154,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
   private ventaDetalles?: VentaDetallesComponent;
 
   private cdr = inject(ChangeDetectorRef);
+  private countryI18n = inject(CountryI18nService);
 
   constructor(
     public apiService: ApiService,
@@ -748,7 +752,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
             this.procesarProductosOrdenCompra(ordenCompra.detalles);
             this.cdr.markForCheck();
           }else{
-            const labelDoc = this.apiService.auth_user()?.empresa?.pais === 'El Salvador' ? 'DUI o NIT' : 'Número de identificación o Identificación fiscal';
+            const labelDoc = this.countryI18n.t('country.identity.withTaxIdOrFiscal');
             Swal.fire({
               title: 'Cliente no encontrado',
               html: `
@@ -1042,7 +1046,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
         } else if (this.impuestos.length === 0) {
           this.alertService.warning(
             'Configuración requerida',
-            'Debe configurar los impuestos en el módulo de finanzas antes de poder incluir IVA (con “Aplica en ventas” activo).'
+            this.countryI18n.tax('configureTaxBeforeIncludeVentas')
           );
           this.venta.cobrar_impuestos = false;
           return;
@@ -1690,7 +1694,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
         }
         if (this.impuestos.length === 0) {
           this.alertService.error(
-            'Debe configurar los impuestos en el módulo de finanzas antes de poder incluir IVA (con “Aplica en ventas” activo).'
+            this.countryI18n.tax('configureTaxBeforeIncludeVentas')
           );
           return;
         }
@@ -1960,8 +1964,8 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
         this.venta = venta;
         this.syncVentaCreditoConsignaFlagsFromEstado();
         this.alertService.success(
-          'DTE emitido.',
-          'El documento ha sido emitido.'
+          this.countryI18n.fe('emitSuccessTitle'),
+          this.countryI18n.fe('emitSuccessBody')
         );
         if (this.venta.id_cliente && this.facturacionElectronica.requiereFlujoEnviarDteSeparado()) {
           this.enviarDTE();
@@ -2009,12 +2013,12 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     this.sending = true;
     this.apiService.store('enviarDTE', this.venta).pipe(this.untilDestroyed()).subscribe(
       (dte) => {
-        this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
+        this.alertService.success(this.countryI18n.fe('sendSuccessTitle'), this.countryI18n.fe('sendSuccessBody'));
         this.sending = false;
         this.cdr.markForCheck();
       },
       (error) => {
-        this.alertService.error('DTE no pudo ser enviado por correo.');
+        this.alertService.error(this.countryI18n.fe('sendError'));
         this.sending = false;
         this.cdr.markForCheck();
       }

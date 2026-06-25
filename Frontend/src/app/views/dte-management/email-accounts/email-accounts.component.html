@@ -42,7 +42,7 @@
         </tr>
         <tr *ngIf="!loading && accounts.length === 0">
           <td colspan="6" class="text-center py-4">
-            <span class="text-muted">No hay cuentas configuradas. Conecta Gmail o IMAP para descargar DTEs.</span>
+            <span class="text-muted">{{ 'country.tax.fe.emailAccountsEmptyHint' | translate }}</span>
           </td>
         </tr>
         <tr *ngFor="let account of accounts">
@@ -160,7 +160,7 @@
       </ng-select>
     </div>
     <p class="text-muted small mb-0">
-      Al ingresar, el usuario seleccionado verá un aviso si hay DTEs válidos pendientes de revisión o procesamiento.
+      {{ 'country.tax.fe.emailAccountsPendingNotice' | translate }}
     </p>
   </div>
   <div class="modal-footer">

@@ -27,6 +27,7 @@ import {
 } from '@shared/modals/fe-cr-exoneracion-detalle/fe-cr-exoneracion-detalle.util';
 import { FE_PAIS_CR, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
 import { copiarImpuestosProductoAlDetalle } from '@utils/impuestos-venta.util';
+import { CountryI18nService } from '@services/country-i18n.service';
 
 @Component({
     selector: 'app-venta-detalles',
@@ -46,6 +47,8 @@ import { copiarImpuestosProductoAlDetalle } from '@utils/impuestos-venta.util';
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class VentaDetallesComponent extends BaseModalComponent implements OnInit {
+
+  private readonly countryI18n = inject(CountryI18nService);
 
   @Input() venta: any = {};
   @Input() usuarios: any = {};
@@ -100,6 +103,14 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
   }
 
   readonly detalleTieneExoneracionCr = detalleTieneExoneracionCr;
+
+  get editTaxExemptionTitle(): string {
+    return this.countryI18n.tax('editTaxExemptionTitle');
+  }
+
+  get configureTaxExemptionTitle(): string {
+    return this.countryI18n.tax('configureTaxExemptionTitle');
+  }
 
     get mostrarCuentaTercerosEnLinea(): boolean {
         return this.habilitarCuentaTerceros

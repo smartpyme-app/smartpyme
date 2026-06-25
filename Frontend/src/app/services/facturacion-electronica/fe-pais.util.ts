@@ -21,6 +21,9 @@ export function resolveCodigoPaisFe(
   if (nombre.includes('salvador')) {
     return FE_PAIS_SV;
   }
+  if (nombre.includes('honduras')) {
+    return 'HN';
+  }
 
   return FE_PAIS_SV;
 }

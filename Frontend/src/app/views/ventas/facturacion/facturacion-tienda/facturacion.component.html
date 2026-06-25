@@ -1,4 +1,4 @@
-<div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
+﻿<div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
     <h3>
         <ng-container >
             Nueva venta
@@ -120,7 +120,7 @@
             <div class="form-group col-md-4 col-lg-3">
             <label for="num_identificacion">Número identificación:</label>
             <input type="text" [(ngModel)]="venta.num_identificacion" name="num_identificacion" class="form-control"
-                id="num_identificacion" placeholder="Número de identificación">
+                id="num_identificacion" [placeholder]="'country.identity.placeholder' | translate">
             </div>
         }
     </div>
@@ -406,7 +406,7 @@
         }
         <div class="form-group col-md-6 col-lg-3 without-label">
             <div class="form-switch bg-light-info rounded">
-              <label for="cobrar_impuestos">Con IVA ({{ apiService.auth_user().empresa.iva | number:'1.0' }}%)</label>
+              <label for="cobrar_impuestos">{{ 'country.tax.taxWithRate' | translate:{ rate: (apiService.auth_user().empresa.iva | number:'1.0') } }}</label>
               <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onCobrarImpuestosChange()" [(ngModel)]="venta.cobrar_impuestos" name="venta.cobrar_impuestos">
             </div>
         </div>

@@ -1,5 +1,5 @@
 <section class="bg-white p-4 rounded mb-3">
-  <h2 class="mb-0">Libros fiscales</h2>
+  <h2 class="mb-0">{{ 'country.tax.libroIva.pageTitle' | translate }}</h2>
 </section>
 
 <div class="bg-white p-4 rounded mb-3">
@@ -17,7 +17,7 @@
           Descargas
         </button>
         <ul class="dropdown-menu dropdown-menu-end">
-          <li><button class="dropdown-item" (click)="descargarExcel()">Libro fiscal - Retenciones (Excel)</button></li>
+          <li><button class="dropdown-item" (click)="descargarExcel()">{{ 'country.tax.libroIva.fiscalRetentionsExcel' | translate }}</button></li>
         </ul>
       </div>
     </div>

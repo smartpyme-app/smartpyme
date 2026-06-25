@@ -7,12 +7,13 @@ import { ApiService } from '../../../services/api.service';
 import { AlertService } from '../../../services/alert.service';
 import { TransformacionService } from './transformacion.service';
 import { BuscadorProductosComponent } from '@shared/parts/buscador-productos/buscador-productos.component';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-transformacion-crear',
   templateUrl: './transformacion-crear.component.html',
   standalone: true,
-  imports: [CommonModule, FormsModule, TooltipModule, BuscadorProductosComponent],
+  imports: [CommonModule, FormsModule, TooltipModule, BuscadorProductosComponent, TranslatePipe],
 })
 export class TransformacionCrearComponent implements OnInit {
 

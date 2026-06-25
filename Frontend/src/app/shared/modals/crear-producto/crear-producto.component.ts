@@ -10,12 +10,13 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '../../base/base-modal.component';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
     selector: 'app-crear-producto',
     templateUrl: './crear-producto.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, TooltipModule],
+    imports: [CommonModule, RouterModule, FormsModule, TooltipModule, TranslatePipe],
 
 })
 export class CrearProductoComponent extends BaseModalComponent implements OnInit {

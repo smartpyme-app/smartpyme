@@ -10,12 +10,13 @@ import { AlertService } from '../../../services/alert.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '../../../services/modal-manager.service';
 import { BaseModalComponent } from '../../base/base-modal.component';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
     selector: 'app-compra-producto',
     templateUrl: './compra-producto.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule],
+    imports: [CommonModule, RouterModule, FormsModule, TranslatePipe],
 
 })
 export class CompraProductoComponent extends BaseModalComponent implements OnInit {

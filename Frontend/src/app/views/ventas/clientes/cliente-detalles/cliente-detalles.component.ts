@@ -1,5 +1,6 @@
 import { Component, OnInit, TemplateRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { TranslatePipe } from '@ngx-translate/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -10,12 +11,13 @@ import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
+import { CountryI18nService } from '@services/country-i18n.service';
 
 @Component({
     selector: 'app-cliente-detalles',
     templateUrl: './cliente-detalles.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, TagInputModule],
+    imports: [CommonModule, RouterModule, FormsModule, TagInputModule, TranslatePipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ClienteDetallesComponent extends BaseModalComponent implements OnInit {
@@ -40,8 +42,7 @@ export class ClienteDetallesComponent extends BaseModalComponent implements OnIn
     };
     public override loading = false;
     public contacto: any = {};
-    public tipoDocumento: any = {
-        '13': 'DUI',
+    public tipoDocumento: Record<string, string> = {
         '36': 'NIT',
         '03': 'Pasaporte',
         '02': 'Carnet de residente',
@@ -49,6 +50,7 @@ export class ClienteDetallesComponent extends BaseModalComponent implements OnIn
     };
 
     private cdr = inject(ChangeDetectorRef);
+    private countryI18n = inject(CountryI18nService);
 
     constructor(
         private apiService: ApiService,
@@ -60,6 +62,7 @@ export class ClienteDetallesComponent extends BaseModalComponent implements OnIn
     }
 
     ngOnInit() {
+        this.tipoDocumento['13'] = this.countryI18n.k('country.identity.name');
         this.loadAll();
     }
 

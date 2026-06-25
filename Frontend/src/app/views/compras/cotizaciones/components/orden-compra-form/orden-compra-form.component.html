@@ -1,4 +1,4 @@
-<div [formGroup]="ordenCompraForm">
+﻿<div [formGroup]="ordenCompraForm">
   <div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
     <h3>Orden de compra</h3>
     <button class="btn btn-light text-danger" routerLink="/ordenes-de-compras"><i class="fa fa-arrow-left"></i>
@@ -203,7 +203,7 @@
 
       <div class="form-group col-md-6 col-lg-3 without-label">
         <div class="form-switch bg-light-info rounded">
-          <label for="cobrar_impuestos">Con IVA</label>
+          <label for="cobrar_impuestos">{{ 'country.tax.taxWithShort' | translate }}</label>
           <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()"
             formControlName="cobrar_impuestos" name="compra.cobrar_impuestos">
         </div>

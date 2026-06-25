@@ -20,6 +20,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { DteDocumentService } from '@services/dte-management/dte-document.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
 import { SLUG_DESCARGA_AUTOMATIZADA_DTES } from '@guards/funcionalidad.guard';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
     selector: 'app-layout',
@@ -38,7 +39,8 @@ import { SLUG_DESCARGA_AUTOMATIZADA_DTES } from '@guards/funcionalidad.guard';
         SidebarOrganizacionesComponent,
         SidebarVentasComponent,
         SidebarServiciosComponent,
-        NotificacionesContainerComponent
+        NotificacionesContainerComponent,
+        TranslatePipe
     ],
     
 })

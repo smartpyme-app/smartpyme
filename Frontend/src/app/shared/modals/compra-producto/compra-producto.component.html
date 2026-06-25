@@ -67,7 +67,7 @@
             </div>
         </div>
         <div class="form-group col-sm-3">
-            <label for="iva">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'IVA:' : 'Impuesto:' }}</label>
+            <label for="iva">{{ 'country.tax.taxLabelColon' | translate }}</label>
             <div class="input-group">
                 <span class="input-group-addon">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                 <input type="number" min="1" class="form-control" [(ngModel)]="detalle.iva" name="iva">

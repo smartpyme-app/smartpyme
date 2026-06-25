@@ -14,12 +14,13 @@ import { TruncatePipe } from '@pipes/truncate.pipe';
 
 import * as moment from 'moment';
 import { LazyImageDirective } from '../../../../directives/lazy-image.directive';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
     selector: 'app-contribuyentes',
     templateUrl: './contribuyentes.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, SumPipe, TruncatePipe, LazyImageDirective],
+    imports: [CommonModule, RouterModule, FormsModule, SumPipe, TruncatePipe, LazyImageDirective, TranslatePipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 

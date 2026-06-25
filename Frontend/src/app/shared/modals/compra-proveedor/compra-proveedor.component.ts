@@ -1,5 +1,6 @@
 import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { TranslatePipe } from '@ngx-translate/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 
@@ -16,7 +17,7 @@ import { BaseModalComponent } from '../../base/base-modal.component';
     selector: 'app-compra-proveedor',
     templateUrl: './compra-proveedor.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule],
+    imports: [CommonModule, RouterModule, FormsModule, TranslatePipe],
     
 })
 export class CompraProveedorComponent extends BaseModalComponent implements OnInit {

@@ -1,5 +1,6 @@
 import { Component, OnInit, TemplateRef, ViewChild, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { TranslatePipe } from '@ngx-translate/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -14,6 +15,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { FacturacionElectronicaService } from '@services/facturacion-electronica/facturacion-electronica.service';
+import { CountryI18nService } from '@services/country-i18n.service';
 import { FE_PAIS_CR, FE_PAIS_SV, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
 import { NOMBRE_DOCUMENTO_CR } from '@views/ventas/documentos/documento-nombre-options';
 import { SharedDataService } from '@services/shared-data.service';
@@ -40,13 +42,16 @@ import { LazyImageDirective } from '../../../../directives/lazy-image.directive'
         BuscadorClientesComponent,
         CrearClienteComponent,
         CrearProyectoComponent,
-        LazyImageDirective
+        LazyImageDirective,
+        TranslatePipe
     ],
     providers: [SumPipe],
     changeDetection: ChangeDetectionStrategy.OnPush,
     
 })
 export class CotizacionComponent extends BaseModalComponent implements OnInit {
+  private readonly countryI18n = inject(CountryI18nService);
+
   public venta: any = {};
   public evento: any = {};
   public detalle: any = {};
@@ -728,7 +733,7 @@ if (
     ) {
       this.alertService.warning(
         'Configuración requerida',
-        'Debe configurar los impuestos en el módulo de finanzas antes de poder incluir IVA'
+        this.countryI18n.tax('configureTaxBeforeInclude')
       );
       this.venta.cobrar_impuestos = false;
       return;
@@ -944,7 +949,7 @@ if (
         }
         if (this.impuestos.length === 0) {
           this.alertService.error(
-            'Debe configurar los impuestos en el módulo de finanzas antes de poder incluir IVA'
+            this.countryI18n.tax('configureTaxBeforeInclude')
           );
           return;
         }
@@ -1125,8 +1130,8 @@ if (
         this.venta = venta;
         this.syncVentaCreditoConsignaFlagsFromEstado();
         this.alertService.success(
-          'DTE emitido.',
-          'El documento ha sido emitido.'
+          this.countryI18n.fe('emitSuccessTitle'),
+          this.countryI18n.fe('emitSuccessBody')
         );
         if (this.venta.id_cliente && this.facturacionElectronica.requiereFlujoEnviarDteSeparado()) {
             this.enviarDTE();
@@ -1163,11 +1168,11 @@ if (
     this.sending = true;
     this.apiService.store('enviarDTE', this.venta).pipe(this.untilDestroyed()).subscribe(
       (dte) => {
-        this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
+        this.alertService.success(this.countryI18n.fe('sendSuccessTitle'), this.countryI18n.fe('sendSuccessBody'));
         this.sending = false;
       },
       (error) => {
-        this.alertService.error('DTE no pudo ser enviado por correo.');
+        this.alertService.error(this.countryI18n.fe('sendError'));
         this.sending = false;
       }
     );

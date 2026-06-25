@@ -1,4 +1,4 @@
-<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+﻿<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading" (click)="loadAll()">Cuenta</h2>
 </section>
 
@@ -55,7 +55,7 @@
                     <!-- si la empresa ES salvadoreña -->
                     @if (apiService.auth_user().empresa.pais == 'El Salvador') {
                       <div class="form-group col-12 col-md-6 col-lg-4">
-                        <label for="departamento">Departamento:</label>
+                        <label for="departamento">{{ 'country.location.departmentColon' | translate }}</label>
                         <ng-select [(ngModel)]="empresa.cod_departamento" (change)="setDepartamento()" class="form-select p-0" name="empresa.departamento">
                           @for (departamento of departamentos; track $index) {
                             <ng-option [value]="departamento.cod">
@@ -66,7 +66,7 @@
                       </div>
 
                       <div class="form-group col-12 col-md-6 col-lg-4">
-                        <label for="distrito">Distrito:</label>
+                        <label for="distrito">{{ 'country.location.districtColon' | translate }}</label>
                         <ng-select  [(ngModel)]="empresa.cod_distrito" (change)="setDistrito()" placeholder="Escribe aquí" class="form-control form-select p-0" name="empresa.cod_distrito">
                           @for (distrito of distritos | filter:'cod_departamento':empresa.cod_departamento; track $index) {
                             <ng-option [value]="distrito.cod">
@@ -77,7 +77,7 @@
                       </div>
 
                       <div class="form-group col-12 col-md-6 col-lg-4">
-                        <label for="municipio">Municipio:</label>
+                        <label for="municipio">{{ 'country.location.municipalityColon' | translate }}</label>
                         <ng-select [(ngModel)]="empresa.cod_municipio" (change)="setMunicipio()" class="form-select p-0" name="empresa.municipio">
                           @for (municipio of municipios | filter:'nombre_departamento':empresa.departamento; track $index) {
                             <ng-option [value]="municipio.cod">
@@ -91,11 +91,11 @@
                     <!-- Otros países (no SV, no CR FE): departamento/municipio libre. CR FE usa selects DGT más abajo. -->
                     @if (apiService.auth_user().empresa.pais != 'El Salvador' && !esCostaRicaFe()) {
                       <div class="form-group col-12 col-md-6 col-lg-4">
-                        <label for="departamento">Departamento:</label>
+                        <label for="departamento">{{ 'country.location.departmentColon' | translate }}</label>
                         <input type="text" class="form-control" [(ngModel)]="empresa.departamento" name="empresa.departamento" placeholder="Escriba aquí">
                       </div>
                       <div class="form-group col-12 col-md-6 col-lg-4">
-                        <label for="municipio">Municipio:</label>
+                        <label for="municipio">{{ 'country.location.municipalityColon' | translate }}</label>
                         <input type="text" class="form-control" [(ngModel)]="empresa.municipio" name="empresa.municipio" placeholder="Escriba aquí">
                       </div>
                     }
@@ -108,7 +108,7 @@
                     </div>
                     @if (esCostaRicaFe()) {
                     <div class="form-group col-12 col-md-6 col-lg-4">
-                        <label for="empresa_cr_provincia">Provincia</label>
+                        <label for="empresa_cr_provincia">{{ 'country.location.department' | translate }}</label>
                         <ng-select [(ngModel)]="empresa.cod_departamento" (change)="setDepartamento()" class="form-select p-0" name="empresa_cr_provincia" id="empresa_cr_provincia">
                           @for (prov of departamentos; track prov.cod) {
                             <ng-option [value]="prov.cod">{{ prov.nombre }}</ng-option>
@@ -116,7 +116,7 @@
                         </ng-select>
                     </div>
                     <div class="form-group col-12 col-md-6 col-lg-4">
-                        <label for="empresa_cr_canton">Cantón</label>
+                        <label for="empresa_cr_canton">{{ 'country.location.municipality' | translate }}</label>
                         <ng-select [(ngModel)]="empresa.cod_municipio" (change)="setMunicipio()" class="form-select p-0" name="empresa_cr_canton" id="empresa_cr_canton" placeholder="Seleccione">
                           @for (mun of municipiosFiltradosCr(); track mun.cod) {
                             <ng-option [value]="mun.cod">{{ mun.nombre }}</ng-option>
@@ -124,7 +124,7 @@
                         </ng-select>
                     </div>
                     <div class="form-group col-12 col-md-6 col-lg-4">
-                        <label for="empresa_cr_distrito">Distrito</label>
+                        <label for="empresa_cr_distrito">{{ 'country.location.district' | translate }}</label>
                         <ng-select [(ngModel)]="empresa.cod_distrito" (change)="setDistrito()" class="form-select p-0" name="empresa_cr_distrito" id="empresa_cr_distrito" placeholder="Seleccione">
                           @for (dis of distritosFiltradosCr(); track dis.cod) {
                             <ng-option [value]="dis.cod">{{ dis.nombre }}</ng-option>
@@ -147,26 +147,13 @@
                     </div>
                     }
                     <div class="form-group col-12 col-md-6 col-lg-4">
-                        @if (apiService.auth_user().empresa.pais == 'El Salvador') {
-                          <label for="nit">NIT</label>
-                        }
-                        @if (apiService.auth_user().empresa.pais != 'El Salvador' && !esCostaRicaFe()) {
-                          <label for="nit">Identificación Fiscal</label>
-                        }
-                        @if (esCostaRicaFe()) {
-                          <label for="nit">Identificación</label>
-                        }
+                        <label for="nit">{{ 'country.tax.nit' | translate }}</label>
                         <input type="text" class="form-control" [(ngModel)]="empresa.nit" name="nit" placeholder="Escriba aquí" [dropSpecialCharacters]="false" mask='{{apiService.auth_user().empresa.validador_nit}}'
                             (ngModelChange)="onNitEmpresaChange()">
                     </div>
                     @if (!esCostaRicaFe()) {
                     <div class="form-group col-12 col-md-6 col-lg-4">
-                        @if (apiService.auth_user().empresa.pais == 'El Salvador') {
-                          <label for="ncr">NCR</label>
-                        }
-                        @if (apiService.auth_user().empresa.pais != 'El Salvador') {
-                          <label for="ncr">Registro Tributario</label>
-                        }
+                        <label for="ncr">{{ 'country.tax.ncr' | translate }}</label>
                         <input type="text" class="form-control" [(ngModel)]="empresa.ncr" name="ncr" placeholder="Escriba aquí">
                     </div>
                     }
@@ -279,7 +266,7 @@
                         </select>
                     </div>
                     <div class="form-group col-12 col-md-6 col-lg-4">
-                        <label for="iva">IVA</label>
+                        <label for="iva">{{ 'country.tax.taxLabel' | translate }}</label>
                         <div class="input-group">
                             <input type="number" class="form-control" [(ngModel)]="empresa.iva" name="iva"
                                 placeholder="Escriba aquí">
@@ -479,7 +466,7 @@
                         <div class="form-group col-md-6 col-xl-4 without-label">
                             <div class="form-switch bg-light-info rounded">
                                 <label for="dte_mostrar_descripcion_producto" class="form-label">
-                                    <strong>Mostrar descripción del producto en PDF de DTE</strong>
+                                    <strong>{{ 'country.tax.fe.pdfProductDescriptionTitle' | translate }}</strong>
                                 </label>
                                 <input class="form-check-input float-end" type="checkbox" role="switch"
                                     id="dte_mostrar_descripcion_producto"
@@ -488,7 +475,7 @@
                                     name="dte_mostrar_descripcion_producto">
                             </div>
                             <small class="text-muted">
-                                Incluye bajo cada línea la descripción del catálogo en facturas y créditos fiscales (PDF). La descripción de la línea del DTE siempre se muestra.
+                                {{ 'country.tax.fe.pdfProductDescriptionHint' | translate }}
                             </small>
                         </div>
                     </div>
@@ -667,9 +654,9 @@
                         </div>
                         <div class="col-12 col-xl-6 d-flex">
                             <div class="empresa-pref-tile w-100">
-                                <p class="empresa-pref-desc small text-muted mb-0">Calcular el IVA por defecto.</p>
+                                <p class="empresa-pref-desc small text-muted mb-0">{{ 'country.tax.defaultTaxCalcDesc' | translate }}</p>
                                 <div class="form-switch bg-light-info rounded">
-                                    <label for="cobrar_iva">Cobrar IVA</label>
+                                    <label for="cobrar_iva">{{ 'country.tax.chargeTax' | translate }}</label>
                                     <input class="form-check-input float-end" type="checkbox" (change)="setCobrarIVA()"
                                         role="switch" (change)="onSubmit()" [checked]="empresa.cobra_iva == 'Si'">
                                 </div>
@@ -726,8 +713,8 @@
                                     [value]="getVersionFacturacion()"
                                     (change)="updateVersionFacturacion($any($event.target).value)"
                                     name="version_facturacion">
-                                    <option value="original">Sin IVA (Los precios no incluyen IVA, se agrega al final.)</option>
-                                    <option value="v2">Con IVA (Los precios ya incluyen IVA, se desglosa automáticamente.)</option>
+                                    <option value="original">{{ 'country.tax.priceModeWithoutTaxDesc' | translate }}</option>
+                                    <option value="v2">{{ 'country.tax.priceModeWithTaxDesc' | translate }}</option>
                                 </select>
                             </div>
                         </div>
@@ -803,7 +790,7 @@
                         </div>
                         <div class="col-12 col-xl-6 d-flex">
                             <div class="empresa-pref-tile w-100">
-                                <p class="empresa-pref-desc small text-muted mb-0">Monto mínimo para retención IVA 1% (gran contribuyente).</p>
+                                <p class="empresa-pref-desc small text-muted mb-0">{{ 'country.tax.retentionThresholdDesc' | translate }}</p>
                                 <div class="mt-auto">
                                     <div class="input-group">
                                         <span class="input-group-text">{{ empresa.moneda || 'USD' }}</span>
@@ -1095,12 +1082,12 @@
         <section class="bg-white rounded p-3 mb-3">
             <div class="row">
                 <div class="form-group col-md-6 col-lg-4">
-                    <label for="mh_usuario">{{ esCostaRicaFe() ? 'Usuario en Hacienda (ATV):' : 'Usuario:' }}</label>
+                    <label for="mh_usuario">{{ 'country.tax.fe.mhUserLabel' | translate }}</label>
                     <input type="text" class="form-control" [(ngModel)]="empresa.mh_usuario" name="mh_usuario"
                         placeholder="Escribe aquí">
                 </div>
                 <div class="form-group col-md-6 col-lg-4">
-                    <label for="mh_contrasena">{{ esCostaRicaFe() ? 'Contraseña en Hacienda (ATV):' : 'Contraseña de la API:' }}</label>
+                    <label for="mh_contrasena">{{ 'country.tax.fe.mhPasswordLabel' | translate }}</label>
                     <div class="input-group">
                         <input [type]="showpassword ? 'text' : 'password'" class="form-control" name="mh_contrasena"
                             [(ngModel)]="empresa.mh_contrasena" placeholder="Escribe aquí" #mh_contrasena="ngModel"
@@ -1111,7 +1098,7 @@
                     </div>
                 </div>
                 <div class="form-group col-md-6 col-lg-4">
-                    <label for="mh_pwd_certificado">{{ esCostaRicaFe() ? 'Contraseña del certificado digital:' : 'Clave Privada del Certificado:' }}</label>
+                    <label for="mh_pwd_certificado">{{ 'country.tax.fe.mhCertPasswordLabel' | translate }}</label>
                     <div class="input-group">
                         <input [type]="showpassword2 ? 'text' : 'password'" class="form-control"
                             name="mh_pwd_certificado" [(ngModel)]="empresa.mh_pwd_certificado"
@@ -1122,7 +1109,7 @@
                     </div>
                 </div>
                 <div class="form-group col-md-6 col-lg-4">
-                    <label for="fe_ambiente">{{ esCostaRicaFe() ? 'Modo:' : 'Ambiente:' }}</label>
+                    <label for="fe_ambiente">{{ 'country.tax.fe.feEnvironmentLabel' | translate }}</label>
                     <select name="fe_ambiente" class="form-select" (change)="cargarEstadisticasPruebas()"
                         [(ngModel)]="empresa.fe_ambiente">
                         <option value="00">Pruebas</option>
@@ -1135,7 +1122,7 @@
                 </div> -->
                 <div class="form-group col-md-6 col-xl-4 without-label">
                     <div class="form-switch bg-light-info rounded">
-                        <label for="enviar_dte">Enviar DTE por correo</label>
+                        <label for="enviar_dte">{{ 'country.tax.fe.sendByEmail' | translate }}</label>
                         <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()"
                             [(ngModel)]="empresa.enviar_dte" name="enviar_dte">
                     </div>

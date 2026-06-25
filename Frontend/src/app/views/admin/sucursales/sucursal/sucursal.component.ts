@@ -8,12 +8,13 @@ import { TabsetComponent } from 'ngx-bootstrap/tabs';
 import { AlertService } from '../../../../services/alert.service';
 import { ApiService } from '../../../../services/api.service';
 import { BaseComponent } from '@shared/base/base.component';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
     selector: 'app-sucursal',
     templateUrl: './sucursal.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule],
+    imports: [CommonModule, RouterModule, FormsModule, TranslatePipe],
     changeDetection: ChangeDetectionStrategy.OnPush,
     
 })

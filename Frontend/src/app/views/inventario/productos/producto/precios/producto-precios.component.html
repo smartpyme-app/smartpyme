@@ -1,4 +1,4 @@
-<div class="row">
+﻿<div class="row">
     <h6 class="my-3 font-weight-bold">
         Lista de precios
 
@@ -10,8 +10,8 @@
         <table class="table table-borderless table-hover">
             <thead>
                 <tr>
-                    <th width="20%">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'Precio sin IVA' : 'Precio sin Impuesto' }}</th>
-                    <th width="20%">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'Precio con IVA' : 'Precio con Impuesto' }}</th>
+                    <th width="20%">{{ 'country.tax.priceWithoutTax' | translate }}</th>
+                    <th width="20%">{{ 'country.tax.priceWithTax' | translate }}</th>
                     <th width="20%">Clasificación</th>
                     <th>Usuarios autorizados</th>
                     <th width="100" class="text-center"><i class="fa fa-cog"></i> </th>
@@ -70,14 +70,14 @@
             <p><span class="fw-medium">Producto:</span> {{ producto.nombre }}</p>
         <div class="row">
             <div class="form-group col-md-6 col-lg-4">
-                <label for="" class="fw-medium">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'Precio sin IVA:' : 'Precio sin Impuesto:' }}</label>
+                <label for="" class="fw-medium">{{ 'country.tax.priceWithoutTaxColon' | translate }}</label>
                 <div class="input-group">
                     <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                     <input id="precio" type="number" class="form-control" (change)="calPrecioFinal()" (keyup)="calPrecioFinal()"  [(ngModel)]="precio.precio" name="precio" focus="true">
                 </div>
             </div>
             <div class="form-group col-md-6 col-lg-4">
-                <label for="" class="fw-medium">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'Precio con IVA:' : 'Precio con Impuesto:' }}</label>
+                <label for="" class="fw-medium">{{ 'country.tax.priceWithTaxColon' | translate }}</label>
                 <div class="input-group">
                     <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                     <input id="precio_final" type="number" class="form-control" (change)="calPrecioBase()" (keyup)="calPrecioBase()" [(ngModel)]="precio.precio_final" name="precio_final">

@@ -1,6 +1,6 @@
 @if (vistaCostaRica) {
   <div class="alert alert-danger text-start">
-    <strong class="d-block mb-2">No se pudo emitir el comprobante electrónico</strong>
+    <strong class="d-block mb-2">{{ 'country.tax.fe.emitFailedTitle' | translate }}</strong>
     @if (vistaCostaRica.avisoPruebas) {
       <div class="alert alert-info py-2 small mb-3" role="status">
         {{ vistaCostaRica.avisoPruebas }}
@@ -19,7 +19,7 @@
           <span class="text-dark d-block mt-1">{{ d.texto }}</span>
           @if (d.tecnico) {
             <details class="mt-2 small text-muted">
-              <summary class="cursor-pointer user-select-none">Detalle técnico (Hacienda)</summary>
+              <summary class="cursor-pointer user-select-none">{{ 'country.tax.fe.emitFailedTechnicalDetail' | translate }}</summary>
               <pre class="mt-2 mb-0 p-2 bg-light rounded small text-break" style="white-space: pre-wrap;">{{ d.tecnico }}</pre>
             </details>
           }
@@ -31,7 +31,7 @@
 
 @if (erroresList.length) {
   <div class="alert alert-danger">
-    <strong class="d-block mb-2">No se pudo emitir el DTE debido a los siguientes errores:</strong>
+    <strong class="d-block mb-2">{{ 'country.tax.fe.emitFailedErrorsIntro' | translate }}</strong>
     <ul class="mt-2 mb-0 ps-3">
       @for (error of erroresList; track error || $index) {
         <li class="mb-1">

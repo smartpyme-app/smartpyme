@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, OnChanges, SimpleChanges, ViewChild, Output, EventEmitter, ChangeDetectionStrategy, ChangeDetectorRef, OnDestroy } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, SimpleChanges, ViewChild, Output, EventEmitter, ChangeDetectionStrategy, ChangeDetectorRef, OnDestroy, inject } from '@angular/core';
 import { DashboardDataService } from '../../services/dashboard-data.service';
 import { ApiService } from '@services/api.service';
 import {
@@ -27,6 +27,7 @@ import { LineChartComponent } from '../../components/line-chart/line-chart.compo
 import { BarChartComponent } from '../../components/bar-chart/bar-chart.component';
 import { AccountsListComponent } from '../../components/accounts-list/accounts-list.component';
 import { TreemapChartComponent } from '../../components/treemap-chart/treemap-chart.component';
+import { CountryI18nService } from '@services/country-i18n.service';
 
 @Component({
   selector: 'app-ventas',
@@ -50,6 +51,7 @@ import { TreemapChartComponent } from '../../components/treemap-chart/treemap-ch
   ]
 })
 export class VentasComponent implements OnInit, OnChanges, OnDestroy {
+  private readonly countryI18n = inject(CountryI18nService);
   public miTema = themeQuartz;
   public modules: any[] = [AllCommunityModule];
 
@@ -60,12 +62,12 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
     const m = this.datos?.metricasVentas || {};
     return [
       {
-        title: 'Ventas totales con IVA',
+        title: this.countryI18n.tax('salesTotalWithTax'),
         value: m.ventasConIVA || 0,
         type: 'currency'
       },
       {
-        title: 'Ventas totales sin IVA',
+        title: this.countryI18n.tax('salesTotalWithoutTax'),
         value: m.ventasSinIVA || 0,
         type: 'currency'
       },
@@ -579,7 +581,7 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
       },
       {
         field: 'ventasSinIva',
-        headerName: 'Ventas Sin IVA',
+        headerName: this.countryI18n.tax('salesWithoutTax'),
         width: 150,
         sortable: true,
         filter: true,
@@ -587,7 +589,7 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
       },
       {
         field: 'ventasConIva',
-        headerName: 'Ventas Con IVA',
+        headerName: this.countryI18n.tax('salesWithTax'),
         width: 150,
         sortable: true,
         filter: true,

@@ -1,10 +1,12 @@
-import { Component, Input, OnInit, OnChanges, Output, EventEmitter, ViewChild } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, Output, EventEmitter, ViewChild, inject } from '@angular/core';
 import { ColDef, GridOptions, GridApi, themeQuartz, AllCommunityModule } from 'ag-grid-community';
 import { AgGridAngular } from 'ag-grid-angular';
+import { TranslatePipe } from '@ngx-translate/core';
 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AgGridModule } from 'ag-grid-angular';
+import { CountryI18nService } from '@services/country-i18n.service';
 
 @Component({
   selector: 'app-finanzas',
@@ -14,10 +16,12 @@ import { AgGridModule } from 'ag-grid-angular';
   imports: [
     CommonModule,
     FormsModule,
-    AgGridModule
+    AgGridModule,
+    TranslatePipe
   ]
 })
 export class FinanzasComponent implements OnInit, OnChanges {
+  private readonly countryI18n = inject(CountryI18nService);
   public miTema = themeQuartz;
   public modules: any[] = [AllCommunityModule];
 
@@ -721,11 +725,11 @@ export class FinanzasComponent implements OnInit, OnChanges {
       labels: meses,
       data: [
         {
-          name: 'Ventas con IVA',
+          name: this.countryI18n.tax('salesWithTax'),
           data: ventasPorMes
         },
         {
-          name: 'Gastos con IVA',
+          name: this.countryI18n.tax('expensesWithTax'),
           data: gastosPorMes
         }
       ],

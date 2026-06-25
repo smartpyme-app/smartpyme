@@ -12,6 +12,7 @@ import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
 import { FacturacionElectronicaService } from '@services/facturacion-electronica/facturacion-electronica.service';
+import { CountryI18nService } from '@services/country-i18n.service';
 import {
   mensajeErrorHttpFeCr,
   type FeCrErrorEmisionPayload,
@@ -52,6 +53,7 @@ export type VentasExportPeriodoTipo = 'detalles' | 'ventas' | 'general';
 })
 export class VentasComponent extends BaseCrudComponent<any> implements OnInit, OnDestroy {
   private readonly facturacionElectronica = inject(FacturacionElectronicaService);
+  private readonly countryI18n = inject(CountryI18nService);
 
   private destroy$ = new Subject<void>();
   private searchSubject$ = new Subject<void>();
@@ -1343,7 +1345,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
       }
 
       if (this.facturacionElectronica.requiereFlujoEnviarDteSeparado()) {
-        this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
+        this.alertService.success(this.countryI18n.fe('emitSuccessTitle'), this.countryI18n.fe('emitSuccessBody'));
         this.saving = false;
         this.enviarDTE(this.venta);
       } else {
@@ -1419,7 +1421,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     this.sending = true;
     const payload = anulado ? { ...venta, documento: 'anulado' } : venta;
     this.apiService.store('enviarDTE', payload).subscribe(dte => {
-      this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
+      this.alertService.success(this.countryI18n.fe('sendSuccessTitle'), this.countryI18n.fe('sendSuccessBody'));
       this.sending = false;
       setTimeout(() => {
         this.modalRef?.hide();
@@ -1432,7 +1434,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     this.saving = true;
     this.facturacionElectronica.emitirDTEContingencia(this.venta).then((venta) => {
       this.venta = venta;
-      this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
+      this.alertService.success(this.countryI18n.fe('emitSuccessTitle'), this.countryI18n.fe('emitSuccessBody'));
       this.saving = false;
     }).catch((error) => {
       this.saving = false;
@@ -1573,7 +1575,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
               }, 3000);
             }
 
-            this.alertService.success('DTE anulado.', 'El DTE fue anulado exitosamente.');
+            this.alertService.success(this.countryI18n.fe('annulSuccessTitle'), this.countryI18n.fe('annulSuccessBody'));
           } else {
             this.venta.errores = dte;
             this.saving = false;
@@ -1632,7 +1634,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
           this.venta.dte.selloRecibido = dte.selloVal;
           this.venta.sello_mh = dte.selloVal;
           this.apiService.store('venta', this.venta).subscribe(data => {
-            this.alertService.success('Sello recibido', 'El DTE ha sido sellado.');
+            this.alertService.success(this.countryI18n.fe('stampSuccessTitle'), this.countryI18n.fe('stampSuccessBody'));
             if (this.venta.cliente_id) {
               this.enviarDTE(this.venta);
             }
@@ -1644,7 +1646,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
         }
         else if (dte) {
           this.consulting = false;
-          this.alertService.info('No se obtuvo el sello', 'El DTE no ha sido emitido.');
+          this.alertService.info(this.countryI18n.fe('noStampTitle'), this.countryI18n.fe('noStampBody'));
         } else {
           this.consulting = false;
           this.alertService.info('No se obtuvo el sello', 'Hacienda no devolvió el sello.');

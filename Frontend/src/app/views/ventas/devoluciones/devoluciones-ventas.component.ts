@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+﻿import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PipesModule } from '@pipes/pipes.module';
 import { FormsModule } from '@angular/forms';
@@ -19,6 +19,7 @@ import { PaginationComponent } from '@shared/parts/pagination/pagination.compone
 import { TruncatePipe } from '@pipes/truncate.pipe';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
+import { CountryI18nService } from '@services/country-i18n.service';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -30,6 +31,8 @@ import Swal from 'sweetalert2';
 })
 
 export class DevolucionesVentasComponent extends BaseCrudComponent<any> implements OnInit {
+
+    private readonly countryI18n = inject(CountryI18nService);
 
     public ventas:any = {};
     public id_venta: any = null;
@@ -310,7 +313,7 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
                 this.ventas.data[idx] = { ...doc };
             }
             if (this.facturacionElectronica.requiereFlujoEnviarDteSeparado()) {
-                this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
+                this.alertService.success(this.countryI18n.fe('emitSuccessTitle'), this.countryI18n.fe('emitSuccessBody'));
                 this.saving = false;
                 this.enviarDTE(this.venta);
             } else {
@@ -429,7 +432,7 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
             .pipe(this.untilDestroyed())
             .subscribe({
                 next: () => {
-                    this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
+                    this.alertService.success(this.countryI18n.fe('sendSuccessTitle'), this.countryI18n.fe('sendSuccessBody'));
                     this.sending = false;
                     setTimeout(() => {
                         this.closeModal();
@@ -453,7 +456,7 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
             return;
         }
         if (venta.dte) {
-            if (confirm('¿Confirma anular la devolución y el DTE?')) {
+            if (confirm(this.countryI18n.fe('annulReturnConfirm'))) {
                 this.venta = venta;
                 this.saving = true;
                 this.apiService.store('generarDTEAnulado', this.venta)
@@ -492,7 +495,7 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
                                                             });
                                                     }
 
-                                                    this.alertService.success('DTE anulado.', 'El DTE fue anulado exitosamente.');
+                                                    this.alertService.success(this.countryI18n.fe('annulSuccessTitle'), this.countryI18n.fe('annulSuccessBody'));
                                                 },
                                                 error: (error) => {
                                                     if (error.error.descripcionMsg) {

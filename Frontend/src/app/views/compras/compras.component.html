@@ -1,4 +1,4 @@
-<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+﻿<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Compras</h2>
     @if (apiService.canCreateTest('compras.crear')) {
         <button routerLink="/compra/crear" tooltip="Crear compra (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir compra</button>
@@ -173,13 +173,13 @@
                                 <div class="list-group border-0">
 
                                     @if (apiService.auth_user().empresa.facturacion_electronica && puedeEmitirFeCompra(compra) && compra.estado != 'Anulada' && !compra.sello_mh && !apiService.supervisorLimitadoRestringidoEnCompras()) {
-                                        <a class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, compra)" tooltip="Emitir DTE">
-                                            <i class="fa fa-fw fa-file-invoice"></i> Emitir DTE
+                                        <a class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, compra)" [tooltip]="'country.tax.fe.emit' | translate">
+                                            <i class="fa fa-fw fa-file-invoice"></i> {{ 'country.tax.fe.emit' | translate }}
                                         </a>
                                     }
                                     @if (apiService.auth_user().empresa.facturacion_electronica && puedeEmitirFeCompra(compra) && compra.sello_mh && !apiService.supervisorLimitadoRestringidoEnCompras()) {
-                                        <a class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, compra)" tooltip="Ver DTE">
-                                            <i class="fa fa-fw fa-file-invoice"></i> Ver DTE
+                                        <a class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, compra)" [tooltip]="'country.tax.fe.view' | translate">
+                                            <i class="fa fa-fw fa-file-invoice"></i> {{ 'country.tax.fe.view' | translate }}
                                         </a>
                                     }
 
@@ -434,7 +434,7 @@
             }
             @if (apiService.auth_user().empresa.facturacion_electronica) {
                 <div class="form-group col-sm-6">
-                    <label for="filtro.dte">Facturación electrónica (DTE):</label>
+                    <label for="filtro.dte">{{ 'country.tax.fe.filterLabel' | translate }}</label>
                     <select name="dts" class="form-select" [(ngModel)]="filtros.dte">
                         <option value="">Todos</option>
                         <option value="0">Sin emitir</option>
@@ -622,7 +622,7 @@
                     name="num_identificacion"
                     class="form-control"
                     id="num_identificacion"
-                    placeholder="Número de identificación">
+                    [placeholder]="'country.identity.placeholder' | translate">
                 </div>
             }
             <div class="form-group col-md-12">
@@ -647,7 +647,7 @@
 
 <ng-template #mDTE>
     <div class="modal-header d-block text-center">
-        <h5 class="modal-title mb-0">{{ esFeCostaRica() ? 'Comprobante electrónico (Costa Rica)' : 'DTE' }}</h5>
+        <h5 class="modal-title mb-0">{{ 'country.tax.fe.modalTitle' | translate }}</h5>
         <button type="button" class="btn-close" (click)="modalRef.hide(); alertService.modal = false; compra.errores = null;" aria-label="Close"></button>
     </div>
   <div class="modal-body">
@@ -701,7 +701,7 @@
             @if (!compra.sello_mh && !(esFeCostaRica() && compra.codigo_generacion)) {
                 <button [disabled]="saving" (click)="emitirDTE()" class="mb-3 btn btn-primary btn-block">
                     @if (!saving) {
-                        <span>{{ esFeCostaRica() ? 'Emitir comprobante' : 'Emitir' }}</span>
+                        <span>{{ 'country.tax.fe.emitButton' | translate }}</span>
                     }
                     @if (saving) {
                         <span>Emitiendo...</span>
@@ -883,7 +883,7 @@
               <table class="table table-sm mb-2">
                 <thead>
                   <tr>
-                    <th>Descripción DTE</th>
+                    <th>{{ 'country.tax.fe.descriptionColumn' | translate }}</th>
                     <th style="min-width: 220px;">Producto o servicio en sistema</th>
                   </tr>
                 </thead>
@@ -915,7 +915,7 @@
           <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 border-top pt-3">
             <div>
               <strong>Total:</strong> {{ item.compra.total | currency:'USD':'symbol':'1.2' }}
-              <span class="text-muted small ms-2">Sub: {{ item.compra.sub_total | currency:'USD':'symbol':'1.2' }} · IVA: {{ item.compra.iva | currency:'USD':'symbol':'1.2' }}</span>
+              <span class="text-muted small ms-2">Sub: {{ item.compra.sub_total | currency:'USD':'symbol':'1.2' }} · {{ 'country.tax.summaryTaxInline' | translate }} {{ item.compra.iva | currency:'USD':'symbol':'1.2' }}</span>
             </div>
             <button
               type="button"

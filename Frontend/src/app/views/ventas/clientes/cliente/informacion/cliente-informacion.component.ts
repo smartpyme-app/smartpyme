@@ -1,5 +1,6 @@
 import { Component, OnInit, TemplateRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { TranslatePipe } from '@ngx-translate/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -28,7 +29,7 @@ import { finalize } from 'rxjs/operators';
     selector: 'app-cliente-informacion',
     templateUrl: './cliente-informacion.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TagInputModule, LazyImageDirective],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TagInputModule, LazyImageDirective, TranslatePipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ClienteInformacionComponent extends BaseModalComponent implements OnInit {

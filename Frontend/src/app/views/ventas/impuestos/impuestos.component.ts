@@ -11,6 +11,7 @@ import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { FilterPipe } from '@pipes/filter.pipe';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { TranslatePipe } from '@ngx-translate/core';
 
 import Swal from 'sweetalert2';
 
@@ -18,7 +19,7 @@ import Swal from 'sweetalert2';
     selector: 'app-impuestos',
     templateUrl: './impuestos.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, FilterPipe, PaginationComponent, PopoverModule, TooltipModule],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, FilterPipe, PaginationComponent, PopoverModule, TooltipModule, TranslatePipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 

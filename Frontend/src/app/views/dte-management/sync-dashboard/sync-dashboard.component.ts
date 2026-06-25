@@ -7,12 +7,13 @@ import { AlertService } from '@services/alert.service';
 import { SyncLogService, SyncLogsResponse } from '@services/dte-management/sync-log.service';
 import { EmailAccountService } from '@services/dte-management/email-account.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-sync-dashboard',
   templateUrl: './sync-dashboard.component.html',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, NgSelectModule, PaginationComponent],
+  imports: [CommonModule, FormsModule, RouterModule, NgSelectModule, PaginationComponent, TranslatePipe],
 })
 export class SyncDashboardComponent implements OnInit {
   logs: SyncLogsResponse | null = null;

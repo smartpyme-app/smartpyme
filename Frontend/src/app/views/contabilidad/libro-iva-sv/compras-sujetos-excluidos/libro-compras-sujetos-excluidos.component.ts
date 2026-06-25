@@ -9,12 +9,13 @@ import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 
 import * as moment from 'moment';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
     selector: 'app-libro-compras-sujetos-excluidos',
     templateUrl: './libro-compras-sujetos-excluidos.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule],
+    imports: [CommonModule, RouterModule, FormsModule, TranslatePipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 

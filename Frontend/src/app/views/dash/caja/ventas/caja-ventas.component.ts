@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+﻿import { Component, OnInit, TemplateRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -6,6 +6,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
 import { FacturacionElectronicaService } from '@services/facturacion-electronica/facturacion-electronica.service';
+import { CountryI18nService } from '@services/country-i18n.service';
 import {
   mensajeErrorHttpFeCr,
   type FeCrErrorEmisionPayload,
@@ -21,15 +22,19 @@ import {
   esErrorTimeoutExport,
   mensajeErrorTimeoutExport,
 } from '../../../../helpers/export-period.helper';
+import { PipesModule } from '../../../../pipes/pipes.module';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 
 @Component({
     selector: 'app-caja-ventas',
     templateUrl: './caja-ventas.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, ImportarExcelComponent, AlertsHaciendaComponent],
+    imports: [CommonModule, RouterModule, FormsModule, ImportarExcelComponent, AlertsHaciendaComponent, PipesModule, TooltipModule],
 })
 
 export class CajaVentasComponent extends BaseCrudComponent<any> implements OnInit {
+
+    private readonly countryI18n = inject(CountryI18nService);
 
     public ventas: any = {};
     public venta:any = {};
@@ -313,7 +318,7 @@ export class CajaVentasComponent extends BaseCrudComponent<any> implements OnIni
         this.saving = true;
         this.facturacionElectronica.emitirDTE(this.venta).then((venta) => {
             this.venta = venta;
-            this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
+            this.alertService.success(this.countryI18n.fe('emitSuccessTitle'), this.countryI18n.fe('emitSuccessBody'));
             this.saving = false;
         }).catch((error: any) => {
             this.saving = false;
@@ -359,7 +364,7 @@ export class CajaVentasComponent extends BaseCrudComponent<any> implements OnIni
         this.apiService.store('enviarDTE', this.venta)
           .pipe(this.untilDestroyed())
           .subscribe(dte => {
-            this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
+            this.alertService.success(this.countryI18n.fe('sendSuccessTitle'), this.countryI18n.fe('sendSuccessBody'));
             this.sending = false;
             setTimeout(()=>{
                 if (this.modalRef) {
@@ -374,7 +379,7 @@ export class CajaVentasComponent extends BaseCrudComponent<any> implements OnIni
         this.saving = true;
         this.facturacionElectronica.emitirDTEContingencia(this.venta).then((venta) => {
             this.venta = venta;
-            this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
+            this.alertService.success(this.countryI18n.fe('emitSuccessTitle'), this.countryI18n.fe('emitSuccessBody'));
             this.saving = false;
         }).catch((error: unknown) => {
             this.saving = false;
@@ -463,7 +468,7 @@ export class CajaVentasComponent extends BaseCrudComponent<any> implements OnIni
             return;
         }
         if(venta.sello_mh){
-            if (confirm('¿Confirma anular la venta y el DTE?')) {
+            if (confirm(this.countryI18n.fe('annulSaleConfirm'))) {
                 this.venta = venta;
                 this.saving = true;
                 this.apiService.store('generarDTEAnulado', this.venta)
@@ -494,7 +499,7 @@ export class CajaVentasComponent extends BaseCrudComponent<any> implements OnIni
                                 },error => {this.alertService.error(error); this.saving = false; });
                             }
 
-                            this.alertService.success('DTE anulado.', 'El DTE fue anulado exitosamente.');
+                            this.alertService.success(this.countryI18n.fe('annulSuccessTitle'), this.countryI18n.fe('annulSuccessBody'));
                         }, (error: unknown) => {
                             const err = error as { error?: { descripcionMsg?: string; observaciones?: unknown[] } };
                             if (err.error?.descripcionMsg) {

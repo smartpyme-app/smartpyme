@@ -23,7 +23,7 @@ import { InventarioComponent } from './sections/inventario/inventario.component'
     VentasComponent,
     GastosComponent,
     ControlCuentasComponent,
-    InventarioComponent
+    InventarioComponent,
   ]
 })
 export class DashboardComponent implements OnInit, OnDestroy {

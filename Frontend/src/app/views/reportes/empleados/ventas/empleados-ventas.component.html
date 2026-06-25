@@ -87,7 +87,7 @@
                                 }
                             </td>
                             <td>
-                                <span tooltip="Sin IVA: {{ empleado.ventas_netas_mes | currency}}">{{empleado.ventas_brutas_mes | currency}}</span>
+                                <span [tooltip]="('country.tax.salesWithoutTaxTooltip' | translate:{ amount: (empleado.ventas_netas_mes | currency) })">{{empleado.ventas_brutas_mes | currency}}</span>
                             </td>
                         </tr>
                     }

@@ -58,8 +58,8 @@
                     <tr>
                         <th (click)="setOrden('nombre')" [ngClass]="{'sorted-asc': filtros.orden == 'nombre' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'nombre' && filtros.direccion == 'desc'}" class="click">Nombre</th>
                         <th>Teléfono</th>
-                        <th class="d-none d-md-table-cell">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'DUI' : 'Número de identificación' }}</th>
-                        <th class="d-none d-md-table-cell">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'NCR' : 'Registro tributario' }}</th>
+                        <th class="d-none d-md-table-cell">{{ 'country.identity.name' | translate }}</th>
+                        <th class="d-none d-md-table-cell">{{ 'country.tax.ncr' | translate }}</th>
                         <th class="d-none d-lg-table-cell">Tipo</th>
                         <th class="d-none d-lg-table-cell">Estado</th>
                         <th class="d-none d-md-table-cell">Crédito</th>

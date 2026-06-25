@@ -11,6 +11,7 @@ import { FilterPipe } from '@pipes/filter.pipe';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { CountryI18nService } from '@services/country-i18n.service';
 import { MHService } from '@services/MH.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { FuncionalidadesService } from '@services/functionalities.service';
@@ -22,13 +23,14 @@ import {
 } from '@services/facturacion-electronica/contribuyente-hacienda.mapper';
 import { forkJoin } from 'rxjs';
 import { map, distinctUntilChanged, finalize } from 'rxjs/operators';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
     selector: 'app-empresa',
     templateUrl: './empresa.component.html',
     styleUrls: ['./empresa.component.css'],
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, FilterPipe, TabsModule, NgxMaskDirective, LazyImageDirective],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, FilterPipe, TabsModule, NgxMaskDirective, LazyImageDirective, TranslatePipe],
 
 })
 export class EmpresaComponent implements OnInit, AfterViewInit {
@@ -114,6 +116,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         private route: ActivatedRoute, private router: Router, private modalService: BsModalService,
         private cdr: ChangeDetectorRef,
         private funcionalidadesService: FuncionalidadesService,
+        private countryI18n: CountryI18nService,
     ) { }
 
     ngOnInit() {
@@ -239,6 +242,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
             user = JSON.parse(localStorage.getItem('SP_auth_user')!);
             user.empresa = empresaGuardada;
             localStorage.setItem('SP_auth_user', JSON.stringify(user));
+            this.countryI18n.applyForEmpresa(empresaGuardada);
 
             if (resolveCodigoPaisFe(this.empresa) !== FE_PAIS_CR) {
                 if (this.empresa.fe_ambiente == '01') {
@@ -1854,8 +1858,8 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
             this.alertService.success(
                 'Configuración actualizada',
                 enabled
-                    ? 'Se mostrará la descripción del producto en los PDF de DTE (factura y CCF).'
-                    : 'Ya no se mostrará la descripción extendida del producto en los PDF de DTE.'
+                    ? this.countryI18n.fe('pdfProductDescriptionEnabledAlert')
+                    : this.countryI18n.fe('pdfProductDescriptionDisabledAlert')
             );
         });
     }
@@ -1897,7 +1901,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         this.onSubmit().then(() => {
             this.alertService.success(
                 'Configuración actualizada',
-                `Versión de facturación cambiada a ${version === 'v2' ? 'V2 (precios con IVA)' : 'Original'}`
+                `Versión de facturación cambiada a ${version === 'v2' ? this.countryI18n.tax('billingVersionV2Short') : 'Original'}`
             );
         });
     }

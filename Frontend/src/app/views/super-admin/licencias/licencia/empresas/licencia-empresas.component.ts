@@ -1,5 +1,6 @@
 import { Component, OnInit, TemplateRef, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { TranslatePipe } from '@ngx-translate/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { NgSelectModule } from '@ng-select/ng-select';
@@ -13,7 +14,7 @@ import { BaseCrudComponent } from '@shared/base/base-crud.component';
     selector: 'app-licencia-empresas',
     templateUrl: './licencia-empresas.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TranslatePipe],
 
 })
 export class LicenciaEmpresasComponent extends BaseCrudComponent<any> implements OnInit {

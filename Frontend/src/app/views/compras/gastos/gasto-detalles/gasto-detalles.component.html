@@ -1,4 +1,4 @@
-<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+﻿<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Gasto</h2>
     <button class="btn btn-light text-danger" (click)="goBack()"><i class="fa fa-arrow-left"></i> Regresar</button>
 </section>
@@ -66,7 +66,7 @@
                                 <th>Categoría</th>
                                 <th>Tipo</th>
                                 <th class="text-end">Sub total</th>
-                                <th class="text-end">IVA</th>
+                                <th class="text-end">{{ 'country.tax.taxLabel' | translate }}</th>
                                 <th class="text-end">Total</th>
                             </tr>
                         </thead>
@@ -111,7 +111,7 @@
                         <p>{{ gasto.sub_total | currency}}</p>
                     </div>
                     <div class="form-group col-md-4 col-lg-3">
-                        <label class="fw-medium">IVA:</label>
+                        <label class="fw-medium">{{ 'country.tax.taxLabelColon' | translate }}</label>
                         <p>{{ gasto.iva | currency}}</p>
                     </div>
                     <div class="form-group col-md-4 col-lg-3">
@@ -127,7 +127,7 @@
                           <p>{{ gasto.recurrente ? 'Si' : 'No' }}</p>
                     </div>
                     <div class="form-group col-md-4 col-lg-3">
-                          <label class="fw-medium">IVA</label>
+                          <label class="fw-medium">{{ 'country.tax.taxLabel' | translate }}</label>
                           <p>{{ gasto.iva ? 'Si' : 'No' }}</p>
                     </div>
                     <div class="form-group col-md-6 col-lg-3">

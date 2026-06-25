@@ -1,4 +1,4 @@
-<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+﻿<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Servicios</h2>
     <!-- <button *ngIf="apiService.canCreateTest('servicios.crear') ||  apiService.auth_user().tipo == 'Citas'" routerLink="/servicio/crear" [queryParams]="{ tipo:'Servicio' }" tooltip="Crear servicio (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir servicio</button> -->
     @if (apiService.canCreateTest('servicios.crear') || apiService.validateRole('usuario_citas', true)) {
@@ -65,8 +65,8 @@
                         <th>Producto</th>
                         <th class="d-none d-lg-table-cell">Estado</th>
                         <th class="d-none d-md-table-cell">Categoria</th>
-                        <th class="text-right">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'Precio sin IVA' : 'Precio sin Impuesto' }}</th>
-                        <th class="text-right">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'Precio con IVA' : 'Precio con Impuesto' }}</th>
+                        <th class="text-right">{{ 'country.tax.priceWithoutTax' | translate }}</th>
+                        <th class="text-right">{{ 'country.tax.priceWithTax' | translate }}</th>
                         @if (apiService.canEditTest('servicios.editar')) {
                             <th class="text-center">Más</th>
                         }

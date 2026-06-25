@@ -186,8 +186,8 @@
         <label class="form-label" for="selTipoDescargaConsumidor">Tipo de archivo</label>
         <select id="selTipoDescargaConsumidor" class="form-select" [(ngModel)]="tipoDescarga" name="tipoDescargaConsumidor">
             <option value="">Seleccione</option>
-            <option value="libro_excel">Libro de IVA (Excel)</option>
-            <option value="libro_pdf">Libro de IVA (PDF)</option>
+            <option value="libro_excel">{{ 'country.tax.libroIva.downloadBookExcel' | translate }}</option>
+            <option value="libro_pdf">{{ 'country.tax.libroIva.downloadBookPdf' | translate }}</option>
             <option *ngIf="isElSalvador" value="anexo_csv">Anexo CSV</option>
             <option *ngIf="isElSalvador" value="dtes_zip">DTEs factura consumidor final (JSON en ZIP)</option>
             <option *ngIf="isElSalvador" value="dtes_pdf_zip">DTEs factura consumidor final (PDF en ZIP)</option>

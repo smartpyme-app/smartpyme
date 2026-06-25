@@ -118,8 +118,8 @@
             </div>
             <div class="form-group col-lg-13">
                 <label for="impuesto.codigo_mh">Código tributo MH</label>
-                <input type="text" class="form-control" maxlength="5" [(ngModel)]="impuesto.codigo_mh" name="impuesto.codigo_mh" placeholder="Ej. 20 (IVA 13%)">
-                <small class="text-muted">Catálogo MH para facturación electrónica. IVA 13% = 20.</small>
+                <input type="text" class="form-control" maxlength="5" [(ngModel)]="impuesto.codigo_mh" name="impuesto.codigo_mh" [placeholder]="'country.tax.taxCatalogCodeExample' | translate">
+                <small class="text-muted">{{ 'country.tax.taxCatalogCodeHint' | translate }}</small>
             </div>
             <div class="bg-white rounded p-3 my-3">
                 <div class="row">

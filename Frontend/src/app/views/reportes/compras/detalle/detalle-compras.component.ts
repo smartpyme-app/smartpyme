@@ -6,6 +6,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '../../../../services/alert.service';
 import { ApiService } from '../../../../services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { TranslatePipe } from '@ngx-translate/core';
 
 declare var $:any;
 
@@ -13,7 +14,7 @@ declare var $:any;
     selector: 'app-detalle-compras',
     templateUrl: './detalle-compras.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule],
+    imports: [CommonModule, RouterModule, FormsModule, TranslatePipe],
     changeDetection: ChangeDetectionStrategy.OnPush,
     
 })

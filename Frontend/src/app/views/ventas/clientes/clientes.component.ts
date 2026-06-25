@@ -1,5 +1,6 @@
 import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { TranslatePipe } from '@ngx-translate/core';
 import { BsModalRef, BsModalService } from 'ngx-bootstrap/modal';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -19,7 +20,7 @@ import { FuncionalidadesService } from '@services/functionalities.service';
     selector: 'app-clientes',
     templateUrl: './clientes.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, ImportarExcelComponent, PaginationComponent, TruncatePipe, PopoverModule, TooltipModule, LazyImageDirective],
+    imports: [CommonModule, RouterModule, FormsModule, ImportarExcelComponent, PaginationComponent, TruncatePipe, PopoverModule, TooltipModule, LazyImageDirective, TranslatePipe],
     changeDetection: ChangeDetectionStrategy.OnPush,
 
 })

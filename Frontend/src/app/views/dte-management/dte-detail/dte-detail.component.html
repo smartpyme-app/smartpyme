@@ -1,5 +1,5 @@
 <section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
-  <h2 class="page-heading">Detalle DTE</h2>
+  <h2 class="page-heading">{{ 'country.tax.fe.detailPageTitle' | translate }}</h2>
   <div class="d-flex gap-2 flex-wrap">
     <button *ngIf="document?.json_path" class="btn btn-default" (click)="openVerJson(mjson)" tooltip="Ver JSON">
       <i class="fa fa-file-code"></i> Ver JSON
@@ -26,7 +26,7 @@
   <div class="card border-0 mb-3">
     <div class="card-body">
       <div class="row">
-        <h6 class="col-12">Información del DTE</h6>
+        <h6 class="col-12">{{ 'country.tax.fe.detailInfoTitle' | translate }}</h6>
         <div class="form-group col-lg-3">
           <label class="fw-medium">Tipo</label>
           <p>{{ dteTypeLabel(document.dte_type) }}</p>
@@ -88,8 +88,7 @@
   <div class="card border-0 mb-3" *ngIf="document.processing_status === 'pendiente_clasificacion'">
     <div class="card-body">
       <div class="alert alert-warning mb-0">
-        <strong>Pendiente clasificación:</strong> Algunos ítems del DTE no coinciden con productos del catálogo.
-        Puede cambiar el destino a &quot;Gasto&quot; si aplica, o clasificar productos desde compras tras procesar.
+        <strong>{{ 'country.tax.fe.pendingClassificationTitle' | translate }}</strong> {{ 'country.tax.fe.pendingClassificationBody' | translate }}
       </div>
     </div>
   </div>
@@ -112,7 +111,7 @@
 
   <div class="card border-0" *ngIf="document.validation_status === 'valid' && document.processing_status !== 'processed' && document.processing_status !== 'anulado'">
     <div class="card-body">
-      <h6 class="col-12 mb-3">Procesar DTE</h6>
+      <h6 class="col-12 mb-3">{{ 'country.tax.fe.processModalTitle' | translate }}</h6>
       <div class="row align-items-end">
         <div class="form-group col-md-4">
           <label class="fw-medium">Destino</label>
@@ -134,7 +133,7 @@
 
 <ng-template #mjson>
   <div class="modal-header">
-    <h4 class="modal-title">JSON del DTE</h4>
+    <h4 class="modal-title">{{ 'country.tax.fe.jsonModalTitle' | translate }}</h4>
     <button type="button" class="btn-close" (click)="closeModal()" aria-label="Close"></button>
   </div>
   <div class="modal-body p-0">
@@ -148,7 +147,7 @@
 
 <ng-template #mpdf>
   <div class="modal-header">
-    <h4 class="modal-title">PDF del DTE</h4>
+    <h4 class="modal-title">{{ 'country.tax.fe.pdfModalTitle' | translate }}</h4>
     <button type="button" class="btn-close" (click)="closeModal()" aria-label="Close"></button>
   </div>
   <div class="modal-body p-0">

@@ -25,7 +25,7 @@
           {{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
           @if (cliente.dui || cliente.nit || cliente.telefono || cliente.nrc) {
             <small class="text-muted d-block">
-              @if (cliente.dui) { <span>DUI: {{ cliente.dui }}</span> }
+              @if (cliente.dui) { <span>{{ 'country.identity.displayPrefix' | translate }} {{ cliente.dui }}</span> }
               @if (cliente.nit) { <span> · NIT: {{ cliente.nit }}</span> }
               @if (cliente.nrc && !cliente.nit) { <span> · NRC: {{ cliente.nrc }}</span> }
               @if (cliente.telefono) { <span> · Tel: {{ cliente.telefono }}</span> }

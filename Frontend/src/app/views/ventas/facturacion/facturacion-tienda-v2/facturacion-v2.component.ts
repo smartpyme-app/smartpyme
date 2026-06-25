@@ -1,6 +1,7 @@
 import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { CommonModule, DecimalPipe } from '@angular/common';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule } from '@angular/forms';
 import { NgSelectModule } from '@ng-select/ng-select';
@@ -25,6 +26,7 @@ import { FidelizacionService, PuntosDisponiblesInfo, ConfiguracionCliente } from
 import { MHService } from '@services/MH.service';
 import { RestauranteService } from '@services/restaurante.service';
 import Swal from 'sweetalert2';
+import { CountryI18nService } from '@services/country-i18n.service';
 import {
   acumularMontosImpuestosVenta,
   copiarImpuestosProductoAlDetalle,
@@ -52,7 +54,8 @@ import * as moment from 'moment';
     CrearClienteComponent,
     CrearProyectoComponent,
     MetodosDePagoComponent,
-    VentaDetallesV2Component
+    VentaDetallesV2Component,
+    TranslatePipe
   ],
   providers: [SumPipe],
 })
@@ -139,6 +142,7 @@ export class FacturacionV2Component implements OnInit {
     private funcionalidadesService: FuncionalidadesService,
     private restauranteService: RestauranteService,
     private fidelizacionService: FidelizacionService,
+    private countryI18n: CountryI18nService,
   ) {
     this.router.routeReuseStrategy.shouldReuseRoute = function () {
       return false;
@@ -655,7 +659,7 @@ export class FacturacionV2Component implements OnInit {
             // Solo procesar productos si el cliente existe
             this.procesarProductosOrdenCompra(ordenCompra.detalles);
           }else{
-            const labelDoc = this.apiService.auth_user()?.empresa?.pais === 'El Salvador' ? 'DUI o NIT' : 'Número de identificación o Identificación fiscal';
+            const labelDoc = this.countryI18n.t('country.identity.withTaxIdOrFiscal');
             Swal.fire({
               title: 'Cliente no encontrado',
               html: `
@@ -1579,7 +1583,7 @@ export class FacturacionV2Component implements OnInit {
         }
         if (this.impuestos.length === 0) {
           this.alertService.error(
-            'Debe configurar los impuestos en el módulo de finanzas antes de poder incluir IVA (con “Aplica en ventas” activo).'
+            this.countryI18n.tax('configureTaxBeforeIncludeVentas')
           );
           return;
         }
@@ -1898,8 +1902,8 @@ export class FacturacionV2Component implements OnInit {
         this.venta = venta;
         this.syncVentaCreditoConsignaFlagsFromEstado();
         this.alertService.success(
-          'DTE emitido.',
-          'El documento ha sido emitido.'
+          this.countryI18n.fe('emitSuccessTitle'),
+          this.countryI18n.fe('emitSuccessBody')
         );
         if (this.venta.id_cliente && this.facturacionElectronica.requiereFlujoEnviarDteSeparado()) {
             this.enviarDTE();
@@ -1949,11 +1953,11 @@ export class FacturacionV2Component implements OnInit {
     this.sending = true;
     this.apiService.store('enviarDTE', this.venta).subscribe(
       (dte) => {
-        this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
+        this.alertService.success(this.countryI18n.fe('sendSuccessTitle'), this.countryI18n.fe('sendSuccessBody'));
         this.sending = false;
       },
       (error) => {
-        this.alertService.error('DTE no pudo ser enviado por correo.');
+        this.alertService.error(this.countryI18n.fe('sendError'));
         this.sending = false;
       }
     );
