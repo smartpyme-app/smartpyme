@@ -14,6 +14,8 @@ use App\Models\Admin\Documento;
 use App\Models\Ventas\Clientes\Cliente;
 use Luecano\NumeroALetras\NumeroALetras;
 use Illuminate\Support\Facades\DB;
+use App\Services\FacturacionElectronica\CostaRica\CostaRicaFeComprobantePdfService;
+use App\Services\FacturacionElectronica\FacturacionElectronicaCountryResolver;
 // Usamos app('dompdf.wrapper') para evitar errores de Facade en producción
 
 use Auth;
@@ -27,6 +29,10 @@ class GenerarDocumentosController extends Controller
             $empresa = JWTAuth::parseToken()->authenticate()->empresa()->first();
 
             if ($empresa->facturacion_electronica && $empresa->fe_ambiente == '01') {
+                if (FacturacionElectronicaCountryResolver::codPais($empresa) === FacturacionElectronicaCountryResolver::CODIGO_COSTA_RICA) {
+                    return app(CostaRicaFeComprobantePdfService::class)->generarTicketImpresion((int) $id, $empresa);
+                }
+
                 $venta = Venta::where('id', $id)->with('detalles', 'cliente', 'empresa')->firstOrFail();
                 $documento = Documento::findOrFail($venta->id_documento);
 

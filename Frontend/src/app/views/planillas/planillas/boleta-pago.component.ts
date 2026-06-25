@@ -9,12 +9,13 @@ import { ApiService } from '@services/api.service';
 import { PlanillaConstants } from '../../../constants/planilla.constants';
 import { ActivatedRoute } from '@angular/router';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 
 @Component({
     selector: 'app-boleta-pago',
     templateUrl: './boleta-pago.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, TranslatePipe],
+    imports: [CommonModule, RouterModule, FormsModule, TranslatePipe, CurrencyPipe],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BoletaPagoComponent implements OnInit {

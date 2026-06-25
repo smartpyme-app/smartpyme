@@ -12,6 +12,7 @@ import { FuncionalidadesService } from '@services/functionalities.service';
 import { PlanillaConstants } from '../../../constants/planilla.constants';
 import { ConceptoPlanilla, ConfiguracionPlanillaService } from '@services/configuracion-planilla.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 
 import Swal from 'sweetalert2';
 
@@ -26,7 +27,7 @@ import Swal from 'sweetalert2';
       `,
     ],
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, PopoverModule, TooltipModule],
+    imports: [CommonModule, RouterModule, FormsModule, PopoverModule, TooltipModule, CurrencyPipe],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PlanillaDetalleComponent implements OnInit {

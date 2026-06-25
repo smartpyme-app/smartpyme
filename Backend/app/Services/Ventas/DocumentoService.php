@@ -10,6 +10,8 @@ use Luecano\NumeroALetras\NumeroALetras;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Illuminate\Support\Facades\Auth;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
+use App\Services\FacturacionElectronica\CostaRica\CostaRicaFeComprobantePdfService;
+use App\Services\FacturacionElectronica\FacturacionElectronicaCountryResolver;
 
 class DocumentoService
 {
@@ -27,6 +29,10 @@ class DocumentoService
 
         // Si tiene facturación electrónica en producción
         if ($empresa->facturacion_electronica && $empresa->fe_ambiente == '01') {
+            if (FacturacionElectronicaCountryResolver::codPais($empresa) === FacturacionElectronicaCountryResolver::CODIGO_COSTA_RICA) {
+                return app(CostaRicaFeComprobantePdfService::class)->generarTicketImpresion($ventaId, $empresa);
+            }
+
             return $this->generarDTE($ventaId, $empresa);
         }
 
