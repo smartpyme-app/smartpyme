@@ -6,12 +6,13 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 
 @Component({
     selector: 'app-corte',
     templateUrl: './corte.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, CurrencyPipe],
     changeDetection: ChangeDetectionStrategy.OnPush,
     
 })

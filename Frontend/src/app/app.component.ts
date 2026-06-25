@@ -71,7 +71,7 @@ export class AppComponent implements OnInit {
         this.chatService.resetChat();
         this.usuario = this.apiService.auth_user();
         if (this.apiService.autenticated()) {
-            this.countryI18n.applyForEmpresa(this.usuario?.empresa);
+            this.countryI18n.applyForEmpresa(this.usuario?.empresa).subscribe();
         }
 
         // Cargar constantes si no están disponibles

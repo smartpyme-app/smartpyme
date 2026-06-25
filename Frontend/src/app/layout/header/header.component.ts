@@ -70,6 +70,11 @@ export class HeaderComponent implements OnInit {
         this.router.navigate(['/usuario', encryptedId]);
     }
 
+    cerrarSesion(): void {
+        this.apiService.logout();
+        this.router.navigate(['/login']);
+    }
+
     public fullscreen() {
         if (!this.isfullscreen) {
             if (this.elem.requestFullscreen)

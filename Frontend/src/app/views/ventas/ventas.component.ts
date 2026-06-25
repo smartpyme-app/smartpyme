@@ -40,6 +40,7 @@ import {
   mensajeErrorTimeoutExport,
   validarPeriodoExport,
 } from '../../helpers/export-period.helper';
+import { FE_PAIS_SV, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
 
 export type VentasExportPeriodoTipo = 'detalles' | 'ventas' | 'general';
 
@@ -244,6 +245,10 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
 
   protected aplicarFiltros(): void {
     this.filtrarVentas();
+  }
+
+  esFacturacionElSalvador(): boolean {
+    return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_SV;
   }
 
   ngOnInit() {

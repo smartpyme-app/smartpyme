@@ -617,7 +617,7 @@ export class ApiService {
                 u.empresa = empresa;
                 localStorage.setItem('SP_auth_user', JSON.stringify(u));
                 // Lazy: evita ciclo HTTP_INTERCEPTORS → ApiService → TranslateService → HttpClient
-                this.injector.get(CountryI18nService).applyForEmpresa(empresa);
+                this.injector.get(CountryI18nService).applyForEmpresa(empresa).subscribe();
                 return undefined;
             }),
             catchError(() => of(undefined))

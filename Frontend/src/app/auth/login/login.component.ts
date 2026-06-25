@@ -77,10 +77,7 @@ export class LoginComponent implements OnInit {
                     }
 
                     this.apiService.loadData();
-                    setTimeout(() => {
-                        this.router.navigate([returnUrl]);
-                    }, 100);
-
+                    this.router.navigate([returnUrl]);
                     this.loading = false;
                 },
                 error: (error) => {

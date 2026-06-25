@@ -49,7 +49,7 @@
                         <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/suscripcion']" tooltip="Mi suscripción" [adaptivePosition]="false" placement="right" class="dropdown-item click link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/star.png" class="icon me-2">Mi suscripción</a></li>
                     }
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/mi-cuenta']" tooltip="Mi cuenta" [adaptivePosition]="false" placement="right" class="dropdown-item click link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/settings.png" class="icon me-2">Mi cuenta</a></li>
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/login']" tooltip="Cerrar sesión" [adaptivePosition]="false" placement="right" class="dropdown-item click link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/log-out.png" class="icon me-2">Cerrar sesión</a></li>
+                    <li><a (click)="cerrarSesion()" tooltip="Cerrar sesión" [adaptivePosition]="false" placement="right" class="dropdown-item click link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/log-out.png" class="icon me-2">Cerrar sesión</a></li>
                 </ul>
             </li>
         </ul>

@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { CountryI18nService } from '@services/country-i18n.service';
 import { SpeedDialComponent } from '../shared/speed-dial/speed-dial.component';
 import { ChatDrawerComponent } from '../shared/chat/chat-drawer.component';
 import { HeaderComponent } from './header/header.component';
@@ -66,11 +67,13 @@ export class LayoutComponent implements OnInit {
     public alertService: AlertService,
     private router: Router,
     private dteDocumentService: DteDocumentService,
-    private funcionalidadesService: FuncionalidadesService
+    private funcionalidadesService: FuncionalidadesService,
+    private countryI18n: CountryI18nService
   ) {}
 
   ngOnInit() {
     this.usuario = this.apiService.auth_user();
+    this.countryI18n.applyForEmpresa(this.usuario?.empresa).subscribe();
     this.mostrarAlertaSuscripcion();
 
     this.getAlertSuscription();

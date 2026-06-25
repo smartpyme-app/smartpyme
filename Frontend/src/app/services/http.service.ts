@@ -1,9 +1,10 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject, Injector } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpErrorResponse } from '@angular/common/http';
 import { map, catchError, retry, timeout, switchMap } from 'rxjs/operators';
-import { Observable, throwError, from } from 'rxjs';
+import { Observable, throwError, from, of } from 'rxjs';
 import { environment } from './../../environments/environment';
 import { AlertService } from '@services/alert.service';
+import { CountryI18nService } from '@services/country-i18n.service';
 
 @Injectable({
   providedIn: 'root'
@@ -12,6 +13,7 @@ export class HttpService {
   public appUrl: string = environment.APP_URL;
   public baseUrl: string = environment.API_URL;
   public apiUrl = this.baseUrl + '/api/';
+  private injector = inject(Injector);
 
   constructor(
     private http: HttpClient,
@@ -268,12 +270,15 @@ export class HttpService {
 
   getUserData(userId: number): Observable<any> {
     return this.http.get<any>(`${this.apiUrl}me/${userId}`).pipe(
-      map((response: any) => {
-        if (response && response.user) {
+      switchMap((response: any) => {
+        if (response?.user) {
           localStorage.setItem('SP_auth_user', JSON.stringify(response.user));
-          return response.user;
+          return this.injector
+            .get(CountryI18nService)
+            .applyForEmpresa(response.user.empresa)
+            .pipe(map(() => response.user));
         }
-        return null;
+        return of(null);
       }),
       catchError(this.handleError)
     );

@@ -1,7 +1,7 @@
 import { Injectable, inject, Injector } from '@angular/core';
 import { HttpResponse } from '@angular/common/http';
-import { map } from 'rxjs/operators';
-import { Observable } from 'rxjs';
+import { map, switchMap, tap } from 'rxjs/operators';
+import { Observable, of } from 'rxjs';
 import { HttpService } from '@services/http.service';
 import { PermissionService } from '@services/permission.service';
 import { ConstantsService } from '@services/constants.service';
@@ -21,22 +21,23 @@ export class AuthService {
 
   login(user: any): Observable<any> {
     return this.httpService.store('login', user).pipe(
-      map((response: HttpResponse<any>) => {
-        let data: any = response;
-        if (data.token && data.user) {
-          localStorage.setItem('SP_token', JSON.stringify(data.token));
-          localStorage.setItem('SP_auth_user', JSON.stringify(data.user));
-
-          // Locale según empresa (sin esto queda el idioma de la sesión anterior en memoria)
-          this.injector.get(CountryI18nService).applyForEmpresa(data.user.empresa);
-
-          // Cargar permisos después del login
+      switchMap((response: HttpResponse<any>) => {
+        const data: any = response;
+        if (!data.token || !data.user) {
+          return of(data);
+        }
+        localStorage.setItem('SP_token', JSON.stringify(data.token));
+        localStorage.setItem('SP_auth_user', JSON.stringify(data.user));
+        return this.injector
+          .get(CountryI18nService)
+          .applyForEmpresa(data.user.empresa)
+          .pipe(map(() => data));
+      }),
+      tap((data: any) => {
+        if (data?.token && data?.user) {
           this.permissionService.loadUserPermissions(data.user.id);
-
-          // Cargar constantes usando ConstantsService
           this.loadConstants();
         }
-        return data;
       })
     );
   }
@@ -66,7 +67,7 @@ export class AuthService {
     }
     localStorage.clear();
     this.permissionService.clearPermissions();
-    this.injector.get(CountryI18nService).applyForEmpresa(null);
+    this.injector.get(CountryI18nService).applyForEmpresa(null).subscribe();
   }
 
   autenticated(): boolean {

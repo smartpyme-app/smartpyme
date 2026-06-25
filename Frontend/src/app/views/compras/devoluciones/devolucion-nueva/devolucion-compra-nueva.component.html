@@ -85,10 +85,12 @@
                             <td class="text-right"> <b>Percepción (1%)</b></td>
                             <td width="70px" class="text-right"> {{ devolucion.iva_percibido | currency}} </td>
                         </tr>
-                        <tr *ngIf="compra.tipo_documento == 'Sujeto excluido' && devolucion.renta">
+                        @if (compra.tipo_documento == 'Sujeto excluido' && devolucion.renta) {
+                        <tr>
                             <td class="text-right"> <b>Ret. Renta (10%)</b></td>
                             <td width="70px" class="text-right"> {{ devolucion.renta_retenida | currency}} </td>
                         </tr>
+                        }
                         <!--  <tr>
                             <td class="text-right">
                                 <div class="form-check form-switch w-100">
@@ -138,12 +140,14 @@
                   <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="devolucion.cobrar_percepcion" name="devolucion.cobrar_percepcion">
                 </div>
             </div>
-            <div *ngIf="compra.tipo_documento == 'Sujeto excluido'" class="form-group col-md-6 col-lg-3 without-label">
+            @if (compra.tipo_documento == 'Sujeto excluido') {
+            <div class="form-group col-md-6 col-lg-3 without-label">
                 <div class="form-switch bg-light-info rounded">
                   <label for="renta">Renta</label>
                   <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="devolucion.renta" name="devolucion.renta">
                 </div>
             </div>
+            }
         </div>
     </section>
     <div class="card-body">

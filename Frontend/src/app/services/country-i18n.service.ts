@@ -1,5 +1,7 @@
 import { Injectable, inject, Injector } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
+import { EMPTY, Observable, Subject, Subscriber } from 'rxjs';
+import { catchError, switchMap, tap } from 'rxjs/operators';
 import { resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
 
 /** Locales con archivo en assets/i18n/es-{cod}.json */
@@ -9,6 +11,32 @@ const SUPPORTED_LOCALES = new Set(['SV', 'CR', 'GT', 'HN']);
 export class CountryI18nService {
   private injector = inject(Injector);
   static readonly FALLBACK_LOCALE = 'es-SV';
+
+  private readonly applySubject = new Subject<{ locale: string; sub: Subscriber<unknown> }>();
+
+  constructor() {
+    this.applySubject
+      .pipe(
+        switchMap(({ locale, sub }) => {
+          const translate = this.injector.get(TranslateService);
+          const op =
+            translate.getCurrentLang() === locale
+              ? translate.reloadLang(locale)
+              : translate.use(locale);
+          return op.pipe(
+            tap({
+              next: (v) => {
+                sub.next(v);
+                sub.complete();
+              },
+              error: (e) => sub.error(e),
+            }),
+            catchError(() => EMPTY)
+          );
+        })
+      )
+      .subscribe();
+  }
 
   private translate(): TranslateService {
     return this.injector.get(TranslateService);
@@ -22,10 +50,14 @@ export class CountryI18nService {
     return SUPPORTED_LOCALES.has(cod) ? `es-${cod}` : CountryI18nService.FALLBACK_LOCALE;
   }
 
+  /** Cambia locale; cancela applies anteriores (evita que un reset SV pise un login CR). */
   applyForEmpresa(
     empresa?: { cod_pais?: string | null; pais?: string | null } | null
-  ): void {
-    this.translate().use(this.localeFromEmpresa(empresa));
+  ): Observable<unknown> {
+    const locale = this.localeFromEmpresa(empresa);
+    return new Observable((observer) => {
+      this.applySubject.next({ locale, sub: observer });
+    });
   }
 
   /** Atajo tipado para mensajes en TypeScript. */
