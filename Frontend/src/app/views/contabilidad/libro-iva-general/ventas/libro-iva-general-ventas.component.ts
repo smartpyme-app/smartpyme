@@ -7,6 +7,7 @@ import { LibroIvaGeneralNavComponent } from '@views/contabilidad/libro-iva-gener
 import { LibroIvaPeriodoFiltrosComponent } from '@views/contabilidad/libro-iva-shared/libro-iva-periodo-filtros.component';
 import { LibroIvaPaisService } from '@views/contabilidad/libro-iva-shared/libro-iva-pais.service';
 import {
+  aplicarPrimeraSucursalLibroIva,
   aplicarRangoMesLibroIva,
   crearAniosLibroIva,
   crearFiltrosLibroIvaIniciales,
@@ -41,12 +42,16 @@ export class LibroIvaGeneralVentasComponent implements OnInit {
     }
     this.years = crearAniosLibroIva();
     this.filtros = crearFiltrosLibroIvaIniciales();
-    this.loadData();
     this.apiService.getAll('sucursales/list').subscribe(
       (sucursales) => {
         this.sucursales = sucursales;
+        aplicarPrimeraSucursalLibroIva(this.filtros, sucursales as Array<{ id?: unknown }>);
+        this.loadData();
       },
-      (error) => this.alertService.error(error)
+      (error) => {
+        this.alertService.error(error);
+        this.loadData();
+      }
     );
   }
 

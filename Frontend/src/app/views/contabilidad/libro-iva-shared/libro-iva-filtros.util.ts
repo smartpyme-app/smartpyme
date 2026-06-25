@@ -20,6 +20,20 @@ export function crearFiltrosLibroIvaIniciales(): Record<string, unknown> {
   };
 }
 
+/** Si no hay sucursal elegida, usa la primera de la lista (p. ej. libros IVA CR). */
+export function aplicarPrimeraSucursalLibroIva(
+  filtros: Record<string, unknown>,
+  sucursales: Array<{ id?: unknown }> | null | undefined
+): void {
+  if (filtros['id_sucursal'] !== '' && filtros['id_sucursal'] != null) {
+    return;
+  }
+  const primera = sucursales?.[0];
+  if (primera?.id != null) {
+    filtros['id_sucursal'] = primera.id;
+  }
+}
+
 export function aplicarRangoMesLibroIva(filtros: Record<string, unknown>): void {
   const anio = Number(filtros['anio']);
   const mes = Number(filtros['mes']);
