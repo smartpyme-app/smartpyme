@@ -28,7 +28,7 @@ import { firstValueFrom } from 'rxjs';
 import * as moment from 'moment';
 import { DetalleComprasComponent } from '@views/reportes/compras/detalle/detalle-compras.component';
 import Swal from 'sweetalert2';
-import { FE_PAIS_CR, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
+import { FE_PAIS_CR, FE_PAIS_SV, esElSalvadorFe as empresaEsElSalvador, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
 import {
     esTipoFacturaElectronicaCompraCr,
     NOMBRE_DOCUMENTO_CR,
@@ -130,6 +130,11 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
     private get importedLabelDefault(): string {
         return this.countryI18n.fe('importedLabel');
     }
+
+    esElSalvadorFe(): boolean {
+        return empresaEsElSalvador(this.apiService.auth_user()?.empresa);
+    }
+
     public documentoImportService = inject(DocumentoImportService);
     private proveedorDesdeEmisor = inject(ProveedorDesdeEmisorService);
 

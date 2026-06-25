@@ -24,7 +24,7 @@ import * as moment from 'moment';
 import { LazyImageDirective } from '../../../../directives/lazy-image.directive';
 import { firstValueFrom, forkJoin } from 'rxjs';
 import { DocumentoImportService } from '@services/compras/documento-import.service';
-import { FE_PAIS_CR, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
+import { FE_PAIS_CR, esElSalvadorFe as empresaEsElSalvador, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
 import {
   esTipoFacturaElectronicaCompraCr,
   NOMBRE_DOCUMENTO_CR,
@@ -111,6 +111,10 @@ export class GastoComponent implements OnInit {
       this.loadAll();
       this.cdr.markForCheck();
     }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
+  }
+
+  esElSalvadorFe(): boolean {
+    return empresaEsElSalvador(this.apiService.auth_user()?.empresa);
   }
 
 	ngOnInit(){

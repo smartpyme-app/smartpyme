@@ -12,6 +12,7 @@ import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { DevolucionCompraDetallesComponent } from './detalles/devolucion-compra-detalles.component';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { esElSalvadorFe as empresaEsElSalvador } from '@services/facturacion-electronica/fe-pais.util';
 
 @Component({
     selector: 'app-devolucion-compra-nueva',
@@ -44,6 +45,10 @@ export class DevolucionCompraNuevaComponent extends BaseModalComponent implement
     ) {
         super(modalManager, alertService);
         this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
+    }
+
+    esElSalvadorFe(): boolean {
+        return empresaEsElSalvador(this.apiService.auth_user()?.empresa);
     }
 
     ngOnInit() {

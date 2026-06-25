@@ -13,6 +13,7 @@ import { EditarAbonoComponent } from '@shared/modals/editar-abono/editar-abono.c
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { esElSalvadorFe as empresaEsElSalvador } from '@services/facturacion-electronica/fe-pais.util';
 import { BaseComponent } from '@shared/base/base.component';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
 
@@ -38,6 +39,10 @@ export class CompraComponent extends BaseComponent implements OnInit {
     ) {
         super();
         // this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
+    }
+
+    esElSalvadorFe(): boolean {
+        return empresaEsElSalvador(this.apiService.auth_user()?.empresa);
     }
 
     ngOnInit() {

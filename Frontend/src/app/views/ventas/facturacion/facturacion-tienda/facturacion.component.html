@@ -540,6 +540,7 @@
                 <option value="Mixta">Mixta</option>
             </select>
         </div>
+        @if (esFacturacionElSalvador()) {
         <div class="form-group col-6 col-lg-4">
             <label for="filtro.tipo_renta">Tipo de ingreso:</label>
             <select name="tipo_renta" class="form-select" [(ngModel)]="venta.tipo_renta">
@@ -558,6 +559,7 @@
                 <option value="Sujetos pasivos excluidos">Sujetos pasivos excluidos</option>
             </select>
         </div>
+        }
     </div>
     <div class="row mt-5">
         <div class="col-md-12">

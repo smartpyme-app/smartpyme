@@ -232,10 +232,10 @@
                         </tr>
                     }
                     @if (venta?.renta_retenida > 0) {
-                        <tr>
+                    <tr>
                         <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end"><b>Renta (10%)</b></td>
                             <td class="text-end"><b>{{ venta?.renta_retenida | currency }}</b></td>
-                        </tr>
+                    </tr>
                     }
                     @if (venta?.exenta > 0) {
                         <tr>

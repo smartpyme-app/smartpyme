@@ -15,6 +15,7 @@ import { CrearProveedorComponent } from '@shared/modals/crear-proveedor/crear-pr
 import { CrearProyectoComponent } from '@shared/modals/crear-proyecto/crear-proyecto.component';
 import { CompraDetallesComponent } from '@views/compras/facturacion/detalles/compra-detalles.component';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { esElSalvadorFe as empresaEsElSalvador } from '@services/facturacion-electronica/fe-pais.util';
 import { LazyImageDirective } from '../../../../../directives/lazy-image.directive';
 
 @Component({
@@ -69,6 +70,10 @@ export class OrdenCompraFormComponent implements OnInit {
     this.ordenCompraForm.valueChanges
       .pipe(this.untilDestroyed())
       .subscribe(() => this.sumTotal())
+  }
+
+  esElSalvadorFe(): boolean {
+    return empresaEsElSalvador(this.apiService.auth_user()?.empresa);
   }
 
   ngOnInit(): void {

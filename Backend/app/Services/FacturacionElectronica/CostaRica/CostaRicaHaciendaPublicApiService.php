@@ -147,7 +147,7 @@ final class CostaRicaHaciendaPublicApiService
                     'ok' => false,
                     'status' => 502,
                     'data' => [
-                        'error' => 'El Ministerio de Hacienda no devolvió datos en formato esperado (respuesta bloqueada o página de error). Espere unos minutos, evite muchas búsquedas seguidas o pruebe desde otra red. Si persiste, consulte facturati@hacienda.go.cr o seguridaddigital@hacienda.go.cr.',
+                        'error' => 'Hacienda no respondió. Reintente en unos minutos o ingrese la actividad económica manualmente.',
                         'code' => 'hacienda_html_response',
                     ],
                 ];
@@ -164,7 +164,7 @@ final class CostaRicaHaciendaPublicApiService
                     'ok' => false,
                     'status' => 502,
                     'data' => [
-                        'error' => 'Respuesta de Hacienda no es JSON válido.',
+                        'error' => 'Hacienda devolvió una respuesta inválida. Intente más tarde.',
                         'code' => 'hacienda_invalid_json',
                     ],
                 ];
@@ -188,7 +188,8 @@ final class CostaRicaHaciendaPublicApiService
                 'ok' => false,
                 'status' => 503,
                 'data' => [
-                    'error' => 'No se pudo contactar la API de Hacienda. Intente más tarde.',
+                    'error' => 'No se pudo contactar a Hacienda. Intente más tarde.',
+                    'code' => 'hacienda_unreachable',
                 ],
             ];
         }

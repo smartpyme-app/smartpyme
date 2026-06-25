@@ -193,7 +193,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
             }
 
             //Se cargan las facturas cuando ya se ha inicializado la empresa
-            if (this.empresa && this.empresa.fe_ambiente === '00' && resolveCodigoPaisFe(this.empresa) !== FE_PAIS_CR) {
+            if (this.empresa && this.empresa.fe_ambiente === '00' && this.esElSalvadorFe()) {
                 this.cargarEstadisticasPruebas();
                 // this.cargarDocumentosBase();
             }
@@ -242,7 +242,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
             user = JSON.parse(localStorage.getItem('SP_auth_user')!);
             user.empresa = empresaGuardada;
             localStorage.setItem('SP_auth_user', JSON.stringify(user));
-            this.countryI18n.applyForEmpresa(empresaGuardada);
+            this.countryI18n.applyForEmpresa(empresaGuardada).subscribe();
 
             if (resolveCodigoPaisFe(this.empresa) !== FE_PAIS_CR) {
                 if (this.empresa.fe_ambiente == '01') {
@@ -881,8 +881,10 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
     }
 
     cargarEstadisticasPruebas() {
-        if (this.empresa.fe_ambiente == '00') {
-            this.mhService.obtenerEstadisticasPruebasMasivas()
+        if (!this.esElSalvadorFe() || this.empresa.fe_ambiente != '00') {
+            return;
+        }
+        this.mhService.obtenerEstadisticasPruebasMasivas()
                 .pipe(this.untilDestroyed())
                 .subscribe(
                 (data) => {
@@ -897,7 +899,6 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
                     this.cdr.markForCheck();
                 }
             );
-        }
     }
 
     getKeysPruebas(): string[] {
@@ -993,6 +994,9 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
     }
 
     cargarDocumentosBase() {
+        if (!this.esElSalvadorFe()) {
+            return;
+        }
         // Llamar al endpoint con el tipo específico
         const endpoint = `mh/pruebas-masivas/documentos-base?tipo=${this.tipoSeleccionado}`;
 
@@ -1014,6 +1018,9 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
 
     // Modifica este método para que abra el modal
     ejecutarPruebasMasivas(template: TemplateRef<any>, tipo: string) {
+        if (!this.esElSalvadorFe()) {
+            return;
+        }
         this.tipoSeleccionado = tipo;
 
         // Verificar si se pueden generar notas
@@ -1046,6 +1053,9 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
 
     // Método para confirmar y ejecutar la emisión
     confirmarEjecucion() {
+        if (!this.esElSalvadorFe()) {
+            return;
+        }
         this.modalRef.hide();
         this.procesando = true;
         this.cdr.markForCheck();

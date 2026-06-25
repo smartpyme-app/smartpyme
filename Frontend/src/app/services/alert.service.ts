@@ -109,6 +109,14 @@ export class AlertService {
                 mensaje: errorMessage,
             });
         }
+        else if(message.status == 502 || message.status == 503) {
+            const body = message.error ?? {};
+            const mensaje = typeof body.error === 'string'
+                ? body.error
+                : this.normalizeUnknownError(message);
+            const titulo = body.code === 'hacienda_html_response' ? 'Hacienda' : 'Lo sentimos';
+            this.alertSubject.next({ tipo: 'alert-warning', titulo, mensaje });
+        }
         else if(message.status == 500) {
             const mensaje = message.error?.message
                 ? message.error.message

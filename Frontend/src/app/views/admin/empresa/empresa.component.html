@@ -301,6 +301,7 @@
             </div>
 
                 <div class="row">
+                    @if (esElSalvadorFe()) {
                     <h6 class="my-3">Configuraciones de renta</h6>
                     <div class="alert alert-info">
                         <p>
@@ -368,7 +369,6 @@
                         <option value="Servicios, profesiones, artes y oficios">Servicios profesiones, artes y oficios</option>
                     </select>
                 </div>
-            </div>
             <div class="bg-white rounded p-3 mb-5">
                 <div class="form-group col-sm-12 pt-2 pb-4">
                     <button type="button" (click)="setCamposRenta()" [disabled]="saving || !empresa.tipo_sector || !empresa.tipo_renta_servicios || !empresa.tipo_renta_productos" class="btn btn-primary float-end tcla-F8" tooltip="Guardar (F8)">
@@ -380,6 +380,8 @@
                         }
                     </button>
                 </div>
+            </div>
+            }
             </div>
             </section>
         </form>
@@ -1207,7 +1209,7 @@
 
          <!-- Pruebas masivas -->
 
-         @if (empresa.fe_ambiente == '00' && !esCostaRicaFe()) {
+         @if (empresa.fe_ambiente == '00' && esElSalvadorFe()) {
            <section class="bg-white rounded p-4 mb-3">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h5 class="mb-0"><i class="fa fa-rocket me-2"></i> Pruebas Masivas de Documentos</h5>
