@@ -64,13 +64,13 @@
                     (selectionChange)="onFiltroCatProductoChange($event)">
                 </app-dropdown-multi-filtro>
             </div>
-            <div class="col-12 col-md-6 col-xl-4">
+            <!-- <div class="col-12 col-md-6 col-xl-4">
                 <app-dropdown-multi-filtro label="Producto" pluralLabel="productos" [items]="filtroAdProductosItems"
                     [mostrarBuscador]="true" [limiteVistaInicial]="100" buscadorPlaceholder="Buscar producto"
                     [todasImplicitas]="filtroProdTodasImplicitas" [seleccionados]="filtroProdSeleccionadas"
                     (selectionChange)="onFiltroProdListaChange($event)">
                 </app-dropdown-multi-filtro>
-            </div>
+            </div> -->
         </div>
     </ng-template>
     <!-- Filtros específicos de Ventas -->
@@ -420,7 +420,8 @@
                                         <div
                                             class="d-flex flex-wrap gap-2 align-items-center justify-content-end w-100">
                                             <!-- Buscador global -->
-                                            <div class="input-group" style="flex: 1 1 200px; max-width: 350px; min-width: 200px;">
+                                            <div class="input-group"
+                                                style="flex: 1 1 200px; max-width: 350px; min-width: 200px;">
                                                 <span class="input-group-text bg-white border-end-0">
                                                     <i class="fas fa-search text-muted"></i>
                                                 </span>
@@ -505,7 +506,8 @@
                                         <div
                                             class="d-flex flex-wrap gap-2 align-items-center justify-content-end w-100">
                                             <!-- Buscador global -->
-                                            <div class="input-group" style="flex: 1 1 200px; max-width: 350px; min-width: 200px;">
+                                            <div class="input-group"
+                                                style="flex: 1 1 200px; max-width: 350px; min-width: 200px;">
                                                 <span class="input-group-text bg-white border-end-0">
                                                     <i class="fas fa-search text-muted"></i>
                                                 </span>

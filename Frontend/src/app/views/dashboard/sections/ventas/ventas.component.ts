@@ -623,6 +623,10 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
         this.clienteGridApi = params.api;
         this.clienteGridColumnApi = params.columnApi;
       },
+      onRowDataUpdated: () => {
+        this.recalcularTotalesVentasCliente();
+        this.cdr.markForCheck();
+      },
       onFilterChanged: () => {
         this.onFilterChangedVentasCliente();
       },
@@ -1099,8 +1103,6 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   limpiarFiltros(): void {
-    this.anio = new Date().getFullYear().toString();
-    this.mes = '';
     this.limpiarFiltrosInteractivos();
     this.filtroAdSucursalTodasImplicitas = true;
     this.filtroAdSucursalSeleccionadas = [];
@@ -1310,75 +1312,9 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
     this.filtrosCambiados.emit(filtros);
   }
 
+  // ponytail: delegates to hayFiltrosAdicionalesActivos — limpiarFiltros no longer touches dates
   get puedeLimpiarFiltrosVentas(): boolean {
-    const anioActual = new Date().getFullYear().toString();
-    const hayAdicionalesEnBorrador =
-      this.filtroAdicionalEstaActivo(
-        this.filtroAdSucursalTodasImplicitas,
-        this.filtroAdSucursalSeleccionadas
-      ) ||
-      this.filtroAdicionalEstaActivo(
-        this.filtroAdEstadoTodasImplicitas,
-        this.filtroAdEstadoSeleccionadas
-      ) ||
-      this.filtroAdicionalEstaActivo(
-        this.filtroAdCanalTodasImplicitas,
-        this.filtroAdCanalSeleccionadas
-      ) ||
-      this.filtroAdicionalEstaActivo(
-        this.filtroAdClienteTodasImplicitas,
-        this.filtroAdClienteSeleccionadas
-      ) ||
-      this.filtroAdicionalEstaActivo(
-        this.filtroAdVendedorTodasImplicitas,
-        this.filtroAdVendedorSeleccionadas
-      );
-    const hayAdicionalesAplicados =
-      this.filtroAdicionalEstaActivo(
-        this.filtroAdSucursalTodasImplicitasAplicado,
-        this.filtroAdSucursalSeleccionadasAplicado
-      ) ||
-      this.filtroAdicionalEstaActivo(
-        this.filtroAdEstadoTodasImplicitasAplicado,
-        this.filtroAdEstadoSeleccionadasAplicado
-      ) ||
-      this.filtroAdicionalEstaActivo(
-        this.filtroAdCanalTodasImplicitasAplicado,
-        this.filtroAdCanalSeleccionadasAplicado
-      ) ||
-      this.filtroAdicionalEstaActivo(
-        this.filtroAdClienteTodasImplicitasAplicado,
-        this.filtroAdClienteSeleccionadasAplicado
-      ) ||
-      this.filtroAdicionalEstaActivo(
-        this.filtroAdVendedorTodasImplicitasAplicado,
-        this.filtroAdVendedorSeleccionadasAplicado
-      );
-    const hayCatProd =
-      this.filtroAdicionalEstaActivo(
-        this.filtroCatTodasImplicitas,
-        this.filtroCatSeleccionadas,
-      ) ||
-      this.filtroAdicionalEstaActivo(
-        this.filtroProdTodasImplicitas,
-        this.filtroProdSeleccionadas,
-      ) ||
-      this.filtroAdicionalEstaActivo(
-        this.filtroCatTodasImplicitasAplicado,
-        this.filtroCatSeleccionadasAplicado,
-      ) ||
-      this.filtroAdicionalEstaActivo(
-        this.filtroProdTodasImplicitasAplicado,
-        this.filtroProdSeleccionadasAplicado,
-      );
-    return (
-      !!this.mes ||
-      this.anio !== anioActual ||
-      hayAdicionalesEnBorrador ||
-      hayAdicionalesAplicados ||
-      hayCatProd ||
-      this.tieneFiltrosInteractivos()
-    );
+    return this.hayFiltrosAdicionalesActivos;
   }
 
   formatCurrency(value: number): string {
