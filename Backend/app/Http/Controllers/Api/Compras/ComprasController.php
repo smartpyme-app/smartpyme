@@ -568,34 +568,36 @@ class ComprasController extends Controller
       
         try {
             $compra = Compra::where('id', $request->id)->with('detalles')->firstOrFail();
+
+            $tipoDocumentoConsignaOriginal = $compra->tipo_documento;
+            $referenciaConsignaOriginal = $compra->referencia;
+
             if ($compra->total != $request->total) {
-                // Crear consigna
-                $consigna = new Compra();
-                $consigna->fill($request->all());
+                $consigna = $compra->replicate();
+                $consigna->tipo_documento = $tipoDocumentoConsignaOriginal;
+                $consigna->referencia = $referenciaConsignaOriginal;
                 $consigna->estado = 'Consigna';
                 $consigna->sub_total = $compra->sub_total - $request->sub_total;
                 $consigna->total = $compra->total - $request->total;
                 $consigna->iva = $compra->iva - $request->iva;
+                $consigna->percepcion = max(0, (float) $compra->percepcion - (float) ($request->percepcion ?? 0));
+                $consigna->iva_retenido = max(0, (float) $compra->iva_retenido - (float) ($request->iva_retenido ?? 0));
+                $consigna->descuento = max(0, (float) $compra->descuento - (float) ($request->descuento ?? 0));
                 $consigna->save();
 
-                foreach($request->detalles as $detalle){
-                    
+                foreach ($request->detalles as $detalle) {
                     $detalle_compra = $compra->detalles()->where('id', $detalle['id'])->first();
-                    if ($detalle_compra) {
-                        if ($detalle_compra->cantidad > $detalle['cantidad']) {
-                            $detalle_consigna = new Detalle();
-                            $detalle_consigna->id_producto = $detalle['id_producto'];
-                            $detalle_consigna->costo = $detalle['costo'];
-                            $detalle_consigna->cantidad = $detalle_compra->cantidad - $detalle['cantidad'];
-                            $detalle_consigna->total = $detalle_consigna->costo * $detalle_consigna->cantidad;
-                            $detalle_consigna->id_compra = $consigna->id;
-                            $detalle_consigna->save();
-                        }
+                    if ($detalle_compra && $detalle_compra->cantidad > $detalle['cantidad']) {
+                        $detalle_consigna = new Detalle();
+                        $detalle_consigna->id_producto = $detalle['id_producto'];
+                        $detalle_consigna->costo = $detalle['costo'];
+                        $detalle_consigna->cantidad = $detalle_compra->cantidad - $detalle['cantidad'];
+                        $detalle_consigna->total = $detalle_consigna->costo * $detalle_consigna->cantidad;
+                        $detalle_consigna->id_compra = $consigna->id;
+                        $detalle_consigna->save();
                     }
-                  
                 }
-                
-                //Guardar nuevos detalles
+
                 $compra->detalles()->delete();
 
                 foreach ($request->detalles as $detalle) {
@@ -610,16 +612,23 @@ class ComprasController extends Controller
                         $det->save();
                     }
                 }
-                
-                $compra->total = $request->total;
-                $compra->iva = $request->iva;
-                $compra->sub_total = $request->sub_total;
             }
 
-
+            $compra->fill($request->except(['detalles', 'id', 'estado']));
+            $compra->tipo_documento = $request->tipo_documento;
+            $compra->referencia = $request->referencia;
+            $compra->total = $request->total;
+            $compra->iva = $request->iva;
+            $compra->sub_total = $request->sub_total;
+            $compra->percepcion = $request->percepcion ?? 0;
+            $compra->iva_retenido = $request->iva_retenido ?? 0;
+            $compra->descuento = $request->descuento ?? $compra->descuento;
+            $this->aplicarReglasCompraSinIvaFiscal($compra);
             $compra->fecha = $request->fecha;
             $compra->estado = 'Pagada';
             $compra->save();
+
+            $this->incrementarCorrelativoDocumentoCompraSiAplica($compra);
 
             DB::commit();
             return Response()->json($compra, 200);
@@ -1099,6 +1108,31 @@ class ComprasController extends Controller
         $compra->retencion = 0;
         $compra->tipo_operacion = 'No Gravada';
         $compra->total = round((float) $compra->sub_total, 2);
+    }
+
+    private function incrementarCorrelativoDocumentoCompraSiAplica(Compra $compra): void
+    {
+        if (! $compra->tipo_documento) {
+            return;
+        }
+
+        $incrementaCorrelativo = in_array($compra->tipo_documento, [
+            'Orden de compra',
+            'Sujeto excluido',
+            DocumentoConstants::FACTURA_REMISION,
+        ], true);
+
+        if (! $incrementaCorrelativo) {
+            return;
+        }
+
+        $documento = Documento::where('nombre', $compra->tipo_documento)
+            ->where('id_sucursal', $compra->id_sucursal)
+            ->first();
+
+        if ($documento) {
+            $documento->increment('correlativo');
+        }
     }
 
 

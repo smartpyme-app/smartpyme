@@ -35,6 +35,7 @@ use App\Services\Restaurante\PedidoCanalInventarioService;
 use App\Services\Inventario\ConversionInventarioService;
 use App\Services\Inventario\ConsignaDisponibleService;
 use App\Constants\OrigenStockVentaConstants;
+use App\Constants\DocumentoConstants;
 use Luecano\NumeroALetras\NumeroALetras;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -655,6 +656,8 @@ class VentasController extends Controller
                 $documento = Documento::where('id', $request->id_documento)
                             ->lockForUpdate()
                             ->firstOrFail();
+
+                $this->aplicarReglasVentaRemisionConsigna($venta, $documento, $request);
 
                 $venta->correlativo = $documento->correlativo;
                 $documento->increment('correlativo');
@@ -2369,5 +2372,18 @@ class VentasController extends Controller
 
         return Response()->json($numsIds, 200);
      }
+
+    private function aplicarReglasVentaRemisionConsigna(Venta $venta, Documento $documento, Request $request): void
+    {
+        $esConsigna = $request->input('estado') === 'Consigna' || $request->boolean('consigna');
+        if (!$esConsigna || !DocumentoConstants::esCompraSinIvaFiscal($documento->nombre)) {
+            return;
+        }
+
+        $venta->iva = 0;
+        $venta->iva_percibido = 0;
+        $venta->iva_retenido = 0;
+        $venta->total = round((float) $venta->sub_total, 2);
+    }
 
 }

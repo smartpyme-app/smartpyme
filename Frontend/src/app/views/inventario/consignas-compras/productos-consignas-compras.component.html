@@ -83,6 +83,11 @@
                                         class="btn text-start border-0 text-black">
                                         <i class="fa fa-fw fa-magnifying-glass me-2"></i>Ver detalles
                                     </button>
+                                    <button *ngIf="prod.ventas_consigna?.length" type="button"
+                                        (click)="openModalVentasConsigna(mventasConsigna, prod)"
+                                        class="btn text-start border-0 text-black">
+                                        <i class="fa fa-fw fa-cart-shopping me-2"></i>Ver ventas desde consigna
+                                    </button>
                                     <button *ngFor="let comp of prod.compras" type="button"
                                         routerLink="/compra/{{ comp.id }}"
                                         class="btn text-start border-0 text-black">
@@ -137,6 +142,39 @@
                     <td></td>
                 </tr>
             </tfoot>
+        </table>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #mventasConsigna>
+  <div class="modal-header">
+    <div class="modal-title w-100 text-center">
+        <h2 class="text-center no-margin">
+            Ventas desde consigna — {{ producto.nombre }}
+        </h2>
+    </div>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+        <table class="table table-borderless table-hover">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Cliente</th>
+                    <th>Documento</th>
+                    <th class="text-end">Cantidad</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let venta of ventasConsignaProducto">
+                    <td>{{ venta.fecha | date:'dd/MM/yyyy' }}</td>
+                    <td>{{ venta.cliente }}</td>
+                    <td>{{ venta.nombre_documento }} #{{ venta.correlativo }}</td>
+                    <td class="text-end">{{ venta.cantidad }}</td>
+                </tr>
+            </tbody>
         </table>
     </div>
   </div>

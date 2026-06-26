@@ -17,6 +17,7 @@ export class ProductosConsignasComprasComponent implements OnInit {
     public filtros: any = {};
     public producto: any = {};
     public categorias: any = [];
+    public ventasConsignaProducto: any[] = [];
 
     modalRef!: BsModalRef;
 
@@ -45,6 +46,12 @@ export class ProductosConsignasComprasComponent implements OnInit {
 
     public openModal(template: TemplateRef<any>, producto: any) {
         this.producto = producto;
+        this.modalRef = this.modalService.show(template, { class: 'modal-lg', backdrop: 'static' });
+    }
+
+    public openModalVentasConsigna(template: TemplateRef<any>, producto: any) {
+        this.producto = producto;
+        this.ventasConsignaProducto = producto?.ventas_consigna ?? [];
         this.modalRef = this.modalService.show(template, { class: 'modal-lg', backdrop: 'static' });
     }
 

@@ -11,6 +11,7 @@ use App\Models\Inventario\ProductoPresentacion;
 use App\Models\Ventas\Detalle as DetalleVenta;
 use App\Services\Inventario\ConversionInventarioService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Crypt;
 
 class ConsignaDisponibleService
 {
@@ -176,6 +177,106 @@ class ConsignaDisponibleService
                     ->where('cotizacion', 0);
             })
             ->sum('cantidad');
+    }
+
+    public function cantidadVendidaDesdeConsignaCompra(int $idProducto, int $idBodega, ?int $excluirVentaId = null): float
+    {
+        return $this->sumSalidaVentasDesdeConsignaCompra($idProducto, $idBodega, $excluirVentaId);
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function listarVentasDesdeConsignaCompra(int $idProducto, int $idBodega, ?int $excluirVentaId = null): array
+    {
+        $query = DetalleVenta::query()
+            ->where('id_producto', $idProducto)
+            ->where('origen_stock', OrigenStockVentaConstants::CONSIGNA_COMPRA)
+            ->whereHas('venta', function ($query) use ($idBodega, $excluirVentaId) {
+                $query->where('id_bodega', $idBodega)
+                    ->where(function ($q) {
+                        $q->where('cotizacion', 0)->orWhereNull('cotizacion');
+                    });
+                if ($excluirVentaId) {
+                    $query->where('id', '!=', $excluirVentaId);
+                }
+            })
+            ->with('venta')
+            ->orderByDesc('id')
+            ->get();
+
+        $ventas = [];
+
+        foreach ($query as $detalle) {
+            $venta = $detalle->venta;
+            if (!$venta) {
+                continue;
+            }
+
+            $factor = 1.0;
+            if ($detalle->id_presentacion) {
+                $presentacion = \App\Models\Inventario\ProductoPresentacion::find($detalle->id_presentacion);
+                if ($presentacion) {
+                    $factor = (float) $presentacion->factor_conversion;
+                }
+            }
+            $cantidadBase = ConversionInventarioService::calcularCantidadBase((float) $detalle->cantidad, $factor);
+            $ventaId = (int) $venta->id;
+
+            if (!isset($ventas[$ventaId])) {
+                $ventas[$ventaId] = [
+                    'fecha' => $venta->fecha,
+                    'cliente' => $venta->nombre_cliente,
+                    'cantidad' => 0,
+                    'id' => $ventaId,
+                    'nombre_documento' => $venta->nombre_documento,
+                    'correlativo' => $venta->correlativo,
+                    'uuid' => Crypt::encrypt($ventaId),
+                ];
+            }
+
+            $ventas[$ventaId]['cantidad'] += $cantidadBase;
+        }
+
+        return array_values(array_map(function (array $row) {
+            $row['cantidad'] = round($row['cantidad'], 4);
+
+            return $row;
+        }, $ventas));
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function listarVentasDesdeConsignaCompraAgregado(int $idProducto, ?int $excluirVentaId = null): array
+    {
+        $bodegaIds = Compra::query()
+            ->where('estado', 'Consigna')
+            ->where('cotizacion', 0)
+            ->whereHas('detalles', function ($query) use ($idProducto) {
+                $query->where('id_producto', $idProducto);
+            })
+            ->pluck('id_bodega')
+            ->unique()
+            ->filter();
+
+        $ventasPorId = [];
+
+        foreach ($bodegaIds as $idBodega) {
+            foreach ($this->listarVentasDesdeConsignaCompra($idProducto, (int) $idBodega, $excluirVentaId) as $venta) {
+                $ventaId = (int) $venta['id'];
+                if (!isset($ventasPorId[$ventaId])) {
+                    $ventasPorId[$ventaId] = $venta;
+                    continue;
+                }
+                $ventasPorId[$ventaId]['cantidad'] = round(
+                    (float) $ventasPorId[$ventaId]['cantidad'] + (float) $venta['cantidad'],
+                    4
+                );
+            }
+        }
+
+        return array_values($ventasPorId);
     }
 
     private function sumSalidaVentasDesdeConsignaCompra(int $idProducto, int $idBodega, ?int $excluirVentaId = null): float

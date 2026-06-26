@@ -193,6 +193,7 @@ class ConsignasController extends Controller
 
             if ($producto) {
                 $stockConsignaDisponible = $consignaDisponibleService->calcularDisponibleAgregadoProducto((int) $producto->id);
+                $ventasConsigna = $consignaDisponibleService->listarVentasDesdeConsignaCompraAgregado((int) $producto->id);
                 $detalles->push([
                     'id'                 => $producto->id,
                     'nombre'             => $producto->nombre,
@@ -202,6 +203,7 @@ class ConsignasController extends Controller
                     'codigo'             => $producto->codigo,
                     'stock'              => round($stockConsignaDisponible, 4),
                     'compras'            => $compras,
+                    'ventas_consigna'    => $ventasConsigna,
                 ]); 
             }
         }
@@ -231,6 +233,27 @@ class ConsignasController extends Controller
         );
 
         return response()->json($disponible, 200);
+    }
+
+    public function ventasConsignaCompra(Request $request, ConsignaDisponibleService $consignaDisponibleService)
+    {
+        $request->validate([
+            'id_producto' => 'required|integer',
+            'id_bodega' => 'required|integer',
+            'excluir_venta_id' => 'nullable|integer',
+        ]);
+
+        $excluirVentaId = $request->filled('excluir_venta_id') ? (int) $request->excluir_venta_id : null;
+        $idProducto = (int) $request->id_producto;
+        $idBodega = (int) $request->id_bodega;
+
+        return response()->json([
+            'cantidad_vendida' => round(
+                $consignaDisponibleService->cantidadVendidaDesdeConsignaCompra($idProducto, $idBodega, $excluirVentaId),
+                4
+            ),
+            'ventas' => $consignaDisponibleService->listarVentasDesdeConsignaCompra($idProducto, $idBodega, $excluirVentaId),
+        ], 200);
     }
 
 
