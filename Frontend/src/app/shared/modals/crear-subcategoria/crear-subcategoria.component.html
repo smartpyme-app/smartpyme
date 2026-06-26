@@ -1,32 +1,66 @@
-<button type="button" class="btn btn-default" (click)="openModal(mCategoria)" tooltip="Crear nueva">
+<button type="button" class="btn btn-default" (click)="openModal(mSubcategoria)" tooltip="Crear nueva subcategoria">
     <i class="fa fa-plus"></i>
 </button>
 
-<ng-template #mCategoria>
-    <div class="modal-header text-center">
-        <h3 class="modal-title">Categoria</h3>
-        <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
-          <span aria-hidden="true">&times;</span>
-        </button>
+<ng-template #mSubcategoria>
+    <div class="modal-header">
+        <div class="modal-title text-center">
+            <h2 class="text-center no-margin">Subcategoria</h2>
+        </div>
+        <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
     </div>
     <div class="modal-body">
-        <form name="form" (ngSubmit)="onSubmit()">
+        <form autocomplete="off" (ngSubmit)="onSubmit()">
+            <app-notificaciones-container></app-notificaciones-container>
             <div class="row">
-                <div class="form-group col-md-12">
-                    <label for="nombre">Nombre:</label>
-                    <input type="text" class="form-control" [(ngModel)]="subcategoria.nombre" name="nombre" placeholder="Nombre" required focus="true">
+                <div class="form-group col-12">
+                    <label for="subcategoria.id_cate_padre">Categoría padre</label>
+                    <ng-select [(ngModel)]="subcategoria.id_cate_padre"
+                               class="form-select p-0"
+                               name="subcategoria.id_cate_padre"
+                               placeholder="Seleccione una categoría"
+                               required>
+                        @for (cat of categorias; track cat.id) {
+                            <ng-option [value]="cat.id">{{ cat.nombre }}</ng-option>
+                        }
+                    </ng-select>
                 </div>
 
-                <div class="form-group col-md-12 mt-3">
-                    <button [disabled]="loading" class="btn btn-primary btn-block tcla-F4">
-                        @if (!loading) {
-                          <span>Guardar <small>(F4)</small></span>
-                        }
-                        @if (loading) {
-                          <span>Guardando...</span>
-                        }
-                    </button>
+                <div class="form-group col-12">
+                    <label for="subcategoria.nombre">Nombre</label>
+                    <input type="text" class="form-control" [(ngModel)]="subcategoria.nombre" name="subcategoria.nombre" placeholder="Nombre" required focus="true">
                 </div>
+
+                <div class="form-group col-md-12">
+                    <div class="form-switch bg-light-info rounded">
+                        <label for="enable">Activo</label>
+                        <input class="form-check-input float-end"
+                               type="checkbox"
+                               role="switch"
+                               [(ngModel)]="subcategoria.enable"
+                               name="enable">
+                    </div>
+                </div>
+
+                <div class="form-group col-12">
+                    <label for="subcategoria.descripcion">Descripción</label>
+                    <textarea name="subcategoria.descripcion"
+                              class="form-control"
+                              cols="30"
+                              rows="3"
+                              [(ngModel)]="subcategoria.descripcion"></textarea>
+                </div>
+            </div>
+
+            <div class="d-grid">
+                <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
+                    @if (!loading) {
+                        <span>Añadir</span>
+                    }
+                    @if (loading) {
+                        <span>Añadiendo...</span>
+                    }
+                </button>
             </div>
         </form>
     </div>

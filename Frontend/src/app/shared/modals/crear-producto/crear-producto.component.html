@@ -62,7 +62,11 @@
                 <div class="form-group col-md-6 col-lg-3">
                     <label for="id_categoria" class="w-100">Categoria</label>
                     <div class="input-group">
-                        <ng-select name="id_categoria" [(ngModel)]="producto.id_categoria" class="form-select p-0">
+                        <ng-select name="id_categoria"
+                                   [(ngModel)]="producto.id_categoria"
+                                   (change)="onSelectCategoria($event)"
+                                   class="form-select p-0"
+                                   placeholder="Seleccione una categoría">
                           @for (categoria of categorias; track categoria.id) {
                             <ng-option [value]="categoria.id">
                               {{categoria.nombre}}
@@ -72,11 +76,28 @@
                         <app-crear-categoria (update)="setCategoria($event)"></app-crear-categoria>
                     </div>
                 </div>
+                <div class="form-group col-md-6 col-lg-3">
+                    <label for="id_subcategoria" class="w-100">Subcategoria</label>
+                    <div class="input-group">
+                        <ng-select name="id_subcategoria"
+                                   [(ngModel)]="producto.id_subcategoria"
+                                   class="form-select p-0"
+                                   [disabled]="!producto.id_categoria"
+                                   placeholder="Seleccione una subcategoría">
+                          @for (subcategoria of subcategoriasFiltradas; track subcategoria.id) {
+                            <ng-option [value]="subcategoria.id">
+                              {{subcategoria.nombre}}
+                            </ng-option>
+                          }
+                        </ng-select>
+                        <app-crear-subcategoria [categoria_id]="producto.id_categoria" (update)="setSubCategoria($event)"></app-crear-subcategoria>
+                    </div>
+                </div>
                 <div class="form-group col-md-6 col-lg-2">
                     <label for="marca">Marca</label>
                     <input type="text" class="form-control" [(ngModel)]="producto.marca" name="marca" placeholder="Escribe aquí">
                 </div>
-                <div class="form-group col-md-12 col-lg-7">
+                <div class="form-group col-md-12 col-lg-4">
                     <label for="etiquetas">Etiquetas</label>
                     <tag-input theme='bootstrap' [placeholder]="'Escribe aquí'" secondaryPlaceholder="Escribe aquí" [separatorKeyCodes]="[32]" [(ngModel)]="producto.etiquetas" name="etiquetas"></tag-input>
                 </div>
