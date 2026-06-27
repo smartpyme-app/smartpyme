@@ -152,7 +152,7 @@ export class LineChartComponent implements OnInit, OnChanges {
             show: this.config.showLineLabels !== false,
             position: 'top',
             formatter: (params: any) => this.formatCompactLineLabel(params.value),
-            color: '#000',
+            color: '#666',
             fontSize: 11,
             fontWeight: 'medium'
           },

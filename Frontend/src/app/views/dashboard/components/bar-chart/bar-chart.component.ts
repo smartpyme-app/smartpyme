@@ -89,7 +89,7 @@ export class BarChartComponent implements OnInit, OnChanges {
       rotate: 0,
       formatter: (params: any) =>
         this.formatCompactBarLabel(params.value, !!this.config.barLabelExactUnder1000),
-      color: isInsidePosition ? '#fff' : '#000',
+      color: isInsidePosition ? '#fff' : '#666',
       fontSize: 12,
       fontWeight: 'medium',
       offset: isInsidePosition ? [0, 0] : [0, -5],
@@ -369,7 +369,7 @@ export class BarChartComponent implements OnInit, OnChanges {
               position: finalPosition,
               rotate: 0,
               align: isInside ? 'center' : 'left',
-              color: isInside ? '#fff' : '#000',
+              color: isInside ? '#fff' : '#666',
               offset: isInside ? [0, 0] : [5, 0]
             }
           };

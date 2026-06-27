@@ -164,7 +164,7 @@ export class AccountsListComponent implements OnInit, OnChanges {
           show: true,
           position: 'right',
           formatter: (params: any) => this.formatBarAmount(params.value),
-          color: '#000',
+          color: '#666',
           fontSize: 11,
           fontWeight: 'normal'
         }
