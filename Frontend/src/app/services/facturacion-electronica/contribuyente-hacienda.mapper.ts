@@ -1,5 +1,5 @@
 /**
- * Normaliza la respuesta de GET /api/fe-cr/contribuyente (cuerpo de /fe/ae de Hacienda CR).
+ * Normaliza la respuesta de GET /fe/ae de Hacienda CR (consulta directa desde el navegador).
  * La forma exacta del JSON puede variar; se contemplan convenciones habituales.
  */
 

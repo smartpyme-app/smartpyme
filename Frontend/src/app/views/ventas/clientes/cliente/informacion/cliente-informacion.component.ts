@@ -23,6 +23,7 @@ import {
     extractNombreContribuyenteDesdeAe,
     mapContribuyenteAeResponseToActividades,
 } from '@services/facturacion-electronica/contribuyente-hacienda.mapper';
+import { HaciendaContribuyenteClientService } from '@services/facturacion-electronica/hacienda-contribuyente-client.service';
 import { finalize } from 'rxjs/operators';
 
 @Component({
@@ -55,7 +56,7 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
 
   private cdr = inject(ChangeDetectorRef);
 
-  /** Actividades económicas CR (Hacienda /fe/ae), mismo patrón que Mi cuenta. */
+  /** Actividades económicas CR (Hacienda /fe/ae, consulta directa desde el navegador). */
   actividadesContribuyenteCr: ContribuyenteActividadOption[] = [];
   actividadContribuyenteSeleccionada: ContribuyenteActividadOption | null = null;
   contribuyenteCargandoCr = false;
@@ -103,6 +104,7 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
     private funcionalidadesService: FuncionalidadesService,
     private duplicateCheckService: DuplicateCheckService,
     private feCrUbic: FeCrUbicacionService,
+    private haciendaContribuyenteClient: HaciendaContribuyenteClientService,
   ) {
     super(modalManager, alertService);
   }
@@ -184,8 +186,8 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
 
         this.contribuyenteCargandoCr = true;
         this.cdr.markForCheck();
-        this.apiService
-            .getAll('fe-cr/contribuyente', { identificacion: id })
+        this.haciendaContribuyenteClient
+            .getContribuyente(id)
             .pipe(
                 this.untilDestroyed(),
                 finalize(() => {

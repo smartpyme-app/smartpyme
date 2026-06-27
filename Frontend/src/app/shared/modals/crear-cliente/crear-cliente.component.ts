@@ -20,6 +20,7 @@ import {
     extractNombreContribuyenteDesdeAe,
     mapContribuyenteAeResponseToActividades,
 } from '@services/facturacion-electronica/contribuyente-hacienda.mapper';
+import { HaciendaContribuyenteClientService } from '@services/facturacion-electronica/hacienda-contribuyente-client.service';
 import { finalize } from 'rxjs/operators';
 
 @Component({
@@ -75,6 +76,7 @@ export class CrearClienteComponent extends BaseModalComponent implements OnInit 
         protected override modalManager: ModalManagerService,
         private duplicateCheckService: DuplicateCheckService,
         private feCrUbic: FeCrUbicacionService,
+        private haciendaContribuyenteClient: HaciendaContribuyenteClientService,
     ) {
         super(modalManager, alertService);
     }
@@ -152,8 +154,8 @@ export class CrearClienteComponent extends BaseModalComponent implements OnInit 
         }
 
         this.contribuyenteCargandoCr = true;
-        this.apiService
-            .getAll('fe-cr/contribuyente', { identificacion: id })
+        this.haciendaContribuyenteClient
+            .getContribuyente(id)
             .pipe(
                 this.untilDestroyed(),
                 finalize(() => {

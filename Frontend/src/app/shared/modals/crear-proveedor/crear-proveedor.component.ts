@@ -18,6 +18,7 @@ import {
     extractNombreContribuyenteDesdeAe,
     mapContribuyenteAeResponseToActividades,
 } from '@services/facturacion-electronica/contribuyente-hacienda.mapper';
+import { HaciendaContribuyenteClientService } from '@services/facturacion-electronica/hacienda-contribuyente-client.service';
 import { finalize } from 'rxjs/operators';
 
 @Component({
@@ -96,6 +97,7 @@ export class CrearProveedorComponent extends BaseModalComponent implements OnIni
         protected override alertService: AlertService,
         protected override modalManager: ModalManagerService,
         private feCrUbic: FeCrUbicacionService,
+        private haciendaContribuyenteClient: HaciendaContribuyenteClientService,
     ) {
         super(modalManager, alertService);
     }
@@ -266,8 +268,8 @@ export class CrearProveedorComponent extends BaseModalComponent implements OnIni
         }
 
         this.contribuyenteCargandoCr = true;
-        this.apiService
-            .getAll('fe-cr/contribuyente', { identificacion: id })
+        this.haciendaContribuyenteClient
+            .getContribuyente(id)
             .pipe(
                 this.untilDestroyed(),
                 finalize(() => {

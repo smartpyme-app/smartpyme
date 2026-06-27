@@ -21,6 +21,7 @@ import {
     ContribuyenteActividadOption,
     mapContribuyenteAeResponseToActividades,
 } from '@services/facturacion-electronica/contribuyente-hacienda.mapper';
+import { HaciendaContribuyenteClientService } from '@services/facturacion-electronica/hacienda-contribuyente-client.service';
 import { forkJoin } from 'rxjs';
 import { map, distinctUntilChanged, finalize } from 'rxjs/operators';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -94,7 +95,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         }
     };
 
-    /** Actividad económica CR: datos de /fe/ae (contribuyente), no CABYS. */
+    /** Actividad económica CR: datos de /fe/ae (Hacienda, consulta directa desde el navegador). */
     actividadesContribuyenteCr: ContribuyenteActividadOption[] = [];
     actividadContribuyenteSeleccionada: ContribuyenteActividadOption | null = null;
     contribuyenteCargandoCr = false;
@@ -117,6 +118,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         private cdr: ChangeDetectorRef,
         private funcionalidadesService: FuncionalidadesService,
         private countryI18n: CountryI18nService,
+        private haciendaContribuyenteClient: HaciendaContribuyenteClientService,
     ) { }
 
     ngOnInit() {
@@ -663,8 +665,8 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
 
         this.contribuyenteCargandoCr = true;
         this.cdr.markForCheck();
-        this.apiService
-            .getAll('fe-cr/contribuyente', { identificacion: nit })
+        this.haciendaContribuyenteClient
+            .getContribuyente(nit)
             .pipe(
                 this.untilDestroyed(),
                 finalize(() => {

@@ -48,7 +48,13 @@ export class AlertService {
             this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': 'Lo sentimos', 'mensaje' : mensaje});
         }
         else if(message.status == 404) {
-            this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': 'Lo sentimos', 'mensaje' : 'El registro no ha sido encontrado'});
+            const body = message.error ?? {};
+            const mensaje = typeof body.error === 'string'
+                ? body.error
+                : 'El registro no ha sido encontrado';
+            const titulo = body.code === 'hacienda_contribuyente_not_found' ? 'Hacienda' : 'Lo sentimos';
+            const tipo = body.code === 'hacienda_contribuyente_not_found' ? 'alert-warning' : 'alert-danger';
+            this.alertSubject.next({ tipo, titulo, mensaje });
         }
         else if(message.status == 403) {
             this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': 'Lo sentimos', 'mensaje' : message.error.error});

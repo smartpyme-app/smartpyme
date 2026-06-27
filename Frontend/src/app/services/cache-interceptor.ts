@@ -81,7 +81,7 @@ export class CacheInterceptor implements HttpInterceptor {
     if (lower.includes('fe-cr/cabys') || lower.includes('/fe/cabys')) {
       return false;
     }
-    if (lower.includes('fe-cr/contribuyente')) {
+    if (lower.includes('fe-cr/contribuyente') || lower.includes('/fe/ae')) {
       return false;
     }
 
