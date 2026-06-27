@@ -294,6 +294,12 @@ export class BarChartComponent implements OnInit, OnChanges {
             return `${sign}$${absValue.toFixed(0)}`;
           }
         },
+        axisLine: {
+          show: false
+        },
+        axisTick: {
+          show: false
+        },
         splitLine: {
           show: false
         }
@@ -310,6 +316,12 @@ export class BarChartComponent implements OnInit, OnChanges {
             const maxLen = 12;
             return value && value.length > maxLen ? value.slice(0, maxLen) + '…' : value;
           }
+        },
+        axisLine: {
+          show: false
+        },
+        axisTick: {
+          show: false
         }
       },
       yAxis: (this.config as any).horizontal ? {
@@ -323,10 +335,22 @@ export class BarChartComponent implements OnInit, OnChanges {
             return value && value.length > maxLen ? value.slice(0, maxLen) + '…' : value;
           }
         },
+        axisLine: {
+          show: false
+        },
+        axisTick: {
+          show: false
+        },
         inverse: true
       } : {
         type: 'value',
         axisLabel: {
+          show: false
+        },
+        axisLine: {
+          show: false
+        },
+        axisTick: {
           show: false
         },
         splitLine: {

@@ -108,6 +108,12 @@ export class AccountsListComponent implements OnInit, OnChanges {
         type: 'category',
         data: labels,
         inverse: true,
+        axisLine: {
+          show: false
+        },
+        axisTick: {
+          show: false
+        },
         axisLabel: {
           interval: 0,
           fontSize: 11,

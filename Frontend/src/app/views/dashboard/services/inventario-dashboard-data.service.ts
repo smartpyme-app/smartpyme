@@ -81,8 +81,8 @@ export class InventarioDashboardDataService {
         type: 'bar',
         horizontal: true,
         showXAxisLabels: false,
-        labels: (porCategoria ?? []).map((i: any) => i.categoria),
-        data: (porCategoria ?? []).map((i: any) => i.stockUnidades),
+        labels: (porCategoria ?? []).filter((i: any) => i.stockUnidades > 0).map((i: any) => i.categoria),
+        data: (porCategoria ?? []).filter((i: any) => i.stockUnidades > 0).map((i: any) => i.stockUnidades),
       },
       detalleInventario: (detalleProductos ?? []).map((i: any) => ({
         producto: i.producto,
@@ -207,8 +207,8 @@ export class InventarioDashboardDataService {
           type: 'bar',
           horizontal: true,
           showXAxisLabels: false,
-          labels: (data ?? []).map((i: any) => i.categoria),
-          data: (data ?? []).map((i: any) => i.stockUnidades),
+          labels: (data ?? []).filter((i: any) => i.stockUnidades > 0).map((i: any) => i.categoria),
+          data: (data ?? []).filter((i: any) => i.stockUnidades > 0).map((i: any) => i.stockUnidades),
         }
       })),
       catchError(err => {
