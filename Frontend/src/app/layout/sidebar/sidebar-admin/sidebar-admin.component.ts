@@ -44,7 +44,6 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit, OnDe
     public loading: boolean = false;
     public filtros: any = {};
     public items: any = [];
-    public notificaciones: any = [];
     public modules: any[] = [];
     public contabilidadHabilitada: boolean = false;
     public tieneFidelizacionHabilitada = false;
@@ -153,7 +152,6 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit, OnDe
             this.loading = false;
           });
 
-        this.loadNotificaciones();
         this.loadModules();
         this.verificarAccesoContabilidad();
         this.verificarFidelizacionHabilitada();
@@ -420,21 +418,6 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit, OnDe
                 error: (error) => {
                     this.alertService.error(error);
                     this.loading = false;
-                }
-            });
-    }
-
-    public loadNotificaciones() {
-        this.filtros.leido = 0;
-        this.filtros.paginate = 1;
-        this.apiService.getAll('notificaciones', this.filtros)
-            .pipe(this.untilDestroyed())
-            .subscribe({
-                next: (notificaciones) => {
-                    this.notificaciones = notificaciones;
-                },
-                error: (error) => {
-                    this.alertService.error(error);
                 }
             });
     }

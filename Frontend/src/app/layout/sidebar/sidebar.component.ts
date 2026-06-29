@@ -58,7 +58,6 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
     public isAbacoSite: boolean = false;
     public filtros: any = {};
     public items: any = [];
-    public notificaciones: any = [];
     public authUser: any = {};
     public tieneFidelizacionHabilitada: boolean = false;
     public modules: any = [];
@@ -183,7 +182,6 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
             this.loading = false;
           });
 
-        this.loadNotificaciones();
         this.loadModules();
         this.usuarioLogueado();
         this.verificarAccesoContabilidad();
@@ -433,21 +431,6 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
                 error: (error) => {
                     this.alertService.error(error);
                     this.loading = false;
-                }
-            });
-    }
-
-    public loadNotificaciones() {
-        this.filtros.leido = 0;
-        this.filtros.paginate = 1;
-        this.apiService.getAll('notificaciones', this.filtros)
-            .pipe(this.untilDestroyed())
-            .subscribe({
-                next: (notificaciones) => {
-                    this.notificaciones = notificaciones;
-                },
-                error: (error) => {
-                    this.alertService.error(error);
                 }
             });
     }
