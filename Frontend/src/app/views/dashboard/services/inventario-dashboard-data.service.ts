@@ -81,6 +81,8 @@ export class InventarioDashboardDataService {
         type: 'bar',
         horizontal: true,
         showXAxisLabels: false,
+        isCurrency: false,
+        colors: ['#7CABFF'],
         labels: (porCategoria ?? []).filter((i: any) => i.stockUnidades > 0).map((i: any) => i.categoria),
         data: (porCategoria ?? []).filter((i: any) => i.stockUnidades > 0).map((i: any) => i.stockUnidades),
       },
@@ -207,13 +209,15 @@ export class InventarioDashboardDataService {
           type: 'bar',
           horizontal: true,
           showXAxisLabels: false,
+          isCurrency: false,
+          colors: ['#7CABFF'],
           labels: (data ?? []).filter((i: any) => i.stockUnidades > 0).map((i: any) => i.categoria),
           data: (data ?? []).filter((i: any) => i.stockUnidades > 0).map((i: any) => i.stockUnidades),
         }
       })),
       catchError(err => {
         console.error('Error loading /api/inventario/por-categoria:', err);
-        return of({ stockPorCategoriaConfig: { type: 'bar', horizontal: true, labels: [], data: [] } });
+        return of({ stockPorCategoriaConfig: { type: 'bar', horizontal: true, isCurrency: false, colors: ['#7CABFF'], labels: [], data: [] } });
       })
     );
 

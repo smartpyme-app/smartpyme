@@ -24,6 +24,7 @@ export interface ChartConfig {
   highlightMaxBar?: boolean; // Opcional: resaltar la barra con el valor máximo con color completo y las demás con opacidad
   graduatedOpacity?: boolean; // Opcional: si es true, la opacidad de las barras se gradúa según su monto
   showLineLabels?: boolean; // Opcional: si es false, oculta las etiquetas en los puntos de las líneas (default: true)
+  isCurrency?: boolean; // Opcional: si es false, no muestra el símbolo de moneda $
 }
 
 export interface MetricCard {
