@@ -109,7 +109,7 @@ export class ProductosComponent implements OnInit {
                 this.filtros.id_bodega = usuario.id_bodega;
             }
 
-            this.filtrarProductos(false);
+            this.obtenerProductos();
         });
 
         this.apiService.getAll('categorias/list').subscribe(categorias => {
@@ -166,7 +166,9 @@ export class ProductosComponent implements OnInit {
             queryParams: this.filtros,
             queryParamsHandling: 'merge',
         });
+    }
 
+    public obtenerProductos(): void {
         this.loading = true;
 
         if (!this.filtros.sin_stock) {
@@ -334,7 +336,7 @@ export class ProductosComponent implements OnInit {
 
         this.apiService.store('ajuste', this.ajuste).subscribe(ajuste => {
             // this.producto.inventarios[this.producto.inventarios.findIndex((item:any) => item.id_bodega == this.filtros.id_bodega)].stock = ajuste.stock_real;
-            this.filtrarProductos(false);
+            this.obtenerProductos();
             this.modalRef.hide();
             this.alertService.modal = false;
             this.loading = false;
