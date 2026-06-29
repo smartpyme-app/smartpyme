@@ -8,6 +8,7 @@ import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 
 
@@ -15,7 +16,7 @@ import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-pag
     selector: 'app-presupuestos',
     templateUrl: './presupuestos.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, PopoverModule, TooltipModule],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, PopoverModule, TooltipModule, CurrencyPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 

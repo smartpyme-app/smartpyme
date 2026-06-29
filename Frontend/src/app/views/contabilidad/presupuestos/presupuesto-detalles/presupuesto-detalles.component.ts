@@ -7,13 +7,14 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-presupuesto-detalles',
     templateUrl: './presupuesto-detalles.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule],
+    imports: [CommonModule, RouterModule, FormsModule, CurrencyPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PresupuestoDetallesComponent implements OnInit {
