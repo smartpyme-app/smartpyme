@@ -204,4 +204,38 @@ class EmpresasFuncionalidadesController extends Controller
             return response()->json(['configuracion' => null]);
         }
     }
+
+     public function verificarAccesos(Request $request)
+    {
+        try {
+            $user = null;
+
+            if ($request->bearerToken()) {
+                try {
+                    $user = Auth::guard('api')->user();
+                } catch (\Exception $e) {
+                    Log::warning("Token inválido al verificar accesos: " . $e->getMessage());
+                }
+            }
+
+            if (!$user || !$user->id_empresa) {
+                return response()->json(['accesos' => []]);
+            }
+
+            $idEmpresa = $user->id_empresa;
+
+            $accesos = EmpresaFuncionalidad::where('id_empresa', $idEmpresa)
+                ->where('empresa_funcionalidades.activo', 1)
+                ->join('funcionalidades', 'empresa_funcionalidades.id_funcionalidad', '=', 'funcionalidades.id')
+                ->pluck('funcionalidades.slug')
+                ->toArray();
+
+            return response()->json(['accesos' => $accesos]);
+        } catch (\Exception $e) {
+            Log::error("Error al verificar accesos a funcionalidades: " . $e->getMessage());
+            return response()->json(['accesos' => []]);
+        }
+    }
+
+
 }
