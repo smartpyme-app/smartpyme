@@ -55,3 +55,17 @@ export function esElSalvadorFe(
 ): boolean {
   return resolveCodigoPaisFe(empresa) === FE_PAIS_SV;
 }
+
+/** Solo SV y CR tienen emisión FE implementada en el sistema. */
+export function paisTieneFeDisponible(
+  empresa?: { cod_pais?: string | null; pais?: string | null; facturacion_electronica?: boolean | number | null } | null | undefined
+): boolean {
+  const cod = resolveCodigoPaisFe(empresa);
+  return cod === FE_PAIS_SV || cod === FE_PAIS_CR;
+}
+
+export function debeEmitirDteEnImpresion(
+  empresa?: { cod_pais?: string | null; pais?: string | null; facturacion_electronica?: boolean | number | null } | null | undefined
+): boolean {
+  return !!empresa?.facturacion_electronica && paisTieneFeDisponible(empresa);
+}

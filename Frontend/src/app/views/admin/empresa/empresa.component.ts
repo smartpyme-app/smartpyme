@@ -121,7 +121,13 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         private haciendaContribuyenteClient: HaciendaContribuyenteClientService,
     ) { }
 
+    public activeTabSlug = 'datos';
+
     ngOnInit() {
+        const tabFromUrl = this.route.snapshot.queryParamMap.get('tab');
+        if (tabFromUrl) {
+            this.activeTabSlug = tabFromUrl.toLowerCase();
+        }
 
         this.apiService.getAll('canales')
             .pipe(this.untilDestroyed())
@@ -156,14 +162,15 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
 
     ngAfterViewInit() {
         this.route.queryParamMap.pipe(
-            map((m) => m.get('tab') ?? ''),
+            map((m) => (m.get('tab') ?? 'datos').toLowerCase()),
             distinctUntilChanged(),
             this.untilDestroyed()
         ).subscribe((slug) => {
-            if (!slug || !this.tabset?.tabs?.length) {
+            if (slug === this.activeTabSlug) {
                 return;
             }
-            queueMicrotask(() => this.seleccionarTabPorNombre(slug));
+            this.activeTabSlug = slug;
+            this.cdr.markForCheck();
         });
     }
 
@@ -202,7 +209,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
 
             const tabSlug = this.route.snapshot.queryParamMap.get('tab');
             if (tabSlug) {
-                queueMicrotask(() => this.seleccionarTabPorNombre(tabSlug));
+                this.activeTabSlug = tabSlug.toLowerCase();
             }
 
         }, error => { this.alertService.error(error); this.loading = false; });
@@ -2362,9 +2369,10 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
             return;
         }
         const tabName = this.getTabNameByHeading(tab.heading);
-        if (!tabName) {
+        if (!tabName || tabName === this.activeTabSlug) {
             return;
         }
+        this.activeTabSlug = tabName;
         const currentTab = this.route.snapshot.queryParamMap.get('tab');
         if (currentTab === tabName) {
             return;
@@ -2390,31 +2398,6 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
             'Shopify': 'shopify'
         };
         return headingMap[heading] ?? null;
-    }
-
-    /**
-     * Selecciona un tab por su nombre
-     */
-    private seleccionarTabPorNombre(tabName: string) {
-        if (!this.tabset?.tabs?.length) {
-            return;
-        }
-        const tabHeadingMap: { [key: string]: string } = {
-            'datos': 'Datos de mi empresa',
-            'preferencias': 'Preferencias del sistema',
-            'facturacion-electronica': 'Facturación electrónica',
-            'integraciones': 'Integraciones',
-            'woocommerce': 'WooCommerce',
-            'shopify': 'Shopify'
-        };
-        const heading = tabHeadingMap[tabName.toLowerCase()];
-        if (!heading) {
-            return;
-        }
-        const tab = this.tabset.tabs.find((t) => t.heading === heading);
-        if (tab) {
-            tab.active = true;
-        }
     }
 
     public verificarAccesoPropina() {

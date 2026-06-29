@@ -1033,7 +1033,7 @@ if (
           this.venta.cotizacion != 1 &&
           this.apiService.auth_user().empresa.impresion_en_facturacion
         ) {
-          if (this.apiService.auth_user().empresa.facturacion_electronica) {
+          if (this.facturacionElectronica.debeEmitirDteEnImpresion()) {
             this.venta.id = venta.id;
             this.emitirDTE();
           } else {
