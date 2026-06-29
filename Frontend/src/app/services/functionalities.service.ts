@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, Subject } from 'rxjs';
-import { catchError, map, tap } from 'rxjs/operators';
+import { catchError, map, tap, shareReplay } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 
 @Injectable({
@@ -31,7 +31,7 @@ export class FuncionalidadesService {
     // Si ya hay una petición en curso, reusar el mismo flujo
     if (this.cargando$) {
       return this.cargando$.pipe(
-        map(() => !!this.accesoCache[slug])
+        map(accesos => accesos.includes(slug))
       );
     }
 
@@ -50,11 +50,12 @@ export class FuncionalidadesService {
         console.error('Error al verificar accesos globales:', error);
         this.cargando$ = null;
         return of([]);
-      })
+      }),
+      shareReplay(1)
     );
 
     return this.cargando$.pipe(
-      map(() => !!this.accesoCache[slug])
+      map(accesos => accesos.includes(slug))
     );
   }
 
