@@ -376,6 +376,69 @@ export class ApiService {
 
     auth_token(){ return JSON.parse(localStorage.getItem('SP_token')!); }
 
+    public imprimirFactura(ventaId: number, windowName?: string, windowFeatures?: string): void {
+        const url = this.baseUrl + '/api/reporte/facturacion/' + ventaId + '?token=' + this.auth_token();
+
+        if (this.empresaUsaImpresionHtml()) {
+            this.imprimirConIframe(url);
+            return;
+        }
+
+        const user = this.auth_user();
+        if (user?.id && user?.empresa && user.empresa.usa_impresion_html === undefined) {
+            this.getUserData(user.id).subscribe({
+                next: (refreshed) => {
+                    if (this.empresaUsaImpresionHtmlFromUser(refreshed)) {
+                        this.imprimirConIframe(url);
+                    } else {
+                        this.abrirFacturaEnVentana(url, windowName, windowFeatures);
+                    }
+                },
+                error: () => this.abrirFacturaEnVentana(url, windowName, windowFeatures),
+            });
+            return;
+        }
+
+        this.abrirFacturaEnVentana(url, windowName, windowFeatures);
+    }
+
+    private empresaUsaImpresionHtml(): boolean {
+        return this.empresaUsaImpresionHtmlFromUser(this.auth_user());
+    }
+
+    private empresaUsaImpresionHtmlFromUser(user: any): boolean {
+        const flag = user?.empresa?.usa_impresion_html;
+        return flag === true || flag === 1;
+    }
+
+    private abrirFacturaEnVentana(url: string, windowName?: string, windowFeatures?: string): void {
+        if (windowName || windowFeatures) {
+            window.open(url, windowName ?? 'Impresión', windowFeatures);
+            return;
+        }
+        window.open(url);
+    }
+
+    private imprimirConIframe(url: string): void {
+        let iframe = document.getElementById('print-frame') as HTMLIFrameElement;
+
+        if (!iframe) {
+            iframe = document.createElement('iframe');
+            iframe.id = 'print-frame';
+            iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:none;';
+            document.body.appendChild(iframe);
+        }
+
+        iframe.src = url;
+
+        iframe.onload = () => {
+            setTimeout(() => {
+                iframe.contentWindow?.focus();
+                iframe.contentWindow?.print();
+            }, 500);
+        };
+    }
+
     date():string{let today = new Date(); let dd = today.getDate(); let mm = today.getMonth()+1; let d; let m; var yyyy = today.getFullYear(); if(dd<10){d='0'+dd;}else{d= dd;} if(mm<10){m='0'+mm;} else{m=mm;} let date:string = yyyy+'-'+m+'-'+d; return date; }
 
     dataURItoBlob(dataURI: any) {

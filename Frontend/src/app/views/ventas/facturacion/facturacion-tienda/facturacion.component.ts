@@ -1527,15 +1527,7 @@ export class FacturacionComponent implements OnInit {
           if (this.apiService.auth_user().empresa.facturacion_electronica) {
             this.emitirDTE();
           } else {
-            window.open(
-              this.apiService.baseUrl +
-                '/api/reporte/facturacion/' +
-                venta.id +
-                '?token=' +
-                this.apiService.auth_token(),
-              'Impresión',
-              'width=400'
-            );
+            this.imprimir(venta);
             if (this.preCuentaId && this.venta.id) {
               this.navegarPostFacturaPreCuenta(this.venta.id);
             } else if (this.pedidoCanalId && this.venta.id) {
@@ -1604,6 +1596,10 @@ export class FacturacionComponent implements OnInit {
 
   // DTE
 
+  public imprimir(venta: any) {
+    this.apiService.imprimirFactura(venta.id, 'Impresión', 'width=400');
+  }
+
   emitirDTE() {
     this.emiting = true;
     this.mhService
@@ -1619,15 +1615,7 @@ export class FacturacionComponent implements OnInit {
         }
         this.emiting = false;
 
-        window.open(
-          this.apiService.baseUrl +
-            '/api/reporte/facturacion/' +
-            venta.id +
-            '?token=' +
-            this.apiService.auth_token(),
-          'Impresión',
-          'width=400'
-        );
+        this.imprimir(venta);
         if (this.preCuentaId && this.venta.id) {
           this.navegarPostFacturaPreCuenta(this.venta.id);
         } else if (this.pedidoCanalId && this.venta.id) {

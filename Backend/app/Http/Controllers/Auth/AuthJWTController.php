@@ -81,6 +81,7 @@ class AuthJWTController extends Controller
         if ($user->empresa) {
             $user->empresa->es_empresa_padre = $user->empresa->esEmpresaPadre();
             $user->empresa->es_empresa_hija = $user->empresa->esEmpresaHija();
+            $this->adjuntarUsaImpresionHtml($user->empresa);
         }
         
         $suscripcion = $user->empresa->suscripcion()
@@ -1020,6 +1021,7 @@ class AuthJWTController extends Controller
         if ($user->empresa) {
             $user->empresa->es_empresa_padre = $user->empresa->esEmpresaPadre();
             $user->empresa->es_empresa_hija = $user->empresa->esEmpresaHija();
+            $this->adjuntarUsaImpresionHtml($user->empresa);
         }
         
         $suscripcion = $user->empresa->suscripcion()
@@ -1044,6 +1046,15 @@ class AuthJWTController extends Controller
         $this->adjuntarAccesoTemporalUsuario($user, $suscripcion);
 
         return response()->json(['user' => $user], 200);
+    }
+
+    private function adjuntarUsaImpresionHtml($empresa): void
+    {
+        $empresa->usa_impresion_html = in_array(
+            (int) $empresa->id,
+            array_map('intval', config('constants.EMPRESAS_IMPRESION_HTML', [])),
+            true
+        );
     }
 
     /**

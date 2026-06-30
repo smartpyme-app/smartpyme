@@ -123,5 +123,6 @@
     </div>
 </section>
 
+@include('reportes.facturacion.partials.impresion-html')
 </body>
 </html>
