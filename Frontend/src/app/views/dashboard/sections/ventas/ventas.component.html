@@ -64,13 +64,13 @@
                     (selectionChange)="onFiltroCatProductoChange($event)">
                 </app-dropdown-multi-filtro>
             </div>
-            <div class="col-12 col-md-6 col-xl-4">
+            <!-- <div class="col-12 col-md-6 col-xl-4">
                 <app-dropdown-multi-filtro label="Producto" pluralLabel="productos" [items]="filtroAdProductosItems"
                     [mostrarBuscador]="true" [limiteVistaInicial]="100" buscadorPlaceholder="Buscar producto"
                     [todasImplicitas]="filtroProdTodasImplicitas" [seleccionados]="filtroProdSeleccionadas"
                     (selectionChange)="onFiltroProdListaChange($event)">
                 </app-dropdown-multi-filtro>
-            </div>
+            </div> -->
         </div>
     </ng-template>
     <!-- Filtros específicos de Ventas -->
@@ -164,6 +164,47 @@
                                 (click)="cambiarVistaMetricas('anio')">
                                 vs Año anterior
                             </button>
+                            <!-- Indicador de filtros interactivos activos -->
+                            <div class="filtros-activos" *ngIf="tieneFiltrosInteractivos()">
+                                <span class="badge-filtro" *ngIf="filtrosInteractivos.canal">
+                                    <span>Canal: <strong>{{ filtrosInteractivos.canal }}</strong></span>
+                                    <button type="button" (click)="limpiarFiltroIndividual('canal')"
+                                        aria-label="Quitar filtro de canal">×</button>
+                                </span>
+                                <span class="badge-filtro" *ngIf="filtrosInteractivos.vendedor">
+                                    <span>Vendedor: <strong>{{ filtrosInteractivos.vendedor }}</strong></span>
+                                    <button type="button" (click)="limpiarFiltroIndividual('vendedor')"
+                                        aria-label="Quitar filtro de vendedor">×</button>
+                                </span>
+                                <span class="badge-filtro" *ngIf="filtrosInteractivos.formaPago">
+                                    <span>Forma Pago: <strong>{{ filtrosInteractivos.formaPago }}</strong></span>
+                                    <button type="button" (click)="limpiarFiltroIndividual('formaPago')"
+                                        aria-label="Quitar filtro de forma de pago">×</button>
+                                </span>
+                                <span class="badge-filtro" *ngIf="filtrosInteractivos.categoria">
+                                    <span>Categoría: <strong>{{ filtrosInteractivos.categoria }}</strong></span>
+                                    <button type="button" (click)="limpiarFiltroIndividual('categoria')"
+                                        aria-label="Quitar filtro de categoría">×</button>
+                                </span>
+                                <span class="badge-filtro" *ngIf="filtrosInteractivos.productoNombre">
+                                    <span>Producto: <strong>{{ filtrosInteractivos.productoNombre }}</strong></span>
+                                    <button type="button" (click)="limpiarFiltroIndividual('productoNombre')"
+                                        aria-label="Quitar filtro de producto">×</button>
+                                </span>
+                                <span class="badge-filtro" *ngIf="filtrosInteractivos.cliente">
+                                    <span>Cliente: <strong>{{ filtrosInteractivos.cliente }}</strong></span>
+                                    <button type="button" (click)="limpiarFiltroIndividual('cliente')"
+                                        aria-label="Quitar filtro de cliente">×</button>
+                                </span>
+                                <span class="badge-filtro" *ngIf="filtrosInteractivos.mes">
+                                    <span>Mes: <strong>{{ filtrosInteractivos.mes }}</strong></span>
+                                    <button type="button" (click)="limpiarFiltroIndividual('mes')"
+                                        aria-label="Quitar filtro de mes">×</button>
+                                </span>
+                                <button type="button" class="btn-limpiar-todos" (click)="limpiarFiltrosInteractivos()">
+                                    Limpiar todos
+                                </button>
+                            </div>
                         </div>
 
                         <!-- Cards de métricas a la derecha (bloque crítico) -->
@@ -379,7 +420,8 @@
                                         <div
                                             class="d-flex flex-wrap gap-2 align-items-center justify-content-end w-100">
                                             <!-- Buscador global -->
-                                            <div class="input-group" style="flex: 1 1 200px; max-width: 350px; min-width: 200px;">
+                                            <div class="input-group"
+                                                style="flex: 1 1 200px; max-width: 350px; min-width: 200px;">
                                                 <span class="input-group-text bg-white border-end-0">
                                                     <i class="fas fa-search text-muted"></i>
                                                 </span>
@@ -441,8 +483,8 @@
                         <!-- Top 25 clientes -->
                         <div class="col-md-6 mb-2">
                             <div class="card h-100">
-                                <div class="card-header bg-primary text-white border-0 py-2 text-center">
-                                    <div class="ventas-card-title text-white mb-0">Top 25 clientes</div>
+                                <div class="card-header bg-white border-0 py-2 text-center">
+                                    <div class="ventas-card-title mb-0">Top 25 clientes</div>
                                 </div>
                                 <div class="card-body">
                                     <ng-container *ngIf="datos.topClientes !== undefined; else ventasListPlaceholder">
@@ -464,7 +506,8 @@
                                         <div
                                             class="d-flex flex-wrap gap-2 align-items-center justify-content-end w-100">
                                             <!-- Buscador global -->
-                                            <div class="input-group" style="flex: 1 1 200px; max-width: 350px; min-width: 200px;">
+                                            <div class="input-group"
+                                                style="flex: 1 1 200px; max-width: 350px; min-width: 200px;">
                                                 <span class="input-group-text bg-white border-end-0">
                                                     <i class="fas fa-search text-muted"></i>
                                                 </span>

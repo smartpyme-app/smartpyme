@@ -81,6 +81,7 @@ export class GastosDashboardDataService {
         labels: (porMes ?? []).map((f: any) => this.obtenerNombreMes(f.anioMes)),
         data: (porMes ?? []).map((f: any) => f.gastosConIva),
         colors: ['#F19447'],
+        barLabelExactUnder1000: true,
       },
       gastosVsPresupuestoConfig: {
         type: 'bar',
@@ -96,7 +97,8 @@ export class GastosDashboardDataService {
           }
         ],
         dataExtra: (vsPresupuesto ?? []).map((f: any) => f.presupuesto),
-        colors: ['#F19447', '#d3d3d3']
+        colors: ['#F19447', '#d3d3d3'],
+        barLabelExactUnder1000: true,
       },
       gastosVsAnioAnteriorConfig: {
         type: 'bar',
@@ -112,7 +114,8 @@ export class GastosDashboardDataService {
           }
         ],
         dataExtra: (vsAnioAnterior ?? []).map((f: any) => f.anioAnterior),
-        colors: ['#F19447', '#d3d3d3']
+        colors: ['#F19447', '#d3d3d3'],
+        barLabelExactUnder1000: true,
       },
     };
   }
@@ -136,6 +139,7 @@ export class GastosDashboardDataService {
         colors: ['#F19447'],
         showXAxisLabels: false,
         graduatedOpacity: true,
+        barLabelExactUnder1000: true,
       },
       gastosPorConceptoConfig: {
         type: 'bar',
@@ -143,6 +147,7 @@ export class GastosDashboardDataService {
         data: (porConcepto ?? []).map((i: any) => i.amount),
         colors: ['#F19447'],
         graduatedOpacity: true,
+        barLabelExactUnder1000: true,
       },
       gastosPorFormaPagoConfig: {
         type: 'doughnut',
@@ -201,6 +206,7 @@ export class GastosDashboardDataService {
           labels: (porMes ?? []).map((f: any) => this.obtenerNombreMes(f.anioMes)),
           data: (porMes ?? []).map((f: any) => f.gastosConIva),
           colors: ['#F19447'],
+          barLabelExactUnder1000: true,
         }
       })),
       catchError(err => {
@@ -219,7 +225,8 @@ export class GastosDashboardDataService {
             { name: 'Presupuestado', data: (vsPresupuesto ?? []).map((f: any) => f.presupuesto || 0) }
           ],
           dataExtra: (vsPresupuesto ?? []).map((f: any) => f.presupuesto),
-          colors: ['#F19447', '#d3d3d3']
+          colors: ['#F19447', '#d3d3d3'],
+          barLabelExactUnder1000: true,
         }
       })),
       catchError(err => {
@@ -238,7 +245,8 @@ export class GastosDashboardDataService {
             { name: 'Año anterior', data: (vsAnioAnterior ?? []).map((f: any) => f.anioAnterior || 0) }
           ],
           dataExtra: (vsAnioAnterior ?? []).map((f: any) => f.anioAnterior),
-          colors: ['#F19447', '#d3d3d3']
+          colors: ['#F19447', '#d3d3d3'],
+          barLabelExactUnder1000: true,
         }
       })),
       catchError(err => {
@@ -257,6 +265,7 @@ export class GastosDashboardDataService {
           colors: ['#F19447'],
           showXAxisLabels: false,
           graduatedOpacity: true,
+          barLabelExactUnder1000: true,
         }
       })),
       catchError(err => {
@@ -273,6 +282,7 @@ export class GastosDashboardDataService {
           data: (porConcepto ?? []).map((i: any) => i.amount),
           colors: ['#F19447'],
           graduatedOpacity: true,
+          barLabelExactUnder1000: true,
         }
       })),
       catchError(err => {

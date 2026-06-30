@@ -182,7 +182,8 @@
                                         *ngIf="(datosFiltrados && datosFiltrados.stockPorCategoriaConfig) || datos.stockPorCategoriaConfig; else invChartLoader">
                                         <app-bar-chart
                                             [config]="(datosFiltrados && datosFiltrados.stockPorCategoriaConfig) ? datosFiltrados.stockPorCategoriaConfig : datos.stockPorCategoriaConfig"
-                                            (itemClick)="onCategoriaStockClick($event)">
+                                            (itemClick)="onCategoriaStockClick($event)"
+                                            height="400px">
                                         </app-bar-chart>
                                     </ng-container>
                                 </div>
