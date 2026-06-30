@@ -328,7 +328,14 @@ export class ApiService {
   }
 
   isLotesActivo(): boolean {
-    return this.auth_user()?.empresa?.custom_empresa?.configuraciones?.lotes_activo ?? false;
+    const empresa = this.auth_user()?.empresa;
+    if (!empresa?.custom_empresa) {
+      return false;
+    }
+    const customConfig = typeof empresa.custom_empresa === 'string'
+      ? JSON.parse(empresa.custom_empresa)
+      : empresa.custom_empresa;
+    return customConfig?.configuraciones?.lotes_activo === true;
   }
 
     /** Indica si el campo componente químico está habilitado para la empresa del usuario actual */
