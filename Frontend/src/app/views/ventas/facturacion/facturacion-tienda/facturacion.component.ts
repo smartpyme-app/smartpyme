@@ -1857,7 +1857,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
           this.venta.cotizacion != 1 &&
           this.apiService.auth_user().empresa.impresion_en_facturacion
         ) {
-          if (this.apiService.auth_user().empresa.facturacion_electronica) {
+          if (this.facturacionElectronica.debeEmitirDteEnImpresion()) {
             this.emitirDTE();
           } else {
             window.open(
@@ -1874,9 +1874,11 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
             } else if (this.pedidoCanalId && this.venta.id) {
               this.navegarPostFacturaPedidoCanal(this.venta.id);
             } else {
-              this.cargarDatosIniciales();
-              this.loadData();
-              this.router.navigate(['/venta/crear']);
+              this.router.navigate(['/ventas']);
+              this.alertService.success(
+                'Venta creada',
+                'La venta fue añadida exitosamente.'
+              );
             }
           }
         } else {

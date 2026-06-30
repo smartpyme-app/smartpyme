@@ -11,12 +11,26 @@ import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '../../base/base-modal.component';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { TranslatePipe } from '@ngx-translate/core';
+import { NgSelectModule } from '@ng-select/ng-select';
+import { TagInputModule } from 'ngx-chips';
+import { CrearCategoriaComponent } from '../crear-categoria/crear-categoria.component';
+import { CrearSubCategoriaComponent } from '../crear-subcategoria/crear-subcategoria.component';
 
 @Component({
     selector: 'app-crear-producto',
     templateUrl: './crear-producto.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, TooltipModule, TranslatePipe],
+    imports: [
+        CommonModule,
+        RouterModule,
+        FormsModule,
+        TooltipModule,
+        TranslatePipe,
+        NgSelectModule,
+        TagInputModule,
+        CrearCategoriaComponent,
+        CrearSubCategoriaComponent,
+    ],
 
 })
 export class CrearProductoComponent extends BaseModalComponent implements OnInit {
@@ -25,6 +39,8 @@ export class CrearProductoComponent extends BaseModalComponent implements OnInit
     @Input() permitirElegirTipo = false;
     @Output() update = new EventEmitter();
     public categorias: any[] = [];
+    public subcategorias: any[] = [];
+    public subcategoriasFiltradas: any[] = [];
     public medidas: any[] = [];
     public override loading = false;
     public guardar = false;
@@ -45,10 +61,17 @@ export class CrearProductoComponent extends BaseModalComponent implements OnInit
     ngOnInit() {
         this.producto.empresa_id = this.apiService.auth_user().empresa_id;
 
-        this.apiService.getAll('categorias/list')
+        this.apiService.getAll('categorias/padre')
             .pipe(this.untilDestroyed())
             .subscribe(categorias => {
             this.categorias = categorias;
+        }, error => { this.alertService.error(error); });
+
+        this.apiService.getAll('subcategorias')
+            .pipe(this.untilDestroyed())
+            .subscribe(subcategorias => {
+            this.subcategorias = subcategorias;
+            this.filtrarSubcategorias();
         }, error => { this.alertService.error(error); });
 
         this.medidas = JSON.parse(localStorage.getItem('unidades_medidas')!);
@@ -56,6 +79,7 @@ export class CrearProductoComponent extends BaseModalComponent implements OnInit
 
     override openModal(template: TemplateRef<any>) {
         this.producto = {};
+        this.subcategoriasFiltradas = [];
         if (this.permitirElegirTipo) {
             this.producto.tipo = 'Producto';
         }
@@ -67,9 +91,42 @@ export class CrearProductoComponent extends BaseModalComponent implements OnInit
         });
     }
 
+    public onSelectCategoria(categoriaId: number | null) {
+        this.producto.id_subcategoria = null;
+        this.filtrarSubcategorias(categoriaId ?? this.producto.id_categoria);
+    }
+
+    private filtrarSubcategorias(categoriaId?: number | null) {
+        const id = categoriaId ?? this.producto.id_categoria;
+        if (!id) {
+            this.subcategoriasFiltradas = [];
+            return;
+        }
+        this.subcategoriasFiltradas = this.subcategorias.filter(
+            (sub: any) => sub.id_cate_padre == id
+        );
+    }
+
     public setCategoria(categoria: any) {
-        this.categorias.push(categoria);
-        this.producto.id_categoria = categoria.id;
+        if (categoria.subcategoria) {
+            this.subcategorias.push(categoria);
+            this.producto.id_categoria = categoria.id_cate_padre;
+            this.producto.id_subcategoria = categoria.id;
+        } else {
+            this.categorias.push(categoria);
+            this.producto.id_categoria = categoria.id;
+            this.producto.id_subcategoria = null;
+        }
+        this.filtrarSubcategorias();
+    }
+
+    public setSubCategoria(subcategoria: any) {
+        if (!this.subcategorias.some((sub: any) => sub.id === subcategoria.id)) {
+            this.subcategorias.push(subcategoria);
+        }
+        this.producto.id_categoria = subcategoria.id_cate_padre;
+        this.producto.id_subcategoria = subcategoria.id;
+        this.filtrarSubcategorias();
     }
 
     public setCompuesto() {

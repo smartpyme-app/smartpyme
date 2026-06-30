@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { Observable, throwError } from 'rxjs';
 import { ApiService } from '@services/api.service';
 import { ElSalvadorFacturacionElectronicaService } from './el-salvador-facturacion-electronica.service';
-import { FE_PAIS_CR, FE_PAIS_SV, resolveCodigoPaisFe } from './fe-pais.util';
+import { FE_PAIS_CR, FE_PAIS_SV, resolveCodigoPaisFe, debeEmitirDteEnImpresion, paisTieneFeDisponible } from './fe-pais.util';
 import { CostaRicaFacturacionElectronicaService } from './costa-rica-facturacion-electronica.service';
 
 const MSG_PAIS_NO_SOPORTADO =
@@ -34,6 +34,14 @@ export class FacturacionElectronicaService {
   /** País FE = Costa Rica (plantillas y menús). */
   isCostaRicaFe(): boolean {
     return this.esCostaRica();
+  }
+
+  paisTieneFeDisponible(empresa?: Parameters<typeof paisTieneFeDisponible>[0]): boolean {
+    return paisTieneFeDisponible(empresa ?? this.api.auth_user()?.empresa);
+  }
+
+  debeEmitirDteEnImpresion(empresa?: Parameters<typeof debeEmitirDteEnImpresion>[0]): boolean {
+    return debeEmitirDteEnImpresion(empresa ?? this.api.auth_user()?.empresa);
   }
 
   private rejectNoSoportado(): Promise<any> {

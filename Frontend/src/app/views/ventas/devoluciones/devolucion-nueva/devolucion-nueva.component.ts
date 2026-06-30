@@ -13,7 +13,7 @@ import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { DevolucionVentaDetallesComponent } from './detalles/devolucion-venta-detalles.component';
 import { MHService } from '@services/MH.service';
 import { CountryI18nService } from '@services/country-i18n.service';
-import { esElSalvadorFe as empresaEsElSalvador } from '@services/facturacion-electronica/fe-pais.util';
+import { esElSalvadorFe as empresaEsElSalvador, debeEmitirDteEnImpresion } from '@services/facturacion-electronica/fe-pais.util';
 
 @Component({
     selector: 'app-devolucion-nueva',
@@ -223,7 +223,7 @@ export class DevolucionVentaNuevaComponent extends BaseModalComponent implements
 
                 if (
                     empresa?.impresion_en_facturacion &&
-                    empresa?.facturacion_electronica &&
+                    debeEmitirDteEnImpresion(empresa) &&
                     esNotaCreditoODebito
                 ) {
                     this.emitirDteNotaTrasProcesar(devolucion);
