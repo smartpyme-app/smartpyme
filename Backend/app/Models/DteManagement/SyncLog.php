@@ -20,6 +20,7 @@ class SyncLog extends Model
         'emails_scanned',
         'dtes_found',
         'dtes_processed',
+        'dtes_duplicates',
         'dtes_failed',
         'error_message',
         'failure_details',

@@ -72,13 +72,17 @@ class ProcessEmailAccountJob implements ShouldQueue
                         $pdfTempPath = $tempDir . '/' . $prefix . '.pdf';
                         File::put($pdfTempPath, $emailData['pdf_content']);
                     }
-                    ProcessDteJob::dispatchSync(
+                    $result = ProcessDteJob::dispatchSync(
                         $account,
                         $jsonTempPath,
                         $emailData['email_message_id'],
                         $pdfTempPath
                     );
-                    $syncLog->increment('dtes_processed');
+                    if ($result === 'duplicate') {
+                        $syncLog->increment('dtes_duplicates');
+                    } else {
+                        $syncLog->increment('dtes_processed');
+                    }
                 } catch (\Throwable $e) {
                     if ($jsonTempPath && File::exists($jsonTempPath)) {
                         File::delete($jsonTempPath);

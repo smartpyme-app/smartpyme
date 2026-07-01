@@ -35,6 +35,9 @@ export class EmailAccountsComponent implements OnInit {
   usuarios: any[] = [];
 
   syncingAccountId: number | null = null;
+  syncAllMode = false;
+  syncAllTargets: EmailAccount[] = [];
+  syncAllFirstTimeCount = 0;
   syncAccountTarget: EmailAccount | null = null;
   syncFechaInicio = '';
   syncFechaFin = '';
@@ -72,6 +75,14 @@ export class EmailAccountsComponent implements OnInit {
 
   get isSyncing(): boolean {
     return this.syncingAccountId !== null;
+  }
+
+  hasActiveAccounts(): boolean {
+    return this.accounts.some(a => a.is_active);
+  }
+
+  private activeAccounts(): EmailAccount[] {
+    return this.accounts.filter(a => a.is_active);
   }
 
   private checkGmailCallbackParams(): void {
@@ -258,6 +269,7 @@ export class EmailAccountsComponent implements OnInit {
     }
 
     if (this.isFirstSync(account)) {
+      this.syncAllMode = false;
       this.openSyncModal(account, this.syncModalTpl);
       return;
     }
@@ -265,7 +277,50 @@ export class EmailAccountsComponent implements OnInit {
     this.runSync(account, { dias: 30 });
   }
 
+  requestSyncAll(): void {
+    const active = this.activeAccounts();
+    if (!active.length) {
+      this.alertService.warning('Sin cuentas', 'No hay cuentas activas para sincronizar.');
+      return;
+    }
+
+    const syncable = active.filter(a => this.canSync(a));
+    const inCooldown = active.filter(a => !this.canSync(a) && a.last_sync_at);
+
+    if (!syncable.length) {
+      this.alertService.warning(
+        'Sincronización en espera',
+        inCooldown.length
+          ? 'Todas las cuentas activas están en periodo de espera (10 minutos entre sincronizaciones).'
+          : 'No hay cuentas listas para sincronizar.'
+      );
+      return;
+    }
+
+    const firstTime = syncable.filter(a => this.isFirstSync(a));
+    if (firstTime.length) {
+      this.syncAllMode = true;
+      this.syncAllTargets = syncable;
+      this.syncAllFirstTimeCount = firstTime.length;
+      this.syncAccountTarget = null;
+      this.openSyncModalForAll(this.syncModalTpl);
+      return;
+    }
+
+    this.runSyncAll(syncable, { dias: 30 });
+  }
+
+  openSyncModalForAll(template: TemplateRef<any>): void {
+    const today = new Date();
+    const past = new Date();
+    past.setDate(past.getDate() - 30);
+    this.syncFechaFin = this.formatDateInput(today);
+    this.syncFechaInicio = this.formatDateInput(past);
+    this.modalRef = this.modalService.show(template, { class: 'modal-md', backdrop: 'static', keyboard: false });
+  }
+
   openSyncModal(account: EmailAccount, template: TemplateRef<any>): void {
+    this.syncAllMode = false;
     this.syncAccountTarget = account;
     const today = new Date();
     const past = new Date();
@@ -276,9 +331,6 @@ export class EmailAccountsComponent implements OnInit {
   }
 
   confirmSyncWithRange(): void {
-    if (!this.syncAccountTarget) {
-      return;
-    }
     if (!this.syncFechaInicio || !this.syncFechaFin) {
       this.alertService.warning('Fechas requeridas', 'Seleccione fecha inicial y final.');
       return;
@@ -288,10 +340,22 @@ export class EmailAccountsComponent implements OnInit {
       return;
     }
     this.modalRef?.hide();
-    this.runSync(this.syncAccountTarget, {
+
+    const rangeOptions = {
       fecha_inicio: this.syncFechaInicio,
-      fecha_fin: this.syncFechaFin
-    });
+      fecha_fin: this.syncFechaFin,
+    };
+
+    if (this.syncAllMode) {
+      this.runSyncAll(this.syncAllTargets, rangeOptions);
+      this.syncAllMode = false;
+      return;
+    }
+
+    if (!this.syncAccountTarget) {
+      return;
+    }
+    this.runSync(this.syncAccountTarget, rangeOptions);
   }
 
   private formatDateInput(d: Date): string {
@@ -311,25 +375,96 @@ export class EmailAccountsComponent implements OnInit {
         this.syncingAccountId = null;
         this.alertService.success(
           res.message,
-          this.countryI18n.fe('syncSuccessDetail', { from: res.date_from, to: res.date_to })
+          this.buildSyncDetail(res)
         );
         this.loadAccounts();
       },
       error: (err) => {
         this.syncingAccountId = null;
-        const retrySec = err?.error?.retry_after_seconds;
-        if (err?.status === 429 && retrySec) {
-          const minutes = Math.ceil(retrySec / 60);
-          this.alertService.warning(
-            'Sincronización en espera',
-            `Puede volver a intentar en aproximadamente ${minutes} minuto(s).`
-          );
-        } else {
-          this.alertService.error(err);
-        }
+        this.handleSyncError(err);
         this.loadAccounts();
       }
     });
+  }
+
+  private runSyncAll(
+    accounts: EmailAccount[],
+    defaultOptions: { dias?: number; fecha_inicio?: string; fecha_fin?: string }
+  ): void {
+    const totals = { new: 0, duplicates: 0, failed: 0, synced: 0, skipped: 0 };
+    const runAt = (index: number): void => {
+      if (index >= accounts.length) {
+        this.syncingAccountId = null;
+        const parts = [
+          `${totals.synced} cuenta(s) sincronizada(s)`,
+          `${totals.new} DTE(s) nuevo(s)`,
+          `${totals.duplicates} duplicado(s) omitido(s)`,
+        ];
+        if (totals.failed > 0) {
+          parts.push(`${totals.failed} fallido(s)`);
+        }
+        if (totals.skipped > 0) {
+          parts.push(`${totals.skipped} omitida(s) por espera`);
+        }
+        this.alertService.success('Sincronización completada', parts.join('. ') + '.');
+        this.loadAccounts();
+        return;
+      }
+
+      const account = accounts[index];
+      const options = this.isFirstSync(account) && defaultOptions.fecha_inicio
+        ? { fecha_inicio: defaultOptions.fecha_inicio, fecha_fin: defaultOptions.fecha_fin }
+        : { dias: defaultOptions.dias ?? 30 };
+
+      if (!this.canSync(account)) {
+        totals.skipped += 1;
+        runAt(index + 1);
+        return;
+      }
+
+      this.syncingAccountId = account.id;
+      this.emailAccountService.sync(account.id, options).subscribe({
+        next: (res) => {
+          totals.synced += 1;
+          totals.new += res.stats?.new ?? 0;
+          totals.duplicates += res.stats?.duplicates ?? 0;
+          totals.failed += res.stats?.failed ?? 0;
+          runAt(index + 1);
+        },
+        error: () => {
+          totals.skipped += 1;
+          runAt(index + 1);
+        }
+      });
+    };
+
+    runAt(0);
+  }
+
+  private buildSyncDetail(res: {
+    date_from?: string;
+    date_to?: string;
+    stats?: { new: number; duplicates: number; failed: number };
+  }): string {
+    const range = this.countryI18n.fe('syncSuccessDetail', { from: res.date_from, to: res.date_to });
+    const stats = res.stats;
+    if (!stats) {
+      return range;
+    }
+    return `${range}. Nuevos: ${stats.new}. Duplicados omitidos: ${stats.duplicates}. Fallidos: ${stats.failed}.`;
+  }
+
+  private handleSyncError(err: any): void {
+    const retrySec = err?.error?.retry_after_seconds;
+    if (err?.status === 429 && retrySec) {
+      const minutes = Math.ceil(retrySec / 60);
+      this.alertService.warning(
+        'Sincronización en espera',
+        `Puede volver a intentar en aproximadamente ${minutes} minuto(s).`
+      );
+    } else {
+      this.alertService.error(err);
+    }
   }
 
   disconnectAccount(account: EmailAccount): void {

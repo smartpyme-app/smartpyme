@@ -4,26 +4,40 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { BsModalRef, BsModalService } from 'ngx-bootstrap/modal';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
+import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
-import { DteDocumentService, DteDocument } from '@services/dte-management/dte-document.service';
+import { ApiService } from '@services/api.service';
+import { DteDocumentService, DteDocument, DteLineItem } from '@services/dte-management/dte-document.service';
+import { FuncionalidadesService } from '@services/functionalities.service';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { CountryI18nService } from '@services/country-i18n.service';
 import { TranslatePipe } from '@ngx-translate/core';
+import { CrearProyectoComponent } from '@shared/modals/crear-proyecto/crear-proyecto.component';
 
 @Component({
   selector: 'app-dte-detail',
   templateUrl: './dte-detail.component.html',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, TooltipModule, TranslatePipe],
+  imports: [CommonModule, FormsModule, RouterModule, TooltipModule, NgSelectModule, TranslatePipe, CrearProyectoComponent],
 })
 export class DteDetailComponent implements OnInit {
   private readonly countryI18n = inject(CountryI18nService);
+  readonly apiService = inject(ApiService);
 
   document: DteDocument | null = null;
+  lineItems: DteLineItem[] = [];
   loading = false;
   downloading = false;
   procesando = false;
+  guardando = false;
   destinoSeleccionado: 'compra' | 'gasto' = 'compra';
+  idProyecto: number | null = null;
+  idCategoria: number | null = null;
+  tipoGasto = '';
+  tipoCostoGasto = '';
+  contabilidadHabilitada = false;
+  proyectos: any[] = [];
+  categorias: any[] = [];
 
   modalRef?: BsModalRef;
   jsonPreview = '';
@@ -33,6 +47,7 @@ export class DteDetailComponent implements OnInit {
   constructor(
     private dteService: DteDocumentService,
     private alertService: AlertService,
+    private funcionalidadesService: FuncionalidadesService,
     private route: ActivatedRoute,
     private router: Router,
     private modalService: BsModalService,
@@ -40,10 +55,61 @@ export class DteDetailComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.verificarAccesoContabilidad();
+    this.cargarProyectos();
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
       this.loadDocument(+id);
     }
+  }
+
+  get esCompra(): boolean {
+    return this.destinoSeleccionado === 'compra';
+  }
+
+  get esGasto(): boolean {
+    return this.destinoSeleccionado === 'gasto';
+  }
+
+  get puedeEditarClasificacion(): boolean {
+    if (!this.document) return false;
+    return this.document.validation_status === 'valid'
+      && this.document.processing_status !== 'processed'
+      && this.document.processing_status !== 'anulado';
+  }
+
+  verificarAccesoContabilidad(): void {
+    this.funcionalidadesService.verificarAcceso('contabilidad').subscribe({
+      next: (acceso) => {
+        this.contabilidadHabilitada = acceso;
+        this.cargarCategorias();
+      },
+      error: () => {
+        this.contabilidadHabilitada = false;
+        this.cargarCategorias();
+      }
+    });
+  }
+
+  cargarProyectos(): void {
+    if (!this.apiService.auth_user()?.empresa?.modulo_proyectos) {
+      return;
+    }
+    this.apiService.getAll('proyectos/list').subscribe({
+      next: (data) => { this.proyectos = data; },
+      error: (err) => this.alertService.error(err)
+    });
+  }
+
+  cargarCategorias(): void {
+    if (!this.apiService.mostrarMenuConfigGastos(this.contabilidadHabilitada)) {
+      this.categorias = [];
+      return;
+    }
+    this.apiService.getAll('gastos/categorias/list').subscribe({
+      next: (data) => { this.categorias = data; },
+      error: (err) => this.alertService.error(err)
+    });
   }
 
   loadDocument(id: number): void {
@@ -51,7 +117,12 @@ export class DteDetailComponent implements OnInit {
     this.dteService.get(id).subscribe({
       next: (doc) => {
         this.document = doc;
+        this.lineItems = doc.line_items || [];
         this.destinoSeleccionado = (doc.destino || 'compra') as 'compra' | 'gasto';
+        this.idProyecto = doc.id_proyecto ?? null;
+        this.idCategoria = doc.id_categoria ?? null;
+        this.tipoGasto = doc.tipo_gasto || this.inferirTipoGasto(this.lineItems) || '';
+        this.tipoCostoGasto = doc.tipo_costo_gasto || '';
         this.loading = false;
       },
       error: (err) => {
@@ -60,6 +131,21 @@ export class DteDetailComponent implements OnInit {
         this.router.navigate(['/dte-management/dtes']);
       }
     });
+  }
+
+  private inferirTipoGasto(items: DteLineItem[]): string | null {
+    if (!items.length) return null;
+    const keywords: Record<string, string[]> = {
+      Alquiler: ['alquiler', 'renta', 'arrendamiento'],
+      Combustible: ['combustible', 'gasolina', 'diesel'],
+      Servicios: ['servicio', 'electricidad', 'agua', 'teléfono'],
+      'Gastos varios': [],
+    };
+    const text = items.map(i => (i.descripcion || '').toLowerCase()).join(' ');
+    for (const [tipo, words] of Object.entries(keywords)) {
+      if (words.some(w => text.includes(w))) return tipo;
+    }
+    return null;
   }
 
   goBack(): void {
@@ -164,42 +250,71 @@ export class DteDetailComponent implements OnInit {
     return map[status] || status;
   }
 
+  setProyecto(proyecto: any): void {
+    this.idProyecto = proyecto?.id ?? null;
+    this.guardarMetadatos();
+  }
+
+  proyectoNombre(id: number): string {
+    return this.proyectos.find(p => p.id === id)?.nombre || `#${id}`;
+  }
+
   cambiarDestino(): void {
-    if (!this.document) return;
-    this.dteService.updateDestino(this.document.id, this.destinoSeleccionado).subscribe({
+    this.guardarMetadatos(true);
+  }
+
+  guardarMetadatos(silent = false): void {
+    if (!this.document || !this.puedeEditarClasificacion) return;
+    this.guardando = true;
+    this.dteService.update(this.document.id, {
+      destino: this.destinoSeleccionado,
+      id_proyecto: this.idProyecto,
+      id_categoria: this.esGasto ? this.idCategoria : null,
+      tipo_gasto: this.esGasto ? (this.tipoGasto || null) : null,
+      tipo_costo_gasto: this.esCompra ? (this.tipoCostoGasto || null) : null,
+    }).subscribe({
       next: (res) => {
         this.document = res.document;
-        this.alertService.success('Éxito', 'Destino actualizado');
+        this.guardando = false;
+        if (!silent) {
+          this.alertService.success('Éxito', 'Datos actualizados');
+        }
       },
-      error: (err) => this.alertService.error(err)
+      error: (err) => {
+        this.guardando = false;
+        this.alertService.error(err);
+      }
     });
   }
 
   procesar(): void {
     if (!this.document) return;
     this.procesando = true;
-    const destActual = this.document.destino || 'compra';
-    const needUpdate = destActual !== this.destinoSeleccionado;
-    const doProcesar = () => {
-      this.dteService.procesar(this.document!.id).subscribe({
-        next: (res) => {
-          this.document = res.document || this.document!;
-          this.alertService.success('Éxito', res.message || this.countryI18n.fe('processedDefault'));
-          this.procesando = false;
-        },
-        error: (err) => {
-          this.alertService.error(err?.error?.error || err?.error?.reason || 'Error al procesar');
-          this.procesando = false;
-        }
-      });
-    };
-    if (needUpdate) {
-      this.dteService.updateDestino(this.document.id, this.destinoSeleccionado).subscribe({
-        next: (res) => { this.document = res.document!; doProcesar(); },
-        error: (err) => { this.alertService.error(err); this.procesando = false; }
-      });
-    } else {
-      doProcesar();
-    }
+    this.dteService.update(this.document.id, {
+      destino: this.destinoSeleccionado,
+      id_proyecto: this.idProyecto,
+      id_categoria: this.esGasto ? this.idCategoria : null,
+      tipo_gasto: this.esGasto ? (this.tipoGasto || null) : null,
+      tipo_costo_gasto: this.esCompra ? (this.tipoCostoGasto || null) : null,
+    }).subscribe({
+      next: (res) => {
+        this.document = res.document;
+        this.dteService.procesar(this.document!.id).subscribe({
+          next: (procRes) => {
+            this.document = procRes.document || this.document!;
+            this.alertService.success('Éxito', procRes.message || this.countryI18n.fe('processedDefault'));
+            this.procesando = false;
+          },
+          error: (err) => {
+            this.alertService.error(err?.error?.error || err?.error?.reason || 'Error al procesar');
+            this.procesando = false;
+          }
+        });
+      },
+      error: (err) => {
+        this.alertService.error(err);
+        this.procesando = false;
+      }
+    });
   }
 }

@@ -40,11 +40,11 @@ class ProcessDteJob implements ShouldQueue
         DteParserService $parser,
         DteValidatorService $validator,
         DteProductSearchService $productSearch
-    ): void {
+    ): string {
         $account = $this->account->fresh();
         if (!$account) {
             $this->cleanupTempFiles();
-            return;
+            return 'failed';
         }
 
         if (DteDocument::withoutGlobalScopes()
@@ -52,7 +52,7 @@ class ProcessDteJob implements ShouldQueue
             ->where('email_message_id', $this->emailMessageId)
             ->exists()) {
             $this->cleanupTempFiles();
-            return;
+            return 'duplicate';
         }
 
         $jsonContent = file_get_contents($this->jsonTempPath);
@@ -62,7 +62,7 @@ class ProcessDteJob implements ShouldQueue
         } catch (\Throwable $e) {
             $this->cleanupTempFiles();
             $this->saveInvalidDte($account, $jsonContent, $e->getMessage(), 'parse_error');
-            return;
+            return 'created';
         }
 
         $empresa = $account->empresa;
@@ -127,10 +127,12 @@ class ProcessDteJob implements ShouldQueue
             if ($validation['valid']) {
                 event(new DteValidated($document));
             }
+
+            return 'created';
         } catch (QueryException $e) {
             $this->cleanupTempFiles();
             if ($e->getCode() === '23000' && str_contains($e->getMessage(), 'dte_documents_empresa_uuid_unique')) {
-                return;
+                return 'duplicate';
             }
             throw $e;
         }

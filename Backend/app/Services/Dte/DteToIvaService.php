@@ -241,6 +241,8 @@ class DteToIvaService
                 'percepcion' => $percepcion > 0 ? $percepcion : 0,
                 'id_bodega' => $idBodega,
                 'id_sucursal' => $idSucursal,
+                'id_proyecto' => $document->id_proyecto,
+                'tipo_costo_gasto' => $document->tipo_costo_gasto,
                 'id_empresa' => $document->id_empresa,
                 'id_usuario' => $idUsuario,
                 'codigo_generacion' => $codigoGeneracion,
@@ -386,7 +388,9 @@ class DteToIvaService
         $concepto = !empty($cuerpoDocumento)
             ? ($cuerpoDocumento[0]['descripcion'] ?? $document->issuer_name ?? 'DTE importado')
             : ($document->issuer_name ?? 'DTE importado');
-        $tipo = $this->determinarCategoriaGasto($cuerpoDocumento);
+        $tipo = $document->tipo_gasto ?: $this->determinarCategoriaGasto($cuerpoDocumento);
+        $idCategoria = $document->id_categoria;
+        $idProyecto = $document->id_proyecto;
 
         if (Gasto::withoutGlobalScopes()
             ->where('id_empresa', $document->id_empresa)
@@ -415,7 +419,9 @@ class DteToIvaService
             $tipo,
             $cuerpoDocumento,
             $identificacion,
-            $selloMh
+            $selloMh,
+            $idCategoria,
+            $idProyecto
         ) {
             $gasto = Gasto::withoutGlobalScopes()->create([
                 'fecha' => $fecha,
@@ -423,6 +429,7 @@ class DteToIvaService
                 'tipo_documento' => $tipoDocumento,
                 'concepto' => $concepto,
                 'tipo' => $tipo,
+                'id_categoria' => $idCategoria,
                 'estado' => $estado,
                 'forma_pago' => $formaPago,
                 'id_proveedor' => $proveedor->id,
@@ -430,6 +437,7 @@ class DteToIvaService
                 'iva' => $iva,
                 'total' => $total,
                 'id_sucursal' => $idSucursal,
+                'id_proyecto' => $idProyecto,
                 'id_empresa' => $document->id_empresa,
                 'id_usuario' => $idUsuario,
                 'codigo_generacion' => $identificacion['codigoGeneracion'] ?? $document->dte_uuid,
@@ -447,6 +455,7 @@ class DteToIvaService
                     'numero_item' => $numeroItem + 1,
                     'concepto' => $item['descripcion'] ?? '',
                     'tipo' => $tipo,
+                    'id_categoria' => $idCategoria,
                     'cantidad' => (float) ($item['cantidad'] ?? 0),
                     'precio_unitario' => (float) ($item['precioUni'] ?? 0),
                     'sub_total' => $ventaTotal - $ivaItem,

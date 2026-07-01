@@ -16,6 +16,7 @@ export interface SyncLog {
   emails_scanned: number;
   dtes_found: number;
   dtes_processed: number;
+  dtes_duplicates?: number;
   dtes_failed: number;
   error_message?: string;
   failure_details?: SyncLogFailure[];

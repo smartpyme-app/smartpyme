@@ -107,7 +107,10 @@ class DteDocumentController extends Controller
             return response()->json(['error' => 'No autorizado'], 403);
         }
 
-        return response()->json($document);
+        $payload = $document->toArray();
+        $payload['line_items'] = $this->parseLineItems($document);
+
+        return response()->json($payload);
     }
 
     /**
@@ -161,10 +164,72 @@ class DteDocumentController extends Controller
             if (!in_array($destino, ['compra', 'gasto'], true)) {
                 return response()->json(['error' => 'Destino inválido'], 422);
             }
-            $document->update(['destino' => $destino]);
+            $document->destino = $destino;
         }
 
+        if ($request->has('id_proyecto')) {
+            $document->id_proyecto = $request->input('id_proyecto') ?: null;
+        }
+
+        if ($request->has('id_categoria')) {
+            $document->id_categoria = $request->input('id_categoria') ?: null;
+        }
+
+        if ($request->has('tipo_gasto')) {
+            $document->tipo_gasto = $request->input('tipo_gasto') ?: null;
+        }
+
+        if ($request->has('tipo_costo_gasto')) {
+            $document->tipo_costo_gasto = $request->input('tipo_costo_gasto') ?: null;
+        }
+
+        $document->save();
+
         return response()->json(['success' => true, 'document' => $document->fresh()]);
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    protected function parseLineItems(DteDocument $document): array
+    {
+        if (!$document->json_path || !Storage::disk('dtes')->exists($document->json_path)) {
+            return [];
+        }
+
+        $jsonData = json_decode(Storage::disk('dtes')->get($document->json_path), true);
+        if (!is_array($jsonData)) {
+            return [];
+        }
+
+        $items = $jsonData['cuerpoDocumento'] ?? [];
+        $lines = [];
+
+        foreach ($items as $index => $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+
+            $cantidad = (float) ($item['cantidad'] ?? 0);
+            $precioUni = (float) ($item['precioUni'] ?? 0);
+            $ventaGravada = (float) ($item['ventaGravada'] ?? 0);
+            $ventaExenta = (float) ($item['ventaExenta'] ?? 0);
+            $ventaNoSuj = (float) ($item['ventaNoSuj'] ?? 0);
+            $subtotalLinea = $ventaGravada + $ventaExenta + $ventaNoSuj;
+            $ventaTotal = (float) ($item['ventaTotal'] ?? 0);
+            $total = $subtotalLinea > 0 ? $subtotalLinea : ($ventaTotal > 0 ? $ventaTotal : max(0, $cantidad * $precioUni));
+
+            $lines[] = [
+                'numero' => $index + 1,
+                'codigo' => $item['codigo'] ?? $item['codTrib'] ?? '',
+                'descripcion' => $item['descripcion'] ?? '',
+                'cantidad' => $cantidad,
+                'precio_unitario' => $precioUni,
+                'total' => round($total, 2),
+            ];
+        }
+
+        return $lines;
     }
 
     /**

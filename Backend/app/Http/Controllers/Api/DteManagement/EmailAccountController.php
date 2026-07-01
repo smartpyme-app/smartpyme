@@ -175,12 +175,22 @@ class EmailAccountController extends Controller
 
         $account->refresh();
 
+        $syncLog = \App\Models\DteManagement\SyncLog::withoutGlobalScopes()
+            ->where('user_email_account_id', $account->id)
+            ->orderByDesc('id')
+            ->first();
+
         return response()->json([
             'success' => true,
             'message' => 'Sincronización completada',
             'date_from' => $dateFrom->toDateString(),
             'date_to' => $dateTo->toDateString(),
             'last_sync_at' => $account->last_sync_at?->toIso8601String(),
+            'stats' => [
+                'new' => (int) ($syncLog->dtes_processed ?? 0),
+                'duplicates' => (int) ($syncLog->dtes_duplicates ?? 0),
+                'failed' => (int) ($syncLog->dtes_failed ?? 0),
+            ],
         ]);
     }
 
