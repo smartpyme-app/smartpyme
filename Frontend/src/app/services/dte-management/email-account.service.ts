@@ -38,7 +38,14 @@ export class EmailAccountService {
   sync(
     id: number,
     options?: { dias?: number; fecha_inicio?: string; fecha_fin?: string }
-  ): Observable<{ success: boolean; message: string; date_from: string; date_to: string; last_sync_at?: string }> {
+  ): Observable<{
+    success: boolean;
+    message: string;
+    date_from: string;
+    date_to: string;
+    last_sync_at?: string;
+    stats?: { new: number; duplicates: number; failed: number };
+  }> {
     let body: { dias?: number; fecha_inicio?: string; fecha_fin?: string } = {};
     if (options?.fecha_inicio && options?.fecha_fin) {
       body = { fecha_inicio: options.fecha_inicio, fecha_fin: options.fecha_fin };

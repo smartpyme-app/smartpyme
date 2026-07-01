@@ -2,6 +2,15 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from '@services/api.service';
 
+export interface DteLineItem {
+  numero: number;
+  codigo?: string;
+  descripcion: string;
+  cantidad: number;
+  precio_unitario: number;
+  total: number;
+}
+
 export interface DteDocument {
   id: number;
   dte_uuid: string;
@@ -17,6 +26,11 @@ export interface DteDocument {
   processing_status: string;
   processing_errors?: string;
   destino?: string;
+  id_proyecto?: number | null;
+  id_categoria?: number | null;
+  tipo_gasto?: string | null;
+  tipo_costo_gasto?: string | null;
+  line_items?: DteLineItem[];
   email_message_id?: string;
   json_path?: string;
   pdf_path?: string;
@@ -54,7 +68,14 @@ export class DteDocumentService {
   }
 
   updateDestino(id: number, destino: 'compra' | 'gasto'): Observable<{ success: boolean; document: DteDocument }> {
-    return this.api.patch(`dtes`, id, { destino });
+    return this.update(id, { destino });
+  }
+
+  update(
+    id: number,
+    payload: Partial<Pick<DteDocument, 'destino' | 'id_proyecto' | 'id_categoria' | 'tipo_gasto' | 'tipo_costo_gasto'>>
+  ): Observable<{ success: boolean; document: DteDocument }> {
+    return this.api.patch(`dtes`, id, payload);
   }
 
   procesar(id: number): Observable<{ success: boolean; message?: string; document?: DteDocument; compra_id?: number; gasto_id?: number }> {

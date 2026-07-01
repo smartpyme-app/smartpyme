@@ -1,8 +1,16 @@
 <section class="d-flex justify-content-between align-items-center bg-white p-4 rounded mb-3">
   <h5 class="mb-0">Cuentas de correo</h5>
-  <div class="d-flex gap-2">
+  <div class="d-flex gap-2 flex-wrap">
+    <button
+      class="btn btn-outline-secondary"
+      (click)="requestSyncAll()"
+      [disabled]="isSyncing || !hasActiveAccounts()"
+      tooltip="Sincronizar todas las cuentas activas de la lista"
+    >
+      <i class="fa fa-sync-alt me-2" [class.fa-spin]="isSyncing"></i>Sincronizar
+    </button>
     <button class="btn btn-primary" (click)="connectGmail()" [disabled]="isSyncing">
-      <i class="fa fa-google me-2"></i>Conectar Gmail
+      <i class="fa-brands fa-google me-2"></i>Conectar Gmail
     </button>
     <button class="btn btn-outline-primary" (click)="openImapModal(imapModal)" [disabled]="isSyncing">
       <i class="fa fa-server me-2"></i>Conectar Otros
@@ -71,19 +79,6 @@
             </span>
             <ng-template #accionesTemplate>
               <div class="list-group border-0">
-                <a
-                  *ngIf="account.is_active"
-                  (click)="requestSync(account)"
-                  class="list-group-item list-group-item-action border-0 click"
-                  [class.disabled]="!canSync(account)"
-                  [class.pe-none]="!canSync(account)"
-                  [attr.aria-disabled]="!canSync(account)"
-                >
-                  <i class="fa fa-fw" [ngClass]="syncingAccountId === account.id ? 'fa-spinner fa-spin' : 'fa-sync-alt'"></i>
-                  <span *ngIf="syncingAccountId === account.id"> Sincronizando…</span>
-                  <span *ngIf="syncingAccountId !== account.id"> Sincronizar</span>
-                  <small class="d-block text-muted" *ngIf="syncCooldownLabel(account)">{{ syncCooldownLabel(account) }}</small>
-                </a>
                 <a (click)="openNotificationModal(notificacionesModal, account)" class="list-group-item list-group-item-action border-0 click">
                   <i class="fa fa-fw fa-bell"></i> Configurar notificaciones
                 </a>
@@ -101,11 +96,16 @@
 
 <ng-template #syncModal>
   <div class="modal-header">
-    <h5 class="modal-title">Primera sincronización</h5>
+    <h5 class="modal-title">{{ syncAllMode ? 'Primera sincronización (cuentas nuevas)' : 'Primera sincronización' }}</h5>
     <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close" [disabled]="isSyncing"></button>
   </div>
   <div class="modal-body">
-    <p class="text-muted mb-3" *ngIf="syncAccountTarget">
+    <p class="text-muted mb-3" *ngIf="syncAllMode">
+      Se sincronizarán <strong>{{ syncAllTargets.length }}</strong> cuenta(s) activa(s).
+      <span *ngIf="syncAllFirstTimeCount > 0">Las cuentas nuevas usarán el rango de fechas indicado.</span>
+      <span *ngIf="syncAllFirstTimeCount === 0">Las cuentas ya sincronizadas revisarán los últimos 30 días.</span>
+    </p>
+    <p class="text-muted mb-3" *ngIf="!syncAllMode && syncAccountTarget">
       Cuenta: <strong>{{ syncAccountTarget.email }}</strong><br>
       Elija el rango de fechas de los correos a revisar (solo la primera vez; después se usarán los últimos 30 días).
     </p>

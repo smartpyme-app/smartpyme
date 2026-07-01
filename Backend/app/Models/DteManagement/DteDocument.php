@@ -29,6 +29,10 @@ class DteDocument extends Model
         'processing_status',
         'processing_errors',
         'destino',
+        'id_proyecto',
+        'id_categoria',
+        'tipo_gasto',
+        'tipo_costo_gasto',
         'email_message_id',
     ];
 
