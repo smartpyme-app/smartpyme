@@ -8,6 +8,7 @@ use App\Models\Admin\Empresa;
 use App\Models\Inventario\Producto;
 use App\Models\MH\MHCCF;
 use App\Models\MH\MHFactura;
+use App\Models\MH\MHFacturaExportacion;
 use App\Models\Suscripcion;
 use App\Models\User;
 use App\Models\Ventas\Clientes\Cliente;
@@ -20,6 +21,8 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use App\Constants\FacturacionElectronica\FEConstants;
 
 class GenerarFacturasSuscripciones extends Command
 {
@@ -35,198 +38,243 @@ class GenerarFacturasSuscripciones extends Command
         $this->mhGateway = $mhGateway;
     }
 
-    public function handle()
-    {
-        $this->info('Iniciando la generación de facturas de suscripciones...');
-        Log::channel('facturacion')->info('Iniciando la generación de facturas de suscripciones...');
+public function handle()
+{
+    $inicio = microtime(true);
+    
+    $this->info('Iniciando la generación de facturas de suscripciones...');
+    Log::channel('facturacion')->info('Iniciando la generación de facturas de suscripciones...');
 
-        try {
-            $empresaId = $this->argument('empresa');
+    try {
+        $empresaId = $this->argument('empresa');
+        $esModoPrueba = $empresaId !== null && $empresaId !== '';
 
-            if ($empresaId !== null && $empresaId !== '') {
-                $msgPrueba = "Modo de prueba/específico activado: Procesando únicamente las suscripciones de la empresa ID: {$empresaId}";
-                $this->info($msgPrueba);
-                Log::channel('facturacion')->info($msgPrueba);
+        if ($esModoPrueba) {
+            $msgPrueba = "Modo de prueba activado: Procesando únicamente las suscripciones de la empresa ID: {$empresaId}";
+            $this->info($msgPrueba);
+            Log::channel('facturacion')->info($msgPrueba);
+        }
+
+        $metodoTransferencia = config('constants.METODO_PAGO_TRANSFERENCIA');
+        $query = Suscripcion::where('estado', 'activo')
+            ->where('metodo_pago', $metodoTransferencia);
+
+        if ($esModoPrueba) {
+            $query->where('empresa_id', $empresaId);
+        }
+
+        $hoy = Carbon::now();
+        $esDiaUno = $hoy->day === 1;
+
+        // ✅ Cargar relaciones para evitar N+1 queries
+        $suscripciones = $query->with(['empresa', 'plan'])->get();
+
+        if (!$esModoPrueba && !$esDiaUno) {
+            $msgDia = 'Planes mensuales solo se emiten el día 1 del mes. Ejecutando solo planes anuales que venzan este mes.';
+            $this->info($msgDia);
+            Log::channel('facturacion')->info($msgDia, ['fecha' => $hoy->toDateString()]);
+        }
+
+        $total = $suscripciones->count();
+        $msg = "Se encontraron {$total} suscripciones activas con método de pago «{$metodoTransferencia}» para evaluar.";
+        $this->info($msg);
+        Log::channel('facturacion')->info($msg);
+
+        $procesadas = 0;
+        $omitidas = 0;
+        $errores = 0;
+        $exitosas = [];
+        $fallidas = [];
+
+        foreach ($suscripciones as $index => $suscripcion) {
+            $esAnual = mb_strtolower((string) $suscripcion->tipo_plan) === 'anual';
+            
+            if (!$esAnual) {
+                if (!$esModoPrueba && !$esDiaUno) {
+                    $omitidas++;
+                    continue;
+                }
+            } else {
+                if ($suscripcion->fecha_proximo_pago) {
+                    $fechaProximoPago = Carbon::parse($suscripcion->fecha_proximo_pago);
+                    
+                    if (!($hoy->year === $fechaProximoPago->year && $hoy->month === $fechaProximoPago->month)) {
+                        $omitidas++;
+                        continue;
+                    }
+                } else {
+                    $this->registrarFalloSuscripcion(
+                        $suscripcion,
+                        'validación',
+                        new \RuntimeException('fecha_proximo_pago no configurada para plan anual.')
+                    );
+                    $errores++;
+                    $fallidas[] = [
+                        'suscripcion_id' => $suscripcion->id,
+                        'empresa_id' => $suscripcion->empresa_id,
+                        'empresa_nombre' => $suscripcion->empresa->nombre ?? 'N/A',
+                        'tipo_plan' => $suscripcion->tipo_plan,
+                        'error' => 'fecha_proximo_pago no configurada',
+                    ];
+                    continue;
+                }
             }
 
-            // Solo clientes que pagan por transferencia; n1co tiene flujo aparte y no se factura aquí.
-            $metodoTransferencia = config('constants.METODO_PAGO_TRANSFERENCIA');
-            $query = Suscripcion::where('estado', 'activo')
-                ->where('metodo_pago', $metodoTransferencia);
-
-            if ($empresaId !== null && $empresaId !== '') {
-                $query->where('empresa_id', $empresaId);
-            }
-
-            $hoy = Carbon::now();
-
-            $suscripciones = $query->get();
-
-            $permitirMensualFueraDiaUno = $empresaId !== null && $empresaId !== '';
-            if (!$permitirMensualFueraDiaUno && $hoy->day !== 1) {
-                $msgDia = 'Planes no anuales solo se emiten el día 1 del mes; hoy no aplica (use argumento empresa para prueba).';
-                $this->info($msgDia);
-                Log::channel('facturacion')->info($msgDia, ['fecha' => $hoy->toDateString()]);
-            }
-
-            $total = $suscripciones->count();
-            $msg = "Se encontraron {$total} suscripciones activas con método de pago «{$metodoTransferencia}» para evaluar.";
+            $progress = ($index + 1) . '/' . $total;
+            $msg = "[{$progress}] Procesando suscripción ID: {$suscripcion->id} (Empresa: {$suscripcion->empresa_id})";
             $this->info($msg);
             Log::channel('facturacion')->info($msg);
 
-            foreach ($suscripciones as $index => $suscripcion) {
-                $esAnual = mb_strtolower((string) $suscripcion->tipo_plan) === 'anual';
-                if (!$esAnual && !$permitirMensualFueraDiaUno && $hoy->day !== 1) {
-                    continue;
-                }
-
-                $progress = ($index + 1) . '/' . $total;
-                $msg = "[{$progress}] Procesando suscripción ID: {$suscripcion->id} (Empresa: {$suscripcion->empresa_id})";
-                $this->info($msg);
-                Log::channel('facturacion')->info($msg);
-
-                if ($esAnual) {
-                    if ($suscripcion->fecha_proximo_pago) {
-                        $fechaProximoPago = Carbon::parse($suscripcion->fecha_proximo_pago);
-
-                        if ($hoy->year === $fechaProximoPago->year && $hoy->month === $fechaProximoPago->month) {
-                            $this->emitirFactura($suscripcion);
-                        }
-                    }
-                } else {
-                    $this->emitirFactura($suscripcion);
-                }
+            try {
+                $venta = $this->emitirFactura($suscripcion);
+                $procesadas++;
+                $exitosas[] = [
+                    'suscripcion_id' => $suscripcion->id,
+                    'empresa_id' => $suscripcion->empresa_id,
+                    'empresa_nombre' => $suscripcion->empresa->nombre ?? 'N/A',
+                    'tipo_plan' => $suscripcion->tipo_plan,
+                    'monto' => $suscripcion->monto,
+                    'venta_id' => $venta?->id,
+                ];
+            } catch (\Throwable $e) {
+                $this->registrarFalloSuscripcion($suscripcion, 'emisión', $e);
+                $errores++;
+                $fallidas[] = [
+                    'suscripcion_id' => $suscripcion->id,
+                    'empresa_id' => $suscripcion->empresa_id,
+                    'empresa_nombre' => $suscripcion->empresa->nombre ?? 'N/A',
+                    'tipo_plan' => $suscripcion->tipo_plan,
+                    'error' => $e->getMessage(),
+                ];
             }
-
-            $this->info('Generación de facturas de suscripciones completada exitosamente.');
-            Log::channel('facturacion')->info('Generación de facturas de suscripciones completada exitosamente.');
-
-            return 0;
-        } catch (\Exception $e) {
-            $this->error('Error durante la generación de facturas: ' . $e->getMessage());
-            Log::channel('facturacion')->error('Error durante la generación de facturas de suscripciones: ' . $e->getMessage());
-
-            return 1;
         }
+
+        $tiempoTotal = round(microtime(true) - $inicio, 2);
+        $resumen = "Generación completada en {$tiempoTotal}s. Procesadas: {$procesadas}, Omitidas: {$omitidas}, Errores: {$errores}";
+        $this->info($resumen);
+        Log::channel('facturacion')->info($resumen);
+
+        if (count($exitosas) > 0) {
+            Log::channel('facturacion')->info('=== EMPRESAS FACTURADAS EXITOSAMENTE ===', ['total' => count($exitosas)]);
+            foreach ($exitosas as $ok) {
+                Log::channel('facturacion')->info("Empresa: {$ok['empresa_nombre']} (ID: {$ok['empresa_id']}) | Suscripcion: {$ok['suscripcion_id']} | Venta: {$ok['venta_id']} | Plan: {$ok['tipo_plan']} | Monto: {$ok['monto']}");
+            }
+        }
+
+        if (count($fallidas) > 0) {
+            Log::channel('facturacion')->error('=== EMPRESAS CON ERROR EN FACTURACION ===', ['total' => count($fallidas)]);
+            foreach ($fallidas as $fail) {
+                Log::channel('facturacion')->error("Empresa: {$fail['empresa_nombre']} (ID: {$fail['empresa_id']}) | Suscripcion: {$fail['suscripcion_id']} | Plan: {$fail['tipo_plan']} | Error: {$fail['error']}");
+            }
+        }
+
+        return $errores > 0 ? 1 : 0;
+    } catch (\Exception $e) {
+        $this->error('Error durante la generación de facturas: ' . $e->getMessage());
+        Log::channel('facturacion')->error('Error durante la generación de facturas de suscripciones: ' . $e->getMessage(), [
+            'exception' => get_class($e),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+            'trace' => $e->getTraceAsString(),
+        ]);
+
+        return 1;
+    }
+}
+
+    private function determinarTipoDte(Cliente $cliente, ?string $tipoFacturaConfigurado): string
+    {
+        if ($tipoFacturaConfigurado !== null && $tipoFacturaConfigurado !== '') {
+            $tipo = str_pad(trim((string) $tipoFacturaConfigurado), 2, '0', STR_PAD_LEFT);
+            if (in_array($tipo, ['01', '03', '11'], true)) {
+                return $tipo;
+            }
+        }
+
+        if (!empty($cliente->cod_pais) && strtoupper($cliente->cod_pais) !== 'SV') {
+            return FEConstants::TIPO_DTE_FACTURAS_DE_EXPORTACION;
+        }
+
+        if (!empty($cliente->ncr)) {
+            return FEConstants::TIPO_DTE_COMPROBANTE_DE_CREDITO_FISCAL;
+        }
+
+        if (!empty($cliente->nit) && $cliente->tipo_documento === '36') {
+            return FEConstants::TIPO_DTE_COMPROBANTE_DE_CREDITO_FISCAL;
+        }
+
+        return FEConstants::TIPO_DTE_FACTURA_CONSUMIDOR_FINAL;
     }
 
-    /**
-     * Emite la factura DTE (armado, firma externa, recepción MH) para la suscripción dada.
-     */
-    private function emitirFactura(Suscripcion $suscripcion): void
+    private function emitirFactura(Suscripcion $suscripcion): ?Venta
     {
         $suscripcion->loadMissing(['empresa', 'plan']);
 
-        $empresa = Empresa::find(2); // Empresa administradora emisora
+        $empresa = Empresa::find(2);
         if (!$empresa instanceof Empresa) {
-            $this->registrarFalloSuscripcion($suscripcion, 'armado', new \RuntimeException('Empresa emisora (Super Admin ID 2) no encontrada en el sistema.'));
-
-            return;
-        }
-
-        $tipoDte = $suscripcion->tipo_factura !== null && $suscripcion->tipo_factura !== ''
-            ? str_pad(trim((string) $suscripcion->tipo_factura), 2, '0', STR_PAD_LEFT)
-            : null;
-
-        if (!in_array($tipoDte, ['01', '03'], true)) {
-            $this->registrarFalloSuscripcion(
-                $suscripcion,
-                'armado',
-                new \RuntimeException("tipo_factura inválido o ausente (esperado 01 o 03): " . var_export($suscripcion->tipo_factura, true))
-            );
-
-            return;
+            throw new \RuntimeException('Empresa emisora (Super Admin ID 2) no encontrada en el sistema.');
         }
 
         if (empty($suscripcion->id_cliente)) {
-            $this->registrarFalloSuscripcion($suscripcion, 'armado', new \RuntimeException('id_cliente no configurado en la suscripción.'));
-
-            return;
+            throw new \RuntimeException('id_cliente no configurado en la suscripción.');
         }
 
         $cliente = Cliente::withoutGlobalScopes()->find($suscripcion->id_cliente);
         if (!$cliente) {
-            $this->registrarFalloSuscripcion($suscripcion, 'armado', new \RuntimeException('Cliente receptor no encontrado (id_cliente).'));
-
-            return;
+            throw new \RuntimeException('Cliente receptor no encontrado (id_cliente: ' . $suscripcion->id_cliente . ').');
         }
 
         if (!$empresa->facturacion_electronica) {
-            $this->registrarFalloSuscripcion($suscripcion, 'armado', new \RuntimeException('La empresa no tiene activada la facturación electrónica.'));
-
-            return;
+            throw new \RuntimeException('La empresa no tiene activada la facturación electrónica.');
         }
 
         if (empty($empresa->mh_usuario) || empty($empresa->mh_contrasena)) {
-            $this->registrarFalloSuscripcion($suscripcion, 'armado', new \RuntimeException('Faltan mh_usuario o mh_contrasena para la API de Hacienda.'));
-
-            return;
+            throw new \RuntimeException('Faltan mh_usuario o mh_contrasena para la API de Hacienda.');
         }
 
         if (empty($empresa->mh_pwd_certificado)) {
-            $this->registrarFalloSuscripcion($suscripcion, 'firmado', new \RuntimeException('Falta mh_pwd_certificado (contraseña del certificado) en la empresa.'));
-
-            return;
+            throw new \RuntimeException('Falta mh_pwd_certificado (contraseña del certificado) en la empresa.');
         }
+
+        $tipoDte = $this->determinarTipoDte($cliente, $suscripcion->tipo_factura);
 
         $venta = null;
         $dteJson = null;
 
-        Log::channel('facturacion')->info("Paso 1: Armar JSON DTE para suscripción {$suscripcion->id}");
-        try {
-            [$venta, $dteJson] = $this->armarJsonDteSuscripcion($suscripcion, $empresa, $cliente, $tipoDte);
-            Log::channel('facturacion')->info("Venta creada ID: {$venta->id} para suscripción {$suscripcion->id}");
-        } catch (\Throwable $e) {
-            $this->registrarFalloSuscripcion($suscripcion, 'armado', $e);
-
-            return;
-        }
+        Log::channel('facturacion')->info("Paso 1: Armar JSON DTE para suscripción {$suscripcion->id} (tipo: {$tipoDte})");
+        [$venta, $dteJson] = $this->armarJsonDteSuscripcion($suscripcion, $empresa, $cliente, $tipoDte);
+        Log::channel('facturacion')->info("Venta creada ID: {$venta->id} para suscripción {$suscripcion->id}");
 
         $documentoFirmado = null;
         Log::channel('facturacion')->info("Paso 2: Firmar JSON DTE externamente para venta {$venta->id}");
-        try {
-            $documentoFirmado = $this->firmarJsonDteExterno($dteJson, $empresa);
-            Log::channel('facturacion')->info("JSON firmado exitosamente para venta {$venta->id}");
-        } catch (\Throwable $e) {
-            $this->registrarFalloSuscripcion($suscripcion, 'firmado', $e, $venta);
-
-            return;
-        }
+        $documentoFirmado = $this->firmarJsonDteExterno($dteJson, $empresa);
+        Log::channel('facturacion')->info("JSON firmado exitosamente para venta {$venta->id}");
 
         $respuestaHacienda = null;
         Log::channel('facturacion')->info("Paso 3: Enviar DTE a recepción Hacienda para venta {$venta->id}");
-        try {
-            $respuestaHacienda = $this->enviarDteRecepcionHacienda($venta, $dteJson, $documentoFirmado, $empresa);
-            Log::channel('facturacion')->info("Respuesta recibida de Hacienda para venta {$venta->id}", ['respuesta' => $respuestaHacienda]);
-        } catch (\Throwable $e) {
-            $this->registrarFalloSuscripcion($suscripcion, 'envío MH', $e, $venta);
-
-            return;
-        }
+        $respuestaHacienda = $this->enviarDteRecepcionHacienda($venta, $dteJson, $documentoFirmado, $empresa);
+        Log::channel('facturacion')->info("Respuesta recibida de Hacienda para venta {$venta->id}", ['respuesta' => $respuestaHacienda]);
 
         $estado = is_array($respuestaHacienda) ? ($respuestaHacienda['estado'] ?? null) : null;
         $sello = is_array($respuestaHacienda) ? ($respuestaHacienda['selloRecibido'] ?? null) : null;
 
         if ($estado !== 'PROCESADO' || empty($sello)) {
             $detalle = is_array($respuestaHacienda) ? json_encode($respuestaHacienda, JSON_UNESCAPED_UNICODE) : (string) $respuestaHacienda;
-            $this->registrarFalloSuscripcion(
-                $suscripcion,
-                'envío MH',
-                new \RuntimeException('Respuesta de Hacienda no indica PROCESADO o falta selloRecibido: ' . $detalle),
-                $venta
-            );
-
-            return;
+            throw new \RuntimeException('Respuesta de Hacienda no indica PROCESADO o falta selloRecibido: ' . $detalle);
         }
 
-        try {
-            Log::channel('facturacion')->info("Paso 4: Persistir venta DTE emitido para venta {$venta->id}");
-            $this->persistirVentaDteEmitido($venta, $dteJson, $documentoFirmado, $sello, $respuestaHacienda);
-            Log::channel('facturacion')->info("Venta {$venta->id} persistida como Pagada con sello MH.");
-        } catch (\Throwable $e) {
-            $this->registrarFalloSuscripcion($suscripcion, 'persistencia', $e, $venta);
+        Log::channel('facturacion')->info("Paso 4: Persistir venta DTE emitido para venta {$venta->id}");
+        $this->persistirVentaDteEmitido($venta, $dteJson, $documentoFirmado, $sello, $respuestaHacienda);
+        Log::channel('facturacion')->info("Venta {$venta->id} persistida con sello MH.");
 
-            return;
+        // Paso 5: Enviar correo con el DTE
+        Log::channel('facturacion')->info("Paso 5: Enviar correo con DTE para venta {$venta->id}");
+        try {
+            $this->enviarCorreoDTE($venta);
+            Log::channel('facturacion')->info("Correo enviado exitosamente para venta {$venta->id}");
+        } catch (\Throwable $e) {
+            Log::channel('facturacion')->warning("No se pudo enviar el correo para venta {$venta->id}: " . $e->getMessage());
+            // No lanzamos excepción para que el proceso continúe
         }
 
         $msg = sprintf(
@@ -244,13 +292,10 @@ class GenerarFacturasSuscripciones extends Command
             'tipo_dte' => $tipoDte,
             'sello_mh' => $sello,
         ]);
+
+        return $venta;
     }
 
-    /**
-     * Paso 1: crea venta + detalle mínimo y genera el JSON DTE con MHFactura o MHCCF.
-     *
-     * @return array{0: Venta, 1: array}
-     */
     private function armarJsonDteSuscripcion(
         Suscripcion $suscripcion,
         Empresa $empresa,
@@ -272,7 +317,12 @@ class GenerarFacturasSuscripciones extends Command
                 throw new \RuntimeException('No hay sucursal con cod_estable_mh configurado para la empresa.');
             }
 
-            $nombreDocumento = $tipoDte === '03' ? 'Crédito fiscal' : 'Factura';
+            $nombreDocumento = match ($tipoDte) {
+                '03' => 'Crédito fiscal',
+                '11' => 'Factura de exportación',
+                default => 'Factura',
+            };
+
             $documento = Documento::withoutGlobalScopes()
                 ->where('id_empresa', $empresa->id)
                 ->where('id_sucursal', $sucursal->id)
@@ -302,7 +352,7 @@ class GenerarFacturasSuscripciones extends Command
                 ?: User::withoutGlobalScopes()->where('id_empresa', $empresa->id)->orderBy('id')->value('id');
 
             if (!$idUsuario) {
-                throw new \RuntimeException('No se pudo determinar id_usuario para la venta (configure usuario_id en la suscripción o cree un usuario en la empresa).');
+                throw new \RuntimeException('No se pudo determinar id_usuario para la venta.');
             }
 
             $producto = Producto::withoutGlobalScopes()
@@ -315,7 +365,7 @@ class GenerarFacturasSuscripciones extends Command
                 ->first();
 
             if (!$producto) {
-                throw new \RuntimeException('No existe ningún producto tipo «Servicio» en la empresa para armar el detalle del DTE.');
+                throw new \RuntimeException('No existe ningún producto tipo «Servicio» en la empresa.');
             }
 
             $total = (float) ($suscripcion->monto ?? 0);
@@ -323,7 +373,8 @@ class GenerarFacturasSuscripciones extends Command
                 throw new \RuntimeException('El monto de la suscripción debe ser mayor a cero.');
             }
 
-            $cobraIva = $empresa->cobra_iva === 'Si' || $empresa->cobra_iva === '1' || $empresa->cobra_iva === 1;
+            $cobraIva = $tipoDte !== '11' && ($empresa->cobra_iva === 'Si' || $empresa->cobra_iva === '1' || $empresa->cobra_iva === 1);
+            
             if ($cobraIva) {
                 $subTotal = round($total / 1.13, 4);
                 $iva = round($total - $subTotal, 2);
@@ -370,7 +421,9 @@ class GenerarFacturasSuscripciones extends Command
             ]);
 
             $venta->correlativo = $documento->correlativo;
-            $documento->increment('correlativo');
+            $documento->correlativo += 1;
+            $documento->save();
+            
             $venta->save();
 
             $detalle = new Detalle;
@@ -389,13 +442,11 @@ class GenerarFacturasSuscripciones extends Command
                 }]);
             }]);
 
-            if ($tipoDte === '03') {
-                $mh = new MHCCF;
-                $dteJson = $mh->generarDTE($venta);
-            } else {
-                $mh = new MHFactura;
-                $dteJson = $mh->generarDTE($venta);
-            }
+            $dteJson = match ($tipoDte) {
+                '03' => (new MHCCF)->generarDTE($venta),
+                '11' => (new MHFacturaExportacion)->generarDTE($venta),
+                default => (new MHFactura)->generarDTE($venta),
+            };
 
             $venta->refresh();
 
@@ -403,11 +454,6 @@ class GenerarFacturasSuscripciones extends Command
         });
     }
 
-    /**
-     * Paso 2: firma electrónica vía servicio externo (mismo cuerpo que usa el frontend).
-     *
-     * @return array|string Decoded JSON firmado enviado como «documento» a Hacienda
-     */
     private function firmarJsonDteExterno(array $dteJson, Empresa $empresa): array|string
     {
         $nit = str_replace('-', '', (string) $empresa->nit);
@@ -455,12 +501,6 @@ class GenerarFacturasSuscripciones extends Command
         return $decoded;
     }
 
-    /**
-     * Paso 3: recepción DTE en Ministerio de Hacienda.
-     *
-     * @param array|string $documentoFirmado
-     * @return array<string, mixed>
-     */
     private function enviarDteRecepcionHacienda(Venta $venta, array $dteJson, $documentoFirmado, Empresa $empresa): array
     {
         $payload = [
@@ -486,10 +526,6 @@ class GenerarFacturasSuscripciones extends Command
         return $body;
     }
 
-    /**
-     * @param array|string $documentoFirmado
-     * @param array<string, mixed> $respuestaHacienda
-     */
     private function persistirVentaDteEmitido(
         Venta $venta,
         array $dteJson,
@@ -516,8 +552,53 @@ class GenerarFacturasSuscripciones extends Command
 
         $venta->dte = $dteJson;
         $venta->sello_mh = $sello;
-        $venta->estado = 'Pagada';
+        $venta->qr = 'https://admin.factura.gob.sv/consultaPublica?ambiente='. $dteJson['identificacion']['ambiente'] .'&codGen=' . $dteJson['identificacion']['codigoGeneracion'] . '&fechaEmi=' . $dteJson['identificacion']['fecEmi'];
         $venta->save();
+    }
+
+    /**
+     * Envía el correo con el DTE al cliente
+     */
+    private function enviarCorreoDTE(Venta $venta): void
+    {
+        $venta->load('cliente');
+        
+        if (!$venta->cliente || empty($venta->cliente->correo)) {
+            throw new \RuntimeException('El cliente no tiene correo electrónico configurado.');
+        }
+
+        $DTE = $venta->dte;
+        if (!$DTE) {
+            throw new \RuntimeException('La venta no tiene DTE generado.');
+        }
+
+        $tipoDte = $DTE['identificacion']['tipoDte'] ?? null;
+        
+        // Generar PDF según el tipo de DTE
+        $vistaPdf = match ($tipoDte) {
+            '01' => 'reportes.facturacion.DTE-Factura',
+            '03' => 'reportes.facturacion.DTE-CCF',
+            '11' => 'reportes.facturacion.DTE-Factura-Exportacion',
+            default => throw new \RuntimeException("Tipo de DTE no soportado para envío de correo: {$tipoDte}"),
+        };
+
+        $pdf = app('dompdf.wrapper')->loadView($vistaPdf, compact('venta', 'DTE'));
+        $pdfContent = $pdf->output();
+
+        $correo = $venta->cliente->correo;
+        $nombre = $DTE['receptor']['nombre'] ?? $venta->cliente->nombre_completo;
+
+        Mail::send('mails.DTE', ['DTE' => $DTE, 'nombre' => $nombre], function ($m) use ($pdfContent, $DTE, $correo, $nombre) {
+            $m->from('noreply@smartpyme.sv', $DTE['emisor']['nombre'])
+                ->to($correo, $nombre)
+                ->attachData($pdfContent, $DTE['identificacion']['codigoGeneracion'] . '.pdf', [
+                    'mime' => 'application/pdf',
+                ])
+                ->attachData(json_encode($DTE), $DTE['identificacion']['codigoGeneracion'] . '.json', [
+                    'mime' => 'application/json',
+                ])
+                ->subject('Documento Tributario Electrónico - Suscripción SmartPyme');
+        });
     }
 
     private function registrarFalloSuscripcion(
