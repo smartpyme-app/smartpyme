@@ -67,9 +67,11 @@
         <div class="form-group col-md-12 col-lg-5" *ngIf="venta.cotizacion != 1">
             <div class="d-flex justify-content-between align-items-baseline gap-2 mb-1">
                 <label for="observaciones" class="mb-0">Observaciones:</label>
-                <small class="text-muted" style="font-size: 10px;">{{ ('' + (venta.observaciones ?? '')).length }}/150</small>
+                <small class="text-muted" style="font-size: 10px;">{{ ('' + (venta.observaciones ?? '')).length
+                    }}/150</small>
             </div>
-            <input id="observaciones" type="text" class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.observaciones" name="observaciones" maxlength="150">
+            <input id="observaciones" type="text" class="form-control" placeholder="Escribe aquí"
+                [(ngModel)]="venta.observaciones" name="observaciones" maxlength="150">
         </div>
         <div *ngIf="apiService.auth_user().empresa.modulo_proyectos" class="form-group col-md-12 col-lg-3">
             <label for="">Proyecto</label>
@@ -221,7 +223,7 @@
 </section>
 
 <section class="card border-0 p-3 mb-3">
-    <h6 class="mt-3">Productos y servicios2</h6>
+    <h6 class="mt-3">Productos y servicios</h6>
 
     <app-venta-detalles-v2 [venta]="venta" [usuarios]="usuarios" [habilitarCuentaTerceros]="habilitarCuentaTerceros"
         (update)="updateVenta($event)" (sumTotal)="sumTotal()"

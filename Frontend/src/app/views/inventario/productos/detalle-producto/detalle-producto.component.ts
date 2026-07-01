@@ -33,6 +33,7 @@ export class DetalleProductoComponent implements OnInit {
       producto => {
         this.producto = producto;
         this.loading = false;
+        this.scrollToFragment();
       },
       error => {
         this.alertService.error(error);
@@ -52,6 +53,15 @@ export class DetalleProductoComponent implements OnInit {
     const pct = this.producto?.porcentaje_impuesto;
     if (pct != null && pct !== '') return Number(pct);
     return Number(this.apiService.auth_user()?.empresa?.iva ?? 0);
+  }
+
+  private scrollToFragment(): void {
+    if (this.route.snapshot.fragment !== 'historial-precio-costo') {
+      return;
+    }
+    setTimeout(() => {
+      document.getElementById('historial-precio-costo')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 150);
   }
 
 }

@@ -1,10 +1,19 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
   <h2 class="page-heading">Configuración de Tipos de Cliente</h2>
-  <button class="btn btn-default tcla-F4" (click)="openCreateModal()" [disabled]="loading"
-    tooltip="Crear tipo de cliente (F4)">
-    <img src="/assets/icons/plus.png" class="icon me-2">
-    Añadir tipo
-  </button>
+  <div class="d-flex gap-2">
+    <!-- Botón para abrir modal de activación -->
+    <button class="btn btn-default" (click)="openActivacionModal()" [disabled]="loading"
+      tooltip="Configuración Fidelización">
+      <i class="fa me-2" [ngClass]="isFidelizacionCompleta() ? 'fa-toggle-on' : 'fa-toggle-off'"></i>
+      {{ isFidelizacionCompleta() ? 'Módulo Activo' : 'Módulo Inactivo' }}
+    </button>
+
+    <button class="btn btn-default tcla-F4" (click)="openCreateModal()" [disabled]="loading"
+      tooltip="Crear tipo de cliente (F4)">
+      <img src="/assets/icons/plus.png" class="icon me-2">
+      Añadir tipo
+    </button>
+  </div>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
@@ -140,7 +149,8 @@
                   <button type="button" (click)="openEditModal(tipo)" class="btn text-start border-0">
                     <i class="fa fa-fw fa-edit me-2"></i> Editar
                   </button>
-                  <button *ngIf="tipo.nivel < 3" type="button" (click)="openUpgradeRulesModal(tipo)" class="btn text-start border-0">
+                  <button *ngIf="tipo.nivel < 3" type="button" (click)="openUpgradeRulesModal(tipo)"
+                    class="btn text-start border-0">
                     <i class="fa fa-fw fa-cog me-2"></i> Reglas de Upgrade
                     <span class="badge bg-primary ms-2"
                       *ngIf="tipo.configuracion_avanzada?.upgrade_automatico?.reglas?.length > 0">
@@ -186,12 +196,12 @@
               <h6 class="text-primary border-bottom pb-2 mb-3">
                 <i class="fa fa-cog me-2"></i>Configuración Básica
               </h6>
-              
+
               <!-- Nivel (concepto principal: Standard, VIP, Ultra VIP o Personalizado) -->
               <div class="mb-3">
                 <label class="form-label">Nivel</label>
-                <select class="form-select" [ngModel]="nivelSeleccionado" (ngModelChange)="onNivelSeleccionadoChange($event)"
-                  name="nivelSeleccionado" required>
+                <select class="form-select" [ngModel]="nivelSeleccionado"
+                  (ngModelChange)="onNivelSeleccionadoChange($event)" name="nivelSeleccionado" required>
                   <option [ngValue]="null" disabled>Seleccionar nivel</option>
                   <option *ngFor="let tipoBase of tiposBase" [ngValue]="tipoBase.id">
                     {{ tipoBase.nombre }} — {{ tipoBase.descripcion }}
@@ -241,12 +251,12 @@
               <h6 class="text-success border-bottom pb-2 mb-3">
                 <i class="fa fa-star me-2"></i>Configuración de Puntos
               </h6>
-              
+
               <!-- Puntos por Dólar -->
               <div class="mb-3">
                 <label class="form-label">Puntos por Dólar</label>
-                <input type="number" class="form-control" [(ngModel)]="formData.puntos_por_dolar" name="puntos_por_dolar"
-                  step="0.01" min="0" (input)="formatPuntosPorDolar($event)" required>
+                <input type="number" class="form-control" [(ngModel)]="formData.puntos_por_dolar"
+                  name="puntos_por_dolar" step="0.01" min="0" (input)="formatPuntosPorDolar($event)" required>
                 <small class="form-text text-muted">
                   Cantidad de puntos que gana por cada dólar gastado
                 </small>
@@ -265,8 +275,8 @@
               <!-- Mínimo Canje -->
               <div class="mb-3">
                 <label class="form-label">Mínimo de Canje</label>
-                <input type="number" class="form-control" [(ngModel)]="formData.minimo_canje" name="minimo_canje" min="1"
-                  required>
+                <input type="number" class="form-control" [(ngModel)]="formData.minimo_canje" name="minimo_canje"
+                  min="1" required>
                 <small class="form-text text-muted">
                   Mínimo de puntos para poder canjear
                 </small>
@@ -275,8 +285,8 @@
               <!-- Máximo Canje -->
               <div class="mb-3">
                 <label class="form-label">Máximo de Canje</label>
-                <input type="number" class="form-control" [(ngModel)]="formData.maximo_canje" name="maximo_canje" min="1"
-                  required>
+                <input type="number" class="form-control" [(ngModel)]="formData.maximo_canje" name="maximo_canje"
+                  min="1" required>
                 <small class="form-text text-muted">
                   Máximo de puntos que puede canjear por transacción
                 </small>
@@ -285,8 +295,8 @@
               <!-- Expiración -->
               <div class="mb-3">
                 <label class="form-label">Expiración (meses)</label>
-                <input type="number" class="form-control" [(ngModel)]="formData.expiracion_meses" name="expiracion_meses"
-                  min="1" required>
+                <input type="number" class="form-control" [(ngModel)]="formData.expiracion_meses"
+                  name="expiracion_meses" min="1" required>
                 <small class="form-text text-muted">
                   Meses antes de que expiren los puntos
                 </small>
@@ -298,7 +308,7 @@
               <h6 class="text-warning border-bottom pb-2 mb-3">
                 <i class="fa fa-magic me-2"></i>Configuración Avanzada
               </h6>
-              
+
               <!-- Multiplicador Especial -->
               <div class="mb-3">
                 <div class="">
@@ -314,8 +324,8 @@
               <div class="mb-3" *ngIf="formData.configuracion_avanzada.multiplicador_especial">
                 <label class="form-label">Valor del Multiplicador</label>
                 <input type="number" class="form-control"
-                  [(ngModel)]="formData.configuracion_avanzada.multiplicador_valor" name="multiplicador_valor" step="0.1"
-                  min="1">
+                  [(ngModel)]="formData.configuracion_avanzada.multiplicador_valor" name="multiplicador_valor"
+                  step="0.1" min="1">
                 <small class="form-text text-muted">
                   Factor multiplicador para puntos especiales
                 </small>
@@ -611,7 +621,7 @@
                   </span>
                 </td>
                 <td>
-                  <span *ngIf="regla.tipo === 'gasto_total'">${{ regla.umbral | number:'1.2-2' }}</span>
+                  <span *ngIf="regla.tipo === 'gasto_total'">{{ regla.umbral | currency }}</span>
                   <span *ngIf="regla.tipo === 'puntos_acumulados'">{{ regla.umbral }} pts</span>
                   <span *ngIf="regla.tipo === 'compras_periodo'">{{ regla.umbral }} compras</span>
                 </td>
@@ -689,3 +699,60 @@
 
 <!-- Backdrop del modal de reglas de upgrade -->
 <div class="modal-backdrop fade show" *ngIf="showUpgradeRulesModal"></div>
+
+<!-- Modal para activar/desactivar obtención y canje de puntos -->
+<div class="modal fade" [class.show]="showActivacionModal" [style.display]="showActivacionModal ? 'block' : 'none'"
+  tabindex="-1" *ngIf="showActivacionModal">
+  <div class="modal-dialog modal-dialog-centered modal-md">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          Configuración del módulo de fidelización
+        </h5>
+        <button type="button" class="btn-close" (click)="closeActivacionModal()"></button>
+      </div>
+
+      <div class="modal-body text-center p-4">
+        <p class="text-muted small mb-4 px-2 alert alert-light">
+          Configure las opciones de funcionamiento general y notificaciones para el sistema de fidelización de clientes.
+        </p>
+
+        <div class="card border p-4 mb-3 text-start shadow-sm" style="border-radius: 10px;">
+          <div class="form-check form-switch d-flex justify-content-between align-items-center p-0 mb-3">
+            <span class="fw-bold text-dark d-flex align-items-center gap-2" style="cursor: pointer; font-size: 15px;"
+              (click)="toggleFidelizacionCompleta()">
+              Activar módulo de fidelización
+              <i class="fa fa-info-circle text-muted" style="cursor: help;"
+                tooltip="Al activar esta opción, los clientes acumularán y podrán canjear sus puntos durante el proceso de facturación en ventas."></i>
+            </span>
+            <input class="form-check-input ms-3" type="checkbox" role="switch" id="fidelizacionCompletaSwitchModal"
+              [checked]="isFidelizacionCompleta()" (change)="toggleFidelizacionCompleta()"
+              style="width: 3.2em; height: 1.6em; cursor: pointer; float: none;">
+          </div>
+
+          <hr class="my-3 text-muted">
+
+          <div class="form-check form-switch d-flex justify-content-between align-items-center p-0 mb-0">
+            <span class="fw-bold text-dark d-flex align-items-center gap-2" style="cursor: pointer; font-size: 15px;"
+              (click)="toggleFidelizacionEnviarCorreos()">
+              Envío automático de correos
+              <i class="fa fa-info-circle text-muted" style="cursor: help;"
+                tooltip="Al activar esta opción, el sistema enviará un correo electrónico automático a los clientes notificándoles los puntos acumulados después de cada venta."></i>
+            </span>
+            <input class="form-check-input ms-3" type="checkbox" role="switch" id="fidelizacionEnviarCorreosSwitchModal"
+              [checked]="isFidelizacionEnviarCorreos()" (change)="toggleFidelizacionEnviarCorreos()"
+              style="width: 3.2em; height: 1.6em; cursor: pointer; float: none;">
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer justify-content-end">
+        <button type="button" class="btn btn-secondary px-4" (click)="closeActivacionModal()">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop fade show" *ngIf="showActivacionModal"></div>

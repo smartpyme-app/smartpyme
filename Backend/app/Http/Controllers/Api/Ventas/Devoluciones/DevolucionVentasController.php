@@ -248,7 +248,7 @@ class DevolucionVentasController extends Controller
         $request->validate([
             'fecha' => 'required|date',
             'id_documento' => 'nullable|exists:documentos,id',
-            'correlativo' => 'nullable|string|max:255',
+            'correlativo' => 'required|max:255',
             'id_usuario' => 'required|exists:users,id',
             'observaciones' => 'required|string|max:255',
         ], [

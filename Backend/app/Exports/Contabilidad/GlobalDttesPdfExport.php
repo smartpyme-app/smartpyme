@@ -114,7 +114,7 @@ class GlobalDttesPdfExport
                 continue;
             }
 
-            $binary = DteVentaPdfService::renderPdfBinary($venta);
+            $binary = DteVentaPdfService::renderPdfBinary($venta, $estadoJson === 'anulados');
             if ($binary === null || $binary === '') {
                 Log::info('GlobalDttesPdfExport: PDF omitido venta ID ' . $venta->id);
 

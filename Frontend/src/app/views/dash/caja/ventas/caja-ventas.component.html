@@ -264,25 +264,23 @@
 
 <ng-template #mDTE>
     <div class="modal-header d-block text-center">
-        <h5 class="modal-title mb-0">DTE </h5>
+        <h5 class="modal-title mb-0">DTE</h5>
         <button type="button" class="btn-close" (click)="modalRef.hide(); alertService.modal = false;" aria-label="Close"></button>
     </div>
   <div class="modal-body">
         <app-notificaciones-container></app-notificaciones-container>
         <div class="d-grid">
 
-            <button *ngIf="venta.sello_mh" (click)="imprimirDTEJSON(venta)" class="mb-3 btn btn-primary btn-block">
-                Ver JSON
-            </button>
-
-            <button *ngIf="venta.sello_mh" (click)="imprimirDTEPDF(venta)" class="mb-3 btn btn-primary btn-block">
-                Ver PDF
-            </button>
-
-            <button *ngIf="venta.sello_mh" [disabled]="sending" (click)="enviarDTE()" class="mb-3 btn btn-primary btn-block">
-                <span *ngIf="!sending">Enviar por correo</span>
-                <span *ngIf="sending">Enviando...</span>
-            </button>
+            <ng-container *ngIf="venta.sello_mh">
+                <button (click)="mhService.verReporteDte(venta, 'json')" class="mb-2 btn btn-primary btn-block">Ver JSON</button>
+                <button (click)="mhService.verReporteDte(venta, 'pdf')" class="mb-2 btn btn-primary btn-block">Ver PDF</button>
+                <button *ngIf="mhService.tieneDteInvalidacion(venta)" (click)="mhService.verReporteDte(venta, 'json', true)" class="mb-2 btn btn-outline-danger btn-block">Ver JSON anulado</button>
+                <button *ngIf="mhService.tieneDteInvalidacion(venta)" (click)="mhService.verReporteDte(venta, 'pdf', true)" class="mb-3 btn btn-outline-danger btn-block">Ver PDF anulado</button>
+                <button [disabled]="sending" (click)="enviarDTE()" class="mb-3 btn btn-primary btn-block">
+                    <span *ngIf="!sending">Enviar por correo</span>
+                    <span *ngIf="sending">Enviando...</span>
+                </button>
+            </ng-container>
 
             <button *ngIf="!venta.sello_mh" [disabled]="saving" (click)="emitirDTE()" class="mb-3 btn btn-primary btn-block">
                 <span *ngIf="!saving">Emitir</span>

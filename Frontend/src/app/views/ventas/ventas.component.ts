@@ -8,6 +8,17 @@ import { MHService } from '@services/MH.service';
 import Swal from 'sweetalert2';
 import { Subject } from 'rxjs';
 import { debounceTime, takeUntil } from 'rxjs/operators';
+import {
+  MAX_DIAS_EXPORT_DETALLES,
+  MAX_DIAS_EXPORT_GENERAL,
+  MAX_DIAS_EXPORT_VENTAS,
+  diasEntreFechasIso,
+  esErrorTimeoutExport,
+  mensajeErrorTimeoutExport,
+  validarPeriodoExport,
+} from '../../helpers/export-period.helper';
+
+export type VentasExportPeriodoTipo = 'detalles' | 'ventas' | 'general';
 
 @Component({
     selector: 'app-ventas',
@@ -91,11 +102,12 @@ export class VentasComponent implements OnInit, OnDestroy {
   /**
    * Período para exportar "Detalles por producto" y "Detalles ventas totales" cuando el listado no tiene inicio/fin en la URL.
    */
-  public tipoPeriodoExport: 'rango' | 'anio' | 'mes' | 'anio_mes' = 'anio_mes';
+  public tipoPeriodoExport: 'rango' | 'mes' | 'anio_mes' = 'anio_mes';
   public exportPeriodoRangoInicio = '';
   public exportPeriodoRangoFin = '';
   public exportPeriodoAnio: number = new Date().getFullYear();
   public exportPeriodoMes = new Date().getMonth() + 1;
+
   public readonly mesesExportPeriodo = [
     { v: 1, n: 'Enero' },
     { v: 2, n: 'Febrero' },
@@ -122,9 +134,15 @@ export class VentasComponent implements OnInit, OnDestroy {
   @ViewChild('modalAnulacion')
   public modalAnulacionTemplate!: TemplateRef<any>;
 
+  @ViewChild('mfiltrosAcumulado')
+  public mfiltrosAcumuladoTpl!: TemplateRef<any>;
+
+  @ViewChild('mfiltrosCobrosVendedor')
+  public mfiltrosCobrosVendedorTpl!: TemplateRef<any>;
+
   constructor(
     public apiService: ApiService,
-    private mhService: MHService,
+    public mhService: MHService,
     private alertService: AlertService,
     private modalService: BsModalService,
     private router: Router,
@@ -648,12 +666,26 @@ export class VentasComponent implements OnInit, OnDestroy {
   // }
   public openDescargar(template: TemplateRef<any>) {
     this.reporteSeleccionado = '';
-    // Resetear todas las propiedades booleanas
     this.esReporteMarca = false;
     this.esReporteUtilidades = false;
     this.esReporteCobrosVendedor = false;
     this.resetExportPeriodo();
     this.modalRefDescargar = this.modalService.show(template);
+  }
+
+  public cerrarModalDescargar(): void {
+    if (this.modalRefDescargar) {
+      this.modalRefDescargar.hide();
+      this.modalRefDescargar = undefined;
+    }
+    if (this.modalRefAcumulado) {
+      this.modalRefAcumulado.hide();
+      this.modalRefAcumulado = undefined;
+    }
+    if (this.modalRefCobrosVendedor) {
+      this.modalRefCobrosVendedor.hide();
+      this.modalRefCobrosVendedor = undefined;
+    }
   }
 
   /** True si el listado tiene rango de fechas en la URL (evita export histórico sin límite). */
@@ -663,9 +695,113 @@ export class VentasComponent implements OnInit, OnDestroy {
     return !!(i && f && String(i).trim() !== '' && String(f).trim() !== '');
   }
 
-  /** Válido para export "detalles por producto" y "ventas totales" (mismo período en el modal). */
-  public get puedeDescargarConPeriodoExport(): boolean {
-    return this.buildFechasExportPeriodo() !== null;
+  public maxDiasExport(tipo: VentasExportPeriodoTipo): number {
+    switch (tipo) {
+      case 'detalles':
+        return MAX_DIAS_EXPORT_DETALLES;
+      case 'ventas':
+        return MAX_DIAS_EXPORT_VENTAS;
+      default:
+        return MAX_DIAS_EXPORT_GENERAL;
+    }
+  }
+
+  /** True si el rango efectivo (listado o modal) supera el límite del tipo de reporte. */
+  public rangoExportSuperaLimite(tipo: VentasExportPeriodoTipo): boolean {
+    const fechas = this.resolveFechasExportRaw();
+    if (!fechas || fechas.inicio > fechas.fin) {
+      return false;
+    }
+    return diasEntreFechasIso(fechas.inicio, fechas.fin) > this.maxDiasExport(tipo);
+  }
+
+  /** Tipo de límite de días según el reporte seleccionado en el modal. */
+  public get tipoLimiteExportActual(): VentasExportPeriodoTipo | null {
+    if (!this.reporteSeleccionado) return null;
+    if (this.reporteSeleccionado === 'detalles') return 'detalles';
+    if (this.reporteSeleccionado === 'ventas') return 'ventas';
+    return 'general';
+  }
+
+  public get puedeDescargarReporte(): boolean {
+    const tipo = this.tipoLimiteExportActual;
+    if (!tipo) return false;
+    return this.buildFechasExportPeriodo(tipo) !== null;
+  }
+
+  public get descargandoReporte(): boolean {
+    switch (this.reporteSeleccionado) {
+      case 'detalles':
+        return this.downloadingDetalles;
+      case 'ventas':
+        return this.downloadingVentas;
+      case 'marca':
+      case 'utilidades':
+        return this.downloadingPorMarca;
+      case 'cobros-vendedor':
+        return this.downloadingCobrosVendedor;
+      default:
+        return this.downloadingVentas;
+    }
+  }
+
+  public get reporteRequiereFiltrosAdicionales(): boolean {
+    return (
+      this.reporteSeleccionado === 'acumulado' ||
+      this.reporteSeleccionado === 'cobros-vendedor'
+    );
+  }
+
+  public descargarReporteSeleccionado(): void {
+    const tipo = this.tipoLimiteExportActual;
+    if (!tipo) return;
+
+    const fechas = this.buildFechasExportPeriodo(tipo);
+    if (!fechas) {
+      this.alertPeriodoExportInvalido(tipo);
+      return;
+    }
+    this.syncFechasExportAFiltros(fechas);
+
+    switch (this.reporteSeleccionado) {
+      case 'detalles':
+        this.descargarDetalles();
+        break;
+      case 'ventas':
+        this.descargarVentas();
+        break;
+      case 'acumulado':
+        this.abrirModalFiltrosAcumulado(this.mfiltrosAcumuladoTpl);
+        break;
+      case 'marca':
+        this.esReporteMarca = true;
+        this.descargarPorMarcasPorMes();
+        break;
+      case 'utilidades':
+        this.esReporteUtilidades = true;
+        this.descargarPorUtilidades();
+        break;
+      case 'cobros-vendedor':
+        this.esReporteCobrosVendedor = true;
+        this.abrirModalFiltrosCobrosVendedor(this.mfiltrosCobrosVendedorTpl);
+        break;
+    }
+  }
+
+  private syncFechasExportAFiltros(fechas: { inicio: string; fin: string }): void {
+    this.filtrosAcumulado.inicio = fechas.inicio;
+    this.filtrosAcumulado.fin = fechas.fin;
+    this.filtrosPorMarca.inicio = fechas.inicio;
+    this.filtrosPorMarca.fin = fechas.fin;
+    this.filtrosCobrosVendedor.inicio = fechas.inicio;
+    this.filtrosCobrosVendedor.fin = fechas.fin;
+  }
+
+  private prefillExportPeriodoDesdeListado(): void {
+    if (!this.tieneRangoFechaEnListado) return;
+    this.tipoPeriodoExport = 'rango';
+    this.exportPeriodoRangoInicio = String(this.filtros.inicio).trim();
+    this.exportPeriodoRangoFin = String(this.filtros.fin).trim();
   }
 
   public get anioEnCursoParaMes(): number {
@@ -689,61 +825,17 @@ export class VentasComponent implements OnInit, OnDestroy {
     return new Date(anio, mes, 0).getDate();
   }
 
-  /** Diferencia en días enteros entre dos fechas ISO (YYYY-MM-DD). Usa mediodía local para evitar DST. */
-  private diasEntreFechasIso(inicioIso: string, finIso: string): number {
-    const s = new Date(inicioIso + 'T12:00:00');
-    const e = new Date(finIso + 'T12:00:00');
-    return Math.floor((e.getTime() - s.getTime()) / 86400000);
-  }
-
-  /** Máximo de días permitidos entre inicio y fin en modo rango (no más de un año). */
-  private static readonly MAX_DIAS_RANGO_EXPORT_PERIOD = 365;
-
   /**
-   * True si el rango elegido supera un año (solo modo rango, sin filtro en URL).
+   * Resuelve inicio/fin desde el selector de período del modal.
    */
-  public get exportPeriodoRangoSuperaUnAnio(): boolean {
-    if (this.tieneRangoFechaEnListado || this.tipoPeriodoExport !== 'rango') {
-      return false;
-    }
-    const ini = this.exportPeriodoRangoInicio?.trim();
-    const fin = this.exportPeriodoRangoFin?.trim();
-    if (!ini || !fin || ini > fin) {
-      return false;
-    }
-    return (
-      this.diasEntreFechasIso(ini, fin) > VentasComponent.MAX_DIAS_RANGO_EXPORT_PERIOD
-    );
-  }
-
-  /**
-   * Fechas efectivas para export de detalles / ventas totales: URL del listado o período del modal.
-   */
-  public buildFechasExportPeriodo(): { inicio: string; fin: string } | null {
-    if (this.tieneRangoFechaEnListado) {
-      return {
-        inicio: String(this.filtros.inicio).trim(),
-        fin: String(this.filtros.fin).trim(),
-      };
-    }
+  private resolveFechasExportRaw(): { inicio: string; fin: string } | null {
     switch (this.tipoPeriodoExport) {
       case 'rango': {
         const ini = this.exportPeriodoRangoInicio?.trim();
         const fin = this.exportPeriodoRangoFin?.trim();
         if (!ini || !fin) return null;
         if (ini > fin) return null;
-        if (
-          this.diasEntreFechasIso(ini, fin) >
-          VentasComponent.MAX_DIAS_RANGO_EXPORT_PERIOD
-        ) {
-          return null;
-        }
         return { inicio: ini, fin };
-      }
-      case 'anio': {
-        const y = +this.exportPeriodoAnio;
-        if (!y || y < 2000 || y > 2100) return null;
-        return { inicio: `${y}-01-01`, fin: `${y}-12-31` };
       }
       case 'mes': {
         const y = new Date().getFullYear();
@@ -770,26 +862,53 @@ export class VentasComponent implements OnInit, OnDestroy {
     }
   }
 
-  private alertPeriodoExportInvalido(): void {
-    if (
-      !this.tieneRangoFechaEnListado &&
-      this.tipoPeriodoExport === 'rango' &&
-      this.exportPeriodoRangoSuperaUnAnio
-    ) {
-      this.alertService.error(
-        'El rango de fechas no puede superar un año (365 días entre inicio y fin).'
-      );
+  /**
+   * Fechas efectivas para export de detalles / ventas totales, validadas según el tipo.
+   */
+  public buildFechasExportPeriodo(
+    tipo: VentasExportPeriodoTipo = 'ventas'
+  ): { inicio: string; fin: string } | null {
+    const raw = this.resolveFechasExportRaw();
+    if (!raw) return null;
+    const check = validarPeriodoExport(raw.inicio, raw.fin, this.maxDiasExport(tipo));
+    return check.valid ? { inicio: raw.inicio, fin: raw.fin } : null;
+  }
+
+  private alertPeriodoExportInvalido(tipo: VentasExportPeriodoTipo): void {
+    const max = this.maxDiasExport(tipo);
+    const raw = this.resolveFechasExportRaw();
+    if (raw?.inicio && raw?.fin) {
+      const check = validarPeriodoExport(raw.inicio, raw.fin, max);
+      if (!check.valid && check.error) {
+        this.alertService.error(check.error);
+        return;
+      }
+    }
+    this.alertService.error(
+      `Debe indicar un período válido (máximo ${max} días). Use rango, mes o año y mes.`
+    );
+  }
+
+  private handleErrorExportVentas(error: unknown, maxDias: number): void {
+    if (esErrorTimeoutExport(error)) {
+      this.alertService.error(mensajeErrorTimeoutExport(maxDias));
     } else {
-      this.alertService.error(
-        'Debe indicar un período válido para el reporte (rango, año, mes o año y mes).'
-      );
+      this.alertService.error(error);
     }
   }
 
+  private finalizarDescargaExport(): void {
+    this.downloadingVentas = false;
+    this.downloadingDetalles = false;
+    this.downloadingCobrosVendedor = false;
+    this.downloadingPorMarca = false;
+    this.saving = false;
+  }
+
   public descargarVentas() {
-    const fechas = this.buildFechasExportPeriodo();
+    const fechas = this.buildFechasExportPeriodo('ventas');
     if (!fechas) {
-      this.alertPeriodoExportInvalido();
+      this.alertPeriodoExportInvalido('ventas');
       return;
     }
     const base = { ...this.filtros, inicio: fechas.inicio, fin: fechas.fin };
@@ -812,13 +931,11 @@ export class VentasComponent implements OnInit, OnDestroy {
         a.click();
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
-        this.downloadingVentas = false;
-        this.saving = false;
+        this.finalizarDescargaExport();
       },
       (error) => {
-        this.alertService.error(error);
-        this.downloadingVentas = false;
-        this.saving = false;
+        this.handleErrorExportVentas(error, MAX_DIAS_EXPORT_VENTAS);
+        this.finalizarDescargaExport();
       }
     );
   }
@@ -826,6 +943,16 @@ export class VentasComponent implements OnInit, OnDestroy {
 
 
   public descargarAcumulado() {
+    const check = validarPeriodoExport(
+      this.filtrosAcumulado.inicio,
+      this.filtrosAcumulado.fin,
+      MAX_DIAS_EXPORT_GENERAL
+    );
+    if (!check.valid) {
+      this.alertService.error(check.error);
+      return;
+    }
+
     this.downloadingVentas = true;
     this.saving = true;
 
@@ -867,18 +994,17 @@ export class VentasComponent implements OnInit, OnDestroy {
         };
       },
       (error) => {
-        this.alertService.error(error);
-        this.downloadingVentas = false;
-        this.saving = false;
+        this.handleErrorExportVentas(error, MAX_DIAS_EXPORT_GENERAL);
+        this.finalizarDescargaExport();
       }
     );
   }
 
 
   public descargarDetalles() {
-    const fechas = this.buildFechasExportPeriodo();
+    const fechas = this.buildFechasExportPeriodo('detalles');
     if (!fechas) {
-      this.alertPeriodoExportInvalido();
+      this.alertPeriodoExportInvalido('detalles');
       return;
     }
     const filtrosExport = { ...this.filtros, inicio: fechas.inicio, fin: fechas.fin };
@@ -894,8 +1020,11 @@ export class VentasComponent implements OnInit, OnDestroy {
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
-      this.downloadingDetalles = false; this.saving = false;
-    }, (error) => { this.alertService.error(error); this.downloadingDetalles = false; this.saving = false; }
+      this.finalizarDescargaExport();
+    }, (error) => {
+      this.handleErrorExportVentas(error, MAX_DIAS_EXPORT_DETALLES);
+      this.finalizarDescargaExport();
+    }
     );
   }
 
@@ -911,8 +1040,11 @@ export class VentasComponent implements OnInit, OnDestroy {
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
-      this.downloadingDetalles = false; this.saving = false;
-    }, (error) => { this.alertService.error(error); this.downloadingDetalles = false; this.saving = false; }
+      this.finalizarDescargaExport();
+    }, (error) => {
+      this.handleErrorExportVentas(error, MAX_DIAS_EXPORT_DETALLES);
+      this.finalizarDescargaExport();
+    }
     );
   }
 
@@ -1036,16 +1168,6 @@ export class VentasComponent implements OnInit, OnDestroy {
     abrir(venta);
   }
 
-  imprimirDTEPDF(venta: any) {
-    const tipo = venta.tipo_dte || venta.dte?.identificacion?.tipoDte;
-    window.open(this.apiService.baseUrl + '/api/reporte/dte/' + venta.id + '/' + tipo + '/?token=' + this.apiService.auth_token(), 'hola', 'width=400');
-  }
-
-  imprimirDTEJSON(venta: any) {
-    const tipo = venta.tipo_dte || venta.dte?.identificacion?.tipoDte;
-    window.open(this.apiService.baseUrl + '/api/reporte/dte-json/' + venta.id + '/' + tipo + '/?token=' + this.apiService.auth_token(), 'hola', 'width=400');
-  }
-
   emitirDTE() {
     this.saving = true;
     this.mhService.emitirDTE(this.venta).then((ventaActualizada) => {
@@ -1072,9 +1194,10 @@ export class VentasComponent implements OnInit, OnDestroy {
     });
   }
 
-  enviarDTE(venta: any) {
+  enviarDTE(venta: any, anulado = false) {
     this.sending = true;
-    this.apiService.store('enviarDTE', venta).subscribe(dte => {
+    const payload = anulado ? { ...venta, documento: 'anulado' } : venta;
+    this.apiService.store('enviarDTE', payload).subscribe(dte => {
       this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
       this.sending = false;
       setTimeout(() => {
@@ -1220,12 +1343,12 @@ export class VentasComponent implements OnInit, OnDestroy {
             // Actualizar la venta en el listado
             const index = this.ventas.data.findIndex((v: any) => v.id === this.venta.id);
             if (index !== -1) {
-              this.ventas.data[index] = { ...this.venta };
+              this.ventas.data[index] = { ...this.venta, tiene_dte_invalidacion: 1 };
             }
             
             if (this.venta.id_cliente) {
               setTimeout(() => {
-                this.enviarDTE(this.venta);
+                this.enviarDTE(this.venta, true);
               }, 3000);
             }
             
@@ -1353,6 +1476,15 @@ export class VentasComponent implements OnInit, OnDestroy {
   }
 
   descargarPorMarcasPorMes() {
+    const check = validarPeriodoExport(
+      this.filtrosPorMarca.inicio,
+      this.filtrosPorMarca.fin,
+      MAX_DIAS_EXPORT_GENERAL
+    );
+    if (!check.valid) {
+      this.alertService.error(check.error);
+      return;
+    }
     this.downloadingPorMarca = true;
     this.saving = true;
     this.filtrosPorMarca.inicio = this.filtrosPorMarca.inicio;
@@ -1374,14 +1506,22 @@ export class VentasComponent implements OnInit, OnDestroy {
         this.saving = false;
       },
       (error) => {
-        this.alertService.error(error);
-        this.downloadingPorMarca = false;
-        this.saving = false;
+        this.handleErrorExportVentas(error, MAX_DIAS_EXPORT_GENERAL);
+        this.finalizarDescargaExport();
       }
     );
   }
 
   public descargarPorUtilidades() {
+    const check = validarPeriodoExport(
+      this.filtrosPorMarca.inicio,
+      this.filtrosPorMarca.fin,
+      MAX_DIAS_EXPORT_GENERAL
+    );
+    if (!check.valid) {
+      this.alertService.error(check.error);
+      return;
+    }
     this.downloadingPorMarca = true;
     this.saving = true;
     this.filtrosPorMarca.inicio = this.filtrosPorMarca.inicio;
@@ -1403,14 +1543,22 @@ export class VentasComponent implements OnInit, OnDestroy {
         this.saving = false;
       },
       (error) => {
-        this.alertService.error(error);
-        this.downloadingPorMarca = false;
-        this.saving = false;
+        this.handleErrorExportVentas(error, MAX_DIAS_EXPORT_GENERAL);
+        this.finalizarDescargaExport();
       }
     );
   }
 
   public descargarCobrosPorVendedor() {
+    const check = validarPeriodoExport(
+      this.filtrosCobrosVendedor.inicio,
+      this.filtrosCobrosVendedor.fin,
+      MAX_DIAS_EXPORT_GENERAL
+    );
+    if (!check.valid) {
+      this.alertService.error(check.error);
+      return;
+    }
     this.downloadingCobrosVendedor = true;
     this.saving = true;
     this.apiService.export('cobros-por-vendedor/exportar', this.filtrosCobrosVendedor).subscribe(
@@ -1443,9 +1591,8 @@ export class VentasComponent implements OnInit, OnDestroy {
         this.saving = false;
       },
       (error) => {
-        this.alertService.error(error);
-        this.downloadingCobrosVendedor = false;
-        this.saving = false;
+        this.handleErrorExportVentas(error, MAX_DIAS_EXPORT_GENERAL);
+        this.finalizarDescargaExport();
       }
     );
   }
@@ -1507,13 +1654,11 @@ export class VentasComponent implements OnInit, OnDestroy {
 
   public seleccionarReporte(reporte: string) {
     this.reporteSeleccionado = reporte;
-    
-    // Resetear todas las propiedades booleanas
+
     this.esReporteMarca = false;
     this.esReporteUtilidades = false;
     this.esReporteCobrosVendedor = false;
-    
-    // Establecer la propiedad booleana correspondiente
+
     if (reporte) {
       switch (reporte) {
         case 'marca':
@@ -1525,11 +1670,9 @@ export class VentasComponent implements OnInit, OnDestroy {
         case 'cobros-vendedor':
           this.esReporteCobrosVendedor = true;
           break;
-        case 'detalles':
-        case 'ventas':
-          this.resetExportPeriodo();
-          break;
       }
+      this.resetExportPeriodo();
+      this.prefillExportPeriodoDesdeListado();
     }
   }
 

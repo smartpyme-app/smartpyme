@@ -37,7 +37,9 @@ use Luecano\NumeroALetras\NumeroALetras;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use App\Exports\VentasExport;
+use App\Exports\VentasDesglosadasPorVendedorExport;
 use App\Exports\VentasDetallesExport;
+use App\Helpers\ExportPeriodHelper;
 use App\Exports\ReportesAutomaticos\VentasPorCategoriaPorVendedor\VentasPorCategoriaVendedorExport;
 use App\Exports\ReportesAutomaticos\VentasPorVendedor\VentasPorVendedorExport;
 use App\Exports\VentasPorUtilidadesExport;
@@ -63,6 +65,7 @@ class VentasController extends Controller
         if ($dteIndex !== false) {
             $columns[$dteIndex] = DB::raw("IF(COALESCE(ventas.dte_s3_key,'') <> '', NULL, ventas.dte) as dte");
         }
+        $columns[] = DB::raw("(CASE WHEN COALESCE(ventas.dte_invalidacion,'') <> '' OR COALESCE(ventas.dte_invalidacion_s3_key,'') <> '' THEN 1 ELSE 0 END) as tiene_dte_invalidacion");
 
         $ventas = Venta::select($columns)
             ->when($request->inicio, function ($query) use ($request) {
@@ -1392,6 +1395,15 @@ class VentasController extends Controller
             } elseif (Auth::user()->id_empresa == 59) { //59  OK V2
                 $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Factura-Smartpyme', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
                 $pdf->setPaper('US Letter', 'portrait');
+            } elseif (Auth::user()->id_empresa == 420) { //420 Inversiones Andre - Honduras
+                $venta->load('detalles.producto');
+                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Factura-Inversiones-Andre', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+                $pdf->setPaper('US Letter', 'portrait');
+            } elseif (Auth::user()->id_empresa == 614) { //614 Demo SP 2 - Honduras
+                $venta->load('detalles.producto');
+                $centavos = str_pad(isset($n[1]) ? $n[1] : '00', 2, '0', STR_PAD_LEFT);
+                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Factura-Accesorios-Honduras', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos', 'documento'));
+                $pdf->setPaper('US Letter', 'portrait');
             } else {
                 // return View('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos', 'documento'));
                 $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos', 'documento'));
@@ -1646,21 +1658,64 @@ class VentasController extends Controller
 
     public function export(Request $request)
     {
-        $ventas = new VentasExport();
-        $ventas->filter($request);
+        return $this->downloadVentasExcel(
+            $request,
+            ExportPeriodHelper::MAX_DIAS_VENTAS_TOTALES,
+            function () use ($request) {
+                $ventas = new VentasExport();
+                $ventas->filter($request);
 
-        $anio = VentasExport::anioDesdeRequest($request);
-        $nombreArchivo = $anio !== null ? "ventas-{$anio}.xlsx" : 'ventas.xlsx';
+                $anio = VentasExport::anioDesdeRequest($request);
+                $nombreArchivo = $anio !== null ? "ventas-{$anio}.xlsx" : 'ventas.xlsx';
 
-        return Excel::download($ventas, $nombreArchivo);
+                return [$ventas, $nombreArchivo];
+            }
+        );
     }
 
     public function exportDetalles(Request $request)
     {
-        $ventas = new VentasDetallesExport();
-        $ventas->filter($request);
+        return $this->downloadVentasExcel(
+            $request,
+            ExportPeriodHelper::MAX_DIAS_DETALLES,
+            function () use ($request) {
+                $ventas = new VentasDetallesExport();
+                $ventas->filter($request);
 
-        return Excel::download($ventas, 'ventas-detalles.xlsx');
+                return [$ventas, 'ventas-detalles.xlsx'];
+            }
+        );
+    }
+
+    /**
+     * Descarga Excel de ventas con validación de período, memoria y tiempo de ejecución.
+     *
+     * @param  callable(): array{0: object, 1: string}  $exportFactory
+     */
+    private function downloadVentasExcel(Request $request, int $maxDias, callable $exportFactory)
+    {
+        ExportPeriodHelper::assertValidPeriod($request, $maxDias);
+
+        try {
+            ini_set('memory_limit', '512M');
+            set_time_limit(300);
+
+            [$export, $nombreArchivo] = $exportFactory();
+
+            return Excel::download($export, $nombreArchivo);
+        } catch (\Throwable $e) {
+            if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpException) {
+                throw $e;
+            }
+
+            \Log::error('Error al exportar ventas: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'error' => 'Error al generar el reporte. Intente con un rango de fechas más corto.',
+            ], 500);
+        }
     }
 
 
@@ -1713,36 +1768,60 @@ class VentasController extends Controller
 
     public function acumuladoExport(Request $request)
     {
+        return $this->downloadVentasExcel(
+            $request,
+            ExportPeriodHelper::MAX_DIAS_GENERAL,
+            function () use ($request) {
+                $user = JWTAuth::parseToken()->authenticate();
+                $request->request->add(['id_empresa' => $user->id_empresa]);
+                $ventas = new VentasAcumuladoExport();
+                $ventas->filter($request);
 
-        //enviar id de la empresa en el request
-
-        $user = JWTAuth::parseToken()->authenticate();
-        $request->request->add(['id_empresa' => $user->id_empresa]);
-        $ventas = new VentasAcumuladoExport();
-        $ventas->filter($request);
-
-        return Excel::download($ventas, 'corte.xlsx');
+                return [$ventas, 'corte.xlsx'];
+            }
+        );
     }
 
     public function porMarcasExport(Request $request)
     {
-        $ventas = new VentasPorMarcasExport();
-        $ventas->filter($request);
-        return Excel::download($ventas, 'ventas-por-marcas.xlsx');
+        return $this->downloadVentasExcel(
+            $request,
+            ExportPeriodHelper::MAX_DIAS_GENERAL,
+            function () use ($request) {
+                $ventas = new VentasPorMarcasExport();
+                $ventas->filter($request);
+
+                return [$ventas, 'ventas-por-marcas.xlsx'];
+            }
+        );
     }
 
     public function porUtilidadesExport(Request $request)
     {
-        $ventas = new VentasPorUtilidadesExport();
-        $ventas->filter($request);
-        return Excel::download($ventas, 'ventas-por-utilidades.xlsx');
+        return $this->downloadVentasExcel(
+            $request,
+            ExportPeriodHelper::MAX_DIAS_GENERAL,
+            function () use ($request) {
+                $ventas = new VentasPorUtilidadesExport();
+                $ventas->filter($request);
+
+                return [$ventas, 'ventas-por-utilidades.xlsx'];
+            }
+        );
     }
 
     public function cobrosPorVendedorExport(Request $request)
     {
-        $cobros = new CobrosPorVendedorExport();
-        $cobros->filter($request);
-        return Excel::download($cobros, 'cobros-por-vendedor.xlsx');
+        return $this->downloadVentasExcel(
+            $request,
+            ExportPeriodHelper::MAX_DIAS_GENERAL,
+            function () use ($request) {
+                $cobros = new CobrosPorVendedorExport();
+                $cobros->filter($request);
+
+                return [$cobros, 'cobros-por-vendedor.xlsx'];
+            }
+        );
     }
 
     public function enviarReporteDiario()
@@ -1868,7 +1947,7 @@ class VentasController extends Controller
                     'id_empresa' => $empresa->id,
                     'sucursales' => $configuracion->sucursales ?? [],
                 ]);
-                $export = new VentasExport($requestVentasTotales);
+                $export = new VentasDesglosadasPorVendedorExport($requestVentasTotales);
             } elseif ($configuracion->tipo_reporte === 'detalle-ventas-por-producto') {
                 $requestDetalleProducto = new Request([
                     'inicio' => $fechaInicio,
@@ -2045,7 +2124,7 @@ class VentasController extends Controller
                     'id_empresa' => $configuracion->id_empresa,
                     'sucursales' => $configuracion->sucursales ?? [],
                 ]);
-                $export = new VentasExport($requestVentasTotales);
+                $export = new VentasDesglosadasPorVendedorExport($requestVentasTotales);
                 $filename = "detalle-ventas-totales-prueba-{$fechaInicio}-{$fechaFin}-" . time() . ".xlsx";
             } elseif ($configuracion->tipo_reporte === 'detalle-ventas-por-producto') {
                 $requestDetalleProducto = new Request([
@@ -2236,7 +2315,7 @@ class VentasController extends Controller
                     'id_empresa' => $configuracion->id_empresa,
                     'sucursales' => $configuracion->sucursales ?? [],
                 ]);
-                $export = new VentasExport($requestVentasTotales);
+                $export = new VentasDesglosadasPorVendedorExport($requestVentasTotales);
                 break;
             case 'detalle-ventas-por-producto':
                 $requestDetalleProducto = new Request([

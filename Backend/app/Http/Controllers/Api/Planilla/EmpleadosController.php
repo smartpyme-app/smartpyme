@@ -93,7 +93,8 @@ class EmpleadosController extends Controller
                     ->ignore($request->id)
                     ->where('id_empresa', auth()->user()->id_empresa),
             ],
-            'nit' => 'nullable|string',
+            'dui_homologado' => 'nullable|boolean',
+            'nit' => $this->reglasNit($request),
             'isss' => 'nullable|string',
             'afp' => 'nullable|string',
             'fecha_nacimiento' => 'required|date',
@@ -160,6 +161,10 @@ class EmpleadosController extends Controller
                     'aplicar_afp' => $request->configuracion_descuentos['aplicar_afp'] ?? true,
                     'aplicar_isss' => $request->configuracion_descuentos['aplicar_isss'] ?? true,
                 ];
+            }
+
+            if ($request->boolean('dui_homologado')) {
+                $datosEmpleado['nit'] = null;
             }
 
             // Crear o actualizar empleado
@@ -259,7 +264,8 @@ class EmpleadosController extends Controller
         $reglasValidacion = [
             'nombres' => 'sometimes|string|max:100',
             'apellidos' => 'sometimes|string|max:100',
-            'nit' => 'nullable|string',
+            'dui_homologado' => 'nullable|boolean',
+            'nit' => $this->reglasNit($request, $empleado),
             'isss' => 'nullable|string',
             'afp' => 'nullable|string',
             'fecha_nacimiento' => 'sometimes|date',
@@ -308,6 +314,7 @@ class EmpleadosController extends Controller
                 'nombres',
                 'apellidos',
                 'dui',
+                'dui_homologado',
                 'nit',
                 'isss',
                 'afp',
@@ -331,6 +338,11 @@ class EmpleadosController extends Controller
             ];
 
             foreach ($camposPermitidos as $campo) {
+                if ($campo === 'dui_homologado' && $request->has('dui_homologado')) {
+                    $datosActualizar[$campo] = $request->boolean('dui_homologado');
+                    continue;
+                }
+
                 if ($request->has($campo) && $request->$campo !== null) {
                     if (in_array($campo, ['tipo_contrato', 'tipo_jornada'])) {
                         $datosActualizar[$campo] = intval($request->$campo);
@@ -344,6 +356,10 @@ class EmpleadosController extends Controller
                         $datosActualizar[$campo] = $request->$campo;
                     }
                 }
+            }
+
+            if ($request->boolean('dui_homologado')) {
+                $datosActualizar['nit'] = null;
             }
 
             // Actualizar empleado
@@ -991,5 +1007,16 @@ class EmpleadosController extends Controller
                 'error' => 'Error al importar los empleados: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    private function reglasNit(Request $request, ?Empleado $empleado = null): array
+    {
+        $duiHomologado = $request->has('dui_homologado')
+            ? $request->boolean('dui_homologado')
+            : ($empleado ? (bool) $empleado->dui_homologado : false);
+
+        return $duiHomologado
+            ? ['nullable', 'string']
+            : ['required', 'string'];
     }
 }

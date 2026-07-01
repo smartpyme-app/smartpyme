@@ -157,6 +157,7 @@
         <select id="selTipoDescargaSujetosExcluidos" class="form-select" [(ngModel)]="tipoDescarga" name="tipoDescargaSujetosExcluidos">
             <option value="">Seleccione</option>
             <option value="libro_excel">Libro de sujetos excluidos (Excel)</option>
+            <option value="libro_pdf">Libro de sujetos excluidos (PDF)</option>
             <option *ngIf="isElSalvador" value="anexo_csv">Anexo CSV (F07 / AnexoSujetosExcluidos)</option>
         </select>
     </div>

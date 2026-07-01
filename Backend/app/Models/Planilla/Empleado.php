@@ -27,6 +27,7 @@ class Empleado extends Model
         'nombres', 
         'apellidos',
         'dui',
+        'dui_homologado',
         'nit',
         'isss',
         'afp',
@@ -55,6 +56,7 @@ class Empleado extends Model
 
     protected $casts = [
         'configuracion_descuentos' => 'array',
+        'dui_homologado' => 'boolean',
     ];
 
     /**

@@ -74,6 +74,12 @@ export class PlanillaDetalleComponent implements OnInit {
     private configPlanillaService: ConfiguracionPlanillaService
   ) { }
 
+  get currencySymbol(): string {
+    const empresa = this.apiService.auth_user()?.empresa;
+    return empresa?.currency?.currency_symbol
+      || (empresa?.moneda === 'HNL' ? 'L' : '$');
+  }
+
   ngOnInit() {
     this.route.params.subscribe((params) => {
 

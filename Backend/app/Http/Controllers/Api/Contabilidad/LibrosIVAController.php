@@ -957,6 +957,18 @@ class LibrosIVAController extends Controller
             ->values()
             ->all();
 
+        $formato = $request->query('formato') ?? 'json';
+
+        if ($formato === 'pdf') {
+            $pdf = app('dompdf.wrapper')->loadView(
+                'reportes.contabilidad.el_salvador.libro-sujetos-excluidos',
+                compact('libroSujetoExcluido', 'request')
+            );
+            $pdf->setPaper('US Letter', 'landscape');
+
+            return $pdf->stream('libro-sujetos-excluidos.pdf');
+        }
+
         return response()->json($libroSujetoExcluido, 200);
     }
 

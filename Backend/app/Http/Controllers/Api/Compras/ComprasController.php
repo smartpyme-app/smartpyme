@@ -12,8 +12,10 @@ use App\Models\Compras\Compra;
 use App\Models\Compras\DevolucionCompra;
 use App\Models\Compras\Proveedores\Proveedor;
 use App\Models\Compras\Detalle;
+use App\Models\Compras\Impuesto as CompraImpuesto;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
+use App\Models\Inventario\Lote;
 use App\Models\Inventario\Kardex;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -22,6 +24,7 @@ use App\Exports\ComprasExport;
 use App\Exports\ComprasDetallesExport;
 use App\Exports\CuentasPagarExport;
 use App\Exports\RentabilidadSucursalExport;
+use App\Helpers\ExportPeriodHelper;
 use Maatwebsite\Excel\Facades\Excel;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Auth;
@@ -111,7 +114,7 @@ class ComprasController extends Controller
 
     public function read($id) {
         $compra = Compra::where('id', $id)
-            ->with('detalles', 'proveedor', 'abonos', 'devoluciones')
+            ->with('detalles', 'proveedor', 'abonos', 'devoluciones', 'impuestos.impuesto')
             ->withSum(['abonos' => function ($query) {
                 $query->where('estado', 'Confirmado');
             }], 'total')
@@ -203,10 +206,22 @@ class ComprasController extends Controller
                     $factorPres
                 );
 
+                $producto = Producto::find($detalle->id_producto);
+                $empresa = \App\Models\Admin\Empresa::find($compra->id_empresa);
+                $lotesActivo = $empresa ? $empresa->isLotesActivo() : false;
+
                 $inventario = Inventario::where('id_producto', $detalle->id_producto)->where('id_bodega', $compra->id_bodega)->first();
 
-                // Anular compra y regresar stock
+                // Anular compra y restar stock
                 if(($compra->estado != 'Anulada') && ($request['estado'] == 'Anulada')){
+
+                    if ($producto && $producto->inventario_por_lotes && $lotesActivo && $detalle->lote_id) {
+                        $lote = Lote::find($detalle->lote_id);
+                        if ($lote) {
+                            $lote->stock -= $cantidadBase;
+                            $lote->save();
+                        }
+                    }
 
                     if ($inventario) {
                         $inventario->stock -= $cantidadBase;
@@ -223,6 +238,14 @@ class ComprasController extends Controller
                 }
                 // Cancelar anulación de compra y descargar stock
                 if(($compra->estado == 'Anulada') && ($request['estado'] != 'Anulada')){
+                    if ($producto && $producto->inventario_por_lotes && $lotesActivo && $detalle->lote_id) {
+                        $lote = Lote::find($detalle->lote_id);
+                        if ($lote) {
+                            $lote->stock += $cantidadBase;
+                            $lote->save();
+                        }
+                    }
+
                     // Aplicar stock
                     if ($inventario) {
                         $inventario->stock += $cantidadBase;
@@ -302,7 +325,7 @@ class ComprasController extends Controller
             else
                 $compra = new Compra;
 
-            $compra->fill($request->except(['detalles', 'dte']));
+            $compra->fill($request->except(['detalles', 'dte', 'impuestos']));
             $this->aplicarIdentificadoresDteImportado($compra, $request);
 
             if (!$request->id && !$request->boolean('incrementar_correlativo_importacion_massiva')) {
@@ -311,6 +334,9 @@ class ComprasController extends Controller
 
             $compra->save();
 
+            if ($request->has('impuestos')) {
+                $this->guardarImpuestosCompra($compra, $request->impuestos);
+            }
 
         // Detalles
 
@@ -489,6 +515,8 @@ class ComprasController extends Controller
             $this->sincronizarStockCompraConShopify($compra);
         }
 
+        $compra->load(['detalles', 'proveedor', 'impuestos.impuesto']);
+
         return Response()->json($compra, 200);
 
         } catch (\Exception $e) {
@@ -499,6 +527,44 @@ class ComprasController extends Controller
             return Response()->json(['error' => $e->getMessage()], 400);
         }
 
+    }
+
+    /**
+     * Guardar impuestos de la compra (reemplaza filas existentes si es edición).
+     *
+     * @param  array<int, array<string, mixed>>|null  $impuestos
+     */
+    private function guardarImpuestosCompra(Compra $compra, ?array $impuestos, bool $reemplazar = true): void
+    {
+        if ($impuestos === null) {
+            return;
+        }
+
+        if ($reemplazar) {
+            CompraImpuesto::where('id_compra', $compra->id)->delete();
+        }
+
+        if ($impuestos === []) {
+            return;
+        }
+
+        foreach ($impuestos as $impuesto) {
+            $idImpuesto = $impuesto['id_impuesto'] ?? $impuesto['id'] ?? null;
+            if (!$idImpuesto) {
+                continue;
+            }
+
+            $monto = (float) ($impuesto['monto'] ?? 0);
+            if (abs($monto) < 0.00001) {
+                continue;
+            }
+
+            $compraImpuesto = new CompraImpuesto();
+            $compraImpuesto->id_impuesto = (int) $idImpuesto;
+            $compraImpuesto->monto = $monto;
+            $compraImpuesto->id_compra = $compra->id;
+            $compraImpuesto->save();
+        }
     }
 
     /**
@@ -802,17 +868,56 @@ class ComprasController extends Controller
     }
 
     public function export(Request $request){
-        $compras = new ComprasExport();
-        $compras->filter($request);
-
-        return Excel::download($compras, 'compras.xlsx');
+        return $this->downloadComprasExcel(
+            $request,
+            ExportPeriodHelper::MAX_DIAS_VENTAS_TOTALES,
+            function () use ($request) {
+                $compras = new ComprasExport();
+                $compras->filter($request);
+                return [$compras, 'compras.xlsx'];
+            }
+        );
     }
 
     public function exportDetalles(Request $request){
-        $compras = new ComprasDetallesExport();
-        $compras->filter($request);
+        return $this->downloadComprasExcel(
+            $request,
+            ExportPeriodHelper::MAX_DIAS_DETALLES,
+            function () use ($request) {
+                $compras = new ComprasDetallesExport();
+                $compras->filter($request);
+                return [$compras, 'compras-detalles.xlsx'];
+            }
+        );
+    }
 
-        return Excel::download($compras, 'compras-detalles.xlsx');
+    /**
+     * @param  callable(): array{0: object, 1: string}  $exportFactory
+     */
+    private function downloadComprasExcel(Request $request, int $maxDias, callable $exportFactory)
+    {
+        ExportPeriodHelper::assertValidPeriod($request, $maxDias);
+
+        try {
+            ini_set('memory_limit', '512M');
+            set_time_limit(300);
+
+            [$export, $nombreArchivo] = $exportFactory();
+
+            return Excel::download($export, $nombreArchivo);
+        } catch (\Throwable $e) {
+            if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpException) {
+                throw $e;
+            }
+
+            \Log::error('Error al exportar compras: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'error' => 'Error al generar el reporte. Intente con un rango de fechas más corto.',
+            ], 500);
+        }
     }
 
     public function sinDevolucion(){
@@ -835,15 +940,17 @@ class ComprasController extends Controller
 
     public function exportRentabilidad(Request $request)
     {
-
-        //enviar id de la empresa en el request
-
-        $user = JWTAuth::parseToken()->authenticate();
-        $request->request->add(['id_empresa' => $user->id_empresa]);
-        $ventas = new RentabilidadSucursalExport();
-        $ventas->filter($request);
-
-        return Excel::download($ventas, 'corte.xlsx');
+        return $this->downloadComprasExcel(
+            $request,
+            ExportPeriodHelper::MAX_DIAS_GENERAL,
+            function () use ($request) {
+                $user = JWTAuth::parseToken()->authenticate();
+                $request->request->add(['id_empresa' => $user->id_empresa]);
+                $ventas = new RentabilidadSucursalExport();
+                $ventas->filter($request);
+                return [$ventas, 'compras-rentabilidad.xlsx'];
+            }
+        );
     }
 
 
@@ -966,7 +1073,7 @@ class ComprasController extends Controller
     }
 
     public function generarDoc($id){
-        $compra = Compra::where('id', $id)->with('detalles', 'proveedor', 'empresa')->firstOrFail();
+        $compra = Compra::where('id', $id)->with('detalles', 'proveedor', 'empresa', 'impuestos.impuesto')->firstOrFail();
 
         $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.compra', compact('compra'));
         $pdf->setPaper('US Letter', 'portrait');

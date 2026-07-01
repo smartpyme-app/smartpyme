@@ -4,6 +4,7 @@ namespace App\Exports\ReportesAutomaticos\DetalleVentasPorVendedor;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Services\Ventas\VentaMontosPorVendedorService;
 use Exception;
 use Mpdf\Mpdf;
 use Mpdf\Config\ConfigVariables;
@@ -226,6 +227,7 @@ class DetalleVentasVendedorPdfExport
             $totalGeneral = [
                 'subtotal' => 0,
                 'descuento' => 0,
+                'iva' => 0,
                 'total' => 0
             ];
             
@@ -233,12 +235,14 @@ class DetalleVentasVendedorPdfExport
                 $totalVendedor = [
                     'subtotal' => 0,
                     'descuento' => 0,
+                    'iva' => 0,
                     'total' => 0
                 ];
                 
                 foreach ($filas as $fila) {
                     $totalVendedor['subtotal'] += $fila['subtotal'];
                     $totalVendedor['descuento'] += $fila['descuento'] ?? 0;
+                    $totalVendedor['iva'] += $fila['iva'] ?? 0;
                     $totalVendedor['total'] += $fila['total'];
                 }
                 
@@ -246,6 +250,7 @@ class DetalleVentasVendedorPdfExport
                 
                 $totalGeneral['subtotal'] += $totalVendedor['subtotal'];
                 $totalGeneral['descuento'] += $totalVendedor['descuento'];
+                $totalGeneral['iva'] += $totalVendedor['iva'];
                 $totalGeneral['total'] += $totalVendedor['total'];
             }
             
@@ -278,6 +283,7 @@ class DetalleVentasVendedorPdfExport
                             'precio' => '',
                             'descuento' => $vendedoresTotales[$vendedor]['descuento'],
                             'subtotal' => $vendedoresTotales[$vendedor]['subtotal'],
+                            'iva' => $vendedoresTotales[$vendedor]['iva'],
                             'total' => $vendedoresTotales[$vendedor]['total'],
                             'es_total' => true
                         ];
@@ -302,6 +308,7 @@ class DetalleVentasVendedorPdfExport
                     'precio' => '',
                     'descuento' => $totalGeneral['descuento'],
                     'subtotal' => $totalGeneral['subtotal'],
+                    'iva' => $totalGeneral['iva'],
                     'total' => $totalGeneral['total'],
                     'es_total' => true
                 ];
@@ -517,6 +524,9 @@ class DetalleVentasVendedorPdfExport
                 // Subtotal
                 $html .= '<td class="numeric">' . htmlspecialchars($fila['subtotal'] ?? '') . '</td>';
                 
+                // IVA
+                $html .= '<td class="numeric">' . htmlspecialchars($fila['iva'] ?? '') . '</td>';
+                
                 // Total
                 $html .= '<td class="numeric">' . htmlspecialchars($fila['total'] ?? '') . '</td>';
                 
@@ -540,8 +550,10 @@ class DetalleVentasVendedorPdfExport
             // Consulta principal para obtener los detalles de ventas
             $query = DB::table('detalles_venta as dv')
                 ->join('productos as pro', 'dv.id_producto', '=', 'pro.id')
-                ->join('users as us', 'dv.id_vendedor', '=', 'us.id')
                 ->join('ventas as vv', 'dv.id_venta', '=', 'vv.id')
+                ->join('users as us', function ($join) {
+                    $join->on('us.id', '=', DB::raw(VentaMontosPorVendedorService::sqlIdVendedorEfectivo('dv', 'vv')));
+                })
                 ->where('vv.estado', '!=', 'Anulada')
                 ->where('vv.id_empresa', $this->id_empresa)
                 ->whereBetween('vv.fecha', [$this->fechaInicio, $this->fechaFin]);
@@ -560,8 +572,9 @@ class DetalleVentasVendedorPdfExport
                 'dv.cantidad',
                 'dv.precio',
                 'dv.descuento',
+                DB::raw('COALESCE(dv.iva, 0) as iva'),
                 DB::raw('(dv.cantidad * dv.precio) as subtotal'),
-                DB::raw('(dv.cantidad * dv.precio - COALESCE(dv.descuento, 0)) as total')
+                DB::raw('(dv.cantidad * dv.precio - COALESCE(dv.descuento, 0) + COALESCE(dv.iva, 0)) as total')
             )
                 ->orderBy('us.name')
                 ->orderBy('vv.fecha')
@@ -582,12 +595,14 @@ class DetalleVentasVendedorPdfExport
                     $vendedoresTotales[$vendedor] = [
                         'subtotal' => 0,
                         'descuento' => 0,
+                        'iva' => 0,
                         'total' => 0
                     ];
                 }
                 
                 $vendedoresTotales[$vendedor]['subtotal'] += $venta->subtotal;
                 $vendedoresTotales[$vendedor]['descuento'] += $venta->descuento ?? 0;
+                $vendedoresTotales[$vendedor]['iva'] += $venta->iva ?? 0;
                 $vendedoresTotales[$vendedor]['total'] += $venta->total;
             }
     
@@ -607,6 +622,7 @@ class DetalleVentasVendedorPdfExport
                         'precio' => '',
                         'descuento' => $vendedoresTotales[$vendedorActual]['descuento'],
                         'subtotal' => $vendedoresTotales[$vendedorActual]['subtotal'],
+                        'iva' => $vendedoresTotales[$vendedorActual]['iva'],
                         'total' => $vendedoresTotales[$vendedorActual]['total'],
                         'es_total' => true
                     ];
@@ -625,6 +641,7 @@ class DetalleVentasVendedorPdfExport
                     'precio' => $venta->precio,
                     'descuento' => $venta->descuento,
                     'subtotal' => $venta->subtotal,
+                    'iva' => $venta->iva,
                     'total' => $venta->total,
                     'es_total' => false
                 ];
@@ -641,6 +658,7 @@ class DetalleVentasVendedorPdfExport
                     'precio' => '',
                     'descuento' => $vendedoresTotales[$vendedorActual]['descuento'],
                     'subtotal' => $vendedoresTotales[$vendedorActual]['subtotal'],
+                    'iva' => $vendedoresTotales[$vendedorActual]['iva'],
                     'total' => $vendedoresTotales[$vendedorActual]['total'],
                     'es_total' => true
                 ];
@@ -656,6 +674,7 @@ class DetalleVentasVendedorPdfExport
                 'precio' => '',
                 'descuento' => array_sum(array_column($vendedoresTotales, 'descuento')),
                 'subtotal' => array_sum(array_column($vendedoresTotales, 'subtotal')),
+                'iva' => array_sum(array_column($vendedoresTotales, 'iva')),
                 'total' => array_sum(array_column($vendedoresTotales, 'total')),
                 'es_total' => true
             ];
@@ -687,7 +706,8 @@ class DetalleVentasVendedorPdfExport
             'Cantidad', 
             'Precio', 
             'Descuento', 
-            'Subtotal', 
+            'Subtotal',
+            'IVA',
             'Total'
         ];
     }
@@ -711,6 +731,7 @@ class DetalleVentasVendedorPdfExport
             $filaFormateada['precio'] = is_numeric($fila['precio'] ?? '') ? number_format((float)$fila['precio'], 2) : $fila['precio'] ?? '';
             $filaFormateada['descuento'] = is_numeric($fila['descuento'] ?? '') ? number_format((float)$fila['descuento'], 2) : $fila['descuento'] ?? '';
             $filaFormateada['subtotal'] = is_numeric($fila['subtotal'] ?? '') ? number_format((float)$fila['subtotal'], 2) : $fila['subtotal'] ?? '';
+            $filaFormateada['iva'] = is_numeric($fila['iva'] ?? '') ? number_format((float)$fila['iva'], 2) : $fila['iva'] ?? '';
             $filaFormateada['total'] = is_numeric($fila['total'] ?? '') ? number_format((float)$fila['total'], 2) : $fila['total'] ?? '';
             
             // Agregar bandera para aplicar estilos diferentes a filas de totales

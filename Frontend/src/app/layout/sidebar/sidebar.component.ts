@@ -354,7 +354,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
     private verificarFidelizacionHabilitada() {
         this.funcionalidadesService.verificarAcceso('fidelizacion-clientes').subscribe({
             next: (tieneAcceso: boolean) => {
-                this.tieneFidelizacionHabilitada = tieneAcceso;
+                this.tieneFidelizacionHabilitada = tieneAcceso && this.apiService.isFidelizacionActiva();
             },
             error: (error) => {
                 console.error('Error al verificar acceso a fidelización:', error);

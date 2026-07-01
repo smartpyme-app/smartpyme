@@ -108,24 +108,78 @@
 
 <ng-template #mdescargar>
   <div class="modal-header">
-    <h4 class="modal-title text-center">Descargar registro de gastos</h4>
-    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    <h4 class="modal-title">Descargar reporte</h4>
+    <button type="button" class="btn-close" (click)="cerrarModalDescargar()" aria-label="Close"></button>
   </div>
   <div class="modal-body">
-        <div class="row">
-            <div class="d-grid mt-4">
-                <button [disabled]="saving" (click)="descargarDetalles()" class="btn btn-primary btn-block">
-                    <span *ngIf="!saving">Descargar los detalles de gastos</span>
-                    <span *ngIf="saving">Descargando...</span>
-                </button>
-            </div>
-            <div class="d-grid mt-4">
-                <button [disabled]="saving" (click)="descargarGastos()" class="btn btn-primary btn-block">
-                    <span *ngIf="!saving">Descargar las gastos</span>
-                    <span *ngIf="saving">Descargando...</span>
-                </button>
-            </div>
+    <p class="text-muted small mb-3">
+      <ng-container *ngIf="!reporteSeleccionado">
+        Seleccione un reporte, elija el período y descargue el Excel.
+      </ng-container>
+      <ng-container *ngIf="tipoLimiteExportGastos as tipoLimite">
+        Elija el período (rango, mes o año y mes). Máximo {{ maxDiasExportPorTipoFn(tipoLimite) }} días.
+        Para más histórico, use
+        <a routerLink="/reportes-automaticos" (click)="cerrarModalDescargar()">Reportes automáticos</a>.
+      </ng-container>
+    </p>
+    <div class="mb-3">
+      <label class="form-label">Reporte</label>
+      <select class="form-select" [(ngModel)]="reporteSeleccionado" (ngModelChange)="seleccionarReporteGastos($event)">
+        <option value="">Seleccione…</option>
+        <option value="gastos">Gastos totales</option>
+        <option value="detalles">Detalles por concepto</option>
+      </select>
+    </div>
+    <ng-container *ngIf="reporteSeleccionado && tipoLimiteExportGastos as tipoLimite">
+      <div class="mb-3">
+        <label class="form-label">Período</label>
+        <select class="form-select" [(ngModel)]="exportPeriodo.tipo" name="tipoPeriodoGastosRec">
+          <option value="rango">Rango de fechas</option>
+          <option value="mes">Mes ({{ anioEnCursoParaMes }})</option>
+          <option value="anio_mes">Año y mes</option>
+        </select>
+      </div>
+      <div class="row" *ngIf="exportPeriodo.tipo === 'rango'">
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Desde</label>
+          <input type="date" class="form-control" [(ngModel)]="exportPeriodo.rangoInicio" name="gastosRecRangoInicio">
         </div>
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Hasta</label>
+          <input type="date" class="form-control" [(ngModel)]="exportPeriodo.rangoFin" name="gastosRecRangoFin">
+        </div>
+      </div>
+      <div class="mb-3" *ngIf="exportPeriodo.tipo === 'mes'">
+        <label class="form-label">Mes</label>
+        <select class="form-select" [(ngModel)]="exportPeriodo.mes" name="gastosRecMes">
+          <option *ngFor="let m of mesesExportPeriodo" [ngValue]="m.v">{{ m.n }}</option>
+        </select>
+      </div>
+      <div class="row" *ngIf="exportPeriodo.tipo === 'anio_mes'">
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Año</label>
+          <select class="form-select" [(ngModel)]="exportPeriodo.anio" name="gastosRecAnio">
+            <option *ngFor="let y of aniosDisponiblesExport" [ngValue]="y">{{ y }}</option>
+          </select>
+        </div>
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Mes</label>
+          <select class="form-select" [(ngModel)]="exportPeriodo.mes" name="gastosRecAnioMes">
+            <option *ngFor="let m of mesesExportPeriodo" [ngValue]="m.v">{{ m.n }}</option>
+          </select>
+        </div>
+      </div>
+      <div *ngIf="rangoExportSuperaLimiteGastos(tipoLimite)" class="text-danger small mb-3">
+        El período supera {{ maxDiasExportPorTipoFn(tipoLimite) }} días.
+      </div>
+      <div class="d-grid">
+        <button [disabled]="saving || !puedeDescargarReporteGastos" (click)="descargarReporteGastosSeleccionado()"
+          class="btn btn-primary">
+          <span *ngIf="!downloadingGastos && !downloadingDetalles">Descargar Excel</span>
+          <span *ngIf="downloadingGastos || downloadingDetalles">Descargando…</span>
+        </button>
+      </div>
+    </ng-container>
   </div>
 </ng-template>
 

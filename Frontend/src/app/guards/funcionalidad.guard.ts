@@ -3,6 +3,7 @@ import { Router, CanActivate, ActivatedRouteSnapshot } from '@angular/router';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { FuncionalidadesService } from '@services/functionalities.service';
+import { ApiService } from '@services/api.service';
 
 export const SLUG_DESCARGA_AUTOMATIZADA_DTES = 'descarga-automatizada-dtes';
 
@@ -11,7 +12,8 @@ export class FuncionalidadGuard implements CanActivate {
 
   constructor(
     private router: Router,
-    private funcionalidadesService: FuncionalidadesService
+    private funcionalidadesService: FuncionalidadesService,
+    private apiService: ApiService
   ) {}
 
   canActivate(route: ActivatedRouteSnapshot): Observable<boolean> {
@@ -23,7 +25,12 @@ export class FuncionalidadGuard implements CanActivate {
     }
 
     return this.funcionalidadesService.verificarAcceso(slug).pipe(
-      map((acceso) => this.resolveAccess(acceso))
+      map((acceso) => {
+        if (slug === 'fidelizacion-clientes' && acceso) {
+          return this.resolveAccess(this.apiService.isFidelizacionActiva());
+        }
+        return this.resolveAccess(acceso);
+      })
     );
   }
 
