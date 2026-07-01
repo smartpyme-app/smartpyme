@@ -210,30 +210,35 @@ public function handle()
     {
         $suscripcion->loadMissing(['empresa', 'plan']);
 
-        $empresa = Empresa::find(2);
-        if (!$empresa instanceof Empresa) {
+        // Empresa emisora (Super Admin) - quien emite la factura
+        $empresaEmisora = Empresa::find(2);
+        if (!$empresaEmisora instanceof Empresa) {
             throw new \RuntimeException('Empresa emisora (Super Admin ID 2) no encontrada en el sistema.');
         }
 
-        if (empty($suscripcion->id_cliente)) {
-            throw new \RuntimeException('id_cliente no configurado en la suscripción.');
+        // Empresa cliente - quien recibe la factura
+        $empresaCliente = $suscripcion->empresa;
+        
+        if (empty($empresaCliente->id_cliente)) {
+            throw new \RuntimeException('id_cliente no configurado en la empresa cliente (ID: ' . $empresaCliente->id . ').');
         }
 
-        $cliente = Cliente::withoutGlobalScopes()->find($suscripcion->id_cliente);
+        $cliente = Cliente::withoutGlobalScopes()->find($empresaCliente->id_cliente);
         if (!$cliente) {
-            throw new \RuntimeException('Cliente receptor no encontrado (id_cliente: ' . $suscripcion->id_cliente . ').');
+            throw new \RuntimeException('Cliente receptor no encontrado (id_cliente: ' . $empresaCliente->id_cliente . ').');
         }
 
-        if (!$empresa->facturacion_electronica) {
-            throw new \RuntimeException('La empresa no tiene activada la facturación electrónica.');
+        // Validaciones de la empresa emisora (Super Admin)
+        if (!$empresaEmisora->facturacion_electronica) {
+            throw new \RuntimeException('La empresa emisora no tiene activada la facturación electrónica.');
         }
 
-        if (empty($empresa->mh_usuario) || empty($empresa->mh_contrasena)) {
+        if (empty($empresaEmisora->mh_usuario) || empty($empresaEmisora->mh_contrasena)) {
             throw new \RuntimeException('Faltan mh_usuario o mh_contrasena para la API de Hacienda.');
         }
 
-        if (empty($empresa->mh_pwd_certificado)) {
-            throw new \RuntimeException('Falta mh_pwd_certificado (contraseña del certificado) en la empresa.');
+        if (empty($empresaEmisora->mh_pwd_certificado)) {
+            throw new \RuntimeException('Falta mh_pwd_certificado (contraseña del certificado) en la empresa emisora.');
         }
 
         $tipoDte = $this->determinarTipoDte($cliente, $suscripcion->tipo_factura);
@@ -242,17 +247,17 @@ public function handle()
         $dteJson = null;
 
         Log::channel('facturacion')->info("Paso 1: Armar JSON DTE para suscripción {$suscripcion->id} (tipo: {$tipoDte})");
-        [$venta, $dteJson] = $this->armarJsonDteSuscripcion($suscripcion, $empresa, $cliente, $tipoDte);
+        [$venta, $dteJson] = $this->armarJsonDteSuscripcion($suscripcion, $empresaEmisora, $cliente, $tipoDte);
         Log::channel('facturacion')->info("Venta creada ID: {$venta->id} para suscripción {$suscripcion->id}");
 
         $documentoFirmado = null;
         Log::channel('facturacion')->info("Paso 2: Firmar JSON DTE externamente para venta {$venta->id}");
-        $documentoFirmado = $this->firmarJsonDteExterno($dteJson, $empresa);
+        $documentoFirmado = $this->firmarJsonDteExterno($dteJson, $empresaEmisora);
         Log::channel('facturacion')->info("JSON firmado exitosamente para venta {$venta->id}");
 
         $respuestaHacienda = null;
         Log::channel('facturacion')->info("Paso 3: Enviar DTE a recepción Hacienda para venta {$venta->id}");
-        $respuestaHacienda = $this->enviarDteRecepcionHacienda($venta, $dteJson, $documentoFirmado, $empresa);
+        $respuestaHacienda = $this->enviarDteRecepcionHacienda($venta, $dteJson, $documentoFirmado, $empresaEmisora);
         Log::channel('facturacion')->info("Respuesta recibida de Hacienda para venta {$venta->id}", ['respuesta' => $respuestaHacienda]);
 
         $estado = is_array($respuestaHacienda) ? ($respuestaHacienda['estado'] ?? null) : null;
@@ -274,7 +279,6 @@ public function handle()
             Log::channel('facturacion')->info("Correo enviado exitosamente para venta {$venta->id}");
         } catch (\Throwable $e) {
             Log::channel('facturacion')->warning("No se pudo enviar el correo para venta {$venta->id}: " . $e->getMessage());
-            // No lanzamos excepción para que el proceso continúe
         }
 
         $msg = sprintf(
@@ -288,7 +292,7 @@ public function handle()
         Log::channel('facturacion')->info($msg, [
             'suscripcion_id' => $suscripcion->id,
             'venta_id' => $venta->id,
-            'empresa_id' => $empresa->id,
+            'empresa_id' => $empresaEmisora->id,
             'tipo_dte' => $tipoDte,
             'sello_mh' => $sello,
         ]);
