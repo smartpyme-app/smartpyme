@@ -140,6 +140,20 @@
                     <td class="text-right">Sumas</td>
                     <td class="text-right">{{ $compra->empresa->currency->currency_symbol }}{{ number_format($compra->sub_total, 2) }}</td>
                 </tr>
+                @if ($compra->impuestos && $compra->impuestos->count() > 0)
+                    @foreach ($compra->impuestos as $lineaImpuesto)
+                        @if ((float) $lineaImpuesto->monto > 0)
+                        <tr>
+                            <td colspan="2"></td>
+                            <td class="text-right">
+                                {{ optional($lineaImpuesto->impuesto)->nombre ?? 'Impuesto' }}
+                                ({{ number_format((float) (optional($lineaImpuesto->impuesto)->porcentaje ?? 0), 2) }}%)
+                            </td>
+                            <td class="text-right">{{ $compra->empresa->currency->currency_symbol }}{{ number_format($lineaImpuesto->monto, 2) }}</td>
+                        </tr>
+                        @endif
+                    @endforeach
+                @elseif ($compra->iva > 0)
                 <tr>
                     <td colspan="2"></td>
                     <td class="text-right">
@@ -151,6 +165,7 @@
                     </td>
                     <td class="text-right">{{ $compra->empresa->currency->currency_symbol }}{{ number_format($compra->iva, 2) }}</td>
                 </tr>
+                @endif
                 @if ($compra->percepcion > 0)
                 <tr>
                     <td colspan="2"></td>
