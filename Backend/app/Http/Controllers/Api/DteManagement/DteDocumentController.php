@@ -7,6 +7,8 @@ use App\Models\DteManagement\DteDocument;
 use App\Models\DteManagement\UserEmailAccount;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class DteDocumentController extends Controller
@@ -159,31 +161,14 @@ class DteDocumentController extends Controller
             return response()->json(['error' => 'El DTE está anulado'], 422);
         }
 
-        if ($request->filled('destino')) {
-            $destino = $request->destino;
-            if (!in_array($destino, ['compra', 'gasto'], true)) {
-                return response()->json(['error' => 'Destino inválido'], 422);
-            }
-            $document->destino = $destino;
+        try {
+            $this->applyDocumentMetadata($document, $request);
+            $document->save();
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        } catch (QueryException $e) {
+            return $this->metadataSaveErrorResponse($e);
         }
-
-        if ($request->has('id_proyecto')) {
-            $document->id_proyecto = $request->input('id_proyecto') ?: null;
-        }
-
-        if ($request->has('id_categoria')) {
-            $document->id_categoria = $request->input('id_categoria') ?: null;
-        }
-
-        if ($request->has('tipo_gasto')) {
-            $document->tipo_gasto = $request->input('tipo_gasto') ?: null;
-        }
-
-        if ($request->has('tipo_costo_gasto')) {
-            $document->tipo_costo_gasto = $request->input('tipo_costo_gasto') ?: null;
-        }
-
-        $document->save();
 
         return response()->json(['success' => true, 'document' => $document->fresh()]);
     }
@@ -193,11 +178,25 @@ class DteDocumentController extends Controller
      */
     protected function parseLineItems(DteDocument $document): array
     {
-        if (!$document->json_path || !Storage::disk('dtes')->exists($document->json_path)) {
+        if (!$document->json_path) {
             return [];
         }
 
-        $jsonData = json_decode(Storage::disk('dtes')->get($document->json_path), true);
+        try {
+            if (!Storage::disk('dtes')->exists($document->json_path)) {
+                return [];
+            }
+
+            $jsonData = json_decode(Storage::disk('dtes')->get($document->json_path), true);
+        } catch (\Throwable $e) {
+            Log::warning('DteDocumentController: no se pudo leer JSON para line_items', [
+                'dte_id' => $document->id,
+                'json_path' => $document->json_path,
+                'error' => $e->getMessage(),
+            ]);
+            return [];
+        }
+
         if (!is_array($jsonData)) {
             return [];
         }
@@ -234,12 +233,11 @@ class DteDocumentController extends Controller
 
     /**
      * Manually process DTE into Compra or Gasto (for pending/pendiente_clasificacion).
-     *
-     * @param int $id
-     * @return JsonResponse
      */
-    public function procesar(int $id): JsonResponse
+    public function procesar(Request $request, int $id): JsonResponse
     {
+        set_time_limit(300);
+
         $document = DteDocument::with('userEmailAccount')->findOrFail($id);
 
         if ($document->id_empresa !== auth()->user()->id_empresa) {
@@ -257,6 +255,18 @@ class DteDocumentController extends Controller
         if ($document->validation_status !== 'valid') {
             return response()->json(['error' => 'Solo se pueden procesar DTEs válidos'], 422);
         }
+
+        try {
+            $this->applyDocumentMetadata($document, $request);
+            $document->save();
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        } catch (QueryException $e) {
+            return $this->metadataSaveErrorResponse($e);
+        }
+
+        $document->refresh();
+        $document->load('userEmailAccount');
 
         $dteToIva = app(\App\Services\Dte\DteToIvaService::class);
         $result = $dteToIva->insertFromDteDocument($document);
@@ -344,5 +354,43 @@ class DteDocumentController extends Controller
         return response()->streamDownload(function () use ($document) {
             echo Storage::disk('dtes')->get($document->pdf_path);
         }, $document->dte_uuid . '.pdf', ['Content-Type' => 'application/pdf']);
+    }
+
+    protected function applyDocumentMetadata(DteDocument $document, Request $request): void
+    {
+        if ($request->filled('destino')) {
+            $destino = $request->destino;
+            if (!in_array($destino, ['compra', 'gasto'], true)) {
+                throw new \InvalidArgumentException('Destino inválido');
+            }
+            $document->destino = $destino;
+        }
+
+        if ($request->has('id_proyecto')) {
+            $document->id_proyecto = $request->input('id_proyecto') ?: null;
+        }
+
+        if ($request->has('id_categoria')) {
+            $document->id_categoria = $request->input('id_categoria') ?: null;
+        }
+
+        if ($request->has('tipo_gasto')) {
+            $document->tipo_gasto = $request->input('tipo_gasto') ?: null;
+        }
+
+        if ($request->has('tipo_costo_gasto')) {
+            $document->tipo_costo_gasto = $request->input('tipo_costo_gasto') ?: null;
+        }
+    }
+
+    protected function metadataSaveErrorResponse(QueryException $e): JsonResponse
+    {
+        if (str_contains($e->getMessage(), 'Unknown column')) {
+            return response()->json([
+                'error' => 'Faltan migraciones en el servidor. Ejecute php artisan migrate en producción.',
+            ], 503);
+        }
+
+        throw $e;
     }
 }

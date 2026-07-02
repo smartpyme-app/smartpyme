@@ -13,6 +13,7 @@ Route::group(['middleware' => ['jwt.auth', 'verificar.funcionalidad:descarga-aut
     Route::get('/', [DteDocumentController::class, 'index']);
     Route::get('/pending-review-alert', [DteDocumentController::class, 'pendingReviewAlert']);
     Route::get('/{id}', [DteDocumentController::class, 'show']);
+    Route::put('/{id}', [DteDocumentController::class, 'update']);
     Route::patch('/{id}', [DteDocumentController::class, 'update']);
     Route::post('/{id}/procesar', [DteDocumentController::class, 'procesar']);
     Route::post('/{id}/anular', [DteDocumentController::class, 'anular']);

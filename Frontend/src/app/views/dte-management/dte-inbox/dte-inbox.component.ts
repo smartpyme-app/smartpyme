@@ -112,36 +112,23 @@ export class DteInboxComponent implements OnInit {
     if (!this.documentoProcesar) return;
     this.procesando = true;
     const doc = this.documentoProcesar;
-    const needUpdate = (doc.destino || 'compra') !== this.destinoSeleccionado;
 
-    const doProcesar = () => {
-      this.dteService.procesar(doc.id).subscribe({
-        next: (res) => {
-          this.alertService.success('Éxito', res.message || this.countryI18n.fe('processedDefault'));
-          this.modalProcesarRef?.hide();
-          this.documentoProcesar = null;
-          this.procesando = false;
-          this.loadDocuments();
-        },
-        error: (err) => {
-          const msg = err?.error?.error || err?.error?.reason || 'Error al procesar';
-          this.alertService.error(typeof msg === 'string' ? { error: { message: msg } } : err);
-          this.procesando = false;
-        }
-      });
-    };
-
-    if (needUpdate) {
-      this.dteService.updateDestino(doc.id, this.destinoSeleccionado).subscribe({
-        next: () => doProcesar(),
-        error: (err) => {
-          this.alertService.error(err);
-          this.procesando = false;
-        }
-      });
-    } else {
-      doProcesar();
-    }
+    this.dteService.procesar(doc.id, {
+      destino: this.destinoSeleccionado,
+    }).subscribe({
+      next: (res) => {
+        this.alertService.success('Éxito', res.message || this.countryI18n.fe('processedDefault'));
+        this.modalProcesarRef?.hide();
+        this.documentoProcesar = null;
+        this.procesando = false;
+        this.loadDocuments();
+      },
+      error: (err) => {
+        const msg = err?.error?.error || err?.error?.reason || 'Error al procesar';
+        this.alertService.error(typeof msg === 'string' ? { error: { message: msg } } : err);
+        this.procesando = false;
+      }
+    });
   }
 
   puedeProcesar(doc: DteDocument): boolean {

@@ -7,7 +7,7 @@ import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { DteDocumentService, DteDocument, DteLineItem } from '@services/dte-management/dte-document.service';
+import { DteDocumentService, DteDocument, DteLineItem, DteProcesarPayload } from '@services/dte-management/dte-document.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { CountryI18nService } from '@services/country-i18n.service';
@@ -43,6 +43,8 @@ export class DteDetailComponent implements OnInit {
   jsonPreview = '';
   pdfPreviewUrl: SafeResourceUrl | null = null;
   private pdfObjectUrl: string | null = null;
+  private metadataReady = false;
+  private metadataSaveTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
     private dteService: DteDocumentService,
@@ -114,6 +116,7 @@ export class DteDetailComponent implements OnInit {
 
   loadDocument(id: number): void {
     this.loading = true;
+    this.metadataReady = false;
     this.dteService.get(id).subscribe({
       next: (doc) => {
         this.document = doc;
@@ -124,6 +127,7 @@ export class DteDetailComponent implements OnInit {
         this.tipoGasto = doc.tipo_gasto || this.inferirTipoGasto(this.lineItems) || '';
         this.tipoCostoGasto = doc.tipo_costo_gasto || '';
         this.loading = false;
+        setTimeout(() => { this.metadataReady = true; });
       },
       error: (err) => {
         this.alertService.error(err);
@@ -264,55 +268,56 @@ export class DteDetailComponent implements OnInit {
   }
 
   guardarMetadatos(silent = false): void {
-    if (!this.document || !this.puedeEditarClasificacion) return;
-    this.guardando = true;
-    this.dteService.update(this.document.id, {
+    if (!this.document || !this.puedeEditarClasificacion || !this.metadataReady) return;
+
+    if (this.metadataSaveTimer) {
+      clearTimeout(this.metadataSaveTimer);
+    }
+
+    this.metadataSaveTimer = setTimeout(() => {
+      this.metadataSaveTimer = null;
+      this.guardando = true;
+      this.dteService.update(this.document!.id, this.buildMetadataPayload()).subscribe({
+        next: (res) => {
+          this.document = res.document;
+          this.guardando = false;
+          if (!silent) {
+            this.alertService.success('Éxito', 'Datos actualizados');
+          }
+        },
+        error: (err) => {
+          this.guardando = false;
+          this.alertService.error(err);
+        }
+      });
+    }, 400);
+  }
+
+  private buildMetadataPayload(): DteProcesarPayload {
+    return {
       destino: this.destinoSeleccionado,
       id_proyecto: this.idProyecto,
       id_categoria: this.esGasto ? this.idCategoria : null,
       tipo_gasto: this.esGasto ? (this.tipoGasto || null) : null,
       tipo_costo_gasto: this.esCompra ? (this.tipoCostoGasto || null) : null,
-    }).subscribe({
-      next: (res) => {
-        this.document = res.document;
-        this.guardando = false;
-        if (!silent) {
-          this.alertService.success('Éxito', 'Datos actualizados');
-        }
-      },
-      error: (err) => {
-        this.guardando = false;
-        this.alertService.error(err);
-      }
-    });
+    };
   }
 
   procesar(): void {
     if (!this.document) return;
     this.procesando = true;
-    this.dteService.update(this.document.id, {
-      destino: this.destinoSeleccionado,
-      id_proyecto: this.idProyecto,
-      id_categoria: this.esGasto ? this.idCategoria : null,
-      tipo_gasto: this.esGasto ? (this.tipoGasto || null) : null,
-      tipo_costo_gasto: this.esCompra ? (this.tipoCostoGasto || null) : null,
-    }).subscribe({
-      next: (res) => {
-        this.document = res.document;
-        this.dteService.procesar(this.document!.id).subscribe({
-          next: (procRes) => {
-            this.document = procRes.document || this.document!;
-            this.alertService.success('Éxito', procRes.message || this.countryI18n.fe('processedDefault'));
-            this.procesando = false;
-          },
-          error: (err) => {
-            this.alertService.error(err?.error?.error || err?.error?.reason || 'Error al procesar');
-            this.procesando = false;
-          }
-        });
+    if (this.metadataSaveTimer) {
+      clearTimeout(this.metadataSaveTimer);
+      this.metadataSaveTimer = null;
+    }
+    this.dteService.procesar(this.document.id, this.buildMetadataPayload()).subscribe({
+      next: (procRes) => {
+        this.document = procRes.document || this.document!;
+        this.alertService.success('Éxito', procRes.message || this.countryI18n.fe('processedDefault'));
+        this.procesando = false;
       },
       error: (err) => {
-        this.alertService.error(err);
+        this.alertService.error(err?.error?.error || err?.error?.reason || err);
         this.procesando = false;
       }
     });

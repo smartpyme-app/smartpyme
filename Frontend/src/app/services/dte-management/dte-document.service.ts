@@ -45,6 +45,14 @@ export interface DteDocumentsResponse {
   total: number;
 }
 
+export interface DteProcesarPayload {
+  destino?: 'compra' | 'gasto';
+  id_proyecto?: number | null;
+  id_categoria?: number | null;
+  tipo_gasto?: string | null;
+  tipo_costo_gasto?: string | null;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -75,11 +83,15 @@ export class DteDocumentService {
     id: number,
     payload: Partial<Pick<DteDocument, 'destino' | 'id_proyecto' | 'id_categoria' | 'tipo_gasto' | 'tipo_costo_gasto'>>
   ): Observable<{ success: boolean; document: DteDocument }> {
-    return this.api.patch(`dtes`, id, payload);
+    // ponytail: PUT evita PATCH bloqueado por CORS en producción (nginx/ALB)
+    return this.api.update(`dtes`, id, payload);
   }
 
-  procesar(id: number): Observable<{ success: boolean; message?: string; document?: DteDocument; compra_id?: number; gasto_id?: number }> {
-    return this.api.store(`dtes/${id}/procesar`, {});
+  procesar(
+    id: number,
+    payload: DteProcesarPayload = {}
+  ): Observable<{ success: boolean; message?: string; document?: DteDocument; compra_id?: number; gasto_id?: number }> {
+    return this.api.storeWithTimeout(`dtes/${id}/procesar`, payload, 300000);
   }
 
   anular(id: number): Observable<{ success: boolean; message: string; document: DteDocument }> {
