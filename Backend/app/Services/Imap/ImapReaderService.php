@@ -4,6 +4,7 @@ namespace App\Services\Imap;
 
 use App\Contracts\EmailReaderInterface;
 use App\Models\DteManagement\UserEmailAccount;
+use App\Support\Dte\DteEmailAttachmentHelper;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
@@ -11,9 +12,6 @@ use Webklex\PHPIMAP\ClientManager;
 
 class ImapReaderService implements EmailReaderInterface
 {
-    /**
-     * {@inheritdoc}
-     */
     public function getEmailsWithDteAttachments(UserEmailAccount $account, Carbon $from, Carbon $to): Collection
     {
         $clientConfig = $this->buildClientConfig($account);
@@ -55,46 +53,44 @@ class ImapReaderService implements EmailReaderInterface
     }
 
     /**
-     * @return array<int, array{email_message_id: string, json_content: string, pdf_content: ?string}>
+     * @return array<int, array{
+     *     email_message_id: string,
+     *     clave: ?string,
+     *     source_format: string,
+     *     source_content: string,
+     *     pdf_content: ?string,
+     *     acuse_content: ?string
+     * }>
      */
     protected function extractDteAttachments($message, UserEmailAccount $account): array
     {
-        $messageId = 'imap-' . $account->id . '-' . $message->getUid();
-        $attachments = $message->getAttachments();
+        $messageId = 'imap-'.$account->id.'-'.$message->getUid();
+        $attachments = [];
 
-        $jsonContent = null;
-        $pdfContent = null;
-
-        foreach ($attachments as $attachment) {
+        foreach ($message->getAttachments() as $attachment) {
             $filename = $attachment->getName() ?: $attachment->getFilename() ?: '';
             $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+            if (!in_array($ext, ['json', 'pdf', 'xml'], true)) {
+                continue;
+            }
 
             try {
                 $content = $attachment->getContent();
-                if ($ext === 'json') {
-                    $jsonContent = $this->ensureUtf8($content);
-                } elseif ($ext === 'pdf') {
-                    $pdfContent = $content;
+                if ($ext === 'json' || $ext === 'xml') {
+                    $content = $this->ensureUtf8($content);
                 }
+                $attachments[] = [
+                    'filename' => $filename,
+                    'content' => $content,
+                ];
             } catch (\Throwable $e) {
                 Log::warning('IMAP: Could not get attachment content', ['filename' => $filename]);
             }
         }
 
-        if ($jsonContent === null) {
-            return [];
-        }
-
-        return [[
-            'email_message_id' => $messageId,
-            'json_content' => $jsonContent,
-            'pdf_content' => $pdfContent,
-        ]];
+        return DteEmailAttachmentHelper::groupAttachments($messageId, $attachments);
     }
 
-    /**
-     * Ensure string is valid UTF-8 to avoid "JSON encode payload Error code: 5" when queuing.
-     */
     protected function ensureUtf8(string $data): string
     {
         if ($data === '') {
@@ -104,6 +100,7 @@ class ImapReaderService implements EmailReaderInterface
         if ($encoding && $encoding !== 'UTF-8') {
             $data = mb_convert_encoding($data, 'UTF-8', $encoding);
         }
+
         return mb_convert_encoding($data, 'UTF-8', 'UTF-8');
     }
 

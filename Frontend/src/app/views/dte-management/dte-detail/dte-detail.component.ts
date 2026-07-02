@@ -10,6 +10,7 @@ import { ApiService } from '@services/api.service';
 import { DteDocumentService, DteDocument, DteLineItem, DteProcesarPayload } from '@services/dte-management/dte-document.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { CurrencyFormatService } from '@services/currency-format.service';
 import { CountryI18nService } from '@services/country-i18n.service';
 import { TranslatePipe } from '@ngx-translate/core';
 import { CrearProyectoComponent } from '@shared/modals/crear-proyecto/crear-proyecto.component';
@@ -22,6 +23,7 @@ import { CrearProyectoComponent } from '@shared/modals/crear-proyecto/crear-proy
 })
 export class DteDetailComponent implements OnInit {
   private readonly countryI18n = inject(CountryI18nService);
+  private readonly currencyFormat = inject(CurrencyFormatService);
   readonly apiService = inject(ApiService);
 
   document: DteDocument | null = null;
@@ -121,7 +123,7 @@ export class DteDetailComponent implements OnInit {
       next: (doc) => {
         this.document = doc;
         this.lineItems = doc.line_items || [];
-        this.destinoSeleccionado = (doc.destino || 'compra') as 'compra' | 'gasto';
+        this.destinoSeleccionado = (doc.destino || (doc.pais === 'CR' ? 'gasto' : 'compra')) as 'compra' | 'gasto';
         this.idProyecto = doc.id_proyecto ?? null;
         this.idCategoria = doc.id_categoria ?? null;
         this.tipoGasto = doc.tipo_gasto || this.inferirTipoGasto(this.lineItems) || '';
@@ -186,6 +188,36 @@ export class DteDetailComponent implements OnInit {
     });
   }
 
+  downloadXml(): void {
+    if (!this.document) return;
+    this.downloading = true;
+    this.dteService.downloadXml(this.document.id).subscribe({
+      next: (blob) => {
+        this.triggerDownload(blob, `${this.document!.dte_uuid}.xml`);
+        this.downloading = false;
+      },
+      error: (err) => {
+        this.alertService.error(err);
+        this.downloading = false;
+      }
+    });
+  }
+
+  downloadAcuse(): void {
+    if (!this.document) return;
+    this.downloading = true;
+    this.dteService.downloadAcuse(this.document.id).subscribe({
+      next: (blob) => {
+        this.triggerDownload(blob, `${this.document!.dte_uuid}-acuse.xml`);
+        this.downloading = false;
+      },
+      error: (err) => {
+        this.alertService.error(err);
+        this.downloading = false;
+      }
+    });
+  }
+
   openVerJson(template: TemplateRef<any>): void {
     if (!this.document) return;
     this.dteService.downloadJson(this.document.id).subscribe({
@@ -235,7 +267,18 @@ export class DteDetailComponent implements OnInit {
     window.URL.revokeObjectURL(url);
   }
 
+  formatMoney(value: number | null | undefined): string {
+    return this.currencyFormat.format(value);
+  }
+
   dteTypeLabel(type: string): string {
+    if (this.document?.pais === 'CR') {
+      const mapCr: Record<string, string> = {
+        '01': 'Factura Electrónica', '02': 'Nota de Débito', '03': 'Nota de Crédito',
+        '04': 'Tiquete Electrónico', '08': 'FE Compra', '09': 'FE Exportación',
+      };
+      return mapCr[type] || type;
+    }
     const map: Record<string, string> = {
       '01': 'Factura Consumidor Final', '03': 'Crédito Fiscal', '04': 'Nota de Remisión',
       '05': 'Nota de Crédito', '06': 'Nota de Débito', '11': 'Factura Exportación', '14': 'Sujeto Excluido'

@@ -21,6 +21,11 @@ class InsertDteIntoIvaModule
             return;
         }
 
+        // ponytail: la bandeja DTE exige revisión manual; no insertar en Compras/Gastos al sincronizar
+        if ($document->processing_status === 'pending') {
+            return;
+        }
+
         try {
             $result = $this->dteToIvaService->insertFromDteDocument($document);
 

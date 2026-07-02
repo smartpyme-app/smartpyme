@@ -356,6 +356,39 @@ class DteDocumentController extends Controller
         }, $document->dte_uuid . '.pdf', ['Content-Type' => 'application/pdf']);
     }
 
+    public function downloadXml(int $id)
+    {
+        return $this->downloadStoredFile($id, 'xml_path', 'xml', 'application/xml');
+    }
+
+    public function downloadAcuse(int $id)
+    {
+        return $this->downloadStoredFile($id, 'acuse_xml_path', 'acuse.xml', 'application/xml');
+    }
+
+    /**
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse|JsonResponse
+     */
+    protected function downloadStoredFile(int $id, string $pathField, string $extension, string $contentType)
+    {
+        $document = DteDocument::findOrFail($id);
+
+        if ($document->id_empresa !== auth()->user()->id_empresa || !$document->{$pathField}) {
+            return response()->json(['error' => 'No autorizado o archivo no encontrado'], 403);
+        }
+
+        $path = $document->{$pathField};
+        if (!Storage::disk('dtes')->exists($path)) {
+            return response()->json(['error' => 'Archivo no encontrado'], 404);
+        }
+
+        $filename = $document->dte_uuid.'.'.$extension;
+
+        return response()->streamDownload(function () use ($path) {
+            echo Storage::disk('dtes')->get($path);
+        }, $filename, ['Content-Type' => $contentType]);
+    }
+
     protected function applyDocumentMetadata(DteDocument $document, Request $request): void
     {
         if ($request->filled('destino')) {

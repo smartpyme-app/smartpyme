@@ -13,6 +13,8 @@ export interface DteLineItem {
 
 export interface DteDocument {
   id: number;
+  pais?: string;
+  formato_origen?: string;
   dte_uuid: string;
   dte_type: string;
   dte_number: string;
@@ -33,6 +35,9 @@ export interface DteDocument {
   line_items?: DteLineItem[];
   email_message_id?: string;
   json_path?: string;
+  xml_path?: string;
+  acuse_xml_path?: string;
+  acuse_estado?: string | null;
   pdf_path?: string;
   user_email_account?: { id: number; email: string; provider: string };
 }
@@ -73,6 +78,14 @@ export class DteDocumentService {
 
   downloadPdf(id: number): Observable<Blob> {
     return this.api.download(`dtes/${id}/download/pdf`);
+  }
+
+  downloadXml(id: number): Observable<Blob> {
+    return this.api.download(`dtes/${id}/download/xml`);
+  }
+
+  downloadAcuse(id: number): Observable<Blob> {
+    return this.api.download(`dtes/${id}/download/acuse`);
   }
 
   updateDestino(id: number, destino: 'compra' | 'gasto'): Observable<{ success: boolean; document: DteDocument }> {

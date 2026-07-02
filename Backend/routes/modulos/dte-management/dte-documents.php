@@ -18,5 +18,7 @@ Route::group(['middleware' => ['jwt.auth', 'verificar.funcionalidad:descarga-aut
     Route::post('/{id}/procesar', [DteDocumentController::class, 'procesar']);
     Route::post('/{id}/anular', [DteDocumentController::class, 'anular']);
     Route::get('/{id}/download/json', [DteDocumentController::class, 'downloadJson']);
+    Route::get('/{id}/download/xml', [DteDocumentController::class, 'downloadXml']);
+    Route::get('/{id}/download/acuse', [DteDocumentController::class, 'downloadAcuse']);
     Route::get('/{id}/download/pdf', [DteDocumentController::class, 'downloadPdf']);
 });

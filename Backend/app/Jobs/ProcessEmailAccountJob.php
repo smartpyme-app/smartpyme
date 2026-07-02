@@ -6,6 +6,7 @@ use App\Models\DteManagement\SyncLog;
 use App\Models\DteManagement\UserEmailAccount;
 use App\Services\Gmail\GmailReaderService;
 use App\Services\Imap\ImapReaderService;
+use App\Support\Dte\DteEmailAttachmentHelper;
 use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -20,6 +21,7 @@ class ProcessEmailAccountJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 3;
+
     public array $backoff = [60, 120, 300];
 
     public function __construct(
@@ -60,36 +62,46 @@ class ProcessEmailAccountJob implements ShouldQueue
             ]);
 
             foreach ($emailsWithDtes as $emailData) {
-                $jsonTempPath = null;
+                $sourceTempPath = null;
                 $pdfTempPath = null;
+                $acuseTempPath = null;
+
                 try {
                     $tempDir = storage_path('app/temp/dtes');
                     File::ensureDirectoryExists($tempDir);
-                    $prefix = $emailData['email_message_id'] . '-' . uniqid();
-                    $jsonTempPath = $tempDir . '/' . $prefix . '.json';
-                    File::put($jsonTempPath, $emailData['json_content']);
+                    $prefix = ($emailData['email_message_id'] ?? uniqid()).'-'.uniqid();
+                    $format = $emailData['source_format'] ?? DteEmailAttachmentHelper::FORMAT_JSON;
+                    $ext = $format === DteEmailAttachmentHelper::FORMAT_XML ? 'xml' : 'json';
+
+                    $sourceTempPath = $tempDir.'/'.$prefix.'.'.$ext;
+                    File::put($sourceTempPath, $emailData['source_content']);
+
                     if (!empty($emailData['pdf_content'])) {
-                        $pdfTempPath = $tempDir . '/' . $prefix . '.pdf';
+                        $pdfTempPath = $tempDir.'/'.$prefix.'.pdf';
                         File::put($pdfTempPath, $emailData['pdf_content']);
                     }
+
+                    if (!empty($emailData['acuse_content'])) {
+                        $acuseTempPath = $tempDir.'/'.$prefix.'-acuse.xml';
+                        File::put($acuseTempPath, $emailData['acuse_content']);
+                    }
+
                     $result = ProcessDteJob::dispatchSync(
                         $account,
-                        $jsonTempPath,
+                        $sourceTempPath,
                         $emailData['email_message_id'],
-                        $pdfTempPath
+                        $format,
+                        $pdfTempPath,
+                        $acuseTempPath
                     );
+
                     if ($result === 'duplicate') {
                         $syncLog->increment('dtes_duplicates');
                     } else {
                         $syncLog->increment('dtes_processed');
                     }
                 } catch (\Throwable $e) {
-                    if ($jsonTempPath && File::exists($jsonTempPath)) {
-                        File::delete($jsonTempPath);
-                    }
-                    if ($pdfTempPath && File::exists($pdfTempPath)) {
-                        File::delete($pdfTempPath);
-                    }
+                    $this->cleanupTemp($sourceTempPath, $pdfTempPath, $acuseTempPath);
                     Log::warning('ProcessEmailAccountJob: Failed to process DTE', [
                         'error' => $e->getMessage(),
                     ]);
@@ -119,6 +131,19 @@ class ProcessEmailAccountJob implements ShouldQueue
                 'error_message' => $e->getMessage(),
             ]);
             throw $e;
+        }
+    }
+
+    protected function cleanupTemp(?string $sourceTempPath, ?string $pdfTempPath, ?string $acuseTempPath): void
+    {
+        if ($sourceTempPath && File::exists($sourceTempPath)) {
+            File::delete($sourceTempPath);
+        }
+        if ($pdfTempPath && File::exists($pdfTempPath)) {
+            File::delete($pdfTempPath);
+        }
+        if ($acuseTempPath && File::exists($acuseTempPath)) {
+            File::delete($acuseTempPath);
         }
     }
 }

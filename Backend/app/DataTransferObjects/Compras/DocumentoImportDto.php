@@ -11,6 +11,7 @@ final class DocumentoImportDto
     /**
      * @param  array<string, mixed>  $identificacion
      * @param  array<string, mixed>  $emisor
+     * @param  array<string, mixed>|null  $receptor
      * @param  array<int, array<string, mixed>>  $lineas
      * @param  array<string, mixed>  $resumen
      * @param  array<string, mixed>|string|null  $documentoOriginal
@@ -25,6 +26,7 @@ final class DocumentoImportDto
         public readonly array|string|null $documentoOriginal = null,
         public readonly ?string $selloRecibido = null,
         public readonly ?string $tipoDocumentoNombre = null,
+        public readonly ?array $receptor = null,
     ) {}
 
     /**
@@ -37,6 +39,7 @@ final class DocumentoImportDto
             'formato_origen' => $this->formatoOrigen,
             'identificacion' => $this->identificacion,
             'emisor' => $this->emisor,
+            'receptor' => $this->receptor,
             'lineas' => $this->lineas,
             'resumen' => $this->resumen,
             'sello_recibido' => $this->selloRecibido,
@@ -105,12 +108,25 @@ final class DocumentoImportDto
             'totalOtrosCargos' => $this->resumen['totalOtrosCargos'] ?? 0,
         ];
 
+        $receptor = null;
+        if ($this->receptor !== null) {
+            $receptor = [
+                'nit' => $this->receptor['identificacion'] ?? $this->receptor['nit'] ?? null,
+                'nombre' => $this->receptor['nombre'] ?? '',
+                'correo' => $this->receptor['correo'] ?? '',
+            ];
+        }
+
         $payload = [
             'identificacion' => $identificacion,
             'emisor' => $emisor,
             'cuerpoDocumento' => $cuerpoDocumento,
             'resumen' => $resumen,
         ];
+
+        if ($receptor !== null) {
+            $payload['receptor'] = $receptor;
+        }
 
         if ($this->selloRecibido) {
             $payload['selloRecibido'] = $this->selloRecibido;

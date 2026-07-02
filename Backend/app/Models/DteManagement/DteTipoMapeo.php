@@ -9,6 +9,7 @@ class DteTipoMapeo extends Model
     protected $table = 'dte_tipo_mapeo';
 
     protected $fillable = [
+        'cod_pais',
         'codigo_mh',
         'nombre_tipo',
         'tipo_documento',
@@ -20,15 +21,10 @@ class DteTipoMapeo extends Model
         'activo' => 'boolean',
     ];
 
-    /**
-     * Get mapping for a DTE code.
-     *
-     * @param string $codigoMh
-     * @return self|null
-     */
-    public static function getByCodigo(string $codigoMh): ?self
+    public static function getByCodigo(string $codigoMh, string $codPais = 'SV'): ?self
     {
         return static::where('codigo_mh', $codigoMh)
+            ->where('cod_pais', $codPais)
             ->where('activo', true)
             ->first();
     }
