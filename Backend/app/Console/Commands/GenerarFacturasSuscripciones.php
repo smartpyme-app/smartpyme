@@ -28,7 +28,7 @@ class GenerarFacturasSuscripciones extends Command
 {
     protected $signature = 'facturas:generar-suscripciones {empresa? : ID de la empresa para ejecutar una prueba específica}';
 
-    protected $description = 'Emite DTE de suscripciones activas con pago por transferencia: planes mensuales el día 1 de cada mes; planes anuales en la fecha de renovación. Excluye n1co (otro flujo).';
+    protected $description = 'Emite DTE de suscripciones activas con pago por transferencia: planes mensuales el día 2 de cada mes; planes anuales en la fecha de renovación. Excluye n1co (otro flujo).';
 
     protected MhGovSvGatewayService $mhGateway;
 
@@ -64,13 +64,13 @@ public function handle()
         }
 
         $hoy = Carbon::now();
-        $esDiaUno = $hoy->day === 1;
+        $esDiaUno = $hoy->day === 2;
 
         // ✅ Cargar relaciones para evitar N+1 queries
         $suscripciones = $query->with(['empresa', 'plan'])->get();
 
         if (!$esModoPrueba && !$esDiaUno) {
-            $msgDia = 'Planes mensuales solo se emiten el día 1 del mes. Ejecutando solo planes anuales que venzan este mes.';
+            $msgDia = 'Planes mensuales solo se emiten el día 2 del mes. Ejecutando solo planes anuales que venzan este mes.';
             $this->info($msgDia);
             Log::channel('facturacion')->info($msgDia, ['fecha' => $hoy->toDateString()]);
         }
