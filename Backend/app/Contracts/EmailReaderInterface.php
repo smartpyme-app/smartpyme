@@ -9,12 +9,16 @@ use Illuminate\Support\Collection;
 interface EmailReaderInterface
 {
     /**
-     * Get emails with DTE attachments (JSON files) in date range.
+     * Get emails with DTE attachments (JSON or XML) in date range.
      *
-     * @param UserEmailAccount $account
-     * @param Carbon $from
-     * @param Carbon $to
-     * @return Collection<int, array{email_message_id: string, json_content: string, pdf_content: ?string}>
+     * @return Collection<int, array{
+     *     email_message_id: string,
+     *     clave: ?string,
+     *     source_format: string,
+     *     source_content: string,
+     *     pdf_content: ?string,
+     *     acuse_content: ?string
+     * }>
      */
     public function getEmailsWithDteAttachments(UserEmailAccount $account, Carbon $from, Carbon $to): Collection;
 }

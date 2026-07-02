@@ -13,6 +13,8 @@ export interface DteLineItem {
 
 export interface DteDocument {
   id: number;
+  pais?: string;
+  formato_origen?: string;
   dte_uuid: string;
   dte_type: string;
   dte_number: string;
@@ -33,6 +35,9 @@ export interface DteDocument {
   line_items?: DteLineItem[];
   email_message_id?: string;
   json_path?: string;
+  xml_path?: string;
+  acuse_xml_path?: string;
+  acuse_estado?: string | null;
   pdf_path?: string;
   user_email_account?: { id: number; email: string; provider: string };
 }
@@ -43,6 +48,14 @@ export interface DteDocumentsResponse {
   last_page: number;
   per_page: number;
   total: number;
+}
+
+export interface DteProcesarPayload {
+  destino?: 'compra' | 'gasto';
+  id_proyecto?: number | null;
+  id_categoria?: number | null;
+  tipo_gasto?: string | null;
+  tipo_costo_gasto?: string | null;
 }
 
 @Injectable({
@@ -67,6 +80,14 @@ export class DteDocumentService {
     return this.api.download(`dtes/${id}/download/pdf`);
   }
 
+  downloadXml(id: number): Observable<Blob> {
+    return this.api.download(`dtes/${id}/download/xml`);
+  }
+
+  downloadAcuse(id: number): Observable<Blob> {
+    return this.api.download(`dtes/${id}/download/acuse`);
+  }
+
   updateDestino(id: number, destino: 'compra' | 'gasto'): Observable<{ success: boolean; document: DteDocument }> {
     return this.update(id, { destino });
   }
@@ -75,11 +96,15 @@ export class DteDocumentService {
     id: number,
     payload: Partial<Pick<DteDocument, 'destino' | 'id_proyecto' | 'id_categoria' | 'tipo_gasto' | 'tipo_costo_gasto'>>
   ): Observable<{ success: boolean; document: DteDocument }> {
-    return this.api.patch(`dtes`, id, payload);
+    // ponytail: PUT evita PATCH bloqueado por CORS en producción (nginx/ALB)
+    return this.api.update(`dtes`, id, payload);
   }
 
-  procesar(id: number): Observable<{ success: boolean; message?: string; document?: DteDocument; compra_id?: number; gasto_id?: number }> {
-    return this.api.store(`dtes/${id}/procesar`, {});
+  procesar(
+    id: number,
+    payload: DteProcesarPayload = {}
+  ): Observable<{ success: boolean; message?: string; document?: DteDocument; compra_id?: number; gasto_id?: number }> {
+    return this.api.storeWithTimeout(`dtes/${id}/procesar`, payload, 300000);
   }
 
   anular(id: number): Observable<{ success: boolean; message: string; document: DteDocument }> {

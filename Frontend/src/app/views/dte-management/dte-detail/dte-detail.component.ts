@@ -7,9 +7,10 @@ import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { DteDocumentService, DteDocument, DteLineItem } from '@services/dte-management/dte-document.service';
+import { DteDocumentService, DteDocument, DteLineItem, DteProcesarPayload } from '@services/dte-management/dte-document.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { CurrencyFormatService } from '@services/currency-format.service';
 import { CountryI18nService } from '@services/country-i18n.service';
 import { TranslatePipe } from '@ngx-translate/core';
 import { CrearProyectoComponent } from '@shared/modals/crear-proyecto/crear-proyecto.component';
@@ -22,6 +23,7 @@ import { CrearProyectoComponent } from '@shared/modals/crear-proyecto/crear-proy
 })
 export class DteDetailComponent implements OnInit {
   private readonly countryI18n = inject(CountryI18nService);
+  private readonly currencyFormat = inject(CurrencyFormatService);
   readonly apiService = inject(ApiService);
 
   document: DteDocument | null = null;
@@ -43,6 +45,8 @@ export class DteDetailComponent implements OnInit {
   jsonPreview = '';
   pdfPreviewUrl: SafeResourceUrl | null = null;
   private pdfObjectUrl: string | null = null;
+  private metadataReady = false;
+  private metadataSaveTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
     private dteService: DteDocumentService,
@@ -114,16 +118,18 @@ export class DteDetailComponent implements OnInit {
 
   loadDocument(id: number): void {
     this.loading = true;
+    this.metadataReady = false;
     this.dteService.get(id).subscribe({
       next: (doc) => {
         this.document = doc;
         this.lineItems = doc.line_items || [];
-        this.destinoSeleccionado = (doc.destino || 'compra') as 'compra' | 'gasto';
+        this.destinoSeleccionado = (doc.destino || (doc.pais === 'CR' ? 'gasto' : 'compra')) as 'compra' | 'gasto';
         this.idProyecto = doc.id_proyecto ?? null;
         this.idCategoria = doc.id_categoria ?? null;
         this.tipoGasto = doc.tipo_gasto || this.inferirTipoGasto(this.lineItems) || '';
         this.tipoCostoGasto = doc.tipo_costo_gasto || '';
         this.loading = false;
+        setTimeout(() => { this.metadataReady = true; });
       },
       error: (err) => {
         this.alertService.error(err);
@@ -182,6 +188,36 @@ export class DteDetailComponent implements OnInit {
     });
   }
 
+  downloadXml(): void {
+    if (!this.document) return;
+    this.downloading = true;
+    this.dteService.downloadXml(this.document.id).subscribe({
+      next: (blob) => {
+        this.triggerDownload(blob, `${this.document!.dte_uuid}.xml`);
+        this.downloading = false;
+      },
+      error: (err) => {
+        this.alertService.error(err);
+        this.downloading = false;
+      }
+    });
+  }
+
+  downloadAcuse(): void {
+    if (!this.document) return;
+    this.downloading = true;
+    this.dteService.downloadAcuse(this.document.id).subscribe({
+      next: (blob) => {
+        this.triggerDownload(blob, `${this.document!.dte_uuid}-acuse.xml`);
+        this.downloading = false;
+      },
+      error: (err) => {
+        this.alertService.error(err);
+        this.downloading = false;
+      }
+    });
+  }
+
   openVerJson(template: TemplateRef<any>): void {
     if (!this.document) return;
     this.dteService.downloadJson(this.document.id).subscribe({
@@ -231,7 +267,18 @@ export class DteDetailComponent implements OnInit {
     window.URL.revokeObjectURL(url);
   }
 
+  formatMoney(value: number | null | undefined): string {
+    return this.currencyFormat.format(value);
+  }
+
   dteTypeLabel(type: string): string {
+    if (this.document?.pais === 'CR') {
+      const mapCr: Record<string, string> = {
+        '01': 'Factura Electrónica', '02': 'Nota de Débito', '03': 'Nota de Crédito',
+        '04': 'Tiquete Electrónico', '08': 'FE Compra', '09': 'FE Exportación',
+      };
+      return mapCr[type] || type;
+    }
     const map: Record<string, string> = {
       '01': 'Factura Consumidor Final', '03': 'Crédito Fiscal', '04': 'Nota de Remisión',
       '05': 'Nota de Crédito', '06': 'Nota de Débito', '11': 'Factura Exportación', '14': 'Sujeto Excluido'
@@ -264,55 +311,56 @@ export class DteDetailComponent implements OnInit {
   }
 
   guardarMetadatos(silent = false): void {
-    if (!this.document || !this.puedeEditarClasificacion) return;
-    this.guardando = true;
-    this.dteService.update(this.document.id, {
+    if (!this.document || !this.puedeEditarClasificacion || !this.metadataReady) return;
+
+    if (this.metadataSaveTimer) {
+      clearTimeout(this.metadataSaveTimer);
+    }
+
+    this.metadataSaveTimer = setTimeout(() => {
+      this.metadataSaveTimer = null;
+      this.guardando = true;
+      this.dteService.update(this.document!.id, this.buildMetadataPayload()).subscribe({
+        next: (res) => {
+          this.document = res.document;
+          this.guardando = false;
+          if (!silent) {
+            this.alertService.success('Éxito', 'Datos actualizados');
+          }
+        },
+        error: (err) => {
+          this.guardando = false;
+          this.alertService.error(err);
+        }
+      });
+    }, 400);
+  }
+
+  private buildMetadataPayload(): DteProcesarPayload {
+    return {
       destino: this.destinoSeleccionado,
       id_proyecto: this.idProyecto,
       id_categoria: this.esGasto ? this.idCategoria : null,
       tipo_gasto: this.esGasto ? (this.tipoGasto || null) : null,
       tipo_costo_gasto: this.esCompra ? (this.tipoCostoGasto || null) : null,
-    }).subscribe({
-      next: (res) => {
-        this.document = res.document;
-        this.guardando = false;
-        if (!silent) {
-          this.alertService.success('Éxito', 'Datos actualizados');
-        }
-      },
-      error: (err) => {
-        this.guardando = false;
-        this.alertService.error(err);
-      }
-    });
+    };
   }
 
   procesar(): void {
     if (!this.document) return;
     this.procesando = true;
-    this.dteService.update(this.document.id, {
-      destino: this.destinoSeleccionado,
-      id_proyecto: this.idProyecto,
-      id_categoria: this.esGasto ? this.idCategoria : null,
-      tipo_gasto: this.esGasto ? (this.tipoGasto || null) : null,
-      tipo_costo_gasto: this.esCompra ? (this.tipoCostoGasto || null) : null,
-    }).subscribe({
-      next: (res) => {
-        this.document = res.document;
-        this.dteService.procesar(this.document!.id).subscribe({
-          next: (procRes) => {
-            this.document = procRes.document || this.document!;
-            this.alertService.success('Éxito', procRes.message || this.countryI18n.fe('processedDefault'));
-            this.procesando = false;
-          },
-          error: (err) => {
-            this.alertService.error(err?.error?.error || err?.error?.reason || 'Error al procesar');
-            this.procesando = false;
-          }
-        });
+    if (this.metadataSaveTimer) {
+      clearTimeout(this.metadataSaveTimer);
+      this.metadataSaveTimer = null;
+    }
+    this.dteService.procesar(this.document.id, this.buildMetadataPayload()).subscribe({
+      next: (procRes) => {
+        this.document = procRes.document || this.document!;
+        this.alertService.success('Éxito', procRes.message || this.countryI18n.fe('processedDefault'));
+        this.procesando = false;
       },
       error: (err) => {
-        this.alertService.error(err);
+        this.alertService.error(err?.error?.error || err?.error?.reason || err);
         this.procesando = false;
       }
     });

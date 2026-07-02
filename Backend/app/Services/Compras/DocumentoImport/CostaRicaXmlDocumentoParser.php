@@ -78,6 +78,9 @@ final class CostaRicaXmlDocumentoParser implements DocumentoImportParserInterfac
         $emisorNode = $this->firstChildByLocalName($xp, 'Emisor');
         $emisor = $this->parseEmisor($xp, $emisorNode);
 
+        $receptorNode = $this->firstChildByLocalName($xp, 'Receptor');
+        $receptor = $this->parseReceptor($xp, $receptorNode);
+
         $lineas = $this->parseLineas($xp);
         $otrosCargos = $this->parseOtrosCargos($xp);
         $resumen = $this->parseResumen($xp, $otrosCargos);
@@ -97,6 +100,7 @@ final class CostaRicaXmlDocumentoParser implements DocumentoImportParserInterfac
             documentoOriginal: $content,
             selloRecibido: null,
             tipoDocumentoNombre: $nombre,
+            receptor: $receptor,
         );
     }
 
@@ -149,6 +153,27 @@ final class CostaRicaXmlDocumentoParser implements DocumentoImportParserInterfac
             'telefono' => $telefono,
             'correo' => $correo,
             'direccion' => $direccion,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function parseReceptor(\DOMXPath $xp, ?DOMNode $receptorNode): ?array
+    {
+        if ($receptorNode === null) {
+            return null;
+        }
+
+        $numero = XmlLocalNameHelper::firstText($xp, 'Numero', $receptorNode);
+        $nombre = XmlLocalNameHelper::firstText($xp, 'Nombre', $receptorNode) ?? '';
+        $correo = XmlLocalNameHelper::firstText($xp, 'CorreoElectronico', $receptorNode) ?? '';
+
+        return [
+            'identificacion' => $numero,
+            'nit' => $numero,
+            'nombre' => $nombre,
+            'correo' => $correo,
         ];
     }
 
@@ -291,6 +316,14 @@ final class CostaRicaXmlDocumentoParser implements DocumentoImportParserInterfac
 
     private function extraerCodigoCabys(\DOMXPath $xp, DOMNode $lineaNode): string
     {
+        $cabysDirecto = XmlLocalNameHelper::firstText($xp, 'CodigoCABYS', $lineaNode);
+        if ($cabysDirecto !== null && $cabysDirecto !== '') {
+            $digits = preg_replace('/\D/', '', $cabysDirecto);
+            if (strlen($digits) === 13) {
+                return $digits;
+            }
+        }
+
         $codigoNodes = XmlLocalNameHelper::allNodes($xp, 'Codigo', $lineaNode);
         foreach ($codigoNodes as $codNode) {
             $tipo = XmlLocalNameHelper::firstText($xp, 'Tipo', $codNode);
@@ -404,9 +437,12 @@ final class CostaRicaXmlDocumentoParser implements DocumentoImportParserInterfac
         }
 
         $pagos = [];
-        $medioPago = XmlLocalNameHelper::firstText($xp, 'MedioPago', $ctx);
-        if ($medioPago) {
-            $pagos[] = ['codigo' => $medioPago];
+        $medioPagoNodes = $ctx ? XmlLocalNameHelper::allNodes($xp, 'MedioPago', $ctx) : XmlLocalNameHelper::allNodes($xp, 'MedioPago');
+        foreach ($medioPagoNodes as $medioNode) {
+            $tipoMedioPago = XmlLocalNameHelper::firstText($xp, 'TipoMedioPago', $medioNode);
+            if ($tipoMedioPago !== null && $tipoMedioPago !== '') {
+                $pagos[] = ['codigo' => $tipoMedioPago];
+            }
         }
 
         return [

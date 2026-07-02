@@ -7,6 +7,12 @@
     <button *ngIf="document?.json_path" class="btn btn-default" (click)="downloadJson()" [disabled]="downloading" tooltip="Descargar JSON">
       <i class="fa fa-download"></i>
     </button>
+    <button *ngIf="document?.xml_path" class="btn btn-default" (click)="downloadXml()" [disabled]="downloading" tooltip="Descargar XML">
+      <i class="fa fa-file-code"></i> XML
+    </button>
+    <button *ngIf="document?.acuse_xml_path" class="btn btn-default" (click)="downloadAcuse()" [disabled]="downloading" tooltip="Descargar acuse Hacienda">
+      <i class="fa fa-file-code"></i> Acuse
+    </button>
     <button *ngIf="document?.pdf_path" class="btn btn-default" (click)="downloadPdf()" [disabled]="downloading" tooltip="Descargar PDF">
       <i class="fa fa-file-pdf"></i>
     </button>
@@ -29,7 +35,10 @@
         <h6 class="col-12">{{ 'country.tax.fe.detailInfoTitle' | translate }}</h6>
         <div class="form-group col-lg-3">
           <label class="fw-medium">Tipo</label>
-          <p>{{ dteTypeLabel(document.dte_type) }}</p>
+          <p>
+            {{ dteTypeLabel(document.dte_type) }}
+            <span *ngIf="document.pais === 'CR'" class="badge bg-info ms-1">CR</span>
+          </p>
         </div>
         <div class="form-group col-lg-3">
           <label class="fw-medium">Número / Control</label>
@@ -41,7 +50,7 @@
         </div>
         <div class="form-group col-lg-3">
           <label class="fw-medium">Total</label>
-          <p>{{ document.total_amount | currency:'USD':'symbol':'1.2' }}</p>
+          <p>{{ formatMoney(document.total_amount) }}</p>
         </div>
         <div class="form-group col-lg-6">
           <label class="fw-medium">Código de generación</label>
@@ -58,6 +67,10 @@
         <div class="form-group col-lg-3">
           <label class="fw-medium">Receptor NIT</label>
           <p>{{ document.receiver_nit || '—' }}</p>
+        </div>
+        <div class="form-group col-lg-3" *ngIf="document.acuse_estado">
+          <label class="fw-medium">Acuse Hacienda</label>
+          <p>{{ document.acuse_estado }}</p>
         </div>
         <div class="form-group col-lg-3">
           <label class="fw-medium">Estado validación</label>
@@ -106,8 +119,8 @@
               <td *ngIf="esCompra">{{ item.codigo || '—' }}</td>
               <td>{{ item.descripcion || '—' }}</td>
               <td class="text-end">{{ item.cantidad }}</td>
-              <td class="text-end">{{ item.precio_unitario | currency:'USD':'symbol':'1.2-4' }}</td>
-              <td class="text-end">{{ item.total | currency:'USD':'symbol':'1.2' }}</td>
+              <td class="text-end">{{ formatMoney(item.precio_unitario) }}</td>
+              <td class="text-end">{{ formatMoney(item.total) }}</td>
             </tr>
           </tbody>
         </table>

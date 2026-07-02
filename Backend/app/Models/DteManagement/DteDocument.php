@@ -13,6 +13,7 @@ class DteDocument extends Model
 
     protected $fillable = [
         'id_empresa',
+        'pais',
         'user_email_account_id',
         'dte_uuid',
         'dte_type',
@@ -22,7 +23,11 @@ class DteDocument extends Model
         'issuer_nit',
         'issuer_name',
         'receiver_nit',
+        'formato_origen',
         'json_path',
+        'xml_path',
+        'acuse_xml_path',
+        'acuse_estado',
         'pdf_path',
         'validation_status',
         'validation_errors',

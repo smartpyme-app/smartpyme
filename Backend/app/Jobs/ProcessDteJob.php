@@ -6,9 +6,11 @@ use App\Events\DteValidated;
 use App\Models\DteManagement\DteDocument;
 use App\Models\DteManagement\DteTipoMapeo;
 use App\Models\DteManagement\UserEmailAccount;
-use App\Services\Dte\DteParserService;
+use App\Services\Dte\DteDocumentParseService;
 use App\Services\Dte\DteProductSearchService;
 use App\Services\Dte\DteValidatorService;
+use App\Support\Dte\DteEmailAttachmentHelper;
+use App\Support\FacturacionElectronica\XmlRespuestaHaciendaCr;
 use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -16,7 +18,6 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Database\QueryException;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
@@ -25,25 +26,29 @@ class ProcessDteJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 3;
+
     public array $backoff = [30, 60, 120];
 
     public function __construct(
         protected UserEmailAccount $account,
-        protected string $jsonTempPath,
+        protected string $sourceTempPath,
         protected string $emailMessageId,
-        protected ?string $pdfTempPath = null
+        protected string $sourceFormat = DteEmailAttachmentHelper::FORMAT_JSON,
+        protected ?string $pdfTempPath = null,
+        protected ?string $acuseTempPath = null,
     ) {
         $this->onQueue('default');
     }
 
     public function handle(
-        DteParserService $parser,
+        DteDocumentParseService $parser,
         DteValidatorService $validator,
         DteProductSearchService $productSearch
     ): string {
         $account = $this->account->fresh();
         if (!$account) {
             $this->cleanupTempFiles();
+
             return 'failed';
         }
 
@@ -52,22 +57,23 @@ class ProcessDteJob implements ShouldQueue
             ->where('email_message_id', $this->emailMessageId)
             ->exists()) {
             $this->cleanupTempFiles();
+
             return 'duplicate';
         }
 
-        $jsonContent = file_get_contents($this->jsonTempPath);
+        $sourceContent = file_get_contents($this->sourceTempPath);
 
         try {
-            $dteData = $parser->parseFromJson($jsonContent);
+            $dteData = $parser->parse($sourceContent, $account->empresa);
         } catch (\Throwable $e) {
             $this->cleanupTempFiles();
-            $this->saveInvalidDte($account, $jsonContent, $e->getMessage(), 'parse_error');
+            $this->saveInvalidDte($account, $sourceContent, $e->getMessage(), 'parse_error');
+
             return 'created';
         }
 
         $empresa = $account->empresa;
         $tenantNit = $empresa->nit ?? '';
-
         $validation = $validator->validate($dteData, $tenantNit);
 
         $year = Carbon::parse($dteData['emission_date'])->format('Y');
@@ -75,24 +81,44 @@ class ProcessDteJob implements ShouldQueue
         $dteUuid = $dteData['dte_uuid'];
         $basePath = "{$account->id_empresa}/{$year}/{$month}/{$dteUuid}";
 
-        $jsonPath = $basePath . '.json';
-        $pdfPath = null;
+        $jsonPath = null;
+        $xmlPath = null;
+        $acusePath = null;
+        $acuseEstado = null;
 
-        Storage::disk('dtes')->put($jsonPath, $jsonContent);
+        if ($this->sourceFormat === DteEmailAttachmentHelper::FORMAT_XML) {
+            $xmlPath = $basePath.'.xml';
+            Storage::disk('dtes')->put($xmlPath, $sourceContent);
 
-        if ($this->pdfTempPath && file_exists($this->pdfTempPath)) {
-            $pdfPath = $basePath . '.pdf';
-            Storage::disk('dtes')->put($pdfPath, file_get_contents($this->pdfTempPath));
+            $compatJson = json_encode($dteData['raw'] ?? [], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+            $jsonPath = $basePath.'.json';
+            Storage::disk('dtes')->put($jsonPath, $compatJson);
         } else {
-            $pdfPath = null;
+            $jsonPath = $basePath.'.json';
+            Storage::disk('dtes')->put($jsonPath, $sourceContent);
+        }
+
+        $pdfPath = null;
+        if ($this->pdfTempPath && file_exists($this->pdfTempPath)) {
+            $pdfPath = $basePath.'.pdf';
+            Storage::disk('dtes')->put($pdfPath, file_get_contents($this->pdfTempPath));
+        }
+
+        if ($this->acuseTempPath && file_exists($this->acuseTempPath)) {
+            $acuseContent = file_get_contents($this->acuseTempPath);
+            $acuseContent = XmlRespuestaHaciendaCr::normalizar($acuseContent);
+            $acusePath = $basePath.'-acuse.xml';
+            Storage::disk('dtes')->put($acusePath, $acuseContent);
+            $acuseEstado = DteEmailAttachmentHelper::extractAcuseEstado($acuseContent);
         }
 
         $this->cleanupTempFiles();
 
         $processingStatus = 'pending';
         $validationStatus = $validation['valid'] ? 'valid' : 'invalid';
-        $mapeo = DteTipoMapeo::getByCodigo($dteData['dte_type']);
-        $destino = $mapeo?->destino ?? 'compra';
+        $codPais = $dteData['pais'] ?? 'SV';
+        $mapeo = DteTipoMapeo::getByCodigo($dteData['dte_type'], $codPais);
+        $destino = $mapeo?->destino ?? ($codPais === 'CR' ? 'gasto' : 'compra');
 
         if ($validation['valid']) {
             if ($destino === 'compra') {
@@ -106,6 +132,7 @@ class ProcessDteJob implements ShouldQueue
         try {
             $document = DteDocument::withoutGlobalScopes()->create([
                 'id_empresa' => $account->id_empresa,
+                'pais' => $codPais,
                 'user_email_account_id' => $account->id,
                 'dte_uuid' => $dteUuid,
                 'dte_type' => $dteData['dte_type'],
@@ -115,14 +142,18 @@ class ProcessDteJob implements ShouldQueue
                 'issuer_nit' => $dteData['issuer_nit'],
                 'issuer_name' => $dteData['issuer_name'],
                 'receiver_nit' => $dteData['receiver_nit'],
+                'formato_origen' => $dteData['formato_origen'] ?? $this->sourceFormat,
                 'json_path' => $jsonPath,
+                'xml_path' => $xmlPath,
+                'acuse_xml_path' => $acusePath,
+                'acuse_estado' => $acuseEstado,
                 'pdf_path' => $pdfPath,
-            'validation_status' => $validationStatus,
-            'validation_errors' => $validation['valid'] ? null : $validation['errors'],
-            'processing_status' => $processingStatus,
-            'destino' => $destino,
-            'email_message_id' => $this->emailMessageId,
-        ]);
+                'validation_status' => $validationStatus,
+                'validation_errors' => $validation['valid'] ? null : $validation['errors'],
+                'processing_status' => $processingStatus,
+                'destino' => $destino,
+                'email_message_id' => $this->emailMessageId,
+            ]);
 
             if ($validation['valid']) {
                 event(new DteValidated($document));
@@ -138,14 +169,14 @@ class ProcessDteJob implements ShouldQueue
         }
     }
 
-    protected function saveInvalidDte(UserEmailAccount $account, string $jsonContent, string $error, string $type): void
+    protected function saveInvalidDte(UserEmailAccount $account, string $sourceContent, string $error, string $type): void
     {
         try {
-            $parser = new DteParserService();
-            $dteData = $parser->parseFromJson($jsonContent);
+            $parser = app(DteDocumentParseService::class);
+            $dteData = $parser->parse($sourceContent, $account->empresa);
         } catch (\Throwable) {
             $dteData = [
-                'dte_uuid' => 'unknown-' . uniqid(),
+                'dte_uuid' => 'unknown-'.uniqid(),
                 'dte_type' => '00',
                 'dte_number' => '',
                 'emission_date' => now()->format('Y-m-d'),
@@ -153,11 +184,14 @@ class ProcessDteJob implements ShouldQueue
                 'issuer_nit' => '',
                 'issuer_name' => '',
                 'receiver_nit' => null,
+                'pais' => 'SV',
+                'formato_origen' => $this->sourceFormat,
             ];
         }
 
         DteDocument::withoutGlobalScopes()->create([
             'id_empresa' => $account->id_empresa,
+            'pais' => $dteData['pais'] ?? 'SV',
             'user_email_account_id' => $account->id,
             'dte_uuid' => $dteData['dte_uuid'],
             'dte_type' => $dteData['dte_type'] ?? '00',
@@ -167,7 +201,9 @@ class ProcessDteJob implements ShouldQueue
             'issuer_nit' => $dteData['issuer_nit'] ?? '',
             'issuer_name' => $dteData['issuer_name'] ?? '',
             'receiver_nit' => $dteData['receiver_nit'] ?? null,
+            'formato_origen' => $dteData['formato_origen'] ?? $this->sourceFormat,
             'json_path' => null,
+            'xml_path' => null,
             'pdf_path' => null,
             'validation_status' => 'invalid',
             'validation_errors' => [$error],
@@ -179,11 +215,14 @@ class ProcessDteJob implements ShouldQueue
 
     protected function cleanupTempFiles(): void
     {
-        if (file_exists($this->jsonTempPath)) {
-            @unlink($this->jsonTempPath);
+        if (file_exists($this->sourceTempPath)) {
+            @unlink($this->sourceTempPath);
         }
         if ($this->pdfTempPath && file_exists($this->pdfTempPath)) {
             @unlink($this->pdfTempPath);
+        }
+        if ($this->acuseTempPath && file_exists($this->acuseTempPath)) {
+            @unlink($this->acuseTempPath);
         }
     }
 }

@@ -68,10 +68,13 @@
         <tr *ngFor="let doc of documents?.data" class="animated fadeIn"
           [class.table-warning]="doc.processing_status === 'pendiente_clasificacion'">
           <td>{{ doc.emission_date | date:'dd/MM/yyyy' }}</td>
-          <td>{{ dteTypeLabel(doc.dte_type) }}</td>
+          <td>
+            {{ dteTypeLabel(doc) }}
+            <span *ngIf="doc.pais === 'CR'" class="badge bg-info ms-1">CR</span>
+          </td>
           <td>{{ doc.dte_number }}</td>
           <td>{{ doc.issuer_name | truncate:30 }}</td>
-          <td class="text-end">{{ doc.total_amount | currency:'USD':'symbol':'1.2' }}</td>
+          <td class="text-end">{{ formatMoney(doc.total_amount) }}</td>
           <td>
             <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="validationBadgeClass(doc.validation_status)">
               {{ validationStatusLabel(doc.validation_status) }}
@@ -167,7 +170,7 @@
   <div class="modal-body" *ngIf="documentoProcesar">
     <p class="text-muted mb-3">
       {{ documentoProcesar.issuer_name }} — {{ documentoProcesar.dte_number }}
-      ({{ documentoProcesar.total_amount | currency:'USD':'symbol':'1.2' }})
+      ({{ formatMoney(documentoProcesar.total_amount) }})
     </p>
     <div class="alert alert-warning py-2" *ngIf="documentoProcesar.processing_status === 'pendiente_clasificacion' && destinoSeleccionado === 'compra'">
       {{ 'country.tax.fe.processPendingClassificationWarning' | translate }}
