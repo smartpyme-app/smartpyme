@@ -1,10 +1,10 @@
-﻿<div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
+<div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
   <h3 (click)="loadAll()">{{ gasto.id ? 'Editar ' : 'Crear ' }} Gasto</h3>
 
   <div class="d-flex align-items-center float-end gap-3">
     @if (!gasto.id) {
       <button class="btn btn-primary me-2" (click)="openJsonImport(jsonImportTemplate)">
-        <i class="fa fa-file-import"></i> {{ documentoImportService.ui.boton }}
+        <i class="fa fa-file-import"></i> Importar JSON
       </button>
     }
 

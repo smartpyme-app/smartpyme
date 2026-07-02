@@ -1059,26 +1059,41 @@ export class GastoComponent implements OnInit {
         return;
       }
 
-      const res = await firstValueFrom(this.documentoImportService.importarGasto(texto));
-      const jsonData = res?.dte;
-      if (!jsonData?.identificacion) {
-        this.alertService.error('El documento no contiene la estructura esperada.');
+      let jsonData: any;
+
+      // 1) Intentar primero con el servicio del backend (DTE firmado, etc.)
+      try {
+        const res = await firstValueFrom(this.documentoImportService.importarGasto(texto));
+        jsonData = res?.dte ?? res;
+
+        if (res?.tipo_documento_nombre && jsonData?.identificacion) {
+          jsonData.identificacion = {
+            ...jsonData.identificacion,
+            _tipoDocumentoNombre: res.tipo_documento_nombre,
+          };
+        }
+      } catch (backendErr) {
+        // 2) Fallback: parsear directamente como JSON crudo
+        console.warn('Fallo el servicio de importación, usando JSON.parse:', backendErr);
+        try {
+          jsonData = JSON.parse(texto);
+        } catch (parseErr) {
+          this.alertService.error('El archivo no es un JSON válido.');
+          return;
+        }
+      }
+
+      if (!jsonData) {
+        this.alertService.error('No se pudo obtener el documento.');
         return;
       }
-      if (res.tipo_documento_nombre) {
-        jsonData.identificacion = {
-          ...jsonData.identificacion,
-          _tipoDocumentoNombre: res.tipo_documento_nombre,
-        };
-      }
 
+      // 3) Mapear
       this.mapJsonToGasto(jsonData);
 
+      // 4) Cerrar modal y notificar
       this.modalRef?.hide();
-      this.alertService.success(
-        'Datos importados',
-        'El documento se importó correctamente.'
-      );
+      this.alertService.success('Datos importados', 'El documento se importó correctamente.');
     } catch (error: any) {
       const msg =
         error?.error?.error ||
@@ -1087,6 +1102,7 @@ export class GastoComponent implements OnInit {
       this.alertService.error(msg);
     } finally {
       this.processingJson = false;
+      // ponytail: CRÍTICO con OnPush — sin esto la vista no refleja los cambios
       this.cdr.markForCheck();
     }
   }
@@ -1364,9 +1380,12 @@ export class GastoComponent implements OnInit {
           this.gasto.total = parseFloat(jsonData.resumen.montoTotalOperacion);
         }
       }
+      // ponytail: OnPush requiere markForCheck tras mutar this.gasto / this.detalles
+      this.cdr.markForCheck();
     } catch (error) {
       console.error('Error al mapear JSON a gasto:', error);
       this.alertService.error('Error al procesar algunos campos del JSON');
+      this.cdr.markForCheck();
     }
   }
 
@@ -1386,10 +1405,10 @@ export class GastoComponent implements OnInit {
 
       try {
         // Intentar buscar en el backend por NIT
-        const response = await       this.apiService
-          .store('proveedores/buscar-nit', { nit: emisorData.nit })
-          .pipe(this.untilDestroyed())
-          .toPromise();
+        const response = await firstValueFrom(
+          this.apiService.store('proveedores/buscar-nit', { nit: emisorData.nit })
+            .pipe(this.untilDestroyed())
+        );
         if (response && response.id) {
           this.gasto.id_proveedor = response.id;
 
@@ -1422,10 +1441,10 @@ export class GastoComponent implements OnInit {
       };
 
       try {
-        const proveedorCreado = await this.apiService
-          .store('proveedor', nuevoProveedor)
-          .pipe(this.untilDestroyed())
-          .toPromise();
+        const proveedorCreado = await firstValueFrom(
+          this.apiService.store('proveedor', nuevoProveedor)
+            .pipe(this.untilDestroyed())
+        );
         if (proveedorCreado && proveedorCreado.id) {
           this.gasto.id_proveedor = proveedorCreado.id;
           this.proveedores.push(proveedorCreado);
