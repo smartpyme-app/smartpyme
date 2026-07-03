@@ -31,6 +31,13 @@ class CostaRicaXmlDocumentoParserTest extends TestCase
     </Identificacion>
     <CorreoElectronico>facturas@proveedor.cr</CorreoElectronico>
   </Emisor>
+  <Receptor>
+    <Nombre>Cliente CR</Nombre>
+    <Identificacion>
+      <Tipo>02</Tipo>
+      <Numero>3101755863</Numero>
+    </Identificacion>
+  </Receptor>
   <DetalleServicio>
     <LineaDetalle>
       <NumeroLinea>1</NumeroLinea>
@@ -71,7 +78,42 @@ XML;
 
         $mh = $dto->toMhCompatArray();
         $this->assertSame('50624051000010123456789012345678901234567890123456', $mh['identificacion']['codigoGeneracion']);
+        $this->assertSame('3101755863', $mh['receptor']['nit']);
         $this->assertSame(13000.0, $mh['resumen']['tributos'][0]['valor']);
+    }
+
+    public function test_parse_xml_con_codigo_cabys_directo(): void
+    {
+        $xml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8"?>
+<FacturaElectronica xmlns="https://cdn.comprobanteselectronicos.go.cr/xml-schemas/v4.4/facturaElectronica">
+  <Clave>50606032600310100718610500004010000034880144304440</Clave>
+  <NumeroConsecutivo>10500004010000034880</NumeroConsecutivo>
+  <FechaEmision>2026-03-06T08:43:17-06:00</FechaEmision>
+  <Emisor>
+    <Nombre>Auto Mercado</Nombre>
+    <Identificacion><Tipo>02</Tipo><Numero>3101007186</Numero></Identificacion>
+  </Emisor>
+  <DetalleServicio>
+    <LineaDetalle>
+      <NumeroLinea>1</NumeroLinea>
+      <CodigoCABYS>2341000000200</CodigoCABYS>
+      <CodigoComercial><Tipo>01</Tipo><Codigo>7445319002025</Codigo></CodigoComercial>
+      <Detalle>BIZCOCHOS</Detalle>
+      <Cantidad>1</Cantidad>
+      <PrecioUnitario>980</PrecioUnitario>
+      <SubTotal>980</SubTotal>
+      <MontoTotal>980</MontoTotal>
+    </LineaDetalle>
+  </DetalleServicio>
+  <ResumenFactura>
+    <TotalComprobante>990</TotalComprobante>
+  </ResumenFactura>
+</FacturaElectronica>
+XML;
+
+        $dto = $this->parser->parse($xml);
+        $this->assertSame('2341000000200', $dto->lineas[0]['codigo']);
     }
 
     public function test_parse_xml_con_otros_cargos_propina(): void

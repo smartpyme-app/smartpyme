@@ -72,7 +72,7 @@ class DteToIvaService
             return ['success' => false];
         }
 
-        $mapeo = DteTipoMapeo::getByCodigo($document->dte_type);
+        $mapeo = DteTipoMapeo::getByCodigo($document->dte_type, $document->pais ?? 'SV');
         $destino = $document->destino ?? $mapeo?->destino ?? 'compra';
         $tipoDocumento = $mapeo?->tipo_documento ?? (self::$tipoDteMap[$document->dte_type] ?? 'Factura');
 
@@ -375,9 +375,9 @@ class DteToIvaService
         $referencia = $identificacion['numeroControl'] ?? $document->dte_number ?? $document->dte_uuid;
         $fecha = $identificacion['fecEmi'] ?? $document->emission_date?->format('Y-m-d') ?? now()->format('Y-m-d');
 
-        $total = (float) ($resumen['totalPagar'] ?? $resumen['montoTotalOperacion'] ?? $document->total_amount ?? 0);
-        $subTotal = (float) ($resumen['subTotal'] ?? $resumen['totalGravada'] ?? $total);
-        $iva = $this->extractIvaFromResumen($resumen);
+        $total = round((float) ($resumen['totalPagar'] ?? $resumen['montoTotalOperacion'] ?? $document->total_amount ?? 0), 2);
+        $subTotal = round((float) ($resumen['subTotal'] ?? $resumen['totalGravada'] ?? $total), 2);
+        $iva = round($this->extractIvaFromResumen($resumen), 2);
 
         $formaPago = 'Efectivo';
         if (!empty($resumen['pagos'][0]['codigo'])) {

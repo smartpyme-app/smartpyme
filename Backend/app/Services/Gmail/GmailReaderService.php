@@ -4,6 +4,7 @@ namespace App\Services\Gmail;
 
 use App\Contracts\EmailReaderInterface;
 use App\Models\DteManagement\UserEmailAccount;
+use App\Support\Dte\DteEmailAttachmentHelper;
 use Carbon\Carbon;
 use Google\Client as GoogleClient;
 use Google\Service\Gmail;
@@ -17,9 +18,6 @@ class GmailReaderService implements EmailReaderInterface
     ) {
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getEmailsWithDteAttachments(UserEmailAccount $account, Carbon $from, Carbon $to): Collection
     {
         $this->gmailOAuthService->refreshAccessToken($account);
@@ -65,71 +63,68 @@ class GmailReaderService implements EmailReaderInterface
     }
 
     /**
-     * Extract JSON and PDF attachments from a Gmail message.
-     *
-     * @return array<int, array{email_message_id: string, json_content: string, pdf_content: ?string}>
+     * @return array<int, array{
+     *     email_message_id: string,
+     *     clave: ?string,
+     *     source_format: string,
+     *     source_content: string,
+     *     pdf_content: ?string,
+     *     acuse_content: ?string
+     * }>
      */
     protected function extractDteAttachments(Gmail $service, object $message): array
     {
         $messageId = $message->getId();
         $payload = $message->getPayload();
-        $parts = $payload->getParts() ?? [];
+        $attachments = $this->collectAttachmentParts($service, $messageId, $payload->getParts() ?? []);
 
-        $jsonContent = null;
-        $pdfContent = null;
+        return DteEmailAttachmentHelper::groupAttachments($messageId, $attachments);
+    }
+
+    /**
+     * @param  array<int, object>  $parts
+     * @return array<int, array{filename: string, content: string}>
+     */
+    protected function collectAttachmentParts(Gmail $service, string $messageId, array $parts): array
+    {
+        $attachments = [];
 
         foreach ($parts as $part) {
             $filename = $part->getFilename() ?? '';
             $body = $part->getBody();
-            if (!$body) {
-                if ($part->getParts()) {
-                    foreach ($part->getParts() as $subPart) {
-                        $subBody = $subPart->getBody();
-                        if ($subBody && $subBody->getAttachmentId()) {
-                            $ext = strtolower(pathinfo($subPart->getFilename() ?? '', PATHINFO_EXTENSION));
-                            $data = $this->getAttachmentData($service, $messageId, $subBody->getAttachmentId());
-                            if ($ext === 'json') {
-                                $jsonContent = $this->ensureUtf8($data);
-                            } elseif ($ext === 'pdf') {
-                                $pdfContent = $data;
-                            }
-                        }
-                    }
-                }
-                continue;
-            }
 
-            if ($body->getAttachmentId()) {
+            if ($body && $body->getAttachmentId()) {
                 $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-                $data = $this->getAttachmentData($service, $messageId, $body->getAttachmentId());
-                if ($ext === 'json') {
-                    $jsonContent = $this->ensureUtf8($data);
-                } elseif ($ext === 'pdf') {
-                    $pdfContent = $data;
+                if (in_array($ext, ['json', 'pdf', 'xml'], true)) {
+                    $data = $this->getAttachmentData($service, $messageId, $body->getAttachmentId());
+                    if ($ext === 'json' || $ext === 'xml') {
+                        $data = $this->ensureUtf8($data);
+                    }
+                    $attachments[] = [
+                        'filename' => $filename,
+                        'content' => $data,
+                    ];
                 }
+            }
+
+            if ($part->getParts()) {
+                $attachments = array_merge(
+                    $attachments,
+                    $this->collectAttachmentParts($service, $messageId, $part->getParts())
+                );
             }
         }
 
-        if ($jsonContent === null) {
-            return [];
-        }
-
-        return [[
-            'email_message_id' => $messageId,
-            'json_content' => $jsonContent,
-            'pdf_content' => $pdfContent,
-        ]];
+        return $attachments;
     }
 
     protected function getAttachmentData(Gmail $service, string $messageId, string $attachmentId): string
     {
         $attachment = $service->users_messages_attachments->get('me', $messageId, $attachmentId);
+
         return base64_decode(strtr($attachment->getData(), '-_', '+/'));
     }
 
-    /**
-     * Ensure string is valid UTF-8 to avoid "JSON encode payload Error code: 5" when queuing.
-     */
     protected function ensureUtf8(string $data): string
     {
         if ($data === '') {
@@ -139,6 +134,7 @@ class GmailReaderService implements EmailReaderInterface
         if ($encoding && $encoding !== 'UTF-8') {
             $data = mb_convert_encoding($data, 'UTF-8', $encoding);
         }
+
         return mb_convert_encoding($data, 'UTF-8', 'UTF-8');
     }
 
@@ -153,6 +149,7 @@ class GmailReaderService implements EmailReaderInterface
             'expires_in' => 0,
         ]);
         $client->setScopes([Gmail::GMAIL_READONLY]);
+
         return $client;
     }
 }
