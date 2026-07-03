@@ -503,9 +503,18 @@ export class VentaDetallesV2Component implements OnInit {
 
     seleccionarLoteVenta(lote: any) {
         this.detalleConLote.lote_id = lote.id;
+        this.detalleConLote.lote = lote;
         this.loteSeleccionado = lote;
+        this.detalleConLote.stock = this.stockDisponibleEnUnidadesDetalle(lote.stock, this.detalleConLote);
         this.modalRef.hide();
         this.update.emit(this.venta);
+    }
+
+    /** Convierte stock del lote (unidades base) a las unidades del detalle (presentación si aplica). */
+    private stockDisponibleEnUnidadesDetalle(stockBase: number | string, detalle: any): number {
+        const stockLote = parseFloat(String(stockBase)) || 0;
+        const factor = parseFloat(String(detalle?.factor_conversion ?? 1)) || 1;
+        return factor > 0 ? stockLote / factor : stockLote;
     }
 
     // Eliminar detalle
