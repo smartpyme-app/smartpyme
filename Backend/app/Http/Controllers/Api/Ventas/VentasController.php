@@ -33,6 +33,7 @@ use App\Models\Eventos\Evento;
 use App\Models\Restaurante\PedidoRestaurante;
 use App\Services\Restaurante\PedidoCanalInventarioService;
 use App\Services\Inventario\ConversionInventarioService;
+use App\Services\Inventario\StockDisponibleService;
 use Luecano\NumeroALetras\NumeroALetras;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -747,30 +748,28 @@ class VentasController extends Controller
                     );
                     
                     // Validar stock solo si no es servicio y si la empresa no permite vender sin stock
-                    if ($producto && $producto->tipo != 'Servicio') {
-                        $inventario = Inventario::where('id_producto', $det['id_producto'])
-                            ->where('id_bodega', $venta->id_bodega)->first();
-                        
-                        // Validar stock disponible
-                        if ($inventario) {
-                            $stockDisponible = $inventario->stock;
-                            $cantidadRequerida = $cantidadBaseDet;
-                            
-                            // Si no se permite vender sin stock y no hay suficiente stock
-                            if (!$puedeVenderSinStock && $stockDisponible < $cantidadRequerida) {
-                                DB::rollback();
-                                return response()->json([
-                                    'error' => "No hay suficiente stock para el producto: {$producto->nombre}. Stock disponible: {$stockDisponible}, Cantidad requerida: {$cantidadRequerida}"
-                                ], 400);
-                            }
-                        } else {
-                            // Si no existe inventario y no se permite vender sin stock
-                            if (!$puedeVenderSinStock) {
-                                DB::rollback();
-                                return response()->json([
-                                    'error' => "No existe inventario para el producto: {$producto->nombre} en la bodega seleccionada"
-                                ], 400);
-                            }
+                    if ($producto && $producto->tipo != 'Servicio' && !$puedeVenderSinStock) {
+                        $loteIdDet = !empty($det['lote_id']) ? (int) $det['lote_id'] : null;
+                        $stockDisponible = StockDisponibleService::obtenerParaVenta(
+                            $producto,
+                            (int) $venta->id_bodega,
+                            $empresa,
+                            $loteIdDet
+                        );
+                        $cantidadRequerida = $cantidadBaseDet;
+
+                        if ($stockDisponible === null) {
+                            DB::rollback();
+                            return response()->json([
+                                'error' => "No existe inventario para el producto: {$producto->nombre} en la bodega seleccionada"
+                            ], 400);
+                        }
+
+                        if ($stockDisponible < $cantidadRequerida) {
+                            DB::rollback();
+                            return response()->json([
+                                'error' => "No hay suficiente stock para el producto: {$producto->nombre}. Stock disponible: {$stockDisponible}, Cantidad requerida: {$cantidadRequerida}"
+                            ], 400);
                         }
                     }
 
@@ -942,47 +941,49 @@ class VentasController extends Controller
                                         $loteCompuesto->stock -= $cantidadCompRequerida;
                                         $loteCompuesto->save();
                                     } else {
-                                        // Si no hay lote disponible, validar inventario tradicional
-                                        $inventarioComp = Inventario::where('id_producto', $comp['id_compuesto'])
-                                            ->where('id_bodega', $venta->id_bodega)->first();
-                                        
-                                        if ($inventarioComp) {
-                                            $stockDisponibleComp = $inventarioComp->stock;
-                                            
-                                            if (!$puedeVenderSinStock && $stockDisponibleComp < $cantidadCompRequerida) {
-                                                DB::rollback();
-                                                return response()->json([
-                                                    'error' => "No hay suficiente stock para el producto compuesto: {$productoCompuesto->nombre}. Stock disponible: {$stockDisponibleComp}, Cantidad requerida: {$cantidadCompRequerida}"
-                                                ], 400);
-                                            }
-                                        } else {
-                                            if (!$puedeVenderSinStock) {
+                                        if (!$puedeVenderSinStock) {
+                                            $loteIdComp = !empty($comp['lote_id']) ? (int) $comp['lote_id'] : null;
+                                            $stockDisponibleComp = StockDisponibleService::obtenerParaVenta(
+                                                $productoCompuesto,
+                                                (int) $venta->id_bodega,
+                                                $empresa,
+                                                $loteIdComp
+                                            );
+
+                                            if ($stockDisponibleComp === null) {
                                                 DB::rollback();
                                                 return response()->json([
                                                     'error' => "No existe inventario para el producto compuesto: {$productoCompuesto->nombre} en la bodega seleccionada"
                                                 ], 400);
                                             }
+
+                                            if ($stockDisponibleComp < $cantidadCompRequerida) {
+                                                DB::rollback();
+                                                return response()->json([
+                                                    'error' => "No hay suficiente stock para el producto compuesto: {$productoCompuesto->nombre}. Stock disponible: {$stockDisponibleComp}, Cantidad requerida: {$cantidadCompRequerida}"
+                                                ], 400);
+                                            }
                                         }
                                     }
                                 } else {
-                                    // Producto compuesto sin lotes, validar inventario tradicional
-                                    $inventarioComp = Inventario::where('id_producto', $comp['id_compuesto'])
-                                        ->where('id_bodega', $venta->id_bodega)->first();
-                                    
-                                    if ($inventarioComp) {
-                                        $stockDisponibleComp = $inventarioComp->stock;
-                                        
-                                        if (!$puedeVenderSinStock && $stockDisponibleComp < $cantidadCompRequerida) {
-                                            DB::rollback();
-                                            return response()->json([
-                                                'error' => "No hay suficiente stock para el producto compuesto: {$productoCompuesto->nombre}. Stock disponible: {$stockDisponibleComp}, Cantidad requerida: {$cantidadCompRequerida}"
-                                            ], 400);
-                                        }
-                                    } else {
-                                        if (!$puedeVenderSinStock) {
+                                    if (!$puedeVenderSinStock) {
+                                        $stockDisponibleComp = StockDisponibleService::obtenerParaVenta(
+                                            $productoCompuesto,
+                                            (int) $venta->id_bodega,
+                                            $empresa
+                                        );
+
+                                        if ($stockDisponibleComp === null) {
                                             DB::rollback();
                                             return response()->json([
                                                 'error' => "No existe inventario para el producto compuesto: {$productoCompuesto->nombre} en la bodega seleccionada"
+                                            ], 400);
+                                        }
+
+                                        if ($stockDisponibleComp < $cantidadCompRequerida) {
+                                            DB::rollback();
+                                            return response()->json([
+                                                'error' => "No hay suficiente stock para el producto compuesto: {$productoCompuesto->nombre}. Stock disponible: {$stockDisponibleComp}, Cantidad requerida: {$cantidadCompRequerida}"
                                             ], 400);
                                         }
                                     }

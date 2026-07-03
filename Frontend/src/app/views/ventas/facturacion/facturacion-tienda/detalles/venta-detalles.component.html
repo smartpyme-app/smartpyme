@@ -60,7 +60,7 @@
                                         style="font-size: 10px; cursor: help;" tooltip="Presentación">P</span></small>
 
                                 <br>
-                                <small class="text-muted" *ngIf="detalle.inventario_por_lotes">
+                                <small class="text-muted" *ngIf="detalle.inventario_por_lotes && apiService.isLotesActivo()">
                                     <button class="btn btn-sm btn-outline-primary mt-1"
                                         (click)="abrirModalLoteVenta(mloteVenta, detalle)"
                                         *ngIf="getLotesMetodologia() === 'Manual'">
@@ -91,6 +91,20 @@
                             <small class="text-muted text-tiny">{{ detalle?.tipo }}<span *ngIf="detalle.id_presentacion"
                                     class="badge bg-success ms-1" style="font-size: 10px; cursor: help;"
                                     tooltip="Presentación">P4</span></small>
+                            <br>
+                            <small class="text-muted" *ngIf="detalle.inventario_por_lotes && apiService.isLotesActivo()">
+                                <button class="btn btn-sm btn-outline-primary mt-1"
+                                    (click)="abrirModalLoteVenta(mloteVenta, detalle)"
+                                    *ngIf="getLotesMetodologia() === 'Manual'">
+                                    <i class="fa fa-box"></i>
+                                    {{ detalle.lote_id ? 'Lote: ' + (detalle.lote?.numero_lote || 'N/A') :
+                                    'Seleccionar lote' }}
+                                </button>
+                                <span *ngIf="getLotesMetodologia() !== 'Manual' && detalle.lote_id"
+                                    class="badge bg-info">
+                                    Lote: {{ detalle.lote?.numero_lote || 'N/A' }}
+                                </span>
+                            </small>
                             <div style="font-size: 14px;">
                                 <ul>
                                     <li class="mb-2" *ngFor="let composicion of detalle?.composiciones">

@@ -36,6 +36,7 @@ use App\Exports\TrasladoLineasUiExport;
 use App\Exports\ShopifyExport;
 use App\Services\Inventario\ProductoImportacionDteService;
 use App\Services\Inventario\MigrarStockALotesService;
+use App\Services\Inventario\StockDisponibleService;
 use App\Services\ShopifyTransformer;
 use App\Services\ImpuestosService;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -198,18 +199,15 @@ class ProductosController extends Controller
             return null;
         }
 
+        if ($id_bodega) {
+            return StockDisponibleService::obtenerParaVenta($producto, $id_bodega, $empresa);
+        }
+
         $lotesActivo = $empresa && $empresa->isLotesActivo();
 
         if ($producto->inventario_por_lotes && $lotesActivo) {
             $lotes = $producto->lotes;
-            if ($id_bodega) {
-                $lotes = $lotes->where('id_bodega', $id_bodega);
-            }
             return (float) $lotes->sum('stock');
-        }
-
-        if ($id_bodega) {
-            return (float) $producto->inventarios->where('id_bodega', $id_bodega)->sum('stock');
         }
 
         return (float) $producto->inventarios->sum('stock');
