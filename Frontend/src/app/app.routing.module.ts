@@ -14,6 +14,7 @@ import { PaymentSuccessComponent }    from './auth/register/pago/payment-success
 import { PaymentSuccessPaywallComponent }    from './layout/paywall/components/payment-success/payment-success.component';
 import { LockComponent }    from './auth/lock/lock.component';
 import { ForgetComponent }    from './auth/forget/forget.component';
+import { ResetPasswordComponent } from './auth/reset-password/reset-password.component';
 import { QuicklinkStrategy } from 'ngx-quicklink';
 import { SupervisorLimitadoGuard } from './guards/supervisor-limitado.guard';
 
@@ -25,6 +26,7 @@ const routes: Routes = [
     { path: 'pago-exitoso', component: PaymentSuccessComponent, title: 'Pago exitoso' },
     { path: 'pago-exitoso-paywall', component: PaymentSuccessPaywallComponent, title: 'Pago exitoso' },
     { path: 'restablecer-cuenta', component: ForgetComponent, title: 'Restablecer contraseña' },
+    { path: 'reset-password', component: ResetPasswordComponent, title: 'Nueva contraseña' },
     { path: 'lock', component: LockComponent },
 
     // Paywall (sin SubscriptionGuard para permitir acceso)
