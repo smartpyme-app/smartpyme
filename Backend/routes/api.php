@@ -25,6 +25,7 @@ Route::get('/prueba', function () {
 });
 
 Route::get('verificar-acceso/{slug}', [EmpresasFuncionalidadesController::class, 'verificarAcceso']);
+Route::get('verificar-accesos', [EmpresasFuncionalidadesController::class, 'verificarAccesos']);
 
 // Ventas perdidas (reporte comparación sp_nova vs vps)
 Route::get('ventas-perdidas', [App\Http\Controllers\VentasPerdidasController::class, 'index'])->name('ventas.perdidas');

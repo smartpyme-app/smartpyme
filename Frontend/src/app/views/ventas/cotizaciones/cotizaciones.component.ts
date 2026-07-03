@@ -119,7 +119,7 @@ export class CotizacionesComponent implements OnInit {
     }
 
     public reemprimir(venta:any){
-        window.open(this.apiService.baseUrl + '/api/reporte/facturacion/' + venta.id + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');
+        this.apiService.imprimirFactura(venta.id, 'Impresión', 'width=400');
     }
 
     // Editar

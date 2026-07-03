@@ -271,7 +271,12 @@ export class TiendaVentaBuscadorV2Component implements OnInit {
 
             producto.inventarios = producto.inventarios?.filter((item:any) => item.id_bodega == this.venta.id_bodega) || [];
 
-            if (producto.inventario_por_lotes && producto.lotes && producto.lotes.length > 0) {
+            if (
+                producto.inventario_por_lotes &&
+                producto.lotes &&
+                producto.lotes.length > 0 &&
+                this.apiService.isLotesActivo()
+            ) {
                 const lotesBodega = this.venta.id_bodega
                     ? producto.lotes.filter((l: any) => l.id_bodega == this.venta.id_bodega)
                     : producto.lotes;

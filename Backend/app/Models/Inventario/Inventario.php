@@ -190,7 +190,7 @@ class Inventario extends Model {
         }
 
         // Calcular el stock total según si el producto usa lotes o no
-        $totalCantidad = $this->calcularStockParaKardex($producto, $modelo, $clase);
+        $totalCantidad = $this->calcularStockParaKardex($producto, $modelo, $clase, $opciones);
 
         $fechaKardex = $fecha ? (is_string($fecha) ? $fecha : $fecha->format('Y-m-d')) : date('Y-m-d');
 
@@ -199,6 +199,7 @@ class Inventario extends Model {
         Kardex::create([
             'fecha'             => $fechaKardex,
             'id_producto'       => $this->id_producto,
+            'lote_id'           => $opciones['lote_id'] ?? null,
             'id_inventario'     => $this->id_bodega,
             'detalle'           => $clase,
             'referencia'        => $modelo->id,
@@ -233,7 +234,7 @@ class Inventario extends Model {
     /**
      * Calcula el stock para el kardex según si el producto usa lotes o no
      */
-    private function calcularStockParaKardex($producto, $modelo, $clase)
+    private function calcularStockParaKardex($producto, $modelo, $clase, $opciones = [])
     {
         // Verificar si los lotes están activos en la empresa
         $empresa = null;
@@ -252,7 +253,7 @@ class Inventario extends Model {
         }
 
         // Si el producto usa lotes, buscar el lote_id desde el modelo de referencia
-        $loteId = $this->obtenerLoteIdDesdeModelo($modelo, $clase, $producto->id);
+        $loteId = $opciones['lote_id'] ?? $this->obtenerLoteIdDesdeModelo($modelo, $clase, $producto->id);
 
         if ($loteId) {
             // Si hay un lote específico, usar su stock
