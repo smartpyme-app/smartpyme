@@ -2,7 +2,7 @@
 
 namespace App\Models\Ventas\Orden_Produccion;
 
-use App\Models\Concerns\AuditableForEmpresa;
+use App\Models\Concerns\AuditableModel;
 use App\Models\Admin\Documento;
 use App\Models\Admin\Empresa;
 use App\Models\Admin\Notificacion;
@@ -14,10 +14,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 
-class OrdenProduccion extends Model
+class OrdenProduccion extends AuditableModel
 {
-    use AuditableForEmpresa;
-
     protected static function auditModule(): string
     {
         return 'ventas';

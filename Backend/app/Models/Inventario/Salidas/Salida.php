@@ -2,7 +2,7 @@
 
 namespace App\Models\Inventario\Salidas;
 
-use App\Models\Concerns\AuditableForEmpresa;
+use App\Models\Concerns\AuditableModel;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Auth;
@@ -12,9 +12,7 @@ use App\Models\Inventario\Lote;
 use App\Models\Admin\Empresa;
 use App\Services\Inventario\ConversionInventarioService;
 
-class Salida extends Model {
-
-    use AuditableForEmpresa;
+class Salida extends AuditableModel {
 
     protected static function auditModule(): string
     {

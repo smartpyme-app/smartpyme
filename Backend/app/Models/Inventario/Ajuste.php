@@ -2,14 +2,12 @@
 
 namespace App\Models\Inventario;
 
-use App\Models\Concerns\AuditableForEmpresa;
+use App\Models\Concerns\AuditableModel;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Auth;
 
-class Ajuste extends Model {
-
-    use AuditableForEmpresa;
+class Ajuste extends AuditableModel {
 
     protected static function auditModule(): string
     {

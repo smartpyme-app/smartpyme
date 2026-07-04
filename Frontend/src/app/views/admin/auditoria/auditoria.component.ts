@@ -48,9 +48,9 @@ export class AuditoriaComponent implements OnInit {
   }
 
   cargarUsuarios(): void {
-    this.apiService.getAll('usuarios', { paginate: 500 }).subscribe({
+    this.apiService.getAll('usuarios/list').subscribe({
       next: (res) => {
-        this.usuarios = res?.data ?? [];
+        this.usuarios = Array.isArray(res) ? res : res?.data ?? [];
         this.cdr.markForCheck();
       },
     });

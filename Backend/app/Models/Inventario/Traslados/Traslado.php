@@ -2,14 +2,12 @@
 
 namespace App\Models\Inventario\Traslados;
 
-use App\Models\Concerns\AuditableForEmpresa;
+use App\Models\Concerns\AuditableModel;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use JWTAuth;
 
-class Traslado extends Model {
-
-    use AuditableForEmpresa;
+class Traslado extends AuditableModel {
 
     protected static function auditModule(): string
     {

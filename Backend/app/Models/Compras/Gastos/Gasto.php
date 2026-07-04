@@ -2,13 +2,11 @@
 
 namespace App\Models\Compras\Gastos;
 
-use App\Models\Concerns\AuditableForEmpresa;
+use App\Models\Concerns\AuditableModel;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
-class Gasto extends Model {
-
-    use AuditableForEmpresa;
+class Gasto extends AuditableModel {
 
     protected static function auditModule(): string
     {
