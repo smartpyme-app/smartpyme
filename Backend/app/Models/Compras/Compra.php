@@ -2,12 +2,20 @@
 
 namespace App\Models\Compras;
 
+use App\Models\Concerns\AuditableForEmpresa;
 use App\Models\Compras\Retaceo\Retaceo;
 use App\Models\Compras\Retaceo\RetaceoCompra;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 class Compra extends Model {
+
+    use AuditableForEmpresa;
+
+    protected static function auditModule(): string
+    {
+        return 'compras';
+    }
 
     protected $table = 'compras';
     protected $fillable = array(

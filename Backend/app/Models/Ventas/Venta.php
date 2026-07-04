@@ -2,6 +2,7 @@
 
 namespace App\Models\Ventas;
 
+use App\Models\Concerns\AuditableForEmpresa;
 use App\Models\Concerns\HasOffloadedDte;
 use App\Models\FidelizacionClientes\TransaccionPuntos;
 use Illuminate\Database\Eloquent\Model;
@@ -11,6 +12,12 @@ use Auth;
 class Venta extends Model {
 
     use HasOffloadedDte;
+    use AuditableForEmpresa;
+
+    protected static function auditModule(): string
+    {
+        return 'ventas';
+    }
 
     protected $table = 'ventas';
     protected $fillable = array(

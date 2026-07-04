@@ -2,6 +2,7 @@
 
 namespace App\Models\Inventario;
 
+use App\Models\Concerns\AuditableForEmpresa;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Builder;
@@ -10,7 +11,16 @@ use Illuminate\Support\Facades\Auth;
 class Producto extends Model
 {
 
+    use AuditableForEmpresa;
     use SoftDeletes;
+
+    protected static function auditModule(): string
+    {
+        return 'inventario';
+    }
+
+    protected $auditExclude = ['stock'];
+
     protected $table = 'productos';
     protected $fillable = array(
         'nombre',

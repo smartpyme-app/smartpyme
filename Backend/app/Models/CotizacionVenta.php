@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\AuditableForEmpresa;
 use App\Models\Admin\Documento;
 use App\Models\Admin\Empresa;
 use App\Models\Admin\Sucursal;
@@ -16,7 +17,14 @@ use Illuminate\Support\Facades\Auth;
 
 class CotizacionVenta extends Model
 {
+    use AuditableForEmpresa;
     use HasFactory;
+
+    protected static function auditModule(): string
+    {
+        return 'ventas';
+    }
+
     protected $table = 'cotizacion_ventas';
     protected $fillable = [
         "estado",

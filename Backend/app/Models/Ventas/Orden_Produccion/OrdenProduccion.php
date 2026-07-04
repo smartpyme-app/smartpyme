@@ -2,6 +2,7 @@
 
 namespace App\Models\Ventas\Orden_Produccion;
 
+use App\Models\Concerns\AuditableForEmpresa;
 use App\Models\Admin\Documento;
 use App\Models\Admin\Empresa;
 use App\Models\Admin\Notificacion;
@@ -15,6 +16,13 @@ use Illuminate\Support\Facades\Auth;
 
 class OrdenProduccion extends Model
 {
+    use AuditableForEmpresa;
+
+    protected static function auditModule(): string
+    {
+        return 'ventas';
+    }
+
     protected $table = 'ordenes_produccion';
 
     protected $fillable = [
