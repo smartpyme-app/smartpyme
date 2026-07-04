@@ -99,6 +99,11 @@ const routes: Routes = [
           path: 'modulos/editar/:id',
           loadComponent: () => import('@views/admin/modules/create/module-form.component').then(m => m.ModuleFormComponent),
           title: 'Editar módulo'
+        },
+        {
+          path: 'auditoria',
+          loadComponent: () => import('@views/super-admin/auditoria/auditoria-platform.component').then(m => m.AuditoriaPlatformComponent),
+          title: 'Auditoría'
         }
     ]
   }
