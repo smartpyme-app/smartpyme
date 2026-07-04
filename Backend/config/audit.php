@@ -13,7 +13,7 @@ return [
     |
     */
 
-    'implementation' => OwenIt\Auditing\Models\Audit::class,
+    'implementation' => App\Models\Audit\Audit::class,
 
     /*
     |--------------------------------------------------------------------------
@@ -27,10 +27,10 @@ return [
     'user' => [
         'morph_prefix' => 'user',
         'guards' => [
-            'web',
             'api',
+            'web',
         ],
-        'resolver' => OwenIt\Auditing\Resolvers\UserResolver::class,
+        'resolver' => App\Resolvers\JwtUserResolver::class,
     ],
 
     /*
@@ -195,4 +195,12 @@ return [
     */
 
     'console' => false,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Retención (purge)
+    |--------------------------------------------------------------------------
+    */
+
+    'purge_months' => (int) env('AUDIT_PURGE_MONTHS', 6),
 ];
