@@ -37,6 +37,9 @@ class Kernel extends ConsoleKernel
             ->everyFiveMinutes()
             ->appendOutputTo(storage_path('logs/reportes-automaticos.log'));
 
+        $schedule->command('auditoria:purge')
+            ->monthlyOn(1, '04:00');
+
         $schedule->command('metricas:empresas')
             ->dailyAt('03:00')
             ->runInBackground()
