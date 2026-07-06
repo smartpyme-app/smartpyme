@@ -4,6 +4,8 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { DistribucionLotesModalComponent } from '@shared/modals/distribucion-lotes/distribucion-lotes-modal.component';
+import { textoResumenLotesDetalle } from '@utils/lotes-venta.util';
 
 @Component({
   selector: 'app-inventario-salida',
@@ -21,11 +23,8 @@ export class InventarioSalidaComponent implements OnInit {
     public loading = false;
     public saving = false;
     modalRef!: BsModalRef;
-    
-    // Lotes
-    @ViewChild('mlote') public mloteTemplate!: TemplateRef<any>;
-    public lotes: any[] = [];
-    public loteSeleccionado: any = null;
+
+    @ViewChild('lotesModal') lotesModal!: DistribucionLotesModalComponent;
 
 	constructor( 
 	    public apiService: ApiService, private alertService: AlertService,
@@ -57,92 +56,94 @@ export class InventarioSalidaComponent implements OnInit {
             this.salida.detalles = [];
         }
         else{
-            // Optenemos el salida
             this.loading = true;
             this.apiService.read('salida/', id).subscribe(salida => {
 	            this.salida = salida;
+                this.normalizarDetallesLotes();
             	this.loading = false;
             }, error => {this.alertService.error(error); this.loading = false; });
         }
 	}
 
+    private normalizarDetallesLotes(): void {
+        (this.salida?.detalles || []).forEach((detalle: any) => {
+            if (detalle.lote_asignaciones?.length) {
+                detalle.lotes_asignados = detalle.lote_asignaciones.map((item: any) => ({
+                    lote_id: item.lote_id,
+                    numero_lote: item.lote?.numero_lote,
+                    cantidad: item.cantidad,
+                }));
+            }
+        });
+    }
 
 	productoSelect(producto:any){
-        this.producto = producto;
-        this.detalle.id_producto = this.producto.id_producto || this.producto.id;
-        this.detalle.id_presentacion = this.producto.id_presentacion || null;
-        this.detalle.factor_conversion = this.producto.factor_conversion || 1;
-        this.detalle.nombre_producto = this.producto.nombre_mostrar || this.producto.nombre;
-        this.detalle.medida = this.producto.medida;
-        this.detalle.costo = this.producto.costo;
-        this.detalle.categoria_nombre = this.producto.categoria_nombre;
-        this.detalle.inventario_por_lotes = this.producto.inventario_por_lotes;
-        this.detalle.cantidad = 1;
-        this.detalle.total = this.detalle.cantidad * this.detalle.costo;
-        this.salida.detalles.push(this.detalle);
-        this.producto = {};
-        this.detalle = {};
-        // document.getElementById('cantidad')!.focus();
+        const detalleNuevo = {
+            id_producto: producto.id_producto || producto.id,
+            id_presentacion: producto.id_presentacion || null,
+            factor_conversion: producto.factor_conversion || 1,
+            nombre_producto: producto.nombre_mostrar || producto.nombre,
+            medida: producto.medida,
+            costo: producto.costo,
+            categoria_nombre: producto.categoria_nombre,
+            inventario_por_lotes: producto.inventario_por_lotes,
+            cantidad: 1,
+            total: producto.costo,
+            lote_id: null,
+            lotes_asignados: null,
+        };
+        detalleNuevo.total = detalleNuevo.cantidad * detalleNuevo.costo;
+        this.salida.detalles.push(detalleNuevo);
+
+        if (this.requiereDistribucionLotes(detalleNuevo)) {
+            setTimeout(() => this.abrirModalLote(detalleNuevo), 100);
+        }
     }
     
     isLotesActivo(): boolean {
         return this.apiService.isLotesActivo();
     }
+
+    requiereDistribucionLotes(detalle: any): boolean {
+        return !!detalle?.inventario_por_lotes
+            && this.isLotesActivo()
+            && this.apiService.getLotesMetodologia() === 'Manual';
+    }
     
     abrirModalLote(detalle: any) {
-        this.detalle = detalle;
-        this.loteSeleccionado = null;
-        this.cargarLotesDisponibles();
-        setTimeout(() => {
-            this.modalRef = this.modalService.show(this.mloteTemplate, {class: 'modal-lg', backdrop: 'static'});
-        }, 100);
-    }
-    
-    cargarLotesDisponibles() {
-        if (!this.detalle.id_producto || !this.salida.id_bodega) {
-            this.lotes = [];
+        if (!this.salida.id_bodega) {
+            this.alertService.warning('Bodega requerida', 'Seleccione una bodega antes de asignar lotes.');
             return;
         }
-        
-        this.loading = true;
-        this.apiService.getAll(`lotes/producto/${this.detalle.id_producto}`, {
-            id_bodega: this.salida.id_bodega
-        }).subscribe(lotes => {
-            this.lotes = Array.isArray(lotes) ? lotes : [];
-            this.loading = false;
-        }, error => {
-            console.error('Error al cargar lotes:', error);
-            this.alertService.error('Error al cargar los lotes del producto');
-            this.loading = false;
-            this.lotes = [];
-        });
+        this.lotesModal.abrir(detalle, this.salida.id_bodega);
     }
-    
-    seleccionarLote(lote: any) {
-        this.loteSeleccionado = lote;
-        this.detalle.lote_id = lote.id;
-        this.detalle.lote = lote;
-        this.modalRef.hide();
+
+    onLotesConfirmados(detalle: any): void {
+        detalle.total = detalle.cantidad * detalle.costo;
     }
-    
-    cerrarModalLote() {
-        if (this.modalRef) {
-            this.modalRef.hide();
-        }
-    }
-    
-    isLoteVencido(lote: any): boolean {
-        if (!lote.fecha_vencimiento) return false;
-        const hoy = new Date();
-        const vencimiento = new Date(lote.fecha_vencimiento);
-        return vencimiento < hoy;
+
+    textoLotesDetalle(detalle: any): string {
+        return textoResumenLotesDetalle(detalle);
     }
    
     updateDetalle(detalle:any){
         detalle.total = detalle.cantidad * detalle.costo;
+        if (this.requiereDistribucionLotes(detalle)) {
+            detalle.lotes_asignados = null;
+            detalle.lote_id = null;
+            detalle.lote = null;
+        }
     }
 
 	public onSubmit() {
+        const faltanLotes = (this.salida.detalles || []).some((d: any) =>
+            this.requiereDistribucionLotes(d) && !(d.lotes_asignados?.length || d.lote_id)
+        );
+        if (faltanLotes) {
+            this.alertService.error('Debe distribuir los lotes de todos los productos con inventario por lotes.');
+            return;
+        }
+
         this.saving = true;
         this.apiService.store('salida', this.salida).subscribe(salida => {
             this.router.navigateByUrl('/salidas');
@@ -171,20 +172,14 @@ export class InventarioSalidaComponent implements OnInit {
 		if (confirm('¿Desea eliminar el Registro?')) {
 			if(detalle.id) {
 				this.apiService.delete('salida/detalle/', detalle.id).subscribe(detalle => {
-					for (var i = 0; i < this.salida.detalles.length; ++i) {
-						if (this.salida.detalles[i].id === detalle.id ){
-							this.salida.detalles.splice(i, 1);
-						}
-					}
+					this.salida.detalles = this.salida.detalles.filter((d: any) => d.id !== detalle.id);
 		        	this.alertService.success("Eliminado", "El registro fue eliminado exitosamente.");
 	        	}, error => {this.alertService.error(error); });
 			}else{
-				for (var i = 0; i < this.salida.detalles.length; ++i) {
-					if (this.salida.detalles[i].id_producto === detalle.id_producto && (this.salida.detalles[i].id_presentacion || null) === (detalle.id_presentacion || null)){
-						this.salida.detalles.splice(i, 1);
-						break;
-					}
-				}
+                const idx = this.salida.detalles.indexOf(detalle);
+                if (idx !== -1) {
+                    this.salida.detalles.splice(idx, 1);
+                }
 	        	this.alertService.success("Eliminado", "El registro fue eliminado exitosamente.");
 			}
 		}

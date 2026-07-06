@@ -35,4 +35,8 @@ class Detalle extends Model {
         return $this->belongsTo('App\Models\Inventario\Lote', 'lote_id');
     }
 
+    public function loteAsignaciones(){
+        return $this->hasMany(DetalleSalidaLote::class, 'id_detalle_salida');
+    }
+
 }
