@@ -12,6 +12,7 @@ use App\Models\Inventario\Lote;
 use App\Models\Admin\Empresa;
 use App\Models\Inventario\ProductoPresentacion;
 use App\Services\Inventario\ConversionInventarioService;
+use App\Services\Inventario\LoteAsignacionService;
 
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -24,7 +25,7 @@ class TrasladosController extends Controller
 
     public function read($id) {
         $traslado = Traslado::where('id', $id)
-            ->with(['producto', 'origen', 'destino', 'empresa', 'usuario', 'lote', 'loteDestino'])
+            ->with(['producto', 'origen', 'destino', 'empresa', 'usuario', 'lote', 'loteDestino', 'loteAsignaciones'])
             ->firstOrFail();
 
         return Response()->json($traslado, 200);
@@ -86,6 +87,7 @@ class TrasladosController extends Controller
           'id_usuario'      => 'required|numeric',
           'lote_id'       => 'nullable|numeric|exists:lotes,id',
           'lote_id_destino' => 'nullable|numeric|exists:lotes,id',
+          'lotes_asignados' => 'nullable|array',
         ]);
 
         $traslado = new Traslado();
@@ -111,84 +113,58 @@ class TrasladosController extends Controller
         $cantidadBase = ConversionInventarioService::calcularCantidadBase($cantidadOriginal, $factor);
 
         $producto = Producto::where('id', $request->id_producto)->with('composiciones')->firstOrFail();
-        
-        if ($producto->inventario_por_lotes && !$request->lote_id) {
-            throw new \Exception('Debe seleccionar un lote para este producto.');
-        }
-        
-        // Si tiene lote_id, verificar y procesar el lote
-        if ($request->lote_id && $producto->inventario_por_lotes) {
-            // Refrescar el lote desde la base de datos para obtener el stock actualizado
-            $loteOrigen = Lote::findOrFail($request->lote_id);
-            $loteOrigen->refresh(); // Asegurar que tenemos los datos más recientes
-            
-            if ($loteOrigen->id_bodega != $request->id_bodega_de) {
-                throw new \Exception('El lote seleccionado no pertenece a la bodega de origen.');
-            }
-            
-            $stockDisponible = (float) $loteOrigen->stock;
-            $cantidadRequerida = $cantidadBase;
-            
-            if ($stockDisponible < $cantidadRequerida) {
-                throw new \Exception('El lote no tiene stock suficiente. Stock disponible: ' . number_format($stockDisponible, 2) . ', Cantidad requerida: ' . number_format($cantidadRequerida, 2));
-            }
-            
-            // Descontar del lote de origen (usar las variables ya convertidas)
-            $loteOrigen->stock = max(0, $stockDisponible - $cantidadRequerida);
-            $loteOrigen->save();
-            
-            // Procesar lote en destino
-            if ($request->lote_id_destino) {
-                // Si se especificó un lote destino, validar y sumar a ese lote
-                $loteDestino = Lote::findOrFail($request->lote_id_destino);
-                
-                if ($loteDestino->id_bodega != $request->id_bodega) {
-                    throw new \Exception('El lote de destino no pertenece a la bodega de destino.');
-                }
-                
-                if ($loteDestino->id_producto != $producto->id) {
-                    throw new \Exception('El lote de destino no corresponde al producto.');
-                }
-                
-                $loteDestino->stock += $cantidadBase;
-                $loteDestino->save();
-            } else {
-                // Si no se especificó lote destino, buscar o crear uno con el mismo número
-                $loteDestino = Lote::where('id_producto', $producto->id)
-                    ->where('id_bodega', $request->id_bodega)
-                    ->where('numero_lote', $loteOrigen->numero_lote)
-                    ->first();
-                
-                if ($loteDestino) {
-                    $loteDestino->stock += $cantidadBase;
-                    $loteDestino->save();
-                } else {
-                    // Crear nuevo lote en destino con el mismo número
-                    $loteDestino = Lote::create([
-                        'id_producto' => $producto->id,
-                        'id_bodega' => $request->id_bodega,
-                        'numero_lote' => $loteOrigen->numero_lote,
-                        'fecha_vencimiento' => $loteOrigen->fecha_vencimiento,
-                        'fecha_fabricacion' => $loteOrigen->fecha_fabricacion,
-                        'stock' => $cantidadBase,
-                        'stock_inicial' => $cantidadBase,
-                        'id_empresa' => Auth::user()->id_empresa,
-                    ]);
-                }
+        $empresa = Empresa::find(Auth::user()->id_empresa);
+        $lotesActivo = $empresa ? $empresa->isLotesActivo() : false;
+        $metodologia = $empresa ? $empresa->getLotesMetodologia() : 'FIFO';
+
+        if ($producto->inventario_por_lotes && $lotesActivo && $metodologia === 'Manual') {
+            $tieneLotes = !empty($request->lote_id) || !empty($request->lotes_asignados);
+            if (!$tieneLotes) {
+                throw new \Exception('Debe seleccionar un lote para este producto.');
             }
         }
         
         $origen = Inventario::where('id_producto', $producto->id)->where('id_bodega', $request->id_bodega_de)->first();
         $destino = Inventario::where('id_producto', $producto->id)->where('id_bodega', $request->id_bodega)->first();
 
-        if ($origen->stock < $cantidadBase) {
+        if (!$origen || !$destino || $origen->stock < $cantidadBase) {
             throw new \Exception('La sucursal no tiene el stock suficiente.');
         }
 
-        
-        if ($origen && $destino) {
-            $traslado->save();
-            
+        $traslado->save();
+
+        if ($producto->inventario_por_lotes && $lotesActivo) {
+            $asignaciones = LoteAsignacionService::resolverAsignacionesSalida(
+                $producto,
+                (int) $request->id_bodega_de,
+                $cantidadBase,
+                $metodologia,
+                $lotesActivo,
+                $request->lote_id ? (int) $request->lote_id : null,
+                $request->lotes_asignados ?? null
+            );
+
+            if (empty($asignaciones)) {
+                if ($metodologia === 'Manual') {
+                    throw new \Exception('Debe seleccionar un lote para este producto.');
+                }
+            } else {
+                $pivotRows = LoteAsignacionService::aplicarTrasladoLotes(
+                    $asignaciones,
+                    $producto,
+                    (int) $request->id_bodega_de,
+                    (int) $request->id_bodega,
+                    $traslado,
+                    $origen,
+                    $destino,
+                    $request->lote_id_destino ? (int) $request->lote_id_destino : null
+                );
+                LoteAsignacionService::sincronizarTrasladoLotes($traslado->id, $pivotRows);
+                $traslado->lote_id = count($pivotRows) === 1 ? $pivotRows[0]['lote_id'] : null;
+                $traslado->lote_id_destino = count($pivotRows) === 1 ? ($pivotRows[0]['lote_id_destino'] ?? null) : null;
+                $traslado->save();
+            }
+        } else {
             $origen->stock -= $cantidadBase;
             $origen->save();
             $origen->kardex($traslado, $cantidadBase * -1);
@@ -196,9 +172,6 @@ class TrasladosController extends Controller
             $destino->stock += $cantidadBase;
             $destino->save();
             $destino->kardex($traslado, $cantidadBase);
-
-        }else{
-            throw new \Exception('Una de las sucursales no tiene inventario.');
         }
 
         // Composiciones
@@ -255,17 +228,21 @@ class TrasladosController extends Controller
             'detalles.*.cantidad' => 'required|numeric|min:0.01',
             'detalles.*.lote_id' => 'nullable|numeric|exists:lotes,id',
             'detalles.*.lote_id_destino' => 'nullable|numeric|exists:lotes,id',
+            'detalles.*.lotes_asignados' => 'nullable|array',
         ]);
 
         if ($request->origen_id == $request->destino_id) {
             return Response()->json(['error' => 'Has seleccionado la misma bodega.', 'code' => 400], 400);
         }
         
-        // Mapear origen_id y destino_id a los nombres que espera el modelo
         $request->merge([
             'id_bodega_de' => $request->origen_id,
             'id_bodega' => $request->destino_id,
         ]);
+
+        $empresa = Empresa::find(Auth::user()->id_empresa);
+        $lotesActivo = $empresa ? $empresa->isLotesActivo() : false;
+        $metodologia = $empresa ? $empresa->getLotesMetodologia() : 'FIFO';
 
         DB::beginTransaction();
         
@@ -284,75 +261,13 @@ class TrasladosController extends Controller
                 $cantidadOriginal = (float) $detalleData['cantidad'];
                 $cantidadBase = ConversionInventarioService::calcularCantidadBase($cantidadOriginal, $factor);
 
-                // Si el producto tiene inventario por lotes, el lote_id es requerido
-                if ($producto->inventario_por_lotes && (!isset($detalleData['lote_id']) || !$detalleData['lote_id'])) {
-                    throw new \Exception("Debe seleccionar un lote para el producto {$producto->nombre}.");
-                }
-                
-                // Si tiene lote_id, verificar y procesar el lote
-                if (isset($detalleData['lote_id']) && $detalleData['lote_id'] && $producto->inventario_por_lotes) {
-                    // Refrescar el lote desde la base de datos para obtener el stock actualizado
-                    $loteOrigen = Lote::findOrFail($detalleData['lote_id']);
-                    $loteOrigen->refresh(); // Asegurar que tenemos los datos más recientes
-                    
-                    if ($loteOrigen->id_bodega != $request->origen_id) {
-                        throw new \Exception("El lote seleccionado no pertenece a la bodega de origen.");
-                    }
-                    
-                    // Convertir a float para comparación más precisa
-                    $stockDisponible = (float) $loteOrigen->stock;
-                    $cantidadRequerida = $cantidadBase;
-                    
-                    if ($stockDisponible < $cantidadRequerida) {
-                        throw new \Exception("El lote no tiene stock suficiente para el producto {$producto->nombre}. Stock disponible: " . number_format($stockDisponible, 2) . ", Cantidad requerida: " . number_format($cantidadRequerida, 2));
-                    }
-                    
-            // Descontar del lote de origen (usar las variables ya convertidas)
-            $loteOrigen->stock = max(0, $stockDisponible - $cantidadRequerida);
-            $loteOrigen->save();
-                    
-                    // Procesar lote en destino
-                    if (isset($detalleData['lote_id_destino']) && $detalleData['lote_id_destino']) {
-                        // Si se especificó un lote destino, validar y sumar a ese lote
-                        $loteDestino = Lote::findOrFail($detalleData['lote_id_destino']);
-                        
-                        if ($loteDestino->id_bodega != $request->destino_id) {
-                            throw new \Exception("El lote de destino no pertenece a la bodega de destino.");
-                        }
-                        
-                        if ($loteDestino->id_producto != $producto->id) {
-                            throw new \Exception("El lote de destino no corresponde al producto.");
-                        }
-                        
-                        $loteDestino->stock += $cantidadBase;
-                        $loteDestino->save();
-                    } else {
-                        // Si no se especificó lote destino, buscar o crear uno con el mismo número
-                        $loteDestino = Lote::where('id_producto', $producto->id)
-                            ->where('id_bodega', $request->destino_id)
-                            ->where('numero_lote', $loteOrigen->numero_lote)
-                            ->first();
-                        
-                        if ($loteDestino) {
-                            $loteDestino->stock += $cantidadBase;
-                            $loteDestino->save();
-                        } else {
-                            // Crear nuevo lote en destino con el mismo número
-                            $loteDestino = Lote::create([
-                                'id_producto' => $producto->id,
-                                'id_bodega' => $request->destino_id,
-                                'numero_lote' => $loteOrigen->numero_lote,
-                                'fecha_vencimiento' => $loteOrigen->fecha_vencimiento,
-                                'fecha_fabricacion' => $loteOrigen->fecha_fabricacion,
-                                'stock' => $cantidadBase,
-                                'stock_inicial' => $cantidadBase,
-                                'id_empresa' => Auth::user()->id_empresa,
-                            ]);
-                        }
+                if ($producto->inventario_por_lotes && $lotesActivo && $metodologia === 'Manual') {
+                    $tieneLotes = !empty($detalleData['lote_id']) || !empty($detalleData['lotes_asignados']);
+                    if (!$tieneLotes) {
+                        throw new \Exception("Debe seleccionar un lote para el producto {$producto->nombre}.");
                     }
                 }
-                
-                // Procesar inventario tradicional
+
                 $origen = Inventario::where('id_producto', $producto->id)
                     ->where('id_bodega', $request->origen_id)
                     ->first();
@@ -363,8 +278,15 @@ class TrasladosController extends Controller
                 if (!$origen || $origen->stock < $cantidadBase) {
                     throw new \Exception("La bodega origen no tiene stock suficiente para el producto {$producto->nombre}.");
                 }
+
+                if (!$destino) {
+                    $destino = new Inventario();
+                    $destino->id_producto = $producto->id;
+                    $destino->id_bodega = $request->destino_id;
+                    $destino->stock = 0;
+                    $destino->save();
+                }
                 
-                // Crear registro de traslado
                 $traslado = new Traslado();
                 $traslado->id_producto = $producto->id;
                 $traslado->id_presentacion = $idPresentacion;
@@ -375,28 +297,45 @@ class TrasladosController extends Controller
                 $traslado->estado = $request->estado;
                 $traslado->id_usuario = Auth::id();
                 $traslado->id_empresa = Auth::user()->id_empresa;
-                if (isset($detalleData['lote_id']) && $detalleData['lote_id']) {
-                    $traslado->lote_id = $detalleData['lote_id'];
-                }
-                if (isset($detalleData['lote_id_destino']) && $detalleData['lote_id_destino']) {
-                    $traslado->lote_id_destino = $detalleData['lote_id_destino'];
-                }
                 $traslado->save();
-                
-                // Actualizar inventarios
-                $origen->stock -= $cantidadBase;
-                $origen->save();
-                $origen->kardex($traslado, $cantidadBase * -1);
-                
-                if ($destino) {
-                    $destino->stock += $cantidadBase;
-                    $destino->save();
-                    $destino->kardex($traslado, $cantidadBase);
+
+                if ($producto->inventario_por_lotes && $lotesActivo) {
+                    $asignaciones = LoteAsignacionService::resolverAsignacionesSalida(
+                        $producto,
+                        (int) $request->origen_id,
+                        $cantidadBase,
+                        $metodologia,
+                        $lotesActivo,
+                        !empty($detalleData['lote_id']) ? (int) $detalleData['lote_id'] : null,
+                        $detalleData['lotes_asignados'] ?? null
+                    );
+
+                    if (empty($asignaciones)) {
+                        if ($metodologia === 'Manual') {
+                            throw new \Exception("Debe seleccionar un lote para el producto {$producto->nombre}.");
+                        }
+                    } else {
+                        $pivotRows = LoteAsignacionService::aplicarTrasladoLotes(
+                            $asignaciones,
+                            $producto,
+                            (int) $request->origen_id,
+                            (int) $request->destino_id,
+                            $traslado,
+                            $origen,
+                            $destino,
+                            !empty($detalleData['lote_id_destino']) ? (int) $detalleData['lote_id_destino'] : null
+                        );
+                        LoteAsignacionService::sincronizarTrasladoLotes($traslado->id, $pivotRows);
+                        $traslado->lote_id = count($pivotRows) === 1 ? $pivotRows[0]['lote_id'] : null;
+                        $traslado->lote_id_destino = count($pivotRows) === 1 ? ($pivotRows[0]['lote_id_destino'] ?? null) : null;
+                        $traslado->save();
+                    }
                 } else {
-                    $destino = new Inventario();
-                    $destino->id_producto = $producto->id;
-                    $destino->id_bodega = $request->destino_id;
-                    $destino->stock = $cantidadBase;
+                    $origen->stock -= $cantidadBase;
+                    $origen->save();
+                    $origen->kardex($traslado, $cantidadBase * -1);
+
+                    $destino->stock += $cantidadBase;
                     $destino->save();
                     $destino->kardex($traslado, $cantidadBase);
                 }
@@ -417,7 +356,7 @@ class TrasladosController extends Controller
          
         try {
 
-        $traslado = Traslado::findOrfail($id);
+        $traslado = Traslado::with('loteAsignaciones')->findOrfail($id);
         $traslado->estado = 'Cancelado';
         $traslado->save();
 
@@ -432,49 +371,31 @@ class TrasladosController extends Controller
 
         $producto = Producto::where('id', $traslado->id_producto)->with('composiciones')->firstOrFail();
         
-        // Si el traslado tiene lote_id, revertir el movimiento en los lotes
-        if ($traslado->lote_id) {
-            $loteOrigen = Lote::find($traslado->lote_id);
-            if ($loteOrigen) {
-                $loteOrigen->stock += $cantidadBase;
-                $loteOrigen->save();
-                
-                // Usar lote_id_destino si se guardó; si no, buscar por numero_lote
-                if ($traslado->lote_id_destino) {
-                    $loteDestino = Lote::find($traslado->lote_id_destino);
-                } else {
-                    $loteDestino = Lote::where('id_producto', $producto->id)
-                        ->where('id_bodega', $traslado->id_bodega)
-                        ->where('numero_lote', $loteOrigen->numero_lote)
-                        ->first();
-                }
-                
-                if ($loteDestino) {
-                    $loteDestino->stock -= $cantidadBase;
-                    if ($loteDestino->stock < 0) {
-                        $loteDestino->stock = 0;
-                    }
-                    $loteDestino->save();
-                }
-            }
-        }
-        
         $origen = Inventario::where('id_producto', $producto->id)->where('id_bodega', $traslado->id_bodega_de)->first();
         $destino = Inventario::where('id_producto', $producto->id)->where('id_bodega', $traslado->id_bodega)->first();
 
-        
         if ($origen && $destino) {
-            $traslado->save();
-            
-            $origen->stock += $cantidadBase;
-            $origen->save();
-            $origen->kardex($traslado, $cantidadBase * -1);
+            if ($traslado->loteAsignaciones->isNotEmpty() || $traslado->lote_id) {
+                LoteAsignacionService::revertirTrasladoLotes(
+                    $traslado->loteAsignaciones,
+                    $producto,
+                    $traslado,
+                    $origen,
+                    $destino,
+                    $cantidadBase,
+                    $traslado->lote_id,
+                    $traslado->lote_id_destino
+                );
+            } else {
+                $origen->stock += $cantidadBase;
+                $origen->save();
+                $origen->kardex($traslado, $cantidadBase * -1);
 
-            $destino->stock -= $cantidadBase;
-            $destino->save();
-            $destino->kardex($traslado, $cantidadBase);
-
-        }else{
+                $destino->stock -= $cantidadBase;
+                $destino->save();
+                $destino->kardex($traslado, $cantidadBase);
+            }
+        } else {
             throw new \Exception('Una de las sucursales no tiene inventario.');
         }
 

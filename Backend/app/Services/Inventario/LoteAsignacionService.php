@@ -4,9 +4,15 @@ namespace App\Services\Inventario;
 
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Lote;
+use App\Models\Inventario\Producto;
+use App\Models\Inventario\Salidas\DetalleSalidaLote;
+use App\Models\Inventario\Traslado;
+use App\Models\Inventario\TrasladoLote;
+use App\Models\Restaurante\PedidoDetalleLote;
 use App\Models\Ventas\Detalle;
 use App\Models\Ventas\DetalleVentaLote;
 use App\Models\Ventas\Venta;
+use Illuminate\Support\Facades\Auth;
 use RuntimeException;
 
 class LoteAsignacionService
@@ -395,5 +401,358 @@ class LoteAsignacionService
     private static function formatearCantidad(float $cantidad): string
     {
         return rtrim(rtrim(number_format($cantidad, 4, '.', ''), '0'), '.') ?: '0';
+    }
+
+    /**
+     * Resuelve asignaciones de lotes para cualquier documento de salida.
+     *
+     * @param  array<int, array{lote_id:int, cantidad:float|int|string}>|null  $asignacionManual
+     * @return array<int, array{lote_id:int, cantidad:float, lote:Lote}>
+     */
+    public static function resolverAsignacionesSalida(
+        Producto $producto,
+        int $idBodega,
+        float $cantidadBase,
+        string $metodologia,
+        bool $lotesActivo,
+        ?int $lotePreferidoId = null,
+        ?array $asignacionManual = null
+    ): array {
+        if (!$producto->inventario_por_lotes || !$lotesActivo || $cantidadBase <= 0) {
+            return [];
+        }
+
+        return self::distribuir(
+            (int) $producto->id,
+            $idBodega,
+            $cantidadBase,
+            $metodologia,
+            $lotePreferidoId,
+            $asignacionManual
+        );
+    }
+
+    /**
+     * Descuenta lotes e inventario para documentos genéricos (salidas, pedidos, etc.).
+     *
+     * @param  array<int, array{lote_id:int, cantidad:float, lote:Lote}>  $asignaciones
+     */
+    public static function aplicarSalidaDocumento(
+        array $asignaciones,
+        $documento,
+        Inventario $inventario,
+        ?float $precio = null,
+        array $kardexOpts = []
+    ): float {
+        if (empty($asignaciones)) {
+            return 0.0;
+        }
+
+        $cantidadTotal = 0.0;
+        foreach ($asignaciones as $asig) {
+            $cantidad = (float) $asig['cantidad'];
+            $lote = $asig['lote'];
+            $lote->stock = max(0, (float) $lote->stock - $cantidad);
+            $lote->save();
+
+            $inventario->kardex($documento, $cantidad, $precio, null, null, array_merge($kardexOpts, [
+                'lote_id' => $asig['lote_id'],
+            ]));
+
+            $cantidadTotal += $cantidad;
+        }
+
+        $inventario->stock = max(0, (float) $inventario->stock - $cantidadTotal);
+        $inventario->save();
+
+        return $cantidadTotal;
+    }
+
+    /**
+     * Restaura lotes e inventario para documentos genéricos.
+     *
+     * @param  iterable<int, object{lote_id:int, cantidad:float|string}>  $registros
+     */
+    public static function revertirSalidaDocumento(
+        iterable $registros,
+        $documento,
+        Inventario $inventario,
+        float $cantidadBase,
+        ?int $loteIdLegacy = null,
+        ?float $precio = null,
+        array $kardexOpts = []
+    ): void {
+        $revertido = false;
+
+        foreach ($registros as $registro) {
+            $lote = Lote::find($registro->lote_id);
+            if ($lote) {
+                $lote->stock = (float) $lote->stock + (float) $registro->cantidad;
+                $lote->save();
+            }
+
+            $inventario->kardex($documento, (float) $registro->cantidad * -1, $precio, null, null, array_merge($kardexOpts, [
+                'lote_id' => $registro->lote_id,
+            ]));
+            $revertido = true;
+        }
+
+        if (!$revertido && $loteIdLegacy) {
+            $lote = Lote::find($loteIdLegacy);
+            if ($lote) {
+                $lote->stock = (float) $lote->stock + $cantidadBase;
+                $lote->save();
+            }
+
+            $inventario->kardex($documento, $cantidadBase * -1, $precio, null, null, array_merge($kardexOpts, [
+                'lote_id' => $loteIdLegacy,
+            ]));
+        } elseif (!$revertido) {
+            $inventario->kardex($documento, $cantidadBase * -1, $precio, null, null, $kardexOpts);
+        }
+
+        $inventario->stock = (float) $inventario->stock + $cantidadBase;
+        $inventario->save();
+    }
+
+    /**
+     * @param  array<int, array{lote_id:int, cantidad:float, lote:Lote}>  $asignaciones
+     */
+    public static function sincronizarDetalleSalidaLotes(int $idDetalleSalida, array $asignaciones): void
+    {
+        DetalleSalidaLote::where('id_detalle_salida', $idDetalleSalida)->delete();
+
+        foreach ($asignaciones as $asig) {
+            DetalleSalidaLote::create([
+                'id_detalle_salida' => $idDetalleSalida,
+                'lote_id' => $asig['lote_id'],
+                'cantidad' => $asig['cantidad'],
+            ]);
+        }
+    }
+
+    /**
+     * @param  array<int, array{lote_id:int, cantidad:float, lote:Lote}>  $asignaciones
+     */
+    public static function sincronizarPedidoDetalleLotes(int $pedidoDetalleId, array $asignaciones): void
+    {
+        PedidoDetalleLote::where('pedido_detalle_id', $pedidoDetalleId)->delete();
+
+        foreach ($asignaciones as $asig) {
+            PedidoDetalleLote::create([
+                'pedido_detalle_id' => $pedidoDetalleId,
+                'lote_id' => $asig['lote_id'],
+                'cantidad' => $asig['cantidad'],
+            ]);
+        }
+    }
+
+    /**
+     * Traslada stock entre bodegas respetando múltiples lotes de origen.
+     *
+     * @param  array<int, array{lote_id:int, cantidad:float, lote:Lote}>  $asignaciones
+     * @return array<int, array{lote_id:int, lote_id_destino:int|null, cantidad:float}>
+     */
+    public static function aplicarTrasladoLotes(
+        array $asignaciones,
+        Producto $producto,
+        int $idBodegaOrigen,
+        int $idBodegaDestino,
+        Traslado $traslado,
+        Inventario $origen,
+        Inventario $destino,
+        ?int $loteIdDestinoPreferido = null
+    ): array {
+        $pivotRows = [];
+
+        foreach ($asignaciones as $asig) {
+            $cantidad = (float) $asig['cantidad'];
+            $loteOrigen = $asig['lote'];
+            $loteOrigen->refresh();
+
+            if ($loteOrigen->id_bodega != $idBodegaOrigen) {
+                throw new RuntimeException('El lote seleccionado no pertenece a la bodega de origen.');
+            }
+
+            if ((float) $loteOrigen->stock < $cantidad) {
+                $numero = $loteOrigen->numero_lote ?: 'S/N';
+                throw new RuntimeException(
+                    "Stock insuficiente en el lote {$numero}. Disponible: {$loteOrigen->stock}, requerido: {$cantidad}"
+                );
+            }
+
+            $loteOrigen->stock = max(0, (float) $loteOrigen->stock - $cantidad);
+            $loteOrigen->save();
+
+            $loteDestino = self::resolverLoteDestinoTraslado(
+                $producto,
+                $idBodegaDestino,
+                $loteOrigen,
+                $cantidad,
+                $loteIdDestinoPreferido
+            );
+
+            $origen->kardex($traslado, $cantidad * -1, null, null, null, ['lote_id' => $loteOrigen->id]);
+            $destino->kardex($traslado, $cantidad, null, null, null, ['lote_id' => $loteDestino->id]);
+
+            $pivotRows[] = [
+                'lote_id' => (int) $loteOrigen->id,
+                'lote_id_destino' => $loteDestino->id,
+                'cantidad' => $cantidad,
+            ];
+        }
+
+        $cantidadTotal = array_sum(array_column($pivotRows, 'cantidad'));
+        $origen->stock = max(0, (float) $origen->stock - $cantidadTotal);
+        $origen->save();
+        $destino->stock = (float) $destino->stock + $cantidadTotal;
+        $destino->save();
+
+        return $pivotRows;
+    }
+
+    /**
+     * @param  iterable<int, TrasladoLote|object{lote_id:int, lote_id_destino:int|null, cantidad:float|string}>  $registros
+     */
+    public static function revertirTrasladoLotes(
+        iterable $registros,
+        Producto $producto,
+        Traslado $traslado,
+        Inventario $origen,
+        Inventario $destino,
+        float $cantidadBase,
+        ?int $loteIdLegacy = null,
+        ?int $loteIdDestinoLegacy = null
+    ): void {
+        $revertido = false;
+
+        foreach ($registros as $registro) {
+            $cantidad = (float) $registro->cantidad;
+            $loteOrigen = Lote::find($registro->lote_id);
+            if ($loteOrigen) {
+                $loteOrigen->stock += $cantidad;
+                $loteOrigen->save();
+            }
+
+            $loteDestino = null;
+            if (!empty($registro->lote_id_destino)) {
+                $loteDestino = Lote::find($registro->lote_id_destino);
+            } elseif ($loteOrigen) {
+                $loteDestino = Lote::where('id_producto', $producto->id)
+                    ->where('id_bodega', $traslado->id_bodega)
+                    ->where('numero_lote', $loteOrigen->numero_lote)
+                    ->first();
+            }
+
+            if ($loteDestino) {
+                $loteDestino->stock = max(0, (float) $loteDestino->stock - $cantidad);
+                $loteDestino->save();
+            }
+
+            $origen->kardex($traslado, $cantidad, null, null, null, ['lote_id' => $registro->lote_id]);
+            $destino->kardex($traslado, $cantidad * -1, null, null, null, [
+                'lote_id' => $loteDestino ? $loteDestino->id : null,
+            ]);
+            $revertido = true;
+        }
+
+        if (!$revertido && $loteIdLegacy) {
+            $loteOrigen = Lote::find($loteIdLegacy);
+            if ($loteOrigen) {
+                $loteOrigen->stock += $cantidadBase;
+                $loteOrigen->save();
+            }
+
+            if ($loteIdDestinoLegacy) {
+                $loteDestino = Lote::find($loteIdDestinoLegacy);
+            } elseif ($loteOrigen) {
+                $loteDestino = Lote::where('id_producto', $producto->id)
+                    ->where('id_bodega', $traslado->id_bodega)
+                    ->where('numero_lote', $loteOrigen->numero_lote)
+                    ->first();
+            } else {
+                $loteDestino = null;
+            }
+
+            if ($loteDestino) {
+                $loteDestino->stock = max(0, (float) $loteDestino->stock - $cantidadBase);
+                $loteDestino->save();
+            }
+
+            $origen->kardex($traslado, $cantidadBase, null, null, null, ['lote_id' => $loteIdLegacy]);
+            $destino->kardex($traslado, $cantidadBase * -1, null, null, null, [
+                'lote_id' => $loteDestino ? $loteDestino->id : null,
+            ]);
+        }
+
+        $origen->stock += $cantidadBase;
+        $origen->save();
+        $destino->stock = max(0, (float) $destino->stock - $cantidadBase);
+        $destino->save();
+    }
+
+    /**
+     * @param  array<int, array{lote_id:int, lote_id_destino:int|null, cantidad:float}>  $pivotRows
+     */
+    public static function sincronizarTrasladoLotes(int $trasladoId, array $pivotRows): void
+    {
+        TrasladoLote::where('traslado_id', $trasladoId)->delete();
+
+        foreach ($pivotRows as $row) {
+            TrasladoLote::create([
+                'traslado_id' => $trasladoId,
+                'lote_id' => $row['lote_id'],
+                'lote_id_destino' => $row['lote_id_destino'] ?? null,
+                'cantidad' => $row['cantidad'],
+            ]);
+        }
+    }
+
+    private static function resolverLoteDestinoTraslado(
+        Producto $producto,
+        int $idBodegaDestino,
+        Lote $loteOrigen,
+        float $cantidad,
+        ?int $loteIdDestinoPreferido = null
+    ): Lote {
+        if ($loteIdDestinoPreferido) {
+            $loteDestino = Lote::findOrFail($loteIdDestinoPreferido);
+
+            if ($loteDestino->id_bodega != $idBodegaDestino) {
+                throw new RuntimeException('El lote de destino no pertenece a la bodega de destino.');
+            }
+
+            if ($loteDestino->id_producto != $producto->id) {
+                throw new RuntimeException('El lote de destino no corresponde al producto.');
+            }
+
+            $loteDestino->stock += $cantidad;
+            $loteDestino->save();
+
+            return $loteDestino;
+        }
+
+        $loteDestino = Lote::where('id_producto', $producto->id)
+            ->where('id_bodega', $idBodegaDestino)
+            ->where('numero_lote', $loteOrigen->numero_lote)
+            ->first();
+
+        if ($loteDestino) {
+            $loteDestino->stock += $cantidad;
+            $loteDestino->save();
+
+            return $loteDestino;
+        }
+
+        return Lote::create([
+            'id_producto' => $producto->id,
+            'id_bodega' => $idBodegaDestino,
+            'numero_lote' => $loteOrigen->numero_lote,
+            'fecha_vencimiento' => $loteOrigen->fecha_vencimiento,
+            'fecha_fabricacion' => $loteOrigen->fecha_fabricacion,
+            'stock' => $cantidad,
+            'stock_inicial' => $cantidad,
+            'id_empresa' => Auth::user()->id_empresa ?? $producto->id_empresa,
+        ]);
     }
 }

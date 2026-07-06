@@ -191,6 +191,18 @@ export class ApiService {
         return customConfig?.configuraciones?.lotes_activo === true;
     }
 
+    /** Metodología de lotes configurada para la empresa (Manual, FIFO, LIFO, FEFO) */
+    getLotesMetodologia(): string {
+        const empresa = this.auth_user()?.empresa;
+        if (!empresa?.custom_empresa) {
+            return 'FIFO';
+        }
+        const customConfig = typeof empresa.custom_empresa === 'string'
+            ? JSON.parse(empresa.custom_empresa)
+            : empresa.custom_empresa;
+        return customConfig?.configuraciones?.lotes_metodologia || 'FIFO';
+    }
+
     /** Indica si el campo componente químico está habilitado para la empresa del usuario actual */
     isComponenteQuimicoHabilitado(): boolean {
         const empresa = this.auth_user()?.empresa;
