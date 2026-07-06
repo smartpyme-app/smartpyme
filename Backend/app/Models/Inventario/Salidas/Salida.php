@@ -273,9 +273,13 @@ class Salida extends Model {
      */
     public function anular()
     {
+        $wasApproved = $this->estado === 'Aprobada';
         $this->estado = 'Anulada';
         $this->save();
-        $this->revertirInventario();
+
+        if ($wasApproved) {
+            $this->revertirInventario();
+        }
     }
 
 }

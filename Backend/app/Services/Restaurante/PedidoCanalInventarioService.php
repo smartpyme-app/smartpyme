@@ -215,18 +215,16 @@ class PedidoCanalInventarioService
                     $precioLinea,
                     $this->kardexOpcionesUsuario($pedido)
                 );
-            } elseif ($detalleRow->lote_id) {
-                $lote = Lote::find($detalleRow->lote_id);
-                if ($lote) {
-                    $lote->stock += $cantidad;
-                    $lote->save();
-                }
-
-                if ($inventario) {
-                    $inventario->stock += $cantidad;
-                    $inventario->save();
-                    $inventario->kardex($pedido, -$cantidad, $precioLinea, null, null, $this->kardexOpcionesUsuario($pedido));
-                }
+            } elseif ($detalleRow->lote_id && $inventario) {
+                LoteAsignacionService::revertirSalidaDocumento(
+                    [],
+                    $pedido,
+                    $inventario,
+                    $cantidad,
+                    (int) $detalleRow->lote_id,
+                    $precioLinea,
+                    $this->kardexOpcionesUsuario($pedido)
+                );
             } elseif ($inventario) {
                 $inventario->stock += $cantidad;
                 $inventario->save();
