@@ -24,6 +24,11 @@ class LibroIvaMontosHelper
         return 0.0;
     }
 
+    public static function ventasNoSujetas(object $documento): float
+    {
+        return round(max(0, (float) ($documento->no_sujeta ?? 0)), 2);
+    }
+
     public static function ventasGravadas(object $documento): float
     {
         $gravada = (float) ($documento->gravada ?? 0);

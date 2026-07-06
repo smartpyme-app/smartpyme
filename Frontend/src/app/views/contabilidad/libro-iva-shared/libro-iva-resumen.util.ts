@@ -94,3 +94,25 @@ export function resumenPeriodoSinMovimientosLibroIva(fiscalResumen: unknown): bo
   const t = resumenTotalesLibroIva(fiscalResumen);
   return t.ventas === 0 && t.compras === 0 && t.gastos === 0;
 }
+
+export type VentasResumenContableFila = {
+  descripcion: string;
+  valor_neto: number;
+  debito_fiscal: number;
+  iva_retenido: number;
+  total_ventas: number;
+  tipo: 'detalle' | 'subtotal' | 'total';
+};
+
+export function ventasResumenContableLibroIva(fiscalResumen: unknown): VentasResumenContableFila[] {
+  const block = (fiscalResumen as { ventas_resumen_contable?: { filas?: unknown[] } })?.ventas_resumen_contable;
+  const rows = block?.filas;
+  if (!Array.isArray(rows)) {
+    return [];
+  }
+  return rows as VentasResumenContableFila[];
+}
+
+export function mostrarVentasResumenContableLibroIva(fiscalResumen: unknown): boolean {
+  return Boolean(fiscalResumen);
+}

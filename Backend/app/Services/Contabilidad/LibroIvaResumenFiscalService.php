@@ -21,10 +21,14 @@ final class LibroIvaResumenFiscalService
 {
     private FacturacionElectronicaHelperService $feHelper;
 
+    private LibroVentasResumenContableService $ventasResumenContable;
+
     public function __construct(
-        FacturacionElectronicaHelperService $feHelper
+        FacturacionElectronicaHelperService $feHelper,
+        LibroVentasResumenContableService $ventasResumenContable
     ) {
         $this->feHelper = $feHelper;
+        $this->ventasResumenContable = $ventasResumenContable;
     }
 
     public function build(BaseLibroIVARequest $request): array
@@ -34,14 +38,16 @@ final class LibroIvaResumenFiscalService
         $codPais = $empresa ? FacturacionElectronicaCountryResolver::codPais($empresa) : FacturacionElectronicaCountryResolver::CODIGO_EL_SALVADOR;
 
         if ($codPais === FacturacionElectronicaCountryResolver::CODIGO_COSTA_RICA) {
-            return $this->buildCostaRica($request, $pais);
+            $resumen = $this->buildCostaRica($request, $pais);
+        } elseif ($pais === 'El Salvador') {
+            $resumen = $this->buildElSalvador($request, $pais);
+        } else {
+            $resumen = $this->buildHondurasYOtros($request, $pais);
         }
 
-        if ($pais === 'El Salvador') {
-            return $this->buildElSalvador($request, $pais);
-        }
+        $resumen['ventas_resumen_contable'] = $this->ventasResumenContable->build($request);
 
-        return $this->buildHondurasYOtros($request, $pais);
+        return $resumen;
     }
 
     private function buildCostaRica(BaseLibroIVARequest $request, string $paisNombre): array

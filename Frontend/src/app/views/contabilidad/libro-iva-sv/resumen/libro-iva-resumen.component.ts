@@ -15,6 +15,8 @@ import {
   sumaVentasDesgloseLibroIva,
   totalFilaDesgloseLibroIva,
   ventasPorImpuestoResumenLibroIva,
+  ventasResumenContableLibroIva,
+  mostrarVentasResumenContableLibroIva,
 } from '@views/contabilidad/libro-iva-shared/libro-iva-resumen.util';
 import * as moment from 'moment';
 import { LibroIvaResumenDescargasComponent } from '@views/contabilidad/libro-iva-shared/libro-iva-resumen-descargas.component';
@@ -155,5 +157,13 @@ export class LibroIvaResumenComponent implements OnInit {
       monto: Number(p?.monto ?? 0),
       descripcion: String(p?.descripcion ?? ''),
     };
+  }
+
+  get ventasResumenContable() {
+    return ventasResumenContableLibroIva(this.resumen);
+  }
+
+  get mostrarVentasResumenContable(): boolean {
+    return mostrarVentasResumenContableLibroIva(this.resumen);
   }
 }
