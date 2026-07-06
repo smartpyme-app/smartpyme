@@ -100,7 +100,7 @@ export class GastosComponent implements OnInit {
                 page: +params['page'] || 1,
             };
 
-            this.filtrarGastos();
+            this.filtrarGastos(false);
         });
 
         this.apiService.getAll('proveedores/list').subscribe(proveedores => { 
@@ -132,10 +132,14 @@ export class GastosComponent implements OnInit {
         this.filtros.page = 1;
 
         this.loading = true;
-        this.filtrarGastos();
+        this.filtrarGastos(false);
     }
 
-    public filtrarGastos(){
+    /** @param resetPage true al buscar/filtrar/ordenar/cambiar paginate; false al paginar o cargar desde URL. */
+    public filtrarGastos(resetPage = true){
+        if (resetPage) {
+            this.filtros.page = 1;
+        }
         // Limpiar valores vacíos antes de navegar
         const queryParams: any = {};
         Object.keys(this.filtros).forEach(key => {
@@ -225,7 +229,7 @@ export class GastosComponent implements OnInit {
 
     public setPagination(event:any):void{
         this.filtros.page = event.page;
-        this.filtrarGastos();
+        this.filtrarGastos(false);
     }
 
 
