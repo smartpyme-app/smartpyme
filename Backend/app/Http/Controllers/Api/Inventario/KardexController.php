@@ -281,7 +281,7 @@ class KardexController extends Controller
         
         // Si es una devolución de venta
         if (strpos($movimiento->detalle, 'Devolución Venta') !== false) {
-            $detalleDevolucion = \App\Models\Ventas\Devoluciones\Detalle::where('id_devolucion', $movimiento->referencia)
+            $detalleDevolucion = \App\Models\Ventas\Devoluciones\Detalle::where('id_devolucion_venta', $movimiento->referencia)
                 ->where('id_producto', $idProducto)
                 ->whereNotNull('lote_id')
                 ->first();
@@ -292,7 +292,7 @@ class KardexController extends Controller
         
         // Si es una devolución de compra
         if (strpos($movimiento->detalle, 'Devolución Compra') !== false) {
-            $detalleDevolucion = \App\Models\Compras\Devoluciones\Detalle::where('id_devolucion', $movimiento->referencia)
+            $detalleDevolucion = \App\Models\Compras\Devoluciones\Detalle::where('id_devolucion_compra', $movimiento->referencia)
                 ->where('id_producto', $idProducto)
                 ->whereNotNull('lote_id')
                 ->first();
