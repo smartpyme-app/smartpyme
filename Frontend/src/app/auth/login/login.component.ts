@@ -20,11 +20,16 @@ export class LoginComponent implements OnInit {
     constructor(
         private apiService: ApiService,
         private router: Router,
+        private route: ActivatedRoute,
         private alertService: AlertService,
     ) { }
 
     ngOnInit() {
         localStorage.clear();
+
+        if (this.route.snapshot.queryParamMap.get('passwordReset')) {
+            setTimeout(() => this.alertService.success('¡Listo!', 'Tu contraseña ha sido actualizada correctamente.'));
+        }
     }
 
     submit() {
