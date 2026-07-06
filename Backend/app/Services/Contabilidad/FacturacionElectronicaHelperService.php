@@ -140,11 +140,14 @@ class FacturacionElectronicaHelperService
         return ! empty($venta->sello_mh);
     }
 
-    /** FE CR: clave y XML del comprobante en dte. */
+    /** FE CR: clave/sello (como sello_mh en SV) y opcionalmente XML en dte. */
     private function ventaFeCrConClave(Venta $venta): bool
     {
-        return trim((string) ($venta->codigo_generacion ?? '')) !== ''
-            && CostaRicaFeDteDocumento::tieneComprobanteCr($venta->dte);
+        return CostaRicaFeDteDocumento::tieneEmisionRegistrada(
+            $venta->codigo_generacion,
+            $venta->sello_mh,
+            $venta->dte
+        );
     }
 
     private function ventaFeCrAceptada(Venta $venta): bool

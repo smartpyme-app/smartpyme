@@ -115,6 +115,9 @@
 
         <p><b>CLAVE NUMÉRICA:</b></p>
         <p class="clave-bloque">{{ $claveFmt }}</p>
+        @if (trim((string) ($venta->sello_mh ?? '')) !== '')
+            <p><b>SELLO DE RECEPCIÓN:</b> <br> {{ $venta->sello_mh }}</p>
+        @endif
         @if ($consecutivo !== '')
             <p><b>CONSECUTIVO FE:</b> {{ $consecutivo }}</p>
         @endif

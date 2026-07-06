@@ -123,6 +123,14 @@ trait HasOffloadedDte
         return parent::refresh();
     }
 
+    /** Relee dte desde columna o S3 (p. ej. tras fallo transitorio de almacenamiento). */
+    public function reloadDtePayload(): mixed
+    {
+        $this->resolvedDteMainCache = false;
+
+        return $this->dte;
+    }
+
     /**
      * @return array|string|null
      */
