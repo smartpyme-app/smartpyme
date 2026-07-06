@@ -985,6 +985,7 @@ final class LibroIvaResumenFiscalService
             return $data;
         });
 
-        return $comprasData->merge($gastosData)->merge($devolucionesData);
+        // ponytail: map() sobre Eloquent\Collection devuelve arrays; merge() de Eloquent exige modelos con getKey()
+        return collect($comprasData)->merge($gastosData)->merge($devolucionesData)->values();
     }
 }
