@@ -29,7 +29,7 @@ class DocumentoService
 
         // Si tiene facturación electrónica en producción
         if ($empresa->facturacion_electronica && $empresa->fe_ambiente == '01') {
-            if (FacturacionElectronicaCountryResolver::codPais($empresa) === FacturacionElectronicaCountryResolver::CODIGO_COSTA_RICA) {
+            if (FacturacionElectronicaCountryResolver::resolveCodigoPaisFe($empresa) === FacturacionElectronicaCountryResolver::CODIGO_COSTA_RICA) {
                 return app(CostaRicaFeComprobantePdfService::class)->generarTicketImpresion($ventaId, $empresa);
             }
 

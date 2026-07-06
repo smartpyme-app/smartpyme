@@ -29,7 +29,7 @@ class GenerarDocumentosController extends Controller
             $empresa = JWTAuth::parseToken()->authenticate()->empresa()->first();
 
             if ($empresa->facturacion_electronica && $empresa->fe_ambiente == '01') {
-                if (FacturacionElectronicaCountryResolver::codPais($empresa) === FacturacionElectronicaCountryResolver::CODIGO_COSTA_RICA) {
+                if (FacturacionElectronicaCountryResolver::resolveCodigoPaisFe($empresa) === FacturacionElectronicaCountryResolver::CODIGO_COSTA_RICA) {
                     return app(CostaRicaFeComprobantePdfService::class)->generarTicketImpresion((int) $id, $empresa);
                 }
 
