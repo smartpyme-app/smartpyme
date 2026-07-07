@@ -7,8 +7,10 @@
 
 <section class="bg-white p-4 rounded mb-3">
   <p class="text-muted small mb-3">
-    Nuevo pedido queda en <strong>Borrador</strong>. Use <strong>Confirmar</strong> para pasarlo a pendiente de facturar (deja de ser editable).
-    En <strong>Pendiente de facturar</strong> use <strong>Facturar</strong> para abrir la pantalla de venta con los productos del pedido; al guardar la venta el pedido pasa a facturado.
+    Nuevo pedido queda en <strong>Borrador</strong>. Use <strong>Confirmar</strong> para pasarlo a pendiente de facturar
+    (deja de ser editable).
+    En <strong>Pendiente de facturar</strong> use <strong>Facturar</strong> para abrir la pantalla de venta con los
+    productos del pedido; al guardar la venta el pedido pasa a facturado.
     También puede <strong>Imprimir ticket</strong>. <strong>Anular</strong> aplica a borrador o pendiente de facturar.
   </p>
 
@@ -28,8 +30,8 @@
     <div class="col">
       <div class="d-flex gap-2 flex-wrap justify-content-end">
         <form class="d-flex input-group" (ngSubmit)="filtrarPedidos()" autocomplete="off">
-          <input type="text" name="buscador" class="form-control" placeholder="Buscar"
-            [(ngModel)]="filtros.buscador" (input)="onBuscadorInput()">
+          <input type="text" name="buscador" class="form-control" placeholder="Buscar" [(ngModel)]="filtros.buscador"
+            (input)="onBuscadorInput()">
         </form>
         <button type="button" tooltip="Filtrar" (click)="openFilter(mfilter)" class="btn btn-default">
           <img src="/assets/icons/filter.png" class="icon" alt="">
@@ -43,7 +45,8 @@
 
   <div class="d-flex flex-wrap gap-2 mb-3">
     <div class="ms-auto d-flex gap-2">
-      <select name="estado" (change)="filtrarPedidos()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
+      <select name="estado" (change)="filtrarPedidos()" [(ngModel)]="filtros.estado"
+        class="form-select bg-default w-auto">
         <option value="">Estado</option>
         <option value="borrador">Borrador</option>
         <option value="pendiente_facturar">Pendiente de facturar</option>
@@ -58,22 +61,31 @@
       <table class="table table-borderless table-hover mb-0">
         <thead>
           <tr>
-            <th (click)="setOrden('id')" [ngClass]="{'sorted-asc': filtros.orden == 'id' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'id' && filtros.direccion == 'desc'}" class="click">#</th>
-            <th (click)="setOrden('fecha')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha' && filtros.direccion == 'desc'}" class="click">Fecha</th>
+            <th (click)="setOrden('id')"
+              [ngClass]="{'sorted-asc': filtros.orden == 'id' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'id' && filtros.direccion == 'desc'}"
+              class="click">#</th>
+            <th (click)="setOrden('fecha')"
+              [ngClass]="{'sorted-asc': filtros.orden == 'fecha' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha' && filtros.direccion == 'desc'}"
+              class="click">Fecha</th>
             <th>Cliente</th>
             <th class="d-none d-md-table-cell">Canal</th>
             <th class="d-none d-md-table-cell">Ref. ext.</th>
-            <th (click)="setOrden('estado')" [ngClass]="{'sorted-asc': filtros.orden == 'estado' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'estado' && filtros.direccion == 'desc'}" class="click">Estado</th>
-            <th (click)="setOrden('total')" [ngClass]="{'sorted-asc': filtros.orden == 'total' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'total' && filtros.direccion == 'desc'}" class="click text-end">Total</th>
+            <th (click)="setOrden('estado')"
+              [ngClass]="{'sorted-asc': filtros.orden == 'estado' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'estado' && filtros.direccion == 'desc'}"
+              class="click">Estado</th>
+            <th *ngIf="tieneBoxful" class="d-none d-md-table-cell">Estado Boxful</th>
+            <th (click)="setOrden('total')"
+              [ngClass]="{'sorted-asc': filtros.orden == 'total' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'total' && filtros.direccion == 'desc'}"
+              class="click text-end">Total</th>
             <th class="text-center"><i class="fa fa-cog"></i></th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td colspan="8" class="text-center" *ngIf="pedidos?.total < 1 && !loading">
+            <td [attr.colspan]="tieneBoxful ? 9 : 8" class="text-center" *ngIf="pedidos?.total < 1 && !loading">
               <span class="badge bg-primary">No hay pedidos con estos criterios</span>
             </td>
-            <td colspan="8" class="text-center" *ngIf="loading">
+            <td [attr.colspan]="tieneBoxful ? 9 : 8" class="text-center" *ngIf="loading">
               <span class="badge bg-primary">Cargando...</span>
             </td>
           </tr>
@@ -86,6 +98,12 @@
             <td>
               <span class="badge" [ngClass]="claseEstado(p.estado)">{{ etiquetaEstado(p.estado) }}</span>
             </td>
+            <td *ngIf="tieneBoxful" class="d-none d-md-table-cell">
+              <span class="badge bg-info text-dark" *ngIf="p.boxful_shipment">
+                {{ p.boxful_shipment.boxful_status_description || 'Creado' }}
+              </span>
+              <span class="text-muted" *ngIf="!p.boxful_shipment">—</span>
+            </td>
             <td class="text-end">{{ p.total | currency }}</td>
             <td class="text-center">
               <span class="btn" [popover]="accionesPedido" [outsideClick]="true" tooltip="Acciones">
@@ -96,22 +114,42 @@
                   <a class="list-group-item list-group-item-action border-0 click" (click)="imprimir(p)">
                     <i class="fa fa-fw fa-print"></i> Imprimir ticket
                   </a>
-                  <a *ngIf="p.estado === 'borrador' || p.estado === 'pendiente_facturar'" class="list-group-item list-group-item-action border-0 click" (click)="enviarComanda(p)">
+                  <a *ngIf="(p.estado === 'borrador' || p.estado === 'pendiente_facturar') && p.canal !== 'Boxful'"
+                    class="list-group-item list-group-item-action border-0 click" (click)="enviarComanda(p)">
                     <i class="fa fa-fw fa-utensils"></i> Enviar comanda cocina
                   </a>
-                  <a *ngIf="p.estado === 'borrador' && apiService.canEdit()" class="list-group-item list-group-item-action border-0 click" (click)="editar(p)">
+                  <a *ngIf="puedeGenerarGuiaBoxful(p)"
+                    class="list-group-item list-group-item-action border-0 click" (click)="generarGuiaBoxful(p)">
+                    <i class="fa fa-fw fa-truck"></i> Generar Guía Boxful
+                  </a>
+                  <a *ngIf="tieneBoxful && tieneBoxfulShipmentValido(p)"
+                    class="list-group-item list-group-item-action border-0 click"
+                    (click)="verDetallesEnvio(p.boxful_shipment.boxful_shipment_id)">
+                    <i class="fa fa-fw fa-info-circle"></i> Detalles Envío Boxful
+                  </a>
+                  <a *ngIf="tieneBoxful && p.boxful_shipment?.shipment_number"
+                    class="list-group-item list-group-item-action border-0 click"
+                    (click)="verTrackingPaquete(p.boxful_shipment.shipment_number, mTracking)">
+                    <i class="fa fa-fw fa-map-marker-alt"></i> Rastrear Paquete
+                  </a>
+                  <a *ngIf="puedeEditarPedido(p) && apiService.canEdit()"
+                    class="list-group-item list-group-item-action border-0 click" (click)="editar(p)">
                     <i class="fa fa-fw fa-edit"></i> Editar
                   </a>
-                  <a *ngIf="p.estado === 'borrador' && apiService.canEdit()" class="list-group-item list-group-item-action border-0 click" (click)="confirmar(p)">
+                  <a *ngIf="puedeEditarPedido(p) && apiService.canEdit()"
+                    class="list-group-item list-group-item-action border-0 click" (click)="confirmar(p)">
                     <i class="fa fa-fw fa-check"></i> Confirmar pedido
                   </a>
-                  <a *ngIf="p.estado === 'pendiente_facturar' && apiService.canEdit()" class="list-group-item list-group-item-action border-0 click" (click)="irAFacturar(p)">
+                  <a *ngIf="p.estado === 'pendiente_facturar' && apiService.canEdit()"
+                    class="list-group-item list-group-item-action border-0 click" (click)="irAFacturar(p)">
                     <i class="fa fa-fw fa-file-invoice-dollar"></i> Facturar
                   </a>
-                  <a *ngIf="p.estado === 'borrador' && apiService.canEdit()" class="list-group-item list-group-item-action border-0 click" (click)="eliminar(p)">
+                  <a *ngIf="puedeEditarPedido(p) && apiService.canEdit()"
+                    class="list-group-item list-group-item-action border-0 click" (click)="eliminar(p)">
                     <i class="fa fa-fw fa-trash"></i> Eliminar
                   </a>
-                  <a *ngIf="(p.estado === 'borrador' || p.estado === 'pendiente_facturar') && apiService.canEdit()" class="list-group-item list-group-item-action border-0 click" (click)="anular(p)">
+                  <a *ngIf="(p.estado === 'borrador' || p.estado === 'pendiente_facturar') && apiService.canEdit()"
+                    class="list-group-item list-group-item-action border-0 click" (click)="anular(p)">
                     <i class="fa fa-fw fa-ban"></i> Anular
                   </a>
                 </div>
@@ -150,7 +188,8 @@
           <label>Canal (contiene):</label>
           <input type="text" class="form-control" name="canal" [(ngModel)]="filtros.canal" placeholder="Ej. Pedidos Ya">
         </div>
-        <div class="form-group col-md-12" *ngIf="apiService.auth_user().tipo === 'Administrador' || apiService.auth_user().tipo === 'Super Admin'">
+        <div class="form-group col-md-12"
+          *ngIf="apiService.auth_user().tipo === 'Administrador' || apiService.auth_user().tipo === 'Super Admin'">
           <label>Sucursal:</label>
           <select [(ngModel)]="filtros.id_sucursal" class="form-select" name="id_sucursal">
             <option [ngValue]="''">Todas</option>
@@ -165,5 +204,81 @@
         </button>
       </div>
     </form>
+  </div>
+</ng-template>
+
+<!-- Selector de Boxful en Modal -->
+<app-boxful-shipping-selector *ngIf="mostrarModalBoxful" [clienteId]="clienteId!" [pedidoId]="pedidoId"
+  [paqueteData]="paqueteData" (guiaGenerada)="onBoxfulGuiaGenerada($event)" (cerrar)="cerrarModalBoxful()">
+</app-boxful-shipping-selector>
+
+<!-- Modal Detalles Envío Boxful Shared -->
+<app-boxful-shipment-details *ngIf="mostrarDetallesEnvio" [shipmentId]="selectedShipmentId"
+  (cerrar)="mostrarDetallesEnvio = false">
+</app-boxful-shipment-details>
+
+<!-- Modal Tracking Paquete -->
+<ng-template #mTracking>
+  <div class="modal-header bg-light border-bottom-0 pb-0 justify-content-between">
+    <div class="modal-title w-100">
+      <h4 class="mb-0 font-weight-bold text-dark">Rastreo de Paquete</h4>
+      <p class="text-muted small mt-1 mb-0" *ngIf="getTrackingShipment()?.shipmentNumber">Guía #: <strong>{{
+          getTrackingShipment()?.shipmentNumber }}</strong></p>
+    </div>
+    <button type="button" class="btn btn-light text-danger border-0" (click)="modalRef.hide()" aria-label="Close">
+      <i class="fa fa-close"></i>
+    </button>
+  </div>
+  <div class="modal-body pt-3 pb-4">
+    <!-- Spinner de carga -->
+    <div class="text-center py-5" *ngIf="cargandoTrackingBoxful">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Cargando...</span>
+      </div>
+      <p class="text-muted mt-2">Consultando rastreo...</p>
+    </div>
+
+    <!-- Contenido cuando ya cargó -->
+    <div *ngIf="!cargandoTrackingBoxful && getTrackingShipment() as s">
+      <!-- Línea de Progreso Horizontal -->
+      <div class="horizontal-tracker mb-4">
+        <div class="tracker-step" *ngFor="let step of getTrackingSteps()">
+          <div class="tracker-circle" [class.completed]="step.completed">
+            <span style="font-size: 20px; line-height: 1; font-weight: bold;">&rarr;</span>
+          </div>
+          <div class="tracker-label" [class.completed]="step.completed">{{ step.label }}</div>
+          <div class="tracker-date text-muted">
+            <span *ngIf="step.completed">
+              {{ step.date ? (step.date | date:'dd MMM yyyy - h:mm a' | lowercase) : 'Completado' }}
+            </span>
+            <span *ngIf="!step.completed">
+              Pendiente
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resumen Detallado del Envío -->
+      <div class="card border-1 bg-light mt-4">
+        <div class="card-body py-3">
+          <h6 class="text-primary font-weight-bold mb-2 small"><i class="fa fa-info-circle me-1"></i> Resumen de Envío
+          </h6>
+          <div class="row small">
+            <div class="col-sm-6 mb-2">
+              <strong>Destinatario:</strong> {{ s.customerName }}
+            </div>
+            <div class="col-sm-6 mb-2">
+              <strong>Courier:</strong> {{ s.courier || 'Boxful' }}
+            </div>
+            <div class="col-md-12">
+              <strong>Dirección de Entrega:</strong> {{ s.customerAddress }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer border-top-0 pt-0">
+    <button type="button" class="btn btn-default" (click)="modalRef.hide()">Cerrar</button>
   </div>
 </ng-template>

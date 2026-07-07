@@ -115,6 +115,31 @@ export class FacturacionComponent implements OnInit {
     };
   }
 
+  // Integración Boxful
+  public paqueteData: any = { peso: 1, alto: 10, ancho: 10, largo: 10, es_fragil: false, id: null };
+  private lastSyncedPaqueteId: number | null = null;
+
+  esCanalBoxful(): boolean {
+    if (!this.venta.id_canal || !this.canales) return false;
+    const canal = this.canales.find((c: any) => c.id == this.venta.id_canal);
+    return canal && canal.nombre === 'Boxful';
+  }
+
+  onBoxfulGuiaGenerada(guia: any): void {
+    console.log('Guía de Boxful generada:', guia);
+    const numGuia = guia.shipmentNumber || guia.data?.shipmentNumber || '';
+    const labelUrl = guia.labelUrl || guia.data?.labelUrl || '';
+    const trackingUrl = guia.trackingUrl || guia.data?.trackingUrl || '';
+    
+    const textToAdd = `Envío Boxful #${numGuia}. Guía PDF: ${labelUrl}. Rastreo: ${trackingUrl}`;
+    if (this.venta.observaciones) {
+      this.venta.observaciones += ` | ${textToAdd}`;
+    } else {
+      this.venta.observaciones = textToAdd;
+    }
+    this.alertService.success('Logística Boxful', `Guía #${numGuia} vinculada a las observaciones de la venta.`);
+  }
+
   ngOnInit() {
     this.cargarDatosIniciales();
     this.loadData();
@@ -818,7 +843,34 @@ export class FacturacionComponent implements OnInit {
     detalle.precio = Number(mejor.precio);
     detalle.precios[0] = { precio: detalle.precio };
   }
+
+  private syncPaqueteData(): void {
+    if (!this.venta || !this.venta.detalles || !Array.isArray(this.venta.detalles)) {
+      this.lastSyncedPaqueteId = null;
+      this.paqueteData.id = null;
+      return;
+    }
+    const pkgDetail = this.venta.detalles.find((d: any) => d.id_paquete);
+    if (pkgDetail) {
+      const pkgId = pkgDetail.id_paquete;
+      if (pkgId !== this.lastSyncedPaqueteId) {
+        this.lastSyncedPaqueteId = pkgId;
+        this.paqueteData.id = pkgId;
+        this.paqueteData.peso = parseFloat(pkgDetail.peso || pkgDetail.cantidad || 1);
+        this.paqueteData.alto = parseFloat(pkgDetail.alto || 10);
+        this.paqueteData.ancho = parseFloat(pkgDetail.ancho || 10);
+        this.paqueteData.largo = parseFloat(pkgDetail.largo || 10);
+        this.paqueteData.es_fragil = !!pkgDetail.es_fragil;
+        this.paqueteData.valor = parseFloat(pkgDetail.total || 50);
+      }
+    } else {
+      this.lastSyncedPaqueteId = null;
+      this.paqueteData.id = null;
+    }
+  }
+
   public sumTotal() {
+    this.syncPaqueteData();
     // Asegurar que detalles existe y es un array
     if (!this.venta.detalles || !Array.isArray(this.venta.detalles)) {
       this.venta.detalles = [];
@@ -1311,6 +1363,7 @@ export class FacturacionComponent implements OnInit {
         const sub = Math.max(0, cant * precio - descLine);
         return {
           id_producto: d.id_producto,
+          id_paquete: d.id_paquete || null,
           cantidad: cant,
           precio: precio.toFixed(4),
           descripcion: d.descripcion || '',

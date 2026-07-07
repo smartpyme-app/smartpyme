@@ -88,5 +88,12 @@ return [
         'enabled' => env('SHOPIFY_ENABLED', false),
         'webhook_secret' => env('SHOPIFY_WEBHOOK_SECRET'),
     ],
+    'boxful' => [
+        'env' => env('BOXFUL_ENV', 'development'), // 'production' or 'development'
+        'urls' => [
+            'production' => 'https://api.goboxful.com',
+            'development' => 'https://devapi.goboxful.com',
+        ],
+    ],
 
 ];

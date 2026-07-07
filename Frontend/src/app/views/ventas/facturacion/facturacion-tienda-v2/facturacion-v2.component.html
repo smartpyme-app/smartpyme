@@ -227,7 +227,7 @@
 
     <app-venta-detalles-v2 [venta]="venta" [usuarios]="usuarios" [habilitarCuentaTerceros]="habilitarCuentaTerceros"
         (update)="updateVenta($event)" (sumTotal)="sumTotal()"
-        (alMenosUnPaqueteConCuentaTerceros)="onAlMenosUnPaqueteCuentaTerceros()"></app-venta-detalles-v2>
+        (alMenosUnPaqueteConCuentaTerceros)="onAlMenosUnPaqueteCuentaTerceros()" (selectCliente)="setCliente($event)"></app-venta-detalles-v2>
 
     <div class="row">
         <div class="col-md-12">
@@ -565,6 +565,8 @@
         </div>
     </div>
 </section>
+
+
 
 <ng-template #mfacturar>
     <div class="modal-header">
