@@ -8,9 +8,12 @@ use Illuminate\Http\Request;
 use App\Models\Inventario\Salidas\Salida;
 use App\Models\Inventario\Salidas\Detalle;
 use App\Models\Inventario\Producto;
+use App\Models\Inventario\ProductoPresentacion;
 use App\Models\Inventario\Kardex;
 use App\Models\Inventario\Inventario;
 use App\Models\Admin\Empresa;
+use App\Services\Inventario\ConversionInventarioService;
+use App\Services\Inventario\LoteAsignacionService;
 use Illuminate\Support\Facades\DB;
 
 class SalidasController extends Controller
@@ -28,7 +31,7 @@ class SalidasController extends Controller
 
     public function read($id) {
 
-        $salida = Salida::where('id', $id)->with(['detalles'])->firstOrFail();
+        $salida = Salida::where('id', $id)->with(['detalles.loteAsignaciones.lote'])->firstOrFail();
         return Response()->json($salida, 200);
 
     }
@@ -89,12 +92,24 @@ class SalidasController extends Controller
             $salida->save();
 
             // Detalles
+            $empresa = Empresa::find($salida->id_empresa ?: auth()->user()->id_empresa);
+            $lotesActivo = $empresa ? $empresa->isLotesActivo() : false;
+            $metodologia = $empresa ? $empresa->getLotesMetodologia() : 'FIFO';
+
             foreach ($request->detalles as $value) {
                 if (!isset($value['id'])) {
                     $detalle = new Detalle;
                     $value['id_salida'] = $salida->id;
                     $detalle->fill($value);
                     $detalle->save();
+
+                    $this->guardarAsignacionesSalidaDetalle(
+                        $detalle,
+                        $value,
+                        (int) $salida->id_bodega,
+                        $lotesActivo,
+                        $metodologia
+                    );
                 }
             }
 
@@ -188,6 +203,52 @@ class SalidasController extends Controller
         $reportes = app('dompdf.wrapper')->loadView('reportes.inventario.salida', compact('salida', 'empresa'));
         return $reportes->stream();
 
+    }
+
+    private function guardarAsignacionesSalidaDetalle(
+        Detalle $detalle,
+        array $payload,
+        int $idBodega,
+        bool $lotesActivo,
+        string $metodologia
+    ): void {
+        $producto = Producto::find($detalle->id_producto);
+        if (!$producto || !$producto->inventario_por_lotes || !$lotesActivo) {
+            return;
+        }
+
+        $factor = 1;
+        if ($detalle->id_presentacion) {
+            $presentacion = ProductoPresentacion::find($detalle->id_presentacion);
+            if ($presentacion) {
+                $factor = (float) $presentacion->factor_conversion;
+            }
+        }
+        $cantidadBase = ConversionInventarioService::calcularCantidadBase((float) $detalle->cantidad, $factor);
+
+        $asignacionManual = !empty($payload['lotes_asignados']) ? $payload['lotes_asignados'] : null;
+        $lotePreferido = !empty($payload['lote_id']) ? (int) $payload['lote_id'] : null;
+
+        $asignaciones = LoteAsignacionService::resolverAsignacionesSalida(
+            $producto,
+            $idBodega,
+            $cantidadBase,
+            $metodologia,
+            $lotesActivo,
+            $lotePreferido,
+            $asignacionManual
+        );
+
+        if (empty($asignaciones)) {
+            if ($metodologia === 'Manual') {
+                throw new \Exception("Debe seleccionar lotes para el producto: {$producto->nombre}");
+            }
+            return;
+        }
+
+        LoteAsignacionService::sincronizarDetalleSalidaLotes($detalle->id, $asignaciones);
+        $detalle->lote_id = count($asignaciones) === 1 ? $asignaciones[0]['lote_id'] : null;
+        $detalle->save();
     }
 
 

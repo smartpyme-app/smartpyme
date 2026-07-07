@@ -20,6 +20,10 @@ return [
         'alejandro.a@smartpyme.sv',
     ],
 
+    'CORREO_FACTURACION_MENSUAL' => [
+        'karla.b@smartpyme.sv',
+    ],
+
     /**
      * Nombres de forma de pago equivalentes a gift card (cierre de caja: no suman al total de ventas).
      * Comparación sin distinguir mayúsculas; debe coincidir con el nombre en ventas o en venta_metodos_pago.

@@ -168,6 +168,8 @@ public function handle()
             }
         }
 
+        $this->enviarCorreoResumen($procesadas, $errores, $tiempoTotal, $exitosas, $fallidas);
+
         return $errores > 0 ? 1 : 0;
     } catch (\Exception $e) {
         $this->error('Error durante la generación de facturas: ' . $e->getMessage());
@@ -556,7 +558,6 @@ public function handle()
 
         $venta->dte = $dteJson;
         $venta->sello_mh = $sello;
-        $venta->qr = 'https://admin.factura.gob.sv/consultaPublica?ambiente='. $dteJson['identificacion']['ambiente'] .'&codGen=' . $dteJson['identificacion']['codigoGeneracion'] . '&fechaEmi=' . $dteJson['identificacion']['fecEmi'];
         $venta->save();
     }
 
@@ -642,6 +643,44 @@ public function handle()
                 ]);
             } catch (\Throwable $ignore) {
             }
+        }
+    }
+
+    /**
+     * Envía un correo con el resumen del proceso de facturación mensual al equipo.
+     */
+    private function enviarCorreoResumen(int $procesadas, int $errores, float $tiempoTotal, array $exitosas, array $fallidas): void
+    {
+        if (count($exitosas) === 0 && count($fallidas) === 0) {
+            return;
+        }
+
+        $destinatarios = config('constants.CORREO_FACTURACION_MENSUAL', []);
+        if (empty($destinatarios)) {
+            $this->warn('No se envió el correo de resumen porque no hay destinatarios configurados en CORREO_FACTURACION_MENSUAL.');
+            return;
+        }
+
+        $asunto = '[SmartPyme] Resumen de Facturación Mensual de Suscripciones - ' . Carbon::now()->format('d/m/Y');
+        try {
+            Mail::send('mails.reporte-facturacion-mensual', [
+                'procesadas' => $procesadas,
+                'errores' => $errores,
+                'tiempoTotal' => $tiempoTotal,
+                'exitosas' => $exitosas,
+                'fallidas' => $fallidas,
+                'generado' => Carbon::now()->format('d/m/Y H:i:s'),
+            ], function ($message) use ($destinatarios, $asunto) {
+                $message->to($destinatarios)->subject($asunto);
+            });
+            
+            $this->info('Correo de resumen enviado exitosamente.');
+            Log::channel('facturacion')->info('Correo de resumen enviado exitosamente a: ' . implode(', ', $destinatarios));
+        } catch (\Throwable $e) {
+            $this->error('Error al enviar el correo de resumen: ' . $e->getMessage());
+            Log::channel('facturacion')->error('Error al enviar el correo de resumen', [
+                'error' => $e->getMessage()
+            ]);
         }
     }
 }

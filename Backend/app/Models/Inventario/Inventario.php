@@ -314,7 +314,7 @@ class Inventario extends Model {
 
         // Si es una devolución de venta
         if ($clase == 'Devolución Venta' || $clase == 'Devolución Venta Anulada') {
-            $detalleDevolucion = \App\Models\Ventas\Devoluciones\Detalle::where('id_devolucion', $modelo->id)
+            $detalleDevolucion = \App\Models\Ventas\Devoluciones\Detalle::where('id_devolucion_venta', $modelo->id)
                 ->where('id_producto', $idProducto)
                 ->whereNotNull('lote_id')
                 ->first();
@@ -325,7 +325,7 @@ class Inventario extends Model {
 
         // Si es una devolución de compra
         if ($clase == 'Devolución Compra' || $clase == 'Devolución Compra Anulada') {
-            $detalleDevolucion = \App\Models\Compras\Devoluciones\Detalle::where('id_devolucion', $modelo->id)
+            $detalleDevolucion = \App\Models\Compras\Devoluciones\Detalle::where('id_devolucion_compra', $modelo->id)
                 ->where('id_producto', $idProducto)
                 ->whereNotNull('lote_id')
                 ->first();
