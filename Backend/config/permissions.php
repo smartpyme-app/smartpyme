@@ -93,6 +93,10 @@ return [
             'editar' => 'administracion.usuarios.editar',
             'eliminar' => 'administracion.usuarios.eliminar'
         ],
+        'auditoria' => [
+            'ver' => 'auditoria.ver',
+            'plataforma_ver' => 'auditoria.plataforma.ver',
+        ],
     ],
 
     /*

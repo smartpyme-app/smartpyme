@@ -2,11 +2,16 @@
 
 namespace App\Models\Admin;
 
-use Illuminate\Database\Eloquent\Model;
+use App\Models\Concerns\AuditableModel;
 use Illuminate\Database\Eloquent\Builder;
 use Auth;
 
-class Sucursal extends Model {
+class Sucursal extends AuditableModel {
+
+    protected static function auditModule(): string
+    {
+        return 'configuraciones';
+    }
 
     protected $table = 'sucursales';
     protected $fillable = [

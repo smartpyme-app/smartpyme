@@ -67,6 +67,11 @@ const routes: Routes = [
           loadComponent: () => import('@views/reportes/reportes-automaticos.component').then(m => m.ReportesAutomaticosComponent), 
           title: 'Reportes automáticos'
         },
+        { 
+          path: 'auditoria', 
+          loadComponent: () => import('@views/admin/auditoria/auditoria.component').then(m => m.AuditoriaComponent), 
+          title: 'Auditoría'
+        },
         {
           path: 'admin/reportes',
           loadComponent: () => import('@views/admin/reportes/reportes.component').then(m => m.AdminReportesComponent),

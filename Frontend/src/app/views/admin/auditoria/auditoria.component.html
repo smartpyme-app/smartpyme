@@ -1,0 +1,83 @@
+<div class="container-fluid py-3">
+  <h2 class="page-heading">Auditoría</h2>
+  <p class="text-muted">Registro de actividades de usuarios en su empresa.</p>
+
+  <div class="card mb-3">
+    <div class="card-body">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label">Módulo</label>
+          <select class="form-select" [(ngModel)]="filtros.module" (change)="onFiltrar()">
+            @for (m of modulos; track m.value) {
+              <option [value]="m.value">{{ m.label }}</option>
+            }
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Usuario</label>
+          <ng-select
+            [items]="usuarios"
+            bindLabel="name"
+            bindValue="id"
+            [(ngModel)]="filtros.user_id"
+            placeholder="Todos"
+            [clearable]="true"
+            (change)="onFiltrar()"
+          ></ng-select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Desde</label>
+          <input type="date" class="form-control" [(ngModel)]="filtros.fecha_inicio" (change)="onFiltrar()" />
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Hasta</label>
+          <input type="date" class="form-control" [(ngModel)]="filtros.fecha_fin" (change)="onFiltrar()" />
+        </div>
+        <div class="col-md-2">
+          <button type="button" class="btn btn-primary w-100" (click)="onFiltrar()" [disabled]="loading">
+            Filtrar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Usuario</th>
+            <th>Actividad</th>
+            <th>Módulo</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (loading) {
+            <tr><td colspan="4" class="text-center py-4">Cargando...</td></tr>
+          } @else if (!registros.data?.length) {
+            <tr><td colspan="4" class="text-center py-4 text-muted">Sin registros</td></tr>
+          } @else {
+            @for (r of registros.data; track r.id) {
+              <tr>
+                <td>{{ r.created_at | date:'dd/MM/yyyy HH:mm' }}</td>
+                <td>{{ r.user_name || '—' }}</td>
+                <td>{{ r.descripcion }}</td>
+                <td><span class="badge bg-secondary">{{ r.module }}</span></td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+    @if (registros.last_page > 1) {
+      <div class="card-footer">
+        <app-pagination
+          [items]="registros"
+          (setPagination)="setPage($event)"
+        ></app-pagination>
+      </div>
+    }
+  </div>
+</div>

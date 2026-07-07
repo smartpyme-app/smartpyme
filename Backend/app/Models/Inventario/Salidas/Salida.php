@@ -2,6 +2,7 @@
 
 namespace App\Models\Inventario\Salidas;
 
+use App\Models\Concerns\AuditableModel;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Auth;
@@ -13,7 +14,12 @@ use App\Models\Inventario\Salidas\DetalleSalidaLote;
 use App\Services\Inventario\ConversionInventarioService;
 use App\Services\Inventario\LoteAsignacionService;
 
-class Salida extends Model {
+class Salida extends AuditableModel {
+
+    protected static function auditModule(): string
+    {
+        return 'inventario';
+    }
 
     protected $table = 'inventario_salidas';
     protected $fillable = array(

@@ -2,15 +2,21 @@
 
 namespace App\Models\Ventas;
 
+use App\Models\Concerns\AuditableModel;
 use App\Models\Concerns\HasOffloadedDte;
 use App\Models\FidelizacionClientes\TransaccionPuntos;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Auth;
 
-class Venta extends Model {
+class Venta extends AuditableModel {
 
     use HasOffloadedDte;
+
+    protected static function auditModule(): string
+    {
+        return 'ventas';
+    }
 
     public const DOCUMENTOS_NO_CONTABLES = ['Cotización', 'Orden de compra'];
 

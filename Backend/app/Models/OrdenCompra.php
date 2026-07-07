@@ -2,15 +2,21 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\AuditableModel;
 use App\Models\Authorization\Authorization;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
-class OrdenCompra extends Model
+class OrdenCompra extends AuditableModel
 {
     use HasFactory;
+
+    protected static function auditModule(): string
+    {
+        return 'compras';
+    }
 
     protected $table = "orden_compras";
 

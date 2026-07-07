@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\AuditableModel;
 use App\Models\Admin\Documento;
 use App\Models\Admin\Empresa;
 use App\Models\Admin\Sucursal;
@@ -14,9 +15,15 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 
-class CotizacionVenta extends Model
+class CotizacionVenta extends AuditableModel
 {
     use HasFactory;
+
+    protected static function auditModule(): string
+    {
+        return 'cotizaciones';
+    }
+
     protected $table = 'cotizacion_ventas';
     protected $fillable = [
         "estado",

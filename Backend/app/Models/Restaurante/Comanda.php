@@ -2,10 +2,27 @@
 
 namespace App\Models\Restaurante;
 
+use App\Models\Concerns\AuditableModel;
 use Illuminate\Database\Eloquent\Model;
 
-class Comanda extends Model
+class Comanda extends AuditableModel
 {
+    protected static function auditModule(): string
+    {
+        return 'restaurante';
+    }
+
+    public function transformAudit(array $data): array
+    {
+        $data['id_empresa'] = $this->pedido_id
+            ? PedidoRestaurante::withoutGlobalScopes()->where('id', $this->pedido_id)->value('id_empresa')
+            : null;
+        $data['id_empresa'] ??= auth()->user()?->id_empresa;
+        $data['module'] = 'restaurante';
+
+        return $data;
+    }
+
     protected $table = 'comandas_restaurante';
 
     protected $fillable = [

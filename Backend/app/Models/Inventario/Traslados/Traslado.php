@@ -2,11 +2,17 @@
 
 namespace App\Models\Inventario\Traslados;
 
+use App\Models\Concerns\AuditableModel;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use JWTAuth;
 
-class Traslado extends Model {
+class Traslado extends AuditableModel {
+
+    protected static function auditModule(): string
+    {
+        return 'inventario';
+    }
 
     protected $table = 'traslados';
     protected $fillable = array(
