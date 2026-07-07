@@ -75,7 +75,7 @@ final class CostaRicaInvoiceFromVentaMapper
             'issuer' => $this->emisor($empresa),
             'receiver' => $this->receptor($venta, $empresa),
             'line_items' => $lineItems,
-            'payments' => $this->pagos($venta),
+            'payments' => $this->pagosDesdeLineas($lineItems),
             'summary' => $this->resumenAlineadoALineas($venta, $lineItems),
         ];
 
@@ -169,13 +169,14 @@ final class CostaRicaInvoiceFromVentaMapper
             $cantidad = 1.0;
         }
 
-        $subTotal = round((float) $detalle->precio * $cantidad, 5);
-        $totalLinea = round((float) $detalle->total, 5);
-        $ivaMonto = round(max(0, $totalLinea - $subTotal), 5);
+        $subTotalBruto = round((float) $detalle->precio * $cantidad, 5);
+        $montoDescuento = round((float) ($detalle->descuento ?? 0), 5);
+        $totalConIva = round((float) $detalle->total, 5);
+        $ivaMonto = round(max(0, $totalConIva - $subTotalBruto), 5);
         if ($ivaMonto < 0.00001 && $porcentajeIvaEstimado > 0) {
-            $ivaMonto = round($subTotal * ($porcentajeIvaEstimado / 100), 5);
-            $totalLinea = round($subTotal + $ivaMonto, 5);
+            $ivaMonto = round(($subTotalBruto - $montoDescuento) * ($porcentajeIvaEstimado / 100), 5);
         }
+        $montos = $this->montosLineaFeCr($subTotalBruto, $montoDescuento, $ivaMonto);
 
         [$ivaTarifaCode, , $rate] = $this->tarifaIva($porcentajeIvaEstimado, $ivaMonto > 0.00001);
 
@@ -191,13 +192,14 @@ final class CostaRicaInvoiceFromVentaMapper
             'description' => mb_substr(strip_tags((string) $desc), 0, 200),
             'quantity' => $cantidad,
             'unit_measure' => $esServicio ? 'Sp' : 'Unid',
-            'unit_price' => round($subTotal / $cantidad, 5),
-            'sub_total' => $subTotal,
-            'total_amount' => $subTotal,
-            'taxable_base' => $subTotal,
+            'unit_price' => round($subTotalBruto / $cantidad, 5),
+            'sub_total' => $montos['sub_total'],
+            'total_amount' => $montos['total_amount'],
+            'taxable_base' => $montos['taxable_base'],
             'transaction_type' => '01',
             'total_tax' => $ivaMonto,
-            'total' => $totalLinea,
+            'total' => $montos['total'],
+            'discounts' => $montos['discounts'],
         ];
 
         // XSD v4.4: antes de <ImpuestoNeto> debe existir al menos un <Impuesto> o <ImpuestoAsumidoEmisorFabrica>.
@@ -210,6 +212,45 @@ final class CostaRicaInvoiceFromVentaMapper
         ]];
 
         return $line;
+    }
+
+    public function resumenDevolucionAlineadoLineas(Devolucion $devolucion, array $lineItems): array
+    {
+        $grav = round((float) ($devolucion->sub_total ?? 0), 2);
+        $exe = round((float) ($devolucion->exenta ?? 0), 2);
+        $ns = round((float) ($devolucion->no_sujeta ?? 0), 2);
+        $totalesLineas = $this->totalesMonetariosDesdeLineas($lineItems);
+        $desc = $this->sumDescuentosDesdeLineas($lineItems);
+        $ventaNeta = round($grav + $exe + $ns, 2);
+
+        $summary = [
+            'total_taxed_goods' => $grav,
+            'total_exempt_goods' => $exe,
+            'total_non_taxable_goods' => $ns,
+            'total_taxed_services' => 0.0,
+            'total_exempt_services' => 0.0,
+            'total_non_taxable_services' => 0.0,
+            'total_taxed' => $grav,
+            'total_exempt' => $exe,
+            'total_non_taxable' => $ns,
+            'total_sale' => $ventaNeta,
+            'total_discounts' => $desc,
+            'total_net_sale' => $ventaNeta,
+            'total_tax' => $totalesLineas['total_tax'],
+            'total' => $totalesLineas['total'],
+            'total_voucher' => $totalesLineas['total'],
+        ];
+
+        if ($totalesLineas['total_tax'] > 0) {
+            $summary['taxes'] = [[
+                'tax_type' => '01',
+                'iva_type' => '08',
+                'rate' => 13.0,
+                'amount' => $totalesLineas['total_tax'],
+            ]];
+        }
+
+        return $summary;
     }
 
     public function resumenDesdeDevolucion(Devolucion $devolucion): array
@@ -255,6 +296,16 @@ final class CostaRicaInvoiceFromVentaMapper
             'payment_method' => '01',
             'amount' => round($total, 2),
         ]];
+    }
+
+    /**
+     * TotalMedioPago = TotalComprobante: misma suma de líneas que el resumen FE.
+     *
+     * @param  array<int, array<string, mixed>>  $lineItems
+     */
+    public function pagosDesdeLineas(array $lineItems): array
+    {
+        return $this->pagosDesdeMonto($this->totalesMonetariosDesdeLineas($lineItems)['total']);
     }
 
     /**
@@ -652,10 +703,9 @@ final class CostaRicaInvoiceFromVentaMapper
     }
 
     /**
-     * @see \App\Models\MH\MHFactura::detalles() En El Salvador, si la venta lleva IVA, al generar el DTE se incorpora
-     *      el impuesto (p. ej. precio * 1.13) porque en BD los montos suelen venir sin reflejar el total con impuesto
-     *      en el mismo sentido. Aquí: si la venta tiene IVA y el detalle tiene `total` = `sub_total` pero con IVA en
-     *      columna `iva`, el monto de línea para FE debe ser subtotal + IVA (coherente con resumen y pagos).
+     * Línea de venta para dgt-xml-generator. {@see montoTotalLineaCr}:
+     * MontoTotalLinea = SubTotal + ImpuestoNeto − MontoDescuento (5 decimales al final).
+     * No usar {@see Detalle::$total}: en BD es el neto sin IVA y puede diferir de sub_total por redondeo de gravada.
      */
     private function linea(Detalle $detalle, Empresa $empresa, Venta $venta): array
     {
@@ -672,17 +722,9 @@ final class CostaRicaInvoiceFromVentaMapper
             $cantidad = 1.0;
         }
 
-        $subTotal = round((float) $detalle->sub_total, 5);
+        $subTotalBruto = round((float) $detalle->sub_total, 5);
         $ivaMonto = round((float) ($detalle->iva ?? 0), 5);
-        $totalLinea = round((float) $detalle->total, 5);
-        $ventaLlevaIva = (float) ($venta->iva ?? 0) > 0.00001;
-        if (
-            $ventaLlevaIva
-            && $ivaMonto > 0.00001
-            && abs($totalLinea - $subTotal) < 0.0001
-        ) {
-            $totalLinea = round($subTotal + $ivaMonto, 5);
-        }
+        $montoDescuento = round((float) ($detalle->descuento ?? 0), 5);
 
         $exoneracion = $this->detalleDeclaraExoneracionCr($detalle);
         $pct = (float) ($detalle->porcentaje_impuesto ?? 0);
@@ -691,6 +733,7 @@ final class CostaRicaInvoiceFromVentaMapper
             $pct = (float) ($ex['tarifa_exonerada'] ?? $pct ?: 13);
             $ivaMonto = 0.0;
         }
+        $montos = $this->montosLineaFeCr($subTotalBruto, $montoDescuento, $ivaMonto);
         [$ivaTarifaCode, , $rate] = $this->tarifaIva($pct, $exoneracion || $ivaMonto > 0);
 
         $esServicio = $this->esUnidadServicioLineaVentaCr($producto, $empresa, $cabys);
@@ -701,13 +744,14 @@ final class CostaRicaInvoiceFromVentaMapper
             'description' => mb_substr(strip_tags((string) $detalle->descripcion), 0, 200),
             'quantity' => $cantidad,
             'unit_measure' => $esServicio ? 'Sp' : 'Unid',
-            'unit_price' => round($subTotal / $cantidad, 5),
-            'sub_total' => $subTotal,
-            'total_amount' => $subTotal,
-            'taxable_base' => $subTotal,
+            'unit_price' => round($subTotalBruto / $cantidad, 5),
+            'sub_total' => $montos['sub_total'],
+            'total_amount' => $montos['total_amount'],
+            'taxable_base' => $montos['taxable_base'],
             'transaction_type' => '01',
             'total_tax' => $ivaMonto,
-            'total' => $totalLinea,
+            'total' => $montos['total'],
+            'discounts' => $montos['discounts'],
         ];
 
         // XSD v4.4: antes de <ImpuestoNeto> debe existir al menos un <Impuesto> o <ImpuestoAsumidoEmisorFabrica>.
@@ -719,7 +763,7 @@ final class CostaRicaInvoiceFromVentaMapper
             'amount' => $gravado && ! $exoneracion ? $ivaMonto : 0.0,
         ];
         if ($exoneracion) {
-            $taxLine['exoneration'] = $this->bloqueExoneracionLineaCr($detalle, $subTotal, $rate);
+            $taxLine['exoneration'] = $this->bloqueExoneracionLineaCr($detalle, $montos['taxable_base'], $rate);
             $line['fe_cr_exoneracion'] = $this->metadataExoneracionDetalleCr($detalle);
         }
         $line['taxes'] = [$taxLine];
@@ -882,14 +926,6 @@ final class CostaRicaInvoiceFromVentaMapper
         return $d !== '' ? str_pad($d, 2, '0', STR_PAD_LEFT) : '08';
     }
 
-    private function pagos(Venta $venta): array
-    {
-        return [[
-            'payment_method' => '01',
-            'amount' => round((float) $venta->total, 2),
-        ]];
-    }
-
     /**
      * Totales de resumen = misma regla que cada línea del XML (Unid vs Sp y base gravada = taxable_base de la línea).
      * Evita -111 cuando columna gravada del detalle ≠ sub_total usado en línea, o cuando servicio/mercancía no coincidía con el detalle.
@@ -973,10 +1009,11 @@ final class CostaRicaInvoiceFromVentaMapper
         $nsGoods = round($nsGoods, 2);
         $nsServices = round($nsServices, 2);
 
-        $iva = round((float) ($venta->iva ?? 0), 2);
-        $desc = round((float) ($venta->descuento ?? 0), 2);
+        $desc = $this->sumDescuentosDesdeLineas($lineItems);
         $sub = round((float) ($venta->sub_total ?? 0), 2);
-        $total = round((float) ($venta->total ?? 0), 2);
+        $totalesLineas = $this->totalesMonetariosDesdeLineas($lineItems);
+        $iva = $totalesLineas['total_tax'];
+        $total = $totalesLineas['total'];
 
         $totalTaxed = round($taxedGoods + $taxedServices, 2);
         $totalExempt = round($exemptGoods + $exemptServices, 2);
@@ -1001,6 +1038,7 @@ final class CostaRicaInvoiceFromVentaMapper
             'total_net_sale' => $sub,
             'total_tax' => $iva,
             'total' => $total,
+            'total_voucher' => $total,
         ];
 
         if ($iva > 0) {
@@ -1252,7 +1290,7 @@ final class CostaRicaInvoiceFromVentaMapper
             'issuer' => $this->emisor($empresa),
             'receiver' => $this->receptorProveedor($proveedor, $empresa),
             'line_items' => $lineItems,
-            'payments' => $this->pagosDesdeMonto((float) $compra->total),
+            'payments' => $this->pagosDesdeLineas($lineItems),
             'summary' => $this->resumenCompraAlineadoLineas($compra, $lineItems),
             'referenced_documents' => $this->referencedDocumentsFacturaElectronicaCompra(
                 $dateIso,
@@ -1304,7 +1342,7 @@ final class CostaRicaInvoiceFromVentaMapper
             'issuer' => $this->emisor($empresa),
             'receiver' => $this->receptorProveedor($proveedor, $empresa),
             'line_items' => $lineItems,
-            'payments' => $this->pagosDesdeMonto((float) $gasto->total),
+            'payments' => $this->pagosDesdeLineas($lineItems),
             'summary' => $this->resumenGastoFecAlineadoLineas($gasto, $lineItems),
             'referenced_documents' => $this->referencedDocumentsFacturaElectronicaCompra(
                 $dateIso,
@@ -1522,7 +1560,6 @@ final class CostaRicaInvoiceFromVentaMapper
         }
 
         $ivaMonto = round((float) ($detalle->iva ?? 0), 5);
-        $totalLinea = round((float) ($detalle->total ?? 0), 5);
         $compraLlevaIva = (float) ($compra->iva ?? 0) > 0.00001;
         $clasLinea = $this->clasificarDetalleCompraCr($detalle);
 
@@ -1537,16 +1574,11 @@ final class CostaRicaInvoiceFromVentaMapper
             }
         }
 
-        if (
-            $compraLlevaIva
-            && $ivaMonto > 0.00001
-            && abs($totalLinea - $subTotal) < 0.0001
-        ) {
-            $totalLinea = round($subTotal + $ivaMonto, 5);
-        }
-
+        $totalLinea = $this->montoTotalLineaCr($subTotal, $ivaMonto, 0.0);
         if ($totalLinea <= 0.00001) {
-            $totalLinea = round($subTotal + $ivaMonto, 5);
+            throw new InvalidArgumentException(
+                'FEC: el total de la línea de compra debe ser mayor a cero tras calcular subtotal e impuesto.'
+            );
         }
 
         $pct = (float) ($detalle->porcentaje_impuesto ?? 0);
@@ -1656,7 +1688,6 @@ final class CostaRicaInvoiceFromVentaMapper
         }
 
         $ivaMonto = round((float) ($detalle->iva ?? 0), 5);
-        $totalLinea = round((float) ($detalle->total ?? 0), 5);
         $gastoLlevaIva = (float) ($gasto->iva ?? 0) > 0.00001;
         if ($gastoLlevaIva && $ivaMonto < 0.00001) {
             $sumGrav = $this->sumSubtotalGravadaGasto($gasto);
@@ -1668,16 +1699,11 @@ final class CostaRicaInvoiceFromVentaMapper
             }
         }
 
-        if (
-            $gastoLlevaIva
-            && $ivaMonto > 0.00001
-            && abs($totalLinea - $subTotal) < 0.0001
-        ) {
-            $totalLinea = round($subTotal + $ivaMonto, 5);
-        }
-
+        $totalLinea = $this->montoTotalLineaCr($subTotal, $ivaMonto, 0.0);
         if ($totalLinea <= 0.00001) {
-            $totalLinea = round($subTotal + $ivaMonto, 5);
+            throw new InvalidArgumentException(
+                'FEC: el total de la línea de gasto debe ser mayor a cero tras calcular subtotal e impuesto.'
+            );
         }
 
         $pct = 13.0;
@@ -1806,9 +1832,10 @@ final class CostaRicaInvoiceFromVentaMapper
             }
         }
 
-        $iva = round((float) ($compra->iva ?? 0), 2);
         $desc = round((float) ($compra->descuento ?? 0), 2);
-        $total = round((float) ($compra->total ?? 0), 2);
+        $totalesLineas = $this->totalesMonetariosDesdeLineas($lineItems);
+        $iva = $totalesLineas['total_tax'];
+        $total = $totalesLineas['total'];
 
         $totalTaxed = round($taxedGoods + $taxedServices, 2);
         $totalExempt = round($exemptGoods + $exemptServices, 2);
@@ -1834,6 +1861,7 @@ final class CostaRicaInvoiceFromVentaMapper
             'total_net_sale' => round(max(0, $totalVenta - $desc), 2),
             'total_tax' => $iva,
             'total' => $total,
+            'total_voucher' => $total,
         ];
 
         if ($iva > 0) {
@@ -1862,8 +1890,9 @@ final class CostaRicaInvoiceFromVentaMapper
             }
             $taxedServices += round((float) ($line['taxable_base'] ?? $line['sub_total'] ?? 0), 2);
         }
-        $iva = round((float) ($gasto->iva ?? 0), 2);
-        $total = round((float) ($gasto->total ?? 0), 2);
+        $totalesLineas = $this->totalesMonetariosDesdeLineas($lineItems);
+        $iva = $totalesLineas['total_tax'];
+        $total = $totalesLineas['total'];
 
         $totalTaxed = round($taxedServices, 2);
         $totalVenta = round($totalTaxed + 0.0 + 0.0 + 0.0, 2);
@@ -1884,6 +1913,7 @@ final class CostaRicaInvoiceFromVentaMapper
             'total_net_sale' => $totalVenta,
             'total_tax' => $iva,
             'total' => $total,
+            'total_voucher' => $total,
         ];
 
         if ($iva > 0) {
@@ -1896,6 +1926,91 @@ final class CostaRicaInvoiceFromVentaMapper
         }
 
         return $summary;
+    }
+
+    /**
+     * Montos de línea FE CR: MontoTotal bruto, opcional &lt;Descuento&gt;, SubTotal neto, MontoTotalLinea = SubTotal + ImpuestoNeto.
+     *
+     * @return array{total_amount: float, sub_total: float, taxable_base: float, total: float, discounts: array<int, array<string, mixed>>}
+     */
+    private function montosLineaFeCr(float $subTotalBruto, float $montoDescuento, float $ivaMonto): array
+    {
+        $discounts = $this->descuentosLineaCr($montoDescuento);
+        $subTotalNeto = $discounts !== []
+            ? round($subTotalBruto - $montoDescuento, 5)
+            : round($subTotalBruto, 5);
+
+        return [
+            'total_amount' => round($subTotalBruto, 5),
+            'sub_total' => $subTotalNeto,
+            'taxable_base' => $subTotalNeto,
+            'total' => $this->montoTotalLineaCr($subTotalNeto, $ivaMonto, 0.0),
+            'discounts' => $discounts,
+        ];
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function descuentosLineaCr(float $montoDescuento): array
+    {
+        if ($montoDescuento <= 0.00001) {
+            return [];
+        }
+
+        return [[
+            'amount' => round($montoDescuento, 5),
+            'discount_type' => '07',
+        ]];
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $lineItems
+     */
+    private function sumDescuentosDesdeLineas(array $lineItems): float
+    {
+        $sum = 0.0;
+        foreach (array_values($lineItems) as $line) {
+            if (! is_array($line)) {
+                continue;
+            }
+            foreach ($line['discounts'] ?? [] as $discount) {
+                $sum += (float) ($discount['amount'] ?? 0);
+            }
+        }
+
+        return round($sum, 2);
+    }
+
+    /**
+     * XSD v4.4 LineaDetalle: MontoTotalLinea = SubTotal + ImpuestoNeto − MontoDescuento (redondeo al final, 5 decimales).
+     * Si el descuento ya está en &lt;Descuento&gt; y SubTotal es neto, pasar montoDescuento = 0.
+     */
+    private function montoTotalLineaCr(float $subTotal, float $impuestoNeto, float $montoDescuento = 0.0): float
+    {
+        return round($subTotal + $impuestoNeto - $montoDescuento, 5);
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $lineItems
+     * @return array{total_tax: float, total: float}
+     */
+    private function totalesMonetariosDesdeLineas(array $lineItems): array
+    {
+        $impuesto = 0.0;
+        $total = 0.0;
+        foreach (array_values($lineItems) as $line) {
+            if (! is_array($line)) {
+                continue;
+            }
+            $impuesto += (float) ($line['total_tax'] ?? 0);
+            $total += (float) ($line['total'] ?? 0);
+        }
+
+        return [
+            'total_tax' => round($impuesto, 2),
+            'total' => round($total, 2),
+        ];
     }
 
     private function clasificarDetalleCompraCr(DetalleCompra $detalle): string
