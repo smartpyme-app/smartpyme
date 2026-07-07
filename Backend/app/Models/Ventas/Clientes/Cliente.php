@@ -2,6 +2,7 @@
 
 namespace App\Models\Ventas\Clientes;
 
+use App\Models\Concerns\AuditableModel;
 use App\Models\FidelizacionClientes\ConsumoPuntos;
 use App\Models\FidelizacionClientes\PuntosCliente;
 use App\Models\FidelizacionClientes\TipoClienteEmpresa;
@@ -12,7 +13,12 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 // use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Cliente extends Model {
+class Cliente extends AuditableModel {
+
+    protected static function auditModule(): string
+    {
+        return 'clientes';
+    }
 
     // use SoftDeletes;
     protected $table = 'clientes';

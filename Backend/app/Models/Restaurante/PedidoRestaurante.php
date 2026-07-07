@@ -3,6 +3,7 @@
 namespace App\Models\Restaurante;
 
 use App\Models\Admin\Empresa;
+use App\Models\Concerns\AuditableModel;
 use App\Models\User;
 use App\Models\Ventas\Clientes\Cliente;
 use App\Models\Ventas\Venta as VentaModel;
@@ -10,8 +11,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class PedidoRestaurante extends Model
+class PedidoRestaurante extends AuditableModel
 {
+    protected static function auditModule(): string
+    {
+        return 'pedidos';
+    }
+
     protected $table = 'restaurante_pedidos';
 
     protected $fillable = [

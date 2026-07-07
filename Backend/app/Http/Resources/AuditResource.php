@@ -11,14 +11,21 @@ class AuditResource extends JsonResource
     public function toArray(Request $request): array
     {
         $newValues = is_array($this->new_values) ? $this->new_values : [];
+        $oldValues = is_array($this->old_values) ? $this->old_values : [];
+
+        /** @var AuditPresentationService $presentation */
+        $presentation = $request->attributes->get('audit_presentation')
+            ?? app(AuditPresentationService::class);
 
         return [
             'id' => $this->id,
-            'descripcion' => app(AuditPresentationService::class)->describe(
+            'descripcion' => $presentation->describe(
                 $this->event,
                 $this->auditable_type,
                 $newValues,
-                $this->user?->name
+                $this->user?->name,
+                $oldValues,
+                $this->auditable_id
             ),
             'event' => $this->event,
             'module' => $this->module,

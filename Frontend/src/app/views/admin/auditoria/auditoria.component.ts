@@ -2,17 +2,9 @@ import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '@services/api.service';
-import { AuditoriaService } from '@services/auditoria.service';
+import { AuditoriaService, AUDITORIA_MODULOS } from '@services/auditoria.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { NgSelectModule } from '@ng-select/ng-select';
-
-const MODULOS = [
-  { value: '', label: 'Todos' },
-  { value: 'ventas', label: 'Ventas' },
-  { value: 'compras', label: 'Compras' },
-  { value: 'inventario', label: 'Inventario' },
-  { value: 'ajustes', label: 'Ajustes' },
-];
 
 @Component({
   selector: 'app-auditoria',
@@ -24,7 +16,7 @@ const MODULOS = [
 export class AuditoriaComponent implements OnInit {
   registros: any = { data: [] };
   usuarios: any[] = [];
-  modulos = MODULOS;
+  modulos = AUDITORIA_MODULOS;
   loading = false;
 
   filtros: any = {

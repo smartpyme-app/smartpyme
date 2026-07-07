@@ -10,7 +10,7 @@ class Gasto extends AuditableModel {
 
     protected static function auditModule(): string
     {
-        return 'compras';
+        return 'gastos';
     }
 
     protected $table = 'egresos';

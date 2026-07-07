@@ -2,12 +2,17 @@
 
 namespace App\Models\Planilla;
 
+use App\Models\Concerns\AuditableModel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 
-class Planilla extends Model
+class Planilla extends AuditableModel
 {
     use HasFactory;
+
+    protected static function auditModule(): string
+    {
+        return 'planilla';
+    }
 
     protected $fillable = [
         'codigo',

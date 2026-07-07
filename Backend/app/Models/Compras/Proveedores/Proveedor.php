@@ -2,12 +2,17 @@
 
 namespace App\Models\Compras\Proveedores;
 
-use Illuminate\Database\Eloquent\Model;
+use App\Models\Concerns\AuditableModel;
 use Illuminate\Database\Eloquent\Builder;
 use Auth;
 // use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Proveedor extends Model {
+class Proveedor extends AuditableModel {
+
+    protected static function auditModule(): string
+    {
+        return 'proveedores';
+    }
 
     // use SoftDeletes;
     protected $table = 'proveedores';

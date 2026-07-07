@@ -18,6 +18,11 @@ class Producto extends AuditableModel
         return 'inventario';
     }
 
+    protected function resolveAuditModule(): string
+    {
+        return ($this->tipo ?? '') === 'Servicio' ? 'servicios' : 'inventario';
+    }
+
     protected $auditExclude = ['stock'];
 
     protected $table = 'productos';

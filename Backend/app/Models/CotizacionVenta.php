@@ -21,7 +21,7 @@ class CotizacionVenta extends AuditableModel
 
     protected static function auditModule(): string
     {
-        return 'ventas';
+        return 'cotizaciones';
     }
 
     protected $table = 'cotizacion_ventas';

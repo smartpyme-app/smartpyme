@@ -2,12 +2,17 @@
 
 namespace App\Models\Inventario;
 
-use Illuminate\Database\Eloquent\Model;
+use App\Models\Concerns\AuditableModel;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
 
-class Paquete extends Model {
+class Paquete extends AuditableModel {
+
+    protected static function auditModule(): string
+    {
+        return 'paquetes';
+    }
 
     use SoftDeletes;
     protected $table = 'paquetes';

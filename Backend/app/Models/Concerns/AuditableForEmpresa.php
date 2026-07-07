@@ -13,9 +13,14 @@ trait AuditableForEmpresa
     public function transformAudit(array $data): array
     {
         $data['id_empresa'] = $this->id_empresa ?? auth()->user()?->id_empresa;
-        $data['module'] = static::auditModule();
+        $data['module'] = $this->resolveAuditModule();
 
         return $data;
+    }
+
+    protected function resolveAuditModule(): string
+    {
+        return static::auditModule();
     }
 
     public function getAuditExclude(): array

@@ -11,7 +11,7 @@ class Ajuste extends AuditableModel {
 
     protected static function auditModule(): string
     {
-        return 'inventario';
+        return 'ajustes';
     }
 
     protected $table = 'ajustes';

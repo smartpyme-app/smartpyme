@@ -2,11 +2,16 @@
 
 namespace App\Models\Admin;
 
-use Illuminate\Database\Eloquent\Model;
+use App\Models\Concerns\AuditableModel;
 use Illuminate\Database\Eloquent\Builder;
 use Auth;
 
-class FormaDePago extends Model {
+class FormaDePago extends AuditableModel {
+
+    protected static function auditModule(): string
+    {
+        return 'configuraciones';
+    }
 
     protected $table = 'formas_pago';
     protected $fillable = array(
