@@ -14,7 +14,6 @@ import { PromocionalService, CodigoPromocional } from '@services/promocional.ser
 export class RegisterAbacoComponent implements OnInit {
 
     public user: any = {};
-    public paises: any = [];
     public loading = false;
     public saludo:string = '';
     public anio:any = '';
@@ -39,15 +38,6 @@ export class RegisterAbacoComponent implements OnInit {
 
     ngOnInit() {
         this.user = this.apiService.register_user();
-
-        this.apiService.getToUrl('https://restcountries.com/v3.1/all?fields=name').subscribe(
-        data => {
-            this.paises = data;
-        },
-        error => {
-            this.alertService.error(error);
-            this.loading = false;
-        });
 
         if(!this.user){
             this.user = {};
