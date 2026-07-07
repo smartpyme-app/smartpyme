@@ -204,15 +204,10 @@ class LotesController extends Controller
             ->where('id_bodega', $request->id_bodega)
             ->where('stock', '>', 0)
             ->with(['producto', 'bodega'])
+            ->orderByRaw('fecha_vencimiento IS NULL')
             ->orderBy('fecha_vencimiento', 'asc')
+            ->orderBy('created_at', 'asc')
             ->get();
-
-        // Si se especifica una cantidad, filtrar lotes que tengan suficiente stock
-        if ($request->cantidad) {
-            $lotes = $lotes->filter(function ($lote) use ($request) {
-                return $lote->stock >= $request->cantidad;
-            });
-        }
 
         return response()->json($lotes->values(), 200);
     }

@@ -10,6 +10,7 @@ class Kardex extends Model {
     protected $fillable = array(
         'fecha',
         'id_producto',
+        'lote_id',
         'id_inventario',
         'detalle',
         'referencia',
@@ -143,6 +144,11 @@ class Kardex extends Model {
      */
     public function getNumeroLoteAttribute()
     {
+        if (!empty($this->attributes['lote_id'])) {
+            $lote = \App\Models\Inventario\Lote::find($this->attributes['lote_id']);
+            return $lote ? ($lote->numero_lote ?: 'Sin número') : null;
+        }
+
         // Si es un ajuste, obtener el lote desde el ajuste
         if (strpos($this->detalle, 'Ajuste') !== false || strpos($this->detalle, 'ajuste') !== false) {
             $ajuste = \App\Models\Inventario\Ajuste::find($this->referencia);
@@ -161,27 +167,36 @@ class Kardex extends Model {
             }
         }
         
-        // Si es una venta, obtener el lote desde el detalle de venta
+        // Si es una venta, obtener el lote desde kardex, detalle o detalle_venta_lotes
         if ($this->detalle == 'Venta' || $this->detalle == 'Venta a consigna' || $this->detalle == 'Venta Anulada') {
             $venta = \App\Models\Ventas\Venta::find($this->referencia);
             if ($venta) {
-                // Buscar el detalle de venta que corresponda a este producto
                 $detalleVenta = \App\Models\Ventas\Detalle::where('id_venta', $venta->id)
                     ->where('id_producto', $this->id_producto)
-                    ->whereNotNull('lote_id')
                     ->first();
-                if ($detalleVenta && $detalleVenta->lote_id) {
-                    $lote = \App\Models\Inventario\Lote::find($detalleVenta->lote_id);
-                    return $lote ? ($lote->numero_lote ?: 'Sin número') : null;
+                if ($detalleVenta) {
+                    if ($detalleVenta->lote_id) {
+                        $lote = \App\Models\Inventario\Lote::find($detalleVenta->lote_id);
+                        return $lote ? ($lote->numero_lote ?: 'Sin número') : null;
+                    }
+                    $cantidadMov = (float) ($this->salida_cantidad ?: $this->entrada_cantidad ?: 0);
+                    if ($cantidadMov > 0) {
+                        $asig = \App\Models\Ventas\DetalleVentaLote::where('id_detalle_venta', $detalleVenta->id)
+                            ->whereRaw('ABS(cantidad - ?) < 0.0001', [$cantidadMov])
+                            ->first();
+                        if ($asig && $asig->lote_id) {
+                            $lote = \App\Models\Inventario\Lote::find($asig->lote_id);
+                            return $lote ? ($lote->numero_lote ?: 'Sin número') : null;
+                        }
+                    }
                 }
             }
         }
-        
+
         // Si es una compra, obtener el lote desde el detalle de compra
         if ($this->detalle == 'Compra' || $this->detalle == 'Compra a consigna' || $this->detalle == 'Compra Anulada') {
             $compra = \App\Models\Compras\Compra::find($this->referencia);
             if ($compra) {
-                // Buscar el detalle de compra que corresponda a este producto
                 $detalleCompra = \App\Models\Compras\Detalle::where('id_compra', $compra->id)
                     ->where('id_producto', $this->id_producto)
                     ->whereNotNull('lote_id')
@@ -192,7 +207,7 @@ class Kardex extends Model {
                 }
             }
         }
-        
+
         return null;
     }
 

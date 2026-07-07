@@ -24,6 +24,28 @@ use Auth;
 class GenerarDocumentosController extends Controller
 {
 
+    public static function empresaUsaImpresionHtml(int $empresaId): bool
+    {
+        return in_array(
+            (int) $empresaId,
+            array_map('intval', config('constants.EMPRESAS_IMPRESION_HTML', [])),
+            true
+        );
+    }
+
+    private function responderDocumentoImpresion(string $view, array $data, callable $configurePdf, string $filename)
+    {
+        if (self::empresaUsaImpresionHtml((int) Auth::user()->id_empresa)) {
+            return view($view, $data);
+        }
+
+        $data['esPdf'] = true;
+        $pdf = app('dompdf.wrapper')->loadView($view, $data);
+        $configurePdf($pdf);
+
+        return $pdf->stream($filename);
+    }
+
     public function generarDoc($id){
 
         // Si tiene facturación electrónica (pruebas o producción)
@@ -199,7 +221,7 @@ class GenerarDocumentosController extends Controller
                     $alto_total_mm = $alto_base + ($total_lineas * $alto_por_producto) + $notaExtra;
                     $alto_total_pt = $alto_total_mm * 2.83465;
                     $ancho_pt = 80 * 2.83465;
-                    $pdf->setPaper([0, 0, $ancho_pt, $alto_total_pt]);
+                    $configurePdf = fn ($pdf) => $pdf->setPaper([0, 0, $ancho_pt, $alto_total_pt]);
                     return $pdf->stream('factura-accesorios-hn.pdf');
                 }
 
@@ -220,158 +242,193 @@ class GenerarDocumentosController extends Controller
             //return response()->json($n);
 
             if(Auth::user()->id_empresa == 38){ //38
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.velo', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.velo';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 212){ //212
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.fotopro', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.fotopro';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 62){ //62
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.hotel-eco', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.hotel-eco';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 84){ //84
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.devetsa', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.devetsa';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 75){ //75
                 // return View('reportes.facturacion.formatos_empresas.Factura-Biovet', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Factura-Biovet', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.Factura-Biovet';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 104){ //104
                 // return View('reportes.facturacion.formatos_empresas.Factura-coloretes', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.factura-Coloretes', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.factura-Coloretes';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 11){ //11
                 // return View('reportes.facturacion.formatos_empresas.Factura-organika', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Factura-organika', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper([0, 0, 365.669, 566.929133858]);
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.Factura-organika';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper([0, 0, 365.669, 566.929133858]);
             }
             elseif(Auth::user()->id_empresa == 12){ //12
                 // return View('reportes.facturacion.formatos_empresas.Factura-Ayakahuite', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Factura-Ayakahuite', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper([0, 0, 365.669, 566.929133858]);
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.Factura-Ayakahuite';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper([0, 0, 365.669, 566.929133858]);
             }
             elseif(Auth::user()->id_empresa == 128){ //128
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.kiero-factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper([0, 0, 283.46, 765.35]);
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.kiero-factura';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper([0, 0, 283.46, 765.35]);
             }
             elseif(Auth::user()->id_empresa == 135){ //135
                 // return View('reportes.facturacion.formatos_empresas.Dentalkey-factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Dentalkey-factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper([0, 0, 609.45, 467.72]);
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.Dentalkey-factura';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper([0, 0, 609.45, 467.72]);
             }
             elseif(Auth::user()->id_empresa == 136){ //136 OK V2
                 return View('reportes.facturacion.formatos_empresas.Factura-Emerson', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Factura-Emerson', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper([0, 0, 365.669, 609.4488]);
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.Factura-Emerson';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper([0, 0, 365.669, 609.4488]);
             }
             elseif(Auth::user()->id_empresa == 149){ //149 OK V2
                 return View('reportes.facturacion.formatos_empresas.Factura-Natura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Factura-Natura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.Factura-Natura';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 187){//187
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Express-Shopping', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.Express-Shopping';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 130){//130
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Factura-TecnoGadget', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('Legal', 'landscape');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.Factura-TecnoGadget';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('Legal', 'landscape');
             }
             elseif(Auth::user()->id_empresa == 177){//177
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Factura-Credicash', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.Factura-Credicash';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 24 ){ //24
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Factura-Via-del-Mar', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.Factura-Via-del-Mar';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 174 ){ //174
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Factura-Consultora-Raices', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.Factura-Consultora-Raices';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 59 ){ //59
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Factura-Smartpyme', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.Factura-Smartpyme';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 244 ){ //244 OK V2
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Factura-keke', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.Factura-keke';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 210 ){ //210
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Factura-Arborea-desg', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.Factura-Arborea-desg';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 229 ){ //229
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Factura-Norbin', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.Factura-Norbin';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 50 ){ //50
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.RefriAcTotal-Factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.RefriAcTotal-Factura';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 274 ){ //274
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Factura-Flat-Speed-Cars', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.Factura-Flat-Speed-Cars';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 321 ){ //321
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Factura-Importaciones-Blanco', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.Factura-Importaciones-Blanco';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 346 ){ //346
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Factura-Vape-Store', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.Factura-Vape-Store';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 154 || Auth::user()->id_empresa == 397 || Auth::user()->id_empresa == 398 || Auth::user()->id_empresa == 397 ){ //154
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Factura-Estilos-Salon', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.Factura-Estilos-Salon';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 396 ){ //154
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Factura-Estilos-Salon-SA-CV', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.Factura-Estilos-Salon-SA-CV';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 367 ){ //367
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Factura-Clinica', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.Factura-Clinica';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 250 ){ //250
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Factura-Full-Solution', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('Legal', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.Factura-Full-Solution';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('Legal', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 400 ){ //400
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Factura-Zoe-Cosmetics', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.Factura-Zoe-Cosmetics';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 420 ){ //420
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Factura-Inversiones-Andre', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.Factura-Inversiones-Andre';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 614 ){ //614 Demo SP 2 - Honduras
                 $venta->load('detalles.producto');
                 $centavos = str_pad(isset($n[1]) ? $n[1] : '00', 2, '0', STR_PAD_LEFT);
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Factura-Accesorios-Honduras', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos', 'documento'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.Factura-Accesorios-Honduras';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos', 'documento');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 700 ){ //700 Lilian Ohle
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Factura-Lilian-Ohle', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos', 'documento'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.Factura-Lilian-Ohle';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos', 'documento');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 315 ){ //315
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Factura-Sistemas-de-Impresion', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.Factura-Sistemas-de-Impresion';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             else{
                 // return View('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos', 'documento'));
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos', 'documento'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.factura';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos', 'documento');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
 
 
-            return $pdf->stream($empresa->nombre . '-factura-' . $venta->correlativo . '.pdf');
+            return $this->responderDocumentoImpresion($viewImpresion, $viewData, $configurePdf, $empresa->nombre . '-factura-' . $venta->correlativo . '.pdf');
         }
 
 //        factura sujeto excluido
@@ -390,25 +447,29 @@ class GenerarDocumentosController extends Controller
             //return response()->json($n);
 
             if(Auth::user()->id_empresa == 210){ //210
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Sujeto-Excluido-fact-Arborea-desg', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.Sujeto-Excluido-fact-Arborea-desg';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 367 ){ //367
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Sujeto-Excluido-Clinica', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.Sujeto-Excluido-Clinica';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 400 ){ //400
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Sujeto-Zoe-Cosmetics', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.Sujeto-Zoe-Cosmetics';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             else{
                 // return View('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.factura-sujeto-excluido', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.factura-sujeto-excluido';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
 
 
-            return $pdf->stream($empresa->nombre . '-factura-' . $venta->correlativo . '.pdf');
+            return $this->responderDocumentoImpresion($viewImpresion, $viewData, $configurePdf, $empresa->nombre . '-factura-' . $venta->correlativo . '.pdf');
         }
 
 //          credito fiscal
@@ -425,113 +486,138 @@ class GenerarDocumentosController extends Controller
             $centavos = $formatter->toWords($n[1]);
 
             if(Auth::user()->id_empresa == 24){ //24
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.vetvia-ccf', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.vetvia-ccf';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 212){ //212
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.CCF-FotoPro', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.CCF-FotoPro';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 38){ //38
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.velo-ccf', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.velo-ccf';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 62){ //62
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.hotel-eco-ccf', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.hotel-eco-ccf';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 128){ //128
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.kiero-ccf', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper([0, 0, 283, 765]);
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.kiero-ccf';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper([0, 0, 283, 765]);
             }
             elseif(Auth::user()->id_empresa == 135){ //135
                 // return View('reportes.facturacion.formatos_empresas.Dentalkey-ccf', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Dentalkey-ccf', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper([0, 0, 609.45, 467.72]);
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.Dentalkey-ccf';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper([0, 0, 609.45, 467.72]);
             }
             elseif(Auth::user()->id_empresa == 136){ //136
                 // return View('reportes.facturacion.formatos_empresas.destroyesa-ccf', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.destroyesa-ccf', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper([0, 0, 297.64, 382.68]);
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.destroyesa-ccf';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper([0, 0, 297.64, 382.68]);
             }
             elseif(Auth::user()->id_empresa == 158){//158
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Guaca-Mix-ccf', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.Guaca-Mix-ccf';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 177){//177
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.CCF-Credicash', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.CCF-Credicash';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 187){//187
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.CCF-Express-Shopping', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.CCF-Express-Shopping';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 130){//130
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.CCF-TecnoGadget', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('Legal', 'landscape');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.CCF-TecnoGadget';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('Legal', 'landscape');
             }
             elseif(Auth::user()->id_empresa == 84){ //84
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.devetsa-cff', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.devetsa-cff';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 59){ //59
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.smartpyme-ccf', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.smartpyme-ccf';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 210){ //210
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.CCF-Arborea-Design', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.CCF-Arborea-Design';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 244){ //210
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.CCF-keke', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.CCF-keke';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 229){ //229
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.CCF-Norbin', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.CCF-Norbin';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 315){ //315
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.CCF-Sistema-Impresiones', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.CCF-Sistema-Impresiones';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 313 ){ //313
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.CCF-American-Laundry', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.CCF-American-Laundry';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 274 ){ //274
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.CCF-Flat-Speed-Cars', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.CCF-Flat-Speed-Cars';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 321 ){ //321
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.CCF-Importaciones-Blanco', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.CCF-Importaciones-Blanco';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 290 ){ //290
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.CCF-Grupo-Lievano', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.CCF-Grupo-Lievano';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 367 ){ //367
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.CCF-Clinica', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.CCF-Clinica';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 250 ){ //250
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.CCF-Full-Solution', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('Legal', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.CCF-Full-Solution';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('Legal', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 400 ){ //400
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.CCF-Zoe-Cosmetics', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.CCF-Zoe-Cosmetics';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             elseif(Auth::user()->id_empresa == 315 ){ //315
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.CCF-Sistemas-de-Impresion', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.CCF-Sistemas-de-Impresion';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             else{
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.credito', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.credito';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
-
-            return $pdf->stream($empresa->nombre . '-credito-' . $venta->correlativo . '.pdf');
+            return $this->responderDocumentoImpresion($viewImpresion, $viewData, $configurePdf, $empresa->nombre . '-credito-' . $venta->correlativo . '.pdf');
         }
 
         // Factura de exportación
@@ -546,10 +632,10 @@ class GenerarDocumentosController extends Controller
 
                 $dolares = $formatter->toWords(floatval(str_replace(',', '',$n[0])));
                 $centavos = $formatter->toWords($n[1]);
-
-                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.jozano-llc', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-                $pdf->setPaper('US Letter', 'portrait');
-                return $pdf->stream($empresa->nombre . '-factura-exportacion-' . $venta->correlativo . '.pdf');
+                $viewImpresion = 'reportes.facturacion.formatos_empresas.jozano-llc';
+                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos');
+                $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
+                return $this->responderDocumentoImpresion($viewImpresion, $viewData, $configurePdf, $empresa->nombre . '-factura-exportacion-' . $venta->correlativo . '.pdf');
             }
         }
 

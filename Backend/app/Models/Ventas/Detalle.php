@@ -107,9 +107,12 @@ class Detalle extends Model
         return $this->belongsTo('App\Models\Inventario\Lote','lote_id');
     }
 
+    public function lotesAsignados(){
+        return $this->hasMany(DetalleVentaLote::class, 'id_detalle_venta');
+    }
+
     public function getDescuentoPorcentajeAttribute()
     {
-
         if ($this->subtotal == 0) {
             return 0;
         }

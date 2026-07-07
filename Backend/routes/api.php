@@ -26,6 +26,7 @@ Route::get('/prueba', function () {
 });
 
 Route::get('verificar-acceso/{slug}', [EmpresasFuncionalidadesController::class, 'verificarAcceso']);
+Route::get('verificar-accesos', [EmpresasFuncionalidadesController::class, 'verificarAccesos']);
 
 // N1co
 require base_path('routes/modulos/n1co/webhook-n1co.php');

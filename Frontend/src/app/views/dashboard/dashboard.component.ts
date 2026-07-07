@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
-import { Subject } from 'rxjs';
+import { Subject, Subscription } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { DashboardDataService } from './services/dashboard-data.service';
 import { FiltrosConsultaVentasDashboard } from './models/filtros-consulta-ventas-dashboard.model';
@@ -42,6 +42,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
   ]);
 
   private destroy$ = new Subject<void>();
+  private datosSubscription?: Subscription;
+
+  private cancelarSuscripcionActiva(): void {
+    if (this.datosSubscription) {
+      this.datosSubscription.unsubscribe();
+      this.datosSubscription = undefined;
+    }
+  }
 
   loading = false;
   datos: any = {};
@@ -68,6 +76,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.cancelarSuscripcionActiva();
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -120,6 +129,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   cargarDatos(filtrosAdicionales: any = {}): void {
+    this.cancelarSuscripcionActiva();
     this.loading = true;
 
     const filtros = {
@@ -127,7 +137,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       ...filtrosAdicionales
     };
 
-    this.dashboardDataService.obtenerDatosPorFiltro(filtros).subscribe({
+    this.datosSubscription = this.dashboardDataService.obtenerDatosPorFiltro(filtros).subscribe({
       next: (data) => {
         // Crear nueva referencia para que OnPush detecte cambios
         this.datos = { ...(data || {}) };
@@ -148,15 +158,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   onFiltrosResultadosCambiados(filtros: any): void {
+    this.cancelarSuscripcionActiva();
     this.filtrosPorSeccion['Resultados'] = filtros;
     const filtrosCompletos = {
       seccion: 'Resultados',
       ...filtros,
     };
 
-    this.dashboardDataService
+    this.datosSubscription = this.dashboardDataService
       .obtenerResultadosProgresivo(filtrosCompletos)
-      .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (data) => {
           this.datos = { ...data };
@@ -171,15 +181,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   onFiltrosGastosCambiados(filtros: any): void {
+    this.cancelarSuscripcionActiva();
     this.filtrosPorSeccion['Gastos'] = filtros;
     const filtrosCompletos = {
       seccion: 'Gastos',
       ...filtros,
     };
 
-    this.dashboardDataService
+    this.datosSubscription = this.dashboardDataService
       .obtenerGastosProgresivo(filtrosCompletos)
-      .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (data) => {
           this.datos = { ...data };
@@ -194,15 +204,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   onFiltrosVentasCambiados(filtros: FiltrosConsultaVentasDashboard): void {
+    this.cancelarSuscripcionActiva();
     this.filtrosPorSeccion['Ventas'] = filtros;
     const filtrosCompletos = {
       seccion: 'Ventas' as const,
       ...filtros,
     };
 
-    this.dashboardDataService
+    this.datosSubscription = this.dashboardDataService
       .obtenerVentasProgresivo(filtrosCompletos)
-      .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (data) => {
           this.datos = { ...data };
@@ -217,15 +227,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   onFiltrosControlCuentasCambiados(filtros: any): void {
+    this.cancelarSuscripcionActiva();
     this.filtrosPorSeccion['Control de cuentas'] = filtros;
     const filtrosCompletos = {
       seccion: 'Control de cuentas',
       ...filtros,
     };
 
-    this.dashboardDataService
+    this.datosSubscription = this.dashboardDataService
       .obtenerCuentasProgresivo(filtrosCompletos)
-      .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (data) => {
           this.datos = { ...data };
@@ -240,15 +250,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   onFiltrosInventarioCambiados(filtros: any): void {
+    this.cancelarSuscripcionActiva();
     this.filtrosPorSeccion['Inventario'] = filtros;
     const filtrosCompletos = {
       seccion: 'Inventario',
       ...filtros,
     };
 
-    this.dashboardDataService
+    this.datosSubscription = this.dashboardDataService
       .obtenerInventarioProgresivo(filtrosCompletos)
-      .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (data) => {
           this.datos = { ...data };

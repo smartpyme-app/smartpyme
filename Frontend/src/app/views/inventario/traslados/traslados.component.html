@@ -208,7 +208,7 @@
                     </ng-template>
                 </ng-select>
             </div>
-            <div class="form-group col-md-6" *ngIf="producto?.inventario_por_lotes && isLotesActivo() && traslado.id_bodega_de">
+            <div class="form-group col-md-6" *ngIf="producto?.inventario_por_lotes && isLotesActivo() && traslado.id_bodega_de && !requiereDistribucionLotes()">
                 <label for="">Lote Origen <span class="text-danger">*</span></label>
                 <ng-select name="lote_id" [(ngModel)]="traslado.lote_id" (change)="setLoteOrigen()" class="form-select p-0" [disabled]="loadingLotes" (open)="cargarLotes()" required>
                     <ng-option value="">Seleccionar lote</ng-option>
@@ -220,6 +220,16 @@
                     </ng-option>
                 </ng-select>
                 <small class="text-muted" *ngIf="loadingLotes">Cargando lotes...</small>
+            </div>
+            <div class="form-group col-md-6" *ngIf="requiereDistribucionLotes() && traslado.id_bodega_de">
+                <label>Lotes origen <span class="text-danger">*</span></label>
+                <div>
+                    <button type="button" class="btn btn-sm"
+                        [ngClass]="traslado.lotes_asignados?.length || traslado.lote_id ? 'btn-success' : 'btn-warning'"
+                        (click)="abrirDistribucionLotes()">
+                        <i class="fa fa-box"></i> {{ textoLotesTraslado() }}
+                    </button>
+                </div>
             </div>
             <div class="form-group col-md-6" *ngIf="producto?.inventario_por_lotes && isLotesActivo() && traslado.id_bodega">
                 <label for="">Lote Destino <small class="text-muted">(Opcional)</small></label>
@@ -237,7 +247,7 @@
             </div>
             <div class="form-group col-md-6">
                 <label for="stock_real">Cantidad a trasladar:</label>
-                <input type="number" [disabled]="!traslado.id_bodega_de || !traslado.id_bodega || (producto?.inventario_por_lotes && isLotesActivo() && !traslado.lote_id)" class="form-control text-center" [(ngModel)]="traslado.cantidad" (change)="validarStockLote()" name="cantidad">
+                <input type="number" [disabled]="!traslado.id_bodega_de || !traslado.id_bodega || (requiereDistribucionLotes() && !(traslado.lotes_asignados?.length || traslado.lote_id)) || (producto?.inventario_por_lotes && isLotesActivo() && !requiereDistribucionLotes() && !traslado.lote_id)" class="form-control text-center" [(ngModel)]="traslado.cantidad" (change)="validarStockLote()" name="cantidad">
                 <small *ngIf="producto?.id_presentacion && traslado.cantidad" class="text-info d-block mt-1">
                     Equivale a {{ (traslado.cantidad * traslado.factor_conversion) | number:'1.2' }} unidades base.
                 </small>
@@ -352,3 +362,5 @@
   </div>
 </ng-template>
 
+<app-distribucion-lotes-modal #lotesModal etiquetaCantidad="Total a trasladar"
+    (confirmado)="onLotesTrasladoConfirmados($event)"></app-distribucion-lotes-modal>

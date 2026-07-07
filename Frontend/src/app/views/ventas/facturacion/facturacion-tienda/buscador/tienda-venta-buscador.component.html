@@ -51,10 +51,10 @@
                     {{ producto.stock_base_actual }} <small>en stock</small>
                 </ng-container>
                 <ng-container *ngIf="producto.stock_base_actual == null && producto.tipo != 'Servicio'">
-                    <span *ngIf="producto.inventario_por_lotes && producto.lotes && producto.lotes.length > 0">
+                    <span *ngIf="producto.inventario_por_lotes && producto.lotes && producto.lotes.length > 0 && apiService.isLotesActivo()">
                         {{ producto.lotes | filter:'id_bodega':venta.id_bodega | sum:'stock' }} <small>en stock</small>
                     </span>
-                    <span *ngIf="!producto.inventario_por_lotes || !producto.lotes || producto.lotes.length == 0">
+                    <span *ngIf="!producto.inventario_por_lotes || !producto.lotes || producto.lotes.length == 0 || !apiService.isLotesActivo()">
                         {{ producto.inventarios | filter:'id_bodega':venta.id_bodega | sum:'stock' }} <small>en stock</small>
                     </span>
                 </ng-container>

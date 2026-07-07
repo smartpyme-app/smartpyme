@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Auth\AuthJWTController;
+use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\Api\PromocionalesController;
 use App\Http\Controllers\Api\SuperAdmin\PlanesController;
 
@@ -10,6 +11,7 @@ Route::post('/login',    [AuthJWTController::class, 'login']);
 Route::post('/logout', [AuthJWTController::class, 'logout']);
 
 Route::post('password/email', [AuthJWTController::class, 'sendResetLinkEmail']);
+Route::post('password/reset', [ResetPasswordController::class, 'reset']);
 
 Route::post('/register', [AuthJWTController::class, 'register']);
 

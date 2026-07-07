@@ -23,7 +23,7 @@ class UpdateDevolucionRequest extends FormRequest
             'id' => 'required|integer|exists:devoluciones_venta,id',
             'fecha' => 'required|date',
             'id_documento' => 'nullable|integer|exists:documentos,id',
-            'correlativo' => 'nullable|string|max:255',
+            'correlativo' => 'nullable|max:255',
             'id_usuario' => 'required|integer|exists:users,id',
             'observaciones' => 'required|string|max:500',
         ];

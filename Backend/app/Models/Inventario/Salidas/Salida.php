@@ -10,7 +10,9 @@ use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Lote;
 use App\Models\Admin\Empresa;
+use App\Models\Inventario\Salidas\DetalleSalidaLote;
 use App\Services\Inventario\ConversionInventarioService;
+use App\Services\Inventario\LoteAsignacionService;
 
 class Salida extends AuditableModel {
 
@@ -106,6 +108,44 @@ class Salida extends AuditableModel {
         
         $cantidadBase = ConversionInventarioService::calcularCantidadBase($detalle->cantidad, $factor);
 
+        $registrosLotes = DetalleSalidaLote::where('id_detalle_salida', $detalle->id)->get();
+
+        if ($producto->inventario_por_lotes && $lotesActivo && $registrosLotes->isNotEmpty()) {
+            $asignaciones = [];
+            foreach ($registrosLotes as $registro) {
+                $lote = Lote::find($registro->lote_id);
+                if (!$lote) {
+                    throw new \Exception("No se encontró el lote asignado para el producto: {$producto->nombre}.");
+                }
+                if ($lote->id_producto != $detalle->id_producto || $lote->id_bodega != $this->id_bodega) {
+                    throw new \Exception("El lote seleccionado no corresponde al producto o bodega especificados.");
+                }
+                if ($lote->stock < (float) $registro->cantidad) {
+                    throw new \Exception("No hay suficiente stock en el lote para el producto: {$producto->nombre}. Stock disponible en lote: {$lote->stock}, Cantidad requerida: {$registro->cantidad}");
+                }
+                $asignaciones[] = [
+                    'lote_id' => (int) $lote->id,
+                    'cantidad' => (float) $registro->cantidad,
+                    'lote' => $lote,
+                ];
+            }
+
+            $inventario = Inventario::where('id_producto', $producto->id)
+                ->where('id_bodega', $this->id_bodega)
+                ->first();
+
+            if (!$inventario) {
+                throw new \Exception("No existe inventario para el producto: {$producto->nombre} en la bodega seleccionada.");
+            }
+
+            if ($inventario->stock < $cantidadBase) {
+                throw new \Exception("No hay suficiente stock para el producto: {$producto->nombre}. Stock disponible: {$inventario->stock}, Cantidad requerida: {$cantidadBase}");
+            }
+
+            LoteAsignacionService::aplicarSalidaDocumento($asignaciones, $this, $inventario, (float) $detalle->costo);
+            return;
+        }
+
         if ($producto->inventario_por_lotes && $lotesActivo && $detalle->lote_id) {
             // Actualizar stock del lote
             $lote = Lote::find($detalle->lote_id);
@@ -141,8 +181,11 @@ class Salida extends AuditableModel {
             $inventario->stock -= $cantidadBase;
             $inventario->save();
 
-            // Registrar en kardex
-            $inventario->kardex($this, $cantidadBase * -1, null, $detalle->costo);
+            // Registrar en kardex (con lote_id si aplica, igual que ventas)
+            $kardexOpts = ($producto->inventario_por_lotes && $lotesActivo && $detalle->lote_id)
+                ? ['lote_id' => $detalle->lote_id]
+                : [];
+            $inventario->kardex($this, $cantidadBase * -1, null, $detalle->costo, null, $kardexOpts);
         }
     }
 
@@ -176,6 +219,28 @@ class Salida extends AuditableModel {
         
         $cantidadBase = ConversionInventarioService::calcularCantidadBase($detalle->cantidad, $factor);
         
+        $registrosLotes = DetalleSalidaLote::where('id_detalle_salida', $detalle->id)->get();
+
+        $inventario = Inventario::where('id_producto', $producto->id)
+            ->where('id_bodega', $this->id_bodega)
+            ->first();
+
+        if ($producto->inventario_por_lotes && $lotesActivo && ($registrosLotes->isNotEmpty() || $detalle->lote_id)) {
+            if (!$inventario) {
+                return;
+            }
+
+            LoteAsignacionService::revertirSalidaDocumento(
+                $registrosLotes,
+                $this,
+                $inventario,
+                $cantidadBase,
+                $detalle->lote_id,
+                (float) $detalle->costo
+            );
+            return;
+        }
+
         if ($producto->inventario_por_lotes && $lotesActivo && $detalle->lote_id) {
             // Revertir stock del lote
             $lote = Lote::find($detalle->lote_id);
@@ -196,13 +261,12 @@ class Salida extends AuditableModel {
             $inventario->save();
 
             // Registrar en kardex
-            $inventario->kardex($this, $cantidadBase, null, $detalle->costo);
+            $kardexOpts = ($producto->inventario_por_lotes && $lotesActivo && $detalle->lote_id)
+                ? ['lote_id' => $detalle->lote_id]
+                : [];
+            $inventario->kardex($this, $cantidadBase, null, $detalle->costo, null, $kardexOpts);
         }
     }
-
-    /**
-     * Aprobar la salida
-     */
     public function aprobar()
     {
         $this->estado = 'Aprobada';
@@ -215,9 +279,13 @@ class Salida extends AuditableModel {
      */
     public function anular()
     {
+        $wasApproved = $this->estado === 'Aprobada';
         $this->estado = 'Anulada';
         $this->save();
-        $this->revertirInventario();
+
+        if ($wasApproved) {
+            $this->revertirInventario();
+        }
     }
 
 }
