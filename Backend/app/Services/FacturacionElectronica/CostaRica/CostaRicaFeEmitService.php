@@ -244,7 +244,7 @@ final class CostaRicaFeEmitService
         $sec = $this->secuencialDesdeCorrelativo($devolucionNd->correlativo);
         $saleCond = '01';
         $venta->loadMissing('sucursal');
-        $header = $this->mapper->encabezadoDocumento($empresa, (string) $venta->fecha, $sec, $saleCond, $venta->sucursal);
+        $header = $this->mapper->encabezadoDocumento($empresa, $this->mapper->fechaEmisionXmlCr(), $sec, $saleCond, $venta->sucursal);
 
         $claveFactura = (string) $venta->codigo_generacion;
         $fechaFactura = \Carbon\Carbon::parse($venta->fecha)->timezone('America/Costa_Rica')->format('Y-m-d\TH:i:sP');

@@ -30,7 +30,13 @@ final class CostaRicaCreditNoteFromDevolucionMapper
         $fechaFactura = Carbon::parse($facturaOriginal->fecha)->timezone('America/Costa_Rica')->format('Y-m-d\TH:i:sP');
 
         $saleCond = '01';
-        $header = $this->invoiceMapper->encabezadoDocumento($empresa, (string) $devolucion->fecha, $secuencialNc, $saleCond, $devolucion->sucursal);
+        $header = $this->invoiceMapper->encabezadoDocumento(
+            $empresa,
+            $this->invoiceMapper->fechaEmisionXmlCr(),
+            $secuencialNc,
+            $saleCond,
+            $devolucion->sucursal
+        );
 
         $facturaOriginal->loadMissing('cliente');
         $receiver = $this->invoiceMapper->receptorDatosVenta($facturaOriginal, $empresa);

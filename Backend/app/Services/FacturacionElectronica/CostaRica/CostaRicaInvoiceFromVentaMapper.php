@@ -125,8 +125,18 @@ final class CostaRicaInvoiceFromVentaMapper
     }
 
     /**
+     * Fecha/hora de emisión del XML (FechaEmision): instante actual en zona CR con offset -06:00.
+     * Hacienda rechaza -53 si se usa medianoche o una hora desincronizada.
+     */
+    public function fechaEmisionXmlCr(): string
+    {
+        return Carbon::now('America/Costa_Rica')->format('Y-m-d\TH:i:sP');
+    }
+
+    /**
      * Encabezado común (fecha de un registro de venta/devolución).
      *
+     * @param  string  $fechaIsoAmericaCr  Para FechaEmision use {@see fechaEmisionXmlCr()} (hora real de emisión).
      * @param  Sucursal|null  $sucursal  Sucursal de la operación (NC, ND, etc.); determina establecimiento y punto de venta como en FE SV.
      */
     public function encabezadoDocumento(Empresa $empresa, string $fechaIsoAmericaCr, int $secuencial, string $saleCondition = '01', ?Sucursal $sucursal = null): array
@@ -171,14 +181,12 @@ final class CostaRicaInvoiceFromVentaMapper
 
         $subTotalBruto = round((float) $detalle->precio * $cantidad, 5);
         $montoDescuento = round((float) ($detalle->descuento ?? 0), 5);
-        $totalConIva = round((float) $detalle->total, 5);
-        $ivaMonto = round(max(0, $totalConIva - $subTotalBruto), 5);
-        if ($ivaMonto < 0.00001 && $porcentajeIvaEstimado > 0) {
-            $ivaMonto = round(($subTotalBruto - $montoDescuento) * ($porcentajeIvaEstimado / 100), 5);
-        }
-        $montos = $this->montosLineaFeCr($subTotalBruto, $montoDescuento, $ivaMonto);
+        $baseImponible = round($subTotalBruto - $montoDescuento, 5);
 
-        [$ivaTarifaCode, , $rate] = $this->tarifaIva($porcentajeIvaEstimado, $ivaMonto > 0.00001);
+        [$ivaTarifaCode, , $rate] = $this->tarifaIva($porcentajeIvaEstimado, $baseImponible > 0.00001 && $porcentajeIvaEstimado > 0);
+        $gravado = $rate > 0.00001 && $baseImponible > 0.00001;
+        $ivaMonto = $gravado ? round($baseImponible * ($rate / 100), 5) : 0.0;
+        $montos = $this->montosLineaFeCr($subTotalBruto, $montoDescuento, $ivaMonto);
 
         $desc = $detalle->descripcion ?: ($producto->nombre ?? 'Ítem');
 
@@ -203,7 +211,6 @@ final class CostaRicaInvoiceFromVentaMapper
         ];
 
         // XSD v4.4: antes de <ImpuestoNeto> debe existir al menos un <Impuesto> o <ImpuestoAsumidoEmisorFabrica>.
-        $gravado = $ivaMonto > 0.00001 && $rate > 0;
         $line['taxes'] = [[
             'tax_type' => '01',
             'iva_type' => $this->codigoTarifaIvaDosDigitos($ivaTarifaCode),
@@ -216,39 +223,116 @@ final class CostaRicaInvoiceFromVentaMapper
 
     public function resumenDevolucionAlineadoLineas(Devolucion $devolucion, array $lineItems): array
     {
-        $grav = round((float) ($devolucion->sub_total ?? 0), 2);
-        $exe = round((float) ($devolucion->exenta ?? 0), 2);
-        $ns = round((float) ($devolucion->no_sujeta ?? 0), 2);
-        $totalesLineas = $this->totalesMonetariosDesdeLineas($lineItems);
+        $lineItems = array_values($lineItems);
+
+        $taxedGoods = 0.0;
+        $taxedServices = 0.0;
+        $exemptGoods = 0.0;
+        $exemptServices = 0.0;
+        $exoneratedGoods = 0.0;
+        $exoneratedServices = 0.0;
+        $nsGoods = 0.0;
+        $nsServices = 0.0;
+
+        $devolucion->loadMissing('detalles');
+        $detalles = $devolucion->detalles->values();
+
+        foreach ($lineItems as $idx => $line) {
+            if (! is_array($line)) {
+                continue;
+            }
+
+            $detalle = $detalles[$idx] ?? null;
+            $esServicio = $this->lineaUsaUnidadServicioCr($line);
+            $ivaLinea = (float) ($line['total_tax'] ?? 0);
+            $clas = $detalle instanceof DetalleDevolucion
+                ? $this->clasificarDetalleDevolucionCr($detalle, $ivaLinea)
+                : ($ivaLinea > 0.00001 ? 'gravada' : 'exenta');
+
+            if (in_array($clas, ['gravada', 'exonerada'], true)) {
+                $monto = round((float) ($line['taxable_base'] ?? $line['sub_total'] ?? 0), 5);
+            } elseif ($detalle instanceof DetalleDevolucion) {
+                $monto = $this->montoDetalleDevolucionPorClasificacionCr($detalle, $clas);
+            } else {
+                $monto = round((float) ($line['sub_total'] ?? 0), 5);
+            }
+
+            if ($monto <= 0.00001) {
+                continue;
+            }
+
+            if ($clas === 'gravada') {
+                if ($esServicio) {
+                    $taxedServices += $monto;
+                } else {
+                    $taxedGoods += $monto;
+                }
+            } elseif ($clas === 'exonerada') {
+                if ($esServicio) {
+                    $exoneratedServices += $monto;
+                } else {
+                    $exoneratedGoods += $monto;
+                }
+            } elseif ($clas === 'exenta') {
+                if ($esServicio) {
+                    $exemptServices += $monto;
+                } else {
+                    $exemptGoods += $monto;
+                }
+            } else {
+                if ($esServicio) {
+                    $nsServices += $monto;
+                } else {
+                    $nsGoods += $monto;
+                }
+            }
+        }
+
+        $taxedGoods = round($taxedGoods, 2);
+        $taxedServices = round($taxedServices, 2);
+        $exemptGoods = round($exemptGoods, 2);
+        $exemptServices = round($exemptServices, 2);
+        $exoneratedGoods = round($exoneratedGoods, 2);
+        $exoneratedServices = round($exoneratedServices, 2);
+        $nsGoods = round($nsGoods, 2);
+        $nsServices = round($nsServices, 2);
+
         $desc = $this->sumDescuentosDesdeLineas($lineItems);
-        $ventaNeta = round($grav + $exe + $ns, 2);
+        $totalesLineas = $this->totalesMonetariosDesdeLineas($lineItems);
+        $sub = round((float) ($devolucion->sub_total ?? 0), 2);
+
+        $totalTaxed = round($taxedGoods + $taxedServices, 2);
+        $totalExempt = round($exemptGoods + $exemptServices, 2);
+        $totalExonerado = round($exoneratedGoods + $exoneratedServices, 2);
+        $totalNs = round($nsGoods + $nsServices, 2);
 
         $summary = [
-            'total_taxed_goods' => $grav,
-            'total_exempt_goods' => $exe,
-            'total_non_taxable_goods' => $ns,
-            'total_taxed_services' => 0.0,
-            'total_exempt_services' => 0.0,
-            'total_non_taxable_services' => 0.0,
-            'total_taxed' => $grav,
-            'total_exempt' => $exe,
-            'total_non_taxable' => $ns,
-            'total_sale' => $ventaNeta,
+            'total_taxed_goods' => $taxedGoods,
+            'total_exempt_goods' => $exemptGoods,
+            'total_exonerated_goods' => $exoneratedGoods,
+            'total_non_taxable_goods' => $nsGoods,
+            'total_taxed_services' => $taxedServices,
+            'total_exempt_services' => $exemptServices,
+            'total_exonerated_services' => $exoneratedServices,
+            'total_non_taxable_services' => $nsServices,
+            'total_taxed' => $totalTaxed,
+            'total_exempt' => $totalExempt,
+            'total_exonerated' => $totalExonerado,
+            'total_non_taxable' => $totalNs,
+            'total_sale' => round($totalTaxed + $totalExempt + $totalExonerado + $totalNs, 2),
             'total_discounts' => $desc,
-            'total_net_sale' => $ventaNeta,
+            'total_net_sale' => $sub,
             'total_tax' => $totalesLineas['total_tax'],
             'total' => $totalesLineas['total'],
             'total_voucher' => $totalesLineas['total'],
         ];
 
-        if ($totalesLineas['total_tax'] > 0) {
-            $summary['taxes'] = [[
-                'tax_type' => '01',
-                'iva_type' => '08',
-                'rate' => 13.0,
-                'amount' => $totalesLineas['total_tax'],
-            ]];
+        $desglose = $this->desgloseImpuestosDesdeLineas($lineItems);
+        if ($desglose !== []) {
+            $summary['taxes'] = $desglose;
         }
+
+        $this->validarLineasYResumenFeCr($lineItems, $summary);
 
         return $summary;
     }
@@ -723,7 +807,6 @@ final class CostaRicaInvoiceFromVentaMapper
         }
 
         $subTotalBruto = round((float) $detalle->sub_total, 5);
-        $ivaMonto = round((float) ($detalle->iva ?? 0), 5);
         $montoDescuento = round((float) ($detalle->descuento ?? 0), 5);
 
         $exoneracion = $this->detalleDeclaraExoneracionCr($detalle);
@@ -731,10 +814,17 @@ final class CostaRicaInvoiceFromVentaMapper
         if ($exoneracion) {
             $ex = $this->exoneracionCrArrayDetalle($detalle);
             $pct = (float) ($ex['tarifa_exonerada'] ?? $pct ?: 13);
+        }
+        [$ivaTarifaCode, , $rate] = $this->tarifaIva($pct, $exoneracion || $pct > 0);
+        $baseImponible = round($subTotalBruto - $montoDescuento, 5);
+        if ($exoneracion) {
+            $ivaMonto = 0.0;
+        } elseif ($rate > 0.00001) {
+            $ivaMonto = round($baseImponible * ($rate / 100), 5);
+        } else {
             $ivaMonto = 0.0;
         }
         $montos = $this->montosLineaFeCr($subTotalBruto, $montoDescuento, $ivaMonto);
-        [$ivaTarifaCode, , $rate] = $this->tarifaIva($pct, $exoneracion || $ivaMonto > 0);
 
         $esServicio = $this->esUnidadServicioLineaVentaCr($producto, $empresa, $cabys);
 
@@ -1042,13 +1132,13 @@ final class CostaRicaInvoiceFromVentaMapper
         ];
 
         if ($iva > 0) {
-            $summary['taxes'] = [[
-                'tax_type' => '01',
-                'iva_type' => '08',
-                'rate' => 13.0,
-                'amount' => $iva,
-            ]];
+            $desglose = $this->desgloseImpuestosDesdeLineas($lineItems);
+            if ($desglose !== []) {
+                $summary['taxes'] = $desglose;
+            }
         }
+
+        $this->validarLineasYResumenFeCr($lineItems, $summary);
 
         return $summary;
     }
@@ -2011,6 +2101,151 @@ final class CostaRicaInvoiceFromVentaMapper
             'total_tax' => round($impuesto, 2),
             'total' => round($total, 2),
         ];
+    }
+
+    /**
+     * TotalDesgloseImpuesto: agrupa impuestos de línea por código y tarifa IVA.
+     *
+     * @param  array<int, array<string, mixed>>  $lineItems
+     * @return array<int, array<string, mixed>>
+     */
+    private function desgloseImpuestosDesdeLineas(array $lineItems): array
+    {
+        $groups = [];
+        foreach (array_values($lineItems) as $line) {
+            if (! is_array($line)) {
+                continue;
+            }
+            foreach ($line['taxes'] ?? [] as $tax) {
+                $amount = (float) ($tax['amount'] ?? 0);
+                if ($amount <= 0.00001) {
+                    continue;
+                }
+                $taxType = (string) ($tax['tax_type'] ?? '01');
+                $ivaType = $this->codigoTarifaIvaDosDigitos((string) ($tax['iva_type'] ?? '08'));
+                $key = $taxType.'|'.$ivaType;
+                if (! isset($groups[$key])) {
+                    $groups[$key] = [
+                        'tax_type' => $taxType,
+                        'iva_type' => $ivaType,
+                        'rate' => (float) ($tax['rate'] ?? 0),
+                        'amount' => 0.0,
+                    ];
+                }
+                $groups[$key]['amount'] += $amount;
+            }
+        }
+
+        $result = [];
+        foreach ($groups as $group) {
+            $group['amount'] = round($group['amount'], 2);
+            $result[] = $group;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Validaciones previas a emitir XML (tolerancia de redondeo FE CR v4.4).
+     *
+     * @param  array<int, array<string, mixed>>  $lineItems
+     * @param  array<string, mixed>  $summary
+     */
+    private function validarLineasYResumenFeCr(array $lineItems, array $summary): void
+    {
+        $tolLinea = 0.00002;
+        $tolResumen = 0.02;
+
+        foreach (array_values($lineItems) as $idx => $line) {
+            if (! is_array($line)) {
+                continue;
+            }
+            $base = (float) ($line['taxable_base'] ?? $line['sub_total'] ?? 0);
+            foreach ($line['taxes'] ?? [] as $tax) {
+                $rate = (float) ($tax['rate'] ?? 0);
+                $amount = (float) ($tax['amount'] ?? 0);
+                if ($rate <= 0.00001 || $amount <= 0.00001) {
+                    continue;
+                }
+                $esperado = round($base * ($rate / 100), 5);
+                if (abs($amount - $esperado) > $tolLinea) {
+                    throw new InvalidArgumentException(sprintf(
+                        'Línea %d: Monto impuesto %.5f no coincide con BaseImponible×(Tarifa/100) (esperado %.5f).',
+                        $idx + 1,
+                        $amount,
+                        $esperado
+                    ));
+                }
+            }
+        }
+
+        $totalTaxedGoods = round((float) ($summary['total_taxed_goods'] ?? 0), 2);
+        $totalTaxedServices = round((float) ($summary['total_taxed_services'] ?? 0), 2);
+        $totalTaxed = round((float) ($summary['total_taxed'] ?? 0), 2);
+        if (abs($totalTaxed - ($totalTaxedGoods + $totalTaxedServices)) > $tolResumen) {
+            throw new InvalidArgumentException(sprintf(
+                'TotalGravado (%.2f) no coincide con TotalServGravados (%.2f) + TotalMercanciasGravadas (%.2f).',
+                $totalTaxed,
+                $totalTaxedServices,
+                $totalTaxedGoods
+            ));
+        }
+
+        $totalTax = round((float) ($summary['total_tax'] ?? 0), 2);
+        if ($totalTax > 0.00001) {
+            $taxes = $summary['taxes'] ?? [];
+            if ($taxes === []) {
+                throw new InvalidArgumentException(
+                    'Falta TotalDesgloseImpuesto (summary.taxes) cuando hay impuestos en el comprobante.'
+                );
+            }
+            $sumDesglose = 0.0;
+            foreach ($taxes as $tax) {
+                $sumDesglose += (float) ($tax['amount'] ?? 0);
+            }
+            if (abs($sumDesglose - $totalTax) > $tolResumen) {
+                throw new InvalidArgumentException(sprintf(
+                    'TotalDesgloseImpuesto (%.2f) no coincide con TotalImpuesto (%.2f).',
+                    $sumDesglose,
+                    $totalTax
+                ));
+            }
+        }
+    }
+
+    /**
+     * @return 'gravada'|'exenta'|'exonerada'|'no_sujeta'
+     */
+    private function clasificarDetalleDevolucionCr(DetalleDevolucion $detalle, float $ivaMonto): string
+    {
+        $t = strtolower(trim((string) ($detalle->tipo_gravado ?? '')));
+        if (in_array($t, ['gravada', 'exenta', 'exonerada', 'no_sujeta'], true)) {
+            return $t;
+        }
+        if ($ivaMonto > 0.00001) {
+            return 'gravada';
+        }
+        if ((float) ($detalle->exenta ?? 0) > 0.00001) {
+            return 'exenta';
+        }
+        if ((float) ($detalle->no_sujeta ?? 0) > 0.00001) {
+            return 'no_sujeta';
+        }
+
+        return 'exenta';
+    }
+
+    private function montoDetalleDevolucionPorClasificacionCr(DetalleDevolucion $detalle, string $clasificacion): float
+    {
+        return match ($clasificacion) {
+            'exenta' => round(max((float) ($detalle->exenta ?? 0), 0), 2) > 0.00001
+                ? round((float) $detalle->exenta, 2)
+                : round((float) $detalle->precio * (float) ($detalle->cantidad ?: 1), 2),
+            'no_sujeta' => round(max((float) ($detalle->no_sujeta ?? 0), 0), 2) > 0.00001
+                ? round((float) $detalle->no_sujeta, 2)
+                : round((float) $detalle->precio * (float) ($detalle->cantidad ?: 1), 2),
+            default => round((float) $detalle->precio * (float) ($detalle->cantidad ?: 1), 2),
+        };
     }
 
     private function clasificarDetalleCompraCr(DetalleCompra $detalle): string
