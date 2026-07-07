@@ -11,9 +11,15 @@ import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { DevolucionVentaDetallesComponent } from './detalles/devolucion-venta-detalles.component';
-import { MHService } from '@services/MH.service';
+import { FacturacionElectronicaService } from '@services/facturacion-electronica/facturacion-electronica.service';
 import { CountryI18nService } from '@services/country-i18n.service';
 import { esElSalvadorFe as empresaEsElSalvador, debeEmitirDteEnImpresion } from '@services/facturacion-electronica/fe-pais.util';
+import {
+    mensajeErrorHttpFeCr,
+    type FeCrErrorEmisionPayload,
+} from '@services/facturacion-electronica/fe-cr-http-error.util';
+import { abrirVentanaTextoFeCr } from '@services/facturacion-electronica/fe-cr-abrir-xml.util';
+import { AlertsHaciendaComponent } from '@shared/parts/alerts-hacienda/alerts-hacienda.component';
 import {
     esNombreNotaCredito,
     esNombreNotaCreditoODebito,
@@ -24,7 +30,7 @@ import {
     selector: 'app-devolucion-nueva',
     templateUrl: './devolucion-nueva.component.html',
     standalone: true,
-    imports: [CommonModule, PipesModule, RouterModule, FormsModule, DevolucionVentaDetallesComponent, CurrencyPipe],
+    imports: [CommonModule, PipesModule, RouterModule, FormsModule, DevolucionVentaDetallesComponent, CurrencyPipe, AlertsHaciendaComponent],
     providers: [SumPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -50,7 +56,7 @@ export class DevolucionVentaNuevaComponent extends BaseModalComponent implements
         private sumPipe:SumPipe,
         private route: ActivatedRoute,
         private router: Router,
-        private mhService: MHService,
+        private facturacionElectronica: FacturacionElectronicaService,
     ){
         super(modalManager, alertService);
         this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
@@ -270,21 +276,63 @@ export class DevolucionVentaNuevaComponent extends BaseModalComponent implements
             },error => {this.alertService.error(error); this.saving = false; this.cdr.markForCheck(); });
         }
 
+    esFeCostaRica(): boolean {
+        return this.facturacionElectronica.isCostaRicaFe();
+    }
+
+    private tipoDteDevolucion(d: any): string {
+        if (d?.tipo_dte) {
+            return String(d.tipo_dte);
+        }
+        return this.esFeCostaRica()
+            ? '03'
+            : (esNombreNotaDebito(d?.nombre_documento) ? '06' : '05');
+    }
+
+    private esPayloadErrorEmisionFeCr(e: unknown): e is FeCrErrorEmisionPayload {
+        if (typeof e !== 'object' || e === null || !('documento' in e)) {
+            return false;
+        }
+        const p = e as Record<string, unknown>;
+        const msg =
+            typeof p['message'] === 'string'
+                ? p['message']
+                : typeof p['error'] === 'string'
+                  ? p['error']
+                  : '';
+        return typeof msg === 'string' && msg.trim() !== '';
+    }
+
+    abrirXmlIntentoEmisionFeCr(): void {
+        const xml = this.devolucion?.fe_cr_intento_emision?.xml_comprobante;
+        if (typeof xml === 'string' && xml.length > 0) {
+            abrirVentanaTextoFeCr(xml, 'application/xml', 'XML comprobante CR');
+        }
+    }
+
+    abrirJsonIntentoEmisionFeCr(): void {
+        const doc = this.devolucion?.fe_cr_intento_emision?.documento;
+        if (doc != null) {
+            abrirVentanaTextoFeCr(
+                JSON.stringify(doc, null, 2),
+                'application/json',
+                'JSON payload FE CR'
+            );
+        }
+    }
+
     /**
      * Misma idea que facturación con "imprimir directamente": si hay FE, al procesar la nota se firma y envía el DTE.
      */
     private emitirDteNotaTrasProcesar(devolucion: any): void {
         this.emiting = true;
         this.cdr.markForCheck();
-        this.mhService.emitirDTENotaCredito(devolucion).then((d) => {
+        this.facturacionElectronica.emitirDTENotaCredito(devolucion).then((d) => {
             this.alertService.success(this.countryI18n.fe('emitSuccessTitle'), this.countryI18n.fe('emitSuccessBody'));
-            if (d.id_cliente) {
+            if (d.id_cliente && this.facturacionElectronica.requiereFlujoEnviarDteSeparado()) {
                 this.enviarDteCorreo(d);
             }
-            const tipoDte =
-                d.tipo_dte ||
-                d.dte?.identificacion?.tipoDte ||
-                (esNombreNotaDebito(d.nombre_documento) ? '06' : '05');
+            const tipoDte = this.tipoDteDevolucion(d);
             window.open(
                 this.apiService.baseUrl +
                     '/api/reporte/dte/' +
@@ -304,15 +352,44 @@ export class DevolucionVentaNuevaComponent extends BaseModalComponent implements
                 'La devolución de venta fue guardada exitosamente.'
             );
             this.cdr.markForCheck();
-        }).catch((error) => {
+        }).catch((error: any) => {
             this.emiting = false;
             this.saving = false;
-            this.alertService.warning('El documento no fue emitido.', error);
-            this.router.navigate(['/devoluciones/ventas']);
+            if (error?.devolucion) {
+                devolucion = { ...error.devolucion };
+            }
+            let msg: string;
+            let feCrIntento: FeCrErrorEmisionPayload | undefined;
+            if (this.esPayloadErrorEmisionFeCr(error)) {
+                msg = error.message;
+                feCrIntento = error;
+            } else if (typeof error === 'string') {
+                msg = error;
+            } else {
+                msg = this.esFeCostaRica()
+                    ? mensajeErrorHttpFeCr(error)
+                    : String(error?.message ?? error);
+            }
+            this.devolucion = {
+                ...devolucion,
+                errores: msg,
+                ...(feCrIntento ? { fe_cr_intento_emision: feCrIntento } : {}),
+            };
             this.alertService.success(
                 'Devolución de venta creada',
                 'La devolución de venta fue guardada exitosamente.'
             );
+            if (this.esFeCostaRica()) {
+                this.alertService.info(
+                    'Comprobante no emitido',
+                    feCrIntento
+                        ? 'Revise el mensaje abajo. Abra «XML del comprobante» (recomendado) o «JSON interno» si necesita depurar.'
+                        : 'Revise el mensaje en el recuadro rojo de esta pantalla.'
+                );
+            } else {
+                this.alertService.warning('El documento no fue emitido.', msg);
+                this.router.navigate(['/devoluciones/ventas']);
+            }
             this.cdr.markForCheck();
         });
     }
