@@ -11,10 +11,11 @@
                 <label for="fecha">Fecha</label><br>
                 <input type="date" class="form-control" [(ngModel)]="devolucion.fecha" name="fecha" id="fecha" required>
             </div>
-            @if (devolucion.id_documento) {
+            @if (documentos.length) {
                 <div class="form-group col-md-4 col-lg-2">
                     <label for="id_documento">Documento</label>
-                    <select name="id_documento" [(ngModel)]="devolucion.id_documento" (change)="setDocumento($event.target.value)" class="form-select">
+                    <select name="id_documento" [(ngModel)]="devolucion.id_documento" (change)="setDocumento($any($event.target).value)" class="form-select" required>
+                        <option [ngValue]="null" disabled>Seleccione documento</option>
                         @for (documento of documentos; track documento.id) {
                             <option [value]="documento.id">{{ documento.nombre }}</option>
                         }

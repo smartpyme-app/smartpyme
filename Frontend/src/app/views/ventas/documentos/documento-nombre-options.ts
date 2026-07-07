@@ -24,6 +24,20 @@ export function esTipoFacturaElectronicaCompraCr(tipo: string | null | undefined
   return t === NOMBRE_DOCUMENTO_CR.fecCompra || t === 'Compra electrónica';
 }
 
+export function esNombreNotaCredito(nombre: string | null | undefined): boolean {
+  const n = String(nombre ?? '').trim();
+  return n === 'Nota de crédito' || n === NOMBRE_DOCUMENTO_CR.notaCredito;
+}
+
+export function esNombreNotaDebito(nombre: string | null | undefined): boolean {
+  const n = String(nombre ?? '').trim();
+  return n === 'Nota de débito' || n === NOMBRE_DOCUMENTO_CR.notaDebito;
+}
+
+export function esNombreNotaCreditoODebito(nombre: string | null | undefined): boolean {
+  return esNombreNotaCredito(nombre) || esNombreNotaDebito(nombre);
+}
+
 /** Costa Rica: denominaciones alineadas con comprobantes electrónicos (DGT). No se lista “Crédito fiscal” (FE 01 = Factura). */
 export const DOCUMENTO_NOMBRE_OPCIONES_CR: DocumentoNombreOption[] = [
   { value: NOMBRE_DOCUMENTO_CR.factura, label: NOMBRE_DOCUMENTO_CR.factura },
