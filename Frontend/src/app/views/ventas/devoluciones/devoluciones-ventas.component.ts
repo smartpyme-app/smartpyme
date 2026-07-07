@@ -13,8 +13,8 @@ import {
   mensajeErrorHttpFeCr,
   type FeCrErrorEmisionPayload,
 } from '@services/facturacion-electronica/fe-cr-http-error.util';
-import { abrirVentanaTextoFeCr } from '@services/facturacion-electronica/fe-cr-abrir-xml.util';
 import { AlertsHaciendaComponent } from '@shared/parts/alerts-hacienda/alerts-hacienda.component';
+import { FeCrEmisionAvanzadoComponent } from '@shared/parts/fe-cr-emision-avanzado/fe-cr-emision-avanzado.component';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { TruncatePipe } from '@pipes/truncate.pipe';
@@ -27,7 +27,7 @@ import Swal from 'sweetalert2';
     selector: 'app-devoluciones-ventas',
     templateUrl: './devoluciones-ventas.component.html',
     standalone: true,
-    imports: [CommonModule, PipesModule, RouterModule, FormsModule, NgSelectModule, PaginationComponent, TruncatePipe, PopoverModule, TooltipModule, LazyImageDirective, AlertsHaciendaComponent],
+    imports: [CommonModule, PipesModule, RouterModule, FormsModule, NgSelectModule, PaginationComponent, TruncatePipe, PopoverModule, TooltipModule, LazyImageDirective, AlertsHaciendaComponent, FeCrEmisionAvanzadoComponent],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 
@@ -308,24 +308,6 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
         return typeof msg === 'string' && msg.trim() !== '';
     }
 
-    abrirXmlIntentoEmisionFeCr(): void {
-        const xml = this.venta?.fe_cr_intento_emision?.xml_comprobante;
-        if (typeof xml === 'string' && xml.length > 0) {
-            abrirVentanaTextoFeCr(xml, 'application/xml', 'XML comprobante CR');
-        }
-    }
-
-    abrirJsonIntentoEmisionFeCr(): void {
-        const doc = this.venta?.fe_cr_intento_emision?.documento;
-        if (doc != null) {
-            abrirVentanaTextoFeCr(
-                JSON.stringify(doc, null, 2),
-                'application/json',
-                'JSON payload FE CR'
-            );
-        }
-    }
-
     emitirDTE() {
         this.saving = true;
         this.cdr.markForCheck();
@@ -385,9 +367,7 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
                 }
                 this.alertService.info(
                     'Comprobante no emitido',
-                    feCrIntento
-                        ? 'Revise el mensaje abajo. Abra «XML del comprobante» o «JSON interno» si necesita depurar.'
-                        : 'Revise el mensaje en el recuadro de esta ventana.'
+                    'Revise los problemas indicados en esta ventana.'
                 );
             } else {
                 this.alertService.warning('Comprobante electrónico', msg);

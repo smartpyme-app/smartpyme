@@ -114,7 +114,10 @@ final class CostaRicaFeComprobantePdfService
                 throw new RuntimeException('No hay comprobante electrónico Costa Rica para este registro.');
             }
             $documento = CostaRicaFeDteDocumento::documentoParaPdf($dte);
-            $clave = (string) ($registro->codigo_generacion ?? '');
+            $clave = CostaRicaFeDteDocumento::claveEmision(
+                $registro->codigo_generacion ?? null,
+                $registro->sello_mh ?? null
+            );
             $titulo = match ($tipo) {
                 '04' => 'Tiquete electrónico',
                 '11' => 'Factura de exportación',
@@ -135,7 +138,10 @@ final class CostaRicaFeComprobantePdfService
             } else {
                 $documento = CostaRicaFeDteDocumento::documentoParaPdf($dte);
             }
-            $clave = (string) ($registro->codigo_generacion ?? '');
+            $clave = CostaRicaFeDteDocumento::claveEmision(
+                $registro->codigo_generacion ?? null,
+                $registro->sello_mh ?? null
+            );
             $titulo = 'Nota de débito electrónica';
         } elseif (in_array($tipo, ['03', '05', '06'], true)) {
             $registro = DevolucionVenta::query()->with(['empresa', 'cliente'])->findOrFail($id);
@@ -145,7 +151,10 @@ final class CostaRicaFeComprobantePdfService
                 throw new RuntimeException('No hay comprobante electrónico Costa Rica para esta devolución.');
             }
             $documento = CostaRicaFeDteDocumento::documentoParaPdf($dte);
-            $clave = (string) ($registro->codigo_generacion ?? '');
+            $clave = CostaRicaFeDteDocumento::claveEmision(
+                $registro->codigo_generacion ?? null,
+                $registro->sello_mh ?? null
+            );
             $titulo = 'Nota de crédito electrónica';
         } elseif (($tipo === '08' && $queryTipo === 'compra') || ($tipo === '14' && $queryTipo === 'compra')) {
             $registro = Compra::query()->with(['empresa', 'proveedor'])->findOrFail($id);
@@ -158,7 +167,10 @@ final class CostaRicaFeComprobantePdfService
                 throw new RuntimeException('Esta compra no tiene factura electrónica de compras (FEC, tipo 08).');
             }
             $documento = CostaRicaFeDteDocumento::documentoParaPdf($dte);
-            $clave = (string) ($registro->codigo_generacion ?? '');
+            $clave = CostaRicaFeDteDocumento::claveEmision(
+                $registro->codigo_generacion ?? null,
+                $registro->sello_mh ?? null
+            );
             $titulo = 'Factura electrónica de compra';
             $tipoDteRuta = '08';
         } elseif (($tipo === '08' && $queryTipo === 'gasto') || ($tipo === '14' && $queryTipo === 'gasto')) {
@@ -172,7 +184,10 @@ final class CostaRicaFeComprobantePdfService
                 throw new RuntimeException('Este egreso no tiene factura electrónica de compras (FEC, tipo 08).');
             }
             $documento = CostaRicaFeDteDocumento::documentoParaPdf($dte);
-            $clave = (string) ($registro->codigo_generacion ?? '');
+            $clave = CostaRicaFeDteDocumento::claveEmision(
+                $registro->codigo_generacion ?? null,
+                $registro->sello_mh ?? null
+            );
             $titulo = 'Factura electrónica de compra';
             $tipoDteRuta = '08';
         } else {

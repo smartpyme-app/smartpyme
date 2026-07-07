@@ -18,8 +18,8 @@ import {
     mensajeErrorHttpFeCr,
     type FeCrErrorEmisionPayload,
 } from '@services/facturacion-electronica/fe-cr-http-error.util';
-import { abrirVentanaTextoFeCr } from '@services/facturacion-electronica/fe-cr-abrir-xml.util';
 import { AlertsHaciendaComponent } from '@shared/parts/alerts-hacienda/alerts-hacienda.component';
+import { FeCrEmisionAvanzadoComponent } from '@shared/parts/fe-cr-emision-avanzado/fe-cr-emision-avanzado.component';
 import {
     esNombreNotaCredito,
     esNombreNotaCreditoODebito,
@@ -30,7 +30,7 @@ import {
     selector: 'app-devolucion-nueva',
     templateUrl: './devolucion-nueva.component.html',
     standalone: true,
-    imports: [CommonModule, PipesModule, RouterModule, FormsModule, DevolucionVentaDetallesComponent, CurrencyPipe, AlertsHaciendaComponent],
+    imports: [CommonModule, PipesModule, RouterModule, FormsModule, DevolucionVentaDetallesComponent, CurrencyPipe, AlertsHaciendaComponent, FeCrEmisionAvanzadoComponent],
     providers: [SumPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -303,24 +303,6 @@ export class DevolucionVentaNuevaComponent extends BaseModalComponent implements
         return typeof msg === 'string' && msg.trim() !== '';
     }
 
-    abrirXmlIntentoEmisionFeCr(): void {
-        const xml = this.devolucion?.fe_cr_intento_emision?.xml_comprobante;
-        if (typeof xml === 'string' && xml.length > 0) {
-            abrirVentanaTextoFeCr(xml, 'application/xml', 'XML comprobante CR');
-        }
-    }
-
-    abrirJsonIntentoEmisionFeCr(): void {
-        const doc = this.devolucion?.fe_cr_intento_emision?.documento;
-        if (doc != null) {
-            abrirVentanaTextoFeCr(
-                JSON.stringify(doc, null, 2),
-                'application/json',
-                'JSON payload FE CR'
-            );
-        }
-    }
-
     /**
      * Misma idea que facturación con "imprimir directamente": si hay FE, al procesar la nota se firma y envía el DTE.
      */
@@ -382,9 +364,7 @@ export class DevolucionVentaNuevaComponent extends BaseModalComponent implements
             if (this.esFeCostaRica()) {
                 this.alertService.info(
                     'Comprobante no emitido',
-                    feCrIntento
-                        ? 'Revise el mensaje abajo. Abra «XML del comprobante» (recomendado) o «JSON interno» si necesita depurar.'
-                        : 'Revise el mensaje en el recuadro rojo de esta pantalla.'
+                    'Revise los problemas indicados en esta pantalla.'
                 );
             } else {
                 this.alertService.warning('El documento no fue emitido.', msg);

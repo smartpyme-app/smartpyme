@@ -228,8 +228,9 @@
                         <p class="muted">Tipo comprobante (código): {{ $tipoDocCodigo }}</p>
                     </td>
                     <td style="width: 22%; text-align: right;">
-                        @if(strlen((string) $qrPayload) > 0)
-                            {!! '<img width="115" height="115" style="display:inline-block;" src="data:image/png;base64,' . DNS2D::getBarcodePNG($qrPayload, 'QRCODE', 8, 1, [0,0,0], true) . '" alt="Código QR" />' !!}
+                        @php $qrImgB64 = DNS2D::getBarcodePNG($qrPayload, 'QRCODE', 8, 1, [0, 0, 0], true); @endphp
+                        @if($qrImgB64 !== '')
+                            <img width="115" height="115" style="display:inline-block;" src="data:image/png;base64,{{ $qrImgB64 }}" alt="Código QR" />
                             <p class="muted" style="margin-top:4px;max-width:115px;margin-left:auto;">Consulta: clave o enlace ATV</p>
                         @endif
                     </td>

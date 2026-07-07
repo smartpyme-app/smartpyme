@@ -17,8 +17,8 @@ import {
   mensajeErrorHttpFeCr,
   type FeCrErrorEmisionPayload,
 } from '@services/facturacion-electronica/fe-cr-http-error.util';
-import { abrirVentanaTextoFeCr } from '@services/facturacion-electronica/fe-cr-abrir-xml.util';
 import { AlertsHaciendaComponent } from '@shared/parts/alerts-hacienda/alerts-hacienda.component';
+import { FeCrEmisionAvanzadoComponent } from '@shared/parts/fe-cr-emision-avanzado/fe-cr-emision-avanzado.component';
 import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { SharedDataService } from '@services/shared-data.service';
@@ -48,7 +48,7 @@ export type VentasExportPeriodoTipo = 'detalles' | 'ventas' | 'general';
     selector: 'app-ventas',
     templateUrl: './ventas.component.html',
     standalone: true,
-    imports: [CommonModule, PipesModule, RouterModule, FormsModule, ImportarExcelComponent, PaginationComponent, CrearAbonoVentaComponent, TruncatePipe, PopoverModule, TooltipModule, NgSelectModule, LazyImageDirective, AlertsHaciendaComponent, NotificacionesContainerComponent],
+    imports: [CommonModule, PipesModule, RouterModule, FormsModule, ImportarExcelComponent, PaginationComponent, CrearAbonoVentaComponent, TruncatePipe, PopoverModule, TooltipModule, NgSelectModule, LazyImageDirective, AlertsHaciendaComponent, FeCrEmisionAvanzadoComponent, NotificacionesContainerComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
 
 })
@@ -1320,25 +1320,6 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     return typeof msg === 'string' && msg.trim() !== '';
   }
 
-  /** XML del último intento fallido (modal DTE), si el backend lo devolvió en 422. */
-  abrirXmlIntentoEmisionFeCr(): void {
-    const xml = this.venta?.fe_cr_intento_emision?.xml_comprobante;
-    if (typeof xml === 'string' && xml.length > 0) {
-      abrirVentanaTextoFeCr(xml, 'application/xml', 'XML comprobante CR');
-    }
-  }
-
-  abrirJsonIntentoEmisionFeCr(): void {
-    const doc = this.venta?.fe_cr_intento_emision?.documento;
-    if (doc != null) {
-      abrirVentanaTextoFeCr(
-        JSON.stringify(doc, null, 2),
-        'application/json',
-        'JSON payload FE CR'
-      );
-    }
-  }
-
   emitirDTE() {
     this.saving = true;
     this.cdr.markForCheck();
@@ -1410,9 +1391,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
         if (this.esFeCostaRica()) {
           this.alertService.info(
             'Comprobante no emitido',
-            feCrIntento
-              ? 'Revise el mensaje abajo. Abra «XML del comprobante» (recomendado) o «JSON interno» si necesita depurar.'
-              : 'Revise el mensaje en el recuadro rojo de esta ventana.'
+            'Revise los problemas indicados en esta ventana.'
           );
         } else {
           this.alertService.warning('Comprobante electrónico', msg);

@@ -163,18 +163,8 @@
     <div class="card-body">
         @if (devolucion.errores) {
             <app-alerts-hacienda [errores]="devolucion.errores"></app-alerts-hacienda>
-            @if (esFeCostaRica() && devolucion.fe_cr_intento_emision?.xml_comprobante) {
-                <div class="mb-3 text-start small">
-                    <p class="text-muted mb-2">Depuración: XML generado en el intento fallido (según respuesta del servidor).</p>
-                    <button type="button" (click)="abrirXmlIntentoEmisionFeCr()" class="mb-2 btn btn-outline-secondary">
-                        Ver XML del comprobante (intento)
-                    </button>
-                    @if (devolucion.fe_cr_intento_emision?.documento) {
-                        <button type="button" (click)="abrirJsonIntentoEmisionFeCr()" class="btn btn-outline-secondary ms-2">
-                            Ver JSON interno (payload)
-                        </button>
-                    }
-                </div>
+            @if (esFeCostaRica()) {
+                <app-fe-cr-emision-avanzado [intento]="devolucion.fe_cr_intento_emision"></app-fe-cr-emision-avanzado>
             }
         }
         <div class="row mt-4">

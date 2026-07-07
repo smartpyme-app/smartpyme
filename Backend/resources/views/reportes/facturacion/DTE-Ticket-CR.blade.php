@@ -124,9 +124,12 @@
     </div>
 
     <br>
+    @php $qrImgB64 = DNS2D::getBarcodePNG($qrPayload, 'QRCODE', 10, 10, [0, 0, 0], true); @endphp
+    @if($qrImgB64 !== '')
     <p class="text-center">
-        {!! '<img id="qrcode" width="150" height="150" src="data:image/png;base64,' . DNS2D::getBarcodePNG($qrPayload, 'QRCODE', 10, 10, array(0,0,0), true) . '" alt="Código QR" />' !!}
+        <img id="qrcode" width="150" height="150" src="data:image/png;base64,{{ $qrImgB64 }}" alt="Código QR" />
     </p>
+    @endif
 
     <hr>
 
