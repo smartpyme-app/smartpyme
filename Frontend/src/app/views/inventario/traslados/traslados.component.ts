@@ -13,6 +13,7 @@ import { BuscadorProductosComponent } from '@shared/parts/buscador-productos/bus
 import { TruncatePipe } from '@pipes/truncate.pipe';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { SharedModule } from '@shared/shared.module';
+import { DistribucionLotesModalComponent } from '@shared/modals/distribucion-lotes/distribucion-lotes-modal.component';
 import { textoResumenLotesDetalle } from '@utils/lotes-venta.util';
 
 @Component({

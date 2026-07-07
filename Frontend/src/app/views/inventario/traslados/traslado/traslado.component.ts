@@ -1,15 +1,22 @@
 import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
-import { Router, ActivatedRoute } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
+import { NgSelectModule } from '@ng-select/ng-select';
 
 import { AlertService } from '../../../../services/alert.service';
 import { ApiService } from '../../../../services/api.service';
+import { SharedModule } from '@shared/shared.module';
 import { DistribucionLotesModalComponent } from '@shared/modals/distribucion-lotes/distribucion-lotes-modal.component';
 import { textoResumenLotesDetalle } from '@utils/lotes-venta.util';
 
 @Component({
   selector: 'app-traslado',
-  templateUrl: './traslado.component.html'
+  templateUrl: './traslado.component.html',
+  standalone: true,
+  imports: [CommonModule, FormsModule, RouterModule, TooltipModule, NgSelectModule, SharedModule],
 })
 export class TrasladoComponent implements OnInit {
 

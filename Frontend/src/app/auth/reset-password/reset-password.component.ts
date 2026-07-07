@@ -1,11 +1,16 @@
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
 import { AlertService } from '../../services/alert.service';
 import { ApiService } from '../../services/api.service';
 
 @Component({
   selector: 'app-reset-password',
-  templateUrl: './reset-password.component.html'
+  templateUrl: './reset-password.component.html',
+  standalone: true,
+  imports: [CommonModule, FormsModule, RouterModule, NotificacionesContainerComponent],
 })
 export class ResetPasswordComponent implements OnInit {
 
