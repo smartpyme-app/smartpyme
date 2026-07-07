@@ -3,47 +3,41 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Providers\RouteServiceProvider;
 use Illuminate\Foundation\Auth\ResetsPasswords;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Http\Request;
-use App\Models\User;
-use App\Http\Requests\Auth\ResetPasswordRequest;
 
 class ResetPasswordController extends Controller
 {
-    /*
-    |--------------------------------------------------------------------------
-    | Password Reset Controller
-    |--------------------------------------------------------------------------
-    |
-    | This controller is responsible for handling password reset requests
-    | and uses a simple trait to include this behavior. You're free to
-    | explore this trait and override any methods you wish to tweak.
-    |
-    */
-
     use ResetsPasswords;
 
-    /**
-     * Where to redirect users after resetting their password.
-     *
-     * @var string
-     */
-    protected $redirectTo = RouteServiceProvider::HOME;
-
-    protected function reset(ResetPasswordRequest $request)
+    protected function reset(Request $request)
     {
-
-        // Encuentra al usuario por la dirección de correo electrónico
-        $user = User::where('email', $request->email)->first();
-
-        // Actualiza la contraseña del usuario
-        $user->update([
-            'password' => Hash::make($request->password),
+        $request->validate([
+            'token' => 'required',
+            'email' => 'required|email',
+            'password' => [
+                'required',
+                'string',
+                'min:8',
+                'confirmed',
+                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/',
+            ],
+        ], [
+            'password.regex' => 'Debe tener al menos una minúscula, una mayúscula, un número y un carácter especial'
         ]);
 
-        return redirect(env('APP_URL'));
-    }
+        // ponytail: Password::reset() validates token+email match internally — closes the vuln
+        $status = Password::reset(
+            $request->only('email', 'password', 'password_confirmation', 'token'),
+            function ($user, $password) {
+                $user->update(['password' => Hash::make($password)]);
+            }
+        );
 
+        return $status === Password::PASSWORD_RESET
+            ? response()->json(['message' => 'Contraseña actualizada correctamente'], 200)
+            : response()->json(['error' => 'El token es inválido o ha expirado'], 400);
+    }
 }

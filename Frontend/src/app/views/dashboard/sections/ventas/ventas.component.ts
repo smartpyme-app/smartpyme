@@ -306,6 +306,21 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
 
   private inicializado: boolean = false;
 
+  private readonly mesesNombres = [
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+  ];
+
+  /** Fecha en DD/MM/YYYY → nombre de mes en español. */
+  private parseMesNombreFromFecha(fecha: string): string | null {
+    if (!fecha) return null;
+    const partes = fecha.split('/');
+    if (partes.length !== 3) return null;
+    const mesNum = parseInt(partes[1], 10) - 1;
+    if (mesNum < 0 || mesNum > 11) return null;
+    return this.mesesNombres[mesNum];
+  }
+
   /**
    * Método eficiente de clonación profunda
    */
@@ -356,21 +371,13 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
     this.cargarOpcionesFiltros();
     this.configurarAGGrid();
     this.configurarAGGridClientes();
-    // Guardar datos originales si existen
-    if (this.datos && Object.keys(this.datos).length > 0) {
-      this.datosOriginales = this.clonarDatos(this.datos);
-      if (Object.keys(this.filtrosInteractivos).length > 0) {
-        this.aplicarFiltrosInteractivos();
-      } else {
-        this.datosFiltrados = this.clonarDatos(this.datos);
-        this.ordenarArraysIniciales();
-        this.datos = this.datosFiltrados;
-        this.recalcularRowsCache();
-      }
-    }
+    this.inicializarDatos();
     // Marcar como inicializado después de un pequeño delay para evitar emitir durante la inicialización
     setTimeout(() => {
       this.inicializado = true;
+      if (Object.keys(this.filtrosInteractivos).length > 0) {
+        this.aplicarFiltrosInteractivos();
+      }
       this.cdr.markForCheck();
     }, 100);
   }
@@ -414,21 +421,31 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['datos']) {
-      // Actualizar datos originales cuando cambian
-      if (this.datos && Object.keys(this.datos).length > 0) {
-        this.datosOriginales = this.clonarDatos(this.datos);
-        // Aplicar filtros interactivos si existen
-        if (Object.keys(this.filtrosInteractivos).length > 0) {
-          this.aplicarFiltrosInteractivos();
-        } else {
-          this.datosFiltrados = this.clonarDatos(this.datos);
-          this.ordenarArraysIniciales();
-          this.datos = this.datosFiltrados;
-          this.recalcularRowsCache();
-        }
-        this.cdr.markForCheck();
+      const datosActuales = changes['datos'].currentValue;
+      if (datosActuales && Object.keys(datosActuales).length > 0) {
+        this.inicializarDatos();
       }
     }
+  }
+
+  private inicializarDatos(): void {
+    if (!this.datos || Object.keys(this.datos).length === 0) {
+      return;
+    }
+
+    this._lastDatosHash = '';
+    this.datosOriginales = this.clonarDatos(this.datos);
+
+    if (Object.keys(this.filtrosInteractivos).length > 0) {
+      this.aplicarFiltrosInteractivos();
+    } else {
+      this.datosFiltrados = this.clonarDatos(this.datos);
+      this.ordenarArraysIniciales();
+      this.datos = this.datosFiltrados;
+      this.recalcularRowsCache();
+    }
+
+    this.cdr.markForCheck();
   }
 
   configurarAGGrid(): void {
@@ -528,6 +545,10 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
         this.gridColumnApi = params.api;
         setTimeout(() => params.api.sizeColumnsToFit(), 0);
       },
+      onRowDataUpdated: () => {
+        this.recalcularTotalesVentasProducto();
+        this.cdr.markForCheck();
+      },
       onFilterChanged: () => {
         this.onFilterChangedVentasProducto();
       }
@@ -540,6 +561,7 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
         field: 'cliente',
         headerName: 'Cliente',
         width: 250,
+        minWidth: 250,
         sortable: true,
         filter: true,
         cellStyle: { textAlign: 'left' }
@@ -548,6 +570,7 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
         field: 'ultimaVenta',
         headerName: 'Última venta',
         width: 120,
+        minWidth: 120,
         sortable: true,
         filter: true,
         cellStyle: { textAlign: 'center' }
@@ -556,6 +579,7 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
         field: 'dias',
         headerName: 'Días',
         width: 100,
+        minWidth: 100,
         sortable: true,
         filter: true,
         cellStyle: { textAlign: 'right' },
@@ -566,7 +590,8 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
       {
         field: 'transacciones',
         headerName: 'Transacciones',
-        width: 120,
+        width: 130,
+        minWidth: 130,
         sortable: true,
         filter: true,
         cellStyle: { textAlign: 'right' },
@@ -578,6 +603,7 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
         field: 'ventasSinIva',
         headerName: this.countryI18n.tax('salesWithoutTax'),
         width: 150,
+        minWidth: 150,
         sortable: true,
         filter: true,
         cellStyle: { textAlign: 'right' }
@@ -586,6 +612,7 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
         field: 'ventasConIva',
         headerName: this.countryI18n.tax('salesWithTax'),
         width: 150,
+        minWidth: 150,
         sortable: true,
         filter: true,
         cellStyle: { textAlign: 'right' }
@@ -597,11 +624,13 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
       paginationPageSize: 20,
       paginationPageSizeSelector: [20, 50, 100],
       suppressMenuHide: true,
+      suppressHorizontalScroll: false,
       quickFilterText: '',
       defaultColDef: {
         resizable: true,
         sortable: true,
-        filter: true
+        filter: true,
+        suppressSizeToFit: true,
       },
       getRowClass: (params: any) => {
         if (params.node.rowPinned === 'bottom') {
@@ -628,10 +657,13 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
       onGridReady: (params: any) => {
         this.clienteGridApi = params.api;
         this.clienteGridColumnApi = params.api;
-        // Asegurar que el scroll funcione correctamente
         setTimeout(() => {
           params.api.sizeColumnsToFit();
         }, 100);
+      },
+      onRowDataUpdated: () => {
+        this.recalcularTotalesVentasCliente();
+        this.cdr.markForCheck();
       },
       onFilterChanged: () => {
         this.onFilterChangedVentasCliente();
@@ -1082,9 +1114,15 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
 
   cambiarVistaMetricas(vista: string): void {
     this.vistaMetricas = vista;
+    if (vista === 'presupuesto') {
+      this.recalcularVentasVsPresupuesto();
+    } else if (vista === 'anio') {
+      this.recalcularVentasVsAnioAnterior();
+    } else {
+      this.recalcularVentasPorMes(this.datosFiltrados.ventasDetalladas || []);
+    }
+    this.datos = this.clonarDatos(this.datosFiltrados);
     this.cdr.markForCheck();
-    // Aquí puedes recargar los datos según la vista seleccionada
-    // Por ejemplo, emitir un evento o llamar a un servicio
   }
 
   getTituloGraficoVentas(): string {
@@ -1103,8 +1141,6 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   limpiarFiltros(): void {
-    this.anio = new Date().getFullYear().toString();
-    this.mes = '';
     this.limpiarFiltrosInteractivos();
     this.filtroAdSucursalTodasImplicitas = true;
     this.filtroAdSucursalSeleccionadas = [];
@@ -1314,75 +1350,9 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
     this.filtrosCambiados.emit(filtros);
   }
 
+  // ponytail: delegates to hayFiltrosAdicionalesActivos — limpiarFiltros no longer touches dates
   get puedeLimpiarFiltrosVentas(): boolean {
-    const anioActual = new Date().getFullYear().toString();
-    const hayAdicionalesEnBorrador =
-      this.filtroAdicionalEstaActivo(
-        this.filtroAdSucursalTodasImplicitas,
-        this.filtroAdSucursalSeleccionadas
-      ) ||
-      this.filtroAdicionalEstaActivo(
-        this.filtroAdEstadoTodasImplicitas,
-        this.filtroAdEstadoSeleccionadas
-      ) ||
-      this.filtroAdicionalEstaActivo(
-        this.filtroAdCanalTodasImplicitas,
-        this.filtroAdCanalSeleccionadas
-      ) ||
-      this.filtroAdicionalEstaActivo(
-        this.filtroAdClienteTodasImplicitas,
-        this.filtroAdClienteSeleccionadas
-      ) ||
-      this.filtroAdicionalEstaActivo(
-        this.filtroAdVendedorTodasImplicitas,
-        this.filtroAdVendedorSeleccionadas
-      );
-    const hayAdicionalesAplicados =
-      this.filtroAdicionalEstaActivo(
-        this.filtroAdSucursalTodasImplicitasAplicado,
-        this.filtroAdSucursalSeleccionadasAplicado
-      ) ||
-      this.filtroAdicionalEstaActivo(
-        this.filtroAdEstadoTodasImplicitasAplicado,
-        this.filtroAdEstadoSeleccionadasAplicado
-      ) ||
-      this.filtroAdicionalEstaActivo(
-        this.filtroAdCanalTodasImplicitasAplicado,
-        this.filtroAdCanalSeleccionadasAplicado
-      ) ||
-      this.filtroAdicionalEstaActivo(
-        this.filtroAdClienteTodasImplicitasAplicado,
-        this.filtroAdClienteSeleccionadasAplicado
-      ) ||
-      this.filtroAdicionalEstaActivo(
-        this.filtroAdVendedorTodasImplicitasAplicado,
-        this.filtroAdVendedorSeleccionadasAplicado
-      );
-    const hayCatProd =
-      this.filtroAdicionalEstaActivo(
-        this.filtroCatTodasImplicitas,
-        this.filtroCatSeleccionadas,
-      ) ||
-      this.filtroAdicionalEstaActivo(
-        this.filtroProdTodasImplicitas,
-        this.filtroProdSeleccionadas,
-      ) ||
-      this.filtroAdicionalEstaActivo(
-        this.filtroCatTodasImplicitasAplicado,
-        this.filtroCatSeleccionadasAplicado,
-      ) ||
-      this.filtroAdicionalEstaActivo(
-        this.filtroProdTodasImplicitasAplicado,
-        this.filtroProdSeleccionadasAplicado,
-      );
-    return (
-      !!this.mes ||
-      this.anio !== anioActual ||
-      hayAdicionalesEnBorrador ||
-      hayAdicionalesAplicados ||
-      hayCatProd ||
-      this.tieneFiltrosInteractivos()
-    );
+    return this.hayFiltrosAdicionalesActivos;
   }
 
   formatCurrency(value: number): string {
@@ -1460,20 +1430,29 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
     return this.datos.ventasDetalladas.reduce((sum: number, item: any) => sum + (item.monto || 0), 0);
   }
 
+  private utilidadVentasProducto(ventasSinIVA: number, descuento: number, costoTotal: number): number {
+    return (ventasSinIVA || 0) - (descuento || 0) - (costoTotal || 0);
+  }
+
   private calcularVentasPorProductoRows(): any[] {
     if (!this.datos.ventasPorProducto) return [];
-    return this.datos.ventasPorProducto.map((item: any) => ({
-      categoria: item.categoria || '-',
-      producto: item.producto || '-',
-      formaPago: item.formaPago || '-',
-      cantidad: item.cantidad || 0,
-      precioUnitario: item.precioUnitario || 0,
-      descuento: item.descuento || 0,
-      ventasSinIVA: item.ventasSinIVA || 0,
-      costoTotal: item.costoTotal || 0,
-      utilidad: item.utilidad || 0,
-      isTotal: false,
-    }));
+    return this.datos.ventasPorProducto.map((item: any) => {
+      const ventasSinIVA = item.ventasSinIVA || 0;
+      const descuento = item.descuento || 0;
+      const costoTotal = item.costoTotal || 0;
+      return {
+        categoria: item.categoria || '-',
+        producto: item.producto || '-',
+        formaPago: item.formaPago || '-',
+        cantidad: item.cantidad || 0,
+        precioUnitario: item.precioUnitario || 0,
+        descuento,
+        ventasSinIVA,
+        costoTotal,
+        utilidad: this.utilidadVentasProducto(ventasSinIVA, descuento, costoTotal),
+        isTotal: false,
+      };
+    });
   }
 
   get ventasPorProductoRows(): any[] {
@@ -1482,14 +1461,18 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
 
   get totalVentasPorProducto(): any {
     if (!this.datos.ventasPorProducto || this.datos.ventasPorProducto.length === 0) {
-      return { cantidad: 0, ventasSinIVA: 0, costoTotal: 0, utilidad: 0 };
+      return { cantidad: 0, ventasSinIVA: 0, descuento: 0, costoTotal: 0, utilidad: 0 };
     }
-    return this.datos.ventasPorProducto.reduce((totals: any, item: any) => ({
+    const totales = this.datos.ventasPorProducto.reduce((totals: any, item: any) => ({
       cantidad: totals.cantidad + (item.cantidad || 0),
       ventasSinIVA: totals.ventasSinIVA + (item.ventasSinIVA || 0),
+      descuento: totals.descuento + (item.descuento || 0),
       costoTotal: totals.costoTotal + (item.costoTotal || 0),
-      utilidad: totals.utilidad + (item.utilidad || 0)
-    }), { cantidad: 0, ventasSinIVA: 0, costoTotal: 0, utilidad: 0 });
+    }), { cantidad: 0, ventasSinIVA: 0, descuento: 0, costoTotal: 0 });
+    return {
+      ...totales,
+      utilidad: this.utilidadVentasProducto(totales.ventasSinIVA, totales.descuento, totales.costoTotal),
+    };
   }
 
   private calcularVentasPorClienteRows(): any[] {
@@ -1842,18 +1825,28 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   // Métodos para filtros interactivos
+  limpiarFiltroIndividual(key: string): void {
+    if (key === 'productoNombre' || key === 'idProducto') {
+      delete this.filtrosInteractivos.idProducto;
+      delete this.filtrosInteractivos.productoNombre;
+    } else {
+      delete (this.filtrosInteractivos as any)[key];
+    }
+    this.aplicarFiltrosInteractivos();
+  }
+
   onCanalClick(event: { name: string; amount: number }): void {
+    if (!event?.name) return;
     if (this.filtrosInteractivos.canal === event.name) {
-      // Si ya está filtrado por este canal, quitar el filtro
       delete this.filtrosInteractivos.canal;
     } else {
-      // Aplicar filtro de canal
       this.filtrosInteractivos.canal = event.name;
     }
     this.aplicarFiltrosInteractivos();
   }
 
   onVendedorClick(event: any): void {
+    if (!event?.name) return;
     if (this.filtrosInteractivos.vendedor === event.name) {
       delete this.filtrosInteractivos.vendedor;
     } else {
@@ -1863,6 +1856,7 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   onFormaPagoClick(event: { name: string; value: any; index: number }): void {
+    if (!event?.name) return;
     if (this.filtrosInteractivos.formaPago === event.name) {
       delete this.filtrosInteractivos.formaPago;
     } else {
@@ -1872,6 +1866,7 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   onCategoriaClick(event: { name: string; amount: number }): void {
+    if (!event?.name) return;
     if (this.filtrosInteractivos.categoria === event.name) {
       delete this.filtrosInteractivos.categoria;
     } else {
@@ -1881,6 +1876,7 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   onProductoClick(event: { name: string; amount: number }): void {
+    if (!event?.name) return;
     const entry = this.productos.find((p) => p.nombre === event.name);
     const id = entry?.id;
     const idStr = id != null ? String(id) : '';
@@ -1908,6 +1904,7 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   onClienteClick(event: { name: string; amount: number }): void {
+    if (!event?.name) return;
     if (this.filtrosInteractivos.cliente === event.name) {
       delete this.filtrosInteractivos.cliente;
     } else {
@@ -1917,6 +1914,7 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   onMesClick(event: { name: string; value: any; index: number }): void {
+    if (!event?.name) return;
     if (this.filtrosInteractivos.mes === event.name) {
       delete this.filtrosInteractivos.mes;
     } else {
@@ -1926,10 +1924,20 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   aplicarFiltrosInteractivos(): void {
-    // Si no hay datos originales, usar los datos actuales
+    if (!this.inicializado) {
+      this.cdr.markForCheck();
+      return;
+    }
+
     const datosBase = Object.keys(this.datosOriginales).length > 0
       ? this.datosOriginales
       : (this.datos || {});
+
+    // ponytail: sin ventasDetalladas aún no se puede filtrar localmente
+    if (!datosBase.ventasDetalladas?.length) {
+      this.cdr.markForCheck();
+      return;
+    }
 
     // Crear una copia profunda de los datos para filtrar
     this.datosFiltrados = this.clonarDatos(datosBase);
@@ -1972,22 +1980,9 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
       ventasFiltradas = ventasFiltradas.filter((v: any) => v.cliente === this.filtrosInteractivos.cliente);
     }
     if (this.filtrosInteractivos.mes) {
-      const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-
       ventasFiltradas = ventasFiltradas.filter((v: any) => {
-        if (!v.fecha) return false;
-
-        // Parsear fecha en formato DD/MM/YYYY
-        const partes = v.fecha.split('/');
-        if (partes.length !== 3) return false;
-
-        const mesNum = parseInt(partes[1], 10) - 1; // Meses van de 0 a 11
-        if (mesNum < 0 || mesNum > 11) return false;
-
-        const mesNombre = meses[mesNum];
-
-        // Comparar ignorando mayúsculas/minúsculas
+        const mesNombre = this.parseMesNombreFromFecha(v.fecha);
+        if (!mesNombre) return false;
         return mesNombre.toLowerCase() === this.filtrosInteractivos.mes?.toLowerCase();
       });
     }
@@ -2036,6 +2031,10 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
 
     // Recalcular ventas por mes
     this.recalcularVentasPorMes(ventasFiltradas);
+
+    // Recalcular vs presupuesto / vs año anterior
+    this.recalcularVentasVsPresupuesto();
+    this.recalcularVentasVsAnioAnterior();
 
     // Recalcular ventas por producto (tabla detallada)
     this.recalcularVentasPorProducto(ventasFiltradas);
@@ -2116,6 +2115,13 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   recalcularVentasPorCanal(ventas: any[]): void {
+    if (!this.tieneFiltrosInteractivos()) {
+      if (this.datosOriginales?.ventasPorCanal) {
+        this.datosFiltrados.ventasPorCanal = this.clonarDatos(this.datosOriginales.ventasPorCanal);
+      }
+      return;
+    }
+
     const ventasPorCanal: { [key: string]: number } = {};
 
     ventas.forEach((v: any) => {
@@ -2129,6 +2135,18 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   recalcularVentasPorVendedor(ventas: any[]): void {
+    if (!this.tieneFiltrosInteractivos()) {
+      if (this.datosOriginales?.ventasPorVendedor) {
+        this.datosFiltrados.ventasPorVendedor = this.clonarDatos(this.datosOriginales.ventasPorVendedor);
+      }
+      if (this.datosOriginales?.ventasPorVendedorChartConfig) {
+        this.datosFiltrados.ventasPorVendedorChartConfig = this.clonarDatos(
+          this.datosOriginales.ventasPorVendedorChartConfig,
+        );
+      }
+      return;
+    }
+
     const ventasPorVendedor: { [key: string]: number } = {};
 
     ventas.forEach((v: any) => {
@@ -2155,6 +2173,15 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   recalcularVentasPorFormaPago(ventas: any[]): void {
+    if (!this.tieneFiltrosInteractivos()) {
+      if (this.datosOriginales?.ventasPorFormaPagoConfig) {
+        this.datosFiltrados.ventasPorFormaPagoConfig = this.clonarDatos(
+          this.datosOriginales.ventasPorFormaPagoConfig,
+        );
+      }
+      return;
+    }
+
     const ventasPorFormaPago: { [key: string]: number } = {};
 
     ventas.forEach((v: any) => {
@@ -2184,6 +2211,13 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   recalcularVentasPorCategoria(ventas: any[]): void {
+    if (!this.tieneFiltrosInteractivos()) {
+      if (this.datosOriginales?.ventasPorCategoria) {
+        this.datosFiltrados.ventasPorCategoria = this.clonarDatos(this.datosOriginales.ventasPorCategoria);
+      }
+      return;
+    }
+
     const ventasPorCategoria: { [key: string]: number } = {};
 
     ventas.forEach((v: any) => {
@@ -2197,6 +2231,13 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   recalcularTopProductos(ventas: any[]): void {
+    if (!this.tieneFiltrosInteractivos()) {
+      if (this.datosOriginales?.topProductosVendidos) {
+        this.datosFiltrados.topProductosVendidos = this.clonarDatos(this.datosOriginales.topProductosVendidos);
+      }
+      return;
+    }
+
     const ventasPorProducto: { [key: string]: number } = {};
 
     ventas.forEach((v: any) => {
@@ -2211,6 +2252,13 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   recalcularTopClientes(ventas: any[]): void {
+    if (!this.tieneFiltrosInteractivos()) {
+      if (this.datosOriginales?.topClientes) {
+        this.datosFiltrados.topClientes = this.clonarDatos(this.datosOriginales.topClientes);
+      }
+      return;
+    }
+
     const ventasPorCliente: { [key: string]: { ventas: number; transacciones: number; ultimaVenta: string } } = {};
 
     ventas.forEach((v: any) => {
@@ -2232,30 +2280,138 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   recalcularVentasPorMes(ventas: any[]): void {
-    const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    if (!this.tieneFiltrosInteractivos()) {
+      if (this.datosOriginales?.ventasPorMesConfig) {
+        this.datosFiltrados.ventasPorMesConfig = this.clonarDatos(this.datosOriginales.ventasPorMesConfig);
+      }
+      return;
+    }
+
     const ventasPorMes: { [key: string]: number } = {};
 
     ventas.forEach((v: any) => {
-      if (v.fecha) {
-        const fecha = new Date(v.fecha);
-        const mesIndex = fecha.getMonth();
-        const mesNombre = meses[mesIndex];
+      const mesNombre = this.parseMesNombreFromFecha(v.fecha);
+      if (mesNombre) {
         ventasPorMes[mesNombre] = (ventasPorMes[mesNombre] || 0) + (v.monto || 0);
       }
     });
 
-    // Mantener el orden de los meses y solo incluir los que tienen datos
-    const labels = meses.filter(m => ventasPorMes[m] !== undefined && ventasPorMes[m] !== 0);
+    let labels = this.mesesNombres.filter(m => ventasPorMes[m] !== undefined && ventasPorMes[m] !== 0);
+    if (labels.length === 0) {
+      labels = [...this.mesesNombres];
+    }
     const data = labels.map(m => ventasPorMes[m] || 0);
 
-    if (this.datosFiltrados.ventasPorMesConfig) {
-      this.datosFiltrados.ventasPorMesConfig = {
-        ...this.datosFiltrados.ventasPorMesConfig,
-        labels: labels.length > 0 ? labels : meses, // Si no hay datos, mostrar todos los meses
-        data: data.length > 0 ? data : meses.map(() => 0)
-      };
+    this.datosFiltrados.ventasPorMesConfig = {
+      ...(this.datosFiltrados.ventasPorMesConfig || {}),
+      type: 'line',
+      showArea: false,
+      smooth: false,
+      showYAxisLabels: false,
+      showXAxisLine: false,
+      labels,
+      data,
+      colors: ['#7CABFF'],
+      barLabelExactUnder1000: true,
+    };
+  }
+
+  recalcularVentasVsPresupuesto(): void {
+    if (!this.tieneFiltrosInteractivos()) {
+      if (this.datosOriginales?.ventasVsPresupuestoConfig) {
+        this.datosFiltrados.ventasVsPresupuestoConfig = this.clonarDatos(
+          this.datosOriginales.ventasVsPresupuestoConfig,
+        );
+      }
+      return;
     }
+
+    if (!this.datosFiltrados.ventasDetalladas) return;
+
+    const ventasPorMes: { [key: string]: number } = {};
+    this.datosFiltrados.ventasDetalladas.forEach((v: any) => {
+      const mesNombre = this.parseMesNombreFromFecha(v.fecha);
+      if (mesNombre) {
+        ventasPorMes[mesNombre] = (ventasPorMes[mesNombre] || 0) + (v.monto || 0);
+      }
+    });
+
+    const presupuestosOriginales = (this.datosOriginales?.ventasVsPresupuestoConfig as any)?.dataExtra || [];
+    let filteredIndices = this.mesesNombres
+      .map((mes, index) => index)
+      .filter(index => {
+        const mes = this.mesesNombres[index];
+        return (ventasPorMes[mes] || 0) !== 0 || (presupuestosOriginales[index] || 0) !== 0;
+      });
+
+    if (filteredIndices.length === 0) {
+      filteredIndices = this.mesesNombres.map((_, index) => index);
+    }
+
+    const labels = filteredIndices.map(index => this.mesesNombres[index]);
+    const dataVentas = filteredIndices.map(index => ventasPorMes[this.mesesNombres[index]] || 0);
+    const dataPresupuesto = filteredIndices.map(index => presupuestosOriginales[index] || 0);
+
+    this.datosFiltrados.ventasVsPresupuestoConfig = {
+      type: 'bar',
+      labels,
+      data: [
+        { name: 'Ventas', data: dataVentas },
+        { name: 'Presupuesto', data: dataPresupuesto },
+      ],
+      dataExtra: presupuestosOriginales,
+      colors: ['#7CABFF', 'rgba(124, 171, 255, 0.4)'],
+      barLabelExactUnder1000: true,
+    };
+  }
+
+  recalcularVentasVsAnioAnterior(): void {
+    if (!this.tieneFiltrosInteractivos()) {
+      if (this.datosOriginales?.ventasVsAnioAnteriorConfig) {
+        this.datosFiltrados.ventasVsAnioAnteriorConfig = this.clonarDatos(
+          this.datosOriginales.ventasVsAnioAnteriorConfig,
+        );
+      }
+      return;
+    }
+
+    if (!this.datosFiltrados.ventasDetalladas) return;
+
+    const ventasPorMes: { [key: string]: number } = {};
+    this.datosFiltrados.ventasDetalladas.forEach((v: any) => {
+      const mesNombre = this.parseMesNombreFromFecha(v.fecha);
+      if (mesNombre) {
+        ventasPorMes[mesNombre] = (ventasPorMes[mesNombre] || 0) + (v.monto || 0);
+      }
+    });
+
+    const ventasAnioAnteriorOriginales = (this.datosOriginales?.ventasVsAnioAnteriorConfig as any)?.dataExtra || [];
+    let filteredIndices = this.mesesNombres
+      .map((mes, index) => index)
+      .filter(index => {
+        const mes = this.mesesNombres[index];
+        return (ventasPorMes[mes] || 0) !== 0 || (ventasAnioAnteriorOriginales[index] || 0) !== 0;
+      });
+
+    if (filteredIndices.length === 0) {
+      filteredIndices = this.mesesNombres.map((_, index) => index);
+    }
+
+    const labels = filteredIndices.map(index => this.mesesNombres[index]);
+    const dataAnioActual = filteredIndices.map(index => ventasPorMes[this.mesesNombres[index]] || 0);
+    const dataAnioAnterior = filteredIndices.map(index => ventasAnioAnteriorOriginales[index] || 0);
+
+    this.datosFiltrados.ventasVsAnioAnteriorConfig = {
+      type: 'bar',
+      labels,
+      data: [
+        { name: 'Año actual', data: dataAnioActual },
+        { name: 'Año anterior', data: dataAnioAnterior },
+      ],
+      dataExtra: ventasAnioAnteriorOriginales,
+      colors: ['#7CABFF', 'rgba(124, 171, 255, 0.4)'],
+      barLabelExactUnder1000: true,
+    };
   }
 
   recalcularVentasPorProducto(ventas: any[]): void {
@@ -2285,10 +2441,12 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
       ventasPorProductoMap[key].ventasSinIVA += (v.monto || 0) / 1.12;
       ventasPorProductoMap[key].descuento += (v.descuento || 0);
       ventasPorProductoMap[key].costoTotal += (v.costoTotal || 0);
-      ventasPorProductoMap[key].utilidad += (v.utilidad || 0);
     });
 
-    this.datosFiltrados.ventasPorProducto = Object.values(ventasPorProductoMap);
+    this.datosFiltrados.ventasPorProducto = Object.values(ventasPorProductoMap).map((row: any) => ({
+      ...row,
+      utilidad: this.utilidadVentasProducto(row.ventasSinIVA, row.descuento, row.costoTotal),
+    }));
   }
 
   recalcularVentasPorCliente(ventas: any[]): void {
@@ -2322,9 +2480,18 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
     const hoy = new Date();
     Object.values(ventasPorClienteMap).forEach((cliente: any) => {
       if (cliente.ultimaVenta) {
-        const fechaUltimaVenta = new Date(cliente.ultimaVenta);
-        const diffTime = Math.abs(hoy.getTime() - fechaUltimaVenta.getTime());
-        cliente.dias = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        const partes = String(cliente.ultimaVenta).split('/');
+        if (partes.length === 3) {
+          const fechaUltimaVenta = new Date(
+            parseInt(partes[2], 10),
+            parseInt(partes[1], 10) - 1,
+            parseInt(partes[0], 10),
+          );
+          if (!Number.isNaN(fechaUltimaVenta.getTime())) {
+            const diffTime = Math.abs(hoy.getTime() - fechaUltimaVenta.getTime());
+            cliente.dias = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          }
+        }
       }
     });
 
@@ -2335,6 +2502,15 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
   // Los métodos filtrarPor* ya no se usan directamente, todo se maneja en aplicarFiltrosInteractivos
 
   recalcularMetricas(): void {
+    if (
+      !this.tieneFiltrosInteractivos() &&
+      this.datosOriginales?.metricasVentas &&
+      Object.keys(this.datosOriginales.metricasVentas).length > 0
+    ) {
+      this.datosFiltrados.metricasVentas = this.clonarDatos(this.datosOriginales.metricasVentas);
+      return;
+    }
+
     // Recalcular métricas de ventas basadas en los datos filtrados
     if (this.datosFiltrados.ventasDetalladas) {
       const ventas = this.datosFiltrados.ventasDetalladas;
@@ -2355,17 +2531,19 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
 
   limpiarFiltrosInteractivos(): void {
     this.filtrosInteractivos = {};
-    // Restaurar datos originales
     if (Object.keys(this.datosOriginales).length > 0) {
       this.datosFiltrados = this.clonarDatos(this.datosOriginales);
-      this.datos = this.datosFiltrados;
+      this.recalcularTodosLosGraficos();
+      this.recalcularMetricas();
+      this.datos = this.clonarDatos(this.datosFiltrados);
+      this.recalcularRowsCache();
+      this.cdr.markForCheck();
     } else if (this.datos) {
-      // Si no hay datos originales guardados, recargar desde el input
       this.datosFiltrados = this.clonarDatos(this.datos);
       this.datos = this.datosFiltrados;
+      this.recalcularRowsCache();
+      this.cdr.markForCheck();
     }
-    this.recalcularRowsCache();
-    this.cdr.markForCheck();
   }
 
   tieneFiltrosInteractivos(): boolean {
@@ -2393,38 +2571,44 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
     return filtros.join(', ');
   }
 
-  recalcularTotalesVentasProducto(): void {
+  recalcularTotalesVentasProducto(desdeFiltroColumnaGrid = false): void {
     let cantidad = 0;
     let ventasSinIVA = 0;
+    let descuento = 0;
     let costoTotal = 0;
-    let utilidad = 0;
 
-    if (this.gridApi && !this.gridApi.isDestroyed()) {
+    const acumular = (item: any): void => {
+      cantidad += (item.cantidad || 0);
+      ventasSinIVA += (item.ventasSinIVA || 0);
+      descuento += (item.descuento || 0);
+      costoTotal += (item.costoTotal || 0);
+    };
+
+    const usarGridFiltrado =
+      desdeFiltroColumnaGrid && this.gridApi && !this.gridApi.isDestroyed?.() && this.gridApi.isAnyFilterPresent();
+
+    if (usarGridFiltrado) {
       this.gridApi.forEachNodeAfterFilter((node: any) => {
-        if (node.data) {
-          cantidad += (node.data.cantidad || 0);
-          ventasSinIVA += (node.data.ventasSinIVA || 0);
-          costoTotal += (node.data.costoTotal || 0);
-          utilidad += (node.data.utilidad || 0);
-        }
+        if (!node.data || node.rowPinned) return;
+        acumular(node.data);
       });
-    } else if (this.datos.ventasPorProducto) {
-      this.datos.ventasPorProducto.forEach((item: any) => {
-        cantidad += (item.cantidad || 0);
-        ventasSinIVA += (item.ventasSinIVA || 0);
-        costoTotal += (item.costoTotal || 0);
-        utilidad += (item.utilidad || 0);
-      });
+    } else {
+      const fuente = this._ventasPorProductoRowsCache.length
+        ? this._ventasPorProductoRowsCache
+        : (this.datos?.ventasPorProducto ?? []);
+      fuente.forEach(acumular);
     }
 
-    if (cantidad > 0 || ventasSinIVA > 0) {
+    const utilidad = this.utilidadVentasProducto(ventasSinIVA, descuento, costoTotal);
+
+    if (cantidad > 0 || ventasSinIVA > 0 || descuento > 0 || costoTotal > 0 || utilidad !== 0) {
       this.pinnedBottomRowDataVentasProducto = [{
         categoria: 'TOTAL',
         producto: '',
         formaPago: '',
         cantidad: cantidad,
         precioUnitario: null,
-        descuento: null,
+        descuento: descuento,
         ventasSinIVA: ventasSinIVA,
         costoTotal: costoTotal,
         utilidad: utilidad
@@ -2435,7 +2619,7 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   onFilterChangedVentasProducto(): void {
-    this.recalcularTotalesVentasProducto();
+    this.recalcularTotalesVentasProducto(true);
     this.cdr.markForCheck();
   }
 

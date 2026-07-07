@@ -328,6 +328,67 @@
     animation: pulse 2s infinite;
 }
 
+/* Filtros interactivos activos (chips) */
+.filtros-activos {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    background-color: #eef4ff;
+    border: 1px solid #c5d9f7;
+    border-radius: 8px;
+    margin-top: 0.75rem;
+    width: 100%;
+}
+
+.filtros-activos .badge-filtro {
+    display: inline-flex;
+    align-items: center;
+    background-color: #dce8fc;
+    color: #38528f;
+    border: 1px solid #a8c4f0;
+    padding: 0.25rem 0.6rem;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    gap: 0.35rem;
+}
+
+.filtros-activos .badge-filtro button {
+    background: none;
+    border: none;
+    color: #38528f;
+    font-size: 1.1rem;
+    line-height: 1;
+    padding: 0;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.filtros-activos .badge-filtro button:hover {
+    color: #1a3266;
+}
+
+.filtros-activos .btn-limpiar-todos {
+    background: none;
+    border: none;
+    color: #38528f;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    margin-left: auto;
+}
+
+.filtros-activos .btn-limpiar-todos:hover {
+    background-color: #dce8fc;
+    color: #1a3266;
+}
+
 @keyframes pulse {
     0%, 100% {
         opacity: 1;

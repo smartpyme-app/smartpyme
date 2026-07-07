@@ -27,6 +27,8 @@ import { CrearProveedorComponent } from './modals/crear-proveedor/crear-proveedo
 import { CrearClienteComponent } from './modals/crear-cliente/crear-cliente.component';
 import { ClienteNotaModalComponent } from './modals/cliente-nota-modal/cliente-nota-modal.component';
 import { CrearAjusteComponent } from './modals/crear-ajuste/crear-ajuste.component';
+import { CrearAjusteLoteComponent } from './modals/crear-ajuste-lote/crear-ajuste-lote.component';
+import { DistribucionLotesModalComponent } from './modals/distribucion-lotes/distribucion-lotes-modal.component';
 import { CrearAbonoVentaComponent } from './modals/crear-abono-venta/crear-abono-venta.component';
 import { CrearAbonoCompraComponent } from './modals/crear-abono-compra/crear-abono-compra.component';
 import { CrearAbonoGastoComponent } from './modals/crear-abono-gasto/crear-abono-gasto.component';
@@ -85,6 +87,8 @@ import { CrearAreaEmpresaComponent } from './modals/crear-area-empresa/crear-are
     CrearClienteComponent,
     ClienteNotaModalComponent,
     CrearAjusteComponent,
+    CrearAjusteLoteComponent,
+    DistribucionLotesModalComponent,
     CrearAbonoVentaComponent,
     CrearAbonoCompraComponent,
     CrearAbonoGastoComponent,
@@ -120,6 +124,8 @@ import { CrearAreaEmpresaComponent } from './modals/crear-area-empresa/crear-are
     CrearClienteComponent,
     ClienteNotaModalComponent,
     CrearAjusteComponent,
+    CrearAjusteLoteComponent,
+    DistribucionLotesModalComponent,
     CrearAbonoVentaComponent,
     CrearAbonoCompraComponent,
     CrearAbonoGastoComponent,
