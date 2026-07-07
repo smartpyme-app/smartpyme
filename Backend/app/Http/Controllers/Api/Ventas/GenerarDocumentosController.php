@@ -16,6 +16,7 @@ use Luecano\NumeroALetras\NumeroALetras;
 use Illuminate\Support\Facades\DB;
 use App\Services\FacturacionElectronica\CostaRica\CostaRicaFeComprobantePdfService;
 use App\Services\FacturacionElectronica\FacturacionElectronicaCountryResolver;
+use App\Support\Admin\DocumentosDefaultPorPais;
 // Usamos app('dompdf.wrapper') para evitar errores de Facade en producción
 
 use Auth;
@@ -25,11 +26,11 @@ class GenerarDocumentosController extends Controller
 
     public function generarDoc($id){
 
-        // Si tiene FE en producción
+        // Si tiene facturación electrónica (pruebas o producción)
             $empresa = JWTAuth::parseToken()->authenticate()->empresa()->first();
 
-            if ($empresa->facturacion_electronica && $empresa->fe_ambiente == '01') {
-                if (FacturacionElectronicaCountryResolver::codPais($empresa) === FacturacionElectronicaCountryResolver::CODIGO_COSTA_RICA) {
+            if ($empresa->facturacion_electronica) {
+                if (FacturacionElectronicaCountryResolver::resolveCodigoPaisFe($empresa) === FacturacionElectronicaCountryResolver::CODIGO_COSTA_RICA) {
                     return app(CostaRicaFeComprobantePdfService::class)->generarTicketImpresion((int) $id, $empresa);
                 }
 
@@ -81,7 +82,11 @@ class GenerarDocumentosController extends Controller
         $venta = Venta::where('id', $id)->with('detalles', 'empresa')->firstOrFail();
         $documento = Documento::findOrfail($venta->id_documento);
 
-        if ($documento->nombre == 'Ticket' || $documento->nombre == 'Recibo') {
+        if (
+            $documento->nombre == 'Ticket'
+            || $documento->nombre == 'Recibo'
+            || $documento->nombre == DocumentosDefaultPorPais::CR_TIQUETE
+        ) {
             $documento = Documento::findOrfail($venta->id_documento);
 
             $empresa = Empresa::findOrfail(Auth::user()->id_empresa);
@@ -161,7 +166,7 @@ class GenerarDocumentosController extends Controller
         }
 
 //        factura
-        if ($documento->nombre == 'Factura') {
+        if ($documento->nombre == 'Factura' || $documento->nombre == DocumentosDefaultPorPais::CR_FACTURA) {
             $cliente = Cliente::withoutGlobalScope('empresa')->find($venta->id_cliente);
 
             $empresa = Empresa::findOrfail(Auth::user()->id_empresa);

@@ -281,6 +281,9 @@
   <div class="modal-body">
         <app-alerts-hacienda [errores]="venta.errores"></app-alerts-hacienda>
         <app-notificaciones-container></app-notificaciones-container>
+        @if (esFeCostaRica()) {
+            <app-fe-cr-emision-avanzado [intento]="venta.fe_cr_intento_emision"></app-fe-cr-emision-avanzado>
+        }
         <div class="d-grid">
 
             @if (esFeCostaRica() && venta.codigo_generacion) {

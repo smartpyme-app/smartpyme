@@ -15,11 +15,17 @@ class LibroIvaResumenFiscalExport implements FromArray, WithEvents, WithTitle
 {
     private const LAST_COL = 'D';
 
+    private const LAST_COL_VENTAS = 'E';
+
     private const FILL_SECTION = 'E2E8F0';
 
     private const FILL_HEADER = 'F1F3F5';
 
     private const FILL_TOTAL = 'DEE2E6';
+
+    private const FILL_SUBTOTAL = '495057';
+
+    private const FILL_RESUMEN_HEADER = 'FFC107';
 
     /** @var array<string, mixed> */
     protected array $resumen;
@@ -53,6 +59,7 @@ class LibroIvaResumenFiscalExport implements FromArray, WithEvents, WithTitle
                 $sheet->getColumnDimension('B')->setWidth(18);
                 $sheet->getColumnDimension('C')->setWidth(18);
                 $sheet->getColumnDimension('D')->setWidth(18);
+                $sheet->getColumnDimension('E')->setWidth(18);
 
                 $periodo = $this->resumen['periodo'] ?? [];
                 $inicio = $periodo['inicio'] ?? null;
@@ -132,6 +139,12 @@ class LibroIvaResumenFiscalExport implements FromArray, WithEvents, WithTitle
                         ]);
                         $sheet->getRowDimension($row)->setRowHeight(28);
                     }
+                }
+
+                $ventasResumen = $this->resumen['ventas_resumen_contable']['filas'] ?? [];
+                if ($ventasResumen !== []) {
+                    $row = $this->blankRow($sheet, $row, 12);
+                    $row = $this->writeVentasResumenContable($sheet, $row, $ventasResumen);
                 }
             },
         ];
@@ -288,5 +301,81 @@ class LibroIvaResumenFiscalExport implements FromArray, WithEvents, WithTitle
     private function applyMoneyFormat($sheet, string $range): void
     {
         $sheet->getStyle($range)->getNumberFormat()->setFormatCode('#,##0.00');
+    }
+
+    /**
+     * @param  array<int, array{descripcion?: string, valor_neto?: float, debito_fiscal?: float, iva_retenido?: float, total_ventas?: float, tipo?: string}>  $filas
+     */
+    private function writeVentasResumenContable($sheet, int $row, array $filas): int
+    {
+        $lastCol = self::LAST_COL_VENTAS;
+        $row = $this->writeSectionTitle($sheet, $row, $lastCol, 'Resumen de ventas');
+
+        $headerRow = $row;
+        $sheet->setCellValue('A'.$headerRow, 'RESUMEN');
+        $sheet->setCellValue('B'.$headerRow, 'VALOR NETO');
+        $sheet->setCellValue('C'.$headerRow, 'DEBITO FISCAL');
+        $sheet->setCellValue('D'.$headerRow, 'IVA RETENIDO');
+        $sheet->setCellValue('E'.$headerRow, 'TOTAL VENTAS');
+        $sheet->getStyle("A{$headerRow}:{$lastCol}{$headerRow}")->applyFromArray([
+            'font' => ['bold' => true],
+            'fill' => [
+                'fillType' => Fill::FILL_SOLID,
+                'startColor' => ['rgb' => self::FILL_RESUMEN_HEADER],
+            ],
+            'alignment' => [
+                'horizontal' => Alignment::HORIZONTAL_CENTER,
+                'vertical' => Alignment::VERTICAL_CENTER,
+            ],
+            'borders' => [
+                'allBorders' => [
+                    'borderStyle' => Border::BORDER_THIN,
+                    'color' => ['rgb' => 'ADB5BD'],
+                ],
+            ],
+        ]);
+        $sheet->getRowDimension($headerRow)->setRowHeight(22);
+        $row++;
+
+        $firstDataRow = $row;
+        foreach ($filas as $fila) {
+            $tipo = (string) ($fila['tipo'] ?? 'detalle');
+            $sheet->setCellValue('A'.$row, (string) ($fila['descripcion'] ?? ''));
+            $sheet->setCellValue('B'.$row, (float) ($fila['valor_neto'] ?? 0));
+            $sheet->setCellValue('C'.$row, (float) ($fila['debito_fiscal'] ?? 0));
+            $sheet->setCellValue('D'.$row, (float) ($fila['iva_retenido'] ?? 0));
+            $sheet->setCellValue('E'.$row, (float) ($fila['total_ventas'] ?? 0));
+
+            if ($tipo === 'subtotal' || $tipo === 'total') {
+                $fill = $tipo === 'total' ? self::FILL_TOTAL : self::FILL_SUBTOTAL;
+                $fontColor = $tipo === 'subtotal' ? 'FFFFFF' : '212529';
+                $sheet->getStyle("A{$row}:{$lastCol}{$row}")->applyFromArray([
+                    'font' => ['bold' => true, 'color' => ['rgb' => $fontColor]],
+                    'fill' => [
+                        'fillType' => Fill::FILL_SOLID,
+                        'startColor' => ['rgb' => $fill],
+                    ],
+                ]);
+            }
+
+            $sheet->getRowDimension($row)->setRowHeight(20);
+            $row++;
+        }
+
+        $lastDataRow = $row - 1;
+        $this->applyMoneyFormat($sheet, "B{$firstDataRow}:E{$lastDataRow}");
+        $sheet->getStyle("B{$firstDataRow}:E{$lastDataRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+        $sheet->getStyle("A{$firstDataRow}:{$lastCol}{$lastDataRow}")->applyFromArray([
+            'borders' => [
+                'allBorders' => [
+                    'borderStyle' => Border::BORDER_THIN,
+                    'color' => ['rgb' => 'DEE2E6'],
+                ],
+            ],
+            'alignment' => ['vertical' => Alignment::VERTICAL_CENTER],
+        ]);
+        $sheet->getStyle("A{$firstDataRow}:A{$lastDataRow}")->getAlignment()->setWrapText(true);
+
+        return $row;
     }
 }

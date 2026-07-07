@@ -115,5 +115,40 @@
     <p class="muted">{{ $pago['descripcion'] ?? '' }}</p>
 @endif
 
+@php
+    $ventasResumen = $resumen['ventas_resumen_contable']['filas'] ?? [];
+@endphp
+@if ($ventasResumen !== [])
+    <h3>Resumen de ventas</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Resumen</th>
+                <th class="text-right">Valor neto</th>
+                <th class="text-right">Débito fiscal</th>
+                <th class="text-right">IVA retenido</th>
+                <th class="text-right">Total ventas</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach ($ventasResumen as $fila)
+                @php
+                    $tipo = $fila['tipo'] ?? 'detalle';
+                    $esSubtotal = in_array($tipo, ['subtotal', 'total'], true);
+                    $bg = $tipo === 'total' ? '#dee2e6' : ($tipo === 'subtotal' ? '#495057' : '');
+                    $color = $tipo === 'subtotal' ? '#ffffff' : '#212529';
+                @endphp
+                <tr @if($esSubtotal) style="background: {{ $bg }}; color: {{ $color }}; font-weight: bold;" @endif>
+                    <td>{{ $fila['descripcion'] ?? '' }}</td>
+                    <td class="text-right">{{ $fmt($fila['valor_neto'] ?? 0) }}</td>
+                    <td class="text-right">{{ $fmt($fila['debito_fiscal'] ?? 0) }}</td>
+                    <td class="text-right">{{ $fmt($fila['iva_retenido'] ?? 0) }}</td>
+                    <td class="text-right">{{ $fmt($fila['total_ventas'] ?? 0) }}</td>
+                </tr>
+            @endforeach
+        </tbody>
+    </table>
+@endif
+
 </body>
 </html>

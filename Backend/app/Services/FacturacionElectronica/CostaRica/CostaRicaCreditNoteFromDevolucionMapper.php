@@ -30,7 +30,13 @@ final class CostaRicaCreditNoteFromDevolucionMapper
         $fechaFactura = Carbon::parse($facturaOriginal->fecha)->timezone('America/Costa_Rica')->format('Y-m-d\TH:i:sP');
 
         $saleCond = '01';
-        $header = $this->invoiceMapper->encabezadoDocumento($empresa, (string) $devolucion->fecha, $secuencialNc, $saleCond, $devolucion->sucursal);
+        $header = $this->invoiceMapper->encabezadoDocumento(
+            $empresa,
+            $this->invoiceMapper->fechaEmisionXmlCr(),
+            $secuencialNc,
+            $saleCond,
+            $devolucion->sucursal
+        );
 
         $facturaOriginal->loadMissing('cliente');
         $receiver = $this->invoiceMapper->receptorDatosVenta($facturaOriginal, $empresa);
@@ -42,9 +48,9 @@ final class CostaRicaCreditNoteFromDevolucionMapper
             $pctIva = round(100 * $ivaH / $sub, 2);
         }
 
-        $lineItems = $devolucion->detalles->map(function ($d) use ($empresa, $pctIva) {
+        $lineItems = array_values($devolucion->detalles->map(function ($d) use ($empresa, $pctIva) {
             return $this->invoiceMapper->lineaDesdeDetalleDevolucion($d, $empresa, $pctIva);
-        })->all();
+        })->all());
 
         $referenced = [[
             'document_type' => '01',
@@ -58,8 +64,8 @@ final class CostaRicaCreditNoteFromDevolucionMapper
             'issuer' => $this->invoiceMapper->emisorDatos($empresa),
             'receiver' => $receiver,
             'line_items' => $lineItems,
-            'payments' => $this->invoiceMapper->pagosDesdeMonto((float) $devolucion->total),
-            'summary' => $this->invoiceMapper->resumenDesdeDevolucion($devolucion),
+            'payments' => $this->invoiceMapper->pagosDesdeLineas($lineItems),
+            'summary' => $this->invoiceMapper->resumenDevolucionAlineadoLineas($devolucion, $lineItems),
             'referenced_documents' => $referenced,
         ]);
     }

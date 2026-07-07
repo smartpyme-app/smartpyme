@@ -11,15 +11,26 @@ import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { DevolucionVentaDetallesComponent } from './detalles/devolucion-venta-detalles.component';
-import { MHService } from '@services/MH.service';
+import { FacturacionElectronicaService } from '@services/facturacion-electronica/facturacion-electronica.service';
 import { CountryI18nService } from '@services/country-i18n.service';
 import { esElSalvadorFe as empresaEsElSalvador, debeEmitirDteEnImpresion } from '@services/facturacion-electronica/fe-pais.util';
+import {
+    mensajeErrorHttpFeCr,
+    type FeCrErrorEmisionPayload,
+} from '@services/facturacion-electronica/fe-cr-http-error.util';
+import { AlertsHaciendaComponent } from '@shared/parts/alerts-hacienda/alerts-hacienda.component';
+import { FeCrEmisionAvanzadoComponent } from '@shared/parts/fe-cr-emision-avanzado/fe-cr-emision-avanzado.component';
+import {
+    esNombreNotaCredito,
+    esNombreNotaCreditoODebito,
+    esNombreNotaDebito,
+} from '@views/ventas/documentos/documento-nombre-options';
 
 @Component({
     selector: 'app-devolucion-nueva',
     templateUrl: './devolucion-nueva.component.html',
     standalone: true,
-    imports: [CommonModule, PipesModule, RouterModule, FormsModule, DevolucionVentaDetallesComponent, CurrencyPipe],
+    imports: [CommonModule, PipesModule, RouterModule, FormsModule, DevolucionVentaDetallesComponent, CurrencyPipe, AlertsHaciendaComponent, FeCrEmisionAvanzadoComponent],
     providers: [SumPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -45,7 +56,7 @@ export class DevolucionVentaNuevaComponent extends BaseModalComponent implements
         private sumPipe:SumPipe,
         private route: ActivatedRoute,
         private router: Router,
-        private mhService: MHService,
+        private facturacionElectronica: FacturacionElectronicaService,
     ){
         super(modalManager, alertService);
         this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
@@ -63,91 +74,122 @@ export class DevolucionVentaNuevaComponent extends BaseModalComponent implements
         else{
             this.loading = true;
             this.venta.cliente = {};
+            this.devolucion = { detalles: [] };
             this.apiService.read('venta/', id)
                 .pipe(this.untilDestroyed())
                 .subscribe(venta => {
                 this.venta = venta;
-                this.devolucion.detalles = venta.detalles;
-                this.devolucion.id_cliente = venta.id_cliente;
-                this.devolucion.id_bodega = venta.id_bodega;
-                this.devolucion.impuestos = venta.impuestos;
-                this.devolucion.fecha = this.apiService.date();
-                this.devolucion.id_venta = id;
-                this.devolucion.tipo = 'devolucion';
-                this.devolucion.cuenta_a_terceros = this.venta.cuenta_a_terceros;
-
-                this.devolucion.percepcion = parseFloat(this.venta.iva_percibido) > 0 ? true : false;
-                this.devolucion.retencion = parseFloat(this.venta.iva_retenido) > 0 ? true : false;
-                this.devolucion.cobrar_impuestos = parseFloat(this.venta.iva) > 0 ? true : false;
-                this.devolucion.renta = parseFloat(this.venta.renta_retenida || 0) > 0 ? true : false;
-
+                const detalles = this.prepararDetallesDesdeVenta(venta.detalles);
                 let corte = JSON.parse(sessionStorage.getItem('SP_corte')!);
-                if (corte) {
-                    this.devolucion.id_caja = JSON.parse(sessionStorage.getItem('SP_corte')!).id_caja;
-                    this.devolucion.id_corte = JSON.parse(sessionStorage.getItem('SP_corte')!).id;
-                }
-                this.devolucion.id_usuario = this.apiService.auth_user().id;
-                this.devolucion.id_bodega = this.venta.id_bodega;
-                this.devolucion.id_sucursal = this.venta.id_sucursal;
-                this.devolucion.id_empresa = this.venta.id_empresa;
-                this.devolucion.enable = true;
-                this.devolucion.sub_total = this.venta.sub_total;
-                this.devolucion.iva = this.venta.iva;
-                this.devolucion.iva_retenido = this.venta.iva_retenido;
-                this.devolucion.iva_percibido = this.venta.iva_percibido;
-                this.devolucion.renta_retenida = this.venta.renta_retenida || 0;
-                this.devolucion.cuenta_a_terceros = this.venta.cuenta_a_terceros;
-                this.devolucion.exenta = this.venta.exenta;
-                this.devolucion.no_sujeta = this.venta.no_sujeta;
-                this.devolucion.descuento = this.venta.descuento;
-                this.devolucion.total_costo = this.venta.total_costo;
-                this.devolucion.total = this.venta.total;
-                // this.sumTotal();
+                this.devolucion = {
+                    detalles,
+                    id_cliente: venta.id_cliente,
+                    id_bodega: venta.id_bodega,
+                    impuestos: venta.impuestos ?? [],
+                    fecha: this.apiService.date(),
+                    id_venta: id,
+                    tipo: 'devolucion',
+                    cuenta_a_terceros: venta.cuenta_a_terceros,
+                    percepcion: parseFloat(venta.iva_percibido) > 0,
+                    retencion: parseFloat(venta.iva_retenido) > 0,
+                    cobrar_impuestos: parseFloat(venta.iva) > 0,
+                    renta: parseFloat(venta.renta_retenida || 0) > 0,
+                    id_caja: corte ? JSON.parse(sessionStorage.getItem('SP_corte')!).id_caja : undefined,
+                    id_corte: corte ? JSON.parse(sessionStorage.getItem('SP_corte')!).id : undefined,
+                    id_usuario: this.apiService.auth_user().id,
+                    id_sucursal: venta.id_sucursal,
+                    id_empresa: venta.id_empresa,
+                    enable: true,
+                    sub_total: venta.sub_total,
+                    iva: venta.iva,
+                    iva_retenido: venta.iva_retenido,
+                    iva_percibido: venta.iva_percibido,
+                    renta_retenida: venta.renta_retenida || 0,
+                    exenta: venta.exenta,
+                    no_sujeta: venta.no_sujeta,
+                    descuento: venta.descuento,
+                    total_costo: venta.total_costo,
+                    total: venta.total,
+                };
                 this.cargarDocumentos();
                 this.loading = false;
                 this.cdr.markForCheck();
-                // console.log(this.devolucion);
             }, error => {this.alertService.error(error);this.loading = false; this.cdr.markForCheck(); });
         }
 
     }
 
     cargarDocumentos(){
+        const idSucursal =
+            this.devolucion.id_sucursal ?? this.apiService.auth_user()?.id_sucursal;
         this.apiService.getAll('documentos/list')
             .pipe(this.untilDestroyed())
             .subscribe(documentos => {
-            this.documentos = documentos;
-            this.documentos = this.documentos.filter((doc:any) => doc.id_sucursal == this.devolucion.id_sucursal &&
-                  doc.nombre === 'Nota de débito' || doc.nombre === 'Nota de crédito'
-                );
+            this.documentos = (documentos ?? []).filter(
+                (doc: any) =>
+                    doc.id_sucursal == idSucursal &&
+                    esNombreNotaCreditoODebito(doc.nombre)
+            );
 
-            if (this.route.snapshot.queryParamMap.get('tipo_documento')! == 'nota_debito') {
-                let documento = this.documentos.find((x:any) => x.nombre == 'Nota de débito');
-                if(documento){
-                    this.devolucion.id_documento = documento.id;
-                    this.devolucion.correlativo = documento.correlativo;
+            const tipoDoc = this.route.snapshot.queryParamMap.get('tipo_documento');
+            if (tipoDoc === 'nota_debito') {
+                const documento = this.documentos.find((x: any) => esNombreNotaDebito(x.nombre));
+                if (documento) {
+                    this.asignarDocumento(documento);
                 }
-            }
-            if (this.route.snapshot.queryParamMap.get('tipo_documento')! == 'nota_credito') {
-                let documento = this.documentos.find((x:any) => x.nombre == 'Nota de crédito');
-                if(documento){
-                    this.devolucion.id_documento = documento.id;
-                    this.devolucion.correlativo = documento.correlativo;
+            } else if (tipoDoc === 'nota_credito') {
+                const documento = this.documentos.find((x: any) => esNombreNotaCredito(x.nombre));
+                if (documento) {
+                    this.asignarDocumento(documento);
                 }
+            } else if (this.documentos.length === 1) {
+                this.asignarDocumento(this.documentos[0]);
             }
             this.cdr.markForCheck();
 
         }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
     }
 
+    private asignarDocumento(documento: { id: number; correlativo?: number | string }): void {
+        this.devolucion = {
+            ...this.devolucion,
+            id_documento: documento.id,
+            correlativo: documento.correlativo,
+        };
+        this.cdr.markForCheck();
+    }
+
+    private prepararDetallesDesdeVenta(detalles: any[] | null | undefined): any[] {
+        return (detalles ?? []).map((detalle) => {
+            const cantidad = parseFloat(String(detalle?.cantidad ?? 0)) || 0;
+            const precio = parseFloat(String(detalle?.precio ?? 0)) || 0;
+            const descuento = parseFloat(String(detalle?.descuento ?? 0)) || 0;
+            const total =
+                detalle?.total != null && detalle?.total !== ''
+                    ? parseFloat(String(detalle.total))
+                    : cantidad * precio - descuento;
+
+            return {
+                ...detalle,
+                seleccionado: false,
+                cantidad,
+                precio,
+                descuento,
+                total: Number.isFinite(total) ? total : 0,
+            };
+        });
+    }
+
     public setDocumento(id_documento:any){
-        let documento = this.documentos.find((x:any) => x.id == id_documento);
-        this.devolucion.id_documento = documento.id;
-        this.devolucion.correlativo = documento.correlativo;
+        const documento = this.documentos.find((x:any) => x.id == id_documento);
+        if (!documento) {
+            return;
+        }
+        this.asignarDocumento(documento);
+        this.cdr.markForCheck();
     }
 
     cargarDatosIniciales(){
-        this.cargarDocumentos();
         this.devolucion = {};
         this.devolucion.fecha = this.apiService.date();
         this.devolucion.tipo = 'devolucion';
@@ -155,6 +197,7 @@ export class DevolucionVentaNuevaComponent extends BaseModalComponent implements
         this.devolucion.detalles = [];
         this.devolucion.canal = 'Tienda';
         this.devolucion.descuento = 0;
+        this.devolucion.impuestos = [];
         this.detalle = {};
 
         let corte = JSON.parse(sessionStorage.getItem('SP_corte')!);
@@ -169,7 +212,7 @@ export class DevolucionVentaNuevaComponent extends BaseModalComponent implements
         this.devolucion.id_bodega = this.apiService.auth_user().id_bodega;
         this.devolucion.id_empresa = this.apiService.auth_user().id_empresa;
         this.devolucion.enable = true;
-        // this.sumTotal();
+        this.cargarDocumentos();
         this.imprimir = true;
     }
 
@@ -183,7 +226,7 @@ export class DevolucionVentaNuevaComponent extends BaseModalComponent implements
         this.devolucion.iva_retenido = this.devolucion.retencion ? this.devolucion.sub_total * 0.01 : 0;
         this.devolucion.renta_retenida = this.devolucion.renta ? this.devolucion.sub_total * 0.10 : 0;
 
-        this.devolucion.impuestos.forEach((impuesto:any) => {
+        (this.devolucion.impuestos ?? []).forEach((impuesto:any) => {
             if(this.devolucion.cobrar_impuestos){
                 impuesto.monto = this.devolucion.sub_total * (impuesto.porcentaje / 100);
             }else{
@@ -199,8 +242,9 @@ export class DevolucionVentaNuevaComponent extends BaseModalComponent implements
     }
 
     updateDevolucion(devolucion:any) {
-        this.devolucion = devolucion;
+        this.devolucion = { ...devolucion, detalles: [...(devolucion?.detalles ?? [])] };
         this.sumTotal();
+        this.cdr.markForCheck();
     }
 
     // Devolución
@@ -217,9 +261,7 @@ export class DevolucionVentaNuevaComponent extends BaseModalComponent implements
                 .pipe(this.untilDestroyed())
                 .subscribe(devolucion => {
                 const empresa = this.apiService.auth_user()?.empresa;
-                const esNotaCreditoODebito =
-                    devolucion.nombre_documento === 'Nota de crédito' ||
-                    devolucion.nombre_documento === 'Nota de débito';
+                const esNotaCreditoODebito = esNombreNotaCreditoODebito(devolucion.nombre_documento);
 
                 if (
                     empresa?.impresion_en_facturacion &&
@@ -234,21 +276,45 @@ export class DevolucionVentaNuevaComponent extends BaseModalComponent implements
             },error => {this.alertService.error(error); this.saving = false; this.cdr.markForCheck(); });
         }
 
+    esFeCostaRica(): boolean {
+        return this.facturacionElectronica.isCostaRicaFe();
+    }
+
+    private tipoDteDevolucion(d: any): string {
+        if (d?.tipo_dte) {
+            return String(d.tipo_dte);
+        }
+        return this.esFeCostaRica()
+            ? '03'
+            : (esNombreNotaDebito(d?.nombre_documento) ? '06' : '05');
+    }
+
+    private esPayloadErrorEmisionFeCr(e: unknown): e is FeCrErrorEmisionPayload {
+        if (typeof e !== 'object' || e === null || !('documento' in e)) {
+            return false;
+        }
+        const p = e as Record<string, unknown>;
+        const msg =
+            typeof p['message'] === 'string'
+                ? p['message']
+                : typeof p['error'] === 'string'
+                  ? p['error']
+                  : '';
+        return typeof msg === 'string' && msg.trim() !== '';
+    }
+
     /**
      * Misma idea que facturación con "imprimir directamente": si hay FE, al procesar la nota se firma y envía el DTE.
      */
     private emitirDteNotaTrasProcesar(devolucion: any): void {
         this.emiting = true;
         this.cdr.markForCheck();
-        this.mhService.emitirDTENotaCredito(devolucion).then((d) => {
+        this.facturacionElectronica.emitirDTENotaCredito(devolucion).then((d) => {
             this.alertService.success(this.countryI18n.fe('emitSuccessTitle'), this.countryI18n.fe('emitSuccessBody'));
-            if (d.id_cliente) {
+            if (d.id_cliente && this.facturacionElectronica.requiereFlujoEnviarDteSeparado()) {
                 this.enviarDteCorreo(d);
             }
-            const tipoDte =
-                d.tipo_dte ||
-                d.dte?.identificacion?.tipoDte ||
-                (d.nombre_documento === 'Nota de débito' ? '06' : '05');
+            const tipoDte = this.tipoDteDevolucion(d);
             window.open(
                 this.apiService.baseUrl +
                     '/api/reporte/dte/' +
@@ -268,15 +334,42 @@ export class DevolucionVentaNuevaComponent extends BaseModalComponent implements
                 'La devolución de venta fue guardada exitosamente.'
             );
             this.cdr.markForCheck();
-        }).catch((error) => {
+        }).catch((error: any) => {
             this.emiting = false;
             this.saving = false;
-            this.alertService.warning('El documento no fue emitido.', error);
-            this.router.navigate(['/devoluciones/ventas']);
+            if (error?.devolucion) {
+                devolucion = { ...error.devolucion };
+            }
+            let msg: string;
+            let feCrIntento: FeCrErrorEmisionPayload | undefined;
+            if (this.esPayloadErrorEmisionFeCr(error)) {
+                msg = error.message;
+                feCrIntento = error;
+            } else if (typeof error === 'string') {
+                msg = error;
+            } else {
+                msg = this.esFeCostaRica()
+                    ? mensajeErrorHttpFeCr(error)
+                    : String(error?.message ?? error);
+            }
+            this.devolucion = {
+                ...devolucion,
+                errores: msg,
+                ...(feCrIntento ? { fe_cr_intento_emision: feCrIntento } : {}),
+            };
             this.alertService.success(
                 'Devolución de venta creada',
                 'La devolución de venta fue guardada exitosamente.'
             );
+            if (this.esFeCostaRica()) {
+                this.alertService.info(
+                    'Comprobante no emitido',
+                    'Revise los problemas indicados en esta pantalla.'
+                );
+            } else {
+                this.alertService.warning('El documento no fue emitido.', msg);
+                this.router.navigate(['/devoluciones/ventas']);
+            }
             this.cdr.markForCheck();
         });
     }

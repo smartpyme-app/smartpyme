@@ -14,6 +14,7 @@ import {
   type FeCrErrorEmisionPayload,
 } from '@services/facturacion-electronica/fe-cr-http-error.util';
 import { AlertsHaciendaComponent } from '@shared/parts/alerts-hacienda/alerts-hacienda.component';
+import { FeCrEmisionAvanzadoComponent } from '@shared/parts/fe-cr-emision-avanzado/fe-cr-emision-avanzado.component';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { TruncatePipe } from '@pipes/truncate.pipe';
@@ -26,7 +27,7 @@ import Swal from 'sweetalert2';
     selector: 'app-devoluciones-ventas',
     templateUrl: './devoluciones-ventas.component.html',
     standalone: true,
-    imports: [CommonModule, PipesModule, RouterModule, FormsModule, NgSelectModule, PaginationComponent, TruncatePipe, PopoverModule, TooltipModule, LazyImageDirective, AlertsHaciendaComponent],
+    imports: [CommonModule, PipesModule, RouterModule, FormsModule, NgSelectModule, PaginationComponent, TruncatePipe, PopoverModule, TooltipModule, LazyImageDirective, AlertsHaciendaComponent, FeCrEmisionAvanzadoComponent],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 
@@ -294,13 +295,17 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
     }
 
     private esPayloadErrorEmisionFeCr(e: unknown): e is FeCrErrorEmisionPayload {
-        return (
-            typeof e === 'object' &&
-            e !== null &&
-            'message' in e &&
-            'documento' in e &&
-            typeof (e as FeCrErrorEmisionPayload).message === 'string'
-        );
+        if (typeof e !== 'object' || e === null || !('documento' in e)) {
+            return false;
+        }
+        const p = e as Record<string, unknown>;
+        const msg =
+            typeof p['message'] === 'string'
+                ? p['message']
+                : typeof p['error'] === 'string'
+                  ? p['error']
+                  : '';
+        return typeof msg === 'string' && msg.trim() !== '';
     }
 
     emitirDTE() {
@@ -362,9 +367,7 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
                 }
                 this.alertService.info(
                     'Comprobante no emitido',
-                    feCrIntento
-                        ? 'Revise el mensaje abajo. Abra «XML del comprobante» o «JSON interno» si necesita depurar.'
-                        : 'Revise el mensaje en el recuadro de esta ventana.'
+                    'Revise los problemas indicados en esta ventana.'
                 );
             } else {
                 this.alertService.warning('Comprobante electrónico', msg);

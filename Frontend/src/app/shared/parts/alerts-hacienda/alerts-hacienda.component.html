@@ -1,49 +1,77 @@
-@if (vistaCostaRica) {
-  <div class="alert alert-danger text-start">
-    <strong class="d-block mb-2">{{ 'country.tax.fe.emitFailedTitle' | translate }}</strong>
-    @if (vistaCostaRica.avisoPruebas) {
-      <div class="alert alert-info py-2 small mb-3" role="status">
-        {{ vistaCostaRica.avisoPruebas }}
-      </div>
-    }
-    @if (vistaCostaRica.resumen) {
-      <p class="small text-muted mb-2">{{ vistaCostaRica.resumen }}</p>
-    }
-    @if (!vistaCostaRica.detalles?.length && !vistaCostaRica.avisoPruebas && vistaCostaRica.raw) {
-      <pre class="small p-2 bg-light rounded text-break mb-0" style="white-space: pre-wrap;">{{ vistaCostaRica.raw }}</pre>
-    }
-    <ul class="mt-2 mb-0 ps-3 list-unstyled">
-      @for (d of vistaCostaRica.detalles; track d.titulo + $index) {
-        <li class="mb-3 pb-2 border-bottom border-light">
-          <span class="fw-bold text-danger d-block">{{ d.titulo }}</span>
-          <span class="text-dark d-block mt-1">{{ d.texto }}</span>
-          @if (d.tecnico) {
-            <details class="mt-2 small text-muted">
-              <summary class="cursor-pointer user-select-none">{{ 'country.tax.fe.emitFailedTechnicalDetail' | translate }}</summary>
-              <pre class="mt-2 mb-0 p-2 bg-light rounded small text-break" style="white-space: pre-wrap;">{{ d.tecnico }}</pre>
-            </details>
-          }
-        </li>
-      }
-    </ul>
-  </div>
-}
-
-@if (erroresList.length) {
-  <div class="alert alert-danger">
-    <strong class="d-block mb-2">{{ 'country.tax.fe.emitFailedErrorsIntro' | translate }}</strong>
-    <ul class="mt-2 mb-0 ps-3">
-      @for (error of erroresList; track error || $index) {
-        <li class="mb-1">
-          @if (error.includes('Campo #/')) {
-            <span class="fw-bold text-danger">{{ parseError(error).campo }}:</span>
-            <span class="text-dark"> {{ parseError(error).mensaje }}</span>
-          }
-          @if (!error.includes('Campo #/')) {
-            <span class="text-dark">{{ error }}</span>
-          }
-        </li>
-      }
-    </ul>
-  </div>
-}
+@if (vistaCostaRica) {
+  <div class="alert alert-danger text-start mb-3">
+    <strong class="d-block">{{ 'country.tax.fe.emitFailedTitle' | translate }}</strong>
+    @if (resumenErroresCr) {
+      <p class="small text-muted mb-0 mt-1">{{ resumenErroresCr }}</p>
+    }
+    @if (vistaCostaRica.avisoPruebas) {
+      <div class="alert alert-info py-2 small mb-0 mt-2" role="status">
+        {{ vistaCostaRica.avisoPruebas }}
+      </div>
+    }
+    @if (!vistaCostaRica.detalles?.length && !vistaCostaRica.avisoPruebas && vistaCostaRica.raw) {
+      <pre class="small p-2 bg-light rounded text-break mb-0 mt-2" style="white-space: pre-wrap;">{{ vistaCostaRica.raw }}</pre>
+    }
+    <div class="mt-3 d-flex flex-column gap-2">
+      @for (d of vistaCostaRica.detalles; track d.titulo + $index) {
+        <div class="card border-danger border-opacity-25">
+          <div class="card-body py-2 px-3">
+            <span class="fw-semibold text-danger d-block">{{ d.titulo }}</span>
+            <p class="mb-0 mt-1 small">{{ d.texto }}</p>
+            @if (d.pasos?.length) {
+              <p class="small fw-semibold mb-1 mt-2 mb-0">{{ 'country.tax.fe.emitFailedWhatToDo' | translate }}</p>
+              <ol class="small mb-0 ps-3 mt-1">
+                @for (paso of d.pasos; track paso) {
+                  <li class="mb-1">{{ paso }}</li>
+                }
+              </ol>
+            }
+            @if (d.enlace) {
+              <a [routerLink]="d.enlace" class="btn btn-sm btn-outline-primary mt-2">
+                {{ d.enlaceLabel || ('country.tax.fe.emitFailedGoSettings' | translate) }}
+              </a>
+            }
+            @if (d.tecnico) {
+              <details class="mt-2 small text-muted">
+                <summary class="cursor-pointer user-select-none">{{ 'country.tax.fe.emitFailedTechnicalDetail' | translate }}</summary>
+                <pre class="mt-2 mb-0 p-2 bg-light rounded small text-break" style="white-space: pre-wrap;">{{ d.tecnico }}</pre>
+              </details>
+            }
+          </div>
+        </div>
+      }
+    </div>
+    @if (vistaCostaRica.raw) {
+      <details class="mt-3 small text-muted">
+        <summary class="cursor-pointer user-select-none">{{ 'country.tax.fe.emitFailedTechnicalDetailFull' | translate }}</summary>
+        <pre class="mt-2 mb-2 p-2 bg-light rounded small text-break" style="white-space: pre-wrap;">{{ vistaCostaRica.raw }}</pre>
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="copiarRaw()">
+          @if (copiadoRaw) {
+            {{ 'country.tax.fe.emitFailedCopied' | translate }}
+          } @else {
+            {{ 'country.tax.fe.emitFailedCopySupport' | translate }}
+          }
+        </button>
+      </details>
+    }
+  </div>
+}
+
+@if (erroresList.length) {
+  <div class="alert alert-danger">
+    <strong class="d-block mb-2">{{ 'country.tax.fe.emitFailedErrorsIntro' | translate }}</strong>
+    <ul class="mt-2 mb-0 ps-3">
+      @for (error of erroresList; track error || $index) {
+        <li class="mb-1">
+          @if (error.includes('Campo #/')) {
+            <span class="fw-bold text-danger">{{ parseError(error).campo }}:</span>
+            <span class="text-dark"> {{ parseError(error).mensaje }}</span>
+          }
+          @if (!error.includes('Campo #/')) {
+            <span class="text-dark">{{ error }}</span>
+          }
+        </li>
+      }
+    </ul>
+  </div>
+}

@@ -17,7 +17,7 @@
                 </tr>
             </thead>
             <tbody>
-                <tr *ngIf="devolucion?.detalles?.length < 1">
+                <tr *ngIf="!devolucion?.detalles?.length">
                     <td colspan="7" class="text-center">
                         <p class="text-muted my-3">
                             Agregue productos y servicios

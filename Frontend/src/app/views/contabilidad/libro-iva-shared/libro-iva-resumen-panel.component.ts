@@ -12,6 +12,8 @@ import {
   sumaVentasDesgloseLibroIva,
   totalFilaDesgloseLibroIva,
   ventasPorImpuestoResumenLibroIva,
+  ventasResumenContableLibroIva,
+  mostrarVentasResumenContableLibroIva,
 } from './libro-iva-resumen.util';
 
 @Component({
@@ -73,5 +75,13 @@ export class LibroIvaResumenPanelComponent {
 
   get pagoCuenta() {
     return pagoCuentaIvaResumenLibroIva(this.fiscalResumen);
+  }
+
+  get ventasResumenContable() {
+    return ventasResumenContableLibroIva(this.fiscalResumen);
+  }
+
+  get mostrarVentasResumenContable(): boolean {
+    return mostrarVentasResumenContableLibroIva(this.fiscalResumen);
   }
 }

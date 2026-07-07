@@ -115,15 +115,21 @@
 
         <p><b>CLAVE NUMÉRICA:</b></p>
         <p class="clave-bloque">{{ $claveFmt }}</p>
+        @if (trim((string) ($venta->sello_mh ?? '')) !== '')
+            <p><b>SELLO DE RECEPCIÓN:</b> <br> {{ $venta->sello_mh }}</p>
+        @endif
         @if ($consecutivo !== '')
             <p><b>CONSECUTIVO FE:</b> {{ $consecutivo }}</p>
         @endif
     </div>
 
     <br>
+    @php $qrImgB64 = DNS2D::getBarcodePNG($qrPayload, 'QRCODE', 10, 10, [0, 0, 0], true); @endphp
+    @if($qrImgB64 !== '')
     <p class="text-center">
-        {!! '<img id="qrcode" width="150" height="150" src="data:image/png;base64,' . DNS2D::getBarcodePNG($qrPayload, 'QRCODE', 10, 10, array(0,0,0), true) . '" alt="Código QR" />' !!}
+        <img id="qrcode" width="150" height="150" src="data:image/png;base64,{{ $qrImgB64 }}" alt="Código QR" />
     </p>
+    @endif
 
     <hr>
 

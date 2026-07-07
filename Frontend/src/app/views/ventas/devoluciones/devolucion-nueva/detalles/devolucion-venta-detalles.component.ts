@@ -1,14 +1,14 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ViewChild, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnChanges, SimpleChanges, EventEmitter, Input, Output, TemplateRef, ViewChild, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { BsModalService } from 'ngx-bootstrap/modal';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 
 import Swal from 'sweetalert2';
 
@@ -16,12 +16,25 @@ import Swal from 'sweetalert2';
     selector: 'app-devolucion-venta-detalles',
     templateUrl: './devolucion-venta-detalles.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule],
+    imports: [CommonModule, RouterModule, FormsModule, CurrencyPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class DevolucionVentaDetallesComponent extends BaseModalComponent implements OnInit {
+export class DevolucionVentaDetallesComponent extends BaseModalComponent implements OnInit, OnChanges {
 
-    @Input() devolucion: any = {};
+    private _devolucion: any = { detalles: [] };
+
+    @Input() set devolucion(value: any) {
+        this._devolucion = value ?? { detalles: [] };
+        if (!Array.isArray(this._devolucion.detalles)) {
+            this._devolucion.detalles = [];
+        }
+        this.inicializarDetalles();
+        this.cdr.markForCheck();
+    }
+
+    get devolucion(): any {
+        return this._devolucion;
+    }
     public detalle:any = {};
     public supervisor:any = {};
     todosSeleccionados: boolean = false;
@@ -60,12 +73,23 @@ export class DevolucionVentaDetallesComponent extends BaseModalComponent impleme
     }
 
     ngOnInit() {
-        if (this.devolucion.detalles) {
-            this.devolucion.detalles.forEach((detalle: any) => {
-                detalle.seleccionado = false;
-            });
-        }
+        this.inicializarDetalles();
+    }
 
+    ngOnChanges(changes: SimpleChanges): void {
+        if (changes['devolucion']) {
+            this.inicializarDetalles();
+            this.cdr.markForCheck();
+        }
+    }
+
+    private inicializarDetalles(): void {
+        (this.devolucion?.detalles ?? []).forEach((detalle: any) => {
+            if (detalle.seleccionado === undefined) {
+                detalle.seleccionado = false;
+            }
+        });
+        this.cdr.markForCheck();
     }
 
     openModalEdit(template: TemplateRef<any>, detalle:any) {

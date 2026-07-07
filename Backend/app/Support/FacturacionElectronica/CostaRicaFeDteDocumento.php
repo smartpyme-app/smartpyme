@@ -24,7 +24,7 @@ final class CostaRicaFeDteDocumento
             return true;
         }
 
-        if (! is_array($dte) || ($dte['pais'] ?? null) !== 'CR') {
+        if (! is_array($dte)) {
             return false;
         }
 
@@ -39,6 +39,34 @@ final class CostaRicaFeDteDocumento
         }
 
         return is_array($cr['payload_interno'] ?? null);
+    }
+
+    /**
+     * Indica emisión registrada (mismo criterio práctico que FE SV con sello_mh en listados).
+     * En CR, al aceptar Hacienda se persisten codigo_generacion, sello_mh (clave DGT) y dte (XML).
+     */
+    public static function tieneEmisionRegistrada(?string $codigoGeneracion, ?string $selloMh, mixed $dte = null): bool
+    {
+        if (self::tieneComprobanteCr($dte)) {
+            return true;
+        }
+
+        if (trim((string) ($codigoGeneracion ?? '')) !== '') {
+            return true;
+        }
+
+        return trim((string) ($selloMh ?? '')) !== '';
+    }
+
+    /** Clave numérica para ticket/QR: codigo_generacion o, como SV con sello_mh, el sello persistido. */
+    public static function claveEmision(?string $codigoGeneracion, ?string $selloMh): string
+    {
+        $clave = trim((string) ($codigoGeneracion ?? ''));
+        if ($clave !== '') {
+            return $clave;
+        }
+
+        return trim((string) ($selloMh ?? ''));
     }
 
     /**
@@ -142,7 +170,16 @@ final class CostaRicaFeDteDocumento
         }
 
         if (is_array($dte)) {
-            return $dte['documento'] ?? null;
+            $doc = $dte['documento'] ?? null;
+            if ($doc !== null) {
+                return $doc;
+            }
+
+            $cr = is_array($dte['cr'] ?? null) ? $dte['cr'] : [];
+            $xml = $cr['xml_comprobante_firmado'] ?? null;
+            if (self::esXmlComprobante($xml)) {
+                return $xml;
+            }
         }
 
         return null;

@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 use App\Services\FacturacionElectronica\CostaRica\CostaRicaFeComprobantePdfService;
 use App\Services\FacturacionElectronica\FacturacionElectronicaCountryResolver;
+use App\Support\Admin\DocumentosDefaultPorPais;
 
 class DocumentoService
 {
@@ -27,9 +28,9 @@ class DocumentoService
         $user = JWTAuth::parseToken()->authenticate();
         $empresa = $user->empresa()->first();
 
-        // Si tiene facturación electrónica en producción
-        if ($empresa->facturacion_electronica && $empresa->fe_ambiente == '01') {
-            if (FacturacionElectronicaCountryResolver::codPais($empresa) === FacturacionElectronicaCountryResolver::CODIGO_COSTA_RICA) {
+        // Si tiene facturación electrónica (pruebas o producción)
+        if ($empresa->facturacion_electronica) {
+            if (FacturacionElectronicaCountryResolver::resolveCodigoPaisFe($empresa) === FacturacionElectronicaCountryResolver::CODIGO_COSTA_RICA) {
                 return app(CostaRicaFeComprobantePdfService::class)->generarTicketImpresion($ventaId, $empresa);
             }
 
@@ -42,9 +43,11 @@ class DocumentoService
         switch ($documento->nombre) {
             case 'Ticket':
             case 'Recibo':
+            case DocumentosDefaultPorPais::CR_TIQUETE:
                 return $this->generarTicket($venta, $empresa, $documento);
 
             case 'Factura':
+            case DocumentosDefaultPorPais::CR_FACTURA:
                 return $this->generarFactura($venta, $empresa);
 
             case 'Sujeto excluido':

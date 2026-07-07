@@ -32,18 +32,21 @@ final class CostaRicaFeComprobantePdfService
             ->findOrFail($ventaId);
 
         $documento = Documento::findOrFail($venta->id_documento);
-        $dte = $venta->dte;
+        $dte = $this->resolverDteVenta($venta);
+        $clave = CostaRicaFeDteDocumento::claveEmision($venta->codigo_generacion, $venta->sello_mh);
 
-        if (! CostaRicaFeDteDocumento::tieneComprobanteCr($dte)) {
-            return 'El documento no ha sido Emitido';
+        $documentoFe = [];
+        if (CostaRicaFeDteDocumento::tieneComprobanteCr($dte)) {
+            $documentoFe = CostaRicaFeDteDocumento::documentoParaPdf($dte);
         }
 
-        $documentoFe = CostaRicaFeDteDocumento::documentoParaPdf($dte);
         if ($documentoFe === []) {
-            return 'El documento no ha sido Emitido';
+            if (! CostaRicaFeDteDocumento::tieneEmisionRegistrada($venta->codigo_generacion, $venta->sello_mh, $dte)) {
+                return 'El documento no ha sido Emitido';
+            }
+            // ponytail: clave/sello en venta pero XML no disponible (S3, legado); ticket desde líneas de venta
+            $documentoFe = $this->documentoFeDesdeVenta($venta, $empresa);
         }
-
-        $clave = (string) ($venta->codigo_generacion ?? '');
         $tipoDteCodigo = $this->resolverTipoDteVenta($venta);
         $titulo = match ($tipoDteCodigo) {
             '04' => 'Tiquete electrónico',
@@ -111,7 +114,10 @@ final class CostaRicaFeComprobantePdfService
                 throw new RuntimeException('No hay comprobante electrónico Costa Rica para este registro.');
             }
             $documento = CostaRicaFeDteDocumento::documentoParaPdf($dte);
-            $clave = (string) ($registro->codigo_generacion ?? '');
+            $clave = CostaRicaFeDteDocumento::claveEmision(
+                $registro->codigo_generacion ?? null,
+                $registro->sello_mh ?? null
+            );
             $titulo = match ($tipo) {
                 '04' => 'Tiquete electrónico',
                 '11' => 'Factura de exportación',
@@ -132,7 +138,10 @@ final class CostaRicaFeComprobantePdfService
             } else {
                 $documento = CostaRicaFeDteDocumento::documentoParaPdf($dte);
             }
-            $clave = (string) ($registro->codigo_generacion ?? '');
+            $clave = CostaRicaFeDteDocumento::claveEmision(
+                $registro->codigo_generacion ?? null,
+                $registro->sello_mh ?? null
+            );
             $titulo = 'Nota de débito electrónica';
         } elseif (in_array($tipo, ['03', '05', '06'], true)) {
             $registro = DevolucionVenta::query()->with(['empresa', 'cliente'])->findOrFail($id);
@@ -142,7 +151,10 @@ final class CostaRicaFeComprobantePdfService
                 throw new RuntimeException('No hay comprobante electrónico Costa Rica para esta devolución.');
             }
             $documento = CostaRicaFeDteDocumento::documentoParaPdf($dte);
-            $clave = (string) ($registro->codigo_generacion ?? '');
+            $clave = CostaRicaFeDteDocumento::claveEmision(
+                $registro->codigo_generacion ?? null,
+                $registro->sello_mh ?? null
+            );
             $titulo = 'Nota de crédito electrónica';
         } elseif (($tipo === '08' && $queryTipo === 'compra') || ($tipo === '14' && $queryTipo === 'compra')) {
             $registro = Compra::query()->with(['empresa', 'proveedor'])->findOrFail($id);
@@ -155,7 +167,10 @@ final class CostaRicaFeComprobantePdfService
                 throw new RuntimeException('Esta compra no tiene factura electrónica de compras (FEC, tipo 08).');
             }
             $documento = CostaRicaFeDteDocumento::documentoParaPdf($dte);
-            $clave = (string) ($registro->codigo_generacion ?? '');
+            $clave = CostaRicaFeDteDocumento::claveEmision(
+                $registro->codigo_generacion ?? null,
+                $registro->sello_mh ?? null
+            );
             $titulo = 'Factura electrónica de compra';
             $tipoDteRuta = '08';
         } elseif (($tipo === '08' && $queryTipo === 'gasto') || ($tipo === '14' && $queryTipo === 'gasto')) {
@@ -169,7 +184,10 @@ final class CostaRicaFeComprobantePdfService
                 throw new RuntimeException('Este egreso no tiene factura electrónica de compras (FEC, tipo 08).');
             }
             $documento = CostaRicaFeDteDocumento::documentoParaPdf($dte);
-            $clave = (string) ($registro->codigo_generacion ?? '');
+            $clave = CostaRicaFeDteDocumento::claveEmision(
+                $registro->codigo_generacion ?? null,
+                $registro->sello_mh ?? null
+            );
             $titulo = 'Factura electrónica de compra';
             $tipoDteRuta = '08';
         } else {
@@ -296,5 +314,60 @@ final class CostaRicaFeComprobantePdfService
         }
 
         return '01';
+    }
+
+    private function resolverDteVenta(Venta $venta): mixed
+    {
+        $dte = $venta->dte;
+        if ($dte !== null) {
+            return $dte;
+        }
+
+        if (! empty($venta->getAttributes()['dte_s3_key'] ?? null)) {
+            return $venta->reloadDtePayload();
+        }
+
+        return null;
+    }
+
+    /**
+     * Representación mínima para ticket cuando hay clave FE pero no XML parseable.
+     *
+     * @return array<string, mixed>
+     */
+    private function documentoFeDesdeVenta(Venta $venta, Empresa $empresa): array
+    {
+        $moneda = strtoupper((string) ($empresa->moneda ?? 'CRC')) === 'USD' ? 'USD' : 'CRC';
+        $lineItems = $venta->detalles->map(static function ($detalle): array {
+            $cantidad = (float) ($detalle->cantidad ?? 0);
+            $total = (float) ($detalle->total ?? 0);
+            $precio = $cantidad > 0 ? $total / $cantidad : (float) ($detalle->precio ?? 0);
+
+            return [
+                'description' => (string) ($detalle->nombre_producto ?? $detalle->descripcion ?? 'Ítem'),
+                'quantity' => $cantidad,
+                'unit_price' => round($precio, 5),
+                'total' => $total,
+            ];
+        })->values()->all();
+
+        return [
+            'date' => $venta->created_at?->timezone('America/Costa_Rica')->format('Y-m-d\TH:i:sP') ?? '',
+            'establishment' => '',
+            'emission_point' => '',
+            'sequential' => (string) ($venta->correlativo ?? ''),
+            'currency' => [
+                'currency_code' => $moneda,
+                'exchange_rate' => 1.0,
+            ],
+            'line_items' => $lineItems,
+            'summary' => [
+                'total_taxed' => (float) ($venta->gravada ?? 0),
+                'total_exempt' => (float) ($venta->exenta ?? 0),
+                'total_non_taxable' => (float) ($venta->no_sujeta ?? 0),
+                'total_tax' => (float) ($venta->iva ?? 0),
+                'total' => (float) ($venta->total ?? 0),
+            ],
+        ];
     }
 }

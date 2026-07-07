@@ -8,6 +8,11 @@ export interface HaciendaCrErrorDetalle {
   titulo: string;
   /** Qué significa y qué revisar */
   texto: string;
+  /** Pasos concretos para el usuario operativo */
+  pasos?: string[];
+  /** Ruta interna (p. ej. configuración de empresa) */
+  enlace?: string;
+  enlaceLabel?: string;
   /** Fragmento original (opcional) para desplegable "detalle técnico" */
   tecnico?: string;
 }
@@ -64,6 +69,35 @@ function limpiarComillasMensaje(s: string): string {
 }
 
 /**
+ * Quita cabeceras de tabla y sugerencias del backend (texto técnico duplicado).
+ */
+function limpiarCuerpoHacienda(cuerpo: string): string {
+  return cuerpo
+    .replace(/\[codigo\s*,\s*mensaje\s*,\s*fila\s*,\s*columna\]/gi, '')
+    .replace(/\n*Sugerencia\s*\(\s*código\s*-?\d+\s*\):[^\n]*/gi, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+/**
+ * Códigos mencionados en bloques «Sugerencia (código -XX)» del backend.
+ */
+function extraerCodigosSugerenciaBackend(texto: string): number[] {
+  const out: number[] = [];
+  const seen = new Set<number>();
+  const re = /Sugerencia\s*\(\s*c[oó]digo\s*(-?\d+)\s*\)/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(texto)) !== null) {
+    const codigo = parseInt(m[1], 10);
+    if (!seen.has(codigo)) {
+      seen.add(codigo);
+      out.push(codigo);
+    }
+  }
+  return out;
+}
+
+/**
  * Traduce errores XSD típicos (cvc-*) a lenguaje operativo.
  */
 function explicarErrorXsd(bloque: string, tecnico: string): HaciendaCrErrorDetalle {
@@ -83,11 +117,13 @@ function explicarErrorXsd(bloque: string, tecnico: string): HaciendaCrErrorDetal
         ? ` (referencia en el XML enviado: fila ${ubic.fila}, columna ${ubic.col ?? '—'})`
         : '';
     return {
-      titulo: 'Estructura del XML no coincide con el esquema de Hacienda',
+      titulo: 'Estructura del comprobante no válida',
       texto:
-        `En el comprobante aparece el elemento ${nombreElementoAmigable(encontrado)}, pero en esa posición el Ministerio espera ${nombreElementoAmigable(esperado)}. ` +
-        `Suele deberse al orden de los nodos (p. ej. impuestos en líneas o totales) o a un tipo de documento que no corresponde.${ubi} ` +
-        `Revise con su asesor o la documentación del catálogo de comprobantes (versión del esquema).`,
+        `En el comprobante aparece ${nombreElementoAmigable(encontrado)}, pero Hacienda espera ${nombreElementoAmigable(esperado)} en esa posición.${ubi}`,
+      pasos: [
+        'Revise el tipo de comprobante y los datos de la venta.',
+        'Si el error persiste, contacte soporte con el detalle técnico.',
+      ],
       tecnico: t,
     };
   }
@@ -96,16 +132,19 @@ function explicarErrorXsd(bloque: string, tecnico: string): HaciendaCrErrorDetal
   if (/cvc-pattern/i.test(t) || /cvc-type/i.test(t)) {
     return {
       titulo: 'Dato con formato no válido',
-      texto:
-        'Algún campo no cumple el formato que exige Hacienda (longitud, decimales o caracteres permitidos). Revise montos, identificaciones y códigos CABYS.',
+      texto: 'Algún campo no cumple el formato que exige Hacienda.',
+      pasos: [
+        'Revise montos, identificaciones y códigos CABYS de los productos.',
+        'Corrija los datos y vuelva a emitir.',
+      ],
       tecnico: t,
     };
   }
 
   return {
     titulo: 'Validación del comprobante',
-    texto:
-      'Hacienda rechazó el XML por una regla de validación. Si no entiende el detalle técnico, comparta el mensaje con soporte o con quien mantenga la integración.',
+    texto: 'Hacienda rechazó el comprobante por una regla de validación.',
+    pasos: ['Copie el detalle técnico y compártalo con soporte si necesita ayuda.'],
     tecnico: t,
   };
 }
@@ -128,7 +167,6 @@ function extraerAvisoPruebas(raw: string): { aviso: string | null; resto: string
 
 /**
  * Extrae bloques que contienen cvc- (mensajes XSD en tabla o texto de Hacienda).
- * El texto puede incluir comillas internas; se toma desde cvc- hasta antes de fila/columna (…, 60, 37).
  */
 function extraerBloquesCvc(resto: string): string[] {
   const texto = resto.replace(/\r\n/g, '\n');
@@ -138,7 +176,6 @@ function extraerBloquesCvc(resto: string): string[] {
   }
 
   let fragment = texto.slice(start);
-  // Cortar antes del patrón ", número, número" (fila/columna en tabla Hacienda), con o sin `]` final
   const cut = fragment.match(
     /^([\s\S]*?)(?=,\s*-?\d+\s*,\s*-?\d+\s*[\]\s\r\n]*$)/
   );
@@ -155,17 +192,24 @@ function extraerBloquesCvc(resto: string): string[] {
 }
 
 /**
- * Filas tipo: -53, "mensaje…", 0, 0 (códigos numéricos DGT distintos de XSD cvc-*).
+ * Filas tipo: -53, "mensaje…", 0, 0 (inline o por línea).
  */
 function extraerFilasCodigoMensajeHacienda(cuerpo: string): Array<{ codigo: number; mensaje: string }> {
-  const text = cuerpo.replace(/\r\n/g, '\n');
+  const text = limpiarCuerpoHacienda(cuerpo.replace(/\r\n/g, '\n'));
   const out: Array<{ codigo: number; mensaje: string }> = [];
-  const re = /^\s*(-?\d+)\s*,\s*"((?:[^"]|"")*)"\s*,\s*(-?\d+)\s*,\s*(-?\d+)\s*$/gm;
+  const seen = new Set<number>();
+  const re = /(-?\d+)\s*,\s*"((?:[^"]|"")*)"\s*,\s*(-?\d+)\s*,\s*(-?\d+)/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(text)) !== null) {
     const codigo = parseInt(m[1], 10);
+    if (seen.has(codigo)) {
+      continue;
+    }
+    seen.add(codigo);
     const mensaje = m[2].replace(/""/g, '"').trim();
-    out.push({ codigo, mensaje });
+    if (mensaje) {
+      out.push({ codigo, mensaje });
+    }
   }
   return out;
 }
@@ -174,52 +218,94 @@ function extraerFilasCodigoMensajeHacienda(cuerpo: string): Array<{ codigo: numb
  * Explica códigos conocidos del validador de Hacienda (DGT).
  */
 function detallePorCodigoNumericoHacienda(codigo: number, mensajeLimpio: string): HaciendaCrErrorDetalle {
-  const tecnico = mensajeLimpio;
+  const tecnico = mensajeLimpio || undefined;
   switch (codigo) {
+    case -99:
+      return {
+        titulo: 'Consecutivo duplicado',
+        texto:
+          'Hacienda ya tiene registrado ese número de comprobante para este establecimiento y punto de venta.',
+        pasos: [
+          'Verifique si este documento ya fue emitido antes (consulte ventas o el estado en Hacienda).',
+          'Si no fue emitido, espere unos minutos y reintente; si persiste, contacte soporte.',
+        ],
+        tecnico,
+      };
     case -53:
       return {
-        titulo: 'Fecha y hora de emisión del XML',
-        texto:
-          'La marca de tiempo del comprobante no coincide con la hora oficial de referencia de Hacienda. Al emitir desde SmartPyme se usa la hora actual en Costa Rica; si persiste, sincronice el reloj del servidor (NTP) o emita de nuevo en unos segundos.',
+        titulo: 'Fecha y hora de emisión',
+        texto: 'La hora del comprobante no coincide con la hora oficial de referencia de Hacienda.',
+        pasos: [
+          'Espere unos segundos y vuelva a emitir.',
+          'Si el error se repite, avise a soporte (puede requerir sincronizar el reloj del servidor).',
+        ],
         tecnico,
       };
     case -37:
       return {
-        titulo: 'Ubicación fiscal del emisor',
+        titulo: 'Dirección fiscal del emisor',
         texto:
-          'Provincia, cantón y distrito del emisor no coinciden con los registrados en la Dirección General de Tributación. Actualice la dirección en Hacienda (datos de contribuyente) y los mismos códigos en la empresa en SmartPyme (facturación FE / distrito 5 dígitos).',
+          'Provincia, cantón o distrito no coinciden con el domicilio fiscal registrado en Hacienda.',
+        pasos: [
+          'Confirme su ubicación en el portal ATV de Hacienda.',
+          'Actualice la misma dirección en la configuración de su empresa en SmartPyme.',
+        ],
+        enlace: '/admin/empresa',
+        enlaceLabel: 'Ir a configuración de empresa',
         tecnico,
       };
     case -111:
       if (/servicios gravados/i.test(mensajeLimpio)) {
         return {
-          titulo: 'Totales de servicios gravados (resumen vs detalle)',
-          texto:
-            'El total de servicios gravados del resumen debe coincidir con la suma de las líneas del detalle marcadas como servicio (tipo de transacción servicio). Revise el tipo de producto (bien vs servicio) y los montos por línea.',
+          titulo: 'Totales de servicios incorrectos',
+          texto: 'El total de servicios gravados no coincide con las líneas del detalle.',
+          pasos: [
+            'Revise que los productos tipo servicio estén marcados correctamente.',
+            'Verifique montos e impuestos de cada línea.',
+          ],
           tecnico,
         };
       }
       if (/mercanc/i.test(mensajeLimpio)) {
         return {
-          titulo: 'Totales de mercancías gravadas (resumen vs detalle)',
-          texto:
-            'El total de mercancías gravadas del resumen debe coincidir con la suma de las líneas clasificadas como bien/mercancía. Revise el tipo de producto y los montos.',
+          titulo: 'Totales de mercancías incorrectos',
+          texto: 'El total de mercancías gravadas no coincide con las líneas del detalle.',
+          pasos: [
+            'Revise que los productos tipo bien/mercancía estén clasificados correctamente.',
+            'Verifique montos e impuestos de cada línea.',
+          ],
           tecnico,
         };
       }
       return {
-        titulo: 'Coherencia de totales en el resumen',
-        texto:
-          'Algún total del bloque de resumen no coincide con la suma de las líneas del detalle. Revise montos y que bienes y servicios estén en los campos correctos.',
+        titulo: 'Totales del resumen incorrectos',
+        texto: 'Algún total del resumen no coincide con la suma de las líneas del detalle.',
+        pasos: [
+          'Revise montos por línea y la clasificación bien vs servicio.',
+          'Corrija los productos afectados y vuelva a emitir.',
+        ],
         tecnico,
       };
     default:
       return {
-        titulo: `Validación Hacienda (código ${codigo})`,
-        texto: 'Revise el mensaje técnico o consulte con soporte si no está claro.',
-        tecnico,
+        titulo: 'Validación rechazada por Hacienda',
+        texto: mensajeLimpio
+          ? resumirMensajeHacienda(mensajeLimpio)
+          : 'Hacienda reportó un error de validación en el comprobante.',
+        pasos: ['Revise los datos del comprobante o contacte soporte con el detalle técnico.'],
+        tecnico: mensajeLimpio || undefined,
       };
   }
+}
+
+/** Recorta mensajes largos de Hacienda para el nivel usuario. */
+function resumirMensajeHacienda(mensaje: string): string {
+  const limpio = mensaje.replace(/\s+/g, ' ').trim();
+  if (limpio.length <= 180) {
+    return limpio;
+  }
+  const corte = limpio.slice(0, 177).replace(/\s+\S*$/, '');
+  return `${corte}…`;
 }
 
 /**
@@ -238,20 +324,20 @@ export function parsearRespuestaErrorHaciendaCr(raw: string): HaciendaCrErrorVis
 
   const { aviso, resto } = extraerAvisoPruebas(original);
 
-  let intro: string | null = null;
+  let cuerpo = resto;
   const introMatch = resto.match(
     /El comprobante electrónico tiene los siguientes errores:\s*/i
   );
-  let cuerpo = resto;
   if (introMatch) {
-    intro = introMatch[0].replace(/:\s*$/, '').trim();
     cuerpo = resto.slice(introMatch.index! + introMatch[0].length).trim();
   }
 
   const detalles: HaciendaCrErrorDetalle[] = [];
+  const codigosVistos = new Set<number>();
 
   const filasCodigo = extraerFilasCodigoMensajeHacienda(cuerpo);
   filasCodigo.forEach((f) => {
+    codigosVistos.add(f.codigo);
     detalles.push(detallePorCodigoNumericoHacienda(f.codigo, f.mensaje));
   });
 
@@ -261,18 +347,28 @@ export function parsearRespuestaErrorHaciendaCr(raw: string): HaciendaCrErrorVis
     detalles.push(explicarErrorXsd(bloque, lineaCompleta));
   });
 
+  // Fallback: códigos en sugerencias del backend aunque no se parsearon filas CSV
+  extraerCodigosSugerenciaBackend(original).forEach((codigo) => {
+    if (codigosVistos.has(codigo)) {
+      return;
+    }
+    codigosVistos.add(codigo);
+    detalles.push(detallePorCodigoNumericoHacienda(codigo, ''));
+  });
+
   if (detalles.length === 0 && /error|rechaz|inválid|invalid/i.test(original)) {
     detalles.push({
-      titulo: 'Respuesta de Hacienda',
-      texto:
-        'No se pudieron extraer líneas técnicas automáticamente. Revise el detalle técnico o copie el mensaje para soporte.',
-      tecnico: original.length > 2000 ? `${original.slice(0, 2000)}…` : original,
+      titulo: 'Hacienda rechazó el comprobante',
+      texto: 'No pudimos interpretar el detalle del error automáticamente.',
+      pasos: [
+        'Despliegue «Detalle técnico completo» abajo y copie el texto para soporte.',
+      ],
     });
   }
 
   return {
     avisoPruebas: aviso,
-    resumen: intro,
+    resumen: null,
     detalles,
     raw: original,
   };
@@ -292,6 +388,24 @@ export function pareceErrorHaciendaCr(texto: string | null | undefined): boolean
     /tiene los siguientes errores/i.test(t) ||
     /codigo\s*,\s*mensaje\s*,\s*fila\s*,\s*columna/i.test(t) ||
     /-\d{1,4}\s*,\s*"/.test(t) ||
+    /Sugerencia\s*\(\s*c[oó]digo\s*-?\d+\s*\)/i.test(t) ||
     /hora oficial|Dirección General de Tributación|no coincide con la suma/i.test(t)
+  );
+}
+
+// ponytail: smoke check — ejecutar en consola: import('./hacienda-cr-error.parser').then(m => m.smokeTestParserHaciendaCr())
+export function smokeTestParserHaciendaCr(): boolean {
+  const muestra =
+    'El comprobante electrónico tiene los siguientes errores:\n' +
+    '[codigo, mensaje, fila, columna]\n' +
+    '-99, "El consecutivo enviado 00100001030000000001 ya existe en la base de datos.", 1, 0\n' +
+    '-37, "En la Dirección General de Tributación los datos de la provincia, cantón y distrito del \'emisor\' no coinciden.", 1, 0\n\n' +
+    'Sugerencia (código -99): el consecutivo enviado ya existe.\n' +
+    'Sugerencia (código -37): facturacion_fe.emisor_distrito.';
+  const v = parsearRespuestaErrorHaciendaCr(muestra);
+  return (
+    v.detalles.length === 2 &&
+    v.detalles.some((d) => /duplicado/i.test(d.titulo)) &&
+    v.detalles.some((d) => d.enlace === '/admin/empresa')
   );
 }
