@@ -20,6 +20,10 @@ return [
         'alejandro.a@smartpyme.sv',
     ],
 
+    'CORREO_FACTURACION_MENSUAL' => [
+        'karla.b@smartpyme.sv',
+    ],
+
     /**
      * Nombres de forma de pago equivalentes a gift card (cierre de caja: no suman al total de ventas).
      * Comparación sin distinguir mayúsculas; debe coincidir con el nombre en ventas o en venta_metodos_pago.
@@ -95,6 +99,13 @@ return [
     'FRECUENCIA_PAGO_MENSUAL' => 'Mensual',
     'FRECUENCIA_PAGO_TRIMESTRAL' => 'Trimestral',
     'FRECUENCIA_PAGO_ANUAL' => 'Anual',
-];
 
+    /**
+     * Empresas que imprimen facturas como HTML (sin dompdf) para compatibilidad con tablets.
+     * Opt-in: el resto de empresas mantiene el flujo PDF actual.
+     */
+    'EMPRESAS_IMPRESION_HTML' => [
+        313, // American Laundry
+    ],
+];
 

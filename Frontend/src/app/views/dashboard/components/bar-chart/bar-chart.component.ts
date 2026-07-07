@@ -8,6 +8,7 @@ import { ChartConfig } from '../../models/chart-config.model';
 })
 export class BarChartComponent implements OnInit, OnChanges {
   @Input() config!: ChartConfig;
+  @Input() height?: string;
   @Output() itemClick = new EventEmitter<{ name: string; value: any; index: number }>();
 
   chartOption: any = {};
@@ -21,6 +22,24 @@ export class BarChartComponent implements OnInit, OnChanges {
     if (changes['config'] && !changes['config'].firstChange) {
       this.initChart();
     }
+  }
+
+  private formatCompactBarLabel(value: number, exactUnder1000 = false): string {
+    const absValue = Math.abs(value);
+    let formatted: string;
+    if (absValue >= 1000000) {
+      formatted = `${(Math.floor((absValue / 1000000) * 10) / 10).toFixed(1)}M`;
+    } else if (absValue >= 1000) {
+      formatted = `${(Math.floor((absValue / 1000) * 10) / 10).toFixed(1)}K`;
+    } else if (exactUnder1000) {
+      formatted = absValue.toLocaleString('es-GT', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+    } else {
+      formatted = absValue.toFixed(0);
+    }
+    return value < 0 ? `(${formatted})` : formatted;
   }
 
   private hexToRgba(hex: string, alpha: number): string {
@@ -69,22 +88,9 @@ export class BarChartComponent implements OnInit, OnChanges {
       show: true,
       position: barLabelPosition,
       rotate: 0,
-      formatter: (params: any) => {
-        const value = params.value;
-        const absValue = Math.abs(value);
-
-        let formatted: string;
-        if (absValue >= 1000000) {
-          formatted = `${(Math.floor((absValue / 1000000) * 10) / 10).toFixed(1)}M`;
-        } else if (absValue >= 1000) {
-          formatted = `${(Math.floor((absValue / 1000) * 10) / 10).toFixed(1)}K`;
-        } else {
-          formatted = absValue.toFixed(0);
-        }
-
-        return value < 0 ? `(${formatted})` : formatted;
-      },
-      color: isInsidePosition ? '#fff' : '#000',
+      formatter: (params: any) =>
+        this.formatCompactBarLabel(params.value, !!this.config.barLabelExactUnder1000),
+      color: isInsidePosition ? '#fff' : '#666',
       fontSize: 12,
       fontWeight: 'medium',
       offset: isInsidePosition ? [0, 0] : [0, -5],
@@ -180,56 +186,100 @@ export class BarChartComponent implements OnInit, OnChanges {
     const labelCount = this.config.labels?.length ?? 0;
     const rotateLabels = this.config.rotateLabels ?? 0;
     const isHorizontal = !!(this.config as any).horizontal;
-    const needsDataZoom = !isHorizontal && !isMultiSeries && labelCount > 6;
-    const dataZoomBottom = needsDataZoom ? '20%' : undefined;
+    // ponytail: scroll/zoom enabled dynamically for vertical charts or horizontal charts with many labels
+    // ceiling: static threshold of 6, upgrade path would parameterize this threshold via chart config
+    // ponytail: vertical charts zoom above 6 items, horizontal charts zoom above 10 items (more space available)
+    // ceiling: static thresholds of 6/10, upgrade path would parameterize these thresholds via configuration
+    const limit = isHorizontal ? 10 : 6;
+    const needsDataZoom = !isMultiSeries && labelCount > limit;
+    const dataZoomBottom = (needsDataZoom && !isHorizontal) ? '20%' : undefined;
     const gridBottom = this.config.gridBottom ?? dataZoomBottom ?? (
       rotateLabels >= 45 ? '16%' : rotateLabels > 0 ? '10%' : '8%'
     );
 
     const primaryColor = this.config.colors?.[0] || '#5470c6';
-    const dataZoom = needsDataZoom ? [
-      {
-        type: 'slider',
-        xAxisIndex: 0,
-        start: 0,
-        end: Math.round((6 / labelCount) * 100),
-        bottom: 5,
-        height: 14,
-        borderColor: primaryColor,
-        fillerColor: this.hexToRgba(primaryColor, 0.15),
-        handleStyle: { color: primaryColor, borderColor: primaryColor },
-        moveHandleStyle: { color: primaryColor },
-        emphasis: { handleStyle: { color: primaryColor } },
-        textStyle: { color: '#666', fontSize: 10 },
-        brushSelect: false,
-      },
-      {
-        type: 'inside',
-        xAxisIndex: 0,
-        start: 0,
-        end: Math.round((6 / labelCount) * 100),
+    let dataZoom: any[] | undefined = undefined;
+
+    if (needsDataZoom) {
+      if (isHorizontal) {
+        dataZoom = [
+          {
+            type: 'slider',
+            yAxisIndex: 0,
+            startValue: 0,
+            endValue: 9, // show 10 items (index 0 to 9)
+            right: '2%',
+            width: 12,
+            borderColor: 'transparent',
+            fillerColor: '#e2e8f0',
+            handleSize: 0,
+            showDetail: false,
+            zoomLock: true,
+            brushSelect: false
+          },
+          {
+            type: 'inside',
+            yAxisIndex: 0,
+            startValue: 0,
+            endValue: 9,
+            zoomOnMouseWheel: false,
+            moveOnMouseMove: true,
+            moveOnMouseWheel: true
+          }
+        ];
+      } else {
+        dataZoom = [
+          {
+            type: 'slider',
+            xAxisIndex: 0,
+            start: 0,
+            end: Math.round((6 / labelCount) * 100),
+            bottom: 5,
+            height: 14,
+            borderColor: primaryColor,
+            fillerColor: this.hexToRgba(primaryColor, 0.15),
+            handleStyle: { color: primaryColor, borderColor: primaryColor },
+            moveHandleStyle: { color: primaryColor },
+            emphasis: { handleStyle: { color: primaryColor } },
+            textStyle: { color: '#666', fontSize: 10 },
+            brushSelect: false,
+          },
+          {
+            type: 'inside',
+            xAxisIndex: 0,
+            start: 0,
+            end: Math.round((6 / labelCount) * 100),
+          }
+        ];
       }
-    ] : undefined;
+    }
+
+    const isCurrency = this.config.isCurrency !== false;
 
     const barTooltipFormatter = (params: any) => {
       const resolveLabel = (item: any) =>
         this.config.tooltipLabels?.[item.dataIndex] ?? item.name;
 
+      const prefix = isCurrency ? '$' : '';
       if (Array.isArray(params)) {
         const label = resolveLabel(params[0]);
         let result = label + '<br/>';
         params.forEach((item: any) => {
           const value = item.value;
           const formattedValue = formatBarTooltipValue(value);
-          result += `${item.marker} ${item.seriesName}: $${formattedValue}<br/>`;
+          result += `${item.marker} ${item.seriesName}: ${prefix}${formattedValue}<br/>`;
         });
         return result;
       }
       const item = params;
       const formattedValue = formatBarTooltipValue(item.value);
       const label = resolveLabel(item);
-      return `${label}<br/>${item.marker} ${item.seriesName}: $${formattedValue}`;
+      return `${label}<br/>${item.marker} ${item.seriesName}: ${prefix}${formattedValue}`;
     };
+
+    const gridRight = isHorizontal
+      ? (needsDataZoom ? '10%' : '4%')
+      : '4%';
 
     this.chartOption = {
       title: this.config.title ? {
@@ -269,7 +319,7 @@ export class BarChartComponent implements OnInit, OnChanges {
       } : undefined,
       grid: {
         left: (this.config as any).horizontal ? '15%' : '3%',
-        right: '4%',
+        right: gridRight,
         bottom: gridBottom,
         top: isMultiSeries ? (this.config.title ? 60 : 40) : 30,
         containLabel: true
@@ -281,13 +331,20 @@ export class BarChartComponent implements OnInit, OnChanges {
           formatter: (value: number) => {
             const absValue = Math.abs(value);
             const sign = value >= 0 ? '' : '-';
+            const prefix = isCurrency ? '$' : '';
             if (absValue >= 1000000) {
-              return `${sign}$${(Math.floor((absValue / 1000000) * 10) / 10).toFixed(1)}M`;
+              return `${sign}${prefix}${(Math.floor((absValue / 1000000) * 10) / 10).toFixed(1)}M`;
             } else if (absValue >= 1000) {
-              return `${sign}$${(Math.floor((absValue / 1000) * 10) / 10).toFixed(1)}K`;
+              return `${sign}${prefix}${(Math.floor((absValue / 1000) * 10) / 10).toFixed(1)}K`;
             }
-            return `${sign}$${absValue.toFixed(0)}`;
+            return `${sign}${prefix}${absValue.toFixed(0)}`;
           }
+        },
+        axisLine: {
+          show: false
+        },
+        axisTick: {
+          show: false
         },
         splitLine: {
           show: false
@@ -305,6 +362,12 @@ export class BarChartComponent implements OnInit, OnChanges {
             const maxLen = 12;
             return value && value.length > maxLen ? value.slice(0, maxLen) + '…' : value;
           }
+        },
+        axisLine: {
+          show: false
+        },
+        axisTick: {
+          show: false
         }
       },
       yAxis: (this.config as any).horizontal ? {
@@ -318,10 +381,22 @@ export class BarChartComponent implements OnInit, OnChanges {
             return value && value.length > maxLen ? value.slice(0, maxLen) + '…' : value;
           }
         },
+        axisLine: {
+          show: false
+        },
+        axisTick: {
+          show: false
+        },
         inverse: true
       } : {
         type: 'value',
         axisLabel: {
+          show: false
+        },
+        axisLine: {
+          show: false
+        },
+        axisTick: {
           show: false
         },
         splitLine: {
@@ -340,7 +415,7 @@ export class BarChartComponent implements OnInit, OnChanges {
               position: finalPosition,
               rotate: 0,
               align: isInside ? 'center' : 'left',
-              color: isInside ? '#fff' : '#000',
+              color: isInside ? '#fff' : '#666',
               offset: isInside ? [0, 0] : [5, 0]
             }
           };

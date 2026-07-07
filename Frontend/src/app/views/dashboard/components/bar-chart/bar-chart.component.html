@@ -1,4 +1,4 @@
-<div class="w-100 chart-container" *ngIf="config">
+<div class="w-100 chart-container" *ngIf="config" [style.height]="height || null">
     <div echarts [options]="chartOption" (chartInit)="onChartInit($event)" class="w-100 h-100"></div>
 </div>
 

@@ -3,6 +3,7 @@
 namespace App\Models\Restaurante;
 
 use App\Models\Inventario\Producto;
+use App\Models\Restaurante\PedidoDetalleLote;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -51,5 +52,10 @@ class PedidoRestauranteDetalle extends Model
     public function paquete(): BelongsTo
     {
         return $this->belongsTo(\App\Models\Inventario\Paquete::class, 'id_paquete');
+    }
+
+    public function loteAsignaciones()
+    {
+        return $this->hasMany(PedidoDetalleLote::class, 'pedido_detalle_id');
     }
 }

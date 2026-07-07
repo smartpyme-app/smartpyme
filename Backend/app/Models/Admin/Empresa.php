@@ -186,6 +186,7 @@ class Empresa extends Model
         'boxful_email',
         'boxful_client_id',
         'boxful_status',
+        'usa_impresion_html',
     ];
 
     public function limiteUsuarios()
@@ -1124,6 +1125,18 @@ class Empresa extends Model
                 ->where('last_message_at', '>=', now()->subHours(24))
                 ->count()
         ];
+    }
+
+    /**
+     * Impresión HTML (sin PDF) para tablets; opt-in vía config/constants.php.
+     */
+    public function getUsaImpresionHtmlAttribute(): bool
+    {
+        return in_array(
+            (int) $this->id,
+            array_map('intval', config('constants.EMPRESAS_IMPRESION_HTML', [])),
+            true
+        );
     }
 
     /**

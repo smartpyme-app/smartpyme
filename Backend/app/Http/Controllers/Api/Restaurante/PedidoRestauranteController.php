@@ -14,6 +14,7 @@ use App\Models\Restaurante\PedidoRestaurante;
 use App\Models\Restaurante\PedidoRestauranteDetalle;
 use App\Models\Ventas\Clientes\Cliente;
 use App\Models\Ventas\Venta as VentaModel;
+use App\Services\Inventario\LoteAsignacionService;
 use App\Services\Restaurante\PedidoCanalInventarioService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -88,7 +89,7 @@ class PedidoRestauranteController extends Controller
         }
 
         $pedido = PedidoRestaurante::where('id_empresa', $user->id_empresa)
-            ->with(['detalles.producto', 'cliente', 'usuario'])
+            ->with(['detalles.producto', 'detalles.loteAsignaciones.lote', 'cliente', 'usuario'])
             ->findOrFail($id);
 
         $empresa = Empresa::find($user->id_empresa);
@@ -636,7 +637,7 @@ class PedidoRestauranteController extends Controller
             }
         }
 
-        PedidoRestauranteDetalle::create([
+        $detalle = PedidoRestauranteDetalle::create([
             'pedido_id' => $pedido->id,
             'producto_id' => (int) $row['producto_id'],
             'id_paquete' => $idPaquete,
@@ -647,6 +648,48 @@ class PedidoRestauranteController extends Controller
             'total' => $total,
             'notas' => $notas,
         ]);
+
+        $this->guardarAsignacionesPedidoDetalle($detalle, $row, $pedido);
+    }
+
+    private function guardarAsignacionesPedidoDetalle(
+        PedidoRestauranteDetalle $detalle,
+        array $row,
+        PedidoRestaurante $pedido
+    ): void {
+        $producto = Producto::find($detalle->producto_id);
+        if (!$producto || !$producto->inventario_por_lotes) {
+            return;
+        }
+
+        $empresa = Empresa::find($pedido->id_empresa);
+        if (!$empresa || !$empresa->isLotesActivo()) {
+            return;
+        }
+
+        $idBodega = (int) ($pedido->id_bodega ?: auth()->user()->id_bodega);
+        if (!$idBodega) {
+            return;
+        }
+
+        $asignacionManual = !empty($row['lotes_asignados']) ? $row['lotes_asignados'] : null;
+        if (empty($asignacionManual)) {
+            return;
+        }
+
+        $asignaciones = LoteAsignacionService::resolverAsignacionesSalida(
+            $producto,
+            $idBodega,
+            (float) $detalle->cantidad,
+            $empresa->getLotesMetodologia(),
+            true,
+            !empty($row['lote_id']) ? (int) $row['lote_id'] : null,
+            $asignacionManual
+        );
+
+        LoteAsignacionService::sincronizarPedidoDetalleLotes($detalle->id, $asignaciones);
+        $detalle->lote_id = count($asignaciones) === 1 ? $asignaciones[0]['lote_id'] : null;
+        $detalle->save();
     }
 
     private function recalcularTotales(PedidoRestaurante $pedido): void

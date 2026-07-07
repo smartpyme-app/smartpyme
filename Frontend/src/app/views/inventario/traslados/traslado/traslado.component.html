@@ -117,7 +117,7 @@
             </div>
         </div>
 
-        <div class="form-group col-sm-12" *ngIf="producto?.inventario_por_lotes && isLotesActivo() && traslado.origen_id">
+        <div class="form-group col-sm-12" *ngIf="producto?.inventario_por_lotes && isLotesActivo() && traslado.origen_id && !requiereDistribucionLotes()">
             <label for="lote_id">Lote Origen <span class="text-danger">*</span></label>
             <ng-select name="lote_id" [(ngModel)]="detalle.lote_id" (change)="setLoteOrigen()" class="form-select p-0" [disabled]="loadingLotes" (open)="cargarLotes()" required>
                 <ng-option value="">Seleccionar lote</ng-option>
@@ -129,6 +129,14 @@
                 </ng-option>
             </ng-select>
             <small class="text-muted" *ngIf="loadingLotes">Cargando lotes...</small>
+        </div>
+        <div class="form-group col-sm-12" *ngIf="requiereDistribucionLotes() && traslado.origen_id">
+            <label>Lotes origen <span class="text-danger">*</span></label>
+            <button type="button" class="btn btn-sm"
+                [ngClass]="detalle.lotes_asignados?.length || detalle.lote_id ? 'btn-success' : 'btn-warning'"
+                (click)="abrirDistribucionLotes()">
+                <i class="fa fa-box"></i> {{ textoLotesDetalle(detalle) }}
+            </button>
         </div>
         <div class="form-group col-sm-12" *ngIf="producto?.inventario_por_lotes && isLotesActivo() && traslado.destino_id">
             <label for="lote_id_destino">Lote Destino <small class="text-muted">(Opcional)</small></label>
@@ -154,7 +162,7 @@
 
         <div class="row text-center">
             <div class="col-md-12">
-                <button type="submit" [disabled]="!detalle.cantidad || !detalle.producto_id || (producto?.inventario_por_lotes && isLotesActivo() && !detalle.lote_id)" class="btn btn-primary btn-block">
+                <button type="submit" [disabled]="!detalle.cantidad || !detalle.producto_id || (requiereDistribucionLotes() && !(detalle.lotes_asignados?.length || detalle.lote_id)) || (producto?.inventario_por_lotes && isLotesActivo() && !requiereDistribucionLotes() && !detalle.lote_id)" class="btn btn-primary btn-block">
                     <span *ngIf="!loading">Guardar</span>
                     <span *ngIf="loading">Guardando...</span>
                 </button>
@@ -184,7 +192,7 @@
             </div>
         </div>
 
-        <div class="form-group col-sm-12" *ngIf="producto?.inventario_por_lotes && isLotesActivo() && traslado.origen_id">
+        <div class="form-group col-sm-12" *ngIf="producto?.inventario_por_lotes && isLotesActivo() && traslado.origen_id && !requiereDistribucionLotes()">
             <label for="lote_id">Lote Origen <span class="text-danger">*</span></label>
             <ng-select name="lote_id" [(ngModel)]="detalle.lote_id" (change)="setLoteOrigen()" class="form-select p-0" [disabled]="loadingLotes" (open)="cargarLotes()" required>
                 <ng-option value="">Seleccionar lote</ng-option>
@@ -196,6 +204,14 @@
                 </ng-option>
             </ng-select>
             <small class="text-muted" *ngIf="loadingLotes">Cargando lotes...</small>
+        </div>
+        <div class="form-group col-sm-12" *ngIf="requiereDistribucionLotes() && traslado.origen_id">
+            <label>Lotes origen <span class="text-danger">*</span></label>
+            <button type="button" class="btn btn-sm"
+                [ngClass]="detalle.lotes_asignados?.length || detalle.lote_id ? 'btn-success' : 'btn-warning'"
+                (click)="abrirDistribucionLotes()">
+                <i class="fa fa-box"></i> {{ textoLotesDetalle(detalle) }}
+            </button>
         </div>
         <div class="form-group col-sm-12" *ngIf="producto?.inventario_por_lotes && isLotesActivo() && traslado.destino_id">
             <label for="lote_id_destino">Lote Destino <small class="text-muted">(Opcional)</small></label>
@@ -297,3 +313,6 @@
     </form>
   </div>
 </ng-template>
+
+<app-distribucion-lotes-modal #lotesModal etiquetaCantidad="Total a trasladar"
+    (confirmado)="onLotesDetalleConfirmados($event)"></app-distribucion-lotes-modal>

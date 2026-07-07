@@ -66,7 +66,7 @@
             <input type="date" class="form-control" [(ngModel)]="filtros.inicio" name="filtros.inicio"/>
         </div>
         <div class="col-md-5 col-lg-2">
-            <label class="form-label">Al</label>
+            <label class="form-label">Al <span class="text-muted fw-normal">(máx. {{ maxDiasKardexExport }} días)</span></label>
             <div class="input-group">
                 <input type="date" class="form-control" [(ngModel)]="filtros.fin" name="filtros.fin"/>
                 <button type="submit" class="btn btn-primary tcla-F6" [disabled]="loading" tooltip="Filtrar (F6)">

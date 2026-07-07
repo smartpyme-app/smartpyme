@@ -1,5 +1,6 @@
 import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter } from '@angular/core';
 import { ChartConfig } from '../../models/chart-config.model';
+import { CurrencyFormatService } from '@services/currency-format.service';
 
 @Component({
   selector: 'app-line-chart',
@@ -12,6 +13,8 @@ export class LineChartComponent implements OnInit, OnChanges {
 
   chartOption: any = {};
   echartsInstance: any;
+
+  constructor(private currencyFormat: CurrencyFormatService) {}
 
   private hexToRgba(hex: string, alpha: number): string {
     if (!hex || !hex.startsWith('#')) return hex;
@@ -32,17 +35,40 @@ export class LineChartComponent implements OnInit, OnChanges {
   }
 
   formatValue(value: number): string {
-    let formatted = '';
     const absValue = Math.abs(value);
     const sign = value >= 0 ? '' : '-';
+    let formatted: string;
     if (absValue >= 1000000) {
       formatted = sign + (Math.floor((absValue / 1000000) * 10) / 10).toFixed(1) + 'M';
     } else if (absValue >= 1000) {
       formatted = sign + (Math.floor((absValue / 1000) * 10) / 10).toFixed(1) + 'K';
+    } else if (this.config?.barLabelExactUnder1000) {
+      formatted = sign + absValue.toLocaleString('es-GT', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
     } else {
       formatted = value.toString();
     }
-    return `$${formatted}`;
+    return `${this.currencyFormat.getSymbol()}${formatted}`;
+  }
+
+  private formatCompactLineLabel(value: number): string {
+    const absValue = Math.abs(value);
+    let formatted: string;
+    if (absValue >= 1000000) {
+      formatted = `${(Math.floor((absValue / 1000000) * 10) / 10).toFixed(1)}M`;
+    } else if (absValue >= 1000) {
+      formatted = `${(Math.floor((absValue / 1000) * 10) / 10).toFixed(1)}K`;
+    } else if (this.config?.barLabelExactUnder1000) {
+      formatted = absValue.toLocaleString('es-GT', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+    } else {
+      formatted = absValue.toFixed(0);
+    }
+    return value < 0 ? `(${formatted})` : formatted;
   }
 
   initChart(): void {
@@ -125,22 +151,8 @@ export class LineChartComponent implements OnInit, OnChanges {
           label: {
             show: this.config.showLineLabels !== false,
             position: 'top',
-            formatter: (params: any) => {
-              const value = params.value;
-              const absValue = Math.abs(value);
-
-              let formatted: string;
-              if (absValue >= 1000000) {
-                formatted = `${(Math.floor((absValue / 1000000) * 10) / 10).toFixed(1)}M`;
-              } else if (absValue >= 1000) {
-                formatted = `${(Math.floor((absValue / 1000) * 10) / 10).toFixed(1)}K`;
-              } else {
-                formatted = absValue.toFixed(0);
-              }
-
-              return value < 0 ? `(${formatted})` : formatted;
-            },
-            color: '#000',
+            formatter: (params: any) => this.formatCompactLineLabel(params.value),
+            color: '#666',
             fontSize: 11,
             fontWeight: 'medium'
           },

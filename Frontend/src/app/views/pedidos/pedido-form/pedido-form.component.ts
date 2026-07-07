@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Observable, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
@@ -10,6 +10,8 @@ import {
   RestauranteService
 } from '@services/restaurante.service';
 import { AlertService } from '@services/alert.service';
+import { DistribucionLotesModalComponent } from '@shared/modals/distribucion-lotes/distribucion-lotes-modal.component';
+import { textoResumenLotesDetalle } from '@utils/lotes-venta.util';
 
 interface LineaLocal {
   producto_id: number;
@@ -19,6 +21,9 @@ interface LineaLocal {
   precio: number;
   descuento: number;
   notas: string;
+  inventario_por_lotes?: boolean;
+  lote_id?: number | null;
+  lotes_asignados?: any[] | null;
 }
 
 @Component({
@@ -48,6 +53,9 @@ export class PedidoFormComponent implements OnInit {
   lineas: LineaLocal[] = [];
   bodegas: any[] = [];
   idBodega: number | null = null;
+  lineaLotesIndex: number | null = null;
+
+  @ViewChild('lotesModal') lotesModal!: DistribucionLotesModalComponent;
 
   venta: any = {
     id_cliente: null,
@@ -163,16 +171,22 @@ export class PedidoFormComponent implements OnInit {
         this.canal = p.canal || '';
         this.referenciaExterna = p.referencia_externa || '';
         this.observaciones = p.observaciones || '';
-        this.idBodega = p.id_bodega ?? this.apiService.auth_user().id_bodega ?? null;
         this.clienteId = p.cliente_id ?? null;
-        this.lineas = (p.detalles || []).map((d) => ({
+        this.lineas = (p.detalles || []).map((d: any) => ({
           producto_id: d.producto_id,
           id_paquete: d.id_paquete || null,
           nombre: d.producto?.nombre || 'Producto #' + d.producto_id,
           cantidad: +d.cantidad,
           precio: +d.precio,
           descuento: +(d.descuento || 0),
-          notas: d.notas || ''
+          notas: d.notas || '',
+          inventario_por_lotes: d.producto?.inventario_por_lotes,
+          lote_id: d.lote_id ?? null,
+          lotes_asignados: (d.lote_asignaciones || []).map((item: any) => ({
+            lote_id: item.lote_id,
+            numero_lote: item.lote?.numero_lote,
+            cantidad: item.cantidad,
+          })),
         }));
         this.cargando = false;
       },
@@ -184,7 +198,6 @@ export class PedidoFormComponent implements OnInit {
     });
   }
 
-  /** Búsqueda remota de clientes (igual que en citas/eventos). */
   searchClientes = (term: string): Observable<any[]> => {
     if (!term || term.length < 2) {
       return of([]);
@@ -199,6 +212,12 @@ export class PedidoFormComponent implements OnInit {
 
   getClienteDisplay = (cliente: any): string =>
     cliente?.tipo === 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo;
+
+  requiereDistribucionLotes(linea: LineaLocal): boolean {
+    return !!linea.inventario_por_lotes
+      && this.apiService.isLotesActivo()
+      && this.apiService.getLotesMetodologia() === 'Manual';
+  }
 
   onProductoSelect(producto: any): void {
     // ponytail: cosmetic guard – backend is source of truth (validarPaquetesDisponibles)
@@ -217,7 +236,7 @@ export class PedidoFormComponent implements OnInit {
     if (producto.id_paquete && producto.id_cliente && producto.id_cliente !== this.clienteId) {
       this.apiService.read('cliente/', producto.id_cliente).subscribe({
         next: (cliente) => this.onSelectCliente(cliente),
-        error: () => {}
+        error: () => { }
       });
     }
 
@@ -230,15 +249,53 @@ export class PedidoFormComponent implements OnInit {
       notas = producto.descripcion;
       nombre = `${nombre} (${producto.descripcion})`;
     }
-    this.lineas.push({
+    const linea: LineaLocal = {
       producto_id: producto.id ?? producto.id_producto,
       id_paquete: producto.id_paquete || null,
       nombre: nombre,
       cantidad: producto.cantidad ?? 1,
       precio: precio,
       descuento: producto.descuento ?? 0,
-      notas: notas
-    });
+      notas: notas,
+      inventario_por_lotes: producto.inventario_por_lotes,
+      lote_id: null,
+      lotes_asignados: null,
+    };
+    this.lineas.push(linea);
+
+    if (this.requiereDistribucionLotes(linea)) {
+      setTimeout(() => this.abrirDistribucionLotes(this.lineas.length - 1), 100);
+    }
+  }
+
+  abrirDistribucionLotes(index: number): void {
+    const idBodega = this.idBodega ?? this.apiService.auth_user().id_bodega;
+    if (!idBodega) {
+      this.alertService.warning('Bodega requerida', 'Seleccione la bodega de inventario del pedido.');
+      return;
+    }
+    this.lineaLotesIndex = index;
+    const linea = this.lineas[index];
+    this.lotesModal.abrir({
+      ...linea,
+      id_producto: linea.producto_id,
+      nombre_producto: linea.nombre,
+    }, idBodega);
+  }
+
+  onLotesLineaConfirmados(detalle: any): void {
+    if (this.lineaLotesIndex == null) {
+      return;
+    }
+    const linea = this.lineas[this.lineaLotesIndex];
+    linea.lotes_asignados = detalle.lotes_asignados;
+    linea.lote_id = detalle.lote_id;
+    linea.cantidad = detalle.cantidad;
+    this.lineaLotesIndex = null;
+  }
+
+  textoLotesLinea(linea: LineaLocal): string {
+    return textoResumenLotesDetalle(linea);
   }
 
   onSelectCliente(cliente: any): void {
@@ -357,13 +414,23 @@ export class PedidoFormComponent implements OnInit {
       return;
     }
 
+    const faltanLotes = this.lineas.some((l) =>
+      this.requiereDistribucionLotes(l) && !(l.lotes_asignados?.length || l.lote_id)
+    );
+    if (faltanLotes) {
+      this.alertService.error('Debe distribuir los lotes de todos los productos con inventario por lotes.');
+      return;
+    }
+
     const detalles = this.lineas.map((l) => ({
       producto_id: l.producto_id,
       id_paquete: l.id_paquete || undefined,
       cantidad: l.cantidad,
       precio: l.precio,
       descuento: l.descuento || 0,
-      notas: l.notas?.trim() || undefined
+      notas: l.notas?.trim() || undefined,
+      lote_id: l.lote_id || undefined,
+      lotes_asignados: l.lotes_asignados || undefined,
     }));
 
     const payload: PedidoCanalPayload = {

@@ -3,6 +3,13 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
+import {
+  MAX_DIAS_EXPORT_DETALLES,
+  MAX_DIAS_EXPORT_VENTAS,
+  validarPeriodoExport,
+  esErrorTimeoutExport,
+  mensajeErrorTimeoutExport,
+} from '../../../../helpers/export-period.helper';
 
 @Component({
   selector: 'app-caja-ventas',
@@ -122,7 +129,7 @@ export class CajaVentasComponent implements OnInit {
     }
 
     public reemprimir(venta:any){
-        window.open(this.apiService.baseUrl + '/api/reporte/facturacion/' + venta.id + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');
+        this.apiService.imprimirFactura(venta.id, 'Impresión', 'width=400');
     }
 
     // Editar
@@ -166,7 +173,18 @@ export class CajaVentasComponent implements OnInit {
     }
 
     public descargarVentas(){
-        this.apiService.export('ventas/exportar', this.filtros).subscribe((data:Blob) => {
+        const hoy = new Date().toISOString().split('T')[0];
+        const filtrosExport = {
+            ...this.filtros,
+            inicio: this.filtros.inicio || hoy,
+            fin: this.filtros.fin || hoy,
+        };
+        const check = validarPeriodoExport(filtrosExport.inicio, filtrosExport.fin, MAX_DIAS_EXPORT_VENTAS);
+        if (!check.valid) {
+            this.alertService.error(check.error);
+            return;
+        }
+        this.apiService.export('ventas/exportar', filtrosExport).subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -176,12 +194,29 @@ export class CajaVentasComponent implements OnInit {
             a.click();
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
-          }, (error) => {console.error('Error al exportar ventas:', error); }
+          }, (error) => {
+            if (esErrorTimeoutExport(error)) {
+                this.alertService.error(mensajeErrorTimeoutExport(MAX_DIAS_EXPORT_VENTAS));
+            } else {
+                this.alertService.error(error);
+            }
+          }
         );
     }
 
     public descargarDetalles(){
-        this.apiService.export('ventas-detalles/exportar', this.filtros).subscribe((data:Blob) => {
+        const hoy = new Date().toISOString().split('T')[0];
+        const filtrosExport = {
+            ...this.filtros,
+            inicio: this.filtros.inicio || hoy,
+            fin: this.filtros.fin || hoy,
+        };
+        const check = validarPeriodoExport(filtrosExport.inicio, filtrosExport.fin, MAX_DIAS_EXPORT_DETALLES);
+        if (!check.valid) {
+            this.alertService.error(check.error);
+            return;
+        }
+        this.apiService.export('ventas-detalles/exportar', filtrosExport).subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -191,12 +226,18 @@ export class CajaVentasComponent implements OnInit {
             a.click();
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
-          }, (error) => {console.error('Error al exportar ventas:', error); }
+          }, (error) => {
+            if (esErrorTimeoutExport(error)) {
+                this.alertService.error(mensajeErrorTimeoutExport(MAX_DIAS_EXPORT_DETALLES));
+            } else {
+                this.alertService.error(error);
+            }
+          }
         );
     }
 
     public imprimir(venta:any){
-        window.open(this.apiService.baseUrl + '/api/reporte/facturacion/' + venta.id + '?token=' + this.apiService.auth_token());
+        this.apiService.imprimirFactura(venta.id);
     }
 
     public linkWompi(venta:any){
@@ -234,11 +275,11 @@ export class CajaVentasComponent implements OnInit {
 
     emitirDTE(){
         this.saving = true;
-        this.mhService.emitirDTE(this.venta).then((venta) => {
+        this.mhService.emitirDTE(this.venta).then((venta: any) => {
             this.venta = venta;
             this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
             this.saving = false;
-        }).catch((error) => {
+        }).catch((error: unknown) => {
             this.saving = false;
             this.alertService.warning('Hubo un problema', error);
         });
@@ -258,11 +299,11 @@ export class CajaVentasComponent implements OnInit {
     emitirEnContingencia(venta:any){
         this.venta = venta;
         this.saving = true;
-        this.mhService.emitirDTEContingencia(this.venta).then((venta) => {
+        this.mhService.emitirDTEContingencia(this.venta).then((venta: any) => {
             this.venta = venta;
             this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
             this.saving = false;
-        }).catch((error) => {
+        }).catch((error: unknown) => {
             this.saving = false;
             this.alertService.warning('Hubo un problema', error);
         });
@@ -277,14 +318,14 @@ export class CajaVentasComponent implements OnInit {
                 this.apiService.store('generarDTEAnulado', this.venta).subscribe(dte => {
                     // this.alertService.success('DTE generado.');
                     this.venta.dte_invalidacion = dte;
-                    this.mhService.firmarDTE(dte).subscribe(dteFirmado => {
+                    this.mhService.firmarDTE(dte).subscribe((dteFirmado: any) => {
                         this.venta.dte_invalidacion.firmaElectronica = dteFirmado.body;
                         
                         if(dteFirmado.status == 'ERROR'){
                             this.alertService.warning('Hubo un problema', dteFirmado.body.mensaje);
                         }
                         
-                        this.mhService.anularDTE(this.venta, dteFirmado.body).subscribe(dte => {
+                        this.mhService.anularDTE(this.venta, dteFirmado.body).subscribe((dte: any) => {
                             if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
                                 this.venta.dte_invalidacion.sello = dte.selloRecibido;
                                 this.venta.sello_mh = dte.selloRecibido;
@@ -295,19 +336,20 @@ export class CajaVentasComponent implements OnInit {
                             }
 
                             this.alertService.success('DTE anulado.', 'El DTE fue anulado exitosamente.');
-                        },error => {
-                            if(error.error.descripcionMsg){
-                                this.alertService.warning('Hubo un problema', error.error.descripcionMsg);
+                        }, (error: unknown) => {
+                            const err = error as { error?: { descripcionMsg?: string; observaciones?: unknown[] } };
+                            if (err.error?.descripcionMsg) {
+                                this.alertService.warning('Hubo un problema', err.error.descripcionMsg);
                             }
-                            if(error.error.observaciones.length > 0){
-                                this.alertService.warning('Hubo un problema', error.error.observaciones);
+                            if (err.error?.observaciones && err.error.observaciones.length > 0) {
+                                this.alertService.warning('Hubo un problema', err.error.observaciones);
                             }
                             this.saving = false;
                         });
 
-                    },error => {this.alertService.error(error);this.saving = false; });
+                    }, (error: unknown) => {this.alertService.error(error);this.saving = false; });
 
-                },error => {this.alertService.error(error);this.saving = false; });
+                }, (error: unknown) => {this.alertService.error(error);this.saving = false; });
             }
         }
         else{

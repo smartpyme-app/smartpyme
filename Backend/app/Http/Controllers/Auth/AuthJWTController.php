@@ -75,12 +75,13 @@ class AuthJWTController extends Controller
         $acceso->fecha = $user->ultimo_login;
         $acceso->save();
 
-        $user->empresa = $user->empresa()->with('licencia')->first();
+        $user->empresa = $user->empresa()->with(['licencia', 'currency'])->first();
         
         // Agregar información sobre el tipo de empresa (padre/hija)
         if ($user->empresa) {
             $user->empresa->es_empresa_padre = $user->empresa->esEmpresaPadre();
             $user->empresa->es_empresa_hija = $user->empresa->esEmpresaHija();
+            $this->adjuntarUsaImpresionHtml($user->empresa);
         }
         
         $suscripcion = $user->empresa->suscripcion()
@@ -1014,12 +1015,13 @@ class AuthJWTController extends Controller
         $user->ultimo_login = Carbon::now();
         $user->save();
 
-        $user->empresa = $user->empresa()->with('licencia')->first();
+        $user->empresa = $user->empresa()->with(['licencia', 'currency'])->first();
         
         // Agregar información sobre el tipo de empresa (padre/hija)
         if ($user->empresa) {
             $user->empresa->es_empresa_padre = $user->empresa->esEmpresaPadre();
             $user->empresa->es_empresa_hija = $user->empresa->esEmpresaHija();
+            $this->adjuntarUsaImpresionHtml($user->empresa);
         }
         
         $suscripcion = $user->empresa->suscripcion()
@@ -1044,6 +1046,15 @@ class AuthJWTController extends Controller
         $this->adjuntarAccesoTemporalUsuario($user, $suscripcion);
 
         return response()->json(['user' => $user], 200);
+    }
+
+    private function adjuntarUsaImpresionHtml($empresa): void
+    {
+        $empresa->usa_impresion_html = in_array(
+            (int) $empresa->id,
+            array_map('intval', config('constants.EMPRESAS_IMPRESION_HTML', [])),
+            true
+        );
     }
 
     /**

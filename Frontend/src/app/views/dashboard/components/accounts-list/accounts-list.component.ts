@@ -1,4 +1,5 @@
 import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter } from '@angular/core';
+import { CurrencyFormatService } from '@services/currency-format.service';
 
 export interface AccountItem {
   name: string;
@@ -18,6 +19,8 @@ export class AccountsListComponent implements OnInit, OnChanges {
 
   chartOption: any = {};
   echartsInstance: any;
+
+  constructor(private currencyFormat: CurrencyFormatService) {}
 
   private hexToRgba(hex: string, alpha: number): string {
     const r = parseInt(hex.slice(1, 3), 16);
@@ -39,6 +42,20 @@ export class AccountsListComponent implements OnInit, OnChanges {
   get sortedAccounts(): AccountItem[] {
     if (!this.accounts || !Array.isArray(this.accounts)) return []; // ← agregar
     return [...this.accounts].sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount));
+  }
+
+  private formatBarAmount(value: number): string {
+    const absValue = Math.abs(value);
+    if (absValue >= 1000000) {
+      return `$${(Math.floor((absValue / 1000000) * 10) / 10).toFixed(1)}M`;
+    }
+    if (absValue >= 1000) {
+      return `$${(Math.floor((absValue / 1000) * 10) / 10).toFixed(1)}K`;
+    }
+    return `$${absValue.toLocaleString('es-GT', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
   }
 
   initChart(): void {
@@ -91,6 +108,12 @@ export class AccountsListComponent implements OnInit, OnChanges {
         type: 'category',
         data: labels,
         inverse: true,
+        axisLine: {
+          show: false
+        },
+        axisTick: {
+          show: false
+        },
         axisLabel: {
           interval: 0,
           fontSize: 11,
@@ -140,20 +163,8 @@ export class AccountsListComponent implements OnInit, OnChanges {
         label: {
           show: true,
           position: 'right',
-          formatter: (params: any) => {
-            const value = params.value;
-            const absValue = Math.abs(value);
-            let formatted: string;
-            if (absValue >= 1000000) {
-              formatted = `${(Math.floor((absValue / 1000000) * 10) / 10).toFixed(1)}M`;
-            } else if (absValue >= 1000) {
-              formatted = `${(Math.floor((absValue / 1000) * 10) / 10).toFixed(1)}K`;
-            } else {
-              formatted = absValue.toLocaleString('es-GT', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-            }
-            return `$${formatted}`;
-          },
-          color: '#000',
+          formatter: (params: any) => this.formatBarAmount(params.value),
+          color: '#666',
           fontSize: 11,
           fontWeight: 'normal'
         }
@@ -179,8 +190,8 @@ export class AccountsListComponent implements OnInit, OnChanges {
 
   onChartInit(ec: any): void {
     this.echartsInstance = ec;
-    // Configurar evento de clic después de inicializar
     if (this.echartsInstance && this.chartOption) {
+      this.echartsInstance.off('click');
       this.echartsInstance.on('click', (params: any) => {
         if (params && params.name !== undefined) {
           const sorted = this.sortedAccounts;
@@ -197,11 +208,6 @@ export class AccountsListComponent implements OnInit, OnChanges {
   }
 
   formatAmount(amount: number): string {
-    return new Intl.NumberFormat('es-GT', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(amount);
+    return this.currencyFormat.format(amount);
   }
 }

@@ -1,6 +1,7 @@
 import { Component, Input, OnInit, OnChanges, Output, EventEmitter, ViewChild } from '@angular/core';
 import { ColDef, GridOptions, GridApi, ColumnApi } from 'ag-grid-community';
 import { AgGridAngular } from 'ag-grid-angular';
+import { CurrencyFormatService } from '@services/currency-format.service';
 
 @Component({
   selector: 'app-finanzas',
@@ -78,7 +79,7 @@ export class FinanzasComponent implements OnInit, OnChanges {
   // Datos para AG Grid (formato tree data)
   estadoResultadosTreeData: any[] = [];
 
-  constructor() { }
+  constructor(private currencyFormat: CurrencyFormatService) { }
 
   ngOnInit(): void {
     this.configurarAGGrid();
@@ -1457,18 +1458,7 @@ export class FinanzasComponent implements OnInit, OnChanges {
   }
 
   formatCurrency(value: number): string {
-    if (value === 0 || value === null || value === undefined) {
-      return '';
-    }
-    
-    const absValue = Math.abs(value);
-    const formatted = new Intl.NumberFormat('es-GT', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(absValue);
-    
-    // Si es negativo, mostrar con paréntesis
-    return value < 0 ? `(${formatted})` : formatted;
+    return this.currencyFormat.format(value, undefined, { blankWhenZero: true, blankWhenNull: true });
   }
 
   formatPercentage(value: number): string {

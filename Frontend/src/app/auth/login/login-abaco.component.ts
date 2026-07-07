@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { PromocionalService, CodigoPromocional } from '@services/promocional.service';
@@ -24,6 +24,7 @@ export class LoginAbacoComponent implements OnInit {
   constructor(
     private apiService: ApiService,
     private router: Router,
+    private route: ActivatedRoute,
     private alertService: AlertService,
     private promocionalService: PromocionalService,
   ) { }
@@ -31,6 +32,10 @@ export class LoginAbacoComponent implements OnInit {
   ngOnInit() {
     localStorage.clear();
     this.cargarCodigoPromocionalAbaco();
+
+    if (this.route.snapshot.queryParamMap.get('passwordReset')) {
+      setTimeout(() => this.alertService.success('¡Listo!', 'Tu contraseña ha sido actualizada correctamente.'));
+    }
   }
 
   private cargarCodigoPromocionalAbaco(): void {

@@ -4,6 +4,20 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
+import {
+  ExportPeriodoState,
+  MESES_EXPORT_PERIODO,
+  MAX_DIAS_EXPORT_VENTAS,
+  aniosDisponiblesExportDesde,
+  buildFechasExportValidadas,
+  crearEstadoExportPeriodoDefault,
+  diasEntreFechasIso,
+  esErrorTimeoutExport,
+  mensajeErrorTimeoutExport,
+  maxDiasExportPorTipo,
+  prefillExportPeriodoDesdeFiltros,
+  validarPeriodoExport,
+} from '../../../helpers/export-period.helper';
 
 @Component({
   selector: 'app-gastos',
@@ -26,6 +40,11 @@ export class GastosComponent implements OnInit {
     public proveedores:any = [];
     public filtros:any = {};
     public numeros_ids:any = [];
+
+    public exportPeriodo: ExportPeriodoState = crearEstadoExportPeriodoDefault();
+    public readonly mesesExportPeriodo = MESES_EXPORT_PERIODO;
+    public readonly aniosDisponiblesExport = aniosDisponiblesExportDesde();
+    public readonly maxDiasExportPorTipo = maxDiasExportPorTipo;
 
     modalRef!: BsModalRef;
 
@@ -176,9 +195,51 @@ export class GastosComponent implements OnInit {
     }
 
 
+    public openDescargar(template: TemplateRef<any>) {
+        this.exportPeriodo = crearEstadoExportPeriodoDefault();
+        prefillExportPeriodoDesdeFiltros(this.filtros, this.exportPeriodo);
+        this.modalRef = this.modalService.show(template);
+    }
+
+    public cerrarModalDescargar(): void {
+        if (this.modalRef) {
+            this.modalRef.hide();
+        }
+    }
+
+    public get anioEnCursoParaMes(): number {
+        return new Date().getFullYear();
+    }
+
+    public get puedeDescargarGastos(): boolean {
+        return buildFechasExportValidadas(this.exportPeriodo, 'ventas') !== null;
+    }
+
+    public rangoExportSuperaLimiteGastos(): boolean {
+        const fechas = buildFechasExportValidadas(this.exportPeriodo, 'ventas');
+        if (fechas) return false;
+        const ini = this.exportPeriodo.rangoInicio?.trim();
+        const fin = this.exportPeriodo.rangoFin?.trim();
+        if (this.exportPeriodo.tipo === 'rango' && ini && fin && ini <= fin) {
+            return diasEntreFechasIso(ini, fin) > maxDiasExportPorTipo('ventas');
+        }
+        return false;
+    }
+
     public descargar(){
+        const fechas = buildFechasExportValidadas(this.exportPeriodo, 'ventas');
+        if (!fechas) {
+            const check = validarPeriodoExport(
+                this.exportPeriodo.rangoInicio,
+                this.exportPeriodo.rangoFin,
+                MAX_DIAS_EXPORT_VENTAS
+            );
+            this.alertService.error(check.error ?? 'Período inválido.');
+            return;
+        }
+        const filtrosExport = { ...this.filtros, inicio: fechas.inicio, fin: fechas.fin };
         this.downloading = true;
-        this.apiService.export('gastos/exportar', this.filtros).subscribe((data:Blob) => {
+        this.apiService.export('gastos/exportar', filtrosExport).subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -189,7 +250,15 @@ export class GastosComponent implements OnInit {
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
             this.downloading = false;
-          }, (error) => { this.alertService.error(error); this.downloading = false; }
+            this.cerrarModalDescargar();
+          }, (error) => {
+            if (esErrorTimeoutExport(error)) {
+                this.alertService.error(mensajeErrorTimeoutExport(MAX_DIAS_EXPORT_VENTAS));
+            } else {
+                this.alertService.error(error);
+            }
+            this.downloading = false;
+          }
         );
     }
 
