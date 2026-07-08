@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, Subject } from 'rxjs';
-import { catchError, map, tap } from 'rxjs/operators';
+import { catchError, map, shareReplay, tap } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 
 @Injectable({
@@ -10,6 +10,8 @@ import { environment } from 'src/environments/environment';
 export class FuncionalidadesService {
   private accesoCache: { [key: string]: boolean } = {};
   private readonly cambiosSubject = new Subject<void>();
+  private cargandoAccesos$: Observable<boolean> | null = null;
+  private accesosCargados = false;
 
   constructor(
     private http: HttpClient
@@ -21,27 +23,46 @@ export class FuncionalidadesService {
   }
 
   verificarAcceso(slug: string): Observable<boolean> {
-    // Si ya está en caché, devolver el resultado directamente
-    if (this.accesoCache[slug] !== undefined) {
-      return of(this.accesoCache[slug]);
+    // ponytail: Si ya cargamos todos los accesos globales, resolver sincrónicamente
+    if (this.accesosCargados) {
+      return of(!!this.accesoCache[slug]);
     }
 
-    // Si no está en caché, consultar a la API
-    return this.http.get<{ acceso: boolean }>(`${environment.API_URL}/api/verificar-acceso/${slug}`).pipe(
-      map(response => response.acceso),
-      tap(acceso => {
-        // Guardar en caché
-        this.accesoCache[slug] = acceso;
+    // Si ya hay una petición de carga global en progreso, suscribirse a la misma
+    if (this.cargandoAccesos$) {
+      return this.cargandoAccesos$.pipe(
+        map(() => !!this.accesoCache[slug])
+      );
+    }
+
+    // Iniciar carga global de todos los accesos activos de la empresa
+    this.cargandoAccesos$ = this.http.get<{ accesos: string[] }>(`${environment.API_URL}/api/verificar-accesos`).pipe(
+      map(response => {
+        this.accesoCache = {};
+        response.accesos.forEach(s => {
+          this.accesoCache[s] = true;
+        });
+        this.accesosCargados = true;
+        this.cargandoAccesos$ = null;
+        return true;
       }),
       catchError(error => {
-        console.error(`Error al verificar acceso a funcionalidad ${slug}:`, error);
-        return of(false); // Por defecto, denegar acceso en caso de error
-      })
+        console.error('Error al cargar accesos a funcionalidades globales:', error);
+        this.cargandoAccesos$ = null;
+        return of(false);
+      }),
+      shareReplay(1)
+    );
+
+    return this.cargandoAccesos$.pipe(
+      map(() => !!this.accesoCache[slug])
     );
   }
 
   limpiarCache(): void {
     this.accesoCache = {};
+    this.accesosCargados = false;
+    this.cargandoAccesos$ = null;
     this.cambiosSubject.next();
   }
 

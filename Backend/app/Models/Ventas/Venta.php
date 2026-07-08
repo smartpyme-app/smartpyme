@@ -2,15 +2,23 @@
 
 namespace App\Models\Ventas;
 
+use App\Models\Concerns\AuditableModel;
 use App\Models\Concerns\HasOffloadedDte;
 use App\Models\FidelizacionClientes\TransaccionPuntos;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Auth;
 
-class Venta extends Model {
+class Venta extends AuditableModel {
 
     use HasOffloadedDte;
+
+    protected static function auditModule(): string
+    {
+        return 'ventas';
+    }
+
+    public const DOCUMENTOS_NO_CONTABLES = ['Cotización', 'Orden de compra'];
 
     protected $table = 'ventas';
     protected $fillable = array(
@@ -182,6 +190,19 @@ class Venta extends Model {
             return $this->documento()->pluck('nombre')->first();
         }
         return $this->documento ? $this->documento->nombre : null;
+    }
+
+    public function referenciaDocumentoContable(): string
+    {
+        return ($this->nombre_documento ?? 'Documento') . ' #' . ($this->correlativo ?? 'Sin correlativo');
+    }
+
+    public function scopeContabilizable($query)
+    {
+        return $query->where('cotizacion', 0)
+            ->whereHas('documento', function ($q) {
+                $q->whereNotIn('nombre', self::DOCUMENTOS_NO_CONTABLES);
+            });
     }
 
     public function getNombreCanalAttribute(){

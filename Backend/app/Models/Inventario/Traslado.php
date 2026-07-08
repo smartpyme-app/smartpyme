@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Auth;
+use App\Models\Inventario\TrasladoLote;
 
 class Traslado extends Model
 {
@@ -80,6 +81,10 @@ class Traslado extends Model
 
     public function loteDestino(){
         return $this->belongsTo('App\Models\Inventario\Lote', 'lote_id_destino');
+    }
+
+    public function loteAsignaciones(){
+        return $this->hasMany(TrasladoLote::class, 'traslado_id');
     }
 
 }

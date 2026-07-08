@@ -26,6 +26,7 @@ Route::get('/prueba', function () {
 });
 
 Route::get('verificar-acceso/{slug}', [EmpresasFuncionalidadesController::class, 'verificarAcceso']);
+Route::get('verificar-accesos', [EmpresasFuncionalidadesController::class, 'verificarAccesos']);
 
 // N1co
 require base_path('routes/modulos/n1co/webhook-n1co.php');
@@ -145,6 +146,7 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	require base_path('routes/modulos/admin/dte-mh-proxy.php');
 	require base_path('routes/modulos/admin/cr-fe.php');
     require base_path('routes/modulos/admin/reportes-automaticos.php');
+    require base_path('routes/modulos/admin/auditoria.php');
     require base_path('routes/modulos/admin/roles-permissions.php');
     require base_path('routes/modulos/reportes.php');
 
@@ -157,6 +159,7 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	require base_path('routes/modulos/super-admin/planes.php');
 	require base_path('routes/modulos/super-admin/pagos.php');
 	require base_path('routes/modulos/super-admin/transacciones.php');
+	require base_path('routes/modulos/super-admin/auditoria.php');
 	require base_path('routes/modulos/super-admin/clientes.php');
 
 	//Crequire base_path('rhatbot

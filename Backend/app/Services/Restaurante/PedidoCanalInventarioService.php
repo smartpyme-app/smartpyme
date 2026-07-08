@@ -6,8 +6,10 @@ use App\Models\Admin\Empresa;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Lote;
 use App\Models\Inventario\Producto;
+use App\Models\Restaurante\PedidoDetalleLote;
 use App\Models\Restaurante\PedidoRestaurante;
 use App\Models\Restaurante\PedidoRestauranteDetalle;
+use App\Services\Inventario\LoteAsignacionService;
 use RuntimeException;
 
 class PedidoCanalInventarioService
@@ -32,9 +34,7 @@ class PedidoCanalInventarioService
         $pedido->load(['detalles', 'detalles.producto', 'detalles.producto.composiciones']);
 
         foreach ($pedido->detalles as $detalleRow) {
-            $detalleRow->lote_id = null;
             $detalleRow->meta_inventario = null;
-            $detalleRow->save();
 
             $producto = $detalleRow->producto ?: Producto::find($detalleRow->producto_id);
             if (!$producto) {
@@ -43,8 +43,11 @@ class PedidoCanalInventarioService
 
             $cantidad = (float) $detalleRow->cantidad;
             $precioLinea = (float) $detalleRow->precio;
+            $kardexOpts = $this->kardexOpcionesUsuario($pedido);
 
             if ($producto->tipo === 'Servicio') {
+                $detalleRow->lote_id = null;
+                $detalleRow->save();
                 $this->procesarComposiciones(
                     $pedido,
                     $detalleRow,
@@ -77,41 +80,55 @@ class PedidoCanalInventarioService
                 }
             }
 
-            $loteSeleccionado = null;
+            $registrosLotes = PedidoDetalleLote::where('pedido_detalle_id', $detalleRow->id)->get();
+            $asignacionManual = $registrosLotes->map(fn ($r) => [
+                'lote_id' => (int) $r->lote_id,
+                'cantidad' => (float) $r->cantidad,
+            ])->all();
+
             if ($producto->inventario_por_lotes && $lotesActivo) {
-                $loteSeleccionado = $this->seleccionarLotePrincipal(
-                    $producto->id,
-                    $idBodega,
-                    $metodologia
-                );
-                if ($loteSeleccionado) {
-                    if (!$puedeVenderSinStock && $loteSeleccionado->stock < $cantidad) {
-                        throw new RuntimeException(
-                            "No hay suficiente stock en el lote {$loteSeleccionado->numero_lote}. Stock disponible: {$loteSeleccionado->stock}, Cantidad requerida: {$cantidad}"
-                        );
+                try {
+                    $asignaciones = LoteAsignacionService::resolverAsignacionesSalida(
+                        $producto,
+                        $idBodega,
+                        $cantidad,
+                        $metodologia,
+                        $lotesActivo,
+                        $detalleRow->lote_id ? (int) $detalleRow->lote_id : null,
+                        !empty($asignacionManual) ? $asignacionManual : null
+                    );
+                } catch (RuntimeException $e) {
+                    if (!$puedeVenderSinStock) {
+                        throw $e;
                     }
-                    $loteSeleccionado->stock -= $cantidad;
-                    $loteSeleccionado->save();
-                    $detalleRow->lote_id = $loteSeleccionado->id;
+                    $asignaciones = [];
+                }
+
+                if (!empty($asignaciones) && $inventario) {
+                    LoteAsignacionService::aplicarSalidaDocumento(
+                        $asignaciones,
+                        $pedido,
+                        $inventario,
+                        $precioLinea,
+                        $kardexOpts
+                    );
+                    LoteAsignacionService::sincronizarPedidoDetalleLotes($detalleRow->id, $asignaciones);
+                    $detalleRow->lote_id = count($asignaciones) === 1 ? $asignaciones[0]['lote_id'] : null;
                     $detalleRow->save();
-                } else {
+                } elseif (!$puedeVenderSinStock && empty($asignaciones)) {
                     if ($metodologia === 'Manual') {
                         throw new RuntimeException(
-                            "La metodología Manual de lotes no permite confirmar pedidos de canal con este producto sin elegir lote en facturación: {$producto->nombre}. Use FIFO/LIFO/FEFO o facture sin pasar por pedido confirmado."
+                            "Debe seleccionar lotes para el producto: {$producto->nombre} (metodología Manual)."
                         );
                     }
-                    if (!$puedeVenderSinStock) {
-                        throw new RuntimeException(
-                            "No hay lotes disponibles con stock para el producto: {$producto->nombre}"
-                        );
-                    }
+                    throw new RuntimeException(
+                        "No hay lotes disponibles con stock para el producto: {$producto->nombre}"
+                    );
                 }
-            }
-
-            if ($inventario) {
+            } elseif ($inventario) {
                 $inventario->stock -= $cantidad;
                 $inventario->save();
-                $inventario->kardex($pedido, $cantidad, $precioLinea, null, null, $this->kardexOpcionesUsuario($pedido));
+                $inventario->kardex($pedido, $cantidad, $precioLinea, null, null, $kardexOpts);
             }
 
             $this->procesarComposiciones(
@@ -183,23 +200,38 @@ class PedidoCanalInventarioService
                 continue;
             }
 
-            if ($detalleRow->lote_id) {
-                $lote = Lote::find($detalleRow->lote_id);
-                if ($lote) {
-                    $lote->stock += $cantidad;
-                    $lote->save();
-                }
-            }
-
             $inventario = Inventario::where('id_producto', $detalleRow->producto_id)
                 ->where('id_bodega', $idBodega)->first();
 
-            if ($inventario) {
+            $registrosLotes = PedidoDetalleLote::where('pedido_detalle_id', $detalleRow->id)->get();
+
+            if ($registrosLotes->isNotEmpty() && $inventario) {
+                LoteAsignacionService::revertirSalidaDocumento(
+                    $registrosLotes,
+                    $pedido,
+                    $inventario,
+                    $cantidad,
+                    $detalleRow->lote_id,
+                    $precioLinea,
+                    $this->kardexOpcionesUsuario($pedido)
+                );
+            } elseif ($detalleRow->lote_id && $inventario) {
+                LoteAsignacionService::revertirSalidaDocumento(
+                    [],
+                    $pedido,
+                    $inventario,
+                    $cantidad,
+                    (int) $detalleRow->lote_id,
+                    $precioLinea,
+                    $this->kardexOpcionesUsuario($pedido)
+                );
+            } elseif ($inventario) {
                 $inventario->stock += $cantidad;
                 $inventario->save();
                 $inventario->kardex($pedido, -$cantidad, $precioLinea, null, null, $this->kardexOpcionesUsuario($pedido));
             }
 
+            PedidoDetalleLote::where('pedido_detalle_id', $detalleRow->id)->delete();
             $detalleRow->lote_id = null;
             $detalleRow->meta_inventario = null;
             $detalleRow->save();

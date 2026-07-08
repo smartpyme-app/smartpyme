@@ -57,6 +57,8 @@ use App\Models\Eventos\Evento;
 use App\Models\Restaurante\PedidoRestaurante;
 use App\Services\Restaurante\PedidoCanalInventarioService;
 use App\Services\Inventario\ConversionInventarioService;
+use App\Services\Inventario\LoteAsignacionService;
+use App\Services\Inventario\StockDisponibleService;
 use Luecano\NumeroALetras\NumeroALetras;
 use Illuminate\Support\Facades\Schema;
 use App\Exports\VentasExport;
@@ -470,19 +472,8 @@ class VentasController extends Controller
             // Anular venta y regresar stock
             if (($venta->estado != 'Anulada') && ($request['estado'] == 'Anulada')) {
 
-                // Si el detalle tiene lote_id, regresar stock al lote
-                if ($detalle->lote_id) {
-                    $lote = Lote::find($detalle->lote_id);
-                    if ($lote) {
-                        $lote->stock += $cantidadBase;
-                        $lote->save();
-                    }
-                }
-
                 if ($inventario) {
-                    $inventario->stock += $cantidadBase;
-                    $inventario->save();
-                    $inventario->kardex($venta, $cantidadBase * -1);
+                    LoteAsignacionService::revertirEntrada($detalle, $venta, $inventario, $cantidadBase);
                 }
 
                 // Inventario compuestos (los compuestos no usan presentaciones: su factor es siempre 1)
@@ -512,20 +503,14 @@ class VentasController extends Controller
             }
             // Cancelar anulación de venta y descargar stock
             if (($venta->estado == 'Anulada') && ($request['estado'] != 'Anulada')) {
-                // Si el detalle tiene lote_id, descontar del lote
-                if ($detalle->lote_id) {
-                    $lote = Lote::find($detalle->lote_id);
-                    if ($lote && $lote->stock >= $cantidadBase) {
-                        $lote->stock -= $cantidadBase;
-                        $lote->save();
-                    }
-                }
-
-                // Aplicar stock
                 if ($inventario) {
-                    $inventario->stock -= $cantidadBase;
-                    $inventario->save();
-                    $inventario->kardex($venta, $cantidadBase);
+                    LoteAsignacionService::reactivarSalidaDesdeDetalle(
+                        $detalle,
+                        $venta,
+                        $inventario,
+                        $cantidadBase,
+                        (float) ($detalle->precio ?? 0)
+                    );
                 }
 
                 // Inventario compuestos

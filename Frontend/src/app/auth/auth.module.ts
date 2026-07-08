@@ -18,6 +18,7 @@ import { PagoComponent } from './../auth/register/pago/pago.component';
 import { PagoAbacoComponent } from './../auth/register/pago/pago-abaco.component';
 import { PagoEntryComponent } from './../auth/register/pago/pago-entry.component';
 import { ForgetComponent } from './../auth/forget/forget.component';
+import { ResetPasswordComponent } from './../auth/reset-password/reset-password.component';
 import { PaymentSuccessComponent } from './../auth/register/pago/payment-success.component';
 import { HeroVideoAutoplayDirective } from './shared/hero-video-autoplay.directive';
 
@@ -37,6 +38,7 @@ import { HeroVideoAutoplayDirective } from './shared/hero-video-autoplay.directi
     PagoComponent,
     PaymentSuccessComponent,
     HeroVideoAutoplayDirective,
+    ResetPasswordComponent,
   ],
   declarations: [
     LoginAbacoComponent,
@@ -52,6 +54,7 @@ import { HeroVideoAutoplayDirective } from './shared/hero-video-autoplay.directi
     LoginEntryComponent,
     LockComponent,
     ForgetComponent,
+    ResetPasswordComponent,
     RegisterComponent,
     RegisterAbacoComponent,
     RegisterEntryComponent,

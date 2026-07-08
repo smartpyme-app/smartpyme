@@ -338,6 +338,18 @@ export class ApiService {
     return customConfig?.configuraciones?.lotes_activo === true;
   }
 
+    /** Metodología de lotes configurada para la empresa (Manual, FIFO, LIFO, FEFO) */
+    getLotesMetodologia(): string {
+        const empresa = this.auth_user()?.empresa;
+        if (!empresa?.custom_empresa) {
+            return 'FIFO';
+        }
+        const customConfig = typeof empresa.custom_empresa === 'string'
+            ? JSON.parse(empresa.custom_empresa)
+            : empresa.custom_empresa;
+        return customConfig?.configuraciones?.lotes_metodologia || 'FIFO';
+    }
+
     /** Indica si el campo componente químico está habilitado para la empresa del usuario actual */
     isComponenteQuimicoHabilitado(): boolean {
         const empresa = this.auth_user()?.empresa;
@@ -539,6 +551,69 @@ export class ApiService {
       return true;
     }
     return this.auth_user()?.tipo === 'Administrador';
+  }
+
+  public imprimirFactura(ventaId: number, windowName?: string, windowFeatures?: string): void {
+    const url = this.baseUrl + '/api/reporte/facturacion/' + ventaId + '?token=' + this.auth_token();
+
+    if (this.empresaUsaImpresionHtml()) {
+      this.imprimirConIframe(url);
+      return;
+    }
+
+    const user = this.auth_user();
+    if (user?.id && user?.empresa && user.empresa.usa_impresion_html === undefined) {
+      this.getUserData(user.id).subscribe({
+        next: (refreshed) => {
+          if (this.empresaUsaImpresionHtmlFromUser(refreshed)) {
+            this.imprimirConIframe(url);
+          } else {
+            this.abrirFacturaEnVentana(url, windowName, windowFeatures);
+          }
+        },
+        error: () => this.abrirFacturaEnVentana(url, windowName, windowFeatures),
+      });
+      return;
+    }
+
+    this.abrirFacturaEnVentana(url, windowName, windowFeatures);
+  }
+
+  private empresaUsaImpresionHtml(): boolean {
+    return this.empresaUsaImpresionHtmlFromUser(this.auth_user());
+  }
+
+  private empresaUsaImpresionHtmlFromUser(user: any): boolean {
+    const flag = user?.empresa?.usa_impresion_html;
+    return flag === true || flag === 1;
+  }
+
+  private abrirFacturaEnVentana(url: string, windowName?: string, windowFeatures?: string): void {
+    if (windowName || windowFeatures) {
+      window.open(url, windowName ?? 'Impresión', windowFeatures);
+      return;
+    }
+    window.open(url);
+  }
+
+  private imprimirConIframe(url: string): void {
+    let iframe = document.getElementById('print-frame') as HTMLIFrameElement;
+
+    if (!iframe) {
+      iframe = document.createElement('iframe');
+      iframe.id = 'print-frame';
+      iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:none;';
+      document.body.appendChild(iframe);
+    }
+
+    iframe.src = url;
+
+    iframe.onload = () => {
+      setTimeout(() => {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      }, 500);
+    };
   }
 
   /**

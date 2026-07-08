@@ -146,6 +146,24 @@ export class TreemapChartComponent implements OnInit, OnChanges {
         }
       ]
     };
+
+    this.attachItemClickHandler();
+  }
+
+  private attachItemClickHandler(): void {
+    if (!this.echartsInstance) {
+      return;
+    }
+    this.echartsInstance.off('click');
+    this.echartsInstance.on('click', (params: any) => {
+      if (params && params.name !== undefined) {
+        this.itemClick.emit({
+          name: params.name,
+          value: params.value || params.data?.value,
+          index: params.dataIndex || 0,
+        });
+      }
+    });
   }
 
   getMaxValue(data: any[]): number {
@@ -166,17 +184,8 @@ export class TreemapChartComponent implements OnInit, OnChanges {
 
   onChartInit(ec: any): void {
     this.echartsInstance = ec;
-    // Configurar evento de clic después de inicializar
     if (this.echartsInstance && this.chartOption) {
-      this.echartsInstance.on('click', (params: any) => {
-        if (params && params.name !== undefined) {
-          this.itemClick.emit({
-            name: params.name,
-            value: params.value || params.data?.value,
-            index: params.dataIndex || 0
-          });
-        }
-      });
+      this.attachItemClickHandler();
     }
   }
 }

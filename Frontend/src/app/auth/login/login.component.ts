@@ -32,10 +32,11 @@ export class LoginComponent implements OnInit {
     private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor(
-      private apiService: ApiService,
-      private mhService: MHService,
-      private router: Router,
-      private alertService: AlertService
+        private apiService: ApiService,
+        private mhService: MHService,
+        private router: Router,
+        private route: ActivatedRoute,
+        private alertService: AlertService,
     ) { }
 
     ngOnInit() {
@@ -47,6 +48,10 @@ export class LoginComponent implements OnInit {
         }
 
         this.user = { email: '', password: '' };
+
+        if (this.route.snapshot.queryParamMap.get('passwordReset')) {
+            setTimeout(() => this.alertService.success('¡Listo!', 'Tu contraseña ha sido actualizada correctamente.'));
+        }
     }
 
     submit() {

@@ -2,16 +2,22 @@
 
 namespace App\Models\Contabilidad\Partidas;
 
+use App\Models\Concerns\AuditableModel;
 use App\Services\Contabilidad\CierreEjercicioService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Auth;
 use Illuminate\Support\Facades\DB;
 
-class Partida extends Model
+class Partida extends AuditableModel
 {
     use HasFactory;
+
+    protected static function auditModule(): string
+    {
+        return 'partidas';
+    }
+
     protected $table = 'partidas';
     protected $fillable = [
         'fecha',

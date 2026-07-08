@@ -38,6 +38,11 @@ export const routes: Routes = [
       title: 'Restablecer contraseña'
     },
     {
+      path: 'reset-password',
+      loadComponent: () => import('./auth/reset-password/reset-password.component').then(m => m.ResetPasswordComponent),
+      title: 'Nueva contraseña'
+    },
+    {
       path: 'lock',
       loadComponent: () => import('./auth/lock/lock.component').then(m => m.LockComponent)
     },

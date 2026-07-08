@@ -89,6 +89,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
   public emiting = false;
   public duplicarventa = false;
   public facturarCotizacion = false;
+  public documentoFiscalListo = true;
   public api: boolean = false;
   public opAvanzadas = false;
   public opAvanzadasFacturacion = false;
@@ -431,6 +432,12 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
             this.venta.id_documento = null;
             this.venta.correlativo = null;
             this.venta.nombre_documento = undefined;
+            if (this.facturarCotizacion) {
+              this.documentoFiscalListo = false;
+              this.alertService.error(
+                'Debe configurar un documento fiscal (Factura o Crédito fiscal) en la sucursal antes de facturar la cotización.'
+              );
+            }
           }
         } else {
           this.venta.nombre_documento = docActual.nombre;
@@ -439,6 +446,9 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
             this.venta.correlativo === ''
           ) {
             this.venta.correlativo = docActual.correlativo;
+          }
+          if (this.facturarCotizacion) {
+            this.documentoFiscalListo = true;
           }
         }
         this.cdr.markForCheck();
@@ -694,6 +704,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
         this.router.navigate(['/cotizaciones']);
       } else {
         this.facturarCotizacion = true;
+        this.documentoFiscalListo = false;
         this.apiService
           .read('venta/', +this.route.snapshot.queryParamMap.get('id_venta')!)
           .subscribe(
@@ -711,6 +722,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
               this.venta.fecha_pago = this.apiService.date();
               this.venta.id_documento = null;
               this.venta.correlativo = null;
+              this.venta.nombre_documento = null;
               this.venta.estado = 'Pagada';
               this.venta.condicion = 'Contado';
               this.venta.impuestos = this.impuestos;
@@ -1477,9 +1489,22 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
         if (!documento) {
           return;
         }
+        if (
+          this.facturarCotizacion &&
+          (documento.nombre === 'Cotización' ||
+            documento.nombre === 'Orden de compra')
+        ) {
+          this.alertService.error(
+            'Debe seleccionar un documento fiscal válido para facturar la cotización.'
+          );
+          return;
+        }
         this.venta.nombre_documento = documento.nombre;
         this.venta.id_documento = documento.id;
         this.venta.correlativo = documento.correlativo;
+        if (this.facturarCotizacion) {
+          this.documentoFiscalListo = true;
+        }
 
         if (this.venta.nombre_documento == 'Factura de exportación' && this.esFacturacionElSalvador()) {
             this.apiService.getAll('recintos').pipe(this.untilDestroyed()).subscribe(
@@ -1659,6 +1684,19 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
   }
 
   public onFacturar() {
+    if (
+      this.facturarCotizacion &&
+      (!this.documentoFiscalListo ||
+        !this.venta.id_documento ||
+        this.venta.nombre_documento === 'Cotización' ||
+        this.venta.nombre_documento === 'Orden de compra')
+    ) {
+      this.alertService.error(
+        'Espere a que se asigne el documento fiscal o seleccione un documento válido (Factura o Crédito fiscal).'
+      );
+      return;
+    }
+
     // Validar que si el método de pago requiere banco, este esté seleccionado
     this.mensajeErrorBanco = '';
 
@@ -1860,15 +1898,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
           if (this.facturacionElectronica.debeEmitirDteEnImpresion()) {
             this.emitirDTE();
           } else {
-            window.open(
-              this.apiService.baseUrl +
-              '/api/reporte/facturacion/' +
-              venta.id +
-              '?token=' +
-              this.apiService.auth_token(),
-              'Impresión',
-              'width=400'
-            );
+            this.imprimir(venta);
             if (this.preCuentaId && this.venta.id) {
               this.navegarPostFacturaPreCuenta(this.venta.id);
             } else if (this.pedidoCanalId && this.venta.id) {
@@ -1958,6 +1988,10 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
 
   // DTE
 
+  public imprimir(venta: any) {
+    this.apiService.imprimirFactura(venta.id, 'Impresión', 'width=400');
+  }
+
   emitirDTE() {
     this.emiting = true;
     this.facturacionElectronica
@@ -1974,15 +2008,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
         }
         this.emiting = false;
 
-        window.open(
-          this.apiService.baseUrl +
-            '/api/reporte/facturacion/' +
-            venta.id +
-            '?token=' +
-            this.apiService.auth_token(),
-          'Impresión',
-          'width=400'
-        );
+        this.imprimir(venta);
         if (this.preCuentaId && this.venta.id) {
           this.navegarPostFacturaPreCuenta(this.venta.id);
         } else if (this.pedidoCanalId && this.venta.id) {

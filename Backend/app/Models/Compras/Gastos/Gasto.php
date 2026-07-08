@@ -2,10 +2,16 @@
 
 namespace App\Models\Compras\Gastos;
 
+use App\Models\Concerns\AuditableModel;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
-class Gasto extends Model {
+class Gasto extends AuditableModel {
+
+    protected static function auditModule(): string
+    {
+        return 'gastos';
+    }
 
     protected $table = 'egresos';
     protected $fillable = [
