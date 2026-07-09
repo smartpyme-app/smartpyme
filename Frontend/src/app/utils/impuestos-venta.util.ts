@@ -105,7 +105,7 @@ export function calcularMontosLineaDetalle(
       const gravadaMoneda = redondearMoneda(totalSinIva);
       detalle.gravada = gravadaMoneda;
       detalle.total_iva = totalConIva.toFixed(4);
-      detalle.iva = redondear4(totalConIva - gravadaMoneda);
+      detalle.iva = redondear4(totalSinIva * pct / 100);
       break;
     }
     case 'exenta': {
