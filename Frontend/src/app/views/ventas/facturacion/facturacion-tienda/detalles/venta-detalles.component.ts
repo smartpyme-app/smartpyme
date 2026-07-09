@@ -38,6 +38,7 @@ import {
 import { FE_PAIS_CR, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
 import { copiarImpuestosProductoAlDetalle } from '@utils/impuestos-venta.util';
 import { CountryI18nService } from '@services/country-i18n.service';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 
 @Component({
     selector: 'app-venta-detalles',
@@ -53,6 +54,7 @@ import { CountryI18nService } from '@services/country-i18n.service';
         TiendaVentaCitasComponent,
         LazyImageDirective,
         FeCrExoneracionDetalleModalComponent,
+        CurrencyPipe,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })

@@ -17,6 +17,7 @@ import {
 } from '@shared/modals/fe-cr-exoneracion-detalle/fe-cr-exoneracion-detalle.util';
 
 import Swal from 'sweetalert2';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 
 import {
     limpiarExentaPorSinIvaSiTipoManual,
@@ -49,6 +50,7 @@ import {
     TiendaVentaPaquetesV2Component,
     TiendaVentaCitasComponent,
     FeCrExoneracionDetalleModalComponent,
+    CurrencyPipe,
   ]
 })
 export class VentaDetallesV2Component implements OnInit {

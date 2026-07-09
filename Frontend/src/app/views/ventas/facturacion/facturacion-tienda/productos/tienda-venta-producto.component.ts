@@ -15,12 +15,13 @@ import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { LazyImageDirective } from '../../../../../directives/lazy-image.directive';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 
 @Component({
     selector: 'app-tienda-venta-producto',
     templateUrl: './tienda-venta-producto.component.html',
     standalone: true,
-    imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, NgSelectModule, PaginationComponent, LazyImageDirective],
+    imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, NgSelectModule, PaginationComponent, LazyImageDirective, CurrencyPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class TiendaVentaProductoComponent extends BasePaginatedModalComponent implements OnInit {

@@ -277,6 +277,14 @@ final class CostaRicaXmlComprobantePdfMapper
 
     private static function extraerCabys(DOMXPath $xp, DOMNode $lineaNode): string
     {
+        $cabysDirecto = XmlLocalNameHelper::firstText($xp, 'CodigoCABYS', $lineaNode);
+        if ($cabysDirecto !== null && $cabysDirecto !== '') {
+            $digits = preg_replace('/\D/', '', $cabysDirecto);
+            if (strlen($digits) === 13) {
+                return $digits;
+            }
+        }
+
         foreach (XmlLocalNameHelper::allNodes($xp, 'Codigo', $lineaNode) as $codNode) {
             $tipo = XmlLocalNameHelper::firstText($xp, 'Tipo', $codNode);
             $valor = XmlLocalNameHelper::firstText($xp, 'Codigo', $codNode)

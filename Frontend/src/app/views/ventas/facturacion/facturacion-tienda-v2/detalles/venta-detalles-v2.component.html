@@ -139,7 +139,7 @@
                         class="form-select" [name]="'precio_tarifa_'+i" *ngIf="detalle?.precios?.length > 1">
                             <option [value]="precio.precio" 
                             *ngFor="let precio of detalle.precios | filter: 'clasificacion':venta.cliente?.clasificacion || null">
-                                {{ (precio.precio_con_iva ?? precio.precio) | currency:'USD':'symbol':'1.0-6'}}
+                                {{ (apiService.auth_user().empresa.currency?.currency_symbol || '$') }}{{ (precio.precio_con_iva ?? precio.precio) | number:'1.0-6':'en-US' }}
                             </option>
                         </select>
                     </td>
@@ -186,7 +186,7 @@
                         </select>
                     </td>
                     <td style="width: 100px;" class="text-right">
-                        <div>{{ detalle.total | currency:'USD':'symbol':'1.0-6'}}</div>
+                        <div>{{ detalle.total | currency }}</div>
                     </td>
                     <td style="width: 50px;" class="text-center">
                         <div class="btn-group">

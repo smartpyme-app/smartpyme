@@ -10,7 +10,7 @@ use App\Models\Compras\Gastos\DetalleEgreso;
 use App\Models\Compras\Gastos\Gasto;
 use App\Models\Compras\Proveedores\Proveedor;
 use App\Models\Inventario\Producto;
-use App\Models\Ventas\Cliente;
+use App\Models\Ventas\Clientes\Cliente;
 use App\Models\Ventas\Detalle;
 use App\Models\Ventas\Devoluciones\Detalle as DetalleDevolucion;
 use App\Models\Ventas\Devoluciones\Devolucion;

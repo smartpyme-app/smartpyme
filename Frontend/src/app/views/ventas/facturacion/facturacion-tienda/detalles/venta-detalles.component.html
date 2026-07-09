@@ -148,7 +148,7 @@
                         @if ((detalle?.precios?.length ?? 0) > 1) {
                         <select [(ngModel)]="detalle.precio" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-select" name="precio">
                             <option [value]="precio.precio" *ngFor="let precio of detalle.precios | filter: 'clasificacion':venta.cliente?.clasificacion || null">
-                                {{ precio.precio | currency:'USD':'symbol':'1.0-6'}}
+                                {{ (apiService.auth_user().empresa.currency?.currency_symbol || '$') }}{{ precio.precio | number:'1.0-6':'en-US' }}
                             </option>
                         </select>
                         }

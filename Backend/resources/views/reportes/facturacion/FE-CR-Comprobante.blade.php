@@ -45,7 +45,14 @@
     if (! is_array($payments)) { $payments = []; }
     $currency = $documento['currency'] ?? [];
     $monedaCod = strtoupper((string) ($currency['currency_code'] ?? 'CRC'));
-    $simbolo = $monedaCod === 'USD' ? 'USD' : 'CRC';
+    $simbolo = $monedaCod === 'USD' ? '$' : '₡';
+    $fmtMonto = static function ($n) use ($simbolo): string {
+        if ($n === null || $n === '' || $n === '—') {
+            return '—';
+        }
+
+        return $simbolo.number_format((float) $n, 2, '.', '');
+    };
     $fecha = $documento['date'] ?? '';
     $est = (string) ($documento['establishment'] ?? '');
     $punto = (string) ($documento['emission_point'] ?? '');
@@ -255,7 +262,7 @@
                     </td>
                     <td style="width: 50%; vertical-align: top;">
                         <p><b>Moneda / tipo de cambio:</b>
-                            {{ $monedaCod }}
+                            {{ $simbolo }} ({{ $monedaCod }})
                             @if (isset($currency['exchange_rate']) && (float) $currency['exchange_rate'] > 0)
                                 @if($monedaCod === 'USD')
                                     · TC {{ number_format((float) $currency['exchange_rate'], 5, '.', '') }} CRC/USD
@@ -387,22 +394,22 @@
                     <td>{{ $line['description'] ?? '' }}</td>
                     <td class="text-right">{{ number_format((float) ($line['quantity'] ?? 0), 2, '.', '') }}</td>
                     <td style="font-size:7px;">{{ $fmtUm($line['unit_measure'] ?? '') }}</td>
-                    <td class="text-right">{{ number_format((float) ($line['unit_price'] ?? 0), 2, '.', '') }}</td>
+                    <td class="text-right">{{ $fmtMonto($line['unit_price'] ?? 0) }}</td>
                     <td class="text-right">{{ isset($line['discount_rate']) ? number_format((float) $line['discount_rate'], 2, '.', '') : '—' }}</td>
-                    <td class="text-right">{{ isset($line['discount_amount']) ? number_format((float) $line['discount_amount'], 2, '.', '') : '—' }}</td>
-                    <td class="text-right">{{ number_format((float) ($line['sub_total'] ?? 0), 2, '.', '') }}</td>
+                    <td class="text-right">{{ isset($line['discount_amount']) ? $fmtMonto($line['discount_amount']) : '—' }}</td>
+                    <td class="text-right">{{ $fmtMonto($line['sub_total'] ?? 0) }}</td>
                     <td class="text-right">{{ $pctImpLinea($line) }}</td>
-                    <td class="text-right">{{ number_format($ivaLinea, 2, '.', '') }}</td>
-                    <td class="text-right">{{ number_format((float) ($line['total'] ?? 0), 2, '.', '') }}</td>
+                    <td class="text-right">{{ $fmtMonto($ivaLinea) }}</td>
+                    <td class="text-right">{{ $fmtMonto($line['total'] ?? 0) }}</td>
                 </tr>
                 @endif
             @endforeach
             <tr class="row-subtotal">
                 <td colspan="8" class="text-right">{{ $grupo['subtotal_row_label'] ?? '' }}</td>
-                <td class="text-right">{{ number_format((float) ($grupo['sub_net'] ?? 0), 2, '.', '') }}</td>
+                <td class="text-right">{{ $fmtMonto($grupo['sub_net'] ?? 0) }}</td>
                 <td></td>
-                <td class="text-right">{{ number_format((float) ($grupo['sub_tax'] ?? 0), 2, '.', '') }}</td>
-                <td class="text-right">{{ number_format((float) ($grupo['sub_total'] ?? 0), 2, '.', '') }}</td>
+                <td class="text-right">{{ $fmtMonto($grupo['sub_tax'] ?? 0) }}</td>
+                <td class="text-right">{{ $fmtMonto($grupo['sub_total'] ?? 0) }}</td>
             </tr>
         @endforeach
         </tbody>
@@ -426,8 +433,8 @@
                         @foreach($feCrPdf['tax_table_rows'] ?? [] as $fila)
                             <tr>
                                 <td>{{ $fila['label'] ?? '' }}</td>
-                                <td class="text-right">{{ number_format((float) ($fila['base'] ?? 0), 2, '.', '') }}</td>
-                                <td class="text-right">{{ number_format((float) ($fila['tax'] ?? 0), 2, '.', '') }}</td>
+                                <td class="text-right">{{ $fmtMonto($fila['base'] ?? 0) }}</td>
+                                <td class="text-right">{{ $fmtMonto($fila['tax'] ?? 0) }}</td>
                             </tr>
                         @endforeach
                         </tbody>
@@ -437,19 +444,19 @@
                     <table class="table bordered totales-ext">
                         <tbody>
                             @if(isset($sum['total_exonerated']) && (float) $sum['total_exonerated'] > 0)
-                            <tr><td>Total exonerado</td><td class="text-right">{{ number_format((float) $sum['total_exonerated'], 2, '.', '') }}</td></tr>
+                            <tr><td>Total exonerado</td><td class="text-right">{{ $fmtMonto($sum['total_exonerated']) }}</td></tr>
                             @endif
-                            <tr><td>Total gravado</td><td class="text-right">{{ number_format((float) ($sum['total_taxed'] ?? 0), 2, '.', '') }}</td></tr>
-                            <tr><td>Total exento</td><td class="text-right">{{ number_format((float) ($sum['total_exempt'] ?? 0), 2, '.', '') }}</td></tr>
-                            <tr><td>Total no sujeto / no facturado</td><td class="text-right">{{ number_format((float) ($sum['total_non_taxable'] ?? 0), 2, '.', '') }}</td></tr>
-                            <tr><td>Total venta</td><td class="text-right">{{ number_format((float) ($sum['total_sale'] ?? 0), 2, '.', '') }}</td></tr>
-                            <tr><td>Total descuentos</td><td class="text-right">{{ number_format((float) ($sum['total_discounts'] ?? 0), 2, '.', '') }}</td></tr>
-                            <tr><td>Total venta neta</td><td class="text-right">{{ number_format((float) ($sum['total_net_sale'] ?? 0), 2, '.', '') }}</td></tr>
-                            <tr><td>Total impuesto (IVA)</td><td class="text-right">{{ number_format((float) ($sum['total_tax'] ?? 0), 2, '.', '') }}</td></tr>
+                            <tr><td>Total gravado</td><td class="text-right">{{ $fmtMonto($sum['total_taxed'] ?? 0) }}</td></tr>
+                            <tr><td>Total exento</td><td class="text-right">{{ $fmtMonto($sum['total_exempt'] ?? 0) }}</td></tr>
+                            <tr><td>Total no sujeto / no facturado</td><td class="text-right">{{ $fmtMonto($sum['total_non_taxable'] ?? 0) }}</td></tr>
+                            <tr><td>Total venta</td><td class="text-right">{{ $fmtMonto($sum['total_sale'] ?? 0) }}</td></tr>
+                            <tr><td>Total descuentos</td><td class="text-right">{{ $fmtMonto($sum['total_discounts'] ?? 0) }}</td></tr>
+                            <tr><td>Total venta neta</td><td class="text-right">{{ $fmtMonto($sum['total_net_sale'] ?? 0) }}</td></tr>
+                            <tr><td>Total impuesto (IVA)</td><td class="text-right">{{ $fmtMonto($sum['total_tax'] ?? 0) }}</td></tr>
                             @if(isset($sum['total_iva_devuelto']) && abs((float) $sum['total_iva_devuelto']) > 1e-5)
-                            <tr><td>Total IVA devuelto</td><td class="text-right">{{ number_format((float) $sum['total_iva_devuelto'], 2, '.', '') }}</td></tr>
+                            <tr><td>Total IVA devuelto</td><td class="text-right">{{ $fmtMonto($sum['total_iva_devuelto']) }}</td></tr>
                             @endif
-                            <tr class="bg-light"><td><b>Total comprobante</b></td><td class="text-right"><b>{{ number_format((float) ($sum['total'] ?? 0), 2, '.', '') }}</b></td></tr>
+                            <tr class="bg-light"><td><b>Total comprobante</b></td><td class="text-right"><b>{{ $fmtMonto($sum['total'] ?? 0) }}</b></td></tr>
                         </tbody>
                     </table>
                 </td>
@@ -473,7 +480,7 @@
                 @if(is_array($p))
                 <tr>
                     <td>{{ $medioPago($p['payment_method'] ?? '', $p['other_text'] ?? $p['payment_other'] ?? null) }}</td>
-                    <td class="text-right">{{ isset($p['amount']) ? number_format((float) $p['amount'], 2, '.', '') : '' }}</td>
+                    <td class="text-right">{{ isset($p['amount']) ? $fmtMonto($p['amount']) : '' }}</td>
                 </tr>
                 @endif
             @endforeach
