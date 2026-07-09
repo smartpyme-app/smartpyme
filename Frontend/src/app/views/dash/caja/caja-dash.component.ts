@@ -33,7 +33,9 @@ export class CajaDashComponent implements OnInit {
 
     ngOnInit() {
         this.usuario = this.apiService.auth_user();
-        // this.loadAll();
+        if (this.usuario?.tipo === 'Cajero') {
+            this.loadAll();
+        }
     }
 
     public loadAll(){
@@ -49,7 +51,10 @@ export class CajaDashComponent implements OnInit {
             }
             this.loading = false;
 
-        }, error => {this.alertService.error(error); this.loading = false;});
+        }, error => {
+            this.alertService.error(error);
+            this.loading = false;
+        });
     }
 
     public modalSupervisor(tipo:any){

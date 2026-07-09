@@ -80,7 +80,7 @@
                                         <a tooltip="Pre imprimir ticket" class="btn btn-default" (click)="imprimirDoc(orden)">
                                             <i class="fa fa-print"></i>
                                         </a>
-                                        <a tooltip="Facturar" class="btn btn-default" routerLink="/facturacion" [queryParams]="{ venta_id: orden.id }">
+                                        <a tooltip="Facturar" class="btn btn-default" routerLink="/venta/crear" [queryParams]="{ venta_id: orden.id }">
                                             <i class="fa fa-cash-register"></i>
                                         </a>
                                     </div>
