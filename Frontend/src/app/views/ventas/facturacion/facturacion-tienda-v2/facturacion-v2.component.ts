@@ -1044,14 +1044,9 @@ export class FacturacionV2Component implements OnInit {
         const pctImp = Number(impuesto.porcentaje);
         const lineasTasa = this.venta.detalles.filter((d: any) => pctIgual(pctImp, pctDetalleDe(d)));
 
-        // IVA exacto = % del total gravado con precisión 4dp (d.total) para no acumular
-        // error de redondeo cuando los precios ya incluyen IVA.
-        // ponytail: d.gravada = round2(d.total); usar d.total mantiene la precisión original.
+        // IVA exacto = % del total gravado (Decimal, sin acumular redondeos por línea)
         const gravadaTasa = lineasTasa.reduce((acc: Decimal, d: any) => {
-          const base = parseFloat(d.gravada || 0) > 0
-            ? parseFloat(d.total || d.gravada || 0) || 0
-            : 0;
-          return acc.plus(new Decimal(base));
+          return acc.plus(new Decimal(parseFloat(d.gravada || 0) || 0));
         }, new Decimal(0));
         const ivaExacto = gravadaTasa.times(pctImp).div(100).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
         impuesto.monto = ivaExacto.toNumber();
@@ -1078,13 +1073,11 @@ export class FacturacionV2Component implements OnInit {
         const lineasSinAsignar = this.venta.detalles
           .filter((d: any) => !porcentajesImpuestos.some((p: number) => pctIgual(p, pctDetalleDe(d))));
         if (lineasSinAsignar.length > 0) {
-          // IVA exacto de líneas sin asignar usando 4dp para consistencia con precio con IVA
+          // IVA exacto de líneas sin asignar agrupadas por tasa propia
           const ivaSinAsignar = lineasSinAsignar.reduce((acc: Decimal, d: any) => {
-            const base = parseFloat(d.gravada || 0) > 0
-              ? parseFloat(d.total || d.gravada || 0) || 0
-              : 0;
+            const gravada = new Decimal(parseFloat(d.gravada || 0) || 0);
             const pct = pctDetalleDe(d);
-            return acc.plus(new Decimal(base).times(pct).div(100));
+            return acc.plus(gravada.times(pct).div(100));
           }, new Decimal(0)).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
           if (ivaSinAsignar.greaterThan(0)) {
             const impuestoDestino = this.venta.impuestos.find((i: any) => pctIgual(Number(i.porcentaje), empresaIva))
@@ -1100,13 +1093,11 @@ export class FacturacionV2Component implements OnInit {
           this.venta.impuestos.reduce((acc: Decimal, i: any) => acc.plus(new Decimal(i.monto || 0)), new Decimal(0))
         ).toDecimalPlaces(4, Decimal.ROUND_HALF_UP).toFixed(4);
       } else {
-        // Sin array de impuestos: calcular usando 4dp para consistencia con precio con IVA
+        // Sin array de impuestos: calcular exactamente por tasa sobre gravada
         const ivaDesdeLineas = this.venta.detalles.reduce((acc: Decimal, d: any) => {
-          const base = parseFloat(d.gravada || 0) > 0
-            ? parseFloat(d.total || d.gravada || 0) || 0
-            : 0;
+          const gravada = new Decimal(parseFloat(d.gravada || 0) || 0);
           const pct = pctDetalleDe(d);
-          return acc.plus(new Decimal(base).times(pct).div(100));
+          return acc.plus(gravada.times(pct).div(100));
         }, new Decimal(0)).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
         this.venta.iva = ivaDesdeLineas.toFixed(4);
       }
