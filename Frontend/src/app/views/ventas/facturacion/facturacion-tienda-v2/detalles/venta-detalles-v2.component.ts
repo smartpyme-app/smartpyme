@@ -256,7 +256,7 @@ export class VentaDetallesV2Component implements OnInit {
             ? this.calcularPrecioSinIva(precioIva, pctDetalle)
             : precioIva;
 
-        detalle.precio = precioSinIva.toFixed(4);
+        detalle.precio = precioSinIva.toFixed(6);
 
         if(detalle.descuento_porcentaje){
             detalle.descuento = Number((cantidad * (precioSinIva * (detalle.descuento_porcentaje / 100))).toFixed(4));
