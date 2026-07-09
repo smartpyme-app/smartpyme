@@ -1,13 +1,11 @@
-import Decimal from 'decimal.js';
-
 export type TipoGravadoVenta = 'gravada' | 'exenta' | 'no_sujeta';
 
 export function redondearMoneda(n: number): number {
-  return new Decimal(n).toDecimalPlaces(2, Decimal.ROUND_HALF_UP).toNumber();
+  return Math.round(n * 100) / 100;
 }
 
 export function redondear4(n: number): number {
-  return new Decimal(n).toDecimalPlaces(4, Decimal.ROUND_HALF_UP).toNumber();
+  return Math.round(n * 10000) / 10000;
 }
 
 /**
@@ -79,19 +77,14 @@ export function calcularMontosLineaDetalle(
   const tipo = resolverTipoGravadoEfectivo(detalle, cobrarImpuestos, pct);
   detalle.tipo_gravado = tipo;
 
-  const dCantidad = new Decimal(cantidad);
-  const dPrecioSinIva = new Decimal(precioSinIva);
-  const dDescuento = new Decimal(descuento);
-  const dPct = new Decimal(pct);
-
-  const subTotalSinIva = redondear4(dCantidad.times(dPrecioSinIva).toNumber());
-  const totalSinIva = redondear4(new Decimal(subTotalSinIva).minus(dDescuento).toNumber());
+  const subTotalSinIva = redondear4(cantidad * precioSinIva);
+  const totalSinIva = redondear4(subTotalSinIva - descuento);
 
   detalle.sub_total = subTotalSinIva.toFixed(4);
   detalle.total = totalSinIva.toFixed(4);
 
-  const factorIva = pct > 0 ? new Decimal(1).plus(dPct.div(100)) : new Decimal(1);
-  const precioConIva = pct > 0 ? dPrecioSinIva.times(factorIva).toNumber() : precioSinIva;
+  const factorIva = pct > 0 ? 1 + pct / 100 : 1;
+  const precioConIva = pct > 0 ? precioSinIva * factorIva : precioSinIva;
   const preservePrecioIva = options?.preservePrecioIva ?? false;
   if (!preservePrecioIva) {
     if (pct > 0) {
@@ -100,10 +93,8 @@ export function calcularMontosLineaDetalle(
       detalle.precio_iva = precioSinIva.toFixed(4);
     }
   }
-  const descuentoConIva = pct > 0 ? dDescuento.times(factorIva).toNumber() : descuento;
-  const totalConIva = redondearMoneda(
-    dCantidad.times(new Decimal(precioConIva)).minus(new Decimal(descuentoConIva)).toNumber()
-  );
+  const descuentoConIva = pct > 0 ? descuento * factorIva : descuento;
+  const totalConIva = redondearMoneda(cantidad * precioConIva - descuentoConIva);
 
   detalle.gravada = 0;
   detalle.exenta = 0;
@@ -140,18 +131,18 @@ export function calcularMontosLineaDetalle(
 
 /** Suma el total con IVA de cada línea (redondeado a moneda por línea). */
 export function sumarTotalConIvaEncabezadoVenta(detalles: any[]): number {
-  const suma = (detalles || []).reduce((acc: Decimal, d: any) => {
+  const suma = (detalles || []).reduce((acc, d) => {
     const totalIva = parseFloat(String(d?.total_iva ?? ''));
     if (Number.isFinite(totalIva)) {
-      return acc.plus(new Decimal(totalIva));
+      return acc + totalIva;
     }
     const gravada = parseFloat(String(d?.gravada ?? 0)) || 0;
     const exenta = parseFloat(String(d?.exenta ?? 0)) || 0;
     const noSujeta = parseFloat(String(d?.no_sujeta ?? 0)) || 0;
     const iva = parseFloat(String(d?.iva ?? 0)) || 0;
-    return acc.plus(new Decimal(gravada).plus(exenta).plus(noSujeta).plus(iva));
-  }, new Decimal(0));
-  return redondearMoneda(suma.toNumber());
+    return acc + gravada + exenta + noSujeta + iva;
+  }, 0);
+  return redondearMoneda(suma);
 }
 
 /**
@@ -159,14 +150,14 @@ export function sumarTotalConIvaEncabezadoVenta(detalles: any[]): number {
  * Misma regla que BD y DTE MH (evita drift al sumar detalle.total vía SumPipe).
  */
 export function sumarSubTotalEncabezadoVenta(detalles: any[]): number {
-  const suma = (detalles || []).reduce((acc: Decimal, d: any) => {
-    const precio = new Decimal(parseFloat(String(d?.precio ?? 0)) || 0);
-    const cantidad = new Decimal(parseFloat(String(d?.cantidad ?? 0)) || 0);
-    const descuento = new Decimal(parseFloat(String(d?.descuento ?? 0)) || 0);
-    const linea = redondearMoneda(cantidad.times(precio).minus(descuento).toNumber());
-    return acc.plus(new Decimal(linea));
-  }, new Decimal(0));
-  return redondearMoneda(suma.toNumber());
+  const suma = (detalles || []).reduce((acc, d) => {
+    const precio = parseFloat(String(d?.precio ?? 0)) || 0;
+    const cantidad = parseFloat(String(d?.cantidad ?? 0)) || 0;
+    const descuento = parseFloat(String(d?.descuento ?? 0)) || 0;
+    const linea = Math.round((precio * cantidad - descuento) * 100) / 100;
+    return acc + linea;
+  }, 0);
+  return Math.round(suma * 100) / 100;
 }
 
 /**
