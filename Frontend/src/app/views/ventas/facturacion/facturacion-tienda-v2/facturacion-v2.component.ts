@@ -10,8 +10,6 @@ import { MHService } from '@services/MH.service';
 import { RestauranteService } from '@services/restaurante.service';
 import Swal from 'sweetalert2';
 
-import Decimal from 'decimal.js';
-
 import {
   normalizarPorcentajeImpuestoDetalle,
   resolverPorcentajeImpuestoVenta,
@@ -838,11 +836,7 @@ export class FacturacionV2Component implements OnInit {
     if (!porcentajeIva || porcentajeIva === 0) {
       return precioConIva;
     }
-    return Number(
-      new Decimal(precioConIva)
-        .div(new Decimal(1).plus(new Decimal(porcentajeIva).div(100)))
-        .toFixed(4)
-    );
+    return precioConIva / (1 + porcentajeIva / 100);
   }
 
   /**
@@ -852,22 +846,18 @@ export class FacturacionV2Component implements OnInit {
     if (!porcentajeIva || porcentajeIva === 0) {
       return 0;
     }
-    return new Decimal(precioConIva).minus(this.calcularPrecioSinIva(precioConIva, porcentajeIva)).toNumber();
+    return precioConIva - this.calcularPrecioSinIva(precioConIva, porcentajeIva);
   }
 
   /**
    * Totales por línea (gravada), coherente con VentaDetallesV2 — usado al cargar orden de compra.
    */
   private aplicarLineaGravadaDesdePrecio(detalle: any): void {
-    const dPrecioSinIva = new Decimal(parseFloat(detalle.precio || 0) || 0);
-    const dCant = new Decimal(parseFloat(String(detalle.cantidad ?? 0)) || 0);
-    const dDesc = new Decimal(parseFloat(detalle.descuento || 0) || 0);
-
-    const dSubTotal = dCant.times(dPrecioSinIva).toDecimalPlaces(4, Decimal.ROUND_HALF_UP);
-    detalle.sub_total = dSubTotal.toNumber();
-
-    const dTotal = dSubTotal.minus(dDesc).toDecimalPlaces(4, Decimal.ROUND_HALF_UP);
-    detalle.total = dTotal.toFixed(4);
+    const precioSinIva = parseFloat(detalle.precio || 0);
+    const cant = parseFloat(String(detalle.cantidad ?? 0)) || 0;
+    detalle.sub_total = Number((cant * precioSinIva).toFixed(4));
+    const desc = parseFloat(detalle.descuento || 0) || 0;
+    detalle.total = Number((detalle.sub_total - desc).toFixed(4)).toFixed(4);
 
     let pctDetalle = 0;
     if (this.venta.cobrar_impuestos) {
@@ -877,15 +867,14 @@ export class FacturacionV2Component implements OnInit {
       );
     }
 
+    const totalNum = parseFloat(detalle.total) || 0;
     detalle.gravada = 0;
     detalle.exenta = 0;
     detalle.no_sujeta = 0;
-    detalle.gravada = dTotal.toNumber();
+    detalle.gravada = totalNum;
     if (pctDetalle > 0) {
-      const dPct = new Decimal(pctDetalle);
-      const dTotalIva = dTotal.times(new Decimal(1).plus(dPct.div(100)));
-      detalle.total_iva = dTotalIva.toDecimalPlaces(4, Decimal.ROUND_HALF_UP).toFixed(4);
-      detalle.iva = dTotal.times(dPct.div(100)).toDecimalPlaces(4, Decimal.ROUND_HALF_UP).toNumber();
+      detalle.total_iva = (totalNum * (1 + pctDetalle / 100)).toFixed(4);
+      detalle.iva = parseFloat((totalNum * (pctDetalle / 100)).toFixed(4));
     } else {
       detalle.total_iva = detalle.total;
       detalle.iva = 0;
@@ -1030,7 +1019,7 @@ export class FacturacionV2Component implements OnInit {
       ? Math.round(subTotalNum * (propinaPorcentaje / 100) * 100) / 100
       : 0;
 
-    // IVA por tasa: calcular exactamente como % del total gravado de esa tasa (no sumando IVAs por línea)
+    // IVA por tasa: cada impuesto recibe solo el IVA de los detalles con ese porcentaje
     const pctIgual = (a: number, b: number) => Math.abs(Number(a) - Number(b)) < 0.01;
     const porcentajesImpuestos = (this.venta.impuestos || []).map((i: any) => Number(i.porcentaje));
     if (this.venta.cobrar_impuestos) {
@@ -1042,64 +1031,46 @@ export class FacturacionV2Component implements OnInit {
 
       this.venta.impuestos.forEach((impuesto: any) => {
         const pctImp = Number(impuesto.porcentaje);
-        const lineasTasa = this.venta.detalles.filter((d: any) => pctIgual(pctImp, pctDetalleDe(d)));
-
-        // IVA exacto = % del total gravado (Decimal, sin acumular redondeos por línea)
-        const gravadaTasa = lineasTasa.reduce((acc: Decimal, d: any) => {
-          return acc.plus(new Decimal(parseFloat(d.gravada || 0) || 0));
-        }, new Decimal(0));
-        const ivaExacto = gravadaTasa.times(pctImp).div(100).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
-        impuesto.monto = ivaExacto.toNumber();
-
-        // Ajuste de centavos: redistribuir diferencia en la última línea gravada de esta tasa
-        if (lineasTasa.length > 0 && ivaExacto.greaterThan(0)) {
-          const ivaLineas = lineasTasa.reduce((acc: Decimal, d: any) => {
-            return acc.plus(new Decimal(parseFloat(d.iva || 0) || 0));
-          }, new Decimal(0));
-          const diff = ivaExacto.minus(ivaLineas.toDecimalPlaces(2, Decimal.ROUND_HALF_UP));
-          if (!diff.isZero()) {
-            const ultimaLinea = lineasTasa[lineasTasa.length - 1];
-            const ivaActual = new Decimal(parseFloat(ultimaLinea.iva || 0) || 0);
-            const ivaAjustado = ivaActual.plus(diff).toDecimalPlaces(4, Decimal.ROUND_HALF_UP);
-            ultimaLinea.iva = ivaAjustado.toNumber();
-            const gravadaLinea = new Decimal(parseFloat(ultimaLinea.gravada || 0) || 0);
-            ultimaLinea.total_iva = gravadaLinea.plus(ivaAjustado).toDecimalPlaces(4, Decimal.ROUND_HALF_UP).toFixed(4);
-          }
-        }
+        const monto = this.venta.detalles
+          .filter((d: any) => pctIgual(pctImp, pctDetalleDe(d)))
+          .reduce((sum: number, d: any) => {
+            const gravada = parseFloat(d.gravada || 0);
+            const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) > 0)
+              ? parseFloat(d.iva) : gravada * (pctImp / 100);
+            return sum + ivaLinea;
+          }, 0);
+        impuesto.monto = parseFloat(Number(monto).toFixed(4));
       });
-
       // Detalles cuyo % no coincide con ningún impuesto: asignar al impuesto empresa o al primero
       if (this.venta.detalles.length && this.venta.impuestos.length) {
-        const lineasSinAsignar = this.venta.detalles
-          .filter((d: any) => !porcentajesImpuestos.some((p: number) => pctIgual(p, pctDetalleDe(d))));
-        if (lineasSinAsignar.length > 0) {
-          // IVA exacto de líneas sin asignar agrupadas por tasa propia
-          const ivaSinAsignar = lineasSinAsignar.reduce((acc: Decimal, d: any) => {
-            const gravada = new Decimal(parseFloat(d.gravada || 0) || 0);
+        const ivaSinAsignar = this.venta.detalles
+          .filter((d: any) => !porcentajesImpuestos.some((p: number) => pctIgual(p, pctDetalleDe(d))))
+          .reduce((sum: number, d: any) => {
+            const gravada = parseFloat(d.gravada || 0);
             const pct = pctDetalleDe(d);
-            return acc.plus(gravada.times(pct).div(100));
-          }, new Decimal(0)).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
-          if (ivaSinAsignar.greaterThan(0)) {
-            const impuestoDestino = this.venta.impuestos.find((i: any) => pctIgual(Number(i.porcentaje), empresaIva))
-              || this.venta.impuestos[0];
-            impuestoDestino.monto = new Decimal(impuestoDestino.monto).plus(ivaSinAsignar)
-              .toDecimalPlaces(4, Decimal.ROUND_HALF_UP).toNumber();
-          }
+            const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) > 0)
+              ? parseFloat(d.iva) : gravada * (pct / 100);
+            return sum + ivaLinea;
+          }, 0);
+        if (ivaSinAsignar > 0) {
+          const impuestoDestino = this.venta.impuestos.find((i: any) => pctIgual(Number(i.porcentaje), empresaIva))
+            || this.venta.impuestos[0];
+          impuestoDestino.monto = parseFloat((parseFloat(impuestoDestino.monto) + ivaSinAsignar).toFixed(4));
         }
       }
-
       if (this.venta.impuestos.length) {
-        this.venta.iva = new Decimal(
-          this.venta.impuestos.reduce((acc: Decimal, i: any) => acc.plus(new Decimal(i.monto || 0)), new Decimal(0))
-        ).toDecimalPlaces(4, Decimal.ROUND_HALF_UP).toFixed(4);
+        this.venta.iva = parseFloat(
+          this.sumPipe.transform(this.venta.impuestos, 'monto')
+        ).toFixed(4);
       } else {
-        // Sin array de impuestos: calcular exactamente por tasa sobre gravada
-        const ivaDesdeLineas = this.venta.detalles.reduce((acc: Decimal, d: any) => {
-          const gravada = new Decimal(parseFloat(d.gravada || 0) || 0);
+        const ivaDesdeLineas = this.venta.detalles.reduce((sum: number, d: any) => {
+          const gravada = parseFloat(d.gravada || 0);
           const pct = pctDetalleDe(d);
-          return acc.plus(gravada.times(pct).div(100));
-        }, new Decimal(0)).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
-        this.venta.iva = ivaDesdeLineas.toFixed(4);
+          const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) > 0)
+            ? parseFloat(d.iva) : gravada * (pct / 100);
+          return sum + ivaLinea;
+        }, 0);
+        this.venta.iva = parseFloat(Number(ivaDesdeLineas).toFixed(4)).toFixed(4);
       }
     } else {
       this.venta.iva = (0).toFixed(4);
