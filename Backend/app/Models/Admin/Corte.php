@@ -50,11 +50,11 @@ class Corte extends Model {
     }
 
     public function ventas(){
-        return $this->hasMany('App\Models\Ventas\Venta', 'corte_id')->where('estado', '!=', 'Anulada');
+        return $this->hasMany('App\Models\Ventas\Venta', 'id_corte')->where('estado', '!=', 'Anulada');
     }
 
     public function devoluciones(){
-        return $this->hasMany('App\Models\Ventas\Devoluciones\Devolucion', 'corte_id');
+        return $this->hasMany('App\Models\Ventas\Devoluciones\Devolucion', 'id_corte');
     }
 
     public function usuario(){

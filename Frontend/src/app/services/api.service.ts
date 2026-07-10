@@ -554,6 +554,18 @@ export class ApiService {
         return false;
     }
 
+    /** Crear/editar pedidos de canal (restaurante): operación diaria de ventas y supervisión. */
+    puedeGestionarPedidosCanal(): boolean {
+        const tipo = this.auth_user()?.tipo;
+        return [
+            'Administrador',
+            'Supervisor',
+            'Supervisor Limitado',
+            'Ventas',
+            'Ventas Limitado',
+        ].includes(tipo);
+    }
+
     /**
      * Empresa donde las rutas y la navegación de ajustes/traslados/consignas/entradas-salidas
      * quedan reservadas solo al rol Administrador.
