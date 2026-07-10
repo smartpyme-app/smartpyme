@@ -1,4 +1,4 @@
-import { Component, AfterViewInit, OnDestroy, EventEmitter, Output, Input, ViewChild, ElementRef } from '@angular/core';
+import { Component, AfterViewInit, OnInit, OnDestroy, OnChanges, SimpleChanges, EventEmitter, Output, Input, ViewChild, ElementRef } from '@angular/core';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { Subscription, fromEvent } from 'rxjs';
@@ -8,7 +8,7 @@ import { debounceTime, distinctUntilChanged, filter, map } from 'rxjs/operators'
   selector: 'app-buscador-clientes',
   templateUrl: './buscador-clientes.component.html'
 })
-export class BuscadorClientesComponent implements AfterViewInit, OnDestroy {
+export class BuscadorClientesComponent implements OnInit, AfterViewInit, OnDestroy, OnChanges {
 
     @Input() cliente:any = {};
     @Output() selectCliente = new EventEmitter();
@@ -26,13 +26,26 @@ export class BuscadorClientesComponent implements AfterViewInit, OnDestroy {
 
     constructor(private apiService: ApiService, private alertService: AlertService) { }
 
+    ngOnInit(): void {
+        this.normalizeCliente();
+    }
+
+    ngOnChanges(changes: SimpleChanges): void {
+        if (changes['cliente']) {
+            this.normalizeCliente();
+        }
+    }
+
     ngAfterViewInit(): void {
+        this.bindSearchInput();
+    }
+
+    private normalizeCliente(): void {
         if (!this.cliente) {
             this.cliente = { nombre: '' };
         } else if (this.cliente.nombre === undefined || this.cliente.nombre === null) {
             this.cliente.nombre = '';
         }
-        this.bindSearchInput();
     }
 
     ngOnDestroy(): void {

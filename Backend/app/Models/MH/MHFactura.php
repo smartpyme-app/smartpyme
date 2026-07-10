@@ -2,6 +2,7 @@
 
 namespace App\Models\MH;
 
+use App\Models\MH\Concerns\BuildsTributosVenta;
 use Illuminate\Database\Eloquent\Model;
 use Ramsey\Uuid\Uuid;
 use Illuminate\Support\Facades\Http;
@@ -11,6 +12,7 @@ use Carbon\Carbon;
 
 class MHFactura extends Model
 {
+    use BuildsTributosVenta;
 
     public $venta;
     public $caja;
@@ -184,8 +186,6 @@ class MHFactura extends Model
     }
 
     public function generarFactura(){
-        $tributos = NULL;
-
         $apendice = NULL;
         
         if ($this->venta->observaciones ) {
@@ -195,7 +195,39 @@ class MHFactura extends Model
             }
         }
 
+        if ($this->venta->iva > 0) {
+            $this->venta->gravada = $this->venta->sub_total;
+        }else{
+            $this->venta->gravada = 0;
+            $this->venta->exenta = $this->venta->sub_total;
+        }
+
         $pagoCond = $this->condicionOperacionYPagoPlazo();
+        $cuerpoDocumento = $this->detalles();
+        $tributosResumen = $this->buildTributosResumenFacturaConsumidor();
+        $montoIva = $this->montoIvaDocumento();
+        $montoTributosNoIva = $this->montoTributosNoIvaDocumento();
+        $totalGravada = floatval(number_format(
+            $this->venta->iva > 0 ? $this->venta->sub_total + $montoIva : 0,
+            2,
+            '.',
+            ''
+        ));
+        $subTotalVentas = floatval(number_format(
+            $totalGravada + (float) $this->venta->exenta + (float) $this->venta->no_sujeta,
+            2,
+            '.',
+            ''
+        ));
+        $totalDescu = 0.0;
+        $subTotal = floatval(number_format($subTotalVentas - $totalDescu, 2, '.', ''));
+        $montoTotalOperacion = floatval(number_format($subTotal + $montoTributosNoIva, 2, '.', ''));
+        $totalIva = floatval(number_format(
+            collect($cuerpoDocumento)->sum(fn ($item) => (float) ($item['ivaItem'] ?? 0)),
+            2,
+            '.',
+            ''
+        ));
 
         return 
             [
@@ -205,12 +237,12 @@ class MHFactura extends Model
                 "receptor" => $this->receptor(),
                 "otrosDocumentos" => NULL,
                 "ventaTercero" => NULL,
-                "cuerpoDocumento" => $this->detalles(),
+                "cuerpoDocumento" => $cuerpoDocumento,
                 "resumen" => [
                   "totalNoSuj" => floatval(number_format($this->venta->no_sujeta, 2, '.', '')),
                   "totalExenta" => floatval(number_format($this->venta->exenta, 2, '.', '')),
-                  "totalGravada" => floatval(number_format($this->venta->gravada + $this->venta->iva, 2, '.', '')),
-                  "subTotalVentas" => floatval(number_format($this->venta->sub_total + $this->venta->iva, 2, '.', '')),
+                  "totalGravada" => $totalGravada,
+                  "subTotalVentas" => $subTotalVentas,
                   "descuNoSuj" => 0,
                   "descuExenta" => 0,
                   // "descuGravada" => floatval(number_format($this->venta->descuento, 2, '.', '')),
@@ -218,15 +250,15 @@ class MHFactura extends Model
                   "porcentajeDescuento" => 0,
                   // "totalDescu" => floatval(number_format($this->venta->descuento, 2, '.', '')),
                   "totalDescu" => floatval(number_format(0 , 2, '.', '')),
-                  "tributos" => $tributos,
-                  "subTotal" => floatval(number_format($this->venta->sub_total + $this->venta->iva, 2, '.', '')),
+                  "tributos" => $tributosResumen,
+                  "subTotal" => $subTotal,
                   "ivaRete1" => floatval(number_format($this->venta->iva_retenido, 2, '.', '')),
                   "reteRenta" => floatval(number_format($this->venta->renta_retenida ?? 0, 2, '.', '')),
-                  "montoTotalOperacion" => floatval(number_format($this->venta->total - $this->venta->cuenta_a_terceros + $this->venta->iva_retenido, 2, '.', '')),
+                  "montoTotalOperacion" => $montoTotalOperacion,
                   "totalNoGravado" => floatval(number_format($this->venta->cuenta_a_terceros, 2, '.', '')),
                   "totalPagar" => floatval(number_format($this->venta->total, 2, '.', '')),
                   "totalLetras" => $this->venta->total_en_letras,
-                  "totalIva" => floatval(number_format($this->venta->iva, 2, '.', '')),
+                  "totalIva" => $totalIva,
                   "saldoFavor" => 0,
                   "condicionOperacion" => $pagoCond['condicionOperacion'],
                   "pagos" => [
@@ -263,6 +295,9 @@ class MHFactura extends Model
                 $this->venta->exenta = $this->venta->sub_total;
             }
 
+            $ventaGravadaPersonalizada = (float) ($this->venta->gravada + $this->montoIvaDocumento());
+            $tributosLineaPersonalizada = $this->buildTributosLineaCodesFacturaConsumidorDesdeDocumento() ?? [];
+
             $detalles->push([
                 "numItem" => 1,
                 "tipoItem" => $this->venta->tipo_item,
@@ -272,15 +307,20 @@ class MHFactura extends Model
                 "codTributo" => NULL,
                 "uniMedida" => 59,
                 "descripcion" => $this->venta->descripcion_impresion,
-                "precioUni" => floatval(number_format($this->venta->sub_total + $this->venta->iva,2, '.', '')),
+                "precioUni" => floatval(number_format($ventaGravadaPersonalizada, 2, '.', '')),
                 "montoDescu" => floatval(number_format($this->venta->descuento,2, '.', '')),
                 "ventaNoSuj" => floatval(number_format($this->venta->no_sujeta,2, '.', '')),
                 "ventaExenta" => floatval(number_format($this->venta->exenta,2, '.', '')),
-                "ventaGravada" => floatval(number_format($this->venta->gravada + $this->venta->iva,2, '.', '')),
-                "tributos" => NULL,
+                "ventaGravada" => floatval(number_format($ventaGravadaPersonalizada, 2, '.', '')),
+                "tributos" => count($tributosLineaPersonalizada) > 0 ? $tributosLineaPersonalizada : null,
                 "psv" => 0,
                 "noGravado" => 0,
-                "ivaItem" => floatval(number_format($this->venta->iva, 4, '.', ''))
+                "ivaItem" => floatval(number_format(
+                    $this->calcularIvaItemFacturaConsumidor($ventaGravadaPersonalizada),
+                    4,
+                    '.',
+                    ''
+                ))
             ]);
 
             return $detalles;
@@ -302,8 +342,6 @@ class MHFactura extends Model
                 $detalle->tipo_item = 1;
             }
 
-            $tributos = NULL;
-
             $detalle->codTributo = NULL;
 
             if ($detalle->producto) {
@@ -312,7 +350,18 @@ class MHFactura extends Model
                 $detalle->codigo = null;
             }
 
-            $this->aplicarClasificacionFiscalDetalle($detalle);
+            if ($this->venta->iva > 0) {
+                $factor = $this->factorIvaIncluidoDetalle($detalle);
+                $detalle->precio = round($detalle->precio * $factor, 4);
+                $detalle->descuento = round($detalle->descuento * $factor, 2);
+                $detalle->gravada = ($detalle->cantidad * $detalle->precio) - $detalle->descuento;
+                $tributos = $this->buildTributosLineaCodesFacturaConsumidor($detalle);
+            } else {
+                $tributos = NULL;
+                $detalle->gravada = 0;
+                $detalle->exenta = $detalle->total;
+                $detalle->iva = 0;
+            }
 
             if ($detalle->cuenta_a_terceros > 0) {
 
@@ -337,7 +386,7 @@ class MHFactura extends Model
                     "tributos" => $tributos,
                     "psv" => 0,
                     "noGravado" => 0,
-                    "ivaItem" => floatval(number_format(round($ventaItem * 0.13 / 1.13, 4), 4, '.', ''))
+                    "ivaItem" => floatval(number_format($this->calcularIvaItemFactura($detalle, $ventaItem), 4, '.', ''))
                   ]);
 
                 $detalles->push([
@@ -381,48 +430,12 @@ class MHFactura extends Model
                     "tributos" => $tributos,
                     "psv" => 0,
                     "noGravado" => 0,
-                    "ivaItem" => floatval(number_format($detalle->gravada > 0 ? round($ventaItem * 0.13 / 1.13, 4) : 0, 4, '.', ''))
+                    "ivaItem" => floatval(number_format($detalle->gravada > 0 ? $this->calcularIvaItemFactura($detalle, $ventaItem) : 0, 4, '.', ''))
                   ]);
             }
         }
 
         return $detalles;
-    }
-
-    /**
-     * Usa gravada/exenta/no_sujeta persistidos por línea; solo recalcula precio con IVA en líneas gravadas.
-     */
-    private function aplicarClasificacionFiscalDetalle($detalle): void
-    {
-        $gravada = floatval($detalle->gravada ?? 0);
-        $exenta = floatval($detalle->exenta ?? 0);
-        $noSujeta = floatval($detalle->no_sujeta ?? 0);
-
-        if ($gravada <= 0 && $exenta <= 0 && $noSujeta <= 0) {
-            $tipo = strtolower((string) ($detalle->tipo_gravado ?? 'gravada'));
-            if ($tipo === 'no_sujeta') {
-                $detalle->no_sujeta = floatval($detalle->total);
-            } elseif ($tipo === 'exenta' || !($this->venta->iva > 0)) {
-                $detalle->exenta = floatval($detalle->total);
-            } else {
-                $gravada = floatval($detalle->total);
-                $detalle->gravada = $gravada;
-            }
-        } else {
-            $detalle->gravada = $gravada;
-            $detalle->exenta = $exenta;
-            $detalle->no_sujeta = $noSujeta;
-        }
-
-        if (floatval($detalle->gravada ?? 0) > 0 && $this->venta->iva > 0) {
-            $detalle->precio = round($detalle->precio * 1.13, 4);
-            $detalle->descuento = round($detalle->descuento * 1.13, 2);
-            $detalle->iva = floatval($detalle->total) * 0.13;
-            $detalle->gravada = ($detalle->cantidad * $detalle->precio) - $detalle->descuento;
-        } else {
-            $detalle->gravada = floatval($detalle->gravada ?? 0);
-            $detalle->iva = floatval($detalle->iva ?? 0);
-        }
     }
 
     /**

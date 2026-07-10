@@ -12,6 +12,7 @@ use App\Models\Compras\Compra;
 use App\Models\Compras\DevolucionCompra;
 use App\Models\Compras\Proveedores\Proveedor;
 use App\Models\Compras\Detalle;
+use App\Models\Compras\Impuesto as CompraImpuesto;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Lote;
@@ -113,7 +114,7 @@ class ComprasController extends Controller
 
     public function read($id) {
         $compra = Compra::where('id', $id)
-            ->with('detalles', 'proveedor', 'abonos', 'devoluciones')
+            ->with('detalles', 'proveedor', 'abonos', 'devoluciones', 'impuestos.impuesto')
             ->withSum(['abonos' => function ($query) {
                 $query->where('estado', 'Confirmado');
             }], 'total')
@@ -324,10 +325,13 @@ class ComprasController extends Controller
             else
                 $compra = new Compra;
 
-            $compra->fill($request->except(['detalles', 'dte']));
+            $compra->fill($request->except(['detalles', 'dte', 'impuestos']));
             $this->aplicarIdentificadoresDteImportado($compra, $request);
             $compra->save();
 
+            if ($request->has('impuestos')) {
+                $this->guardarImpuestosCompra($compra, $request->impuestos);
+            }
 
         // Detalles
 
@@ -502,6 +506,8 @@ class ComprasController extends Controller
             $this->sincronizarStockCompraConShopify($compra);
         }
 
+        $compra->load(['detalles', 'proveedor', 'impuestos.impuesto']);
+
         return Response()->json($compra, 200);
 
         } catch (\Exception $e) {
@@ -512,6 +518,44 @@ class ComprasController extends Controller
             return Response()->json(['error' => $e->getMessage()], 400);
         }
 
+    }
+
+    /**
+     * Guardar impuestos de la compra (reemplaza filas existentes si es edición).
+     *
+     * @param  array<int, array<string, mixed>>|null  $impuestos
+     */
+    private function guardarImpuestosCompra(Compra $compra, ?array $impuestos, bool $reemplazar = true): void
+    {
+        if ($impuestos === null) {
+            return;
+        }
+
+        if ($reemplazar) {
+            CompraImpuesto::where('id_compra', $compra->id)->delete();
+        }
+
+        if ($impuestos === []) {
+            return;
+        }
+
+        foreach ($impuestos as $impuesto) {
+            $idImpuesto = $impuesto['id_impuesto'] ?? $impuesto['id'] ?? null;
+            if (!$idImpuesto) {
+                continue;
+            }
+
+            $monto = (float) ($impuesto['monto'] ?? 0);
+            if (abs($monto) < 0.00001) {
+                continue;
+            }
+
+            $compraImpuesto = new CompraImpuesto();
+            $compraImpuesto->id_impuesto = (int) $idImpuesto;
+            $compraImpuesto->monto = $monto;
+            $compraImpuesto->id_compra = $compra->id;
+            $compraImpuesto->save();
+        }
     }
 
     /**
@@ -1020,7 +1064,7 @@ class ComprasController extends Controller
     }
 
     public function generarDoc($id){
-        $compra = Compra::where('id', $id)->with('detalles', 'proveedor', 'empresa')->firstOrFail();
+        $compra = Compra::where('id', $id)->with('detalles', 'proveedor', 'empresa', 'impuestos.impuesto')->firstOrFail();
 
         $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.compra', compact('compra'));
         $pdf->setPaper('US Letter', 'portrait');
