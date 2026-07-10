@@ -42,14 +42,17 @@ class KardexController extends Controller
             ->orderBy('id', 'desc')
             ->get();
 
-        // Filtrar por lote_id si se proporciona
+        // Filtrar por lote_id si se proporciona (incluye traslados multilote vía traslado_lotes)
         if ($request->lote_id) {
             $lote = Lote::find($request->lote_id);
             if ($lote) {
-                $kardex = $kardex->filter(function ($movimiento) use ($lote, $producto) {
-                    // Obtener el lote_id del movimiento usando la misma lógica que getNumeroLoteAttribute
+                $loteId = (int) $lote->id;
+                $kardex = $kardex->filter(function ($movimiento) use ($loteId, $producto) {
+                    if ($movimiento instanceof Kardex) {
+                        return $movimiento->coincideConLote($loteId);
+                    }
                     $loteIdMovimiento = $this->obtenerLoteIdDelMovimiento($movimiento, $producto->id);
-                    return $loteIdMovimiento == $lote->id;
+                    return $loteIdMovimiento == $loteId;
                 })->values();
             } else {
                 $kardex = collect([]);
@@ -241,7 +244,12 @@ class KardexController extends Controller
      */
     private function obtenerLoteIdDelMovimiento($movimiento, $idProducto)
     {
-        if (!empty($movimiento->lote_id)) {
+        if ($movimiento instanceof Kardex) {
+            $loteId = $movimiento->resolverLoteIdEfectivo();
+            if ($loteId) {
+                return $loteId;
+            }
+        } elseif (!empty($movimiento->lote_id)) {
             return (int) $movimiento->lote_id;
         }
 
@@ -253,8 +261,11 @@ class KardexController extends Controller
             }
         }
         
-        // Si es un traslado
+        // Si es un traslado (fallback si el movimiento no es instancia Kardex)
         if (strpos($movimiento->detalle, 'Traslado') !== false || strpos($movimiento->detalle, 'traslado') !== false) {
+            if ($movimiento instanceof Kardex) {
+                return $movimiento->resolverLoteIdTraslado();
+            }
             $traslado = \App\Models\Inventario\Traslado::find($movimiento->referencia);
             if ($traslado && $traslado->lote_id) {
                 return $traslado->lote_id;
