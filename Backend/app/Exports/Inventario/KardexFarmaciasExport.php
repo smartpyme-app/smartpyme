@@ -54,7 +54,7 @@ class KardexFarmaciasExport implements FromCollection, WithHeadings, WithMapping
     {
         $request = $this->request;
 
-        return Kardex::where('id_producto', $request->id_producto)
+        $kardex = Kardex::where('id_producto', $request->id_producto)
             ->when($request->id_inventario, function ($q) use ($request) {
                 $q->where('id_inventario', $request->id_inventario);
             })
@@ -70,6 +70,18 @@ class KardexFarmaciasExport implements FromCollection, WithHeadings, WithMapping
             ->orderBy($request->orden ?? 'fecha', $request->direccion ?? 'desc')
             ->orderBy('id', 'desc')
             ->get();
+
+        if ($request->lote_id) {
+            $lote = Lote::find($request->lote_id);
+            if ($lote) {
+                $loteId = (int) $lote->id;
+                $kardex = $kardex->filter(fn ($movimiento) => $movimiento->coincideConLote($loteId))->values();
+            } else {
+                $kardex = collect([]);
+            }
+        }
+
+        return $kardex;
     }
 
     public function map($row): array
