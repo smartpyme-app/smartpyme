@@ -35,7 +35,7 @@ class Compra extends Model {
         'exenta',
         'percepcion',
         'renta_retenida',
-        // 'iva_retenido',
+        'iva_retenido',
         'descuento',
         'recurrente',
         'cotizacion',

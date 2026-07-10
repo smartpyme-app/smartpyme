@@ -1105,7 +1105,6 @@ class ComprasController extends Controller
         $compra->iva = 0;
         $compra->iva_retenido = 0;
         $compra->percepcion = 0;
-        $compra->retencion = 0;
         $compra->tipo_operacion = 'No Gravada';
         $compra->total = round((float) $compra->sub_total, 2);
     }
