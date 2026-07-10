@@ -44,7 +44,7 @@ class AnexoConsumidoresExport implements FromCollection, WithMapping, WithCustom
     {
         $request = $this->request;//where('id_empresa', Auth::user()->id_empresa)
         
-        $ventas = Venta::with(['cliente', 'documento'])
+        $ventas = Venta::with(['cliente', 'documento', 'empresa', 'detalles.producto'])
                         ->where('estado', '!=', 'Anulada')
                         ->whereHas('documento', function($q) {
                             $q->where('nombre', 'Factura')->orWhere('nombre', 'Factura de exportación');
@@ -119,7 +119,7 @@ class AnexoConsumidoresExport implements FromCollection, WithMapping, WithCustom
                 number_format($cuentaTerceros, 2, '.', ''), //S Ventas a terceros
                 $venta->total ? number_format($venta->total, 2, '.', '') : '0.00', //T Total
                 $this->tipoOperacion($venta->tipo_operacion), //U Tipo operacion renta 1 Gravada 2 Exenta
-                $this->tipoRenta($venta->tipo_renta), //V Tipo ingreso renta
+                $this->tipoRentaVenta($venta), //V Tipo ingreso renta
                 2, //W num de Anexo
 
          ];
@@ -143,6 +143,33 @@ class AnexoConsumidoresExport implements FromCollection, WithMapping, WithCustom
             case 'Mixta': return 4;
             default: return '0';
         }
+    }
+
+    private function tipoRentaVenta($venta)
+    {
+        $codigo = $this->tipoRenta($venta->tipo_renta);
+        if ($codigo !== null) {
+            return $codigo;
+        }
+
+        return $this->tipoRenta($this->tipoRentaEmpresaFallback($venta));
+    }
+
+    private function tipoRentaEmpresaFallback($venta): ?string
+    {
+        $empresa = $venta->empresa ?? Auth::user()->empresa()->first();
+        if (!$empresa) {
+            return null;
+        }
+
+        $detalles = $venta->detalles;
+        $detalle = $detalles ? $detalles->sortBy('id')->first() : null;
+        $producto = $detalle ? $detalle->producto : null;
+        if ($producto && $producto->tipo === 'Servicio') {
+            return $empresa->tipo_renta_servicios;
+        }
+
+        return $empresa->tipo_renta_productos;
     }
 
     function tipoRenta($tipo) {
