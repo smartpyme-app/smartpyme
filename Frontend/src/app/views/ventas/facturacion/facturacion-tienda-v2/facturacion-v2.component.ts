@@ -308,7 +308,8 @@ export class FacturacionV2Component implements OnInit {
     }
 
     this.venta.tipo_operacion = 'Gravada';
-    this.venta.tipo_renta = null;
+    const empresa = this.apiService.auth_user()?.empresa;
+    this.venta.tipo_renta = empresa?.tipo_renta_productos ?? empresa?.tipo_renta_servicios ?? null;
     this.venta.detalle_banco = '';
     this.venta.id_cliente = '';
     this.venta.detalles = [];
