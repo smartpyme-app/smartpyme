@@ -564,7 +564,7 @@ export class FacturacionV2Component implements OnInit {
                 }
 
                 // Asegurar que precio_iva esté como número
-                detalle.precio_iva = parseFloat(detalle.precio_iva).toFixed(4);
+                detalle.precio_iva = parseFloat(detalle.precio_iva).toFixed(6);
 
                 // Recalcular total del detalle usando precio sin IVA
                 const precioSinIva = parseFloat(detalle.precio || 0);

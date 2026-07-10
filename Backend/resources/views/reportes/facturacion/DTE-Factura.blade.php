@@ -165,7 +165,11 @@
                                 Otro
                             @endif
                         </p>
-                        <p><b>Núm de Documento:</b> {{ $DTE['receptor']['numDocumento'] }}</p>
+                        <p><b>Núm de Documento:</b> {{ $DTE['receptor']['numDocumento'] }}
+                            @if (!empty($DTE['receptor']['nrc']))
+                                <b> &nbsp;&nbsp;&nbsp; NRC:</b> {{ $DTE['receptor']['nrc'] }}
+                            @endif
+                        </p>
                         <p><b>Act. económica:</b> {{ $DTE['receptor']['descActividad'] }}</p>
                             <p><b>Dirección:</b> 
                                 @if ($registro->id_cliente)

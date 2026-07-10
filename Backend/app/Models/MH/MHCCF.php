@@ -361,7 +361,7 @@ class MHCCF extends Model
                        // "ivaItem" => floatval($detalle->iva)
                    ]);
                }else{
-                   $precioUni = round(floatval($detalle->precio), 4);
+                   $precioUni = round(floatval($detalle->precio), 6);
                    $cantidad = round(floatval($detalle->cantidad), 2);
                    $montoDescu = round(floatval($detalle->descuento), 2);
                    $ventaItem = round($precioUni * $cantidad - $montoDescu, 2);
