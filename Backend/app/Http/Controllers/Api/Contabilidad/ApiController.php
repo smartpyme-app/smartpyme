@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Contabilidad;
 
 use App\Http\Controllers\Controller;
+use App\Models\Ventas\Venta;
 use Illuminate\Http\Request;
 
 use App\Services\Contabilidad\VentasService;
@@ -60,11 +61,12 @@ class ApiController extends Controller
         $this->otrasSalidasService = $otrasSalidasService;
     }
 
-    public function venta(Request $venta)
+    public function venta(Request $request)
     {
-        $this->ventasService->crearPartida($venta);
+        $venta = Venta::findOrFail($request->id);
+        $resultado = $this->ventasService->crearPartida($venta);
 
-        return Response()->json($venta, 200);
+        return response()->json($resultado, 200);
     }
 
     public function compra(Request $compra)
