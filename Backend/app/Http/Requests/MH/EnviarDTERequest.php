@@ -22,7 +22,10 @@ class EnviarDTERequest extends FormRequest
         return [
             'id' => ['required', 'integer'],
             'tipo_dte' => ['required', 'string', 'in:01,02,03,04,05,06,08,11,14'],
-            'tipo' => ['required_if:tipo_dte,14,08', 'nullable', 'string', 'in:compra,gasto'],
+            // 'tipo' solo aplica a compra/gasto (FEC 14/08). Para el resto (NC 03, factura 01, etc.) el frontend
+            // envía el objeto completo del registro con su propio 'tipo' (p. ej. devolucion): excluirlo evita el
+            // falso error "El tipo debe ser compra o gasto".
+            'tipo' => ['exclude_unless:tipo_dte,14,08', 'required_if:tipo_dte,14,08', 'string', 'in:compra,gasto'],
         ];
     }
 
