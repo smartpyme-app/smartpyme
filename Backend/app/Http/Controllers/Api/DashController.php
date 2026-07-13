@@ -23,9 +23,12 @@ use JWTAuth;
 
 class DashController extends Controller
 {
-    public function __construct(
-        private CajaUsuarioResolver $cajaUsuarioResolver
-    ) {}
+    private CajaUsuarioResolver $cajaUsuarioResolver;
+
+    public function __construct(CajaUsuarioResolver $cajaUsuarioResolver)
+    {
+        $this->cajaUsuarioResolver = $cajaUsuarioResolver;
+    }
 
     public function index(Request $request) {
 

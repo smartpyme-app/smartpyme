@@ -354,8 +354,8 @@ class Indicador extends Model
 
     public function getTotalVentas(){
         return $this->getTotalVentasPagadas()
-                + $this->getTotalVentasPendientes();
-                // - $this->getTotalDevolucionesVenta();
+                + $this->getTotalVentasPendientes()
+                - $this->getTotalDevolucionesVenta();
     }
 
     /**
