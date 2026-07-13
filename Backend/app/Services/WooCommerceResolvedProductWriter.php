@@ -47,7 +47,7 @@ final class WooCommerceResolvedProductWriter
 
     public function buildVariationPayload(array $productData): array
     {
-        return array_filter([
+        $payload = array_filter([
             'sku' => $productData['sku'] ?? null,
             'regular_price' => $productData['regular_price'] ?? null,
             'price' => $productData['price'] ?? null,
@@ -57,5 +57,11 @@ final class WooCommerceResolvedProductWriter
         ], function ($v) {
             return $v !== null;
         });
+
+        if (isset($productData['cost_of_goods_sold'])) {
+            $payload['cost_of_goods_sold'] = $productData['cost_of_goods_sold'];
+        }
+
+        return $payload;
     }
 }

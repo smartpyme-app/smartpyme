@@ -169,7 +169,14 @@ class WooCommerceProductosImport implements ToModel, WithHeadingRow, SkipsEmptyR
         }
 
         // No sobrescribir costo si ya existe y el CSV no trae costo
-        $costoActual = $producto->exists ? $producto->costo : 0;
+        $costoCsv = $this->parseDecimal($this->getValue($row, [
+            'costo',
+            'cost',
+            'cost_of_goods_sold',
+            'cost of goods sold',
+            'cogs_value',
+            'meta_cogs_total_value',
+        ]));
 
         $producto->nombre = $nombre;
         $producto->descripcion = $descripcion;
@@ -191,9 +198,10 @@ class WooCommerceProductosImport implements ToModel, WithHeadingRow, SkipsEmptyR
         $producto->enable = '1';
         $producto->id_empresa = $this->usuario->id_empresa;
 
-        if ($producto->exists && $costoActual > 0) {
-            // No sobrescribir costo existente
-        } else {
+        if ($costoCsv > 0) {
+            $producto->costo = $costoCsv;
+            $producto->costo_promedio = $costoCsv;
+        } elseif (!$producto->exists) {
             $producto->costo = 0;
             $producto->costo_promedio = 0;
         }

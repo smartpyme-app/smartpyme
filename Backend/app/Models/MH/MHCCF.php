@@ -149,7 +149,7 @@ class MHCCF extends Model
               "descActividad" => $this->venta->cliente->giro,
               "direccion" => [
                 "departamento" => $this->venta->cliente->cod_departamento,
-                "municipio" => $this->venta->cliente->cod_departamento,
+                "municipio" => $this->venta->cliente->cod_municipio,
                 "complemento" => $this->venta->cliente->empresa_direccion ?? $this->venta->cliente->direccion,
               ],
               "telefono" => $this->venta->cliente->telefono,

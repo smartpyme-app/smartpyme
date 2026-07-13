@@ -113,7 +113,8 @@ class InventarioObserver
             try {
                 $this->stockService->actualizarStockEnWooCommerce(
                     $inventario->id_producto,
-                    $usuario->id
+                    $usuario->id,
+                    ['stock']
                 );
             } catch (\Exception $e) {
                 Log::error("Error al sincronizar stock para usuario: " . $e->getMessage(), [
