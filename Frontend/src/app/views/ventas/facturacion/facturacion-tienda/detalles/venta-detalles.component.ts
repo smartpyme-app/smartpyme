@@ -5,6 +5,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import {
     calcularMontosLineaDetalle,
+    copiarImpuestosProductoAlDetalle,
     limpiarExentaPorSinIvaSiTipoManual,
     sincronizarTipoGravadoPorCobroIva,
 } from '@utils/impuestos-venta.util';
@@ -258,6 +259,12 @@ export class VentaDetallesComponent implements OnInit {
         public addDetalle(producto:any){
             this.detalle = Object.assign({}, producto);
             this.detalle.id = null;
+
+            copiarImpuestosProductoAlDetalle(
+                this.detalle,
+                producto,
+                this.apiService.auth_user()?.empresa?.iva ?? 0
+            );
             
             // ── Guardar campos de presentación para el backend ───────────────────────
             this.detalle.id_presentacion   = producto.id_presentacion  ?? null;

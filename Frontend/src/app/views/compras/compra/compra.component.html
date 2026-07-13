@@ -121,11 +121,25 @@
                         <td [attr.colspan]="apiService.supervisorLimitadoRestringidoEnCompras() ? 1 : 2" class="text-end"><b>Descuento:</b></td>
                         <td *ngIf="!apiService.supervisorLimitadoRestringidoEnCompras()" class="text-end"><b>{{ compra?.descuento | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
-                    <tr>
-                        <td [attr.colspan]="apiService.supervisorLimitadoRestringidoEnCompras() ? 1 : 2" class="text-end"></td>
-                        <td [attr.colspan]="apiService.supervisorLimitadoRestringidoEnCompras() ? 1 : 2" class="text-end"><b>IVA</b></td>
-                        <td *ngIf="!apiService.supervisorLimitadoRestringidoEnCompras()" class="text-end"><b>{{ compra?.iva | currency:'USD':'symbol':'1.2'}}</b> </td>
-                    </tr>
+                    <ng-container *ngIf="compra?.impuestos?.length; else ivaUnico">
+                        <tr *ngFor="let impuesto of compra.impuestos">
+                            <ng-container *ngIf="(impuesto.monto ?? 0) > 0">
+                                <td [attr.colspan]="apiService.supervisorLimitadoRestringidoEnCompras() ? 1 : 2" class="text-end"></td>
+                                <td [attr.colspan]="apiService.supervisorLimitadoRestringidoEnCompras() ? 1 : 2" class="text-end">
+                                    {{ impuesto.nombre || impuesto?.impuesto?.nombre || 'Impuesto' }}
+                                    <small class="text-muted">({{ (impuesto.porcentaje ?? impuesto?.impuesto?.porcentaje) | number:'1.0-2' }}%)</small>
+                                </td>
+                                <td *ngIf="!apiService.supervisorLimitadoRestringidoEnCompras()" class="text-end"><b>{{ impuesto.monto | currency:'USD':'symbol':'1.2' }}</b></td>
+                            </ng-container>
+                        </tr>
+                    </ng-container>
+                    <ng-template #ivaUnico>
+                        <tr *ngIf="compra?.iva > 0">
+                            <td [attr.colspan]="apiService.supervisorLimitadoRestringidoEnCompras() ? 1 : 2" class="text-end"></td>
+                            <td [attr.colspan]="apiService.supervisorLimitadoRestringidoEnCompras() ? 1 : 2" class="text-end"><b>IVA</b></td>
+                            <td *ngIf="!apiService.supervisorLimitadoRestringidoEnCompras()" class="text-end"><b>{{ compra?.iva | currency:'USD':'symbol':'1.2' }}</b></td>
+                        </tr>
+                    </ng-template>
                     <tr *ngIf="compra?.percepcion > 0">
                         <td [attr.colspan]="apiService.supervisorLimitadoRestringidoEnCompras() ? 1 : 2" class="text-end"></td>
                         <td [attr.colspan]="apiService.supervisorLimitadoRestringidoEnCompras() ? 1 : 2" class="text-end"><b>Percepción (1%)</b></td>

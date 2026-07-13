@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
 use App\Models\Admin\Empresa;
+use App\Models\Admin\Impuesto as ImpuestoCatalogo;
 use App\Models\Admin\Sucursal;
 use App\Models\Inventario\Categorias\SubCategoria;
 use App\Models\Inventario\Producto;
@@ -30,6 +31,7 @@ use App\Exports\WooCommerceExport;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use App\Exports\PlantillaInventarioMasivoExport;
 use App\Exports\PlantillaProductosImportExport;
 use App\Exports\TrasladoLineasUiExport;
@@ -272,7 +274,10 @@ class ProductosController extends Controller
         $empresa = Auth::user() ? Empresa::find(Auth::user()->id_empresa) : null;
         $incluirComponenteQuimico = $empresa && $empresa->isComponenteQuimicoHabilitado();
 
-        $productos = Producto::where('enable', true)->with('inventarios', 'lotes', 'composiciones.opciones', 'composiciones.compuesto.inventarios')->with('precios')
+        $productos = Producto::where('enable', true)->with(array_merge(
+            ['inventarios', 'lotes', 'composiciones.opciones', 'composiciones.compuesto.inventarios', 'precios'],
+            $this->relacionesImpuestosProducto()
+        ))
             ->where(function ($q) use ($txt, $incluirComponenteQuimico) {
                 $q->where('nombre', 'like', "%$txt%")
                     ->orWhere('barcode', 'like', "%$txt%")
@@ -294,16 +299,16 @@ class ProductosController extends Controller
         $id_bodega = $request->query('id_bodega');
         $empresa   = Auth::user() ? Empresa::find(Auth::user()->id_empresa) : null;
         $incluirComponenteQuimico = $empresa && $empresa->isComponenteQuimicoHabilitado();
-        $incluirPresentaciones = $empresa && $empresa->isModuloPresentaciones();
+        $incluirPresentaciones = $this->puedeCargarPresentaciones($empresa);
 
         // ── 1. Buscar productos base ──────────────────────────────────────────────
-        $with = [
+        $with = array_merge([
             'inventarios',
             'lotes',
             'composiciones.opciones',
             'composiciones.compuesto.inventarios',
             'precios',
-        ];
+        ], $this->relacionesImpuestosProducto());
         if ($incluirPresentaciones) {
             $with[] = 'presentaciones';
         }
@@ -374,7 +379,7 @@ class ProductosController extends Controller
         $id_bodega = $request->query('id_bodega');
         $empresa = Auth::user() ? Empresa::find(Auth::user()->id_empresa) : null;
         $incluirComponenteQuimico = $empresa && $empresa->isComponenteQuimicoHabilitado();
-        $incluirPresentaciones = $empresa && $empresa->isModuloPresentaciones();
+        $incluirPresentaciones = $this->puedeCargarPresentaciones($empresa);
 
         if ($id_bodega) {
             $withBodega = [
@@ -389,7 +394,10 @@ class ProductosController extends Controller
 
             $productos = Producto::where('enable', true)
                 ->with($withBodega)
-                ->with('composiciones.opciones', 'composiciones.compuesto.inventarios', 'precios')
+                ->with(array_merge(
+                    ['composiciones.opciones', 'composiciones.compuesto.inventarios', 'precios'],
+                    $this->relacionesImpuestosProducto()
+                ))
                 ->whereIn('tipo', ['Producto', 'Compuesto', 'Servicio'])
                 ->where(function ($q) use ($id_bodega) {
                     $q->whereHas('inventarios', function ($iq) use ($id_bodega) {
@@ -412,7 +420,10 @@ class ProductosController extends Controller
                 ->take(50)
                 ->get();
         } else {
-            $withGlobal = ['inventarios', 'lotes', 'composiciones.opciones', 'composiciones.compuesto.inventarios'];
+            $withGlobal = array_merge(
+                ['inventarios', 'lotes', 'composiciones.opciones', 'composiciones.compuesto.inventarios'],
+                $this->relacionesImpuestosProducto()
+            );
             if ($incluirPresentaciones) {
                 $withGlobal[] = 'presentaciones';
             }
@@ -493,18 +504,28 @@ class ProductosController extends Controller
 
     public function read($id)
     {
+        $empresa = Auth::user() ? Empresa::find(Auth::user()->id_empresa) : null;
+
+        $with = [
+            'inventarios',
+            'composiciones.compuesto',
+            'composiciones.opciones',
+            'precios.usuarios',
+            'imagenes',
+            'proveedores.proveedor',
+            'unidad',
+        ];
+
+        if ($empresa && $empresa->isModuloPresentaciones() && Schema::hasTable('producto_presentaciones')) {
+            $with[] = 'presentaciones.unidadMedida';
+        }
+
+        if (Schema::hasTable('producto_impuestos')) {
+            $with[] = 'impuestos';
+        }
 
         $producto = Producto::where('id', $id)
-            ->with(
-                'inventarios',
-                'composiciones.compuesto',
-                'composiciones.opciones',
-                'precios.usuarios',
-                'imagenes',
-                'proveedores.proveedor',
-                'unidad',
-                'presentaciones.unidadMedida'
-            )
+            ->with($with)
             ->firstOrFail();
 
         return Response()->json($producto, 200);
@@ -512,15 +533,21 @@ class ProductosController extends Controller
 
     public function searchByCode($codigo)
     {
+        $with = [
+            'inventarios',
+            'composiciones.compuesto',
+            'composiciones.opciones',
+            'precios.usuarios',
+            'imagenes',
+            'proveedores.proveedor',
+        ];
+
+        if (Schema::hasTable('producto_impuestos')) {
+            $with[] = 'impuestos';
+        }
+
         $producto = Producto::where('codigo', $codigo)
-            ->with(
-                'inventarios',
-                'composiciones.compuesto',
-                'composiciones.opciones',
-                'precios.usuarios',
-                'imagenes',
-                'proveedores.proveedor'
-            )
+            ->with($with)
             ->firstOrFail();
 
         return Response()->json($producto, 200);
@@ -570,6 +597,10 @@ class ProductosController extends Controller
         $producto->fill($request->all());
         $producto->save();
 
+        if ($request->has('id_impuestos') && Schema::hasTable('producto_impuestos')) {
+            $this->syncProductoImpuestos($producto, $request->input('id_impuestos', []));
+        }
+
         $migracionLotes = null;
         if (
             $producto->tipo != 'Servicio'
@@ -615,12 +646,60 @@ class ProductosController extends Controller
 
 
 
+        if (Schema::hasTable('producto_impuestos')) {
+            $producto->load('impuestos');
+        }
+
         $payload = $producto->toArray();
         if ($migracionLotes !== null) {
             $payload['migracion_lotes'] = $migracionLotes;
         }
 
         return Response()->json($payload, 200);
+    }
+
+    /**
+     * Sincroniza impuestos de venta asignados al producto (tabla producto_impuestos).
+     * Actualiza porcentaje_impuesto con la suma de tasas (cálculo paralelo sobre la base).
+     */
+    protected function syncProductoImpuestos(Producto $producto, $idImpuestos): void
+    {
+        $ids = collect(is_array($idImpuestos) ? $idImpuestos : [])
+            ->filter(fn ($id) => $id !== null && $id !== '')
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        if (count($ids) === 0) {
+            $producto->impuestos()->detach();
+            $producto->porcentaje_impuesto = 0;
+            $producto->save();
+            return;
+        }
+
+        $impuestos = ImpuestoCatalogo::withoutGlobalScopes()
+            ->where('id_empresa', $producto->id_empresa)
+            ->whereIn('id', $ids)
+            ->where('aplica_ventas', true)
+            ->get();
+
+        $producto->impuestos()->sync($impuestos->pluck('id')->all());
+        $producto->porcentaje_impuesto = round((float) $impuestos->sum('porcentaje'), 2);
+        $producto->save();
+    }
+
+    protected function puedeCargarPresentaciones(?Empresa $empresa): bool
+    {
+        return $empresa
+            && $empresa->isModuloPresentaciones()
+            && Schema::hasTable('producto_presentaciones');
+    }
+
+    /** @return string[] */
+    protected function relacionesImpuestosProducto(): array
+    {
+        return Schema::hasTable('producto_impuestos') ? ['impuestos'] : [];
     }
 
     /**
