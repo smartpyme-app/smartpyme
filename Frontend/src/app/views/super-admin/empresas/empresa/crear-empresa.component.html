@@ -285,76 +285,16 @@
                 <div class="row mt-5">
                     <div class="form-group col-lg-12 mt-3">
                         <button [disabled]="saving" class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
-                            <span *ngIf="!saving">Guardar</span>
-                            <span *ngIf="saving">Guardando...</span>
+                            @if (!saving) {
+                                <span>Guardar</span>
+                            }
+                            @if (saving) {
+                                <span>Guardando...</span>
+                            }
                         </button>
                     </div>
                 </div>
-
-                <div class="form-group col-md-6 col-xl-6 without-label">
-                    <div class="form-switch bg-light-info rounded">
-                      <label for="cobrar_iva">{{ 'country.tax.chargeTax' | translate }}</label>
-                      <input class="form-check-input float-end" type="checkbox" (change)="setCobrarIVA()" role="switch" [checked]="empresa.cobra_iva == 'Si'">
-                    </div>
-                </div>
-
-                <div class="form-group col-6 mb-4">
-                    <label class="w-100">Plan</label>
-                    <div class="input-group">
-                        <select class="form-select" (change)="setPlan()" name="plan" [(ngModel)]="empresa.plan">
-                            <option value="">Selecciona aquí</option>
-                            <option value="Emprendedor">Emprendedor</option>
-                            <option value="Estándar">Estándar</option>
-                            <option value="Avanzado">Avanzado</option>
-                            <option value="Pro">Pro</option>
-                        </select>
-                        <select class="form-select" (change)="setPlan()" name="tipo_plan" [(ngModel)]="empresa.tipo_plan">
-                            <option value="">Selecciona aquí</option>
-                            <option value="Mensual">Mensual</option>
-                            <option value="Anual">Anual</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-group col-md-6 col-lg-3">
-                    <label>Límete de usuarios</label>
-                    <input type="number" class="form-control" [(ngModel)]="empresa.user_limit" name="user_limit" placeholder="Escriba aquí">
-                </div>
-
-                <div class="form-group col-md-6 col-lg-3">
-                    <label>Límete de sucursales</label>
-                    <input type="number" class="form-control" [(ngModel)]="empresa.sucursal_limit" name="sucursal_limit" placeholder="Escriba aquí">
-                </div>
-                <div class="form-group col-md-6 col-lg-4">
-                    <label for="total">Pago de plan</label>
-                    <div class="input-group">
-                        <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
-                        <input type="number" class="form-control" [(ngModel)]="empresa.total" name="total" placeholder="Escriba aquí">
-                    </div>
-                </div>
-                <div class="form-group col-md-6 col-lg-4">
-                    <label>Referido</label>
-                    <input type="text" class="form-control" [(ngModel)]="empresa.referido" name="referido" placeholder="Escriba aquí">
-                </div>
-                <div class="form-group col-md-6 col-lg-4">
-                    <label>Campaña</label>
-                    <input type="text" class="form-control" [(ngModel)]="empresa.campania" name="campania" placeholder="Escriba aquí">
-                </div>
-
-            </div>
-
-            <div class="row mt-5">
-                <div class="form-group col-lg-12 mt-3">
-                    <button [disabled]="saving" class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
-                        @if (!saving) {
-                            <span>Guardar</span>
-                        }
-                        @if (saving) {
-                            <span>Guardando...</span>
-                        }
-                    </button>
-                </div>
-            </div>
-        </form>        </div>
+        </form>
+        </div>
     </div>
 </div>

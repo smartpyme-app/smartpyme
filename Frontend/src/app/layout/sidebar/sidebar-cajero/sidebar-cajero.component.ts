@@ -1,9 +1,14 @@
 import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { ApiService } from '@services/api.service';
 
 @Component({
   selector: 'app-sidebar-cajero',
-  templateUrl: './sidebar-cajero.component.html'
+  templateUrl: './sidebar-cajero.component.html',
+  standalone: true,
+  imports: [CommonModule, RouterModule, TooltipModule],
 })
 export class SidebarCajeroComponent implements OnInit {
   public sidebarCollapsed = false;

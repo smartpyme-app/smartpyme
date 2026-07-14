@@ -21,7 +21,7 @@ import Swal from 'sweetalert2';
     selector: 'app-traslado-masivo',
     templateUrl: './traslado-masivo.component.html',
     standalone: true,
-    imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, TooltipModule],
+    imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, TooltipModule, DistribucionLotesModalComponent],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class TrasladoMasivoComponent extends BaseModalComponent implements OnInit {

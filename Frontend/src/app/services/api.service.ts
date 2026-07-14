@@ -637,6 +637,17 @@ export class ApiService {
     return cfg?.bloquear_cotizaciones_vendedores === true;
   }
 
+  puedeGestionarPedidosCanal(): boolean {
+    const tipo = this.auth_user()?.tipo;
+    return [
+      'Administrador',
+      'Supervisor',
+      'Supervisor Limitado',
+      'Ventas',
+      'Ventas Limitado',
+    ].includes(tipo);
+  }
+
     /**
      * Preferencia en empresa (Preferencias del sistema): impide gastos para Supervisor limitado.
      * Por defecto en BD es false para no cambiar comportamiento tras la migración.
