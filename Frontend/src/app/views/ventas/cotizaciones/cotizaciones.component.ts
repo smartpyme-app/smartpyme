@@ -114,16 +114,27 @@ export class CotizacionesComponent extends BaseCrudComponent<any> implements OnI
             this.filtros.id_usuario = this.apiService.auth_user().id;
         }
         this.loading = true;
+        this.cdr.markForCheck();
         if(!this.filtros.id_cliente){
             this.filtros.id_cliente = '';
         }
-        this.apiService.getAll('cotizaciones', this.filtros).subscribe(ventas => {
-            this.ventas = ventas;
-            this.loading = false;
-            if(this.modalRef){
+        this.apiService.getAll('cotizaciones', this.filtros)
+          .pipe(this.untilDestroyed())
+          .subscribe({
+            next: (ventas) => {
+              this.ventas = this.normalizeVentas(ventas);
+              this.loading = false;
+              if (this.modalRef) {
                 this.modalRef.hide();
+              }
+              this.cdr.markForCheck();
+            },
+            error: (error) => {
+              this.alertService.error(error);
+              this.loading = false;
+              this.cdr.markForCheck();
             }
-        }, error => {this.alertService.error(error); });
+          });
     }
 
   private normalizeVentas(ventas: any) {
@@ -162,7 +173,7 @@ export class CotizacionesComponent extends BaseCrudComponent<any> implements OnI
     }
 
     this.loading = true;
-    this.apiService.delete('venta/', itemToDelete)
+    this.apiService.delete('cotizacionVentas/', itemToDelete)
       .pipe(this.untilDestroyed())
       .subscribe({
         next: (deletedItem: any) => {

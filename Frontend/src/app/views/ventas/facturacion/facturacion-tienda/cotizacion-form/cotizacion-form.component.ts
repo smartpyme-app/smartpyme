@@ -13,6 +13,7 @@ import { CrearProyectoComponent } from '@shared/modals/crear-proyecto/crear-proy
 import { NgSelectModule } from '@ng-select/ng-select';
 import { BaseComponent } from '@shared/base/base.component';
 import { TranslatePipe } from '@ngx-translate/core';
+import { LazyImageDirective } from '../../../../../directives/lazy-image.directive';
 
 @Component({
     selector: 'app-cotizacion-form',
@@ -55,7 +56,7 @@ export class CotizacionFormComponent extends BaseComponent implements OnInit {
       fecha_pago: this.apiService.date(),
       forma_pago: 'Efectivo',
       tipo: 'Interna',
-      estado: 'Pendiente',
+      estado: 'pendiente',
       detalle_banco: '',
       id_cliente: '',
       detalles: [],

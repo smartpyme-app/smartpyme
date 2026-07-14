@@ -527,7 +527,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     // Para cotizaciones Pre-venta
     if (this.route.snapshot.queryParamMap.get('cotizacion')) {
       this.venta.cotizacion = 1;
-      this.venta.estado = 'Pendiente';
+      this.venta.estado = 'pendiente';
       this.venta.tipo = 'cotizacion'; // Identificador para cotización
       this.venta.observaciones = this.venta.id_empresa == 2 ? 'Uso del Servicio: La plataforma SmartPyme se proporciona bajo licencia no exclusiva y no transferible, según el plan de suscripción seleccionado por el cliente. El cliente es responsable del uso adecuado de la plataforma y de la exactitud de los datos ingresados. \nPagos: Las tarifas establecidas en la cotización deben ser pagadas puntualmente. Los retrasos en el pago pueden llevar a la suspensión o cancelación del servicio. \nDisponibilidad del Servicio: SmartPyme garantiza un 99% de disponibilidad del servicio, excluyendo mantenimientos programados y eventos de fuerza mayor. \nPropiedad Intelectual: El cliente no podrá realizar ingeniería inversa, descompilar ni modificar la plataforma. \nLimitación de responsabilidad: SmartPyme no se hace responsable de pérdidas de datos causadas por eventos externos, uso indebido de la plataforma o situaciones fuera de su control razonable. \nDuración del acuerdo: Los servicios se brindan durante la vigencia del plan de suscripción. Tras terminación, el cliente tiene derecho a descargar su información antes de que sea eliminada, siempre y cuando no tenga pagos pendientes. En caso de mora, SmartPyme no estará obligada a proporcionar acceso o respaldos hasta que la situación sea regularizada. \nSituaciones excepcionales: \nEn caso de circunstancias extraordinarias que conlleven la finalización de operaciones, la empresa no estará obligada a continuar con la prestación del servicio. Esto incluye, pero no se limita a, solicitudes de acceso perpetuo o indefinido a la plataforma. \nRenovación: Los cobros se efectuarán de forma automática cada mes (acorde a la forma de pago elegida), por lo que de no continuar usando el sistema debe notificarse por escrito al correo electrónico expresando las razones. De esta forma se brindará un plazo de 15 días para extraer la información de su cuenta, posteriormente será eliminada definitivamente. \nPolítica de reembolsos: No se realizan reembolsos ni devoluciones bajo ninguna circunstancia, incluyendo cancelaciones anticipadas, falta de uso del sistema o cualquier otra razón. Al realizar el pago, el cliente acepta esta condición. \nCompromisos de SmartPyme: \nBrindar capacitaciones y soporte técnico a usuarios de negocios. \nGarantizar el correcto funcionamiento de la plataforma en todo momento con altos estándares de seguridad, disponibilidad y confidencialidad. \nOfrecemos acompañamiento y asesoría durante el proceso de implementación, de facturación electrónica u otro correspondiente a la información para el uso necesario de SmartPyme.\nBrindar documentación de confidencialidad para su firma. \nPara SmartPyme será un honor trabajar con usted y apoyar sus esfuerzos en optimizar las operaciones de su empresa y proporcionar información oportuna a través de nuestra plataforma de Inteligencia de Negocios. \nQuedamos atentos a cualquier consulta o información adicional que necesite.' : '';
       this.syncVentaCreditoConsignaFlagsFromEstado();
@@ -603,18 +603,17 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
       }
     }
 
-    // Para editar cotizaciones Pre-venta
+    // Para editar cotizaciones Pre-venta / ventas
     if (this.route.snapshot.paramMap.get('id')) {
       this.editar = true;
-      const endpoint = this.venta.cotizacion == 1 ? 'cotizacion/' : 'venta/';
-      const isCotizacion = this.venta.cotizacion == 1 ? true : false;
+      const isCotizacion = this.venta.cotizacion == 1;
+      const endpoint = isCotizacion ? 'cotizacionVentas/' : 'venta/';
       this.apiService
-        .read('venta/', +this.route.snapshot.paramMap.get('id')!)
+        .read(endpoint, +this.route.snapshot.paramMap.get('id')!)
         .subscribe(
           (venta) => {
-            this.venta = venta;
+            this.venta = this.adaptarCotizacionVentaSiAplica(venta, isCotizacion);
             this.retencionIvaGcUsuarioDecidio = true;
-            this.venta.cotizacion = isCotizacion ? 1 : 0;
             this.normalizarDetallesTipoGravado(this.venta);
             this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
             this.syncVentaCreditoConsignaFlagsFromEstado();
@@ -706,10 +705,10 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
         this.facturarCotizacion = true;
         this.documentoFiscalListo = false;
         this.apiService
-          .read('venta/', +this.route.snapshot.queryParamMap.get('id_venta')!)
+          .read('cotizacionVentas/', +this.route.snapshot.queryParamMap.get('id_venta')!)
           .subscribe(
             (venta) => {
-              this.venta = venta;
+              this.venta = this.adaptarCotizacionVentaSiAplica(venta, false);
               this.retencionIvaGcUsuarioDecidio = true;
               this.normalizarDetallesTipoGravado(this.venta);
               if(!this.venta.cliente){
@@ -728,7 +727,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
               this.venta.impuestos = this.impuestos;
               this.venta.observaciones = '';
               this.venta.cotizacion = 0;
-              this.venta.num_cotizacion = this.venta.id;
+              this.venta.num_cotizacion = venta.id;
               this.venta.id = null;
               this.syncVentaCreditoConsignaFlagsFromEstado();
               this.venta.detalles.forEach((detalle: any) => {
@@ -1851,12 +1850,15 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
       return;
     }
 
-    this.apiService.store('facturacion', this.venta).subscribe(
+    const endpointSave = this.venta.cotizacion == 1 ? 'cotizacionVentas' : 'facturacion';
+    this.apiService.store(endpointSave, this.venta).subscribe(
       (venta) => {
         // Actualizar siempre la venta local con la respuesta del backend (id, correlativo, etc.)
         // para que en un siguiente guardado se envíe el mismo correlativo.
         const detallesAntes = this.venta.detalles;
+        const cotizacionFlag = this.venta.cotizacion;
         Object.assign(this.venta, venta);
+        this.venta.cotizacion = cotizacionFlag;
         if (
           (!this.venta.detalles || !Array.isArray(this.venta.detalles) || this.venta.detalles.length === 0) &&
           Array.isArray(detallesAntes) &&
@@ -2144,6 +2146,25 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
 }
 
   /** Normaliza detalles: infiere tipo_gravado y sub_total si faltan (ventas existentes). Asegura gravada/exenta/no_sujeta para que el IVA cuadre. */
+  /** Adapta payload de cotizacion_ventas al shape que usa FacturacionComponent. */
+  private adaptarCotizacionVentaSiAplica(venta: any, keepAsCotizacion: boolean) {
+    if (!venta) {
+      return venta;
+    }
+    venta.cotizacion = keepAsCotizacion ? 1 : 0;
+    venta.retencion = venta.aplicar_retencion ?? venta.retencion;
+    if (Array.isArray(venta.detalles)) {
+      venta.detalles = venta.detalles.map((detalle: any) => ({
+        ...detalle,
+        descripcion: detalle.descripcion || detalle.producto?.nombre || detalle.nombre_producto || '',
+        nombre_producto: detalle.nombre_producto || detalle.producto?.nombre || detalle.descripcion || '',
+        img: detalle.img || detalle.producto?.img,
+        costo: detalle.costo ?? detalle.total_costo ?? detalle.producto?.costo ?? 0,
+      }));
+    }
+    return venta;
+  }
+
   private normalizarDetallesTipoGravado(venta: any) {
     if (!venta?.detalles?.length) return;
     if (this.esFeCostaRicaFacturacion()) {

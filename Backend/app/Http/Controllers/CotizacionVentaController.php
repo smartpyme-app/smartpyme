@@ -4,38 +4,33 @@ namespace App\Http\Controllers;
 
 use App\Models\CotizacionVenta;
 use App\Models\CotizacionVentaDetalle;
+use App\Services\Ventas\CotizacionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\StoreCotizacionVentaRequest;
 
 class CotizacionVentaController extends Controller
 {
-    public function store(StoreCotizacionVentaRequest $request)
+    public function store(StoreCotizacionVentaRequest $request, CotizacionService $cotizacionService)
     {
-
         DB::beginTransaction();
         try {
-            $cotizacion = new CotizacionVenta();
-            $cotizacion->fill($request->merge(["aplicar_retencion" => $request->retencion])->all());
-            $cotizacion->save();
-            foreach ($request->detalles as $detalle) {
-                $newDetalle = CotizacionVentaDetalle::create(
-                    [
-                        "id_producto" => $detalle["id_producto"],
-                        "cantidad" => $detalle["cantidad"],
-                        "precio" => $detalle["precio"],
-                        "descuento" => $detalle["descuento"],
-                        "total" => $detalle["total"],
-                        "id_cotizacion_venta" => $cotizacion->id
-                    ]
-                );
+            $cotizacion = $cotizacionService->crearOActualizarCotizacion($request->all());
+
+            if (!$request->id && $request->id_documento) {
+                $cotizacionService->asignarCorrelativo($cotizacion, (int) $request->id_documento);
             }
 
+            if ($request->has('detalles') && is_array($request->detalles)) {
+                $cotizacionService->guardarDetalles($cotizacion, $request->detalles);
+            }
 
             DB::commit();
-            return response()->json(['message' => 'Cotización registrada correctamente', "cotizacion" => $cotizacion], 200);
+
+            $cotizacion->load('cliente', 'detalles.producto', 'usuario');
+
+            // Misma forma que facturacion/listados FE: el modelo en la raíz
+            return response()->json($cotizacion, 200);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['error' => $e->getMessage()], 500);
@@ -44,11 +39,13 @@ class CotizacionVentaController extends Controller
 
     public function index(Request $request)
     {
-        //Log::info('test');
+        $orden = $request->get('orden') ?: 'fecha';
+        $direccion = $request->get('direccion') ?: 'desc';
+        $paginate = (int) ($request->get('paginate') ?: 10);
 
         $ordenes = CotizacionVenta::with(
-            "cliente:id,nombre",
-            "usuario:id,name",
+            'cliente:id,nombre,apellido,tipo,nombre_empresa',
+            'usuario:id,name',
             'tieneOrdenProduccion'
         )->when($request->inicio, function ($query) use ($request) {
             return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
@@ -80,19 +77,14 @@ class CotizacionVentaController extends Controller
                     $qq->where('correlativo', 'like', "%{$b}%")
                        ->orWhere('estado', 'like', "%{$b}%")
                        ->orWhere('observaciones', 'like', "%{$b}%")
-                       // cliente: nombre + apellido
                        ->orWhereHas('cliente', function ($qc) use ($b) {
                            $qc->whereRaw("CONCAT_WS(' ', nombre, apellido) LIKE ?", ["%{$b}%"])
                               ->orWhere('nombre', 'like', "%{$b}%")
-                              ->orWhere('apellido', 'like', "%{$b}%");
+                              ->orWhere('apellido', 'like', "%{$b}%")
+                              ->orWhere('nombre_empresa', 'like', "%{$b}%");
                        })
-                       // usuario: name
                        ->orWhereHas('usuario', function ($qu) use ($b) {
                            $qu->where('name', 'like', "%{$b}%");
-                       })
-                       // empresa: nombre
-                       ->orWhereHas('cliente', function ($qe) use ($b) {
-                           $qe->where('nombre_empresa', 'like', "%{$b}%");
                        });
                 });
             })
@@ -102,24 +94,43 @@ class CotizacionVentaController extends Controller
                     $qc->whereRaw("CONCAT_WS(' ', nombre, apellido) LIKE ?", ["%{$b}%"]);
                 });
             })
-            ->orderBy($request->orden, $request->direccion)
+            ->orderBy($orden, $direccion)
             ->orderBy('id', 'desc')
-            ->paginate($request->paginate);
-       
+            ->paginate($paginate);
 
-        return Response()->json($ordenes, 200);
+        return response()->json($ordenes, 200);
     }
 
     public function read(int $id)
     {
         $cotizacion = CotizacionVenta::with(
-            "cliente",
-            "usuario",
-            "detalles.producto"
+            'cliente',
+            'usuario',
+            'detalles.producto',
+            'detalles.customFields.customField',
+            'detalles.customFields.customFieldValue'
         )->where('id', $id)->firstOrFail();
+
         return response()->json($cotizacion, 200);
     }
 
+    public function destroy(int $id)
+    {
+        $cotizacion = CotizacionVenta::with('detalles.customFields')->findOrFail($id);
+
+        foreach ($cotizacion->detalles as $detalle) {
+            if ($detalle->customFields) {
+                foreach ($detalle->customFields as $customField) {
+                    $customField->delete();
+                }
+            }
+            $detalle->delete();
+        }
+
+        $cotizacion->delete();
+
+        return response()->json($cotizacion, 201);
+    }
 
     public function delete($id)
     {
@@ -129,13 +140,8 @@ class CotizacionVentaController extends Controller
                 $customField->delete();
             }
         }
-        // Actualizar inventario
-        // $producto = Producto::findOrFail($detalle->producto_id);
-        // if ($producto->inventario) {
-        //     Inventario::where('bodega_id', $detalle->venta->bodega_id)->where('producto_id', $detalle->producto_id)->increment('stock', $detalle->cantidad);
-        // }
         $detalle->delete();
 
-        return Response()->json($detalle, 201);
+        return response()->json($detalle, 201);
     }
 }

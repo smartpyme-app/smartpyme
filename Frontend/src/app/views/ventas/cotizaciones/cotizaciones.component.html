@@ -116,7 +116,7 @@
                           <ng-template #accionesTemplate>
                               <div class="d-flex flex-column align-items-start">
                                 <!-- <a *ngIf="venta.estado == 'pendiente' || venta.estado == 'enviada' && apiService.canEdit()" routerLink="/cotizacion/editar/{{venta.id}}" [queryParams]="{ cotizacion:1 }" class="btn"> -->
-                                  @if (venta.estado == 'Pendiente' || venta.estado == 'enviada' && apiService.canEditTest('ventas.cotizaciones.editar')) {
+                                  @if ((venta.estado == 'pendiente' || venta.estado == 'enviada') && apiService.canEditTest('ventas.cotizaciones.editar')) {
                                       <a routerLink="/cotizacion/editar/{{venta.id}}" [queryParams]="{ cotizacion:1 }" class="btn">
                                           <i class="fa fa-fw fa-edit"></i> Editar
                                       </a>
@@ -126,7 +126,7 @@
                                         <i class="fa fa-fw fa-copy"></i> Duplicar
                                     </a>
                                   }
-                                  <a routerLink="/cotizacion/{{venta.id}}" class="btn">
+                                  <a routerLink="/cotizacion/editar/{{venta.id}}" [queryParams]="{ cotizacion:1 }" class="btn">
                                       <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
                                   </a>
 
@@ -139,7 +139,7 @@
                                       <i class="fa fa-fw fa-print"></i> Imprimir
                                   </a>
                                   <!-- si esta aprobada se podra crear orden de producción -->
-                                  @if (venta.estado == 'aceptada' && venta.tiene_orden_produccion.length == 0) {
+                                  @if (venta.estado == 'aceptada' && !(venta.tiene_orden_produccion?.length)) {
                                       <a routerLink="/orden-produccion/crear/{{venta.id}}" class="btn">
                                           <i class="fa fa-fw fa-cogs"></i> Crear Orden de Producción
                                       </a>

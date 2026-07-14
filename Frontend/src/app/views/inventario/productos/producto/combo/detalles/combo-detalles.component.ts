@@ -35,7 +35,7 @@ export class ComboDetallesComponent extends BaseModalComponent implements OnInit
   public buscador: string = '';
 
   constructor(
-    private apiService: ApiService, 
+    public apiService: ApiService,
     protected override alertService: AlertService,
     protected override modalManager: ModalManagerService,
     private cdr: ChangeDetectorRef
