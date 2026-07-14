@@ -157,7 +157,7 @@ class CotizacionesController extends Controller
 
     public function read($id) {
 
-        $orden = Cotizacion::where('id', $id)->with('cliente', 'detalles')->firstOrFail();
+        $orden = CotizacionVenta::where('id', $id)->with('cliente', 'detalles.producto')->firstOrFail();
         if ($this->esUsuarioRolVentasCotizaciones() && (int) $orden->id_usuario !== (int) Auth::id()) {
             abort(403, 'No autorizado');
         }
@@ -296,7 +296,7 @@ class CotizacionesController extends Controller
 
     public function delete($id)
     {
-        $orden = Cotizacion::findOrFail($id);
+        $orden = CotizacionVenta::with('detalles')->findOrFail($id);
         if ($this->esUsuarioRolVentasCotizaciones() && (int) $orden->id_usuario !== (int) Auth::id()) {
             abort(403, 'No autorizado');
         }
@@ -398,9 +398,17 @@ class CotizacionesController extends Controller
 
     public function duplicarCotizacion(Request $request)
     {
-        $cotizacion = CotizacionVenta::findOrFail($request->id);
+        $cotizacion = CotizacionVenta::with('detalles')->findOrFail($request->id);
         $nuevaCotizacion = $cotizacion->replicate();
+        $nuevaCotizacion->estado = 'pendiente';
+        $nuevaCotizacion->correlativo = null;
         $nuevaCotizacion->save();
+
+        foreach ($cotizacion->detalles as $detalle) {
+            $nuevoDetalle = $detalle->replicate();
+            $nuevoDetalle->id_cotizacion_venta = $nuevaCotizacion->id;
+            $nuevoDetalle->save();
+        }
 
         return response()->json($nuevaCotizacion, 200);
     }

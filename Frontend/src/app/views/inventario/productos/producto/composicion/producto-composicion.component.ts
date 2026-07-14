@@ -11,13 +11,14 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
+import { BuscadorProductosComponent } from '@shared/parts/buscador-productos/buscador-productos.component';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 
 @Component({
     selector: 'app-producto-composicion',
     templateUrl: './producto-composicion.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, NotificacionesContainerComponent, TooltipModule],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, NotificacionesContainerComponent, BuscadorProductosComponent, TooltipModule],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProductoComposicionComponent extends BaseModalComponent implements OnInit {
@@ -60,6 +61,7 @@ export class ProductoComposicionComponent extends BaseModalComponent implements 
             if (compuesto.id_compuesto) {
                 this.apiService.read('productos/', compuesto.id_compuesto).subscribe(producto => {
                     this.productoSeleccionado = producto;
+                    this.cdr.markForCheck();
                 });
             }
         }else{
@@ -77,11 +79,13 @@ export class ProductoComposicionComponent extends BaseModalComponent implements 
         this.productoSeleccionado = producto;
         this.composicion.id_compuesto = producto.id;
         this.composicion.id_presentacion = producto.id_presentacion || null;
+        this.cdr.markForCheck();
     }
 
     limpiarProducto() {
         this.productoSeleccionado = null;
         this.composicion.id_compuesto = '';
+        this.cdr.markForCheck();
     }
 
     onSubmit(){
@@ -158,12 +162,14 @@ export class ProductoComposicionComponent extends BaseModalComponent implements 
 
         productoSelectOpcion(producto: any) {
             this.opcion.id_producto = producto.id;
+            this.cdr.markForCheck();
             this.agregarOpcion();
         }
 
         limpiarProductoOpcion() {
             this.productoSeleccionado = null;
             this.opcion.id_producto = '';
+            this.cdr.markForCheck();
         }
 
 

@@ -29,6 +29,7 @@ Route::get('/cotizaciones',                    [CotizacionVentaController::class
 
 Route::post("cotizacionVentas", [CotizacionVentaController::class, 'store']);
 Route::get("cotizacionVentas/{id}", [CotizacionVentaController::class, 'read']);
+Route::delete("cotizacionVentas/{id}", [CotizacionVentaController::class, 'destroy']);
 Route::delete("cotizacion-venta-detalle/{id}", [CotizacionVentaController::class, 'delete']);
 
 

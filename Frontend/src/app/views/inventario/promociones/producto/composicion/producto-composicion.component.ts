@@ -6,15 +6,16 @@ import { Router, ActivatedRoute } from '@angular/router';
 
 import { AlertService } from '../../../../../services/alert.service';
 import { ApiService } from '../../../../../services/api.service';
-import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '../../../../../services/modal-manager.service';
 import { BaseModalComponent } from '../../../../../shared/base/base-modal.component';
+import { BuscadorProductosComponent } from '@shared/parts/buscador-productos/buscador-productos.component';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 
 @Component({
     selector: 'app-producto-composicion',
     templateUrl: './producto-composicion.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule],
+    imports: [CommonModule, RouterModule, FormsModule, BuscadorProductosComponent, TooltipModule],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProductoComposicionComponent extends BaseModalComponent implements OnInit {
@@ -50,13 +51,13 @@ export class ProductoComposicionComponent extends BaseModalComponent implements 
         this.composicion.cantidad = 1;
         
         let detalle = this.producto.composiciones.find((x:any) => x.compuesto_id == this.composicion.compuesto_id);
-        console.log(detalle);
         if(detalle){
             this.composicion = detalle;
         }
 
         this.productos.total = 0;
-        document.getElementById('cantidad')!.focus();
+        this.cdr.markForCheck();
+        document.getElementById('cantidad')?.focus();
     }
 
     onSubmit(){

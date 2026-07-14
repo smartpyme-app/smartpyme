@@ -27,16 +27,24 @@ class CotizacionService
 
         // Preparar datos para cotización
         $cotizacionData = $data;
-        $cotizacionData['aplicar_retencion'] = $data['retencion'] ?? false;
+        $cotizacionData['aplicar_retencion'] = $data['retencion'] ?? $data['aplicar_retencion'] ?? false;
 
         // Asegurar que id_empresa esté establecido
         if (!isset($cotizacionData['id_empresa'])) {
             $cotizacionData['id_empresa'] = Auth::user()->id_empresa;
         }
 
+        if (isset($cotizacionData['estado']) && is_string($cotizacionData['estado'])) {
+            $cotizacionData['estado'] = strtolower($cotizacionData['estado']);
+        }
+
         // Excluir campos que no aplican a cotizaciones
         unset($cotizacionData['id_canal']);
         unset($cotizacionData['cotizacion']);
+        unset($cotizacionData['detalles']);
+        unset($cotizacionData['cliente']);
+        unset($cotizacionData['impuestos']);
+        unset($cotizacionData['retencion']);
 
         $cotizacion->fill($cotizacionData);
         $cotizacion->save();
