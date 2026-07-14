@@ -113,7 +113,7 @@ export class FacturacionComponent implements OnInit {
     private fidelizacionService: FidelizacionService,
     private funcionalidadesService: FuncionalidadesService,
     private restauranteService: RestauranteService
-  ) {}
+  ) { }
 
   ngOnInit() {
     this.cargarDatosIniciales();
@@ -387,7 +387,7 @@ export class FacturacionComponent implements OnInit {
             descuento: 0,
             descuento_porcentaje: 0,
             sub_total: sub.toFixed(4),
-            total: sub.toFixed(4),
+            total: sub.toFixed(2),
             tipo_gravado: 'gravada',
             porcentaje_impuesto: iva,
             gravada: 0,
@@ -1323,8 +1323,8 @@ export class FacturacionComponent implements OnInit {
           costo: 0,
           descuento: descLine.toFixed(4),
           descuento_porcentaje: 0,
-          sub_total: sub.toFixed(4),
-          total: sub.toFixed(4),
+          sub_total: sub.toFixed(2),
+          total: sub.toFixed(2),
           tipo_gravado: 'gravada',
           porcentaje_impuesto: iva,
           gravada: 0,
