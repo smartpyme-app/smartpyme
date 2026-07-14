@@ -183,7 +183,20 @@ class MHNotaCredito extends Model
         $tributos = $this->buildTributosResumen();
         $subTotal = floatval(number_format($this->devolucion->sub_total, 2, '.', ''));
         $totalDescu = floatval(number_format($this->devolucion->descuento, 2, '.', ''));
-        $montoTotalOperacion = $this->montoTotalOperacionConTributos($subTotal, $tributos, $totalDescu);
+        $ivaPerci1 = floatval(number_format($this->devolucion->iva_percibido, 2, '.', ''));
+        $ivaRete1 = floatval(number_format($this->devolucion->iva_retenido, 2, '.', ''));
+        $reteRenta = floatval(number_format($this->devolucion->renta_retenida ?? 0, 2, '.', ''));
+        // NC no tiene totalPagar: MH valida montoTotalOperacion como el neto
+        // (equivalente al totalPagar del CCF: +ivaPerci1 -ivaRete1 -reteRenta).
+        $montoTotalOperacion = floatval(number_format(
+            $this->montoTotalOperacionConTributos($subTotal, $tributos, $totalDescu)
+                + $ivaPerci1
+                - $ivaRete1
+                - $reteRenta,
+            2,
+            '.',
+            ''
+        ));
 
         return 
             [
@@ -204,9 +217,9 @@ class MHNotaCredito extends Model
                   "totalDescu" => $totalDescu,
                   "tributos" => $tributos,
                   "subTotal" => $subTotal,
-                  "ivaPerci1" => floatval(number_format($this->devolucion->iva_percibido, 2, '.', '')),
-                  "ivaRete1" => floatval(number_format($this->devolucion->iva_retenido, 2, '.', '')),
-                  "reteRenta" => 0,
+                  "ivaPerci1" => $ivaPerci1,
+                  "ivaRete1" => $ivaRete1,
+                  "reteRenta" => $reteRenta,
                   "montoTotalOperacion" => $montoTotalOperacion,
                   "totalLetras" => $this->devolucion->total_en_letras,
                   // "totalIva" => floatval(number_format($this->devolucion->iva, 2, '.', '')),
