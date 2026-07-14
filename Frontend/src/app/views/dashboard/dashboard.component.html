@@ -18,30 +18,35 @@
             <app-resultados 
                 *ngSwitchCase="'Resultados'"
                 [datos]="datos"
+                [datosCompletos]="datosResultadosCompletos"
                 (filtrosCambiados)="onFiltrosResultadosCambiados($event)">
             </app-resultados>
 
             <app-ventas 
                 *ngSwitchCase="'Ventas'"
                 [datos]="datos"
+                [datosCompletos]="datosVentasCompletos"
                 (filtrosCambiados)="onFiltrosVentasCambiados($event)">
             </app-ventas>
 
             <app-gastos 
                 *ngSwitchCase="'Gastos'"
                 [datos]="datos"
+                [datosCompletos]="datosGastosCompletos"
                 (filtrosCambiados)="onFiltrosGastosCambiados($event)">
             </app-gastos>
 
             <app-control-cuentas 
                 *ngSwitchCase="'Control de cuentas'"
                 [datos]="datos"
+                [datosCompletos]="datosCuentasCompletos"
                 (filtrosCambiados)="onFiltrosControlCuentasCambiados($event)">
             </app-control-cuentas>
 
             <app-inventario 
                 *ngSwitchCase="'Inventario'"
                 [datos]="datos"
+                [datosCompletos]="datosInventarioCompletos"
                 (filtrosCambiados)="onFiltrosInventarioCambiados($event)">
             </app-inventario>
         </ng-container>

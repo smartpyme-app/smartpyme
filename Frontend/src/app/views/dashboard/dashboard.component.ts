@@ -33,6 +33,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   loading = false;
   datos: any = {};
+  datosResultadosCompletos = false;
+  datosVentasCompletos = false;
+  datosGastosCompletos = false;
+  datosCuentasCompletos = false;
+  datosInventarioCompletos = false;
   filtrosPorSeccion: { [seccion: string]: any } = {};
 
   // Finanzas: oculta hasta estar lista — añadir de nuevo `{ nombre: 'Finanzas', ... }` aquí y el *ngSwitchCase* en el HTML.
@@ -139,6 +144,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   onFiltrosResultadosCambiados(filtros: any): void {
     this.cancelarSuscripcionActiva();
+    this.datosResultadosCompletos = false;
     this.filtrosPorSeccion['Resultados'] = filtros;
     const filtrosCompletos = {
       seccion: 'Resultados',
@@ -155,6 +161,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
         error: (error) => {
           console.error('Error al cargar datos de resultados:', error);
           this.datos = {};
+          this.datosResultadosCompletos = true; // desbloquear aunque haya error
+          this.cdr.markForCheck();
+        },
+        complete: () => {
+          this.datosResultadosCompletos = true;
           this.cdr.markForCheck();
         },
       });
@@ -162,6 +173,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   onFiltrosGastosCambiados(filtros: any): void {
     this.cancelarSuscripcionActiva();
+    this.datosGastosCompletos = false;
     this.filtrosPorSeccion['Gastos'] = filtros;
     const filtrosCompletos = {
       seccion: 'Gastos',
@@ -178,13 +190,20 @@ export class DashboardComponent implements OnInit, OnDestroy {
         error: (error) => {
           console.error('Error al cargar datos de gastos:', error);
           this.datos = {};
+          this.datosGastosCompletos = true;
+          this.cdr.markForCheck();
+        },
+        complete: () => {
+          this.datosGastosCompletos = true;
           this.cdr.markForCheck();
         },
       });
   }
 
+
   onFiltrosVentasCambiados(filtros: FiltrosConsultaVentasDashboard): void {
     this.cancelarSuscripcionActiva();
+    this.datosVentasCompletos = false;
     this.filtrosPorSeccion['Ventas'] = filtros;
     const filtrosCompletos = {
       seccion: 'Ventas' as const,
@@ -201,6 +220,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
         error: (error) => {
           console.error('Error al cargar datos de ventas:', error);
           this.datos = {};
+          this.datosVentasCompletos = true;
+          this.cdr.markForCheck();
+        },
+        complete: () => {
+          this.datosVentasCompletos = true;
           this.cdr.markForCheck();
         },
       });
@@ -208,6 +232,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   onFiltrosControlCuentasCambiados(filtros: any): void {
     this.cancelarSuscripcionActiva();
+    this.datosCuentasCompletos = false;
     this.filtrosPorSeccion['Control de cuentas'] = filtros;
     const filtrosCompletos = {
       seccion: 'Control de cuentas',
@@ -224,13 +249,20 @@ export class DashboardComponent implements OnInit, OnDestroy {
         error: (error) => {
           console.error('Error al cargar datos de control de cuentas:', error);
           this.datos = {};
+          this.datosCuentasCompletos = true;
+          this.cdr.markForCheck();
+        },
+        complete: () => {
+          this.datosCuentasCompletos = true;
           this.cdr.markForCheck();
         },
       });
   }
 
+
   onFiltrosInventarioCambiados(filtros: any): void {
     this.cancelarSuscripcionActiva();
+    this.datosInventarioCompletos = false;
     this.filtrosPorSeccion['Inventario'] = filtros;
     const filtrosCompletos = {
       seccion: 'Inventario',
@@ -247,9 +279,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
         error: (error) => {
           console.error('Error al cargar datos de inventario:', error);
           this.datos = {};
+          this.datosInventarioCompletos = true;
+          this.cdr.markForCheck();
+        },
+        complete: () => {
+          this.datosInventarioCompletos = true;
           this.cdr.markForCheck();
         },
       });
   }
+
 }
 
