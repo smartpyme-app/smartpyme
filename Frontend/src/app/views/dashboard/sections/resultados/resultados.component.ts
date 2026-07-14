@@ -590,11 +590,9 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
     });
   }
 
-  /**
-   * Siempre inicia en "Todo el año" (null).
-   */
+  /** Inicia en el mes actual. */
   private aplicarDefectoMesFlujoEfectivo(): void {
-    this.mesFlujoEfectivo = null;
+    this.mesFlujoEfectivo = new Date().getMonth() + 1;
   }
 
   /** Último mes disponible en el desplegable según año (año actual → hasta hoy; otro año → 12). */

@@ -75,7 +75,7 @@ class DashController extends Controller
             $indicadores->total_ventas_canal = $indicadores->getVentasByCanal();
             $indicadores->total_ventas_forma_pago = $indicadores->getVentasByFormaPago();
 
-            $indicadores->total_cxc = $indicadores->getTotalVentasPendientes();
+            $indicadores->total_cxc = $indicadores->getCuentasPorCobrarNetas();
 
         // Transacciones
 
