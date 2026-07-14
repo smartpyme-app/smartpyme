@@ -391,12 +391,11 @@ class PlanillasController extends Controller
         }
     }
 
-    private function calcularISSSyAFP($salarioDevengado)
+    private function calcularISSSyAFP($salarioDevengado, $tipoPlanilla = 'mensual')
     {
-        // Método mantenido para compatibilidad, pero usando constantes actualizadas
-        $baseISSSEmpleado = min($salarioDevengado, 1000);
-        $isssEmpleado = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO;
-        $isssPatronal = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_PATRONO;
+        $isss = \App\Helpers\IsssHelper::calcularIsss($salarioDevengado, $tipoPlanilla);
+        $isssEmpleado = $isss['isss_empleado'];
+        $isssPatronal = $isss['isss_patronal'];
 
         $afpEmpleado = $salarioDevengado * PlanillaConstants::DESCUENTO_AFP_EMPLEADO;
         $afpPatronal = $salarioDevengado * PlanillaConstants::DESCUENTO_AFP_PATRONO;
@@ -1100,9 +1099,9 @@ class PlanillasController extends Controller
 
                 // EMPLEADOS ASALARIADOS: Con ISSS y AFP normales (base = base para retenciones)
                 if ($aplicarIsss) {
-                    $baseISSSEmpleado = min($baseParaRetenciones, 1000);
-                    $detalle->isss_empleado = round($baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO, 2);
-                    $detalle->isss_patronal = round($baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_PATRONO, 2);
+                    $isss = \App\Helpers\IsssHelper::calcularIsss($baseParaRetenciones, $planilla->tipo_planilla);
+                    $detalle->isss_empleado = $isss['isss_empleado'];
+                    $detalle->isss_patronal = $isss['isss_patronal'];
                 } else {
                     // No aplicar ISSS si está desactivado en la configuración
                     $detalle->isss_empleado = 0;
@@ -1818,10 +1817,9 @@ class PlanillasController extends Controller
         }
     }
 
-    private function calcularISSSEmpleado($salario)
+    private function calcularISSSEmpleado($salario, $tipoPlanilla = 'mensual')
     {
-        $baseISSSEmpleado = min($salario, 1000);
-        return round($baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO, 2);
+        return \App\Helpers\IsssHelper::calcularRetencionEmpleado($salario, $tipoPlanilla);
     }
 
     private function calcularAFPEmpleado($salario)
@@ -2293,9 +2291,9 @@ class PlanillasController extends Controller
                 $afpPatronal = 0;
             } else {
                 // EMPLEADOS ASALARIADOS: Con ISSS y AFP normales
-                $baseISSSEmpleado = min($salarioDevengado, 1000);
-                $isssEmpleado = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO;
-                $isssPatronal = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_PATRONO;
+                $isss = \App\Helpers\IsssHelper::calcularIsss($salarioDevengado, $planilla->tipo_planilla);
+                $isssEmpleado = $isss['isss_empleado'];
+                $isssPatronal = $isss['isss_patronal'];
                 $afpEmpleado = $salarioDevengado * PlanillaConstants::DESCUENTO_AFP_EMPLEADO;
                 $afpPatronal = $salarioDevengado * PlanillaConstants::DESCUENTO_AFP_PATRONO;
             }
@@ -2687,10 +2685,10 @@ class PlanillasController extends Controller
         $salarioDevengado = $datosEmpleado['salario_devengado'];
         $tipoContrato = $datosEmpleado['tipo_contrato'];
 
-        // Usar tu lógica actual
-        $baseISSSEmpleado = min($salarioDevengado, 1000);
-        $isssEmpleado = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO;
-        $isssPatronal = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_PATRONO;
+        // Usar el RentaHelper existente
+        $isss = \App\Helpers\IsssHelper::calcularIsss($salarioDevengado, $tipoPlanilla);
+        $isssEmpleado = $isss['isss_empleado'];
+        $isssPatronal = $isss['isss_patronal'];
 
         $afpEmpleado = $salarioDevengado * PlanillaConstants::DESCUENTO_AFP_EMPLEADO;
         $afpPatronal = $salarioDevengado * PlanillaConstants::DESCUENTO_AFP_PATRONO;
@@ -2763,9 +2761,9 @@ class PlanillasController extends Controller
             $afpPatronal = 0;
         } else {
             // EMPLEADOS ASALARIADOS: Con ISSS y AFP normales
-            $baseISSSEmpleado = min($salarioDevengado, 1000);
-            $isssEmpleado = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO;
-            $isssPatronal = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_PATRONO;
+            $isss = \App\Helpers\IsssHelper::calcularIsss($salarioDevengado, $tipoPlanilla);
+            $isssEmpleado = $isss['isss_empleado'];
+            $isssPatronal = $isss['isss_patronal'];
             $afpEmpleado = $salarioDevengado * PlanillaConstants::DESCUENTO_AFP_EMPLEADO;
             $afpPatronal = $salarioDevengado * PlanillaConstants::DESCUENTO_AFP_PATRONO;
         }
