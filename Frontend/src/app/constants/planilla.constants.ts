@@ -274,10 +274,12 @@ export class PlanillaConstants {
         // Calcular total de ingresos
         const totalIngresos = salarioDevengado + montoHorasExtra + comisiones + bonificaciones + otrosIngresos;
     
-        // Calcular ISSS con tope de $1000
+        // Calcular ISSS con tope de $1000 (3% proporcional al ingreso del período)
+        const descuentoIsss = constants.DESCUENTO_ISSS_EMPLEADO ?? constants.DESCUENTOS?.ISSS_EMPLEADO ?? 0.03;
+        const descuentoIsssPatronal = constants.DESCUENTO_ISSS_PATRONO ?? constants.DESCUENTOS?.ISSS_PATRONO ?? 0.075;
         const baseISSSEmpleado = Math.min(totalIngresos, 1000);
-        const isssEmpleado = Math.round(baseISSSEmpleado * constants.DESCUENTO_ISSS_EMPLEADO * 100) / 100;
-        const isssPatronal = Math.round(baseISSSEmpleado * constants.DESCUENTO_ISSS_PATRONO * 100) / 100;
+        const isssEmpleado = Math.round(baseISSSEmpleado * descuentoIsss * 100) / 100;
+        const isssPatronal = Math.round(baseISSSEmpleado * descuentoIsssPatronal * 100) / 100;
     
         // Calcular AFP sin tope
         const afpEmpleado = Math.round(totalIngresos * constants.DESCUENTO_AFP_EMPLEADO * 100) / 100;
