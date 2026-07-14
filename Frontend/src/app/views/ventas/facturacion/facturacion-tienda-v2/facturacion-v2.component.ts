@@ -630,12 +630,15 @@ export class FacturacionV2Component implements OnInit {
 
           // En v2, lista sin IVA (como configuración del producto); columna Precio muestra ese valor cuando hay lista
           const ivaEmpresa = this.apiService.auth_user()?.empresa?.iva ?? 0;
-          const pctImpuesto = resolverPorcentajeImpuestoVenta(producto.porcentaje_impuesto, ivaEmpresa);
           detalle.porcentaje_impuesto = normalizarPorcentajeImpuestoDetalle(
             producto.porcentaje_impuesto,
             ivaEmpresa
           );
           copiarImpuestosProductoAlDetalle(detalle, producto, ivaEmpresa);
+          const pctImpuesto = resolverPorcentajeImpuestoVenta(
+            detalle.porcentaje_impuesto,
+            ivaEmpresa
+          );
 
           const precioSinIva = parseFloat(producto.precio);
           const precioConIva = precioSinIva * (1 + pctImpuesto / 100);
