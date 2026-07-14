@@ -1205,6 +1205,12 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
 
     /** Activa o desactiva la retención según subtotal y tipo de contribuyente del cliente (si el usuario no la ajustó a mano). */
     private sincronizarRetencionGranContribuyente(): void {
+        // ponytail: CR no usa retención IVA/renta SV; UI ocultos
+        if (this.esFeCostaRicaFacturacion()) {
+            this.venta.retencion = false;
+            this.venta.renta = false;
+            return;
+        }
         const c = this.venta?.cliente;
         if (!c || c.tipo_contribuyente !== 'Grande') {
             return;

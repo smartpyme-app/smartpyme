@@ -1458,6 +1458,10 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
   }
 
   anularDTE(venta: any) {
+    // ponytail: en CR no hay invalidación MH; anulación de venta no aplica en UI
+    if (this.esFeCostaRica()) {
+      return;
+    }
     this.venta = venta;
     if (venta.sello_mh && !(venta.dte_invalidacion || venta.dte_invalidacion_en_s3)) {
       // Abrir modal para ingresar fecha y motivo

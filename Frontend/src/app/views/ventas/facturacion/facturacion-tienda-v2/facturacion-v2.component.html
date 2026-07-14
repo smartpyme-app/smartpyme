@@ -341,6 +341,7 @@
               <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="venta.recurrente" name="venta.recurrente">
             </div>
         </div>
+        @if (!esFeCostaRicaFacturacion()) {
         <div class="form-group col-md-6 col-lg-3 without-label">
             <div class="form-switch bg-light-info rounded">
               <label for="cobrar_impuestos">{{ 'country.tax.taxWithRate' | translate:{ rate: (apiService.auth_user().empresa.iva | number:'1.0') } }}</label>
@@ -359,6 +360,7 @@
               <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="venta.renta" name="renta">
             </div>
         </div>
+        }
         <div class="form-group col-md-4 col-lg-3 without-label" *ngIf="venta.cotizacion != 1 && apiService.auth_user().tipo != 'Ventas Limitado'">
             <div class="form-switch bg-light-info rounded">
                 <label for="habilitar_cuenta_terceros">Cuenta a terceros</label>
@@ -456,7 +458,7 @@
             <textarea class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.descripcion_impresion" name="descripcion_impresion" rows="2"></textarea>
         </div>
     </div>
-    <div class="row" *ngIf="(apiService.auth_user()?.empresa?.custom_empresa?.configuraciones?.mostrar_campos_contables ?? true)">
+    <div class="row" *ngIf="!esFeCostaRicaFacturacion() && (apiService.auth_user()?.empresa?.custom_empresa?.configuraciones?.mostrar_campos_contables ?? true)">
         <div class="form-group col-6 col-lg-4">
             <label for="tipo_operacion">Tipo de operación:</label>
             <select name="tipo_operacion" class="form-select" [(ngModel)]="venta.tipo_operacion">

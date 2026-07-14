@@ -1228,6 +1228,12 @@ export class FacturacionV2Component implements OnInit {
     }
 
     private sincronizarRetencionGranContribuyente(): void {
+        // ponytail: CR no usa retención IVA/renta SV; UI ocultos
+        if (this.esFeCostaRicaFacturacion()) {
+            this.venta.retencion = false;
+            this.venta.renta = false;
+            return;
+        }
         const c = this.venta?.cliente;
         if (!c || c.tipo_contribuyente !== 'Grande') {
             return;

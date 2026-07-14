@@ -26,8 +26,8 @@
           @if (cliente.dui || cliente.nit || cliente.telefono || cliente.nrc) {
             <small class="text-muted d-block">
               @if (cliente.dui) { <span>{{ 'country.identity.displayPrefix' | translate }} {{ cliente.dui }}</span> }
-              @if (cliente.nit) { <span> · NIT: {{ cliente.nit }}</span> }
-              @if (cliente.nrc && !cliente.nit) { <span> · NRC: {{ cliente.nrc }}</span> }
+              @if (cliente.nit) { <span> · {{ 'country.tax.nitColon' | translate }} {{ cliente.nit }}</span> }
+              @if (cliente.nrc && !cliente.nit) { <span> · {{ 'country.tax.ncrColon' | translate }} {{ cliente.nrc }}</span> }
               @if (cliente.telefono) { <span> · Tel: {{ cliente.telefono }}</span> }
             </small>
           }
