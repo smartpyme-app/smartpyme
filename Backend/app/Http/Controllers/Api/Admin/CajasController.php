@@ -10,6 +10,7 @@ use JWTAuth;
 use App\Models\Admin\Empresa;
 use App\Models\Admin\Caja;
 use App\Models\Admin\Corte;
+use App\Services\Admin\CajaUsuarioResolver;
 
 use App\Models\Ventas\Venta;
 use App\Models\Ventas\DevolucionVenta;
@@ -18,6 +19,9 @@ use App\Http\Requests\Admin\Cajas\StoreCajaRequest;
 
 class CajasController extends Controller
 {
+    public function __construct(
+        private CajaUsuarioResolver $cajaUsuarioResolver
+    ) {}
     
 
     public function index() {
@@ -65,7 +69,21 @@ class CajasController extends Controller
 
     public function caja(){
         $usuario = JWTAuth::parseToken()->authenticate();
-        $caja     = Caja::where('id', $usuario->caja_id)->with('corte')->firstOrFail();
+
+        if (! \Illuminate\Support\Facades\Schema::hasTable('cajas')) {
+            return response()->json([
+                'message' => 'El módulo de caja no está disponible: faltan tablas en la base de datos. Ejecute las migraciones pendientes.',
+            ], 503);
+        }
+
+        $caja = $this->cajaUsuarioResolver->resolverParaUsuario($usuario);
+        if (! $caja) {
+            return response()->json([
+                'message' => 'El usuario no tiene caja ni sucursal asignada. Configure el usuario en Administración → Usuarios.',
+            ], 422);
+        }
+
+        $caja->load('corte');
 
         return Response()->json($caja, 200);
     }

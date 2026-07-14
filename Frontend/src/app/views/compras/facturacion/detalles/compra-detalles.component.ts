@@ -100,6 +100,11 @@ export class CompraDetallesComponent extends BaseModalComponent implements OnIni
         productoSelect(producto:any):void{
             this.detalle = Object.assign({}, producto);
             this.detalle.id = null;
+            this.detalle.inventario_por_lotes = !!producto.inventario_por_lotes;
+            if (!this.detalle.lote_id) {
+              this.detalle.lote_id = null;
+              this.detalle.lote = null;
+            }
 
             // Verifica si el producto ya fue ingresado
             let detalleExistente = this.compra.detalles.find((x:any) => x.id_producto == this.detalle.id_producto);
@@ -108,7 +113,6 @@ export class CompraDetallesComponent extends BaseModalComponent implements OnIni
                 this.detalle = detalleExistente;
                 this.detalle.cantidad += producto.cantidad;
             }
-
             // Agregar el producto directamente, el modal se abrirá cuando el usuario haga clic en el botón
             this.agregarDetalleFinal();
         }
@@ -124,7 +128,21 @@ export class CompraDetallesComponent extends BaseModalComponent implements OnIni
             this.compra.detalles.push(this.detalle);
         }
 
+        const detalleAgregado = detalleExistente || this.detalle;
+        const requiereLote = !!detalleAgregado.inventario_por_lotes
+            && this.isLotesActivo()
+            && !detalleAgregado.lote_id;
+
         this.update.emit(this.compra);
+
+        if (requiereLote && this.mloteTemplate) {
+            // Mantener referencia al detalle de la línea para el modal de lote
+            setTimeout(() => {
+                this.abrirModalLote(this.mloteTemplate, detalleAgregado);
+            }, 100);
+            return;
+        }
+
         this.detalle = {};
         if (this.modalRef) {
             this.modalRef.hide();

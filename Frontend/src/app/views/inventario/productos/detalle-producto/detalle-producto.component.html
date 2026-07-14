@@ -31,6 +31,15 @@
             <span *ngIf="producto.tipo != 'Servicio' && producto.medida"><strong class="text-body">Medida:</strong> {{ producto.medida }}</span>
             <span><strong class="text-body">Categoría:</strong> {{ producto.nombre_categoria || producto.categoria?.nombre || '—' }}</span>
             <span *ngIf="producto.marca"><strong class="text-body">Marca:</strong> {{ producto.marca }}</span>
+            <span *ngIf="producto.tipo != 'Materia prima'">
+                <strong class="text-body">Impuestos:</strong>
+                <ng-container *ngIf="producto.impuestos?.length; else impuestoLegacy">
+                    <span *ngFor="let imp of producto.impuestos; let last = last">
+                        {{ imp.nombre }} ({{ imp.porcentaje }}%)<span *ngIf="!last">, </span>
+                    </span>
+                </ng-container>
+                <ng-template #impuestoLegacy>{{ producto.porcentaje_impuesto ?? apiService.auth_user()?.empresa?.iva ?? 0 }}%</ng-template>
+            </span>
             <span *ngIf="producto.descripcion" class="w-100"><strong class="text-body">Descripción:</strong> {{ producto.descripcion }}</span>
         </div>
     </div>

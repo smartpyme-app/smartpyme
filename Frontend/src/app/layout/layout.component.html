@@ -28,6 +28,12 @@
     (usuario.tipo == 'Ventas' || usuario.tipo == 'Ventas Limitado')
   ) {
     <app-sidebar-ventas></app-sidebar-ventas>
+  } @else if (
+    apiService.isNotSuperAdmin() &&
+    !usuario.empresa.licencia &&
+    usuario.tipo == 'Cajero'
+  ) {
+    <app-sidebar-cajero></app-sidebar-cajero>
   } @else if (apiService.isNotSuperAdmin() && !usuario.empresa.licencia && usuario.tipo == 'Citas') {
     <app-sidebar-servicios></app-sidebar-servicios>
   } @else if (
@@ -37,6 +43,13 @@
     usuario.empresa.es_empresa_padre
   ) {
     <app-sidebar-ventas></app-sidebar-ventas>
+  } @else if (
+    apiService.isNotSuperAdmin() &&
+    usuario.empresa.licencia &&
+    usuario.tipo == 'Cajero' &&
+    usuario.empresa.es_empresa_padre
+  ) {
+    <app-sidebar-cajero></app-sidebar-cajero>
   } @else if (
     apiService.isNotSuperAdmin() &&
     usuario.empresa.licencia &&

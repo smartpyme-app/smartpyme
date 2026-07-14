@@ -9,7 +9,6 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithCustomCsvSettings;
 use Illuminate\Http\Request;
 use App\Models\Admin\Empresa;
-use App\Services\Contabilidad\LibroIvaMontosHelper;
 
 class AnexoConsumidoresExport implements FromCollection, WithMapping, WithCustomCsvSettings
 {
@@ -44,8 +43,8 @@ class AnexoConsumidoresExport implements FromCollection, WithMapping, WithCustom
     public function collection()
     {
         $request = $this->request;//where('id_empresa', Auth::user()->id_empresa)
-
-        $ventas = Venta::with(['cliente', 'documento'])
+        
+        $ventas = Venta::with(['cliente', 'documento', 'empresa', 'detalles.producto'])
                         ->where('estado', '!=', 'Anulada')
                         ->whereHas('documento', function($q) {
                             $q->where('nombre', 'Factura')->orWhere('nombre', 'Factura de exportación');
@@ -58,7 +57,7 @@ class AnexoConsumidoresExport implements FromCollection, WithMapping, WithCustom
                         ->orderByDesc('fecha')
                         ->get();
         return $ventas;
-
+        
     }
 
     public function map($venta): array{
@@ -79,11 +78,14 @@ class AnexoConsumidoresExport implements FromCollection, WithMapping, WithCustom
             $totalPropio = max(0, (float) $venta->total - $cuentaTerceros);
 
             if ($esFacturaExportacion) {
-                $ventaExenta = 0;
-                $ventaGravada = 0;
+                $venta->exenta = 0;
+                $venta->gravada = 0;
+            } elseif ($venta->iva > 0) {
+                $venta->exenta = 0;
+                $venta->gravada = $totalPropio;
             } else {
-                $ventaExenta = LibroIvaMontosHelper::ventasExentas($venta);
-                $ventaGravada = LibroIvaMontosHelper::ventasGravadas($venta);
+                $venta->gravada = 0;
+                $venta->exenta = $totalPropio;
             }
 
            // Según guía de Hacienda:
@@ -106,10 +108,10 @@ class AnexoConsumidoresExport implements FromCollection, WithMapping, WithCustom
                 $tieneFE ? '' : $correlativo, //H Numero Control (vacío si DTE, correlativo si impreso)
                 $tieneFE ? '' : $correlativo, //I Numero Control (vacío si DTE, correlativo si impreso)
                 NULL, //J Caja registradora
-                $ventaExenta ? number_format($ventaExenta, 2, '.', '') : '0.00', //K Exentas
+                $venta->exenta ? number_format($venta->exenta, 2, '.', '') : '0.00', //K Exentas
                 '0.00', //L No Exentas no sujetas a proporcionalidad
                 $venta->no_sujeta ? number_format($venta->no_sujeta, 2, '.', '') : '0.00', //M No Sujetas
-                $esFacturaExportacion ? '0.00' : number_format($ventaGravada, 2, '.', ''), //N Gravadas'
+                $esFacturaExportacion ? '0.00' : number_format($venta->gravada, 2, '.', ''), //N Gravadas'
                 $esFacturaExportacion ? number_format(max(0, (float) $venta->total - $cuentaTerceros), 2, '.', ''): '0.00', //O Exportacion internas (propio, sin terceros)'
                 '0.00', //P Exportacion externas'
                 '0.00', //Q Exportacion servicios'
@@ -117,7 +119,7 @@ class AnexoConsumidoresExport implements FromCollection, WithMapping, WithCustom
                 number_format($cuentaTerceros, 2, '.', ''), //S Ventas a terceros
                 $venta->total ? number_format($venta->total, 2, '.', '') : '0.00', //T Total
                 $this->tipoOperacion($venta->tipo_operacion), //U Tipo operacion renta 1 Gravada 2 Exenta
-                $this->tipoRenta($venta->tipo_renta), //V Tipo ingreso renta
+                $this->tipoRentaVenta($venta), //V Tipo ingreso renta
                 2, //W num de Anexo
 
          ];
@@ -141,6 +143,33 @@ class AnexoConsumidoresExport implements FromCollection, WithMapping, WithCustom
             case 'Mixta': return 4;
             default: return '0';
         }
+    }
+
+    private function tipoRentaVenta($venta)
+    {
+        $codigo = $this->tipoRenta($venta->tipo_renta);
+        if ($codigo !== null) {
+            return $codigo;
+        }
+
+        return $this->tipoRenta($this->tipoRentaEmpresaFallback($venta));
+    }
+
+    private function tipoRentaEmpresaFallback($venta): ?string
+    {
+        $empresa = $venta->empresa ?? Auth::user()->empresa()->first();
+        if (!$empresa) {
+            return null;
+        }
+
+        $detalles = $venta->detalles;
+        $detalle = $detalles ? $detalles->sortBy('id')->first() : null;
+        $producto = $detalle ? $detalle->producto : null;
+        if ($producto && $producto->tipo === 'Servicio') {
+            return $empresa->tipo_renta_servicios;
+        }
+
+        return $empresa->tipo_renta_productos;
     }
 
     function tipoRenta($tipo) {

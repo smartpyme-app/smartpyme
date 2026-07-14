@@ -47,7 +47,7 @@ class Sucursal extends AuditableModel {
     }
 
     public function cajas(){
-        return $this->hasMany('App\Models\Admin\Caja', 'id_sucursal');
+        return $this->hasMany('App\Models\Admin\Caja', 'sucursal_id');
     }
 
     public function usuarios(){

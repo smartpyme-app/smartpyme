@@ -1059,8 +1059,25 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
         } else {
             this.sumTotal();
             this.sincronizarTotalDocumentoImportado(data);
+            this.avisarLotesPendientesTrasImportacion();
+            this.notificarDetallesActualizados();
         }
-        this.notificarDetallesActualizados();
+    }
+
+    /** Tras importar DTE JSON: avisa líneas con lotes sin asignar (el modal se abre desde el detalle). */
+    private avisarLotesPendientesTrasImportacion(): void {
+        if (!this.apiService.isLotesActivo() || !this.compra?.detalles?.length) {
+            return;
+        }
+        const sinLote = this.compra.detalles.filter(
+            (d: any) => d.inventario_por_lotes && !d.lote_id
+        );
+        if (sinLote.length) {
+            this.alertService.info(
+                'Lotes / partidas',
+                `Hay ${sinLote.length} línea(s) con control por lotes. Use el botón de lote en cada línea para seleccionar o crear un lote (no se lee del JSON/XML).`
+            );
+        }
     }
 
     /**
@@ -1530,7 +1547,11 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
       tipo: producto.tipo,
       img: producto.img || 'default-product.png', // Imagen por defecto
       // Para servicios, no aplicamos stock
-      stock: producto.tipo === 'Servicio' ? null : (producto.stock || 0)
+      stock: producto.tipo === 'Servicio' ? null : (producto.stock || 0),
+      inventario_por_lotes: !!producto.inventario_por_lotes,
+      lote_id: null,
+      lote: null,
+      porcentaje_impuesto: producto.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva ?? null,
     };
   }
 
@@ -1567,6 +1588,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
         this.ajusteTabActivo = 0;
         this.sumTotal();
         this.sincronizarTotalDocumentoImportado(this.dteImportadoActivo);
+        this.avisarLotesPendientesTrasImportacion();
         this.notificarDetallesActualizados();
 
         this.alertService.success('Productos asignados', 'Los productos han sido asignados correctamente.');

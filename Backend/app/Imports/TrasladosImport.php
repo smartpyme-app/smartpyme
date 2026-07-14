@@ -6,6 +6,8 @@ use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Traslado;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Bodega;
+use App\Models\Admin\Empresa;
+use App\Services\Inventario\LoteAsignacionService;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithStartRow;
@@ -201,6 +203,7 @@ class TrasladosImport implements ToModel, WithHeadingRow, WithStartRow
 
         $out['id_producto'] = $idProducto;
         $out['nombre_producto'] = $producto->nombre;
+        $out['inventario_por_lotes'] = (bool) $producto->inventario_por_lotes;
         // Datos de UI para vista previa aunque falle stock u otra validación posterior
         $out['img'] = $producto->img;
         $nombreCatDb = $producto->nombre_categoria;
@@ -332,6 +335,7 @@ class TrasladosImport implements ToModel, WithHeadingRow, WithStartRow
                     'id_inventario_destino' => $v['id_inventario_destino'] ?? null,
                     'img' => $v['img'] ?? null,
                     'nombre_categoria' => $v['nombre_categoria'] ?? null,
+                    'inventario_por_lotes' => (bool) ($v['inventario_por_lotes'] ?? false),
                     'ok' => $v['error'] === null,
                     'error' => $v['error'],
                 ];
@@ -353,6 +357,16 @@ class TrasladosImport implements ToModel, WithHeadingRow, WithStartRow
             DB::beginTransaction();
 
             try {
+                $empresa = Empresa::find(Auth::user()->id_empresa);
+                $lotesActivo = $empresa ? $empresa->isLotesActivo() : false;
+                $metodologia = $empresa ? $empresa->getLotesMetodologia() : 'FIFO';
+
+                if ($producto->inventario_por_lotes && $lotesActivo && $metodologia === 'Manual') {
+                    throw new \Exception(
+                        "El producto \"{$producto->nombre}\" requiere distribución manual de lotes. Use \"Cargar en listado\" y distribuya los lotes antes de trasladar."
+                    );
+                }
+
                 $traslado = new Traslado();
                 $traslado->id_producto = $idProducto;
                 $traslado->id_bodega_de = $idBodegaOrigen;
@@ -364,10 +378,6 @@ class TrasladosImport implements ToModel, WithHeadingRow, WithStartRow
                 $traslado->estado = 'Confirmado';
                 $traslado->save();
 
-                $inventarioOrigen->stock -= $cantidadTraslado;
-                $inventarioOrigen->save();
-                $inventarioOrigen->kardex($traslado, $cantidadTraslado * -1);
-
                 $inventarioDestino = Inventario::firstOrCreate(
                     [
                         'id_producto' => $idProducto,
@@ -375,9 +385,45 @@ class TrasladosImport implements ToModel, WithHeadingRow, WithStartRow
                     ],
                     ['stock' => 0, 'stock_minimo' => 0, 'stock_maximo' => 0]
                 );
-                $inventarioDestino->stock += $cantidadTraslado;
-                $inventarioDestino->save();
-                $inventarioDestino->kardex($traslado, $cantidadTraslado);
+
+                if ($producto->inventario_por_lotes && $lotesActivo) {
+                    $asignaciones = LoteAsignacionService::resolverAsignacionesSalida(
+                        $producto,
+                        (int) $idBodegaOrigen,
+                        (float) $cantidadTraslado,
+                        $metodologia,
+                        $lotesActivo,
+                        null,
+                        null
+                    );
+
+                    if (empty($asignaciones)) {
+                        throw new \Exception("No hay lotes con stock suficiente para el producto \"{$producto->nombre}\".");
+                    }
+
+                    $pivotRows = LoteAsignacionService::aplicarTrasladoLotes(
+                        $asignaciones,
+                        $producto,
+                        (int) $idBodegaOrigen,
+                        (int) $idBodegaDestino,
+                        $traslado,
+                        $inventarioOrigen,
+                        $inventarioDestino,
+                        null
+                    );
+                    LoteAsignacionService::sincronizarTrasladoLotes($traslado->id, $pivotRows);
+                    $traslado->lote_id = count($pivotRows) === 1 ? $pivotRows[0]['lote_id'] : null;
+                    $traslado->lote_id_destino = count($pivotRows) === 1 ? ($pivotRows[0]['lote_id_destino'] ?? null) : null;
+                    $traslado->save();
+                } else {
+                    $inventarioOrigen->stock -= $cantidadTraslado;
+                    $inventarioOrigen->save();
+                    $inventarioOrigen->kardex($traslado, $cantidadTraslado * -1);
+
+                    $inventarioDestino->stock += $cantidadTraslado;
+                    $inventarioDestino->save();
+                    $inventarioDestino->kardex($traslado, $cantidadTraslado);
+                }
 
                 foreach ($producto->composiciones as $composicion) {
                     $productoCompuesto = Producto::where('id', $composicion->id_compuesto)->first();
@@ -390,10 +436,6 @@ class TrasladosImport implements ToModel, WithHeadingRow, WithStartRow
 
                     $inventarioCompuestoOrigen = Inventario::where('id_producto', $composicion->id_compuesto)
                         ->where('id_bodega', $idBodegaOrigen)
-                        ->first();
-
-                    $inventarioCompuestoDestino = Inventario::where('id_producto', $composicion->id_compuesto)
-                        ->where('id_bodega', $idBodegaDestino)
                         ->first();
 
                     if (!$inventarioCompuestoOrigen) {

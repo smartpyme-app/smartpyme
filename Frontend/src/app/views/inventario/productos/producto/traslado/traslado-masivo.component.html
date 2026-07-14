@@ -163,6 +163,15 @@
                                 step="1"
                                 [disabled]="!puedeEditarCantidadTraslado(producto)"
                                 [title]="!puedeEditarCantidadTraslado(producto) ? (producto.importacion_preview_ok === false ? 'Fila con error de importación' : 'Sin stock en bodega origen') : 'Entero entre 1 y ' + (producto.stock_origen || 0)">
+                            <small class="d-block mt-1" *ngIf="requiereDistribucionLotes(producto)">
+                                <button type="button" class="btn btn-sm"
+                                    [ngClass]="tieneLotesAsignados(producto) ? 'btn-outline-success' : 'btn-outline-warning'"
+                                    (click)="abrirDistribucionLotes(producto)">
+                                    <i class="fa fa-boxes"></i>
+                                    <span *ngIf="tieneLotesAsignados(producto)">{{ textoLotesDetalle(producto) }}</span>
+                                    <span *ngIf="!tieneLotesAsignados(producto)">Distribuir lotes</span>
+                                </button>
+                            </small>
                         </td>
                         <td class="text-center" *ngIf="listadoTieneFilasDeImportacion()">
                             <span *ngIf="producto.importacion_preview_ok === false" class="badge bg-danger">Error</span>
@@ -186,7 +195,7 @@
     <div class="row mt-3">
         <div class="col-md-12 text-end">
             <button type="submit" (click)="openModalConfirmar(mConfirmar)"
-                    [disabled]="saving || !conceptoTrasladoValido() || hayFilasConErrorImportacion() || hayFilasConCantidadOStockInvalidosParaTraslado() || productosParaTraslado.length === 0"
+                    [disabled]="saving || !conceptoTrasladoValido() || hayFilasConErrorImportacion() || hayFilasConCantidadOStockInvalidosParaTraslado() || hayFilasSinLotesRequeridos() || productosParaTraslado.length === 0"
                     class="btn btn-primary">
                 @if (!saving) {
                 <span>
@@ -308,3 +317,6 @@
         </button>
     </div>
 </ng-template>
+
+<app-distribucion-lotes-modal #lotesModal etiquetaCantidad="Total a trasladar"
+    (confirmado)="onLotesDetalleConfirmados($event)"></app-distribucion-lotes-modal>

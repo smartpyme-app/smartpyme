@@ -14,6 +14,7 @@ import { SidebarComponent } from './sidebar/sidebar.component';
 import { SidebarAdminComponent } from './sidebar/sidebar-admin/sidebar-admin.component';
 import { SidebarOrganizacionesComponent } from './sidebar/sidebar-organizaciones/sidebar-organizaciones.component';
 import { SidebarVentasComponent } from './sidebar/sidebar-ventas/sidebar-ventas.component';
+import { SidebarCajeroComponent } from './sidebar/sidebar-cajero/sidebar-cajero.component';
 import { SidebarServiciosComponent } from './sidebar/sidebar-servicios/sidebar-servicios.component';
 import { LayoutComponent } from './layout.component';
 import { SpeedDialComponent } from '../shared/speed-dial/speed-dial.component';
@@ -41,6 +42,7 @@ import { PerfilComponent } from './header/perfil/perfil.component';
     SidebarAdminComponent,
     SidebarOrganizacionesComponent,
     SidebarVentasComponent,
+    SidebarCajeroComponent,
     SidebarServiciosComponent,
     PerfilComponent,
     ThemeComponent,
@@ -58,6 +60,7 @@ import { PerfilComponent } from './header/perfil/perfil.component';
     SidebarAdminComponent,
     SidebarOrganizacionesComponent,
     SidebarVentasComponent,
+    SidebarCajeroComponent,
     SidebarServiciosComponent,
     LayoutComponent,
     PerfilComponent,

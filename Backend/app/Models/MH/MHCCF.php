@@ -309,7 +309,6 @@ class MHCCF extends Model
             $tributos = null;
             $this->aplicarClasificacionFiscalDetalle($detalle, $tributos);
 
-
             // Producto no Gravado
                if ($detalle->cuenta_a_terceros > 0) {
                    $precioUni = round(floatval($detalle->precio), 4);
@@ -355,7 +354,7 @@ class MHCCF extends Model
                        // "ivaItem" => floatval($detalle->iva)
                    ]);
                }else{
-                   $precioUni = round(floatval($detalle->precio), 4);
+                   $precioUni = round(floatval($detalle->precio), 6);
                    $cantidad = round(floatval($detalle->cantidad), 2);
                    $montoDescu = round(floatval($detalle->descuento), 2);
                    $ventaItem = round($precioUni * $cantidad - $montoDescu, 2);
@@ -409,7 +408,7 @@ class MHCCF extends Model
         }
 
         if (floatval($detalle->gravada ?? 0) > 0 && $this->venta->iva > 0) {
-            $tributos = ['20'];
+            $tributos = $this->buildTributosLineaCodes($detalle);
         } else {
             $tributos = null;
         }

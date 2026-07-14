@@ -58,7 +58,7 @@ class MHDTEController extends Controller
     public function generarDTENotaCredito(GenerarDTENotaCreditoRequest $request)
     {
         $devolucion = DevolucionVenta::where('id', $request->id)
-            ->with('detalles.producto.impuestos', 'impuestos.impuesto', 'cliente', 'empresa', 'venta')
+            ->with('detalles.producto.impuestos', 'impuestos.impuesto', 'cliente', 'empresa', 'venta.impuestos.impuesto')
             ->firstOrFail();
 
         if (!$devolucion->venta) {
