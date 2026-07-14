@@ -15,6 +15,7 @@ use App\Services\WooCommerceApiClient;
 use Illuminate\Http\Request;
 use App\Services\WooCommerceTransformer;
 use App\Services\WooCommerceInboundProductService;
+use App\Services\WooCommerceOrderExtrasService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -24,10 +25,14 @@ use App\Services\FidelizacionCliente\ConsumoPuntosService;
 class WooCommerceController extends Controller
 {
     protected $transformer;
+    protected $orderExtrasService;
 
-    public function __construct(WooCommerceTransformer $transformer)
-    {
+    public function __construct(
+        WooCommerceTransformer $transformer,
+        WooCommerceOrderExtrasService $orderExtrasService
+    ) {
         $this->transformer = $transformer;
+        $this->orderExtrasService = $orderExtrasService;
     }
 
     public function procesarVenta($tokenEmpresa, Request $request)
@@ -169,6 +174,31 @@ class WooCommerceController extends Controller
                 // );
             }
 
+            $shippingLines = $request->shipping_lines ?? $request->input('shipping_lines', []);
+            if (!empty($shippingLines)) {
+                $this->orderExtrasService->procesarEnvios(
+                    $shippingLines,
+                    $venta->id,
+                    $usuario->id_empresa,
+                    $usuario->id,
+                    $usuario->id_sucursal
+                );
+            }
+
+            $feeLines = $request->fee_lines ?? $request->input('fee_lines', []);
+            if (!empty($feeLines)) {
+                $this->orderExtrasService->procesarRecargos(
+                    $feeLines,
+                    $venta->id,
+                    $usuario->id_empresa,
+                    $usuario->id,
+                    $usuario->id_sucursal
+                );
+            }
+
+            $venta->load('detalles');
+            $this->recalcularTotalesVenta($venta);
+
             $documento = Documento::findOrfail($venta->id_documento);
             $documento->increment('correlativo');
 
@@ -248,6 +278,32 @@ class WooCommerceController extends Controller
         return response()->json([
             'status' => 'success',
             'mensaje' => 'Exportación de productos iniciada. Este proceso puede tomar varios minutos.'
+        ]);
+    }
+
+    private function recalcularTotalesVenta(Venta $venta): void
+    {
+        $subtotal = 0;
+        $iva = 0;
+        $gravada = 0;
+        $exenta = 0;
+
+        foreach ($venta->detalles as $detalle) {
+            $subtotal += round($detalle->cantidad * $detalle->precio, 2);
+            $iva += round($detalle->iva, 2);
+            $gravada += round($detalle->gravada, 2);
+            $exenta += round($detalle->exenta ?? 0, 2);
+        }
+
+        $total = round($gravada + $iva + $exenta, 2);
+
+        $venta->update([
+            'sub_total' => round($subtotal, 2),
+            'iva' => round($iva, 2),
+            'gravada' => round($gravada, 2),
+            'exenta' => round($exenta, 2),
+            'total' => $total,
+            'monto_pago' => $total,
         ]);
     }
 

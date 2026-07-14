@@ -30,9 +30,10 @@ class ProductoObserver
     {
         // No sincronizar si el producto está deshabilitado
         if (!$producto->enable) {
-            // Log::info("Producto deshabilitado, no se sincronizará", [
-            //     'producto_id' => $producto->id
-            // ]);
+            return;
+        }
+
+        if (!$producto->wasChanged(['precio', 'precio_sin_iva', 'precio_con_iva', 'costo', 'costo_promedio', 'nombre', 'descripcion', 'codigo'])) {
             return;
         }
 
@@ -57,7 +58,8 @@ class ProductoObserver
         try {
             $this->stockService->actualizarStockEnWooCommerce(
                 $producto->id,
-                $usuario->id
+                $usuario->id,
+                $this->collectChangedSyncFields($producto)
             );
         } catch (\Exception $e) {
             Log::error("Error al sincronizar producto para usuario: " . $e->getMessage(), [
@@ -113,5 +115,21 @@ class ProductoObserver
         // ]);
 
         return;
+    }
+
+    /**
+     * @return string[]
+     */
+    private function collectChangedSyncFields(Producto $producto): array
+    {
+        $fields = [];
+
+        foreach (['precio', 'precio_sin_iva', 'precio_con_iva', 'costo', 'costo_promedio', 'nombre', 'descripcion', 'codigo'] as $field) {
+            if ($producto->wasChanged($field)) {
+                $fields[] = $field;
+            }
+        }
+
+        return $fields;
     }
 }
