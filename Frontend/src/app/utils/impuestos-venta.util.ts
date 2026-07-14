@@ -80,8 +80,8 @@ export function calcularMontosLineaDetalle(
   const subTotalSinIva = redondear4(cantidad * precioSinIva);
   const totalSinIva = redondear4(subTotalSinIva - descuento);
 
-  detalle.sub_total = subTotalSinIva.toFixed(4);
-  detalle.total = totalSinIva.toFixed(4);
+  detalle.sub_total = subTotalSinIva.toFixed(2);
+  detalle.total = totalSinIva.toFixed(2);
 
   const factorIva = pct > 0 ? 1 + pct / 100 : 1;
   const precioConIva = pct > 0 ? precioSinIva * factorIva : precioSinIva;
@@ -104,21 +104,21 @@ export function calcularMontosLineaDetalle(
     case 'gravada': {
       const gravadaMoneda = redondearMoneda(totalSinIva);
       detalle.gravada = gravadaMoneda;
-      detalle.total_iva = totalConIva.toFixed(4);
+      detalle.total_iva = totalConIva.toFixed(2);
       detalle.iva = redondear4(totalSinIva * pct / 100);
       break;
     }
     case 'exenta': {
       const monto = redondearMoneda(totalSinIva);
       detalle.exenta = monto;
-      detalle.total_iva = monto.toFixed(4);
+      detalle.total_iva = monto.toFixed(2);
       detalle.iva = 0;
       break;
     }
     case 'no_sujeta': {
       const monto = redondearMoneda(totalSinIva);
       detalle.no_sujeta = monto;
-      detalle.total_iva = monto.toFixed(4);
+      detalle.total_iva = monto.toFixed(2);
       detalle.iva = 0;
       break;
     }
