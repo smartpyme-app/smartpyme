@@ -150,10 +150,6 @@ class Compra extends AuditableModel {
         return $this->hasMany('App\Models\Compras\Devoluciones\Devolucion', 'id_compra');
     }
 
-    public function impuestos(){
-        return $this->hasMany('App\Models\Compras\Impuesto', 'id_compra');
-    }
-
     /**
      * Retaceo vinculado (una compra solo puede estar en un retaceo).
      */
