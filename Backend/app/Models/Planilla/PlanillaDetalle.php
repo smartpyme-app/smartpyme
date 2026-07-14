@@ -78,11 +78,9 @@ class PlanillaDetalle extends Model
     public function calcularISSSAfp()
     {
         $baseCalculo = $this->total_ingresos;
-        // Tope máximo ISSS = $1000
-        $topeISSS = 1000;
+        $tipoPlanilla = $this->planilla?->tipo_planilla ?? 'mensual';
 
-        // ISSS = 3%
-        $this->isss = min($baseCalculo, $topeISSS) * 0.03;
+        $this->isss = \App\Helpers\IsssHelper::calcularRetencionEmpleado($baseCalculo, $tipoPlanilla);
 
         // AFP = 7.25%
         $this->afp = $baseCalculo * 0.0725;

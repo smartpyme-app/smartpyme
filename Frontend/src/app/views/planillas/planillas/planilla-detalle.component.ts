@@ -1431,7 +1431,8 @@ export class PlanillaDetalleComponent implements OnInit {
     } else {
       // Para empleados regulares - verificar configuración del empleado (base = base para retenciones)
       if (aplicarIsss) {
-        const baseISSSEmpleado = Math.min(baseParaRetenciones, 1000.00);
+        const topeIsss = PlanillaConstants.getTopeIsssPorPeriodo(this.planilla.tipo_planilla);
+        const baseISSSEmpleado = Math.min(baseParaRetenciones, topeIsss);
         isssEmpleado = baseISSSEmpleado * 0.03;
         isssPatronal = baseISSSEmpleado * 0.075;
       } else {
@@ -1714,7 +1715,7 @@ export class PlanillaDetalleComponent implements OnInit {
     const otrosIngresos = Number(detalle.otros_ingresos) || 0;
 
     const totalIngresos = salarioDevengado + montoHorasExtra + comisiones + bonificaciones + otrosIngresos;
-    const isssEmpleado = PlanillaConstants.calcularDescuentoISSSEmpleado(totalIngresos);
+    const isssEmpleado = PlanillaConstants.calcularDescuentoISSSEmpleado(totalIngresos, this.planilla.tipo_planilla);
     const afpEmpleado = PlanillaConstants.calcularDescuentoAFPEmpleado(totalIngresos);
     const salarioGravado = PlanillaConstants.calcularSalarioGravado(
       totalIngresos,
@@ -1936,7 +1937,7 @@ export class PlanillaDetalleComponent implements OnInit {
     const otrosIngresos = Number(detalle.otros_ingresos) || 0;
 
     const totalIngresos = salarioDevengado + montoHorasExtra + comisiones + bonificaciones + otrosIngresos;
-    const isssEmpleado = PlanillaConstants.calcularDescuentoISSSEmpleado(totalIngresos);
+    const isssEmpleado = PlanillaConstants.calcularDescuentoISSSEmpleado(totalIngresos, this.planilla.tipo_planilla);
     const afpEmpleado = PlanillaConstants.calcularDescuentoAFPEmpleado(totalIngresos);
 
     // Cálculo con método legacy

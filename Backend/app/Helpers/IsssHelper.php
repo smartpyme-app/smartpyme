@@ -8,16 +8,31 @@ class IsssHelper
 {
     /**
      * Tope mensual de salario cotizable ISSS (USD).
+     * Reglamento ISSS: base máxima $1,000/mes → retención máxima $30 empleado / $75 patronal.
      */
     public const TOPE_MENSUAL = 1000.00;
 
+    /** Retención máxima mensual del empleado (3% × $1,000). */
+    public const MAX_RETENCION_MENSUAL_EMPLEADO = 30.00;
+
+    /** Aporte patronal máximo mensual (7.5% × $1,000). */
+    public const MAX_APORTE_MENSUAL_PATRONO = 75.00;
+
     /**
      * Obtiene el tope de cotización ISSS aplicable al período de pago.
-     * El tope legal es mensual ($1,000); cada planilla aplica el tope al ingreso del período.
+     * El tope legal es mensual ($1,000); se prorratea según la frecuencia de planilla
+     * para que la suma de períodos del mes no supere el tope mensual.
      */
     public static function obtenerTopePorPeriodo(string $tipoPlanilla = 'mensual'): float
     {
-        return self::TOPE_MENSUAL;
+        switch (strtolower($tipoPlanilla)) {
+            case 'quincenal':
+                return round(self::TOPE_MENSUAL / 2, 2);
+            case 'semanal':
+                return round(self::TOPE_MENSUAL / 4.33, 2);
+            default:
+                return self::TOPE_MENSUAL;
+        }
     }
 
     /**
