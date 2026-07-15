@@ -63,63 +63,62 @@ class InventarioObserver
                 return;
             }
 
-            // Solo si la empresa tiene status 'connecting' o 'connected', intentar la sincronización
-            $empresa = Empresa::where('id', $bodega->id_empresa)
-                ->whereNotNull('woocommerce_api_key')
-                ->whereNotNull('woocommerce_store_url')
-                ->whereNotNull('woocommerce_consumer_key')
-                ->whereNotNull('woocommerce_consumer_secret')
-                ->where('woocommerce_status', 'connected')
-                ->first();
-
-            if (!$empresa) {
-                // Solo logear como INFO si la empresa está intentando conectarse
-                if ($empresaBase->woocommerce_status === 'connecting') {
-                    Log::info("Empresa en proceso de configuración WooCommerce - sincronización pendiente", [
-                        'bodega_id' => $inventario->id_bodega,
-                        'empresa_id' => $empresaBase->id,
-                        'empresa_nombre' => $empresaBase->nombre,
-                        'current_status' => $empresaBase->woocommerce_status,
-                        'diagnostico' => 'Ejecuta: php artisan woocommerce:diagnosticar ' . $inventario->id_bodega
-                    ]);
-                } else {
-                    // Solo logear como DEBUG para empresas con configuración incompleta
-                    Log::debug("Configuración WooCommerce incompleta - omitiendo sincronización", [
-                        'bodega_id' => $inventario->id_bodega,
-                        'empresa_id' => $empresaBase->id,
-                        'current_status' => $empresaBase->woocommerce_status
-                    ]);
-                }
-                return;
-            }
-
-
-            $usuario = User::where('id_empresa', $empresa->id)
-                ->where('woocommerce_status', 'connected')
-                ->first();
-
-            if (!$usuario) {
-                Log::info("No se encontró usuario con integración WooCommerce para esta empresa", [
-                    'empresa_id' => $empresa->id
-                ]);
-                return;
-            }
-
-            if ($inventario->id_bodega != $usuario->id_bodega) {
-                return;
-            }
-
-
             try {
+                // Solo si la empresa tiene status 'connecting' o 'connected', intentar la sincronización
+                $empresa = Empresa::where('id', $bodega->id_empresa)
+                    ->whereNotNull('woocommerce_api_key')
+                    ->whereNotNull('woocommerce_store_url')
+                    ->whereNotNull('woocommerce_consumer_key')
+                    ->whereNotNull('woocommerce_consumer_secret')
+                    ->where('woocommerce_status', 'connected')
+                    ->first();
+
+                if (!$empresa) {
+                    // Solo logear como INFO si la empresa está intentando conectarse
+                    if ($empresaBase->woocommerce_status === 'connecting') {
+                        Log::info("Empresa en proceso de configuración WooCommerce - sincronización pendiente", [
+                            'bodega_id' => $inventario->id_bodega,
+                            'empresa_id' => $empresaBase->id,
+                            'empresa_nombre' => $empresaBase->nombre,
+                            'current_status' => $empresaBase->woocommerce_status,
+                            'diagnostico' => 'Ejecuta: php artisan woocommerce:diagnosticar ' . $inventario->id_bodega
+                        ]);
+                    } else {
+                        // Solo logear como DEBUG para empresas con configuración incompleta
+                        Log::debug("Configuración WooCommerce incompleta - omitiendo sincronización", [
+                            'bodega_id' => $inventario->id_bodega,
+                            'empresa_id' => $empresaBase->id,
+                            'current_status' => $empresaBase->woocommerce_status
+                        ]);
+                    }
+                    return;
+                }
+
+                $usuario = User::where('id_empresa', $empresa->id)
+                    ->where('woocommerce_status', 'connected')
+                    ->first();
+
+                if (!$usuario) {
+                    Log::info("No se encontró usuario con integración WooCommerce para esta empresa", [
+                        'empresa_id' => $empresa->id
+                    ]);
+                    return;
+                }
+
+                if ($inventario->id_bodega != $usuario->id_bodega) {
+                    return;
+                }
+
                 $this->stockService->actualizarStockEnWooCommerce(
                     $inventario->id_producto,
                     $usuario->id,
                     ['stock']
                 );
-            } catch (\Exception $e) {
-                Log::error("Error al sincronizar stock para usuario: " . $e->getMessage(), [
-                    'usuario_id' => $usuario->id,
-                    'producto_id' => $inventario->id_producto
+            } catch (\Throwable $e) {
+                Log::error("Error al sincronizar stock con WooCommerce: " . $e->getMessage(), [
+                    'producto_id' => $inventario->id_producto,
+                    'bodega_id' => $inventario->id_bodega,
+                    'empresa_id' => $bodega->id_empresa,
                 ]);
             }
         }
