@@ -11,11 +11,13 @@ import { RestauranteService } from '@services/restaurante.service';
 import Swal from 'sweetalert2';
 
 import {
-  acumularMontosImpuestosVenta,
+  acumularImpuestosVentaConCierreResidual,
+  calcularMontosLineaDetalle,
   copiarImpuestosProductoAlDetalle,
   normalizarPorcentajeImpuestoDetalle,
   resolverPorcentajeImpuestoVenta,
   sumarSubTotalEncabezadoVenta,
+  sumarTotalConIvaEncabezadoVenta,
 } from '@utils/impuestos-venta.util';
 
 import * as moment from 'moment';
@@ -538,22 +540,14 @@ export class FacturacionV2Component implements OnInit {
                 // Asegurar que precio_iva esté como número
                 detalle.precio_iva = parseFloat(detalle.precio_iva).toFixed(6);
 
-                // Recalcular total del detalle usando precio sin IVA
-                const precioSinIva = parseFloat(detalle.precio || 0);
-                detalle.sub_total = Number((parseFloat(detalle.cantidad || 0) * precioSinIva).toFixed(4));
-                detalle.total = (parseFloat(detalle.sub_total) - parseFloat(detalle.descuento || 0)).toFixed(4);
                 const tipo = (detalle.tipo_gravado && String(detalle.tipo_gravado).toLowerCase()) || 'gravada';
                 detalle.tipo_gravado = ['gravada', 'exenta', 'no_sujeta'].includes(tipo) ? tipo : 'gravada';
-                detalle.gravada = detalle.tipo_gravado === 'gravada' ? detalle.total : 0;
-                detalle.exenta = detalle.tipo_gravado === 'exenta' ? detalle.total : 0;
-                detalle.no_sujeta = detalle.tipo_gravado === 'no_sujeta' ? detalle.total : 0;
-
-                // Calcular total_iva para visualización (solo gravada lleva IVA)
-                if (detalle.tipo_gravado === 'gravada' && this.venta.cobrar_impuestos && porcentajeIvaTotal > 0) {
-                  detalle.total_iva = (parseFloat(detalle.total) * (1 + porcentajeIvaTotal / 100)).toFixed(4);
-                } else {
-                  detalle.total_iva = detalle.total;
-                }
+                calcularMontosLineaDetalle(
+                  detalle,
+                  !!this.venta.cobrar_impuestos,
+                  this.apiService.auth_user()?.empresa?.iva,
+                  { preservePrecioIva: true }
+                );
               });
 
               this.sumTotal();
@@ -854,32 +848,25 @@ export class FacturacionV2Component implements OnInit {
    * Totales por línea (gravada), coherente con VentaDetallesV2 — usado al cargar orden de compra.
    */
   private aplicarLineaGravadaDesdePrecio(detalle: any): void {
+    const empresaIva = this.apiService.auth_user()?.empresa?.iva;
+    const pctDetalle = this.venta.cobrar_impuestos
+      ? resolverPorcentajeImpuestoVenta(detalle?.porcentaje_impuesto, empresaIva)
+      : 0;
     const precioSinIva = parseFloat(detalle.precio || 0);
-    const cant = parseFloat(String(detalle.cantidad ?? 0)) || 0;
-    detalle.sub_total = Number((cant * precioSinIva).toFixed(4));
-    const desc = parseFloat(detalle.descuento || 0) || 0;
-    detalle.total = Number((detalle.sub_total - desc).toFixed(4)).toFixed(4);
 
-    let pctDetalle = 0;
-    if (this.venta.cobrar_impuestos) {
-      pctDetalle = resolverPorcentajeImpuestoVenta(
-        detalle?.porcentaje_impuesto,
-        this.apiService.auth_user()?.empresa?.iva
-      );
+    if (detalle.precio_iva == null || detalle.precio_iva === '') {
+      detalle.precio_iva =
+        pctDetalle > 0
+          ? (precioSinIva * (1 + pctDetalle / 100)).toFixed(4)
+          : precioSinIva.toFixed(4);
     }
 
-    const totalNum = parseFloat(detalle.total) || 0;
-    detalle.gravada = 0;
-    detalle.exenta = 0;
-    detalle.no_sujeta = 0;
-    detalle.gravada = totalNum;
-    if (pctDetalle > 0) {
-      detalle.total_iva = (totalNum * (1 + pctDetalle / 100)).toFixed(4);
-      detalle.iva = parseFloat((totalNum * (pctDetalle / 100)).toFixed(4));
-    } else {
-      detalle.total_iva = detalle.total;
-      detalle.iva = 0;
-    }
+    calcularMontosLineaDetalle(
+      detalle,
+      !!this.venta.cobrar_impuestos,
+      empresaIva,
+      { preservePrecioIva: true }
+    );
   }
 
   /**
@@ -979,12 +966,6 @@ export class FacturacionV2Component implements OnInit {
       this.venta.impuestos = [];
     }
 
-    // En v2, los detalles tienen total sin IVA, así que agregamos el IVA al calcular los totales
-    // Usar el IVA de la empresa directamente
-    const porcentajeIvaTotal = this.venta.cobrar_impuestos
-      ? (this.apiService.auth_user()?.empresa?.iva || 0)
-      : 0;
-
     this.venta.sub_total = Number(sumarSubTotalEncabezadoVenta(this.venta.detalles)).toFixed(4);
 
     this.sincronizarRetencionGranContribuyente();
@@ -1015,44 +996,24 @@ export class FacturacionV2Component implements OnInit {
       ? Math.round(subTotalNum * (propinaPorcentaje / 100) * 100) / 100
       : 0;
 
-    // IVA por tasa: cada impuesto acumula el monto de las líneas que lo incluyen
     const empresaIva = Number(this.apiService.auth_user()?.empresa?.iva ?? 0);
-    if (this.venta.cobrar_impuestos) {
-      if (this.venta.impuestos.length) {
-        acumularMontosImpuestosVenta(
-          this.venta.impuestos,
-          this.venta.detalles,
-          true,
-          empresaIva
-        );
-        this.venta.iva = parseFloat(
-          this.sumPipe.transform(this.venta.impuestos, 'monto')
-        ).toFixed(4);
-      } else {
-        const ivaDesdeLineas = this.venta.detalles.reduce((sum: number, d: any) => {
-          const gravada = parseFloat(d.gravada || 0);
-          const pct = resolverPorcentajeImpuestoVenta(d.porcentaje_impuesto, empresaIva, true);
-          const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) > 0)
-            ? parseFloat(d.iva) : gravada * (pct / 100);
-          return sum + ivaLinea;
-        }, 0);
-        this.venta.iva = parseFloat(Number(ivaDesdeLineas).toFixed(4)).toFixed(4);
-      }
-    } else {
-      this.venta.iva = (0).toFixed(4);
-      this.venta.impuestos.forEach((impuesto: any) => { impuesto.monto = 0; });
-    }
+    const ivaEncabezado = acumularImpuestosVentaConCierreResidual(
+      this.venta.impuestos,
+      this.venta.detalles,
+      !!this.venta.cobrar_impuestos,
+      empresaIva
+    );
+    this.venta.iva = ivaEncabezado.toFixed(4);
 
     const rawDescuento = parseFloat(this.sumPipe.transform(this.venta.detalles, 'descuento'));
     this.venta.descuento = Number(rawDescuento).toFixed(4);
     const rawTotalCosto = parseFloat(this.sumPipe.transform(this.venta.detalles, 'total_costo'));
     this.venta.total_costo = Number(rawTotalCosto).toFixed(4);
 
-    // El total NO incluye la propina; incluir descuento por puntos si aplica
+    // Total desde suma de líneas con IVA (redondeo por línea); evita centavos de más/menos
     const descuentoPuntos = parseFloat(this.venta.descuento_puntos || 0) || 0;
     const totalNum =
-      parseFloat(this.venta.sub_total) +
-      parseFloat(this.venta.iva) +
+      sumarTotalConIvaEncabezadoVenta(this.venta.detalles) +
       parseFloat(this.venta.cuenta_a_terceros) +
       parseFloat(String(this.venta.iva_percibido)) -
       parseFloat(String(this.venta.iva_retenido)) -
