@@ -21,12 +21,12 @@ class InventarioObserver
     public function updated(Inventario $inventario)
     {
         if ($inventario->isDirty('stock')) {
-            Log::info("Cambio de stock detectado", [
-                'producto_id' => $inventario->id_producto,
-                'bodega_id' => $inventario->id_bodega,
-                'stock_anterior' => $inventario->getOriginal('stock'),
-                'stock_nuevo' => $inventario->stock
-            ]);
+            // Log::info("Cambio de stock detectado", [
+            //     'producto_id' => $inventario->id_producto,
+            //     'bodega_id' => $inventario->id_bodega,
+            //     'stock_anterior' => $inventario->getOriginal('stock'),
+            //     'stock_nuevo' => $inventario->stock
+            // ]);
 
             $bodega = Bodega::where('id', $inventario->id_bodega)->first();
             
@@ -54,12 +54,12 @@ class InventarioObserver
                 $empresaBase->woocommerce_status === 'disconnected' || 
                 $empresaBase->woocommerce_status === 'disabled') {
                 
-                Log::debug("Empresa sin integración WooCommerce habilitada - omitiendo sincronización", [
-                    'bodega_id' => $inventario->id_bodega,
-                    'empresa_id' => $empresaBase->id,
-                    'empresa_nombre' => $empresaBase->nombre,
-                    'woocommerce_status' => $empresaBase->woocommerce_status ?? 'null'
-                ]);
+                // Log::debug("Empresa sin integración WooCommerce habilitada - omitiendo sincronización", [
+                //     'bodega_id' => $inventario->id_bodega,
+                //     'empresa_id' => $empresaBase->id,
+                //     'empresa_nombre' => $empresaBase->nombre,
+                //     'woocommerce_status' => $empresaBase->woocommerce_status ?? 'null'
+                // ]);
                 return;
             }
 
