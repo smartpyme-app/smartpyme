@@ -38,8 +38,18 @@ export class VentasDashboardDataService {
     porMes: any;
     vsPresupuesto: any;
     vsAnioAnterior: any;
+    anio?: number;
   }): Record<string, unknown> {
-    const { cards, porMes, vsPresupuesto, vsAnioAnterior } = raw;
+    const { cards, porMes, vsPresupuesto, vsAnioAnterior, anio } = raw;
+    // Si consultamos el año actual, eliminar meses que aún no han ocurrido.
+    const hoy = new Date();
+    const anioConsulta = anio ?? hoy.getFullYear();
+    const vsAnioFiltrado = (anioConsulta === hoy.getFullYear())
+      ? (vsAnioAnterior ?? []).filter((f: any) => {
+          const mesNum = parseInt(String(f.anioMes ?? '').split('-')[1] ?? f.anioMes, 10);
+          return mesNum <= hoy.getMonth() + 1;
+        })
+      : (vsAnioAnterior ?? []);
     return {
       metricasVentas: {
         ventasConIVA: cards?.ventasConIva ?? 0,
@@ -77,19 +87,19 @@ export class VentasDashboardDataService {
       },
       ventasVsAnioAnteriorConfig: {
         type: 'bar',
-        labels: (vsAnioAnterior ?? []).map((f: any) => this.obtenerNombreMes(f.anioMes)),
+        labels: vsAnioFiltrado.map((f: any) => this.obtenerNombreMes(f.anioMes)),
         data: [
           {
             name: 'Año actual',
-            data: (vsAnioAnterior ?? []).map((f: any) => f.anioActual || 0),
+            data: vsAnioFiltrado.map((f: any) => f.anioActual || 0),
           },
           {
             name: 'Año anterior',
-            data: (vsAnioAnterior ?? []).map((f: any) => f.anioAnterior || 0),
+            data: vsAnioFiltrado.map((f: any) => f.anioAnterior || 0),
           }
         ],
         colors: ['#7CABFF', 'rgba(124, 171, 255, 0.4)'],
-        dataExtra: (vsAnioAnterior ?? []).map((f: any) => f.anioAnterior || 0),
+        dataExtra: vsAnioFiltrado.map((f: any) => f.anioAnterior || 0),
         barLabelExactUnder1000: true,
       },
     };
@@ -231,19 +241,30 @@ export class VentasDashboardDataService {
     );
 
     const vsAnioAnterior$ = safe(`/api/ventas/vs-anio-anterior?${p}`).pipe(
-      map(data => ({
-        ventasVsAnioAnteriorConfig: {
-          type: 'bar',
-          labels: (data ?? []).map((f: any) => this.obtenerNombreMes(f.anioMes)),
-          data: [
-            { name: 'Año actual', data: (data ?? []).map((f: any) => f.anioActual || 0) },
-            { name: 'Año anterior', data: (data ?? []).map((f: any) => f.anioAnterior || 0) }
-          ],
-          colors: ['#7CABFF', 'rgba(124, 171, 255, 0.4)'],
-          dataExtra: (data ?? []).map((f: any) => f.anioAnterior || 0),
-          barLabelExactUnder1000: true,
-        }
-      })),
+      map(data => {
+        // Si consultamos el año actual, eliminar meses que aún no han ocurrido.
+        const hoy = new Date();
+        const anioConsulta = Number(filtros?.anio ?? hoy.getFullYear());
+        const dateFiltrada = (anioConsulta === hoy.getFullYear())
+          ? (data ?? []).filter((f: any) => {
+              const mesNum = parseInt(String(f.anioMes ?? '').split('-')[1] ?? f.anioMes, 10);
+              return mesNum <= hoy.getMonth() + 1;
+            })
+          : (data ?? []);
+        return {
+          ventasVsAnioAnteriorConfig: {
+            type: 'bar',
+            labels: dateFiltrada.map((f: any) => this.obtenerNombreMes(f.anioMes)),
+            data: [
+              { name: 'Año actual', data: dateFiltrada.map((f: any) => f.anioActual || 0) },
+              { name: 'Año anterior', data: dateFiltrada.map((f: any) => f.anioAnterior || 0) }
+            ],
+            colors: ['#7CABFF', 'rgba(124, 171, 255, 0.4)'],
+            dataExtra: dateFiltrada.map((f: any) => f.anioAnterior || 0),
+            barLabelExactUnder1000: true,
+          }
+        };
+      }),
       catchError(err => {
         console.error('Error loading /api/ventas/vs-anio-anterior:', err);
         return of({ ventasVsAnioAnteriorConfig: { type: 'bar', labels: [], data: [], colors: ['#7CABFF', 'rgba(124, 171, 255, 0.4)'] } });
@@ -437,6 +458,7 @@ export class VentasDashboardDataService {
           porMes: all.porMes,
           vsPresupuesto: all.vsPresupuesto,
           vsAnioAnterior: all.vsAnioAnterior,
+          anio: filtros?.anio ? Number(filtros.anio) : undefined,
         }),
         ...this.mapearVentasPesado({
           porCanal: all.porCanal,

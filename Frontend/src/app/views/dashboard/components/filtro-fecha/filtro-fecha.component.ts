@@ -76,6 +76,26 @@ export class FiltroFechaComponent implements OnInit {
 
   aniosDisponibles: number[] = [];
 
+  private readonly todosMeses = [
+    { valor: '1', nombre: 'Enero' }, { valor: '2', nombre: 'Febrero' },
+    { valor: '3', nombre: 'Marzo' }, { valor: '4', nombre: 'Abril' },
+    { valor: '5', nombre: 'Mayo' }, { valor: '6', nombre: 'Junio' },
+    { valor: '7', nombre: 'Julio' }, { valor: '8', nombre: 'Agosto' },
+    { valor: '9', nombre: 'Septiembre' }, { valor: '10', nombre: 'Octubre' },
+    { valor: '11', nombre: 'Noviembre' }, { valor: '12', nombre: 'Diciembre' },
+  ];
+
+  /** Meses válidos según el año seleccionado: si es el año actual, solo hasta el mes actual. */
+  get mesesDisponibles(): { valor: string; nombre: string }[] {
+    const hoy = new Date();
+    const anioActual = hoy.getFullYear();
+    const mesActual = hoy.getMonth() + 1;
+    if (Number(this.anio) === anioActual) {
+      return this.todosMeses.slice(0, mesActual);
+    }
+    return this.todosMeses;
+  }
+
   ngOnInit(): void {
     this.modoAvanzado = this.iniciarEnModoAvanzado;
     const anioActual = new Date().getFullYear();
