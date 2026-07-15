@@ -60,7 +60,7 @@ class InventarioObserver
                 //     'empresa_nombre' => $empresaBase->nombre,
                 //     'woocommerce_status' => $empresaBase->woocommerce_status ?? 'null'
                 // ]);
-                // return;
+                return;
             }
 
             try {
