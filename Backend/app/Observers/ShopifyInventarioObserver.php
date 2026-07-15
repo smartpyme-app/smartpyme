@@ -78,13 +78,13 @@ class ShopifyInventarioObserver
             return;
         }
 
-        Log::info("Cambio de stock detectado para Shopify", [
-            'inventario_id' => $inventario->id,
-            'producto_id' => $inventario->id_producto,
-            'bodega_id' => $inventario->id_bodega,
-            'stock_anterior' => $inventario->getOriginal('stock'),
-            'stock_nuevo' => $inventario->stock
-        ]);
+        // Log::info("Cambio de stock detectado para Shopify", [
+        //     'inventario_id' => $inventario->id,
+        //     'producto_id' => $inventario->id_producto,
+        //     'bodega_id' => $inventario->id_bodega,
+        //     'stock_anterior' => $inventario->getOriginal('stock'),
+        //     'stock_nuevo' => $inventario->stock
+        // ]);
 
         // No usar isLocked aquí: el lock se pone al procesar products/update desde Shopify
         // y bloquearía enviar ajustes desde SmartPyme a Shopify durante 2 min.
