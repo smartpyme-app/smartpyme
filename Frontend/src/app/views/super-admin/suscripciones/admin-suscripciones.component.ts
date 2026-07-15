@@ -529,8 +529,9 @@ export class AdminSuscripcionesComponent extends BasePaginatedComponent implemen
 
     const datosSuscripcion: any = {
       ...this.suscripcion,
+      plan_id: this.suscripcion.plan?.id ?? this.suscripcion.plan_id,
       usuario_id: this.suscripcion.usuario_id,
-      fin_periodo_prueba: new Date(this.suscripcion.fin_periodo_prueba),
+      fin_periodo_prueba: this.suscripcion.fin_periodo_prueba,
       frecuencia_pago: this.suscripcion.frecuencia_pago || this.suscripcion.tipo_plan,
       codigo_promocional: this.suscripcion.codigo_promocional || null,
       monto_mensual: this.suscripcion.monto_mensual || null,
@@ -550,9 +551,7 @@ export class AdminSuscripcionesComponent extends BasePaginatedComponent implemen
       },
       (error) => {
         this.saving = false;
-        this.alertService.error(
-          error.message || 'Error actualizando suscripción'
-        );
+        this.alertService.error(error);
       }
     );
   }
@@ -1194,8 +1193,8 @@ export class AdminSuscripcionesComponent extends BasePaginatedComponent implemen
 
     const datosSuscripcion = {
       ...this.nuevaSuscripcion,
-      fecha_proximo_pago: new Date(this.nuevaSuscripcion.fecha_proximo_pago),
-      fin_periodo_prueba: new Date(this.nuevaSuscripcion.fin_periodo_prueba),
+      fecha_proximo_pago: this.nuevaSuscripcion.fecha_proximo_pago,
+      fin_periodo_prueba: this.nuevaSuscripcion.fin_periodo_prueba,
       frecuencia_pago: this.nuevaSuscripcion.frecuencia_pago || this.nuevaSuscripcion.tipo_plan,
       codigo_promocional: this.nuevaSuscripcion.codigo_promocional || null,
       monto_mensual: this.nuevaSuscripcion.monto_mensual || null,
