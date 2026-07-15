@@ -22,7 +22,8 @@ class EditSuscriptionRequest extends FormRequest
         return [
             'id' => ['required', 'integer', 'exists:suscripciones,id'],
             'usuario_id' => ['required', 'integer', 'exists:users,id'],
-            'fecha_proximo_pago' => ['required', 'date'],
+            // No se edita en este endpoint; solo vía pago recibido o integraciones.
+            'fecha_proximo_pago' => ['nullable', 'date'],
             'fin_periodo_prueba' => ['required', 'date'],
             'estado' => ['required', 'string'],
             'monto' => ['required', 'numeric', 'min:0'],
