@@ -31,6 +31,27 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
   }
 
+  // ponytail: deep comparison helper to ignore identical filter emissions
+  private sonFiltrosIguales(f1: any, f2: any): boolean {
+    if (!f1 || !f2) return f1 === f2;
+    const keys1 = Object.keys(f1);
+    const keys2 = Object.keys(f2);
+    if (keys1.length !== keys2.length) return false;
+    for (const key of keys1) {
+      const v1 = f1[key];
+      const v2 = f2[key];
+      if (Array.isArray(v1) && Array.isArray(v2)) {
+        if (v1.length !== v2.length) return false;
+        const s1 = [...v1].sort();
+        const s2 = [...v2].sort();
+        if (s1.some((val, idx) => val !== s2[idx])) return false;
+      } else if (v1 !== v2) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   loading = false;
   datos: any = {};
   datosResultadosCompletos = false;
@@ -57,7 +78,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.restaurarSeccionDesdeAlmacenamiento();
-    this.cargarDatos();
+    // ponytail: only load initial data if we have saved filters for the active section.
+    // Otherwise, wait for the child component to mount and emit its default filters.
+    const filtrosGuardados = this.filtrosPorSeccion[this.seccionActiva];
+    if (filtrosGuardados) {
+      this.cargarDatos(filtrosGuardados);
+    } else {
+      this.datos = {};
+    }
   }
 
   ngOnDestroy(): void {
@@ -70,9 +98,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.secciones.forEach(s => s.activo = false);
     seccion.activo = true;
     this.persistirSeccionActivaSiAplica();
-    // Cargar datos usando filtros guardados de la nueva sección activa (si existen)
-    const filtrosGuardados = this.filtrosPorSeccion[this.seccionActiva] || {};
-    this.cargarDatos(filtrosGuardados);
+    // ponytail: only load data on tab change if we have saved filters for the target section.
+    // Otherwise, let the child component initialize and emit its defaults.
+    const filtrosGuardados = this.filtrosPorSeccion[this.seccionActiva];
+    if (filtrosGuardados) {
+      this.cargarDatos(filtrosGuardados);
+    } else {
+      this.datos = {};
+    }
   }
 
   private restaurarSeccionDesdeAlmacenamiento(): void {
@@ -122,6 +155,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
       ...filtrosAdicionales
     };
 
+    // ponytail: ensure we store the active filters
+    this.filtrosPorSeccion[this.seccionActiva] = filtrosAdicionales;
+
     this.datosSubscription = this.dashboardDataService.obtenerDatosPorFiltro(filtros).subscribe({
       next: (data) => {
         // Crear nueva referencia para que OnPush detecte cambios
@@ -143,6 +179,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   onFiltrosResultadosCambiados(filtros: any): void {
+    if (this.sonFiltrosIguales(this.filtrosPorSeccion['Resultados'], filtros)) {
+      return;
+    }
     this.cancelarSuscripcionActiva();
     this.datosResultadosCompletos = false;
     this.filtrosPorSeccion['Resultados'] = filtros;
@@ -172,6 +211,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   onFiltrosGastosCambiados(filtros: any): void {
+    if (this.sonFiltrosIguales(this.filtrosPorSeccion['Gastos'], filtros)) {
+      return;
+    }
     this.cancelarSuscripcionActiva();
     this.datosGastosCompletos = false;
     this.filtrosPorSeccion['Gastos'] = filtros;
@@ -202,6 +244,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
 
   onFiltrosVentasCambiados(filtros: FiltrosConsultaVentasDashboard): void {
+    if (this.sonFiltrosIguales(this.filtrosPorSeccion['Ventas'], filtros)) {
+      return;
+    }
     this.cancelarSuscripcionActiva();
     this.datosVentasCompletos = false;
     this.filtrosPorSeccion['Ventas'] = filtros;
@@ -231,6 +276,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   onFiltrosControlCuentasCambiados(filtros: any): void {
+    if (this.sonFiltrosIguales(this.filtrosPorSeccion['Control de cuentas'], filtros)) {
+      return;
+    }
     this.cancelarSuscripcionActiva();
     this.datosCuentasCompletos = false;
     this.filtrosPorSeccion['Control de cuentas'] = filtros;
@@ -261,6 +309,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
 
   onFiltrosInventarioCambiados(filtros: any): void {
+    if (this.sonFiltrosIguales(this.filtrosPorSeccion['Inventario'], filtros)) {
+      return;
+    }
     this.cancelarSuscripcionActiva();
     this.datosInventarioCompletos = false;
     this.filtrosPorSeccion['Inventario'] = filtros;

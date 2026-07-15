@@ -347,7 +347,13 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
     // Marcar como inicializado después de un pequeño delay para evitar emitir durante la inicialización
     setTimeout(() => {
       this.inicializado = true;
-      if (Object.keys(this.filtrosInteractivos).length > 0) {
+      // ponytail: if no saved state, admin users must emit default filters
+      if (!tieneEstadoGuardado) {
+        const user = this.apiService.auth_user();
+        if (user?.tipo === 'Administrador') {
+          this.emitirFiltrosAlPadre();
+        }
+      } else if (Object.keys(this.filtrosInteractivos).length > 0) {
         this.aplicarFiltrosInteractivos();
       }
       this.cdr.markForCheck();

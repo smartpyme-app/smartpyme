@@ -230,6 +230,10 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
     // Marcar como inicializado después de un pequeño delay para evitar emitir durante la inicialización
     setTimeout(() => {
       this.inicializado = true;
+      // ponytail: if no saved state, emit default filters on startup
+      if (!tieneEstadoGuardado) {
+        this.aplicarFiltros();
+      }
       this.cdr.markForCheck();
     }, 100);
   }
