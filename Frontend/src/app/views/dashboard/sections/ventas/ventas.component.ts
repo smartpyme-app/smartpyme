@@ -24,6 +24,7 @@ import { MetricCard } from '../../models/chart-config.model';
 })
 export class VentasComponent implements OnInit, OnChanges, OnDestroy {
   @Input() datos: any = {};
+  @Input() datosCompletos = false;
   @Output() filtrosCambiados = new EventEmitter<FiltrosConsultaVentasDashboard>();
 
   get metricasCards(): MetricCard[] {
@@ -273,6 +274,10 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
 
   private inicializado: boolean = false;
 
+  /** true mientras se espera la respuesta del servidor tras cambiar un filtro */
+  filtrosLocked = false;
+  private _filtrosLockTimeout: any = null;
+
   private readonly mesesNombres = [
     'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
@@ -342,7 +347,13 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
     // Marcar como inicializado después de un pequeño delay para evitar emitir durante la inicialización
     setTimeout(() => {
       this.inicializado = true;
-      if (Object.keys(this.filtrosInteractivos).length > 0) {
+      // ponytail: if no saved state, admin users must emit default filters
+      if (!tieneEstadoGuardado) {
+        const user = this.apiService.auth_user();
+        if (user?.tipo === 'Administrador') {
+          this.emitirFiltrosAlPadre();
+        }
+      } else if (Object.keys(this.filtrosInteractivos).length > 0) {
         this.aplicarFiltrosInteractivos();
       }
       this.cdr.markForCheck();
@@ -392,6 +403,11 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
       if (datosActuales && Object.keys(datosActuales).length > 0) {
         this.inicializarDatos();
       }
+    }
+
+    // datosCompletos=true: todas las APIs terminaron → desbloquear filtros
+    if (changes['datosCompletos'] && this.datosCompletos) {
+      this._desbloquearFiltros();
     }
   }
 
@@ -1252,6 +1268,9 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
       return;
     }
 
+    // Bloquear filtros mientras se espera la respuesta
+    this._bloquearFiltros();
+
     if (!this.anio) {
       this.anio = new Date().getFullYear().toString();
     }
@@ -1310,6 +1329,22 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
     }
 
     this.filtrosCambiados.emit(filtros);
+  }
+
+  private _bloquearFiltros(): void {
+    this.filtrosLocked = true;
+    this.cdr.markForCheck();
+    if (this._filtrosLockTimeout) clearTimeout(this._filtrosLockTimeout);
+    this._filtrosLockTimeout = setTimeout(() => this._desbloquearFiltros(), 8000);
+  }
+
+  private _desbloquearFiltros(): void {
+    if (this._filtrosLockTimeout) {
+      clearTimeout(this._filtrosLockTimeout);
+      this._filtrosLockTimeout = null;
+    }
+    this.filtrosLocked = false;
+    this.cdr.markForCheck();
   }
 
   // ponytail: delegates to hayFiltrosAdicionalesActivos — limpiarFiltros no longer touches dates
