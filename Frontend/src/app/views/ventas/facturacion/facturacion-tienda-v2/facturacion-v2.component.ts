@@ -13,8 +13,11 @@ import Swal from 'sweetalert2';
 import {
   acumularMontosImpuestosVenta,
   copiarImpuestosProductoAlDetalle,
+  esImpuestoIva,
+  hidratarImpuestosProductosEnDetalles,
   normalizarPorcentajeImpuestoDetalle,
   resolverPorcentajeImpuestoVenta,
+  sincronizarTipoGravadoPorCobroIva,
   sumarSubTotalEncabezadoVenta,
 } from '@utils/impuestos-venta.util';
 
@@ -416,6 +419,10 @@ export class FacturacionV2Component implements OnInit {
             this.venta = venta;
             this.retencionIvaGcUsuarioDecidio = true;
             this.normalizarDetallesTipoGravado(this.venta);
+            hidratarImpuestosProductosEnDetalles(
+              this.venta.detalles,
+              this.apiService.auth_user()?.empresa?.iva
+            );
             this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
             this.sumTotal();
           },
@@ -441,6 +448,10 @@ export class FacturacionV2Component implements OnInit {
             this.venta = venta;
             this.retencionIvaGcUsuarioDecidio = true;
             this.normalizarDetallesTipoGravado(this.venta);
+            hidratarImpuestosProductosEnDetalles(
+              this.venta.detalles,
+              this.apiService.auth_user()?.empresa?.iva
+            );
             if (!this.venta.cliente) {
               this.venta.cliente = {};
             } else {
@@ -488,6 +499,10 @@ export class FacturacionV2Component implements OnInit {
               this.venta = venta;
               this.retencionIvaGcUsuarioDecidio = true;
               this.normalizarDetallesTipoGravado(this.venta);
+              hidratarImpuestosProductosEnDetalles(
+                this.venta.detalles,
+                this.apiService.auth_user()?.empresa?.iva
+              );
               if (!this.venta.cliente) {
                 this.venta.cliente = {};
               } else {
@@ -1015,33 +1030,19 @@ export class FacturacionV2Component implements OnInit {
       ? Math.round(subTotalNum * (propinaPorcentaje / 100) * 100) / 100
       : 0;
 
-    // IVA por tasa: cada impuesto acumula el monto de las líneas que lo incluyen
     const empresaIva = Number(this.apiService.auth_user()?.empresa?.iva ?? 0);
-    if (this.venta.cobrar_impuestos) {
-      if (this.venta.impuestos.length) {
-        acumularMontosImpuestosVenta(
-          this.venta.impuestos,
-          this.venta.detalles,
-          true,
-          empresaIva
-        );
-        this.venta.iva = parseFloat(
-          this.sumPipe.transform(this.venta.impuestos, 'monto')
-        ).toFixed(4);
-      } else {
-        const ivaDesdeLineas = this.venta.detalles.reduce((sum: number, d: any) => {
-          const gravada = parseFloat(d.gravada || 0);
-          const pct = resolverPorcentajeImpuestoVenta(d.porcentaje_impuesto, empresaIva, true);
-          const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) > 0)
-            ? parseFloat(d.iva) : gravada * (pct / 100);
-          return sum + ivaLinea;
-        }, 0);
-        this.venta.iva = parseFloat(Number(ivaDesdeLineas).toFixed(4)).toFixed(4);
-      }
-    } else {
-      this.venta.iva = (0).toFixed(4);
-      this.venta.impuestos.forEach((impuesto: any) => { impuesto.monto = 0; });
-    }
+    acumularMontosImpuestosVenta(
+      this.venta.impuestos,
+      this.venta.detalles,
+      !!this.venta.cobrar_impuestos,
+      empresaIva
+    );
+    const montoSoloIva = this.venta.impuestos
+      .filter((impuesto: any) => esImpuestoIva(impuesto))
+      .reduce((suma: number, impuesto: any) => suma + (parseFloat(impuesto.monto) || 0), 0);
+    this.venta.iva = parseFloat(montoSoloIva.toFixed(4)).toFixed(4);
+    const montoTotalImpuestos = this.venta.impuestos
+      .reduce((suma: number, impuesto: any) => suma + (parseFloat(impuesto.monto) || 0), 0);
 
     const rawDescuento = parseFloat(this.sumPipe.transform(this.venta.detalles, 'descuento'));
     this.venta.descuento = Number(rawDescuento).toFixed(4);
@@ -1052,7 +1053,7 @@ export class FacturacionV2Component implements OnInit {
     const descuentoPuntos = parseFloat(this.venta.descuento_puntos || 0) || 0;
     const totalNum =
       parseFloat(this.venta.sub_total) +
-      parseFloat(this.venta.iva) +
+      montoTotalImpuestos +
       parseFloat(this.venta.cuenta_a_terceros) +
       parseFloat(String(this.venta.iva_percibido)) -
       parseFloat(String(this.venta.iva_retenido)) -
@@ -1147,9 +1148,11 @@ export class FacturacionV2Component implements OnInit {
       cliente.nombre = cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo;
       this.venta.id_cliente = cliente.id;
       this.venta.cliente = cliente;
-      if (cliente.tipo_contribuyente == "Grande") {
-        this.sumTotal();
+      if (cliente.tipo_fiscal === 'Exento') {
+        this.venta.cobrar_impuestos = false;
+        sincronizarTipoGravadoPorCobroIva(this.venta.detalles, false);
       }
+      this.sumTotal();
 
       // Resetear y cargar puntos del cliente (si fidelización habilitada)
       this.resetearPuntos();

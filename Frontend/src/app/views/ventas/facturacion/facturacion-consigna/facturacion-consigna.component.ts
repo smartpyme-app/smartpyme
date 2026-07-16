@@ -4,6 +4,11 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { SumPipe }     from '@pipes/sum.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import {
+    acumularMontosImpuestosVenta,
+    esImpuestoIva,
+    hidratarImpuestosProductosEnDetalles,
+} from '@utils/impuestos-venta.util';
 
 import * as moment from 'moment';
 
@@ -44,7 +49,11 @@ export class FacturacionConsignaComponent implements OnInit {
                 this.loading = true;
                 this.apiService.read('venta/', params.id).subscribe(venta => {
                     this.venta = venta;
-                    this.venta.cobrar_impuestos = (this.apiService.auth_user().empresa.cobra_iva == 'Si') ? true : false;
+                    hidratarImpuestosProductosEnDetalles(
+                        this.venta.detalles,
+                        this.apiService.auth_user()?.empresa?.iva
+                    );
+                    this.venta.cobrar_impuestos = parseFloat(this.venta.iva || 0) > 0;
                     this.loading = false;
                     this.cargarDocumentos();
                     this.cargarDatos();
@@ -123,22 +132,33 @@ export class FacturacionConsignaComponent implements OnInit {
     }
 
     public sumTotal() {
+        if (!Array.isArray(this.venta.detalles)) {
+            this.venta.detalles = [];
+        }
+        if (!Array.isArray(this.venta.impuestos)) {
+            this.venta.impuestos = [];
+        }
+
         this.venta.sub_total = (parseFloat(this.sumPipe.transform(this.venta.detalles, 'total'))).toFixed(4);
         this.venta.iva_percibido = this.venta.percepcion ? this.venta.sub_total * 0.01 : 0; 
         this.venta.iva_retenido = this.venta.retencion ? this.venta.sub_total * 0.01 : 0; 
 
-        this.venta.impuestos.forEach((impuesto:any) => {
-            if(this.venta.cobrar_impuestos){
-                impuesto.monto = this.venta.sub_total * (impuesto.porcentaje / 100);
-            }else{
-                impuesto.monto = 0;
-            }
-        });
-
-        this.venta.iva = (parseFloat(this.sumPipe.transform(this.venta.impuestos, 'monto'))).toFixed(4);
+        const empresaIva = Number(this.apiService.auth_user()?.empresa?.iva ?? 0);
+        acumularMontosImpuestosVenta(
+            this.venta.impuestos,
+            this.venta.detalles,
+            !!this.venta.cobrar_impuestos,
+            empresaIva
+        );
+        const montoSoloIva = this.venta.impuestos
+            .filter((impuesto:any) => esImpuestoIva(impuesto))
+            .reduce((suma:number, impuesto:any) => suma + (parseFloat(impuesto.monto) || 0), 0);
+        this.venta.iva = parseFloat(montoSoloIva.toFixed(4)).toFixed(4);
+        const montoTotalImpuestos = this.venta.impuestos
+            .reduce((suma:number, impuesto:any) => suma + (parseFloat(impuesto.monto) || 0), 0);
         this.venta.descuento = (parseFloat(this.sumPipe.transform(this.venta.detalles, 'descuento'))).toFixed(4);
         this.venta.total_costo = (parseFloat(this.sumPipe.transform(this.venta.detalles, 'total_costo'))).toFixed(4);
-        this.venta.total = (parseFloat(this.venta.sub_total) + parseFloat(this.venta.iva) + parseFloat(this.venta.iva_percibido) - parseFloat(this.venta.iva_retenido)).toFixed(4);
+        this.venta.total = (parseFloat(this.venta.sub_total) + montoTotalImpuestos + parseFloat(this.venta.iva_percibido) - parseFloat(this.venta.iva_retenido)).toFixed(4);
     }
 
     public setDocumento(id_documento:any){
