@@ -12,7 +12,7 @@ import Swal from 'sweetalert2';
 
 import * as moment from 'moment';
 import {
-  acumularMontosImpuestosVenta,
+  acumularImpuestosVentaConCierreResidual,
   calcularMontosLineaDetalle,
   sumarSubTotalEncabezadoVenta,
   sumarTotalConIvaEncabezadoVenta,
@@ -855,31 +855,13 @@ export class FacturacionComponent implements OnInit {
       ? Math.round(subTotalNum * (propinaPorcentaje / 100) * 100) / 100
       : 0;
 
-    // IVA por tasa: cada impuesto acumula el monto de las líneas que lo incluyen
-    if (this.venta.cobrar_impuestos) {
-      if (this.venta.impuestos.length) {
-        acumularMontosImpuestosVenta(
-          this.venta.impuestos,
-          this.venta.detalles,
-          true,
-          empresaIva
-        );
-        this.venta.iva = (parseFloat(this.sumPipe.transform(this.venta.impuestos, 'monto')) || 0).toFixed(4);
-      } else {
-        const ivaDesdeLineas = this.venta.detalles.reduce((sum: number, d: any) => {
-          const gravada = parseFloat(d.gravada || 0);
-          const pct = (d.porcentaje_impuesto != null && d.porcentaje_impuesto !== '')
-            ? Number(d.porcentaje_impuesto) : empresaIva;
-          const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) > 0)
-            ? parseFloat(d.iva) : gravada * (pct / 100);
-          return sum + ivaLinea;
-        }, 0);
-        this.venta.iva = parseFloat(Number(ivaDesdeLineas).toFixed(4)).toFixed(4);
-      }
-    } else {
-      this.venta.iva = (0).toFixed(4);
-      this.venta.impuestos.forEach((impuesto: any) => { impuesto.monto = 0; });
-    }
+    const ivaEncabezado = acumularImpuestosVentaConCierreResidual(
+      this.venta.impuestos,
+      this.venta.detalles,
+      !!this.venta.cobrar_impuestos,
+      empresaIva
+    );
+    this.venta.iva = ivaEncabezado.toFixed(4);
 
     const rawDescuento = parseFloat(this.sumPipe.transform(this.venta.detalles, 'descuento'));
     this.venta.descuento = Number(rawDescuento).toFixed(4);
