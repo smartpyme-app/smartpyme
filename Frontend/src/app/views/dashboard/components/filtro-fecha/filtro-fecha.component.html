@@ -6,6 +6,7 @@
                 type="button"
                 class="btn btn-sm filtro-fecha-preset"
                 [ngClass]="clasePreset('este-mes')"
+                [disabled]="disabled"
                 (click)="presetEsteMes()">
                 Este mes
             </button>
@@ -13,6 +14,7 @@
                 type="button"
                 class="btn btn-sm filtro-fecha-preset"
                 [ngClass]="clasePreset('mes-anterior')"
+                [disabled]="disabled"
                 (click)="presetMesAnterior()">
                 Mes anterior
             </button>
@@ -20,6 +22,7 @@
                 type="button"
                 class="btn btn-sm filtro-fecha-preset"
                 [ngClass]="clasePreset('este-anio')"
+                [disabled]="disabled"
                 (click)="presetEsteAnio()">
                 Este año
             </button>
@@ -27,6 +30,7 @@
                 type="button"
                 class="btn btn-sm filtro-fecha-preset"
                 [ngClass]="clasePreset('anio-pasado')"
+                [disabled]="disabled"
                 (click)="presetAnioPasado()">
                 Año pasado
             </button>
@@ -34,6 +38,7 @@
         <button
             type="button"
             class="filtro-fecha-link"
+            [disabled]="disabled"
             (click)="alternarModoAvanzado()">
             Rango personalizado
         </button>
@@ -51,6 +56,7 @@
                     [id]="idAnio"
                     class="form-select filtro-fecha-select"
                     [ngModel]="anio"
+                    [disabled]="disabled"
                     (ngModelChange)="onAnioChange($event)">
                     <option value="">Seleccionar</option>
                     <option *ngFor="let a of aniosDisponibles; trackBy: trackByAnio" [value]="a">{{ a }}</option>
@@ -65,6 +71,7 @@
                     [id]="idMes"
                     class="form-select filtro-fecha-select"
                     [ngModel]="mes"
+                    [disabled]="disabled"
                     (ngModelChange)="onMesChange($event)">
                     <option value="">Todos</option>
                     <option *ngFor="let m of mesesDisponibles" [value]="m.valor">{{ m.nombre }}</option>
@@ -73,6 +80,7 @@
             <button
                 type="button"
                 class="filtro-fecha-link filtro-fecha-link--inline align-self-end mb-2"
+                [disabled]="disabled"
                 (click)="alternarModoAvanzado()">
                 ← Filtros rápidos
             </button>
