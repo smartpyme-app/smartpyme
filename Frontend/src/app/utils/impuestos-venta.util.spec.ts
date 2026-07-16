@@ -16,6 +16,8 @@ describe('impuestos-venta.util — IVA vs especiales', () => {
     // Honduras
     expect(esImpuestoIva({ porcentaje: 15 }, 15)).toBe(true);
     expect(esImpuestoIva({ porcentaje: 18 }, 15)).toBe(true);
+    // Código libre en HN no impide reconocer 18% como IVA (solo C8 es especial)
+    expect(esImpuestoIva({ codigo_mh: '18', porcentaje: 18 }, 15)).toBe(true);
     // Costa Rica (reducidas + general)
     expect(esImpuestoIva({ porcentaje: 13 }, 13)).toBe(true);
     expect(esImpuestoIva({ porcentaje: 4 }, 13)).toBe(true);
@@ -24,6 +26,41 @@ describe('impuestos-venta.util — IVA vs especiales', () => {
     // Tasa custom solo vía empresa.iva
     expect(esImpuestoIva({ porcentaje: 10.5 }, 10.5)).toBe(true);
     expect(esImpuestoIva({ porcentaje: 10.5 })).toBe(false);
+  });
+
+  it('recupera línea auto-exenta cuando el IVA pasa a reconocerse (HN 18%)', () => {
+    const detalle: any = {
+      cantidad: 1,
+      precio: 106.78,
+      descuento: 0,
+      tipo_gravado: 'exenta',
+      exenta_por_sin_iva: true,
+      impuestos: [{ id: 1, porcentaje: 18 }],
+    };
+
+    calcularMontosLineaDetalle(detalle, true, 15);
+
+    expect(detalle.tipo_gravado).toBe('gravada');
+    expect(detalle.exenta).toBe(0);
+    expect(Number(detalle.gravada)).toBeCloseTo(106.78, 2);
+    expect(Number(detalle.iva)).toBeCloseTo(19.2204, 2);
+  });
+
+  it('respeta exenta manual aunque el producto tenga IVA', () => {
+    const detalle: any = {
+      cantidad: 1,
+      precio: 100,
+      descuento: 0,
+      tipo_gravado: 'exenta',
+      exenta_manual: true,
+      impuestos: [{ id: 1, porcentaje: 18 }],
+    };
+
+    calcularMontosLineaDetalle(detalle, true, 15);
+
+    expect(detalle.tipo_gravado).toBe('exenta');
+    expect(detalle.exenta).toBe(100);
+    expect(detalle.iva).toBe(0);
   });
 
   it('porcentajeIvaDetalle reconoce IVA 15/18 HN y no deja la línea en 0', () => {
