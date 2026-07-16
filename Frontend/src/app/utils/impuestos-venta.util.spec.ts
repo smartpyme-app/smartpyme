@@ -8,11 +8,59 @@ import {
 } from './impuestos-venta.util';
 
 describe('impuestos-venta.util — IVA vs especiales', () => {
-  it('esImpuestoIva reconoce codigo 20 y 13% sin código', () => {
+  it('esImpuestoIva reconoce codigo 20, tasas regionales y empresa.iva', () => {
     expect(esImpuestoIva({ codigo_mh: '20', porcentaje: 13 })).toBe(true);
     expect(esImpuestoIva({ codigo_mh: null, porcentaje: 13 })).toBe(true);
     expect(esImpuestoIva({ codigo_mh: 'C8', porcentaje: 5 })).toBe(false);
     expect(esImpuestoIva({ porcentaje: 5 })).toBe(false);
+    // Honduras
+    expect(esImpuestoIva({ porcentaje: 15 }, 15)).toBe(true);
+    expect(esImpuestoIva({ porcentaje: 18 }, 15)).toBe(true);
+    // Costa Rica (reducidas + general)
+    expect(esImpuestoIva({ porcentaje: 13 }, 13)).toBe(true);
+    expect(esImpuestoIva({ porcentaje: 4 }, 13)).toBe(true);
+    expect(esImpuestoIva({ porcentaje: 2 }, 13)).toBe(true);
+    expect(esImpuestoIva({ porcentaje: 1 }, 13)).toBe(true);
+    // Tasa custom solo vía empresa.iva
+    expect(esImpuestoIva({ porcentaje: 10.5 }, 10.5)).toBe(true);
+    expect(esImpuestoIva({ porcentaje: 10.5 })).toBe(false);
+  });
+
+  it('porcentajeIvaDetalle reconoce IVA 15/18 HN y no deja la línea en 0', () => {
+    expect(
+      porcentajeIvaDetalle({ impuestos: [{ id: 1, porcentaje: 15 }] }, 15, true)
+    ).toBe(15);
+    expect(
+      porcentajeIvaDetalle({ impuestos: [{ id: 1, porcentaje: 18 }] }, 15, true)
+    ).toBe(18);
+    expect(
+      porcentajeIvaDetalle(
+        {
+          impuestos: [
+            { id: 1, porcentaje: 15 },
+            { id: 2, porcentaje: 5, codigo_mh: 'C8' },
+          ],
+        },
+        15,
+        true
+      )
+    ).toBe(15);
+  });
+
+  it('calcularMontosLineaDetalle deja gravada un producto HN 15% multi-impuesto', () => {
+    const detalle: any = {
+      cantidad: 1,
+      precio: 100,
+      descuento: 0,
+      tipo_gravado: 'gravada',
+      impuestos: [{ id: 1, porcentaje: 15 }],
+    };
+
+    calcularMontosLineaDetalle(detalle, true, 15);
+
+    expect(detalle.tipo_gravado).toBe('gravada');
+    expect(detalle.gravada).toBe(100);
+    expect(Number(detalle.iva)).toBeCloseTo(15, 2);
   });
 
   it('con cobrarIva=false acumula turismo sobre línea exenta si el detalle tiene el impuesto', () => {
