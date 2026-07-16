@@ -151,7 +151,7 @@ export class FacturacionConsignaComponent implements OnInit {
             empresaIva
         );
         const montoSoloIva = this.venta.impuestos
-            .filter((impuesto:any) => esImpuestoIva(impuesto))
+            .filter((impuesto:any) => esImpuestoIva(impuesto, empresaIva))
             .reduce((suma:number, impuesto:any) => suma + (parseFloat(impuesto.monto) || 0), 0);
         this.venta.iva = parseFloat(montoSoloIva.toFixed(4)).toFixed(4);
         const montoTotalImpuestos = this.venta.impuestos

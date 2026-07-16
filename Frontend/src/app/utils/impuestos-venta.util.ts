@@ -59,15 +59,42 @@ export function limpiarExentaPorSinIvaSiTipoManual(detalle: any): void {
   detalle.exenta_por_sin_iva = false;
 }
 
+function pctIgual(a: number, b: number): boolean {
+  return Math.abs(Number(a) - Number(b)) < 0.01;
+}
+
+/**
+ * Tasas IVA regionales además del IVA default de la empresa.
+ * HN 15/18, CR 1/2/4/8/13, SV 13, GT 12, BZ 12.5, PA 7, MX 16.
+ * El 5% (turismo) se excluye explícitamente en esImpuestoIva.
+ */
+const TASAS_IVA_REGIONALES = [1, 2, 4, 7, 8, 12, 12.5, 13, 15, 16, 18];
+
+/**
+ * Identifica IVA vs tributos especiales (turismo, etc.).
+ * - codigo_mh '20' → IVA (MH El Salvador)
+ * - otro codigo_mh → especial (no IVA)
+ * - sin código: IVA si coincide con empresa.iva o con una tasa regional conocida
+ * - 5% sin código → no IVA (turismo)
+ */
 export function esImpuestoIva(
-  imp: { codigo_mh?: string | null; porcentaje?: number } | null | undefined
+  imp: { codigo_mh?: string | null; porcentaje?: number } | null | undefined,
+  ivaEmpresa?: unknown
 ): boolean {
   if (!imp) return false;
   if (imp.codigo_mh === '20') return true;
-  return (
-    Number(imp.porcentaje) === 13 &&
-    (imp.codigo_mh == null || imp.codigo_mh === '')
-  );
+  if (imp.codigo_mh != null && String(imp.codigo_mh).trim() !== '') {
+    return false;
+  }
+  const pct = Number(imp.porcentaje) || 0;
+  if (pct <= 0 || pctIgual(pct, 5)) {
+    return false;
+  }
+  const iva = Number(ivaEmpresa ?? 0) || 0;
+  if (iva > 0 && pctIgual(pct, iva)) {
+    return true;
+  }
+  return TASAS_IVA_REGIONALES.some((t) => pctIgual(pct, t));
 }
 
 /** Base para impuestos especiales: gravada o exenta; nunca no_sujeta. */
@@ -87,7 +114,7 @@ export function porcentajeIvaDetalle(
 ): number {
   if (!cobrarIva) return 0;
   if (Array.isArray(detalle?.impuestos) && detalle.impuestos.length > 0) {
-    const ivas = detalle.impuestos.filter((i: any) => esImpuestoIva(i));
+    const ivas = detalle.impuestos.filter((i: any) => esImpuestoIva(i, ivaEmpresa));
     if (ivas.length === 0) return 0;
     return ivas.reduce((s: number, i: any) => s + (Number(i.porcentaje) || 0), 0);
   }
@@ -227,10 +254,6 @@ export function normalizarPorcentajeImpuestoDetalle(
   return iva > 0 ? iva : null;
 }
 
-function pctIgual(a: number, b: number): boolean {
-  return Math.abs(Number(a) - Number(b)) < 0.01;
-}
-
 /** Si el detalle-impuesto tiene id, empareja por el id maestro; si no, por porcentaje. */
 function encontrarVentaImpuesto(ventaImpuestos: any[], di: any): any | undefined {
   if (di.id != null) {
@@ -309,8 +332,7 @@ export function acumularMontosImpuestosVenta(
   const porcentajesImpuestos = ventaImpuestos.map((i: any) => Number(i.porcentaje));
   const pctDetalleLegacy = (d: any) =>
     resolverPorcentajeImpuestoVenta(d.porcentaje_impuesto, empresaIva, true);
-  const esPctIvaLegacy = (pct: number) =>
-    esImpuestoIva({ porcentaje: pct }) || pctIgual(pct, empresaIva);
+  const esPctIvaLegacy = (pct: number) => esImpuestoIva({ porcentaje: pct }, empresaIva);
 
   let ivaSinAsignar = 0;
 
@@ -322,7 +344,7 @@ export function acumularMontosImpuestosVenta(
         const pct = Number(di.porcentaje) || 0;
         const ventaImp = encontrarVentaImpuesto(ventaImpuestos, di);
 
-        if (esImpuestoIva(di)) {
+        if (esImpuestoIva(di, empresaIva)) {
           if (!cobrarImpuestos || tipo !== 'gravada') {
             return;
           }
@@ -406,10 +428,13 @@ export function calcularIvaResidualEncabezadoVenta(detalles: any[]): number {
   );
 }
 
-export function montoIvaDeVentaImpuestos(ventaImpuestos: any[]): number {
+export function montoIvaDeVentaImpuestos(
+  ventaImpuestos: any[],
+  empresaIva?: unknown
+): number {
   return redondearMoneda(
     (ventaImpuestos || [])
-      .filter((imp: any) => esImpuestoIva(imp))
+      .filter((imp: any) => esImpuestoIva(imp, empresaIva))
       .reduce(
         (s: number, imp: any) => s + (parseFloat(String(imp?.monto ?? 0)) || 0),
         0
@@ -417,10 +442,13 @@ export function montoIvaDeVentaImpuestos(ventaImpuestos: any[]): number {
   );
 }
 
-export function montoEspecialesDeVentaImpuestos(ventaImpuestos: any[]): number {
+export function montoEspecialesDeVentaImpuestos(
+  ventaImpuestos: any[],
+  empresaIva?: unknown
+): number {
   return redondearMoneda(
     (ventaImpuestos || [])
-      .filter((imp: any) => !esImpuestoIva(imp))
+      .filter((imp: any) => !esImpuestoIva(imp, empresaIva))
       .reduce(
         (s: number, imp: any) => s + (parseFloat(String(imp?.monto ?? 0)) || 0),
         0
@@ -451,18 +479,19 @@ export function acumularImpuestosVentaConCierreResidual(
   );
 
   if (!cobrarImpuestos) {
-    return montoIvaDeVentaImpuestos(ventaImpuestos);
+    return montoIvaDeVentaImpuestos(ventaImpuestos, empresaIva);
   }
 
   const ivaObjetivo = calcularIvaResidualEncabezadoVenta(detalles);
-  const ivaAcumulado = montoIvaDeVentaImpuestos(ventaImpuestos);
+  const ivaAcumulado = montoIvaDeVentaImpuestos(ventaImpuestos, empresaIva);
   const delta = redondearMoneda(ivaObjetivo - ivaAcumulado);
 
   if (Math.abs(delta) >= 0.005) {
     const impuestoDestino =
       ventaImpuestos.find(
-        (i: any) => esImpuestoIva(i) && pctIgual(Number(i.porcentaje), empresaIva)
-      ) || ventaImpuestos.find((i: any) => esImpuestoIva(i));
+        (i: any) =>
+          esImpuestoIva(i, empresaIva) && pctIgual(Number(i.porcentaje), empresaIva)
+      ) || ventaImpuestos.find((i: any) => esImpuestoIva(i, empresaIva));
     if (impuestoDestino) {
       impuestoDestino.monto = parseFloat(
         (parseFloat(String(impuestoDestino.monto ?? 0)) + delta).toFixed(4)
@@ -470,5 +499,5 @@ export function acumularImpuestosVentaConCierreResidual(
     }
   }
 
-  return montoIvaDeVentaImpuestos(ventaImpuestos);
+  return montoIvaDeVentaImpuestos(ventaImpuestos, empresaIva);
 }

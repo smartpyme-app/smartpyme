@@ -179,8 +179,29 @@ trait BuildsTributosVenta
             return false;
         }
 
-        return $impuesto->codigo_mh === '20'
-            || ((float) $impuesto->porcentaje === 13.0 && empty($impuesto->codigo_mh));
+        if ($impuesto->codigo_mh === '20') {
+            return true;
+        }
+
+        // Tributo especial MH (turismo C8, etc.)
+        if (!empty($impuesto->codigo_mh)) {
+            return false;
+        }
+
+        $pct = (float) $impuesto->porcentaje;
+        // Turismo 5% sin código
+        if (abs($pct - 5.0) < 0.01) {
+            return false;
+        }
+
+        // Tasas IVA regionales: HN 15/18, CR 1/2/4/8/13, SV 13, GT 12, BZ 12.5, PA 7, MX 16
+        foreach ([1.0, 2.0, 4.0, 7.0, 8.0, 12.0, 12.5, 13.0, 15.0, 16.0, 18.0] as $tasa) {
+            if (abs($pct - $tasa) < 0.01) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
