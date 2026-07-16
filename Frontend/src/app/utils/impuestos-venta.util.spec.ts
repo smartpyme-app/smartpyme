@@ -5,6 +5,8 @@ import {
   calcularMontosLineaDetalle,
   hidratarImpuestosProductosEnDetalles,
   porcentajeIvaDetalle,
+  redondearMoneda,
+  sumarIvaLineasSinRedondeo,
 } from './impuestos-venta.util';
 
 describe('impuestos-venta.util — IVA vs especiales', () => {
@@ -309,5 +311,85 @@ describe('impuestos-venta.util — IVA vs especiales', () => {
     expect(iva).toBeCloseTo(13, 2);
     expect(Number(ventaImpuestos[0].monto)).toBeCloseTo(13, 2);
     expect(Number(ventaImpuestos[1].monto)).toBeCloseTo(5, 2);
+  });
+
+  it('acumula IVA sin redondear por línea (evita desface en multi-línea)', () => {
+    const lineas: any[] = [
+      { cantidad: 1, precio: 4.4159, descuento: 0, tipo_gravado: 'gravada', impuestos: [{ id: 1, porcentaje: 13, codigo_mh: '20' }] },
+      { cantidad: 2, precio: 4.4159, descuento: 0, tipo_gravado: 'gravada', impuestos: [{ id: 1, porcentaje: 13, codigo_mh: '20' }] },
+      { cantidad: 3, precio: 4.4159, descuento: 0, tipo_gravado: 'gravada', impuestos: [{ id: 1, porcentaje: 13, codigo_mh: '20' }] },
+      { cantidad: 3, precio: 3.9735, descuento: 0, tipo_gravado: 'gravada', impuestos: [{ id: 1, porcentaje: 13, codigo_mh: '20' }] },
+      { cantidad: 26, precio: 4.4159, descuento: 0, tipo_gravado: 'gravada', impuestos: [{ id: 1, porcentaje: 13, codigo_mh: '20' }] },
+      { cantidad: 4, precio: 4.4159, descuento: 0, tipo_gravado: 'gravada', impuestos: [{ id: 1, porcentaje: 13, codigo_mh: '20' }] },
+      { cantidad: 1, precio: 3.9735, descuento: 0, tipo_gravado: 'gravada', impuestos: [{ id: 1, porcentaje: 13, codigo_mh: '20' }] },
+      { cantidad: 1, precio: 3.9735, descuento: 0, tipo_gravado: 'gravada', impuestos: [{ id: 1, porcentaje: 13, codigo_mh: '20' }] },
+      { cantidad: 26, precio: 3.9735, descuento: 0, tipo_gravado: 'gravada', impuestos: [{ id: 1, porcentaje: 13, codigo_mh: '20' }] },
+      { cantidad: 10, precio: 3.9735, descuento: 0, tipo_gravado: 'gravada', impuestos: [{ id: 1, porcentaje: 13, codigo_mh: '20' }] },
+      { cantidad: 2, precio: 4.4159, descuento: 0, tipo_gravado: 'gravada', impuestos: [{ id: 1, porcentaje: 13, codigo_mh: '20' }] },
+    ];
+    lineas.forEach((d) => calcularMontosLineaDetalle(d, true, 13));
+
+    const ivaRedondeadoPorLinea = redondearMoneda(
+      lineas.reduce(
+        (acc, d) => acc + redondearMoneda(parseFloat(String(d.gravada)) * 0.13),
+        0
+      )
+    );
+    const ivaCorrecto = redondearMoneda(sumarIvaLineasSinRedondeo(lineas, true, 13));
+
+    expect(ivaRedondeadoPorLinea).toBe(43.01);
+    expect(ivaCorrecto).toBe(42.99);
+
+    const ventaImpuestos = [{ id: 1, porcentaje: 13, codigo_mh: '20', nombre: 'IVA', monto: 0 }];
+    acumularMontosImpuestosVenta(ventaImpuestos, lineas, true, 13);
+
+    expect(Number(ventaImpuestos[0].monto)).toBe(ivaCorrecto);
+  });
+
+  it('IVA de cabecera cuadra con subtotal × tasa (196.07 × 13% = 25.49)', () => {
+    expect(redondearMoneda(196.07 * 0.13)).toBe(25.49);
+
+    const lineas: any[] = [
+      { cantidad: 1, precio: 100, descuento: 0, tipo_gravado: 'gravada', impuestos: [{ id: 1, porcentaje: 13, codigo_mh: '20' }] },
+      { cantidad: 1, precio: 96.07, descuento: 0, tipo_gravado: 'gravada', impuestos: [{ id: 1, porcentaje: 13, codigo_mh: '20' }] },
+    ];
+    lineas.forEach((d) => calcularMontosLineaDetalle(d, true, 13));
+
+    const subtotal = lineas.reduce((acc, d) => acc + Number(d.gravada), 0);
+    expect(redondearMoneda(subtotal)).toBe(196.07);
+
+    const ventaImpuestos = [{ id: 1, porcentaje: 13, codigo_mh: '20', nombre: 'IVA', monto: 0 }];
+    const iva = acumularImpuestosVentaConCierreResidual(ventaImpuestos, lineas, true, 13);
+
+    expect(iva).toBe(25.49);
+    expect(Number(ventaImpuestos[0].monto)).toBe(25.49);
+  });
+
+  it('desglosa IVA por tasa en venta.impuestos', () => {
+    const ventaImpuestos = [
+      { id: 1, porcentaje: 13, codigo_mh: '20', nombre: 'IVA', monto: 0 },
+      { id: 2, porcentaje: 0, codigo_mh: '20', nombre: 'IVA 0%', monto: 0 },
+    ];
+    const detalles: any[] = [
+      {
+        cantidad: 2,
+        precio: 10,
+        descuento: 0,
+        tipo_gravado: 'gravada',
+        impuestos: [{ id: 1, porcentaje: 13, codigo_mh: '20' }],
+      },
+      {
+        cantidad: 1,
+        precio: 50,
+        descuento: 0,
+        tipo_gravado: 'exenta',
+        impuestos: [{ id: 2, porcentaje: 0, codigo_mh: '20' }],
+      },
+    ];
+    detalles.forEach((d) => calcularMontosLineaDetalle(d, true, 13));
+    acumularMontosImpuestosVenta(ventaImpuestos, detalles, true, 13);
+
+    expect(Number(ventaImpuestos[0].monto)).toBe(2.6);
+    expect(Number(ventaImpuestos[1].monto)).toBe(0);
   });
 });

@@ -1,7 +1,13 @@
 export type TipoGravadoVenta = 'gravada' | 'exenta' | 'no_sujeta';
 
 export function redondearMoneda(n: number): number {
-  return Math.round(n * 100) / 100;
+  if (!Number.isFinite(n)) {
+    return 0;
+  }
+  // Evita que 25.4891 (float) caiga en 25.48 por drift binario al redondear.
+  const sign = n < 0 ? -1 : 1;
+  const cents = Math.round(Math.abs(n) * 100 + 1e-10);
+  return (sign * cents) / 100;
 }
 
 export function redondear4(n: number): number {
@@ -114,6 +120,18 @@ export function esImpuestoIva(
   return TASAS_IVA_REGIONALES.some((t) => pctIgual(pct, t));
 }
 
+/**
+ * Base gravada por línea para impuestos: misma regla que el subtotal de cabecera
+ * (round(precio×cantidad−descuento, 2)). El IVA se calcula sobre esta base y se
+ * redondea solo al acumular en cabecera, no por línea.
+ */
+export function baseGravadaLineaImpuesto(detalle: any): number {
+  const cantidad = parseFloat(String(detalle?.cantidad ?? 0)) || 0;
+  const precio = parseFloat(String(detalle?.precio ?? 0)) || 0;
+  const descuento = parseFloat(String(detalle?.descuento ?? 0)) || 0;
+  return redondearMoneda(cantidad * precio - descuento);
+}
+
 /** Base para impuestos especiales: gravada o exenta; nunca no_sujeta. */
 export function baseParaImpuestosEspeciales(detalle: any): number {
   const tipo = String(detalle?.tipo_gravado || 'gravada').toLowerCase();
@@ -142,8 +160,8 @@ export function porcentajeIvaDetalle(
 
 /**
  * Calcula gravada/exenta/no_sujeta, IVA y total con IVA por línea.
- * total_iva se redondea a moneda (2 dec); el IVA cierra por diferencia con la gravada
- * redondeada para que sub_total + IVA coincida con el total al cobrar.
+ * gravada/total_iva se redondean a moneda por línea (DTE); detalle.iva queda sin redondear
+ * para acumular en cabecera y redondear solo al mostrar.
  */
 export function calcularMontosLineaDetalle(
   detalle: any,
@@ -186,7 +204,7 @@ export function calcularMontosLineaDetalle(
       const gravadaMoneda = redondearMoneda(totalSinIva);
       detalle.gravada = gravadaMoneda;
       detalle.total_iva = totalConIva.toFixed(2);
-      detalle.iva = redondear4(totalSinIva * pct / 100);
+      detalle.iva = gravadaMoneda * (pct / 100);
       break;
     }
     case 'exenta': {
@@ -365,15 +383,13 @@ export function acumularMontosImpuestosVenta(
           if (!cobrarImpuestos || tipo !== 'gravada') {
             return;
           }
-          const gravada = parseFloat(d.gravada || 0);
-          if (gravada <= 0) {
+          const base = baseGravadaLineaImpuesto(d);
+          if (base <= 0) {
             return;
           }
-          const montoLinea = parseFloat((gravada * (pct / 100)).toFixed(4));
+          const montoLinea = base * (pct / 100);
           if (ventaImp) {
-            ventaImp.monto = parseFloat(
-              (parseFloat(ventaImp.monto) + montoLinea).toFixed(4)
-            );
+            ventaImp.monto = (parseFloat(String(ventaImp.monto ?? 0)) || 0) + montoLinea;
           } else if (di.id == null) {
             ivaSinAsignar += montoLinea;
           }
@@ -384,11 +400,9 @@ export function acumularMontosImpuestosVenta(
         if (base <= 0) {
           return;
         }
-        const montoLinea = parseFloat((base * (pct / 100)).toFixed(4));
+        const montoLinea = base * (pct / 100);
         if (ventaImp) {
-          ventaImp.monto = parseFloat(
-            (parseFloat(ventaImp.monto) + montoLinea).toFixed(4)
-          );
+          ventaImp.monto = (parseFloat(String(ventaImp.monto ?? 0)) || 0) + montoLinea;
         }
       });
       return;
@@ -401,19 +415,17 @@ export function acumularMontosImpuestosVenta(
       if (!cobrarImpuestos || tipo !== 'gravada') {
         return;
       }
-      const gravada = parseFloat(d.gravada || 0);
-      if (gravada <= 0) {
+      const base = baseGravadaLineaImpuesto(d);
+      if (base <= 0) {
         return;
       }
       const ivaLinea =
-        d.iva != null && d.iva !== '' && parseFloat(d.iva) > 0
+        d.iva != null && d.iva !== '' && Number.isFinite(parseFloat(d.iva))
           ? parseFloat(d.iva)
-          : gravada * (pct / 100);
+          : base * (pct / 100);
 
       if (ventaImp) {
-        ventaImp.monto = parseFloat(
-          (parseFloat(ventaImp.monto) + ivaLinea).toFixed(4)
-        );
+        ventaImp.monto = (parseFloat(String(ventaImp.monto ?? 0)) || 0) + ivaLinea;
       } else if (!porcentajesImpuestos.some((p: number) => pctIgual(p, pct))) {
         ivaSinAsignar += ivaLinea;
       }
@@ -425,14 +437,36 @@ export function acumularMontosImpuestosVenta(
     const impuestoDestino =
       ventaImpuestos.find((i: any) => pctIgual(Number(i.porcentaje), empresaIva)) ||
       ventaImpuestos[0];
-    impuestoDestino.monto = parseFloat(
-      (parseFloat(impuestoDestino.monto) + ivaSinAsignar).toFixed(4)
-    );
+    impuestoDestino.monto =
+      (parseFloat(String(impuestoDestino.monto ?? 0)) || 0) + ivaSinAsignar;
   }
 
   ventaImpuestos.forEach((imp: any) => {
-    imp.monto = parseFloat(Number(imp.monto).toFixed(4));
+    imp.monto = redondearMoneda(parseFloat(String(imp.monto ?? 0)) || 0);
   });
+}
+
+/** Suma IVA por línea sin redondear el impuesto (base ya redondeada como subtotal). */
+export function sumarIvaLineasSinRedondeo(
+  detalles: any[],
+  cobrarImpuestos: boolean,
+  empresaIva: number
+): number {
+  return (detalles || []).reduce((acc, d) => {
+    const pct = porcentajeIvaDetalle(d, empresaIva, cobrarImpuestos);
+    const tipo = resolverTipoGravadoEfectivo(d, cobrarImpuestos, pct);
+    if (!cobrarImpuestos || tipo !== 'gravada') {
+      return acc;
+    }
+    const base = baseGravadaLineaImpuesto(d);
+    if (base <= 0) {
+      return acc;
+    }
+    if (d.iva != null && d.iva !== '' && Number.isFinite(parseFloat(d.iva))) {
+      return acc + parseFloat(d.iva);
+    }
+    return acc + base * (pct / 100);
+  }, 0);
 }
 
 /**
@@ -499,7 +533,9 @@ export function acumularImpuestosVentaConCierreResidual(
     return montoIvaDeVentaImpuestos(ventaImpuestos, empresaIva);
   }
 
-  const ivaObjetivo = calcularIvaResidualEncabezadoVenta(detalles);
+  const ivaObjetivo = redondearMoneda(
+    sumarIvaLineasSinRedondeo(detalles, cobrarImpuestos, empresaIva)
+  );
   const ivaAcumulado = montoIvaDeVentaImpuestos(ventaImpuestos, empresaIva);
   const delta = redondearMoneda(ivaObjetivo - ivaAcumulado);
 
@@ -510,8 +546,8 @@ export function acumularImpuestosVentaConCierreResidual(
           esImpuestoIva(i, empresaIva) && pctIgual(Number(i.porcentaje), empresaIva)
       ) || ventaImpuestos.find((i: any) => esImpuestoIva(i, empresaIva));
     if (impuestoDestino) {
-      impuestoDestino.monto = parseFloat(
-        (parseFloat(String(impuestoDestino.monto ?? 0)) + delta).toFixed(4)
+      impuestoDestino.monto = redondearMoneda(
+        (parseFloat(String(impuestoDestino.monto ?? 0)) || 0) + delta
       );
     }
   }
