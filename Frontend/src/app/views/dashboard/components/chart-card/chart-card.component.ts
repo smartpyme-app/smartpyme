@@ -45,17 +45,15 @@ export class ChartCardComponent implements OnInit {
     // Si es número, formatearlo según el tipo
     if (typeof value === 'number') {
       if (this.data.type === 'percentage') {
-        // Si el valor viene como decimal (0.125) → convertir a porcentaje
-        // Si viene como entero/flotante directo (12.5) → usarlo directo
-        const pct = Math.abs(value) <= 1 && value !== 0 ? value * 100 : value;
-        const sign = pct >= 0 ? '' : '-';
-        return `${sign}${Math.abs(pct).toFixed(2)}%`;
+        // Valor ya en puntos porcentuales (ej. 0.26 → 0.26%, 12.5 → 12.50%)
+        const sign = value >= 0 ? '' : '-';
+        return `${sign}${Math.abs(value).toFixed(2)}%`;
       }
 
       if (this.data.type === 'percentage-int') {
-        const pct = Math.abs(value) <= 1 && value !== 0 ? value * 100 : value;
-        const sign = pct >= 0 ? '' : '-';
-        const rounded = Math.round(Math.abs(pct));
+        // Valor ya en puntos porcentuales (ej. 12.4 → 12%)
+        const sign = value >= 0 ? '' : '-';
+        const rounded = Math.round(Math.abs(value));
         return `${sign}${rounded}%`;
       }
 
