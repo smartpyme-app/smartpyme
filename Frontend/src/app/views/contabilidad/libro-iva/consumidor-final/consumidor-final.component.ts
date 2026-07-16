@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { empresaTieneImpuestoTurismo } from '@utils/impuestos-turismo.util';
 
 import * as moment from 'moment';
 
@@ -19,6 +20,7 @@ export class ConsumidorFinalComponent implements OnInit {
     public loading:boolean = false;
     public downloading:boolean = false;
     public filtros:any = {};
+    public tieneImpuestoTurismo = false;
     modalRef!: BsModalRef;
     public tipoDescarga: string = '';
 
@@ -53,6 +55,13 @@ export class ConsumidorFinalComponent implements OnInit {
         this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error); this.loading = false;});
+
+        this.apiService.getAll('impuestos').subscribe(
+            (impuestos) => {
+                this.tieneImpuestoTurismo = empresaTieneImpuestoTurismo(impuestos);
+            },
+            (error) => { this.alertService.error(error); }
+        );
 
         this.loadAll();
     }

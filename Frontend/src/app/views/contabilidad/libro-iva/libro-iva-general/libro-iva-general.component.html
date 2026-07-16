@@ -7,7 +7,7 @@
     <div *ngIf="soloTurismo" class="d-flex gap-2 flex-wrap">
       <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-iva/contribuyentes">Contribuyentes</button>
       <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-iva/consumidor-final">Consumidor Final</button>
-      <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-iva/impuesto-turismo">Impuesto turismo 5%</button>
+      <button *ngIf="tieneImpuestoTurismo" class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-iva/impuesto-turismo">Impuesto turismo 5%</button>
     </div>
     <div *ngIf="!soloTurismo" class="d-flex gap-2 flex-wrap">
       <button type="button" class="btn" [ngClass]="{'btn-primary': activoSeccion === 'ventas'}" (click)="activoSeccion = 'ventas'; loadAll()">
@@ -19,7 +19,7 @@
       <button type="button" class="btn" [ngClass]="{'btn-primary': activoSeccion === 'retenciones'}" (click)="activoSeccion = 'retenciones'; loadAll()">
         Retenciones
       </button>
-      <button type="button" class="btn" [ngClass]="{'btn-primary': activoSeccion === 'turismo'}" (click)="activoSeccion = 'turismo'; loadAll()">
+      <button *ngIf="tieneImpuestoTurismo" type="button" class="btn" [ngClass]="{'btn-primary': activoSeccion === 'turismo'}" (click)="activoSeccion = 'turismo'; loadAll()">
         Impuesto turismo 5%
       </button>
     </div>

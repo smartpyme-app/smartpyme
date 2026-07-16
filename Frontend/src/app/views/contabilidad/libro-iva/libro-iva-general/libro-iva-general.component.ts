@@ -1,13 +1,18 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import {
+  empresaTieneImpuestoTurismo,
+  filtrarImpuestosTurismo,
+} from '@utils/impuestos-turismo.util';
 import * as moment from 'moment';
 
 /**
  * Libros de IVA - Vista general para países distintos de El Salvador.
- * Muestra solo: Ventas, Compras y Retenciones.
+ * Muestra: Ventas, Compras y Retenciones (+ turismo solo si la empresa lo tiene).
+ * También sirve la ruta dedicada de turismo (El Salvador) con data.soloTurismo.
  */
 @Component({
   selector: 'app-libro-iva-general',
@@ -16,6 +21,7 @@ import * as moment from 'moment';
 export class LibroIvaGeneralComponent implements OnInit {
   activoSeccion: 'ventas' | 'compras' | 'retenciones' | 'turismo' = 'ventas';
   soloTurismo = false;
+  tieneImpuestoTurismo = false;
   ventas: any[] = [];
   compras: any[] = [];
   retenciones: any[] = [];
@@ -33,7 +39,8 @@ export class LibroIvaGeneralComponent implements OnInit {
     public apiService: ApiService,
     private alertService: AlertService,
     private modalService: BsModalService,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private router: Router
   ) {}
 
   ngOnInit() {
@@ -59,13 +66,24 @@ export class LibroIvaGeneralComponent implements OnInit {
     );
     this.apiService.getAll('impuestos').subscribe(
       (impuestos) => {
-        this.impuestosTurismo = (impuestos || []).filter((impuesto: any) =>
-          Number(impuesto.porcentaje) === 5 && String(impuesto.codigo_mh ?? '') !== '20'
-        );
+        this.impuestosTurismo = filtrarImpuestosTurismo(impuestos);
+        this.tieneImpuestoTurismo = empresaTieneImpuestoTurismo(impuestos);
+
+        if (this.soloTurismo && !this.tieneImpuestoTurismo) {
+          const pais = this.apiService.auth_user()?.empresa?.pais ?? '';
+          this.router.navigate([
+            pais === 'El Salvador' ? '/libro-iva/contribuyentes' : '/libro-iva/general',
+          ]);
+          return;
+        }
+
+        this.loadAll();
       },
-      (error) => { this.alertService.error(error); }
+      (error) => {
+        this.alertService.error(error);
+        this.loadAll();
+      }
     );
-    this.loadAll();
   }
 
   set activarSeccion(seccion: 'ventas' | 'compras' | 'retenciones' | 'turismo') {
