@@ -982,6 +982,13 @@ export class FacturacionV2Component implements OnInit {
       this.venta.impuestos = [];
     }
 
+    const empresaIva = Number(this.apiService.auth_user()?.empresa?.iva ?? 0);
+    this.venta.detalles.forEach((d: any) => {
+      calcularMontosLineaDetalle(d, !!this.venta.cobrar_impuestos, empresaIva, {
+        preservePrecioIva: true,
+      });
+    });
+
     this.venta.sub_total = Number(sumarSubTotalEncabezadoVenta(this.venta.detalles)).toFixed(4);
 
     this.sincronizarRetencionGranContribuyente();
@@ -1012,7 +1019,6 @@ export class FacturacionV2Component implements OnInit {
       ? Math.round(subTotalNum * (propinaPorcentaje / 100) * 100) / 100
       : 0;
 
-    const empresaIva = Number(this.apiService.auth_user()?.empresa?.iva ?? 0);
     const ivaEncabezado = acumularImpuestosVentaConCierreResidual(
       this.venta.impuestos,
       this.venta.detalles,
@@ -1028,7 +1034,7 @@ export class FacturacionV2Component implements OnInit {
 
     // Total: líneas con IVA + tributos especiales (turismo, etc.) aunque IVA esté apagado.
     const descuentoPuntos = parseFloat(this.venta.descuento_puntos || 0) || 0;
-    const montoEspeciales = montoEspecialesDeVentaImpuestos(this.venta.impuestos);
+    const montoEspeciales = montoEspecialesDeVentaImpuestos(this.venta.impuestos, empresaIva);
     const totalNum =
       sumarTotalConIvaEncabezadoVenta(this.venta.detalles) +
       montoEspeciales +
