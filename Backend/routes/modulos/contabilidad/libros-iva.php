@@ -34,6 +34,8 @@ use Illuminate\Support\Facades\Route;
     Route::get('/libro-iva/retencion1/descargar-anexo',         [LibrosIVAController::class, 'anexoRetencion1Export']);
     Route::get('/libro-iva/percepcion1/descargar-libro',         [LibrosIVAController::class, 'libroPercepcion1Export']);
     Route::get('/libro-iva/percepcion1/descargar-anexo',         [LibrosIVAController::class, 'anexoPercepcion1Export']);
+    Route::get('/libro-iva/impuesto-turismo',                    [LibrosIVAController::class, 'impuestoTurismoList']);
+    Route::get('/libro-iva/impuesto-turismo/descargar-libro',    [LibrosIVAController::class, 'impuestoTurismoLibroExport']);
 
 
 ?>

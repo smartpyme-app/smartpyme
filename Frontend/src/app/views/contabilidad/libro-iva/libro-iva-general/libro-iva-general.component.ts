@@ -1,4 +1,5 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -13,10 +14,14 @@ import * as moment from 'moment';
   templateUrl: './libro-iva-general.component.html',
 })
 export class LibroIvaGeneralComponent implements OnInit {
-  activoSeccion: 'ventas' | 'compras' | 'retenciones' = 'ventas';
+  activoSeccion: 'ventas' | 'compras' | 'retenciones' | 'turismo' = 'ventas';
+  soloTurismo = false;
   ventas: any[] = [];
   compras: any[] = [];
   retenciones: any[] = [];
+  impuestoTurismo: any[] = [];
+  totalImpuestoTurismo = 0;
+  impuestosTurismo: any[] = [];
   years: number[] = [];
   sucursales: any[] = [];
   loading = false;
@@ -27,16 +32,23 @@ export class LibroIvaGeneralComponent implements OnInit {
   constructor(
     public apiService: ApiService,
     private alertService: AlertService,
-    private modalService: BsModalService
+    private modalService: BsModalService,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit() {
+    this.soloTurismo = this.route.snapshot.data['soloTurismo'] === true;
+    if (this.soloTurismo) {
+      this.activoSeccion = 'turismo';
+    }
+
     const currentYear = new Date().getFullYear();
     const currentMonth = new Date().getMonth() + 1;
     for (let i = 0; i <= 10; i++) {
       this.years.push(currentYear - i);
     }
     this.filtros.id_sucursal = '';
+    this.filtros.id_impuesto = '';
     this.filtros.anio = currentYear;
     this.filtros.mes = currentMonth;
     this.setTime();
@@ -45,10 +57,18 @@ export class LibroIvaGeneralComponent implements OnInit {
       (sucursales) => { this.sucursales = sucursales; },
       (error) => { this.alertService.error(error); }
     );
+    this.apiService.getAll('impuestos').subscribe(
+      (impuestos) => {
+        this.impuestosTurismo = (impuestos || []).filter((impuesto: any) =>
+          Number(impuesto.porcentaje) === 5 && String(impuesto.codigo_mh ?? '') !== '20'
+        );
+      },
+      (error) => { this.alertService.error(error); }
+    );
     this.loadAll();
   }
 
-  set activarSeccion(seccion: 'ventas' | 'compras' | 'retenciones') {
+  set activarSeccion(seccion: 'ventas' | 'compras' | 'retenciones' | 'turismo') {
     this.activoSeccion = seccion;
     this.loadAll();
   }
@@ -73,6 +93,15 @@ export class LibroIvaGeneralComponent implements OnInit {
     } else if (this.activoSeccion === 'retenciones') {
       this.apiService.getAll('libro-iva/retenciones', this.filtros).subscribe(
         (data) => { this.retenciones = data || []; this.loading = false; },
+        (error) => { this.alertService.error(error); this.loading = false; }
+      );
+    } else if (this.activoSeccion === 'turismo') {
+      this.apiService.getAll('libro-iva/impuesto-turismo', this.filtros).subscribe(
+        (data) => {
+          this.impuestoTurismo = data?.filas || [];
+          this.totalImpuestoTurismo = Number(data?.total_monto_turismo || 0);
+          this.loading = false;
+        },
         (error) => { this.alertService.error(error); this.loading = false; }
       );
     } else {
@@ -170,6 +199,25 @@ export class LibroIvaGeneralComponent implements OnInit {
         const a = document.createElement('a');
         a.href = url;
         a.download = 'Libro-retenciones.xlsx';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        this.downloading = false;
+      },
+      (error) => this.manejarErrorDescarga(error)
+    );
+  }
+
+  descargarImpuestoTurismoExcel() {
+    this.downloading = true;
+    this.apiService.export('libro-iva/impuesto-turismo/descargar-libro', this.filtros).subscribe(
+      (data: Blob) => {
+        const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'Libro-impuesto-turismo-5.xlsx';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);

@@ -108,6 +108,7 @@ export class ClienteInformacionComponent implements OnInit {
         this.cliente.tipo = 'Persona';
         this.cliente.contactos = [];
         this.cliente.tipo_contribuyente = '';
+        this.cliente.tipo_fiscal = '';
         this.cliente.habilita_credito = false;
         this.cliente.dias_credito = null;
         this.cliente.limite_credito = null;
@@ -453,6 +454,7 @@ export class ClienteInformacionComponent implements OnInit {
     this.cliente.nit = '';
     this.cliente.ncr = '';
     this.cliente.tipo_contribuyente = '';
+    this.cliente.tipo_fiscal = '';
     this.cliente.giro = '';
     this.cliente.empresa_telefono = '';
     this.cliente.empresa_direccion = '';

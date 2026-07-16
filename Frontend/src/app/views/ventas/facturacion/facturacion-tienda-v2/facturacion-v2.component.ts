@@ -14,8 +14,11 @@ import {
   acumularImpuestosVentaConCierreResidual,
   calcularMontosLineaDetalle,
   copiarImpuestosProductoAlDetalle,
+  esImpuestoIva,
+  hidratarImpuestosProductosEnDetalles,
   normalizarPorcentajeImpuestoDetalle,
   resolverPorcentajeImpuestoVenta,
+  sincronizarTipoGravadoPorCobroIva,
   sumarSubTotalEncabezadoVenta,
   sumarTotalConIvaEncabezadoVenta,
 } from '@utils/impuestos-venta.util';
@@ -418,6 +421,10 @@ export class FacturacionV2Component implements OnInit {
             this.venta = venta;
             this.retencionIvaGcUsuarioDecidio = true;
             this.normalizarDetallesTipoGravado(this.venta);
+            hidratarImpuestosProductosEnDetalles(
+              this.venta.detalles,
+              this.apiService.auth_user()?.empresa?.iva
+            );
             this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
             this.sumTotal();
           },
@@ -443,6 +450,10 @@ export class FacturacionV2Component implements OnInit {
             this.venta = venta;
             this.retencionIvaGcUsuarioDecidio = true;
             this.normalizarDetallesTipoGravado(this.venta);
+            hidratarImpuestosProductosEnDetalles(
+              this.venta.detalles,
+              this.apiService.auth_user()?.empresa?.iva
+            );
             if (!this.venta.cliente) {
               this.venta.cliente = {};
             } else {
@@ -490,6 +501,10 @@ export class FacturacionV2Component implements OnInit {
               this.venta = venta;
               this.retencionIvaGcUsuarioDecidio = true;
               this.normalizarDetallesTipoGravado(this.venta);
+              hidratarImpuestosProductosEnDetalles(
+                this.venta.detalles,
+                this.apiService.auth_user()?.empresa?.iva
+              );
               if (!this.venta.cliente) {
                 this.venta.cliente = {};
               } else {
@@ -1108,9 +1123,11 @@ export class FacturacionV2Component implements OnInit {
       cliente.nombre = cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo;
       this.venta.id_cliente = cliente.id;
       this.venta.cliente = cliente;
-      if (cliente.tipo_contribuyente == "Grande") {
-        this.sumTotal();
+      if (cliente.tipo_fiscal === 'Exento') {
+        this.venta.cobrar_impuestos = false;
+        sincronizarTipoGravadoPorCobroIva(this.venta.detalles, false);
       }
+      this.sumTotal();
 
       // Resetear y cargar puntos del cliente (si fidelización habilitada)
       this.resetearPuntos();

@@ -77,15 +77,14 @@ trait BuildsTributosVenta
      */
     protected function buildTributosResumen(): ?Collection
     {
-        $doc = $this->documentoFiscal();
         $filas = $this->filasImpuestosDocumento();
 
         if ($filas->isEmpty()) {
-            if ((float) $doc->iva > 0) {
+            if ($this->documentoTieneIva()) {
                 return collect([[
                     'codigo' => '20',
                     'descripcion' => 'Impuesto al Valor Agregado 13%',
-                    'valor' => floatval(number_format($doc->iva, 2, '.', '')),
+                    'valor' => floatval(number_format($this->montoIvaDocumento(), 2, '.', '')),
                 ]]);
             }
 
@@ -107,11 +106,11 @@ trait BuildsTributosVenta
             ];
         })->filter()->values();
 
-        if ($tributos->isEmpty() && (float) $doc->iva > 0) {
+        if ($tributos->isEmpty() && $this->documentoTieneIva()) {
             return collect([[
                 'codigo' => '20',
                 'descripcion' => 'Impuesto al Valor Agregado 13%',
-                'valor' => floatval(number_format($doc->iva, 2, '.', '')),
+                'valor' => floatval(number_format($this->montoIvaDocumento(), 2, '.', '')),
             ]]);
         }
 
@@ -125,9 +124,7 @@ trait BuildsTributosVenta
      */
     protected function buildTributosLineaCodes($detalle): ?array
     {
-        $doc = $this->documentoFiscal();
-
-        if ((float) $doc->iva <= 0 && (float) ($detalle->iva ?? 0) <= 0) {
+        if (!$this->documentoTieneIva() && !$this->documentoTieneTributosNoIva()) {
             return null;
         }
 
@@ -156,8 +153,6 @@ trait BuildsTributosVenta
      */
     protected function buildTributosLineaCodesDesdeDocumento(): ?array
     {
-        $doc = $this->documentoFiscal();
-
         $codigos = $this->filasImpuestosDocumento()
             ->map(fn ($vi) => $this->resolverCodigoMhImpuesto($vi->impuesto))
             ->filter()
@@ -165,7 +160,7 @@ trait BuildsTributosVenta
             ->values()
             ->all();
 
-        if (count($codigos) === 0 && (float) $doc->iva > 0) {
+        if (count($codigos) === 0 && $this->documentoTieneIva()) {
             return ['20'];
         }
 
@@ -195,9 +190,7 @@ trait BuildsTributosVenta
      */
     protected function buildTributosLineaCodesFacturaConsumidor($detalle): ?array
     {
-        $doc = $this->documentoFiscal();
-
-        if ((float) $doc->iva <= 0 && (float) ($detalle->gravada ?? 0) <= 0) {
+        if (!$this->documentoTieneIva() && !$this->documentoTieneTributosNoIva()) {
             return null;
         }
 
@@ -336,6 +329,10 @@ trait BuildsTributosVenta
      */
     protected function calcularIvaItemFactura($detalle, float $ventaItem): float
     {
+        if (!$this->documentoTieneIva()) {
+            return 0.0;
+        }
+
         return $this->calcularIvaItemFacturaConsumidor($ventaItem);
     }
 
@@ -364,6 +361,16 @@ trait BuildsTributosVenta
         return round((float) $this->filasImpuestosDocumento()
             ->filter(fn ($vi) => !$this->esImpuestoIva($vi->impuesto))
             ->sum(fn ($vi) => (float) $vi->monto), 2);
+    }
+
+    protected function documentoTieneIva(): bool
+    {
+        return $this->montoIvaDocumento() > 0;
+    }
+
+    protected function documentoTieneTributosNoIva(): bool
+    {
+        return $this->montoTributosNoIvaDocumento() > 0;
     }
 
     /** CCF / notas: subTotal neto + suma de resumen.tributos[].valor */
