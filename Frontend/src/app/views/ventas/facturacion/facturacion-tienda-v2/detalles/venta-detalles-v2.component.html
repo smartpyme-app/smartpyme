@@ -1,3 +1,81 @@
+<style>
+.product-zoom-img {
+    cursor: zoom-in;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+.product-zoom-img:hover {
+    transform: scale(1.12);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+.zoom-dialog {
+    border: none;
+    background: transparent;
+    padding: 0;
+    outline: none;
+    max-width: 90vw;
+    max-height: 90vh;
+    overflow: visible;
+    align-self: center;
+    justify-self: center;
+}
+.zoom-dialog::backdrop {
+    background-color: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(8px);
+    transition: backdrop-filter 0.3s ease;
+}
+.zoom-dialog-content {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+    background: #1e1e1e;
+    border: 1px solid rgba(255,255,255,0.1);
+    animation: zoomIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.zoom-dialog-img {
+    max-width: 85vw;
+    max-height: 80vh;
+    object-fit: contain;
+    display: block;
+}
+.zoom-dialog-close {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s, transform 0.2s;
+    z-index: 100;
+}
+.zoom-dialog-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+}
+@keyframes zoomIn {
+    from {
+        transform: scale(0.9);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+</style>
+
 <div class="d-flex justify-content-end mb-3">
     <div class="col-md-12 col-lg-8 justify-content-end d-flex gap-2">
         <app-tienda-venta-buscador-v2 class="w-100" [venta]="venta"
@@ -51,6 +129,8 @@
                         <div class="d-flex gap-3" *ngIf="!usuario.empresa.editar_descripcion_venta">
                             <div>
                                 <img src="{{ apiService.baseUrl }}/img/{{ detalle.img }}" class="rounded-circle"
+                                    [class.product-zoom-img]="hasImage(detalle.img)"
+                                    (click)="zoomImage(detalle.img, imageDialog)"
                                     height="50px" width="50px">
                             </div>
                             <div>
@@ -327,3 +407,11 @@
         </button>
     </div>
 </ng-template>
+
+<!-- Dialog Modal para Zoom de Fotos de Producto -->
+<dialog #imageDialog class="zoom-dialog" closedby="any" (click)="$event.target === imageDialog && imageDialog.close()">
+    <div class="zoom-dialog-content">
+        <button type="button" class="zoom-dialog-close" (click)="imageDialog.close()" aria-label="Cerrar">&times;</button>
+        <img [src]="zoomImageUrl" class="zoom-dialog-img" alt="Vista Ampliada de Producto" />
+    </div>
+</dialog>
