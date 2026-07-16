@@ -12,12 +12,13 @@ import Swal from 'sweetalert2';
 
 import * as moment from 'moment';
 import {
-  acumularMontosImpuestosVenta,
+  acumularImpuestosVentaConCierreResidual,
   calcularMontosLineaDetalle,
-  esImpuestoIva,
   hidratarImpuestosProductosEnDetalles,
+  montoEspecialesDeVentaImpuestos,
   sincronizarTipoGravadoPorCobroIva,
   sumarSubTotalEncabezadoVenta,
+  sumarTotalConIvaEncabezadoVenta,
 } from '@utils/impuestos-venta.util';
 import { VentaDetallesComponent } from './detalles/venta-detalles.component';
 
@@ -869,29 +870,25 @@ export class FacturacionComponent implements OnInit {
       ? Math.round(subTotalNum * (propinaPorcentaje / 100) * 100) / 100
       : 0;
 
-    acumularMontosImpuestosVenta(
+    const ivaEncabezado = acumularImpuestosVentaConCierreResidual(
       this.venta.impuestos,
       this.venta.detalles,
       !!this.venta.cobrar_impuestos,
       empresaIva
     );
-    const montoSoloIva = this.venta.impuestos
-      .filter((impuesto: any) => esImpuestoIva(impuesto))
-      .reduce((suma: number, impuesto: any) => suma + (parseFloat(impuesto.monto) || 0), 0);
-    this.venta.iva = parseFloat(montoSoloIva.toFixed(4)).toFixed(4);
-    const montoTotalImpuestos = this.venta.impuestos
-      .reduce((suma: number, impuesto: any) => suma + (parseFloat(impuesto.monto) || 0), 0);
+    this.venta.iva = ivaEncabezado.toFixed(4);
 
     const rawDescuento = parseFloat(this.sumPipe.transform(this.venta.detalles, 'descuento'));
     this.venta.descuento = Number(rawDescuento).toFixed(4);
     const rawTotalCosto = parseFloat(this.sumPipe.transform(this.venta.detalles, 'total_costo'));
     this.venta.total_costo = Number(rawTotalCosto).toFixed(4);
 
-    // Total cobrado incluye IVA e impuestos especiales, aunque el switch de IVA esté apagado.
+    // Total: líneas con IVA + tributos especiales (turismo, etc.) aunque IVA esté apagado.
     const descuentoPuntos = parseFloat(this.venta.descuento_puntos || 0) || 0;
+    const montoEspeciales = montoEspecialesDeVentaImpuestos(this.venta.impuestos);
     const totalNum =
-      parseFloat(this.venta.sub_total) +
-      montoTotalImpuestos +
+      sumarTotalConIvaEncabezadoVenta(this.venta.detalles) +
+      montoEspeciales +
       parseFloat(this.venta.cuenta_a_terceros) +
       parseFloat(String(this.venta.iva_percibido)) -
       parseFloat(String(this.venta.iva_retenido)) -
