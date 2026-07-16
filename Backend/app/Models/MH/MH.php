@@ -318,7 +318,7 @@ class MH extends Model
               "descActividad" => $this->venta->cliente->giro,
               "direccion" => [
                 "departamento" => $this->venta->cliente->cod_departamento,
-                "municipio" => $this->venta->cliente->cod_departamento,
+                "municipio" => $this->venta->cliente->cod_municipio,
                 "complemento" => $this->venta->cliente->direccion ? $this->venta->cliente->direccion : $this->venta->cliente->empresa_direccion,
               ],
               "telefono" => $this->venta->cliente->telefono,

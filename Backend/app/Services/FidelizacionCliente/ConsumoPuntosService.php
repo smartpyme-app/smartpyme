@@ -100,18 +100,18 @@ class ConsumoPuntosService
 
         // 4. Verificar si la empresa tiene fidelización habilitada (con cache)
         $empresaId = $venta->id_empresa;
-        Log::info('Empresa ID: ' . $empresaId);
-        Log::info("Iniciando verificación de fidelización para empresa", ['empresa_id' => $empresaId]);
+        //Log::info('Empresa ID: ' . $empresaId);
+        //Log::info("Iniciando verificación de fidelización para empresa", ['empresa_id' => $empresaId]);
 
         $tieneFidelizacion = $this->verificarFidelizacionHabilitada($empresaId);
 
-        Log::info("Resultado final de tieneFidelizacion", [
-            'empresa_id' => $empresaId,
-            'tieneFidelizacion' => $tieneFidelizacion
-        ]);
+            // Log::info("Resultado final de tieneFidelizacion", [
+            //     'empresa_id' => $empresaId,
+            //     'tieneFidelizacion' => $tieneFidelizacion
+            // ]);
 
         if (!$tieneFidelizacion) {
-            Log::debug('Empresa no tiene fidelización habilitada', ['empresa_id' => $empresaId]);
+            //Log::debug('Empresa no tiene fidelización habilitada', ['empresa_id' => $empresaId]);
             return false;
         }
 

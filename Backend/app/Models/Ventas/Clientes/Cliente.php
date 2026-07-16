@@ -30,6 +30,7 @@ class Cliente extends AuditableModel {
        'cod_giro',
        'tipo',
        'tipo_contribuyente',
+       'tipo_fiscal',
        'clasificacion',
        'dui',
        'nit',

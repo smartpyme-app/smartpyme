@@ -32,7 +32,14 @@
         </div>
     </ng-template>
     <!-- Filtros específicos de Resultados -->
-    <div class="bg-white p-2 rounded mb-3 filter-bar-card">
+    <div class="bg-white p-2 rounded mb-3 filter-bar-card filter-bar-wrapper" [class.filter-bar-locked]="filtrosLocked">
+
+        <!-- Overlay de carga sobre los filtros -->
+        <div class="filter-loading-overlay" *ngIf="filtrosLocked" aria-live="polite" aria-busy="true">
+            <span class="filter-loading-spinner"></span>
+            <span class="filter-loading-text">Filtrando datos…</span>
+        </div>
+
         <div class="d-flex align-items-center justify-content-end flex-wrap gap-3">
 
             <!-- Contenedor de filtros (año, mes y sucursal) alineados a la derecha -->
@@ -40,12 +47,13 @@
                 <!-- Selector de año -->
                 <div class="d-flex flex-column dmf-select-outer">
                     <span class="dmf-select-label fw-medium small mb-1">Año</span>
-                    <div class="dmf-select-wrap">
+                    <div class="dmf-select-wrap" [class.dmf-select-wrap--disabled]="filtrosLocked">
                         <span class="dmf-select-icon" aria-hidden="true">
                             <i class="fas fa-chevron-down"></i>
                         </span>
                         <select id="anioResultados" name="anioResultados" class="dmf-select"
-                            [ngModel]="anioSeleccionado" (ngModelChange)="cambiarAnio($event)">
+                            [ngModel]="anioSeleccionado" (ngModelChange)="cambiarAnio($event)"
+                            [disabled]="filtrosLocked">
                             <option *ngFor="let anio of anios; trackBy: trackByIndex" [ngValue]="anio">
                                 {{ anio }}
                             </option>
@@ -56,12 +64,13 @@
                 <!-- Selector de mes -->
                 <div class="d-flex flex-column dmf-select-outer">
                     <span class="dmf-select-label fw-medium small mb-1">Mes</span>
-                    <div class="dmf-select-wrap">
+                    <div class="dmf-select-wrap" [class.dmf-select-wrap--disabled]="filtrosLocked">
                         <span class="dmf-select-icon" aria-hidden="true">
                             <i class="fas fa-chevron-down"></i>
                         </span>
                         <select id="mesResultados" name="mesResultados" class="dmf-select"
-                            [(ngModel)]="mesFlujoEfectivo" (ngModelChange)="onMesFlujoEfectivoChange()">
+                            [(ngModel)]="mesFlujoEfectivo" (ngModelChange)="onMesFlujoEfectivoChange()"
+                            [disabled]="filtrosLocked">
                             <option [ngValue]="null">Todo el año</option>
                             <option *ngFor="let m of opcionesMesFlujo; trackBy: trackByMesValor" [ngValue]="m.valor">
                                 {{ m.etiqueta }}
@@ -71,7 +80,7 @@
                 </div>
 
                 <app-dropdown-multi-filtro label="Sucursales" pluralLabel="sucursales" [items]="sucursales"
-                    [disabled]="sucursalesMultiDisabled" [todasImplicitas]="sucursalesTodasImplicitas"
+                    [disabled]="sucursalesMultiDisabled || filtrosLocked" [todasImplicitas]="sucursalesTodasImplicitas"
                     [seleccionados]="sucursalesSeleccionadas" (selectionChange)="onSucursalesMultiFiltroChange($event)">
                 </app-dropdown-multi-filtro>
             </div>
@@ -190,7 +199,8 @@
                                 <div class="d-flex flex-column p-3 border-bottom gap-2">
                                     <div class="cashflow-card-title mb-0 text-center">Ventas del mes</div>
                                     <div class="d-flex gap-2 align-items-center flex-wrap justify-content-end w-100">
-                                        <div class="input-group" style="flex: 1 1 200px; max-width: 350px; min-width: 200px;">
+                                        <div class="input-group"
+                                            style="flex: 1 1 200px; max-width: 350px; min-width: 200px;">
                                             <span class="input-group-text bg-white border-end-0">
                                                 <i class="fas fa-search text-muted"></i>
                                             </span>
@@ -231,7 +241,8 @@
                                 <div class="d-flex flex-column p-3 border-bottom gap-2">
                                     <div class="cashflow-card-title mb-0 text-center">Gastos del mes</div>
                                     <div class="d-flex gap-2 align-items-center flex-wrap justify-content-end w-100">
-                                        <div class="input-group" style="flex: 1 1 200px; max-width: 350px; min-width: 200px;">
+                                        <div class="input-group"
+                                            style="flex: 1 1 200px; max-width: 350px; min-width: 200px;">
                                             <span class="input-group-text bg-white border-end-0">
                                                 <i class="fas fa-search text-muted"></i>
                                             </span>
@@ -278,7 +289,8 @@
                                 <div class="d-flex flex-column p-3 border-bottom gap-2">
                                     <div class="cashflow-card-title mb-0 text-center">Abonos recibidos CxC</div>
                                     <div class="d-flex gap-2 align-items-center flex-wrap justify-content-end w-100">
-                                        <div class="input-group" style="flex: 1 1 200px; max-width: 350px; min-width: 200px;">
+                                        <div class="input-group"
+                                            style="flex: 1 1 200px; max-width: 350px; min-width: 200px;">
                                             <span class="input-group-text bg-white border-end-0">
                                                 <i class="fas fa-search text-muted"></i>
                                             </span>
@@ -315,7 +327,8 @@
                                 <div class="d-flex flex-column p-3 border-bottom gap-2">
                                     <div class="cashflow-card-title mb-0 text-center">Abonos realizados CxP</div>
                                     <div class="d-flex gap-2 align-items-center flex-wrap justify-content-end w-100">
-                                        <div class="input-group" style="flex: 1 1 200px; max-width: 350px; min-width: 200px;">
+                                        <div class="input-group"
+                                            style="flex: 1 1 200px; max-width: 350px; min-width: 200px;">
                                             <span class="input-group-text bg-white border-end-0">
                                                 <i class="fas fa-search text-muted"></i>
                                             </span>

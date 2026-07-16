@@ -34,10 +34,13 @@ import { CountryI18nService } from '@services/country-i18n.service';
 
 import * as moment from 'moment';
 import {
+  acumularImpuestosVentaConCierreResidual,
   calcularMontosLineaDetalle,
+  hidratarImpuestosProductosEnDetalles,
+  montoEspecialesDeVentaImpuestos,
+  sincronizarTipoGravadoPorCobroIva,
   sumarSubTotalEncabezadoVenta,
   sumarTotalConIvaEncabezadoVenta,
-  acumularMontosImpuestosVenta,
   copiarImpuestosProductoAlDetalle,
 } from '@utils/impuestos-venta.util';
 
@@ -615,6 +618,10 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
             this.venta = this.adaptarCotizacionVentaSiAplica(venta, isCotizacion);
             this.retencionIvaGcUsuarioDecidio = true;
             this.normalizarDetallesTipoGravado(this.venta);
+            hidratarImpuestosProductosEnDetalles(
+              this.venta.detalles,
+              this.apiService.auth_user()?.empresa?.iva
+            );
             this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
             this.syncVentaCreditoConsignaFlagsFromEstado();
             this.sumTotal();
@@ -660,9 +667,13 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
             this.venta = venta;
             this.retencionIvaGcUsuarioDecidio = true;
             this.normalizarDetallesTipoGravado(this.venta);
-            if(!this.venta.cliente){
-                this.venta.cliente = {};
-            }else{
+            hidratarImpuestosProductosEnDetalles(
+              this.venta.detalles,
+              this.apiService.auth_user()?.empresa?.iva
+            );
+            if (!this.venta.cliente) {
+              this.venta.cliente = {};
+            } else {
               this.venta.cliente.nombre = this.venta.cliente.tipo == 'Empresa' ? this.venta.cliente.nombre_empresa : this.venta.cliente.nombre_completo;
             }
             this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
@@ -711,9 +722,13 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
               this.venta = this.adaptarCotizacionVentaSiAplica(venta, false);
               this.retencionIvaGcUsuarioDecidio = true;
               this.normalizarDetallesTipoGravado(this.venta);
-              if(!this.venta.cliente){
-                  this.venta.cliente = {};
-              }else{
+              hidratarImpuestosProductosEnDetalles(
+                this.venta.detalles,
+                this.apiService.auth_user()?.empresa?.iva
+              );
+              if (!this.venta.cliente) {
+                this.venta.cliente = {};
+              } else {
                 this.venta.cliente.nombre = this.venta.cliente.tipo == 'Empresa' ? this.venta.cliente.nombre_empresa : this.venta.cliente.nombre_completo;
               }
               this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
@@ -1115,29 +1130,27 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
       ? Math.round(subTotalNum * (propinaPorcentaje / 100) * 100) / 100
       : 0;
 
-    // IVA por tasa: cada impuesto acumula el monto de las líneas que lo incluyen
-    if (this.venta.cobrar_impuestos) {
-      acumularMontosImpuestosVenta(
-        this.venta.impuestos,
-        this.venta.detalles,
-        true,
-        empresaIva
-      );
-      this.venta.iva = (parseFloat(this.sumPipe.transform(this.venta.impuestos, 'monto')) || 0).toFixed(4);
-    } else {
-      this.venta.iva = (0).toFixed(4);
-      this.venta.impuestos.forEach((impuesto: any) => { impuesto.monto = 0; });
-    }
+    // IVA por tasa: acumula por impuesto (multi-impuesto) y cierra la diferencia residual
+    // de IVA sin apagar tributos especiales (turismo, etc.) cuando cobrar_impuestos es false.
+    const ivaEncabezado = acumularImpuestosVentaConCierreResidual(
+      this.venta.impuestos,
+      this.venta.detalles,
+      !!this.venta.cobrar_impuestos,
+      empresaIva
+    );
+    this.venta.iva = ivaEncabezado.toFixed(4);
 
     const rawDescuento = parseFloat(this.sumPipe.transform(this.venta.detalles, 'descuento'));
     this.venta.descuento = Number(rawDescuento).toFixed(4);
     const rawTotalCosto = parseFloat(this.sumPipe.transform(this.venta.detalles, 'total_costo'));
     this.venta.total_costo = Number(rawTotalCosto).toFixed(4);
 
-    // Total desde suma de líneas con IVA (redondeo por línea); evita centavos de más/menos
+    // Total: líneas con IVA + tributos especiales (turismo, etc.) aunque IVA esté apagado.
     const descuentoPuntos = parseFloat(this.venta.descuento_puntos || 0) || 0;
+    const montoEspeciales = montoEspecialesDeVentaImpuestos(this.venta.impuestos);
     const totalNum =
       sumarTotalConIvaEncabezadoVenta(this.venta.detalles) +
+      montoEspeciales +
       parseFloat(this.venta.cuenta_a_terceros) +
       parseFloat(String(this.venta.iva_percibido)) -
       parseFloat(String(this.venta.iva_retenido)) -
@@ -1235,15 +1248,17 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     }
 
     // Cliente
-    public setCliente(cliente:any){
-        if(cliente.id){
+    public setCliente(cliente: any) {
+        if (cliente.id) {
             this.retencionIvaGcUsuarioDecidio = false;
             cliente.nombre = cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo;
             this.venta.id_cliente = cliente.id;
             this.venta.cliente = cliente;
-            if(cliente.tipo_contribuyente == "Grande") {
-                this.sumTotal();
+            if (cliente.tipo_fiscal === 'Exento') {
+                this.venta.cobrar_impuestos = false;
+                sincronizarTipoGravadoPorCobroIva(this.venta.detalles, false);
             }
+            this.sumTotal();
             // Resetear puntos cuando cambia el cliente
             this.resetearPuntos();
             // Cargar puntos del cliente (solo si la empresa tiene fidelización habilitada)

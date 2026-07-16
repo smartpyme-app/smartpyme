@@ -27,40 +27,40 @@
         <div class="row g-3">
             <div class="col-12 col-md-6 col-xl-4">
                 <app-dropdown-multi-filtro label="Sucursal" pluralLabel="sucursales" [items]="filtroAdSucursalesItems"
-                    [disabled]="filtroAdSucursalMultiDisabled" [todasImplicitas]="filtroAdSucursalTodasImplicitas"
+                    [disabled]="filtroAdSucursalMultiDisabled || filtrosLocked" [todasImplicitas]="filtroAdSucursalTodasImplicitas"
                     [seleccionados]="filtroAdSucursalSeleccionadas"
                     (selectionChange)="onFiltroAdSucursalChange($event)">
                 </app-dropdown-multi-filtro>
             </div>
             <div class="col-12 col-md-6 col-xl-4">
                 <app-dropdown-multi-filtro label="Estado" pluralLabel="estados" [items]="estadosVenta"
-                    [disabled]="false" [todasImplicitas]="filtroAdEstadoTodasImplicitas"
+                    [disabled]="filtrosLocked" [todasImplicitas]="filtroAdEstadoTodasImplicitas"
                     [seleccionados]="filtroAdEstadoSeleccionadas" (selectionChange)="onFiltroAdEstadoChange($event)">
                 </app-dropdown-multi-filtro>
             </div>
             <div class="col-12 col-md-6 col-xl-4">
                 <app-dropdown-multi-filtro label="Canal" pluralLabel="canales" [items]="filtroAdCanalesItems"
-                    [disabled]="false" [todasImplicitas]="filtroAdCanalTodasImplicitas"
+                    [disabled]="filtrosLocked" [todasImplicitas]="filtroAdCanalTodasImplicitas"
                     [seleccionados]="filtroAdCanalSeleccionadas" (selectionChange)="onFiltroAdCanalChange($event)">
                 </app-dropdown-multi-filtro>
             </div>
             <div class="col-12 col-md-6 col-xl-4">
                 <app-dropdown-multi-filtro label="Cliente" pluralLabel="clientes" [items]="filtroAdClientesItems"
-                    [disabled]="false" [mostrarBuscador]="true" [limiteVistaInicial]="100" buscadorPlaceholder="Buscar"
+                    [disabled]="filtrosLocked" [mostrarBuscador]="true" [limiteVistaInicial]="100" buscadorPlaceholder="Buscar"
                     [todasImplicitas]="filtroAdClienteTodasImplicitas" [seleccionados]="filtroAdClienteSeleccionadas"
                     (selectionChange)="onFiltroAdClienteChange($event)">
                 </app-dropdown-multi-filtro>
             </div>
             <div class="col-12 col-md-6 col-xl-4">
                 <app-dropdown-multi-filtro label="Vendedor" pluralLabel="vendedores" [items]="filtroAdVendedoresItems"
-                    [disabled]="false" [todasImplicitas]="filtroAdVendedorTodasImplicitas"
+                    [disabled]="filtrosLocked" [todasImplicitas]="filtroAdVendedorTodasImplicitas"
                     [seleccionados]="filtroAdVendedorSeleccionadas"
                     (selectionChange)="onFiltroAdVendedorChange($event)">
                 </app-dropdown-multi-filtro>
             </div>
             <div class="col-12 col-md-6 col-xl-4">
                 <app-dropdown-multi-filtro label="Categoría" pluralLabel="categorías" [items]="filtroAdCategoriasItems"
-                    [todasImplicitas]="filtroCatTodasImplicitas" [seleccionados]="filtroCatSeleccionadas"
+                    [disabled]="filtrosLocked" [todasImplicitas]="filtroCatTodasImplicitas" [seleccionados]="filtroCatSeleccionadas"
                     (selectionChange)="onFiltroCatProductoChange($event)">
                 </app-dropdown-multi-filtro>
             </div>
@@ -76,25 +76,35 @@
     <!-- Filtros específicos de Ventas -->
     <div class="row mb-2">
         <div class="col-12">
-            <div class="card filter-bar-card">
+            <div class="card filter-bar-card filter-bar-wrapper" [class.filter-bar-locked]="filtrosLocked">
+
+                <!-- Overlay de carga sobre los filtros -->
+                <div class="filter-loading-overlay" *ngIf="filtrosLocked" aria-live="polite" aria-busy="true">
+                    <span class="filter-loading-spinner"></span>
+                    <span class="filter-loading-text">Filtrando datos…</span>
+                </div>
+
                 <div class="card-body">
                     <div class="d-flex align-items-end justify-content-between gap-3 flex-wrap">
                         <app-filtro-fecha [(anio)]="anio" [(mes)]="mes" (filtroChange)="refrescarDatosPorFecha()"
-                            controlId="ventas-filtro-principal">
+                            controlId="ventas-filtro-principal" [disabled]="filtrosLocked">
                         </app-filtro-fecha>
 
                         <!-- Botones y controles a la derecha -->
                         <div class="d-flex align-items-end gap-2">
-                            <button type="button" class="btn btn-outline-primary" (click)="toggleFiltrosAdicionales()">
+                            <button type="button" class="btn btn-outline-primary" (click)="toggleFiltrosAdicionales()"
+                                [disabled]="filtrosLocked">
                                 <i class="fas fa-filter me-1"></i> Ver otros filtros
                             </button>
 
                             <button type="button" class="btn btn-primary" tooltip="Aplicar filtros"
-                                *ngIf="mostrarBotonAplicarOtrosFiltrosVentas" (click)="confirmarOtrosFiltrosVentas()">
+                                *ngIf="mostrarBotonAplicarOtrosFiltrosVentas" (click)="confirmarOtrosFiltrosVentas()"
+                                [disabled]="filtrosLocked">
                                 <i class="fa fa-check"></i> Aplicar
                             </button>
                             <button type="button" class="btn btn-outline-primary" tooltip="Limpiar filtros"
-                                (click)="limpiarFiltros()" *ngIf="puedeLimpiarFiltrosVentas">
+                                (click)="limpiarFiltros()" *ngIf="puedeLimpiarFiltrosVentas"
+                                [disabled]="filtrosLocked">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
                                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                     stroke-linejoin="round"
@@ -133,6 +143,7 @@
                     </div>
                 </div>
             </div>
+
         </div>
     </div>
     <!-- Sección de métricas y gráficos combinada en una sola tarjeta (Ventas) -->

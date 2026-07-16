@@ -141,7 +141,7 @@ class MHNotaDebito extends Model
               "descActividad" => $this->devolucion->cliente->giro,
               "direccion" => [
                 "departamento" => $this->devolucion->cliente->cod_departamento,
-                "municipio" => $this->devolucion->cliente->cod_departamento,
+                "municipio" => $this->devolucion->cliente->cod_municipio,
                 "complemento" => $this->devolucion->cliente->empresa_direccion ?? $this->devolucion->cliente->direccion,
               ],
               "telefono" => $this->devolucion->cliente->telefono,
@@ -161,9 +161,9 @@ class MHNotaDebito extends Model
 
     public function generarNotaCredito(){
 
-        if ($this->devolucion->iva > 0) {
+        if ($this->documentoTieneIva()) {
             $this->devolucion->gravada = $this->devolucion->sub_total;
-        }else{
+        } elseif (!$this->documentoTieneTributosNoIva()) {
             $this->devolucion->gravada = 0;
             $this->devolucion->exenta = $this->devolucion->sub_total;
         }
@@ -246,10 +246,12 @@ class MHNotaDebito extends Model
 
             $detalle->codTributo = NULL;
 
-            if ($this->devolucion->iva > 0) {
+            if ($this->documentoTieneIva()) {
                 $tributos = $this->buildTributosLineaCodes($detalle);
                 $detalle->gravada = $detalle->total;
-            }else{
+            } elseif ($this->documentoTieneTributosNoIva()) {
+                $tributos = $this->buildTributosLineaCodes($detalle);
+            } else {
                 $tributos = NULL;
                 $detalle->gravada = 0;
                 $detalle->exenta = $detalle->total;

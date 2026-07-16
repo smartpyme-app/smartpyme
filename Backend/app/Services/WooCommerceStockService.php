@@ -23,7 +23,7 @@ class WooCommerceStockService
         $this->resolvedProductWriter = $resolvedProductWriter;
     }
 
-    public function actualizarStockEnWooCommerce($productoId, $userId)
+    public function actualizarStockEnWooCommerce($productoId, $userId, ?array $changedFields = null)
     {
         try {
 
@@ -85,7 +85,7 @@ class WooCommerceStockService
                 $empresa->woocommerce_consumer_secret
             );
 
-            $productData = $this->prepararDatosProducto($producto, $stock, $wooClient);
+            $productData = $this->prepararDatosProducto($producto, $stock, $wooClient, $changedFields);
 
             if (!empty($producto->woocommerce_id)) {
                 if ($this->actualizarProductoExistente($wooClient, $producto, $productData)) {
@@ -110,7 +110,8 @@ class WooCommerceStockService
                 return false;
             }
 
-            $this->crearNuevoProducto($wooClient, $producto, $productData);
+            $productDataCompleto = $this->prepararDatosProducto($producto, $stock, $wooClient, null);
+            $this->crearNuevoProducto($wooClient, $producto, $productDataCompleto);
 
             return true;
         } catch (\Exception $e) {
@@ -195,62 +196,76 @@ class WooCommerceStockService
         return $resultados;
     }
 
-    private function prepararDatosProducto($producto, $stock, $client)
+    private function prepararDatosProducto($producto, $stock, $client, ?array $changedFields = null)
     {
-        $categories = [];
-        if (!empty($producto->id_categoria)) {
-            $categories[] = [
-                'id' => $this->obtenerCategoria($producto->id_categoria, $client)
-            ];
-        }
-        $images = [];
-        if (!empty($producto->imagenes)) {
-            foreach ($producto->imagenes as $imagen) {
-                $images[] = [
-                    'src' => url('/img' . $imagen->img)
-                ];
-            }
-        }
+        $fullSync = $changedFields === null;
+        $includesField = function (string $field) use ($fullSync, $changedFields): bool {
+            return $fullSync || in_array($field, $changedFields ?? [], true);
+        };
 
         // Calcular precio con IVA si está habilitado
         $precio = $producto->precio;
         $empresa = $producto->empresa;
-        
+
         if ($empresa && $empresa->cobra_iva === 'Si' && !empty($empresa->iva) && $empresa->iva > 0) {
             $ivaDecimal = $empresa->iva / 100;
             $precio = $producto->precio * (1 + $ivaDecimal);
         }
-        
-        // Formatear el precio correctamente para WooCommerce
+
         $precio = number_format($precio, 2, '.', '');
 
         $productData = [
-            'name' => $producto->nombre,
-            'status' => 'publish',
-            'featured' => false,
-            'catalog_visibility' => 'visible',
             'sku' => $producto->codigo,
             'price' => $precio,
             'regular_price' => $precio,
             'manage_stock' => true,
             'stock_quantity' => $stock,
-            'stock_status' => $stock > 0 ? 'instock' : 'outofstock'
+            'stock_status' => $stock > 0 ? 'instock' : 'outofstock',
         ];
 
-        // Añadir descripción si existe
-        if (!empty($producto->descripcion)) {
+        if ($fullSync || $includesField('nombre')) {
+            $productData['name'] = $producto->nombre;
+        }
+
+        if ($fullSync) {
+            $productData['status'] = 'publish';
+            $productData['featured'] = false;
+            $productData['catalog_visibility'] = 'visible';
+        }
+
+        if (($fullSync || $includesField('descripcion')) && !empty($producto->descripcion)) {
             $productData['description'] = $producto->descripcion;
             $productData['short_description'] = substr($producto->descripcion, 0, 150);
         }
 
-        // Añadir categorías si existen
-        if (!empty($categories)) {
-            $productData['categories'] = $categories;
+        if ($fullSync) {
+            $categories = [];
+            if (!empty($producto->id_categoria)) {
+                $categories[] = [
+                    'id' => $this->obtenerCategoria($producto->id_categoria, $client),
+                ];
+            }
+            if (!empty($categories)) {
+                $productData['categories'] = $categories;
+            }
+
+            if (!empty($producto->imagenes)) {
+                $images = [];
+                foreach ($producto->imagenes as $imagen) {
+                    $images[] = [
+                        'src' => url('/img' . $imagen->img),
+                    ];
+                }
+                if (!empty($images)) {
+                    $productData['images'] = $images;
+                }
+            }
         }
 
-        // Añadir imágenes si existen
-        if (!empty($images)) {
-            $productData['images'] = $images;
+        $shouldSyncCost = $fullSync || $includesField('costo') || $includesField('costo_promedio');
+
+        if ($shouldSyncCost) {
+            return WooCommerceCogsHelper::mergeCostIntoProductData($productData, (float) $producto->costo);
         }
 
         return $productData;

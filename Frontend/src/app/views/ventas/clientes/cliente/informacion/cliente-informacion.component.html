@@ -346,6 +346,16 @@
                         <option value="Otro">Otro</option>
                     </select>
                 </div>
+                <div class="form-group col-md-6 col-lg-3">
+                    <label for="tipo_fiscal">Tipo fiscal (IVA):</label>
+                    <select class="form-select" [(ngModel)]="cliente.tipo_fiscal" name="tipo_fiscal">
+                        <option value="">Seleccione aquí</option>
+                        <option value="Contribuyente">Contribuyente</option>
+                        <option value="Consumidor Final">Consumidor Final</option>
+                        <option value="Exento">Exento</option>
+                    </select>
+                    <small class="form-text text-muted">Exento: no aplica IVA 13%; sí impuestos especiales del producto.</small>
+                </div>
                 <div class="form-group col-6 col-lg-6">
                     <label for="giro">Giro:</label>
                     @if (!apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador') {

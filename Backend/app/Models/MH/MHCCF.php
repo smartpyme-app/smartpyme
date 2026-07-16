@@ -151,7 +151,7 @@ class MHCCF extends Model
               "descActividad" => $this->venta->cliente->giro,
               "direccion" => [
                 "departamento" => $this->venta->cliente->cod_departamento,
-                "municipio" => $this->venta->cliente->cod_departamento,
+                "municipio" => $this->venta->cliente->cod_municipio,
                 "complemento" => $this->venta->cliente->empresa_direccion ?? $this->venta->cliente->direccion,
               ],
               "telefono" => $this->venta->cliente->telefono,
@@ -170,9 +170,9 @@ class MHCCF extends Model
             }
         }
 
-        if ($this->venta->iva > 0) {
+        if ($this->documentoTieneIva()) {
             $this->venta->gravada = $this->venta->sub_total;
-        }else{
+        } elseif (!$this->documentoTieneTributosNoIva()) {
             $this->venta->gravada = 0;
             $this->venta->exenta = $this->venta->sub_total;
         }
@@ -244,17 +244,19 @@ class MHCCF extends Model
                 $this->venta->tipo_item = 1;
             }
 
-            if ($this->venta->iva > 0) {
+            if ($this->documentoTieneIva()) {
                 $this->venta->gravada = $this->venta->sub_total;
-            }else{
+            } elseif (!$this->documentoTieneTributosNoIva()) {
                 $this->venta->gravada = 0;
                 $this->venta->exenta = $this->venta->sub_total;
             }
 
-            if ($this->venta->iva > 0) {
+            if ($this->documentoTieneIva()) {
                 $tributos = $this->buildTributosLineaCodesDesdeDocumento();
                 $this->venta->gravada = $this->venta->detalles()->sum('total');
-            }else{
+            } elseif ($this->documentoTieneTributosNoIva()) {
+                $tributos = $this->buildTributosLineaCodesDesdeDocumento();
+            } else {
                 $tributos = NULL;
                 $this->venta->gravada = 0;
                 $this->venta->exenta = $this->venta->detalles()->sum('total');
@@ -408,6 +410,9 @@ class MHCCF extends Model
         }
 
         if (floatval($detalle->gravada ?? 0) > 0 && $this->venta->iva > 0) {
+            $tributos = $this->buildTributosLineaCodes($detalle);
+        } elseif ($this->documentoTieneTributosNoIva()) {
+            // ponytail: documento sin IVA (p. ej. turismo 5% exento) sigue necesitando tributos no-IVA por línea.
             $tributos = $this->buildTributosLineaCodes($detalle);
         } else {
             $tributos = null;

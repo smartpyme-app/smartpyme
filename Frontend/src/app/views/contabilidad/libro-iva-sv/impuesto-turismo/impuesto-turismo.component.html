@@ -1,0 +1,93 @@
+
+<section class="bg-white p-4 rounded mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+        <h2 class="mb-0">Impuesto turismo 5%</h2>
+    </div>
+    <button type="button" class="btn btn-default d-inline-flex align-items-center" (click)="descargarLibro()"
+            [disabled]="downloading">
+        <img src="/assets/icons/download.png" class="icon me-2" alt="">
+        Descargar (Excel)
+    </button>
+</section>
+
+<div class="bg-white p-4 rounded mb-3">
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <div class="d-flex gap-2 flex-wrap">
+            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-iva-sv/contribuyentes">Contribuyentes</button>
+            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-iva-sv/consumidor-final">Consumidor Final</button>
+            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-iva-sv/compras">Compras</button>
+            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-iva-sv/anulados">Anulados</button>
+            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-iva-sv/compras-sujetos-excluidos">Sujetos Excluidos</button>
+            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-iva-sv/resumen">Resumen</button>
+            <button class="btn tcla-F5" routerLinkActive="btn-primary" (click)="loadAll()" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-iva-sv/impuesto-turismo">Impuesto turismo 5%</button>
+        </div>
+        <div class="ms-auto d-flex gap-2">
+            <select class="form-select" [(ngModel)]="filtros.id_sucursal" name="id_sucursal" (change)="loadAll()">
+                <option value="">Todas las sucursales</option>
+                <option [value]="sucursal.id" *ngFor="let sucursal of sucursales">{{ sucursal.nombre }}</option>
+            </select>
+            <select class="form-select" name="mes" [(ngModel)]="filtros.mes" (change)="setTime()">
+                <option [value]="1">Enero</option>
+                <option [value]="2">Febrero</option>
+                <option [value]="3">Marzo</option>
+                <option [value]="4">Abril</option>
+                <option [value]="5">Mayo</option>
+                <option [value]="6">Junio</option>
+                <option [value]="7">Julio</option>
+                <option [value]="8">Agosto</option>
+                <option [value]="9">Septiembre</option>
+                <option [value]="10">Octubre</option>
+                <option [value]="11">Noviembre</option>
+                <option [value]="12">Diciembre</option>
+            </select>
+            <select class="form-select" name="anio" [(ngModel)]="filtros.anio" (change)="setTime()">
+                <option *ngFor="let year of years" [value]="year">{{ year }}</option>
+            </select>
+            <select class="form-select" [(ngModel)]="filtros.id_impuesto" name="id_impuesto" (change)="loadAll()">
+                <option value="">Todos los impuestos 5%</option>
+                <option *ngFor="let impuesto of impuestosTurismo" [value]="impuesto.id">{{ impuesto.nombre }}</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="table-responsive bg-white">
+                <table class="table table-bordered table-hover mr-top" id="tablaImpuestoTurismo">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Documento</th>
+                            <th>Cliente</th>
+                            <th class="text-end">Base</th>
+                            <th class="text-end">Monto 5%</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="5" class="text-center" *ngIf="(filas?.length ?? 0) === 0 && !loading">
+                                <span class="badge bg-primary">No tiene registros</span>
+                            </td>
+                            <td colspan="5" class="text-center" *ngIf="loading">
+                                <span class="badge bg-primary">Cargando...</span>
+                            </td>
+                        </tr>
+                        <tr class="animated fadeIn" *ngFor="let row of filas">
+                            <td>{{ row.fecha | date:'dd/MM/yyyy' }}</td>
+                            <td>{{ row.documento }}</td>
+                            <td>{{ row.cliente }}</td>
+                            <td class="text-end">{{ row.base | currency }}</td>
+                            <td class="text-end">{{ row.monto_turismo | currency }}</td>
+                        </tr>
+                    </tbody>
+                    <tfoot *ngIf="!loading">
+                        <tr>
+                            <th colspan="4" class="text-end">Total período</th>
+                            <th class="text-end">{{ totalMontoTurismo | currency }}</th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

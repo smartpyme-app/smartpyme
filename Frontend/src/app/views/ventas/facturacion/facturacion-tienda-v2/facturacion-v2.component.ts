@@ -28,11 +28,15 @@ import { RestauranteService } from '@services/restaurante.service';
 import Swal from 'sweetalert2';
 import { CountryI18nService } from '@services/country-i18n.service';
 import {
-  acumularMontosImpuestosVenta,
+  acumularImpuestosVentaConCierreResidual,
+  montoEspecialesDeVentaImpuestos,
+  calcularMontosLineaDetalle,
   copiarImpuestosProductoAlDetalle,
+  esImpuestoIva,
+  hidratarImpuestosProductosEnDetalles,
   normalizarPorcentajeImpuestoDetalle,
   resolverPorcentajeImpuestoVenta,
-  calcularMontosLineaDetalle,
+  sincronizarTipoGravadoPorCobroIva,
   sumarSubTotalEncabezadoVenta,
   sumarTotalConIvaEncabezadoVenta,
 } from '@utils/impuestos-venta.util';
@@ -479,6 +483,10 @@ export class FacturacionV2Component implements OnInit {
             this.venta = venta;
             this.retencionIvaGcUsuarioDecidio = true;
             this.normalizarDetallesTipoGravado(this.venta);
+            hidratarImpuestosProductosEnDetalles(
+              this.venta.detalles,
+              this.apiService.auth_user()?.empresa?.iva
+            );
             this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
             this.migrarExoneracionCrLegacyADetalles();
             this.sumTotal();
@@ -505,9 +513,13 @@ export class FacturacionV2Component implements OnInit {
             this.venta = venta;
             this.retencionIvaGcUsuarioDecidio = true;
             this.normalizarDetallesTipoGravado(this.venta);
-            if(!this.venta.cliente){
-                this.venta.cliente = {};
-            }else{
+            hidratarImpuestosProductosEnDetalles(
+              this.venta.detalles,
+              this.apiService.auth_user()?.empresa?.iva
+            );
+            if (!this.venta.cliente) {
+              this.venta.cliente = {};
+            } else {
               this.venta.cliente.nombre = this.venta.cliente.tipo == 'Empresa' ? this.venta.cliente.nombre_empresa : this.venta.cliente.nombre_completo;
             }
             this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
@@ -554,6 +566,10 @@ export class FacturacionV2Component implements OnInit {
               this.venta = venta;
               this.retencionIvaGcUsuarioDecidio = true;
               this.normalizarDetallesTipoGravado(this.venta);
+              hidratarImpuestosProductosEnDetalles(
+                this.venta.detalles,
+                this.apiService.auth_user()?.empresa?.iva
+              );
               if (!this.venta.cliente) {
                 this.venta.cliente = {};
               } else {
@@ -611,23 +627,25 @@ export class FacturacionV2Component implements OnInit {
                 // Asegurar que precio_iva esté como número
                 detalle.precio_iva = parseFloat(detalle.precio_iva).toFixed(4);
 
-                // Recalcular total del detalle usando precio sin IVA
-                const precioSinIva = parseFloat(detalle.precio || 0);
-                detalle.sub_total = Number((parseFloat(detalle.cantidad || 0) * precioSinIva).toFixed(4));
-                detalle.total = (parseFloat(detalle.sub_total) - parseFloat(detalle.descuento || 0)).toFixed(4);
                 const tiposValidos = ['gravada', 'exenta', 'no_sujeta', 'exonerada'];
                 const tipo = (detalle.tipo_gravado && String(detalle.tipo_gravado).toLowerCase()) || 'gravada';
                 detalle.tipo_gravado = tiposValidos.includes(tipo) ? tipo : 'gravada';
-                detalle.gravada =
-                  detalle.tipo_gravado === 'gravada' || detalle.tipo_gravado === 'exonerada' ? detalle.total : 0;
-                detalle.exenta = detalle.tipo_gravado === 'exenta' ? detalle.total : 0;
-                detalle.no_sujeta = detalle.tipo_gravado === 'no_sujeta' ? detalle.total : 0;
-
-                // Calcular total_iva para visualización (solo gravada lleva IVA)
-                if (detalle.tipo_gravado === 'gravada' && this.venta.cobrar_impuestos && porcentajeIvaTotal > 0) {
-                  detalle.total_iva = (parseFloat(detalle.total) * (1 + porcentajeIvaTotal / 100)).toFixed(4);
-                } else {
+                if (detalle.tipo_gravado === 'exonerada') {
+                  // FE CR: exonerada se trata como gravada sin IVA (util no modela este tipo).
+                  const precioSinIva = parseFloat(detalle.precio || 0);
+                  detalle.sub_total = Number((parseFloat(detalle.cantidad || 0) * precioSinIva).toFixed(4));
+                  detalle.total = (parseFloat(detalle.sub_total) - parseFloat(detalle.descuento || 0)).toFixed(4);
+                  detalle.gravada = detalle.total;
+                  detalle.exenta = 0;
+                  detalle.no_sujeta = 0;
                   detalle.total_iva = detalle.total;
+                } else {
+                  calcularMontosLineaDetalle(
+                    detalle,
+                    !!this.venta.cobrar_impuestos,
+                    this.apiService.auth_user()?.empresa?.iva,
+                    { preservePrecioIva: true }
+                  );
                 }
               });
 
@@ -950,32 +968,25 @@ export class FacturacionV2Component implements OnInit {
    * Totales por línea (gravada), coherente con VentaDetallesV2 — usado al cargar orden de compra.
    */
   private aplicarLineaGravadaDesdePrecio(detalle: any): void {
+    const empresaIva = this.apiService.auth_user()?.empresa?.iva;
+    const pctDetalle = this.venta.cobrar_impuestos
+      ? resolverPorcentajeImpuestoVenta(detalle?.porcentaje_impuesto, empresaIva)
+      : 0;
     const precioSinIva = parseFloat(detalle.precio || 0);
-    const cant = parseFloat(String(detalle.cantidad ?? 0)) || 0;
-    detalle.sub_total = Number((cant * precioSinIva).toFixed(4));
-    const desc = parseFloat(detalle.descuento || 0) || 0;
-    detalle.total = Number((detalle.sub_total - desc).toFixed(4)).toFixed(4);
 
-    let pctDetalle = 0;
-    if (this.venta.cobrar_impuestos) {
-      pctDetalle = resolverPorcentajeImpuestoVenta(
-        detalle?.porcentaje_impuesto,
-        this.apiService.auth_user()?.empresa?.iva
-      );
+    if (detalle.precio_iva == null || detalle.precio_iva === '') {
+      detalle.precio_iva =
+        pctDetalle > 0
+          ? (precioSinIva * (1 + pctDetalle / 100)).toFixed(4)
+          : precioSinIva.toFixed(4);
     }
 
-    const totalNum = parseFloat(detalle.total) || 0;
-    detalle.gravada = 0;
-    detalle.exenta = 0;
-    detalle.no_sujeta = 0;
-    detalle.gravada = totalNum;
-    if (pctDetalle > 0) {
-      detalle.total_iva = (totalNum * (1 + pctDetalle / 100)).toFixed(4);
-      detalle.iva = parseFloat((totalNum * (pctDetalle / 100)).toFixed(4));
-    } else {
-      detalle.total_iva = detalle.total;
-      detalle.iva = 0;
-    }
+    calcularMontosLineaDetalle(
+      detalle,
+      !!this.venta.cobrar_impuestos,
+      empresaIva,
+      { preservePrecioIva: true }
+    );
   }
 
   /**
@@ -1127,42 +1138,28 @@ export class FacturacionV2Component implements OnInit {
       ? Math.round(subTotalNum * (propinaPorcentaje / 100) * 100) / 100
       : 0;
 
-    // IVA por tasa: cada impuesto acumula el monto de las líneas que lo incluyen
-    if (this.venta.cobrar_impuestos) {
-      if (this.venta.impuestos.length) {
-        acumularMontosImpuestosVenta(
-          this.venta.impuestos,
-          this.venta.detalles,
-          true,
-          empresaIva
-        );
-        this.venta.iva = parseFloat(
-          this.sumPipe.transform(this.venta.impuestos, 'monto')
-        ).toFixed(4);
-      } else {
-        const ivaDesdeLineas = this.venta.detalles.reduce((sum: number, d: any) => {
-          const gravada = parseFloat(d.gravada || 0);
-          const pct = resolverPorcentajeImpuestoVenta(d.porcentaje_impuesto, empresaIva, true);
-          const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) > 0)
-            ? parseFloat(d.iva) : gravada * (pct / 100);
-          return sum + ivaLinea;
-        }, 0);
-        this.venta.iva = parseFloat(Number(ivaDesdeLineas).toFixed(4)).toFixed(4);
-      }
-    } else {
-      this.venta.iva = (0).toFixed(4);
-      this.venta.impuestos.forEach((impuesto: any) => { impuesto.monto = 0; });
-    }
+    // IVA por tasa: acumula por impuesto (multi-impuesto) y cierra la diferencia residual
+    // de IVA sin apagar tributos especiales (turismo, etc.) cuando cobrar_impuestos es false.
+    const ivaEncabezado = acumularImpuestosVentaConCierreResidual(
+      this.venta.impuestos,
+      this.venta.detalles,
+      !!this.venta.cobrar_impuestos,
+      empresaIva
+    );
+    this.venta.iva = ivaEncabezado.toFixed(4);
 
     const rawDescuento = parseFloat(this.sumPipe.transform(this.venta.detalles, 'descuento'));
     this.venta.descuento = Number(rawDescuento).toFixed(4);
     const rawTotalCosto = parseFloat(this.sumPipe.transform(this.venta.detalles, 'total_costo'));
     this.venta.total_costo = Number(rawTotalCosto).toFixed(4);
 
-    // Total desde suma de líneas con IVA (redondeo por línea); evita centavos de más/menos
+    // Total: suma de líneas con IVA (redondeo por línea) + tributos especiales (turismo, etc.),
+    // estos últimos se mantienen aunque el IVA esté apagado.
     const descuentoPuntos = parseFloat(this.venta.descuento_puntos || 0) || 0;
+    const montoEspeciales = montoEspecialesDeVentaImpuestos(this.venta.impuestos);
     const totalNum =
       sumarTotalConIvaEncabezadoVenta(this.venta.detalles) +
+      montoEspeciales +
       parseFloat(this.venta.cuenta_a_terceros) +
       parseFloat(String(this.venta.iva_percibido)) -
       parseFloat(String(this.venta.iva_retenido)) -
@@ -1252,15 +1249,17 @@ export class FacturacionV2Component implements OnInit {
     }
 
     // Cliente
-    public setCliente(cliente:any){
-        if(cliente.id){
+    public setCliente(cliente: any) {
+        if (cliente.id) {
             this.retencionIvaGcUsuarioDecidio = false;
             cliente.nombre = cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo;
             this.venta.id_cliente = cliente.id;
             this.venta.cliente = cliente;
-            if(cliente.tipo_contribuyente == "Grande") {
-                this.sumTotal();
+            if (cliente.tipo_fiscal === 'Exento') {
+                this.venta.cobrar_impuestos = false;
+                sincronizarTipoGravadoPorCobroIva(this.venta.detalles, false);
             }
+            this.sumTotal();
 
             // Resetear y cargar puntos del cliente (si fidelización habilitada)
             this.resetearPuntos();

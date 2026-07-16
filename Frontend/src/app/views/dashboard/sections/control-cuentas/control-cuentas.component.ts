@@ -50,6 +50,7 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
   public modules: any[] = [AllCommunityModule];
 
   @Input() datos: any = {};
+  @Input() datosCompletos = false;
   @Output() filtrosCambiados = new EventEmitter<any>();
 
   get metricasCardsCxc(): MetricCard[] {
@@ -123,6 +124,11 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
 
   anio: string = new Date().getFullYear().toString();
   mes: string = '';
+
+  /** true mientras se espera la respuesta del servidor tras cambiar un filtro */
+  filtrosLocked = false;
+  private _filtrosLockTimeout: any = null;
+
   
   // Filtros adicionales (Cuentas por cobrar)
   mostrarFiltrosAdicionales: boolean = false;
@@ -407,7 +413,13 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
         this.cdr.markForCheck();
       }
     }
+
+    // datosCompletos=true: todas las APIs terminaron → desbloquear filtros
+    if (changes['datosCompletos'] && this.datosCompletos) {
+      this._desbloquearFiltros();
+    }
   }
+
 
   cargarOpcionesFiltros(): void {
     const tieneEstadoGuardado = !!this.dashboardDataService.obtenerFiltrosUI('Control de cuentas');
@@ -813,6 +825,10 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
       return;
     }
 
+    // Bloquear filtros mientras se espera la respuesta
+    this._bloquearFiltros();
+
+
     if (!this.anio) {
       this.anio = new Date().getFullYear().toString();
     }
@@ -864,6 +880,23 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
 
     this.filtrosCambiados.emit(filtros);
   }
+
+  private _bloquearFiltros(): void {
+    this.filtrosLocked = true;
+    this.cdr.markForCheck();
+    if (this._filtrosLockTimeout) clearTimeout(this._filtrosLockTimeout);
+    this._filtrosLockTimeout = setTimeout(() => this._desbloquearFiltros(), 8000);
+  }
+
+  private _desbloquearFiltros(): void {
+    if (this._filtrosLockTimeout) {
+      clearTimeout(this._filtrosLockTimeout);
+      this._filtrosLockTimeout = null;
+    }
+    this.filtrosLocked = false;
+    this.cdr.markForCheck();
+  }
+
 
   private filtroMultiExplicitoActivo(
     todasImplicitas: boolean,

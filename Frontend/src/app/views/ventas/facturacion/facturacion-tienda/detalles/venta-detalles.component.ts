@@ -80,6 +80,8 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
   @Output() update = new EventEmitter();
   @Output() sumTotal = new EventEmitter();
   @Output() alMenosUnPaqueteConCuentaTerceros = new EventEmitter<void>();
+  modalRef!: BsModalRef;
+  public zoomImageUrl: string = '';
 
     @ViewChild('msupervisor')
     public supervisorTemplate!: TemplateRef<any>;
@@ -677,6 +679,17 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
     if (this.usuario.empresa.vendedor_detalle_venta) count++;
     count += this.selectedCustomFields.length;
     return count;
+  }
+
+  public hasImage(img: any): boolean {
+      return !!img && img !== 'default.png' && img !== 'default.jpg' && img !== 'productos/default.jpg' && img !== 'null' && img !== 'undefined';
+  }
+
+  public zoomImage(img: any, dialog: any) {
+      if (this.hasImage(img)) {
+          this.zoomImageUrl = this.apiService.baseUrl + '/img/' + img;
+          dialog.showModal();
+      }
   }
 
 }

@@ -135,6 +135,16 @@ const routes: Routes = [
 
         },
 
+        {
+
+          path: 'libro-iva-sv/impuesto-turismo',
+
+          loadComponent: () => import('@views/contabilidad/libro-iva-sv/impuesto-turismo/impuesto-turismo.component').then(m => m.ImpuestoTurismoComponent),
+
+          title: 'Impuesto turismo 5%'
+
+        },
+
         // Costa Rica
 
         {
@@ -268,6 +278,16 @@ const routes: Routes = [
           path: 'libro-iva/consumidor-final',
 
           redirectTo: 'libro-iva-sv/consumidor-final',
+
+          pathMatch: 'full'
+
+        },
+
+        {
+
+          path: 'libro-iva/impuesto-turismo',
+
+          redirectTo: 'libro-iva-sv/impuesto-turismo',
 
           pathMatch: 'full'
 
@@ -512,4 +532,3 @@ const routes: Routes = [
 })
 
 export class ContabilidadRoutingModule { }
-

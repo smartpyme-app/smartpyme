@@ -27,6 +27,7 @@ use App\Exports\Contabilidad\ElSalvador\GlobalDttesExport;
 use App\Exports\Contabilidad\GlobalDttesPdfExport;
 use App\Exports\Contabilidad\ElSalvador\NotasCreditoDebitoExport;
 use App\Exports\Contabilidad\ElSalvador\LibroRetencion1Export;
+use App\Exports\Contabilidad\ElSalvador\LibroImpuestoTurismoExport;
 use App\Exports\Contabilidad\ElSalvador\AnexoRetencion1Export;
 use App\Exports\Contabilidad\ElSalvador\LibroPercepcion1Export;
 use App\Exports\Contabilidad\ElSalvador\AnexoPercepcion1Export;
@@ -922,6 +923,80 @@ class LibrosIvaSvController extends Controller
             return response('Error al procesar la solicitud: ' . $e->getMessage(), 500)
                 ->header('Content-Type', 'text/plain');
         }
+    }
+
+    private function ventasImpuestoTurismoQuery(Request $request)
+    {
+        return Venta::query()
+            ->with(['cliente', 'documento', 'impuestos.impuesto'])
+            ->where('estado', '!=', 'Anulada')
+            ->where('cotizacion', 0)
+            ->when($request->id_sucursal, fn ($query) => $query->where('id_sucursal', $request->id_sucursal))
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->whereHas('impuestos', function ($query) use ($request) {
+                $query->where('monto', '>', 0)
+                    ->whereHas('impuesto', function ($impuestoQuery) use ($request) {
+                        $impuestoQuery->where('porcentaje', 5)
+                            ->where(function ($codigoQuery) {
+                                $codigoQuery->whereNull('codigo_mh')
+                                    ->orWhere('codigo_mh', '!=', '20');
+                            });
+
+                        if ($request->filled('id_impuesto')) {
+                            $impuestoQuery->where('impuestos.id', $request->id_impuesto);
+                        }
+                    });
+            })
+            ->orderBy('fecha')
+            ->orderBy('correlativo');
+    }
+
+    public function impuestoTurismoList(Request $request): JsonResponse
+    {
+        $this->assertElSalvador();
+
+        $idImpuesto = $request->filled('id_impuesto') ? (string) $request->id_impuesto : null;
+
+        $ventas = $this->ventasImpuestoTurismoQuery($request)->get();
+        $ventasFiltradas = $this->facturacionElectronicaHelper->filtrarVentasPorFacturacionElectronica($ventas);
+
+        $filas = $ventasFiltradas
+            ->map(function ($venta) use ($idImpuesto) {
+                $montoTurismo = (float) $venta->impuestos
+                    ->filter(function ($ventaImpuesto) use ($idImpuesto) {
+                        $impuesto = $ventaImpuesto->impuesto;
+
+                        return (float) $ventaImpuesto->monto > 0
+                            && (float) optional($impuesto)->porcentaje === 5.0
+                            && (string) optional($impuesto)->codigo_mh !== '20'
+                            && ($idImpuesto === null || (string) $ventaImpuesto->id_impuesto === $idImpuesto);
+                    })
+                    ->sum('monto');
+
+                return [
+                    'fecha' => $venta->fecha,
+                    'correlativo' => trim((string) $venta->correlativo),
+                    'numero_control' => $venta->numero_control,
+                    'documento' => $venta->numero_control ?: trim((string) $venta->correlativo),
+                    'cliente' => $venta->nombre_cliente,
+                    'base' => (float) $venta->sub_total,
+                    'monto_turismo' => $montoTurismo,
+                ];
+            })
+            ->values();
+
+        return response()->json([
+            'filas' => $filas,
+            'total_monto_turismo' => (float) $filas->sum('monto_turismo'),
+        ]);
+    }
+
+    public function impuestoTurismoLibroExport(Request $request)
+    {
+        $export = new LibroImpuestoTurismoExport();
+        $export->filter($request);
+
+        return Excel::download($export, 'LibroImpuestoTurismo5.xlsx');
     }
 
     public function libroRetencion1Export(BaseLibroIVARequest $request)

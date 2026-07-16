@@ -25,9 +25,12 @@ use App\Http\Requests\Dash\CorteDashRequest;
 
 class DashController extends Controller
 {
-    public function __construct(
-        private CajaUsuarioResolver $cajaUsuarioResolver
-    ) {}
+    private CajaUsuarioResolver $cajaUsuarioResolver;
+
+    public function __construct(CajaUsuarioResolver $cajaUsuarioResolver)
+    {
+        $this->cajaUsuarioResolver = $cajaUsuarioResolver;
+    }
 
     public function index(IndexDashRequest $request) {
 
@@ -74,7 +77,7 @@ class DashController extends Controller
             $indicadores->total_ventas_canal = $indicadores->getVentasByCanal();
             $indicadores->total_ventas_forma_pago = $indicadores->getVentasByFormaPago();
 
-            $indicadores->total_cxc = $indicadores->getTotalVentasPendientes();
+            $indicadores->total_cxc = $indicadores->getCuentasPorCobrarNetas();
 
         // Transacciones
 

@@ -1,3 +1,59 @@
+/* ----------------------------------------
+   Filter bar – estado bloqueado (cargando)
+   ---------------------------------------- */
+.filter-bar-wrapper {
+    position: relative;
+}
+
+.filter-bar-locked {
+    opacity: 0.72;
+    pointer-events: none;
+    user-select: none;
+    transition: opacity 0.25s ease;
+}
+
+.filter-loading-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(2px);
+    border-radius: 0.375rem;
+    pointer-events: all;
+    animation: filterOverlayFadeIn 0.2s ease;
+}
+
+@keyframes filterOverlayFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+.filter-loading-spinner {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid rgba(241, 148, 71, 0.25);
+    border-top-color: #F19447;
+    border-radius: 50%;
+    animation: filterSpinnerRotate 0.7s linear infinite;
+    flex-shrink: 0;
+}
+
+@keyframes filterSpinnerRotate {
+    to { transform: rotate(360deg); }
+}
+
+.filter-loading-text {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #F19447;
+    letter-spacing: 0.01em;
+}
+
 /* Cabeceras de tabla AG Grid: título + buscador + exportación (responsive) */
 .gastos-section .inv-ag-grid-toolbar {
   display: flex;

@@ -195,9 +195,9 @@ class MHFactura extends Model
             }
         }
 
-        if ($this->venta->iva > 0) {
+        if ($this->documentoTieneIva()) {
             $this->venta->gravada = $this->venta->sub_total;
-        }else{
+        } elseif (!$this->documentoTieneTributosNoIva()) {
             $this->venta->gravada = 0;
             $this->venta->exenta = $this->venta->sub_total;
         }
@@ -208,7 +208,9 @@ class MHFactura extends Model
         $montoIva = $this->montoIvaDocumento();
         $montoTributosNoIva = $this->montoTributosNoIvaDocumento();
         $totalGravada = floatval(number_format(
-            $this->venta->iva > 0 ? $this->venta->sub_total + $montoIva : 0,
+            $this->documentoTieneIva()
+                ? $this->venta->sub_total + $montoIva
+                : (float) $this->venta->gravada,
             2,
             '.',
             ''
@@ -222,12 +224,7 @@ class MHFactura extends Model
         $totalDescu = 0.0;
         $subTotal = floatval(number_format($subTotalVentas - $totalDescu, 2, '.', ''));
         $montoTotalOperacion = floatval(number_format($subTotal + $montoTributosNoIva, 2, '.', ''));
-        $totalIva = floatval(number_format(
-            collect($cuerpoDocumento)->sum(fn ($item) => (float) ($item['ivaItem'] ?? 0)),
-            2,
-            '.',
-            ''
-        ));
+        $totalIva = floatval(number_format($montoIva, 2, '.', ''));
 
         return 
             [
@@ -288,14 +285,17 @@ class MHFactura extends Model
                 $this->venta->tipo_item = 1;
             }
 
-            if ($this->venta->iva > 0) {
+            if ($this->documentoTieneIva()) {
                 $this->venta->gravada = $this->venta->sub_total;
-            }else{
+            } elseif (!$this->documentoTieneTributosNoIva()) {
                 $this->venta->gravada = 0;
                 $this->venta->exenta = $this->venta->sub_total;
             }
 
-            $ventaGravadaPersonalizada = (float) ($this->venta->gravada + $this->montoIvaDocumento());
+            $ventaGravadaPersonalizada = (float) $this->venta->gravada;
+            if ($this->documentoTieneIva()) {
+                $ventaGravadaPersonalizada += $this->montoIvaDocumento();
+            }
             $tributosLineaPersonalizada = $this->buildTributosLineaCodesFacturaConsumidorDesdeDocumento() ?? [];
 
             $detalles->push([
@@ -316,7 +316,9 @@ class MHFactura extends Model
                 "psv" => 0,
                 "noGravado" => 0,
                 "ivaItem" => floatval(number_format(
-                    $this->calcularIvaItemFacturaConsumidor($ventaGravadaPersonalizada),
+                    $this->documentoTieneIva()
+                        ? $this->calcularIvaItemFacturaConsumidor($ventaGravadaPersonalizada)
+                        : 0,
                     4,
                     '.',
                     ''
@@ -353,6 +355,9 @@ class MHFactura extends Model
             $this->aplicarClasificacionFiscalDetalle($detalle);
             if (floatval($detalle->gravada ?? 0) > 0 && $this->venta->iva > 0) {
                 $tributos = $this->buildTributosLineaCodesFacturaConsumidor($detalle);
+            } elseif ($this->documentoTieneTributosNoIva()) {
+                // ponytail: documento sin IVA (p. ej. turismo 5% exento) sigue necesitando tributos no-IVA por línea.
+                $tributos = $this->buildTributosLineaCodesFacturaConsumidor($detalle);
             } else {
                 $tributos = null;
             }
@@ -380,7 +385,14 @@ class MHFactura extends Model
                     "tributos" => $tributos,
                     "psv" => 0,
                     "noGravado" => 0,
-                    "ivaItem" => floatval(number_format($this->calcularIvaItemFactura($detalle, $ventaItem), 4, '.', ''))
+                    "ivaItem" => floatval(number_format(
+                        $this->documentoTieneIva()
+                            ? $this->calcularIvaItemFactura($detalle, $ventaItem)
+                            : 0,
+                        4,
+                        '.',
+                        ''
+                    ))
                   ]);
 
                 $detalles->push([
@@ -424,7 +436,14 @@ class MHFactura extends Model
                     "tributos" => $tributos,
                     "psv" => 0,
                     "noGravado" => 0,
-                    "ivaItem" => floatval(number_format($detalle->gravada > 0 ? $this->calcularIvaItemFactura($detalle, $ventaItem) : 0, 4, '.', ''))
+                    "ivaItem" => floatval(number_format(
+                        $this->documentoTieneIva() && $detalle->gravada > 0
+                            ? $this->calcularIvaItemFactura($detalle, $ventaItem)
+                            : 0,
+                        4,
+                        '.',
+                        ''
+                    ))
                   ]);
             }
         }
@@ -464,7 +483,8 @@ class MHFactura extends Model
             $detalle->iva = floatval($detalle->total) * ($this->tasaIvaDetalle($detalle) / 100);
         } else {
             $detalle->gravada = floatval($detalle->gravada ?? 0);
-            $detalle->iva = floatval($detalle->iva ?? 0);
+            // Documento sin IVA (p. ej. turismo 5% exento): no debe llevar IVA por línea.
+            $detalle->iva = 0;
         }
     }
 

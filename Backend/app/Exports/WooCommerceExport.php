@@ -91,7 +91,8 @@ class WooCommerceExport implements FromCollection, WithHeadings, WithMapping, Wi
             'Cross-sells',
             'External URL',
             'Button text',
-            'Position'
+            'Position',
+            'Cost of goods sold',
         ];
     }
 
@@ -117,6 +118,7 @@ class WooCommerceExport implements FromCollection, WithHeadings, WithMapping, Wi
 
  
         $precio = $row->precio ? number_format($row->precio, 2, '.', '') : '';
+        $costo = $row->costo > 0 ? number_format($row->costo, 2, '.', '') : '';
 
         return [
             $row->woocommerce_id ?? '',
@@ -156,7 +158,8 @@ class WooCommerceExport implements FromCollection, WithHeadings, WithMapping, Wi
             '', // Cross-sells
             '', // External URL
             '', // Button text
-            '0'  // Position
+            '0',  // Position
+            $costo, // Cost of goods sold
         ];
     }
 

@@ -64,26 +64,36 @@
                 Cuentas por cobrar
             </button>
             <!-- Tarjeta de filtros -->
-            <div class="card mb-4">
+            <div class="card mb-4 filter-bar-card filter-bar-wrapper" [class.filter-bar-locked]="filtrosLocked">
+
+                <!-- Overlay de carga sobre los filtros -->
+                <div class="filter-loading-overlay" *ngIf="filtrosLocked" aria-live="polite" aria-busy="true">
+                    <span class="filter-loading-spinner"></span>
+                    <span class="filter-loading-text">Filtrando datos…</span>
+                </div>
+
                 <div class="card-body">
 
                     <div class="d-flex align-items-end justify-content-between gap-3 flex-wrap">
                         <app-filtro-fecha [(anio)]="anio" [(mes)]="mes" (filtroChange)="aplicarFiltros()"
-                            controlId="control-cuentas-cxc" accentColor="#3366cc">
+                            controlId="control-cuentas-cxc" accentColor="#3366cc" [disabled]="filtrosLocked">
                         </app-filtro-fecha>
 
                         <!-- Botones y controles a la derecha -->
                         <div class="d-flex align-items-end gap-2">
-                            <button type="button" class="btn btn-outline-primary" (click)="toggleFiltrosAdicionales()">
+                            <button type="button" class="btn btn-outline-primary" (click)="toggleFiltrosAdicionales()"
+                                [disabled]="filtrosLocked">
                                 <i class="fas fa-filter me-1"></i> Ver otros filtros
                             </button>
                             <button type="button" class="btn btn-primary"
                                 tooltip="Aplicar otros filtros de cuentas por cobrar"
-                                *ngIf="mostrarBotonAplicarOtrosFiltrosCxc" (click)="confirmarOtrosFiltrosCxc()">
+                                *ngIf="mostrarBotonAplicarOtrosFiltrosCxc" (click)="confirmarOtrosFiltrosCxc()"
+                                [disabled]="filtrosLocked">
                                 <i class="fa fa-check"></i> Aplicar
                             </button>
                             <button type="button" class="btn btn-outline-primary" tooltip="Limpiar filtros"
-                                (click)="limpiarFiltros()" *ngIf="puedeLimpiarFiltrosControlCuentas">
+                                (click)="limpiarFiltros()" *ngIf="puedeLimpiarFiltrosControlCuentas"
+                                [disabled]="filtrosLocked">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
                                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                     stroke-linejoin="round"
@@ -121,7 +131,7 @@
                             <div class="col-12 col-md-6 col-xl-4">
                                 <app-dropdown-multi-filtro label="Sucursal" pluralLabel="sucursales"
                                     accentColor="#3366cc" [items]="filtroCxcSucursalesItems"
-                                    [disabled]="filtroCxcSucursalDisabled"
+                                    [disabled]="filtroCxcSucursalDisabled || filtrosLocked"
                                     [todasImplicitas]="filtroCxcSucTodasImplicitas"
                                     [seleccionados]="filtroCxcSucSeleccionadas"
                                     (selectionChange)="onFiltroCxcSucursalChange($event)">
@@ -129,7 +139,7 @@
                             </div>
                             <div class="col-12 col-md-6 col-xl-4">
                                 <app-dropdown-multi-filtro label="Cliente" pluralLabel="clientes" accentColor="#3366cc"
-                                    [items]="filtroCxcClientesItems" [disabled]="false" [mostrarBuscador]="true"
+                                    [items]="filtroCxcClientesItems" [disabled]="filtrosLocked" [mostrarBuscador]="true"
                                     [limiteVistaInicial]="100" buscadorPlaceholder="Buscar cliente"
                                     [todasImplicitas]="filtroCxcCliTodasImplicitas"
                                     [seleccionados]="filtroCxcCliSeleccionadas"
@@ -139,7 +149,7 @@
                             <div class="col-12 col-md-6 col-xl-4">
                                 <app-dropdown-multi-filtro label="Estado de vigencia" pluralLabel="estados"
                                     accentColor="#3366cc" [items]="filtroCxcVigenciaItems"
-                                    [disabled]="filtroCxcVigenciaItems.length === 0"
+                                    [disabled]="filtroCxcVigenciaItems.length === 0 || filtrosLocked"
                                     [todasImplicitas]="filtroCxcVigTodasImplicitas"
                                     [seleccionados]="filtroCxcVigSeleccionadas"
                                     (selectionChange)="onFiltroCxcVigenciaChange($event)">
@@ -253,29 +263,37 @@
                 Cuentas por pagar
             </button>
             <!-- Tarjeta de filtros -->
-            <div class="card mb-1">
+            <div class="card mb-1 filter-bar-card filter-bar-wrapper" [class.filter-bar-locked]="filtrosLocked">
+
+                <!-- Overlay de carga sobre los filtros -->
+                <div class="filter-loading-overlay filter-loading-overlay--cxp" *ngIf="filtrosLocked" aria-live="polite" aria-busy="true">
+                    <span class="filter-loading-spinner"></span>
+                    <span class="filter-loading-text">Filtrando datos…</span>
+                </div>
+
                 <div class="card-body">
                     <div class="d-flex align-items-end justify-content-between gap-3 flex-wrap">
                         <app-filtro-fecha [(anio)]="anio" [(mes)]="mes" (filtroChange)="aplicarFiltros()"
                             controlId="control-cuentas-cxp" labelClass="fw-medium small mb-1" labelColor="#F19447"
-                            accentColor="#F19447">
+                            accentColor="#F19447" [disabled]="filtrosLocked">
                         </app-filtro-fecha>
 
                         <!-- Botones y controles a la derecha -->
                         <div class="d-flex align-items-end gap-2">
                             <button type="button" class="btn btn-custom-filtros"
-                                (click)="toggleFiltrosAdicionalesPagar()">
+                                (click)="toggleFiltrosAdicionalesPagar()" [disabled]="filtrosLocked">
                                 <i class="fas fa-filter me-1"></i> Ver otros filtros
                             </button>
                             <button type="button" class="btn"
                                 style="background-color: #F19447; border-color: #F19447; color: white;"
                                 tooltip="Aplicar otros filtros de cuentas por pagar"
-                                *ngIf="mostrarBotonAplicarOtrosFiltrosCxp" (click)="confirmarOtrosFiltrosCxp()">
+                                *ngIf="mostrarBotonAplicarOtrosFiltrosCxp" (click)="confirmarOtrosFiltrosCxp()"
+                                [disabled]="filtrosLocked">
                                 <i class="fa fa-check"></i> Aplicar
                             </button>
                             <button type="button" class="btn" style="border-color: #F19447; color: #F19447;"
                                 tooltip="Limpiar filtros" (click)="limpiarFiltros()"
-                                *ngIf="puedeLimpiarFiltrosControlCuentas">
+                                *ngIf="puedeLimpiarFiltrosControlCuentas" [disabled]="filtrosLocked">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
                                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                     stroke-linejoin="round"
@@ -313,7 +331,7 @@
                         <div class="row g-3">
                             <div class="col-12 col-md-6 col-xl-4">
                                 <app-dropdown-multi-filtro label="Proveedor" pluralLabel="proveedores"
-                                    accentColor="#F19447" [items]="filtroCxpProveedoresItems" [disabled]="false"
+                                    accentColor="#F19447" [items]="filtroCxpProveedoresItems" [disabled]="filtrosLocked"
                                     [mostrarBuscador]="true" [limiteVistaInicial]="100"
                                     buscadorPlaceholder="Buscar proveedor"
                                     [todasImplicitas]="filtroCxpProvTodasImplicitas"
@@ -324,7 +342,7 @@
                             <div class="col-12 col-md-6 col-xl-4">
                                 <app-dropdown-multi-filtro label="Estado de vigencia" pluralLabel="estados"
                                     accentColor="#F19447" [items]="filtroCxpVigenciaItems"
-                                    [disabled]="filtroCxpVigenciaItems.length === 0"
+                                    [disabled]="filtroCxpVigenciaItems.length === 0 || filtrosLocked"
                                     [todasImplicitas]="filtroCxpVigTodasImplicitas"
                                     [seleccionados]="filtroCxpVigSeleccionadas"
                                     (selectionChange)="onFiltroCxpVigenciaChange($event)">

@@ -31,6 +31,8 @@ Route::prefix('libro-iva-sv')->group(function () {
     Route::get('/retencion1/descargar-anexo', [LibrosIvaSvController::class, 'anexoRetencion1Export']);
     Route::get('/percepcion1/descargar-libro', [LibrosIvaSvController::class, 'libroPercepcion1Export']);
     Route::get('/percepcion1/descargar-anexo', [LibrosIvaSvController::class, 'anexoPercepcion1Export']);
+    Route::get('/impuesto-turismo', [LibrosIvaSvController::class, 'impuestoTurismoList']);
+    Route::get('/impuesto-turismo/descargar-libro', [LibrosIvaSvController::class, 'impuestoTurismoLibroExport']);
 });
 
 // Rutas legacy El Salvador (compatibilidad)
@@ -59,3 +61,5 @@ Route::get('/libro-iva/retencion1/descargar-libro', [LibrosIvaSvController::clas
 Route::get('/libro-iva/retencion1/descargar-anexo', [LibrosIvaSvController::class, 'anexoRetencion1Export']);
 Route::get('/libro-iva/percepcion1/descargar-libro', [LibrosIvaSvController::class, 'libroPercepcion1Export']);
 Route::get('/libro-iva/percepcion1/descargar-anexo', [LibrosIvaSvController::class, 'anexoPercepcion1Export']);
+Route::get('/libro-iva/impuesto-turismo', [LibrosIvaSvController::class, 'impuestoTurismoList']);
+Route::get('/libro-iva/impuesto-turismo/descargar-libro', [LibrosIvaSvController::class, 'impuestoTurismoLibroExport']);

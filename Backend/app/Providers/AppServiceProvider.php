@@ -56,12 +56,8 @@ class AppServiceProvider extends ServiceProvider
 
         Paquete::observe(PaqueteWebhookObserver::class);
 
-        // Registrar el observer de Producto solo cuando sea necesario
-        if (config('services.woocommerce.enabled', false)) {
-            Producto::observe(ProductoObserver::class);
-        }
-
-
+        // Registrar observers de integraciones e-commerce
+        Producto::observe(ProductoObserver::class);
         Inventario::observe(ShopifyInventarioObserver::class);
         Producto::observe(ShopifyProductoObserver::class);
 

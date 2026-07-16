@@ -19,6 +19,7 @@
             <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-iva-sv/anulados">Anulados</button>
             <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-iva-sv/compras-sujetos-excluidos">Sujetos Excluidos</button>
             <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-iva-sv/resumen">Resumen</button>
+            <button *ngIf="tieneImpuestoTurismo" class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-iva-sv/impuesto-turismo">Impuesto turismo 5%</button>
         </div>
         <div class="ms-auto d-flex gap-2">
             <select class="form-select" [(ngModel)]="filtros.id_sucursal" name="id_sucursal" (change)="loadAll()">

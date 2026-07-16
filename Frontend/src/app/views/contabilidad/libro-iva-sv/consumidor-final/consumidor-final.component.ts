@@ -10,6 +10,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService, ModalConfig } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { SumPipe } from '@pipes/sum.pipe';
+import { empresaTieneImpuestoTurismo } from '@utils/impuestos-turismo.util';
 
 import * as moment from 'moment';
 import { LazyImageDirective } from '../../../../directives/lazy-image.directive';
@@ -31,6 +32,7 @@ export class ConsumidorFinalComponent extends BaseModalComponent implements OnIn
     public override loading:boolean = false;
     public downloading:boolean = false;
     public filtros:any = {};
+    public tieneImpuestoTurismo = false;
     public tipoDescarga: string = '';
 
     constructor(
@@ -70,6 +72,13 @@ export class ConsumidorFinalComponent extends BaseModalComponent implements OnIn
             this.sucursales = sucursales;
             this.cdr.markForCheck();
         }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
+
+        this.apiService.getAll('impuestos').subscribe(
+            (impuestos) => {
+                this.tieneImpuestoTurismo = empresaTieneImpuestoTurismo(impuestos);
+            },
+            (error) => { this.alertService.error(error); }
+        );
 
         this.loadAll();
     }

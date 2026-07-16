@@ -57,6 +57,25 @@ export class PlanillaDetalleComponent implements OnInit {
   public downloading: boolean = false;
   public configPlanilla: any = null;
   public round: any = Math.round;
+
+  private roundMonetary(value: number): number {
+    return Math.round((Number(value) || 0) * 100) / 100;
+  }
+
+  private getDiasReferenciaPlanilla(): number {
+    if (!this.planilla) {
+      return 30;
+    }
+
+    switch (this.planilla.tipo_planilla) {
+      case 'quincenal':
+        return 15;
+      case 'semanal':
+        return 7;
+      default:
+        return 30;
+    }
+  }
   public conceptosConfigurados: any = null;
   public conceptosDeduccion: [string, ConceptoPlanilla][] = [];
   public conceptos: { [codigo: string]: ConceptoPlanilla } = {};
@@ -1373,7 +1392,8 @@ export class PlanillaDetalleComponent implements OnInit {
 
     // Obtener valores base
     const salarioBase = Number(this.detalleSeleccionado.salario_base) || 0;
-    const diasLaborados = Number(this.detalleSeleccionado.dias_laborados) || 30;
+    const diasReferencia = this.getDiasReferenciaPlanilla();
+    const diasLaborados = Number(this.detalleSeleccionado.dias_laborados) || diasReferencia;
     let horasExtra = Number(this.detalleSeleccionado.horas_extra) || 0;
     const comisiones = Number(this.detalleSeleccionado.comisiones) || 0;
     const bonificaciones = Number(this.detalleSeleccionado.bonificaciones) || 0;
@@ -1403,8 +1423,14 @@ export class PlanillaDetalleComponent implements OnInit {
         salarioDevengado = salarioBase; // mensual
       }
     } else {
-      // Para empleados regulares, calcular proporcionalmente según días laborados
-      salarioDevengado = (salarioBase / 30) * diasLaborados;
+      // Para empleados regulares, calcular proporcionalmente según días laborados del período
+      let salarioBaseAjustado = salarioBase;
+      if (this.planilla.tipo_planilla === 'quincenal') {
+        salarioBaseAjustado = salarioBase / 2;
+      } else if (this.planilla.tipo_planilla === 'semanal') {
+        salarioBaseAjustado = salarioBase / 4.33;
+      }
+      salarioDevengado = (salarioBaseAjustado / diasReferencia) * diasLaborados;
     }
     this.detalleSeleccionado.salario_devengado = Number(salarioDevengado.toFixed(2));
 
@@ -1463,7 +1489,8 @@ export class PlanillaDetalleComponent implements OnInit {
     } else {
       // Para empleados regulares - verificar configuración del empleado (base = base para retenciones)
       if (aplicarIsss) {
-        const baseISSSEmpleado = Math.min(baseParaRetenciones, 1000.00);
+        const topeIsss = PlanillaConstants.getTopeIsssPorPeriodo(this.planilla.tipo_planilla);
+        const baseISSSEmpleado = Math.min(baseParaRetenciones, topeIsss);
         isssEmpleado = baseISSSEmpleado * 0.03;
         isssPatronal = baseISSSEmpleado * 0.075;
       } else {
@@ -1748,7 +1775,7 @@ export class PlanillaDetalleComponent implements OnInit {
     const otrosIngresos = Number(detalle.otros_ingresos) || 0;
 
     const totalIngresos = salarioDevengado + montoHorasExtra + comisiones + bonificaciones + otrosIngresos;
-    const isssEmpleado = PlanillaConstants.calcularDescuentoISSSEmpleado(totalIngresos);
+    const isssEmpleado = PlanillaConstants.calcularDescuentoISSSEmpleado(totalIngresos, this.planilla.tipo_planilla);
     const afpEmpleado = PlanillaConstants.calcularDescuentoAFPEmpleado(totalIngresos);
     const salarioGravado = PlanillaConstants.calcularSalarioGravado(
       totalIngresos,
@@ -1970,7 +1997,7 @@ export class PlanillaDetalleComponent implements OnInit {
     const otrosIngresos = Number(detalle.otros_ingresos) || 0;
 
     const totalIngresos = salarioDevengado + montoHorasExtra + comisiones + bonificaciones + otrosIngresos;
-    const isssEmpleado = PlanillaConstants.calcularDescuentoISSSEmpleado(totalIngresos);
+    const isssEmpleado = PlanillaConstants.calcularDescuentoISSSEmpleado(totalIngresos, this.planilla.tipo_planilla);
     const afpEmpleado = PlanillaConstants.calcularDescuentoAFPEmpleado(totalIngresos);
 
     // Cálculo con método legacy
@@ -2128,17 +2155,17 @@ export class PlanillaDetalleComponent implements OnInit {
     const aplicarIsss = configDescuentos.aplicar_isss !== false; // Por defecto true si no existe
 
     // Aplicar valores calculados respetando la configuración del empleado
-    this.detalleSeleccionado.isss_empleado = aplicarIsss ? this.round(resultados.isss_empleado || 0) : 0;
-    this.detalleSeleccionado.isss_patronal = aplicarIsss ? this.round(resultados.isss_patronal || 0) : 0;
-    this.detalleSeleccionado.afp_empleado = aplicarAfp ? this.round(resultados.afp_empleado || 0) : 0;
-    this.detalleSeleccionado.afp_patronal = aplicarAfp ? this.round(resultados.afp_patronal || 0) : 0;
-    this.detalleSeleccionado.renta = this.round(resultados.renta || 0);
+    this.detalleSeleccionado.isss_empleado = aplicarIsss ? this.roundMonetary(resultados.isss_empleado || 0) : 0;
+    this.detalleSeleccionado.isss_patronal = aplicarIsss ? this.roundMonetary(resultados.isss_patronal || 0) : 0;
+    this.detalleSeleccionado.afp_empleado = aplicarAfp ? this.roundMonetary(resultados.afp_empleado || 0) : 0;
+    this.detalleSeleccionado.afp_patronal = aplicarAfp ? this.roundMonetary(resultados.afp_patronal || 0) : 0;
+    this.detalleSeleccionado.renta = this.roundMonetary(resultados.renta || 0);
 
     // Aplicar totales
     if (resultados.totales) {
-      this.detalleSeleccionado.total_ingresos = this.round(resultados.totales.total_ingresos || 0);
-      this.detalleSeleccionado.total_descuentos = this.round(resultados.totales.total_deducciones || 0);
-      this.detalleSeleccionado.sueldo_neto = this.round(resultados.totales.sueldo_neto || 0);
+      this.detalleSeleccionado.total_ingresos = this.roundMonetary(resultados.totales.total_ingresos || 0);
+      this.detalleSeleccionado.total_descuentos = this.roundMonetary(resultados.totales.total_deducciones || 0);
+      this.detalleSeleccionado.sueldo_neto = this.roundMonetary(resultados.totales.sueldo_neto || 0);
     }
 
     // Recalcular totales de planilla

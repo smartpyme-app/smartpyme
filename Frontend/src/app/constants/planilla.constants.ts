@@ -274,10 +274,13 @@ export class PlanillaConstants {
         // Calcular total de ingresos
         const totalIngresos = salarioDevengado + montoHorasExtra + comisiones + bonificaciones + otrosIngresos;
     
-        // Calcular ISSS con tope de $1000
-        const baseISSSEmpleado = Math.min(totalIngresos, 1000);
-        const isssEmpleado = Math.round(baseISSSEmpleado * constants.DESCUENTO_ISSS_EMPLEADO * 100) / 100;
-        const isssPatronal = Math.round(baseISSSEmpleado * constants.DESCUENTO_ISSS_PATRONO * 100) / 100;
+        // Calcular ISSS con tope prorrateado al período (mensual $1,000, quincenal $500, etc.)
+        const descuentoIsss = constants.DESCUENTO_ISSS_EMPLEADO ?? constants.DESCUENTOS?.ISSS_EMPLEADO ?? 0.03;
+        const descuentoIsssPatronal = constants.DESCUENTO_ISSS_PATRONO ?? constants.DESCUENTOS?.ISSS_PATRONO ?? 0.075;
+        const topeIsss = this.getTopeIsssPorPeriodo(tipoPlanilla);
+        const baseISSSEmpleado = Math.min(totalIngresos, topeIsss);
+        const isssEmpleado = Math.round(baseISSSEmpleado * descuentoIsss * 100) / 100;
+        const isssPatronal = Math.round(baseISSSEmpleado * descuentoIsssPatronal * 100) / 100;
     
         // Calcular AFP sin tope
         const afpEmpleado = Math.round(totalIngresos * constants.DESCUENTO_AFP_EMPLEADO * 100) / 100;
@@ -543,12 +546,32 @@ export class PlanillaConstants {
 
     // ==================== MÉTODOS LEGACY (mantener compatibilidad) ====================
 
-    static calcularDescuentoISSSEmpleado(salario: number): number {
-        return Math.round(Math.min(salario, 1000) * this.DESCUENTOS.ISSS_EMPLEADO * 100) / 100;
+    static calcularDescuentoISSSEmpleado(salario: number, tipoPlanilla: string = 'mensual'): number {
+        const tope = this.getTopeIsssPorPeriodo(tipoPlanilla);
+        const tasa = this.DESCUENTOS?.ISSS_EMPLEADO ?? 0.03;
+        return Math.round(Math.min(salario, tope) * tasa * 100) / 100;
     }
 
-    static calcularDescuentoISSSPatronal(salario: number): number {
-        return Math.round(Math.min(salario, 1000) * this.DESCUENTOS.ISSS_PATRONO * 100) / 100;
+    static calcularDescuentoISSSPatronal(salario: number, tipoPlanilla: string = 'mensual'): number {
+        const tope = this.getTopeIsssPorPeriodo(tipoPlanilla);
+        const tasa = this.DESCUENTOS?.ISSS_PATRONO ?? 0.075;
+        return Math.round(Math.min(salario, tope) * tasa * 100) / 100;
+    }
+
+    /**
+     * Tope de cotización ISSS prorrateado por frecuencia de planilla.
+     * Tope legal mensual: $1,000 (máx. $30 empleado / mes).
+     */
+    static getTopeIsssPorPeriodo(tipoPlanilla: string = 'mensual'): number {
+        const topeMensual = 1000;
+        switch (tipoPlanilla?.toLowerCase()) {
+            case 'quincenal':
+                return topeMensual / 2;
+            case 'semanal':
+                return Math.round((topeMensual / 4.33) * 100) / 100;
+            default:
+                return topeMensual;
+        }
     }
 
     static calcularDescuentoAFPEmpleado(salario: number): number {
