@@ -13,8 +13,10 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { BsModalRef, BsModalService } from 'ngx-bootstrap/modal';
+
 import {
     limpiarExentaPorSinIvaSiTipoManual,
+    porcentajeIvaDetalle,
     sincronizarTipoGravadoPorCobroIva,
 } from '@utils/impuestos-venta.util';
 import {
@@ -99,7 +101,6 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
     public apiService: ApiService,
     protected override alertService: AlertService,
     protected override modalManager: ModalManagerService,
-    private modalService: BsModalService,
     private cdr: ChangeDetectorRef
   ) {
     super(modalManager, alertService);
@@ -171,13 +172,11 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
   }
 
     private obtenerPorcentajeIvaDetalle(detalle: any): number {
-        if (!this.venta.cobrar_impuestos) {
-            return 0;
-        }
-        const pct = (detalle?.porcentaje_impuesto != null && detalle?.porcentaje_impuesto !== '')
-            ? Number(detalle.porcentaje_impuesto)
-            : (this.apiService.auth_user().empresa?.iva ?? 0);
-        return Number(pct) || 0;
+        return porcentajeIvaDetalle(
+            detalle,
+            this.apiService.auth_user()?.empresa?.iva,
+            !!this.venta.cobrar_impuestos
+        );
     }
 
     /** Aplica gravada/exenta/no_sujeta; IVA alineado con total con IVA redondeado por línea. */
@@ -497,7 +496,7 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
             ? previos.reduce((s: number, p: any) => s + ((parseFloat(String(p.cantidad)) || 0) / (factor || 1)), 0)
             : 1;
         this.cargarLotesDisponiblesVenta();
-        this.modalRef = this.modalService.show(template, { class: 'modal-lg', backdrop: 'static' });
+        this.openLargeModal(template);
     }
 
     cargarLotesDisponiblesVenta() {
@@ -586,7 +585,7 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
         this.updateTotal(this.detalleConLote);
         this.skipLimpiarLotes = false;
 
-        this.modalRef?.hide();
+        this.closeModal();
         this.update.emit(this.venta);
         this.sumTotal.emit();
     }

@@ -22,6 +22,7 @@ import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import {
     limpiarExentaPorSinIvaSiTipoManual,
     normalizarPorcentajeImpuestoDetalle,
+    porcentajeIvaDetalle,
     resolverPorcentajeImpuestoVenta,
     copiarImpuestosProductoAlDetalle,
     sincronizarTipoGravadoPorCobroIva,
@@ -170,10 +171,10 @@ export class VentaDetallesV2Component implements OnInit {
      * Obtiene el porcentaje de IVA para un detalle: del producto si tiene, si no el de la empresa.
      */
     private obtenerPorcentajeIvaDetalle(detalle: any): number {
-        return resolverPorcentajeImpuestoVenta(
-            detalle?.porcentaje_impuesto,
+        return porcentajeIvaDetalle(
+            detalle,
             this.apiService.auth_user()?.empresa?.iva,
-            this.venta.cobrar_impuestos
+            !!this.venta.cobrar_impuestos
         );
     }
 

@@ -67,16 +67,17 @@ export class MHService {
             return throwError(() => new Error('Usuario no autenticado, vuelva a iniciar sesión'));
         }
 
-        if (!user.empresa?.nit) {
-            return throwError(() => new Error('NIT no configurado en la información de la cuenta'));
-        }
-
         if (!user.empresa.mh_pwd_certificado) {
             return throwError(() => new Error('Contraseña del certificado no configurada en los datos de facturación electrónica'));
         }
 
+        const nitRaw = user.empresa?.nit ?? DTE?.emisor?.nit;
+        if (!nitRaw) {
+            return throwError(() => new Error('NIT no configurado en la información de la cuenta'));
+        }
+
         let formData:any = {};
-        // formData.nit = user.empresa.nit.replace(/-/g, '');
+        formData.nit = String(nitRaw).replace(/-/g, '');
         formData.activo = true;
         formData.passwordPri = user.empresa.mh_pwd_certificado;
         formData.dteJson = DTE;

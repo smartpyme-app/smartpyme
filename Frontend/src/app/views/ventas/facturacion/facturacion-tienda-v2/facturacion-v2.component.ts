@@ -29,7 +29,6 @@ import Swal from 'sweetalert2';
 import { CountryI18nService } from '@services/country-i18n.service';
 import {
   acumularImpuestosVentaConCierreResidual,
-  montoEspecialesDeVentaImpuestos,
   calcularMontosLineaDetalle,
   copiarImpuestosProductoAlDetalle,
   esImpuestoIva,
@@ -38,7 +37,7 @@ import {
   resolverPorcentajeImpuestoVenta,
   sincronizarTipoGravadoPorCobroIva,
   sumarSubTotalEncabezadoVenta,
-  sumarTotalConIvaEncabezadoVenta,
+  sumarTotalEncabezadoVenta,
 } from '@utils/impuestos-venta.util';
 import * as moment from 'moment';
 
@@ -1094,18 +1093,14 @@ export class FacturacionV2Component implements OnInit {
       this.venta.impuestos = [...this.impuestos];
     }
 
-    // En v2, los detalles tienen total sin IVA, así que agregamos el IVA al calcular los totales
-    // Usar el IVA de la empresa directamente
-    const porcentajeIvaTotal = this.venta.cobrar_impuestos
-      ? (this.apiService.auth_user()?.empresa?.iva || 0)
-      : 0;
-
     const empresaIva = Number(this.apiService.auth_user()?.empresa?.iva ?? 0);
     this.venta.detalles.forEach((d: any) => {
       if (String(d?.tipo_gravado || '').toLowerCase() === 'exonerada') {
         return;
       }
-      calcularMontosLineaDetalle(d, !!this.venta.cobrar_impuestos, empresaIva, { preservePrecioIva: true });
+      calcularMontosLineaDetalle(d, !!this.venta.cobrar_impuestos, empresaIva, {
+        preservePrecioIva: true,
+      });
     });
 
     this.venta.sub_total = Number(sumarSubTotalEncabezadoVenta(this.venta.detalles)).toFixed(4);
@@ -1156,16 +1151,19 @@ export class FacturacionV2Component implements OnInit {
     // Total: suma de líneas con IVA (redondeo por línea) + tributos especiales (turismo, etc.),
     // estos últimos se mantienen aunque el IVA esté apagado.
     const descuentoPuntos = parseFloat(this.venta.descuento_puntos || 0) || 0;
-    const montoEspeciales = montoEspecialesDeVentaImpuestos(this.venta.impuestos);
-    const totalNum =
-      sumarTotalConIvaEncabezadoVenta(this.venta.detalles) +
-      montoEspeciales +
-      parseFloat(this.venta.cuenta_a_terceros) +
-      parseFloat(String(this.venta.iva_percibido)) -
-      parseFloat(String(this.venta.iva_retenido)) -
-      parseFloat(String(this.venta.renta_retenida)) -
-      descuentoPuntos;
-    this.venta.total = (Math.round(totalNum * 100) / 100).toFixed(2);
+    const totalNum = sumarTotalEncabezadoVenta(
+      this.venta.detalles,
+      this.venta.impuestos,
+      {
+        empresaIva,
+        cuentaTerceros: parseFloat(this.venta.cuenta_a_terceros),
+        ivaPercibido: parseFloat(String(this.venta.iva_percibido)),
+        ivaRetenido: parseFloat(String(this.venta.iva_retenido)),
+        rentaRetenida: parseFloat(String(this.venta.renta_retenida)),
+        descuentoPuntos,
+      }
+    );
+    this.venta.total = totalNum.toFixed(2);
 
 
     // Asignar tipoOperacion según los detalles
