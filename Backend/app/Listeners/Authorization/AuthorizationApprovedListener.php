@@ -103,8 +103,27 @@ class AuthorizationApprovedListener
                             // Obtener roles actuales usando Spatie
                             $currentRoles = $user->getRoleNames()->toArray();
                             
-                            // CAMBIO: Usar métodos de Spatie en lugar de sync()
-                            $user->syncRoles([$rol->name]); // ← ESTA es la línea que cambias
+                            $user->syncRoles([$rol->name]);
+
+                            // Alinear tipo legacy cuando el nombre de rol tiene mapeo conocido
+                            $rolToTipo = [
+                                'super_admin' => 'Super Administrador',
+                                'admin' => 'Administrador',
+                                'usuario' => 'Operativo',
+                                'usuario_ventas' => 'Ventas',
+                                'gerente_operaciones' => 'Gerente Operaciones',
+                                'contador_superior' => 'Contador',
+                                'contador_auxiliar' => 'Contador Auxiliar',
+                                'gerente_compras' => 'Gerente Compras',
+                                'gerente_ventas' => 'Gerente Ventas',
+                                'supervisor_limitado' => 'Supervisor Limitado',
+                                'usuario_consultas' => 'Usuario Consultas',
+                                'usuario_citas' => 'Citas',
+                                'usuario_supervisor' => 'Supervisor',
+                            ];
+                            if (isset($rolToTipo[$rol->name])) {
+                                $user->tipo = $rolToTipo[$rol->name];
+                            }
                             
                             Log::info("✅ Rol actualizado para usuario: " . $user->id);
                             Log::info("   Roles anteriores: " . implode(', ', $currentRoles));

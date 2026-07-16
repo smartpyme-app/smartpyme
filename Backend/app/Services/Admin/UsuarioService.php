@@ -159,14 +159,66 @@ class UsuarioService
             $usuario->bienvenida();
         }
 
-        // Sincronizar roles
-        if (isset($data['rol_id']) && $data['rol_id']) {
-            $usuario->roles()->sync([$data['rol_id']]);
-        }
+        $this->sincronizarRolSiCambio($usuario, $data['rol_id'] ?? null);
 
         $usuario->load('roles');
 
         return $usuario;
+    }
+
+    /**
+     * Actualiza solo el estado enable (activar/desactivar) sin tocar roles.
+     */
+    public function actualizarEstado(int $id, $enable): User
+    {
+        $usuario = User::findOrFail($id);
+        $usuario->enable = $enable;
+        $usuario->save();
+        $usuario->load('roles');
+
+        return $usuario;
+    }
+
+    /**
+     * Sync de rol solo si viene rol_id válido y distinto al actual.
+     * Evita que saves colaterales (enable, tour, etc.) pisen o vacíen el pivot.
+     */
+    public function sincronizarRolSiCambio(User $usuario, $rolId): bool
+    {
+        $rolActual = optional($usuario->roles()->first())->id;
+
+        if (!self::debeAplicarCambioRol($rolActual, $rolId)) {
+            return false;
+        }
+
+        $rolId = (int) $rolId;
+
+        Log::info('Sincronizando rol de usuario', [
+            'user_id' => $usuario->id,
+            'rol_anterior' => $rolActual,
+            'rol_nuevo' => $rolId,
+        ]);
+
+        $usuario->roles()->sync([$rolId]);
+
+        return true;
+    }
+
+    /**
+     * ¿Hay que hacer sync del pivot? (sin tocar BD)
+     */
+    public static function debeAplicarCambioRol($rolIdActual, $rolIdNuevo): bool
+    {
+        if ($rolIdNuevo === null || $rolIdNuevo === '' || $rolIdNuevo === false) {
+            return false;
+        }
+
+        $rolIdNuevo = (int) $rolIdNuevo;
+        if ($rolIdNuevo <= 0) {
+            return false;
+        }
+
+        return (int) $rolIdActual !== $rolIdNuevo;
     }
 
     /**

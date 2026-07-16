@@ -98,6 +98,12 @@ class UsuariosController extends Controller
 
     public function store(StoreUsuarioRequest $request)
     {
+        // Activar/desactivar: no tocar roles ni resto de campos
+        if ($request->isEnableOnlyUpdate()) {
+            $usuario = $this->usuarioService->actualizarEstado($request->id, $request->enable);
+            return Response()->json($usuario, 200);
+        }
+
         // Verificar autorización para cambio de rol
         if ($request->id && $request->rol_id) {
             $usuario = Usuario::findOrFail($request->id);

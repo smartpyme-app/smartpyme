@@ -203,6 +203,24 @@ class PendingRecordService
         Log::info('User ID:', ['id' => $userId]);
         Log::info('Request type:', ['type' => $authType]);
         Log::info('Request data received:', $requestData);
+
+        // No pisar un pending de otro tipo (p. ej. rol) con password/código
+        if (
+            is_array($user->pending_changes)
+            && isset($user->pending_changes['type'])
+            && $user->pending_changes['type'] !== $authType
+            && $user->id_authorization
+            && (int) $user->id_authorization !== (int) $authorization->id
+        ) {
+            Log::warning('pending_changes de otro tipo ya existe; no se sobrescribe', [
+                'user_id' => $userId,
+                'existing_type' => $user->pending_changes['type'],
+                'incoming_type' => $authType,
+            ]);
+            throw new \Exception(
+                'Ya hay un cambio pendiente de autorización (' . $user->pending_changes['type'] . '). Apruébalo o recházalo antes de solicitar otro.'
+            );
+        }
         
         // Limpiar y procesar los datos correctamente
         $cleanedData = $this->cleanUserData($requestData, $authType);

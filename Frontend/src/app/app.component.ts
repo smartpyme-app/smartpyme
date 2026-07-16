@@ -199,8 +199,23 @@ export class AppComponent implements OnInit {
     }
 
     saveTour(){
+        // Solo tour_bienvenida: no reenviar auth_user completo (podría incluir rol_id stale)
+        if (!this.usuario?.id) {
+            return;
+        }
         this.usuario.tour_bienvenida = true;
-        this.apiService.store('usuario', this.usuario)
+        this.apiService.store('usuario', {
+            id: this.usuario.id,
+            tour_bienvenida: true,
+            // Campos mínimos requeridos por StoreUsuarioRequest en update completo;
+            // el backend ignora sync de rol si no viene rol_id distinto.
+            name: this.usuario.name,
+            email: this.usuario.email,
+            tipo: this.usuario.tipo,
+            id_empresa: this.usuario.id_empresa,
+            id_sucursal: this.usuario.id_sucursal,
+            id_bodega: this.usuario.id_bodega,
+        })
             .pipe(this.untilDestroyed())
             .subscribe({
                 next: (usuario) => {},

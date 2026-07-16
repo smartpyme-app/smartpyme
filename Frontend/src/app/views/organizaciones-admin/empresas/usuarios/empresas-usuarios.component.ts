@@ -89,8 +89,12 @@ export class EmpresasUsuariosComponent extends BaseCrudComponent<any> implements
             next: (usuarios) => {
                 this.usuarios = usuarios;
                 this.usuarios.data.forEach((usuario:any) => {
-                    usuario.rol_id = usuario.roles[0].id;
-                    usuario.rol_name = usuario.roles[0].name;
+                    if (usuario.roles?.length > 0) {
+                        usuario.rol_id = usuario.roles[0].id;
+                        usuario.rol_name = usuario.roles[0].name;
+                    } else {
+                        usuario.rol_name = 'Sin rol asignado';
+                    }
                 });
                 this.loading = false;
                 this.cdr.markForCheck();
@@ -152,7 +156,7 @@ export class EmpresasUsuariosComponent extends BaseCrudComponent<any> implements
     }  
 
     public setEstado(usuario:any){
-        this.apiService.store('admin-usuario', usuario).pipe(this.untilDestroyed()).subscribe({
+        this.apiService.store('admin-usuario', { id: usuario.id, enable: usuario.enable }).pipe(this.untilDestroyed()).subscribe({
             next: (usuario) => {
                 if(usuario.enable == 1){
                     this.alertService.success('Usuario activado', 'El usuario fue activado exitosamente.');
