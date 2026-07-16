@@ -7,6 +7,8 @@ import {
   porcentajeIvaDetalle,
   redondearMoneda,
   sumarIvaLineasSinRedondeo,
+  sumarTotalEncabezadoVenta,
+  resolverIvaObjetivoEncabezadoVenta,
 } from './impuestos-venta.util';
 
 describe('impuestos-venta.util — IVA vs especiales', () => {
@@ -363,6 +365,86 @@ describe('impuestos-venta.util — IVA vs especiales', () => {
 
     expect(iva).toBe(25.49);
     expect(Number(ventaImpuestos[0].monto)).toBe(25.49);
+  });
+
+  it('total cuadra con subtotal + IVA + cuenta a terceros (312.21)', () => {
+    const lineas: any[] = [
+      { cantidad: 1, precio: 100, descuento: 0, tipo_gravado: 'gravada', impuestos: [{ id: 1, porcentaje: 13, codigo_mh: '20' }] },
+      { cantidad: 1, precio: 96.07, descuento: 0, tipo_gravado: 'gravada', impuestos: [{ id: 1, porcentaje: 13, codigo_mh: '20' }] },
+    ];
+    lineas.forEach((d) => calcularMontosLineaDetalle(d, true, 13));
+
+    const ventaImpuestos = [{ id: 1, porcentaje: 13, codigo_mh: '20', nombre: 'IVA', monto: 0 }];
+    acumularImpuestosVentaConCierreResidual(ventaImpuestos, lineas, true, 13);
+
+    const total = sumarTotalEncabezadoVenta(lineas, ventaImpuestos, {
+      empresaIva: 13,
+      cuentaTerceros: 90.65,
+    });
+
+    expect(total).toBe(312.21);
+  });
+
+  it('v2 precio con IVA 34.99 cierra total (30.96 + 4.03)', () => {
+    const precioSinIva = 34.99 / 1.13;
+    const detalle: any = {
+      cantidad: 1,
+      precio: precioSinIva,
+      precio_iva: '34.9900',
+      descuento: 0,
+      tipo_gravado: 'gravada',
+      impuestos: [{ id: 1, porcentaje: 13, codigo_mh: '20' }],
+    };
+    calcularMontosLineaDetalle(detalle, true, 13, { preservePrecioIva: true });
+
+    expect(Number(detalle.gravada)).toBe(30.96);
+    expect(Number(detalle.total_iva)).toBe(34.99);
+
+    const ventaImpuestos = [{ id: 1, porcentaje: 13, codigo_mh: '20', nombre: 'IVA', monto: 0 }];
+    const iva = acumularImpuestosVentaConCierreResidual(
+      ventaImpuestos,
+      [detalle],
+      true,
+      13
+    );
+    const total = sumarTotalEncabezadoVenta([detalle], ventaImpuestos, {
+      empresaIva: 13,
+    });
+
+    expect(iva).toBe(4.03);
+    expect(total).toBe(34.99);
+    expect(resolverIvaObjetivoEncabezadoVenta([detalle], true, 13)).toBe(4.03);
+  });
+
+  it('v2 precio con IVA 12.99 cierra total (11.50 + 1.49)', () => {
+    const precioSinIva = 12.99 / 1.13;
+    const detalle: any = {
+      cantidad: 1,
+      precio: precioSinIva,
+      precio_iva: '12.9900',
+      descuento: 0,
+      tipo_gravado: 'gravada',
+      impuestos: [{ id: 1, porcentaje: 13, codigo_mh: '20' }],
+    };
+    calcularMontosLineaDetalle(detalle, true, 13, { preservePrecioIva: true });
+
+    expect(Number(detalle.gravada)).toBe(11.5);
+    expect(Number(detalle.total_iva)).toBe(12.99);
+
+    const ventaImpuestos = [{ id: 1, porcentaje: 13, codigo_mh: '20', nombre: 'IVA', monto: 0 }];
+    const iva = acumularImpuestosVentaConCierreResidual(
+      ventaImpuestos,
+      [detalle],
+      true,
+      13
+    );
+    const total = sumarTotalEncabezadoVenta([detalle], ventaImpuestos, {
+      empresaIva: 13,
+    });
+
+    expect(iva).toBe(1.49);
+    expect(total).toBe(12.99);
+    expect(resolverIvaObjetivoEncabezadoVenta([detalle], true, 13)).toBe(1.49);
   });
 
   it('desglosa IVA por tasa en venta.impuestos', () => {

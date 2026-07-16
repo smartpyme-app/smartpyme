@@ -469,6 +469,39 @@ export function sumarIvaLineasSinRedondeo(
   }, 0);
 }
 
+export interface OpcionesTotalEncabezadoVenta {
+  empresaIva: number;
+  cuentaTerceros?: number;
+  ivaPercibido?: number;
+  ivaRetenido?: number;
+  rentaRetenida?: number;
+  descuentoPuntos?: number;
+}
+
+/**
+ * Total de cabecera alineado con el desglose mostrado en pantalla:
+ * subtotal + IVA + tributos especiales + cuenta a terceros + ajustes.
+ */
+export function sumarTotalEncabezadoVenta(
+  detalles: any[],
+  ventaImpuestos: any[],
+  options: OpcionesTotalEncabezadoVenta
+): number {
+  const subtotal = sumarSubTotalEncabezadoVenta(detalles);
+  const iva = montoIvaDeVentaImpuestos(ventaImpuestos, options.empresaIva);
+  const especiales = montoEspecialesDeVentaImpuestos(
+    ventaImpuestos,
+    options.empresaIva
+  );
+  const ct = parseFloat(String(options.cuentaTerceros ?? 0)) || 0;
+  const perc = parseFloat(String(options.ivaPercibido ?? 0)) || 0;
+  const reten = parseFloat(String(options.ivaRetenido ?? 0)) || 0;
+  const renta = parseFloat(String(options.rentaRetenida ?? 0)) || 0;
+  const pts = parseFloat(String(options.descuentoPuntos ?? 0)) || 0;
+
+  return redondearMoneda(subtotal + iva + especiales + ct + perc - reten - renta - pts);
+}
+
 /**
  * IVA de cabecera como diferencia entre total con IVA por línea y subtotal sin IVA.
  * Cierra sub_total + IVA con el total cuando los precios ya incluyen impuesto (facturación v2).
@@ -477,6 +510,26 @@ export function calcularIvaResidualEncabezadoVenta(detalles: any[]): number {
   return redondearMoneda(
     sumarTotalConIvaEncabezadoVenta(detalles) - sumarSubTotalEncabezadoVenta(detalles)
   );
+}
+
+/**
+ * IVA objetivo de cabecera.
+ * - v2 (precio con IVA): si |tasa − residual| ≤ $0.01, usa residual (cierra al precio ingresado).
+ * - Multi-línea sin IVA: si la diferencia es mayor, usa tasa sobre bases acumuladas.
+ */
+export function resolverIvaObjetivoEncabezadoVenta(
+  detalles: any[],
+  cobrarImpuestos: boolean,
+  empresaIva: number
+): number {
+  const ivaPorTasa = redondearMoneda(
+    sumarIvaLineasSinRedondeo(detalles, cobrarImpuestos, empresaIva)
+  );
+  const ivaResidual = calcularIvaResidualEncabezadoVenta(detalles);
+  if (Math.abs(ivaPorTasa - ivaResidual) <= 0.01 + 1e-9) {
+    return ivaResidual;
+  }
+  return ivaPorTasa;
 }
 
 export function montoIvaDeVentaImpuestos(
@@ -533,8 +586,10 @@ export function acumularImpuestosVentaConCierreResidual(
     return montoIvaDeVentaImpuestos(ventaImpuestos, empresaIva);
   }
 
-  const ivaObjetivo = redondearMoneda(
-    sumarIvaLineasSinRedondeo(detalles, cobrarImpuestos, empresaIva)
+  const ivaObjetivo = resolverIvaObjetivoEncabezadoVenta(
+    detalles,
+    cobrarImpuestos,
+    empresaIva
   );
   const ivaAcumulado = montoIvaDeVentaImpuestos(ventaImpuestos, empresaIva);
   const delta = redondearMoneda(ivaObjetivo - ivaAcumulado);
