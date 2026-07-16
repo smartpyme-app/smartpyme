@@ -1,6 +1,7 @@
 import {
   esImpuestoIva,
   acumularMontosImpuestosVenta,
+  acumularImpuestosVentaConCierreResidual,
   calcularMontosLineaDetalle,
   hidratarImpuestosProductosEnDetalles,
   porcentajeIvaDetalle,
@@ -162,5 +163,66 @@ describe('impuestos-venta.util — IVA vs especiales', () => {
     acumularMontosImpuestosVenta(ventaImpuestos, detalles, true, 13);
 
     expect(ventaImpuestos[0].monto).toBe(0);
+  });
+
+  it('cierre residual con IVA off conserva turismo y retorna IVA 0', () => {
+    const ventaImpuestos = [
+      { id: 1, porcentaje: 13, codigo_mh: '20', monto: 99 },
+      { id: 2, porcentaje: 5, codigo_mh: 'C8', monto: 99 },
+    ];
+    const detalles: any[] = [{
+      tipo_gravado: 'exenta',
+      gravada: 0,
+      exenta: 100,
+      no_sujeta: 0,
+      total_iva: '100.00',
+      impuestos: [
+        { id: 1, porcentaje: 13, codigo_mh: '20' },
+        { id: 2, porcentaje: 5, codigo_mh: 'C8' },
+      ],
+    }];
+
+    const iva = acumularImpuestosVentaConCierreResidual(
+      ventaImpuestos,
+      detalles,
+      false,
+      13
+    );
+
+    expect(iva).toBe(0);
+    expect(ventaImpuestos[0].monto).toBe(0);
+    expect(Number(ventaImpuestos[1].monto)).toBeCloseTo(5, 2);
+  });
+
+  it('cierre residual con IVA on ajusta solo el IVA y no el turismo', () => {
+    const ventaImpuestos = [
+      { id: 1, porcentaje: 13, codigo_mh: '20', monto: 0 },
+      { id: 2, porcentaje: 5, codigo_mh: 'C8', monto: 0 },
+    ];
+    const detalles: any[] = [{
+      tipo_gravado: 'gravada',
+      precio: 100,
+      cantidad: 1,
+      descuento: 0,
+      gravada: 100,
+      exenta: 0,
+      no_sujeta: 0,
+      total_iva: '113.00',
+      impuestos: [
+        { id: 1, porcentaje: 13, codigo_mh: '20' },
+        { id: 2, porcentaje: 5, codigo_mh: 'C8' },
+      ],
+    }];
+
+    const iva = acumularImpuestosVentaConCierreResidual(
+      ventaImpuestos,
+      detalles,
+      true,
+      13
+    );
+
+    expect(iva).toBeCloseTo(13, 2);
+    expect(Number(ventaImpuestos[0].monto)).toBeCloseTo(13, 2);
+    expect(Number(ventaImpuestos[1].monto)).toBeCloseTo(5, 2);
   });
 });

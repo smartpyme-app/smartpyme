@@ -12,6 +12,7 @@ import Swal from 'sweetalert2';
 
 import {
   acumularImpuestosVentaConCierreResidual,
+  montoEspecialesDeVentaImpuestos,
   calcularMontosLineaDetalle,
   copiarImpuestosProductoAlDetalle,
   esImpuestoIva,
@@ -1025,10 +1026,12 @@ export class FacturacionV2Component implements OnInit {
     const rawTotalCosto = parseFloat(this.sumPipe.transform(this.venta.detalles, 'total_costo'));
     this.venta.total_costo = Number(rawTotalCosto).toFixed(4);
 
-    // Total desde suma de líneas con IVA (redondeo por línea); evita centavos de más/menos
+    // Total: líneas con IVA + tributos especiales (turismo, etc.) aunque IVA esté apagado.
     const descuentoPuntos = parseFloat(this.venta.descuento_puntos || 0) || 0;
+    const montoEspeciales = montoEspecialesDeVentaImpuestos(this.venta.impuestos);
     const totalNum =
       sumarTotalConIvaEncabezadoVenta(this.venta.detalles) +
+      montoEspeciales +
       parseFloat(this.venta.cuenta_a_terceros) +
       parseFloat(String(this.venta.iva_percibido)) -
       parseFloat(String(this.venta.iva_retenido)) -
