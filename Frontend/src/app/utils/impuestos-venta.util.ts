@@ -395,3 +395,63 @@ export function acumularMontosImpuestosVenta(
     imp.monto = parseFloat(Number(imp.monto).toFixed(4));
   });
 }
+
+/**
+ * IVA de cabecera como diferencia entre total con IVA por línea y subtotal sin IVA.
+ * Cierra sub_total + IVA con el total cuando los precios ya incluyen impuesto (facturación v2).
+ */
+export function calcularIvaResidualEncabezadoVenta(detalles: any[]): number {
+  return redondearMoneda(
+    sumarTotalConIvaEncabezadoVenta(detalles) - sumarSubTotalEncabezadoVenta(detalles)
+  );
+}
+
+/**
+ * Acumula IVA por tasa y ajusta el cierre al residual (precios con IVA incluido).
+ */
+export function acumularImpuestosVentaConCierreResidual(
+  ventaImpuestos: any[],
+  detalles: any[],
+  cobrarImpuestos: boolean,
+  empresaIva: number
+): number {
+  if (!cobrarImpuestos) {
+    ventaImpuestos?.forEach((imp: any) => {
+      imp.monto = 0;
+    });
+    return 0;
+  }
+
+  const ivaObjetivo = calcularIvaResidualEncabezadoVenta(detalles);
+
+  if (!ventaImpuestos?.length) {
+    return ivaObjetivo;
+  }
+
+  acumularMontosImpuestosVenta(ventaImpuestos, detalles, true, empresaIva);
+  const ivaAcumulado = redondearMoneda(
+    ventaImpuestos.reduce(
+      (s: number, imp: any) => s + (parseFloat(String(imp?.monto ?? 0)) || 0),
+      0
+    )
+  );
+  const delta = redondearMoneda(ivaObjetivo - ivaAcumulado);
+
+  if (Math.abs(delta) >= 0.005) {
+    const impuestoDestino =
+      ventaImpuestos.find((i: any) => pctIgual(Number(i.porcentaje), empresaIva)) ||
+      ventaImpuestos[0];
+    if (impuestoDestino) {
+      impuestoDestino.monto = parseFloat(
+        (parseFloat(String(impuestoDestino.monto ?? 0)) + delta).toFixed(4)
+      );
+    }
+  }
+
+  return redondearMoneda(
+    ventaImpuestos.reduce(
+      (s: number, imp: any) => s + (parseFloat(String(imp?.monto ?? 0)) || 0),
+      0
+    )
+  );
+}
