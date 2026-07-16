@@ -170,9 +170,9 @@ class MHCCF extends Model
             }
         }
 
-        if ($this->venta->iva > 0) {
+        if ($this->documentoTieneIva()) {
             $this->venta->gravada = $this->venta->sub_total;
-        }else{
+        } elseif (!$this->documentoTieneTributosNoIva()) {
             $this->venta->gravada = 0;
             $this->venta->exenta = $this->venta->sub_total;
         }
@@ -244,17 +244,19 @@ class MHCCF extends Model
                 $this->venta->tipo_item = 1;
             }
 
-            if ($this->venta->iva > 0) {
+            if ($this->documentoTieneIva()) {
                 $this->venta->gravada = $this->venta->sub_total;
-            }else{
+            } elseif (!$this->documentoTieneTributosNoIva()) {
                 $this->venta->gravada = 0;
                 $this->venta->exenta = $this->venta->sub_total;
             }
 
-            if ($this->venta->iva > 0) {
+            if ($this->documentoTieneIva()) {
                 $tributos = $this->buildTributosLineaCodesDesdeDocumento();
                 $this->venta->gravada = $this->venta->detalles()->sum('total');
-            }else{
+            } elseif ($this->documentoTieneTributosNoIva()) {
+                $tributos = $this->buildTributosLineaCodesDesdeDocumento();
+            } else {
                 $tributos = NULL;
                 $this->venta->gravada = 0;
                 $this->venta->exenta = $this->venta->detalles()->sum('total');
@@ -306,10 +308,12 @@ class MHCCF extends Model
                 $detalle->codigo = null;
             }
 
-            if ($this->venta->iva > 0) {
+            if ($this->documentoTieneIva()) {
                 $tributos = $this->buildTributosLineaCodes($detalle);
                 $detalle->gravada = $detalle->total;
-            }else{
+            } elseif ($this->documentoTieneTributosNoIva()) {
+                $tributos = $this->buildTributosLineaCodes($detalle);
+            } else {
                 $tributos = NULL;
                 $detalle->gravada = 0;
                 $detalle->exenta = $detalle->total;

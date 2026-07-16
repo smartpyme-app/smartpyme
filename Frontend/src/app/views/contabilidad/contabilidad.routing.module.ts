@@ -32,6 +32,8 @@ const routes: Routes = [
           title: 'Contribuyentes'},
         { path: 'libro-iva/consumidor-final', component: ConsumidorFinalComponent,
           title: 'Consumidor final'},
+        { path: 'libro-iva/impuesto-turismo', component: LibroIvaGeneralComponent,
+          title: 'Impuesto turismo 5%', data: { soloTurismo: true }},
         { path: 'libro-iva/general', component: LibroIvaGeneralComponent,
           title: 'Libros fiscales'},
         { path: 'libro-compras', component: LibroComprasComponent, title: 'Libro de compras'},
