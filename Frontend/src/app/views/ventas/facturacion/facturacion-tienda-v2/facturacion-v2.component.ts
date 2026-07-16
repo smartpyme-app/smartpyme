@@ -12,7 +12,6 @@ import Swal from 'sweetalert2';
 
 import {
   acumularImpuestosVentaConCierreResidual,
-  montoEspecialesDeVentaImpuestos,
   calcularMontosLineaDetalle,
   copiarImpuestosProductoAlDetalle,
   esImpuestoIva,
@@ -21,7 +20,7 @@ import {
   resolverPorcentajeImpuestoVenta,
   sincronizarTipoGravadoPorCobroIva,
   sumarSubTotalEncabezadoVenta,
-  sumarTotalConIvaEncabezadoVenta,
+  sumarTotalEncabezadoVenta,
 } from '@utils/impuestos-venta.util';
 
 import * as moment from 'moment';
@@ -1032,18 +1031,20 @@ export class FacturacionV2Component implements OnInit {
     const rawTotalCosto = parseFloat(this.sumPipe.transform(this.venta.detalles, 'total_costo'));
     this.venta.total_costo = Number(rawTotalCosto).toFixed(4);
 
-    // Total: líneas con IVA + tributos especiales (turismo, etc.) aunque IVA esté apagado.
     const descuentoPuntos = parseFloat(this.venta.descuento_puntos || 0) || 0;
-    const montoEspeciales = montoEspecialesDeVentaImpuestos(this.venta.impuestos, empresaIva);
-    const totalNum =
-      sumarTotalConIvaEncabezadoVenta(this.venta.detalles) +
-      montoEspeciales +
-      parseFloat(this.venta.cuenta_a_terceros) +
-      parseFloat(String(this.venta.iva_percibido)) -
-      parseFloat(String(this.venta.iva_retenido)) -
-      parseFloat(String(this.venta.renta_retenida)) -
-      descuentoPuntos;
-    this.venta.total = (Math.round(totalNum * 100) / 100).toFixed(2);
+    const totalNum = sumarTotalEncabezadoVenta(
+      this.venta.detalles,
+      this.venta.impuestos,
+      {
+        empresaIva,
+        cuentaTerceros: parseFloat(this.venta.cuenta_a_terceros),
+        ivaPercibido: parseFloat(String(this.venta.iva_percibido)),
+        ivaRetenido: parseFloat(String(this.venta.iva_retenido)),
+        rentaRetenida: parseFloat(String(this.venta.renta_retenida)),
+        descuentoPuntos,
+      }
+    );
+    this.venta.total = totalNum.toFixed(2);
 
 
     // Asignar tipoOperacion según los detalles
