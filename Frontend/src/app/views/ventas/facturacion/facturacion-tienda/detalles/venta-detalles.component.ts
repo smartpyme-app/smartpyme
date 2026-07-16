@@ -7,6 +7,7 @@ import {
     calcularMontosLineaDetalle,
     copiarImpuestosProductoAlDetalle,
     limpiarExentaPorSinIvaSiTipoManual,
+    porcentajeIvaDetalle,
     sincronizarTipoGravadoPorCobroIva,
 } from '@utils/impuestos-venta.util';
 import {
@@ -106,13 +107,11 @@ export class VentaDetallesComponent implements OnInit {
     }
 
     private obtenerPorcentajeIvaDetalle(detalle: any): number {
-        if (!this.venta.cobrar_impuestos) {
-            return 0;
-        }
-        const pct = (detalle?.porcentaje_impuesto != null && detalle?.porcentaje_impuesto !== '')
-            ? Number(detalle.porcentaje_impuesto)
-            : (this.apiService.auth_user().empresa?.iva ?? 0);
-        return Number(pct) || 0;
+        return porcentajeIvaDetalle(
+            detalle,
+            this.apiService.auth_user()?.empresa?.iva,
+            !!this.venta.cobrar_impuestos
+        );
     }
 
     /** Aplica gravada/exenta/no_sujeta; IVA alineado con total con IVA redondeado por línea. */

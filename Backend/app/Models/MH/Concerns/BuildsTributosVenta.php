@@ -179,17 +179,18 @@ trait BuildsTributosVenta
             return false;
         }
 
-        if ($impuesto->codigo_mh === '20') {
+        $codigo = trim((string) ($impuesto->codigo_mh ?? ''));
+        if ($codigo === '20') {
             return true;
         }
 
-        // Tributo especial MH (turismo C8, etc.)
-        if (!empty($impuesto->codigo_mh)) {
+        // Tributos MH especiales conocidos (turismo C8, etc.)
+        if ($codigo !== '' && in_array($codigo, ['C8'], true)) {
             return false;
         }
 
         $pct = (float) $impuesto->porcentaje;
-        // Turismo 5% sin código
+        // Turismo 5%
         if (abs($pct - 5.0) < 0.01) {
             return false;
         }
@@ -291,12 +292,7 @@ trait BuildsTributosVenta
     protected function montoIvaDocumento(): float
     {
         $filaIva = $this->filasImpuestosDocumento()->first(function ($vi) {
-            $imp = $vi->impuesto;
-            if (!$imp) {
-                return false;
-            }
-
-            return $imp->codigo_mh === '20' || ((float) $imp->porcentaje === 13.0 && empty($imp->codigo_mh));
+            return $this->esImpuestoIva($vi->impuesto);
         });
 
         if ($filaIva) {
@@ -334,7 +330,7 @@ trait BuildsTributosVenta
             }
 
             $iva = $detalle->producto->impuestos->first(function ($imp) {
-                return $imp->codigo_mh === '20' || (float) $imp->porcentaje === 13.0;
+                return $this->esImpuestoIva($imp);
             });
 
             if ($iva) {

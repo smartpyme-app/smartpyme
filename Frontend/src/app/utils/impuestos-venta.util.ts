@@ -11,6 +11,7 @@ export function redondear4(n: number): number {
 /**
  * Tipo gravado efectivo por línea.
  * Sin IVA en cabecera, una línea gravada se trata como exenta (no como no_sujeta).
+ * Exenta manual (usuario) se respeta; exenta automática se recupera si hay IVA.
  */
 export function resolverTipoGravadoEfectivo(
   detalle: any,
@@ -22,11 +23,22 @@ export function resolverTipoGravadoEfectivo(
     return 'no_sujeta';
   }
   if (tipo === 'exenta') {
+    // Usuario eligió Exenta en el selector: no forzar gravada.
+    if (detalle?.exenta_manual) {
+      return 'exenta';
+    }
+    // Auto-exenta (sin IVA reconocido o Con IVA off): recuperar si ahora hay IVA.
+    if (cobrarImpuestos && pctImpuesto > 0) {
+      detalle.exenta_por_sin_iva = false;
+      return 'gravada';
+    }
     return 'exenta';
   }
   if (cobrarImpuestos && pctImpuesto > 0) {
     return 'gravada';
   }
+  // Gravada sin IVA efectivo → exenta automática (recuperable al reactivar IVA).
+  detalle.exenta_por_sin_iva = true;
   return 'exenta';
 }
 
@@ -57,6 +69,8 @@ export function sincronizarTipoGravadoPorCobroIva(
 /** Usuario cambió el tipo manualmente: no revertir a gravada al reactivar IVA. */
 export function limpiarExentaPorSinIvaSiTipoManual(detalle: any): void {
   detalle.exenta_por_sin_iva = false;
+  const tipo = String(detalle?.tipo_gravado || '').toLowerCase();
+  detalle.exenta_manual = tipo === 'exenta' || tipo === 'no_sujeta';
 }
 
 function pctIgual(a: number, b: number): boolean {
@@ -70,22 +84,25 @@ function pctIgual(a: number, b: number): boolean {
  */
 const TASAS_IVA_REGIONALES = [1, 2, 4, 7, 8, 12, 12.5, 13, 15, 16, 18];
 
+/** Códigos MH CAT-015 de tributos que NO son IVA (p. ej. turismo C8). */
+const CODIGOS_MH_NO_IVA = new Set(['C8']);
+
 /**
  * Identifica IVA vs tributos especiales (turismo, etc.).
  * - codigo_mh '20' → IVA (MH El Salvador)
- * - otro codigo_mh → especial (no IVA)
- * - sin código: IVA si coincide con empresa.iva o con una tasa regional conocida
- * - 5% sin código → no IVA (turismo)
+ * - codigo MH especial conocido (C8…) → no IVA
+ * - 5% → no IVA (turismo)
+ * - resto: IVA si coincide con empresa.iva o tasa regional (HN 15/18, CR 1/2/4/8/13…)
  */
 export function esImpuestoIva(
   imp: { codigo_mh?: string | null; porcentaje?: number } | null | undefined,
   ivaEmpresa?: unknown
 ): boolean {
   if (!imp) return false;
-  if (imp.codigo_mh === '20') return true;
-  if (imp.codigo_mh != null && String(imp.codigo_mh).trim() !== '') {
-    return false;
-  }
+  const codigo = imp.codigo_mh != null ? String(imp.codigo_mh).trim() : '';
+  if (codigo === '20') return true;
+  if (codigo && CODIGOS_MH_NO_IVA.has(codigo)) return false;
+
   const pct = Number(imp.porcentaje) || 0;
   if (pct <= 0 || pctIgual(pct, 5)) {
     return false;
