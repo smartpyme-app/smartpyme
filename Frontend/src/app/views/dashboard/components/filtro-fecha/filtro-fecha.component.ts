@@ -77,6 +77,9 @@ export class FiltroFechaComponent implements OnInit {
   /** Si es true, al cargar se muestran año/mes; si false, los atajos. */
   @Input() iniciarEnModoAvanzado = false;
 
+  /** Bloquea interacción mientras el padre carga datos (p. ej. filtrosLocked). */
+  @Input() disabled = false;
+
   modoAvanzado = false;
 
   aniosDisponibles: number[] = [];

@@ -179,8 +179,30 @@ trait BuildsTributosVenta
             return false;
         }
 
-        return $impuesto->codigo_mh === '20'
-            || ((float) $impuesto->porcentaje === 13.0 && empty($impuesto->codigo_mh));
+        $codigo = trim((string) ($impuesto->codigo_mh ?? ''));
+        if ($codigo === '20') {
+            return true;
+        }
+
+        // Tributos MH especiales conocidos (turismo C8, etc.)
+        if ($codigo !== '' && in_array($codigo, ['C8'], true)) {
+            return false;
+        }
+
+        $pct = (float) $impuesto->porcentaje;
+        // Turismo 5%
+        if (abs($pct - 5.0) < 0.01) {
+            return false;
+        }
+
+        // Tasas IVA regionales: HN 15/18, CR 1/2/4/8/13, SV 13, GT 12, BZ 12.5, PA 7, MX 16
+        foreach ([1.0, 2.0, 4.0, 7.0, 8.0, 12.0, 12.5, 13.0, 15.0, 16.0, 18.0] as $tasa) {
+            if (abs($pct - $tasa) < 0.01) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -270,12 +292,7 @@ trait BuildsTributosVenta
     protected function montoIvaDocumento(): float
     {
         $filaIva = $this->filasImpuestosDocumento()->first(function ($vi) {
-            $imp = $vi->impuesto;
-            if (!$imp) {
-                return false;
-            }
-
-            return $imp->codigo_mh === '20' || ((float) $imp->porcentaje === 13.0 && empty($imp->codigo_mh));
+            return $this->esImpuestoIva($vi->impuesto);
         });
 
         if ($filaIva) {
@@ -313,7 +330,7 @@ trait BuildsTributosVenta
             }
 
             $iva = $detalle->producto->impuestos->first(function ($imp) {
-                return $imp->codigo_mh === '20' || (float) $imp->porcentaje === 13.0;
+                return $this->esImpuestoIva($imp);
             });
 
             if ($iva) {
