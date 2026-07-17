@@ -8,74 +8,66 @@ import { ApiService } from '@services/api.service';
   templateUrl: './productos-consignas-compras.component.html',
 })
 export class ProductosConsignasComprasComponent implements OnInit {
+  public compras: any[] = [];
+  public buscador: string = '';
+  public loading: boolean = false;
+  public downloading: boolean = false;
+  public compra: any = {};
+  modalRef!: BsModalRef;
 
-    public productos: any = [];
-    public buscador: string = '';
-    public loading: boolean = false;
-    public downloading: boolean = false;
-    
-    public filtros: any = {};
-    public producto: any = {};
-    public categorias: any = [];
-    public ventasConsignaProducto: any[] = [];
+  constructor(
+    public apiService: ApiService,
+    private alertService: AlertService,
+    private modalService: BsModalService
+  ) {}
 
-    modalRef!: BsModalRef;
+  ngOnInit() {
+    this.loadAll();
+  }
 
-    constructor(
-        public apiService: ApiService, 
-        private alertService: AlertService,
-        private modalService: BsModalService
-    ){}
+  public loadAll() {
+    this.loading = true;
+    this.apiService.getAll('productos/consignas-compras').subscribe(
+      (compras) => {
+        this.compras = compras;
+        this.loading = false;
+      },
+      (error) => {
+        this.alertService.error(error);
+        this.loading = false;
+      }
+    );
+  }
 
-    ngOnInit() {
-        this.loadAll();
+  public openDetalles(template: TemplateRef<any>, compra: any) {
+    this.compra = compra;
+    this.modalRef = this.modalService.show(template, {
+      class: 'modal-lg',
+      backdrop: 'static',
+    });
+  }
 
-        this.apiService.getAll('categorias/list').subscribe(categorias => {
-            this.categorias = categorias;
-        }, error => { this.alertService.error(error); });
-    }
-
-    public loadAll() {
-        this.filtros.categoria = '';
-        this.loading = true;
-        this.apiService.getAll('productos/consignas-compras').subscribe(productos => { 
-            this.productos = productos;
-            this.loading = false;
-        }, error => { this.alertService.error(error); this.loading = false; });
-    }
-
-    public openModal(template: TemplateRef<any>, producto: any) {
-        this.producto = producto;
-        this.modalRef = this.modalService.show(template, { class: 'modal-lg', backdrop: 'static' });
-    }
-
-    public openModalVentasConsigna(template: TemplateRef<any>, producto: any) {
-        this.producto = producto;
-        this.ventasConsignaProducto = producto?.ventas_consigna ?? [];
-        this.modalRef = this.modalService.show(template, { class: 'modal-lg', backdrop: 'static' });
-    }
-
-    public descargar() {
-        this.downloading = true;
-        this.apiService.export('productos/consignas-compras/exportar', this.filtros).subscribe((data: Blob) => {
-            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'consignas-compras.xlsx';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-            this.downloading = false;
-        }, (error) => { this.alertService.error(error); this.downloading = false; });
-    }
-
-    public isShopifyActive(): boolean {
-        const empresa = this.apiService.auth_user()?.empresa;
-        if (!empresa) return false;
-        return !!(empresa.shopify_store_url && 
-                 empresa.shopify_consumer_secret && 
-                 empresa.shopify_status === 'connected');
-    }
+  public descargar() {
+    this.downloading = true;
+    this.apiService.export('productos/consignas-compras/exportar', {}).subscribe(
+      (data: Blob) => {
+        const blob = new Blob([data], {
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'consignas-compras.xlsx';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        this.downloading = false;
+      },
+      (error) => {
+        this.alertService.error(error);
+        this.downloading = false;
+      }
+    );
+  }
 }
