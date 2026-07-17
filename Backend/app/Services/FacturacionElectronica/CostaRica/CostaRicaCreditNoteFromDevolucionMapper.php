@@ -19,7 +19,7 @@ final class CostaRicaCreditNoteFromDevolucionMapper
 
     public function buildDocumentData(Devolucion $devolucion, Empresa $empresa, Venta $facturaOriginal, int $secuencialNc): array
     {
-        $devolucion->loadMissing(['detalles.producto', 'cliente', 'sucursal']);
+        $devolucion->loadMissing(['detalles.producto.impuestos', 'cliente', 'sucursal']);
 
         if ($devolucion->detalles->isEmpty()) {
             throw new InvalidArgumentException('La devolución no tiene líneas de detalle.');

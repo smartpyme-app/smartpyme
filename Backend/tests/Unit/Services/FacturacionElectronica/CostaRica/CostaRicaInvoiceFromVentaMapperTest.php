@@ -3,6 +3,7 @@
 namespace Tests\Unit\Services\FacturacionElectronica\CostaRica;
 
 use App\Models\Admin\Empresa;
+use App\Models\Admin\Impuesto;
 use App\Models\Inventario\Producto;
 use App\Models\Ventas\Devoluciones\Detalle as DetalleDevolucion;
 use App\Models\Ventas\Devoluciones\Devolucion;
@@ -10,6 +11,7 @@ use App\Services\FacturacionElectronica\CostaRica\CostaRicaInvoiceFromVentaMappe
 use App\Services\FacturacionElectronica\CostaRica\CostaRicaTipoCambioService;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
 final class CostaRicaInvoiceFromVentaMapperTest extends TestCase
@@ -77,6 +79,52 @@ final class CostaRicaInvoiceFromVentaMapperTest extends TestCase
         $this->assertSame(39.0, $summary['taxes'][0]['amount']);
     }
 
+    public function test_multiimpuesto_13_mas_5_emite_solo_iva_13_tarifa_08(): void
+    {
+        $empresa = $this->empresaStub();
+        $detalle = $this->detalleDevolucionMock(1, 100.0, 0.0, '8517120000100', 'Producto');
+        $detalle->producto->setRelation('impuestos', new Collection([
+            $this->impuestoStub(13.0, null),
+            $this->impuestoStub(5.0, 'C8'),
+        ]));
+
+        // Fallback 18% (suma multiimpuesto): debe ignorarse y usar IVA 13 del producto.
+        $line = $this->mapper->lineaDesdeDetalleDevolucion($detalle, $empresa, 18.0);
+
+        $this->assertCount(1, $line['taxes']);
+        $this->assertSame('01', $line['taxes'][0]['tax_type']);
+        $this->assertSame('08', $line['taxes'][0]['iva_type']);
+        $this->assertSame(13.0, $line['taxes'][0]['rate']);
+        $this->assertSame(13.0, $line['taxes'][0]['amount']);
+    }
+
+    public function test_porcentaje_18_sin_impuestos_producto_falla(): void
+    {
+        $empresa = $this->empresaStub();
+        $detalle = $this->detalleDevolucionMock(1, 100.0, 0.0, '8517120000100', 'Producto');
+        $detalle->producto->setRelation('impuestos', new Collection());
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessageMatches('/posible suma multiimpuesto/');
+
+        $this->mapper->lineaDesdeDetalleDevolucion($detalle, $empresa, 18.0);
+    }
+
+    public function test_tarifa_iva_1_por_ciento_codigo_02(): void
+    {
+        $empresa = $this->empresaStub();
+        $detalle = $this->detalleDevolucionMock(1, 100.0, 0.0, '8517120000100', 'Producto');
+        $detalle->producto->setRelation('impuestos', new Collection([
+            $this->impuestoStub(1.0, null),
+        ]));
+
+        $line = $this->mapper->lineaDesdeDetalleDevolucion($detalle, $empresa, 1.0);
+
+        $this->assertSame('02', $line['taxes'][0]['iva_type']);
+        $this->assertSame(1.0, $line['taxes'][0]['rate']);
+        $this->assertSame(1.0, $line['taxes'][0]['amount']);
+    }
+
     private function empresaStub(): Empresa
     {
         $empresa = $this->createMock(Empresa::class);
@@ -106,6 +154,7 @@ final class CostaRicaInvoiceFromVentaMapperTest extends TestCase
         $producto->tipo = $tipoProducto;
         $producto->codigo = null;
         $producto->setRawAttributes(['codigo_cabys' => $cabys]);
+        $producto->setRelation('impuestos', new Collection());
 
         $detalle = (new \ReflectionClass(DetalleDevolucion::class))->newInstanceWithoutConstructor();
         $detalle->cantidad = $cantidad;
@@ -119,5 +168,14 @@ final class CostaRicaInvoiceFromVentaMapperTest extends TestCase
         $detalle->setRelation('producto', $producto);
 
         return $detalle;
+    }
+
+    private function impuestoStub(float $porcentaje, ?string $codigoMh): Impuesto
+    {
+        $imp = (new \ReflectionClass(Impuesto::class))->newInstanceWithoutConstructor();
+        $imp->porcentaje = $porcentaje;
+        $imp->codigo_mh = $codigoMh;
+
+        return $imp;
     }
 }

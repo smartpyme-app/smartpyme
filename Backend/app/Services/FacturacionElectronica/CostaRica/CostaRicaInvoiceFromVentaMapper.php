@@ -40,7 +40,7 @@ final class CostaRicaInvoiceFromVentaMapper
 
     public function buildDocumentData(Venta $venta, Empresa $empresa, int $secuencialFactura): array
     {
-        $venta->loadMissing(['detalles.producto', 'cliente', 'sucursal']);
+        $venta->loadMissing(['detalles.producto.impuestos', 'cliente', 'sucursal']);
 
         if ($venta->detalles->isEmpty()) {
             throw new InvalidArgumentException('La venta no tiene líneas de detalle.');
@@ -165,7 +165,6 @@ final class CostaRicaInvoiceFromVentaMapper
 
     public function lineaDesdeDetalleDevolucion(DetalleDevolucion $detalle, Empresa $empresa, float $porcentajeIvaEstimado): array
     {
-        $detalle->loadMissing('producto');
         $producto = $detalle->producto;
         $cabys = $this->resolverCabysLinea($producto, $empresa);
         if (strlen($cabys) !== 13) {
@@ -183,7 +182,12 @@ final class CostaRicaInvoiceFromVentaMapper
         $montoDescuento = round((float) ($detalle->descuento ?? 0), 5);
         $baseImponible = round($subTotalBruto - $montoDescuento, 5);
 
-        [$ivaTarifaCode, , $rate] = $this->tarifaIva($porcentajeIvaEstimado, $baseImponible > 0.00001 && $porcentajeIvaEstimado > 0);
+        // Misma regla que factura: IVA DGT desde producto_impuestos; no usar suma multiimpuesto del encabezado.
+        $pct = $this->resolverPorcentajeIvaDesdeProducto(
+            $producto instanceof Producto ? $producto : null,
+            $porcentajeIvaEstimado
+        );
+        [$ivaTarifaCode, , $rate] = $this->tarifaIva($pct, $baseImponible > 0.00001 && $pct > 0);
         $gravado = $rate > 0.00001 && $baseImponible > 0.00001;
         $ivaMonto = $gravado ? round($baseImponible * ($rate / 100), 5) : 0.0;
         $montos = $this->montosLineaFeCr($subTotalBruto, $montoDescuento, $ivaMonto);
@@ -234,7 +238,9 @@ final class CostaRicaInvoiceFromVentaMapper
         $nsGoods = 0.0;
         $nsServices = 0.0;
 
-        $devolucion->loadMissing('detalles');
+        if (! $devolucion->relationLoaded('detalles')) {
+            $devolucion->loadMissing('detalles');
+        }
         $detalles = $devolucion->detalles->values();
 
         foreach ($lineItems as $idx => $line) {
@@ -810,7 +816,7 @@ final class CostaRicaInvoiceFromVentaMapper
         $montoDescuento = round((float) ($detalle->descuento ?? 0), 5);
 
         $exoneracion = $this->detalleDeclaraExoneracionCr($detalle);
-        $pct = (float) ($detalle->porcentaje_impuesto ?? 0);
+        $pct = $this->resolverPorcentajeIvaLineaCr($detalle);
         if ($exoneracion) {
             $ex = $this->exoneracionCrArrayDetalle($detalle);
             $pct = (float) ($ex['tarifa_exonerada'] ?? $pct ?: 13);
@@ -983,6 +989,8 @@ final class CostaRicaInvoiceFromVentaMapper
     }
 
     /**
+     * Tarifas IVA CR (nota 8.1) usadas en emisión. Sin fallback a 13%.
+     *
      * @return array{0: string, 1: string, 2: float}
      */
     private function tarifaIva(float $porcentajeDeclarado, bool $tieneIva): array
@@ -995,6 +1003,10 @@ final class CostaRicaInvoiceFromVentaMapper
             return ['08', 'Tarifa general 13%', 13.0];
         }
 
+        if (abs($porcentajeDeclarado - 8) < 0.01) {
+            return ['07', 'Tarifa transitoria 8%', 8.0];
+        }
+
         if (abs($porcentajeDeclarado - 4) < 0.01) {
             return ['04', 'Tarifa reducida 4%', 4.0];
         }
@@ -1003,7 +1015,111 @@ final class CostaRicaInvoiceFromVentaMapper
             return ['03', 'Tarifa reducida 2%', 2.0];
         }
 
-        return ['08', 'Tarifa general 13%', 13.0];
+        if (abs($porcentajeDeclarado - 1) < 0.01) {
+            return ['02', 'Tarifa reducida 1%', 1.0];
+        }
+
+        if (abs($porcentajeDeclarado - 0.5) < 0.01) {
+            return ['09', 'Tarifa reducida 0.5%', 0.5];
+        }
+
+        throw new InvalidArgumentException(sprintf(
+            'Tarifa IVA %.2f%% no reconocida para FE Costa Rica (use 0.5, 1, 2, 4, 8 o 13).',
+            $porcentajeDeclarado
+        ));
+    }
+
+    /**
+     * Porcentaje IVA de línea venta para XML CR.
+     */
+    private function resolverPorcentajeIvaLineaCr(Detalle $detalle): float
+    {
+        return $this->resolverPorcentajeIvaDesdeProducto(
+            $detalle->producto instanceof Producto ? $detalle->producto : null,
+            (float) ($detalle->porcentaje_impuesto ?? 0)
+        );
+    }
+
+    /**
+     * Porcentaje IVA para XML CR: solo tasas DGT conocidas.
+     * Si el producto tiene producto_impuestos, toma el IVA y descarta no-IVA (p. ej. turismo 5% / C8).
+     * Alineado con esImpuestoIva de facturación (main/multiimpuestos), filtrado a tarifas CR.
+     * ponytail: un solo Impuesto IVA por línea; multi-nodo DGT no-IVA queda fuera de alcance.
+     */
+    private function resolverPorcentajeIvaDesdeProducto(?Producto $producto, float $porcentajeImpuestoFallback): float
+    {
+        if ($producto instanceof Producto) {
+            if (! $producto->relationLoaded('impuestos')) {
+                $producto->loadMissing('impuestos');
+            }
+            $impuestos = $producto->impuestos;
+            if ($impuestos !== null && $impuestos->count() > 0) {
+                $ivas = [];
+                foreach ($impuestos as $imp) {
+                    if ($this->esImpuestoIvaCr($imp)) {
+                        $ivas[] = round((float) ($imp->porcentaje ?? 0), 2);
+                    }
+                }
+                $ivas = array_values(array_unique($ivas));
+                if (count($ivas) > 1) {
+                    throw new InvalidArgumentException(
+                        'El producto tiene más de una tarifa IVA distinta; FE CR emite un solo IVA por línea.'
+                    );
+                }
+                if (count($ivas) === 1) {
+                    return (float) $ivas[0];
+                }
+
+                return 0.0;
+            }
+        }
+
+        $pct = round($porcentajeImpuestoFallback, 2);
+        if ($pct <= 0.00001) {
+            return 0.0;
+        }
+        if (! $this->esTarifaIvaCrConocida($pct)) {
+            throw new InvalidArgumentException(sprintf(
+                'porcentaje_impuesto %.2f%% no es una tarifa IVA CR válida (posible suma multiimpuesto). Asigne impuestos de producto o use 0.5/1/2/4/8/13.',
+                $pct
+            ));
+        }
+
+        return $pct;
+    }
+
+    /**
+     * Misma idea que Frontend esImpuestoIva / BuildsTributosVenta::esImpuestoIva,
+     * pero solo acepta tarifas IVA de Costa Rica (DGT).
+     */
+    private function esImpuestoIvaCr(object $imp): bool
+    {
+        $codigo = isset($imp->codigo_mh) ? trim((string) $imp->codigo_mh) : '';
+        if ($codigo === '20') {
+            return $this->esTarifaIvaCrConocida((float) ($imp->porcentaje ?? 0));
+        }
+        // Tributos MH especiales conocidos (turismo C8, etc.)
+        if ($codigo !== '' && in_array(strtoupper($codigo), ['C8'], true)) {
+            return false;
+        }
+
+        $pct = (float) ($imp->porcentaje ?? 0);
+        if ($pct <= 0.00001 || abs($pct - 5) < 0.01) {
+            return false;
+        }
+
+        return $this->esTarifaIvaCrConocida($pct);
+    }
+
+    private function esTarifaIvaCrConocida(float $porcentaje): bool
+    {
+        foreach ([0.5, 1.0, 2.0, 4.0, 8.0, 13.0] as $t) {
+            if (abs($porcentaje - $t) < 0.01) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -1024,7 +1140,7 @@ final class CostaRicaInvoiceFromVentaMapper
      */
     private function resumenAlineadoALineas(Venta $venta, array $lineItems): array
     {
-        $venta->loadMissing(['detalles.producto', 'empresa']);
+        $venta->loadMissing(['detalles.producto.impuestos', 'empresa']);
         $empresa = $venta->empresa;
         if (! $empresa instanceof Empresa) {
             throw new InvalidArgumentException('La venta no tiene empresa para el resumen FE CR.');
@@ -1346,7 +1462,7 @@ final class CostaRicaInvoiceFromVentaMapper
      */
     public function buildFacturaElectronicaCompraDesdeCompra(Compra $compra, Empresa $empresa, int $secuencial): array
     {
-        $compra->loadMissing(['detalles.producto', 'proveedor', 'sucursal']);
+        $compra->loadMissing(['detalles.producto.impuestos', 'proveedor', 'sucursal']);
         if ($compra->detalles->isEmpty()) {
             throw new InvalidArgumentException('La compra no tiene líneas de detalle para FEC.');
         }
@@ -1628,7 +1744,6 @@ final class CostaRicaInvoiceFromVentaMapper
      */
     private function lineaCompra(DetalleCompra $detalle, Empresa $empresa, Compra $compra): array
     {
-        $detalle->loadMissing('producto');
         $producto = $detalle->producto;
         $cabys = $this->resolverCabysLinea($producto, $empresa);
         if (strlen($cabys) !== 13) {
@@ -1671,7 +1786,10 @@ final class CostaRicaInvoiceFromVentaMapper
             );
         }
 
-        $pct = (float) ($detalle->porcentaje_impuesto ?? 0);
+        $pct = $this->resolverPorcentajeIvaDesdeProducto(
+            $producto instanceof Producto ? $producto : null,
+            (float) ($detalle->porcentaje_impuesto ?? 0)
+        );
         if ($ivaMonto > 0.00001 && $pct < 0.01) {
             $pct = 13.0;
         }
