@@ -19,15 +19,26 @@ class ConsignaDisponibleService
      * Pool virtual de compras en consigna (proveedor) menos ventas que descontaron de ese pool.
      * El inventario físico sigue siendo uno solo; esto solo rastrea el origen contable.
      */
+    public static function calcularDisponibleDesdeComponentes(
+        float $entradaAbierta,
+        float $ventasConsigna,
+        float $liquidado,
+        float $stockFisico
+    ): float {
+        $salidaEfectiva = max(0, $ventasConsigna - $liquidado);
+        $disponible = max(0, $entradaAbierta - $salidaEfectiva);
+
+        return min($disponible, $stockFisico);
+    }
+
     public function calcularDisponible(int $idProducto, int $idBodega, ?int $excluirVentaId = null): float
     {
         $entrada = $this->sumEntradaComprasConsigna($idProducto, $idBodega);
         $salida = $this->sumSalidaVentasDesdeConsignaCompra($idProducto, $idBodega, $excluirVentaId);
-
-        $disponible = max(0, $entrada - $salida);
+        $liquidado = $this->sumLiquidadoComprasConsigna($idProducto, $idBodega);
         $stockFisico = $this->obtenerStockFisico($idProducto, $idBodega);
 
-        return min($disponible, $stockFisico);
+        return self::calcularDisponibleDesdeComponentes($entrada, $salida, $liquidado, $stockFisico);
     }
 
     /**
@@ -165,6 +176,11 @@ class ConsignaDisponibleService
             (float) ($det['cantidad'] ?? 0),
             $factor
         );
+    }
+
+    private function sumLiquidadoComprasConsigna(int $idProducto, int $idBodega): float
+    {
+        return 0.0;
     }
 
     private function sumEntradaComprasConsigna(int $idProducto, int $idBodega): float
