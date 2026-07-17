@@ -60,16 +60,18 @@ class ConsignasComprasExport implements FromCollection, WithHeadings, WithMappin
         $compras = Compra::query()
             ->where('estado', 'Consigna')
             ->where('cotizacion', 0)
-            ->with(['detalles.producto', 'bodega', 'sucursal'])
+            ->with(['proveedor', 'detalles.producto', 'bodega', 'sucursal'])
             ->orderByDesc('fecha')
+            ->orderByDesc('id')
             ->get();
 
         $rows = collect();
         foreach ($compras as $compra) {
+            $nombreProveedor = $compra->nombre_proveedor;
             foreach ($compra->detalles as $detalle) {
                 $rows->push([
                     'fecha' => $compra->fecha,
-                    'proveedor' => $compra->nombre_proveedor,
+                    'proveedor' => $nombreProveedor,
                     'tipo_documento' => $compra->tipo_documento,
                     'referencia' => $compra->referencia,
                     'fecha_pago' => $compra->fecha_pago,

@@ -16,7 +16,8 @@ use Illuminate\Support\Facades\Crypt;
 class ConsignaDisponibleService
 {
     /**
-     * Pool virtual de compras en consigna (proveedor) menos ventas que descontaron de ese pool.
+     * Pool virtual de compras en consigna (proveedor) menos ventas que descontaron de ese pool,
+     * neto de unidades ya liquidadas (convertidas a compra propia).
      * El inventario físico sigue siendo uno solo; esto solo rastrea el origen contable.
      */
     public static function calcularDisponibleDesdeComponentes(

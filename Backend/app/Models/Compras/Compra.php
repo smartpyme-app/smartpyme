@@ -110,7 +110,10 @@ class Compra extends Model {
     }
 
     public function getNombreProveedorAttribute()
-    {   $proveedor = $this->proveedor()->first();
+    {
+        $proveedor = $this->relationLoaded('proveedor')
+            ? $this->proveedor
+            : $this->proveedor()->first();
         if ($proveedor) {
             return $proveedor->tipo == 'Empresa' ? $proveedor->nombre_empresa : $proveedor->nombre . ' ' . $proveedor->apellido;
         }
