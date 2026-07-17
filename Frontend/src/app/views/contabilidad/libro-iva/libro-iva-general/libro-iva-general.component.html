@@ -1,10 +1,15 @@
 <section class="bg-white p-4 rounded mb-3">
-  <h2 class="mb-0">Libros fiscales</h2>
+  <h2 class="mb-0">{{ soloTurismo ? 'Impuesto turismo 5%' : 'Libros fiscales' }}</h2>
 </section>
 
 <div class="bg-white p-4 rounded mb-3">
   <div class="d-flex flex-wrap gap-2 mb-3">
-    <div class="d-flex gap-2 flex-wrap">
+    <div *ngIf="soloTurismo" class="d-flex gap-2 flex-wrap">
+      <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-iva/contribuyentes">Contribuyentes</button>
+      <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-iva/consumidor-final">Consumidor Final</button>
+      <button *ngIf="tieneImpuestoTurismo" class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-iva/impuesto-turismo">Impuesto turismo 5%</button>
+    </div>
+    <div *ngIf="!soloTurismo" class="d-flex gap-2 flex-wrap">
       <button type="button" class="btn" [ngClass]="{'btn-primary': activoSeccion === 'ventas'}" (click)="activoSeccion = 'ventas'; loadAll()">
         Ventas
       </button>
@@ -13,6 +18,9 @@
       </button>
       <button type="button" class="btn" [ngClass]="{'btn-primary': activoSeccion === 'retenciones'}" (click)="activoSeccion = 'retenciones'; loadAll()">
         Retenciones
+      </button>
+      <button *ngIf="tieneImpuestoTurismo" type="button" class="btn" [ngClass]="{'btn-primary': activoSeccion === 'turismo'}" (click)="activoSeccion = 'turismo'; loadAll()">
+        Impuesto turismo 5%
       </button>
     </div>
     <div class="ms-auto d-flex gap-2 align-items-center">
@@ -38,8 +46,12 @@
         <select class="form-select" style="width: auto;" [(ngModel)]="filtros.anio" name="anio" (change)="onFiltroChange()">
           <option *ngFor="let year of years" [value]="year">{{ year }}</option>
         </select>
+        <select *ngIf="activoSeccion === 'turismo'" class="form-select" style="width: auto;" [(ngModel)]="filtros.id_impuesto" name="id_impuesto" (change)="loadAll()">
+          <option value="">Todos los impuestos 5%</option>
+          <option *ngFor="let impuesto of impuestosTurismo" [value]="impuesto.id">{{ impuesto.nombre }}</option>
+        </select>
       </ng-container>
-      <div class="dropdown" *ngIf="activoSeccion === 'ventas' || activoSeccion === 'compras' || activoSeccion === 'retenciones'">
+      <div class="dropdown" *ngIf="activoSeccion === 'ventas' || activoSeccion === 'compras' || activoSeccion === 'retenciones' || activoSeccion === 'turismo'">
         <button class="btn btn-default dropdown-toggle" type="button" data-bs-toggle="dropdown" [disabled]="downloading">
           Descargas
         </button>
@@ -54,6 +66,9 @@
           </li>
           <li *ngIf="activoSeccion === 'retenciones'">
             <button class="dropdown-item" (click)="descargarRetencionesExcel()">Libro fiscal - Retenciones (Excel)</button>
+          </li>
+          <li *ngIf="activoSeccion === 'turismo'">
+            <button class="dropdown-item" (click)="descargarImpuestoTurismoExcel()">Impuesto turismo 5% (Excel)</button>
           </li>
         </ul>
       </div>
@@ -196,6 +211,50 @@
                 <td class="text-end">{{ row.impuesto_retenido | currency }}</td>
               </tr>
             </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sección Impuesto turismo -->
+  <div *ngIf="activoSeccion === 'turismo'">
+    <div class="row">
+      <div class="col-12">
+        <div class="table-responsive bg-white">
+          <table class="table table-bordered table-hover mr-top" id="tablaImpuestoTurismo">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Documento</th>
+                <th>Cliente</th>
+                <th class="text-end">Base</th>
+                <th class="text-end">Monto 5%</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="5" class="text-center" *ngIf="(impuestoTurismo?.length ?? 0) === 0 && !loading">
+                  <span class="badge bg-primary">No tiene registros</span>
+                </td>
+                <td colspan="5" class="text-center" *ngIf="loading">
+                  <span class="badge bg-primary">Cargando...</span>
+                </td>
+              </tr>
+              <tr class="animated fadeIn" *ngFor="let row of impuestoTurismo">
+                <td>{{ row.fecha | date:'dd/MM/yyyy' }}</td>
+                <td>{{ row.documento }}</td>
+                <td>{{ row.cliente }}</td>
+                <td class="text-end">{{ row.base | currency }}</td>
+                <td class="text-end">{{ row.monto_turismo | currency }}</td>
+              </tr>
+            </tbody>
+            <tfoot *ngIf="!loading">
+              <tr>
+                <th colspan="4" class="text-end">Total período</th>
+                <th class="text-end">{{ totalImpuestoTurismo | currency }}</th>
+              </tr>
+            </tfoot>
           </table>
         </div>
       </div>

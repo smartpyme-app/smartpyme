@@ -30,6 +30,7 @@ import { formatEmpresaCurrency, getEmpresaCurrencySymbol } from '@helpers/curren
 })
 export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
   @Input() datos: any = {};
+  @Input() datosCompletos = false;
   @Output() filtrosCambiados = new EventEmitter<any>();
 
   // Propiedades cacheadas para evitar recálculos
@@ -312,6 +313,10 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
    */
   sucursalesTodasImplicitas = true;
 
+  /** true mientras se espera la respuesta del servidor tras cambiar un filtro */
+  filtrosLocked = false;
+  private _filtrosLockTimeout: any = null;
+
   constructor(
     private cdr: ChangeDetectorRef,
     private apiService: ApiService,
@@ -590,11 +595,9 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
     });
   }
 
-  /**
-   * Siempre inicia en "Todo el año" (null).
-   */
+  /** Inicia en el mes actual. */
   private aplicarDefectoMesFlujoEfectivo(): void {
-    this.mesFlujoEfectivo = null;
+    this.mesFlujoEfectivo = new Date().getMonth() + 1;
   }
 
   /** Último mes disponible en el desplegable según año (año actual → hasta hoy; otro año → 12). */
@@ -636,7 +639,7 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['datos']) {
       if (this.datos && Object.keys(this.datos).length > 0) {
-        // Recalcular cache cuando los datos cambien
+        // Recalcular cache cuando los datos cambien (progresivo)
         this.recalcularRowsCache();
         this.actualizarVentasPivot();
         this.actualizarGastosPivot();
@@ -644,6 +647,11 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
         this.actualizarPagar30Pivot();
         this.cdr.markForCheck();
       }
+    }
+
+    // datosCompletos=true: todas las APIs terminaron → desbloquear filtros
+    if (changes['datosCompletos'] && this.datosCompletos) {
+      this._desbloquearFiltros();
     }
   }
 
@@ -672,6 +680,9 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
       return;
     }
 
+    // Bloquear filtros mientras se espera la respuesta
+    this._bloquearFiltros();
+
     const allIds = this.sucursales.map(s => s.id);
     const sel = this.sucursalesSeleccionadas;
     const sucursal =
@@ -689,6 +700,23 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
 
     // Emitir evento al componente padre para recargar datos
     this.filtrosCambiados.emit(filtros);
+  }
+
+  private _bloquearFiltros(): void {
+    this.filtrosLocked = true;
+    this.cdr.markForCheck();
+    // Safety net: desbloquear tras 8s aunque no lleguen datos
+    if (this._filtrosLockTimeout) clearTimeout(this._filtrosLockTimeout);
+    this._filtrosLockTimeout = setTimeout(() => this._desbloquearFiltros(), 8000);
+  }
+
+  private _desbloquearFiltros(): void {
+    if (this._filtrosLockTimeout) {
+      clearTimeout(this._filtrosLockTimeout);
+      this._filtrosLockTimeout = null;
+    }
+    this.filtrosLocked = false;
+    this.cdr.markForCheck();
   }
 
   formatCurrency(value: number): string {

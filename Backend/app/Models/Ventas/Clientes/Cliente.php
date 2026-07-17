@@ -23,6 +23,7 @@ class Cliente extends Model {
        'giro',
        'tipo',
        'tipo_contribuyente',
+       'tipo_fiscal',
        'clasificacion',
        'dui',
        'nit',

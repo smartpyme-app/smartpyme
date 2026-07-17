@@ -43,7 +43,14 @@
     <!-- Filtros específicos de Inventario -->
     <div class="row mb-1">
         <div class="col-12">
-            <div class="card border-0 shadow-sm">
+            <div class="card border-0 shadow-sm filter-bar-card filter-bar-wrapper" [class.filter-bar-locked]="filtrosLocked">
+
+                <!-- Overlay de carga sobre los filtros -->
+                <div class="filter-loading-overlay" *ngIf="filtrosLocked" aria-live="polite" aria-busy="true">
+                    <span class="filter-loading-spinner"></span>
+                    <span class="filter-loading-text">Filtrando datos…</span>
+                </div>
+
                 <div class="card-body">
                     <div class="d-flex align-items-end justify-content-end gap-3 flex-wrap">
                         <!-- <app-filtro-fecha [(anio)]="anio" [(mes)]="mes" (filtroChange)="aplicarFiltros()"
@@ -52,16 +59,17 @@
 
                         <!-- Botones y controles a la derecha -->
                         <div class="d-flex align-items-end gap-2">
-                            <button type="button" class="btn btn-outline-primary" (click)="toggleFiltrosAdicionales()">
+                            <button type="button" class="btn btn-outline-primary" (click)="toggleFiltrosAdicionales()"
+                                [disabled]="filtrosLocked">
                                 <i class="fas fa-filter me-1"></i> Mostrar filtros
                             </button>
                             <button type="button" class="btn btn-primary" tooltip="Aplicar otros filtros al dashboard"
                                 *ngIf="mostrarBotonAplicarOtrosFiltrosInventario"
-                                (click)="confirmarOtrosFiltrosInventario()">
+                                (click)="confirmarOtrosFiltrosInventario()" [disabled]="filtrosLocked">
                                 <i class="fa fa-check"></i> Aplicar
                             </button>
                             <button type="button" class="btn btn-outline-primary" tooltip="Limpiar filtros"
-                                (click)="limpiarFiltros()" *ngIf="puedeLimpiarFiltrosInventario">
+                                (click)="limpiarFiltros()" *ngIf="puedeLimpiarFiltrosInventario" [disabled]="filtrosLocked">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
                                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                     stroke-linejoin="round"
@@ -98,7 +106,7 @@
                         <div class="row g-3">
                             <div class="col-12 col-md-6 col-xl-4">
                                 <app-dropdown-multi-filtro label="Sucursal" pluralLabel="sucursales"
-                                    [items]="filtroAdSucursalesItems"
+                                    [items]="filtroAdSucursalesItems" [disabled]="filtrosLocked"
                                     [todasImplicitas]="filtroAdSucursalTodasImplicitas"
                                     [seleccionados]="filtroAdSucursalSeleccionadas"
                                     (selectionChange)="onFiltroAdSucursalChange($event)">
@@ -106,7 +114,7 @@
                             </div>
                             <div class="col-12 col-md-6 col-xl-4">
                                 <app-dropdown-multi-filtro label="Categoría" pluralLabel="categorías"
-                                    [items]="filtroAdCategoriasItems"
+                                    [items]="filtroAdCategoriasItems" [disabled]="filtrosLocked"
                                     [todasImplicitas]="filtroAdCategoriaTodasImplicitas"
                                     [seleccionados]="filtroAdCategoriaSeleccionadas"
                                     (selectionChange)="onFiltroAdCategoriaChange($event)">
@@ -115,7 +123,7 @@
                             <div class="col-12 col-md-6 col-xl-4">
                                 <app-dropdown-multi-filtro label="Producto" pluralLabel="productos"
                                     [items]="filtroAdProductosItems" [mostrarBuscador]="true" [limiteVistaInicial]="100"
-                                    buscadorPlaceholder="Buscar producto"
+                                    buscadorPlaceholder="Buscar producto" [disabled]="filtrosLocked"
                                     [todasImplicitas]="filtroAdProductoTodasImplicitas"
                                     [seleccionados]="filtroAdProductoSeleccionadas"
                                     (selectionChange)="onFiltroAdProductoChange($event)">
@@ -123,7 +131,7 @@
                             </div>
                             <div class="col-12 col-md-6 col-xl-4">
                                 <app-dropdown-multi-filtro label="Proveedor" pluralLabel="proveedores"
-                                    [items]="filtroAdProveedoresItems"
+                                    [items]="filtroAdProveedoresItems" [disabled]="filtrosLocked"
                                     [todasImplicitas]="filtroAdProveedorTodasImplicitas"
                                     [seleccionados]="filtroAdProveedorSeleccionadas"
                                     (selectionChange)="onFiltroAdProveedorChange($event)">
@@ -182,7 +190,8 @@
                                         *ngIf="(datosFiltrados && datosFiltrados.stockPorCategoriaConfig) || datos.stockPorCategoriaConfig; else invChartLoader">
                                         <app-bar-chart
                                             [config]="(datosFiltrados && datosFiltrados.stockPorCategoriaConfig) ? datosFiltrados.stockPorCategoriaConfig : datos.stockPorCategoriaConfig"
-                                            (itemClick)="onCategoriaStockClick($event)">
+                                            (itemClick)="onCategoriaStockClick($event)"
+                                            height="400px">
                                         </app-bar-chart>
                                     </ng-container>
                                 </div>

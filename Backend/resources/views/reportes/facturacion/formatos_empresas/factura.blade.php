@@ -130,5 +130,6 @@
         @include('reportes.facturacion.partials.documento-nota')
     </section>
 
+@include('reportes.facturacion.partials.impresion-html')
 </body>
 </html>

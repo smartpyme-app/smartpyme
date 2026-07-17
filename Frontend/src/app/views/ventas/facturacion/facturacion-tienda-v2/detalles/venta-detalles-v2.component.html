@@ -1,3 +1,81 @@
+<style>
+.product-zoom-img {
+    cursor: zoom-in;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+.product-zoom-img:hover {
+    transform: scale(1.12);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+.zoom-dialog {
+    border: none;
+    background: transparent;
+    padding: 0;
+    outline: none;
+    max-width: 90vw;
+    max-height: 90vh;
+    overflow: visible;
+    align-self: center;
+    justify-self: center;
+}
+.zoom-dialog::backdrop {
+    background-color: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(8px);
+    transition: backdrop-filter 0.3s ease;
+}
+.zoom-dialog-content {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+    background: #1e1e1e;
+    border: 1px solid rgba(255,255,255,0.1);
+    animation: zoomIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.zoom-dialog-img {
+    max-width: 85vw;
+    max-height: 80vh;
+    object-fit: contain;
+    display: block;
+}
+.zoom-dialog-close {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s, transform 0.2s;
+    z-index: 100;
+}
+.zoom-dialog-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+}
+@keyframes zoomIn {
+    from {
+        transform: scale(0.9);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+</style>
+
 <div class="d-flex justify-content-end mb-3">
     <div class="col-md-12 col-lg-8 justify-content-end d-flex gap-2">
         <app-tienda-venta-buscador-v2 class="w-100" [venta]="venta"
@@ -51,6 +129,8 @@
                         <div class="d-flex gap-3" *ngIf="!usuario.empresa.editar_descripcion_venta">
                             <div>
                                 <img src="{{ apiService.baseUrl }}/img/{{ detalle.img }}" class="rounded-circle"
+                                    [class.product-zoom-img]="hasImage(detalle.img)"
+                                    (click)="zoomImage(detalle.img, imageDialog)"
                                     height="50px" width="50px">
                             </div>
                             <div>
@@ -60,13 +140,12 @@
                                         style="font-size: 10px; cursor: help;" tooltip="Presentación">P</span></small>
 
                                 <br>
-                                <small class="text-muted" *ngIf="detalle.inventario_por_lotes">
+                                <small class="text-muted" *ngIf="detalle.inventario_por_lotes && apiService.isLotesActivo()">
                                     <button class="btn btn-sm btn-outline-primary mt-1"
                                         (click)="abrirModalLoteVenta(mloteVenta, detalle)"
                                         *ngIf="getLotesMetodologia() === 'Manual'">
                                         <i class="fa fa-box"></i>
-                                        {{ detalle.lote_id ? 'Lote: ' + (detalle.lote?.numero_lote || 'N/A') :
-                                        'Seleccionar lote' }}
+                                        {{ textoLotesDetalle(detalle) }}
                                     </button>
                                     <span *ngIf="getLotesMetodologia() !== 'Manual' && detalle.lote_id"
                                         class="badge bg-info">
@@ -91,6 +170,19 @@
                             <small class="text-muted text-tiny">{{ detalle?.tipo }} <span
                                     *ngIf="detalle.id_presentacion" class="badge bg-success ms-1"
                                     style="font-size: 10px; cursor: help;" tooltip="Presentación">P</span></small>
+                            <br>
+                            <small class="text-muted" *ngIf="detalle.inventario_por_lotes && apiService.isLotesActivo()">
+                                <button class="btn btn-sm btn-outline-primary mt-1"
+                                    (click)="abrirModalLoteVenta(mloteVenta, detalle)"
+                                    *ngIf="getLotesMetodologia() === 'Manual'">
+                                    <i class="fa fa-box"></i>
+                                    {{ textoLotesDetalle(detalle) }}
+                                </button>
+                                <span *ngIf="getLotesMetodologia() !== 'Manual' && detalle.lote_id"
+                                    class="badge bg-info">
+                                    Lote: {{ detalle.lote?.numero_lote || 'N/A' }}
+                                </span>
+                            </small>
                             <div style="font-size: 14px;">
                                 <ul>
                                     <li class="mb-2" *ngFor="let composicion of detalle?.composiciones">
@@ -108,6 +200,8 @@
                             tooltip="{{ detalle.stock != null ? (detalle.stock > 0 ? detalle.stock + ' disponibles' : 'No hay disponibles') : '' }}"
                             [(ngModel)]="detalle.cantidad" (change)="updateTotal(detalle)"
                             (keyup)="updateTotal(detalle)" (wheel)="$event.preventDefault()" class="form-control"
+                            [readonly]="esDetalleCantidadPorLotes(detalle)"
+                            [title]="esDetalleCantidadPorLotes(detalle) ? 'La cantidad se define en Distribuir lotes' : ''"
                             [ngClass]="{ 'border-danger': ((detalle.cantidad > detalle.stock) && (detalle.stock != null)) }"
                             name="cantidad">
                     </td>
@@ -239,70 +333,85 @@
     </div>
 </ng-template>
 
-<!-- Modal para seleccionar lote en ventas (facturación v2) -->
+<!-- Modal distribución de lotes (facturación v2) -->
 <ng-template #mloteVenta>
     <div class="modal-header">
-        <h4 class="modal-title">Seleccionar Lote - {{ detalleConLote?.descripcion }}</h4>
+        <h4 class="modal-title">Distribución de lotes — {{ detalleConLote?.descripcion }}</h4>
         <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
     </div>
     <div class="modal-body">
-        <div class="alert alert-info">
+        <div class="alert alert-info mb-3">
             <i class="fa fa-info-circle"></i>
-            Seleccione el lote del cual se descontará el stock para esta venta.
+            Indique cuánto tomar de cada lote. Al confirmar, la <strong>cantidad del producto</strong>
+            será la suma de los lotes asignados.
+        </div>
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+            <span>
+                Total a vender:
+                <strong class="text-primary">{{ formatCantidadLote(totalAsignadoLotesVentaUnidades()) }}</strong>
+                unidad(es)
+            </span>
+            <div class="d-flex align-items-center gap-2">
+                <label class="mb-0 small text-muted">Auto-distribuir</label>
+                <input type="number" class="form-control form-control-sm text-center" style="width: 90px;" min="0"
+                    step="any" [(ngModel)]="cantidadObjetivoModal" [ngModelOptions]="{standalone: true}"
+                    (wheel)="$event.preventDefault()">
+                <button type="button" class="btn btn-sm btn-outline-secondary" (click)="autoDistribuirLotesVenta()"
+                    [disabled]="loading || !lotes.length">
+                    <i class="fa fa-magic"></i> Aplicar
+                </button>
+            </div>
         </div>
         <div class="table-responsive" style="max-height: 400px;">
-            <table class="table table-sm table-hover">
+            <table class="table table-sm table-hover align-middle">
                 <thead>
                     <tr>
                         <th>Número</th>
-                        <th>Stock disponible</th>
+                        <th>Stock disp.</th>
                         <th>Vencimiento</th>
-                        <th>Estado</th>
-                        <th>Acción</th>
+                        <th style="width: 120px;">Cantidad</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr *ngIf="loading">
-                        <td colspan="5" class="text-center">Cargando...</td>
+                        <td colspan="4" class="text-center">Cargando...</td>
                     </tr>
                     <tr *ngIf="!loading && lotes.length == 0">
-                        <td colspan="5" class="text-center text-muted">No hay lotes disponibles con stock suficiente
-                        </td>
+                        <td colspan="4" class="text-center text-muted">No hay lotes con stock disponible</td>
                     </tr>
                     <tr *ngFor="let lote of lotes">
                         <td><strong>{{ lote.numero_lote || 'N/A' }}</strong></td>
                         <td>
-                            <span class="badge"
-                                [ngClass]="lote.stock >= detalleConLote.cantidad ? 'bg-success' : 'bg-warning'">
-                                {{ lote.stock }}
-                            </span>
+                            <span class="badge bg-secondary">{{ formatCantidadLote(lote.stock_unidades) }}</span>
                         </td>
                         <td>
-                            {{ lote.fecha_vencimiento ? (lote.fecha_vencimiento | date:'dd/MM/yyyy') : 'Sin vencimiento'
-                            }}
-                            <br>
-                            <small class="text-muted" *ngIf="lote.dias_vencimiento !== null">
-                                ({{ lote.dias_vencimiento > 0 ? '+' : '' }}{{ lote.dias_vencimiento }} días)
-                            </small>
+                            {{ lote.fecha_vencimiento ? (lote.fecha_vencimiento | date:'dd/MM/yyyy') : 'Sin vencimiento' }}
                         </td>
                         <td>
-                            <span class="badge" [ngClass]="{
-                                    'bg-danger': lote.dias_vencimiento < 0,
-                                    'bg-warning': lote.dias_vencimiento >= 0 && lote.dias_vencimiento <= 7,
-                                    'bg-success': lote.dias_vencimiento > 7 || lote.dias_vencimiento === null
-                                  }">
-                                {{ lote.dias_vencimiento < 0 ? 'Vencido' : (lote.dias_vencimiento <=7 ? 'Vence pronto'
-                                    : 'Vigente' ) }} </span>
-                        </td>
-                        <td>
-                            <button class="btn btn-sm btn-primary" (click)="seleccionarLoteVenta(lote)"
-                                [disabled]="lote.stock < detalleConLote.cantidad">
-                                Seleccionar
-                            </button>
+                            <input type="number" class="form-control form-control-sm text-center" min="0"
+                                [max]="lote.stock_unidades" step="any"
+                                [(ngModel)]="lote.cantidad_asignada"
+                                [ngModelOptions]="{standalone: true}"
+                                (wheel)="$event.preventDefault()">
                         </td>
                     </tr>
                 </tbody>
             </table>
         </div>
     </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-light" (click)="modalRef.hide()">Cancelar</button>
+        <button type="button" class="btn btn-primary" (click)="confirmarDistribucionLotesVenta()"
+            [disabled]="!distribucionLotesValida() || loading">
+            Confirmar distribución
+        </button>
+    </div>
 </ng-template>
+
+<!-- Dialog Modal para Zoom de Fotos de Producto -->
+<dialog #imageDialog class="zoom-dialog" closedby="any" (click)="$event.target === imageDialog && imageDialog.close()">
+    <div class="zoom-dialog-content">
+        <button type="button" class="zoom-dialog-close" (click)="imageDialog.close()" aria-label="Cerrar">&times;</button>
+        <img [src]="zoomImageUrl" class="zoom-dialog-img" alt="Vista Ampliada de Producto" />
+    </div>
+</dialog>

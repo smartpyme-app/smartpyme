@@ -8,7 +8,7 @@ use App\Models\Planilla\Empleado;
 use App\Models\Planilla\DepartamentoEmpresa;
 use App\Models\Planilla\CargoEmpresa;
 use App\Constants\PlanillaConstants;
-use App\Helpers\RentaHelper;
+use App\Helpers\IsssHelper;
 use App\Services\Planilla\ConfiguracionPlanillaService;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
@@ -310,8 +310,8 @@ class PlanillasImport implements ToCollection, WithHeadingRow, WithEvents
         // Recalcular los aportes patronales con los valores finales de ingresos
         // para asegurar consistencia (el servicio los calculó con salario_devengado, pero aquí
         // debemos usar total_ingresos que incluye horas extra, comisiones, etc.)
-        $baseISSSPatronal = min($total_ingresos, 1000);
-        $isss_patronal = round($baseISSSPatronal * PlanillaConstants::DESCUENTO_ISSS_PATRONO, 2);
+        $baseISSSPatronal = min($total_ingresos, IsssHelper::obtenerTopePorPeriodo($this->data['tipo_planilla']));
+        $isss_patronal = IsssHelper::calcularAportePatronal($total_ingresos, $this->data['tipo_planilla']);
         $afp_patronal = round($total_ingresos * PlanillaConstants::DESCUENTO_AFP_PATRONO, 2);
 
         // Total deducciones (redondear a 2 decimales)
@@ -1181,10 +1181,9 @@ class PlanillasImport implements ToCollection, WithHeadingRow, WithEvents
         return $nit;
     }
 
-    protected function calcularISSSPatronal($salario)
+    protected function calcularISSSPatronal($salario, $tipoPlanilla = 'mensual')
     {
-        $baseISSSPatronal = min($salario, 1000);
-        return $baseISSSPatronal * PlanillaConstants::DESCUENTO_ISSS_PATRONO;
+        return IsssHelper::calcularAportePatronal($salario, $tipoPlanilla);
     }
 
     protected function calcularAFPPatronal($salario)

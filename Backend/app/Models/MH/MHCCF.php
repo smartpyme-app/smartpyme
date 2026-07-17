@@ -2,6 +2,7 @@
 
 namespace App\Models\MH;
 
+use App\Models\MH\Concerns\BuildsTributosVenta;
 use Illuminate\Database\Eloquent\Model;
 use Ramsey\Uuid\Uuid;
 use Illuminate\Support\Facades\Http;
@@ -12,6 +13,7 @@ use Illuminate\Support\Facades\Log;
 
 class MHCCF extends Model
 {
+    use BuildsTributosVenta;
 
     public $venta;
     public $caja;
@@ -149,7 +151,7 @@ class MHCCF extends Model
               "descActividad" => $this->venta->cliente->giro,
               "direccion" => [
                 "departamento" => $this->venta->cliente->cod_departamento,
-                "municipio" => $this->venta->cliente->cod_departamento,
+                "municipio" => $this->venta->cliente->cod_municipio,
                 "complemento" => $this->venta->cliente->empresa_direccion ?? $this->venta->cliente->direccion,
               ],
               "telefono" => $this->venta->cliente->telefono,
@@ -158,8 +160,6 @@ class MHCCF extends Model
     }
 
     public function generarCCF(){
-
-        $tributos = NULL;
 
         $apendice = NULL;
         
@@ -170,14 +170,19 @@ class MHCCF extends Model
             }
         }
 
-        if ($this->venta->iva > 0) {
-            $tributos = collect();
-            if ($this->venta->iva){ 
-                $tributos->push(['codigo' => '20', 'descripcion'=> 'Impuesto al Valor Agregado 13%', 'valor' => floatval(number_format($this->venta->iva, 2, '.', ''))]);
-            }
+        if ($this->documentoTieneIva()) {
+            $this->venta->gravada = $this->venta->sub_total;
+        } elseif (!$this->documentoTieneTributosNoIva()) {
+            $this->venta->gravada = 0;
+            $this->venta->exenta = $this->venta->sub_total;
         }
 
         $pagoCond = $this->condicionOperacionYPagoPlazo();
+        $cuerpoDocumento = $this->detalles();
+        $tributos = $this->buildTributosResumen();
+        $subTotal = floatval(number_format($this->venta->sub_total, 2, '.', ''));
+        $totalDescu = 0.0;
+        $montoTotalOperacion = $this->montoTotalOperacionConTributos($subTotal, $tributos, $totalDescu);
 
         return 
             [
@@ -187,25 +192,25 @@ class MHCCF extends Model
                 "receptor" => $this->receptor(),
                 "otrosDocumentos" => NULL,
                 "ventaTercero" => NULL,
-                "cuerpoDocumento" => $this->detalles(),
+                "cuerpoDocumento" => $cuerpoDocumento,
                "resumen" => [
                   "totalNoSuj" => floatval(number_format($this->venta->no_sujeta, 2, '.', '')),
                   "totalExenta" => floatval(number_format($this->venta->exenta, 2, '.', '')),
                   "totalGravada" => floatval(number_format($this->venta->gravada, 2, '.', '')),
-                  "subTotalVentas" => floatval(number_format($this->venta->sub_total, 2, '.', '')),
+                  "subTotalVentas" => $subTotal,
                   "descuNoSuj" => 0,
                   "descuExenta" => 0,
                   // "descuGravada" => floatval(number_format($this->venta->descuento, 2, '.', '')),
                   "descuGravada" => floatval(number_format(0, 2, '.', '')),
                   "porcentajeDescuento" => 0,
                   // "totalDescu" => floatval(number_format($this->venta->descuento, 2, '.', '')),
-                  "totalDescu" => floatval(number_format(0, 2, '.', '')),
+                  "totalDescu" => floatval(number_format($totalDescu, 2, '.', '')),
                   "tributos" => $tributos,
-                  "subTotal" => floatval(number_format($this->venta->sub_total, 2, '.', '')),
+                  "subTotal" => $subTotal,
                   "ivaPerci1" => floatval(number_format($this->venta->iva_percibido, 2, '.', '')),
                   "ivaRete1" => floatval(number_format($this->venta->iva_retenido, 2, '.', '')),
                   "reteRenta" => floatval(number_format($this->venta->renta_retenida ?? 0, 2, '.', '')),
-                  "montoTotalOperacion" => floatval(number_format($this->venta->total - $this->venta->cuenta_a_terceros + $this->venta->iva_retenido + $this->venta->renta_retenida, 2, '.', '')),
+                  "montoTotalOperacion" => $montoTotalOperacion,
                   "totalNoGravado" => floatval(number_format($this->venta->cuenta_a_terceros, 2, '.', '')),
                   "totalPagar" => floatval(number_format($this->venta->total, 2, '.', '')),
                   "totalLetras" => $this->venta->total_en_letras,
@@ -239,19 +244,20 @@ class MHCCF extends Model
                 $this->venta->tipo_item = 1;
             }
 
-            if ($this->venta->iva > 0) {
+            if ($this->documentoTieneIva()) {
                 $this->venta->gravada = $this->venta->sub_total;
-            }else{
+            } elseif (!$this->documentoTieneTributosNoIva()) {
                 $this->venta->gravada = 0;
                 $this->venta->exenta = $this->venta->sub_total;
             }
 
-            $tributos = NULL;
-            if ($this->venta->iva > 0) {
-                $tributos = collect();
-                $tributos = ['20'];
+            if ($this->documentoTieneIva()) {
+                $tributos = $this->buildTributosLineaCodesDesdeDocumento();
                 $this->venta->gravada = $this->venta->detalles()->sum('total');
-            }else{
+            } elseif ($this->documentoTieneTributosNoIva()) {
+                $tributos = $this->buildTributosLineaCodesDesdeDocumento();
+            } else {
+                $tributos = NULL;
                 $this->venta->gravada = 0;
                 $this->venta->exenta = $this->venta->detalles()->sum('total');
             }
@@ -294,7 +300,6 @@ class MHCCF extends Model
                 $detalle->tipo_item = 1;
             }
 
-            $tributos = NULL;
             $detalle->codTributo = NULL;
             
             if ($detalle->producto) {
@@ -303,7 +308,16 @@ class MHCCF extends Model
                 $detalle->codigo = null;
             }
 
-            $this->aplicarClasificacionFiscalDetalle($detalle, $tributos);
+            if ($this->documentoTieneIva()) {
+                $tributos = $this->buildTributosLineaCodes($detalle);
+                $detalle->gravada = $detalle->total;
+            } elseif ($this->documentoTieneTributosNoIva()) {
+                $tributos = $this->buildTributosLineaCodes($detalle);
+            } else {
+                $tributos = NULL;
+                $detalle->gravada = 0;
+                $detalle->exenta = $detalle->total;
+            }
 
 
             // Producto no Gravado
@@ -351,7 +365,7 @@ class MHCCF extends Model
                        // "ivaItem" => floatval($detalle->iva)
                    ]);
                }else{
-                   $precioUni = round(floatval($detalle->precio), 4);
+                   $precioUni = round(floatval($detalle->precio), 6);
                    $cantidad = round(floatval($detalle->cantidad), 2);
                    $montoDescu = round(floatval($detalle->descuento), 2);
                    $ventaItem = round($precioUni * $cantidad - $montoDescu, 2);
@@ -378,37 +392,6 @@ class MHCCF extends Model
         }
 
         return $detalles;
-    }
-
-    /**
-     * Usa gravada/exenta/no_sujeta persistidos por línea para el cuerpo del DTE.
-     */
-    private function aplicarClasificacionFiscalDetalle($detalle, &$tributos): void
-    {
-        $gravada = floatval($detalle->gravada ?? 0);
-        $exenta = floatval($detalle->exenta ?? 0);
-        $noSujeta = floatval($detalle->no_sujeta ?? 0);
-
-        if ($gravada <= 0 && $exenta <= 0 && $noSujeta <= 0) {
-            $tipo = strtolower((string) ($detalle->tipo_gravado ?? 'gravada'));
-            if ($tipo === 'no_sujeta') {
-                $detalle->no_sujeta = floatval($detalle->total);
-            } elseif ($tipo === 'exenta' || !($this->venta->iva > 0)) {
-                $detalle->exenta = floatval($detalle->total);
-            } else {
-                $detalle->gravada = floatval($detalle->total);
-            }
-        } else {
-            $detalle->gravada = $gravada;
-            $detalle->exenta = $exenta;
-            $detalle->no_sujeta = $noSujeta;
-        }
-
-        if (floatval($detalle->gravada ?? 0) > 0 && $this->venta->iva > 0) {
-            $tributos = ['20'];
-        } else {
-            $tributos = null;
-        }
     }
 
     /**

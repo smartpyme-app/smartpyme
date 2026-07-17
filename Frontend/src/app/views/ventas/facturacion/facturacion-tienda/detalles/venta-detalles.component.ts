@@ -5,7 +5,9 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import {
     calcularMontosLineaDetalle,
+    copiarImpuestosProductoAlDetalle,
     limpiarExentaPorSinIvaSiTipoManual,
+    porcentajeIvaDetalle,
     sincronizarTipoGravadoPorCobroIva,
 } from '@utils/impuestos-venta.util';
 import {
@@ -15,6 +17,16 @@ import {
     validarCantidadOrigenConsignaCompra,
     esOrigenConsignaCompra,
 } from '@utils/venta-consigna.util';
+import {
+    autoDistribuirCantidadesLotes,
+    asignacionLotesExcedeStock,
+    factorConversionDetalle,
+    limpiarAsignacionLotesDetalle,
+    stockBaseAUnidadesDetalle,
+    textoResumenLotesDetalle,
+    totalAsignadoUnidadesLotes,
+    formatCantidadLote,
+} from '@utils/lotes-venta.util';
 
 import Swal from 'sweetalert2';
 
@@ -37,6 +49,7 @@ export class VentaDetallesComponent implements OnInit {
     @Output() sumTotal = new EventEmitter();
     @Output() alMenosUnPaqueteConCuentaTerceros = new EventEmitter<void>();
     modalRef!: BsModalRef;
+    public zoomImageUrl: string = '';
 
     @ViewChild('msupervisor')
     public supervisorTemplate!: TemplateRef<any>;
@@ -101,13 +114,11 @@ export class VentaDetallesComponent implements OnInit {
     }
 
     private obtenerPorcentajeIvaDetalle(detalle: any): number {
-        if (!this.venta.cobrar_impuestos) {
-            return 0;
-        }
-        const pct = (detalle?.porcentaje_impuesto != null && detalle?.porcentaje_impuesto !== '')
-            ? Number(detalle.porcentaje_impuesto)
-            : (this.apiService.auth_user().empresa?.iva ?? 0);
-        return Number(pct) || 0;
+        return porcentajeIvaDetalle(
+            detalle,
+            this.apiService.auth_user()?.empresa?.iva,
+            !!this.venta.cobrar_impuestos
+        );
     }
 
     /** Aplica gravada/exenta/no_sujeta; IVA alineado con total con IVA redondeado por línea. */
@@ -133,6 +144,9 @@ export class VentaDetallesComponent implements OnInit {
             }
 
             detalle.total_costo  = (cantidad * parseFloat(detalle.costo ?? 0)).toFixed(4);
+            if (!this.skipLimpiarLotes && detalle.inventario_por_lotes && this.getLotesMetodologia() === 'Manual') {
+                limpiarAsignacionLotesDetalle(detalle);
+            }
             this.aplicarTipoGravado(detalle);
             this.update.emit(this.venta);
             this.sumTotal.emit();
@@ -285,6 +299,12 @@ export class VentaDetallesComponent implements OnInit {
         public addDetalle(producto:any){
             this.detalle = Object.assign({}, producto);
             this.detalle.id = null;
+
+            copiarImpuestosProductoAlDetalle(
+                this.detalle,
+                producto,
+                this.apiService.auth_user()?.empresa?.iva ?? 0
+            );
             
             // ── Guardar campos de presentación para el backend ───────────────────────
             this.detalle.id_presentacion   = producto.id_presentacion  ?? null;
@@ -343,7 +363,11 @@ export class VentaDetallesComponent implements OnInit {
                 const metodologia = this.getLotesMetodologia();
                 if (metodologia === 'Manual') {
                     this.detalle.inventario_por_lotes = true;
-                    this.detalle.lote_id = null;
+                    if (detalle) {
+                        limpiarAsignacionLotesDetalle(this.detalle);
+                    } else {
+                        this.detalle.lote_id = null;
+                    }
                     if (!detalle) {
                         this.venta.detalles.push(this.detalle);
                     }
@@ -371,34 +395,58 @@ export class VentaDetallesComponent implements OnInit {
         }
 
     // Métodos para gestión de lotes en ventas
-    public lotes: any[] = [];
-    public loteSeleccionado: any = null;
-    public detalleConLote: any = null;
-
     getLotesMetodologia(): string {
         const empresa = this.apiService.auth_user()?.empresa;
         if (empresa?.custom_empresa?.configuraciones?.lotes_metodologia) {
             return empresa.custom_empresa.configuraciones.lotes_metodologia;
         }
-        return 'FIFO'; // Por defecto
+        return 'FIFO';
+    }
+
+    public lotes: any[] = [];
+    public loteSeleccionado: any = null;
+    public detalleConLote: any = null;
+    public cantidadObjetivoModal: number = 1;
+    private skipLimpiarLotes = false;
+
+    esDetalleCantidadPorLotes(detalle: any): boolean {
+        return !!detalle?.inventario_por_lotes
+            && this.apiService.isLotesActivo()
+            && this.getLotesMetodologia() === 'Manual';
     }
 
     abrirModalLoteVenta(template: TemplateRef<any>, detalle: any) {
         this.detalleConLote = detalle;
+        const previos = detalle.lotes_asignados || [];
+        const factor = factorConversionDetalle(detalle);
+        this.cantidadObjetivoModal = previos.length
+            ? previos.reduce((s: number, p: any) => s + ((parseFloat(String(p.cantidad)) || 0) / (factor || 1)), 0)
+            : 1;
         this.cargarLotesDisponiblesVenta();
-        this.modalRef = this.modalService.show(template, {class: 'modal-lg'});
+        this.modalRef = this.modalService.show(template, { class: 'modal-lg', backdrop: 'static' });
     }
 
     cargarLotesDisponiblesVenta() {
-        if (!this.detalleConLote?.id_producto || !this.venta.id_bodega) return;
-        
+        if (!this.detalleConLote?.id_producto || !this.venta.id_bodega) {
+            return;
+        }
+
         this.loading = true;
         this.apiService.getAll('lotes/disponibles', {
             id_producto: this.detalleConLote.id_producto,
             id_bodega: this.venta.id_bodega,
-            cantidad: this.detalleConLote.cantidad
         }).subscribe(lotes => {
-            this.lotes = lotes;
+            const previos = this.detalleConLote.lotes_asignados || [];
+            const factor = factorConversionDetalle(this.detalleConLote);
+            this.lotes = (lotes || []).map((lote: any) => {
+                const previo = previos.find((p: any) => p.lote_id == lote.id);
+                const cantidadBase = previo ? parseFloat(String(previo.cantidad)) || 0 : 0;
+                return {
+                    ...lote,
+                    cantidad_asignada: factor > 0 ? cantidadBase / factor : cantidadBase,
+                    stock_unidades: stockBaseAUnidadesDetalle(lote.stock, this.detalleConLote),
+                };
+            });
             this.loading = false;
         }, error => {
             this.alertService.error(error);
@@ -406,12 +454,74 @@ export class VentaDetallesComponent implements OnInit {
         });
     }
 
-    seleccionarLoteVenta(lote: any) {
-        this.detalleConLote.lote_id = lote.id;
-        this.loteSeleccionado = lote;
+    autoDistribuirLotesVenta(): void {
+        const objetivo = parseFloat(String(this.cantidadObjetivoModal)) || 0;
+        if (objetivo <= 0) {
+            this.alertService.error('Indique una cantidad a distribuir mayor a cero.');
+            return;
+        }
+        autoDistribuirCantidadesLotes(
+            this.lotes,
+            objetivo * factorConversionDetalle(this.detalleConLote),
+            this.detalleConLote
+        );
+    }
+
+    totalAsignadoLotesVentaUnidades(): number {
+        return totalAsignadoUnidadesLotes(this.lotes);
+    }
+
+    distribucionLotesValida(): boolean {
+        const total = this.totalAsignadoLotesVentaUnidades();
+        return total > 0 && !asignacionLotesExcedeStock(this.lotes);
+    }
+
+    confirmarDistribucionLotesVenta(): void {
+        const factor = factorConversionDetalle(this.detalleConLote);
+        const totalUnidades = this.totalAsignadoLotesVentaUnidades();
+
+        if (totalUnidades <= 0) {
+            this.alertService.error('Indique al menos un lote con cantidad.');
+            return;
+        }
+
+        if (asignacionLotesExcedeStock(this.lotes)) {
+            this.alertService.error('Alguna cantidad supera el stock disponible del lote.');
+            return;
+        }
+
+        const asignaciones = this.lotes
+            .filter((lote: any) => (parseFloat(String(lote.cantidad_asignada)) || 0) > 0)
+            .map((lote: any) => ({
+                lote_id: lote.id,
+                numero_lote: lote.numero_lote,
+                cantidad: (parseFloat(String(lote.cantidad_asignada)) || 0) * factor,
+            }));
+
+        this.detalleConLote.lotes_asignados = asignaciones;
+        if (asignaciones.length === 1) {
+            this.detalleConLote.lote_id = asignaciones[0].lote_id;
+            this.detalleConLote.lote = this.lotes.find((l: any) => l.id == asignaciones[0].lote_id);
+        } else {
+            this.detalleConLote.lote_id = null;
+            this.detalleConLote.lote = null;
+        }
+
+        this.skipLimpiarLotes = true;
+        this.detalleConLote.cantidad = totalUnidades;
+        this.updateTotal(this.detalleConLote);
+        this.skipLimpiarLotes = false;
+
         this.modalRef.hide();
         this.update.emit(this.venta);
+        this.sumTotal.emit();
     }
+
+    textoLotesDetalle(detalle: any): string {
+        return textoResumenLotesDetalle(detalle);
+    }
+
+    formatCantidadLote = formatCantidadLote;
 
     // Eliminar detalle
         public delete(detalle:any){
@@ -483,5 +593,15 @@ export class VentaDetallesComponent implements OnInit {
 
     }
 
+    public hasImage(img: any): boolean {
+        return !!img && img !== 'default.png' && img !== 'default.jpg' && img !== 'productos/default.jpg' && img !== 'null' && img !== 'undefined';
+    }
+
+    public zoomImage(img: any, dialog: any) {
+        if (this.hasImage(img)) {
+            this.zoomImageUrl = this.apiService.baseUrl + '/img/' + img;
+            dialog.showModal();
+        }
+    }
 
 }

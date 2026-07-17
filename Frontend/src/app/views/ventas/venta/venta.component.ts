@@ -23,6 +23,7 @@ export class VentaComponent implements OnInit {
     public abonoEdit:any = {};
 
     modalRef!: BsModalRef;
+    public zoomImageUrl: string = '';
 
     constructor( public apiService:ApiService, private alertService:AlertService, private sumPipe:SumPipe,
         private route: ActivatedRoute, private router: Router, private modalService: BsModalService,
@@ -95,6 +96,17 @@ export class VentaComponent implements OnInit {
         const total = parseFloat(this.venta?.total || 0);
         const propina = parseFloat(this.venta?.propina || 0);
         return total + propina;
+    }
+
+    public hasImage(img: any): boolean {
+        return !!img && img !== 'default.png' && img !== 'default.jpg' && img !== 'productos/default.jpg' && img !== 'null' && img !== 'undefined';
+    }
+
+    public zoomImage(img: any, dialog: any) {
+        if (this.hasImage(img)) {
+            this.zoomImageUrl = this.apiService.baseUrl + '/img/' + img;
+            dialog.showModal();
+        }
     }
 
 }

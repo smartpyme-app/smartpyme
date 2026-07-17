@@ -12,8 +12,10 @@ use App\Models\Compras\Compra;
 use App\Models\Compras\DevolucionCompra;
 use App\Models\Compras\Proveedores\Proveedor;
 use App\Models\Compras\Detalle;
+use App\Models\Compras\Impuesto as CompraImpuesto;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
+use App\Models\Inventario\Lote;
 use App\Models\Inventario\Kardex;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -113,7 +115,7 @@ class ComprasController extends Controller
 
     public function read($id) {
         $compra = Compra::where('id', $id)
-            ->with('detalles', 'proveedor', 'abonos', 'devoluciones')
+            ->with('detalles', 'proveedor', 'abonos', 'devoluciones', 'impuestos.impuesto')
             ->withSum(['abonos' => function ($query) {
                 $query->where('estado', 'Confirmado');
             }], 'total')
@@ -205,10 +207,22 @@ class ComprasController extends Controller
                     $factorPres
                 );
 
+                $producto = Producto::find($detalle->id_producto);
+                $empresa = \App\Models\Admin\Empresa::find($compra->id_empresa);
+                $lotesActivo = $empresa ? $empresa->isLotesActivo() : false;
+
                 $inventario = Inventario::where('id_producto', $detalle->id_producto)->where('id_bodega', $compra->id_bodega)->first();
 
-                // Anular compra y regresar stock
+                // Anular compra y restar stock
                 if(($compra->estado != 'Anulada') && ($request['estado'] == 'Anulada')){
+
+                    if ($producto && $producto->inventario_por_lotes && $lotesActivo && $detalle->lote_id) {
+                        $lote = Lote::find($detalle->lote_id);
+                        if ($lote) {
+                            $lote->stock -= $cantidadBase;
+                            $lote->save();
+                        }
+                    }
 
                     if ($inventario) {
                         $inventario->stock -= $cantidadBase;
@@ -225,6 +239,14 @@ class ComprasController extends Controller
                 }
                 // Cancelar anulación de compra y descargar stock
                 if(($compra->estado == 'Anulada') && ($request['estado'] != 'Anulada')){
+                    if ($producto && $producto->inventario_por_lotes && $lotesActivo && $detalle->lote_id) {
+                        $lote = Lote::find($detalle->lote_id);
+                        if ($lote) {
+                            $lote->stock += $cantidadBase;
+                            $lote->save();
+                        }
+                    }
+
                     // Aplicar stock
                     if ($inventario) {
                         $inventario->stock += $cantidadBase;
@@ -304,11 +326,14 @@ class ComprasController extends Controller
             else
                 $compra = new Compra;
 
-            $compra->fill($request->except(['detalles', 'dte']));
+            $compra->fill($request->except(['detalles', 'dte', 'impuestos']));
             $this->aplicarReglasCompraSinIvaFiscal($compra);
             $this->aplicarIdentificadoresDteImportado($compra, $request);
             $compra->save();
 
+            if ($request->has('impuestos')) {
+                $this->guardarImpuestosCompra($compra, $request->impuestos);
+            }
 
         // Detalles
 
@@ -487,6 +512,8 @@ class ComprasController extends Controller
             $this->sincronizarStockCompraConShopify($compra);
         }
 
+        $compra->load(['detalles', 'proveedor', 'impuestos.impuesto']);
+
         return Response()->json($compra, 200);
 
         } catch (\Exception $e) {
@@ -497,6 +524,44 @@ class ComprasController extends Controller
             return Response()->json(['error' => $e->getMessage()], 400);
         }
 
+    }
+
+    /**
+     * Guardar impuestos de la compra (reemplaza filas existentes si es edición).
+     *
+     * @param  array<int, array<string, mixed>>|null  $impuestos
+     */
+    private function guardarImpuestosCompra(Compra $compra, ?array $impuestos, bool $reemplazar = true): void
+    {
+        if ($impuestos === null) {
+            return;
+        }
+
+        if ($reemplazar) {
+            CompraImpuesto::where('id_compra', $compra->id)->delete();
+        }
+
+        if ($impuestos === []) {
+            return;
+        }
+
+        foreach ($impuestos as $impuesto) {
+            $idImpuesto = $impuesto['id_impuesto'] ?? $impuesto['id'] ?? null;
+            if (!$idImpuesto) {
+                continue;
+            }
+
+            $monto = (float) ($impuesto['monto'] ?? 0);
+            if (abs($monto) < 0.00001) {
+                continue;
+            }
+
+            $compraImpuesto = new CompraImpuesto();
+            $compraImpuesto->id_impuesto = (int) $idImpuesto;
+            $compraImpuesto->monto = $monto;
+            $compraImpuesto->id_compra = $compra->id;
+            $compraImpuesto->save();
+        }
     }
 
     /**
@@ -1015,7 +1080,7 @@ class ComprasController extends Controller
     }
 
     public function generarDoc($id){
-        $compra = Compra::where('id', $id)->with('detalles', 'proveedor', 'empresa')->firstOrFail();
+        $compra = Compra::where('id', $id)->with('detalles', 'proveedor', 'empresa', 'impuestos.impuesto')->firstOrFail();
 
         $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.compra', compact('compra'));
         $pdf->setPaper('US Letter', 'portrait');

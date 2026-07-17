@@ -253,4 +253,14 @@ class Producto extends Model
     {
         return $this->hasMany('App\Models\Inventario\ProductoPresentacion', 'id_producto');
     }
+
+    public function impuestos()
+    {
+        return $this->belongsToMany(
+            'App\Models\Admin\Impuesto',
+            'producto_impuestos',
+            'id_producto',
+            'id_impuesto'
+        )->withTimestamps();
+    }
 }

@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
 use App\Models\Admin\Empresa;
+use App\Models\Admin\Impuesto as ImpuestoCatalogo;
 use App\Models\Admin\Sucursal;
 use App\Models\Inventario\Categorias\SubCategoria;
 use App\Models\Inventario\Producto;
@@ -30,12 +31,15 @@ use App\Exports\WooCommerceExport;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use App\Exports\PlantillaInventarioMasivoExport;
 use App\Exports\PlantillaProductosImportExport;
 use App\Exports\TrasladoLineasUiExport;
 use App\Exports\ShopifyExport;
 use App\Services\Inventario\ProductoImportacionDteService;
 use App\Services\Inventario\MigrarStockALotesService;
+use App\Services\Inventario\StockDisponibleService;
+use App\Services\Inventario\LoteAsignacionService;
 use App\Services\ShopifyTransformer;
 use App\Services\ImpuestosService;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -198,18 +202,15 @@ class ProductosController extends Controller
             return null;
         }
 
+        if ($id_bodega) {
+            return StockDisponibleService::obtenerParaVenta($producto, $id_bodega, $empresa);
+        }
+
         $lotesActivo = $empresa && $empresa->isLotesActivo();
 
         if ($producto->inventario_por_lotes && $lotesActivo) {
             $lotes = $producto->lotes;
-            if ($id_bodega) {
-                $lotes = $lotes->where('id_bodega', $id_bodega);
-            }
             return (float) $lotes->sum('stock');
-        }
-
-        if ($id_bodega) {
-            return (float) $producto->inventarios->where('id_bodega', $id_bodega)->sum('stock');
         }
 
         return (float) $producto->inventarios->sum('stock');
@@ -273,7 +274,10 @@ class ProductosController extends Controller
         $empresa = Auth::user() ? Empresa::find(Auth::user()->id_empresa) : null;
         $incluirComponenteQuimico = $empresa && $empresa->isComponenteQuimicoHabilitado();
 
-        $productos = Producto::where('enable', true)->with('inventarios', 'lotes', 'composiciones.opciones', 'composiciones.compuesto.inventarios')->with('precios')
+        $productos = Producto::where('enable', true)->with(array_merge(
+            ['inventarios', 'lotes', 'composiciones.opciones', 'composiciones.compuesto.inventarios', 'precios'],
+            $this->relacionesImpuestosProducto()
+        ))
             ->where(function ($q) use ($txt, $incluirComponenteQuimico) {
                 $q->where('nombre', 'like', "%$txt%")
                     ->orWhere('barcode', 'like', "%$txt%")
@@ -295,16 +299,16 @@ class ProductosController extends Controller
         $id_bodega = $request->query('id_bodega');
         $empresa   = Auth::user() ? Empresa::find(Auth::user()->id_empresa) : null;
         $incluirComponenteQuimico = $empresa && $empresa->isComponenteQuimicoHabilitado();
-        $incluirPresentaciones = $empresa && $empresa->isModuloPresentaciones();
+        $incluirPresentaciones = $this->puedeCargarPresentaciones($empresa);
 
         // ── 1. Buscar productos base ──────────────────────────────────────────────
-        $with = [
+        $with = array_merge([
             'inventarios',
             'lotes',
             'composiciones.opciones',
             'composiciones.compuesto.inventarios',
             'precios',
-        ];
+        ], $this->relacionesImpuestosProducto());
         if ($incluirPresentaciones) {
             $with[] = 'presentaciones';
         }
@@ -375,7 +379,7 @@ class ProductosController extends Controller
         $id_bodega = $request->query('id_bodega');
         $empresa = Auth::user() ? Empresa::find(Auth::user()->id_empresa) : null;
         $incluirComponenteQuimico = $empresa && $empresa->isComponenteQuimicoHabilitado();
-        $incluirPresentaciones = $empresa && $empresa->isModuloPresentaciones();
+        $incluirPresentaciones = $this->puedeCargarPresentaciones($empresa);
 
         if ($id_bodega) {
             $withBodega = [
@@ -390,7 +394,10 @@ class ProductosController extends Controller
 
             $productos = Producto::where('enable', true)
                 ->with($withBodega)
-                ->with('composiciones.opciones', 'composiciones.compuesto.inventarios', 'precios')
+                ->with(array_merge(
+                    ['composiciones.opciones', 'composiciones.compuesto.inventarios', 'precios'],
+                    $this->relacionesImpuestosProducto()
+                ))
                 ->whereIn('tipo', ['Producto', 'Compuesto', 'Servicio'])
                 ->where(function ($q) use ($id_bodega) {
                     $q->whereHas('inventarios', function ($iq) use ($id_bodega) {
@@ -413,7 +420,10 @@ class ProductosController extends Controller
                 ->take(50)
                 ->get();
         } else {
-            $withGlobal = ['inventarios', 'lotes', 'composiciones.opciones', 'composiciones.compuesto.inventarios'];
+            $withGlobal = array_merge(
+                ['inventarios', 'lotes', 'composiciones.opciones', 'composiciones.compuesto.inventarios'],
+                $this->relacionesImpuestosProducto()
+            );
             if ($incluirPresentaciones) {
                 $withGlobal[] = 'presentaciones';
             }
@@ -494,18 +504,28 @@ class ProductosController extends Controller
 
     public function read($id)
     {
+        $empresa = Auth::user() ? Empresa::find(Auth::user()->id_empresa) : null;
+
+        $with = [
+            'inventarios',
+            'composiciones.compuesto',
+            'composiciones.opciones',
+            'precios.usuarios',
+            'imagenes',
+            'proveedores.proveedor',
+            'unidad',
+        ];
+
+        if ($empresa && $empresa->isModuloPresentaciones() && Schema::hasTable('producto_presentaciones')) {
+            $with[] = 'presentaciones.unidadMedida';
+        }
+
+        if (Schema::hasTable('producto_impuestos')) {
+            $with[] = 'impuestos';
+        }
 
         $producto = Producto::where('id', $id)
-            ->with(
-                'inventarios',
-                'composiciones.compuesto',
-                'composiciones.opciones',
-                'precios.usuarios',
-                'imagenes',
-                'proveedores.proveedor',
-                'unidad',
-                'presentaciones.unidadMedida'
-            )
+            ->with($with)
             ->firstOrFail();
 
         return Response()->json($producto, 200);
@@ -513,15 +533,21 @@ class ProductosController extends Controller
 
     public function searchByCode($codigo)
     {
+        $with = [
+            'inventarios',
+            'composiciones.compuesto',
+            'composiciones.opciones',
+            'precios.usuarios',
+            'imagenes',
+            'proveedores.proveedor',
+        ];
+
+        if (Schema::hasTable('producto_impuestos')) {
+            $with[] = 'impuestos';
+        }
+
         $producto = Producto::where('codigo', $codigo)
-            ->with(
-                'inventarios',
-                'composiciones.compuesto',
-                'composiciones.opciones',
-                'precios.usuarios',
-                'imagenes',
-                'proveedores.proveedor'
-            )
+            ->with($with)
             ->firstOrFail();
 
         return Response()->json($producto, 200);
@@ -571,6 +597,10 @@ class ProductosController extends Controller
         $producto->fill($request->all());
         $producto->save();
 
+        if ($request->has('id_impuestos') && Schema::hasTable('producto_impuestos')) {
+            $this->syncProductoImpuestos($producto, $request->input('id_impuestos', []));
+        }
+
         $migracionLotes = null;
         if (
             $producto->tipo != 'Servicio'
@@ -616,12 +646,60 @@ class ProductosController extends Controller
 
 
 
+        if (Schema::hasTable('producto_impuestos')) {
+            $producto->load('impuestos');
+        }
+
         $payload = $producto->toArray();
         if ($migracionLotes !== null) {
             $payload['migracion_lotes'] = $migracionLotes;
         }
 
         return Response()->json($payload, 200);
+    }
+
+    /**
+     * Sincroniza impuestos de venta asignados al producto (tabla producto_impuestos).
+     * Actualiza porcentaje_impuesto con la suma de tasas (cálculo paralelo sobre la base).
+     */
+    protected function syncProductoImpuestos(Producto $producto, $idImpuestos): void
+    {
+        $ids = collect(is_array($idImpuestos) ? $idImpuestos : [])
+            ->filter(fn ($id) => $id !== null && $id !== '')
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        if (count($ids) === 0) {
+            $producto->impuestos()->detach();
+            $producto->porcentaje_impuesto = 0;
+            $producto->save();
+            return;
+        }
+
+        $impuestos = ImpuestoCatalogo::withoutGlobalScopes()
+            ->where('id_empresa', $producto->id_empresa)
+            ->whereIn('id', $ids)
+            ->where('aplica_ventas', true)
+            ->get();
+
+        $producto->impuestos()->sync($impuestos->pluck('id')->all());
+        $producto->porcentaje_impuesto = round((float) $impuestos->sum('porcentaje'), 2);
+        $producto->save();
+    }
+
+    protected function puedeCargarPresentaciones(?Empresa $empresa): bool
+    {
+        return $empresa
+            && $empresa->isModuloPresentaciones()
+            && Schema::hasTable('producto_presentaciones');
+    }
+
+    /** @return string[] */
+    protected function relacionesImpuestosProducto(): array
+    {
+        return Schema::hasTable('producto_impuestos') ? ['impuestos'] : [];
     }
 
     /**
@@ -1429,6 +1507,9 @@ class ProductosController extends Controller
             'productos' => 'required|array',
             'productos.*.id_producto' => 'required|numeric',
             'productos.*.cantidad' => 'required|numeric|min:0.01',
+            'productos.*.lote_id' => 'nullable|numeric|exists:lotes,id',
+            'productos.*.lote_id_destino' => 'nullable|numeric|exists:lotes,id',
+            'productos.*.lotes_asignados' => 'nullable|array',
         ]);
 
         if ($request->id_bodega_origen == $request->id_bodega_destino) {
@@ -1440,11 +1521,16 @@ class ProductosController extends Controller
         try {
             $trasladosExitosos = 0;
             $errores = [];
+            $user = Auth::user();
+            $empresa = Empresa::find($user->id_empresa);
+            $lotesActivo = $empresa ? $empresa->isLotesActivo() : false;
+            $metodologia = $empresa ? $empresa->getLotesMetodologia() : 'FIFO';
+            $idBodegaOrigen = (int) $request->id_bodega_origen;
+            $idBodegaDestino = (int) $request->id_bodega_destino;
 
             foreach ($request->productos as $productoData) {
                 $idProducto = $productoData['id_producto'];
-                $cantidad = $productoData['cantidad'];
-
+                $cantidad = (float) $productoData['cantidad'];
 
                 if ($cantidad <= 0) {
                     continue;
@@ -1457,63 +1543,43 @@ class ProductosController extends Controller
                     continue;
                 }
 
+                if ($producto->inventario_por_lotes && $lotesActivo && $metodologia === 'Manual') {
+                    $tieneLotes = !empty($productoData['lote_id']) || !empty($productoData['lotes_asignados']);
+                    if (!$tieneLotes) {
+                        $errores[] = "Debe distribuir o seleccionar lotes para el producto {$producto->nombre}.";
+                        continue;
+                    }
+                }
+
                 $origen = Inventario::where('id_producto', $producto->id)
-                    ->where('id_bodega', $request->id_bodega_origen)
+                    ->where('id_bodega', $idBodegaOrigen)
                     ->first();
 
                 $destino = Inventario::where('id_producto', $producto->id)
-                    ->where('id_bodega', $request->id_bodega_destino)
+                    ->where('id_bodega', $idBodegaDestino)
                     ->first();
-
 
                 if (!$origen) {
                     $errores[] = "Una de las sucursales no tiene inventario para el producto {$producto->nombre}.";
                     continue;
                 }
 
-
                 if ($origen->stock < $cantidad) {
                     $errores[] = "La sucursal origen no tiene stock suficiente para el producto {$producto->nombre}.";
                     continue;
                 }
-                $user = Auth::user();
 
-
-                $traslado = new Traslado();
-                $traslado->id_producto = $idProducto;
-                $traslado->id_bodega_de = $request->id_bodega_origen;
-                $traslado->id_bodega = $request->id_bodega_destino;
-                $traslado->concepto = $request->concepto;
-                $traslado->cantidad = $cantidad;
-                $traslado->id_usuario = $user->id;
-                $traslado->id_empresa = $user->id_empresa;
-                $traslado->estado = 'Confirmado';
-                $traslado->save();
-
-
-                $origen->stock -= $cantidad;
-                $origen->save();
-                $origen->kardex($traslado, $cantidad * -1);
-                if ($destino) {
-                    $destino->stock += $cantidad;
-                    $destino->save();
-                    $destino->kardex($traslado, $cantidad);
-                } else {
+                if (!$destino) {
                     $destino = Inventario::firstOrCreate(
                         [
                             'id_producto' => $idProducto,
-                            'id_bodega' => $request->id_bodega_destino,
+                            'id_bodega' => $idBodegaDestino,
                         ],
                         ['stock' => 0, 'stock_minimo' => 0, 'stock_maximo' => 0]
                     );
-                    $destino->stock += $cantidad;
-                    $destino->save();
-                    $destino->kardex($traslado, $cantidad);
                 }
 
-
                 $composicionesValidas = true;
-
                 foreach ($producto->composiciones as $comp) {
                     $productoCompuesto = Producto::where('id', $comp->id_compuesto)->first();
 
@@ -1524,11 +1590,11 @@ class ProductosController extends Controller
                     }
 
                     $origenComp = Inventario::where('id_producto', $comp->id_compuesto)
-                        ->where('id_bodega', $request->id_bodega_origen)
+                        ->where('id_bodega', $idBodegaOrigen)
                         ->first();
 
                     $destinoComp = Inventario::where('id_producto', $comp->id_compuesto)
-                        ->where('id_bodega', $request->id_bodega_destino)
+                        ->where('id_bodega', $idBodegaDestino)
                         ->first();
 
                     if (!$origenComp || !$destinoComp) {
@@ -1546,19 +1612,78 @@ class ProductosController extends Controller
                     }
                 }
 
-
                 if (!$composicionesValidas) {
                     continue;
                 }
 
-                // Actualizar inventario de las composiciones
+                $traslado = new Traslado();
+                $traslado->id_producto = $idProducto;
+                $traslado->id_bodega_de = $idBodegaOrigen;
+                $traslado->id_bodega = $idBodegaDestino;
+                $traslado->concepto = $request->concepto;
+                $traslado->cantidad = $cantidad;
+                $traslado->id_usuario = $user->id;
+                $traslado->id_empresa = $user->id_empresa;
+                $traslado->estado = 'Confirmado';
+                $traslado->save();
+
+                if ($producto->inventario_por_lotes && $lotesActivo) {
+                    try {
+                        $asignaciones = LoteAsignacionService::resolverAsignacionesSalida(
+                            $producto,
+                            $idBodegaOrigen,
+                            $cantidad,
+                            $metodologia,
+                            $lotesActivo,
+                            !empty($productoData['lote_id']) ? (int) $productoData['lote_id'] : null,
+                            $productoData['lotes_asignados'] ?? null
+                        );
+
+                        if (empty($asignaciones)) {
+                            if ($metodologia === 'Manual') {
+                                throw new \Exception("Debe seleccionar un lote para el producto {$producto->nombre}.");
+                            }
+                            $errores[] = "No hay lotes con stock suficiente para el producto {$producto->nombre}.";
+                            $traslado->delete();
+                            continue;
+                        }
+
+                        $pivotRows = LoteAsignacionService::aplicarTrasladoLotes(
+                            $asignaciones,
+                            $producto,
+                            $idBodegaOrigen,
+                            $idBodegaDestino,
+                            $traslado,
+                            $origen,
+                            $destino,
+                            !empty($productoData['lote_id_destino']) ? (int) $productoData['lote_id_destino'] : null
+                        );
+                        LoteAsignacionService::sincronizarTrasladoLotes($traslado->id, $pivotRows);
+                        $traslado->lote_id = count($pivotRows) === 1 ? $pivotRows[0]['lote_id'] : null;
+                        $traslado->lote_id_destino = count($pivotRows) === 1 ? ($pivotRows[0]['lote_id_destino'] ?? null) : null;
+                        $traslado->save();
+                    } catch (\Exception $e) {
+                        $errores[] = $e->getMessage();
+                        $traslado->delete();
+                        continue;
+                    }
+                } else {
+                    $origen->stock -= $cantidad;
+                    $origen->save();
+                    $origen->kardex($traslado, $cantidad * -1);
+
+                    $destino->stock += $cantidad;
+                    $destino->save();
+                    $destino->kardex($traslado, $cantidad);
+                }
+
                 foreach ($producto->composiciones as $comp) {
                     $origenComp = Inventario::where('id_producto', $comp->id_compuesto)
-                        ->where('id_bodega', $request->id_bodega_origen)
+                        ->where('id_bodega', $idBodegaOrigen)
                         ->first();
 
                     $destinoComp = Inventario::where('id_producto', $comp->id_compuesto)
-                        ->where('id_bodega', $request->id_bodega_destino)
+                        ->where('id_bodega', $idBodegaDestino)
                         ->first();
 
                     $cantidadComp = $cantidad * $comp->cantidad;

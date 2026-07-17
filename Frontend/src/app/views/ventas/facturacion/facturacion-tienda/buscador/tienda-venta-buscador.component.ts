@@ -7,6 +7,7 @@ import { debounceTime, switchMap, filter, catchError, tap } from 'rxjs/operators
 import { SumPipe }     from '@pipes/sum.pipe';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
+import { copiarImpuestosProductoAlDetalle } from '@utils/impuestos-venta.util';
 
 @Component({
   selector: 'app-tienda-venta-buscador',
@@ -173,6 +174,11 @@ export class TiendaVentaBuscadorComponent implements OnInit {
         this.detalle.img            = producto.img;
         this.detalle.precio         = parseFloat(producto.precio);
         this.detalle.porcentaje_impuesto = producto.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
+        copiarImpuestosProductoAlDetalle(
+            this.detalle,
+            producto,
+            this.apiService.auth_user()?.empresa?.iva ?? 0
+        );
         this.detalle.precios        = producto.precios;
         this.detalle.precios.unshift({
                 'precio' : this.detalle.precio
@@ -199,24 +205,40 @@ export class TiendaVentaBuscadorComponent implements OnInit {
 
         producto.inventarios        = producto.inventarios.filter((item:any) => item.id_bodega == this.venta.id_bodega);
         
-        // Si el producto tiene inventario por lotes, calcular stock de lotes
-        if (producto.inventario_por_lotes && producto.lotes && producto.lotes.length > 0) {
-            // Filtrar lotes por bodega
-            const lotesBodega = producto.lotes.filter((lote: any) => lote.id_bodega == this.venta.id_bodega);
-            // Calcular stock total de lotes
-            let stockLotes = lotesBodega.reduce((sum: number, lote: any) => sum + (parseFloat(lote.stock) || 0), 0);
-            
-            // Si es presentación, ajustar el stock de lotes al factor
-            if (producto.factor_conversion && producto.factor_conversion > 0) {
-                stockLotes = stockLotes / producto.factor_conversion;
+        if (producto.tipo === 'Servicio') {
+            this.detalle.stock = null;
+            this.detalle.inventario_por_lotes = false;
+            this.detalle.lote_id = null;
+        } else if (
+            producto.inventario_por_lotes &&
+            producto.lotes?.length > 0 &&
+            this.apiService.isLotesActivo()
+        ) {
+            const lotesBodega = this.venta.id_bodega
+                ? producto.lotes.filter((lote: any) => lote.id_bodega == this.venta.id_bodega)
+                : producto.lotes;
+            let stockLotes = lotesBodega.reduce(
+                (sum: number, lote: any) => sum + (parseFloat(lote.stock) || 0), 0
+            );
+            const factor = parseFloat(String(producto.factor_conversion ?? 1)) || 1;
+            if (factor > 0) {
+                stockLotes = stockLotes / factor;
             }
             this.detalle.stock = stockLotes;
+            this.detalle.inventario_por_lotes = true;
+            this.detalle.lote_id = null;
         } else if (producto.tipo !== 'Servicio' && producto.stock_base_actual !== undefined && producto.stock_base_actual !== null) {
             this.detalle.stock = parseFloat(producto.stock_base_actual);
+            this.detalle.inventario_por_lotes = false;
+            this.detalle.lote_id = null;
         } else if(producto.tipo != 'Servicio' && producto.inventarios && producto.inventarios.length > 0){
             this.detalle.stock = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
+            this.detalle.inventario_por_lotes = false;
+            this.detalle.lote_id = null;
         } else {
             this.detalle.stock = null;
+            this.detalle.inventario_por_lotes = false;
+            this.detalle.lote_id = null;
         }
         this.detalle.cantidad       = 1;
         this.detalle.descuento      = 0;

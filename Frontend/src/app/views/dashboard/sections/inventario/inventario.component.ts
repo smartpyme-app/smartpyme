@@ -21,6 +21,7 @@ import { MetricCard } from '../../models/chart-config.model';
 })
 export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
   @Input() datos: any = {};
+  @Input() datosCompletos = false;
   @Output() filtrosCambiados = new EventEmitter<any>();
 
   get metricasCards(): MetricCard[] {
@@ -151,6 +152,11 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
 
   private inicializado: boolean = false;
 
+  /** true mientras se espera la respuesta del servidor tras cambiar un filtro */
+  filtrosLocked = false;
+  private _filtrosLockTimeout: any = null;
+
+
   constructor(
     private cdr: ChangeDetectorRef,
     private dashboardDataService: DashboardDataService,
@@ -224,6 +230,10 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
     // Marcar como inicializado después de un pequeño delay para evitar emitir durante la inicialización
     setTimeout(() => {
       this.inicializado = true;
+      // ponytail: if no saved state, emit default filters on startup
+      if (!tieneEstadoGuardado) {
+        this.aplicarFiltros();
+      }
       this.cdr.markForCheck();
     }, 100);
   }
@@ -261,7 +271,13 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
         this.cdr.markForCheck();
       }
     }
+
+    // datosCompletos=true: todas las APIs terminaron → desbloquear filtros
+    if (changes['datosCompletos'] && this.datosCompletos) {
+      this._desbloquearFiltros();
+    }
   }
+
 
   cargarOpcionesFiltros(): void {
     this.filtrosCatalogo.sucursalesParaFiltro().subscribe({
@@ -408,7 +424,12 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
 
   aplicarFiltros(): void {
     if (!this.inicializado) return;
+
+    // Bloquear filtros mientras se espera la respuesta
+    this._bloquearFiltros();
+
     if (!this.anio) this.anio = new Date().getFullYear().toString();
+
 
     const filtros: any = {
       anio: this.anio,
@@ -426,6 +447,23 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
     if (this.mes) filtros.mes = this.mes;
     this.filtrosCambiados.emit(filtros);
   }
+
+  private _bloquearFiltros(): void {
+    this.filtrosLocked = true;
+    this.cdr.markForCheck();
+    if (this._filtrosLockTimeout) clearTimeout(this._filtrosLockTimeout);
+    this._filtrosLockTimeout = setTimeout(() => this._desbloquearFiltros(), 8000);
+  }
+
+  private _desbloquearFiltros(): void {
+    if (this._filtrosLockTimeout) {
+      clearTimeout(this._filtrosLockTimeout);
+      this._filtrosLockTimeout = null;
+    }
+    this.filtrosLocked = false;
+    this.cdr.markForCheck();
+  }
+
 
   get puedeLimpiarFiltrosInventario(): boolean {
     const anioActual = new Date().getFullYear().toString();

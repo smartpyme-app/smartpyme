@@ -1,0 +1,51 @@
+<div id="tour.sidebar" class="sidebar shadow-sm" [ngClass]="{'collapsed': sidebarCollapsed}">
+    <div class="click d-flex justify-content-start align-items-center ps-2 pb-2 mb-2 border-bottom position-relative" style="min-height: 7vh;">
+        <img *ngIf="!isAbacoSite" src="assets/img/icon.png" (click)="toggleSidebar()" height="25px">
+        <a routerLink="/" tooltip="Caja" style="display: flex; align-items: center;">
+            <img *ngIf="!isAbacoSite" src="assets/img/logo.png" class="logo" height="25px">
+            <img *ngIf="isAbacoSite" src="assets/img/logo-abaco.png" class="logo" height="15px">
+        </a>
+        <button id="toggleBtn" class="btn btn-link text-decoration-none d-flex justify-content-end toggle" type="button" (click)="toggleSidebar()">
+            <img src="/assets/icons/sidebar.png">
+        </button>
+    </div>
+    <div style="min-height: 45vh;">
+        <ul class="list-unstyled ps-0">
+            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+                <a [routerLink]="['/']" tooltip="Caja" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                    <img src="/assets/icons/inbox.png" class="icon me-2">Caja
+                </a>
+            </li>
+            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+                <a [routerLink]="['/venta/crear']" tooltip="Facturación" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                    <img src="/assets/icons/trending-up.png" class="icon me-2">Facturación
+                </a>
+            </li>
+            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+                <a [routerLink]="['/vendedor/devoluciones/ventas']" tooltip="Devoluciones" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                    <img src="/assets/icons/arrow-right.png" class="icon me-2">Devoluciones
+                </a>
+            </li>
+            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+                <a [routerLink]="['/cierre-de-caja']" tooltip="Cierre de caja" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                    <img src="/assets/icons/inbox.png" class="icon me-2">Cierre de caja
+                </a>
+            </li>
+        </ul>
+    </div>
+    <div style="min-height: 37vh;">
+        <ul class="list-unstyled ps-0 border-top pt-2">
+            <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+                <a [routerLink]="['/login']" tooltip="Cerrar sesión" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                    <img src="/assets/icons/log-out.png" class="icon me-2">Cerrar sesión
+                </a>
+            </li>
+        </ul>
+    </div>
+    <div *ngIf="isAbacoSite" class="w-100 text-center">
+        <p class="mb-1 text-muted" style="font-size: 10px;">Powered by </p>
+        <a href="https://www.smartpyme.app" target="_blank" rel="noopener noreferrer">
+            <img src="assets/img/smartpyme.png" style="height: 25px; width: auto;" alt="SmartPyme" />
+        </a>
+    </div>
+</div>

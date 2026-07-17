@@ -1,9 +1,11 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '../../../../services/alert.service';
 import { ApiService } from '../../../../services/api.service';
+import { DistribucionLotesModalComponent } from '@shared/modals/distribucion-lotes/distribucion-lotes-modal.component';
+import { textoResumenLotesDetalle } from '@utils/lotes-venta.util';
 
 @Component({
   selector: 'app-traslado',
@@ -24,6 +26,7 @@ export class TrasladoComponent implements OnInit {
 
     public loading = false;
     modalRef!: BsModalRef;
+    @ViewChild('lotesModal') lotesModal!: DistribucionLotesModalComponent;
 
 	constructor( 
 	    public apiService: ApiService, private alertService: AlertService,
@@ -106,6 +109,7 @@ export class TrasladoComponent implements OnInit {
         this.detalle.nombre_categoria = this.producto.nombre_categoria;
         this.detalle.lote_id = null;
         this.detalle.lote_id_destino = null;
+        this.detalle.lotes_asignados = null;
         this.lotes = [];
         this.lotesDestino = [];
         
@@ -293,17 +297,56 @@ export class TrasladoComponent implements OnInit {
     isLotesActivo(): boolean {
         return this.apiService.isLotesActivo();
     }
+
+    requiereDistribucionLotes(detalle?: any): boolean {
+        const d = detalle || this.detalle;
+        return !!this.producto?.inventario_por_lotes
+            && this.isLotesActivo()
+            && this.apiService.getLotesMetodologia() === 'Manual';
+    }
+
+    abrirDistribucionLotes(detalle?: any): void {
+        const target = detalle || this.detalle;
+        if (!this.traslado?.origen_id) {
+            this.alertService.warning('Bodega origen', 'Seleccione la bodega de origen.');
+            return;
+        }
+        this.lotesModal.abrir({
+            ...target,
+            id_producto: target.producto_id || this.producto?.id,
+            producto_id: target.producto_id || this.producto?.id,
+            nombre_producto: target.nombre_producto || this.producto?.nombre,
+            factor_conversion: target.factor_conversion || this.producto?.factor_conversion || 1,
+        }, this.traslado.origen_id);
+    }
+
+    onLotesDetalleConfirmados(detalle: any): void {
+        if (this.detalle && (this.detalle === detalle || this.detalle.producto_id === detalle.producto_id)) {
+            Object.assign(this.detalle, detalle);
+        }
+        const idx = this.traslado.detalles.findIndex((d: any) => d === detalle || (d.producto_id === detalle.producto_id && !d.id));
+        if (idx !== -1) {
+            this.traslado.detalles[idx] = { ...this.traslado.detalles[idx], ...detalle };
+        }
+    }
+
+    textoLotesDetalle(detalle: any): string {
+        return textoResumenLotesDetalle(detalle);
+    }
 	
 
 	agregarDetalle(){
-		// Validar que si el producto tiene lotes, se haya seleccionado un lote
-		if (this.producto?.inventario_por_lotes && this.isLotesActivo() && !this.detalle.lote_id) {
+		if (this.requiereDistribucionLotes() && !(this.detalle.lotes_asignados?.length || this.detalle.lote_id)) {
+			this.alertService.error('Debe distribuir los lotes de origen para este producto.');
+			return;
+		}
+
+		if (this.producto?.inventario_por_lotes && this.isLotesActivo() && !this.requiereDistribucionLotes() && !this.detalle.lote_id) {
 			this.alertService.error('Debe seleccionar un lote para este producto.');
 			return;
 		}
 
-		// Validar stock del lote antes de agregar
-		if (this.producto?.inventario_por_lotes && this.isLotesActivo() && this.detalle.lote_id && this.detalle.cantidad) {
+		if (this.producto?.inventario_por_lotes && this.isLotesActivo() && this.detalle.lote_id && !this.detalle.lotes_asignados?.length && this.detalle.cantidad) {
 			const loteSeleccionado = this.lotes.find((l: any) => l.id == this.detalle.lote_id);
 			if (loteSeleccionado) {
 				const stockDisponible = parseFloat(loteSeleccionado.stock) || 0;
@@ -317,7 +360,7 @@ export class TrasladoComponent implements OnInit {
 			}
 		}
 
-		this.traslado.detalles.push(this.detalle);
+		this.traslado.detalles.push({ ...this.detalle, inventario_por_lotes: this.producto?.inventario_por_lotes });
 		this.producto = {};
 		this.detalle = {};
         this.modalRef.hide();

@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
-import { Subject } from 'rxjs';
+import { Subject, Subscription } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { DashboardDataService } from './services/dashboard-data.service';
 import { FiltrosConsultaVentasDashboard } from './models/filtros-consulta-ventas-dashboard.model';
@@ -22,9 +22,43 @@ export class DashboardComponent implements OnInit, OnDestroy {
   ]);
 
   private destroy$ = new Subject<void>();
+  private datosSubscription?: Subscription;
+
+  private cancelarSuscripcionActiva(): void {
+    if (this.datosSubscription) {
+      this.datosSubscription.unsubscribe();
+      this.datosSubscription = undefined;
+    }
+  }
+
+  // ponytail: deep comparison helper to ignore identical filter emissions
+  private sonFiltrosIguales(f1: any, f2: any): boolean {
+    if (!f1 || !f2) return f1 === f2;
+    const keys1 = Object.keys(f1);
+    const keys2 = Object.keys(f2);
+    if (keys1.length !== keys2.length) return false;
+    for (const key of keys1) {
+      const v1 = f1[key];
+      const v2 = f2[key];
+      if (Array.isArray(v1) && Array.isArray(v2)) {
+        if (v1.length !== v2.length) return false;
+        const s1 = [...v1].sort();
+        const s2 = [...v2].sort();
+        if (s1.some((val, idx) => val !== s2[idx])) return false;
+      } else if (v1 !== v2) {
+        return false;
+      }
+    }
+    return true;
+  }
 
   loading = false;
   datos: any = {};
+  datosResultadosCompletos = false;
+  datosVentasCompletos = false;
+  datosGastosCompletos = false;
+  datosCuentasCompletos = false;
+  datosInventarioCompletos = false;
   filtrosPorSeccion: { [seccion: string]: any } = {};
 
   // Finanzas: oculta hasta estar lista — añadir de nuevo `{ nombre: 'Finanzas', ... }` aquí y el *ngSwitchCase* en el HTML.
@@ -44,10 +78,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.restaurarSeccionDesdeAlmacenamiento();
-    this.cargarDatos();
+    // ponytail: only load initial data if we have saved filters for the active section.
+    // Otherwise, wait for the child component to mount and emit its default filters.
+    const filtrosGuardados = this.filtrosPorSeccion[this.seccionActiva];
+    if (filtrosGuardados) {
+      this.cargarDatos(filtrosGuardados);
+    } else {
+      this.datos = {};
+    }
   }
 
   ngOnDestroy(): void {
+    this.cancelarSuscripcionActiva();
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -56,9 +98,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.secciones.forEach(s => s.activo = false);
     seccion.activo = true;
     this.persistirSeccionActivaSiAplica();
-    // Cargar datos usando filtros guardados de la nueva sección activa (si existen)
-    const filtrosGuardados = this.filtrosPorSeccion[this.seccionActiva] || {};
-    this.cargarDatos(filtrosGuardados);
+    // ponytail: only load data on tab change if we have saved filters for the target section.
+    // Otherwise, let the child component initialize and emit its defaults.
+    const filtrosGuardados = this.filtrosPorSeccion[this.seccionActiva];
+    if (filtrosGuardados) {
+      this.cargarDatos(filtrosGuardados);
+    } else {
+      this.datos = {};
+    }
   }
 
   private restaurarSeccionDesdeAlmacenamiento(): void {
@@ -100,6 +147,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   cargarDatos(filtrosAdicionales: any = {}): void {
+    this.cancelarSuscripcionActiva();
     this.loading = true;
 
     const filtros = {
@@ -107,7 +155,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
       ...filtrosAdicionales
     };
 
-    this.dashboardDataService.obtenerDatosPorFiltro(filtros).subscribe({
+    // ponytail: ensure we store the active filters
+    this.filtrosPorSeccion[this.seccionActiva] = filtrosAdicionales;
+
+    this.datosSubscription = this.dashboardDataService.obtenerDatosPorFiltro(filtros).subscribe({
       next: (data) => {
         // Crear nueva referencia para que OnPush detecte cambios
         this.datos = { ...(data || {}) };
@@ -128,15 +179,19 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   onFiltrosResultadosCambiados(filtros: any): void {
+    if (this.sonFiltrosIguales(this.filtrosPorSeccion['Resultados'], filtros)) {
+      return;
+    }
+    this.cancelarSuscripcionActiva();
+    this.datosResultadosCompletos = false;
     this.filtrosPorSeccion['Resultados'] = filtros;
     const filtrosCompletos = {
       seccion: 'Resultados',
       ...filtros,
     };
 
-    this.dashboardDataService
+    this.datosSubscription = this.dashboardDataService
       .obtenerResultadosProgresivo(filtrosCompletos)
-      .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (data) => {
           this.datos = { ...data };
@@ -145,21 +200,30 @@ export class DashboardComponent implements OnInit, OnDestroy {
         error: (error) => {
           console.error('Error al cargar datos de resultados:', error);
           this.datos = {};
+          this.datosResultadosCompletos = true; // desbloquear aunque haya error
+          this.cdr.markForCheck();
+        },
+        complete: () => {
+          this.datosResultadosCompletos = true;
           this.cdr.markForCheck();
         },
       });
   }
 
   onFiltrosGastosCambiados(filtros: any): void {
+    if (this.sonFiltrosIguales(this.filtrosPorSeccion['Gastos'], filtros)) {
+      return;
+    }
+    this.cancelarSuscripcionActiva();
+    this.datosGastosCompletos = false;
     this.filtrosPorSeccion['Gastos'] = filtros;
     const filtrosCompletos = {
       seccion: 'Gastos',
       ...filtros,
     };
 
-    this.dashboardDataService
+    this.datosSubscription = this.dashboardDataService
       .obtenerGastosProgresivo(filtrosCompletos)
-      .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (data) => {
           this.datos = { ...data };
@@ -168,21 +232,31 @@ export class DashboardComponent implements OnInit, OnDestroy {
         error: (error) => {
           console.error('Error al cargar datos de gastos:', error);
           this.datos = {};
+          this.datosGastosCompletos = true;
+          this.cdr.markForCheck();
+        },
+        complete: () => {
+          this.datosGastosCompletos = true;
           this.cdr.markForCheck();
         },
       });
   }
 
+
   onFiltrosVentasCambiados(filtros: FiltrosConsultaVentasDashboard): void {
+    if (this.sonFiltrosIguales(this.filtrosPorSeccion['Ventas'], filtros)) {
+      return;
+    }
+    this.cancelarSuscripcionActiva();
+    this.datosVentasCompletos = false;
     this.filtrosPorSeccion['Ventas'] = filtros;
     const filtrosCompletos = {
       seccion: 'Ventas' as const,
       ...filtros,
     };
 
-    this.dashboardDataService
+    this.datosSubscription = this.dashboardDataService
       .obtenerVentasProgresivo(filtrosCompletos)
-      .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (data) => {
           this.datos = { ...data };
@@ -191,21 +265,30 @@ export class DashboardComponent implements OnInit, OnDestroy {
         error: (error) => {
           console.error('Error al cargar datos de ventas:', error);
           this.datos = {};
+          this.datosVentasCompletos = true;
+          this.cdr.markForCheck();
+        },
+        complete: () => {
+          this.datosVentasCompletos = true;
           this.cdr.markForCheck();
         },
       });
   }
 
   onFiltrosControlCuentasCambiados(filtros: any): void {
+    if (this.sonFiltrosIguales(this.filtrosPorSeccion['Control de cuentas'], filtros)) {
+      return;
+    }
+    this.cancelarSuscripcionActiva();
+    this.datosCuentasCompletos = false;
     this.filtrosPorSeccion['Control de cuentas'] = filtros;
     const filtrosCompletos = {
       seccion: 'Control de cuentas',
       ...filtros,
     };
 
-    this.dashboardDataService
+    this.datosSubscription = this.dashboardDataService
       .obtenerCuentasProgresivo(filtrosCompletos)
-      .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (data) => {
           this.datos = { ...data };
@@ -214,21 +297,31 @@ export class DashboardComponent implements OnInit, OnDestroy {
         error: (error) => {
           console.error('Error al cargar datos de control de cuentas:', error);
           this.datos = {};
+          this.datosCuentasCompletos = true;
+          this.cdr.markForCheck();
+        },
+        complete: () => {
+          this.datosCuentasCompletos = true;
           this.cdr.markForCheck();
         },
       });
   }
 
+
   onFiltrosInventarioCambiados(filtros: any): void {
+    if (this.sonFiltrosIguales(this.filtrosPorSeccion['Inventario'], filtros)) {
+      return;
+    }
+    this.cancelarSuscripcionActiva();
+    this.datosInventarioCompletos = false;
     this.filtrosPorSeccion['Inventario'] = filtros;
     const filtrosCompletos = {
       seccion: 'Inventario',
       ...filtros,
     };
 
-    this.dashboardDataService
+    this.datosSubscription = this.dashboardDataService
       .obtenerInventarioProgresivo(filtrosCompletos)
-      .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (data) => {
           this.datos = { ...data };
@@ -237,9 +330,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
         error: (error) => {
           console.error('Error al cargar datos de inventario:', error);
           this.datos = {};
+          this.datosInventarioCompletos = true;
+          this.cdr.markForCheck();
+        },
+        complete: () => {
+          this.datosInventarioCompletos = true;
           this.cdr.markForCheck();
         },
       });
   }
+
 }
 

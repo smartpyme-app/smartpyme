@@ -11,11 +11,16 @@ import { RestauranteService } from '@services/restaurante.service';
 import Swal from 'sweetalert2';
 
 import {
+  acumularImpuestosVentaConCierreResidual,
+  calcularMontosLineaDetalle,
+  copiarImpuestosProductoAlDetalle,
+  esImpuestoIva,
+  hidratarImpuestosProductosEnDetalles,
   normalizarPorcentajeImpuestoDetalle,
   resolverPorcentajeImpuestoVenta,
-  calcularMontosLineaDetalle,
+  sincronizarTipoGravadoPorCobroIva,
   sumarSubTotalEncabezadoVenta,
-  sumarTotalConIvaEncabezadoVenta,
+  sumarTotalEncabezadoVenta,
 } from '@utils/impuestos-venta.util';
 import { esVentaPorConsigna, sincronizarFlagConsignaVenta, aplicarEstadoConsignaEnVenta } from '@utils/venta-consigna.util';
 import { FACTURA_REMISION, esVentaConsignaRemision } from '../../../../constants/documento.constants';
@@ -120,11 +125,7 @@ export class FacturacionV2Component implements OnInit {
     private funcionalidadesService: FuncionalidadesService,
     private restauranteService: RestauranteService,
     private fidelizacionService: FidelizacionService,
-  ) {
-    this.router.routeReuseStrategy.shouldReuseRoute = function () {
-      return false;
-    };
-  }
+  ) {}
 
   ngOnInit() {
     this.cargarDatosIniciales();
@@ -346,7 +347,8 @@ export class FacturacionV2Component implements OnInit {
     }
 
     this.venta.tipo_operacion = 'Gravada';
-    this.venta.tipo_renta = null;
+    const empresa = this.apiService.auth_user()?.empresa;
+    this.venta.tipo_renta = empresa?.tipo_renta_productos ?? empresa?.tipo_renta_servicios ?? null;
     this.venta.detalle_banco = '';
     this.venta.id_cliente = '';
     this.venta.detalles = [];
@@ -356,7 +358,7 @@ export class FacturacionV2Component implements OnInit {
     this.venta.iva_percibido = 0;
     this.venta.iva_retenido = 0;
     this.venta.cotizacion = 0;
-    if(this.canales.length > 0){
+    if (this.canales.length > 0) {
       this.venta.id_canal = this.canales[0].id;
     }
     this.venta.iva = 0;
@@ -364,9 +366,9 @@ export class FacturacionV2Component implements OnInit {
     this.venta.total = 0;
     this.venta.propina = 0;
     this.venta.cobrar_propina = false;
-    if(this.impuestos.length > 0){
+    if (this.impuestos.length > 0) {
       this.venta.impuestos = this.impuestos;
-    }else{
+    } else {
       this.venta.impuestos = [];
     }
     this.detalle = {};
@@ -396,7 +398,7 @@ export class FacturacionV2Component implements OnInit {
     if (this.route.snapshot.queryParamMap.get('cotizacion')) {
       this.venta.cotizacion = 1;
       this.venta.estado = 'Pendiente';
-        this.venta.observaciones = this.venta.id_empresa == 2 ? 'Uso del Servicio: La plataforma SmartPyme se proporciona bajo licencia no exclusiva y no transferible, según el plan de suscripción seleccionado por el cliente. El cliente es responsable del uso adecuado de la plataforma y de la exactitud de los datos ingresados. \nPagos: Las tarifas establecidas en la cotización deben ser pagadas puntualmente. Los retrasos en el pago pueden llevar a la suspensión o cancelación del servicio. \nDisponibilidad del Servicio: SmartPyme garantiza un 99% de disponibilidad del servicio, excluyendo mantenimientos programados y eventos de fuerza mayor. \nPropiedad Intelectual: El cliente no podrá realizar ingeniería inversa, descompilar ni modificar la plataforma. \nLimitación de responsabilidad: SmartPyme no se hace responsable de pérdidas de datos causadas por eventos externos, uso indebido de la plataforma o situaciones fuera de su control razonable. \nDuración del acuerdo: Los servicios se brindan durante la vigencia del plan de suscripción. Tras terminación, el cliente tiene derecho a descargar su información antes de que sea eliminada, siempre y cuando no tenga pagos pendientes. En caso de mora, SmartPyme no estará obligada a proporcionar acceso o respaldos hasta que la situación sea regularizada. \nSituaciones excepcionales: \nEn caso de circunstancias extraordinarias que conlleven la finalización de operaciones, la empresa no estará obligada a continuar con la prestación del servicio. Esto incluye, pero no se limita a, solicitudes de acceso perpetuo o indefinido a la plataforma. \nRenovación: Los cobros se efectuarán de forma automática cada mes (acorde a la forma de pago elegida), por lo que de no continuar usando el sistema debe notificarse por escrito al correo electrónico expresando las razones. De esta forma se brindará un plazo de 15 días para extraer la información de su cuenta, posteriormente será eliminada definitivamente. \nPolítica de reembolsos: No se realizan reembolsos ni devoluciones bajo ninguna circunstancia, incluyendo cancelaciones anticipadas, falta de uso del sistema o cualquier otra razón. Al realizar el pago, el cliente acepta esta condición. \nCompromisos de SmartPyme: \nBrindar capacitaciones y soporte técnico a usuarios de negocios. \nGarantizar el correcto funcionamiento de la plataforma en todo momento con altos estándares de seguridad, disponibilidad y confidencialidad. \nOfrecemos acompañamiento y asesoría durante el proceso de implementación, de facturación electrónica u otro correspondiente a la información para el uso necesario de SmartPyme.\nBrindar documentación de confidencialidad para su firma. \nPara SmartPyme será un honor trabajar con usted y apoyar sus esfuerzos en optimizar las operaciones de su empresa y proporcionar información oportuna a través de nuestra plataforma de Inteligencia de Negocios. \nQuedamos atentos a cualquier consulta o información adicional que necesite.' : '';
+      this.venta.observaciones = this.venta.id_empresa == 2 ? 'Uso del Servicio: La plataforma SmartPyme se proporciona bajo licencia no exclusiva y no transferible, según el plan de suscripción seleccionado por el cliente. El cliente es responsable del uso adecuado de la plataforma y de la exactitud de los datos ingresados. \nPagos: Las tarifas establecidas en la cotización deben ser pagadas puntualmente. Los retrasos en el pago pueden llevar a la suspensión o cancelación del servicio. \nDisponibilidad del Servicio: SmartPyme garantiza un 99% de disponibilidad del servicio, excluyendo mantenimientos programados y eventos de fuerza mayor. \nPropiedad Intelectual: El cliente no podrá realizar ingeniería inversa, descompilar ni modificar la plataforma. \nLimitación de responsabilidad: SmartPyme no se hace responsable de pérdidas de datos causadas por eventos externos, uso indebido de la plataforma o situaciones fuera de su control razonable. \nDuración del acuerdo: Los servicios se brindan durante la vigencia del plan de suscripción. Tras terminación, el cliente tiene derecho a descargar su información antes de que sea eliminada, siempre y cuando no tenga pagos pendientes. En caso de mora, SmartPyme no estará obligada a proporcionar acceso o respaldos hasta que la situación sea regularizada. \nSituaciones excepcionales: \nEn caso de circunstancias extraordinarias que conlleven la finalización de operaciones, la empresa no estará obligada a continuar con la prestación del servicio. Esto incluye, pero no se limita a, solicitudes de acceso perpetuo o indefinido a la plataforma. \nRenovación: Los cobros se efectuarán de forma automática cada mes (acorde a la forma de pago elegida), por lo que de no continuar usando el sistema debe notificarse por escrito al correo electrónico expresando las razones. De esta forma se brindará un plazo de 15 días para extraer la información de su cuenta, posteriormente será eliminada definitivamente. \nPolítica de reembolsos: No se realizan reembolsos ni devoluciones bajo ninguna circunstancia, incluyendo cancelaciones anticipadas, falta de uso del sistema o cualquier otra razón. Al realizar el pago, el cliente acepta esta condición. \nCompromisos de SmartPyme: \nBrindar capacitaciones y soporte técnico a usuarios de negocios. \nGarantizar el correcto funcionamiento de la plataforma en todo momento con altos estándares de seguridad, disponibilidad y confidencialidad. \nOfrecemos acompañamiento y asesoría durante el proceso de implementación, de facturación electrónica u otro correspondiente a la información para el uso necesario de SmartPyme.\nBrindar documentación de confidencialidad para su firma. \nPara SmartPyme será un honor trabajar con usted y apoyar sus esfuerzos en optimizar las operaciones de su empresa y proporcionar información oportuna a través de nuestra plataforma de Inteligencia de Negocios. \nQuedamos atentos a cualquier consulta o información adicional que necesite.' : '';
     }
 
     // Pre-cuenta restaurante: state o queryParams (respaldo por si state se pierde)
@@ -458,6 +460,10 @@ export class FacturacionV2Component implements OnInit {
             sincronizarFlagConsignaVenta(this.venta);
             this.retencionIvaGcUsuarioDecidio = true;
             this.normalizarDetallesTipoGravado(this.venta);
+            hidratarImpuestosProductosEnDetalles(
+              this.venta.detalles,
+              this.apiService.auth_user()?.empresa?.iva
+            );
             this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
             this.sumTotal();
           },
@@ -483,9 +489,13 @@ export class FacturacionV2Component implements OnInit {
             this.venta = venta;
             this.retencionIvaGcUsuarioDecidio = true;
             this.normalizarDetallesTipoGravado(this.venta);
-            if(!this.venta.cliente){
-                this.venta.cliente = {};
-            }else{
+            hidratarImpuestosProductosEnDetalles(
+              this.venta.detalles,
+              this.apiService.auth_user()?.empresa?.iva
+            );
+            if (!this.venta.cliente) {
+              this.venta.cliente = {};
+            } else {
               this.venta.cliente.nombre = this.venta.cliente.tipo == 'Empresa' ? this.venta.cliente.nombre_empresa : this.venta.cliente.nombre_completo;
             }
             this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
@@ -530,9 +540,13 @@ export class FacturacionV2Component implements OnInit {
               this.venta = venta;
               this.retencionIvaGcUsuarioDecidio = true;
               this.normalizarDetallesTipoGravado(this.venta);
-              if(!this.venta.cliente){
-                  this.venta.cliente = {};
-              }else{
+              hidratarImpuestosProductosEnDetalles(
+                this.venta.detalles,
+                this.apiService.auth_user()?.empresa?.iva
+              );
+              if (!this.venta.cliente) {
+                this.venta.cliente = {};
+              } else {
                 this.venta.cliente.nombre = this.venta.cliente.tipo == 'Empresa' ? this.venta.cliente.nombre_empresa : this.venta.cliente.nombre_completo;
               }
               this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
@@ -578,24 +592,16 @@ export class FacturacionV2Component implements OnInit {
                 }
 
                 // Asegurar que precio_iva esté como número
-                detalle.precio_iva = parseFloat(detalle.precio_iva).toFixed(4);
+                detalle.precio_iva = parseFloat(detalle.precio_iva).toFixed(6);
 
-                // Recalcular total del detalle usando precio sin IVA
-                const precioSinIva = parseFloat(detalle.precio || 0);
-                detalle.sub_total = Number((parseFloat(detalle.cantidad || 0) * precioSinIva).toFixed(4));
-                detalle.total = (parseFloat(detalle.sub_total) - parseFloat(detalle.descuento || 0)).toFixed(4);
                 const tipo = (detalle.tipo_gravado && String(detalle.tipo_gravado).toLowerCase()) || 'gravada';
                 detalle.tipo_gravado = ['gravada', 'exenta', 'no_sujeta'].includes(tipo) ? tipo : 'gravada';
-                detalle.gravada = detalle.tipo_gravado === 'gravada' ? detalle.total : 0;
-                detalle.exenta = detalle.tipo_gravado === 'exenta' ? detalle.total : 0;
-                detalle.no_sujeta = detalle.tipo_gravado === 'no_sujeta' ? detalle.total : 0;
-
-                // Calcular total_iva para visualización (solo gravada lleva IVA)
-                if (detalle.tipo_gravado === 'gravada' && this.venta.cobrar_impuestos && porcentajeIvaTotal > 0) {
-                  detalle.total_iva = (parseFloat(detalle.total) * (1 + porcentajeIvaTotal / 100)).toFixed(4);
-                } else {
-                  detalle.total_iva = detalle.total;
-                }
+                calcularMontosLineaDetalle(
+                  detalle,
+                  !!this.venta.cobrar_impuestos,
+                  this.apiService.auth_user()?.empresa?.iva,
+                  { preservePrecioIva: true }
+                );
               });
 
               this.sumTotal();
@@ -619,13 +625,13 @@ export class FacturacionV2Component implements OnInit {
         this.venta.num_orden = ordenCompra.id;
 
         this.apiService.getAll('clientes/buscar/' + (ordenCompra.empresa.dui ?? ordenCompra.empresa.nit)).subscribe((empresa) => {
-          if(empresa.length > 0){
+          if (empresa.length > 0) {
             this.setCliente(empresa[0]);
             console.log(empresa);
 
             // Solo procesar productos si el cliente existe
             this.procesarProductosOrdenCompra(ordenCompra.detalles);
-          }else{
+          } else {
             const labelDoc = this.apiService.auth_user()?.empresa?.pais === 'El Salvador' ? 'DUI o NIT' : 'Número de identificación o Identificación fiscal';
             Swal.fire({
               title: 'Cliente no encontrado',
@@ -650,15 +656,15 @@ export class FacturacionV2Component implements OnInit {
           }
         });
       }, (error) => { this.alertService.error(error); this.loading = false; }
-    );
-    console.log(this.venta);
+      );
+      console.log(this.venta);
     }
     this.cargarDocumentos();
   }
-    // Método para procesar productos de orden de compra
+  // Método para procesar productos de orden de compra
   public procesarProductosOrdenCompra(detalles: any[]) {
     detalles.forEach((detalleCompra: any) => {
-      this.apiService.getAll('producto/buscar-by-code/'+ detalleCompra.codigo).subscribe((producto) => {
+      this.apiService.getAll('producto/buscar-by-code/' + detalleCompra.codigo).subscribe((producto) => {
         if (producto) {
           const detalle: any = {};
           detalle.cantidad = detalleCompra.cantidad;
@@ -672,9 +678,13 @@ export class FacturacionV2Component implements OnInit {
 
           // En v2, lista sin IVA (como configuración del producto); columna Precio muestra ese valor cuando hay lista
           const ivaEmpresa = this.apiService.auth_user()?.empresa?.iva ?? 0;
-          const pctImpuesto = resolverPorcentajeImpuestoVenta(producto.porcentaje_impuesto, ivaEmpresa);
           detalle.porcentaje_impuesto = normalizarPorcentajeImpuestoDetalle(
             producto.porcentaje_impuesto,
+            ivaEmpresa
+          );
+          copiarImpuestosProductoAlDetalle(detalle, producto, ivaEmpresa);
+          const pctImpuesto = resolverPorcentajeImpuestoVenta(
+            detalle.porcentaje_impuesto,
             ivaEmpresa
           );
 
@@ -685,13 +695,13 @@ export class FacturacionV2Component implements OnInit {
 
           detalle.precios = producto.precios
             ? producto.precios.map((p: any) => {
-                const sin = parseFloat(p.precio);
-                return {
-                  ...p,
-                  precio: sin.toFixed(4),
-                  precio_sin_iva: sin,
-                };
-              })
+              const sin = parseFloat(p.precio);
+              return {
+                ...p,
+                precio: sin.toFixed(4),
+                precio_sin_iva: sin,
+              };
+            })
             : [];
           detalle.precios.unshift({
             precio: precioSinIva.toFixed(4),
@@ -727,9 +737,9 @@ export class FacturacionV2Component implements OnInit {
           this.venta.detalles.push(detalle);
           this.sumTotal();
         } else {
-           Swal.fire({
-             title: 'Producto no encontrado',
-             html: `
+          Swal.fire({
+            title: 'Producto no encontrado',
+            html: `
                <div class="text-left">
                  <p><strong>No se encontró el producto para poder facturar.</strong></p>
                  <p>Debe verificar o crear el producto con el siguiente código:</p>
@@ -739,12 +749,12 @@ export class FacturacionV2Component implements OnInit {
                  </ul>
                </div>
              `,
-             icon: 'warning',
-             confirmButtonText: 'Entendido',
-             confirmButtonColor: '#3085d6'
-           }).then(() => {
-             window.history.back();
-           });
+            icon: 'warning',
+            confirmButtonText: 'Entendido',
+            confirmButtonColor: '#3085d6'
+          }).then(() => {
+            window.history.back();
+          });
         }
       }, (error) => {
         Swal.fire({
@@ -820,7 +830,7 @@ export class FacturacionV2Component implements OnInit {
 
                     detalle.total = (
                       parseFloat(detalle.cantidad) *
-                        parseFloat(detalle.precio) -
+                      parseFloat(detalle.precio) -
                       parseFloat(detalle.descuento)
                     ).toFixed(4);
 
@@ -892,32 +902,25 @@ export class FacturacionV2Component implements OnInit {
    * Totales por línea (gravada), coherente con VentaDetallesV2 — usado al cargar orden de compra.
    */
   private aplicarLineaGravadaDesdePrecio(detalle: any): void {
+    const empresaIva = this.apiService.auth_user()?.empresa?.iva;
+    const pctDetalle = this.venta.cobrar_impuestos
+      ? resolverPorcentajeImpuestoVenta(detalle?.porcentaje_impuesto, empresaIva)
+      : 0;
     const precioSinIva = parseFloat(detalle.precio || 0);
-    const cant = parseFloat(String(detalle.cantidad ?? 0)) || 0;
-    detalle.sub_total = Number((cant * precioSinIva).toFixed(4));
-    const desc = parseFloat(detalle.descuento || 0) || 0;
-    detalle.total = Number((detalle.sub_total - desc).toFixed(4)).toFixed(4);
 
-    let pctDetalle = 0;
-    if (this.venta.cobrar_impuestos) {
-      pctDetalle = resolverPorcentajeImpuestoVenta(
-        detalle?.porcentaje_impuesto,
-        this.apiService.auth_user()?.empresa?.iva
-      );
+    if (detalle.precio_iva == null || detalle.precio_iva === '') {
+      detalle.precio_iva =
+        pctDetalle > 0
+          ? (precioSinIva * (1 + pctDetalle / 100)).toFixed(4)
+          : precioSinIva.toFixed(4);
     }
 
-    const totalNum = parseFloat(detalle.total) || 0;
-    detalle.gravada = 0;
-    detalle.exenta = 0;
-    detalle.no_sujeta = 0;
-    detalle.gravada = totalNum;
-    if (pctDetalle > 0) {
-      detalle.total_iva = (totalNum * (1 + pctDetalle / 100)).toFixed(4);
-      detalle.iva = parseFloat((totalNum * (pctDetalle / 100)).toFixed(4));
-    } else {
-      detalle.total_iva = detalle.total;
-      detalle.iva = 0;
-    }
+    calcularMontosLineaDetalle(
+      detalle,
+      !!this.venta.cobrar_impuestos,
+      empresaIva,
+      { preservePrecioIva: true }
+    );
   }
 
   /**
@@ -964,8 +967,8 @@ export class FacturacionV2Component implements OnInit {
 
     const sinSel =
       mejor.precio_sin_iva !== undefined &&
-      mejor.precio_sin_iva !== null &&
-      mejor.precio_sin_iva !== ''
+        mejor.precio_sin_iva !== null &&
+        mejor.precio_sin_iva !== ''
         ? Number(mejor.precio_sin_iva)
         : parseFloat(String(mejor.precio));
     if (!Number.isFinite(sinSel)) return;
@@ -1017,15 +1020,11 @@ export class FacturacionV2Component implements OnInit {
       this.venta.impuestos = [];
     }
 
-    // En v2, los detalles tienen total sin IVA, así que agregamos el IVA al calcular los totales
-    // Usar el IVA de la empresa directamente
-    const porcentajeIvaTotal = this.venta.cobrar_impuestos
-      ? (this.apiService.auth_user()?.empresa?.iva || 0)
-      : 0;
-
     const empresaIva = Number(this.apiService.auth_user()?.empresa?.iva ?? 0);
     this.venta.detalles.forEach((d: any) => {
-      calcularMontosLineaDetalle(d, !!this.venta.cobrar_impuestos, empresaIva, { preservePrecioIva: true });
+      calcularMontosLineaDetalle(d, !!this.venta.cobrar_impuestos, empresaIva, {
+        preservePrecioIva: true,
+      });
     });
 
     this.venta.sub_total = Number(sumarSubTotalEncabezadoVenta(this.venta.detalles)).toFixed(4);
@@ -1058,79 +1057,33 @@ export class FacturacionV2Component implements OnInit {
       ? Math.round(subTotalNum * (propinaPorcentaje / 100) * 100) / 100
       : 0;
 
-    // IVA por tasa: cada impuesto recibe solo el IVA de los detalles con ese porcentaje
-    const pctIgual = (a: number, b: number) => Math.abs(Number(a) - Number(b)) < 0.01;
-    const porcentajesImpuestos = (this.venta.impuestos || []).map((i: any) => Number(i.porcentaje));
-    if (this.venta.cobrar_impuestos) {
-      const pctDetalleDe = (d: any) => resolverPorcentajeImpuestoVenta(
-        d.porcentaje_impuesto,
-        empresaIva,
-        true
-      );
-
-      this.venta.impuestos.forEach((impuesto: any) => {
-        const pctImp = Number(impuesto.porcentaje);
-        const monto = this.venta.detalles
-          .filter((d: any) => pctIgual(pctImp, pctDetalleDe(d)))
-          .reduce((sum: number, d: any) => {
-            const gravada = parseFloat(d.gravada || 0);
-            const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) > 0)
-              ? parseFloat(d.iva) : gravada * (pctImp / 100);
-            return sum + ivaLinea;
-          }, 0);
-        impuesto.monto = parseFloat(Number(monto).toFixed(4));
-      });
-      // Detalles cuyo % no coincide con ningún impuesto: asignar al impuesto empresa o al primero
-      if (this.venta.detalles.length && this.venta.impuestos.length) {
-        const ivaSinAsignar = this.venta.detalles
-          .filter((d: any) => !porcentajesImpuestos.some((p: number) => pctIgual(p, pctDetalleDe(d))))
-          .reduce((sum: number, d: any) => {
-            const gravada = parseFloat(d.gravada || 0);
-            const pct = pctDetalleDe(d);
-            const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) > 0)
-              ? parseFloat(d.iva) : gravada * (pct / 100);
-            return sum + ivaLinea;
-          }, 0);
-        if (ivaSinAsignar > 0) {
-          const impuestoDestino = this.venta.impuestos.find((i: any) => pctIgual(Number(i.porcentaje), empresaIva))
-            || this.venta.impuestos[0];
-          impuestoDestino.monto = parseFloat((parseFloat(impuestoDestino.monto) + ivaSinAsignar).toFixed(4));
-        }
-      }
-      if (this.venta.impuestos.length) {
-        this.venta.iva = parseFloat(
-          this.sumPipe.transform(this.venta.impuestos, 'monto')
-        ).toFixed(4);
-      } else {
-        const ivaDesdeLineas = this.venta.detalles.reduce((sum: number, d: any) => {
-          const gravada = parseFloat(d.gravada || 0);
-          const pct = pctDetalleDe(d);
-          const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) > 0)
-            ? parseFloat(d.iva) : gravada * (pct / 100);
-          return sum + ivaLinea;
-        }, 0);
-        this.venta.iva = parseFloat(Number(ivaDesdeLineas).toFixed(4)).toFixed(4);
-      }
-    } else {
-      this.venta.iva = (0).toFixed(4);
-      this.venta.impuestos.forEach((impuesto: any) => { impuesto.monto = 0; });
-    }
+    const ivaEncabezado = acumularImpuestosVentaConCierreResidual(
+      this.venta.impuestos,
+      this.venta.detalles,
+      !!this.venta.cobrar_impuestos,
+      empresaIva
+    );
+    this.venta.iva = ivaEncabezado.toFixed(4);
 
     const rawDescuento = parseFloat(this.sumPipe.transform(this.venta.detalles, 'descuento'));
     this.venta.descuento = Number(rawDescuento).toFixed(4);
     const rawTotalCosto = parseFloat(this.sumPipe.transform(this.venta.detalles, 'total_costo'));
     this.venta.total_costo = Number(rawTotalCosto).toFixed(4);
 
-    // Total desde suma de líneas con IVA (redondeo por línea); evita centavos de más/menos
     const descuentoPuntos = parseFloat(this.venta.descuento_puntos || 0) || 0;
-    const totalNum =
-      sumarTotalConIvaEncabezadoVenta(this.venta.detalles) +
-      parseFloat(this.venta.cuenta_a_terceros) +
-      parseFloat(String(this.venta.iva_percibido)) -
-      parseFloat(String(this.venta.iva_retenido)) -
-      parseFloat(String(this.venta.renta_retenida)) -
-      descuentoPuntos;
-    this.venta.total = (Math.round(totalNum * 100) / 100).toFixed(2);
+    const totalNum = sumarTotalEncabezadoVenta(
+      this.venta.detalles,
+      this.venta.impuestos,
+      {
+        empresaIva,
+        cuentaTerceros: parseFloat(this.venta.cuenta_a_terceros),
+        ivaPercibido: parseFloat(String(this.venta.iva_percibido)),
+        ivaRetenido: parseFloat(String(this.venta.iva_retenido)),
+        rentaRetenida: parseFloat(String(this.venta.renta_retenida)),
+        descuentoPuntos,
+      }
+    );
+    this.venta.total = totalNum.toFixed(2);
 
 
     // Asignar tipoOperacion según los detalles
@@ -1142,11 +1095,11 @@ export class FacturacionV2Component implements OnInit {
 
     // Asignar tipo renta
     if (this.venta.detalles && this.venta.detalles.length > 0) {
-        if (this.venta.detalles[0].tipo == 'Servicio'){
-            this.venta.tipo_renta = this.apiService.auth_user().empresa.tipo_renta_servicios;
-        }else{
-            this.venta.tipo_renta = this.apiService.auth_user().empresa.tipo_renta_productos;
-        }
+      if (this.venta.detalles[0].tipo == 'Servicio') {
+        this.venta.tipo_renta = this.apiService.auth_user().empresa.tipo_renta_servicios;
+      } else {
+        this.venta.tipo_renta = this.apiService.auth_user().empresa.tipo_renta_productos;
+      }
     }
 
     this.actualizarCambioEfectivo();
@@ -1167,358 +1120,360 @@ export class FacturacionV2Component implements OnInit {
     this.venta.cambio = (recibido - aCobrarEfectivo).toFixed(2);
   }
 
-   /** Tras cargar una venta: mostrar el bloque de cuenta a terceros si hay monto en líneas o en cabecera. */
-    private aplicarEstadoCuentaTercerosDesdeVentaCargada(): void {
-      const cRaw = parseFloat(this.venta.cuenta_a_terceros) || 0;
-      const sumDet = parseFloat(this.sumPipe.transform(this.venta.detalles || [], 'cuenta_a_terceros')) || 0;
-      this.habilitarCuentaTerceros = sumDet > 0.0001 || cRaw > 0.0001;
-    }
+  /** Tras cargar una venta: mostrar el bloque de cuenta a terceros si hay monto en líneas o en cabecera. */
+  private aplicarEstadoCuentaTercerosDesdeVentaCargada(): void {
+    const cRaw = parseFloat(this.venta.cuenta_a_terceros) || 0;
+    const sumDet = parseFloat(this.sumPipe.transform(this.venta.detalles || [], 'cuenta_a_terceros')) || 0;
+    this.habilitarCuentaTerceros = sumDet > 0.0001 || cRaw > 0.0001;
+  }
 
-    onCuentaTercerosSwitchChange(): void {
+  onCuentaTercerosSwitchChange(): void {
+    this.sumTotal();
+  }
+
+  onAlMenosUnPaqueteCuentaTerceros(): void {
+    this.habilitarCuentaTerceros = true;
+    this.sumTotal();
+  }
+
+  private montoMinimoRetencionIvaGc(): number {
+    const v = this.apiService.auth_user()?.empresa?.monto_minimo_retencion_iva_gc;
+    const n = parseFloat(v);
+    return !isNaN(n) && n >= 0 ? n : 100;
+  }
+
+  private sincronizarRetencionGranContribuyente(): void {
+    const c = this.venta?.cliente;
+    if (!c || c.tipo_contribuyente !== 'Grande') {
+      return;
+    }
+    if (this.retencionIvaGcUsuarioDecidio) {
+      return;
+    }
+    const sub = parseFloat(this.venta.sub_total) || 0;
+    const min = this.montoMinimoRetencionIvaGc();
+    this.venta.retencion = sub >= min;
+  }
+
+  public onRetencionIvaManualChange(): void {
+    this.retencionIvaGcUsuarioDecidio = true;
+    this.sumTotal();
+  }
+
+  public onCobrarImpuestosChange(): void {
+    this.ventaDetallesV2?.sincronizarIvasDetalles();
+    this.sumTotal();
+  }
+
+  // Cliente
+  public setCliente(cliente: any) {
+    if (cliente.id) {
+      this.retencionIvaGcUsuarioDecidio = false;
+      cliente.nombre = cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo;
+      this.venta.id_cliente = cliente.id;
+      this.venta.cliente = cliente;
+      if (cliente.tipo_fiscal === 'Exento') {
+        this.venta.cobrar_impuestos = false;
+        sincronizarTipoGravadoPorCobroIva(this.venta.detalles, false);
+      }
       this.sumTotal();
-    }
 
-    onAlMenosUnPaqueteCuentaTerceros(): void {
-      this.habilitarCuentaTerceros = true;
-      this.sumTotal();
-    }
+      // Resetear y cargar puntos del cliente (si fidelización habilitada)
+      this.resetearPuntos();
+      if (this.tieneFidelizacionHabilitada) {
+        this.cargarPuntosCliente();
+      }
 
-    private montoMinimoRetencionIvaGc(): number {
-        const v = this.apiService.auth_user()?.empresa?.monto_minimo_retencion_iva_gc;
-        const n = parseFloat(v);
-        return !isNaN(n) && n >= 0 ? n : 100;
-    }
+      // Asignar vendedor si el cliente tiene uno asignado
+      if (cliente.id_vendedor) {
+        this.venta.id_vendedor = cliente.id_vendedor;
+      }
 
-    private sincronizarRetencionGranContribuyente(): void {
-        const c = this.venta?.cliente;
-        if (!c || c.tipo_contribuyente !== 'Grande') {
-            return;
-        }
-        if (this.retencionIvaGcUsuarioDecidio) {
-            return;
-        }
-        const sub = parseFloat(this.venta.sub_total) || 0;
-        const min = this.montoMinimoRetencionIvaGc();
-        this.venta.retencion = sub >= min;
-    }
-
-    public onRetencionIvaManualChange(): void {
-        this.retencionIvaGcUsuarioDecidio = true;
-        this.sumTotal();
-    }
-
-    public onCobrarImpuestosChange(): void {
-        this.ventaDetallesV2?.sincronizarIvasDetalles();
-        this.sumTotal();
-    }
-
-    // Cliente
-    public setCliente(cliente:any){
-        if(cliente.id){
-            this.retencionIvaGcUsuarioDecidio = false;
-            cliente.nombre = cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo;
-            this.venta.id_cliente = cliente.id;
-            this.venta.cliente = cliente;
-            if(cliente.tipo_contribuyente == "Grande") {
-                this.sumTotal();
-            }
-
-            // Resetear y cargar puntos del cliente (si fidelización habilitada)
-            this.resetearPuntos();
-            if (this.tieneFidelizacionHabilitada) {
-                this.cargarPuntosCliente();
-            }
-
-            // Asignar vendedor si el cliente tiene uno asignado
-            if(cliente.id_vendedor) {
-                this.venta.id_vendedor = cliente.id_vendedor;
-            }
-
-            // Si el cliente tiene crédito habilitado, aplicar venta al crédito automáticamente
-            if (cliente.habilita_credito && cliente.dias_credito) {
-                this.venta.credito = true;
-                this.venta.condicion = 'Crédito';
-                const fechaVenta = this.venta.fecha || this.apiService.date();
-                this.venta.fecha_pago = moment(fechaVenta).add(cliente.dias_credito, 'days').format('YYYY-MM-DD');
-                if (this.venta.consigna) {
-                    this.venta.estado = 'Consigna';
-                } else {
-                    this.venta.estado = 'Pendiente';
-                }
-            }
-
-            // Obtener saldo pendiente si el cliente tiene límite de crédito
-            // Obtener saldo pendiente: siempre si pref "estado de cuenta en facturación" activa, o solo si tiene límite de crédito
-            const cargarSaldo = this.apiService.isEstadoCuentaEnFacturacionHabilitado() || cliente.limite_credito;
-            if (cargarSaldo) {
-                this.venta.cliente = { ...this.venta.cliente, saldo_pendiente: 0 };
-                this.apiService.getAll('cliente/' + cliente.id + '/saldo-pendiente').subscribe(
-                    (res: any) => {
-                        this.venta.cliente = { ...this.venta.cliente, saldo_pendiente: res.saldo_pendiente ?? 0 };
-                    },
-                    () => { this.venta.cliente = { ...this.venta.cliente, saldo_pendiente: 0 }; }
-                );
-            } else {
-                this.venta.cliente = { ...this.venta.cliente, saldo_pendiente: null };
-            }
-
-            // Limpiar mensaje de validación al cambiar cliente
-            this.mensajeValidacionFecha = '';
-        } else {
-            this.venta.cliente = { ...this.venta.cliente, saldo_pendiente: null };
-            this.puntosCliente = 0;
-            this.resetearPuntos();
-        }
-        console.log(cliente);
-    }
-
-    /**
-     * Abrir PDF del estado de cuenta del cliente en nueva pestaña
-     */
-    public abrirEstadoCuentaPdf(): void {
-        if (!this.venta?.cliente?.id) return;
-        const url = `${this.apiService.baseUrl}/api/cliente/estado-de-cuenta/${this.venta.cliente.id}?token=${this.apiService.auth_token()}`;
-        window.open(url, '_blank');
-    }
-
-    // Proyecto
-    public setProyecto(proyecto: any) {
-        if (!this.venta.id_proyecto) {
-            this.proyectos.push(proyecto);
-        }
-        this.venta.id_proyecto = proyecto.id;
-    }
-
-    public setCredito() {
-        // Prevenir que usuarios "Ventas Limitado" activen ventas al crédito
-        if (this.apiService.auth_user().tipo === 'Ventas Limitado' && this.venta.credito) {
-            this.venta.credito = false;
-            this.alertService.error('Los usuarios de tipo "Ventas Limitado" no pueden crear ventas al crédito.');
-            return;
-        }
-        if (this.venta.credito) {
-            this.venta.condicion = 'Crédito';
-            this.venta.fecha_pago = moment().add(1, 'month').format('YYYY-MM-DD');
-            this.venta.estado = this.venta.consigna ? 'Consigna' : 'Pendiente';
-        } else {
-            this.venta.consigna = false;
-            this.venta.estado = 'Pagada';
-            this.venta.condicion = 'Contado';
-            this.venta.fecha_pago = moment().format('YYYY-MM-DD');
-            // Limpiar mensaje de validación al cambiar a contado
-            this.mensajeValidacionFecha = '';
-        }
-    }
-
-    /**
-     * Valida si la fecha de pago está dentro del rango permitido según la clasificación del cliente
-     * A: máximo 90 días, B: máximo 60 días, C: máximo 30 días
-     */
-    validarFechaPagoPorClasificacion(fechaPago: string): boolean {
-        if (!this.venta.cliente?.clasificacion || !fechaPago) {
-            return true; // Si no hay cliente o fecha, no validar
-        }
-
-        const hoy = moment();
-        const fechaSeleccionada = moment(fechaPago);
-        const diasDiferencia = fechaSeleccionada.diff(hoy, 'days');
-
-        let diasMaximos = 30; // Por defecto 30 días (clasificación C)
-
-        switch (this.venta.cliente.clasificacion.toUpperCase()) {
-            case 'A':
-                diasMaximos = 90;
-                break;
-            case 'B':
-                diasMaximos = 60;
-                break;
-            case 'C':
-                diasMaximos = 30;
-                break;
-            default:
-                diasMaximos = 30;
-                break;
-        }
-
-        return diasDiferencia <= diasMaximos;
-    }
-
-    /**
-     * Obtiene el mensaje de validación para la fecha de pago según la clasificación
-     */
-    obtenerMensajeValidacionFecha(): string {
-        if (!this.venta.cliente?.clasificacion) {
-            return '';
-        }
-
-        let diasMaximos = 30;
-        let clasificacion = 'C';
-
-        switch (this.venta.cliente.clasificacion.toUpperCase()) {
-            case 'A':
-                diasMaximos = 90;
-                clasificacion = 'A';
-                break;
-            case 'B':
-                diasMaximos = 60;
-                clasificacion = 'B';
-                break;
-            case 'C':
-                diasMaximos = 30;
-                clasificacion = 'C';
-                break;
-        }
-
-        return `Clientes de clasificación ${clasificacion} no puede exceder ${diasMaximos} días.`;
-    }
-
-    /**
-     * Valida la fecha de pago cuando cambia y muestra mensaje si está fuera del rango
-     */
-    public validarFechaPago() {
-        this.mensajeValidacionFecha = ''; // Limpiar mensaje anterior
-
-        if (this.venta.credito && this.venta.fecha_pago) {
-            if (!this.validarFechaPagoPorClasificacion(this.venta.fecha_pago)) {
-                this.mensajeValidacionFecha = this.obtenerMensajeValidacionFecha();
-
-                // Revertir a la fecha anterior o establecer una fecha válida
-                const hoy = moment();
-                let diasMaximos = 30;
-
-                if (this.venta.cliente?.clasificacion) {
-                    switch (this.venta.cliente.clasificacion.toUpperCase()) {
-                        case 'A':
-                            diasMaximos = 90;
-                            break;
-                        case 'B':
-                            diasMaximos = 60;
-                            break;
-                        case 'C':
-                            diasMaximos = 30;
-                            break;
-                    }
-                }
-
-                // Establecer la fecha máxima permitida
-                this.venta.fecha_pago = hoy.add(diasMaximos, 'days').format('YYYY-MM-DD');
-            }
-        }
-    }
-
-    public setConsigna() {
+      // Si el cliente tiene crédito habilitado, aplicar venta al crédito automáticamente
+      if (cliente.habilita_credito && cliente.dias_credito) {
+        this.venta.credito = true;
+        this.venta.condicion = 'Crédito';
+        const fechaVenta = this.venta.fecha || this.apiService.date();
+        this.venta.fecha_pago = moment(fechaVenta).add(cliente.dias_credito, 'days').format('YYYY-MM-DD');
         if (this.venta.consigna) {
-            if (!this.venta.id_cliente) {
-                this.alertService.warning('Consigna', 'Seleccione un cliente para ventas por consigna.');
-                this.venta.consigna = false;
-                return;
-            }
-            if (this.venta.detalles?.length) {
-                this.venta.detalles = [];
-                this.alertService.warning(
-                    'Consigna',
-                    'Se vació el detalle. Toda la factura quedará en consigna; no puede mezclar líneas de venta normal y consigna.'
-                );
-                this.sumTotal();
-            }
-            this.venta.estado = 'Consigna';
-            this.venta.credito = true;
-            this.venta.condicion = 'Crédito';
-            this.aplicarFiltroDocumentosVenta();
+          this.venta.estado = 'Consigna';
         } else {
-            if (this.venta.detalles?.length) {
-                this.venta.detalles = [];
-                this.sumTotal();
-            }
-            this.setCredito();
-            this.aplicarFiltroDocumentosVenta();
+          this.venta.estado = 'Pendiente';
         }
+      }
+
+      // Obtener saldo pendiente si el cliente tiene límite de crédito
+      // Obtener saldo pendiente: siempre si pref "estado de cuenta en facturación" activa, o solo si tiene límite de crédito
+      const cargarSaldo = this.apiService.isEstadoCuentaEnFacturacionHabilitado() || cliente.limite_credito;
+      if (cargarSaldo) {
+        this.venta.cliente = { ...this.venta.cliente, saldo_pendiente: 0 };
+        this.apiService.getAll('cliente/' + cliente.id + '/saldo-pendiente').subscribe(
+          (res: any) => {
+            this.venta.cliente = { ...this.venta.cliente, saldo_pendiente: res.saldo_pendiente ?? 0 };
+          },
+          () => { this.venta.cliente = { ...this.venta.cliente, saldo_pendiente: 0 }; }
+        );
+      } else {
+        this.venta.cliente = { ...this.venta.cliente, saldo_pendiente: null };
+      }
+
+      // Limpiar mensaje de validación al cambiar cliente
+      this.mensajeValidacionFecha = '';
+    } else {
+      this.venta.cliente = { ...this.venta.cliente, saldo_pendiente: null };
+      this.puntosCliente = 0;
+      this.resetearPuntos();
+    }
+    console.log(cliente);
+  }
+
+  /**
+   * Abrir PDF del estado de cuenta del cliente en nueva pestaña
+   */
+  public abrirEstadoCuentaPdf(): void {
+    if (!this.venta?.cliente?.id) return;
+    const url = `${this.apiService.baseUrl}/api/cliente/estado-de-cuenta/${this.venta.cliente.id}?token=${this.apiService.auth_token()}`;
+    window.open(url, '_blank');
+  }
+
+  // Proyecto
+  public setProyecto(proyecto: any) {
+    if (!this.venta.id_proyecto) {
+      this.proyectos.push(proyecto);
+    }
+    this.venta.id_proyecto = proyecto.id;
+  }
+
+  public setCredito() {
+    // Prevenir que usuarios "Ventas Limitado" activen ventas al crédito
+    if (this.apiService.auth_user().tipo === 'Ventas Limitado' && this.venta.credito) {
+      this.venta.credito = false;
+      this.alertService.error('Los usuarios de tipo "Ventas Limitado" no pueden crear ventas al crédito.');
+      return;
+    }
+    if (this.venta.credito) {
+      this.venta.condicion = 'Crédito';
+      this.venta.fecha_pago = moment().add(1, 'month').format('YYYY-MM-DD');
+      this.venta.estado = this.venta.consigna ? 'Consigna' : 'Pendiente';
+    } else {
+      this.venta.consigna = false;
+      this.venta.estado = 'Pagada';
+      this.venta.condicion = 'Contado';
+      this.venta.fecha_pago = moment().format('YYYY-MM-DD');
+      // Limpiar mensaje de validación al cambiar a contado
+      this.mensajeValidacionFecha = '';
+    }
+  }
+
+  /**
+   * Valida si la fecha de pago está dentro del rango permitido según la clasificación del cliente
+   * A: máximo 90 días, B: máximo 60 días, C: máximo 30 días
+   */
+  validarFechaPagoPorClasificacion(fechaPago: string): boolean {
+    if (!this.venta.cliente?.clasificacion || !fechaPago) {
+      return true; // Si no hay cliente o fecha, no validar
     }
 
-    public updateVenta(venta: any) {
-        this.venta = venta;
-        sincronizarFlagConsignaVenta(this.venta);
+    const hoy = moment();
+    const fechaSeleccionada = moment(fechaPago);
+    const diasDiferencia = fechaSeleccionada.diff(hoy, 'days');
+
+    let diasMaximos = 30; // Por defecto 30 días (clasificación C)
+
+    switch (this.venta.cliente.clasificacion.toUpperCase()) {
+      case 'A':
+        diasMaximos = 90;
+        break;
+      case 'B':
+        diasMaximos = 60;
+        break;
+      case 'C':
+        diasMaximos = 30;
+        break;
+      default:
+        diasMaximos = 30;
+        break;
+    }
+
+    return diasDiferencia <= diasMaximos;
+  }
+
+  /**
+   * Obtiene el mensaje de validación para la fecha de pago según la clasificación
+   */
+  obtenerMensajeValidacionFecha(): string {
+    if (!this.venta.cliente?.clasificacion) {
+      return '';
+    }
+
+    let diasMaximos = 30;
+    let clasificacion = 'C';
+
+    switch (this.venta.cliente.clasificacion.toUpperCase()) {
+      case 'A':
+        diasMaximos = 90;
+        clasificacion = 'A';
+        break;
+      case 'B':
+        diasMaximos = 60;
+        clasificacion = 'B';
+        break;
+      case 'C':
+        diasMaximos = 30;
+        clasificacion = 'C';
+        break;
+    }
+
+    return `Clientes de clasificación ${clasificacion} no puede exceder ${diasMaximos} días.`;
+  }
+
+  /**
+   * Valida la fecha de pago cuando cambia y muestra mensaje si está fuera del rango
+   */
+  public validarFechaPago() {
+    this.mensajeValidacionFecha = ''; // Limpiar mensaje anterior
+
+    if (this.venta.credito && this.venta.fecha_pago) {
+      if (!this.validarFechaPagoPorClasificacion(this.venta.fecha_pago)) {
+        this.mensajeValidacionFecha = this.obtenerMensajeValidacionFecha();
+
+        // Revertir a la fecha anterior o establecer una fecha válida
+        const hoy = moment();
+        let diasMaximos = 30;
+
+        if (this.venta.cliente?.clasificacion) {
+          switch (this.venta.cliente.clasificacion.toUpperCase()) {
+            case 'A':
+              diasMaximos = 90;
+              break;
+            case 'B':
+              diasMaximos = 60;
+              break;
+            case 'C':
+              diasMaximos = 30;
+              break;
+          }
+        }
+
+        // Establecer la fecha máxima permitida
+        this.venta.fecha_pago = hoy.add(diasMaximos, 'days').format('YYYY-MM-DD');
+      }
+    }
+  }
+
+  public setConsigna() {
+    if (this.venta.consigna) {
+      if (!this.venta.id_cliente) {
+        this.alertService.warning('Consigna', 'Seleccione un cliente para ventas por consigna.');
+        this.venta.consigna = false;
+        return;
+      }
+      if (this.venta.detalles?.length) {
+        this.venta.detalles = [];
+        this.alertService.warning(
+          'Consigna',
+          'Se vació el detalle. Toda la factura quedará en consigna; no puede mezclar líneas de venta normal y consigna.'
+        );
         this.sumTotal();
+      }
+      this.venta.estado = 'Consigna';
+      this.venta.credito = true;
+      this.venta.condicion = 'Crédito';
+      this.aplicarFiltroDocumentosVenta();
+    } else {
+      if (this.venta.detalles?.length) {
+        this.venta.detalles = [];
+        this.sumTotal();
+      }
+      this.setCredito();
+      this.aplicarFiltroDocumentosVenta();
+    }
+  }
+
+  public updateVenta(venta: any) {
+    this.venta = venta;
+    sincronizarFlagConsignaVenta(this.venta);
+    this.sumTotal();
+  }
+
+  public cambioMetodoDePago() {
+    if (this.venta.forma_pago != 'Multiple') {
+      this.venta.metodos_de_pago = [];
+      this.venta.efectivo = this.venta.total;
+      this.formaPagos.forEach((item: any) => {
+        item.total = null;
+      });
     }
 
-    public cambioMetodoDePago() {
-        if (this.venta.forma_pago != 'Multiple') {
-            this.venta.metodos_de_pago = [];
-            this.venta.efectivo = this.venta.total;
-            this.formaPagos.forEach((item: any) => {
-                item.total = null;
-            });
+    // Si módulo bancos: asignar banco por defecto del método de pago
+    if (this.apiService.isModuloBancos() && this.venta.forma_pago && this.venta.forma_pago !== 'Efectivo' && this.venta.forma_pago !== 'Wompi' && this.venta.forma_pago !== 'Multiple') {
+      const formaPagoSeleccionada = this.formaPagos.find((fp: any) => fp.nombre === this.venta.forma_pago);
+      if (formaPagoSeleccionada?.banco?.nombre_banco) {
+        this.venta.detalle_banco = formaPagoSeleccionada.banco.nombre_banco;
+      } else {
+        this.venta.detalle_banco = '';
+      }
+    } else if (!this.requiereBanco()) {
+      this.venta.detalle_banco = '';
+      this.mensajeErrorBanco = '';
+    }
+    this.actualizarCambioEfectivo();
+  }
+
+  public setDocumento(id_documento: any) {
+    let documento = this.documentos.find((x: any) => x.id == id_documento);
+    this.venta.nombre_documento = documento.nombre;
+    this.venta.id_documento = documento.id;
+    this.venta.correlativo = documento.correlativo;
+
+    if (this.venta.nombre_documento == 'Factura de exportación') {
+      this.apiService.getAll('recintos').subscribe(
+        (recintos) => {
+          this.recintos = recintos;
+        },
+        (error) => {
+          this.alertService.error(error);
         }
-
-        // Si módulo bancos: asignar banco por defecto del método de pago
-        if (this.apiService.isModuloBancos() && this.venta.forma_pago && this.venta.forma_pago !== 'Efectivo' && this.venta.forma_pago !== 'Wompi' && this.venta.forma_pago !== 'Multiple') {
-            const formaPagoSeleccionada = this.formaPagos.find((fp: any) => fp.nombre === this.venta.forma_pago);
-            if (formaPagoSeleccionada?.banco?.nombre_banco) {
-                this.venta.detalle_banco = formaPagoSeleccionada.banco.nombre_banco;
-            } else {
-                this.venta.detalle_banco = '';
-            }
-        } else if (!this.requiereBanco()) {
-            this.venta.detalle_banco = '';
-            this.mensajeErrorBanco = '';
+      );
+      this.apiService.getAll('regimenes').subscribe(
+        (regimenes) => {
+          this.regimenes = regimenes;
+        },
+        (error) => {
+          this.alertService.error(error);
         }
-        this.actualizarCambioEfectivo();
-    }
-
-    public setDocumento(id_documento: any) {
-        let documento = this.documentos.find((x: any) => x.id == id_documento);
-        this.venta.nombre_documento = documento.nombre;
-        this.venta.id_documento = documento.id;
-        this.venta.correlativo = documento.correlativo;
-
-        if (this.venta.nombre_documento == 'Factura de exportación') {
-            this.apiService.getAll('recintos').subscribe(
-                (recintos) => {
-                    this.recintos = recintos;
-                },
-                (error) => {
-                    this.alertService.error(error);
-                }
-            );
-            this.apiService.getAll('regimenes').subscribe(
-                (regimenes) => {
-                    this.regimenes = regimenes;
-                },
-                (error) => {
-                    this.alertService.error(error);
-                }
-            );
-            this.apiService.getAll('incoterms').subscribe(
-                (incoterms) => {
-                    this.incoterms = incoterms;
-                },
-                (error) => {
-                    this.alertService.error(error);
-                }
-            );
+      );
+      this.apiService.getAll('incoterms').subscribe(
+        (incoterms) => {
+          this.incoterms = incoterms;
+        },
+        (error) => {
+          this.alertService.error(error);
         }
-        if (this.venta.nombre_documento == 'Factura comercial') {
-            this.venta.cobrar_impuestos = false;
-            this.sumTotal();
-        }else{
-            this.venta.cobrar_impuestos = true;
-            this.sumTotal();
-        }
+      );
     }
+    if (this.venta.nombre_documento == 'Factura comercial') {
+      this.venta.cobrar_impuestos = false;
+      this.sumTotal();
+    } else {
+      this.venta.cobrar_impuestos = true;
+      this.sumTotal();
+    }
+  }
 
-    setIncoterm() {
-        this.venta.incoterm = this.incoterms.find(
-            (item: any) => item.cod == this.venta.cod_incoterm
-        ).nombre;
-    }
+  setIncoterm() {
+    this.venta.incoterm = this.incoterms.find(
+      (item: any) => item.cod == this.venta.cod_incoterm
+    ).nombre;
+  }
 
-    // Facturar
-    public openModalFacturar(template: TemplateRef<any>) {
-        this.modalRef = this.modalService.show(template, {
-            class: 'modal-md',
-            backdrop: 'static',
-        });
-    }
+  // Facturar
+  public openModalFacturar(template: TemplateRef<any>) {
+    this.modalRef = this.modalService.show(template, {
+      class: 'modal-md',
+      backdrop: 'static',
+    });
+  }
 
   public onFacturar() {
     // Validar que si el método de pago requiere banco, este esté seleccionado
@@ -1537,7 +1492,7 @@ export class FacturacionV2Component implements OnInit {
     if (
       confirm(
         '¿Confirma procesar la ' +
-          (this.venta.cotizacion == 1 ? ' cotización.' : 'venta.')
+        (this.venta.cotizacion == 1 ? ' cotización.' : 'venta.')
       )
     ) {
       if (!this.venta.recibido) this.venta.recibido = this.venta.total;
@@ -1652,7 +1607,7 @@ export class FacturacionV2Component implements OnInit {
     if (data.cliente_id) {
       this.apiService.read('cliente/', data.cliente_id as number).subscribe({
         next: (c) => this.setCliente(c),
-        error: () => {},
+        error: () => { },
       });
     }
 
@@ -1693,9 +1648,9 @@ export class FacturacionV2Component implements OnInit {
    */
   public requiereBanco(): boolean {
     return this.venta.forma_pago &&
-           this.venta.forma_pago !== 'Efectivo' &&
-           this.venta.forma_pago !== 'Wompi' &&
-           this.venta.forma_pago !== 'Multiple';
+      this.venta.forma_pago !== 'Efectivo' &&
+      this.venta.forma_pago !== 'Wompi' &&
+      this.venta.forma_pago !== 'Multiple';
   }
 
   // Guardar venta
@@ -1741,7 +1696,7 @@ export class FacturacionV2Component implements OnInit {
               (venta) => {
                 venta.estado = 'Facturada';
                 this.apiService.store('venta', venta).subscribe(
-                  (venta) => {},
+                  (venta) => { },
                   (error) => {
                     this.alertService.error(error);
                     this.saving = false;
@@ -1762,15 +1717,7 @@ export class FacturacionV2Component implements OnInit {
           if (this.apiService.auth_user().empresa.facturacion_electronica) {
             this.emitirDTE();
           } else {
-            window.open(
-              this.apiService.baseUrl +
-                '/api/reporte/facturacion/' +
-                venta.id +
-                '?token=' +
-                this.apiService.auth_token(),
-              'Impresión',
-              'width=400'
-            );
+            this.imprimir(venta);
             if (this.preCuentaId && this.venta.id) {
               this.navegarPostFacturaPreCuenta(this.venta.id);
             } else if (this.pedidoCanalId && this.venta.id) {
@@ -1839,6 +1786,10 @@ export class FacturacionV2Component implements OnInit {
 
   // DTE
 
+  public imprimir(venta: any) {
+    this.apiService.imprimirFactura(venta.id, 'Impresión', 'width=400');
+  }
+
   emitirDTE() {
     this.emiting = true;
     this.mhService
@@ -1849,20 +1800,12 @@ export class FacturacionV2Component implements OnInit {
           'DTE emitido.',
           'El documento ha sido emitido.'
         );
-        if(this.venta.id_cliente){
-            this.enviarDTE();
+        if (this.venta.id_cliente) {
+          this.enviarDTE();
         }
         this.emiting = false;
 
-        window.open(
-          this.apiService.baseUrl +
-            '/api/reporte/facturacion/' +
-            venta.id +
-            '?token=' +
-            this.apiService.auth_token(),
-          'Impresión',
-          'width=400'
-        );
+        this.imprimir(venta);
         if (this.preCuentaId && this.venta.id) {
           this.navegarPostFacturaPreCuenta(this.venta.id);
         } else if (this.pedidoCanalId && this.venta.id) {
@@ -1898,11 +1841,11 @@ export class FacturacionV2Component implements OnInit {
   public setBodega() {
 
     let bodegaSeleccionada = this.bodegas.find((b: any) => b.id == this.venta.id_bodega);
-   // console.log("bodega", bodegaSeleccionada);
+    // console.log("bodega", bodegaSeleccionada);
     this.venta.id_sucursal = bodegaSeleccionada.id_sucursal;
 
     if (bodegaSeleccionada) {
-     // console.log("bodegaSeleccionada", bodegaSeleccionada);
+      // console.log("bodegaSeleccionada", bodegaSeleccionada);
       this.venta.id_sucursal = bodegaSeleccionada.id_sucursal;
 
       this.apiService.getAll('documentos/list').subscribe(
@@ -2007,21 +1950,21 @@ export class FacturacionV2Component implements OnInit {
 
   public verificarAccesoPropina() {
     this.funcionalidadesService.verificarAcceso('cobro-propina').subscribe(
-        (acceso) => {
-            this.tieneAccesoPropina = acceso;
-        },
-        (error) => {
-            console.error('Error al verificar acceso a propina:', error);
-            this.tieneAccesoPropina = false;
-        }
+      (acceso) => {
+        this.tieneAccesoPropina = acceso;
+      },
+      (error) => {
+        console.error('Error al verificar acceso a propina:', error);
+        this.tieneAccesoPropina = false;
+      }
     );
-}
+  }
 
-public getTotalConPropina(): number {
+  public getTotalConPropina(): number {
     const total = parseFloat(this.venta?.total || 0);
     const propina = parseFloat(this.venta?.propina || 0);
     return total + propina;
-}
+  }
 
   // ==================== FIDELIZACIÓN - PUNTOS ====================
 
@@ -2224,9 +2167,7 @@ public getTotalConPropina(): number {
 
   private verificarFidelizacionHabilitada(): void {
     this.funcionalidadesService.verificarAcceso('fidelizacion-clientes').subscribe({
-      next: (tieneAcceso: boolean) => {
-        this.tieneFidelizacionHabilitada = tieneAcceso && this.apiService.isFidelizacionCompleta();
-      },
+      next: (tieneAcceso: boolean) => { this.tieneFidelizacionHabilitada = tieneAcceso; },
       error: () => { this.tieneFidelizacionHabilitada = false; }
     });
   }

@@ -30,39 +30,55 @@ class ProductoObserver
     {
         // No sincronizar si el producto está deshabilitado
         if (!$producto->enable) {
-            // Log::info("Producto deshabilitado, no se sincronizará", [
-            //     'producto_id' => $producto->id
-            // ]);
             return;
         }
 
-        $empresa = Empresa::where('id', $producto->id_empresa)
-            ->whereNotNull('woocommerce_api_key')
-            ->whereNotNull('woocommerce_store_url')
-            ->whereNotNull('woocommerce_consumer_key')
-            ->whereNotNull('woocommerce_consumer_secret')
-            ->where('woocommerce_status', 'connected')
-            ->first();
-
-        if (!$empresa) {
+        if (!$producto->wasChanged(['precio', 'precio_sin_iva', 'precio_con_iva', 'costo', 'costo_promedio', 'nombre', 'descripcion', 'codigo'])) {
             return;
         }
-        $usuario = User::where('id_empresa', $empresa->id)
-            ->where('woocommerce_status', 'connected')
-            ->first();
 
-        if (!$usuario) {
+        $empresaBase = Empresa::where('id', $producto->id_empresa)->first();
+
+        if (!$empresaBase) {
             return;
         }
+
+        if (empty($empresaBase->woocommerce_status) ||
+            $empresaBase->woocommerce_status === 'disconnected' ||
+            $empresaBase->woocommerce_status === 'disabled') {
+            return;
+        }
+
         try {
+            $empresa = Empresa::where('id', $producto->id_empresa)
+                ->whereNotNull('woocommerce_api_key')
+                ->whereNotNull('woocommerce_store_url')
+                ->whereNotNull('woocommerce_consumer_key')
+                ->whereNotNull('woocommerce_consumer_secret')
+                ->where('woocommerce_status', 'connected')
+                ->first();
+
+            if (!$empresa) {
+                return;
+            }
+
+            $usuario = User::where('id_empresa', $empresa->id)
+                ->where('woocommerce_status', 'connected')
+                ->first();
+
+            if (!$usuario) {
+                return;
+            }
+
             $this->stockService->actualizarStockEnWooCommerce(
                 $producto->id,
-                $usuario->id
+                $usuario->id,
+                $this->collectChangedSyncFields($producto)
             );
-        } catch (\Exception $e) {
-            Log::error("Error al sincronizar producto para usuario: " . $e->getMessage(), [
-                'usuario_id' => $usuario->id,
-                'producto_id' => $producto->id
+        } catch (\Throwable $e) {
+            Log::error("Error al sincronizar producto con WooCommerce: " . $e->getMessage(), [
+                'producto_id' => $producto->id,
+                'empresa_id' => $producto->id_empresa,
             ]);
         }
     }
@@ -71,47 +87,64 @@ class ProductoObserver
 
     public function created(Producto $producto)
     {
-        $empresa = Empresa::where('id', $producto->id_empresa)->first();
+        $empresaBase = Empresa::where('id', $producto->id_empresa)->first();
 
-        if (!$empresa) {
-            return;
-        }
-        $usuarios = User::where('id_empresa', $empresa->id)
-            ->whereNotNull('woocommerce_api_key')
-            ->whereNotNull('woocommerce_store_url')
-            ->whereNotNull('woocommerce_consumer_key')
-            ->whereNotNull('woocommerce_consumer_secret')
-            ->get();
-
-        if ($usuarios->isEmpty()) {
-            // Log::info("No se encontraron usuarios con integración WooCommerce para este producto", [
-            //     'producto_id' => $producto->id,
-            //     'sucursal_id' => $producto->id_sucursal
-            // ]);
+        if (!$empresaBase) {
             return;
         }
 
+        if (empty($empresaBase->woocommerce_status) ||
+            $empresaBase->woocommerce_status === 'disconnected' ||
+            $empresaBase->woocommerce_status === 'disabled') {
+            return;
+        }
 
-        foreach ($usuarios as $usuario) {
-            try {
-                // Si existe este servicio, si no debes crearlo
-                $this->stockService->actualizarStockEnWooCommerce(
-                    $producto->id,
-                    $usuario->id
-                );
-            } catch (\Exception $e) {
-                Log::channel('shopify')->error("Error al sincronizar producto para usuario: " . $e->getMessage(), [
-                    'usuario_id' => $usuario->id,
-                    'producto_id' => $producto->id
-                ]);
+        try {
+            $empresa = Empresa::where('id', $producto->id_empresa)
+                ->whereNotNull('woocommerce_api_key')
+                ->whereNotNull('woocommerce_store_url')
+                ->whereNotNull('woocommerce_consumer_key')
+                ->whereNotNull('woocommerce_consumer_secret')
+                ->where('woocommerce_status', 'connected')
+                ->first();
+
+            if (!$empresa) {
+                return;
+            }
+
+            $usuario = User::where('id_empresa', $empresa->id)
+                ->where('woocommerce_status', 'connected')
+                ->first();
+
+            if (!$usuario) {
+                return;
+            }
+
+            $this->stockService->actualizarStockEnWooCommerce(
+                $producto->id,
+                $usuario->id
+            );
+        } catch (\Throwable $e) {
+            Log::error("Error al sincronizar producto nuevo con WooCommerce: " . $e->getMessage(), [
+                'producto_id' => $producto->id,
+                'empresa_id' => $producto->id_empresa,
+            ]);
+        }
+    }
+
+    /**
+     * @return string[]
+     */
+    private function collectChangedSyncFields(Producto $producto): array
+    {
+        $fields = [];
+
+        foreach (['precio', 'precio_sin_iva', 'precio_con_iva', 'costo', 'costo_promedio', 'nombre', 'descripcion', 'codigo'] as $field) {
+            if ($producto->wasChanged($field)) {
+                $fields[] = $field;
             }
         }
 
-
-        // Log::channel('shopify')->info("Usuarios encontrados", [
-        //     'usuarios' => $usuarios
-        // ]);
-
-        return;
+        return $fields;
     }
 }
