@@ -103,6 +103,14 @@ class UsuariosController extends Controller
 
     public function store(StoreUsuarioRequest $request)
     {
+        if ($request->isEnableOnlyUpdate()) {
+            $usuario = Usuario::findOrFail($request->id);
+            $usuario->enable = $request->enable;
+            $usuario->save();
+            $usuario->load('roles');
+
+            return Response()->json($usuario, 200);
+        }
 
         if($request->id)
             $usuario = Usuario::findOrFail($request->id);
@@ -136,8 +144,15 @@ class UsuariosController extends Controller
         }
 
         $usuario->save();
-        
-        $usuario->roles()->sync([$request->rol_id]);
+
+        if ($request->filled('rol_id')) {
+            $rolActual = optional($usuario->roles()->first())->id;
+            if ((int) $rolActual !== (int) $request->rol_id) {
+                $usuario->roles()->sync([(int) $request->rol_id]);
+            }
+        }
+
+        $usuario->load('roles');
 
         return Response()->json($usuario, 200);
     }

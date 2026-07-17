@@ -245,7 +245,7 @@ export class AdminUsuariosComponent extends BaseCrudComponent<any> implements On
     }
 
     public setEstado(usuario:any){
-        this.apiService.store('admin-usuario', usuario)
+        this.apiService.store('admin-usuario', { id: usuario.id, enable: usuario.enable })
             .pipe(this.untilDestroyed())
             .subscribe({
                 next: (usuario) => {

@@ -235,7 +235,11 @@ export class UsuariosComponent extends BaseCrudComponent<any> implements OnInit 
 
   public async setEstado(usuario: any) {
     try {
-      const usuarioActualizado = await this.apiService.store('usuario', usuario)
+      // Solo id+enable: evita reenviar rol_id/roles y pisar el pivot Spatie
+      const usuarioActualizado = await this.apiService.store('usuario', {
+        id: usuario.id,
+        enable: usuario.enable,
+      })
         .pipe(this.untilDestroyed())
         .toPromise();
 

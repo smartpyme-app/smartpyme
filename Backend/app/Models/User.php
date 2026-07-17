@@ -190,7 +190,7 @@ class User extends Authenticatable implements JWTSubject
     }
 
     public function getRolIdAttribute(){
-        return $this->roles->first()->id;
+        return optional($this->roles->first())->id;
     }
 
     public function authorizationTypes()

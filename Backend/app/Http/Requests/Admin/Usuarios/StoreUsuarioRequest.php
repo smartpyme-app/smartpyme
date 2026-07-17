@@ -17,10 +17,31 @@ class StoreUsuarioRequest extends FormRequest
     }
 
     /**
+     * Toggle enable sin el resto del formulario (activar/desactivar en lista).
+     */
+    public function isEnableOnlyUpdate(): bool
+    {
+        if (!$this->filled('id') || !$this->exists('enable')) {
+            return false;
+        }
+
+        $extra = collect($this->keys())->diff(['id', 'enable', '_token', '_method']);
+
+        return $extra->isEmpty();
+    }
+
+    /**
      * Get the validation rules that apply to the request.
      */
     public function rules(): array
     {
+        if ($this->isEnableOnlyUpdate()) {
+            return [
+                'id' => 'required|integer|exists:users,id',
+                'enable' => 'required',
+            ];
+        }
+
         $id = $this->input('id');
         $isUpdate = !empty($id);
         

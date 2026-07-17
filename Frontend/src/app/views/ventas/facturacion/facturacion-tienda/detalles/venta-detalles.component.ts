@@ -12,6 +12,8 @@ import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
+import { BsModalRef, BsModalService } from 'ngx-bootstrap/modal';
+
 import {
     limpiarExentaPorSinIvaSiTipoManual,
     porcentajeIvaDetalle,
@@ -80,6 +82,7 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
   @Output() update = new EventEmitter();
   @Output() sumTotal = new EventEmitter();
   @Output() alMenosUnPaqueteConCuentaTerceros = new EventEmitter<void>();
+  override modalRef!: BsModalRef;
   public zoomImageUrl: string = '';
 
     @ViewChild('msupervisor')

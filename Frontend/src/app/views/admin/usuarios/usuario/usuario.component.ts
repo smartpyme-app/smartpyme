@@ -210,8 +210,13 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
       .subscribe(
       (usuario) => {
         this.usuario = usuario;
-        this.usuario.rol_id = usuario.roles[0].id;
-        this.rol = usuario.roles[0];
+        if (usuario.roles?.length > 0) {
+          this.usuario.rol_id = usuario.roles[0].id;
+          this.rol = usuario.roles[0];
+        } else {
+          this.usuario.rol_id = null;
+          this.rol = {};
+        }
         this.rol.name = this.rol.name
           .split('_')
           .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
@@ -273,7 +278,18 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
     formData.append('id_sucursal', this.usuario.id_sucursal);
     formData.append('id_bodega', this.usuario.id_bodega);
 
+    // No reenviar relaciones/objetos que no deben escribirse (roles, pending_changes, etc.)
+    const skipKeys = new Set([
+      'roles', 'permissions', 'empresa', 'sucursal', 'bodega', 'pending_changes',
+      'authorization', 'authorizationTypes', 'accesos', 'suscripciones', 'ordenesPago',
+      'metodoPago', 'whatsappSession', 'whatsappMessages', 'encrypted_id', 'rol', 'rol_name',
+    ]);
+
     for (var key in this.usuario) {
+      if (skipKeys.has(key)) {
+        continue;
+      }
+
       if (key == 'activo' || key == 'empleado') {
         this.usuario[key] = this.usuario[key] ? 1 : 0;
       }
@@ -284,8 +300,8 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
       if (value === null || value === undefined) {
         formData.append(key, '');
       } else if (typeof value === 'object') {
-        // Para objetos (como roles), serializar a JSON string
-        formData.append(key, JSON.stringify(value));
+        // Saltar objetos no escalares restantes
+        continue;
       } else {
         formData.append(key, value.toString());
       }
