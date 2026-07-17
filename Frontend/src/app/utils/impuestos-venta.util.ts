@@ -476,6 +476,63 @@ export interface OpcionesTotalEncabezadoVenta {
   ivaRetenido?: number;
   rentaRetenida?: number;
   descuentoPuntos?: number;
+  /** Si true y venta.impuestos está vacío, usa IVA residual de líneas (v2 / pedido). */
+  cobrarImpuestos?: boolean;
+}
+
+/**
+ * Descuento en facturación v2: se calcula sobre el precio con IVA (campo de texto)
+ * y se convierte a base sin IVA para gravada/DTE.
+ */
+export function calcularDescuentoDesdePrecioConIva(options: {
+  cantidad: number;
+  precioConIva: number;
+  pctIva: number;
+  descuentoPorcentaje?: number;
+  descuentoMontoConIva?: number;
+}): { descuentoSinIva: number; descuentoConIva: number } {
+  const cantidad = Number(options.cantidad) || 0;
+  const precioConIva = Number(options.precioConIva) || 0;
+  const pctIva = Number(options.pctIva) || 0;
+  const pctDesc = Number(options.descuentoPorcentaje) || 0;
+  const montoDesc = Number(options.descuentoMontoConIva) || 0;
+
+  let descuentoConIva = 0;
+  if (pctDesc) {
+    descuentoConIva = cantidad * precioConIva * (pctDesc / 100);
+  } else if (montoDesc) {
+    descuentoConIva = cantidad * montoDesc;
+  }
+
+  const factor = pctIva > 0 ? 1 + pctIva / 100 : 1;
+  const descuentoSinIva = pctIva > 0 ? descuentoConIva / factor : descuentoConIva;
+
+  return {
+    descuentoConIva: Number(descuentoConIva.toFixed(4)),
+    descuentoSinIva: Number(descuentoSinIva.toFixed(4)),
+  };
+}
+
+/**
+ * Suma descuentos en términos con IVA (lo que el usuario ve en el campo Precio / $ descuento).
+ * Preferir detalle.descuento_con_iva; si falta, reconstruir desde descuento sin IVA × factor.
+ */
+export function sumarDescuentoConIvaEncabezadoVenta(
+  detalles: any[],
+  empresaIva: number,
+  cobrarImpuestos: boolean
+): number {
+  const suma = (detalles || []).reduce((acc, d) => {
+    const conIva = parseFloat(String(d?.descuento_con_iva ?? ''));
+    if (Number.isFinite(conIva)) {
+      return acc + conIva;
+    }
+    const desc = parseFloat(String(d?.descuento ?? 0)) || 0;
+    const pct = porcentajeIvaDetalle(d, empresaIva, cobrarImpuestos);
+    const factor = pct > 0 ? 1 + pct / 100 : 1;
+    return acc + desc * factor;
+  }, 0);
+  return redondearMoneda(suma);
 }
 
 /**
@@ -488,7 +545,14 @@ export function sumarTotalEncabezadoVenta(
   options: OpcionesTotalEncabezadoVenta
 ): number {
   const subtotal = sumarSubTotalEncabezadoVenta(detalles);
-  const iva = montoIvaDeVentaImpuestos(ventaImpuestos, options.empresaIva);
+  let iva = montoIvaDeVentaImpuestos(ventaImpuestos, options.empresaIva);
+  // Pedido / race: impuestos aún no cargados → no perder el IVA de las líneas.
+  if (
+    options.cobrarImpuestos &&
+    (!ventaImpuestos || ventaImpuestos.length === 0)
+  ) {
+    iva = calcularIvaResidualEncabezadoVenta(detalles);
+  }
   const especiales = montoEspecialesDeVentaImpuestos(
     ventaImpuestos,
     options.empresaIva

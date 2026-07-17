@@ -140,7 +140,7 @@
                 <p>{{ proyecto.nombre }}</p>
             </div>
             <div class="form-group col-lg-4">
-                <label class="fw-medium">Número de222 orden</label>
+                <label class="fw-medium">Número de orden</label>
                 <p>{{ venta.num_orden }}</p>
             </div>
             <div class="form-group col-lg-4" *ngIf="venta.referencia_shopify">
@@ -239,32 +239,25 @@
                             </div>
                         </td>
                         <td>{{ detalle.cantidad }}</td>
-                        <td>{{ (apiService.auth_user().empresa?.currency?.currency_symbol || '$') }}{{ detalle.precio |
-                            number:'1.0-6':'en-US' }}</td>
-                        <td>{{ (apiService.auth_user().empresa?.currency?.currency_symbol || '$') }}{{ detalle.descuento
-                            | number:'1.0-6':'en-US' }}</td>
+                        <td>{{ (apiService.auth_user().empresa?.currency?.currency_symbol || '$') }}{{ precioDetalleConIva(detalle) |
+                            number:'1.2-2':'en-US' }}</td>
+                        <td>{{ (apiService.auth_user().empresa?.currency?.currency_symbol || '$') }}{{ descuentoDetalleConIva(detalle)
+                            | number:'1.2-2':'en-US' }}</td>
                         <td>{{ (detalle.tipo_gravado || 'gravada') === 'gravada' ? 'Gravada' : ((detalle.tipo_gravado ||
                             '') === 'exenta' ? 'Exenta' : 'No sujeta') }}</td>
                         <td class="text-end">{{ (apiService.auth_user().empresa?.currency?.currency_symbol || '$') }}{{
-                            detalle.total | number:'1.0-6':'en-US' }}</td>
+                            totalDetalleConIva(detalle) | number:'1.2-2':'en-US' }}</td>
                     </tr>
                     <tr>
                         <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end">
                             <b>Sub Total:</b>
                         </td>
-                        <td class="text-end"><b>{{ venta?.referencia_shopify ? venta?.gravada : (venta?.sub_total +
-                                venta?.descuento) | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-end"><b>{{ subTotalFacturacion() | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
                     <tr *ngIf="venta.referencia_shopify">
                         <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)"
                             class="text-end text-info"><b>Impuestos incluidos:</b></td>
                         <td class="text-end text-info"><b>{{ venta?.iva | currency:'USD':'symbol':'1.2' }}</b></td>
-                    </tr>
-                    <tr>
-                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end">
-                            <b>Descuento:</b>
-                        </td>
-                        <td class="text-end"><b>{{ venta?.descuento | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
                     <tr *ngFor="let impuesto of venta?.impuestos">
                         <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end">{{
