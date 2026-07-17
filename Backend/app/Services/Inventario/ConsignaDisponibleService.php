@@ -180,7 +180,15 @@ class ConsignaDisponibleService
 
     private function sumLiquidadoComprasConsigna(int $idProducto, int $idBodega): float
     {
-        return 0.0;
+        return (float) DetalleCompra::query()
+            ->where('id_producto', $idProducto)
+            ->whereHas('compra', function ($query) use ($idBodega) {
+                $query->where('es_consigna', true)
+                    ->where('estado', 'Pagada')
+                    ->where('id_bodega', $idBodega)
+                    ->where('cotizacion', 0);
+            })
+            ->sum('cantidad');
     }
 
     private function sumEntradaComprasConsigna(int $idProducto, int $idBodega): float

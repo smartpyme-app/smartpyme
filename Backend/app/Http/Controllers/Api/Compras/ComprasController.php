@@ -329,6 +329,9 @@ class ComprasController extends Controller
             $compra->fill($request->except(['detalles', 'dte', 'impuestos']));
             $this->aplicarReglasCompraSinIvaFiscal($compra);
             $this->aplicarIdentificadoresDteImportado($compra, $request);
+            if ($compra->estado === 'Consigna') {
+                $compra->es_consigna = true;
+            }
             $compra->save();
 
             if ($request->has('impuestos')) {
@@ -641,6 +644,7 @@ class ComprasController extends Controller
                 $consigna = $compra->replicate();
                 $consigna->tipo_documento = $tipoDocumentoConsignaOriginal;
                 $consigna->referencia = $referenciaConsignaOriginal;
+                $consigna->es_consigna = true;
                 $consigna->estado = 'Consigna';
                 $consigna->sub_total = $compra->sub_total - $request->sub_total;
                 $consigna->total = $compra->total - $request->total;
@@ -690,6 +694,7 @@ class ComprasController extends Controller
             $compra->descuento = $request->descuento ?? $compra->descuento;
             $this->aplicarReglasCompraSinIvaFiscal($compra);
             $compra->fecha = $request->fecha;
+            $compra->es_consigna = true;
             $compra->estado = 'Pagada';
             $compra->save();
 
