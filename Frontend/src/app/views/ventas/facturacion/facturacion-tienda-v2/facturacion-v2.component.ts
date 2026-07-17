@@ -17,8 +17,10 @@ import {
   esImpuestoIva,
   hidratarImpuestosProductosEnDetalles,
   normalizarPorcentajeImpuestoDetalle,
+  redondearMoneda,
   resolverPorcentajeImpuestoVenta,
   sincronizarTipoGravadoPorCobroIva,
+  sumarDescuentoConIvaEncabezadoVenta,
   sumarSubTotalEncabezadoVenta,
   sumarTotalEncabezadoVenta,
 } from '@utils/impuestos-venta.util';
@@ -214,7 +216,7 @@ export class FacturacionV2Component implements OnInit {
         this.impuestos = impuestos.filter((impuesto: any) => impuesto.aplica_ventas !== false && impuesto.aplica_ventas !== 0);
         // Al editar cotización/venta no sobrescribir impuestos para no volver a agregarlos
         const esEdicion = !!this.route.snapshot.paramMap.get('id');
-        if (!esEdicion && (!this.venta.impuestos || this.venta.iva == 0)) {
+        if (!esEdicion && (!Array.isArray(this.venta.impuestos) || this.venta.impuestos.length === 0)) {
           this.venta.impuestos = this.impuestos;
           this.sumTotal();
         }
@@ -537,10 +539,10 @@ export class FacturacionV2Component implements OnInit {
                 if (!detalle.precio_iva || detalle.precio_iva === null || detalle.precio_iva === undefined) {
                   if (porcentajeIvaTotal > 0) {
                     // El precio actual es sin IVA, calcular precio con IVA
-                    detalle.precio_iva = (parseFloat(detalle.precio || 0) * (1 + porcentajeIvaTotal / 100)).toFixed(4);
+                    detalle.precio_iva = redondearMoneda(parseFloat(detalle.precio || 0) * (1 + porcentajeIvaTotal / 100)).toFixed(2);
                   } else {
                     // Sin IVA, precio_iva es igual a precio
-                    detalle.precio_iva = parseFloat(detalle.precio || 0).toFixed(4);
+                    detalle.precio_iva = redondearMoneda(parseFloat(detalle.precio || 0)).toFixed(2);
                   }
                 } else {
                   // Si ya tiene precio_iva, verificar que precio (sin IVA) esté correcto
@@ -552,8 +554,8 @@ export class FacturacionV2Component implements OnInit {
                   }
                 }
 
-                // Asegurar que precio_iva esté como número
-                detalle.precio_iva = parseFloat(detalle.precio_iva).toFixed(6);
+                // Asegurar que precio_iva esté a 2 decimales
+                detalle.precio_iva = redondearMoneda(parseFloat(detalle.precio_iva)).toFixed(2);
 
                 const tipo = (detalle.tipo_gravado && String(detalle.tipo_gravado).toLowerCase()) || 'gravada';
                 detalle.tipo_gravado = ['gravada', 'exenta', 'no_sujeta'].includes(tipo) ? tipo : 'gravada';
@@ -651,7 +653,7 @@ export class FacturacionV2Component implements OnInit {
 
           const precioSinIva = parseFloat(producto.precio);
           const precioConIva = precioSinIva * (1 + pctImpuesto / 100);
-          detalle.precio_iva = precioConIva.toFixed(4);
+          detalle.precio_iva = redondearMoneda(precioConIva).toFixed(2);
           detalle.precio = precioSinIva.toFixed(4);
 
           detalle.precios = producto.precios
@@ -872,8 +874,8 @@ export class FacturacionV2Component implements OnInit {
     if (detalle.precio_iva == null || detalle.precio_iva === '') {
       detalle.precio_iva =
         pctDetalle > 0
-          ? (precioSinIva * (1 + pctDetalle / 100)).toFixed(4)
-          : precioSinIva.toFixed(4);
+          ? redondearMoneda(precioSinIva * (1 + pctDetalle / 100)).toFixed(2)
+          : redondearMoneda(precioSinIva).toFixed(2);
     }
 
     calcularMontosLineaDetalle(
@@ -934,7 +936,9 @@ export class FacturacionV2Component implements OnInit {
         : parseFloat(String(mejor.precio));
     if (!Number.isFinite(sinSel)) return;
     detalle.precio = sinSel.toFixed(4);
-    detalle.precio_iva = pct > 0 ? (sinSel * (1 + pct / 100)).toFixed(4) : sinSel.toFixed(4);
+    detalle.precio_iva = pct > 0
+      ? redondearMoneda(sinSel * (1 + pct / 100)).toFixed(2)
+      : redondearMoneda(sinSel).toFixed(2);
   }
 
   /** Stock desde producto ya cargado por bodega (misma regla que el buscador v2). */
@@ -1026,8 +1030,31 @@ export class FacturacionV2Component implements OnInit {
     );
     this.venta.iva = ivaEncabezado.toFixed(4);
 
+    // Si el catálogo llegó tarde (pedido/pre-cuenta), asignar impuestos y recalcular montos.
+    if (
+      this.venta.cobrar_impuestos &&
+      (!Array.isArray(this.venta.impuestos) || this.venta.impuestos.length === 0) &&
+      Array.isArray(this.impuestos) &&
+      this.impuestos.length > 0
+    ) {
+      this.venta.impuestos = this.impuestos;
+      const ivaRecalc = acumularImpuestosVentaConCierreResidual(
+        this.venta.impuestos,
+        this.venta.detalles,
+        true,
+        empresaIva
+      );
+      this.venta.iva = ivaRecalc.toFixed(4);
+    }
+
     const rawDescuento = parseFloat(this.sumPipe.transform(this.venta.detalles, 'descuento'));
     this.venta.descuento = Number(rawDescuento).toFixed(4);
+    // Mostrar descuento en términos del precio con IVA (campo Precio / $ descuento).
+    this.venta.descuento_con_iva = sumarDescuentoConIvaEncabezadoVenta(
+      this.venta.detalles,
+      empresaIva,
+      !!this.venta.cobrar_impuestos
+    ).toFixed(4);
     const rawTotalCosto = parseFloat(this.sumPipe.transform(this.venta.detalles, 'total_costo'));
     this.venta.total_costo = Number(rawTotalCosto).toFixed(4);
 
@@ -1037,6 +1064,7 @@ export class FacturacionV2Component implements OnInit {
       this.venta.impuestos,
       {
         empresaIva,
+        cobrarImpuestos: !!this.venta.cobrar_impuestos,
         cuentaTerceros: parseFloat(this.venta.cuenta_a_terceros),
         ivaPercibido: parseFloat(String(this.venta.iva_percibido)),
         ivaRetenido: parseFloat(String(this.venta.iva_retenido)),
@@ -1527,6 +1555,13 @@ export class FacturacionV2Component implements OnInit {
     const detalles = data.detalles || [];
     if (detalles.length) {
       this.venta.detalles = this.mapearDetallesConsumoExterno(detalles);
+      if (
+        (!Array.isArray(this.venta.impuestos) || this.venta.impuestos.length === 0) &&
+        Array.isArray(this.impuestos) &&
+        this.impuestos.length > 0
+      ) {
+        this.venta.impuestos = this.impuestos;
+      }
       this.sumTotal();
     }
 
@@ -1832,7 +1867,7 @@ export class FacturacionV2Component implements OnInit {
         id_producto: d.id_producto,
         cantidad: cant,
         precio: precioSinIva.toFixed(4),
-        precio_iva: precioConIva.toFixed(4),
+        precio_iva: redondearMoneda(precioConIva).toFixed(2),
         descripcion: d.descripcion || '',
         costo: 0,
         descuento: descLine.toFixed(4),

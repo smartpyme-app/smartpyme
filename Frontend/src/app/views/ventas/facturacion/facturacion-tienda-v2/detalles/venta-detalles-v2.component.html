@@ -219,9 +219,13 @@
                         class="form-select" [name]="'precio_tarifa_'+i" *ngIf="detalle?.precios?.length > 1">
                             <option [value]="precio.precio" 
                             *ngFor="let precio of detalle.precios | filter: 'clasificacion':venta.cliente?.clasificacion || null">
-                                {{ (precio.precio_con_iva ?? precio.precio) | currency:'USD':'symbol':'1.0-6'}}
+                                {{ (precio.precio_con_iva ?? precio.precio) | currency:'USD':'symbol':'1.2' }}
                             </option>
                         </select>
+                        <small class="text-muted d-block mt-1" *ngIf="venta.cobrar_impuestos && detalle.precio"
+                            style="font-size: 0.7rem; line-height: 1.2;">
+                            Sin IVA: {{ detalle.precio | currency:'USD':'symbol':'1.2' }}
+                        </small>
                     </td>
                     <td style="width: 100px;" *ngIf="mostrarCuentaTercerosEnLinea">
                         <div class="input-group">
@@ -266,7 +270,7 @@
                         </select>
                     </td>
                     <td style="width: 100px;" class="text-right">
-                        <div>{{ detalle.total | currency:'USD':'symbol':'1.0-6'}}</div>
+                        <div>{{ (detalle.total_iva != null ? detalle.total_iva : detalle.total) | currency:'USD':'symbol':'1.2'}}</div>
                     </td>
                     <td style="width: 50px;" class="text-center">
                         <div class="btn-group">

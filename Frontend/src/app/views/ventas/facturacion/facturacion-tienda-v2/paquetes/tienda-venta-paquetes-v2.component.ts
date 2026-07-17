@@ -4,7 +4,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { SumPipe }     from '@pipes/sum.pipe';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
-import { normalizarPorcentajeImpuestoDetalle } from '@utils/impuestos-venta.util';
+import { normalizarPorcentajeImpuestoDetalle, redondearMoneda } from '@utils/impuestos-venta.util';
 
 @Component({
   selector: 'app-tienda-venta-paquetes-v2',
@@ -134,7 +134,7 @@ export class TiendaVentaPaquetesV2Component implements OnInit {
         const precioSinIva = iva > 0 ? precioConIva / (1 + iva / 100) : precioConIva;
         
         // precio_iva: precio con IVA (para cálculos y visualización)
-        this.detalle.precio_iva     = precioConIva.toFixed(4);
+        this.detalle.precio_iva     = redondearMoneda(precioConIva).toFixed(2);
         // precio: precio sin IVA (para guardar en BD)
         this.detalle.precio         = precioSinIva.toFixed(4);
         
@@ -197,7 +197,7 @@ export class TiendaVentaPaquetesV2Component implements OnInit {
             const precioSinIva = iva > 0 ? precioConIva / (1 + iva / 100) : precioConIva;
             
             // precio_iva: precio con IVA (para cálculos y visualización)
-            this.detalle.precio_iva    = precioConIva.toFixed(4);
+            this.detalle.precio_iva    = redondearMoneda(precioConIva).toFixed(2);
             // precio: precio sin IVA (para guardar en BD)
             this.detalle.precio        = precioSinIva.toFixed(4);
             
