@@ -19,6 +19,7 @@ class Compra extends Model {
         'sello_mh',
         'fecha',
         'estado',
+        'es_consigna',
         'forma_pago',
         'tipo_documento',
         'num_identificacion',
@@ -88,6 +89,7 @@ class Compra extends Model {
     }
 
     protected $casts = [
+        'es_consigna' => 'boolean',
         'dte_migrated_at' => 'datetime',
         'dte_invalidacion_migrated_at' => 'datetime',
     ];
