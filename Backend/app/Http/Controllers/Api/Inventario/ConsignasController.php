@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api\Inventario;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Ventas\Detalle as DetalleVenta;
-use App\Models\Compras\Detalle as DetalleCompra;
+use App\Models\Compras\Compra;
 use Illuminate\Support\Facades\Crypt;
 
 use App\Exports\ConsignasExport;
@@ -159,56 +159,51 @@ class ConsignasController extends Controller
         return Excel::download($consignas, 'consignas.xlsx');
     }
 
-    public function indexCompras() {
+    public function indexCompras()
+    {
+        $compras = Compra::query()
+            ->where('estado', 'Consigna')
+            ->where('cotizacion', 0)
+            ->with([
+                'proveedor',
+                'bodega:id,nombre',
+                'sucursal:id,nombre',
+                'detalles.producto:id,nombre,codigo,img,id_categoria',
+                'detalles.producto.categoria:id,nombre',
+            ])
+            ->orderByDesc('fecha')
+            ->orderByDesc('id')
+            ->get();
 
-        $consignaDisponibleService = app(ConsignaDisponibleService::class);
+        $rows = $compras->map(function (Compra $compra) {
+            return [
+                'id' => $compra->id,
+                'uuid' => Crypt::encrypt($compra->id),
+                'fecha' => $compra->fecha,
+                'proveedor' => $compra->nombre_proveedor,
+                'id_proveedor' => $compra->id_proveedor,
+                'tipo_documento' => $compra->tipo_documento,
+                'referencia' => $compra->referencia,
+                'fecha_pago' => $compra->fecha_pago,
+                'estado' => $compra->estado,
+                'bodega' => $compra->bodega?->nombre ?? '',
+                'sucursal' => $compra->sucursal?->nombre ?? '',
+                'total' => $compra->total,
+                'detalles' => $compra->detalles->map(function ($detalle) {
+                    return [
+                        'id' => $detalle->id,
+                        'id_producto' => $detalle->id_producto,
+                        'producto' => $detalle->producto?->nombre,
+                        'codigo' => $detalle->producto?->codigo,
+                        'cantidad' => $detalle->cantidad,
+                        'costo' => $detalle->costo,
+                        'total' => $detalle->total,
+                    ];
+                })->values(),
+            ];
+        })->values();
 
-        $detallesDeCompra = DetalleCompra::whereHas('compra', function($query){
-                                $query->where('estado', 'Consigna');
-                            })
-                            ->with('producto.categoria', 'compra.proveedor', 'compra.bodega', 'compra.sucursal')
-                            ->get()
-                            ->groupBy('id_producto');
-
-        $detalles = collect();
-
-        foreach ($detallesDeCompra as $detallesGroup) {
-            $compras = collect();
-            
-            foreach ($detallesGroup as $detalle) {
-                $compras->push([
-                    'fecha'             => $detalle->compra->fecha,
-                    'proveedor'         => $detalle->compra->nombre_proveedor,
-                    'cantidad'          => $detalle->cantidad,
-                    'id'                => $detalle->compra->id,
-                    'tipo_documento'    => $detalle->compra->tipo_documento,
-                    'referencia'        => $detalle->compra->referencia,
-                    'fecha_pago'        => $detalle->compra->fecha_pago,
-                    'bodega'            => $detalle->compra->bodega ? $detalle->compra->bodega->nombre : '',
-                    'sucursal'          => $detalle->compra->sucursal ? $detalle->compra->sucursal->nombre : '',
-                    'uuid'              => Crypt::encrypt($detalle->compra->id)
-                ]);
-            }
-            $producto = $detallesGroup[0]->producto()->first();
-
-            if ($producto) {
-                $stockConsignaDisponible = $consignaDisponibleService->calcularDisponibleAgregadoProducto((int) $producto->id);
-                $ventasConsigna = $consignaDisponibleService->listarVentasDesdeConsignaCompraAgregado((int) $producto->id);
-                $detalles->push([
-                    'id'                 => $producto->id,
-                    'nombre'             => $producto->nombre,
-                    'img'                => $producto->img,
-                    'nombre_categoria'   => $producto->nombre_categoria,
-                    'costo'              => $detallesGroup[0]->costo,
-                    'codigo'             => $producto->codigo,
-                    'stock'              => round($stockConsignaDisponible, 4),
-                    'compras'            => $compras,
-                    'ventas_consigna'    => $ventasConsigna,
-                ]); 
-            }
-        }
-
-        return Response()->json($detalles, 200);
+        return response()->json($rows, 200);
     }
 
     public function exportCompras(Request $request){
