@@ -6,7 +6,6 @@ import { RouterModule } from '@angular/router';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { TagInputModule } from 'ngx-chips';
 
-import { FilterPipe } from '@pipes/filter.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
@@ -14,6 +13,12 @@ import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '../../base/base-modal.component';
 import { DuplicateCheckService } from '@services/duplicate-check.service';
 import { FeCrUbicacionService } from '@services/fe-cr-ubicacion.service';
+import {
+    alCambiarDepartamento,
+    dedupePorCod,
+    filtrarPorCodDepartamento,
+    trackUbicacionCod,
+} from '@utils/ubicacion-catalogo.util';
 import Swal from 'sweetalert2';
 import {
     ContribuyenteActividadOption,
@@ -27,7 +32,7 @@ import { finalize } from 'rxjs/operators';
     selector: 'app-crear-cliente',
     templateUrl: './crear-cliente.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TagInputModule, FilterPipe, TranslatePipe],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TagInputModule, TranslatePipe],
 
 })
 export class CrearClienteComponent extends BaseModalComponent implements OnInit {
@@ -240,6 +245,16 @@ export class CrearClienteComponent extends BaseModalComponent implements OnInit 
         this.reconciliarSeleccionActividadContribuyenteCr();
     }
 
+    get municipiosFiltrados(): any[] {
+        return filtrarPorCodDepartamento(this.municipios, this.cliente?.cod_departamento);
+    }
+
+    get distritosFiltrados(): any[] {
+        return filtrarPorCodDepartamento(this.distritos, this.cliente?.cod_departamento);
+    }
+
+    trackUbicacion = trackUbicacionCod;
+
     municipiosFiltradosCr(): any[] {
         return this.feCrUbic.municipiosPorProvincia(this.municipios, this.cliente?.cod_departamento);
     }
@@ -296,7 +311,7 @@ export class CrearClienteComponent extends BaseModalComponent implements OnInit 
     }
 
     ngOnInit() {
-        this.paises = JSON.parse(localStorage.getItem('paises') || '[]');
+        this.paises = dedupePorCod(JSON.parse(localStorage.getItem('paises') || '[]'));
         this.departamentos = JSON.parse(localStorage.getItem('departamentos') || '[]');
         this.distritos = JSON.parse(localStorage.getItem('distritos') || '[]');
         this.municipios = JSON.parse(localStorage.getItem('municipios') || '[]');
@@ -398,8 +413,12 @@ export class CrearClienteComponent extends BaseModalComponent implements OnInit 
         });
     }
 
-    setPais(){
-        this.cliente.pais = this.paises.find((item:any) => item.cod == this.cliente.cod_pais).nombre;
+    setPais(cod?: unknown){
+        if (cod !== undefined && cod !== null) {
+            this.cliente.cod_pais = cod;
+        }
+        const pais = this.paises.find((item:any) => item.cod == this.cliente.cod_pais);
+        this.cliente.pais = pais?.nombre ?? '';
     }
 
     setGiro() {
@@ -408,7 +427,10 @@ export class CrearClienteComponent extends BaseModalComponent implements OnInit 
         ).nombre;
     }
 
-    setDistrito(){
+    setDistrito(cod?: unknown){
+        if (cod !== undefined && cod !== null) {
+            this.cliente.cod_distrito = cod;
+        }
         let distrito = this.distritos.find((item:any) => item.cod == this.cliente.cod_distrito && item.cod_departamento == this.cliente.cod_departamento);
         console.log(distrito);
         if(distrito){
@@ -424,7 +446,10 @@ export class CrearClienteComponent extends BaseModalComponent implements OnInit 
         }
     }
 
-    setMunicipio(){
+    setMunicipio(cod?: unknown){
+        if (cod !== undefined && cod !== null) {
+            this.cliente.cod_municipio = cod;
+        }
         let municipio = this.municipios.find((item:any) => item.cod == this.cliente.cod_municipio && item.cod_departamento == this.cliente.cod_departamento);
         if(municipio){
             this.cliente.municipio = municipio.nombre;
@@ -435,17 +460,8 @@ export class CrearClienteComponent extends BaseModalComponent implements OnInit 
         }
     }
 
-    setDepartamento(){
-        let departamento = this.departamentos.find((item:any) => item.cod == this.cliente.cod_departamento);
-        if(departamento){
-            this.cliente.departamento = departamento.nombre;
-            this.cliente.cod_departamento = departamento.cod;
-
-        }
-        this.cliente.municipio = '';
-        this.cliente.cod_municipio = '';
-        this.cliente.distrito = '';
-        this.cliente.cod_distrito = '';
+    setDepartamento(cod?: unknown){
+        alCambiarDepartamento(this.cliente, this.departamentos, cod ?? this.cliente.cod_departamento);
     }
 
     public verificarSiExiste(){

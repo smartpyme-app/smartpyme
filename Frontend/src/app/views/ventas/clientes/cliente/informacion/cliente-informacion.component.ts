@@ -13,9 +13,14 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { FuncionalidadesService } from '@services/functionalities.service';
-import { FilterPipe } from '@pipes/filter.pipe';
 import { DuplicateCheckService } from '@services/duplicate-check.service';
 import { FeCrUbicacionService } from '@services/fe-cr-ubicacion.service';
+import {
+  alCambiarDepartamento,
+  dedupePorCod,
+  filtrarPorCodDepartamento,
+  trackUbicacionCod,
+} from '@utils/ubicacion-catalogo.util';
 import Swal from 'sweetalert2';
 import { LazyImageDirective } from '../../../../../directives/lazy-image.directive';
 import {
@@ -295,7 +300,7 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
 
     ngOnInit() {
         this.loadAll();
-        this.paises = JSON.parse(localStorage.getItem('paises') || '[]');
+        this.paises = dedupePorCod(JSON.parse(localStorage.getItem('paises') || '[]'));
         this.departamentos = JSON.parse(localStorage.getItem('departamentos') || '[]');
         this.distritos = JSON.parse(localStorage.getItem('distritos') || '[]');
         this.municipios = JSON.parse(localStorage.getItem('municipios') || '[]');
@@ -428,10 +433,13 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
     this.cliente.tipo = tipo;
   }
 
-  setPais() {
-    this.cliente.pais = this.paises.find(
-      (item: any) => item.cod == this.cliente.cod_pais
-    ).nombre;
+  setPais(cod?: unknown) {
+    if (cod !== undefined && cod !== null) {
+      this.cliente.cod_pais = cod;
+    }
+    const pais = this.paises.find((item: any) => item.cod == this.cliente.cod_pais);
+    this.cliente.pais = pais?.nombre ?? '';
+    this.cdr.markForCheck();
   }
 
   setGiro() {
@@ -441,7 +449,10 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
     console.log(this.cliente.giro);
   }
 
-  setDistrito() {
+  setDistrito(cod?: unknown) {
+    if (cod !== undefined && cod !== null) {
+      this.cliente.cod_distrito = cod;
+    }
     let distrito = this.distritos.find(
       (item: any) =>
         item.cod == this.cliente.cod_distrito &&
@@ -463,7 +474,10 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
     this.cdr.markForCheck();
   }
 
-  setMunicipio() {
+  setMunicipio(cod?: unknown) {
+    if (cod !== undefined && cod !== null) {
+      this.cliente.cod_municipio = cod;
+    }
     let municipio = this.municipios.find(
       (item: any) =>
         item.cod == this.cliente.cod_municipio &&
@@ -481,35 +495,17 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
 
   // Métodos getter para filtrar distritos y municipios
   get distritosFiltrados(): any[] {
-    if (!this.distritos || !this.cliente.cod_departamento) {
-      return [];
-    }
-    return this.distritos.filter((distrito: any) =>
-      distrito.cod_departamento == this.cliente.cod_departamento
-    );
+    return filtrarPorCodDepartamento(this.distritos, this.cliente?.cod_departamento);
   }
 
   get municipiosFiltrados(): any[] {
-    if (!this.municipios || !this.cliente.cod_departamento) {
-      return [];
-    }
-    return this.municipios.filter((municipio: any) =>
-      municipio.cod_departamento == this.cliente.cod_departamento
-    );
+    return filtrarPorCodDepartamento(this.municipios, this.cliente?.cod_departamento);
   }
 
-  setDepartamento() {
-    let departamento = this.departamentos.find(
-      (item: any) => item.cod == this.cliente.cod_departamento
-    );
-    if (departamento) {
-      this.cliente.departamento = departamento.nombre;
-      this.cliente.cod_departamento = departamento.cod;
-    }
-    this.cliente.municipio = '';
-    this.cliente.cod_municipio = '';
-    this.cliente.distrito = '';
-    this.cliente.cod_distrito = '';
+  trackUbicacion = trackUbicacionCod;
+
+  setDepartamento(cod?: unknown) {
+    alCambiarDepartamento(this.cliente, this.departamentos, cod ?? this.cliente.cod_departamento);
     this.cdr.markForCheck();
   }
 
