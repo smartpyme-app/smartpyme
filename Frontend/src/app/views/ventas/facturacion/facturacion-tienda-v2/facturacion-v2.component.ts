@@ -563,7 +563,10 @@ export class FacturacionV2Component implements OnInit {
                   detalle,
                   !!this.venta.cobrar_impuestos,
                   this.apiService.auth_user()?.empresa?.iva,
-                  { preservePrecioIva: true }
+                  {
+                    preservePrecioIva: true,
+                    paisEmpresa: this.apiService.auth_user()?.empresa?.pais,
+                  }
                 );
               });
 
@@ -882,7 +885,10 @@ export class FacturacionV2Component implements OnInit {
       detalle,
       !!this.venta.cobrar_impuestos,
       empresaIva,
-      { preservePrecioIva: true }
+      {
+        preservePrecioIva: true,
+        paisEmpresa: this.apiService.auth_user()?.empresa?.pais,
+      }
     );
   }
 
@@ -986,9 +992,11 @@ export class FacturacionV2Component implements OnInit {
     }
 
     const empresaIva = Number(this.apiService.auth_user()?.empresa?.iva ?? 0);
+    const paisEmpresa = this.apiService.auth_user()?.empresa?.pais;
     this.venta.detalles.forEach((d: any) => {
       calcularMontosLineaDetalle(d, !!this.venta.cobrar_impuestos, empresaIva, {
         preservePrecioIva: true,
+        paisEmpresa,
       });
     });
 
@@ -1026,7 +1034,8 @@ export class FacturacionV2Component implements OnInit {
       this.venta.impuestos,
       this.venta.detalles,
       !!this.venta.cobrar_impuestos,
-      empresaIva
+      empresaIva,
+      paisEmpresa
     );
     this.venta.iva = ivaEncabezado.toFixed(4);
 
@@ -1042,7 +1051,8 @@ export class FacturacionV2Component implements OnInit {
         this.venta.impuestos,
         this.venta.detalles,
         true,
-        empresaIva
+        empresaIva,
+        paisEmpresa
       );
       this.venta.iva = ivaRecalc.toFixed(4);
     }
@@ -1053,7 +1063,8 @@ export class FacturacionV2Component implements OnInit {
     this.venta.descuento_con_iva = sumarDescuentoConIvaEncabezadoVenta(
       this.venta.detalles,
       empresaIva,
-      !!this.venta.cobrar_impuestos
+      !!this.venta.cobrar_impuestos,
+      paisEmpresa
     ).toFixed(4);
     const rawTotalCosto = parseFloat(this.sumPipe.transform(this.venta.detalles, 'total_costo'));
     this.venta.total_costo = Number(rawTotalCosto).toFixed(4);

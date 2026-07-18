@@ -835,8 +835,11 @@ export class FacturacionComponent implements OnInit {
     }
 
     const empresaIva = Number(this.apiService.auth_user()?.empresa?.iva ?? 0);
+    const paisEmpresa = this.apiService.auth_user()?.empresa?.pais;
     this.venta.detalles.forEach((d: any) => {
-      calcularMontosLineaDetalle(d, !!this.venta.cobrar_impuestos, empresaIva);
+      calcularMontosLineaDetalle(d, !!this.venta.cobrar_impuestos, empresaIva, {
+        paisEmpresa,
+      });
     });
 
     this.venta.sub_total = Number(sumarSubTotalEncabezadoVenta(this.venta.detalles)).toFixed(4);
@@ -873,7 +876,8 @@ export class FacturacionComponent implements OnInit {
       this.venta.impuestos,
       this.venta.detalles,
       !!this.venta.cobrar_impuestos,
-      empresaIva
+      empresaIva,
+      paisEmpresa
     );
     this.venta.iva = ivaEncabezado.toFixed(4);
 
