@@ -3,6 +3,7 @@ import * as moment from 'moment';
 import { HttpService } from '@services/http.service';
 import { AlertService } from '@services/alert.service';
 import { FE_PAIS_CR, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
+import { dedupePorCod } from '@utils/ubicacion-catalogo.util';
 
 declare let $: any;
 
@@ -198,7 +199,7 @@ export class UtilityService {
 
     this.httpService.getAll('paises').subscribe(
       (paises: any) => {
-        localStorage.setItem('paises', JSON.stringify(paises));
+        localStorage.setItem('paises', JSON.stringify(dedupePorCod(Array.isArray(paises) ? paises : [])));
       },
       (error: any) => {
         this.alertService.error(error);
