@@ -39,6 +39,21 @@ export class AdminGuard  {
 
     // Si la ruta actual es una de las restringidas, verificar permisos de administrador
     if (adminOnlyRoutes.some(route => currentUrl.includes(route))) {
+      // Notificaciones: admin (tipo o rol) y vendedores (tipo o rol Spatie)
+      if (currentUrl.includes('/notificaciones')) {
+        if (
+          this.apiService.isVentas() ||
+          this.apiService.verifyVentasRole() ||
+          this.apiService.isAdmin() ||
+          this.apiService.isAdminRole() ||
+          this.apiService.hasPermission('admin.acceder')
+        ) {
+          return true;
+        }
+        this.router.navigate(['/']);
+        return false;
+      }
+
       // Verificar si tiene permisos específicos para la funcionalidad
       if (currentUrl.includes('/usuarios') || currentUrl.includes('/usuario')) {
         if (this.apiService.hasPermission('usuarios.acceder') ||
@@ -64,6 +79,7 @@ export class AdminGuard  {
 
       // Verificar si tiene rol de administrador
       if (this.apiService.isAdminRole() ||
+          this.apiService.isAdmin() ||
           this.apiService.hasPermission('admin.acceder')) {
         return true;
       } else {
