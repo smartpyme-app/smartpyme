@@ -9,6 +9,7 @@ use App\Models\Admin\Empresa;
 use App\Services\ImpuestosService;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Ajuste;
+use Illuminate\Database\Eloquent\Model;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
@@ -28,14 +29,25 @@ class WooCommerceProductosImport implements ToModel, WithHeadingRow, SkipsEmptyR
     public function __construct()
     {
         $this->usuario = JWTAuth::parseToken()->authenticate();
-        $bodega = Bodega::where('id_empresa', $this->usuario->id_empresa)
-            ->where('activo', true)
-            ->orderBy('id')
-            ->first();
+
+        $bodega = null;
+        if (!empty($this->usuario->id_bodega)) {
+            $bodega = Bodega::where('id_empresa', $this->usuario->id_empresa)
+                ->where('id', $this->usuario->id_bodega)
+                ->first();
+        }
+
+        if (!$bodega) {
+            $bodega = Bodega::where('id_empresa', $this->usuario->id_empresa)
+                ->where('activo', true)
+                ->orderBy('id')
+                ->first();
+        }
 
         if (!$bodega) {
             $bodega = Bodega::where('id_empresa', $this->usuario->id_empresa)->first();
         }
+
         $this->bodega = $bodega;
     }
 
@@ -169,71 +181,98 @@ class WooCommerceProductosImport implements ToModel, WithHeadingRow, SkipsEmptyR
         }
 
         // No sobrescribir costo si ya existe y el CSV no trae costo
-        $costoActual = $producto->exists ? $producto->costo : 0;
+        $costoCsv = $this->parseDecimal($this->getValue($row, [
+            'costo',
+            'cost',
+            'cost_of_goods_sold',
+            'cost of goods sold',
+            'cogs_value',
+            'meta_cogs_total_value',
+        ]));
 
-        $producto->nombre = $nombre;
-        $producto->descripcion = $descripcion;
-        $producto->descripcion_completa = $descripcionCompleta;
-        $producto->codigo = $sku;
-        $producto->precio = $precio;
-        $producto->precio_sin_iva = $precioSinIva;
-        $producto->precio_con_iva = $precioConIvaFinal;
-        $producto->id_categoria = $id_categoria ?: $this->obtenerCategoriaPorDefecto();
-        $producto->marca = $marca;
-        $producto->barcode = $barcode;
-        $producto->etiquetas = $etiquetas;
-        $producto->woocommerce_id = $wooId;
-        $producto->imported_from_woocommerce_csv = true;
-        $producto->last_woocommerce_sync = now();
-        $producto->woocommerce_parent_id = ($parentId && strtolower($tipo) === 'variation') ? $parentId : null;
-        $producto->tipo = 'Producto';
-        $producto->medida = 'Unidad';
-        $producto->enable = '1';
-        $producto->id_empresa = $this->usuario->id_empresa;
+        return Model::withoutEvents(function () use (
+            $producto,
+            $esNuevo,
+            $nombre,
+            $descripcion,
+            $descripcionCompleta,
+            $sku,
+            $precio,
+            $precioSinIva,
+            $precioConIvaFinal,
+            $id_categoria,
+            $marca,
+            $barcode,
+            $etiquetas,
+            $wooId,
+            $parentId,
+            $tipo,
+            $costoCsv,
+            $stock
+        ) {
+            $producto->nombre = $nombre;
+            $producto->descripcion = $descripcion;
+            $producto->descripcion_completa = $descripcionCompleta;
+            $producto->codigo = $sku;
+            $producto->precio = $precio;
+            $producto->precio_sin_iva = $precioSinIva;
+            $producto->precio_con_iva = $precioConIvaFinal;
+            $producto->id_categoria = $id_categoria ?: $this->obtenerCategoriaPorDefecto();
+            $producto->marca = $marca;
+            $producto->barcode = $barcode;
+            $producto->etiquetas = $etiquetas;
+            $producto->woocommerce_id = $wooId;
+            $producto->imported_from_woocommerce_csv = true;
+            $producto->last_woocommerce_sync = now();
+            $producto->woocommerce_parent_id = ($parentId && strtolower($tipo) === 'variation') ? $parentId : null;
+            $producto->tipo = 'Producto';
+            $producto->medida = 'Unidad';
+            $producto->enable = '1';
+            $producto->id_empresa = $this->usuario->id_empresa;
 
-        if ($producto->exists && $costoActual > 0) {
-            // No sobrescribir costo existente
-        } else {
-            $producto->costo = 0;
-            $producto->costo_promedio = 0;
-        }
-
-        $producto->save();
-
-        // Inventario en bodega
-        if ($this->bodega && $producto->id) {
-            $inventario = Inventario::withoutGlobalScopes()
-                ->where('id_producto', $producto->id)
-                ->where('id_bodega', $this->bodega->id)
-                ->first();
-
-            if (!$inventario) {
-                $inventario = new Inventario();
-                $inventario->id_producto = $producto->id;
-                $inventario->id_bodega = $this->bodega->id;
+            if ($costoCsv > 0) {
+                $producto->costo = $costoCsv;
+                $producto->costo_promedio = $costoCsv;
+            } elseif (!$producto->exists) {
+                $producto->costo = 0;
+                $producto->costo_promedio = 0;
             }
 
-            $stockAnterior = $inventario->stock ?? 0;
-            $inventario->stock = $stock;
-            $inventario->save();
+            $producto->save();
 
-            if ($esNuevo && $stock > 0) {
-                $ajuste = Ajuste::create([
-                    'concepto' => 'Importación WooCommerce',
-                    'id_producto' => $producto->id,
-                    'id_bodega' => $this->bodega->id,
-                    'stock_actual' => 0,
-                    'stock_real' => $stock,
-                    'ajuste' => $stock,
-                    'estado' => 'Confirmado',
-                    'id_empresa' => $this->usuario->id_empresa,
-                    'id_usuario' => $this->usuario->id,
-                ]);
-                $inventario->kardex($ajuste, $ajuste->ajuste);
+            if ($this->bodega && $producto->id) {
+                $inventario = Inventario::withoutGlobalScopes()
+                    ->where('id_producto', $producto->id)
+                    ->where('id_bodega', $this->bodega->id)
+                    ->first();
+
+                if (!$inventario) {
+                    $inventario = new Inventario();
+                    $inventario->id_producto = $producto->id;
+                    $inventario->id_bodega = $this->bodega->id;
+                }
+
+                $inventario->stock = $stock;
+                $inventario->save();
+
+                if ($esNuevo && $stock > 0) {
+                    $ajuste = Ajuste::create([
+                        'concepto' => 'Importación WooCommerce',
+                        'id_producto' => $producto->id,
+                        'id_bodega' => $this->bodega->id,
+                        'stock_actual' => 0,
+                        'stock_real' => $stock,
+                        'ajuste' => $stock,
+                        'estado' => 'Confirmado',
+                        'id_empresa' => $this->usuario->id_empresa,
+                        'id_usuario' => $this->usuario->id,
+                    ]);
+                    $inventario->kardex($ajuste, $ajuste->ajuste);
+                }
             }
-        }
 
-        return $producto;
+            return $producto;
+        });
     }
 
     private function getValue(array $row, array $keys)

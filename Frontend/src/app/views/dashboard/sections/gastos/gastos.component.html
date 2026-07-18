@@ -30,30 +30,37 @@
                 <span class="visually-hidden">Cargando tabla…</span>
             </div>
         </div>
-    </ng-template>
-
-    <!-- Filtros específicos de Gastos -->
+    </ng-template> <!-- Filtros específicos de Gastos -->
     <div class="row mb-2">
         <div class="col-12">
-            <div class="card filter-bar-card">
+            <div class="card filter-bar-card filter-bar-wrapper" [class.filter-bar-locked]="filtrosLocked">
+
+                <!-- Overlay de carga sobre los filtros -->
+                <div class="filter-loading-overlay" *ngIf="filtrosLocked" aria-live="polite" aria-busy="true">
+                    <span class="filter-loading-spinner"></span>
+                    <span class="filter-loading-text">Filtrando datos…</span>
+                </div>
+
                 <div class="card-body">
                     <div class="d-flex align-items-end justify-content-between gap-3 flex-wrap">
                         <app-filtro-fecha [(anio)]="anio" [(mes)]="mes" (filtroChange)="aplicarFiltros()"
-                            controlId="gastos-filtro-principal" accentColor="#F19447">
+                            controlId="gastos-filtro-principal" accentColor="#F19447" [disabled]="filtrosLocked">
                         </app-filtro-fecha>
 
                         <!-- Botones y controles a la derecha -->
                         <div class="d-flex align-items-end gap-2">
-                            <button type="button" class="btn btn-custom-filtros" (click)="toggleFiltrosAdicionales()">
+                            <button type="button" class="btn btn-custom-filtros" (click)="toggleFiltrosAdicionales()"
+                                [disabled]="filtrosLocked">
                                 <i class="fas fa-filter me-1"></i> Ver otros filtros
                             </button>
                             <button type="button" class="btn btn-custom-filtros"
                                 tooltip="Aplicar otros filtros al dashboard"
-                                *ngIf="mostrarBotonAplicarOtrosFiltrosGastos" (click)="confirmarOtrosFiltrosGastos()">
+                                *ngIf="mostrarBotonAplicarOtrosFiltrosGastos" (click)="confirmarOtrosFiltrosGastos()"
+                                [disabled]="filtrosLocked">
                                 <i class="fa fa-check"></i> Aplicar
                             </button>
                             <button type="button" class="btn btn-custom-filtros" tooltip="Limpiar filtros"
-                                *ngIf="puedeLimpiarFiltrosGastos" (click)="limpiarFiltros()">
+                                *ngIf="puedeLimpiarFiltrosGastos" (click)="limpiarFiltros()" [disabled]="filtrosLocked">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
                                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                     stroke-linejoin="round"
@@ -92,7 +99,7 @@
                             <div class="col-12 col-md-6 col-xl-3">
                                 <app-dropdown-multi-filtro label="Sucursal" pluralLabel="sucursales"
                                     accentColor="#F19447" [items]="filtroGastoSucursalesItems"
-                                    [disabled]="filtroSucursalGastosDisabled"
+                                    [disabled]="filtroSucursalGastosDisabled || filtrosLocked"
                                     [todasImplicitas]="filtroGastoSucTodasImplicitas"
                                     [seleccionados]="filtroGastoSucSeleccionadas"
                                     (selectionChange)="onFiltroGastoSucursalChange($event)">
@@ -100,8 +107,8 @@
                             </div>
                             <div class="col-12 col-md-6 col-xl-3">
                                 <app-dropdown-multi-filtro label="Proveedor" pluralLabel="proveedores"
-                                    accentColor="#F19447" [items]="filtroGastoProveedoresItems" [disabled]="false"
-                                    [mostrarBuscador]="true" [limiteVistaInicial]="100"
+                                    accentColor="#F19447" [items]="filtroGastoProveedoresItems"
+                                    [disabled]="filtrosLocked" [mostrarBuscador]="true" [limiteVistaInicial]="100"
                                     buscadorPlaceholder="Buscar proveedor"
                                     [todasImplicitas]="filtroGastoProvTodasImplicitas"
                                     [seleccionados]="filtroGastoProvSeleccionadas"
@@ -110,7 +117,7 @@
                             </div>
                             <div class="col-12 col-md-6 col-xl-3">
                                 <app-dropdown-multi-filtro label="Estado de gasto" pluralLabel="estados de gasto"
-                                    accentColor="#F19447" [items]="filtroGastoEstadosItems" [disabled]="false"
+                                    accentColor="#F19447" [items]="filtroGastoEstadosItems" [disabled]="filtrosLocked"
                                     [todasImplicitas]="filtroGastoEstTodasImplicitas"
                                     [seleccionados]="filtroGastoEstSeleccionadas"
                                     (selectionChange)="onFiltroGastoEstadoChange($event)">
@@ -279,7 +286,8 @@
                                         <div class="gastos-card-title mb-0 text-center">Detalle de gastos</div>
                                         <div class="d-flex flex-wrap gap-2 align-items-center justify-content-end w-100"
                                             *ngIf="datos.detalleGastos !== undefined">
-                                            <div class="input-group" style="flex: 1 1 200px; max-width: 350px; min-width: 200px;">
+                                            <div class="input-group"
+                                                style="flex: 1 1 200px; max-width: 350px; min-width: 200px;">
                                                 <span class="input-group-text bg-white border-end-0">
                                                     <i class="fas fa-search text-muted"></i>
                                                 </span>

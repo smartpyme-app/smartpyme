@@ -26,7 +26,7 @@ class Caja extends Model {
     }
 
     public function ventasDia(){
-        return $this->hasMany('App\Models\Ventas\Venta', 'caja_id')->whereDate('fecha', $this->corte()->pluck('fecha')->first())->where('estado', '!=', 'Anulada');
+        return $this->hasMany('App\Models\Ventas\Venta', 'id_caja')->whereDate('fecha', $this->corte()->pluck('fecha')->first())->where('estado', '!=', 'Anulada');
     }
 
     public function cortesDia(){

@@ -96,4 +96,8 @@ return [
         ],
     ],
 
+    'woocommerce' => [
+        'enabled' => env('WOOCOMMERCE_ENABLED', true),
+    ],
+
 ];

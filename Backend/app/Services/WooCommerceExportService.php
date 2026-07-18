@@ -247,7 +247,7 @@ class WooCommerceExportService
             $productData['images'] = $images;
         }
 
-        return $productData;
+        return WooCommerceCogsHelper::mergeCostIntoProductData($productData, (float) $producto->costo);
     }
 
 

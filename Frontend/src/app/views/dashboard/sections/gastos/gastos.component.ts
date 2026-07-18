@@ -22,6 +22,7 @@ import { MetricCard } from '../../models/chart-config.model';
 })
 export class GastosComponent implements OnInit, OnChanges, OnDestroy {
   @Input() datos: any = {};
+  @Input() datosCompletos = false;
   @Output() filtrosCambiados = new EventEmitter<any>();
 
   get metricasCards(): MetricCard[] {
@@ -71,6 +72,10 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
 
   public inicializado: boolean = false;
   private filtrosListosParaEmitir = false;
+
+  /** true mientras se espera la respuesta del servidor tras cambiar un filtro */
+  filtrosLocked = false;
+  private _filtrosLockTimeout: any = null;
 
   @ViewChild('detalleGastosGrid') detalleGastosGrid!: AgGridAngular;
 
@@ -245,6 +250,16 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
     const tieneEstadoGuardado = !!savedState;
     if (savedState) {
       Object.assign(this, savedState);
+      // Object.assign copia referencias de arrays; clonar para que borrador y aplicado
+      // no compartan el mismo array (rompería la comparación mismoEstadoFiltroMultiGastos).
+      this.filtroGastoSucSeleccionadas = [...(this.filtroGastoSucSeleccionadas ?? [])];
+      this.filtroGastoProvSeleccionadas = [...(this.filtroGastoProvSeleccionadas ?? [])];
+      this.filtroGastoTipoSeleccionadas = [...(this.filtroGastoTipoSeleccionadas ?? [])];
+      this.filtroGastoEstSeleccionadas = [...(this.filtroGastoEstSeleccionadas ?? [])];
+      this.filtroGastoSucSeleccionadasAplicado = [...(this.filtroGastoSucSeleccionadasAplicado ?? [])];
+      this.filtroGastoProvSeleccionadasAplicado = [...(this.filtroGastoProvSeleccionadasAplicado ?? [])];
+      this.filtroGastoTipoSeleccionadasAplicado = [...(this.filtroGastoTipoSeleccionadasAplicado ?? [])];
+      this.filtroGastoEstSeleccionadasAplicado = [...(this.filtroGastoEstSeleccionadasAplicado ?? [])];
     }
 
     // Configurar AG Grid
@@ -357,14 +372,28 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
     return (items || []).map((x) => String(x.id));
   }
 
+  /**
+   * Convierte el estado del filtro multi-selección en un string para la API.
+   * Retorna:
+   *   ''    → no enviar el parámetro (todas implícitas o equivalente a todas)
+   *   null  → "ninguno seleccionado" (estado activo pero vacío — no se deben traer datos)
+   *   'a,b' → IDs seleccionados
+   * ponytail: null indica "filtro activo pero vacío"; el caller decide cómo manejarlo.
+   */
   private filtroGastoMultiAString(
     todasImplicitas: boolean,
     seleccionados: string[],
     todosIds: string[],
-  ): string {
-    if (todasImplicitas || seleccionados.length === 0) {
+  ): string | null {
+    // Todas implícitas → sin filtro
+    if (todasImplicitas) {
       return '';
     }
+    // Ninguno seleccionado → filtro activo pero vacío (no traer nada)
+    if (seleccionados.length === 0) {
+      return null;
+    }
+    // Si el usuario eligió exactamente todos los IDs conocidos → equivale a "todas"
     if (
       todosIds.length > 0 &&
       seleccionados.length === todosIds.length &&
@@ -444,7 +473,9 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
     todasImplicitas: boolean,
     seleccionados: string[],
   ): boolean {
-    return !todasImplicitas || seleccionados.length > 0;
+    // Solo consideramos activo si no son todas implícitas Y hay al menos uno seleccionado.
+    // todasImplicitas=false + seleccionados=[] es un estado inválido/vacío, no "activo útil".
+    return !todasImplicitas && seleccionados.length > 0;
   }
 
   /** Botón «Limpiar filtros»: solo si hay mes, año distinto, otros filtros o filtros del gráfico. */
@@ -679,6 +710,11 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
         this.inicializarDatos();
       }
     }
+
+    // datosCompletos=true: todas las APIs terminaron → desbloquear filtros
+    if (changes['datosCompletos'] && this.datosCompletos) {
+      this._desbloquearFiltros();
+    }
   }
 
   inicializarDatos(): void {
@@ -768,6 +804,10 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
     if (!this.filtrosListosParaEmitir) {
       return;
     }
+    
+    // Bloquear filtros mientras se espera la respuesta
+    this._bloquearFiltros();
+
     if (!this.anio) {
       this.anio = new Date().getFullYear().toString();
     }
@@ -783,6 +823,10 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
       this.filtroGastoProvSeleccionadasAplicado,
       this.idsDeListaFiltro(this.proveedores),
     );
+    // null = ninguno seleccionado → no tiene sentido pedir datos, salir temprano
+    if (prov === null) {
+      return;
+    }
     if (prov) {
       filtros.proveedor = prov;
     }
@@ -791,6 +835,9 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
       this.filtroGastoTipoSeleccionadasAplicado,
       this.idsDeListaFiltro(this.tiposGasto),
     );
+    if (tipo === null) {
+      return;
+    }
     if (tipo) {
       filtros.tipoGasto = tipo;
     }
@@ -799,6 +846,9 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
       this.filtroGastoEstSeleccionadasAplicado,
       this.idsDeListaFiltro(this.estadosGasto),
     );
+    if (est === null) {
+      return;
+    }
     if (est) {
       filtros.estadoGasto = est;
     }
@@ -807,6 +857,23 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
     }
     this.filtrosCambiados.emit(filtros);
   }
+
+  private _bloquearFiltros(): void {
+    this.filtrosLocked = true;
+    this.cdr.markForCheck();
+    if (this._filtrosLockTimeout) clearTimeout(this._filtrosLockTimeout);
+    this._filtrosLockTimeout = setTimeout(() => this._desbloquearFiltros(), 8000);
+  }
+
+  private _desbloquearFiltros(): void {
+    if (this._filtrosLockTimeout) {
+      clearTimeout(this._filtrosLockTimeout);
+      this._filtrosLockTimeout = null;
+    }
+    this.filtrosLocked = false;
+    this.cdr.markForCheck();
+  }
+
 
   limpiarFiltros(): void {
     this.anio = new Date().getFullYear().toString();

@@ -549,9 +549,9 @@ class EmpleadosController extends Controller
 
                 // EMPLEADOS ASALARIADOS: base para retenciones (excluye abonos si abonos_sin_retencion)
                 if ($aplicarIsss) {
-                    $baseISSSEmpleado = min($baseParaRetenciones, 1000);
-                    $detalle->isss_empleado = round($baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO, 2);
-                    $detalle->isss_patronal = round($baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_PATRONO, 2);
+                    $isss = \App\Helpers\IsssHelper::calcularIsss($baseParaRetenciones, $planilla->tipo_planilla);
+                    $detalle->isss_empleado = $isss['isss_empleado'];
+                    $detalle->isss_patronal = $isss['isss_patronal'];
                 } else {
                     $detalle->isss_empleado = 0;
                     $detalle->isss_patronal = 0;

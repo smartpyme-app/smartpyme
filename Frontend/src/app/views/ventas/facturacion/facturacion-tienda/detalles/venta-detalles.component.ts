@@ -5,7 +5,9 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import {
     calcularMontosLineaDetalle,
+    copiarImpuestosProductoAlDetalle,
     limpiarExentaPorSinIvaSiTipoManual,
+    porcentajeIvaDetalle,
     sincronizarTipoGravadoPorCobroIva,
 } from '@utils/impuestos-venta.util';
 import {
@@ -41,6 +43,7 @@ export class VentaDetallesComponent implements OnInit {
     @Output() alMenosUnPaqueteConCuentaTerceros = new EventEmitter<void>();
     @Output() selectCliente = new EventEmitter<any>();
     modalRef!: BsModalRef;
+    public zoomImageUrl: string = '';
 
     @ViewChild('msupervisor')
     public supervisorTemplate!: TemplateRef<any>;
@@ -105,13 +108,11 @@ export class VentaDetallesComponent implements OnInit {
     }
 
     private obtenerPorcentajeIvaDetalle(detalle: any): number {
-        if (!this.venta.cobrar_impuestos) {
-            return 0;
-        }
-        const pct = (detalle?.porcentaje_impuesto != null && detalle?.porcentaje_impuesto !== '')
-            ? Number(detalle.porcentaje_impuesto)
-            : (this.apiService.auth_user().empresa?.iva ?? 0);
-        return Number(pct) || 0;
+        return porcentajeIvaDetalle(
+            detalle,
+            this.apiService.auth_user()?.empresa?.iva,
+            !!this.venta.cobrar_impuestos
+        );
     }
 
     /** Aplica gravada/exenta/no_sujeta; IVA alineado con total con IVA redondeado por línea. */
@@ -259,6 +260,12 @@ export class VentaDetallesComponent implements OnInit {
         public addDetalle(producto:any){
             this.detalle = Object.assign({}, producto);
             this.detalle.id = null;
+
+            copiarImpuestosProductoAlDetalle(
+                this.detalle,
+                producto,
+                this.apiService.auth_user()?.empresa?.iva ?? 0
+            );
             
             // ── Guardar campos de presentación para el backend ───────────────────────
             this.detalle.id_presentacion   = producto.id_presentacion  ?? null;
@@ -546,5 +553,15 @@ export class VentaDetallesComponent implements OnInit {
 
     }
 
+    public hasImage(img: any): boolean {
+        return !!img && img !== 'default.png' && img !== 'default.jpg' && img !== 'productos/default.jpg' && img !== 'null' && img !== 'undefined';
+    }
+
+    public zoomImage(img: any, dialog: any) {
+        if (this.hasImage(img)) {
+            this.zoomImageUrl = this.apiService.baseUrl + '/img/' + img;
+            dialog.showModal();
+        }
+    }
 
 }

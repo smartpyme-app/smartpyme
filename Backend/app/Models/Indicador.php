@@ -243,8 +243,7 @@ class Indicador extends Model
     }
 
     public function getTotalVentasPagadas(){
-
-        return $this->ventas_pagadas->sum('total');
+        return (float) $this->ventas_pagadas->sum('total'); 
     }
 
     public function getTotalPropina(){
@@ -282,8 +281,7 @@ class Indicador extends Model
     }
 
     public function getTotalVentasPendientes(){
-
-        return $this->cxc->sum('total');
+        return (float) $this->cxc->sum('total');
     }
 
     public function getCantidadVentasPendientes(){
@@ -354,8 +352,8 @@ class Indicador extends Model
 
     public function getTotalVentas(){
         return $this->getTotalVentasPagadas()
-                + $this->getTotalVentasPendientes();
-                // - $this->getTotalDevolucionesVenta();
+                + $this->getTotalVentasPendientes()
+                - $this->getTotalDevolucionesVenta();
     }
 
     /**
@@ -619,6 +617,41 @@ class Indicador extends Model
 
     public function empresa(){
         return $this->belongsTo('App\Models\Admin\Empresa', 'id_empresa');
+    }
+
+    public function getCuentasPorCobrarNetas(){
+        $idsVentas = $this->cxc->pluck('id');
+
+        if ($idsVentas->isEmpty()) {
+            return 0.00;
+        }
+
+        $abonosPorVenta = \App\Models\Ventas\Abono::whereIn('id_venta', $idsVentas)
+                        ->where('estado', 'Confirmado')
+                        ->selectRaw('id_venta, SUM(total) as total_abonos')
+                        ->groupBy('id_venta')
+                        ->pluck('total_abonos', 'id_venta');
+
+        $devolucionesPorVenta = \App\Models\Ventas\Devoluciones\Devolucion::whereIn('id_venta', $idsVentas)
+                        ->where('enable', 1)
+                        ->selectRaw('id_venta, SUM(total) as total_devoluciones')
+                        ->groupBy('id_venta')
+                        ->pluck('total_devoluciones', 'id_venta');
+
+        $totalDeudaNeta = 0.00;
+
+        foreach ($this->cxc as $venta) {
+            $abono = $abonosPorVenta[$venta->id] ?? 0.00;
+            $devolucion = $devolucionesPorVenta[$venta->id] ?? 0.00;
+            
+            $saldo = $venta->total - $abono - $devolucion;
+
+            if ($saldo > 0) {
+                $totalDeudaNeta += $saldo;
+            }
+        }
+
+        return (float) $totalDeudaNeta;
     }
 
 }

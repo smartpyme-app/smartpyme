@@ -224,7 +224,7 @@ class VentasController extends Controller
     public function read($id)
     {
         $venta = Venta::where('id', $id)
-            ->with('devoluciones', 'detalles.composiciones', 'detalles.vendedor', 'detalles.producto', 'abonos.usuario', 'cliente', 'impuestos.impuesto', 'metodos_de_pago')
+            ->with('devoluciones', 'detalles.composiciones', 'detalles.vendedor', 'detalles.producto.impuestos', 'abonos.usuario', 'cliente', 'impuestos.impuesto', 'metodos_de_pago')
             ->withSum(['abonos' => function ($query) {
                 $query->where('estado', 'Confirmado');
             }], 'total')

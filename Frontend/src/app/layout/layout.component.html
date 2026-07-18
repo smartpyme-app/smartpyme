@@ -9,8 +9,13 @@
   <app-sidebar-ventas *ngIf="
       usuario.id_empresa != 2 &&
       (!usuario.empresa.licencia || (usuario.empresa.licencia && usuario.empresa.es_empresa_padre)) &&
-      usuario.tipo == 'Ventas' || usuario.tipo == 'Ventas Limitado'
+      (usuario.tipo == 'Ventas' || usuario.tipo == 'Ventas Limitado')
     "></app-sidebar-ventas>
+  <app-sidebar-cajero *ngIf="
+      usuario.id_empresa != 2 &&
+      (!usuario.empresa.licencia || (usuario.empresa.licencia && usuario.empresa.es_empresa_padre)) &&
+      usuario.tipo == 'Cajero'
+    "></app-sidebar-cajero>
   <app-sidebar-servicios *ngIf="
       usuario.id_empresa != 2 &&
       (!usuario.empresa.licencia || (usuario.empresa.licencia && usuario.empresa.es_empresa_padre)) &&

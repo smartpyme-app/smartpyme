@@ -1,6 +1,6 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
   <h2 class="page-heading">Pedidos</h2>
-  <button *ngIf="apiService.canCreate()" type="button" class="btn btn-default" (click)="nuevo()">
+  <button *ngIf="apiService.puedeGestionarPedidosCanal()" type="button" class="btn btn-default" (click)="nuevo()">
     <i class="fa fa-plus"></i> Nuevo pedido
   </button>
 </section>
@@ -132,23 +132,23 @@
                     (click)="verTrackingPaquete(p.boxful_shipment.shipment_number, mTracking)">
                     <i class="fa fa-fw fa-map-marker-alt"></i> Rastrear Paquete
                   </a>
-                  <a *ngIf="puedeEditarPedido(p) && apiService.canEdit()"
+                  <a *ngIf="puedeEditarPedido(p) && apiService.puedeGestionarPedidosCanal()"
                     class="list-group-item list-group-item-action border-0 click" (click)="editar(p)">
                     <i class="fa fa-fw fa-edit"></i> Editar
                   </a>
-                  <a *ngIf="puedeEditarPedido(p) && apiService.canEdit()"
+                  <a *ngIf="puedeEditarPedido(p) && apiService.puedeGestionarPedidosCanal()"
                     class="list-group-item list-group-item-action border-0 click" (click)="confirmar(p)">
                     <i class="fa fa-fw fa-check"></i> Confirmar pedido
                   </a>
-                  <a *ngIf="p.estado === 'pendiente_facturar' && apiService.canEdit()"
+                  <a *ngIf="p.estado === 'pendiente_facturar' && apiService.puedeGestionarPedidosCanal()"
                     class="list-group-item list-group-item-action border-0 click" (click)="irAFacturar(p)">
                     <i class="fa fa-fw fa-file-invoice-dollar"></i> Facturar
                   </a>
-                  <a *ngIf="puedeEditarPedido(p) && apiService.canEdit()"
+                  <a *ngIf="puedeEditarPedido(p) && apiService.puedeGestionarPedidosCanal()"
                     class="list-group-item list-group-item-action border-0 click" (click)="eliminar(p)">
                     <i class="fa fa-fw fa-trash"></i> Eliminar
                   </a>
-                  <a *ngIf="(p.estado === 'borrador' || p.estado === 'pendiente_facturar') && apiService.canEdit()"
+                  <a *ngIf="(p.estado === 'borrador' || p.estado === 'pendiente_facturar') && apiService.puedeGestionarPedidosCanal()"
                     class="list-group-item list-group-item-action border-0 click" (click)="anular(p)">
                     <i class="fa fa-fw fa-ban"></i> Anular
                   </a>

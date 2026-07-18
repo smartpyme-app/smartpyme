@@ -4,6 +4,7 @@ namespace App\Services\Planilla;
 
 use App\Constants\PlanillaConstants;
 use App\Models\EmpresaConfiguracionPlanilla;
+use App\Helpers\IsssHelper;
 use App\Helpers\RentaHelper;
 use App\Models\Admin\Empresa;
 use Illuminate\Support\Facades\Log;
@@ -66,10 +67,10 @@ class ConfiguracionPlanillaService
                 'renta' => round($totalIngresos * 0.10, 2)
             ];
         } else {
-            // Usar constantes actuales de El Salvador
-            $baseISSSEmpleado = min($totalIngresos, 1000);
-            $isssEmpleado = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO;
-            $isssPatronal = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_PATRONO;
+            // ISSS proporcional al ingreso del período (salario devengado + ingresos gravables)
+            $isss = IsssHelper::calcularIsss($totalIngresos, $tipoPlanilla);
+            $isssEmpleado = $isss['isss_empleado'];
+            $isssPatronal = $isss['isss_patronal'];
             $afpEmpleado = $totalIngresos * PlanillaConstants::DESCUENTO_AFP_EMPLEADO;
             $afpPatronal = $totalIngresos * PlanillaConstants::DESCUENTO_AFP_PATRONO;
             

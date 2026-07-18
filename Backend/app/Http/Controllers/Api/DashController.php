@@ -10,6 +10,8 @@ use stdClass;
 use App\Models\Admin\Empresa;
 use App\Models\Admin\Sucursal;
 use App\Models\Admin\Corte;
+use App\Models\Ventas\Venta;
+use App\Services\Admin\CajaUsuarioResolver;
 
 use App\Models\Indicador;
 use App\Models\User;
@@ -21,6 +23,12 @@ use JWTAuth;
 
 class DashController extends Controller
 {
+    private CajaUsuarioResolver $cajaUsuarioResolver;
+
+    public function __construct(CajaUsuarioResolver $cajaUsuarioResolver)
+    {
+        $this->cajaUsuarioResolver = $cajaUsuarioResolver;
+    }
 
     public function index(Request $request) {
 
@@ -67,7 +75,7 @@ class DashController extends Controller
             $indicadores->total_ventas_canal = $indicadores->getVentasByCanal();
             $indicadores->total_ventas_forma_pago = $indicadores->getVentasByFormaPago();
 
-            $indicadores->total_cxc = $indicadores->getTotalVentasPendientes();
+            $indicadores->total_cxc = $indicadores->getCuentasPorCobrarNetas();
 
         // Transacciones
 
@@ -226,6 +234,48 @@ class DashController extends Controller
 
         return Response()->json($data, 200);
 
+    }
+
+    /**
+     * Órdenes (ventas en proceso) visibles en la pantalla de caja del cajero.
+     */
+    public function cajero($id)
+    {
+        $authUser = JWTAuth::parseToken()->authenticate();
+
+        if ((int) $id !== (int) $authUser->id && $authUser->tipo !== 'Administrador') {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+
+        $usuario = User::findOrFail($id);
+        $caja = $this->cajaUsuarioResolver->resolverParaUsuario($usuario);
+
+        if (! $caja) {
+            return Response()->json([
+                'current_page' => 1,
+                'data' => [],
+                'per_page' => 5000,
+                'total' => 0,
+            ], 200);
+        }
+
+        $caja->load('corte');
+        $corte = $caja->corte;
+
+        if ($corte) {
+            $ventas = $corte->ventas()
+                ->where('estado', 'En Proceso')
+                ->orderBy('id', 'desc')
+                ->paginate(5000);
+        } else {
+            $sucursalId = $usuario->id_sucursal ?? $usuario->sucursal_id ?? null;
+            $ventas = Venta::where('estado', 'En Proceso')
+                ->when($sucursalId, fn ($q) => $q->where('id_sucursal', $sucursalId))
+                ->orderBy('id', 'desc')
+                ->paginate(5000);
+        }
+
+        return Response()->json($ventas, 200);
     }
 
 

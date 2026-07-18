@@ -1,8 +1,10 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { DistribucionLotesModalComponent } from '@shared/modals/distribucion-lotes/distribucion-lotes-modal.component';
+import { textoResumenLotesDetalle } from '@utils/lotes-venta.util';
 import { debounceTime, switchMap, filter, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
 import Swal from 'sweetalert2';
@@ -49,6 +51,8 @@ export class TrasladoMasivoComponent implements OnInit {
     public importModalArchivoSeleccionado = false;
     private rowUidSeq = 0;
     private tieneShopify = false;
+
+    @ViewChild('lotesModal') lotesModal!: DistribucionLotesModalComponent;
 
     constructor(
         public apiService: ApiService,
@@ -261,12 +265,21 @@ export class TrasladoMasivoComponent implements OnInit {
             id_inventario_origen: invOrigen ? invOrigen.id : null,
             id_inventario_destino: invDestino ? invDestino.id : null,
             cantidad_traslado: 1,
+            inventario_por_lotes: !!producto.inventario_por_lotes,
+            lote_id: null,
+            lote_id_destino: null,
+            lotes_asignados: null,
+            lote: null,
         };
 
         this.aplicarReglasCantidadTraslado(fila, {});
         this.seleccionados = [...this.seleccionados, fila];
         this.actualizarProductosParaTraslado();
         this.limpiarBusquedaUi();
+
+        if (this.requiereDistribucionLotes(fila)) {
+            setTimeout(() => this.abrirDistribucionLotes(fila), 100);
+        }
     }
 
     private productoYaSeleccionado(idProducto: number): boolean {
@@ -331,6 +344,11 @@ export class TrasladoMasivoComponent implements OnInit {
 
     public validarCantidadTraslado(producto: any) {
         this.aplicarReglasCantidadTraslado(producto, { avisoSuperaStock: true });
+        if (producto.inventario_por_lotes && this.isLotesActivo()) {
+            producto.lotes_asignados = null;
+            producto.lote_id = null;
+            producto.lote = null;
+        }
         this.actualizarProductosParaTraslado();
     }
 
@@ -392,8 +410,83 @@ export class TrasladoMasivoComponent implements OnInit {
                 stock_origen: p.stock_origen,
                 stock_destino: p.stock_destino,
                 cantidad_traslado: p.cantidad_traslado,
-                nombre: p.nombre
+                nombre: p.nombre,
+                inventario_por_lotes: !!p.inventario_por_lotes,
+                lote_id: p.lote_id || null,
+                lote_id_destino: p.lote_id_destino || null,
+                lotes_asignados: p.lotes_asignados || null,
+                lote: p.lote || null,
             }));
+    }
+
+    isLotesActivo(): boolean {
+        return this.apiService.isLotesActivo();
+    }
+
+    requiereDistribucionLotes(producto: any): boolean {
+        return !!producto?.inventario_por_lotes
+            && this.isLotesActivo()
+            && this.apiService.getLotesMetodologia() === 'Manual';
+    }
+
+    tieneLotesAsignados(producto: any): boolean {
+        return !!(producto?.lotes_asignados?.length || producto?.lote_id);
+    }
+
+    abrirDistribucionLotes(producto: any): void {
+        if (!this.filtros.id_bodega_origen) {
+            this.alertService.warning('Bodega origen', 'Seleccione la bodega de origen.');
+            return;
+        }
+        if (!this.lotesModal) {
+            return;
+        }
+        this.lotesModal.abrir({
+            ...producto,
+            uid: producto.uid,
+            id_producto: producto.id,
+            producto_id: producto.id,
+            nombre_producto: producto.nombre,
+            cantidad: producto.cantidad_traslado,
+            factor_conversion: 1,
+        }, Number(this.filtros.id_bodega_origen));
+    }
+
+    onLotesDetalleConfirmados(detalle: any): void {
+        const idProducto = detalle.id_producto || detalle.producto_id || detalle.id;
+        const target = this.seleccionados.find(
+            (p: any) => (detalle.uid && p.uid === detalle.uid) || p.id === idProducto
+        );
+
+        if (!target) {
+            return;
+        }
+
+        target.lotes_asignados = detalle.lotes_asignados || null;
+        target.lote_id = detalle.lote_id || null;
+        target.lote = detalle.lote || null;
+        if (detalle.cantidad != null && detalle.cantidad !== '') {
+            target.cantidad_traslado = Number(detalle.cantidad) || target.cantidad_traslado;
+            this.aplicarReglasCantidadTraslado(target, {});
+        }
+        this.actualizarProductosParaTraslado();
+    }
+
+    textoLotesDetalle(producto: any): string {
+        return textoResumenLotesDetalle({
+            ...producto,
+            lotes_asignados: producto.lotes_asignados,
+            lote: producto.lote,
+        });
+    }
+
+    hayFilasSinLotesRequeridos(): boolean {
+        return this.seleccionados.some(
+            p => p.importacion_preview_ok !== false
+                && this.requiereDistribucionLotes(p)
+                && !this.tieneLotesAsignados(p)
+                && this.stockOrigenNumerico(p) > 0
+        );
     }
 
     public getNombreBodega(idBodega: string): string {
@@ -420,6 +513,14 @@ export class TrasladoMasivoComponent implements OnInit {
             this.alertService.warning(
                 'Cantidades inválidas',
                 'Hay productos con cantidad a trasladar inválida o sin stock en origen. Corrija las cantidades o quite filas con error.'
+            );
+            return;
+        }
+
+        if (this.hayFilasSinLotesRequeridos()) {
+            this.alertService.warning(
+                'Lotes requeridos',
+                'Hay productos con control por lotes (metodología Manual). Distribuya los lotes de origen antes de continuar.'
             );
             return;
         }
@@ -454,6 +555,14 @@ export class TrasladoMasivoComponent implements OnInit {
             return;
         }
 
+        if (this.hayFilasSinLotesRequeridos()) {
+            this.alertService.warning(
+                'Lotes requeridos',
+                'Distribuya los lotes de origen para los productos con control por lotes antes de confirmar.'
+            );
+            return;
+        }
+
         if (this.productosParaTraslado.length === 0) {
             this.alertService.warning('Sin productos para trasladar', 'No hay productos válidos para trasladar.');
             return;
@@ -482,7 +591,10 @@ export class TrasladoMasivoComponent implements OnInit {
             id_usuario: this.traslado.id_usuario || this.apiService.auth_user().id,
             productos: this.productosParaTraslado.map(p => ({
                 id_producto: p.id_producto,
-                cantidad: p.cantidad_traslado
+                cantidad: p.cantidad_traslado,
+                lote_id: p.lote_id || null,
+                lote_id_destino: p.lote_id_destino || null,
+                lotes_asignados: p.lotes_asignados || null,
             }))
         };
 
@@ -726,7 +838,22 @@ export class TrasladoMasivoComponent implements OnInit {
             importacion_preview_ok: f.ok,
             importacion_preview_error: f.error || null,
             fila_excel: f.fila,
+            inventario_por_lotes: !!f.inventario_por_lotes,
+            lote_id: null,
+            lote_id_destino: null,
+            lotes_asignados: null,
+            lote: null,
         }));
         this.sanearCantidadesEnListado();
+
+        const pendientesLote = this.seleccionados.filter(
+            p => p.importacion_preview_ok !== false && this.requiereDistribucionLotes(p)
+        );
+        if (pendientesLote.length) {
+            this.alertService.info(
+                'Lotes / partidas',
+                `Hay ${pendientesLote.length} producto(s) con control por lotes. Use el botón de lotes en cada fila para distribuir antes de realizar el traslado.`
+            );
+        }
     }
 }

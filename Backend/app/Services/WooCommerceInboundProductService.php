@@ -118,6 +118,7 @@ class WooCommerceInboundProductService
         }
 
         $enable = ($status === 'publish' && (empty($p['catalog_visibility']) || $p['catalog_visibility'] !== 'hidden')) ? '1' : '0';
+        $costoWoo = WooCommerceCogsHelper::extractCostFromPayload($p);
 
         $producto = Producto::withoutGlobalScope('empresa')
             ->where('id_empresa', $empresa->id)
@@ -136,8 +137,6 @@ class WooCommerceInboundProductService
         if ($esNuevo) {
             $producto = new Producto();
         }
-
-        $costoExistente = $producto->exists ? (float) $producto->costo : 0;
 
         return Model::withoutEvents(function () use (
             $producto,
@@ -159,7 +158,7 @@ class WooCommerceInboundProductService
             $marca,
             $stock,
             $enable,
-            $costoExistente
+            $costoWoo
         ) {
             $producto->nombre = $nombre;
             $producto->descripcion = $descripcion;
@@ -178,7 +177,10 @@ class WooCommerceInboundProductService
             $producto->medida = 'Unidad';
             $producto->enable = $enable;
             $producto->id_empresa = $empresa->id;
-            if (!$producto->exists || $costoExistente <= 0) {
+            if ($costoWoo !== null) {
+                $producto->costo = $costoWoo;
+                $producto->costo_promedio = $costoWoo;
+            } elseif (!$producto->exists) {
                 $producto->costo = 0;
                 $producto->costo_promedio = 0;
             }
