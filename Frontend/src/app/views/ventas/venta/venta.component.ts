@@ -122,7 +122,12 @@ export class VentaComponent implements OnInit {
             return 1;
         }
         const ivaEmpresa = this.apiService.auth_user()?.empresa?.iva;
-        const pct = porcentajeIvaDetalle(detalle, ivaEmpresa, true);
+        const pct = porcentajeIvaDetalle(
+            detalle,
+            ivaEmpresa,
+            true,
+            this.apiService.auth_user()?.empresa?.pais
+        );
         return pct > 0 ? 1 + pct / 100 : 1;
     }
 

@@ -145,7 +145,8 @@ export class VentaDetallesV2Component implements OnInit {
         return porcentajeIvaDetalle(
             detalle,
             this.apiService.auth_user()?.empresa?.iva,
-            !!this.venta.cobrar_impuestos
+            !!this.venta.cobrar_impuestos,
+            this.apiService.auth_user()?.empresa?.pais
         );
     }
 
@@ -155,7 +156,10 @@ export class VentaDetallesV2Component implements OnInit {
             detalle,
             !!this.venta.cobrar_impuestos,
             this.apiService.auth_user()?.empresa?.iva,
-            { preservePrecioIva: true }
+            {
+                preservePrecioIva: true,
+                paisEmpresa: this.apiService.auth_user()?.empresa?.pais,
+            }
         );
     }
 

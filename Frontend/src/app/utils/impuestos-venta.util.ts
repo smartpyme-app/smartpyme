@@ -142,10 +142,16 @@ export function baseParaImpuestosEspeciales(detalle: any): number {
   return exenta > 0 ? exenta : 0;
 }
 
+/** Temporal: solo HN trata porcentaje_impuesto=0 como exento (sin fallback a IVA empresa). */
+export function esEmpresaHonduras(paisEmpresa: unknown): boolean {
+  return String(paisEmpresa ?? '').trim().toLowerCase() === 'honduras';
+}
+
 export function porcentajeIvaDetalle(
   detalle: any,
   ivaEmpresa: unknown,
-  cobrarIva: boolean
+  cobrarIva: boolean,
+  paisEmpresa?: unknown
 ): number {
   if (!cobrarIva) return 0;
   if (Array.isArray(detalle?.impuestos) && detalle.impuestos.length > 0) {
@@ -153,7 +159,13 @@ export function porcentajeIvaDetalle(
     if (ivas.length === 0) return 0;
     return ivas.reduce((s: number, i: any) => s + (Number(i.porcentaje) || 0), 0);
   }
-  const pct = Number(detalle?.porcentaje_impuesto ?? ivaEmpresa ?? 0) || 0;
+  const rawPct = detalle?.porcentaje_impuesto;
+  const hasExplicitPct = rawPct != null && rawPct !== '';
+  // Temporal HN: 0 explícito = exento. En SV/otros, 0 o vacío sigue cayendo al IVA empresa.
+  if (esEmpresaHonduras(paisEmpresa) && hasExplicitPct && Number(rawPct) === 0) {
+    return 0;
+  }
+  const pct = Number(hasExplicitPct ? rawPct : (ivaEmpresa ?? 0)) || 0;
   if (pct === 5) return 0;
   return pct > 0 ? pct : Number(ivaEmpresa ?? 0) || 0;
 }
@@ -167,12 +179,17 @@ export function calcularMontosLineaDetalle(
   detalle: any,
   cobrarImpuestos: boolean,
   ivaEmpresa: unknown,
-  options?: { preservePrecioIva?: boolean }
+  options?: { preservePrecioIva?: boolean; paisEmpresa?: unknown }
 ): void {
   const cantidad = parseFloat(String(detalle?.cantidad ?? 0)) || 0;
   const precioSinIva = parseFloat(String(detalle?.precio ?? 0)) || 0;
   const descuento = parseFloat(String(detalle?.descuento ?? 0)) || 0;
-  const pct = porcentajeIvaDetalle(detalle, ivaEmpresa, cobrarImpuestos);
+  const pct = porcentajeIvaDetalle(
+    detalle,
+    ivaEmpresa,
+    cobrarImpuestos,
+    options?.paisEmpresa
+  );
   const tipo = resolverTipoGravadoEfectivo(detalle, cobrarImpuestos, pct);
   detalle.tipo_gravado = tipo;
 
@@ -450,10 +467,11 @@ export function acumularMontosImpuestosVenta(
 export function sumarIvaLineasSinRedondeo(
   detalles: any[],
   cobrarImpuestos: boolean,
-  empresaIva: number
+  empresaIva: number,
+  paisEmpresa?: unknown
 ): number {
   return (detalles || []).reduce((acc, d) => {
-    const pct = porcentajeIvaDetalle(d, empresaIva, cobrarImpuestos);
+    const pct = porcentajeIvaDetalle(d, empresaIva, cobrarImpuestos, paisEmpresa);
     const tipo = resolverTipoGravadoEfectivo(d, cobrarImpuestos, pct);
     if (!cobrarImpuestos || tipo !== 'gravada') {
       return acc;
@@ -520,7 +538,8 @@ export function calcularDescuentoDesdePrecioConIva(options: {
 export function sumarDescuentoConIvaEncabezadoVenta(
   detalles: any[],
   empresaIva: number,
-  cobrarImpuestos: boolean
+  cobrarImpuestos: boolean,
+  paisEmpresa?: unknown
 ): number {
   const suma = (detalles || []).reduce((acc, d) => {
     const conIva = parseFloat(String(d?.descuento_con_iva ?? ''));
@@ -528,7 +547,7 @@ export function sumarDescuentoConIvaEncabezadoVenta(
       return acc + conIva;
     }
     const desc = parseFloat(String(d?.descuento ?? 0)) || 0;
-    const pct = porcentajeIvaDetalle(d, empresaIva, cobrarImpuestos);
+    const pct = porcentajeIvaDetalle(d, empresaIva, cobrarImpuestos, paisEmpresa);
     const factor = pct > 0 ? 1 + pct / 100 : 1;
     return acc + desc * factor;
   }, 0);
@@ -584,10 +603,11 @@ export function calcularIvaResidualEncabezadoVenta(detalles: any[]): number {
 export function resolverIvaObjetivoEncabezadoVenta(
   detalles: any[],
   cobrarImpuestos: boolean,
-  empresaIva: number
+  empresaIva: number,
+  paisEmpresa?: unknown
 ): number {
   const ivaPorTasa = redondearMoneda(
-    sumarIvaLineasSinRedondeo(detalles, cobrarImpuestos, empresaIva)
+    sumarIvaLineasSinRedondeo(detalles, cobrarImpuestos, empresaIva, paisEmpresa)
   );
   const ivaResidual = calcularIvaResidualEncabezadoVenta(detalles);
   if (Math.abs(ivaPorTasa - ivaResidual) <= 0.01 + 1e-9) {
@@ -625,6 +645,37 @@ export function montoEspecialesDeVentaImpuestos(
 }
 
 /**
+ * Destino del centavo de cierre residual: preferir un IVA que ya tenga monto
+ * (la tasa realmente usada en la factura). Si ninguno tiene, cae al IVA empresa.
+ */
+function elegirImpuestoIvaParaCierreResidual(
+  ventaImpuestos: any[],
+  empresaIva: number
+): any | undefined {
+  const ivas = (ventaImpuestos || []).filter((i: any) =>
+    esImpuestoIva(i, empresaIva)
+  );
+  if (!ivas.length) {
+    return undefined;
+  }
+
+  const conMonto = ivas
+    .filter((i: any) => Math.abs(parseFloat(String(i.monto ?? 0)) || 0) >= 0.005)
+    .sort(
+      (a: any, b: any) =>
+        Math.abs(parseFloat(String(b.monto ?? 0)) || 0) -
+        Math.abs(parseFloat(String(a.monto ?? 0)) || 0)
+    );
+  if (conMonto.length) {
+    return conMonto[0];
+  }
+
+  return (
+    ivas.find((i: any) => pctIgual(Number(i.porcentaje), empresaIva)) || ivas[0]
+  );
+}
+
+/**
  * Acumula impuestos y, si hay IVA, ajusta el cierre residual solo sobre el IVA
  * (precios con IVA incluido en facturación v2). No apaga tributos especiales
  * cuando cobrarImpuestos es false. Retorna solo el monto de IVA.
@@ -633,7 +684,8 @@ export function acumularImpuestosVentaConCierreResidual(
   ventaImpuestos: any[],
   detalles: any[],
   cobrarImpuestos: boolean,
-  empresaIva: number
+  empresaIva: number,
+  paisEmpresa?: unknown
 ): number {
   if (!ventaImpuestos?.length) {
     return cobrarImpuestos ? calcularIvaResidualEncabezadoVenta(detalles) : 0;
@@ -653,17 +705,17 @@ export function acumularImpuestosVentaConCierreResidual(
   const ivaObjetivo = resolverIvaObjetivoEncabezadoVenta(
     detalles,
     cobrarImpuestos,
-    empresaIva
+    empresaIva,
+    paisEmpresa
   );
   const ivaAcumulado = montoIvaDeVentaImpuestos(ventaImpuestos, empresaIva);
   const delta = redondearMoneda(ivaObjetivo - ivaAcumulado);
 
   if (Math.abs(delta) >= 0.005) {
-    const impuestoDestino =
-      ventaImpuestos.find(
-        (i: any) =>
-          esImpuestoIva(i, empresaIva) && pctIgual(Number(i.porcentaje), empresaIva)
-      ) || ventaImpuestos.find((i: any) => esImpuestoIva(i, empresaIva));
+    const impuestoDestino = elegirImpuestoIvaParaCierreResidual(
+      ventaImpuestos,
+      empresaIva
+    );
     if (impuestoDestino) {
       impuestoDestino.monto = redondearMoneda(
         (parseFloat(String(impuestoDestino.monto ?? 0)) || 0) + delta

@@ -90,6 +90,114 @@ describe('impuestos-venta.util — IVA vs especiales', () => {
     ).toBe(15);
   });
 
+  it('HN: porcentaje_impuesto 0 sin impuestos[] se trata como exento (no usa IVA empresa)', () => {
+    expect(
+      porcentajeIvaDetalle(
+        { impuestos: [], porcentaje_impuesto: 0 },
+        15,
+        true,
+        'Honduras'
+      )
+    ).toBe(0);
+
+    const detalle: any = {
+      cantidad: 2,
+      precio: 65,
+      descuento: 0,
+      tipo_gravado: 'gravada',
+      impuestos: [],
+      porcentaje_impuesto: 0,
+    };
+    calcularMontosLineaDetalle(detalle, true, 15, { paisEmpresa: 'Honduras' });
+    expect(detalle.tipo_gravado).toBe('exenta');
+    expect(detalle.exenta).toBe(130);
+    expect(detalle.iva).toBe(0);
+  });
+
+  it('SV: porcentaje_impuesto 0 sin impuestos[] sigue usando IVA de la empresa', () => {
+    expect(
+      porcentajeIvaDetalle(
+        { impuestos: [], porcentaje_impuesto: 0 },
+        13,
+        true,
+        'El Salvador'
+      )
+    ).toBe(13);
+    expect(
+      porcentajeIvaDetalle({ impuestos: [], porcentaje_impuesto: 0 }, 13, true)
+    ).toBe(13);
+
+    const detalle: any = {
+      cantidad: 1,
+      precio: 100,
+      descuento: 0,
+      tipo_gravado: 'gravada',
+      impuestos: [],
+      porcentaje_impuesto: 0,
+    };
+    calcularMontosLineaDetalle(detalle, true, 13, { paisEmpresa: 'El Salvador' });
+    expect(detalle.tipo_gravado).toBe('gravada');
+    expect(detalle.gravada).toBe(100);
+    expect(Number(detalle.iva)).toBeCloseTo(13, 2);
+  });
+
+  it('HN: sin porcentaje_impuesto (legacy) sigue usando IVA de la empresa', () => {
+    expect(
+      porcentajeIvaDetalle({ impuestos: [] }, 15, true, 'Honduras')
+    ).toBe(15);
+  });
+
+  it('HN: factura mixta 18% + exentos no cobra 15% sobre exentos', () => {
+    const ventaImpuestos = [
+      { id: 1, porcentaje: 15, nombre: 'IMPUESTO (15%)', monto: 0 },
+      { id: 2, porcentaje: 18, nombre: 'IMPUESTO (18%)', monto: 0 },
+      { id: 3, porcentaje: 0, nombre: 'EXENTO (0%)', monto: 0 },
+    ];
+    const detalles: any[] = [
+      {
+        cantidad: 1,
+        precio: 309.322,
+        descuento: 0,
+        tipo_gravado: 'gravada',
+        impuestos: [{ id: 2, porcentaje: 18 }],
+        porcentaje_impuesto: 18,
+      },
+      {
+        cantidad: 28,
+        precio: 25,
+        descuento: 0,
+        tipo_gravado: 'gravada',
+        impuestos: [],
+        porcentaje_impuesto: 0,
+      },
+      {
+        cantidad: 2,
+        precio: 65,
+        descuento: 0,
+        tipo_gravado: 'gravada',
+        impuestos: [],
+        porcentaje_impuesto: 0,
+      },
+    ];
+
+    detalles.forEach((d) =>
+      calcularMontosLineaDetalle(d, true, 15, { paisEmpresa: 'Honduras' })
+    );
+    const iva = acumularImpuestosVentaConCierreResidual(
+      ventaImpuestos,
+      detalles,
+      true,
+      15,
+      'Honduras'
+    );
+
+    expect(detalles[1].tipo_gravado).toBe('exenta');
+    expect(detalles[2].tipo_gravado).toBe('exenta');
+    expect(Number(ventaImpuestos[1].monto)).toBeCloseTo(55.68, 1);
+    expect(Number(ventaImpuestos[0].monto)).toBeLessThan(0.02);
+    expect(iva).toBeCloseTo(55.68, 1);
+  });
+
   it('calcularMontosLineaDetalle deja gravada un producto HN 15% multi-impuesto', () => {
     const detalle: any = {
       cantidad: 1,
@@ -315,6 +423,71 @@ describe('impuestos-venta.util — IVA vs especiales', () => {
     expect(iva).toBeCloseTo(13, 2);
     expect(Number(ventaImpuestos[0].monto)).toBeCloseTo(13, 2);
     expect(Number(ventaImpuestos[1].monto)).toBeCloseTo(5, 2);
+  });
+
+  it('cierre residual HN mete el centavo en la tasa con monto (18%), no en 15% vacío', () => {
+    const ventaImpuestos = [
+      { id: 1, porcentaje: 15, monto: 0 },
+      { id: 2, porcentaje: 18, monto: 0 },
+      { id: 3, porcentaje: 0, monto: 0 },
+    ];
+    const detalles: any[] = [
+      {
+        cantidad: 1,
+        precio: 309.322,
+        descuento: 0,
+        tipo_gravado: 'gravada',
+        impuestos: [{ id: 2, porcentaje: 18 }],
+        porcentaje_impuesto: 18,
+      },
+      {
+        cantidad: 1,
+        precio: 618.64,
+        descuento: 0,
+        tipo_gravado: 'gravada',
+        impuestos: [{ id: 2, porcentaje: 18 }],
+        porcentaje_impuesto: 18,
+      },
+      {
+        cantidad: 28,
+        precio: 25,
+        descuento: 0,
+        tipo_gravado: 'gravada',
+        impuestos: [],
+        porcentaje_impuesto: 0,
+      },
+      {
+        cantidad: 2,
+        precio: 65,
+        descuento: 0,
+        tipo_gravado: 'gravada',
+        impuestos: [],
+        porcentaje_impuesto: 0,
+      },
+      {
+        cantidad: 1,
+        precio: 196.492,
+        descuento: 0,
+        tipo_gravado: 'gravada',
+        impuestos: [{ id: 2, porcentaje: 18 }],
+        porcentaje_impuesto: 18,
+      },
+    ];
+
+    detalles.forEach((d) =>
+      calcularMontosLineaDetalle(d, true, 15, { paisEmpresa: 'Honduras' })
+    );
+    const iva = acumularImpuestosVentaConCierreResidual(
+      ventaImpuestos,
+      detalles,
+      true,
+      15,
+      'Honduras'
+    );
+
+    expect(Number(ventaImpuestos[0].monto)).toBe(0);
+    expect(Number(ventaImpuestos[1].monto)).toBeCloseTo(202.41, 2);
+    expect(iva).toBeCloseTo(202.41, 2);
   });
 
   it('acumula IVA sin redondear por línea (evita desface en multi-línea)', () => {

@@ -110,7 +110,8 @@ export class VentaDetallesComponent implements OnInit {
         return porcentajeIvaDetalle(
             detalle,
             this.apiService.auth_user()?.empresa?.iva,
-            !!this.venta.cobrar_impuestos
+            !!this.venta.cobrar_impuestos,
+            this.apiService.auth_user()?.empresa?.pais
         );
     }
 
@@ -119,7 +120,8 @@ export class VentaDetallesComponent implements OnInit {
         calcularMontosLineaDetalle(
             detalle,
             !!this.venta.cobrar_impuestos,
-            this.apiService.auth_user()?.empresa?.iva
+            this.apiService.auth_user()?.empresa?.iva,
+            { paisEmpresa: this.apiService.auth_user()?.empresa?.pais }
         );
     }
 
