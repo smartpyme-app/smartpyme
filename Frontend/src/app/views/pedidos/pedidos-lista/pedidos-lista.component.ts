@@ -472,6 +472,12 @@ export class PedidosListaComponent implements OnInit, OnDestroy {
     this.mostrarDetallesEnvio = true;
   }
 
+  onCerrarDetallesEnvioBoxful(): void {
+    this.mostrarDetallesEnvio = false;
+    this.selectedShipmentId = '';
+    this.cargarLista();
+  }
+
   verTrackingPaquete(shipmentNumber: string, template: TemplateRef<any>): void {
     this.trackingInfo = null;
     this.cargandoTrackingBoxful = true;

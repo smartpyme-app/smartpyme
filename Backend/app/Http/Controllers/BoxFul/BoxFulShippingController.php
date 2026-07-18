@@ -10,6 +10,7 @@ use App\Models\Admin\Integracion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class BoxFulShippingController extends Controller
 {
@@ -351,12 +352,7 @@ class BoxFulShippingController extends Controller
 
             if (!empty($origenInput)) {
                 $direccionOrigenId = $origenInput['id'] ?? $origenInput['recolectionAddressId'] ?? null;
-                if (!empty($direccionOrigenId) && (!is_string($direccionOrigenId) || strlen($direccionOrigenId) !== 24 || !ctype_xdigit($direccionOrigenId))) {
-                    $localOrigen = \App\Models\Admin\DireccionOrigen::find($direccionOrigenId);
-                    if ($localOrigen && !empty($localOrigen->boxful_address_id)) {
-                        $direccionOrigenId = $localOrigen->boxful_address_id;
-                    }
-                }
+                $direccionOrigenId = $this->resolveOrigenBoxfulAddressId($direccionOrigenId, (int) $empresa->id);
             }
 
             if (empty($direccionOrigenId)) {
@@ -460,31 +456,92 @@ class BoxFulShippingController extends Controller
                 'ventaId' => 'nullable|integer',
             ]);
 
+            $empresaId = (int) $empresa->id;
+            $pendingToken = null;
             $paquetesInput = $request->input('paquetes');
             $paqueteInput = $request->input('paquete') ?? [];
             $paqueteId = $request->input('paqueteId') ?? ($paqueteInput['id'] ?? null);
             $paqueteModel = $paqueteId ? \App\Models\Inventario\Paquete::find($paqueteId) : null;
-            $pedidoRestauranteId = $request->input('pedidoId');
+            // Solo pedidoId entero: storeOrderNumber/orderNumber son refs BoxFul (WR/venta), NO ids de pedido.
+            $pedidoRestauranteId = $request->input('pedidoId') ? (int) $request->input('pedidoId') : null;
+            if ($pedidoRestauranteId !== null && $pedidoRestauranteId <= 0) {
+                $pedidoRestauranteId = null;
+            }
             $ventaId = $request->input('ventaId') ? (int) $request->input('ventaId') : null;
+
+            if ($ventaId) {
+                $ventaOk = \App\Models\Ventas\Venta::where('id', $ventaId)
+                    ->where('id_empresa', $empresaId)
+                    ->exists();
+                if (! $ventaOk) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'La venta indicada no existe o no pertenece a su empresa.',
+                    ], 404);
+                }
+            }
+
+            if ($pedidoRestauranteId) {
+                $pedidoOk = \App\Models\Restaurante\PedidoRestaurante::where('id', $pedidoRestauranteId)
+                    ->where('id_empresa', $empresaId)
+                    ->exists();
+                if (! $pedidoOk) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'El pedido indicado no existe o no pertenece a su empresa.',
+                    ], 404);
+                }
+            }
 
             if (! $paqueteModel && $pedidoRestauranteId) {
                 $detallePaquete = \App\Models\Restaurante\PedidoRestauranteDetalle::where('pedido_id', $pedidoRestauranteId)
                     ->whereNotNull('id_paquete')
                     ->value('id_paquete');
                 if ($detallePaquete) {
-                    $paqueteModel = \App\Models\Inventario\Paquete::withoutGlobalScopes()->find($detallePaquete);
+                    $paqueteModel = \App\Models\Inventario\Paquete::withoutGlobalScopes()
+                        ->where('id', $detallePaquete)
+                        ->where('id_empresa', $empresaId)
+                        ->first();
                 }
             }
 
-            // Flujo venta-first: resolver o crear stub BoxFul de la venta
+            // Flujo venta-first: resolver stub BoxFul de la venta (solo de esta empresa)
             if (! $paqueteModel && $ventaId) {
+                $this->clearStalePendingGuiaForVenta($empresaId, $ventaId);
                 $paqueteModel = \App\Models\Inventario\Paquete::withoutGlobalScopes()
+                    ->where('id_empresa', $empresaId)
                     ->where('id_venta', $ventaId)
                     ->where('transportista', 'Boxful')
                     ->where(function ($q) {
-                        $q->whereNull('num_guia')->orWhere('num_guia', '');
+                        $q->whereNull('num_guia')
+                            ->orWhere('num_guia', '')
+                            ->orWhere('num_guia', 'like', 'PENDING-%');
                     })
+                    ->orderByDesc('id')
                     ->first();
+            }
+
+            if ($paqueteModel && (int) $paqueteModel->id_empresa !== $empresaId) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'El paquete indicado no pertenece a su empresa.',
+                ], 403);
+            }
+
+            if ($paqueteModel) {
+                $this->clearStalePendingGuia($empresaId, (int) $paqueteModel->id);
+                $paqueteModel->refresh();
+            }
+
+            // Idempotencia: si ya hay guía BoxFul para este paquete/venta/pedido, no crear otra.
+            $guiaExistente = $this->findExistingBoxfulGuia(
+                $empresaId,
+                $paqueteModel ? (int) $paqueteModel->id : null,
+                $ventaId,
+                $pedidoRestauranteId
+            );
+            if ($guiaExistente) {
+                return $this->responseGuiaBoxfulYaExiste($guiaExistente);
             }
 
             if (empty($paquetesInput) && empty($paqueteInput) && empty($paqueteModel)) {
@@ -631,18 +688,45 @@ class BoxFulShippingController extends Controller
                 }
             }
 
-            // Obtener dirección de origen de la bodega/tienda
+            // Resolver origen ANTES del payload (raíz + pickup deben llevar el mismo id).
             $origenInput = $request->input('origen');
             $direccionOrigenId = null;
 
             if (!empty($origenInput)) {
                 $direccionOrigenId = $origenInput['id'] ?? $origenInput['recolectionAddressId'] ?? null;
-                if (!empty($direccionOrigenId) && (!is_string($direccionOrigenId) || strlen($direccionOrigenId) !== 24 || !ctype_xdigit($direccionOrigenId))) {
-                    $localOrigen = \App\Models\Admin\DireccionOrigen::find($direccionOrigenId);
-                    if ($localOrigen && !empty($localOrigen->boxful_address_id)) {
-                        $direccionOrigenId = $localOrigen->boxful_address_id;
+                $direccionOrigenId = $this->resolveOrigenBoxfulAddressId($direccionOrigenId, $empresaId);
+            }
+
+            if (empty($direccionOrigenId)) {
+                $direccionOrigenId = $integracion->getConfig('direccion_origen_id');
+            }
+
+            if (empty($direccionOrigenId)) {
+                try {
+                    $addrResponse = $this->boxfulService->get('addresses');
+                    if ($addrResponse->successful()) {
+                        $addresses = $addrResponse->json();
+                        $addressList = isset($addresses['addresses']) ? $addresses['addresses'] : (isset($addresses['data']) ? $addresses['data'] : $addresses);
+                        if (is_array($addressList) && count($addressList) > 0) {
+                            $firstAddr = $addressList[0];
+                            $direccionOrigenId = $firstAddr['id'] ?? $firstAddr['addressId'] ?? null;
+
+                            if (!empty($direccionOrigenId)) {
+                                $integracion->setConfig(['direccion_origen_id' => $direccionOrigenId]);
+                                $integracion->save();
+                            }
+                        }
                     }
+                } catch (\Exception $e) {
+                    Log::warning('No se pudo autodetectar dirección de origen de la empresa para envío: ' . $e->getMessage());
                 }
+            }
+
+            if (empty($direccionOrigenId)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Dirección de bodega de origen no configurada. Por favor, configure la dirección de origen en Ajustes de Empresa.'
+                ], 400);
             }
 
             // Construir el payload oficial para POST /shipment
@@ -686,8 +770,8 @@ class BoxFulShippingController extends Controller
                     'customerAddressLongitude' => (float) ($destino['longitud'] ?? $destino['longitude'] ?? $destino['lng'] ?? 0.0),
                 ],
                 'pickup' => [
-                    'recolectionAddressId' => $direccionOrigenId
-                ]
+                    'recolectionAddressId' => $direccionOrigenId,
+                ],
             ];
 
             if ($orderNumber) {
@@ -695,46 +779,51 @@ class BoxFulShippingController extends Controller
                 $boxfulPayload['orderNumber'] = $orderNumber;
             }
 
-            if (empty($direccionOrigenId)) {
-                // Fallback a la configuración de la integración
-                $direccionOrigenId = $integracion->getConfig('direccion_origen_id');
-            }
+            // Claim atómico del stub para evitar doble POST a BoxFul (doble clic / race).
+            if ($paqueteModel) {
+                $this->clearStalePendingGuia($empresaId, (int) $paqueteModel->id);
+                $pendingToken = 'PENDING-' . Str::upper(Str::random(12));
+                // Solo claim si no hay guía real ni PENDING fresco (stale ya se limpió arriba).
+                $claimed = \App\Models\Inventario\Paquete::withoutGlobalScopes()
+                    ->where('id', $paqueteModel->id)
+                    ->where('id_empresa', $empresaId)
+                    ->where(function ($q) {
+                        $q->whereNull('num_guia')->orWhere('num_guia', '');
+                    })
+                    ->update(['num_guia' => $pendingToken]);
 
-            if (empty($direccionOrigenId)) {
-                // Fallback: si no está configurada, intentar buscar las direcciones registradas de la empresa en Boxful y tomar la primera
-                try {
-                    $addrResponse = $this->boxfulService->get('addresses');
-                    if ($addrResponse->successful()) {
-                        $addresses = $addrResponse->json();
-                        $addressList = isset($addresses['addresses']) ? $addresses['addresses'] : (isset($addresses['data']) ? $addresses['data'] : $addresses);
-                        if (is_array($addressList) && count($addressList) > 0) {
-                            $firstAddr = $addressList[0];
-                            $direccionOrigenId = $firstAddr['id'] ?? $firstAddr['addressId'] ?? null;
-                            
-                            if (!empty($direccionOrigenId)) {
-                                // Guardar en configuración para no repetir la llamada HTTP en el futuro
-                                $integracion->setConfig(['direccion_origen_id' => $direccionOrigenId]);
-                                $integracion->save();
-                            }
-                        }
+                if ($claimed === 0) {
+                    $guiaExistente = $this->findExistingBoxfulGuia(
+                        $empresaId,
+                        $paqueteModel->id,
+                        $ventaId,
+                        $pedidoRestauranteId
+                    );
+                    if ($guiaExistente) {
+                        return $this->responseGuiaBoxfulYaExiste($guiaExistente);
                     }
-                } catch (\Exception $e) {
-                    Log::warning('No se pudo autodetectar dirección de origen de la empresa para envío: ' . $e->getMessage());
+
+                    return response()->json([
+                        'status' => 'error',
+                        'code' => 'boxful_shipment_in_progress',
+                        'message' => 'Ya hay una generación de guía BoxFul en curso para este paquete. Espere un momento e intente de nuevo.',
+                    ], 409);
                 }
-            }
 
-            if (empty($direccionOrigenId)) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Dirección de bodega de origen no configurada. Por favor, configure la dirección de origen en Ajustes de Empresa.'
-                ], 400);
+                $paqueteModel->num_guia = $pendingToken;
             }
-
-            $boxfulPayload['recolectionAddressId'] = $direccionOrigenId;
 
             $response = $this->boxfulService->post('shipment', $boxfulPayload);
 
             if ($response->failed()) {
+                if ($pendingToken && $paqueteModel) {
+                    \App\Models\Inventario\Paquete::withoutGlobalScopes()
+                        ->where('id', $paqueteModel->id)
+                        ->where('num_guia', $pendingToken)
+                        ->update(['num_guia' => null]);
+                    $paqueteModel->num_guia = null;
+                }
+
                 $status = $response->status();
                 $body = $response->json();
                 Log::error('Error de API Boxful en createShipment', [
@@ -769,132 +858,172 @@ class BoxFulShippingController extends Controller
             $statusDesc = $shipment['statusDescription'] ?? ($shipment['status_description'] ?? null);
             $shipmentStatus = $shipment['status'] ?? null;
 
-            if ($shipmentId || $shipmentNumber) {
-                if (! $pedidoRestauranteId) {
-                    $pedidoRestauranteId = $request->input('storeOrderNumber') ?? $request->input('orderNumber') ?? null;
-                }
+            $warnings = [];
+            $valorPaquete = isset($valor) ? (float) $valor : (float) ($parcels[0]['price'] ?? 0);
 
-                if (! $paqueteModel) {
-                    $paqueteModel = new \App\Models\Inventario\Paquete();
-                    $paqueteModel->id_empresa = $empresa->id;
-                    $paqueteModel->id_usuario = $user->id;
-                    $paqueteModel->id_sucursal = $user->id_sucursal ?? ($empresa->sucursales()->first()->id ?? null);
+            if ($shipmentId || $shipmentNumber) {
+                $statusNumeric = is_numeric($shipmentStatus) ? (int) $shipmentStatus : null;
+
+                DB::transaction(function () use (
+                    &$paqueteModel,
+                    &$ventaId,
+                    &$clienteId,
+                    $empresa,
+                    $empresaId,
+                    $user,
+                    $pedidoRestauranteId,
+                    $shipmentNumber,
+                    $shipmentId,
+                    $labelUrl,
+                    $trackingUrl,
+                    $courierName,
+                    $statusDesc,
+                    $statusNumeric,
+                    $courierId,
+                    $cod,
+                    $codAmount,
+                    $request,
+                    $direccionOrigenId,
+                    $destino,
+                    $nombre,
+                    $apellido,
+                    $totalWeight,
+                    $parcels,
+                    $valorPaquete
+                ) {
+                    if (! $paqueteModel) {
+                        $paqueteModel = new \App\Models\Inventario\Paquete();
+                        $paqueteModel->id_empresa = $empresa->id;
+                        $paqueteModel->id_usuario = $user->id;
+                        $paqueteModel->id_sucursal = $user->id_sucursal ?? ($empresa->sucursales()->first()->id ?? null);
+
+                        if ($pedidoRestauranteId) {
+                            $pedido = \App\Models\Restaurante\PedidoRestaurante::where('id', $pedidoRestauranteId)
+                                ->where('id_empresa', $empresaId)
+                                ->first();
+                            if ($pedido) {
+                                if ($pedido->id_venta) {
+                                    $paqueteModel->id_venta = $pedido->id_venta;
+                                    if (!$ventaId) {
+                                        $ventaId = (int) $pedido->id_venta;
+                                    }
+                                }
+                                if (empty($clienteId) && $pedido->cliente_id) {
+                                    $clienteId = $pedido->cliente_id;
+                                }
+                                $paqueteModel->nota = 'Creado desde pedido #' . $pedido->id;
+                            }
+                        }
+
+                        if ($ventaId) {
+                            $paqueteModel->id_venta = $ventaId;
+                            $ventaRef = \App\Models\Ventas\Venta::where('id', $ventaId)
+                                ->where('id_empresa', $empresaId)
+                                ->first();
+                            if ($ventaRef && empty($clienteId)) {
+                                $clienteId = $ventaRef->id_cliente;
+                            }
+                            if (empty($paqueteModel->nota)) {
+                                $paqueteModel->nota = 'Creado desde venta #' . $ventaId;
+                            }
+                        }
+
+                        $paqueteModel->id_cliente = $clienteId;
+                        $paqueteModel->fecha = now();
+                        // ponytail: never use pedido id as WR — collides with hasOneThrough-style lookups
+                        $paqueteModel->wr = ($paqueteModel->wr ?? null) ?: ('BOXFUL-' . strtoupper(\Illuminate\Support\Str::random(8)));
+                        $paqueteModel->transportista = 'Boxful';
+                        $paqueteModel->consignatario = $nombre . ' ' . $apellido;
+                        $paqueteModel->estado = 'Pendiente';
+                        $paqueteModel->peso = $totalWeight;
+                        $paqueteModel->precio = $valorPaquete;
+                        $paqueteModel->piezas = count($parcels);
+                        $paqueteModel->num_guia = $shipmentNumber ?? $shipmentId;
+                        $paqueteModel->save();
+                    } else {
+                        $paqueteModel->num_guia = $shipmentNumber ?? $shipmentId;
+                        $paqueteModel->peso = $totalWeight;
+                        $paqueteModel->piezas = count($parcels);
+                        if ($ventaId && !$paqueteModel->id_venta) {
+                            $paqueteModel->id_venta = $ventaId;
+                        }
+                        $paqueteModel->save();
+                    }
 
                     if ($pedidoRestauranteId) {
-                        $pedido = \App\Models\Restaurante\PedidoRestaurante::find($pedidoRestauranteId);
-                        if ($pedido) {
-                            if ($pedido->id_venta) {
-                                $paqueteModel->id_venta = $pedido->id_venta;
-                                if (!$ventaId) {
-                                    $ventaId = (int) $pedido->id_venta;
-                                }
-                            }
-                            if (empty($clienteId) && $pedido->cliente_id) {
-                                $clienteId = $pedido->cliente_id;
-                            }
-                            $paqueteModel->nota = 'Creado desde pedido #' . $pedido->id;
+                        $pedidoDeEmpresa = \App\Models\Restaurante\PedidoRestaurante::where('id', $pedidoRestauranteId)
+                            ->where('id_empresa', $empresaId)
+                            ->exists();
+                        if ($pedidoDeEmpresa) {
+                            \App\Models\Restaurante\PedidoRestauranteDetalle::where('pedido_id', $pedidoRestauranteId)
+                                ->update(['id_paquete' => $paqueteModel->id]);
                         }
                     }
 
-                    if ($ventaId) {
-                        $paqueteModel->id_venta = $ventaId;
-                        $ventaRef = \App\Models\Ventas\Venta::find($ventaId);
-                        if ($ventaRef && empty($clienteId)) {
-                            $clienteId = $ventaRef->id_cliente;
-                        }
-                        if (empty($paqueteModel->nota)) {
-                            $paqueteModel->nota = 'Creado desde venta #' . $ventaId;
+                    $localOrigenId = null;
+                    if (!empty($direccionOrigenId)) {
+                        $localOrigen = \App\Models\Admin\DireccionOrigen::where('id_empresa', $empresaId)
+                            ->where('boxful_address_id', $direccionOrigenId)
+                            ->first();
+                        if ($localOrigen) {
+                            $localOrigenId = $localOrigen->id;
+                        } else {
+                            $localOrigen = \App\Models\Admin\DireccionOrigen::create([
+                                'id_empresa' => $empresa->id,
+                                'alias' => 'Dirección autogenerada',
+                                'direccion' => $destino['direccion'] ?? 'Dirección',
+                                'referencia' => $destino['referencia'] ?? 'Autogenerado',
+                                'telefono' => $destino['telefono'] ?? '70000000',
+                                'boxful_state_id' => $destino['stateId'] ?? '0',
+                                'boxful_city_id' => $destino['cityId'] ?? '0',
+                                'boxful_address_id' => $direccionOrigenId,
+                                'latitud' => 0,
+                                'longitud' => 0,
+                            ]);
+                            $localOrigenId = $localOrigen->id;
                         }
                     }
 
-                    $paqueteModel->id_cliente = $clienteId;
-                    $paqueteModel->fecha = now();
-                    // ponytail: never use pedido id as WR — collides with hasOneThrough-style lookups
-                    $paqueteModel->wr = ($paqueteModel->wr ?? null) ?: ('BOXFUL-' . strtoupper(\Illuminate\Support\Str::random(8)));
-                    $paqueteModel->transportista = 'Boxful';
-                    $paqueteModel->consignatario = $nombre . ' ' . $apellido;
-                    $paqueteModel->estado = 'Pendiente';
-                    $paqueteModel->peso = $totalWeight;
-                    $paqueteModel->precio = $valor ?? 0;
-                    $paqueteModel->piezas = count($parcels);
-                    $paqueteModel->num_guia = $shipmentNumber ?? $shipmentId;
-                    $paqueteModel->save();
-                } else {
-                    $paqueteModel->num_guia = $shipmentNumber ?? $shipmentId;
-                    $paqueteModel->peso = $totalWeight;
-                    $paqueteModel->piezas = count($parcels);
-                    if ($ventaId && !$paqueteModel->id_venta) {
-                        $paqueteModel->id_venta = $ventaId;
-                    }
-                    $paqueteModel->save();
-                }
+                    $shipmentFields = [
+                        'direccion_origen_id' => $localOrigenId,
+                        'fecha_recoleccion' => $request->input('fecha_recoleccion') ?? $request->input('recolectionDate') ?? now(),
+                        'cod' => $cod,
+                        'cod_monto' => $cod ? $codAmount : 0,
+                        'boxful_shipment_id' => $shipmentId,
+                        'shipment_number' => $shipmentNumber,
+                        'boxful_courier_id' => $courierId,
+                        'boxful_courier_name' => $courierName,
+                        'boxful_label_url' => $labelUrl,
+                        'boxful_tracking_url' => $trackingUrl,
+                        'boxful_status' => $statusNumeric,
+                        'boxful_status_description' => $statusDesc,
+                    ];
 
-                if ($pedidoRestauranteId) {
-                    \App\Models\Restaurante\PedidoRestauranteDetalle::where('pedido_id', $pedidoRestauranteId)
-                        ->update(['id_paquete' => $paqueteModel->id]);
-                }
-
-                $localOrigenId = null;
-                if (!empty($direccionOrigenId)) {
-                    $localOrigen = \App\Models\Admin\DireccionOrigen::where('boxful_address_id', $direccionOrigenId)->first();
-                    if ($localOrigen) {
-                        $localOrigenId = $localOrigen->id;
+                    $boxfulShipment = \App\Models\Inventario\BoxfulShipment::where('paquete_id', $paqueteModel->id)->first();
+                    if ($boxfulShipment) {
+                        $boxfulShipment->update($shipmentFields);
+                        \App\Models\Inventario\BoxfulParcel::where('boxful_shipment_id', $boxfulShipment->id)->delete();
                     } else {
-                        $localOrigen = \App\Models\Admin\DireccionOrigen::create([
-                            'id_empresa' => $empresa->id,
-                            'alias' => 'Dirección autogenerada',
-                            'direccion' => $destino['direccion'] ?? 'Dirección',
-                            'referencia' => $destino['referencia'] ?? 'Autogenerado',
-                            'telefono' => $destino['telefono'] ?? '70000000',
-                            'boxful_state_id' => $destino['stateId'] ?? '0',
-                            'boxful_city_id' => $destino['cityId'] ?? '0',
-                            'boxful_address_id' => $direccionOrigenId,
-                            'latitud' => 0,
-                            'longitud' => 0,
-                        ]);
-                        $localOrigenId = $localOrigen->id;
+                        $boxfulShipment = \App\Models\Inventario\BoxfulShipment::create(
+                            array_merge(['paquete_id' => $paqueteModel->id], $shipmentFields)
+                        );
                     }
-                }
 
-                $shipmentFields = [
-                    'direccion_origen_id' => $localOrigenId,
-                    'fecha_recoleccion' => $request->input('fecha_recoleccion') ?? $request->input('recolectionDate') ?? now(),
-                    'cod' => $cod,
-                    'cod_monto' => $cod ? $codAmount : 0,
-                    'boxful_shipment_id' => $shipmentId,
-                    'shipment_number' => $shipmentNumber,
-                    'boxful_courier_id' => $courierId,
-                    'boxful_courier_name' => $courierName,
-                    'boxful_label_url' => $labelUrl,
-                    'boxful_tracking_url' => $trackingUrl,
-                    'boxful_status' => $shipmentStatus,
-                    'boxful_status_description' => $statusDesc,
-                ];
-
-                $boxfulShipment = \App\Models\Inventario\BoxfulShipment::where('paquete_id', $paqueteModel->id)->first();
-                if ($boxfulShipment) {
-                    $boxfulShipment->update($shipmentFields);
-                    \App\Models\Inventario\BoxfulParcel::where('boxful_shipment_id', $boxfulShipment->id)->delete();
-                } else {
-                    $boxfulShipment = \App\Models\Inventario\BoxfulShipment::create(
-                        array_merge(['paquete_id' => $paqueteModel->id], $shipmentFields)
-                    );
-                }
-
-                if ($boxfulShipment) {
-                    foreach ($parcels as $p) {
-                        \App\Models\Inventario\BoxfulParcel::create([
-                            'boxful_shipment_id' => $boxfulShipment->id,
-                            'contenido' => $p['content'],
-                            'alto' => $p['height'],
-                            'ancho' => $p['width'],
-                            'largo' => $p['length'],
-                            'peso' => $p['weight'],
-                            'valor_declarado' => $p['price'],
-                            'es_fragil' => $p['isFragile'],
-                        ]);
+                    if ($boxfulShipment) {
+                        foreach ($parcels as $p) {
+                            \App\Models\Inventario\BoxfulParcel::create([
+                                'boxful_shipment_id' => $boxfulShipment->id,
+                                'contenido' => $p['content'],
+                                'alto' => $p['height'],
+                                'ancho' => $p['width'],
+                                'largo' => $p['length'],
+                                'peso' => $p['weight'],
+                                'valor_declarado' => $p['price'],
+                                'es_fragil' => $p['isFragile'],
+                            ]);
+                        }
                     }
-                }
+                });
 
                 Log::info('Guía de Boxful guardada en el paquete local correctamente', [
                     'paqueteId' => $paqueteModel->id,
@@ -904,7 +1033,9 @@ class BoxFulShippingController extends Controller
 
                 // Auto-confirmar el pedido de canal si viene en borrador
                 if ($pedidoRestauranteId && $shipmentNumber) {
-                    $pedidoCanal = \App\Models\Restaurante\PedidoRestaurante::find($pedidoRestauranteId);
+                    $pedidoCanal = \App\Models\Restaurante\PedidoRestaurante::where('id', $pedidoRestauranteId)
+                        ->where('id_empresa', $empresaId)
+                        ->first();
                     if ($pedidoCanal && $pedidoCanal->estado === 'borrador') {
                         try {
                             DB::transaction(function () use ($pedidoCanal, $user) {
@@ -918,13 +1049,25 @@ class BoxFulShippingController extends Controller
                             Log::info('Pedido canal auto-confirmado al generar guía Boxful', ['pedidoId' => $pedidoRestauranteId]);
                         } catch (\Throwable $e) {
                             Log::warning('No se pudo auto-confirmar el pedido canal al generar guía Boxful: ' . $e->getMessage(), ['pedidoId' => $pedidoRestauranteId]);
+                            $warnings[] = 'Guía creada, pero no se pudo auto-confirmar el pedido de canal.';
                         }
                     }
                 }
 
-                // Flujo venta-first: crear pedido de seguimiento tras la guía (sin inventario ni facturación)
+                // Flujo venta-first: pedido de seguimiento (fuera de la txn de guía; si falla, avisar)
                 if ($ventaId && $shipmentNumber && $paqueteModel) {
-                    $this->crearPedidoSeguimientoDesdeVenta($ventaId, $paqueteModel, $user, $shipmentNumber);
+                    try {
+                        $creado = $this->crearPedidoSeguimientoDesdeVenta($ventaId, $paqueteModel, $user, $shipmentNumber, $empresaId);
+                        if (! $creado) {
+                            $warnings[] = 'Guía creada, pero no se pudo crear el pedido de seguimiento BoxFul.';
+                        }
+                    } catch (\Throwable $e) {
+                        Log::warning('No se pudo crear pedido de seguimiento BoxFul desde venta: ' . $e->getMessage(), [
+                            'ventaId' => $ventaId,
+                            'paqueteId' => $paqueteModel->id ?? null,
+                        ]);
+                        $warnings[] = 'Guía creada, pero no se pudo crear el pedido de seguimiento BoxFul.';
+                    }
                 }
             }
 
@@ -947,6 +1090,7 @@ class BoxFulShippingController extends Controller
                     'cod' => $cod,
                     'codAmount' => $cod ? $codAmount : 0,
                     'data' => is_array($shipment) ? $shipment : $shipmentData,
+                    'warnings' => $warnings,
                 ]
             ), 201);
 
@@ -957,6 +1101,12 @@ class BoxFulShippingController extends Controller
                 'errors' => $e->errors()
             ], 422);
         } catch (\Exception $e) {
+            if (! empty($pendingToken) && ! empty($paqueteModel)) {
+                \App\Models\Inventario\Paquete::withoutGlobalScopes()
+                    ->where('id', $paqueteModel->id)
+                    ->where('num_guia', $pendingToken)
+                    ->update(['num_guia' => null]);
+            }
             Log::error('BoxFulShippingController@createShipment exception: ' . $e->getMessage());
             return response()->json([
                 'status' => 'error',
@@ -1466,73 +1616,245 @@ class BoxFulShippingController extends Controller
      * Crea PedidoRestaurante de seguimiento ligado a una venta ya facturada.
      * No descuenta inventario ni deja el pedido pendiente de facturar.
      */
+    /**
+     * @return bool true si ya existía o se creó; false si no se pudo crear
+     */
     private function crearPedidoSeguimientoDesdeVenta(
         int $ventaId,
         \App\Models\Inventario\Paquete $paqueteModel,
         $user,
-        string $shipmentNumber
-    ): void {
-        try {
-            $yaExiste = \App\Models\Restaurante\PedidoRestaurante::where('id_venta', $ventaId)
-                ->where('canal', 'Boxful')
-                ->exists();
+        string $shipmentNumber,
+        ?int $empresaId = null
+    ): bool {
+        $empresaId = $empresaId ?? (int) ($user->id_empresa ?? 0);
+        if ($empresaId <= 0) {
+            return false;
+        }
 
-            if ($yaExiste) {
-                return;
+        if ((int) $paqueteModel->id_empresa !== $empresaId) {
+            return false;
+        }
+
+        $yaExiste = \App\Models\Restaurante\PedidoRestaurante::where('id_empresa', $empresaId)
+            ->where('id_venta', $ventaId)
+            ->where('canal', 'Boxful')
+            ->exists();
+
+        if ($yaExiste) {
+            return true;
+        }
+
+        $venta = \App\Models\Ventas\Venta::with('detalles')
+            ->where('id', $ventaId)
+            ->where('id_empresa', $empresaId)
+            ->first();
+        if (!$venta) {
+            return false;
+        }
+
+        $pedido = \App\Models\Restaurante\PedidoRestaurante::create([
+            'id_empresa' => $empresaId,
+            'id_sucursal' => $venta->id_sucursal ?? $user->id_sucursal,
+            'id_bodega' => $venta->id_bodega ?? $user->id_bodega,
+            'usuario_id' => $user->id,
+            'fecha' => now()->toDateString(),
+            'canal' => 'Boxful',
+            'referencia_externa' => $shipmentNumber,
+            'estado' => 'facturado',
+            'id_venta' => $venta->id,
+            'cliente_id' => $venta->id_cliente,
+            'observaciones' => 'Envío Boxful #' . $shipmentNumber . ' desde venta #' . $venta->id,
+            'subtotal' => $venta->sub_total ?? 0,
+            'descuento' => $venta->descuento ?? 0,
+            'total' => $venta->total ?? 0,
+        ]);
+
+        foreach ($venta->detalles as $det) {
+            if (empty($det->id_producto)) {
+                continue;
             }
-
-            $venta = \App\Models\Ventas\Venta::with('detalles')->find($ventaId);
-            if (!$venta) {
-                return;
-            }
-
-            $pedido = \App\Models\Restaurante\PedidoRestaurante::create([
-                'id_empresa' => $venta->id_empresa ?? $user->id_empresa,
-                'id_sucursal' => $venta->id_sucursal ?? $user->id_sucursal,
-                'id_bodega' => $venta->id_bodega ?? $user->id_bodega,
-                'usuario_id' => $user->id,
-                'fecha' => now()->toDateString(),
-                'canal' => 'Boxful',
-                'referencia_externa' => $shipmentNumber,
-                'estado' => 'facturado',
-                'id_venta' => $venta->id,
-                'cliente_id' => $venta->id_cliente,
-                'observaciones' => 'Envío Boxful #' . $shipmentNumber . ' desde venta #' . $venta->id,
-                'subtotal' => $venta->sub_total ?? 0,
-                'descuento' => $venta->descuento ?? 0,
-                'total' => $venta->total ?? 0,
-            ]);
-
-            foreach ($venta->detalles as $det) {
-                if (empty($det->id_producto)) {
-                    continue;
-                }
-                $lineTotal = $det->total ?? (($det->precio ?? 0) * ($det->cantidad ?? 1));
-                \App\Models\Restaurante\PedidoRestauranteDetalle::create([
-                    'pedido_id' => $pedido->id,
-                    'producto_id' => $det->id_producto,
-                    'id_paquete' => $paqueteModel->id,
-                    'cantidad' => $det->cantidad ?? 1,
-                    'precio' => $det->precio ?? 0,
-                    'descuento' => $det->descuento ?? 0,
-                    'subtotal' => $det->sub_total ?? $lineTotal,
-                    'total' => $lineTotal,
-                    'notas' => null,
-                ]);
-            }
-
-            Log::info('Pedido de seguimiento BoxFul creado desde venta', [
-                'ventaId' => $ventaId,
-                'pedidoId' => $pedido->id,
-                'paqueteId' => $paqueteModel->id,
-                'shipmentNumber' => $shipmentNumber,
-            ]);
-        } catch (\Throwable $e) {
-            Log::warning('No se pudo crear pedido de seguimiento BoxFul desde venta: ' . $e->getMessage(), [
-                'ventaId' => $ventaId,
-                'paqueteId' => $paqueteModel->id ?? null,
+            $lineTotal = $det->total ?? (($det->precio ?? 0) * ($det->cantidad ?? 1));
+            \App\Models\Restaurante\PedidoRestauranteDetalle::create([
+                'pedido_id' => $pedido->id,
+                'producto_id' => $det->id_producto,
+                'id_paquete' => $paqueteModel->id,
+                'cantidad' => $det->cantidad ?? 1,
+                'precio' => $det->precio ?? 0,
+                'descuento' => $det->descuento ?? 0,
+                'subtotal' => $det->sub_total ?? $lineTotal,
+                'total' => $lineTotal,
+                'notas' => null,
             ]);
         }
+
+        Log::info('Pedido de seguimiento BoxFul creado desde venta', [
+            'ventaId' => $ventaId,
+            'pedidoId' => $pedido->id,
+            'paqueteId' => $paqueteModel->id,
+            'shipmentNumber' => $shipmentNumber,
+        ]);
+
+        return true;
+    }
+
+    /** Libera tokens PENDING- huérfanos (>5 min) de un paquete. */
+    private function clearStalePendingGuia(int $empresaId, int $paqueteId): void
+    {
+        \App\Models\Inventario\Paquete::withoutGlobalScopes()
+            ->where('id', $paqueteId)
+            ->where('id_empresa', $empresaId)
+            ->where('num_guia', 'like', 'PENDING-%')
+            ->where('updated_at', '<', now()->subMinutes(5))
+            ->update(['num_guia' => null]);
+    }
+
+    private function clearStalePendingGuiaForVenta(int $empresaId, int $ventaId): void
+    {
+        \App\Models\Inventario\Paquete::withoutGlobalScopes()
+            ->where('id_empresa', $empresaId)
+            ->where('id_venta', $ventaId)
+            ->where('transportista', 'Boxful')
+            ->where('num_guia', 'like', 'PENDING-%')
+            ->where('updated_at', '<', now()->subMinutes(5))
+            ->update(['num_guia' => null]);
+    }
+
+    /**
+     * Busca guía BoxFul ya generada para paquete/venta/pedido.
+     *
+     * @return \App\Models\Inventario\BoxfulShipment|array{shipment_number: string, boxful_label_url?: null, boxful_tracking_url?: null, boxful_courier_name?: null, cod?: bool, cod_monto?: float, boxful_shipment_id?: null}|null
+     */
+    private function findExistingBoxfulGuia(
+        int $empresaId,
+        ?int $paqueteId,
+        ?int $ventaId,
+        ?int $pedidoId
+    ) {
+        $paqueteIds = collect();
+
+        if ($paqueteId) {
+            $paqueteIds->push($paqueteId);
+        }
+
+        if ($ventaId) {
+            $idsVenta = \App\Models\Inventario\Paquete::withoutGlobalScopes()
+                ->where('id_empresa', $empresaId)
+                ->where('id_venta', $ventaId)
+                ->where('transportista', 'Boxful')
+                ->pluck('id');
+            $paqueteIds = $paqueteIds->merge($idsVenta);
+        }
+
+        if ($pedidoId) {
+            $idsPedido = \App\Models\Restaurante\PedidoRestauranteDetalle::where('pedido_id', $pedidoId)
+                ->whereNotNull('id_paquete')
+                ->pluck('id_paquete');
+            $paqueteIds = $paqueteIds->merge($idsPedido);
+        }
+
+        $paqueteIds = $paqueteIds->filter()->unique()->values();
+        if ($paqueteIds->isEmpty()) {
+            return null;
+        }
+
+        $shipment = \App\Models\Inventario\BoxfulShipment::whereIn('paquete_id', $paqueteIds)
+            ->where(function ($q) {
+                $q->where(function ($q2) {
+                    $q2->whereNotNull('shipment_number')->where('shipment_number', '!=', '');
+                })->orWhere(function ($q2) {
+                    $q2->whereNotNull('boxful_shipment_id')->where('boxful_shipment_id', '!=', '');
+                });
+            })
+            ->orderByDesc('id')
+            ->first();
+
+        if ($shipment) {
+            return $shipment;
+        }
+
+        $paqueteConGuia = \App\Models\Inventario\Paquete::withoutGlobalScopes()
+            ->where('id_empresa', $empresaId)
+            ->whereIn('id', $paqueteIds)
+            ->whereNotNull('num_guia')
+            ->where('num_guia', '!=', '')
+            ->where('num_guia', 'not like', 'PENDING-%')
+            ->first();
+
+        if ($paqueteConGuia) {
+            return [
+                'shipment_number' => $paqueteConGuia->num_guia,
+                'boxful_shipment_id' => null,
+                'boxful_label_url' => null,
+                'boxful_tracking_url' => null,
+                'boxful_courier_name' => null,
+                'cod' => false,
+                'cod_monto' => 0,
+            ];
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  \App\Models\Inventario\BoxfulShipment|array  $guia
+     */
+    private function responseGuiaBoxfulYaExiste($guia)
+    {
+        $isModel = $guia instanceof \App\Models\Inventario\BoxfulShipment;
+        $shipmentNumber = $isModel ? $guia->shipment_number : ($guia['shipment_number'] ?? null);
+        $labelUrl = $isModel ? $guia->boxful_label_url : ($guia['boxful_label_url'] ?? null);
+        $trackingUrl = $isModel ? $guia->boxful_tracking_url : ($guia['boxful_tracking_url'] ?? null);
+        $courierName = $isModel ? $guia->boxful_courier_name : ($guia['boxful_courier_name'] ?? null);
+        $cod = $isModel ? (bool) $guia->cod : (bool) ($guia['cod'] ?? false);
+        $codAmount = $isModel ? (float) ($guia->cod_monto ?? 0) : (float) ($guia['cod_monto'] ?? 0);
+        $shipmentId = $isModel ? $guia->boxful_shipment_id : ($guia['boxful_shipment_id'] ?? null);
+
+        return response()->json([
+            'status' => 'error',
+            'code' => 'boxful_shipment_already_exists',
+            'message' => 'Este envío ya tiene una guía BoxFul generada (#'.($shipmentNumber ?: 'N/A').').',
+            'shipmentNumber' => $shipmentNumber,
+            'labelUrl' => $labelUrl,
+            'trackingUrl' => $trackingUrl,
+            'courierName' => $courierName,
+            'cod' => $cod,
+            'codAmount' => $codAmount,
+            'data' => [
+                'id' => $shipmentId,
+                'shipmentNumber' => $shipmentNumber,
+                'labelUrl' => $labelUrl,
+                'trackingUrl' => $trackingUrl,
+                'courierName' => $courierName,
+                'cod' => $cod,
+                'codAmount' => $codAmount,
+            ],
+        ], 409);
+    }
+
+    /**
+     * Resuelve ID de origen BoxFul (24 hex) desde id local o id remoto, solo de la empresa.
+     *
+     * @param  mixed  $direccionOrigenId
+     */
+    private function resolveOrigenBoxfulAddressId($direccionOrigenId, int $empresaId): ?string
+    {
+        if (empty($direccionOrigenId)) {
+            return null;
+        }
+
+        if (is_string($direccionOrigenId) && strlen($direccionOrigenId) === 24 && ctype_xdigit($direccionOrigenId)) {
+            return $direccionOrigenId;
+        }
+
+        $localOrigen = \App\Models\Admin\DireccionOrigen::where('id_empresa', $empresaId)
+            ->where('id', $direccionOrigenId)
+            ->first();
+
+        if ($localOrigen && ! empty($localOrigen->boxful_address_id)) {
+            return (string) $localOrigen->boxful_address_id;
+        }
+
+        return null;
     }
 
     /**

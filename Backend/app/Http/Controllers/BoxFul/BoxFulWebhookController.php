@@ -17,8 +17,8 @@ class BoxFulWebhookController extends Controller
     {
         Log::info('Webhook de Boxful recibido', [
             'empresa_id' => $empresaId,
-            'headers' => $request->headers->all(),
-            'payload' => $request->all(),
+            'has_authorization' => $request->hasHeader('Authorization'),
+            'keys' => array_keys($request->all()),
         ]);
 
         // 1. Obtener la integración de Boxful para esta empresa
@@ -53,8 +53,6 @@ class BoxFulWebhookController extends Controller
         if ($incomingSecret !== $secret) {
             Log::warning('Webhook de Boxful: Credencial de webhook inválida para la empresa', [
                 'empresa_id' => $empresaId,
-                'incoming' => $incomingSecret,
-                'expected' => $secret
             ]);
             return response()->json([
                 'status' => 'error',
@@ -65,7 +63,11 @@ class BoxFulWebhookController extends Controller
         // 3. Procesar el evento y actualizar el paquete
         $shipmentNumber = $request->input('shipmentNumber');
         $shipmentId = $request->input('shipmentId') ?? $request->input('id');
-        $status = $request->input('status'); // e.g. "delivered", "in_transit", etc.
+        $status = $request->input('status');
+        $statusDescription = $request->input('statusDescription')
+            ?? $request->input('status_description')
+            ?? (is_string($status) ? $status : null);
+        $statusNumeric = $this->mapBoxfulStatusToInt($status);
 
         $paquete = null;
         if ($shipmentId) {
@@ -84,7 +86,9 @@ class BoxFulWebhookController extends Controller
         }
 
         if ($paquete) {
-            if ($status) {
+            if ($statusDescription) {
+                $paquete->estado = $statusDescription;
+            } elseif (is_string($status) && $status !== '') {
                 $paquete->estado = $status;
             }
             if ($shipmentNumber && (empty($paquete->num_guia) || $paquete->num_guia === $shipmentId || str_starts_with($paquete->num_guia, 'BOXFUL-'))) {
@@ -92,25 +96,31 @@ class BoxFulWebhookController extends Controller
             }
             $paquete->save();
 
-            // also update status description and shipment number in boxful_shipments
-            if ($shipmentId) {
-                $updateFields = [];
-                if ($status) {
-                    $updateFields['boxful_status_description'] = $status;
+            $updateFields = [];
+            if ($statusDescription) {
+                $updateFields['boxful_status_description'] = $statusDescription;
+            }
+            if ($statusNumeric !== null) {
+                $updateFields['boxful_status'] = $statusNumeric;
+            }
+            if ($shipmentNumber) {
+                $updateFields['shipment_number'] = $shipmentNumber;
+            }
+            if (!empty($updateFields)) {
+                $query = \App\Models\Inventario\BoxfulShipment::query();
+                if ($shipmentId) {
+                    $query->where('boxful_shipment_id', $shipmentId);
+                } else {
+                    $query->where('paquete_id', $paquete->id);
                 }
-                if ($shipmentNumber) {
-                    $updateFields['shipment_number'] = $shipmentNumber;
-                }
-                if (!empty($updateFields)) {
-                    \App\Models\Inventario\BoxfulShipment::where('boxful_shipment_id', $shipmentId)
-                        ->update($updateFields);
-                }
+                $query->update($updateFields);
             }
 
             Log::info('Webhook de Boxful: Paquete actualizado correctamente', [
                 'paquete_id' => $paquete->id,
                 'num_guia' => $paquete->num_guia,
-                'nuevo_estado' => $status ?? 'sin cambios'
+                'nuevo_estado' => $statusDescription ?? $status ?? 'sin cambios',
+                'boxful_status' => $statusNumeric,
             ]);
 
             return response()->json([
@@ -121,12 +131,55 @@ class BoxFulWebhookController extends Controller
 
         Log::warning('Webhook de Boxful: Paquete no encontrado en el sistema', [
             'shipmentNumber' => $shipmentNumber,
-            'shipmentId' => $shipmentId
+            'shipmentId' => $shipmentId,
+            'empresa_id' => $empresaId,
         ]);
 
         return response()->json([
             'status' => 'success',
             'message' => 'Webhook recibido, pero paquete no fue encontrado.'
         ], 200);
+    }
+
+    /**
+     * Mapea status BoxFul (string o int) al tinyInteger local (-1..4+).
+     */
+    private function mapBoxfulStatusToInt($status): ?int
+    {
+        if ($status === null || $status === '') {
+            return null;
+        }
+        if (is_numeric($status)) {
+            return (int) $status;
+        }
+
+        $s = strtolower(trim((string) $status));
+        $map = [
+            'created' => -1,
+            'creado' => -1,
+            'registered' => 1,
+            'registrado' => 1,
+            'registrada' => 1,
+            'picked' => 2,
+            'pickup' => 2,
+            'recolectado' => 2,
+            'recolectada' => 2,
+            'in_transit' => 3,
+            'in transit' => 3,
+            'transit' => 3,
+            'ruta' => 3,
+            'camino' => 3,
+            'delivered' => 4,
+            'entregado' => 4,
+            'entregada' => 4,
+        ];
+
+        foreach ($map as $needle => $value) {
+            if ($s === $needle || str_contains($s, $needle)) {
+                return $value;
+            }
+        }
+
+        return null;
     }
 }

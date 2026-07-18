@@ -1799,6 +1799,12 @@ export class VentasComponent implements OnInit, OnDestroy {
     this.mostrarDetallesEnvio = true;
   }
 
+  onCerrarDetallesEnvioBoxful(): void {
+    this.mostrarDetallesEnvio = false;
+    this.selectedShipmentId = '';
+    this.filtrarVentas(false);
+  }
+
   verTrackingPaqueteBoxful(venta: any, template: TemplateRef<any>): void {
     const shipmentNumber = this.boxfulShipmentDeVenta(venta)?.shipment_number;
     if (!shipmentNumber) {

@@ -1,6 +1,8 @@
-import { Component, EventEmitter, Input, OnInit, Output, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, OnChanges, OnDestroy, SimpleChanges } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { BoxfulApiService, BoxfulState, BoxfulCity } from '@services/boxful/boxful-api.service';
 import { AlertService } from '@services/alert.service';
 
@@ -9,7 +11,7 @@ import { AlertService } from '@services/alert.service';
   templateUrl: './boxful-shipping-selector.component.html',
   styleUrls: ['./boxful-shipping-selector.component.css']
 })
-export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
+export class BoxfulShippingSelectorComponent implements OnInit, OnChanges, OnDestroy {
   @Input() clienteId!: number;
   @Input() paqueteData: any; // peso, alto, ancho, largo
   @Input() pedidoId: number | null = null;
@@ -30,6 +32,9 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
   cod = false;
   codAmount = 0;
 
+  private destroy$ = new Subject<void>();
+  private alive = true;
+
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['clienteId'] && !changes['clienteId'].firstChange) {
       this.resetWizard();
@@ -40,6 +45,12 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
     if (changes['sugerirCod'] || changes['montoCodSugerido']) {
       this.aplicarSugerenciaCod();
     }
+  }
+
+  ngOnDestroy(): void {
+    this.alive = false;
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   // Paso 1
@@ -719,8 +730,11 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
       codAmount: this.cod ? parseFloat(String(this.codAmount)) : 0,
     };
 
-    this.boxfulService.getCouriersAvailable(payload).subscribe({
+    this.boxfulService.getCouriersAvailable(payload).pipe(takeUntil(this.destroy$)).subscribe({
       next: (res: any) => {
+        if (!this.alive) {
+          return;
+        }
         this.loadingCouriers = false;
 
         let couriersList: any[] = [];
@@ -747,6 +761,9 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
         }
       },
       error: (err: any) => {
+        if (!this.alive) {
+          return;
+        }
         console.error('Error al cotizar mensajería:', err);
         this.errorMessage = err.error?.message || 'Ocurrió un error al obtener las paqueterías disponibles de Boxful.';
         this.alertService.error(this.errorMessage);
@@ -822,14 +839,35 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
       codAmount: this.cod ? parseFloat(String(this.codAmount)) : 0,
     };
 
-    this.boxfulService.createShipment(payload).subscribe({
+    this.boxfulService.createShipment(payload).pipe(takeUntil(this.destroy$)).subscribe({
       next: (res: any) => {
+        if (!this.alive) {
+          return;
+        }
         this.shipmentResult = this.normalizarShipmentResult(res);
+        if (Array.isArray(res?.warnings)) {
+          this.shipmentResult.warnings = res.warnings;
+        }
         this.generatingGuide = false;
         this.step = 3;
+        if (Array.isArray(res?.warnings) && res.warnings.length) {
+          this.alertService.warning('Atención', res.warnings.join(' '));
+        }
         this.guiaGenerada.emit(this.shipmentResult);
       },
       error: (err: any) => {
+        if (!this.alive) {
+          return;
+        }
+        // Guía ya existente: mostrar confirmación con datos locales
+        if (err?.status === 409 && err?.error?.shipmentNumber) {
+          this.shipmentResult = this.normalizarShipmentResult(err.error);
+          this.generatingGuide = false;
+          this.step = 3;
+          this.alertService.warning('Atención', err.error?.message || 'Este envío ya tiene guía BoxFul.');
+          this.guiaGenerada.emit(this.shipmentResult);
+          return;
+        }
         console.error('Error al generar la guía en Boxful:', err);
         this.errorMessage = err.error?.message || 'Ocurrió un error al generar la guía en Boxful.';
         this.alertService.error(this.errorMessage);
@@ -1002,6 +1040,12 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
   crearOtroEnvio(): void {
     this.cerrar.emit();
     this.router.navigate(['/venta/crear']);
+  }
+
+  /** Cierra el wizard y lleva al listado de pedidos (seguimiento BoxFul). */
+  irAPedidos(): void {
+    this.cerrar.emit();
+    this.router.navigate(['/pedidos']);
   }
 
   private fillAddressFormFromClient(): void {

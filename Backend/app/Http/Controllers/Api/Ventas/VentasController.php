@@ -1023,6 +1023,11 @@ class VentasController extends Controller
 
             DB::commit();
             $venta->refresh();
+            // Exponer stub BoxFul al FE para abrir el wizard con paqueteId real
+            $venta->load(['paquetes' => function ($query) {
+                $query->where('transportista', 'Boxful')
+                    ->select('id', 'id_venta', 'num_guia', 'transportista', 'wr', 'peso', 'estado', 'id_cliente');
+            }]);
             return Response()->json($venta, 200);
         } catch (\Exception $e) {
             DB::rollback();
@@ -2270,27 +2275,27 @@ class VentasController extends Controller
     /**
      * Crea un paquete BoxFul pendiente ligado a la venta (sin guía ni llamada a BoxFul).
      */
-    private function crearPaqueteStubBoxfulSiAplica(Venta $venta): void
+    private function crearPaqueteStubBoxfulSiAplica(Venta $venta): ?int
     {
         if ($venta->estado === 'Anulada' || empty($venta->id_canal)) {
-            return;
+            return null;
         }
 
         $canal = Canal::find($venta->id_canal);
         if (!$canal || strcasecmp((string) $canal->nombre, 'Boxful') !== 0) {
-            return;
+            return null;
         }
 
-        $existe = Paquete::withoutGlobalScopes()
+        $stubId = Paquete::withoutGlobalScopes()
             ->where('id_venta', $venta->id)
             ->where('transportista', 'Boxful')
             ->where(function ($q) {
                 $q->whereNull('num_guia')->orWhere('num_guia', '');
             })
-            ->exists();
+            ->value('id');
 
-        if ($existe) {
-            return;
+        if ($stubId) {
+            return (int) $stubId;
         }
 
         // Si ya hay guía BoxFul, no crear otro stub
@@ -2302,7 +2307,7 @@ class VentasController extends Controller
             ->exists();
 
         if ($conGuia) {
-            return;
+            return null;
         }
 
         $user = Auth::user();
@@ -2325,6 +2330,8 @@ class VentasController extends Controller
         $paquete->precio = $venta->total ?? 0;
         $paquete->nota = 'Stub BoxFul desde venta #' . $venta->id;
         $paquete->save();
+
+        return (int) $paquete->id;
     }
 
     public function getNumerosIdentificacion(){

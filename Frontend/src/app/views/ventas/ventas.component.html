@@ -1037,7 +1037,7 @@
 </app-boxful-shipping-selector>
 
 <app-boxful-shipment-details *ngIf="mostrarDetallesEnvio" [shipmentId]="selectedShipmentId"
-  (cerrar)="mostrarDetallesEnvio = false">
+  (cerrar)="onCerrarDetallesEnvioBoxful()">
 </app-boxful-shipment-details>
 
 <ng-template #mTrackingBoxful>

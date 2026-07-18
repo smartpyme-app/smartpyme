@@ -478,7 +478,11 @@
           </div>
 
           <h4 class="fw-bold text-success mb-2">¡Guía Generada Exitosamente!</h4>
-          <p class="text-muted mb-3">Puede imprimir la guía o rastrear el envío. Cierre el modal cuando termine.</p>
+          <p class="text-muted mb-2">
+            Se creó el pedido de seguimiento asociado a este envío.
+            Para consultarlo, diríjase al módulo de <strong>Pedidos</strong>.
+          </p>
+          <p class="text-muted mb-3">También puede imprimir la guía o rastrear el envío desde aquí. Cierre el modal cuando termine.</p>
 
           <!-- Tabla de Datos Básicos -->
           <div class="table-responsive max-width-md mx-auto mb-4 border rounded bg-light" style="max-width: 450px;">
@@ -524,11 +528,14 @@
             </button>
           </div>
 
-          <div class="mt-4 pt-2 border-top d-flex justify-content-center gap-3">
+          <div class="mt-4 pt-2 border-top d-flex flex-wrap justify-content-center gap-3">
+            <button type="button" (click)="irAPedidos()" class="btn btn-outline-primary px-3">
+              <i class="fa fa-list me-1"></i> Ver en Pedidos
+            </button>
             <button type="button" (click)="crearOtroEnvio()" class="btn btn-link text-decoration-none text-muted">
               <i class="fa fa-plus me-1"></i> Crear otra venta
             </button>
-            <span class="text-muted py-1">|</span>
+            <span class="text-muted py-1 d-none d-sm-inline">|</span>
             <button type="button" (click)="closeSelector()" class="btn btn-link text-decoration-none text-primary fw-bold">
               <i class="fa fa-times me-1"></i> Cerrar Modal
             </button>

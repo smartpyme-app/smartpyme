@@ -209,12 +209,15 @@
 
 <!-- Selector de Boxful en Modal -->
 <app-boxful-shipping-selector *ngIf="mostrarModalBoxful" [clienteId]="clienteId!" [pedidoId]="pedidoId"
-  [paqueteData]="paqueteData" (guiaGenerada)="onBoxfulGuiaGenerada($event)" (cerrar)="cerrarModalBoxful()">
+  [paqueteData]="paqueteData"
+  [sugerirCod]="false"
+  [montoCodSugerido]="pedidoRecienCreado?.total ?? null"
+  (guiaGenerada)="onBoxfulGuiaGenerada($event)" (cerrar)="cerrarModalBoxful()">
 </app-boxful-shipping-selector>
 
 <!-- Modal Detalles Envío Boxful Shared -->
 <app-boxful-shipment-details *ngIf="mostrarDetallesEnvio" [shipmentId]="selectedShipmentId"
-  (cerrar)="mostrarDetallesEnvio = false">
+  (cerrar)="onCerrarDetallesEnvioBoxful()">
 </app-boxful-shipment-details>
 
 <!-- Modal Tracking Paquete -->
