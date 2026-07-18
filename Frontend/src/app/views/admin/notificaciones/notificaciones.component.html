@@ -29,6 +29,7 @@
             <!-- <button class="btn btn-default">Traslados</button> -->
         </div>
         <div class="col d-flex gap-2 justify-content-end">
+            @if (!soloCuentasPorCobrar) {
             <select name="tipo"  [(ngModel)]="filtros.tipo" (change)="filtrarNotificaciones()" class="form-select bg-default w-auto">
                 <option value="">Tipo</option>
                 <option value="Cuentas por pagar">Cuentas por pagar</option>
@@ -36,6 +37,7 @@
                 <option value="Inventario bajo">Inventario bajo</option>
                 <option value="Orden de Producción">Orden de Producción</option>
             </select>
+            }
         </div>
     </div>
     <div class="row">

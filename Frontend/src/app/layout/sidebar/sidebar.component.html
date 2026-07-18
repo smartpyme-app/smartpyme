@@ -317,7 +317,14 @@
             @if (apiService.hasPermission('finanzas.cierre_caja.ver')) {
                 <li tourAnchor="tour.cierre_caja" id="tour.cierre_caja" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/cierre-de-caja']" tooltip="Ver cierre de caja" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1 text-secondary"><img appLazyImage="/assets/icons/inbox-stroke.png" class="icon me-2">Cierre de caja</a></li>
             }
-            <!-- <li tourAnchor="tour.notificaciones" id="tour.notificaciones" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/notificaciones']" tooltip="Notificaciones" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center justify-content-between text-decoration-none py-1 w-100"><span><img src="/assets/icons/bell.png" class="icon me-2">Notificaciones</span><span class="badge bg-primary" *ngIf="notificaciones.total">{{ notificaciones.total ? notificaciones.total : 0 }}</span></a> </li> -->
+            <li tourAnchor="tour.notificaciones" id="tour.notificaciones" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+                <a [routerLink]="['/notificaciones']" tooltip="Notificaciones" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center justify-content-between text-decoration-none py-1 w-100">
+                    <span><img appLazyImage="/assets/icons/bell.png" class="icon me-2">Notificaciones</span>
+                    @if (notificaciones?.total) {
+                        <span class="badge bg-primary">{{ notificaciones.total }}</span>
+                    }
+                </a>
+            </li>
             @if (apiService.hasPermission('ayuda.ver')) {
                 <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/ayuda']" tooltip="Ayuda" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1"><img appLazyImage="/assets/icons/life-buoy.png" class="icon me-2">Ayuda</a></li>
             }

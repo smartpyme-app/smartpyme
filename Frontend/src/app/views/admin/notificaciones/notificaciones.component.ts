@@ -28,6 +28,8 @@ export class NotificacionesComponent extends BaseCrudComponent<any> implements O
     public notificaciones: PaginatedResponse<any> = {} as PaginatedResponse;
     public paginacion = [];
     public override filtros:any = {};
+    /** Ventas / Ventas Limitado / rol Spatie: solo CxC propias */
+    public soloCuentasPorCobrar = false;
 
     constructor(
         protected override apiService:ApiService,
@@ -57,12 +59,15 @@ export class NotificacionesComponent extends BaseCrudComponent<any> implements O
     }
 
 	ngOnInit() {
+        // "Usuario Ventas" en UI = rol Spatie usuario_ventas (verifyVentasRole)
+        this.soloCuentasPorCobrar =
+            this.apiService.isVentas() || this.apiService.verifyVentasRole();
         this.loadAll();
     }
 
     public override loadAll() {
         this.filtros.categoria = '';
-        this.filtros.tipo = '';
+        this.filtros.tipo = this.soloCuentasPorCobrar ? 'Cuentas por cobrar' : '';
         this.filtros.leido = '';
         this.filtros.buscador = '';
         this.filtros.orden = 'id';
