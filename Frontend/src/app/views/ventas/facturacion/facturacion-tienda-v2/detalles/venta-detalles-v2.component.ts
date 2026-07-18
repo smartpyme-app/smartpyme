@@ -257,11 +257,23 @@ export class VentaDetallesV2Component implements OnInit {
         this.updateTotal(detalle);
     }
 
-    public updateTotal(detalle:any){
+    /**
+     * Recalcula totales de la línea.
+     * @param formatearPrecio Si true (change/blur), redondea precio_iva a 2 decimales.
+     *                        En keyup debe ser false: reformatear mientras se escribe
+     *                        pisa el input y deja el campo casi ineditable.
+     */
+    public updateTotal(detalle:any, formatearPrecio: boolean = false){
         const cantidad = parseFloat(detalle.cantidad ?? 0) || 0;
         const pctDetalle = this.obtenerPorcentajeIvaDetalle(detalle);
-        const precioIva = redondearMoneda(parseFloat(detalle.precio_iva ?? 0) || 0);
-        detalle.precio_iva = precioIva.toFixed(2);
+        const parsedPrecioIva = parseFloat(detalle.precio_iva ?? '');
+        const precioIva = Number.isFinite(parsedPrecioIva)
+            ? redondearMoneda(parsedPrecioIva)
+            : 0;
+        // Solo formatear al confirmar (change/blur). En keyup no tocar el valor del input.
+        if (formatearPrecio) {
+            detalle.precio_iva = precioIva.toFixed(2);
+        }
         const precioSinIva = pctDetalle > 0
             ? this.calcularPrecioSinIva(precioIva, pctDetalle)
             : precioIva;
