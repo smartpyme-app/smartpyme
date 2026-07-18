@@ -102,4 +102,50 @@ describe('FacturacionV2Component', () => {
     expect(component.venta.impuestos[1].monto).toBe(5);
     expect(component.venta.total).toBe('105.00');
   });
+
+  it('incluye IVA en total aunque venta.impuestos esté vacío (pedido)', () => {
+    const component: any = Object.create(FacturacionV2Component.prototype);
+    component.apiService = {
+      auth_user: () => ({
+        empresa: {
+          iva: 13,
+          propina_porcentaje: 0,
+          tipo_renta_productos: null,
+          tipo_renta_servicios: null,
+        },
+      }),
+    };
+    component.sumPipe = new SumPipe();
+    component.sincronizarRetencionGranContribuyente = () => undefined;
+    component.actualizarCambioEfectivo = () => undefined;
+    component.impuestos = [
+      { id: 1, porcentaje: 13, codigo_mh: '20', nombre: 'IVA', monto: 0 },
+    ];
+    const precioSinIva = 42.5 / 1.13;
+    component.venta = {
+      cobrar_impuestos: true,
+      percepcion: false,
+      retencion: false,
+      renta: false,
+      cobrar_propina: false,
+      detalles: [{
+        cantidad: 1,
+        precio: precioSinIva,
+        precio_iva: '42.5000',
+        descuento: 0,
+        tipo_gravado: 'gravada',
+        porcentaje_impuesto: 13,
+        cuenta_a_terceros: 0,
+        tipo: 'Producto',
+      }],
+      impuestos: [],
+    };
+
+    component.sumTotal();
+
+    expect(Number(component.venta.iva)).toBeCloseTo(4.89, 2);
+    expect(component.venta.total).toBe('42.50');
+    expect(component.venta.impuestos.length).toBeGreaterThan(0);
+    expect(Number(component.venta.impuestos[0].monto)).toBeCloseTo(4.89, 2);
+  });
 });

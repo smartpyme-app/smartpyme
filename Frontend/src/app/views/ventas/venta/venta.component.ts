@@ -18,6 +18,7 @@ import { FE_PAIS_CR, FE_PAIS_SV, resolveCodigoPaisFe } from '@services/facturaci
 import { detalleTieneExoneracionCr } from '@shared/modals/fe-cr-exoneracion-detalle/fe-cr-exoneracion-detalle.util';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
+import { porcentajeIvaDetalle, redondearMoneda } from '@utils/impuestos-venta.util';
 
 @Component({
     selector: 'app-venta',
@@ -264,6 +265,48 @@ export class VentaComponent implements OnInit {
             this.zoomImageUrl = this.apiService.baseUrl + '/img/' + img;
             dialog.showModal();
         }
+    }
+
+    /** Factor IVA de la línea (1 si no hay IVA / exenta / no sujeta). */
+    private factorIvaDetalle(detalle: any): number {
+        const tipo = String(detalle?.tipo_gravado || 'gravada').toLowerCase();
+        if (tipo !== 'gravada') {
+            return 1;
+        }
+        const ivaVenta = parseFloat(String(this.venta?.iva ?? 0)) || 0;
+        const cobrar = ivaVenta > 0 || !!this.venta?.cobrar_impuestos;
+        if (!cobrar) {
+            return 1;
+        }
+        const ivaEmpresa = this.apiService.auth_user()?.empresa?.iva;
+        const pct = porcentajeIvaDetalle(detalle, ivaEmpresa, true);
+        return pct > 0 ? 1 + pct / 100 : 1;
+    }
+
+    public precioDetalleConIva(detalle: any): number {
+        return redondearMoneda(
+            (parseFloat(String(detalle?.precio ?? 0)) || 0) * this.factorIvaDetalle(detalle)
+        );
+    }
+
+    public descuentoDetalleConIva(detalle: any): number {
+        return redondearMoneda(
+            (parseFloat(String(detalle?.descuento ?? 0)) || 0) * this.factorIvaDetalle(detalle)
+        );
+    }
+
+    public totalDetalleConIva(detalle: any): number {
+        return redondearMoneda(
+            (parseFloat(String(detalle?.total ?? 0)) || 0) * this.factorIvaDetalle(detalle)
+        );
+    }
+
+    /** Mismo Sub Total que facturación: base sin IVA después de descuento. */
+    public subTotalFacturacion(): number {
+        if (this.venta?.referencia_shopify) {
+            return redondearMoneda(parseFloat(String(this.venta?.gravada ?? 0)) || 0);
+        }
+        return redondearMoneda(parseFloat(String(this.venta?.sub_total ?? 0)) || 0);
     }
 
 }

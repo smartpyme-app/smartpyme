@@ -150,7 +150,7 @@
                 </div>
             }
             <div class="form-group col-lg-4">
-                <label class="fw-medium">Número de222 orden</label>
+                <label class="fw-medium">Número de orden</label>
                 <p>{{ venta.num_orden }}</p>
             </div>
             @if (venta.referencia_shopify) {
@@ -280,15 +280,15 @@
                                     {{ getCustomFieldValue(detalle, field.id) }}
                                 </td>
                             }
-                            <td>{{ (apiService.auth_user().empresa?.currency?.currency_symbol || '$') }}{{ detalle.precio | number:'1.0-6':'en-US' }}</td>
-                            <td>{{ (apiService.auth_user().empresa?.currency?.currency_symbol || '$') }}{{ detalle.descuento | number:'1.0-6':'en-US' }}</td>
+                            <td>{{ (apiService.auth_user().empresa?.currency?.currency_symbol || '$') }}{{ precioDetalleConIva(detalle) | number:'1.2-2':'en-US' }}</td>
+                            <td>{{ (apiService.auth_user().empresa?.currency?.currency_symbol || '$') }}{{ descuentoDetalleConIva(detalle) | number:'1.2-2':'en-US' }}</td>
                             <td>{{ etiquetaTipoGravado(detalle) }}</td>
-                            <td class="text-end">{{ (apiService.auth_user().empresa?.currency?.currency_symbol || '$') }}{{ detalle.total | number:'1.0-6':'en-US' }}</td>
+                            <td class="text-end">{{ (apiService.auth_user().empresa?.currency?.currency_symbol || '$') }}{{ totalDetalleConIva(detalle) | number:'1.2-2':'en-US' }}</td>
                         </tr>
                     }
                     <tr>
                         <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end"><b>Sub Total:</b></td>
-                        <td class="text-end"><b>{{ venta?.referencia_shopify ? venta?.gravada : (venta?.sub_total + venta?.descuento) | currency }}</b></td>
+                        <td class="text-end"><b>{{ subTotalFacturacion() | currency }}</b></td>
                     </tr>
                     @if (venta.referencia_shopify) {
                         <tr>
@@ -296,10 +296,6 @@
                             <td class="text-end text-info"><b>{{ venta?.iva | currency }}</b></td>
                         </tr>
                     }
-                    <tr>
-                        <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end"><b>Descuento:</b></td>
-                        <td class="text-end"><b>{{ venta?.descuento | currency }}</b></td>
-                    </tr>
                     @for (impuesto of venta?.impuestos; track impuesto.id || $index) {
                         <tr>
                             <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end">{{ impuesto?.impuesto?.nombre }} <small class="text-muted">({{ impuesto?.impuesto?.porcentaje | number:'1.0-2' }}%)</small> </td>

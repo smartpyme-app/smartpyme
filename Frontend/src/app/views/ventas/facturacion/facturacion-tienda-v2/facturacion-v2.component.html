@@ -228,11 +228,6 @@
                         <td style="width: 150px;" class="text-right"> {{ venta.sub_total | currency}} </td>
                         <td style="width: 50px;"></td>
                     </tr>
-                    <tr>
-                        <td class="text-right"><b>Descuentos</b> </td>
-                        <td style="width: 150px;" class="text-right"> {{ venta.descuento | currency}} </td>
-                        <td style="width: 50px;"></td>
-                    </tr>
                     <tr *ngIf="descuentoPuntos > 0" class="text-success">
                         <td class="text-right">
                             <i class="fas fa-coins me-1"></i>

@@ -14,6 +14,7 @@ import {
     normalizarPorcentajeImpuestoDetalle,
     resolverPorcentajeImpuestoVenta,
     copiarImpuestosProductoAlDetalle,
+    redondearMoneda,
 } from '@utils/impuestos-venta.util';
 
 @Component({
@@ -240,7 +241,7 @@ export class TiendaVentaBuscadorV2Component implements OnInit {
 
         this.detalle.porcentaje_impuesto = porcentajeImpuesto;
         copiarImpuestosProductoAlDetalle(this.detalle, producto, this.ivaEmpresa());
-        this.detalle.precio_iva          = precioConIva.toFixed(4);
+        this.detalle.precio_iva          = redondearMoneda(precioConIva).toFixed(2);
         this.detalle.precio              = precioSinIva.toFixed(4);
         this.detalle.precio_base         = precioSinIva;
         this.detalle.precios             = this.armarListaPreciosDetalleV2(producto, precioSinIva, pctImpuesto);

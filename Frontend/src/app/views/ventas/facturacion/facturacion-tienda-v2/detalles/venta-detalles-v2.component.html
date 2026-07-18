@@ -222,6 +222,10 @@
                                 {{ (apiService.auth_user().empresa.currency?.currency_symbol || '$') }}{{ (precio.precio_con_iva ?? precio.precio) | number:'1.0-6':'en-US' }}
                             </option>
                         </select>
+                        <small class="text-muted d-block mt-1" *ngIf="venta.cobrar_impuestos && detalle.precio"
+                            style="font-size: 0.7rem; line-height: 1.2;">
+                            Sin IVA: {{ detalle.precio | currency:'USD':'symbol':'1.2' }}
+                        </small>
                     </td>
                     <td style="width: 100px;" *ngIf="mostrarCuentaTercerosEnLinea">
                         <div class="input-group">
@@ -266,7 +270,7 @@
                         </select>
                     </td>
                     <td style="width: 100px;" class="text-right">
-                        <div>{{ detalle.total | currency }}</div>
+                        <div>{{ (detalle.total_iva != null ? detalle.total_iva : detalle.total) | currency }}</div>
                     </td>
                     <td style="width: 50px;" class="text-center">
                         <div class="btn-group">

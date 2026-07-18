@@ -9,6 +9,8 @@ import {
   sumarIvaLineasSinRedondeo,
   sumarTotalEncabezadoVenta,
   resolverIvaObjetivoEncabezadoVenta,
+  calcularDescuentoDesdePrecioConIva,
+  sumarDescuentoConIvaEncabezadoVenta,
 } from './impuestos-venta.util';
 
 describe('impuestos-venta.util — IVA vs especiales', () => {
@@ -414,6 +416,77 @@ describe('impuestos-venta.util — IVA vs especiales', () => {
     expect(iva).toBe(4.03);
     expect(total).toBe(34.99);
     expect(resolverIvaObjetivoEncabezadoVenta([detalle], true, 13)).toBe(4.03);
+  });
+
+  it('v2: total incluye IVA residual aunque venta.impuestos esté vacío (pedido/race)', () => {
+    const precioSinIva = 42.5 / 1.13;
+    const detalle: any = {
+      cantidad: 1,
+      precio: precioSinIva,
+      precio_iva: '42.5000',
+      descuento: 0,
+      tipo_gravado: 'gravada',
+      porcentaje_impuesto: 13,
+    };
+    calcularMontosLineaDetalle(detalle, true, 13, { preservePrecioIva: true });
+
+    const iva = acumularImpuestosVentaConCierreResidual([], [detalle], true, 13);
+    const total = sumarTotalEncabezadoVenta([detalle], [], {
+      empresaIva: 13,
+      cobrarImpuestos: true,
+    });
+
+    expect(Number(detalle.gravada)).toBeCloseTo(37.61, 2);
+    expect(iva).toBeCloseTo(4.89, 2);
+    expect(total).toBe(42.5);
+  });
+
+  it('v2: descuento % se calcula sobre precio con IVA (38.50 × 10%)', () => {
+    const r = calcularDescuentoDesdePrecioConIva({
+      cantidad: 1,
+      precioConIva: 38.5,
+      pctIva: 13,
+      descuentoPorcentaje: 10,
+    });
+    expect(r.descuentoConIva).toBeCloseTo(3.85, 2);
+    expect(r.descuentoSinIva).toBeCloseTo(3.4071, 4);
+
+    const detalle: any = {
+      cantidad: 1,
+      precio: 38.5 / 1.13,
+      precio_iva: '38.5000',
+      descuento: r.descuentoSinIva,
+      descuento_con_iva: r.descuentoConIva,
+      tipo_gravado: 'gravada',
+      porcentaje_impuesto: 13,
+    };
+    calcularMontosLineaDetalle(detalle, true, 13, { preservePrecioIva: true });
+    expect(Number(detalle.total_iva)).toBe(34.65);
+    expect(sumarDescuentoConIvaEncabezadoVenta([detalle], 13, true)).toBeCloseTo(3.85, 2);
+  });
+
+  it('v2: descuento en dinero se calcula sobre precio con IVA ($10 de $38.50)', () => {
+    const r = calcularDescuentoDesdePrecioConIva({
+      cantidad: 1,
+      precioConIva: 38.5,
+      pctIva: 13,
+      descuentoMontoConIva: 10,
+    });
+    expect(r.descuentoConIva).toBe(10);
+    expect(r.descuentoSinIva).toBeCloseTo(8.8496, 4);
+
+    const detalle: any = {
+      cantidad: 1,
+      precio: 38.5 / 1.13,
+      precio_iva: '38.5000',
+      descuento: r.descuentoSinIva,
+      descuento_con_iva: r.descuentoConIva,
+      tipo_gravado: 'gravada',
+      porcentaje_impuesto: 13,
+    };
+    calcularMontosLineaDetalle(detalle, true, 13, { preservePrecioIva: true });
+    expect(Number(detalle.total_iva)).toBe(28.5);
+    expect(sumarDescuentoConIvaEncabezadoVenta([detalle], 13, true)).toBe(10);
   });
 
   it('v2 precio con IVA 12.99 cierra total (11.50 + 1.49)', () => {
