@@ -117,26 +117,105 @@ export class FacturacionV2Component implements OnInit {
   // Integración Boxful
   public paqueteData: any = { peso: 1, alto: 10, ancho: 10, largo: 10, es_fragil: false, id: null };
   private lastSyncedPaqueteId: number | null = null;
+  public tieneBoxful = false;
+  public mostrarModalBoxful = false;
+  public boxfulVentaId: number | null = null;
+  public boxfulClienteId: number | null = null;
+  public boxfulSugerirCod = false;
+  public boxfulMontoCod: number | null = null;
+  public boxfulPaqueteData: any = {
+    peso: 1, alto: 11, ancho: 43, largo: 47.5, es_fragil: false, id: null, parcels: []
+  };
 
   esCanalBoxful(): boolean {
     if (!this.venta.id_canal || !this.canales) return false;
     const canal = this.canales.find((c: any) => c.id == this.venta.id_canal);
-    return canal && canal.nombre === 'Boxful';
+    return !!(canal && canal.nombre === 'Boxful');
+  }
+
+  mostrarAlertaEnvioBoxful(): boolean {
+    return this.tieneBoxful && this.esCanalBoxful() && this.venta.cotizacion != 1;
+  }
+
+  private debePreguntarEnvioBoxful(): boolean {
+    return this.mostrarAlertaEnvioBoxful() && !!this.venta?.id;
+  }
+
+  private preguntarGenerarEnvioBoxful(venta: any): void {
+    Swal.fire({
+      title: 'Envío BoxFul',
+      text: 'La venta se guardó correctamente. ¿Desea generar el envío BoxFul ahora o hacerlo después desde el listado de ventas?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Generar ahora',
+      cancelButtonText: 'Después',
+      reverseButtons: true,
+      allowOutsideClick: false,
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.abrirWizardBoxfulDesdeVenta(venta);
+      } else {
+        this.router.navigate(['/ventas']);
+        this.alertService.success(
+          'Venta creada',
+          'Puede generar el envío BoxFul después desde el listado de ventas.'
+        );
+      }
+    });
+  }
+
+  private abrirWizardBoxfulDesdeVenta(venta: any): void {
+    if (!venta?.id_cliente) {
+      this.alertService.warning(
+        'Atención',
+        'La venta no tiene cliente asignado. Genere el envío después desde el listado de ventas.'
+      );
+      this.router.navigate(['/ventas']);
+      return;
+    }
+
+    this.boxfulVentaId = venta.id;
+    this.boxfulClienteId = venta.id_cliente;
+    this.boxfulSugerirCod = !!(venta.credito || venta.condicion === 'Crédito' || this.venta?.credito || this.venta?.condicion === 'Crédito');
+    this.boxfulMontoCod = parseFloat(venta.total || this.venta?.total || 0) || null;
+    this.boxfulPaqueteData = {
+      id: null,
+      peso: 1,
+      alto: 11,
+      ancho: 43,
+      largo: 47.5,
+      es_fragil: false,
+      parcels: [{
+        peso: 1,
+        alto: 11,
+        ancho: 43,
+        largo: 47.5,
+        es_fragil: false,
+        contenido: '',
+        valor: parseFloat(venta.total || 50)
+      }]
+    };
+    this.mostrarModalBoxful = true;
+    this.alertService.success('Venta creada', 'Complete los datos del envío BoxFul.');
   }
 
   onBoxfulGuiaGenerada(guia: any): void {
-    console.log('Guía de Boxful generada:', guia);
-    const numGuia = guia.shipmentNumber || guia.data?.shipmentNumber || '';
-    const labelUrl = guia.labelUrl || guia.data?.labelUrl || '';
-    const trackingUrl = guia.trackingUrl || guia.data?.trackingUrl || '';
-    
-    const textToAdd = `Envío Boxful #${numGuia}. Guía PDF: ${labelUrl}. Rastreo: ${trackingUrl}`;
-    if (this.venta.observaciones) {
-      this.venta.observaciones += ` | ${textToAdd}`;
-    } else {
-      this.venta.observaciones = textToAdd;
+    const numGuia = guia?.shipmentNumber || guia?.data?.shipmentNumber || '';
+    if (numGuia) {
+      this.alertService.success('Logística Boxful', `Guía #${numGuia} generada correctamente.`);
     }
-    this.alertService.success('Logística Boxful', `Guía #${numGuia} vinculada a las observaciones de la venta.`);
+  }
+
+  cerrarModalBoxful(): void {
+    this.mostrarModalBoxful = false;
+    this.boxfulVentaId = null;
+    this.boxfulClienteId = null;
+    this.boxfulSugerirCod = false;
+    this.boxfulMontoCod = null;
+    this.boxfulPaqueteData = {
+      peso: 1, alto: 11, ancho: 43, largo: 47.5, es_fragil: false, id: null, parcels: []
+    };
+    this.router.navigate(['/ventas']);
   }
 
   ngOnInit() {
@@ -231,6 +310,15 @@ export class FacturacionV2Component implements OnInit {
         this.alertService.error(error);
       }
     );
+
+    this.apiService.getAll('boxful/status').subscribe({
+      next: (res: any) => {
+        this.tieneBoxful = !!(res && res.connected);
+      },
+      error: () => {
+        this.tieneBoxful = false;
+      }
+    });
 
     this.apiService.getAll('impuestos').subscribe(
       (impuestos) => {
@@ -1742,6 +1830,8 @@ export class FacturacionV2Component implements OnInit {
               this.navegarPostFacturaPreCuenta(this.venta.id);
             } else if (this.pedidoCanalId && this.venta.id) {
               this.navegarPostFacturaPedidoCanal(this.venta.id);
+            } else if (this.debePreguntarEnvioBoxful()) {
+              this.preguntarGenerarEnvioBoxful(venta);
             } else {
               this.cargarDatosIniciales();
               this.loadData();
@@ -1759,6 +1849,8 @@ export class FacturacionV2Component implements OnInit {
             this.navegarPostFacturaPreCuenta(this.venta.id);
           } else if (this.pedidoCanalId && this.venta.id) {
             this.navegarPostFacturaPedidoCanal(this.venta.id);
+          } else if (this.debePreguntarEnvioBoxful()) {
+            this.preguntarGenerarEnvioBoxful(venta);
           } else {
             this.router.navigate(['/ventas']);
             this.alertService.success(

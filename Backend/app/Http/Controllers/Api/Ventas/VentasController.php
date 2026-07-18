@@ -30,8 +30,10 @@ use App\Models\Inventario\Paquete;
 use App\Services\Webhooks\WebhookPaqueteVentaDispatcher;
 use App\Models\Contabilidad\Proyecto;
 use App\Models\Eventos\Evento;
+use App\Models\Admin\Canal;
 use App\Models\Restaurante\PedidoRestaurante;
 use App\Services\Restaurante\PedidoCanalInventarioService;
+use Illuminate\Support\Str;
 use App\Services\Inventario\ConversionInventarioService;
 use App\Services\Inventario\LoteAsignacionService;
 use App\Services\Inventario\StockDisponibleService;
@@ -143,6 +145,11 @@ class VentasController extends Controller
             ->where('cotizacion', 0)
             ->when($request->buscador, fn ($query) => $this->aplicarFiltroBuscador($query, (string) $request->buscador))
             ->with(['cliente', 'usuario', 'vendedor', 'sucursal', 'canal', 'documento', 'proyecto'])
+            ->with(['paquetes' => function ($query) {
+                $query->where('transportista', 'Boxful')
+                    ->select('id', 'id_venta', 'num_guia', 'transportista', 'wr', 'peso', 'estado', 'id_cliente')
+                    ->with('boxfulShipment');
+            }])
             ->with(['devolucionesNcNd' => function ($query) {
                 $query->with('documento:id,nombre');
             }])
@@ -1007,6 +1014,11 @@ class VentasController extends Controller
                     ]);
                     // No se interrumpe la transacción por errores en puntos de acumulación
                 }
+            }
+
+            // Paquete stub BoxFul para generar envío desde ventas (sin llamar a la API BoxFul)
+            if ((int) ($request->cotizacion ?? 0) === 0) {
+                $this->crearPaqueteStubBoxfulSiAplica($venta);
             }
 
             DB::commit();
@@ -2254,6 +2266,66 @@ class VentasController extends Controller
         // }
     }
 
+
+    /**
+     * Crea un paquete BoxFul pendiente ligado a la venta (sin guía ni llamada a BoxFul).
+     */
+    private function crearPaqueteStubBoxfulSiAplica(Venta $venta): void
+    {
+        if ($venta->estado === 'Anulada' || empty($venta->id_canal)) {
+            return;
+        }
+
+        $canal = Canal::find($venta->id_canal);
+        if (!$canal || strcasecmp((string) $canal->nombre, 'Boxful') !== 0) {
+            return;
+        }
+
+        $existe = Paquete::withoutGlobalScopes()
+            ->where('id_venta', $venta->id)
+            ->where('transportista', 'Boxful')
+            ->where(function ($q) {
+                $q->whereNull('num_guia')->orWhere('num_guia', '');
+            })
+            ->exists();
+
+        if ($existe) {
+            return;
+        }
+
+        // Si ya hay guía BoxFul, no crear otro stub
+        $conGuia = Paquete::withoutGlobalScopes()
+            ->where('id_venta', $venta->id)
+            ->where('transportista', 'Boxful')
+            ->whereNotNull('num_guia')
+            ->where('num_guia', '!=', '')
+            ->exists();
+
+        if ($conGuia) {
+            return;
+        }
+
+        $user = Auth::user();
+        $detalles = $venta->detalles()->get();
+        $primerDetalle = $detalles->first();
+
+        $paquete = new Paquete();
+        $paquete->id_empresa = $venta->id_empresa ?? $user->id_empresa;
+        $paquete->id_usuario = $venta->id_usuario ?? $user->id;
+        $paquete->id_sucursal = $venta->id_sucursal ?? $user->id_sucursal;
+        $paquete->id_venta = $venta->id;
+        $paquete->id_cliente = $venta->id_cliente;
+        $paquete->id_venta_detalle = $detalles->count() === 1 && $primerDetalle ? $primerDetalle->id : null;
+        $paquete->fecha = $venta->fecha ?? now();
+        $paquete->wr = 'BOXFUL-' . strtoupper(Str::random(8));
+        $paquete->transportista = 'Boxful';
+        $paquete->estado = 'Pendiente';
+        $paquete->peso = 0;
+        $paquete->piezas = 1;
+        $paquete->precio = $venta->total ?? 0;
+        $paquete->nota = 'Stub BoxFul desde venta #' . $venta->id;
+        $paquete->save();
+    }
 
     public function getNumerosIdentificacion(){
         $numsIds = Venta::select('num_identificacion')

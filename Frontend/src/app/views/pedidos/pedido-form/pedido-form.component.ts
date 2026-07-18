@@ -32,6 +32,9 @@ interface LineaLocal {
   styleUrls: ['./pedido-form.component.css']
 })
 export class PedidoFormComponent implements OnInit {
+  /** ponytail: wizard BoxFul oficial vive en Ventas; reactivar con true si hace falta dual */
+  readonly boxfulWizardFromPedidosEnabled = false;
+
   modoEdicion = false;
   pedidoId: number | null = null;
   guardando = false;
@@ -305,6 +308,9 @@ export class PedidoFormComponent implements OnInit {
   }
 
   esCanalBoxful(): boolean {
+    if (!this.boxfulWizardFromPedidosEnabled) {
+      return false;
+    }
     return this.canal === 'Boxful' && !!this.usuario?.empresa?.modulo_paquetes && this.tieneBoxful;
   }
 

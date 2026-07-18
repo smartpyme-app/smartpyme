@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, OnInit, Output, OnChanges, SimpleChanges } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
 import { BoxfulApiService, BoxfulState, BoxfulCity } from '@services/boxful/boxful-api.service';
 import { AlertService } from '@services/alert.service';
 
@@ -12,6 +13,11 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
   @Input() clienteId!: number;
   @Input() paqueteData: any; // peso, alto, ancho, largo
   @Input() pedidoId: number | null = null;
+  @Input() ventaId: number | null = null;
+  /** Si true, premarca pago contra entrega (editable). */
+  @Input() sugerirCod = false;
+  /** Monto COD sugerido (p. ej. total de la venta). */
+  @Input() montoCodSugerido: number | null = null;
   @Output() guiaGenerada = new EventEmitter<any>();
   @Output() cerrar = new EventEmitter<void>();
 
@@ -20,12 +26,19 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
   // Asistente (Wizard)
   step: number = 1;
 
+  /** Cash on Delivery / pago contra entrega */
+  cod = false;
+  codAmount = 0;
+
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['clienteId'] && !changes['clienteId'].firstChange) {
       this.resetWizard();
       if (this.clienteId) {
         this.loadClientDetails();
       }
+    }
+    if (changes['sugerirCod'] || changes['montoCodSugerido']) {
+      this.aplicarSugerenciaCod();
     }
   }
 
@@ -35,6 +48,14 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
   filteredCities: BoxfulCity[] = [];
   mode: 'new' = 'new';
 
+  /** Códigos telefónicos de país usados por BoxFul (addressAreaCode). */
+  readonly codigosArea = [
+    { value: '503', label: 'El Salvador (+503)' },
+    { value: '502', label: 'Guatemala (+502)' },
+    { value: '506', label: 'Costa Rica (+506)' },
+    { value: '504', label: 'Honduras (+504)' },
+  ];
+
   // Datos de Bodega/Origen de la Empresa
   originAddresses: any[] = [];
   selectedOriginAddressId: string | null = null;
@@ -42,6 +63,9 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
   originMode: 'saved' | 'new' = 'saved';
   originAddressForm!: FormGroup;
   savingOriginAddress = false;
+  deletingOriginAddress = false;
+  /** Si está set, el formulario de bodega está en modo edición (PATCH BoxFul). */
+  editingOriginBoxfulId: string | null = null;
   filteredOriginCities: BoxfulCity[] = [];
 
   // Datos del Destinatario
@@ -68,7 +92,8 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
   constructor(
     private fb: FormBuilder,
     private boxfulService: BoxfulApiService,
-    private alertService: AlertService
+    private alertService: AlertService,
+    private router: Router
   ) { }
 
   ngOnInit(): void {
@@ -97,6 +122,48 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
     if (this.clienteId) {
       this.loadClientDetails();
     }
+
+    this.aplicarSugerenciaCod();
+  }
+
+  private aplicarSugerenciaCod(): void {
+    this.cod = !!this.sugerirCod;
+    const sugerido = this.montoCodSugerido != null && !isNaN(Number(this.montoCodSugerido))
+      ? Number(this.montoCodSugerido)
+      : this.sumaValorParcels();
+    this.codAmount = this.cod ? Math.max(0, sugerido) : 0;
+  }
+
+  private sumaValorParcels(): number {
+    const parcels = this.getParcels();
+    if (!parcels.length) {
+      return parseFloat(this.paqueteData?.valor || this.paqueteData?.price || 0) || 0;
+    }
+    return parcels.reduce((sum, p) => sum + (parseFloat(p.valor || p.price || 0) || 0), 0);
+  }
+
+  onCodToggle(): void {
+    if (this.cod && (!this.codAmount || this.codAmount <= 0)) {
+      this.codAmount = this.montoCodSugerido != null
+        ? Number(this.montoCodSugerido)
+        : this.sumaValorParcels();
+    }
+    if (!this.cod) {
+      this.codAmount = 0;
+    }
+  }
+
+  private validarCod(): boolean {
+    if (!this.cod) {
+      return true;
+    }
+    const monto = parseFloat(String(this.codAmount));
+    if (!monto || monto <= 0) {
+      this.errorMessage = 'Si activa pago contra entrega (COD), indique un monto mayor a 0.';
+      this.alertService.error(this.errorMessage);
+      return false;
+    }
+    return true;
   }
 
   getParcels(): any[] {
@@ -285,6 +352,7 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
   toggleOriginMode(): void {
     this.originMode = this.originMode === 'saved' ? 'new' : 'saved';
     this.errorMessage = null;
+    this.editingOriginBoxfulId = null;
     if (this.originMode === 'new') {
       this.originAddressForm.reset({
         alias: '',
@@ -299,6 +367,71 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
       });
       this.filteredOriginCities = [];
     }
+  }
+
+  cancelarFormularioOrigen(): void {
+    this.editingOriginBoxfulId = null;
+    this.errorMessage = null;
+    if (this.originAddresses.length > 0) {
+      this.originMode = 'saved';
+    }
+    this.originAddressForm.reset({
+      alias: '',
+      direccion: '',
+      referencia: '',
+      telefono: '',
+      codigo_area: '503',
+      stateId: null,
+      cityId: null,
+      latitud: null,
+      longitud: null
+    });
+    this.filteredOriginCities = [];
+  }
+
+  editarDireccionOrigen(): void {
+    if (!this.selectedOriginAddressId) {
+      return;
+    }
+
+    const boxfulAddressId = String(this.selectedOriginAddressId);
+    const selected = this.originAddresses.find(
+      (a) => String(a.boxful_address_id || a.id || a.addressId) === boxfulAddressId
+    );
+    if (!selected) {
+      this.alertService.error('No se encontró la bodega seleccionada.');
+      return;
+    }
+
+    const stateId = selected.boxful_state_id || selected.stateId || null;
+    const cityId = selected.boxful_city_id || selected.cityId || null;
+    const selectedState = this.states.find((s) => String(s.id) === String(stateId));
+    this.filteredOriginCities = selectedState?.Cities || [];
+
+    this.editingOriginBoxfulId = selected.boxful_address_id
+      ? String(selected.boxful_address_id)
+      : boxfulAddressId;
+    this.originMode = 'new';
+    this.errorMessage = null;
+
+    this.originAddressForm.reset({
+      alias: selected.alias || '',
+      direccion: selected.direccion || selected.address || '',
+      referencia: selected.referencia || selected.referencePoint || '',
+      telefono: selected.telefono || selected.addressPhone || '',
+      codigo_area: this.normalizarCodigoArea(selected.codigo_area || selected.addressAreaCode || '503'),
+      stateId,
+      cityId,
+      latitud: selected.latitud ?? selected.latitude ?? null,
+      longitud: selected.longitud ?? selected.longitude ?? null
+    });
+  }
+
+  /** Normaliza "+503" / "503" al value del select. */
+  private normalizarCodigoArea(codigo: string | number | null | undefined): string {
+    const raw = String(codigo ?? '503').replace(/^\+/, '').trim();
+    const known = this.codigosArea.find((c) => c.value === raw);
+    return known ? known.value : '503';
   }
 
   onOriginStateChange(): void {
@@ -335,6 +468,49 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
     }
   }
 
+  eliminarDireccionOrigen(): void {
+    if (!this.selectedOriginAddressId || this.deletingOriginAddress) {
+      return;
+    }
+
+    const boxfulAddressId = String(this.selectedOriginAddressId);
+    const selected = this.originAddresses.find(
+      (a) => String(a.boxful_address_id || a.id || a.addressId) === boxfulAddressId
+    );
+    const label = selected?.alias || selected?.direccion || selected?.address || boxfulAddressId;
+
+    if (!confirm(`¿Eliminar la bodega/origen "${label}"? Esta acción no se puede deshacer.`)) {
+      return;
+    }
+
+    this.deletingOriginAddress = true;
+    this.errorMessage = null;
+
+    this.boxfulService.deleteAddress(boxfulAddressId).subscribe({
+      next: () => {
+        this.deletingOriginAddress = false;
+        this.originAddresses = this.originAddresses.filter(
+          (a) => String(a.boxful_address_id || a.id || a.addressId) !== boxfulAddressId
+        );
+
+        if (this.originAddresses.length > 0) {
+          const next = this.originAddresses[0];
+          this.selectedOriginAddressId = next.boxful_address_id || next.id || next.addressId;
+        } else {
+          this.selectedOriginAddressId = null;
+          this.originMode = 'new';
+        }
+
+        this.alertService.success('Éxito', 'Dirección de origen eliminada.');
+      },
+      error: (err: any) => {
+        this.deletingOriginAddress = false;
+        this.errorMessage = err?.error?.message || 'No se pudo eliminar la dirección de origen.';
+        this.alertService.error(this.errorMessage);
+      }
+    });
+  }
+
   guardarNuevaDireccionOrigen(): void {
     if (this.originAddressForm.invalid) {
       this.originAddressForm.markAllAsTouched();
@@ -346,14 +522,57 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
     this.errorMessage = null;
 
     const formVal = this.originAddressForm.value;
+    const lat = parseFloat(formVal.latitud);
+    const lng = parseFloat(formVal.longitud);
+
+    if (this.editingOriginBoxfulId) {
+      const patchPayload = {
+        alias: formVal.alias || 'Bodega',
+        address: formVal.direccion,
+        referencePoint: formVal.referencia,
+        latitude: lat,
+        longitude: lng,
+        stateId: formVal.stateId,
+        cityId: formVal.cityId,
+        addressPhone: formVal.telefono,
+        addressAreaCode: formVal.codigo_area
+      };
+
+      this.boxfulService.updateAddress(this.editingOriginBoxfulId, patchPayload).subscribe({
+        next: (res: any) => {
+          this.savingOriginAddress = false;
+          const updated = res?.address || res;
+          const idKey = String(this.editingOriginBoxfulId);
+          const idx = this.originAddresses.findIndex(
+            (a) => String(a.boxful_address_id || a.id || a.addressId) === idKey
+          );
+          if (idx >= 0 && updated) {
+            this.originAddresses[idx] = { ...this.originAddresses[idx], ...updated };
+          } else {
+            this.loadOriginAddresses();
+          }
+          this.selectedOriginAddressId = idKey;
+          this.editingOriginBoxfulId = null;
+          this.originMode = 'saved';
+          this.alertService.success('Éxito', 'Dirección de origen actualizada.');
+        },
+        error: (err: any) => {
+          this.savingOriginAddress = false;
+          this.errorMessage = err?.error?.message || 'No se pudo actualizar la dirección de origen.';
+          this.alertService.error(this.errorMessage);
+        }
+      });
+      return;
+    }
+
     const payload = {
       alias: formVal.alias || 'Bodega',
       direccion: formVal.direccion,
       referencia: formVal.referencia,
-      latitude: parseFloat(formVal.latitud),
-      longitude: parseFloat(formVal.longitud),
-      latitud: parseFloat(formVal.latitud),
-      longitud: parseFloat(formVal.longitud),
+      latitude: lat,
+      longitude: lng,
+      latitud: lat,
+      longitud: lng,
       stateId: formVal.stateId,
       cityId: formVal.cityId,
       boxful_state_id: formVal.stateId,
@@ -375,6 +594,7 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
           this.originAddresses.push(createdAddr);
           this.selectedOriginAddressId = createdAddr.boxful_address_id || createdAddr.id || createdAddr.addressId;
           this.originMode = 'saved';
+          this.editingOriginBoxfulId = null;
           this.originAddressForm.reset({
             alias: '',
             direccion: '',
@@ -470,6 +690,10 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
       }
     }
 
+    if (!this.validarCod()) {
+      return;
+    }
+
     this.loadingCouriers = true;
 
     const paquetesPayload = parcelsList.map(p => ({
@@ -484,24 +708,15 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
       contenido: p.contenido || p.content || 'Productos varios'
     }));
 
-    const firstParcel = paquetesPayload[0] || {
-      peso: 1.0,
-      alto: 11.0,
-      ancho: 43.0,
-      largo: 47.5,
-      valor: 50.0,
-      es_fragil: false,
-      isFragile: false,
-      contenido: 'Productos varios'
-    };
-
     // Construir payload según la nueva arquitectura normalizada
     const payload = {
       paquetes: paquetesPayload,
       destino: this.getDireccionDestino(),
       origen: this.getDireccionOrigen(),
-      paqueteId: this.paqueteData.id || null,
-      fecha_recoleccion: this.fechaRecoleccion
+      paqueteId: this.paqueteData?.id || null,
+      fecha_recoleccion: this.fechaRecoleccion,
+      cod: !!this.cod,
+      codAmount: this.cod ? parseFloat(String(this.codAmount)) : 0,
     };
 
     this.boxfulService.getCouriersAvailable(payload).subscribe({
@@ -558,6 +773,10 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
       }
     }
 
+    if (!this.validarCod()) {
+      return;
+    }
+
     this.generatingGuide = true;
     this.errorMessage = null;
 
@@ -575,22 +794,15 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
       contenido: p.contenido || p.content || 'Productos varios'
     }));
 
-    const firstParcel = paquetesPayload[0] || {
-      peso: 1.0,
-      alto: 11.0,
-      ancho: 43.0,
-      largo: 47.5,
-      valor: 50.0,
-      es_fragil: false,
-      isFragile: false,
-      contenido: 'Productos varios'
-    };
+    const orderRef = this.pedidoId
+      ? String(this.pedidoId)
+      : (this.ventaId ? String(this.ventaId) : undefined);
 
     // Construir payload final para shipment
     const payload = {
       courierId: this.selectedCourierId,
-      storeOrderNumber: this.pedidoId ? String(this.pedidoId) : undefined,
-      orderNumber: this.pedidoId ? String(this.pedidoId) : undefined,
+      storeOrderNumber: orderRef,
+      orderNumber: orderRef,
       paquetes: paquetesPayload,
       destino: destino,
       origen: this.getDireccionOrigen(),
@@ -602,18 +814,20 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
         codigo_area: destino.codigo_area || '503'
       },
       clienteId: this.clienteId,
-      paqueteId: this.paqueteData.id || null,
+      paqueteId: this.paqueteData?.id || null,
       pedidoId: this.pedidoId || null,
-      fecha_recoleccion: this.fechaRecoleccion
+      ventaId: this.ventaId || null,
+      fecha_recoleccion: this.fechaRecoleccion,
+      cod: !!this.cod,
+      codAmount: this.cod ? parseFloat(String(this.codAmount)) : 0,
     };
 
     this.boxfulService.createShipment(payload).subscribe({
       next: (res: any) => {
-        this.shipmentResult = res;
+        this.shipmentResult = this.normalizarShipmentResult(res);
         this.generatingGuide = false;
         this.step = 3;
-        this.guiaGenerada.emit(res);
-
+        this.guiaGenerada.emit(this.shipmentResult);
       },
       error: (err: any) => {
         console.error('Error al generar la guía en Boxful:', err);
@@ -624,6 +838,77 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
     });
   }
 
+  /**
+   * BoxFul / nuestro proxy pueden anidar el envío en shipmentData|data|response.
+   * Aplana campos usados por el paso 3 (guía, PDF, tracking, precio).
+   */
+  private normalizarShipmentResult(res: any): any {
+    const candidates = [
+      res?.shipmentData,
+      res?.data,
+      res?.response,
+      res?.shipment,
+      res,
+    ].filter((x) => x && typeof x === 'object');
+
+    let nested: any = {};
+    for (const c of candidates) {
+      if (c.shipmentNumber || c.labelUrl || c.trackingUrl || c.shipment_number || c.id) {
+        nested = c;
+        break;
+      }
+      if (c.data && (c.data.shipmentNumber || c.data.labelUrl)) {
+        nested = c.data;
+        break;
+      }
+    }
+
+    const selectedCourier = this.couriers.find(
+      (x) => String(x.id || x.courierId) === String(this.selectedCourierId)
+    );
+
+    return {
+      shipmentNumber:
+        nested.shipmentNumber ||
+        nested.shipment_number ||
+        nested.trackingNumber ||
+        nested.tracking_number ||
+        nested.id ||
+        null,
+      labelUrl:
+        nested.labelUrl ||
+        nested.label_url ||
+        nested.label ||
+        nested.pdfUrl ||
+        nested.pdf_url ||
+        null,
+      trackingUrl:
+        nested.trackingUrl ||
+        nested.tracking_url ||
+        nested.tracking ||
+        nested.trackUrl ||
+        null,
+      courierName:
+        nested.courierName ||
+        nested.courier_name ||
+        nested.Courier?.name ||
+        nested.courier?.name ||
+        selectedCourier?.name ||
+        selectedCourier?.courierName ||
+        null,
+      price:
+        nested.price ??
+        nested.Price ??
+        nested.cost ??
+        nested.total ??
+        selectedCourier?.price ??
+        0,
+      cod: nested.cod ?? this.cod,
+      codAmount: nested.codAmount ?? nested.cod_monto ?? (this.cod ? this.codAmount : 0),
+      raw: res,
+    };
+  }
+
   // Reiniciar Wizard
   resetWizard(): void {
     this.step = 1;
@@ -631,6 +916,7 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
     this.selectedCourierId = null;
     this.shipmentResult = null;
     this.errorMessage = null;
+    this.aplicarSugerenciaCod();
     this.loadOriginAddresses();
     this.originMode = 'saved';
     this.fechaRecoleccion = this.getTodayString();
@@ -707,6 +993,15 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges {
 
   closeSelector(): void {
     this.cerrar.emit();
+  }
+
+  /**
+   * Tras generar guía: cierra el wizard y abre facturación.
+   * /venta/crear → FacturacionVersionGuard redirige a v1 o ventas-v2/crear.
+   */
+  crearOtroEnvio(): void {
+    this.cerrar.emit();
+    this.router.navigate(['/venta/crear']);
   }
 
   private fillAddressFormFromClient(): void {

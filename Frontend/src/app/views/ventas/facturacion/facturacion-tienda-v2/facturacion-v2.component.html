@@ -451,6 +451,12 @@
                 <option [value]="canal.id" *ngFor="let canal of canales">{{ canal.nombre }}</option>
             </select>
         </div>
+        <div class="form-group col-md-12" *ngIf="mostrarAlertaEnvioBoxful()">
+            <div class="alert alert-info mb-0 py-2" role="alert">
+                <i class="fa fa-truck me-2"></i>
+                Esta venta podrá generar un envío BoxFul desde el listado de ventas, una vez guardada.
+            </div>
+        </div>
         <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1">
             <label for="id_vendedor">Vendedor</label>
             <select name="id_vendedor" [(ngModel)]="venta.id_vendedor" class="form-select">
@@ -770,3 +776,13 @@
         </button>
     </div>
 </ng-template>
+
+<app-boxful-shipping-selector *ngIf="mostrarModalBoxful && boxfulClienteId"
+  [clienteId]="boxfulClienteId"
+  [ventaId]="boxfulVentaId"
+  [paqueteData]="boxfulPaqueteData"
+  [sugerirCod]="boxfulSugerirCod"
+  [montoCodSugerido]="boxfulMontoCod"
+  (guiaGenerada)="onBoxfulGuiaGenerada($event)"
+  (cerrar)="cerrarModalBoxful()">
+</app-boxful-shipping-selector>

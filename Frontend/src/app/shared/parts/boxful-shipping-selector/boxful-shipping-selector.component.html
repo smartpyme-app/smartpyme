@@ -5,7 +5,10 @@
       <!-- Encabezado de Modal del Sistema -->
       <div class="modal-header justify-content-between">
         <h3 class="modal-title">
-          <span>Logística Boxful <strong *ngIf="pedidoId">| Pedido #{{ pedidoId }}</strong></span>
+          <span>Logística Boxful
+            <strong *ngIf="pedidoId">| Pedido #{{ pedidoId }}</strong>
+            <strong *ngIf="!pedidoId && ventaId">| Venta #{{ ventaId }}</strong>
+          </span>
           <small class="text-muted d-block mt-1" style="font-size: 12px; font-weight: normal;">Paso {{ step }} de 3 -
             Cotización y generación de guías</small>
         </h3>
@@ -99,23 +102,42 @@
           <div class="mb-3 pb-3 border-bottom">
             <label for="direccionOrigenSelect"
               class="fw-bold text-dark mb-1 d-flex justify-content-between align-items-center w-100">
-              <span><i class="fa fa-building me-1"></i> Bodega / Dirección de origen de despacho <span
+              <span><i class="fa fa-building me-1"></i> Dirección de origen de despacho <span
                   class="text-danger">*</span></span>
               <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none fw-bold"
                 *ngIf="originAddresses.length > 0 && !loadingOriginAddresses" (click)="toggleOriginMode()">
-                {{ originMode === 'saved' ? '+ Agregar bodega/origen' : 'Ver bodegas guardadas' }}
+                {{ originMode === 'saved' ? '+ Agregar dirección de origen' : 'Ver direcciones de origen guardadas' }}
               </button>
             </label>
 
             <!-- MODO ORIGEN 1: Bodega Guardada -->
             <div *ngIf="originMode === 'saved' && !loadingOriginAddresses">
-              <select id="direccionOrigenSelect" class="form-select" [(ngModel)]="selectedOriginAddressId">
-                <option [ngValue]="null" disabled>-- Seleccione una dirección de origen --</option>
-                <option *ngFor="let addr of originAddresses"
-                  [value]="addr.boxful_address_id || addr.id || addr.addressId">
-                  {{ addr.direccion || addr.address }}
-                </option>
-              </select>
+              <div class="d-flex gap-2 align-items-start">
+                <select id="direccionOrigenSelect" class="form-select" [(ngModel)]="selectedOriginAddressId">
+                  <option [ngValue]="null" disabled>-- Seleccione una dirección de origen --</option>
+                  <option *ngFor="let addr of originAddresses"
+                    [value]="addr.boxful_address_id || addr.id || addr.addressId">
+                    {{ addr.alias ? (addr.alias + ' — ') : '' }}{{ addr.direccion || addr.address }}
+                  </option>
+                </select>
+                <button type="button" class="btn btn-outline-secondary btn-sm flex-shrink-0"
+                  *ngIf="selectedOriginAddressId"
+                  [disabled]="deletingOriginAddress || savingOriginAddress"
+                  (click)="editarDireccionOrigen()"
+                  tooltip="Editar bodega seleccionada"
+                  tooltipPlacement="top">
+                  <i class="fa fa-pencil"></i>
+                </button>
+                <button type="button" class="btn btn-outline-danger btn-sm flex-shrink-0"
+                  *ngIf="selectedOriginAddressId"
+                  [disabled]="deletingOriginAddress"
+                  (click)="eliminarDireccionOrigen()"
+                  tooltip="Eliminar bodega seleccionada"
+                  tooltipPlacement="top">
+                  <span *ngIf="deletingOriginAddress" class="spinner-border spinner-border-sm" role="status"></span>
+                  <i *ngIf="!deletingOriginAddress" class="fa fa-trash"></i>
+                </button>
+              </div>
               <div class="form-text text-muted mt-1 small" *ngIf="originAddresses.length === 0">
                 <i class="fa fa-info-circle me-1"></i> No tiene direcciones de origen registradas en Boxful.
               </div>
@@ -123,8 +145,10 @@
 
             <!-- MODO ORIGEN 2: Nueva Bodega/Origen -->
             <div *ngIf="originMode === 'new' && !loadingOriginAddresses" class="p-3 bg-light rounded border mb-2 mt-2">
-              <h6 class="fw-bold text-dark mb-3"><i class="fa fa-plus-circle me-1"></i> Nueva dirección de origen
-                (Bodega)</h6>
+              <h6 class="fw-bold text-dark mb-3">
+                <i class="fa me-1" [ngClass]="editingOriginBoxfulId ? 'fa-pencil' : 'fa-plus-circle'"></i>
+                {{ editingOriginBoxfulId ? 'Editar dirección de origen (Bodega)' : 'Nueva dirección de origen (Bodega)' }}
+              </h6>
               <form [formGroup]="originAddressForm" autocomplete="off">
                 <div class="form-group mb-3">
                   <label for="origenAlias" class="form-label mb-1 small">Alias de la Bodega <span
@@ -196,9 +220,11 @@
                   <div class="form-group col-4 mb-3">
                     <label for="origenCodArea" class="form-label mb-1 small">Cód. Área <span
                         class="text-danger">*</span></label>
-                    <input id="origenCodArea" type="text" formControlName="codigo_area"
-                      class="form-control form-control-sm" placeholder="503"
+                    <select id="origenCodArea" formControlName="codigo_area"
+                      class="form-select form-select-sm"
                       [class.is-invalid]="originAddressForm.get('codigo_area')?.touched && originAddressForm.get('codigo_area')?.invalid">
+                      <option *ngFor="let c of codigosArea" [value]="c.value">{{ c.label }}</option>
+                    </select>
                     <div class="text-danger mt-1" style="font-size: 11px;"
                       *ngIf="originAddressForm.get('codigo_area')?.touched && originAddressForm.get('codigo_area')?.invalid">
                       Requerido.</div>
@@ -217,14 +243,15 @@
 
                 <div class="d-flex justify-content-end mt-2">
                   <button type="button" class="btn btn-sm btn-light me-2" *ngIf="originAddresses.length > 0"
-                    (click)="toggleOriginMode()">
+                    (click)="cancelarFormularioOrigen()">
                     Cancelar
                   </button>
                   <button type="button" class="btn btn-sm btn-primary" [disabled]="savingOriginAddress"
                     (click)="guardarNuevaDireccionOrigen()">
                     <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"
                       *ngIf="savingOriginAddress"></span>
-                    <i class="fa fa-save me-1" *ngIf="!savingOriginAddress"></i> Guardar Bodega
+                    <i class="fa fa-save me-1" *ngIf="!savingOriginAddress"></i>
+                    {{ editingOriginBoxfulId ? 'Actualizar Bodega' : 'Guardar Bodega' }}
                   </button>
                 </div>
               </form>
@@ -288,9 +315,10 @@
               <div class="row">
                 <div class="form-group col-4 col-md-4 mb-3">
                   <label for="nuevoCodArea">Cód. Área <span class="text-danger">*</span></label>
-                  <input id="nuevoCodArea" type="text" formControlName="codigo_area" class="form-control"
-                    placeholder="503"
+                  <select id="nuevoCodArea" formControlName="codigo_area" class="form-select"
                     [class.is-invalid]="addressForm.get('codigo_area')?.touched && addressForm.get('codigo_area')?.invalid">
+                    <option *ngFor="let c of codigosArea" [value]="c.value">{{ c.label }}</option>
+                  </select>
                   <div class="text-danger mt-1" style="font-size: 11px;"
                     *ngIf="addressForm.get('codigo_area')?.touched && addressForm.get('codigo_area')?.invalid">
                     Requerido.</div>
@@ -309,6 +337,31 @@
           </div>
 
           <!-- Botón de Cotización -->
+          <!-- Pago contra entrega (COD) -->
+          <div class="mb-3 p-3 bg-light rounded border mt-4">
+            <div class="form-switch d-flex align-items-center justify-content-between gap-3 mb-0">
+              <label class="fw-bold text-dark mb-0" for="boxfulCod">
+                <i class="fa fa-hand-holding-usd me-1 text-muted"></i>
+                Pago contra entrega (COD)
+              </label>
+              <input class="form-check-input m-0 flex-shrink-0" type="checkbox" role="switch" id="boxfulCod"
+                [(ngModel)]="cod" (ngModelChange)="onCodToggle()" name="boxfulCod">
+            </div>
+            <div class="form-text text-muted small mt-2 mb-0">
+              El courier cobra al destinatario al entregar el paquete.
+            </div>
+            <div class="mt-3" *ngIf="cod">
+              <label for="boxfulCodAmount" class="form-label mb-1 small fw-bold">
+                Monto a cobrar <span class="text-danger">*</span>
+              </label>
+              <div class="input-group" style="max-width: 220px;">
+                <span class="input-group-text">$</span>
+                <input id="boxfulCodAmount" type="number" class="form-control" min="0.01" step="0.01"
+                  [(ngModel)]="codAmount" name="boxfulCodAmount">
+              </div>
+            </div>
+          </div>
+
           <div class="d-grid mt-4">
             <button (click)="cotizarEnvio()" [disabled]="loadingCouriers" class="btn btn-primary">
               <span *ngIf="loadingCouriers">
@@ -425,7 +478,7 @@
           </div>
 
           <h4 class="fw-bold text-success mb-2">¡Guía Generada Exitosamente!</h4>
-          <p class="text-muted mb-3">Los datos de la guía se han agregado a las observaciones de la venta.</p>
+          <p class="text-muted mb-3">Puede imprimir la guía o rastrear el envío. Cierre el modal cuando termine.</p>
 
           <!-- Tabla de Datos Básicos -->
           <div class="table-responsive max-width-md mx-auto mb-4 border rounded bg-light" style="max-width: 450px;">
@@ -433,17 +486,21 @@
               <tbody>
                 <tr class="border-bottom">
                   <td class="p-2 fw-bold text-muted" style="width: 45%;">Número de Guía:</td>
-                  <td class="p-2 fw-bold font-monospace">{{ shipmentResult?.shipmentNumber ||
-                    shipmentResult?.data?.shipmentNumber || 'N/A' }}</td>
+                  <td class="p-2 fw-bold font-monospace">{{ shipmentResult?.shipmentNumber || 'N/A' }}</td>
                 </tr>
-                <tr class="border-bottom" *ngIf="shipmentResult?.courierName || shipmentResult?.data?.courierName">
+                <tr class="border-bottom" *ngIf="shipmentResult?.courierName">
                   <td class="p-2 fw-bold text-muted">Paquetería:</td>
-                  <td class="p-2 fw-bold">{{ shipmentResult?.courierName || shipmentResult?.data?.courierName }}</td>
+                  <td class="p-2 fw-bold">{{ shipmentResult?.courierName }}</td>
                 </tr>
-                <tr>
+                <tr class="border-bottom">
                   <td class="p-2 fw-bold text-muted">Costo de Envío:</td>
-                  <td class="p-2 fw-bold text-primary font-monospace">${{ (shipmentResult?.price ||
-                    shipmentResult?.data?.price || 0) | number:'1.2-2' }}</td>
+                  <td class="p-2 fw-bold text-primary font-monospace">${{ (shipmentResult?.price || 0) | number:'1.2-2' }}</td>
+                </tr>
+                <tr *ngIf="shipmentResult?.cod || cod">
+                  <td class="p-2 fw-bold text-muted">Pago contra entrega:</td>
+                  <td class="p-2 fw-bold font-monospace">
+                    Sí — ${{ (shipmentResult?.codAmount || codAmount || 0) | number:'1.2-2' }}
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -451,22 +508,28 @@
 
           <!-- Botones de Acción PDF / Tracking -->
           <div class="d-flex flex-column flex-sm-row gap-2 justify-content-center mb-3">
-            <a [href]="shipmentResult?.labelUrl || shipmentResult?.data?.labelUrl" target="_blank"
+            <a *ngIf="shipmentResult?.labelUrl" [href]="shipmentResult.labelUrl" target="_blank" rel="noopener"
               class="btn btn-primary px-4">
               <i class="fa fa-file-pdf-o me-2"></i> Imprimir Guía (PDF)
             </a>
-            <a [href]="shipmentResult?.trackingUrl || shipmentResult?.data?.trackingUrl" target="_blank"
+            <button *ngIf="!shipmentResult?.labelUrl" type="button" class="btn btn-primary px-4" disabled>
+              <i class="fa fa-file-pdf-o me-2"></i> PDF no disponible
+            </button>
+            <a *ngIf="shipmentResult?.trackingUrl" [href]="shipmentResult.trackingUrl" target="_blank" rel="noopener"
               class="btn btn-light px-4">
               <i class="fa fa-location-arrow me-2"></i> Rastrear Envío
             </a>
+            <button *ngIf="!shipmentResult?.trackingUrl" type="button" class="btn btn-light px-4" disabled>
+              <i class="fa fa-location-arrow me-2"></i> Rastreo no disponible
+            </button>
           </div>
 
           <div class="mt-4 pt-2 border-top d-flex justify-content-center gap-3">
-            <button (click)="resetWizard()" class="btn btn-link text-decoration-none text-muted">
-              <i class="fa fa-refresh me-1"></i> Crear otro envío
+            <button type="button" (click)="crearOtroEnvio()" class="btn btn-link text-decoration-none text-muted">
+              <i class="fa fa-plus me-1"></i> Crear otra venta
             </button>
             <span class="text-muted py-1">|</span>
-            <button (click)="closeSelector()" class="btn btn-link text-decoration-none text-primary fw-bold">
+            <button type="button" (click)="closeSelector()" class="btn btn-link text-decoration-none text-primary fw-bold">
               <i class="fa fa-times me-1"></i> Cerrar Modal
             </button>
           </div>

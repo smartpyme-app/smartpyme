@@ -58,16 +58,16 @@ export class BoxfulApiService {
   }
 
   /**
-   * Actualiza una dirección existente en Boxful.
+   * Actualiza una dirección existente en Boxful (id = boxful_address_id string).
    */
-  updateAddress(id: number, data: Partial<BoxfulAddress>): Observable<BoxfulAddress> {
+  updateAddress(id: string | number, data: Partial<BoxfulAddress> | Record<string, any>): Observable<any> {
     return this.api.patch('boxful/addresses', id, data);
   }
 
   /**
-   * Elimina una dirección de Boxful por ID.
+   * Elimina una dirección de Boxful por ID (string Mongo de BoxFul).
    */
-  deleteAddress(id: number): Observable<any> {
+  deleteAddress(id: string | number): Observable<any> {
     return this.api.delete('boxful/addresses/', id);
   }
 

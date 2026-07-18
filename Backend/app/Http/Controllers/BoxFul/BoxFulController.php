@@ -212,12 +212,20 @@ class BoxFulController extends Controller
                 ], $status);
             }
 
-            $boxfulAddressId = $response->json('id') ?? $response->json('data.id') ?? $response->json('addressId');
+            // Doc Boxful POST /addresses: { status: "success", address: { id: "..." } }
+            $bodyOk = $response->json() ?? [];
+            $boxfulAddressId = $bodyOk['address']['id']
+                ?? $bodyOk['data']['id']
+                ?? $bodyOk['id']
+                ?? $bodyOk['addressId']
+                ?? null;
 
             if (empty($boxfulAddressId)) {
+                Log::error('Boxful configurar origen: respuesta sin address.id', ['response' => $bodyOk]);
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'La API de Boxful no devolvió un ID de dirección válido para la dirección de origen.'
+                    'message' => 'La API de Boxful no devolvió un ID de dirección válido para la dirección de origen.',
+                    'response' => $bodyOk,
                 ], 500);
             }
 

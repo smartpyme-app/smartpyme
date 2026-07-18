@@ -23,6 +23,9 @@ export class PedidosListaComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   private searchSubject$ = new Subject<void>();
 
+  /** ponytail: wizard BoxFul oficial vive en Ventas; reactivar con true si hace falta dual */
+  readonly boxfulWizardFromPedidosEnabled = false;
+
   pedidos: any = {};
   loading = false;
   sucursales: any[] = [];
@@ -446,13 +449,12 @@ export class PedidosListaComponent implements OnInit, OnDestroy {
 
     this.restauranteService.actualizarPedido(this.pedidoId!, updatePayload).subscribe({
       next: () => {
-        this.mostrarModalBoxful = false;
+        // Mantener modal abierto para el paso 3 de confirmación del wizard
         this.alertService.success('Guía vinculada y pedido confirmado', `Envío Boxful #${numGuia} vinculado al pedido.`);
         this.cargarLista();
       },
       error: (err) => {
         this.alertService.error(err);
-        this.mostrarModalBoxful = false;
         this.cargarLista();
       }
     });
@@ -644,6 +646,9 @@ export class PedidosListaComponent implements OnInit, OnDestroy {
   }
 
   puedeGenerarGuiaBoxful(p: any): boolean {
+    if (!this.boxfulWizardFromPedidosEnabled) {
+      return false;
+    }
     return p.canal === 'Boxful'
       && !!p.cliente_id
       && p.estado === 'borrador'

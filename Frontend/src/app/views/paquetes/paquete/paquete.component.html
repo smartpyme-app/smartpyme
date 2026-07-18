@@ -64,17 +64,6 @@
     <div class="bg-white rounded p-3 mb-3">
         <h6>Detalle del paquete</h6>
 
-        <div class="row mb-2" *ngIf="tieneBoxful">
-            <div class="form-group col-md-3 col-lg-2 without-label">
-                <div class="form-switch border rounded">
-                    <label for="es_fragil">¿Es frágil?</label>
-                    <input class="form-check-input float-end" type="checkbox" role="switch" id="es_fragil"
-                        name="es_fragil" [(ngModel)]="paquete.es_fragil">
-                </div>
-            </div>
-        </div>
-
-
         <!-- Fila 2: Información de Rastreo y Logística -->
         <div class="row mb-3">
             <div class="form-group col-md-3 col-lg-2">
@@ -117,94 +106,6 @@
                 <label for="volumen">Volumen:</label>
                 <input type="number" class="form-control" name="volumen" [(ngModel)]="paquete.volumen"
                     placeholder="Escriba aquí" />
-            </div>
-        </div>
-
-        <!-- Fila 3.5: Selector de Tamaño de Paquete (Boxful) -->
-        <div class="row mb-3" *ngIf="tieneBoxful">
-            <div class="col-12 mb-2">
-                <label class="form-label font-weight-bold">Tamaño del Paquete:</label>
-            </div>
-            <div class="col-md-3 mb-2">
-                <div class="package-type-card p-2 d-flex align-items-center justify-content-between"
-                    [class.selected]="tipoPaquete === 'S'" (click)="seleccionarTipoPaquete('S', 11, 43, 47.5)">
-                    <div class="d-flex align-items-center">
-                        <span class="badge-size me-2">S</span>
-                        <div>
-                            <div class="package-dims">S - Pequeño</div>
-                            <div class="package-desc">11 x 43 x 47.5 cm</div>
-                        </div>
-                    </div>
-                    <div class="package-box-icon d-flex align-items-center justify-content-center"
-                        style="height: 45px; width: 45px;">
-                        <svg width="45" height="30" viewBox="0 0 60 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M30 5 L52 14 L30 23 L8 14 Z" fill="#FFEFEA" stroke="#FF5E36" stroke-width="1.5"
-                                stroke-linejoin="round" />
-                            <path d="M8 14 L8 22 L30 31 L30 23 Z" fill="#FF5E36" fill-opacity="0.1" stroke="#FF5E36"
-                                stroke-width="1.5" stroke-linejoin="round" />
-                            <path d="M30 23 L30 31 L52 22 L52 14 Z" fill="#FF5E36" fill-opacity="0.2" stroke="#FF5E36"
-                                stroke-width="1.5" stroke-linejoin="round" />
-                        </svg>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-3 mb-2">
-                <div class="package-type-card p-2 d-flex align-items-center justify-content-between"
-                    [class.selected]="tipoPaquete === 'M'" (click)="seleccionarTipoPaquete('M', 22, 43, 47.5)">
-                    <div class="d-flex align-items-center">
-                        <span class="badge-size me-2">M</span>
-                        <div>
-                            <div class="package-dims">M - Mediano</div>
-                            <div class="package-desc">22 x 43 x 47.5 cm</div>
-                        </div>
-                    </div>
-                    <div class="package-box-icon d-flex align-items-center justify-content-center"
-                        style="height: 45px; width: 45px;">
-                        <svg width="45" height="37.5" viewBox="0 0 60 50" fill="none"
-                            xmlns="http://www.w3.org/2000/svg">
-                            <path d="M30 5 L52 14 L30 23 L8 14 Z" fill="#FFEFEA" stroke="#FF5E36" stroke-width="1.5"
-                                stroke-linejoin="round" />
-                            <path d="M8 14 L8 30 L30 39 L30 23 Z" fill="#FF5E36" fill-opacity="0.1" stroke="#FF5E36"
-                                stroke-width="1.5" stroke-linejoin="round" />
-                            <path d="M30 23 L30 39 L52 30 L52 14 Z" fill="#FF5E36" fill-opacity="0.2" stroke="#FF5E36"
-                                stroke-width="1.5" stroke-linejoin="round" />
-                        </svg>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-3 mb-2">
-                <div class="package-type-card p-2 d-flex align-items-center justify-content-between"
-                    [class.selected]="tipoPaquete === 'L'" (click)="seleccionarTipoPaquete('L', 34, 43, 47.5)">
-                    <div class="d-flex align-items-center">
-                        <span class="badge-size me-2">L</span>
-                        <div>
-                            <div class="package-dims">L - Grande</div>
-                            <div class="package-desc">34 x 43 x 47.5 cm</div>
-                        </div>
-                    </div>
-                    <div class="package-box-icon d-flex align-items-center justify-content-center"
-                        style="height: 45px; width: 45px;">
-                        <svg width="45" height="45" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M30 5 L52 14 L30 23 L8 14 Z" fill="#FFEFEA" stroke="#FF5E36" stroke-width="1.5"
-                                stroke-linejoin="round" />
-                            <path d="M8 14 L8 38 L30 47 L30 23 Z" fill="#FF5E36" fill-opacity="0.1" stroke="#FF5E36"
-                                stroke-width="1.5" stroke-linejoin="round" />
-                            <path d="M30 23 L30 47 L52 38 L52 14 Z" fill="#FF5E36" fill-opacity="0.2" stroke="#FF5E36"
-                                stroke-width="1.5" stroke-linejoin="round" />
-                        </svg>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Fila 3b: Propiedades adicionales de Boxful -->
-        <div class="row mb-3" *ngIf="tieneBoxful">
-            <div class="form-group col-md-6 col-lg-4">
-                <label for="contenido">Contenido del paquete: <span class="text-danger">*</span></label>
-                <textarea class="form-control" name="contenido" [(ngModel)]="paquete.contenido" rows="2"
-                    placeholder="Ej. Ropa, Documentos"></textarea>
             </div>
         </div>
 

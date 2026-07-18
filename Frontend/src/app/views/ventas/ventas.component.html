@@ -318,6 +318,21 @@
                                         (click)="generarTrasladoEmpresa(venta)">
                                         <i class="fa fa-fw fa-exchange"></i> Generar traslado a empresa
                                     </a>
+                                    <a *ngIf="puedeGenerarEnvioBoxful(venta)"
+                                        class="list-group-item list-group-item-action border-0 click"
+                                        (click)="generarEnvioBoxful(venta)">
+                                        <i class="fa fa-fw fa-truck"></i> Generar envío de BoxFul
+                                    </a>
+                                    <a *ngIf="puedeVerDetallesEnvioBoxful(venta)"
+                                        class="list-group-item list-group-item-action border-0 click"
+                                        (click)="verDetallesEnvioBoxful(venta)">
+                                        <i class="fa fa-fw fa-info-circle"></i> Detalles Envío Boxful
+                                    </a>
+                                    <a *ngIf="tieneEnvioBoxful(venta)"
+                                        class="list-group-item list-group-item-action border-0 click"
+                                        (click)="verTrackingPaqueteBoxful(venta, mTrackingBoxful)">
+                                        <i class="fa fa-fw fa-map-marker-alt"></i> Rastrear Paquete
+                                    </a>
                                 </div>
                             </ng-template>
                         </td>
@@ -1009,4 +1024,79 @@
             <p class="mb-0">Anulando DTE...</p>
         </div>
     </div>
+</ng-template>
+
+<app-boxful-shipping-selector *ngIf="mostrarModalBoxful && boxfulClienteId"
+  [clienteId]="boxfulClienteId"
+  [ventaId]="boxfulVentaId"
+  [paqueteData]="boxfulPaqueteData"
+  [sugerirCod]="boxfulSugerirCod"
+  [montoCodSugerido]="boxfulMontoCod"
+  (guiaGenerada)="onBoxfulGuiaGenerada($event)"
+  (cerrar)="cerrarModalBoxful()">
+</app-boxful-shipping-selector>
+
+<app-boxful-shipment-details *ngIf="mostrarDetallesEnvio" [shipmentId]="selectedShipmentId"
+  (cerrar)="mostrarDetallesEnvio = false">
+</app-boxful-shipment-details>
+
+<ng-template #mTrackingBoxful>
+  <div class="modal-header bg-light border-bottom-0 pb-0 justify-content-between">
+    <div class="modal-title w-100">
+      <h4 class="mb-0 font-weight-bold text-dark">Rastreo de Paquete</h4>
+      <p class="text-muted small mt-1 mb-0" *ngIf="getTrackingShipment()?.shipmentNumber">
+        Guía #: <strong>{{ getTrackingShipment()?.shipmentNumber }}</strong>
+      </p>
+    </div>
+    <button type="button" class="btn btn-light text-danger border-0" (click)="modalRef.hide()" aria-label="Close">
+      <i class="fa fa-close"></i>
+    </button>
+  </div>
+  <div class="modal-body pt-3 pb-4">
+    <div class="text-center py-5" *ngIf="cargandoTrackingBoxful">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Cargando...</span>
+      </div>
+      <p class="text-muted mt-2">Consultando rastreo...</p>
+    </div>
+
+    <div *ngIf="!cargandoTrackingBoxful && getTrackingShipment() as s">
+      <div class="horizontal-tracker mb-4">
+        <div class="tracker-step" *ngFor="let step of getTrackingSteps()">
+          <div class="tracker-circle" [class.completed]="step.completed">
+            <span style="font-size: 20px; line-height: 1; font-weight: bold;">&rarr;</span>
+          </div>
+          <div class="tracker-label" [class.completed]="step.completed">{{ step.label }}</div>
+          <div class="tracker-date text-muted">
+            <span *ngIf="step.completed">
+              {{ step.date ? (step.date | date:'dd MMM yyyy - h:mm a' | lowercase) : 'Completado' }}
+            </span>
+            <span *ngIf="!step.completed">Pendiente</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card border-1 bg-light mt-4">
+        <div class="card-body py-3">
+          <h6 class="text-primary font-weight-bold mb-2 small">
+            <i class="fa fa-info-circle me-1"></i> Resumen de Envío
+          </h6>
+          <div class="row small">
+            <div class="col-sm-6 mb-2">
+              <strong>Destinatario:</strong> {{ s.customerName }}
+            </div>
+            <div class="col-sm-6 mb-2">
+              <strong>Courier:</strong> {{ s.courier || 'Boxful' }}
+            </div>
+            <div class="col-md-12">
+              <strong>Dirección de Entrega:</strong> {{ s.customerAddress }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer border-top-0 pt-0">
+    <button type="button" class="btn btn-default" (click)="modalRef.hide()">Cerrar</button>
+  </div>
 </ng-template>

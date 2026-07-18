@@ -180,9 +180,13 @@ class BoxFulAddressController extends Controller
                 ], $status);
             }
 
-            // automatically sync newly created Boxful address to local DB
-            $boxfulData = $response->json();
-            $boxfulAddressId = $boxfulData['id'] ?? $boxfulData['data']['id'] ?? $boxfulData['addressId'] ?? null;
+            // Doc Boxful POST /addresses: { status: "success", address: { id: "..." } }
+            $boxfulData = $response->json() ?? [];
+            $boxfulAddressId = $boxfulData['address']['id']
+                ?? $boxfulData['data']['id']
+                ?? $boxfulData['id']
+                ?? $boxfulData['addressId']
+                ?? null;
 
             if ($boxfulAddressId) {
                 $user = auth()->user();
@@ -240,14 +244,15 @@ class BoxFulAddressController extends Controller
                 'cityId' => 'sometimes|required|string',
                 'addressPhone' => 'sometimes|required|string|max:20',
                 'addressAreaCode' => 'sometimes|required|string|max:10',
+                'alias' => 'nullable|string|max:100',
+                'extraLevels' => 'nullable|array',
             ]);
 
-            // Filtrar estrictamente para enviar solo los campos requeridos
+            // Solo campos de la API Boxful PATCH /addresses/{id}
             $payload = $request->only([
-                'address', 'referencePoint', 'latitude', 'longitude', 'stateId', 'cityId', 'addressPhone', 'addressAreaCode'
+                'address', 'referencePoint', 'latitude', 'longitude', 'stateId', 'cityId', 'addressPhone', 'addressAreaCode', 'extraLevels'
             ]);
 
-            // Mantener solo los campos presentes en la petición
             $payload = array_filter($payload, function ($value, $key) use ($request) {
                 return $request->has($key);
             }, ARRAY_FILTER_USE_BOTH);
@@ -270,10 +275,9 @@ class BoxFulAddressController extends Controller
                 ], $status);
             }
 
-            // update local origin address model if it exists
             $localAddr = \App\Models\Admin\DireccionOrigen::where('boxful_address_id', $id)->first();
             if ($localAddr) {
-                $localAddr->update([
+                $localUpdates = [
                     'direccion' => $request->address ?? $localAddr->direccion,
                     'referencia' => $request->referencePoint ?? $localAddr->referencia,
                     'latitud' => $request->latitude ?? $localAddr->latitud,
@@ -282,10 +286,17 @@ class BoxFulAddressController extends Controller
                     'boxful_city_id' => $request->cityId ?? $localAddr->boxful_city_id,
                     'telefono' => $request->addressPhone ?? $localAddr->telefono,
                     'codigo_area' => $request->addressAreaCode ?? $localAddr->codigo_area,
-                ]);
+                ];
+                if ($request->filled('alias')) {
+                    $localUpdates['alias'] = $request->alias;
+                }
+                $localAddr->update($localUpdates);
+                $localAddr->refresh();
             }
 
-            return response()->json($response->json(), 200);
+            $body = $response->json() ?? [];
+            // Preferir registro local actualizado para el FE (incluye alias)
+            return response()->json($localAddr ?: $body, 200);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -308,16 +319,28 @@ class BoxFulAddressController extends Controller
     }
 
     /**
-     * Elimina una dirección en Boxful.
+     * Elimina una dirección en Boxful y el registro local ligado.
+     * Si Boxful responde 404, limpia el local huérfano igual.
      */
     public function destroyAddress($id)
     {
         try {
-            $response = $this->boxfulService->deleteAddress($id);
+            $response = $this->boxfulService->deleteAddress((string) $id);
 
             if ($response->failed()) {
                 $status = $response->status();
                 $body = $response->json();
+
+                // Ya no existe en Boxful: limpiar local para no dejar bodegas fantasmas
+                if ($status === 404) {
+                    \App\Models\Admin\DireccionOrigen::where('boxful_address_id', $id)->delete();
+
+                    return response()->json([
+                        'status' => 'success',
+                        'message' => 'La dirección ya no existía en Boxful; se eliminó localmente.',
+                    ], 200);
+                }
+
                 Log::error('Error de API Boxful en destroyAddress', [
                     'id' => $id,
                     'status' => $status,
@@ -331,11 +354,10 @@ class BoxFulAddressController extends Controller
                 ], $status);
             }
 
-            // delete local origin address if successfully deleted on Boxful
             \App\Models\Admin\DireccionOrigen::where('boxful_address_id', $id)->delete();
 
             $body = $response->json();
-            return response()->json($body ?? ['status' => 'success', 'message' => 'Dirección eliminada correctamente.'], $response->status());
+            return response()->json($body ?? ['status' => 'success', 'message' => 'Dirección eliminada correctamente.'], 200);
 
         } catch (\Exception $e) {
             Log::error('Excepción en BoxFulAddressController@destroyAddress', [
