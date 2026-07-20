@@ -10,7 +10,8 @@ import * as moment from 'moment';
 
 @Component({
   selector: 'app-paquete',
-  templateUrl: './paquete.component.html'
+  templateUrl: './paquete.component.html',
+  styleUrls: ['./paquete.component.css']
 })
 export class PaqueteComponent implements OnInit {
 
@@ -23,6 +24,7 @@ export class PaqueteComponent implements OnInit {
     public loading = false;
     public saving = false;
     modalRef?: BsModalRef;
+
 
 	constructor( 
 	    private apiService: ApiService, private alertService: AlertService,
@@ -82,6 +84,20 @@ export class PaqueteComponent implements OnInit {
 
     public onSubmit(){
         this.saving = true;
+
+        // ponytail: prevent database integrity violations by default-initializing numeric fields to 0 if null/empty
+        if (this.paquete.otros === undefined || this.paquete.otros === null || this.paquete.otros === '') {
+            this.paquete.otros = 0;
+        }
+        if (this.paquete.cuenta_a_terceros === undefined || this.paquete.cuenta_a_terceros === null || this.paquete.cuenta_a_terceros === '') {
+            this.paquete.cuenta_a_terceros = 0;
+        }
+        if (this.paquete.precio === undefined || this.paquete.precio === null || this.paquete.precio === '') {
+            this.paquete.precio = 0;
+        }
+        if (this.paquete.total === undefined || this.paquete.total === null || this.paquete.total === '') {
+            this.paquete.total = 0;
+        }
 
         this.apiService.store('paquete', this.paquete).subscribe(paquete => {
             if (!this.paquete.id) {

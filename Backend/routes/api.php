@@ -167,6 +167,9 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	require base_path('routes/modulos/dte-management/email-accounts.php');
 	require base_path('routes/modulos/dte-management/dte-documents.php');
 	require base_path('routes/modulos/dte-management/sync-logs.php');
+
+	// Boxful Integration
+	require base_path('routes/modulos/boxful/boxful.php');
 });
 
 //webhook

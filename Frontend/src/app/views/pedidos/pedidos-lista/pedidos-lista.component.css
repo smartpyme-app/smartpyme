@@ -1,1 +1,130 @@
 /* listado pedidos */
+
+/* Timeline Estilo Premium */
+.tracking-timeline {
+  position: relative;
+  padding: 10px 0;
+  list-style: none;
+}
+
+.tracking-timeline:before {
+  content: " ";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 20px;
+  width: 2px;
+  background-color: #e9ecef;
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 20px;
+  padding-left: 45px;
+}
+
+.timeline-badge {
+  position: absolute;
+  top: 6px;
+  left: 14px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background-color: #007bff;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 2px #007bff;
+  z-index: 10;
+}
+
+.timeline-panel {
+  padding: 12px 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  transition: all 0.2s ease-in-out;
+}
+
+.timeline-panel:hover {
+  background: #f1f3f5;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.font-weight-bold {
+  font-weight: 700;
+}
+
+.gap-2 {
+  gap: 0.5rem;
+}
+
+.gap-3 {
+  gap: 1rem;
+}
+
+/* Horizontal Progress Tracker */
+.horizontal-tracker {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  position: relative;
+  margin: 30px 0 10px 0;
+  padding: 0;
+}
+
+.horizontal-tracker::before {
+  content: "";
+  position: absolute;
+  top: 17px;
+  left: 35px;
+  right: 35px;
+  height: 2px;
+  border-top: 2px dotted #ced4da;
+  z-index: 1;
+}
+
+.tracker-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  position: relative;
+  z-index: 2;
+}
+
+.tracker-circle {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background-color: #6c757d;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  margin-bottom: 8px;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 0 4px #fff;
+}
+
+.tracker-circle.completed {
+  background-color: #2b50ed;
+}
+
+.tracker-label {
+  font-weight: 700;
+  font-size: 13px;
+  color: #6c757d;
+  text-align: center;
+  margin-bottom: 2px;
+}
+
+.tracker-label.completed {
+  color: #2b50ed;
+}
+
+.tracker-date {
+  font-size: 10px;
+  color: #8c96a3;
+  text-align: center;
+}
+

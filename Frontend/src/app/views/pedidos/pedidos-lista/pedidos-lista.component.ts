@@ -12,6 +12,7 @@ import { debounceTime, takeUntil } from 'rxjs/operators';
 import { ApiService } from '@services/api.service';
 import { RestauranteService, PedidoCanal } from '@services/restaurante.service';
 import { AlertService } from '@services/alert.service';
+import { BoxfulApiService } from '@services/boxful/boxful-api.service';
 
 @Component({
   selector: 'app-pedidos-lista',
@@ -22,10 +23,25 @@ export class PedidosListaComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   private searchSubject$ = new Subject<void>();
 
+  /** ponytail: wizard BoxFul oficial vive en Ventas; reactivar con true si hace falta dual */
+  readonly boxfulWizardFromPedidosEnabled = false;
+
   pedidos: any = {};
   loading = false;
   sucursales: any[] = [];
   modalRef!: BsModalRef;
+
+  mostrarModalBoxful = false;
+  pedidoId: number | null = null;
+  clienteId: number | null = null;
+  pedidoRecienCreado: any = null;
+  paqueteData: any = { peso: 1, alto: 10, ancho: 10, largo: 10, es_fragil: false, id: null };
+  tieneBoxful = false;
+
+  mostrarDetallesEnvio = false;
+  selectedShipmentId = '';
+  cargandoTrackingBoxful = false;
+  trackingInfo: any = null;
 
   filtros: any = {};
 
@@ -35,7 +51,8 @@ export class PedidosListaComponent implements OnInit, OnDestroy {
     private alertService: AlertService,
     private router: Router,
     private route: ActivatedRoute,
-    private modalService: BsModalService
+    private modalService: BsModalService,
+    private boxfulApiService: BoxfulApiService
   ) {}
 
   ngOnInit(): void {
@@ -55,6 +72,18 @@ export class PedidosListaComponent implements OnInit, OnDestroy {
         },
         error: () => {
           this.sucursales = [];
+        }
+      });
+
+    this.apiService
+      .getAll('boxful/status')
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (res: any) => {
+          this.tieneBoxful = res && res.connected;
+        },
+        error: () => {
+          this.tieneBoxful = false;
         }
       });
 
@@ -365,6 +394,209 @@ export class PedidosListaComponent implements OnInit, OnDestroy {
     });
   }
 
+  generarGuiaBoxful(pedido: any): void {
+    this.alertService.info('Cargando detalles del pedido...', '');
+    this.restauranteService.getPedido(pedido.id).subscribe({
+      next: (fullPedido: any) => {
+        this.pedidoId = fullPedido.id;
+        this.clienteId = fullPedido.cliente_id;
+        this.pedidoRecienCreado = fullPedido;
+        // ponytail: one parcel per order line – Boxful prices per-box
+        const detalles = fullPedido.detalles || [];
+        const parcels = detalles.length > 0
+          ? detalles.map((d: any) => {
+              const bp = d.paquete?.boxful_shipment?.parcels?.[0] || d.paquete?.boxfulShipment?.parcels?.[0];
+              return {
+                id: bp?.id || null,
+                peso: bp?.peso ?? 1,
+                alto: bp?.alto ?? 11,
+                ancho: bp?.ancho ?? 43,
+                largo: bp?.largo ?? 47.5,
+                es_fragil: bp?.es_fragil ?? false,
+                contenido: bp?.contenido ?? '',
+                valor: parseFloat(bp?.valor_declarado || d.total || d.precio || 50)
+              };
+            })
+          : [{ peso: 1, alto: 11, ancho: 43, largo: 47.5, es_fragil: false, contenido: '', valor: 50 }];
+        this.paqueteData = { id: this.primerPaqueteIdDeDetalles(detalles), parcels };
+        this.mostrarModalBoxful = true;
+      },
+      error: (err) => {
+        console.error('Error al cargar detalles del pedido:', err);
+        this.alertService.error(err);
+      }
+    });
+  }
+
+  onBoxfulGuiaGenerada(guia: any): void {
+    const numGuia = guia.shipmentNumber || guia.data?.shipmentNumber || guia.id || guia.data?.id || '';
+    const labelUrl = guia.labelUrl || guia.data?.labelUrl || '';
+    const trackingUrl = guia.trackingUrl || guia.data?.trackingUrl || '';
+
+    if (!numGuia) {
+      this.alertService.error('Boxful no devolvió número de guía. El pedido no se actualizó.');
+      return;
+    }
+
+    const textToAdd = `Envío Boxful #${numGuia}. Guía PDF: ${labelUrl}. Rastreo: ${trackingUrl}`;
+    const obsActual = this.pedidoRecienCreado?.observaciones
+      ? `${this.pedidoRecienCreado.observaciones} | ${textToAdd}`
+      : textToAdd;
+
+    const updatePayload = {
+      observaciones: obsActual
+    };
+
+    this.restauranteService.actualizarPedido(this.pedidoId!, updatePayload).subscribe({
+      next: () => {
+        // Mantener modal abierto para el paso 3 de confirmación del wizard
+        this.alertService.success('Guía vinculada y pedido confirmado', `Envío Boxful #${numGuia} vinculado al pedido.`);
+        this.cargarLista();
+      },
+      error: (err) => {
+        this.alertService.error(err);
+        this.cargarLista();
+      }
+    });
+  }
+
+  cerrarModalBoxful(): void {
+    this.mostrarModalBoxful = false;
+    this.pedidoId = null;
+    this.clienteId = null;
+    this.pedidoRecienCreado = null;
+  }
+
+  verDetallesEnvio(boxfulShipmentId: string): void {
+    this.selectedShipmentId = boxfulShipmentId;
+    this.mostrarDetallesEnvio = true;
+  }
+
+  onCerrarDetallesEnvioBoxful(): void {
+    this.mostrarDetallesEnvio = false;
+    this.selectedShipmentId = '';
+    this.cargarLista();
+  }
+
+  verTrackingPaquete(shipmentNumber: string, template: TemplateRef<any>): void {
+    this.trackingInfo = null;
+    this.cargandoTrackingBoxful = true;
+    this.modalRef = this.modalService.show(template, { class: 'modal-md' });
+
+    this.boxfulApiService.getTracking(shipmentNumber).subscribe({
+      next: (res) => {
+        this.trackingInfo = res;
+        this.cargandoTrackingBoxful = false;
+      },
+      error: (err) => {
+        this.alertService.error(err);
+        this.cargandoTrackingBoxful = false;
+        this.modalRef.hide();
+      }
+    });
+  }
+
+
+  getTrackingCheckpoints(): any[] {
+    if (!this.trackingInfo) {
+      return [];
+    }
+
+    if (Array.isArray(this.trackingInfo)) {
+      return this.trackingInfo;
+    }
+
+    const tracking = this.trackingInfo.tracking || this.trackingInfo.data;
+    if (tracking) {
+      if (Array.isArray(tracking)) {
+        return tracking;
+      }
+      if (Array.isArray(tracking.statusHistory)) {
+        return tracking.statusHistory;
+      }
+      if (Array.isArray(tracking.checkpoints)) {
+        return tracking.checkpoints;
+      }
+    }
+
+    if (Array.isArray(this.trackingInfo.statusHistory)) {
+      return this.trackingInfo.statusHistory;
+    }
+    if (Array.isArray(this.trackingInfo.checkpoints)) {
+      return this.trackingInfo.checkpoints;
+    }
+
+    return [];
+  }
+
+  getTrackingShipment(): any {
+    if (!this.trackingInfo) {
+      return null;
+    }
+    return this.trackingInfo.shipment || this.trackingInfo.shipmentData || this.trackingInfo;
+  }
+
+  getTrackingSteps(): any[] {
+    const s = this.getTrackingShipment();
+    if (!s) {
+      return [];
+    }
+
+    const currentStatus = s.status !== undefined ? s.status : -1;
+    const history = s.statusHistory || [];
+    const createdAt = s.createdAt;
+
+    const findDateInHistory = (keywords: string[], statusVal: number): any => {
+      let found = history.find((h: any) => h.status === statusVal);
+      if (found && found.createdAt) {
+        return found.createdAt;
+      }
+
+      found = history.find((h: any) => {
+        const desc = (h.statusDescription || h.status || '').toLowerCase();
+        return keywords.some(k => desc.includes(k));
+      });
+      if (found && found.createdAt) {
+        return found.createdAt;
+      }
+
+      return null;
+    };
+
+    return [
+      {
+        key: 'creado',
+        label: 'Creado',
+        completed: currentStatus >= -1,
+        date: createdAt
+      },
+      {
+        key: 'registrado',
+        label: 'Registrado',
+        completed: currentStatus >= 1,
+        date: findDateInHistory(['registrado', 'registrada'], 1)
+      },
+      {
+        key: 'recolectado',
+        label: 'Recolectado',
+        completed: currentStatus >= 2,
+        date: findDateInHistory(['recolectado', 'recolectada', 'pickup'], 2)
+      },
+      {
+        key: 'ruta',
+        label: 'Ruta a destino',
+        completed: currentStatus >= 3,
+        date: findDateInHistory(['ruta', 'transito', 'camino', 'transit'], 3)
+      },
+      {
+        key: 'entregado',
+        label: 'Entregado',
+        completed: currentStatus >= 4,
+        date: findDateInHistory(['entregado', 'entregada', 'delivered'], 4)
+      }
+    ];
+  }
+
   etiquetaEstado(estado: string): string {
     const m: Record<string, string> = {
       borrador: 'Borrador',
@@ -400,5 +632,46 @@ export class PedidosListaComponent implements OnInit, OnDestroy {
       .nombre_empresa ||
       (c as { nombre_completo?: string }).nombre_completo ||
       '—';
+  }
+
+  tieneBoxfulShipmentValido(p: any): boolean {
+    return !!p?.boxful_shipment?.shipment_number;
+  }
+
+  tieneGuiaBoxfulEnObservaciones(p: any): boolean {
+    const obs = (p?.observaciones || '').toLowerCase();
+    const match = obs.match(/envío boxful #([^.\s|]+)/);
+    return !!(match && match[1]);
+  }
+
+  /** Borrador sin guía Boxful ya creada → se puede editar/confirmar/eliminar. */
+  puedeEditarPedido(p: any): boolean {
+    if (p.estado !== 'borrador') return false;
+    if (p.canal === 'Boxful' && this.tieneBoxfulShipmentValido(p)) return false;
+    return true;
+  }
+
+  puedeGenerarGuiaBoxful(p: any): boolean {
+    if (!this.boxfulWizardFromPedidosEnabled) {
+      return false;
+    }
+    return p.canal === 'Boxful'
+      && !!p.cliente_id
+      && p.estado === 'borrador'
+      && this.tieneBoxful
+      && !this.tieneGuiaBoxfulEnObservaciones(p)
+      && !this.tieneBoxfulShipmentValido(p);
+  }
+
+  private primerPaqueteIdDeDetalles(detalles: any[]): number | null {
+    for (const d of detalles) {
+      if (d?.id_paquete) {
+        return d.id_paquete;
+      }
+      if (d?.paquete?.id) {
+        return d.paquete.id;
+      }
+    }
+    return null;
   }
 }

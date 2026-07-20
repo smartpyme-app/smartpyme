@@ -45,6 +45,7 @@ export class VentaDetallesV2Component implements OnInit {
     @Output() update = new EventEmitter();
     @Output() sumTotal = new EventEmitter();
     @Output() alMenosUnPaqueteConCuentaTerceros = new EventEmitter<void>();
+    @Output() selectCliente = new EventEmitter<any>();
     modalRef!: BsModalRef;
     public zoomImageUrl: string = '';
 
