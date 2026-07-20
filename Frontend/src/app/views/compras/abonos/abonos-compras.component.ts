@@ -7,6 +7,7 @@ import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { FuncionalidadesService } from '@services/functionalities.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
@@ -31,11 +32,13 @@ export class AbonosComprasComponent extends BaseCrudComponent<any> implements On
     public sucursales:any = [];
     public documentos:any = [];
     public filtrado:boolean = false;
+    public contabilidadHabilitada: boolean = false;
 
     constructor(
         apiService: ApiService,
         alertService: AlertService,
         modalManager: ModalManagerService,
+        private funcionalidadesService: FuncionalidadesService,
         private cdr: ChangeDetectorRef
     ){
         super(apiService, alertService, modalManager, {
@@ -62,6 +65,7 @@ export class AbonosComprasComponent extends BaseCrudComponent<any> implements On
 
     ngOnInit() {
         this.loadAll();
+        this.verificarAccesoContabilidad();
 
         this.apiService.getAll('proveedores/list').pipe(this.untilDestroyed()).subscribe(proveedores => {
             this.proveedores = proveedores;
@@ -184,6 +188,21 @@ export class AbonosComprasComponent extends BaseCrudComponent<any> implements On
             this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
             this.cdr.markForCheck();
         },error => {this.alertService.error(error); this.cdr.markForCheck();});
+    }
+
+    verificarAccesoContabilidad() {
+        this.funcionalidadesService.verificarAcceso('contabilidad')
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (acceso) => {
+                    this.contabilidadHabilitada = !!acceso;
+                    this.cdr.markForCheck();
+                },
+                error: () => {
+                    this.contabilidadHabilitada = false;
+                    this.cdr.markForCheck();
+                }
+            });
     }
 
 }

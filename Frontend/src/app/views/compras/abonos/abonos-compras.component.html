@@ -114,10 +114,15 @@
                                         <a (click)="openModalEdit(meditAbono, abono)" class="list-group-item list-group-item-action border-0 click">
                                             <i class="fa fa-fw fa-edit"></i> Editar
                                         </a>
+                                        <a (click)="imprimir(abono)" class="list-group-item list-group-item-action border-0 click">
+                                            <i class="fa fa-fw fa-print"></i> Imprimir
+                                        </a>
                                     }
-                                    <a (click)="generarPartidaContable(abono)" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-edit"></i> Generar partida contable
-                                    </a>
+                                    @if (contabilidadHabilitada) {
+                                        <a (click)="generarPartidaContable(abono)" class="list-group-item list-group-item-action border-0 click">
+                                            <i class="fa fa-edit"></i> Generar partida contable
+                                        </a>
+                                    }
                                 </div>
                             </ng-template>
                         </td>
