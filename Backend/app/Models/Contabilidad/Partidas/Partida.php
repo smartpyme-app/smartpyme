@@ -218,6 +218,9 @@ class Partida extends Model
         if ($this->referencia == 'Venta') {
             return 'venta';
         }
+        if ($this->referencia == 'Devolucion de Venta') {
+            return 'devolucion/venta';
+        }
         if ($this->referencia == 'Abono de Venta') {
             return 'venta/abono';
         }

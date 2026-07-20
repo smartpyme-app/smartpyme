@@ -167,12 +167,24 @@ export class DevolucionVentaNuevaComponent implements OnInit {
             this.saving = true;
             this.apiService.store('devolucion/venta/facturacion', this.devolucion).subscribe(devolucion => {
                 this.saving = false;
+                this.generarPartidaDevolucionSiAutomatico(devolucion);
                 if(devolucion.tipo_documento == 'Factura' || devolucion.tipo_documento == 'Credito Fiscal' || devolucion.tipo_documento == 'Ticket'){
                     this.imprimirDocDevolucion(devolucion);
                 }
                 this.router.navigate(['/devoluciones/ventas']);
                 this.alertService.success('Devolucion de venta creada', 'La devolución de venta fue guardado exitosamente.');
             },error => {this.alertService.error(error); this.saving = false; });
+        }
+
+        /** Solo genera partida si la empresa está en modo automático de contabilidad. */
+        private generarPartidaDevolucionSiAutomatico(devolucionGuardada: any): void {
+            if (this.apiService.auth_user().empresa.generar_partidas !== 'Auto') {
+                return;
+            }
+            this.apiService.store('contabilidad/partida/devolucion-venta', devolucionGuardada).subscribe({
+                next: () => {},
+                error: (error) => this.alertService.error(error),
+            });
         }
 
 

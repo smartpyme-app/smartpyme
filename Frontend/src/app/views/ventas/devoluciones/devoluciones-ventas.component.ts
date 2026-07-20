@@ -95,6 +95,12 @@ export class DevolucionesVentasComponent implements OnInit {
         }, error => {this.alertService.error(error); });
     }
 
+    generarPartidaContable(venta: any) {
+        this.apiService.store('contabilidad/partida/devolucion-venta', venta).subscribe(() => {
+            this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
+        }, error => { this.alertService.error(error); });
+    }
+
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
             this.apiService.delete('devolucion/venta/', id) .subscribe(data => {

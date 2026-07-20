@@ -7,6 +7,7 @@ use App\Models\Ventas\Venta;
 use Illuminate\Http\Request;
 
 use App\Services\Contabilidad\VentasService;
+use App\Services\Contabilidad\DevolucionesVentasService;
 use App\Services\Contabilidad\CXCService;
 use App\Services\Contabilidad\ComprasService;
 use App\Services\Contabilidad\CXPService;
@@ -17,6 +18,7 @@ use App\Services\Contabilidad\AjustesService;
 use App\Services\Contabilidad\TrasladosService;
 use App\Services\Contabilidad\OtrasEntradasService;
 use App\Services\Contabilidad\OtrasSalidasService;
+use App\Models\Ventas\Devoluciones\Devolucion;
 
 use Illuminate\Support\Facades\Validator;
 
@@ -24,6 +26,7 @@ class ApiController extends Controller
 {
 
     protected $ventasService;
+    protected $devolucionesVentasService;
     protected $cxcService;
     protected $comprasService;
     protected $cxpService;
@@ -37,6 +40,7 @@ class ApiController extends Controller
 
     public function __construct(
         VentasService $ventasService,
+        DevolucionesVentasService $devolucionesVentasService,
         CXCService $cxcService,
         ComprasService $comprasService,
         CXPService $cxpService,
@@ -49,6 +53,7 @@ class ApiController extends Controller
         OtrasSalidasService $otrasSalidasService
     ) {
         $this->ventasService = $ventasService;
+        $this->devolucionesVentasService = $devolucionesVentasService;
         $this->cxcService = $cxcService;
         $this->gastosService = $gastosService;
         $this->comprasService = $comprasService;
@@ -65,6 +70,14 @@ class ApiController extends Controller
     {
         $venta = Venta::findOrFail($request->id);
         $resultado = $this->ventasService->crearPartida($venta);
+
+        return response()->json($resultado, 200);
+    }
+
+    public function devolucionVenta(Request $request)
+    {
+        $devolucion = Devolucion::findOrFail($request->id);
+        $resultado = $this->devolucionesVentasService->crearPartida($devolucion);
 
         return response()->json($resultado, 200);
     }

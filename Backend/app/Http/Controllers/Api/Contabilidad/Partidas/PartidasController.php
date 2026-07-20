@@ -608,8 +608,9 @@ class PartidasController extends Controller
             
             // OPTIMIZACIÓN 1: Eager loading optimizado - solo campos necesarios
             // NOTA: nombre_documento es un accessor, no una columna, por eso cargamos la relación 'documento'
+            // Solo ventas Pagada (contado): las Pendientes van a generarCxC para evitar doble saldo.
             $ventas = Venta::contabilizable()
-                        ->where('estado','!=', 'Anulada')
+                        ->where('estado', 'Pagada')
                         ->where('fecha', $request->fecha)
                         ->where('id_empresa', auth()->user()->id_empresa)
                         ->select(['id', 'fecha', 'correlativo', 'id_documento', 'forma_pago', 
@@ -627,9 +628,17 @@ class PartidasController extends Controller
                             }
                         ])
                         ->get();
+
+            // Excluir ventas que ya tienen partida (p. ej. modo Auto) para no duplicar saldos
+            $ventaIdsConPartida = Partida::where('referencia', 'Venta')
+                ->whereIn('id_referencia', $ventas->pluck('id'))
+                ->pluck('id_referencia')
+                ->unique();
+            $ventas = $ventas->reject(fn ($v) => $ventaIdsConPartida->contains($v->id))->values();
             
             \Log::info('Ventas cargadas', [
                 'cantidad' => $ventas->count(),
+                'excluidas_con_partida' => $ventaIdsConPartida->count(),
                 'tiempo' => microtime(true) - $startTime
             ]);
             
@@ -648,8 +657,16 @@ class PartidasController extends Controller
                         ])
                         ->get();
 
+            // Excluir abonos que ya tienen partida
+            $abonoIdsConPartida = Partida::where('referencia', 'Abono de Venta')
+                ->whereIn('id_referencia', $abonos_ventas->pluck('id'))
+                ->pluck('id_referencia')
+                ->unique();
+            $abonos_ventas = $abonos_ventas->reject(fn ($a) => $abonoIdsConPartida->contains($a->id))->values();
+
             \Log::info('Abonos cargados', [
                 'cantidad' => $abonos_ventas->count(),
+                'excluidos_con_partida' => $abonoIdsConPartida->count(),
                 'tiempo' => microtime(true) - $startTime
             ]);
 
@@ -953,6 +970,7 @@ class PartidasController extends Controller
                             'codigo' => $cuenta_iva_retenido->codigo,
                             'nombre_cuenta' => $cuenta_iva_retenido->nombre,
                             'concepto' => 'IVA retenido ' . $refDoc,
+                            'debe' => $ingreso->iva_retenido,
                             'haber' => NULL,
                             'saldo' => 0,
                         ];
@@ -1146,6 +1164,13 @@ class PartidasController extends Controller
             ->where('estado', 'Pendiente')
             ->whereDate('fecha', $request->fecha)
             ->get();
+
+        // Excluir ventas que ya tienen partida (p. ej. modo Auto) para no duplicar saldos
+        $ventaIdsConPartida = Partida::where('referencia', 'Venta')
+            ->whereIn('id_referencia', $ventas->pluck('id'))
+            ->pluck('id_referencia')
+            ->unique();
+        $ventas = $ventas->reject(fn ($v) => $ventaIdsConPartida->contains($v->id))->values();
 
         // Partida
             $partida = [
