@@ -98,7 +98,11 @@ class PlanillaExportService
     public function generarBoletaIndividual($id_detalle)
     {
         try {
-            $detalle = PlanillaDetalle::with(['empleado', 'planilla'])->findOrFail($id_detalle);
+            $detalle = PlanillaDetalle::with([
+                'empleado.cargo',
+                'empleado.departamento',
+                'planilla.empresa.currency',
+            ])->findOrFail($id_detalle);
 
             $totalIngresos = $detalle->salario_devengado +
                 $detalle->monto_horas_extra +
@@ -106,26 +110,29 @@ class PlanillaExportService
                 $detalle->bonificaciones +
                 $detalle->otros_ingresos;
 
-            $totalDescuentos = $detalle->isss_empleado +
+            $totalDeducciones = $detalle->isss_empleado +
                 $detalle->afp_empleado +
                 $detalle->renta +
                 $detalle->prestamos +
                 $detalle->anticipos +
-                $detalle->otros_descuentos +
-                $detalle->descuentos_judiciales;
+                $detalle->descuentos_judiciales +
+                $detalle->otros_descuentos;
 
-            $pdf = PDF::loadView('pdf.boleta-pago-individual', [
+            $pdf = PDF::loadView('pdf.boleta-individual', [
                 'detalle' => $detalle,
-                'empleado' => $detalle->empleado,
-                'planilla' => $detalle->planilla,
-                'total_ingresos' => $totalIngresos,
-                'total_descuentos' => $totalDescuentos,
-                'sueldo_neto' => $detalle->sueldo_neto
+                'totalIngresos' => $totalIngresos,
+                'totalDeducciones' => $totalDeducciones,
+                'periodo' => [
+                    'inicio' => $detalle->planilla->fecha_inicio,
+                    'fin' => $detalle->planilla->fecha_fin,
+                ],
             ]);
 
             $pdf->setPaper('letter', 'portrait');
 
-            return $pdf->stream("boleta_{$detalle->empleado->codigo}_{$detalle->planilla->codigo}.pdf");
+            $filename = "boleta_{$detalle->planilla->codigo}_{$detalle->empleado->codigo}.pdf";
+
+            return $pdf->download($filename);
         } catch (\Exception $e) {
             Log::error('Error generando boleta individual: ' . $e->getMessage());
             throw $e;

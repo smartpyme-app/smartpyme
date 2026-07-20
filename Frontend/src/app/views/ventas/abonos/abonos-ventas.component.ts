@@ -8,6 +8,7 @@ import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { FuncionalidadesService } from '@services/functionalities.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { TruncatePipe } from '@pipes/truncate.pipe';
@@ -34,11 +35,13 @@ export class AbonosVentasComponent extends BaseCrudComponent<any> implements OnI
     public formaPagos:any = [];
     public documentos:any = [];
     public filtrado:boolean = false;
+    public contabilidadHabilitada: boolean = false;
 
     constructor(
         apiService: ApiService,
         alertService: AlertService,
         modalManager: ModalManagerService,
+        private funcionalidadesService: FuncionalidadesService,
         private cdr: ChangeDetectorRef
     ){
         super(apiService, alertService, modalManager, {
@@ -65,6 +68,7 @@ export class AbonosVentasComponent extends BaseCrudComponent<any> implements OnI
 
     ngOnInit() {
         this.loadAll();
+        this.verificarAccesoContabilidad();
     }
 
     public setOrden(columna: string) {
@@ -226,6 +230,21 @@ export class AbonosVentasComponent extends BaseCrudComponent<any> implements OnI
             .subscribe(abono => {
                 this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
             },error => {this.alertService.error(error);});
+    }
+
+    verificarAccesoContabilidad() {
+        this.funcionalidadesService.verificarAcceso('contabilidad')
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (acceso) => {
+                    this.contabilidadHabilitada = !!acceso;
+                    this.cdr.markForCheck();
+                },
+                error: () => {
+                    this.contabilidadHabilitada = false;
+                    this.cdr.markForCheck();
+                }
+            });
     }
 
 }

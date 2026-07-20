@@ -29,7 +29,7 @@ class CotizacionesController extends Controller
     /**
      * Preferencias de cotización desde custom_empresa (PDF).
      */
-    private function cotizacionPdfViewData(Cotizacion $venta): array
+    private function cotizacionPdfViewData(CotizacionVenta $venta): array
     {
         $custom = ($venta->empresa && is_array($venta->empresa->custom_empresa))
             ? $venta->empresa->custom_empresa
@@ -333,16 +333,16 @@ class CotizacionesController extends Controller
             $pdfData = array_merge(compact('venta'), $this->cotizacionPdfViewData($venta));
 
             if(Auth::user()->id_empresa == 420){ //420
-                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.cotizacion-inversiones-andre', compact('venta'));
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.cotizacion-inversiones-andre', $pdfData);
                 $pdf->setPaper('US Letter', 'portrait');
             }elseif(Auth::user()->id_empresa == 498){ //13
-                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.cotizacion-grupo-split', compact('venta'));
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.cotizacion-grupo-split', $pdfData);
                 $pdf->setPaper('US Letter', 'portrait');
             }elseif(Auth::user()->id_empresa == 2){ //2 Super Admin
-                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.cotizacion-smartpyme', compact('venta'));
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.cotizacion-smartpyme', $pdfData);
                 $pdf->setPaper('US Letter', 'portrait');
             }else{
-                $pdf = PDF::loadView('reportes.facturacion.cotizacion', compact('venta'));
+                $pdf = PDF::loadView('reportes.facturacion.cotizacion', $pdfData);
                 $pdf->setPaper('US Letter', 'portrait');
             }
             return $pdf->stream('cotizacion-' . $venta->id . '.pdf');
