@@ -411,6 +411,8 @@
               <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onCobrarImpuestosChange()" [(ngModel)]="venta.cobrar_impuestos" name="venta.cobrar_impuestos">
             </div>
         </div>
+        }
+        @if (esFacturacionElSalvador()) {
         <div class="form-group col-md-6 col-lg-3 without-label">
             <div class="form-switch bg-light-info rounded">
               <label for="percepcion">Retención (1%)</label>
@@ -531,7 +533,7 @@
             <textarea class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.descripcion_impresion" name="descripcion_impresion" rows="2"></textarea>
         </div>
     </div>
-    <div class="row" *ngIf="!esFeCostaRicaFacturacion() && (apiService.auth_user()?.empresa?.custom_empresa?.configuraciones?.mostrar_campos_contables ?? true)">
+    <div class="row" *ngIf="esFacturacionElSalvador() && (apiService.auth_user()?.empresa?.custom_empresa?.configuraciones?.mostrar_campos_contables ?? true)">
         <div class="form-group col-6 col-lg-4">
             <label for="tipo_operacion">Tipo de operación:</label>
             <select name="tipo_operacion" class="form-select" [(ngModel)]="venta.tipo_operacion">

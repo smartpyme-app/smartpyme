@@ -11,6 +11,7 @@
       "withTaxIdOrFiscal": "Número de identificación o identificación fiscal",
       "searchPlaceholder": "Buscar por nombre, DPI, NIT o teléfono...",
       "searchWithCode": "Buscar por nombre, DPI o código",
+      "searchDtePlaceholder": "Buscar por número, NIT, emisor...",
       "displayPrefix": "DPI:",
       "missing": "Sin DPI",
       "nameSlashId": "DPI / Identificación"

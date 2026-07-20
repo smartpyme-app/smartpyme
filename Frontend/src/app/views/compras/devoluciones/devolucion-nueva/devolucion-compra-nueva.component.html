@@ -134,6 +134,7 @@
                   <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="devolucion.cobrar_impuestos" name="devolucion.cobrar_impuestos">
                 </div>
             </div>
+            @if (esElSalvadorFe()) {
             <div class="form-group col-md-6 col-lg-3 without-label">
                 <div class="form-switch bg-light-info rounded">
                   <label for="percepcion">Percepción</label>
@@ -147,6 +148,7 @@
                   <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="devolucion.renta" name="devolucion.renta">
                 </div>
             </div>
+            }
             }
         </div>
     </section>

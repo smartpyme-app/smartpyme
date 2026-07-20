@@ -11,6 +11,7 @@
       "withTaxIdOrFiscal": "DNI o RTN",
       "searchPlaceholder": "Buscar por nombre, DNI, RTN o teléfono...",
       "searchWithCode": "Buscar por nombre, DNI o código",
+      "searchDtePlaceholder": "Buscar por número, RTN, emisor...",
       "displayPrefix": "DNI:",
       "missing": "Sin DNI",
       "nameSlashId": "DNI / Identificación"

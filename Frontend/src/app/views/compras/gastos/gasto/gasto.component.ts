@@ -1078,7 +1078,7 @@ export class GastoComponent implements OnInit {
         try {
           jsonData = JSON.parse(texto);
         } catch (parseErr) {
-          this.alertService.error('El archivo no es un JSON válido.');
+          this.alertService.error('El archivo no es un documento electrónico válido.');
           return;
         }
       }

@@ -537,6 +537,7 @@
                     }
                 </ng-select>
             </div>
+            @if (esElSalvadorFe()) {
             <div class="form-group col-sm-6">
                 <label for="tipo_clasificacion">Clasificación:</label>
                 <select name="tipo_clasificacion" class="form-select" [(ngModel)]="compra.tipo_clasificacion">
@@ -578,6 +579,7 @@
                     <option value="Servicios, profesiones, artes y oficios">Servicios profesiones, artes y oficios</option>
                 </select>
             </div>
+            }
             @if (apiService.auth_user().empresa.modulo_proyectos) {
                 <div class="form-group col-md-6">
                     <label for="id_proyecto">Proyecto:</label>

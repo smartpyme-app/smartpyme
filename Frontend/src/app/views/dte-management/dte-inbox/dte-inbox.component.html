@@ -18,7 +18,7 @@
           <i class="fa fa-rotate"></i>
         </button>
         <form class="d-flex input-group flex-grow-1" name="form" (ngSubmit)="filtrar()" autocomplete="off">
-          <input type="text" name="search" class="form-control" placeholder="Buscar por número, NIT, emisor..."
+          <input type="text" name="search" class="form-control" [placeholder]="'country.identity.searchDtePlaceholder' | translate"
             [(ngModel)]="filtros.buscador">
         </form>
         <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3">
