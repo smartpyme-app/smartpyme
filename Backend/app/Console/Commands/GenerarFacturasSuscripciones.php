@@ -22,23 +22,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use App\Constants\FacturacionElectronica\FEConstants;
+use App\Helpers\FeTipoDteHelper;
 
 class GenerarFacturasSuscripciones extends Command
 {
-    private const EMPRESA_EMISORA_ID = 2;
-
-    /** @var array<string, string> nombre documento (lowercase) => código DTE */
-    private const MAPA_NOMBRE_DOCUMENTO_A_TIPO_DTE = [
-        'factura' => FEConstants::TIPO_DTE_FACTURA_CONSUMIDOR_FINAL,
-        'ticket' => FEConstants::TIPO_DTE_FACTURA_CONSUMIDOR_FINAL,
-        'crédito fiscal' => FEConstants::TIPO_DTE_COMPROBANTE_DE_CREDITO_FISCAL,
-        'nota de crédito' => FEConstants::TIPO_DTE_NOTA_DE_CREDITO,
-        'nota de débito' => FEConstants::TIPO_DTE_NOTA_DE_DEBITO,
-        'factura de exportación' => FEConstants::TIPO_DTE_FACTURAS_DE_EXPORTACION,
-        'sujeto excluido' => FEConstants::TIPO_DTE_FACTURA_DE_SUJETO_EXCLUIDO,
-    ];
-
     protected $signature = 'facturas:generar-suscripciones {empresa? : ID de la empresa para ejecutar una prueba específica}';
 
     protected $description = 'Emite DTE de suscripciones activas con pago por transferencia: planes mensuales el día 3 de cada mes; planes anuales en la fecha de renovación. Excluye n1co (otro flujo).';
@@ -197,46 +184,14 @@ public function handle()
     }
 }
 
-    private function determinarTipoDte(Cliente $cliente, Empresa $empresaEmisora): string
-    {
-        if (!empty($empresaEmisora->id_documento)) {
-            $documento = Documento::withoutGlobalScopes()
-                ->where('id', $empresaEmisora->id_documento)
-                ->where('id_empresa', self::EMPRESA_EMISORA_ID)
-                ->first();
-
-            if ($documento && !empty($documento->nombre)) {
-                $nombre = mb_strtolower(trim((string) $documento->nombre));
-                if (isset(self::MAPA_NOMBRE_DOCUMENTO_A_TIPO_DTE[$nombre])) {
-                    return self::MAPA_NOMBRE_DOCUMENTO_A_TIPO_DTE[$nombre];
-                }
-            }
-        }
-
-        // Fallback si id_documento vacío, documento no encontrado o nombre sin mapeo
-        if (!empty($cliente->cod_pais) && strtoupper($cliente->cod_pais) !== 'SV') {
-            return FEConstants::TIPO_DTE_FACTURAS_DE_EXPORTACION;
-        }
-
-        if (!empty($cliente->ncr)) {
-            return FEConstants::TIPO_DTE_COMPROBANTE_DE_CREDITO_FISCAL;
-        }
-
-        if (!empty($cliente->nit) && $cliente->tipo_documento === '36') {
-            return FEConstants::TIPO_DTE_COMPROBANTE_DE_CREDITO_FISCAL;
-        }
-
-        return FEConstants::TIPO_DTE_FACTURA_CONSUMIDOR_FINAL;
-    }
-
     private function emitirFactura(Suscripcion $suscripcion): ?Venta
     {
         $suscripcion->loadMissing(['empresa', 'plan']);
 
         // Empresa emisora (Super Admin) - quien emite la factura
-        $empresaEmisora = Empresa::find(self::EMPRESA_EMISORA_ID);
+        $empresaEmisora = Empresa::find(FeTipoDteHelper::EMPRESA_EMISORA_ID);
         if (!$empresaEmisora instanceof Empresa) {
-            throw new \RuntimeException('Empresa emisora (Super Admin ID ' . self::EMPRESA_EMISORA_ID . ') no encontrada en el sistema.');
+            throw new \RuntimeException('Empresa emisora (Super Admin ID ' . FeTipoDteHelper::EMPRESA_EMISORA_ID . ') no encontrada en el sistema.');
         }
 
         // Empresa cliente - quien recibe la factura
@@ -264,7 +219,7 @@ public function handle()
             throw new \RuntimeException('Falta mh_pwd_certificado (contraseña del certificado) en la empresa emisora.');
         }
 
-        $tipoDte = $this->determinarTipoDte($cliente, $empresaEmisora);
+        $tipoDte = FeTipoDteHelper::determinarTipoDte($cliente, $empresaEmisora->id_documento);
 
         $venta = null;
         $dteJson = null;
