@@ -91,8 +91,10 @@ return [
     'boxful' => [
         'env' => env('BOXFUL_ENV', 'development'), // 'production' or 'development'
         'urls' => [
-            'production' => 'https://api.goboxful.com',
+            // 'production' => 'https://api.goboxful.com',
+            'production' => 'https://devapi.goboxful.com',
             'development' => 'https://devapi.goboxful.com',
+            
         ],
     ],
 

@@ -59,7 +59,7 @@ class BoxFulService
 
         // Normalizar el nombre del entorno y establecer la URL base
         if (in_array($this->env, ['production', 'produccion'])) {
-            $this->baseUrl = $config['urls']['production'] ?? 'https://api.goboxful.com';
+            $this->baseUrl = $config['urls']['production'] ?? 'https://devapi.goboxful.com';
         } else {
             $this->baseUrl = $config['urls']['development'] ?? 'https://devapi.goboxful.com';
         }
