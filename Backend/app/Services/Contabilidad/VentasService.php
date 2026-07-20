@@ -251,6 +251,29 @@ class VentasService
                 ]);
             }
 
+            // Cuenta a terceros (cobros por cuenta de terceros)
+            if ($venta->cuenta_a_terceros > 0) {
+                if (!$configuracion->id_cuenta_cuenta_a_terceros) {
+                    throw new Exception('No se ha configurado la cuenta contable de cuenta a terceros', 400);
+                }
+
+                $cuenta = Cuenta::find($configuracion->id_cuenta_cuenta_a_terceros);
+                if (!$cuenta) {
+                    throw new Exception('No se encontró la cuenta contable de cuenta a terceros', 400);
+                }
+
+                Detalle::create([
+                    'id_cuenta' => $cuenta->id,
+                    'codigo' => $cuenta->codigo,
+                    'nombre_cuenta' => $cuenta->nombre,
+                    'concepto' => 'Cobros a cuenta de terceros',
+                    'debe' => NULL,
+                    'haber' => $venta->cuenta_a_terceros,
+                    'saldo' => 0,
+                    'id_partida' => $partida_ingresos->id
+                ]);
+            }
+
             // === SEGUNDA PARTIDA: COSTO DE VENTAS ===
             $partida_costos = Partida::create([
                 'fecha' => $venta->fecha,

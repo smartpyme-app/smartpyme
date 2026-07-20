@@ -614,7 +614,7 @@ class PartidasController extends Controller
                         ->where('fecha', $request->fecha)
                         ->where('id_empresa', auth()->user()->id_empresa)
                         ->select(['id', 'fecha', 'correlativo', 'id_documento', 'forma_pago', 
-                                 'total', 'sub_total', 'iva', 'iva_retenido', 'total_costo', 
+                                 'total', 'sub_total', 'iva', 'iva_retenido', 'cuenta_a_terceros', 'total_costo', 
                                  'id_sucursal', 'estado'])
                         ->with([
                             'documento' => function($query) {
@@ -792,6 +792,7 @@ class PartidasController extends Controller
                 $configuracion->id_cuenta_ventas,
                 $configuracion->id_cuenta_iva_ventas,
                 $configuracion->id_cuenta_iva_retenido_ventas,
+                $configuracion->id_cuenta_cuenta_a_terceros,
                 $configuracion->id_cuenta_costo_venta,
                 $configuracion->id_cuenta_inventario,
                 $configuracion->id_cuenta_cxc
@@ -847,6 +848,7 @@ class PartidasController extends Controller
             $cuenta_ventas = $cuentas[$configuracion->id_cuenta_ventas] ?? null;
             $cuenta_iva = $cuentas[$configuracion->id_cuenta_iva_ventas] ?? null;
             $cuenta_iva_retenido = $cuentas[$configuracion->id_cuenta_iva_retenido_ventas] ?? null;
+            $cuenta_terceros = $cuentas[$configuracion->id_cuenta_cuenta_a_terceros] ?? null;
             $cuenta_costos = $cuentas[$configuracion->id_cuenta_costo_venta] ?? null;
             $cuenta_inventarios = $cuentas[$configuracion->id_cuenta_inventario] ?? null;
             $cuenta_cxc = $cuentas[$configuracion->id_cuenta_cxc] ?? null;
@@ -972,6 +974,25 @@ class PartidasController extends Controller
                             'concepto' => 'IVA retenido ' . $refDoc,
                             'debe' => $ingreso->iva_retenido,
                             'haber' => NULL,
+                            'saldo' => 0,
+                        ];
+                    }
+
+                    if ($ingreso->cuenta_a_terceros > 0) {
+                        if (!$cuenta_terceros) {
+                            return Response()->json([
+                                'titulo' => 'No hay cuenta contable.',
+                                'error' => 'No está configurada la cuenta contable de cuenta a terceros.',
+                                'code' => 400,
+                            ], 400);
+                        }
+                        $detalles[] = [
+                            'id_cuenta' => $cuenta_terceros->id,
+                            'codigo' => $cuenta_terceros->codigo,
+                            'nombre_cuenta' => $cuenta_terceros->nombre,
+                            'concepto' => 'Cobros a cuenta de terceros ' . $refDoc,
+                            'debe' => NULL,
+                            'haber' => $ingreso->cuenta_a_terceros,
                             'saldo' => 0,
                         ];
                     }
@@ -1189,6 +1210,9 @@ class PartidasController extends Controller
             }
             $cuenta_iva = Cuenta::where('id', $configuracion->id_cuenta_iva_ventas)->first();
             $cuenta_iva_retenido = Cuenta::where('id', $configuracion->id_cuenta_iva_retenido_ventas)->first();
+            $cuenta_terceros = $configuracion->id_cuenta_cuenta_a_terceros
+                ? Cuenta::where('id', $configuracion->id_cuenta_cuenta_a_terceros)->first()
+                : null;
             $cuenta_ventas_general = $configuracion->id_cuenta_ventas
                 ? Cuenta::where('id', $configuracion->id_cuenta_ventas)->first()
                 : null;
@@ -1270,6 +1294,25 @@ class PartidasController extends Controller
                         'concepto' => 'IVA retenido ' . $refDoc,
                         'debe' => $venta->iva_retenido,
                         'haber' => NULL,
+                        'saldo' => 0,
+                    ];
+                }
+
+                if ($venta->cuenta_a_terceros > 0) {
+                    if (!$cuenta_terceros) {
+                        return Response()->json([
+                            'titulo' => 'No hay cuenta contable.',
+                            'error' => 'No está configurada la cuenta contable de cuenta a terceros.',
+                            'code' => 400,
+                        ], 400);
+                    }
+                    $detalles[] = [
+                        'id_cuenta' => $cuenta_terceros->id,
+                        'codigo' => $cuenta_terceros->codigo,
+                        'nombre_cuenta' => $cuenta_terceros->nombre,
+                        'concepto' => 'Cobros a cuenta de terceros ' . $refDoc,
+                        'debe' => NULL,
+                        'haber' => $venta->cuenta_a_terceros,
                         'saldo' => 0,
                     ];
                 }
