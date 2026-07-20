@@ -11,6 +11,7 @@
       "withTaxIdOrFiscal": "DUI o NIT",
       "searchPlaceholder": "Buscar por nombre, DUI, NIT o teléfono...",
       "searchWithCode": "Buscar por nombre, DUI o código",
+      "searchDtePlaceholder": "Buscar por número, NIT, emisor...",
       "displayPrefix": "DUI:",
       "missing": "Sin DUI",
       "nameSlashId": "DUI / Identificación"

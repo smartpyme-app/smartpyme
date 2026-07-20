@@ -103,9 +103,9 @@ export class BuscadorClienteVista360Component implements OnDestroy {
       partes.push(`${this.countryI18n.t('country.identity.displayPrefix')} ${cliente.dui}`);
     }
     if (cliente?.nit) {
-      partes.push(`NIT: ${cliente.nit}`);
+      partes.push(`${this.countryI18n.t('country.tax.nitColon')} ${cliente.nit}`);
     } else if (cliente?.ncr) {
-      partes.push(`NRC: ${cliente.ncr}`);
+      partes.push(`${this.countryI18n.t('country.tax.ncrColon')} ${cliente.ncr}`);
     }
     if (cliente?.telefono) {
       partes.push(`Tel: ${cliente.telefono}`);

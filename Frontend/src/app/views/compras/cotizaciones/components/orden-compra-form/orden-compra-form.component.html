@@ -169,13 +169,15 @@
               <td style="width: 150px;" class="text-right"> {{ impuestos.iva | currency}} </td>
               <td style="width: 50px;"></td>
             </tr>
+            @if (esElSalvadorFe()) {
             <tr>
               <td class="text-right"> <b>Percepción (1%)</b></td>
               <td style="width: 150px;" class="text-right"> {{ impuestos.percepcion | currency}}
               </td>
               <td style="width: 50px;"></td>
             </tr>
-            @if (impuestos.tipo_documento == 'Sujeto excluido') {
+            }
+            @if (esElSalvadorFe() && impuestos.tipo_documento == 'Sujeto excluido') {
               <tr>
                 <td class="text-right"> <b>Ret. Renta (10%)</b></td>
                 <td style="width: 150px;" class="text-right"> {{ impuestos.renta_retenida |
@@ -208,6 +210,7 @@
             formControlName="cobrar_impuestos" name="compra.cobrar_impuestos">
         </div>
       </div>
+      @if (esElSalvadorFe()) {
       <div class="form-group col-md-6 col-lg-3 without-label">
         <div class="form-switch bg-light-info rounded">
           <label for="percepcion">Percepción</label>
@@ -215,7 +218,8 @@
             formControlName="cobrar_percepcion" name="compra.cobrar_percepcion">
         </div>
       </div>
-      @if (tipoDocumento?.value == 'Sujeto excluido') {
+      }
+      @if (esElSalvadorFe() && tipoDocumento?.value == 'Sujeto excluido') {
         <div class="form-group col-md-6 col-lg-3 without-label">
           <div class="form-switch bg-light-info rounded">
             <label for="renta">Renta</label>

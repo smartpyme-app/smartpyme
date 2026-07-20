@@ -563,6 +563,7 @@
                     <input type="text" class="form-control" [(ngModel)]="venta.num_orden_exento" name="num_orden_exento"
                         id="num_orden_exento">
                 </div>
+                @if (esFacturacionElSalvador()) {
                 <div class="form-group col-md-4">
                     <label for="tipo_operacion">Tipo de operación:</label>
                     <select name="tipo_operacion" class="form-select" [(ngModel)]="venta.tipo_operacion">
@@ -573,6 +574,7 @@
                         <option value="Mixta">Mixta</option>
                     </select>
                 </div>
+                }
                 @if (esFacturacionElSalvador()) {
                 <div class="form-group col-md-4">
                     <label for="filtro.tipo_renta">Tipo de ingreso:</label>

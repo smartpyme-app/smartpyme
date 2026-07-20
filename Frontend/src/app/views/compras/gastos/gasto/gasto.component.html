@@ -4,7 +4,7 @@
   <div class="d-flex align-items-center float-end gap-3">
     @if (!gasto.id) {
       <button class="btn btn-primary me-2" (click)="openJsonImport(jsonImportTemplate)">
-        <i class="fa fa-file-import"></i> Importar JSON
+        <i class="fa fa-file-import"></i> {{ documentoImportService.ui.boton }}
       </button>
     }
 
@@ -296,6 +296,7 @@
                             <option value="no_sujeta">No sujeta</option>
                         </select>
                     </div>
+                    @if (esElSalvadorFe()) {
                     <div class="form-group col-md-6 col-lg-3">
                         <label class="d-block mb-1">Aplica</label>
                         <div class="form-check form-check-inline">
@@ -307,6 +308,7 @@
                             <label class="form-check-label" for="det_ret_iva_{{i}}">{{ 'country.tax.taxRetainedShort' | translate }}</label>
                         </div>
                     </div>
+                    }
                 </div>
             </div>
             <div class="d-flex justify-content-between align-items-center mt-2">
@@ -339,15 +341,15 @@
                 <label for="">{{ 'country.tax.taxLabelColon' | translate }}</label>
                 <input type='number' disabled class="form-control" name="iva" [(ngModel)]="gasto.iva"/>
             </div>
-            <div class="form-group col-md-4 col-lg-2">
+            <div class="form-group col-md-4 col-lg-2" *ngIf="esElSalvadorFe()">
                 <label for="">{{ 'country.tax.taxPerceivedColon' | translate }}</label>
                 <input type='number' disabled class="form-control" name="iva_percibido" [(ngModel)]="gasto.iva_percibido"/>
             </div>
-            <div class="form-group col-md-4 col-lg-2">
+            <div class="form-group col-md-4 col-lg-2" *ngIf="esElSalvadorFe()">
                 <label for="">Renta:</label>
                 <input type='number' disabled class="form-control" name="renta_retenida" [(ngModel)]="gasto.renta_retenida"/>
             </div>
-            <div class="form-group col-md-4 col-lg-2">
+            <div class="form-group col-md-4 col-lg-2" *ngIf="esElSalvadorFe()">
                 <label for="">{{ 'country.tax.taxRetainedColon' | translate }}</label>
                 <input type='number' disabled class="form-control" name="iva_retenido" [(ngModel)]="gasto.iva_retenido"/>
             </div>
@@ -408,19 +410,19 @@
                   <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setTotal()" [(ngModel)]="gasto.impuesto" name="impuesto">
                 </div>
             </div>
-            <div class="form-group col-md-4 col-lg-3 without-label " *ngIf="!varios_items">
+            <div class="form-group col-md-4 col-lg-3 without-label " *ngIf="!varios_items && esElSalvadorFe()">
                 <div class="form-switch bg-light-info rounded">
                   <label for="renta">Renta (10%)</label>
                   <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setTotal()" [(ngModel)]="gasto.renta" name="renta">
                 </div>
             </div>
-            <div class="form-group col-md-6 col-lg-3 without-label" *ngIf="!varios_items">
+            <div class="form-group col-md-6 col-lg-3 without-label" *ngIf="!varios_items && esElSalvadorFe()">
                 <div class="form-switch bg-light-info rounded">
                   <label for="percepcion">Percepción (1%)</label>
                   <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setTotal()" [(ngModel)]="gasto.percepcion" name="gasto.percepcion">
                 </div>
             </div>
-            <div class="form-group col-md-6 col-lg-3 without-label" *ngIf="!varios_items">
+            <div class="form-group col-md-6 col-lg-3 without-label" *ngIf="!varios_items && esElSalvadorFe()">
                 <div class="form-switch bg-light-info rounded">
                   <label for="retencion">Retención (1%)</label>
                   <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setTotal()" [(ngModel)]="gasto.retencion" name="gasto.retencion">
@@ -477,7 +479,7 @@
                         (change)="onImpuestoValorChange()"/>
                 </div>
             </div>
-            <div class="form-group col-6 col-lg-2" *ngIf="!varios_items">
+            <div class="form-group col-6 col-lg-2" *ngIf="!varios_items && esElSalvadorFe()">
                 <label for="tipo_operacion">Tipo de operación:</label>
                 <select name="tipo_operacion" class="form-select" [(ngModel)]="gasto.tipo_operacion">
                     <option [ngValue]="null">Seleccione aquí</option>
@@ -487,7 +489,7 @@
                     <option value="Mixta">Mixta</option>
                 </select>
             </div>
-            <div class="form-group col-6 col-lg-2">
+            <div class="form-group col-6 col-lg-2" *ngIf="esElSalvadorFe()">
                 <label for="tipo_clasificacion">Clasificación:</label>
                 <select name="tipo_clasificacion" class="form-select" [(ngModel)]="gasto.tipo_clasificacion">
                     <option [ngValue]="null">Seleccione aquí</option>
@@ -495,7 +497,7 @@
                     <option value="Gasto">Gasto</option>
                 </select>
             </div>
-            <div class="form-group col-6 col-sm-3">
+            <div class="form-group col-6 col-sm-3" *ngIf="esElSalvadorFe()">
                 <label for="tipo_sector">Sector:</label>
                 <select name="tipo_sector" class="form-select" [(ngModel)]="gasto.tipo_sector">
                     <option [ngValue]="null">Seleccione aquí</option>
@@ -505,7 +507,7 @@
                     <option value="Servicios, profesiones, artes y oficios">Servicios profesiones, artes y oficios</option>
                 </select>
             </div>
-            <div class="form-group col-6 col-lg-5">
+            <div class="form-group col-6 col-lg-5" *ngIf="esElSalvadorFe()">
                 <label for="tipo_costo_gasto">Tipo {{gasto.tipo_clasificacion}}:</label>
                 <select name="tipo_costo_gasto" class="form-select" [(ngModel)]="gasto.tipo_costo_gasto">
                     <option [ngValue]="null">Seleccione aquí</option>

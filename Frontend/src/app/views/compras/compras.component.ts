@@ -34,6 +34,7 @@ const SLUG_IMPORTACION_MASIVA_COMPRAS_JSON = 'importacion-masiva-compras-json';
 import { debounceTime, distinctUntilChanged, switchMap, takeUntil, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { esTipoFacturaElectronicaCompraCr } from '@views/ventas/documentos/documento-nombre-options';
+import { esElSalvadorFe as empresaEsElSalvador } from '@services/facturacion-electronica/fe-pais.util';
 import {
   ExportLimiteTipo,
   ExportPeriodoState,
@@ -775,6 +776,10 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
 
     esFeCostaRica(): boolean {
         return this.facturacionElectronica.isCostaRicaFe();
+    }
+
+    esElSalvadorFe(): boolean {
+        return empresaEsElSalvador(this.apiService.auth_user()?.empresa);
     }
 
     private esPayloadErrorEmisionFeCr(e: unknown): e is FeCrErrorEmisionPayload {

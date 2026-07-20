@@ -507,6 +507,7 @@
                             [(ngModel)]="venta.cobrar_impuestos" name="venta.cobrar_impuestos">
                     </div>
                 </div>
+                @if (esFacturacionElSalvador()) {
                 <div class="form-group col-md-6 col-lg-3 without-label">
                     <div class="form-switch bg-light-info rounded">
                         <label for="percepcion">Retención (1%)</label>
@@ -521,6 +522,7 @@
                             [(ngModel)]="venta.renta" name="renta">
                     </div>
                 </div>
+                }
             @if (venta.cotizacion != 1) {
                 <div class="form-group col-md-6 col-lg-3">
                     <label for="forma_pago">Método de pago</label>
@@ -664,6 +666,7 @@
         }
 
             <div class="row">
+                @if (esFacturacionElSalvador()) {
                 <div class="form-group col-6 col-lg-4">
                     <label for="tipo_operacion">Tipo de operación:</label>
                     <select name="tipo_operacion" class="form-select" [(ngModel)]="venta.tipo_operacion">
@@ -674,7 +677,6 @@
                         <option value="Mixta">Mixta</option>
                     </select>
                 </div>
-                @if (esFacturacionElSalvador()) {
                 <div class="form-group col-6 col-lg-4">
                     <label for="filtro.tipo_renta">Tipo de ingreso:</label>
                     <select name="tipo_renta" class="form-select" [(ngModel)]="venta.tipo_renta">
