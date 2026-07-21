@@ -18,11 +18,15 @@
       </div>
       <div class="col-md-4 col-lg-3">
         <label class="form-label" for="pf_canal">Canal</label>
-        <input id="pf_canal" type="text" class="form-control" [(ngModel)]="canal" name="canal" placeholder="Ej. Pedidos Ya">
+        <ng-select id="pf_canal" name="canal" [(ngModel)]="canal" [items]="canales" bindLabel="nombre"
+          bindValue="nombre" [addTag]="true" addTagText="Agregar canal: " [clearable]="true" [searchable]="true"
+          placeholder="Seleccione o escriba..." class="form-select p-0 w-100">
+        </ng-select>
       </div>
       <div class="col-md-4 col-lg-3">
         <label class="form-label" for="pf_ref">Referencia externa</label>
-        <input id="pf_ref" type="text" class="form-control" [(ngModel)]="referenciaExterna" name="ref" placeholder="ID en plataforma">
+        <input id="pf_ref" type="text" class="form-control" [(ngModel)]="referenciaExterna" name="ref"
+          placeholder="ID en plataforma">
       </div>
       <div class="col-md-4 col-lg-3">
         <label class="form-label" for="pf_bodega">Bodega (inventario)</label>
@@ -33,16 +37,9 @@
       </div>
       <div class="col-md-6 col-lg-4">
         <label class="form-label" for="pf_cli">Cliente (opcional)</label>
-        <app-select-search
-          id="pf_cli"
-          name="clienteId"
-          [(ngModel)]="clienteId"
-          [items]="clientes"
-          displayProperty="nombre_completo"
-          valueProperty="id"
-          [customDisplayFunction]="getClienteDisplay"
-          [searchFunction]="searchClientes"
-          placeholder="Buscar por nombre, empresa o teléfono..."
+        <app-select-search id="pf_cli" name="clienteId" [(ngModel)]="clienteId" [items]="clientes"
+          displayProperty="nombre_completo" valueProperty="id" [customDisplayFunction]="getClienteDisplay"
+          [searchFunction]="searchClientes" placeholder="Buscar por nombre, empresa o teléfono..."
           cssClass="form-select p-0">
         </app-select-search>
       </div>
@@ -53,11 +50,24 @@
     </div>
   </section>
 
+  <!-- Indicador visual si es Boxful -->
+  <div *ngIf="esCanalBoxful() && clienteId" class="alert alert-info mb-3">
+    <i class="fa fa-truck me-2"></i>
+    <strong>Canal Boxful:</strong> Después de guardar el pedido, se le solicitará generar la guía de envío.
+  </div>
+
   <section class="bg-white p-4 rounded mb-3">
     <h6 class="mb-3">Productos y servicios</h6>
-    <div class="mb-3">
-      <label class="form-label">Agregar producto o servicio</label>
-      <app-buscador-productos (selectProducto)="onProductoSelect($event)"></app-buscador-productos>
+    <div class="mb-3 d-flex gap-2 align-items-end">
+      <div class="flex-grow-1">
+        <label class="form-label">Agregar producto o servicio</label>
+        <app-buscador-productos (selectProducto)="onProductoSelect($event)"></app-buscador-productos>
+      </div>
+      <div *ngIf="usuario?.empresa?.modulo_paquetes && tieneBoxful">
+        <app-tienda-venta-paquetes [venta]="ventaPaquetes" (productoSelect)="onProductoSelect($event)"
+          (selectCliente)="onSelectCliente($event)">
+        </app-tienda-venta-paquetes>
+      </div>
     </div>
 
     <div class="table-responsive">
@@ -85,17 +95,21 @@
               </small>
             </td>
             <td>
-              <input type="number" class="form-control form-control-sm" min="0.0001" step="any" [(ngModel)]="l.cantidad" [name]="'c'+i">
+              <input type="number" class="form-control form-control-sm" min="0.0001" step="any" [(ngModel)]="l.cantidad"
+                [name]="'c'+i">
             </td>
             <td>
-              <input type="number" class="form-control form-control-sm" min="0" step="any" [(ngModel)]="l.precio" [name]="'p'+i">
+              <input type="number" class="form-control form-control-sm" min="0" step="any" [(ngModel)]="l.precio"
+                [name]="'p'+i">
             </td>
             <td>
-              <input type="number" class="form-control form-control-sm" min="0" step="any" [(ngModel)]="l.descuento" [name]="'d'+i">
+              <input type="number" class="form-control form-control-sm" min="0" step="any" [(ngModel)]="l.descuento"
+                [name]="'d'+i">
             </td>
             <td class="text-end">{{ totalLinea(l) | currency }}</td>
             <td>
-              <input type="text" class="form-control form-control-sm" [(ngModel)]="l.notas" [name]="'n'+i" placeholder="Notas / ID pedido">
+              <input type="text" class="form-control form-control-sm" [(ngModel)]="l.notas" [name]="'n'+i"
+                placeholder="Notas / ID pedido">
             </td>
             <td>
               <button type="button" class="btn btn-sm btn-outline-danger" (click)="quitarLinea(i)"><i class="fa fa-times"></i></button>
@@ -121,13 +135,22 @@
       <span *ngIf="!guardando">Guardar</span>
       <span *ngIf="guardando">Guardando...</span>
     </button>
-    <button type="button" class="btn btn-default" *ngIf="modoEdicion && pedidoId" [disabled]="enviandoComanda || !lineas.length" (click)="enviarComanda()">
+    <button type="button" class="btn btn-default" *ngIf="modoEdicion && pedidoId && !esCanalBoxful()"
+      [disabled]="enviandoComanda || !lineas.length" (click)="enviarComanda()">
       <span *ngIf="!enviandoComanda"><i class="fa fa-utensils me-1"></i> Enviar comanda</span>
       <span *ngIf="enviandoComanda">Enviando...</span>
     </button>
     <button type="button" class="btn btn-default" [disabled]="guardando" (click)="volver()">Cancelar</button>
   </section>
 </ng-container>
+
+<!-- Selector de Boxful en Modal -->
+<app-boxful-shipping-selector *ngIf="mostrarModalBoxful" [clienteId]="clienteId!" [pedidoId]="pedidoId"
+  [paqueteData]="paqueteData"
+  [sugerirCod]="false"
+  [montoCodSugerido]="pedidoRecienCreado?.total ?? null"
+  (guiaGenerada)="onBoxfulGuiaGenerada($event)" (cerrar)="cerrarModalBoxful()">
+</app-boxful-shipping-selector>
 
 <app-distribucion-lotes-modal #lotesModal etiquetaCantidad="Total del pedido"
   (confirmado)="onLotesLineaConfirmados($event)"></app-distribucion-lotes-modal>

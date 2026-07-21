@@ -134,6 +134,7 @@ class Cliente extends Model {
         return $this->hasMany('App\Models\Cotizaciones\Cotizacion', 'id_cliente');
     }
 
+
     public function eventos()
     {
         return $this->hasMany('App\Models\Eventos\Evento', 'id_cliente');

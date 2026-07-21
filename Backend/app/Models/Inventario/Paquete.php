@@ -38,6 +38,9 @@ class Paquete extends Model {
         'id_empresa',
     );
 
+    protected $casts = [
+    ];
+
     protected $appends = ['nombre_cliente', 'nombre_asesor', 'nombre_usuario'];
 
     protected static function boot()
@@ -102,6 +105,11 @@ class Paquete extends Model {
     
     public function asesor(){
         return $this->belongsTo('App\Models\User', 'id_asesor');
+    }
+
+    public function boxfulShipment()
+    {
+        return $this->hasOne(BoxfulShipment::class, 'paquete_id');
     }
 
 

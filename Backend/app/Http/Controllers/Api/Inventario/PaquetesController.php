@@ -103,7 +103,7 @@ class PaquetesController extends Controller
     public function read($id) {
 
         $paquete = Paquete::where('id', $id)
-                                ->with('cliente', 'proveedor')
+                                ->with('cliente', 'proveedor', 'boxfulShipment.parcels')
                                 ->firstOrFail();
 
         return Response()->json($paquete, 200);
@@ -141,9 +141,44 @@ class PaquetesController extends Controller
         else
             $paquete = new Paquete;
         
+        $data = $request->all();
+        // ponytail: prevent database integrity violations on nullable db fields that have NOT NULL constraints
+        if (!isset($data['otros']) || is_null($data['otros']) || $data['otros'] === '') {
+            $data['otros'] = 0;
+        }
+        if (!isset($data['cuenta_a_terceros']) || is_null($data['cuenta_a_terceros']) || $data['cuenta_a_terceros'] === '') {
+            $data['cuenta_a_terceros'] = 0;
+        }
+        if (!isset($data['precio']) || is_null($data['precio']) || $data['precio'] === '') {
+            $data['precio'] = 0;
+        }
+        if (!isset($data['total']) || is_null($data['total']) || $data['total'] === '') {
+            $data['total'] = 0;
+        }
 
-        $paquete->fill($request->all());
+        $paquete->fill($data);
         $paquete->save();
+
+        if ($request->hasAny(['contenido', 'alto', 'ancho', 'largo', 'es_fragil'])) {
+            $integracion = \App\Models\Admin\Integracion::boxful();
+            if ($integracion && $integracion->estado === 'connected') {
+                $boxfulShipment = \App\Models\Inventario\BoxfulShipment::firstOrCreate([
+                    'paquete_id' => $paquete->id
+                ]);
+
+                $boxfulParcel = \App\Models\Inventario\BoxfulParcel::firstOrNew([
+                    'boxful_shipment_id' => $boxfulShipment->id
+                ]);
+
+                $boxfulParcel->contenido = $request->input('contenido', $boxfulParcel->contenido ?? 'Productos varios');
+                $boxfulParcel->alto = (float) $request->input('alto', $boxfulParcel->alto ?? 10.0);
+                $boxfulParcel->ancho = (float) $request->input('ancho', $boxfulParcel->ancho ?? 10.0);
+                $boxfulParcel->largo = (float) $request->input('largo', $boxfulParcel->largo ?? 10.0);
+                $boxfulParcel->peso = (float) $request->input('peso', $paquete->peso ?? 1.0);
+                $boxfulParcel->es_fragil = (bool) $request->input('es_fragil', $boxfulParcel->es_fragil ?? false);
+                $boxfulParcel->save();
+            }
+        }
 
         return Response()->json($paquete, 200);
 

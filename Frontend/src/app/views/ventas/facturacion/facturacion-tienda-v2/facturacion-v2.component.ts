@@ -17,8 +17,10 @@ import {
   esImpuestoIva,
   hidratarImpuestosProductosEnDetalles,
   normalizarPorcentajeImpuestoDetalle,
+  redondearMoneda,
   resolverPorcentajeImpuestoVenta,
   sincronizarTipoGravadoPorCobroIva,
+  sumarDescuentoConIvaEncabezadoVenta,
   sumarSubTotalEncabezadoVenta,
   sumarTotalEncabezadoVenta,
 } from '@utils/impuestos-venta.util';
@@ -127,6 +129,134 @@ export class FacturacionV2Component implements OnInit {
     private fidelizacionService: FidelizacionService,
   ) {}
 
+  // Integración Boxful
+  public paqueteData: any = { peso: 1, alto: 10, ancho: 10, largo: 10, es_fragil: false, id: null };
+  private lastSyncedPaqueteId: number | null = null;
+  public tieneBoxful = false;
+  public mostrarModalBoxful = false;
+  public boxfulVentaId: number | null = null;
+  public boxfulClienteId: number | null = null;
+  public boxfulSugerirCod = false;
+  public boxfulMontoCod: number | null = null;
+  public boxfulPaqueteData: any = {
+    peso: 1, alto: 11, ancho: 43, largo: 47.5, es_fragil: false, id: null, parcels: []
+  };
+
+  esCanalBoxful(): boolean {
+    if (!this.venta.id_canal || !this.canales) return false;
+    const canal = this.canales.find((c: any) => c.id == this.venta.id_canal);
+    return !!(canal && canal.nombre === 'Boxful');
+  }
+
+  mostrarAlertaEnvioBoxful(): boolean {
+    return this.tieneBoxful && this.esCanalBoxful() && this.venta.cotizacion != 1;
+  }
+
+  private debePreguntarEnvioBoxful(): boolean {
+    return this.mostrarAlertaEnvioBoxful() && !!this.venta?.id;
+  }
+
+  private preguntarGenerarEnvioBoxful(venta: any): void {
+    Swal.fire({
+      title: 'Envío BoxFul',
+      text: 'La venta se guardó correctamente. ¿Desea generar el envío BoxFul ahora o hacerlo después desde el listado de ventas?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Generar ahora',
+      cancelButtonText: 'Después',
+      reverseButtons: true,
+      allowOutsideClick: false,
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.abrirWizardBoxfulDesdeVenta(venta);
+      } else {
+        this.router.navigate(['/ventas']);
+        this.alertService.success(
+          'Venta creada',
+          'Puede generar el envío BoxFul después desde el listado de ventas.'
+        );
+      }
+    });
+  }
+
+  private resolverPaqueteStubBoxful(venta: any): any | null {
+    const paquetes = venta?.paquetes || this.venta?.paquetes || [];
+    const stub = (paquetes as any[]).find((p) =>
+      (p.transportista === 'Boxful' || p.transportista === 'boxful')
+      && (!p.num_guia || String(p.num_guia).trim() === '' || String(p.num_guia).startsWith('PENDING-'))
+    );
+    if (stub?.id) {
+      return stub;
+    }
+    if (venta?.boxful_paquete_stub_id || this.venta?.boxful_paquete_stub_id) {
+      return { id: venta?.boxful_paquete_stub_id || this.venta?.boxful_paquete_stub_id, peso: 1 };
+    }
+    if (this.paqueteData?.id) {
+      return { id: this.paqueteData.id, peso: this.paqueteData.peso || 1 };
+    }
+    return null;
+  }
+
+  private abrirWizardBoxfulDesdeVenta(venta: any): void {
+    if (!venta?.id_cliente) {
+      this.alertService.warning(
+        'Atención',
+        'La venta no tiene cliente asignado. Genere el envío después desde el listado de ventas.'
+      );
+      this.router.navigate(['/ventas']);
+      return;
+    }
+
+    const stub = this.resolverPaqueteStubBoxful(venta);
+    const peso = parseFloat(stub?.peso || 1) || 1;
+
+    this.boxfulVentaId = venta.id;
+    this.boxfulClienteId = venta.id_cliente;
+    this.boxfulSugerirCod = !!(venta.credito || venta.condicion === 'Crédito' || this.venta?.credito || this.venta?.condicion === 'Crédito');
+    this.boxfulMontoCod = parseFloat(venta.total || this.venta?.total || 0) || null;
+    this.boxfulPaqueteData = {
+      id: stub?.id || null,
+      peso,
+      alto: 11,
+      ancho: 43,
+      largo: 47.5,
+      es_fragil: false,
+      parcels: [{
+        peso,
+        alto: 11,
+        ancho: 43,
+        largo: 47.5,
+        es_fragil: false,
+        contenido: '',
+        valor: parseFloat(venta.total || 50)
+      }]
+    };
+    this.mostrarModalBoxful = true;
+    this.alertService.success('Venta creada', 'Complete los datos del envío BoxFul.');
+  }
+
+  onBoxfulGuiaGenerada(guia: any): void {
+    const numGuia = guia?.shipmentNumber || guia?.data?.shipmentNumber || '';
+    if (numGuia) {
+      this.alertService.success('Logística Boxful', `Guía #${numGuia} generada correctamente.`);
+    }
+    if (Array.isArray(guia?.warnings) && guia.warnings.length) {
+      this.alertService.warning('Atención', guia.warnings.join(' '));
+    }
+  }
+
+  cerrarModalBoxful(): void {
+    this.mostrarModalBoxful = false;
+    this.boxfulVentaId = null;
+    this.boxfulClienteId = null;
+    this.boxfulSugerirCod = false;
+    this.boxfulMontoCod = null;
+    this.boxfulPaqueteData = {
+      peso: 1, alto: 11, ancho: 43, largo: 47.5, es_fragil: false, id: null, parcels: []
+    };
+    this.router.navigate(['/ventas']);
+  }
+
   ngOnInit() {
     this.cargarDatosIniciales();
     this.loadData();
@@ -220,13 +350,22 @@ export class FacturacionV2Component implements OnInit {
       }
     );
 
+    this.apiService.getAll('boxful/status').subscribe({
+      next: (res: any) => {
+        this.tieneBoxful = !!(res && res.connected);
+      },
+      error: () => {
+        this.tieneBoxful = false;
+      }
+    });
+
     this.apiService.getAll('impuestos').subscribe(
       (impuestos) => {
         // Filtrar solo los impuestos que aplican a ventas
         this.impuestos = impuestos.filter((impuesto: any) => impuesto.aplica_ventas !== false && impuesto.aplica_ventas !== 0);
         // Al editar cotización/venta no sobrescribir impuestos para no volver a agregarlos
         const esEdicion = !!this.route.snapshot.paramMap.get('id');
-        if (!esEdicion && (!this.venta.impuestos || this.venta.iva == 0)) {
+        if (!esEdicion && (!Array.isArray(this.venta.impuestos) || this.venta.impuestos.length === 0)) {
           this.venta.impuestos = this.impuestos;
           this.sumTotal();
         }
@@ -576,10 +715,10 @@ export class FacturacionV2Component implements OnInit {
                 if (!detalle.precio_iva || detalle.precio_iva === null || detalle.precio_iva === undefined) {
                   if (porcentajeIvaTotal > 0) {
                     // El precio actual es sin IVA, calcular precio con IVA
-                    detalle.precio_iva = (parseFloat(detalle.precio || 0) * (1 + porcentajeIvaTotal / 100)).toFixed(4);
+                    detalle.precio_iva = redondearMoneda(parseFloat(detalle.precio || 0) * (1 + porcentajeIvaTotal / 100)).toFixed(2);
                   } else {
                     // Sin IVA, precio_iva es igual a precio
-                    detalle.precio_iva = parseFloat(detalle.precio || 0).toFixed(4);
+                    detalle.precio_iva = redondearMoneda(parseFloat(detalle.precio || 0)).toFixed(2);
                   }
                 } else {
                   // Si ya tiene precio_iva, verificar que precio (sin IVA) esté correcto
@@ -591,8 +730,8 @@ export class FacturacionV2Component implements OnInit {
                   }
                 }
 
-                // Asegurar que precio_iva esté como número
-                detalle.precio_iva = parseFloat(detalle.precio_iva).toFixed(6);
+                // Asegurar que precio_iva esté a 2 decimales
+                detalle.precio_iva = redondearMoneda(parseFloat(detalle.precio_iva)).toFixed(2);
 
                 const tipo = (detalle.tipo_gravado && String(detalle.tipo_gravado).toLowerCase()) || 'gravada';
                 detalle.tipo_gravado = ['gravada', 'exenta', 'no_sujeta'].includes(tipo) ? tipo : 'gravada';
@@ -600,7 +739,10 @@ export class FacturacionV2Component implements OnInit {
                   detalle,
                   !!this.venta.cobrar_impuestos,
                   this.apiService.auth_user()?.empresa?.iva,
-                  { preservePrecioIva: true }
+                  {
+                    preservePrecioIva: true,
+                    paisEmpresa: this.apiService.auth_user()?.empresa?.pais,
+                  }
                 );
               });
 
@@ -690,7 +832,7 @@ export class FacturacionV2Component implements OnInit {
 
           const precioSinIva = parseFloat(producto.precio);
           const precioConIva = precioSinIva * (1 + pctImpuesto / 100);
-          detalle.precio_iva = precioConIva.toFixed(4);
+          detalle.precio_iva = redondearMoneda(precioConIva).toFixed(2);
           detalle.precio = precioSinIva.toFixed(4);
 
           detalle.precios = producto.precios
@@ -911,15 +1053,18 @@ export class FacturacionV2Component implements OnInit {
     if (detalle.precio_iva == null || detalle.precio_iva === '') {
       detalle.precio_iva =
         pctDetalle > 0
-          ? (precioSinIva * (1 + pctDetalle / 100)).toFixed(4)
-          : precioSinIva.toFixed(4);
+          ? redondearMoneda(precioSinIva * (1 + pctDetalle / 100)).toFixed(2)
+          : redondearMoneda(precioSinIva).toFixed(2);
     }
 
     calcularMontosLineaDetalle(
       detalle,
       !!this.venta.cobrar_impuestos,
       empresaIva,
-      { preservePrecioIva: true }
+      {
+        preservePrecioIva: true,
+        paisEmpresa: this.apiService.auth_user()?.empresa?.pais,
+      }
     );
   }
 
@@ -973,7 +1118,9 @@ export class FacturacionV2Component implements OnInit {
         : parseFloat(String(mejor.precio));
     if (!Number.isFinite(sinSel)) return;
     detalle.precio = sinSel.toFixed(4);
-    detalle.precio_iva = pct > 0 ? (sinSel * (1 + pct / 100)).toFixed(4) : sinSel.toFixed(4);
+    detalle.precio_iva = pct > 0
+      ? redondearMoneda(sinSel * (1 + pct / 100)).toFixed(2)
+      : redondearMoneda(sinSel).toFixed(2);
   }
 
   /** Stock desde producto ya cargado por bodega (misma regla que el buscador v2). */
@@ -1009,7 +1156,33 @@ export class FacturacionV2Component implements OnInit {
     return null;
   }
 
+  private syncPaqueteData(): void {
+    if (!this.venta || !this.venta.detalles || !Array.isArray(this.venta.detalles)) {
+      this.lastSyncedPaqueteId = null;
+      this.paqueteData.id = null;
+      return;
+    }
+    const pkgDetail = this.venta.detalles.find((d: any) => d.id_paquete);
+    if (pkgDetail) {
+      const pkgId = pkgDetail.id_paquete;
+      if (pkgId !== this.lastSyncedPaqueteId) {
+        this.lastSyncedPaqueteId = pkgId;
+        this.paqueteData.id = pkgId;
+        this.paqueteData.peso = parseFloat(pkgDetail.peso || pkgDetail.cantidad || 1);
+        this.paqueteData.alto = parseFloat(pkgDetail.alto || 10);
+        this.paqueteData.ancho = parseFloat(pkgDetail.ancho || 10);
+        this.paqueteData.largo = parseFloat(pkgDetail.largo || 10);
+        this.paqueteData.es_fragil = !!pkgDetail.es_fragil;
+        this.paqueteData.valor = parseFloat(pkgDetail.total || 50);
+      }
+    } else {
+      this.lastSyncedPaqueteId = null;
+      this.paqueteData.id = null;
+    }
+  }
+
   public sumTotal() {
+    this.syncPaqueteData();
     // Asegurar que detalles existe y es un array
     if (!this.venta.detalles || !Array.isArray(this.venta.detalles)) {
       this.venta.detalles = [];
@@ -1021,9 +1194,11 @@ export class FacturacionV2Component implements OnInit {
     }
 
     const empresaIva = Number(this.apiService.auth_user()?.empresa?.iva ?? 0);
+    const paisEmpresa = this.apiService.auth_user()?.empresa?.pais;
     this.venta.detalles.forEach((d: any) => {
       calcularMontosLineaDetalle(d, !!this.venta.cobrar_impuestos, empresaIva, {
         preservePrecioIva: true,
+        paisEmpresa,
       });
     });
 
@@ -1061,12 +1236,38 @@ export class FacturacionV2Component implements OnInit {
       this.venta.impuestos,
       this.venta.detalles,
       !!this.venta.cobrar_impuestos,
-      empresaIva
+      empresaIva,
+      paisEmpresa
     );
     this.venta.iva = ivaEncabezado.toFixed(4);
 
+    // Si el catálogo llegó tarde (pedido/pre-cuenta), asignar impuestos y recalcular montos.
+    if (
+      this.venta.cobrar_impuestos &&
+      (!Array.isArray(this.venta.impuestos) || this.venta.impuestos.length === 0) &&
+      Array.isArray(this.impuestos) &&
+      this.impuestos.length > 0
+    ) {
+      this.venta.impuestos = this.impuestos;
+      const ivaRecalc = acumularImpuestosVentaConCierreResidual(
+        this.venta.impuestos,
+        this.venta.detalles,
+        true,
+        empresaIva,
+        paisEmpresa
+      );
+      this.venta.iva = ivaRecalc.toFixed(4);
+    }
+
     const rawDescuento = parseFloat(this.sumPipe.transform(this.venta.detalles, 'descuento'));
     this.venta.descuento = Number(rawDescuento).toFixed(4);
+    // Mostrar descuento en términos del precio con IVA (campo Precio / $ descuento).
+    this.venta.descuento_con_iva = sumarDescuentoConIvaEncabezadoVenta(
+      this.venta.detalles,
+      empresaIva,
+      !!this.venta.cobrar_impuestos,
+      paisEmpresa
+    ).toFixed(4);
     const rawTotalCosto = parseFloat(this.sumPipe.transform(this.venta.detalles, 'total_costo'));
     this.venta.total_costo = Number(rawTotalCosto).toFixed(4);
 
@@ -1076,6 +1277,7 @@ export class FacturacionV2Component implements OnInit {
       this.venta.impuestos,
       {
         empresaIva,
+        cobrarImpuestos: !!this.venta.cobrar_impuestos,
         cuentaTerceros: parseFloat(this.venta.cuenta_a_terceros),
         ivaPercibido: parseFloat(String(this.venta.iva_percibido)),
         ivaRetenido: parseFloat(String(this.venta.iva_retenido)),
@@ -1601,6 +1803,13 @@ export class FacturacionV2Component implements OnInit {
     const detalles = data.detalles || [];
     if (detalles.length) {
       this.venta.detalles = this.mapearDetallesConsumoExterno(detalles);
+      if (
+        (!Array.isArray(this.venta.impuestos) || this.venta.impuestos.length === 0) &&
+        Array.isArray(this.impuestos) &&
+        this.impuestos.length > 0
+      ) {
+        this.venta.impuestos = this.impuestos;
+      }
       this.sumTotal();
     }
 
@@ -1722,6 +1931,8 @@ export class FacturacionV2Component implements OnInit {
               this.navegarPostFacturaPreCuenta(this.venta.id);
             } else if (this.pedidoCanalId && this.venta.id) {
               this.navegarPostFacturaPedidoCanal(this.venta.id);
+            } else if (this.debePreguntarEnvioBoxful()) {
+              this.preguntarGenerarEnvioBoxful(venta);
             } else {
               this.cargarDatosIniciales();
               this.loadData();
@@ -1739,6 +1950,8 @@ export class FacturacionV2Component implements OnInit {
             this.navegarPostFacturaPreCuenta(this.venta.id);
           } else if (this.pedidoCanalId && this.venta.id) {
             this.navegarPostFacturaPedidoCanal(this.venta.id);
+          } else if (this.debePreguntarEnvioBoxful()) {
+            this.preguntarGenerarEnvioBoxful(venta);
           } else {
             this.router.navigate(['/ventas']);
             this.alertService.success(
@@ -1792,10 +2005,21 @@ export class FacturacionV2Component implements OnInit {
 
   emitirDTE() {
     this.emiting = true;
+    const ventaPreDte = { ...this.venta };
     this.mhService
       .emitirDTE(this.venta)
       .then((venta) => {
-        this.venta = venta;
+        this.venta = { ...ventaPreDte, ...venta };
+        // emitirDTE puede devolver la venta sin paquetes/canal; conservar datos BoxFul del facturado
+        if (ventaPreDte.paquetes && !this.venta.paquetes) {
+          this.venta.paquetes = ventaPreDte.paquetes;
+        }
+        if (ventaPreDte.boxful_paquete_stub_id && !this.venta.boxful_paquete_stub_id) {
+          this.venta.boxful_paquete_stub_id = ventaPreDte.boxful_paquete_stub_id;
+        }
+        if (ventaPreDte.id_canal && !this.venta.id_canal) {
+          this.venta.id_canal = ventaPreDte.id_canal;
+        }
         this.alertService.success(
           'DTE emitido.',
           'El documento ha sido emitido.'
@@ -1810,17 +2034,23 @@ export class FacturacionV2Component implements OnInit {
           this.navegarPostFacturaPreCuenta(this.venta.id);
         } else if (this.pedidoCanalId && this.venta.id) {
           this.navegarPostFacturaPedidoCanal(this.venta.id);
+        } else if (this.debePreguntarEnvioBoxful()) {
+          this.preguntarGenerarEnvioBoxful(this.venta);
         } else {
           this.cargarDatosIniciales();
           this.router.navigate(['/ventas-v2/crear']);
         }
       })
       .catch((error) => {
-        this.cargarDatosIniciales();
-        this.router.navigate(['/ventas-v2/crear']);
-
         this.emiting = false;
         this.alertService.warning('El documento no fue emitido.', error);
+        // La venta ya se guardó: ofrecer envío BoxFul aunque falle el DTE
+        if (this.debePreguntarEnvioBoxful()) {
+          this.preguntarGenerarEnvioBoxful(this.venta);
+        } else {
+          this.cargarDatosIniciales();
+          this.router.navigate(['/ventas-v2/crear']);
+        }
       });
   }
 
@@ -1906,9 +2136,10 @@ export class FacturacionV2Component implements OnInit {
 
       const detalle: any = {
         id_producto: d.id_producto,
+        id_paquete: d.id_paquete || null,
         cantidad: cant,
         precio: precioSinIva.toFixed(4),
-        precio_iva: precioConIva.toFixed(4),
+        precio_iva: redondearMoneda(precioConIva).toFixed(2),
         descripcion: d.descripcion || '',
         costo: 0,
         descuento: descLine.toFixed(4),

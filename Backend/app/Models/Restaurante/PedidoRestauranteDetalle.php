@@ -14,6 +14,7 @@ class PedidoRestauranteDetalle extends Model
     protected $fillable = [
         'pedido_id',
         'producto_id',
+        'id_paquete',
         'lote_id',
         'cantidad',
         'precio',
@@ -27,6 +28,7 @@ class PedidoRestauranteDetalle extends Model
     ];
 
     protected $casts = [
+        'id_paquete' => 'integer',
         'cantidad' => 'decimal:4',
         'precio' => 'decimal:4',
         'descuento' => 'decimal:4',
@@ -45,6 +47,11 @@ class PedidoRestauranteDetalle extends Model
     public function producto(): BelongsTo
     {
         return $this->belongsTo(Producto::class, 'producto_id');
+    }
+
+    public function paquete(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Inventario\Paquete::class, 'id_paquete');
     }
 
     public function loteAsignaciones()

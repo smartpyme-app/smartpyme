@@ -22,6 +22,7 @@ import {
     asignacionLotesExcedeStock,
     factorConversionDetalle,
     limpiarAsignacionLotesDetalle,
+    limpiarLotesSiCambioCantidad,
     stockBaseAUnidadesDetalle,
     textoResumenLotesDetalle,
     totalAsignadoUnidadesLotes,
@@ -48,6 +49,7 @@ export class VentaDetallesComponent implements OnInit {
     @Output() update = new EventEmitter();
     @Output() sumTotal = new EventEmitter();
     @Output() alMenosUnPaqueteConCuentaTerceros = new EventEmitter<void>();
+    @Output() selectCliente = new EventEmitter<any>();
     modalRef!: BsModalRef;
     public zoomImageUrl: string = '';
 
@@ -117,7 +119,8 @@ export class VentaDetallesComponent implements OnInit {
         return porcentajeIvaDetalle(
             detalle,
             this.apiService.auth_user()?.empresa?.iva,
-            !!this.venta.cobrar_impuestos
+            !!this.venta.cobrar_impuestos,
+            this.apiService.auth_user()?.empresa?.pais
         );
     }
 
@@ -126,7 +129,8 @@ export class VentaDetallesComponent implements OnInit {
         calcularMontosLineaDetalle(
             detalle,
             !!this.venta.cobrar_impuestos,
-            this.apiService.auth_user()?.empresa?.iva
+            this.apiService.auth_user()?.empresa?.iva,
+            { paisEmpresa: this.apiService.auth_user()?.empresa?.pais }
         );
     }
 
@@ -163,6 +167,15 @@ export class VentaDetallesComponent implements OnInit {
         }
 
         aplicar();
+    }
+
+    /** Recalcula totales; limpia lotes solo si el usuario cambió la cantidad. */
+    public onCantidadChange(detalle: any): void {
+        limpiarLotesSiCambioCantidad(detalle, {
+            skipLimpiarLotes: this.skipLimpiarLotes,
+            metodologiaManual: this.getLotesMetodologia() === 'Manual',
+        });
+        this.updateTotal(detalle);
     }
 
     public onTipoGravadoChange(detalle: any) {

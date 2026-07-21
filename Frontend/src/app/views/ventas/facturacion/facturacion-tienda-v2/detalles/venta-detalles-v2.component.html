@@ -84,7 +84,8 @@
             (productoSelect)="productoSelect($event)"></app-tienda-venta-producto>
         <app-tienda-venta-paquetes-v2 *ngIf="usuario.empresa.modulo_paquetes && venta.cotizacion != 1" [venta]="venta"
             (productoSelect)="productoSelect($event)"
-            (alMenosUnPaqueteConCuentaTerceros)="onAlMenosUnPaqueteCuentaTercerosEnListado()"></app-tienda-venta-paquetes-v2>
+            (alMenosUnPaqueteConCuentaTerceros)="onAlMenosUnPaqueteCuentaTercerosEnListado()"
+            (selectCliente)="selectCliente.emit($event)"></app-tienda-venta-paquetes-v2>
         <app-tienda-venta-citas *ngIf="usuario.empresa.modulo_citas && venta.cotizacion != 1" [venta]="venta"
             (productoSelect)="productoSelect($event)"></app-tienda-venta-citas>
     </div>
@@ -198,8 +199,8 @@
                     <td style="width: 150px;">
                         <input type="number"
                             tooltip="{{ detalle.stock != null ? (detalle.stock > 0 ? detalle.stock + ' disponibles' : 'No hay disponibles') : '' }}"
-                            [(ngModel)]="detalle.cantidad" (change)="updateTotal(detalle)"
-                            (keyup)="updateTotal(detalle)" (wheel)="$event.preventDefault()" class="form-control"
+                            [(ngModel)]="detalle.cantidad" (change)="onCantidadChange(detalle)"
+                            (keyup)="onCantidadChange(detalle)" (wheel)="$event.preventDefault()" class="form-control"
                             [readonly]="esDetalleCantidadPorLotes(detalle)"
                             [title]="esDetalleCantidadPorLotes(detalle) ? 'La cantidad se define en Distribuir lotes' : ''"
                             [ngClass]="{ 'border-danger': ((detalle.cantidad > detalle.stock) && (detalle.stock != null)) }"
@@ -211,17 +212,24 @@
                             <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol
                                 || '$' }}</span>
                             <input type="number" step="0.01" [disabled]="!usuario.empresa.editar_precio_venta"
-                                [(ngModel)]="detalle.precio_iva" (change)="updateTotal(detalle)"
-                                (keyup)="updateTotal(detalle)" (wheel)="$event.preventDefault()" class="form-control"
+                                [(ngModel)]="detalle.precio_iva"
+                                (change)="updateTotal(detalle, true)"
+                                (blur)="updateTotal(detalle, true)"
+                                (keyup)="updateTotal(detalle)"
+                                (wheel)="$event.preventDefault()" class="form-control"
                                 name="precio_iva">
                         </div>
                         <select [(ngModel)]="detalle.precio" (change)="onPrecioSelectChange(detalle)" 
                         class="form-select" [name]="'precio_tarifa_'+i" *ngIf="detalle?.precios?.length > 1">
                             <option [value]="precio.precio" 
                             *ngFor="let precio of detalle.precios | filter: 'clasificacion':venta.cliente?.clasificacion || null">
-                                {{ (precio.precio_con_iva ?? precio.precio) | currency:'USD':'symbol':'1.0-6'}}
+                                {{ (precio.precio_con_iva ?? precio.precio) | currency:'USD':'symbol':'1.2' }}
                             </option>
                         </select>
+                        <small class="text-muted d-block mt-1" *ngIf="venta.cobrar_impuestos && detalle.precio"
+                            style="font-size: 0.7rem; line-height: 1.2;">
+                            Sin IVA: {{ detalle.precio | currency:'USD':'symbol':'1.2' }}
+                        </small>
                     </td>
                     <td style="width: 100px;" *ngIf="mostrarCuentaTercerosEnLinea">
                         <div class="input-group">
@@ -266,7 +274,7 @@
                         </select>
                     </td>
                     <td style="width: 100px;" class="text-right">
-                        <div>{{ detalle.total | currency:'USD':'symbol':'1.0-6'}}</div>
+                        <div>{{ (detalle.total_iva != null ? detalle.total_iva : detalle.total) | currency:'USD':'symbol':'1.2'}}</div>
                     </td>
                     <td style="width: 50px;" class="text-center">
                         <div class="btn-group">
