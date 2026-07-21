@@ -35,6 +35,7 @@ import { ProductoVentasComponent } from './productos/producto/historial/ventas/p
 import { PromocionesComponent } from './promociones/promociones.component';
 
 import { ProductosConsignasComponent } from './consignas/productos-consignas.component';
+import { ProductosConsignasComprasComponent } from './consignas-compras/productos-consignas-compras.component';
 
 import { MateriasPrimaComponent } from './materias-prima/materias-prima.component';
 import { MateriaPrimaComponent } from './materias-prima/materia-prima/materia-prima.component';
@@ -111,6 +112,7 @@ import { ProductoPresentacionesComponent } from './productos/producto/presentaci
     ProductoAjustesComponent,
     ProductoVentasComponent,
     ProductosConsignasComponent,
+    ProductosConsignasComprasComponent,
     MateriasPrimaComponent,
     MateriaPrimaComponent,
     MateriaPrimaInformacionComponent,
@@ -157,6 +159,7 @@ import { ProductoPresentacionesComponent } from './productos/producto/presentaci
     ProductoAjustesComponent,
     ProductoVentasComponent,
     ProductosConsignasComponent,
+    ProductosConsignasComprasComponent,
     MateriasPrimaComponent,
     MateriaPrimaComponent,
     MateriaPrimaInformacionComponent,

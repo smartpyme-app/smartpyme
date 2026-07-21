@@ -2,6 +2,7 @@
 
 namespace App\Exports;
 
+use App\Constants\OrigenStockVentaConstants;
 use App\Models\Admin\Empresa;
 use App\Models\Inventario\Paquete;
 use App\Models\Ventas\Detalle;
@@ -142,6 +143,7 @@ class VentasDetallesExport implements FromQuery, WithHeadings, WithMapping, With
             'venta.cliente:id,tipo,nombre,apellido,nombre_empresa,telefono,dui,nit',
             'venta.documento:id,nombre',
             'venta.canal:id,nombre',
+            'venta.detalles:id,id_venta,origen_stock',
             'venta.sucursal:id,nombre,id_empresa',
             'venta.sucursal.empresa:id,nombre',
             'venta.usuario:id,name',
@@ -312,7 +314,7 @@ class VentasDetallesExport implements FromQuery, WithHeadings, WithMapping, With
             $venta ? $venta->forma_pago : null,
             $venta ? $venta->detalle_banco : null,
             $venta ? $venta->estado : null,
-            ($venta && $venta->canal) ? $venta->canal->nombre : null,
+            self::nombreCanalParaExport($venta),
             $row->cantidad,
             round($row->costo,2),
             round($row->precio,2),
@@ -335,6 +337,28 @@ class VentasDetallesExport implements FromQuery, WithHeadings, WithMapping, With
             $fields[] = $paquete ? $paquete->num_seguimiento : '';
         }
         return $fields;
+    }
+
+    /**
+     * Etiqueta de canal para export: "Consigna" si alguna línea usa stock consigna_compra.
+     */
+    public static function nombreCanalParaExport(?object $venta): ?string
+    {
+        if (!$venta) {
+            return null;
+        }
+
+        $detalles = $venta->relationLoaded('detalles')
+            ? $venta->detalles
+            : $venta->detalles()->get(['id', 'id_venta', 'origen_stock']);
+
+        foreach ($detalles as $detalle) {
+            if (OrigenStockVentaConstants::esConsignaCompra($detalle->origen_stock ?? null)) {
+                return 'Consigna';
+            }
+        }
+
+        return $venta->canal?->nombre;
     }
 
     /**

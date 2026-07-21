@@ -217,13 +217,13 @@
         <div class="form-group col-md-6 col-lg-3 without-label">
             <div class="form-switch bg-light-info rounded">
               <label for="cobrar_impuestos">Con IVA ({{ apiService.auth_user().empresa.iva | number:'1.0' }}%)</label>
-              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="compra.cobrar_impuestos" name="compra.cobrar_impuestos">
+              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="compra.cobrar_impuestos" name="compra.cobrar_impuestos" [disabled]="esCompraSinIvaFiscal()">
             </div>
         </div>
         <div class="form-group col-md-6 col-lg-3 without-label">
             <div class="form-switch bg-light-info rounded">
               <label for="percepcion">Percepción</label>
-              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="compra.cobrar_percepcion" name="compra.cobrar_percepcion">
+              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="compra.cobrar_percepcion" name="compra.cobrar_percepcion" [disabled]="esCompraSinIvaFiscal()">
             </div>
         </div>
         <div *ngIf="compra.tipo_documento == 'Sujeto excluido'" class="form-group col-md-6 col-lg-3 without-label">

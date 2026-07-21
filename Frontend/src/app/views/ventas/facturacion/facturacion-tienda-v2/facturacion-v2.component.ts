@@ -24,6 +24,8 @@ import {
   sumarSubTotalEncabezadoVenta,
   sumarTotalEncabezadoVenta,
 } from '@utils/impuestos-venta.util';
+import { esVentaPorConsigna, sincronizarFlagConsignaVenta, aplicarEstadoConsignaEnVenta } from '@utils/venta-consigna.util';
+import { FACTURA_REMISION, esVentaConsignaRemision } from '../../../../constants/documento.constants';
 
 import * as moment from 'moment';
 import { VentaDetallesV2Component } from './detalles/venta-detalles-v2.component';
@@ -41,6 +43,16 @@ export class FacturacionV2Component implements OnInit {
   public proyectos: any = [];
   public usuarios: any = [];
   public documentos: any = [];
+  private documentosSucursal: any[] = [];
+  private readonly nombresDocumentosVentaNormales = [
+    'Factura',
+    'Crédito fiscal',
+    'Factura de exportación',
+    'Factura comercial',
+    'Ticket',
+    'Recibo',
+    'Sujeto excluido',
+  ];
   public formaPagos: any = [];
   public sucursales: any = [];
   public bodegas: any = [];
@@ -389,45 +401,71 @@ export class FacturacionV2Component implements OnInit {
   public cargarDocumentos() {
     this.apiService.getAll('documentos/list').subscribe(
       (documentos) => {
-        this.documentos = documentos;
-        this.documentos = this.documentos.filter(
+        this.documentosSucursal = documentos.filter(
           (doc: any) => doc.id_sucursal == this.venta.id_sucursal
         );
-        if (!this.venta.id_documento && !this.venta.correlativo) {
-          let documento = this.documentos.find(
-            (x: any) => x.predeterminado == 1
-          );
-          if (documento) {
-            this.venta.id_documento = documento.id;
-            this.venta.correlativo = documento.correlativo;
-          } else {
-            this.venta.id_documento = documentos[0].id;
-            this.venta.correlativo = documentos[0].correlativo;
-          }
-
-          if (this.venta.cotizacion == 1) {
-            this.documentos = this.documentos.filter(
-              (x: any) => x.nombre == 'Cotización'
-            );
-            let documento = this.documentos.find(
-              (x: any) => x.nombre == 'Cotización'
-            );
-            if (documento) {
-              this.venta.id_documento = documento.id;
-              this.venta.correlativo = documento.correlativo;
-            }
-          } else {
-            this.documentos = this.documentos.filter(
-              (doc: any) =>
-                doc.nombre === 'Factura' || doc.nombre === 'Crédito fiscal' || doc.nombre === 'Factura de exportación' || doc.nombre === 'Factura comercial' || doc.nombre === 'Ticket' || doc.nombre === 'Recibo' || doc.nombre === 'Sujeto excluido'
-            );
-          }
-        }
+        this.aplicarFiltroDocumentosVenta();
       },
       (error) => {
         this.alertService.error(error);
       }
     );
+  }
+
+  private aplicarFiltroDocumentosVenta() {
+    if (this.venta.cotizacion == 1) {
+      this.documentos = this.documentosSucursal.filter(
+        (x: any) => x.nombre == 'Cotización'
+      );
+      const documento = this.documentos.find((x: any) => x.nombre == 'Cotización');
+      if (documento) {
+        this.venta.id_documento = documento.id;
+        this.venta.correlativo = documento.correlativo;
+      }
+      return;
+    }
+
+    if (esVentaConsignaRemision(this.venta)) {
+      this.documentos = this.documentosSucursal.filter(
+        (doc: any) => doc.nombre === FACTURA_REMISION
+      );
+      this.seleccionarDocumentoRemisionConsigna();
+      return;
+    }
+
+    this.documentos = this.documentosSucursal.filter((doc: any) =>
+      this.nombresDocumentosVentaNormales.includes(doc.nombre)
+    );
+
+    const documentoActual = this.documentos.find(
+      (x: any) => x.id == this.venta.id_documento
+    );
+    if (!documentoActual) {
+      const documento =
+        this.documentos.find((x: any) => x.predeterminado == 1) || this.documentos[0];
+      if (documento) {
+        this.venta.id_documento = documento.id;
+        this.venta.correlativo = documento.correlativo;
+      }
+    }
+  }
+
+  private seleccionarDocumentoRemisionConsigna() {
+    const documento = this.documentos.find((x: any) => x.nombre === FACTURA_REMISION);
+    if (!documento) {
+      this.alertService.warning(
+        'Consigna',
+        'No hay un documento "Factura de remisión" configurado para esta sucursal.'
+      );
+      return;
+    }
+
+    this.venta.id_documento = documento.id;
+    this.venta.correlativo = documento.correlativo;
+    this.venta.cobrar_impuestos = false;
+    this.venta.percepcion = 0;
+    this.venta.iva_percibido = 0;
+    this.sumTotal();
   }
 
   public cargarDatosIniciales() {
@@ -558,6 +596,7 @@ export class FacturacionV2Component implements OnInit {
         .subscribe(
           (venta) => {
             this.venta = venta;
+            sincronizarFlagConsignaVenta(this.venta);
             this.retencionIvaGcUsuarioDecidio = true;
             this.normalizarDetallesTipoGravado(this.venta);
             hidratarImpuestosProductosEnDetalles(
@@ -1355,10 +1394,14 @@ export class FacturacionV2Component implements OnInit {
       // Si el cliente tiene crédito habilitado, aplicar venta al crédito automáticamente
       if (cliente.habilita_credito && cliente.dias_credito) {
         this.venta.credito = true;
-        this.venta.estado = 'Pendiente';
         this.venta.condicion = 'Crédito';
         const fechaVenta = this.venta.fecha || this.apiService.date();
         this.venta.fecha_pago = moment(fechaVenta).add(cliente.dias_credito, 'days').format('YYYY-MM-DD');
+        if (this.venta.consigna) {
+          this.venta.estado = 'Consigna';
+        } else {
+          this.venta.estado = 'Pendiente';
+        }
       }
 
       // Obtener saldo pendiente si el cliente tiene límite de crédito
@@ -1411,10 +1454,11 @@ export class FacturacionV2Component implements OnInit {
       return;
     }
     if (this.venta.credito) {
-      this.venta.estado = 'Pendiente';
       this.venta.condicion = 'Crédito';
       this.venta.fecha_pago = moment().add(1, 'month').format('YYYY-MM-DD');
+      this.venta.estado = this.venta.consigna ? 'Consigna' : 'Pendiente';
     } else {
+      this.venta.consigna = false;
       this.venta.estado = 'Pagada';
       this.venta.condicion = 'Contado';
       this.venta.fecha_pago = moment().format('YYYY-MM-DD');
@@ -1521,14 +1565,36 @@ export class FacturacionV2Component implements OnInit {
 
   public setConsigna() {
     if (this.venta.consigna) {
+      if (!this.venta.id_cliente) {
+        this.alertService.warning('Consigna', 'Seleccione un cliente para ventas por consigna.');
+        this.venta.consigna = false;
+        return;
+      }
+      if (this.venta.detalles?.length) {
+        this.venta.detalles = [];
+        this.alertService.warning(
+          'Consigna',
+          'Se vació el detalle. Toda la factura quedará en consigna; no puede mezclar líneas de venta normal y consigna.'
+        );
+        this.sumTotal();
+      }
       this.venta.estado = 'Consigna';
+      this.venta.credito = true;
+      this.venta.condicion = 'Crédito';
+      this.aplicarFiltroDocumentosVenta();
     } else {
+      if (this.venta.detalles?.length) {
+        this.venta.detalles = [];
+        this.sumTotal();
+      }
       this.setCredito();
+      this.aplicarFiltroDocumentosVenta();
     }
   }
 
   public updateVenta(venta: any) {
     this.venta = venta;
+    sincronizarFlagConsignaVenta(this.venta);
     this.sumTotal();
   }
 
@@ -1633,9 +1699,10 @@ export class FacturacionV2Component implements OnInit {
     ) {
       if (!this.venta.recibido) this.venta.recibido = this.venta.total;
 
-      if (this.venta.forma_pago == 'Wompi') {
+      if (this.venta.forma_pago == 'Wompi' && !this.venta.consigna) {
         this.venta.estado = 'Pendiente';
       }
+      aplicarEstadoConsignaEnVenta(this.venta);
       this.onSubmit();
     }
   }
@@ -1667,6 +1734,13 @@ export class FacturacionV2Component implements OnInit {
         `El total de la línea "${nombre}" debe ser mayor o igual a 0.`
       );
       return true;
+    }
+
+    if (esVentaPorConsigna(this.venta)) {
+      if (!this.venta.id_cliente) {
+        this.alertService.error('Debe seleccionar un cliente para ventas por consigna.');
+        return true;
+      }
     }
 
     return false;
@@ -1808,6 +1882,8 @@ export class FacturacionV2Component implements OnInit {
     if (this.pedidoCanalId) {
       (this.venta as any).id_pedido_canal = this.pedidoCanalId;
     }
+
+    aplicarEstadoConsignaEnVenta(this.venta);
 
     // Asegurar que usuarios "Ventas Limitado" siempre tengan ventas al contado
     if (this.apiService.auth_user().tipo === 'Ventas Limitado') {

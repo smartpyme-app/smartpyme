@@ -35,6 +35,9 @@ use App\Models\Restaurante\PedidoRestaurante;
 use App\Services\Restaurante\PedidoCanalInventarioService;
 use Illuminate\Support\Str;
 use App\Services\Inventario\ConversionInventarioService;
+use App\Services\Inventario\ConsignaDisponibleService;
+use App\Constants\OrigenStockVentaConstants;
+use App\Constants\DocumentoConstants;
 use App\Services\Inventario\LoteAsignacionService;
 use App\Services\Inventario\StockDisponibleService;
 use Luecano\NumeroALetras\NumeroALetras;
@@ -531,6 +534,9 @@ class VentasController extends Controller
             ], 403);
         }
 
+        $consignaDisponibleService = app(ConsignaDisponibleService::class);
+        $consignaDisponibleService->normalizarRequestVentaConsigna($request);
+
         // Validar límite de crédito del cliente (si aplica)
         if ($request->estado === 'Pendiente' && $request->id_cliente) {
             $cliente = Cliente::find($request->id_cliente);
@@ -567,7 +573,7 @@ class VentasController extends Controller
             // 'correlativo'       => 'required|numeric|unique:ventas,correlativo,'.$request->id.',id,id_sucursal,'.$request->id_sucursal.',id_documento,'.$request->id_documento,
             'id_documento'      => 'required|max:255',
             'id_canal'          => 'required|max:255',
-            'id_cliente'        => 'required_if:estado,"Pendiente"',
+            'id_cliente'        => 'required_if:estado,"Pendiente"|required_if:estado,"Consigna"',
             'detalles'          => 'required',
             'fecha_expiracion'  => 'required_if:cotizacion,1',
             'descripcion_impresion'  => 'required_if:descripcion_personalizada,1',
@@ -583,9 +589,17 @@ class VentasController extends Controller
             'id_sucursal'       => 'required|numeric',
         ], [
             'detalles.required' => 'Tiene que agregar productos',
-            'id_cliente.required_if' => 'El cliente es requerido para los creditos y la facturación.',
+            'id_cliente.required_if' => 'El cliente es requerido para créditos, consignas y facturación.',
             'fecha_expiracion.required_if' => 'La fecha de expiracion es obligatorio cuando es cotización.',
         ]);
+
+        if ($errorConsigna = $consignaDisponibleService->validarVentaConsigna($request)) {
+            return response()->json(['error' => $errorConsigna], 422);
+        }
+
+        if ($errorOrigen = $consignaDisponibleService->validarOrigenStockEnFacturacion($request)) {
+            return response()->json(['error' => $errorOrigen], 422);
+        }
 
         DB::beginTransaction();
 
@@ -635,6 +649,8 @@ class VentasController extends Controller
                             ->lockForUpdate()
                             ->firstOrFail();
 
+                $this->aplicarReglasVentaRemisionConsigna($venta, $documento, $request);
+
                 $venta->correlativo = $documento->correlativo;
                 $documento->increment('correlativo');
 
@@ -648,6 +664,10 @@ class VentasController extends Controller
                 else
                     $detalle = new Detalle;
                 $det['id_venta'] = $venta->id;
+
+                if (!OrigenStockVentaConstants::esConsignaCompra($det['origen_stock'] ?? null)) {
+                    $det['origen_stock'] = OrigenStockVentaConstants::NORMAL;
+                }
 
                 // ── Cálculos de Costos con Presentaciones ──
                 $factorDet = 1;
@@ -2344,5 +2364,18 @@ class VentasController extends Controller
 
         return Response()->json($numsIds, 200);
      }
+
+    private function aplicarReglasVentaRemisionConsigna(Venta $venta, Documento $documento, Request $request): void
+    {
+        $esConsigna = $request->input('estado') === 'Consigna' || $request->boolean('consigna');
+        if (!$esConsigna || !DocumentoConstants::esCompraSinIvaFiscal($documento->nombre)) {
+            return;
+        }
+
+        $venta->iva = 0;
+        $venta->iva_percibido = 0;
+        $venta->iva_retenido = 0;
+        $venta->total = round((float) $venta->sub_total, 2);
+    }
 
 }

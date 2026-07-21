@@ -11,6 +11,7 @@ class Detalle extends Model {
         'id_producto',
         'id_presentacion',
         'lote_id',
+        'origen_stock',
         'descripcion',
         'cantidad',
         'precio',

@@ -1,0 +1,117 @@
+<section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
+    <h2 class="page-heading">Consignas</h2>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+    <div class="row mb-3">
+        <div class="col">
+            <span class="text-muted" *ngIf="compras?.length">
+                Mostrando {{ compras?.length + ' registros' }}
+            </span>
+        </div>
+
+        <div class="col">
+            <div class="d-flex gap-2">
+                <button [disabled]="downloading" tooltip="Descargar consignas de compras" (click)="descargar()" class="btn btn-default tcla-F6">
+                    <img src="/assets/icons/download.png" class="icon">
+                </button>
+                <input type="text" name="search" class="form-control pull-right" placeholder="Buscar por proveedor o documento..." [(ngModel)]="buscador">
+            </div>
+        </div>
+    </div>
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <div class="d-flex gap-2 flex-wrap">
+            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/consignas">Compras</button>
+            <button class="btn" routerLinkActive="btn-primary" routerLink="/consignas/ventas">Ventas</button>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-12 table-responsive">
+            <table class="table table-borderless table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Proveedor</th>
+                        <th class="d-none d-md-table-cell">Documento</th>
+                        <th class="d-none d-md-table-cell">Fecha pago</th>
+                        <th>Estado</th>
+                        <th class="text-end">Total</th>
+                        <th class="text-center"><i class="fa fa-cog"></i></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="7" class="text-center" *ngIf="compras?.length < 1 && !loading">
+                            <span class="badge bg-primary">No tiene compras en consigna</span>
+                        </td>
+                        <td colspan="7" class="text-center" *ngIf="loading">
+                            <span class="badge bg-primary">Cargando...</span>
+                        </td>
+                    </tr>
+                    <tr *ngFor="let compra of compras | filter:['proveedor','referencia']:buscador">
+                        <td>{{ compra.fecha | date:'dd/MM/yyyy' }}</td>
+                        <td>{{ compra.proveedor | truncate:30 }}</td>
+                        <td class="d-none d-md-table-cell">{{ compra.tipo_documento }} #{{ compra.referencia }}</td>
+                        <td class="d-none d-md-table-cell">{{ compra.fecha_pago | date:'dd/MM/yyyy' }}</td>
+                        <td>
+                            <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : compra?.estado == 'Pendiente', 'bg-danger' : compra?.estado == 'Anulada', 'bg-info' : compra?.estado == 'Consigna', 'bg-success' : compra?.estado == 'Pagada', 'bg-primary' : compra?.estado == 'Pre-compra'}">
+                                {{ compra.estado }}
+                            </span>
+                        </td>
+                        <td class="text-end">{{ compra.total | currency:'USD':'symbol':'1.2' }}</td>
+                        <td class="text-center">
+                            <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                            </span>
+                            <ng-template #accionesTemplate>
+                                <div class="list-group border-0">
+                                    <a *ngIf="apiService.canEdit() && !apiService.supervisorLimitadoRestringidoEnCompras()" routerLink="/compra/consigna/revisar/{{ compra.id }}" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fas fa-fw fa-hand-holding-usd"></i> Revisar consigna
+                                    </a>
+                                    <button type="button" (click)="openDetalles(mdetalles, compra)" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
+                                    </button>
+                                </div>
+                            </ng-template>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+<ng-template #mdetalles>
+  <div class="modal-header">
+    <div class="modal-title w-100 text-center">
+        <h2 class="text-center no-margin">
+            {{ compra.proveedor }} — {{ compra.tipo_documento }} #{{ compra.referencia }}
+        </h2>
+    </div>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+        <table class="table table-borderless table-hover">
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Código</th>
+                    <th class="text-end">Cantidad</th>
+                    <th class="text-end">Costo</th>
+                    <th class="text-end">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let detalle of compra?.detalles">
+                    <td>{{ detalle.producto }}</td>
+                    <td>{{ detalle.codigo }}</td>
+                    <td class="text-end">{{ detalle.cantidad }}</td>
+                    <td class="text-end">{{ detalle.costo | currency:'USD':'symbol':'1.2' }}</td>
+                    <td class="text-end">{{ detalle.total | currency:'USD':'symbol':'1.2' }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+  </div>
+</ng-template>

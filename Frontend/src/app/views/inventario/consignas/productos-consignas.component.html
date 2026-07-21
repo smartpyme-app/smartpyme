@@ -1,6 +1,5 @@
 <section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
-    <h2 class="page-heading">Inventario</h2>
-    <!-- <button routerLink="/producto/crear" tooltip="Crear producto (F7)" class="btn btn-default tcla-F7 font-weight-bold"><img src="/assets/icons/plus.png" class="icon me-2"> Añadir producto</button> -->
+    <h2 class="page-heading">Consignas</h2>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
@@ -26,17 +25,10 @@
     </div>
     <div class="d-flex flex-wrap gap-2 mb-3">
         <div class="d-flex gap-2 flex-wrap">
-            <button class="btn" routerLinkActive="btn-primary" routerLink="/productos">Todos</button>
-            <button class="btn" routerLinkActive="btn-primary" routerLink="/ajustes" 
-                    *ngIf="apiService.canAccederOperacionesInventario()">Ajustes</button>
-            <button class="btn" routerLinkActive="btn-primary" routerLink="/traslados"
-                    *ngIf="apiService.canAccederOperacionesInventario()">Traslados</button>
-            <button class="btn" routerLinkActive="btn-primary" (click)="loadAll()" routerLink="/consignas"
-                    *ngIf="apiService.canAccederOperacionesInventario()">Consignas</button>
-            <button class="btn" routerLinkActive="btn-primary" routerLink="/entradas"
-                    *ngIf="apiService.canAccederOperacionesInventario()">Otras Entradas</button>
-            <button class="btn" routerLinkActive="btn-primary" routerLink="/salidas"
-                    *ngIf="apiService.canAccederOperacionesInventario()">Otras Salidas</button>
+            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/consignas">Compras</button>
+            <button class="btn" routerLinkActive="btn-primary" (click)="loadAll()" routerLink="/consignas/ventas">Ventas
+                
+            </button>
         </div>
         <div class="ms-auto d-flex gap-2">
             <ng-select name="categoria" [(ngModel)]="filtros.categoria" class="form-select p-0 border-0 bg-default">
@@ -84,9 +76,21 @@
                         <td class="d-none d-md-table-cell text-right">{{ producto.precio | currency:'USD':'symbol':'1.2' }}</td>
                         <td class="text-center"> {{ producto.stock }} </td>
                         <td class="text-center">
-                            <a (click)="openModal(mdetalles, producto)" class="btn" tooltip="Ver detalles">
-                                <img  src="/assets/icons/search.png" class="icon me-2">
-                            </a>
+                            <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                            </span>
+                            <ng-template #accionesTemplate>
+                                <div class="d-flex flex-column">
+                                    <button *ngIf="apiService.canEdit()" type="button"
+                                        routerLink="/producto/editar/{{producto.id}}" class="btn text-start border-0 text-black">
+                                        <img src="/assets/icons/edit.png" class="icon me-2">Editar
+                                    </button>
+                                    <button type="button" (click)="openModal(mdetalles, producto)"
+                                        class="btn text-start border-0 text-black">
+                                        <i class="fa fa-fw fa-magnifying-glass me-2"></i>Ver detalles
+                                    </button>
+                                </div>
+                            </ng-template>
                         </td>
                     </tr>
                 </tbody>
@@ -101,8 +105,10 @@
 
 <ng-template #mdetalles>
   <div class="modal-header">
-    <div class="modal-title text-center">
-        <h5>{{ producto.nombre }} <span class="badge bg-default text-dark">{{ producto?.ventas | sum:'cantidad' }} en consigna</span></h5>
+    <div class="modal-title w-100 text-center">
+        <h2 class="text-center no-margin">
+            {{ producto.nombre }} <span class="badge bg-default text-dark fs-6">{{ producto?.ventas | sum:'cantidad' }} en consigna</span>
+        </h2>
     </div>
     <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
   </div>

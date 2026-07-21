@@ -11,6 +11,13 @@ import {
     sincronizarTipoGravadoPorCobroIva,
 } from '@utils/impuestos-venta.util';
 import {
+    ORIGEN_STOCK_NORMAL,
+    normalizarOrigenStock,
+    preguntarOrigenStockSiAplica,
+    validarCantidadOrigenConsignaCompra,
+    esOrigenConsignaCompra,
+} from '@utils/venta-consigna.util';
+import {
     autoDistribuirCantidadesLotes,
     asignacionLotesExcedeStock,
     factorConversionDetalle,
@@ -128,21 +135,38 @@ export class VentaDetallesComponent implements OnInit {
     }
 
     public updateTotal(detalle:any){
-        const cantidad = parseFloat(detalle.cantidad ?? 0) || 0;
-        const precio = parseFloat(detalle.precio ?? 0) || 0;
+        const aplicar = () => {
+            const cantidad = parseFloat(detalle.cantidad ?? 0) || 0;
+            const precio = parseFloat(detalle.precio ?? 0) || 0;
 
-        if(detalle.descuento_porcentaje){
-            detalle.descuento = Number((cantidad * (precio * (detalle.descuento_porcentaje / 100))).toFixed(4));
-        }else if(detalle.descuento_monto){
-            detalle.descuento = Number((cantidad * detalle.descuento_monto).toFixed(4));
-        }else{
-            detalle.descuento = 0;
+            if(detalle.descuento_porcentaje){
+                detalle.descuento = Number((cantidad * (precio * (detalle.descuento_porcentaje / 100))).toFixed(4));
+            }else if(detalle.descuento_monto){
+                detalle.descuento = Number((cantidad * detalle.descuento_monto).toFixed(4));
+            }else{
+                detalle.descuento = 0;
+            }
+
+            detalle.total_costo  = (cantidad * parseFloat(detalle.costo ?? 0)).toFixed(4);
+            if (!this.skipLimpiarLotes && detalle.inventario_por_lotes && this.getLotesMetodologia() === 'Manual') {
+                limpiarAsignacionLotesDetalle(detalle);
+            }
+            this.aplicarTipoGravado(detalle);
+            this.update.emit(this.venta);
+            this.sumTotal.emit();
+        };
+
+        if (esOrigenConsignaCompra(detalle.origen_stock)) {
+            validarCantidadOrigenConsignaCompra(this.apiService, this.alertService, this.venta, detalle)
+                .subscribe((ok) => {
+                    if (ok) {
+                        aplicar();
+                    }
+                });
+            return;
         }
 
-        detalle.total_costo  = (cantidad * parseFloat(detalle.costo ?? 0)).toFixed(4);
-        this.aplicarTipoGravado(detalle);
-        this.update.emit(this.venta);
-        this.sumTotal.emit();
+        aplicar();
     }
 
     /** Recalcula totales; limpia lotes solo si el usuario cambió la cantidad. */
@@ -184,6 +208,25 @@ export class VentaDetallesComponent implements OnInit {
 
     // Agregar detalle
         productoSelect(producto:any):void{
+            preguntarOrigenStockSiAplica(this.apiService, this.venta, producto).subscribe((origen) => {
+                if (origen === null) {
+                    return;
+                }
+                const productoConOrigen = { ...producto, origen_stock: origen };
+                if (esOrigenConsignaCompra(origen)) {
+                    validarCantidadOrigenConsignaCompra(this.apiService, this.alertService, this.venta, productoConOrigen)
+                        .subscribe((ok) => {
+                            if (ok) {
+                                this.procesarProductoSelect(productoConOrigen);
+                            }
+                        });
+                    return;
+                }
+                this.procesarProductoSelect(productoConOrigen);
+            });
+        }
+
+        private procesarProductoSelect(producto:any):void{
 
             if (producto.tipo === 'Servicio') {
                 this.addDetalle(producto);
@@ -279,14 +322,15 @@ export class VentaDetallesComponent implements OnInit {
             // ── Guardar campos de presentación para el backend ───────────────────────
             this.detalle.id_presentacion   = producto.id_presentacion  ?? null;
             this.detalle.factor_conversion = producto.factor_conversion ?? 1;
+            this.detalle.origen_stock = normalizarOrigenStock(producto.origen_stock ?? ORIGEN_STOCK_NORMAL);
 
-            // ── Regla de agrupación: AMBOS id_producto + id_presentacion deben coincidir
-            // Una "Caja" y una "Unidad suelta" del mismo producto son filas separadas.
+            // ── Regla de agrupación: producto + presentación + origen de stock
             let detalle = null;
             if(this.apiService.auth_user().empresa.agrupar_detalles_venta){
                 detalle = this.venta.detalles.find((x:any) =>
                     x.id_producto === this.detalle.id_producto &&
-                    (x.id_presentacion ?? null) === (this.detalle.id_presentacion ?? null)
+                    (x.id_presentacion ?? null) === (this.detalle.id_presentacion ?? null) &&
+                    normalizarOrigenStock(x.origen_stock) === this.detalle.origen_stock
                 );
             }
                 

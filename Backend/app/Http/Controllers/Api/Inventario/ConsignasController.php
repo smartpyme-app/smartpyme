@@ -5,11 +5,12 @@ namespace App\Http\Controllers\Api\Inventario;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Ventas\Detalle as DetalleVenta;
-use App\Models\Compras\Detalle as DetalleCompra;
+use App\Models\Compras\Compra;
 use Illuminate\Support\Facades\Crypt;
 
 use App\Exports\ConsignasExport;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Services\Inventario\ConsignaDisponibleService;
 
 class ConsignasController extends Controller
 {
@@ -46,6 +47,7 @@ class ConsignasController extends Controller
 
             if ($producto) {
                 $detalles->push([
+                    'id'                 => $producto->id,
                     'nombre'             => $producto->nombre,
                     'img'                => $producto->img,
                     'nombre_categoria'   => $producto->nombre_categoria,
@@ -155,6 +157,97 @@ class ConsignasController extends Controller
         $consignas->filter($request);
 
         return Excel::download($consignas, 'consignas.xlsx');
+    }
+
+    public function indexCompras()
+    {
+        $compras = Compra::query()
+            ->where('estado', 'Consigna')
+            ->where('cotizacion', 0)
+            ->with([
+                'proveedor',
+                'bodega:id,nombre',
+                'sucursal:id,nombre',
+                'detalles.producto:id,nombre,codigo',
+            ])
+            ->orderByDesc('fecha')
+            ->orderByDesc('id')
+            ->get();
+
+        $rows = $compras->map(function (Compra $compra) {
+            return [
+                'id' => $compra->id,
+                'uuid' => Crypt::encrypt($compra->id),
+                'fecha' => $compra->fecha,
+                'proveedor' => $compra->nombre_proveedor,
+                'id_proveedor' => $compra->id_proveedor,
+                'tipo_documento' => $compra->tipo_documento,
+                'referencia' => $compra->referencia,
+                'fecha_pago' => $compra->fecha_pago,
+                'estado' => $compra->estado,
+                'bodega' => $compra->bodega?->nombre ?? '',
+                'sucursal' => $compra->sucursal?->nombre ?? '',
+                'total' => $compra->total,
+                'detalles' => $compra->detalles->map(function ($detalle) {
+                    return [
+                        'id' => $detalle->id,
+                        'id_producto' => $detalle->id_producto,
+                        'producto' => $detalle->producto?->nombre,
+                        'codigo' => $detalle->producto?->codigo,
+                        'cantidad' => $detalle->cantidad,
+                        'costo' => $detalle->costo,
+                        'total' => $detalle->total,
+                    ];
+                })->values(),
+            ];
+        })->values();
+
+        return response()->json($rows, 200);
+    }
+
+    public function exportCompras(Request $request){
+        $consignas = new \App\Exports\ConsignasComprasExport();
+        $consignas->filter($request);
+
+        return Excel::download($consignas, 'consignas-compras.xlsx');
+    }
+
+    public function disponible(Request $request, ConsignaDisponibleService $consignaDisponibleService)
+    {
+        $request->validate([
+            'id_producto' => 'required|integer',
+            'id_bodega' => 'required|integer',
+            'excluir_venta_id' => 'nullable|integer',
+        ]);
+
+        $disponible = $consignaDisponibleService->obtenerResumenStock(
+            (int) $request->id_producto,
+            (int) $request->id_bodega,
+            $request->filled('excluir_venta_id') ? (int) $request->excluir_venta_id : null
+        );
+
+        return response()->json($disponible, 200);
+    }
+
+    public function ventasConsignaCompra(Request $request, ConsignaDisponibleService $consignaDisponibleService)
+    {
+        $request->validate([
+            'id_producto' => 'required|integer',
+            'id_bodega' => 'required|integer',
+            'excluir_venta_id' => 'nullable|integer',
+        ]);
+
+        $excluirVentaId = $request->filled('excluir_venta_id') ? (int) $request->excluir_venta_id : null;
+        $idProducto = (int) $request->id_producto;
+        $idBodega = (int) $request->id_bodega;
+
+        return response()->json([
+            'cantidad_vendida' => round(
+                $consignaDisponibleService->cantidadVendidaDesdeConsignaCompra($idProducto, $idBodega, $excluirVentaId),
+                4
+            ),
+            'ventas' => $consignaDisponibleService->listarVentasDesdeConsignaCompra($idProducto, $idBodega, $excluirVentaId),
+        ], 200);
     }
 
 

@@ -19,6 +19,7 @@ class Compra extends Model {
         'sello_mh',
         'fecha',
         'estado',
+        'es_consigna',
         'forma_pago',
         'tipo_documento',
         'num_identificacion',
@@ -35,7 +36,7 @@ class Compra extends Model {
         'exenta',
         'percepcion',
         'renta_retenida',
-        // 'iva_retenido',
+        'iva_retenido',
         'descuento',
         'recurrente',
         'cotizacion',
@@ -88,6 +89,7 @@ class Compra extends Model {
     }
 
     protected $casts = [
+        'es_consigna' => 'boolean',
         'dte_migrated_at' => 'datetime',
         'dte_invalidacion_migrated_at' => 'datetime',
     ];
@@ -108,7 +110,10 @@ class Compra extends Model {
     }
 
     public function getNombreProveedorAttribute()
-    {   $proveedor = $this->proveedor()->first();
+    {
+        $proveedor = $this->relationLoaded('proveedor')
+            ? $this->proveedor
+            : $this->proveedor()->first();
         if ($proveedor) {
             return $proveedor->tipo == 'Empresa' ? $proveedor->nombre_empresa : $proveedor->nombre . ' ' . $proveedor->apellido;
         }
