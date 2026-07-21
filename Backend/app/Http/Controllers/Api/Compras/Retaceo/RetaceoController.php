@@ -468,7 +468,7 @@ class RetaceoController extends Controller
             'compras.proveedor',
             'gastos.gasto',
             'distribucion.producto',
-            'empresa',
+            'empresa.currency',
             'sucursal',
             'usuario'
         ])->findOrFail($id);

@@ -5,6 +5,7 @@ import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import Swal from 'sweetalert2';
 import { forkJoin } from 'rxjs';
 
@@ -42,7 +43,7 @@ interface ItemDistribucion {
   templateUrl: './retaceo.component.html',
   styleUrls: ['./retaceo.component.css'],
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, NgSelectModule],
+  imports: [CommonModule, FormsModule, RouterModule, NgSelectModule, CurrencyPipe],
 })
 export class RetaceoComponent implements OnInit {
   public retaceo: any = {};
