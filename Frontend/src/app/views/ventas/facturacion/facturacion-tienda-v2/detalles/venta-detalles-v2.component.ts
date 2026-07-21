@@ -22,6 +22,7 @@ import {
     asignacionLotesExcedeStock,
     factorConversionDetalle,
     limpiarAsignacionLotesDetalle,
+    limpiarLotesSiCambioCantidad,
     stockBaseAUnidadesDetalle,
     textoResumenLotesDetalle,
     totalAsignadoUnidadesLotes,
@@ -256,6 +257,13 @@ export class VentaDetallesV2Component implements OnInit {
                 ? redondearMoneda(sinLista * (1 + pctDetalle / 100)).toFixed(2)
                 : redondearMoneda(sinLista).toFixed(2);
         this.updateTotal(detalle);
+        // Mantener el valor del <select> alineado con las opciones del catálogo
+        // (updateTotal reformatea precio a 6 decimales y el select queda en blanco).
+        if (precioSeleccionado && precioSeleccionado.precio !== undefined && precioSeleccionado.precio !== null) {
+            detalle.precio = precioSeleccionado.precio;
+        } else {
+            detalle.precio = valSel;
+        }
     }
 
     /**
@@ -293,12 +301,18 @@ export class VentaDetallesV2Component implements OnInit {
         detalle.descuento_con_iva = redondearMoneda(descuentoConIva);
 
         detalle.total_costo  = (cantidad * parseFloat(detalle.costo ?? 0)).toFixed(4);
-        if (!this.skipLimpiarLotes && detalle.inventario_por_lotes && this.getLotesMetodologia() === 'Manual') {
-            limpiarAsignacionLotesDetalle(detalle);
-        }
         this.aplicarTipoGravado(detalle);
         this.update.emit(this.venta);
         this.sumTotal.emit();
+    }
+
+    /** Recalcula totales; limpia lotes solo si el usuario cambió la cantidad. */
+    public onCantidadChange(detalle: any, formatearPrecio: boolean = false): void {
+        limpiarLotesSiCambioCantidad(detalle, {
+            skipLimpiarLotes: this.skipLimpiarLotes,
+            metodologiaManual: this.getLotesMetodologia() === 'Manual',
+        });
+        this.updateTotal(detalle, formatearPrecio);
     }
 
     public modalSupervisor(detalle:any){
