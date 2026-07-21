@@ -88,3 +88,17 @@ export function limpiarAsignacionLotesDetalle(detalle: any): void {
     detalle.lote_id = null;
     detalle.lote = null;
 }
+
+/** Limpia lotes al editar cantidad (metodología Manual), salvo skip (p. ej. confirmar distribución). */
+export function limpiarLotesSiCambioCantidad(
+    detalle: any,
+    opts: { skipLimpiarLotes: boolean; metodologiaManual: boolean }
+): void {
+    if (
+        !opts.skipLimpiarLotes
+        && detalle?.inventario_por_lotes
+        && opts.metodologiaManual
+    ) {
+        limpiarAsignacionLotesDetalle(detalle);
+    }
+}

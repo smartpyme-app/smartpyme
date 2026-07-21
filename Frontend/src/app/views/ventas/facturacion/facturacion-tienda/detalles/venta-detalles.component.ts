@@ -15,6 +15,7 @@ import {
     asignacionLotesExcedeStock,
     factorConversionDetalle,
     limpiarAsignacionLotesDetalle,
+    limpiarLotesSiCambioCantidad,
     stockBaseAUnidadesDetalle,
     textoResumenLotesDetalle,
     totalAsignadoUnidadesLotes,
@@ -139,12 +140,18 @@ export class VentaDetallesComponent implements OnInit {
         }
 
         detalle.total_costo  = (cantidad * parseFloat(detalle.costo ?? 0)).toFixed(4);
-        if (!this.skipLimpiarLotes && detalle.inventario_por_lotes && this.getLotesMetodologia() === 'Manual') {
-            limpiarAsignacionLotesDetalle(detalle);
-        }
         this.aplicarTipoGravado(detalle);
         this.update.emit(this.venta);
         this.sumTotal.emit();
+    }
+
+    /** Recalcula totales; limpia lotes solo si el usuario cambió la cantidad. */
+    public onCantidadChange(detalle: any): void {
+        limpiarLotesSiCambioCantidad(detalle, {
+            skipLimpiarLotes: this.skipLimpiarLotes,
+            metodologiaManual: this.getLotesMetodologia() === 'Manual',
+        });
+        this.updateTotal(detalle);
     }
 
     public onTipoGravadoChange(detalle: any) {

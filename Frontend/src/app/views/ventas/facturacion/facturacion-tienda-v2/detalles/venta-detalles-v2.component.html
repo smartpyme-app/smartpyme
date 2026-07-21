@@ -199,8 +199,8 @@
                     <td style="width: 150px;">
                         <input type="number"
                             tooltip="{{ detalle.stock != null ? (detalle.stock > 0 ? detalle.stock + ' disponibles' : 'No hay disponibles') : '' }}"
-                            [(ngModel)]="detalle.cantidad" (change)="updateTotal(detalle)"
-                            (keyup)="updateTotal(detalle)" (wheel)="$event.preventDefault()" class="form-control"
+                            [(ngModel)]="detalle.cantidad" (change)="onCantidadChange(detalle)"
+                            (keyup)="onCantidadChange(detalle)" (wheel)="$event.preventDefault()" class="form-control"
                             [readonly]="esDetalleCantidadPorLotes(detalle)"
                             [title]="esDetalleCantidadPorLotes(detalle) ? 'La cantidad se define en Distribuir lotes' : ''"
                             [ngClass]="{ 'border-danger': ((detalle.cantidad > detalle.stock) && (detalle.stock != null)) }"
