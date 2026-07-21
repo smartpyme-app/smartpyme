@@ -61,7 +61,6 @@ export class FacturacionComponent implements OnInit {
   public sending = false;
   public emiting = false;
   public duplicarventa = false;
-  public facturarCotizacion = false;
   public api: boolean = false;
   public tieneAccesoPropina: boolean = false;
   public tieneFidelizacionHabilitada: boolean = false;
@@ -692,7 +691,6 @@ export class FacturacionComponent implements OnInit {
         this.alertService.error('No tiene permiso para facturar cotizaciones.');
         this.router.navigate(['/cotizaciones']);
       } else {
-        this.facturarCotizacion = true;
         this.apiService
           .read('venta/', +this.route.snapshot.queryParamMap.get('id_venta')!)
           .subscribe(
@@ -1726,28 +1724,6 @@ export class FacturacionComponent implements OnInit {
         // Actualizar siempre la venta local con la respuesta del backend (id, correlativo, etc.)
         // para que en un siguiente guardado se envíe el mismo correlativo.
         Object.assign(this.venta, venta);
-
-        // Si es cotización
-        if (this.facturarCotizacion) {
-          this.apiService
-            .read('venta/', +this.route.snapshot.queryParamMap.get('id_venta')!)
-            .subscribe(
-              (venta) => {
-                venta.estado = 'Facturada';
-                this.apiService.store('venta', venta).subscribe(
-                  (venta) => { },
-                  (error) => {
-                    this.alertService.error(error);
-                    this.saving = false;
-                  }
-                );
-              },
-              (error) => {
-                this.alertService.error(error);
-                this.saving = false;
-              }
-            );
-        }
 
         if (
           this.venta.cotizacion != 1 &&
