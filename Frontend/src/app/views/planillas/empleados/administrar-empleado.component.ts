@@ -13,6 +13,7 @@ import { TemplateRef, ChangeDetectorRef } from '@angular/core';
 import { PlanillaConstants } from '../../../constants/planilla.constants';
 import { createDuration } from '@fullcalendar/core/internal';
 import { CountryI18nService } from '@services/country-i18n.service';
+import { esElSalvadorFe as empresaEsElSalvador } from '@services/facturacion-electronica/fe-pais.util';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
@@ -105,6 +106,10 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
 
   }
 
+  esElSalvadorFe(): boolean {
+    return empresaEsElSalvador(this.apiService.auth_user()?.empresa);
+  }
+
   ngOnInit() {
     this.loadAll();
     this.loadCatalogos();
@@ -114,6 +119,7 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
     this.departamentosSV = JSON.parse(localStorage.getItem('departamentos')!);
     this.distritos = JSON.parse(localStorage.getItem('distritos')!);
     this.municipios = JSON.parse(localStorage.getItem('municipios')!);
+    const esSV = this.esElSalvadorFe();
     this.empleado = {
       estado: PlanillaConstants.ESTADOS_EMPLEADO.ACTIVO,
       tipo_contrato: PlanillaConstants.TIPOS_CONTRATO.PERMANENTE,
@@ -125,8 +131,8 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
         direccion: '',
       },
       configuracion_descuentos: {
-        aplicar_afp: true,
-        aplicar_isss: true,
+        aplicar_afp: esSV,
+        aplicar_isss: esSV,
       },
       dui_homologado: false,
     };
@@ -185,7 +191,7 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
       case TIPO_DOCUMENTO_DUI:
         return this.countryI18n.k('country.identity.name');
       case TIPO_DOCUMENTO_NIT:
-        return 'NIT';
+        return this.countryI18n.k('country.tax.nit');
       case TIPO_DOCUMENTO_ISSS:
         return 'ISSS';
       case TIPO_DOCUMENTO_AFP:
@@ -419,6 +425,7 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
   }
 
   private inicializarEmpleado() {
+    const esSV = this.esElSalvadorFe();
     this.empleado = {
       estado: PlanillaConstants.ESTADOS_EMPLEADO.ACTIVO,
       tipo_contrato: PlanillaConstants.TIPOS_CONTRATO.PERMANENTE,
@@ -430,8 +437,8 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
         direccion: '',
       },
       configuracion_descuentos: {
-        aplicar_afp: true,
-        aplicar_isss: true,
+        aplicar_afp: esSV,
+        aplicar_isss: esSV,
       },
       dui_homologado: false,
     };
@@ -587,8 +594,8 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
                   direccion: '',
                 },
                 configuracion_descuentos: empleado.configuracion_descuentos || {
-                  aplicar_afp: true,
-                  aplicar_isss: true,
+                  aplicar_afp: this.esElSalvadorFe(),
+                  aplicar_isss: this.esElSalvadorFe(),
                 },
                 dui_homologado: !!empleado.dui_homologado,
               };
@@ -614,6 +621,7 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
           );
         } else {
           // Modo creación - inicializar con valores por defecto
+          const esSV = this.esElSalvadorFe();
           this.empleado = {
             estado: PlanillaConstants.ESTADOS_EMPLEADO.ACTIVO,
             tipo_contrato: PlanillaConstants.TIPOS_CONTRATO.PERMANENTE,
@@ -627,8 +635,8 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
               direccion: '',
             },
             configuracion_descuentos: {
-              aplicar_afp: true,
-              aplicar_isss: true,
+              aplicar_afp: esSV,
+              aplicar_isss: esSV,
             },
             dui_homologado: false,
           };
@@ -765,9 +773,10 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
 
     // Asegurar que configuracion_descuentos tenga valores por defecto si no existe
     if (!this.empleado.configuracion_descuentos) {
+      const esSV = this.esElSalvadorFe();
       this.empleado.configuracion_descuentos = {
-        aplicar_afp: true,
-        aplicar_isss: true,
+        aplicar_afp: esSV,
+        aplicar_isss: esSV,
       };
     }
 

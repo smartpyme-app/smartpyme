@@ -395,6 +395,7 @@
               name="dui"
               class="form-control"
               required
+              [placeholder]="'country.identity.placeholder' | translate"
             />
           </div>
           <div class="form-group col-md-6">
@@ -404,29 +405,31 @@
               [(ngModel)]="empleado.nit"
               name="nit"
               class="form-control"
-              required
+              [required]="esElSalvadorFe()"
             />
           </div>
-          <div class="form-group col-md-6">
-            <label for="isss">Número ISSS:</label>
-            <input
-              type="text"
-              [(ngModel)]="empleado.isss"
-              name="isss"
-              class="form-control"
-              required
-            />
-          </div>
-          <div class="form-group col-md-6">
-            <label for="afp">Número AFP:</label>
-            <input
-              type="text"
-              [(ngModel)]="empleado.afp"
-              name="afp"
-              class="form-control"
-              required
-            />
-          </div>
+          @if (esElSalvadorFe()) {
+            <div class="form-group col-md-6">
+              <label for="isss">Número ISSS:</label>
+              <input
+                type="text"
+                [(ngModel)]="empleado.isss"
+                name="isss"
+                class="form-control"
+                required
+              />
+            </div>
+            <div class="form-group col-md-6">
+              <label for="afp">Número AFP:</label>
+              <input
+                type="text"
+                [(ngModel)]="empleado.afp"
+                name="afp"
+                class="form-control"
+                required
+              />
+            </div>
+          }
   
           <!-- Información Laboral -->
           @if (contabilidadHabilitada) {

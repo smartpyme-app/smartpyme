@@ -38,6 +38,9 @@ import { GastosSupervisorRestriccionGuard } from '@guards/gastos-supervisor-rest
 const gastosSupervisorRestriccion = [GastosSupervisorRestriccionGuard];
 import { RoleGuard } from '../../guards/role.guard';
 import { PermissionGuard } from '../../guards/permission.guard';
+import { FuncionalidadGuard } from '@guards/funcionalidad.guard';
+
+const retaceoGuards = [PermissionGuard, FuncionalidadGuard];
 
 const routes: Routes = [
   {
@@ -244,16 +247,31 @@ const routes: Routes = [
       {
         path: 'retaceos',
         loadComponent: () => import('./retaceo/retaceos-list.component').then(m => m.RetaceosListComponent),
+        canActivate: retaceoGuards,
+        data: {
+          permission: 'compras.retaceo.ver',
+          funcionalidadSlug: 'contabilidad',
+        },
         title: 'Retaceos'
       },
       {
         path: 'retaceo/crear',
         loadComponent: () => import('./retaceo/retaceo.component').then(m => m.RetaceoComponent),
+        canActivate: retaceoGuards,
+        data: {
+          permission: 'compras.retaceo.crear',
+          funcionalidadSlug: 'contabilidad',
+        },
         title: 'Retaceo'
       },
       {
         path: 'retaceo/:id',
         loadComponent: () => import('./retaceo/retaceo.component').then(m => m.RetaceoComponent),
+        canActivate: retaceoGuards,
+        data: {
+          permission: 'compras.retaceo.ver',
+          funcionalidadSlug: 'contabilidad',
+        },
         title: 'Retaceo'
       },
       {

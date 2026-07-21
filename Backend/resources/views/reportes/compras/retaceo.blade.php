@@ -47,6 +47,7 @@
     </style>
 </head>
 <body>
+    @php $simbolo_moneda = optional(optional($retaceo->empresa)->currency)->currency_symbol ?? '$'; @endphp
     <table>
         <tbody>
             <tr>
@@ -158,26 +159,26 @@
                 <tr>
                     <td class="border-bottom">{{ $gasto->tipo_gasto }}</td>
                     <td class="border-bottom">{{ $gasto->gasto->concepto ?? 'N/A' }}</td>
-                    <td class="border-bottom text-right">${{ number_format($gasto->monto, 2) }}</td>
+                    <td class="border-bottom text-right">{{ $simbolo_moneda }}{{ number_format($gasto->monto, 2) }}</td>
                 </tr>
             @endforeach
         </tbody>
         <tfoot>
             <tr>
                 <td colspan="2" class="text-right fw-bold">Total Transporte:</td>
-                <td class="text-right fw-bold">${{ number_format($totalTransporte, 2) }}</td>
+                <td class="text-right fw-bold">{{ $simbolo_moneda }}{{ number_format($totalTransporte, 2) }}</td>
             </tr>
             <tr>
                 <td colspan="2" class="text-right fw-bold">Total Seguro:</td>
-                <td class="text-right fw-bold">${{ number_format($totalSeguro, 2) }}</td>
+                <td class="text-right fw-bold">{{ $simbolo_moneda }}{{ number_format($totalSeguro, 2) }}</td>
             </tr>
             <tr>
                 <td colspan="2" class="text-right fw-bold">Total Otros:</td>
-                <td class="text-right fw-bold">${{ number_format($totalOtros, 2) }}</td>
+                <td class="text-right fw-bold">{{ $simbolo_moneda }}{{ number_format($totalOtros, 2) }}</td>
             </tr>
             <tr>
                 <td colspan="2" class="text-right fw-bold border-top">Total de Gastos:</td>
-                <td class="text-right fw-bold border-top">${{ number_format($retaceo->total_gastos, 2) }}</td>
+                <td class="text-right fw-bold border-top">{{ $simbolo_moneda }}{{ number_format($retaceo->total_gastos, 2) }}</td>
             </tr>
         </tfoot>
     </table>
@@ -227,16 +228,16 @@
                 <tr>
                     <td class="border-bottom">{{ $item->producto->nombre ?? 'Producto sin nombre' }}</td>
                     <td class="border-bottom text-center">{{ number_format($item->cantidad, 0) }}</td>
-                    <td class="border-bottom text-right">${{ number_format($item->costo_original, 2) }}</td>
-                    <td class="border-bottom text-right">${{ number_format($item->valor_fob, 2) }}</td>
+                    <td class="border-bottom text-right">{{ $simbolo_moneda }}{{ number_format($item->costo_original, 2) }}</td>
+                    <td class="border-bottom text-right">{{ $simbolo_moneda }}{{ number_format($item->valor_fob, 2) }}</td>
                     <td class="border-bottom text-right">{{ number_format($item->porcentaje_distribucion, 2) }}%</td>
                     <td class="border-bottom text-right">{{ number_format($item->porcentaje_dai ?? 0, 2) }}%</td>
-                    <td class="border-bottom text-right">${{ number_format($item->monto_transporte, 2) }}</td>
-                    <td class="border-bottom text-right">${{ number_format($item->monto_seguro, 2) }}</td>
-                    <td class="border-bottom text-right">${{ number_format($item->monto_dai, 2) }}</td>
-                    <td class="border-bottom text-right">${{ number_format($item->monto_otros, 2) }}</td>
-                    <td class="border-bottom text-right">${{ number_format($item->costo_landed, 2) }}</td>
-                    <td class="border-bottom text-right fw-bold">${{ number_format($item->costo_retaceado, 2) }}</td>
+                    <td class="border-bottom text-right">{{ $simbolo_moneda }}{{ number_format($item->monto_transporte, 2) }}</td>
+                    <td class="border-bottom text-right">{{ $simbolo_moneda }}{{ number_format($item->monto_seguro, 2) }}</td>
+                    <td class="border-bottom text-right">{{ $simbolo_moneda }}{{ number_format($item->monto_dai, 2) }}</td>
+                    <td class="border-bottom text-right">{{ $simbolo_moneda }}{{ number_format($item->monto_otros, 2) }}</td>
+                    <td class="border-bottom text-right">{{ $simbolo_moneda }}{{ number_format($item->costo_landed, 2) }}</td>
+                    <td class="border-bottom text-right fw-bold">{{ $simbolo_moneda }}{{ number_format($item->costo_retaceado, 2) }}</td>
                 </tr>
             @endforeach
         </tbody>
@@ -244,16 +245,16 @@
             <tr class="bg-light">
                 <td class="fw-bold border-top">TOTALES</td>
                 <td class="text-center fw-bold border-top">{{ number_format($totalCantidad, 0) }}</td>
-                <td class="text-right fw-bold border-top">${{ number_format($totalCostoOriginal, 2) }}</td>
-                <td class="text-right fw-bold border-top">${{ number_format($totalFOB, 2) }}</td>
+                <td class="text-right fw-bold border-top">{{ $simbolo_moneda }}{{ number_format($totalCostoOriginal, 2) }}</td>
+                <td class="text-right fw-bold border-top">{{ $simbolo_moneda }}{{ number_format($totalFOB, 2) }}</td>
                 <td class="text-right fw-bold border-top">100%</td>
                 <td class="text-right fw-bold border-top">-</td>
-                <td class="text-right fw-bold border-top">${{ number_format($totalTransporte, 2) }}</td>
-                <td class="text-right fw-bold border-top">${{ number_format($totalSeguro, 2) }}</td>
-                <td class="text-right fw-bold border-top">${{ number_format($totalDAI, 2) }}</td>
-                <td class="text-right fw-bold border-top">${{ number_format($totalOtros, 2) }}</td>
-                <td class="text-right fw-bold border-top">${{ number_format($totalLanded, 2) }}</td>
-                <td class="text-right fw-bold border-top">${{ number_format($retaceo->total_retaceado, 2) }}</td>
+                <td class="text-right fw-bold border-top">{{ $simbolo_moneda }}{{ number_format($totalTransporte, 2) }}</td>
+                <td class="text-right fw-bold border-top">{{ $simbolo_moneda }}{{ number_format($totalSeguro, 2) }}</td>
+                <td class="text-right fw-bold border-top">{{ $simbolo_moneda }}{{ number_format($totalDAI, 2) }}</td>
+                <td class="text-right fw-bold border-top">{{ $simbolo_moneda }}{{ number_format($totalOtros, 2) }}</td>
+                <td class="text-right fw-bold border-top">{{ $simbolo_moneda }}{{ number_format($totalLanded, 2) }}</td>
+                <td class="text-right fw-bold border-top">{{ $simbolo_moneda }}{{ number_format($retaceo->total_retaceado, 2) }}</td>
             </tr>
         </tfoot>
     </table>

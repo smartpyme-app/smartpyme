@@ -9,6 +9,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
@@ -18,7 +19,7 @@ import Swal from 'sweetalert2';
     selector: 'app-retaceos-list',
     templateUrl: './retaceos-list.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, PaginationComponent, PopoverModule, TooltipModule],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, PaginationComponent, PopoverModule, TooltipModule, CurrencyPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class RetaceosListComponent extends BaseModalComponent implements OnInit {

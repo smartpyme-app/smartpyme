@@ -76,7 +76,7 @@ class UpdateEmpleadoRequest extends FormRequest
                             ->exists();
 
                         if ($existe) {
-                            $validator->errors()->add('dui', 'El DUI ya está registrado.');
+                            $validator->errors()->add('dui', 'La identificación ya está registrada.');
                         }
                     }
                 }
@@ -92,7 +92,7 @@ class UpdateEmpleadoRequest extends FormRequest
         return [
             'nombres.max' => 'Los nombres no pueden exceder 100 caracteres.',
             'apellidos.max' => 'Los apellidos no pueden exceder 100 caracteres.',
-            'dui.unique' => 'El DUI ya está registrado.',
+            'dui.unique' => 'La identificación ya está registrada.',
             'fecha_nacimiento.date' => 'La fecha de nacimiento debe ser una fecha válida.',
             'email.email' => 'El correo electrónico debe ser válido.',
             'salario_base.numeric' => 'El salario base debe ser un número.',

@@ -1,5 +1,6 @@
 import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import {
   pagoCuentaIvaResumenLibroIva,
   resumenIvaLibroIva,
@@ -19,7 +20,7 @@ import {
 @Component({
   selector: 'app-libro-iva-resumen-panel',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, CurrencyPipe],
   templateUrl: './libro-iva-resumen-panel.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

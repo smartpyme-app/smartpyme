@@ -5,6 +5,7 @@ import { Router, RouterModule } from '@angular/router';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { LibroIvaPaisService } from '@views/contabilidad/libro-iva-shared/libro-iva-pais.service';
 import {
   comprasPorImpuestoResumenLibroIva,
@@ -25,7 +26,7 @@ import { LibroIvaResumenDescargasComponent } from '@views/contabilidad/libro-iva
   selector: 'app-libro-iva-resumen',
   templateUrl: './libro-iva-resumen.component.html',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, TooltipModule, LibroIvaResumenDescargasComponent],
+  imports: [CommonModule, FormsModule, RouterModule, TooltipModule, CurrencyPipe, LibroIvaResumenDescargasComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LibroIvaResumenComponent implements OnInit {

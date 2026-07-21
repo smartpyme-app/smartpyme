@@ -8,6 +8,7 @@ import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
+import { esElSalvadorFe as empresaEsElSalvador } from '@services/facturacion-electronica/fe-pais.util';
 import { PlanillaConstants } from '../../../constants/planilla.constants';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
@@ -81,6 +82,10 @@ export class EmpleadosComponent extends BaseCrudComponent<any> implements OnInit
           this.cdr.markForCheck();
         }
       });
+  }
+
+  esElSalvadorFe(): boolean {
+    return empresaEsElSalvador(this.apiService.auth_user()?.empresa);
   }
   
   public override loadAll() {
