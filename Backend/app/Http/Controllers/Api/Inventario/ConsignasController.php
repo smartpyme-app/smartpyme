@@ -168,8 +168,7 @@ class ConsignasController extends Controller
                 'proveedor',
                 'bodega:id,nombre',
                 'sucursal:id,nombre',
-                'detalles.producto:id,nombre,codigo,img,id_categoria',
-                'detalles.producto.categoria:id,nombre',
+                'detalles.producto:id,nombre,codigo',
             ])
             ->orderByDesc('fecha')
             ->orderByDesc('id')
