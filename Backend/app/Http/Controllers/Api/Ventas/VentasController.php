@@ -1041,6 +1041,14 @@ class VentasController extends Controller
                 $this->crearPaqueteStubBoxfulSiAplica($venta);
             }
 
+            // Si la factura proviene de una cotización, marcarla como Facturada en la misma transacción
+            if ((int) ($request->cotizacion ?? 0) === 0 && !empty($venta->num_cotizacion)) {
+                Venta::where('id', $venta->num_cotizacion)
+                    ->where('cotizacion', 1)
+                    ->where('estado', '!=', 'Anulada')
+                    ->update(['estado' => 'Facturada']);
+            }
+
             DB::commit();
             $venta->refresh();
             // Exponer stub BoxFul al FE para abrir el wizard con paqueteId real
