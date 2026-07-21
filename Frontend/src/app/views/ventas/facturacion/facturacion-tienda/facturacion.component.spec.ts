@@ -98,4 +98,80 @@ describe('FacturacionComponent', () => {
     expect(component.venta.impuestos[1].monto).toBe(5);
     expect(component.venta.total).toBe('105.00');
   });
+
+  it('al cambiar bodega de la misma sucursal recarga documentos sin vaciarlos', () => {
+    const component: any = Object.create(FacturacionComponent.prototype);
+    component.bodegas = [
+      { id: 1, id_sucursal: 10, nombre: 'A' },
+      { id: 2, id_sucursal: 10, nombre: 'B' },
+    ];
+    component.venta = { id_bodega: '2', id_sucursal: 10, cotizacion: 0 };
+    component.cargarDocumentos = jasmine.createSpy('cargarDocumentos');
+
+    component.setBodega();
+
+    expect(component.venta.id_bodega).toBe(2);
+    expect(component.venta.id_sucursal).toBe(10);
+    expect(component.cargarDocumentos).toHaveBeenCalled();
+  });
+
+  it('al cambiar bodega de otra sucursal recarga documentos por sucursal', () => {
+    const component: any = Object.create(FacturacionComponent.prototype);
+    component.bodegas = [
+      { id: 1, id_sucursal: 10, nombre: 'A' },
+      { id: 2, id_sucursal: 20, nombre: 'B' },
+    ];
+    component.venta = { id_bodega: '2', id_sucursal: 10, cotizacion: 0 };
+    component.cargarDocumentos = jasmine.createSpy('cargarDocumentos');
+
+    component.setBodega();
+
+    expect(component.venta.id_sucursal).toBe(20);
+    expect(component.cargarDocumentos).toHaveBeenCalled();
+  });
+
+  it('no falla si la bodega seleccionada no existe en la lista', () => {
+    const component: any = Object.create(FacturacionComponent.prototype);
+    component.bodegas = [{ id: 1, id_sucursal: 10, nombre: 'A' }];
+    component.venta = { id_bodega: 999, id_sucursal: 10 };
+    component.cargarDocumentos = jasmine.createSpy('cargarDocumentos');
+
+    expect(() => component.setBodega()).not.toThrow();
+    expect(component.venta.id_sucursal).toBe(10);
+    expect(component.cargarDocumentos).not.toHaveBeenCalled();
+  });
+
+  it('filtra documentos por la sucursal de la bodega seleccionada', () => {
+    const component: any = Object.create(FacturacionComponent.prototype);
+    component.documentosLoadSeq = 0;
+    component.nombresDocumentosVentaNormales = [
+      'Factura',
+      'Crédito fiscal',
+      'Ticket',
+    ];
+    component.bodegas = [{ id: 5, id_sucursal: 10, nombre: 'Principal' }];
+    component.venta = { id_bodega: 5, id_sucursal: 99, cotizacion: 0 };
+    component.documentosSucursal = [];
+    component.documentos = [];
+    const docsApi = [
+      { id: 1, nombre: 'Factura', id_sucursal: 10, predeterminado: 1, correlativo: 1 },
+      { id: 2, nombre: 'Crédito fiscal', id_sucursal: 10, predeterminado: 0, correlativo: 2 },
+      { id: 3, nombre: 'Factura', id_sucursal: 20, predeterminado: 0, correlativo: 3 },
+      { id: 4, nombre: 'Cotización', id_sucursal: 10, predeterminado: 0, correlativo: 4 },
+    ];
+    component.apiService = {
+      getAll: jasmine.createSpy('getAll').and.callFake(() => ({
+        subscribe: (ok: any) => ok(docsApi),
+      })),
+    };
+    component.alertService = { error: jasmine.createSpy('error') };
+
+    component.cargarDocumentos();
+
+    expect(component.documentos.map((d: any) => d.nombre)).toEqual([
+      'Factura',
+      'Crédito fiscal',
+    ]);
+    expect(component.venta.id_documento).toBe(1);
+  });
 });

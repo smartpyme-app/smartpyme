@@ -37,6 +37,7 @@ export class FacturacionComponent implements OnInit {
   public usuarios: any = [];
   public documentos: any = [];
   private documentosSucursal: any[] = [];
+  private documentosLoadSeq = 0;
   private readonly nombresDocumentosVentaNormales = [
     'Factura',
     'Crédito fiscal',
@@ -287,6 +288,9 @@ export class FacturacionComponent implements OnInit {
               item.id_sucursal == this.apiService.auth_user().id_sucursal
           );
         }
+        // Alinear sucursal con la bodega y recargar documentos (el filtro es por sucursal).
+        this.sincronizarSucursalDesdeBodega();
+        this.cargarDocumentos();
       },
       (error) => {
         this.alertService.error(error);
@@ -398,17 +402,50 @@ export class FacturacionComponent implements OnInit {
   }
 
   public cargarDocumentos() {
+    const seq = ++this.documentosLoadSeq;
     this.apiService.getAll('documentos/list').subscribe(
       (documentos) => {
-        this.documentosSucursal = documentos.filter(
-          (doc: any) => doc.id_sucursal == this.venta.id_sucursal
+        if (seq !== this.documentosLoadSeq) {
+          return;
+        }
+        const idSucursal = this.obtenerIdSucursalDocumentos();
+        this.documentosSucursal = (documentos || []).filter(
+          (doc: any) =>
+            idSucursal != null && Number(doc.id_sucursal) === Number(idSucursal)
         );
         this.aplicarFiltroDocumentosVenta();
       },
       (error) => {
+        if (seq !== this.documentosLoadSeq) {
+          return;
+        }
         this.alertService.error(error);
       }
     );
+  }
+
+  /** Prioriza la sucursal de la bodega seleccionada; si no hay, usa la de la venta. */
+  private obtenerIdSucursalDocumentos(): number | null {
+    const bodega = this.bodegas?.find(
+      (b: any) => Number(b.id) === Number(this.venta?.id_bodega)
+    );
+    if (bodega?.id_sucursal != null && bodega.id_sucursal !== '') {
+      return Number(bodega.id_sucursal);
+    }
+    if (this.venta?.id_sucursal != null && this.venta.id_sucursal !== '') {
+      return Number(this.venta.id_sucursal);
+    }
+    return null;
+  }
+
+  private sincronizarSucursalDesdeBodega(): void {
+    const bodega = this.bodegas?.find(
+      (b: any) => Number(b.id) === Number(this.venta?.id_bodega)
+    );
+    if (bodega?.id_sucursal != null && bodega.id_sucursal !== '') {
+      this.venta.id_sucursal = bodega.id_sucursal;
+      this.venta.id_bodega = Number(bodega.id);
+    }
   }
 
   private aplicarFiltroDocumentosVenta() {
@@ -432,9 +469,16 @@ export class FacturacionComponent implements OnInit {
       return;
     }
 
-    this.documentos = this.documentosSucursal.filter((doc: any) =>
-      this.nombresDocumentosVentaNormales.includes(doc.nombre)
+    const porWhitelist = this.documentosSucursal.filter((doc: any) =>
+      this.nombresDocumentosVentaNormales.includes(String(doc.nombre || '').trim())
     );
+    // Si no hay match exacto de nombres, no dejar el select vacío: excluir solo cotización/OC.
+    this.documentos = porWhitelist.length
+      ? porWhitelist
+      : this.documentosSucursal.filter(
+          (doc: any) =>
+            doc.nombre !== 'Cotización' && doc.nombre !== 'Orden de compra'
+        );
 
     const documentoActual = this.documentos.find(
       (x: any) => x.id == this.venta.id_documento
@@ -777,7 +821,7 @@ export class FacturacionComponent implements OnInit {
       );
       console.log(this.venta);
     }
-    this.cargarDocumentos();
+    // Documentos se cargan al resolver bodegas (sucursal de la bodega) o en setBodega.
   }
   // Método para procesar productos de orden de compra
   public procesarProductosOrdenCompra(detalles: any[]) {
@@ -1875,46 +1919,16 @@ export class FacturacionComponent implements OnInit {
   }
 
   public setBodega() {
-
-    let bodegaSeleccionada = this.bodegas.find((b: any) => b.id == this.venta.id_bodega);
-    // console.log("bodega", bodegaSeleccionada);
-    this.venta.id_sucursal = bodegaSeleccionada.id_sucursal;
-
-    if (bodegaSeleccionada) {
-      // console.log("bodegaSeleccionada", bodegaSeleccionada);
-      this.venta.id_sucursal = bodegaSeleccionada.id_sucursal;
-
-      this.apiService.getAll('documentos/list').subscribe(
-        (documentos) => {
-          this.documentos = documentos.filter(
-            (x: any) => x.id_sucursal == this.venta.id_sucursal
-          );
-
-          if (this.venta.cotizacion == 1) {
-            this.documentos = this.documentos.filter(
-              (x: any) => x.nombre == 'Cotización'
-            );
-          } else {
-            this.documentos = this.documentos.filter(
-              (x: any) =>
-                x.nombre !== 'Cotización' && x.nombre !== 'Orden de compra'
-            );
-          }
-
-          let documentoPredeterminado = this.documentos.find(
-            (x: any) => x.predeterminado == 1
-          );
-          if (documentoPredeterminado) {
-            this.setDocumento(documentoPredeterminado.id);
-          } else if (this.documentos.length > 0) {
-            this.setDocumento(this.documentos[0].id);
-          }
-        },
-        (error) => {
-          this.alertService.error(error);
-        }
-      );
+    const bodegaSeleccionada = this.bodegas?.find(
+      (b: any) => Number(b.id) === Number(this.venta.id_bodega)
+    );
+    if (!bodegaSeleccionada) {
+      return;
     }
+
+    this.venta.id_bodega = Number(bodegaSeleccionada.id);
+    this.venta.id_sucursal = bodegaSeleccionada.id_sucursal;
+    this.cargarDocumentos();
   }
 
   public isColumnEnabled(columnName: string): boolean {
