@@ -4,10 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Helpers\FeTipoDteHelper;
 use App\Models\Ventas\Venta;
 use App\Models\Ventas\Detalle;
 use App\Models\Ventas\Impuesto;
 use App\Models\Admin\Documento;
+use App\Models\Ventas\Clientes\Cliente;
 
 class OrdenPago extends Model
 {
@@ -72,15 +74,35 @@ class OrdenPago extends Model
            throw new \Exception('Ya se ha generado una venta para esta orden');
         }
 
-        $documento = Documento::where('id_empresa', 2)->where('nombre', 'Factura')->first();
-        $id_cliente = $this->usuario()->first()->empresa()->first()->id_cliente;
+        $usuario = $this->usuario()->first();
+        if (!$usuario) {
+           throw new \Exception('La orden no tiene usuario asociado');
+        }
+
+        $empresaCliente = $usuario->empresa()->first();
+        if (!$empresaCliente) {
+           throw new \Exception('El usuario no tiene empresa asociada');
+        }
+
+        $id_cliente = $empresaCliente->id_cliente;
+        if (!$id_cliente) {
+           throw new \Exception('La empresa no esta vinculada a un cliente');
+        }
+
+        $cliente = Cliente::withoutGlobalScopes()->find($id_cliente);
+        if (!$cliente) {
+           throw new \Exception('Cliente receptor no encontrado');
+        }
+
+        [$documento, $tipoDte] = FeTipoDteHelper::resolverDocumentoYTipoDte(
+            $cliente,
+            $empresaCliente->id_documento
+        );
+
         $producto = $this->plan()->first()->producto()->first();
 
         if (!$documento) {
            throw new \Exception('No hay documento');
-        }
-        if (!$id_cliente) {
-           throw new \Exception('La empresa no esta vinculada a un cliente');
         }
         if (!$producto) {
            throw new \Exception('El plan no esta vinculado a un producto');
@@ -92,6 +114,7 @@ class OrdenPago extends Model
             'estado' => 'Pagada',
             'id_canal' => 185,
             'id_documento' => $documento->id,
+            'tipo_dte' => $tipoDte,
             'forma_pago' => 'N1co',
             'condicion' => 'Contado',
             'fecha_pago' => date('Y-m-d'),
@@ -110,7 +133,7 @@ class OrdenPago extends Model
             'id_cliente' => $id_cliente,
             'id_usuario' => 114,
             'id_vendedor' => $this->id_usuario,
-            'id_empresa' => 2,
+            'id_empresa' => FeTipoDteHelper::EMPRESA_EMISORA_ID,
             'id_sucursal' => 76
         ]);
 

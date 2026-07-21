@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use App\Constants\FacturacionElectronica\FEConstants;
+use App\Helpers\FeTipoDteHelper;
 
 class GenerarFacturasSuscripciones extends Command
 {
@@ -184,38 +184,14 @@ public function handle()
     }
 }
 
-    private function determinarTipoDte(Cliente $cliente, ?string $tipoFacturaConfigurado): string
-    {
-        if ($tipoFacturaConfigurado !== null && $tipoFacturaConfigurado !== '') {
-            $tipo = str_pad(trim((string) $tipoFacturaConfigurado), 2, '0', STR_PAD_LEFT);
-            if (in_array($tipo, ['01', '03', '11'], true)) {
-                return $tipo;
-            }
-        }
-
-        if (!empty($cliente->cod_pais) && strtoupper($cliente->cod_pais) !== 'SV') {
-            return FEConstants::TIPO_DTE_FACTURAS_DE_EXPORTACION;
-        }
-
-        if (!empty($cliente->ncr)) {
-            return FEConstants::TIPO_DTE_COMPROBANTE_DE_CREDITO_FISCAL;
-        }
-
-        if (!empty($cliente->nit) && $cliente->tipo_documento === '36') {
-            return FEConstants::TIPO_DTE_COMPROBANTE_DE_CREDITO_FISCAL;
-        }
-
-        return FEConstants::TIPO_DTE_FACTURA_CONSUMIDOR_FINAL;
-    }
-
     private function emitirFactura(Suscripcion $suscripcion): ?Venta
     {
         $suscripcion->loadMissing(['empresa', 'plan']);
 
         // Empresa emisora (Super Admin) - quien emite la factura
-        $empresaEmisora = Empresa::find(2);
+        $empresaEmisora = Empresa::find(FeTipoDteHelper::EMPRESA_EMISORA_ID);
         if (!$empresaEmisora instanceof Empresa) {
-            throw new \RuntimeException('Empresa emisora (Super Admin ID 2) no encontrada en el sistema.');
+            throw new \RuntimeException('Empresa emisora (Super Admin ID ' . FeTipoDteHelper::EMPRESA_EMISORA_ID . ') no encontrada en el sistema.');
         }
 
         // Empresa cliente - quien recibe la factura
@@ -243,7 +219,7 @@ public function handle()
             throw new \RuntimeException('Falta mh_pwd_certificado (contraseña del certificado) en la empresa emisora.');
         }
 
-        $tipoDte = $this->determinarTipoDte($cliente, $suscripcion->tipo_factura);
+        $tipoDte = FeTipoDteHelper::determinarTipoDte($cliente, $empresaEmisora->id_documento);
 
         $venta = null;
         $dteJson = null;
