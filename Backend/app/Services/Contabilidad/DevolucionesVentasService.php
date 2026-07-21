@@ -79,22 +79,43 @@ class DevolucionesVentasService
                 throw new Exception('No se encontró la cuenta contable de devoluciones de ventas', 400);
             }
 
-            // Neto gravado + exentas / no sujetas / cuenta a terceros (sin IVA ni retención)
+            // Neto gravado + exentas / no sujetas (sin IVA, retencion ni cuenta a terceros)
             $montoDevolucion = (float) $devolucion->sub_total
                 + (float) ($devolucion->exenta ?? 0)
-                + (float) ($devolucion->no_sujeta ?? 0)
-                + (float) ($devolucion->cuenta_a_terceros ?? 0);
+                + (float) ($devolucion->no_sujeta ?? 0);
 
             Detalle::create([
                 'id_cuenta' => $cuenta_devoluciones->id,
                 'codigo' => $cuenta_devoluciones->codigo,
                 'nombre_cuenta' => $cuenta_devoluciones->nombre,
-                'concepto' => 'Devolución de ventas',
+                'concepto' => 'Devolucion de ventas',
                 'debe' => $montoDevolucion,
                 'haber' => null,
                 'saldo' => 0,
                 'id_partida' => $partida_ingresos->id,
             ]);
+
+            if ($devolucion->cuenta_a_terceros > 0) {
+                if (!$configuracion->id_cuenta_cuenta_a_terceros) {
+                    throw new Exception('No se ha configurado la cuenta contable de cuenta a terceros', 400);
+                }
+
+                $cuenta_terceros = Cuenta::find($configuracion->id_cuenta_cuenta_a_terceros);
+                if (!$cuenta_terceros) {
+                    throw new Exception('No se encontro la cuenta contable de cuenta a terceros', 400);
+                }
+
+                Detalle::create([
+                    'id_cuenta' => $cuenta_terceros->id,
+                    'codigo' => $cuenta_terceros->codigo,
+                    'nombre_cuenta' => $cuenta_terceros->nombre,
+                    'concepto' => 'Cobros a cuenta de terceros (devolucion)',
+                    'debe' => $devolucion->cuenta_a_terceros,
+                    'haber' => null,
+                    'saldo' => 0,
+                    'id_partida' => $partida_ingresos->id,
+                ]);
+            }
 
             if ($devolucion->iva > 0) {
                 if (!$configuracion->id_cuenta_iva_ventas) {

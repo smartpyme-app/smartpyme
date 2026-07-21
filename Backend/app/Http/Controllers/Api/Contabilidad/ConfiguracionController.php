@@ -29,6 +29,7 @@ class ConfiguracionController extends Controller
             'id_cuenta_iva_retenido_ventas'   => 'required|numeric',
             'id_cuenta_renta_retenida_ventas'   => 'required|numeric',
             'id_cuenta_cxc'   => 'required|numeric',
+            'id_cuenta_cuenta_a_terceros' => 'nullable|numeric',
             
             'id_cuenta_costo_venta'   => 'required|numeric',
 

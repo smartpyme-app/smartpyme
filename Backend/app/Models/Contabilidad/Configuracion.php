@@ -22,6 +22,7 @@ class Configuracion extends Model
         'id_cuenta_cxp',
         'id_cuenta_devoluciones_proveedores',
         'id_cuenta_propina_ventas',
+        'id_cuenta_cuenta_a_terceros',
 
         'id_cuenta_iva_ventas',
         'id_cuenta_iva_retenido_ventas',
