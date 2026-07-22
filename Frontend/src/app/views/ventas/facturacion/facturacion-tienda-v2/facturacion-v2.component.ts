@@ -511,6 +511,17 @@ export class FacturacionV2Component implements OnInit {
     this.sumTotal();
   }
 
+  /**
+   * Al duplicar o facturar cotización se limpia el documento de la venta base.
+   * Hay que recargar/reasignar; si no, el select puede mostrar un valor visual
+   * con id_documento null y el API responde "campo id documento es obligatorio".
+   */
+  private reiniciarDocumentoTrasCargarVentaBase(): void {
+    this.venta.id_documento = null;
+    this.venta.correlativo = null;
+    this.cargarDocumentos();
+  }
+
   public cargarDatosIniciales() {
     this.venta = {};
     this.habilitarCuentaTerceros = false;
@@ -683,8 +694,7 @@ export class FacturacionV2Component implements OnInit {
             this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
             this.venta.fecha = this.apiService.date();
             this.venta.fecha_pago = this.apiService.date();
-            this.venta.id_documento = null;
-            this.venta.correlativo = null;
+            this.reiniciarDocumentoTrasCargarVentaBase();
             this.venta.tipo_dte = null;
             this.venta.numero_control = null;
             this.venta.codigo_generacion = null;
@@ -733,8 +743,6 @@ export class FacturacionV2Component implements OnInit {
               this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
               this.venta.fecha = this.apiService.date();
               this.venta.fecha_pago = this.apiService.date();
-              this.venta.id_documento = null;
-              this.venta.correlativo = null;
               this.venta.estado = 'Pagada';
               this.venta.condicion = 'Contado';
               this.venta.impuestos = this.impuestos;
@@ -788,6 +796,7 @@ export class FacturacionV2Component implements OnInit {
                 );
               });
 
+              this.reiniciarDocumentoTrasCargarVentaBase();
               this.sumTotal();
 
               // Para proyectos
@@ -1757,6 +1766,16 @@ export class FacturacionV2Component implements OnInit {
   }
 
   private tieneDetallesInvalidosParaFacturar(): boolean {
+    if (this.venta.id_documento == null || this.venta.id_documento === '') {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Documento requerido',
+        text: 'Debe seleccionar un documento para procesar la venta.',
+        confirmButtonText: 'Entendido',
+      });
+      return true;
+    }
+
     const detalles = this.venta.detalles || [];
 
     const sinCantidad = detalles.find((detalle: any) => {

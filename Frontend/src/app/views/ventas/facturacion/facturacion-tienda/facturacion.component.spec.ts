@@ -1,4 +1,5 @@
 import { SumPipe } from '@pipes/sum.pipe';
+import Swal from 'sweetalert2';
 import { FacturacionComponent } from './facturacion.component';
 
 describe('FacturacionComponent', () => {
@@ -173,6 +174,30 @@ describe('FacturacionComponent', () => {
       'Crédito fiscal',
     ]);
     expect(component.venta.id_documento).toBe(1);
+  });
+
+  it('bloquea facturar si id_documento está vacío', () => {
+    const component: any = Object.create(FacturacionComponent.prototype);
+    component.venta = {
+      id_documento: null,
+      detalles: [{ cantidad: 1, total: 10, descripcion: 'Prod' }],
+    };
+    spyOn(Swal, 'fire');
+
+    expect(component.tieneDetallesInvalidosParaFacturar()).toBeTrue();
+    expect(Swal.fire).toHaveBeenCalled();
+  });
+
+  it('al reiniciar documento tras cargar venta base limpia y recarga documentos', () => {
+    const component: any = Object.create(FacturacionComponent.prototype);
+    component.venta = { id_documento: 99, correlativo: 5 };
+    component.cargarDocumentos = jasmine.createSpy('cargarDocumentos');
+
+    component.reiniciarDocumentoTrasCargarVentaBase();
+
+    expect(component.venta.id_documento).toBeNull();
+    expect(component.venta.correlativo).toBeNull();
+    expect(component.cargarDocumentos).toHaveBeenCalled();
   });
 
   it('no vuelve a facturar si saving o emiting ya están activos', () => {
