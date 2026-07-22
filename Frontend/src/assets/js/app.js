@@ -40,7 +40,13 @@ $(document).ready(function() {
 $(document).keydown(function(tecla){
    let letra;
    letra = '.tcla-' + tecla.key;
-   $(letra).click();
+   $(letra).each(function () {
+      // No disparar atajos sobre botones deshabilitados (p. ej. F8 durante facturación)
+      if (this.disabled || $(this).prop('disabled')) {
+         return;
+      }
+      $(this).trigger('click');
+   });
  // console.log(letra);
     if (tecla.key == 'F5') {
         $('#lector').focus();
