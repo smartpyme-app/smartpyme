@@ -174,4 +174,51 @@ describe('FacturacionComponent', () => {
     ]);
     expect(component.venta.id_documento).toBe(1);
   });
+
+  it('no vuelve a facturar si saving o emiting ya están activos', () => {
+    const component: any = Object.create(FacturacionComponent.prototype);
+    component.saving = true;
+    component.emiting = false;
+    component.mensajeErrorBanco = '';
+    component.requiereBanco = () => false;
+    component.tieneDetallesInvalidosParaFacturar = () => false;
+    component.onSubmit = jasmine.createSpy('onSubmit');
+    spyOn(window, 'confirm').and.returnValue(true);
+
+    component.onFacturar();
+
+    expect(component.onSubmit).not.toHaveBeenCalled();
+  });
+
+  it('no dispara un segundo store mientras saving es true', () => {
+    const component: any = Object.create(FacturacionComponent.prototype);
+    component.saving = true;
+    component.emiting = false;
+    component.apiService = { store: jasmine.createSpy('store') };
+
+    component.onSubmit();
+
+    expect(component.apiService.store).not.toHaveBeenCalled();
+  });
+
+  it('en error de red ambiguo no rehabilita saving si el usuario cancela', () => {
+    const component: any = Object.create(FacturacionComponent.prototype);
+    component.saving = false;
+    component.emiting = false;
+    component.duplicarventa = false;
+    component.pedidoCanalId = null;
+    component.venta = { monto_pago: 10, efectivo: 10, total: 10, detalles: [] };
+    component.apiService = {
+      auth_user: () => ({ tipo: 'Admin', empresa: {} }),
+      store: jasmine.createSpy('store').and.callFake(() => ({
+        subscribe: (_ok: any, err: any) => err({ status: 0 }),
+      })),
+    };
+    component.alertService = { error: jasmine.createSpy('error') };
+    spyOn(window, 'confirm').and.returnValue(false);
+
+    component.onSubmit();
+
+    expect(component.saving).toBeTrue();
+  });
 });

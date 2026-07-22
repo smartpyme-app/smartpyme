@@ -1720,6 +1720,10 @@ export class FacturacionV2Component implements OnInit {
   }
 
   public onFacturar() {
+    if (this.saving || this.emiting) {
+      return;
+    }
+
     // Validar que si el método de pago requiere banco, este esté seleccionado
     this.mensajeErrorBanco = '';
 
@@ -1739,6 +1743,9 @@ export class FacturacionV2Component implements OnInit {
         (this.venta.cotizacion == 1 ? ' cotización.' : 'venta.')
       )
     ) {
+      if (this.saving || this.emiting) {
+        return;
+      }
       if (!this.venta.recibido) this.venta.recibido = this.venta.total;
 
       if (this.venta.forma_pago == 'Wompi' && !this.venta.consigna) {
@@ -1906,6 +1913,9 @@ export class FacturacionV2Component implements OnInit {
 
   // Guardar venta
   public onSubmit() {
+    if (this.saving || this.emiting) {
+      return;
+    }
     this.saving = true;
 
     // Si se esta duplicando una venta, esta ya no se marca como recurrente para
@@ -1988,8 +1998,35 @@ export class FacturacionV2Component implements OnInit {
       },
       (error) => {
         this.alertService.error(error);
-        this.saving = false;
+        if (this.esErrorRedAmbiguoAlFacturar(error)) {
+          const habilitar = confirm(
+            'No se confirmó la respuesta del servidor. La venta pudo haberse guardado.\n\n' +
+              'Revise el listado de ventas antes de reintentar.\n\n' +
+              '¿Desea habilitar de nuevo el botón de facturar?'
+          );
+          if (habilitar) {
+            this.saving = false;
+          }
+        } else {
+          this.saving = false;
+        }
       }
+    );
+  }
+
+  /** Errores donde el POST pudo commitir en servidor sin respuesta al cliente. */
+  private esErrorRedAmbiguoAlFacturar(error: any): boolean {
+    const status = error?.status;
+    if (status === 0 || status === 502 || status === 503 || status === 504) {
+      return true;
+    }
+    const texto = String(
+      error?.message || error?.statusText || error?.name || ''
+    ).toLowerCase();
+    return (
+      texto.includes('timeout') ||
+      texto.includes('gateway timeout') ||
+      texto.includes('unknown error')
     );
   }
 
