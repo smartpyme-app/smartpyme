@@ -22,6 +22,7 @@ import { CotizacionesComponent } from '@views/ventas/cotizaciones/cotizaciones.c
 import { SolicitudesCompraComponent } from '@views/ventas/solicitudes-compra/solicitudes-compra.component';
 
 import { CanalesComponent } from '@views/ventas/canales/canales.component';
+import { ComisionesComponent } from '@views/ventas/comisiones/comisiones.component';
 import { FormasDePagoComponent } from '@views/ventas/formas-de-pago/formas-de-pago.component';
 import { BancosComponent } from '@views/ventas/bancos/bancos.component';
 import { ImpuestosComponent } from '@views/ventas/impuestos/impuestos.component';
@@ -58,6 +59,7 @@ import { FacturacionVersionGuard } from '@guards/facturacion-version.guard';
     CotizacionesComponent,
     SolicitudesCompraComponent,
     CanalesComponent,
+    ComisionesComponent,
     FormasDePagoComponent,
     BancosComponent,
     ImpuestosComponent,
@@ -76,6 +78,7 @@ import { FacturacionVersionGuard } from '@guards/facturacion-version.guard';
     CotizacionesComponent,
     SolicitudesCompraComponent,
     CanalesComponent,
+    ComisionesComponent,
     FormasDePagoComponent,
     BancosComponent,
     ImpuestosComponent,

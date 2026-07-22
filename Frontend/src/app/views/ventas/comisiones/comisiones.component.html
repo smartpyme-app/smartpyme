@@ -1,0 +1,425 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+  <h2 class="page-heading">Comisiones</h2>
+  <button
+    *ngIf="apiService.canCreate()"
+    type="button"
+    class="btn btn-default tcla-F4"
+    tooltip="Registrar comisión (F4)"
+    (click)="openModal(mdetalle)"
+  >
+    <i class="fa fa-plus"></i> Registrar comisión
+  </button>
+</section>
+
+<section class="mb-3">
+  <div class="row g-3">
+    <div class="col-md-6">
+      <div class="bg-white p-4 rounded h-100">
+        <div class="text-muted small mb-1">Total de comisiones generadas</div>
+        <div class="fs-4 fw-semibold">
+          {{ (summary.total_comisiones || 0) | currency }}
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="bg-white p-4 rounded h-100">
+        <div class="text-muted small mb-1">Total de registros</div>
+        <div class="fs-4 fw-semibold">{{ summary.cantidad || 0 }}</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+  <div class="row">
+    <div class="col-md-6 mb-3">
+      <span class="text-muted d-flex align-items-center gap-2" *ngIf="comisiones?.total">
+        Mostrando
+        <select
+          name="paginate"
+          class="form-select w-auto"
+          (change)="filtrar()"
+          [(ngModel)]="filtros.paginate"
+        >
+          <option [ngValue]="10">10</option>
+          <option [ngValue]="25">25</option>
+          <option [ngValue]="50">50</option>
+          <option [ngValue]="100">100</option>
+        </select>
+        de {{ comisiones?.total + ' registros' }}
+      </span>
+    </div>
+
+    <div class="col-md-6 mb-3">
+      <div class="d-flex gap-2">
+        <form class="d-flex input-group" (ngSubmit)="filtrar()" autocomplete="off">
+          <input
+            type="text"
+            name="buscador"
+            class="form-control pull-right"
+            placeholder="Buscar correlativo"
+            [(ngModel)]="filtros.correlativo_referencia"
+          />
+        </form>
+        <button
+          tooltip="Filtrar (F3)"
+          (click)="openFilter(mfilter)"
+          class="btn btn-default tcla-F3"
+        >
+          <img src="/assets/icons/filter.png" class="icon" alt="" />
+        </button>
+        <button
+          tooltip="Limpiar filtros"
+          (click)="limpiarFiltros()"
+          class="btn btn-default"
+        >
+          <i class="fa fa-refresh"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="d-flex flex-wrap gap-2 mb-3">
+    <div class="d-flex gap-2 flex-wrap">
+      <button
+        type="button"
+        class="btn tcla-F5"
+        [ngClass]="{ 'btn-primary': !filtrado }"
+        tooltip="Actualizar (F5)"
+        (click)="loadAll()"
+      >
+        Todos
+      </button>
+    </div>
+    <div class="ms-auto d-flex gap-2">
+      <select
+        name="id_vendedor"
+        (change)="filtrar()"
+        [(ngModel)]="filtros.id_vendedor"
+        class="form-select bg-default w-auto"
+      >
+        <option [ngValue]="null">Vendedor</option>
+        <option *ngFor="let v of vendedores" [ngValue]="v.id">{{ getNombreVendedor(v) }}</option>
+      </select>
+      <select
+        name="origen"
+        (change)="filtrar()"
+        [(ngModel)]="filtros.origen"
+        class="form-select bg-default w-auto"
+      >
+        <option value="">Origen</option>
+        <option *ngFor="let o of origenes" [value]="o.value">{{ o.label }}</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="table-responsive">
+      <table class="table table-borderless table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Vendedor</th>
+            <th>Correlativo</th>
+            <th>Origen</th>
+            <th>Categoría</th>
+            <th class="text-end">Base ($)</th>
+            <th class="text-end">Tasa (%)</th>
+            <th class="text-end">Comisión ($)</th>
+            <th *ngIf="apiService.canEdit()" class="text-center">
+              <i class="fa fa-cog"></i>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colspan="9" class="text-center" *ngIf="comisiones?.total < 1 && !loading">
+              <span class="badge bg-primary">No hay comisiones registradas</span>
+            </td>
+            <td colspan="9" class="text-center" *ngIf="loading">
+              <span class="badge bg-primary">Cargando...</span>
+            </td>
+          </tr>
+          <tr *ngFor="let c of comisiones?.data">
+            <td>{{ c.fecha | date : 'dd/MM/yyyy' }}</td>
+            <td>{{ getNombreVendedor(c.vendedor) }}</td>
+            <td>{{ c.correlativo_referencia || '—' }}</td>
+            <td>{{ labelOrigen(c.origen) }}</td>
+            <td>{{ c.categoria || '—' }}</td>
+            <td class="text-end">{{ c.base_calculo | currency }}</td>
+            <td class="text-end">{{ c.tasa_comision }}</td>
+            <td class="text-end">{{ c.monto_comision | currency }}</td>
+            <td class="text-center" *ngIf="apiService.canEdit()">
+              <span
+                class="btn"
+                [popover]="accionesTemplate"
+                [outsideClick]="true"
+                tooltip="Acciones"
+              >
+                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+              </span>
+              <ng-template #accionesTemplate>
+                <div class="d-flex flex-column align-items-start">
+                  <a class="btn" (click)="openModal(mdetalle, c)">
+                    <i class="fa fa-fw fa-edit"></i> Editar
+                  </a>
+                  <a class="btn text-danger" (click)="delete(c.id)">
+                    <i class="fa fa-fw fa-trash"></i> Eliminar
+                  </a>
+                </div>
+              </ng-template>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="col-12" *ngIf="comisiones?.last_page > 1">
+      <app-pagination
+        [items]="comisiones"
+        (setPagination)="setPagination($event)"
+      ></app-pagination>
+    </div>
+  </div>
+</section>
+
+<ng-template #mfilter>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+      <h2 class="text-center">Filtrar</h2>
+    </div>
+    <button
+      type="button"
+      class="btn-close"
+      (click)="modalRef.hide()"
+      aria-label="Close"
+    ></button>
+  </div>
+  <div class="modal-body">
+    <app-notificaciones-container></app-notificaciones-container>
+    <form autocomplete="off" (ngSubmit)="aplicarFiltros()">
+      <div class="row">
+        <div class="form-group col-sm-6">
+          <label>Del:</label>
+          <input
+            type="date"
+            class="form-control"
+            name="filtros.fecha_inicio"
+            [(ngModel)]="filtros.fecha_inicio"
+          />
+        </div>
+        <div class="form-group col-sm-6">
+          <label>Al:</label>
+          <input
+            type="date"
+            class="form-control"
+            name="filtros.fecha_fin"
+            [(ngModel)]="filtros.fecha_fin"
+          />
+        </div>
+        <div class="form-group col-sm-6">
+          <label>Vendedor:</label>
+          <ng-select
+            [items]="vendedores"
+            bindValue="id"
+            [(ngModel)]="filtros.id_vendedor"
+            name="filtros.id_vendedor"
+            class="form-select p-0"
+            placeholder="Todos"
+            [clearable]="true"
+            appendTo="body"
+          >
+            <ng-template ng-label-tmp let-item="item">
+              {{ getNombreVendedor(item) }}
+            </ng-template>
+            <ng-template ng-option-tmp let-item="item">
+              {{ getNombreVendedor(item) }}
+            </ng-template>
+          </ng-select>
+        </div>
+        <div class="form-group col-sm-6">
+          <label>Origen:</label>
+          <select
+            class="form-control form-select"
+            name="filtros.origen"
+            [(ngModel)]="filtros.origen"
+          >
+            <option value="">Todos</option>
+            <option *ngFor="let o of origenes" [value]="o.value">{{ o.label }}</option>
+          </select>
+        </div>
+        <div class="form-group col-sm-12">
+          <label>Correlativo / referencia:</label>
+          <input
+            type="text"
+            class="form-control"
+            name="filtros.correlativo_referencia"
+            [(ngModel)]="filtros.correlativo_referencia"
+            placeholder="Nº factura / ticket"
+          />
+        </div>
+      </div>
+      <div class="d-grid mt-3">
+        <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
+          <span *ngIf="!loading">Filtrar</span>
+          <span *ngIf="loading">Filtrando...</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</ng-template>
+
+<ng-template #mdetalle>
+  <div class="modal-header">
+    <div class="modal-title">
+      <h2>{{ comision.id ? 'Editar comisión' : 'Registrar comisión' }}</h2>
+    </div>
+    <button
+      type="button"
+      class="btn-close"
+      (click)="closeModal()"
+      aria-label="Close"
+    ></button>
+  </div>
+  <div class="modal-body">
+    <app-notificaciones-container></app-notificaciones-container>
+    <form autocomplete="off" (ngSubmit)="onSubmit()">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Vendedor</label>
+          <ng-select
+            [items]="vendedores"
+            bindValue="id"
+            [(ngModel)]="comision.id_vendedor"
+            name="id_vendedor"
+            placeholder="Seleccione vendedor"
+            [clearable]="false"
+            appendTo="body"
+            required
+          >
+            <ng-template ng-label-tmp let-item="item">
+              {{ getNombreVendedor(item) }}
+            </ng-template>
+            <ng-template ng-option-tmp let-item="item">
+              {{ getNombreVendedor(item) }}
+            </ng-template>
+          </ng-select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Origen</label>
+          <select
+            class="form-select"
+            [(ngModel)]="comision.origen"
+            name="origen"
+            required
+          >
+            <option *ngFor="let o of origenes" [value]="o.value">{{ o.label }}</option>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Correlativo / referencia</label>
+          <ng-select
+            [(ngModel)]="ventaSeleccionada"
+            name="venta_referencia"
+            [items]="opcionesVentas"
+            [typeahead]="searchVentas$"
+            [loading]="ventasLoading"
+            [clearable]="true"
+            [addTag]="addTagCorrelativo"
+            addTagText="Usar correlativo"
+            [compareWith]="compareVentas"
+            placeholder="Buscar venta por correlativo o cliente..."
+            appendTo="body"
+            class="form-select p-0"
+            (change)="onVentaSeleccionada($event)"
+          >
+            <ng-template ng-label-tmp let-item="item">
+              {{ labelVenta(item) }}
+            </ng-template>
+            <ng-template ng-option-tmp let-item="item">
+              <div>{{ labelVenta(item) }}</div>
+              <small class="text-muted" *ngIf="item?.fecha">
+                {{ item.fecha | date : 'dd/MM/yyyy' }}
+                <span *ngIf="item?.estado"> · {{ item.estado }}</span>
+              </small>
+            </ng-template>
+          </ng-select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Categoría</label>
+          <ng-select
+            [items]="categorias"
+            bindLabel="nombre"
+            bindValue="nombre"
+            [(ngModel)]="comision.categoria"
+            name="categoria"
+            placeholder="Seleccione categoría"
+            [clearable]="true"
+            appendTo="body"
+            class="form-select p-0"
+          >
+          </ng-select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Base de cálculo ($)</label>
+          <input
+            type="number"
+            step="0.01"
+            min="0.01"
+            class="form-control"
+            [(ngModel)]="comision.base_calculo"
+            name="base_calculo"
+            required
+          />
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Tasa de comisión (%)</label>
+          <input
+            type="number"
+            step="0.01"
+            min="0"
+            max="100"
+            class="form-control"
+            [(ngModel)]="comision.tasa_comision"
+            name="tasa_comision"
+            required
+          />
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Comisión a pagar ($)</label>
+          <input
+            type="text"
+            class="form-control"
+            [value]="montoComisionPreview | currency"
+            readonly
+          />
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Fecha</label>
+          <input
+            type="date"
+            class="form-control"
+            [(ngModel)]="comision.fecha"
+            name="fecha"
+            required
+          />
+        </div>
+        <div class="col-md-8">
+          <label class="form-label">Notas</label>
+          <input
+            type="text"
+            class="form-control"
+            [(ngModel)]="comision.notas"
+            name="notas"
+          />
+        </div>
+      </div>
+      <div class="d-grid mt-4">
+        <button type="submit" [disabled]="saving" class="btn btn-primary btn-block">
+          <span *ngIf="!saving">{{ comision.id ? 'Guardar' : 'Registrar' }}</span>
+          <span *ngIf="saving">Guardando...</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</ng-template>

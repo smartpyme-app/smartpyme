@@ -13,6 +13,7 @@ import { RecurrentesComponent } from '@views/ventas/recurrentes/recurrentes.comp
 import { AbonosVentasComponent } from '@views/ventas/abonos/abonos-ventas.component';
 
 import { CanalesComponent } from '@views/ventas/canales/canales.component';
+import { ComisionesComponent } from '@views/ventas/comisiones/comisiones.component';
 import { FormasDePagoComponent } from '@views/ventas/formas-de-pago/formas-de-pago.component';
 import { ImpuestosComponent } from '@views/ventas/impuestos/impuestos.component';
 import { DocumentosComponent } from '@views/ventas/documentos/documentos.component';
@@ -60,6 +61,7 @@ const routes: Routes = [
         { path: 'solicitudes-compra', component: SolicitudesCompraComponent, title: 'Solicitudes de compra' },
     // 
         { path: 'canales', canActivate: [AdminGuard], component: CanalesComponent, title: 'Canales de venta'},
+        { path: 'comisiones', canActivate: [AdminGuard], component: ComisionesComponent, title: 'Comisiones'},
         { path: 'formas-de-pago', canActivate: [AdminGuard], component: FormasDePagoComponent, title: 'Formas de pago'},
         { path: 'impuestos', canActivate: [AdminGuard], component: ImpuestosComponent, title: 'Impuestos'},
         { path: 'documentos', canActivate: [AdminGuard], component: DocumentosComponent, title: 'Documentos'},
