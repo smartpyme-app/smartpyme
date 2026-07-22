@@ -830,7 +830,8 @@ export class FacturacionComponent implements OnInit {
       );
       console.log(this.venta);
     }
-    // Documentos se cargan al resolver bodegas (sucursal de la bodega) o en setBodega.
+    // Tras resetear la venta (p. ej. al quedarse en facturación) hay que reasignar documento/correlativo.
+    this.cargarDocumentos();
   }
   // Método para procesar productos de orden de compra
   public procesarProductosOrdenCompra(detalles: any[]) {
@@ -1911,9 +1912,11 @@ export class FacturacionComponent implements OnInit {
 
   emitirDTE() {
     this.emiting = true;
+    // Snapshot: no usar this.venta por referencia; tras emitir se resetea el formulario
+    // y una mutación concurrente no debe afectar generarDTE.
     const ventaPreDte = { ...this.venta };
     this.mhService
-      .emitirDTE(this.venta)
+      .emitirDTE({ ...ventaPreDte })
       .then((venta) => {
         this.venta = { ...ventaPreDte, ...venta };
         // emitirDTE puede devolver la venta sin paquetes/canal; conservar datos BoxFul del facturado

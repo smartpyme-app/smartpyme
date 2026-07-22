@@ -200,7 +200,32 @@ describe('FacturacionComponent', () => {
     expect(component.cargarDocumentos).toHaveBeenCalled();
   });
 
-  it('no vuelve a facturar si saving o emiting ya están activos', () => {
+  it('emitirDTE envía un snapshot y no la referencia de this.venta', async () => {
+    const component: any = Object.create(FacturacionComponent.prototype);
+    const ventaObj = { id: 5, id_documento: 1, nombre_documento: 'Factura' };
+    component.venta = ventaObj;
+    component.preCuentaId = null;
+    component.pedidoCanalId = null;
+    component.mhService = {
+      emitirDTE: jasmine.createSpy('emitirDTE').and.returnValue(Promise.reject('tipo no permitido')),
+    };
+    component.alertService = { warning: jasmine.createSpy('warning') };
+    component.debePreguntarEnvioBoxful = () => false;
+    component.cargarDatosIniciales = jasmine.createSpy('cargarDatosIniciales');
+    component.router = { navigate: jasmine.createSpy('navigate') };
+
+    component.emitirDTE();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const arg = component.mhService.emitirDTE.calls.mostRecent().args[0];
+    expect(arg).not.toBe(ventaObj);
+    expect(arg.id).toBe(5);
+    expect(arg.id_documento).toBe(1);
+    expect(component.cargarDatosIniciales).toHaveBeenCalled();
+  });
+
+  it('no vuelve a facturar si saving o emiting ya estan activos', () => {
     const component: any = Object.create(FacturacionComponent.prototype);
     component.saving = true;
     component.emiting = false;
