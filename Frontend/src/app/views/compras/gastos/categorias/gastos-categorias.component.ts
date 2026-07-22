@@ -5,6 +5,7 @@ import { RouterModule } from '@angular/router';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { FuncionalidadesService } from '@services/functionalities.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
 
@@ -25,11 +26,13 @@ export class GastosCategoriasComponent extends BaseCrudComponent<any> implements
     public catalogo:any = [];
     public filtro:any = {};
     public filtrado:boolean = false;
+    public contabilidadHabilitada = false;
 
     constructor(
         apiService: ApiService, 
         alertService: AlertService,
         modalManager: ModalManagerService,
+        private funcionalidadesService: FuncionalidadesService,
         private cdr: ChangeDetectorRef
     ) {
         super(apiService, alertService, modalManager, {
@@ -51,7 +54,24 @@ export class GastosCategoriasComponent extends BaseCrudComponent<any> implements
     }
 
     ngOnInit() {
+        this.verificarAccesoContabilidad();
         this.loadAll();
+    }
+
+    verificarAccesoContabilidad() {
+        this.funcionalidadesService.verificarAcceso('contabilidad')
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (acceso) => {
+                    this.contabilidadHabilitada = acceso;
+                    this.cdr.markForCheck();
+                },
+                error: (error) => {
+                    console.error('Error al verificar acceso a contabilidad:', error);
+                    this.contabilidadHabilitada = false;
+                    this.cdr.markForCheck();
+                }
+            });
     }
 
     public override loadAll() {
@@ -72,13 +92,15 @@ export class GastosCategoriasComponent extends BaseCrudComponent<any> implements
     }
 
     override openModal(template: TemplateRef<any>, categoria?: any) {
-        // Cargar catálogo antes de abrir el modal
-        this.apiService.getAll('catalogo/list')
-          .pipe(this.untilDestroyed())
-          .subscribe(catalogo => {
-            this.catalogo = catalogo;
-        }, error => {this.alertService.error(error);});
-        
+        if (this.contabilidadHabilitada) {
+            this.apiService.getAll('catalogo/list')
+              .pipe(this.untilDestroyed())
+              .subscribe(catalogo => {
+                this.catalogo = catalogo;
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error);});
+        }
+
         super.openModal(template, categoria, { class: 'modal-md', backdrop: 'static' });
     }
 

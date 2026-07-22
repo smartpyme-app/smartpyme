@@ -10,7 +10,9 @@
                 <thead>
                     <tr>
                         <th>Nombre</th>
-                        <th>Cuenta contable</th>
+                        @if (contabilidadHabilitada) {
+                            <th>Cuenta contable</th>
+                        }
                         <th class="text-center"><i class="fa fa-cog"></i></th>
                     </tr>
                 </thead>
@@ -34,7 +36,9 @@
                         <tr class="animated fadeIn">
 
                         <td>{{categoria.nombre }} </td>
-                        <td>{{categoria.cuenta?.nombre }} </td>
+                        @if (contabilidadHabilitada) {
+                            <td>{{categoria.cuenta?.nombre }} </td>
+                        }
                         <td class="d-flex justify-content-center gap-2">
                             <a class="btn btn-light" (click)="delete(categoria.id)" tooltip="Eliminar">
                                 <i class="fa fa-trash"></i>
@@ -68,20 +72,22 @@
                 <label for="categoria.nombre">Nombre</label>
                 <input type="text" class="form-control" [(ngModel)]="categoria.nombre" name="categoria.nombre">
             </div>
-            <div class="form-group col-md-12">
-                <label for="categoria.id_cuenta_contable">Cuenta contable:</label>
-                <ng-select [(ngModel)]="categoria.id_cuenta_contable" class="form-select p-0" name="categoria.id_cuenta_contable">
-                    <ng-option value="">Seleccione aquí</ng-option>
-                    @for (cuenta of catalogo; track cuenta.id) {
-                        <ng-option [value]="cuenta.id">
-                            <div class="d-flex align-items-center">
-                                <span style="width: 75px;">{{ cuenta.codigo }} </span>
-                                <span class="col-8"> - {{ cuenta.nombre }}</span>
-                            </div>
-                        </ng-option>
-                    }
-                </ng-select>
-            </div>
+            @if (contabilidadHabilitada) {
+                <div class="form-group col-md-12">
+                    <label for="categoria.id_cuenta_contable">Cuenta contable:</label>
+                    <ng-select [(ngModel)]="categoria.id_cuenta_contable" class="form-select p-0" name="categoria.id_cuenta_contable">
+                        <ng-option value="">Seleccione aquí</ng-option>
+                        @for (cuenta of catalogo; track cuenta.id) {
+                            <ng-option [value]="cuenta.id">
+                                <div class="d-flex align-items-center">
+                                    <span style="width: 75px;">{{ cuenta.codigo }} </span>
+                                    <span class="col-8"> - {{ cuenta.nombre }}</span>
+                                </div>
+                            </ng-option>
+                        }
+                    </ng-select>
+                </div>
+            }
         </div>
         <div class="d-grid">
             <button type="submit" [disabled]="saving" class="btn btn-primary btn-block">
