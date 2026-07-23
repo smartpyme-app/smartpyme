@@ -23,6 +23,38 @@
             </div>
         </div>
     </ng-template>
+    <ng-template #resultadosVentasTableLoader>
+        <div class="d-flex align-items-center justify-content-center text-primary" style="min-height: 400px;"
+            aria-busy="true" aria-live="polite">
+            <div class="spinner-border" role="status" style="width: 2.5rem; height: 2.5rem;">
+                <span class="visually-hidden">Cargando tabla…</span>
+            </div>
+        </div>
+    </ng-template>
+    <ng-template #resultadosGastosTableLoader>
+        <div class="d-flex align-items-center justify-content-center text-primary" style="min-height: 400px;"
+            aria-busy="true" aria-live="polite">
+            <div class="spinner-border" role="status" style="width: 2.5rem; height: 2.5rem;">
+                <span class="visually-hidden">Cargando tabla…</span>
+            </div>
+        </div>
+    </ng-template>
+    <ng-template #resultadosAbonosCxcTableLoader>
+        <div class="d-flex align-items-center justify-content-center text-primary" style="min-height: 400px;"
+            aria-busy="true" aria-live="polite">
+            <div class="spinner-border" role="status" style="width: 2.5rem; height: 2.5rem;">
+                <span class="visually-hidden">Cargando tabla…</span>
+            </div>
+        </div>
+    </ng-template>
+    <ng-template #resultadosAbonosCxpTableLoader>
+        <div class="d-flex align-items-center justify-content-center text-primary" style="min-height: 400px;"
+            aria-busy="true" aria-live="polite">
+            <div class="spinner-border" role="status" style="width: 2.5rem; height: 2.5rem;">
+                <span class="visually-hidden">Cargando tabla…</span>
+            </div>
+        </div>
+    </ng-template>
     <ng-template #resultadosCashflowBlockLoader>
         <div class="d-flex align-items-center justify-content-center text-primary my-4" style="min-height: 480px;"
             aria-busy="true" aria-live="polite">
@@ -208,13 +240,11 @@
                                                 placeholder="Buscar..." [(ngModel)]="quickFilterVentas"
                                                 (input)="onQuickFilterVentasChange()">
                                         </div>
-                                        <!-- <button class="btn btn-sm btn-outline-primary" (click)="exportarVentasCSV()"
-                                            title="Exportar a CSV">
-                                            <i class="fas fa-file-csv me-1"></i> CSV
-                                        </button> -->
                                         <button class="btn btn-sm btn-outline-success" (click)="exportarVentasExcel()"
-                                            title="Exportar a Excel">
-                                            <i class="fas fa-file-excel me-1"></i> Excel
+                                            title="Exportar a Excel"
+                                            [disabled]="ventasExporting || ventasLoading">
+                                            <i class="fas fa-file-excel me-1"></i>
+                                            {{ ventasExporting ? 'Exportando…' : 'Excel' }}
                                         </button>
                                         <button class="btn btn-sm btn-outline-secondary"
                                             (click)="limpiarFiltrosVentas()" title="Limpiar filtros">
@@ -222,16 +252,27 @@
                                         </button>
                                     </div>
                                 </div>
-                                <ag-grid-angular #ventasGrid class="ag-theme-alpine w-100" [rowData]="ventasRows"
-                                    [pinnedBottomRowData]="pinnedBottomRowDataVentas" [columnDefs]="ventasColumnDefs"
-                                    [gridOptions]="ventasGridOptions" [quickFilterText]="quickFilterVentas"
-                                    [defaultColDef]="{
-                                        resizable: true,
-                                        sortable: true,
-                                        filter: true
-                                    }" style="width: 100%; height: 400px;" [domLayout]="'normal'"
-                                    (gridReady)="onVentasGridReady($event)">
-                                </ag-grid-angular>
+                                <ng-container *ngIf="ventasListo; else resultadosVentasTableLoader">
+                                    <div class="position-relative">
+                                        <div *ngIf="ventasLoading"
+                                            class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+                                            style="background: rgba(255,255,255,0.55); z-index: 2;">
+                                            <div class="spinner-border spinner-border-sm text-secondary" role="status">
+                                                <span class="visually-hidden">Cargando…</span>
+                                            </div>
+                                        </div>
+                                        <ag-grid-angular #ventasGrid class="ag-theme-alpine w-100" [rowData]="ventasRows"
+                                            [pinnedBottomRowData]="pinnedBottomRowDataVentas"
+                                            [columnDefs]="ventasColumnDefs" [gridOptions]="ventasGridOptions"
+                                            [defaultColDef]="{
+                                                resizable: true,
+                                                sortable: true,
+                                                filter: true
+                                            }" style="width: 100%; height: 400px;" [domLayout]="'normal'"
+                                            (gridReady)="onVentasGridReady($event)">
+                                        </ag-grid-angular>
+                                    </div>
+                                </ng-container>
                             </div>
                         </div>
                     </div>
@@ -250,13 +291,11 @@
                                                 placeholder="Buscar..." [(ngModel)]="quickFilterGastos"
                                                 (input)="onQuickFilterGastosChange()">
                                         </div>
-                                        <!-- <button class="btn btn-sm btn-outline-primary" (click)="exportarGastosCSV()"
-                                            title="Exportar a CSV">
-                                            <i class="fas fa-file-csv me-1"></i> CSV
-                                        </button> -->
                                         <button class="btn btn-sm btn-outline-success" (click)="exportarGastosExcel()"
-                                            title="Exportar a Excel">
-                                            <i class="fas fa-file-excel me-1"></i> Excel
+                                            title="Exportar a Excel"
+                                            [disabled]="gastosExporting || gastosLoading">
+                                            <i class="fas fa-file-excel me-1"></i>
+                                            {{ gastosExporting ? 'Exportando…' : 'Excel' }}
                                         </button>
                                         <button class="btn btn-sm btn-outline-secondary"
                                             (click)="limpiarFiltrosGastos()" title="Limpiar filtros">
@@ -264,16 +303,27 @@
                                         </button>
                                     </div>
                                 </div>
-                                <ag-grid-angular #gastosGrid class="ag-theme-alpine w-100" [rowData]="gastosRows"
-                                    [pinnedBottomRowData]="pinnedBottomRowDataGastos" [columnDefs]="gastosColumnDefs"
-                                    [gridOptions]="gastosGridOptions" [quickFilterText]="quickFilterGastos"
-                                    [defaultColDef]="{
-                                        resizable: true,
-                                        sortable: true,
-                                        filter: true
-                                    }" style="width: 100%; height: 400px;" [domLayout]="'normal'"
-                                    (gridReady)="onGastosGridReady($event)">
-                                </ag-grid-angular>
+                                <ng-container *ngIf="gastosListo; else resultadosGastosTableLoader">
+                                    <div class="position-relative">
+                                        <div *ngIf="gastosLoading"
+                                            class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+                                            style="background: rgba(255,255,255,0.55); z-index: 2;">
+                                            <div class="spinner-border spinner-border-sm text-secondary" role="status">
+                                                <span class="visually-hidden">Cargando…</span>
+                                            </div>
+                                        </div>
+                                        <ag-grid-angular #gastosGrid class="ag-theme-alpine w-100" [rowData]="gastosRows"
+                                            [pinnedBottomRowData]="pinnedBottomRowDataGastos"
+                                            [columnDefs]="gastosColumnDefs" [gridOptions]="gastosGridOptions"
+                                            [defaultColDef]="{
+                                                resizable: true,
+                                                sortable: true,
+                                                filter: true
+                                            }" style="width: 100%; height: 400px;" [domLayout]="'normal'"
+                                            (gridReady)="onGastosGridReady($event)">
+                                        </ag-grid-angular>
+                                    </div>
+                                </ng-container>
                             </div>
                         </div>
                     </div>
@@ -299,8 +349,10 @@
                                                 (input)="onQuickFilterAbonosCxcChange()">
                                         </div>
                                         <button class="btn btn-sm btn-outline-success"
-                                            (click)="exportarAbonosCxcExcel()" title="Exportar a Excel">
-                                            <i class="fas fa-file-excel me-1"></i> Excel
+                                            (click)="exportarAbonosCxcExcel()" title="Exportar a Excel"
+                                            [disabled]="abonosCxcExporting || abonosCxcLoading">
+                                            <i class="fas fa-file-excel me-1"></i>
+                                            {{ abonosCxcExporting ? 'Exportando…' : 'Excel' }}
                                         </button>
                                         <button class="btn btn-sm btn-outline-secondary"
                                             (click)="limpiarFiltrosAbonosCxc()" title="Limpiar filtros">
@@ -308,16 +360,28 @@
                                         </button>
                                     </div>
                                 </div>
-                                <ag-grid-angular #abonosCxcGrid class="ag-theme-alpine w-100" [rowData]="abonosCxcRows"
-                                    [pinnedBottomRowData]="pinnedBottomRowDataAbonosCxc"
-                                    [columnDefs]="abonosCxcColumnDefs" [gridOptions]="abonosCxcGridOptions"
-                                    [quickFilterText]="quickFilterAbonosCxc" [defaultColDef]="{
-                            resizable: true,
-                            sortable: true,
-                            filter: true
-                        }" style="width: 100%; height: 400px;" [domLayout]="'normal'"
-                                    (gridReady)="onAbonosCxcGridReady($event)">
-                                </ag-grid-angular>
+                                <ng-container *ngIf="abonosCxcListo; else resultadosAbonosCxcTableLoader">
+                                    <div class="position-relative">
+                                        <div *ngIf="abonosCxcLoading"
+                                            class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+                                            style="background: rgba(255,255,255,0.55); z-index: 2;">
+                                            <div class="spinner-border spinner-border-sm text-secondary" role="status">
+                                                <span class="visually-hidden">Cargando…</span>
+                                            </div>
+                                        </div>
+                                        <ag-grid-angular #abonosCxcGrid class="ag-theme-alpine w-100"
+                                            [rowData]="abonosCxcRows"
+                                            [pinnedBottomRowData]="pinnedBottomRowDataAbonosCxc"
+                                            [columnDefs]="abonosCxcColumnDefs" [gridOptions]="abonosCxcGridOptions"
+                                            [defaultColDef]="{
+                                                resizable: true,
+                                                sortable: true,
+                                                filter: true
+                                            }" style="width: 100%; height: 400px;" [domLayout]="'normal'"
+                                            (gridReady)="onAbonosCxcGridReady($event)">
+                                        </ag-grid-angular>
+                                    </div>
+                                </ng-container>
                             </div>
                         </div>
                     </div>
@@ -337,8 +401,10 @@
                                                 (input)="onQuickFilterAbonosCxpChange()">
                                         </div>
                                         <button class="btn btn-sm btn-outline-success"
-                                            (click)="exportarAbonosCxpExcel()" title="Exportar a Excel">
-                                            <i class="fas fa-file-excel me-1"></i> Excel
+                                            (click)="exportarAbonosCxpExcel()" title="Exportar a Excel"
+                                            [disabled]="abonosCxpExporting || abonosCxpLoading">
+                                            <i class="fas fa-file-excel me-1"></i>
+                                            {{ abonosCxpExporting ? 'Exportando…' : 'Excel' }}
                                         </button>
                                         <button class="btn btn-sm btn-outline-secondary"
                                             (click)="limpiarFiltrosAbonosCxp()" title="Limpiar filtros">
@@ -346,16 +412,28 @@
                                         </button>
                                     </div>
                                 </div>
-                                <ag-grid-angular #abonosCxpGrid class="ag-theme-alpine w-100" [rowData]="abonosCxpRows"
-                                    [pinnedBottomRowData]="pinnedBottomRowDataAbonosCxp"
-                                    [columnDefs]="abonosCxpColumnDefs" [gridOptions]="abonosCxpGridOptions"
-                                    [quickFilterText]="quickFilterAbonosCxp" [defaultColDef]="{
-                            resizable: true,
-                            sortable: true,
-                            filter: true
-                        }" style="width: 100%; height: 400px;" [domLayout]="'normal'"
-                                    (gridReady)="onAbonosCxpGridReady($event)">
-                                </ag-grid-angular>
+                                <ng-container *ngIf="abonosCxpListo; else resultadosAbonosCxpTableLoader">
+                                    <div class="position-relative">
+                                        <div *ngIf="abonosCxpLoading"
+                                            class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+                                            style="background: rgba(255,255,255,0.55); z-index: 2;">
+                                            <div class="spinner-border spinner-border-sm text-secondary" role="status">
+                                                <span class="visually-hidden">Cargando…</span>
+                                            </div>
+                                        </div>
+                                        <ag-grid-angular #abonosCxpGrid class="ag-theme-alpine w-100"
+                                            [rowData]="abonosCxpRows"
+                                            [pinnedBottomRowData]="pinnedBottomRowDataAbonosCxp"
+                                            [columnDefs]="abonosCxpColumnDefs" [gridOptions]="abonosCxpGridOptions"
+                                            [defaultColDef]="{
+                                                resizable: true,
+                                                sortable: true,
+                                                filter: true
+                                            }" style="width: 100%; height: 400px;" [domLayout]="'normal'"
+                                            (gridReady)="onAbonosCxpGridReady($event)">
+                                        </ag-grid-angular>
+                                    </div>
+                                </ng-container>
                             </div>
                         </div>
                     </div>

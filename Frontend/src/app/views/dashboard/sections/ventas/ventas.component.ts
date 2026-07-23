@@ -1,4 +1,6 @@
 import { Component, Input, OnInit, OnChanges, SimpleChanges, ViewChild, Output, EventEmitter, ChangeDetectionStrategy, ChangeDetectorRef, OnDestroy } from '@angular/core';
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged, switchMap, takeUntil } from 'rxjs/operators';
 import { DashboardDataService } from '../../services/dashboard-data.service';
 import { ApiService } from '@services/api.service';
 import {
@@ -15,6 +17,10 @@ import { RevoGrid } from '@revolist/angular-datagrid';
 import { SortingPlugin, FilterPlugin, ExportFilePlugin } from '@revolist/revogrid';
 import { ColDef, GridOptions, GridApi, ColumnApi } from 'ag-grid-community';
 import { MetricCard } from '../../models/chart-config.model';
+import {
+  DetalleVentasProductoTotales,
+  DetalleVentasClienteTotales,
+} from '../../services/ventas-dashboard-data.service';
 
 @Component({
   selector: 'app-ventas',
@@ -72,6 +78,51 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
   quickFilterText: string = '';
   quickFilterTextCliente: string = '';
   busquedaVentasDetalladas: string = '';
+
+  // Detalle ventas por producto — paginación lazy
+  ventasProductoListo = false;
+  ventasProductoLoading = false;
+  ventasProductoExporting = false;
+  readonly ventasProductoPageSize = 50;
+  ventasProductoOffset = 0;
+  ventasProductoTotal = 0;
+  ventasProductoTotales: DetalleVentasProductoTotales = {
+    cantidad: 0,
+    descuento: 0,
+    ventasSinIVA: 0,
+    costoTotal: 0,
+    utilidad: 0,
+  };
+  private readonly destroy$ = new Subject<void>();
+  private readonly ventasProductoPage$ = new Subject<{
+    offset: number;
+    q: string;
+    append: boolean;
+  }>();
+  private readonly quickFilterVentasProducto$ = new Subject<string>();
+  private ventasProductoAppendPending = false;
+
+  // Detalle ventas por cliente — paginación lazy
+  ventasClienteListo = false;
+  ventasClienteLoading = false;
+  ventasClienteExporting = false;
+  readonly ventasClientePageSize = 50;
+  ventasClienteOffset = 0;
+  ventasClienteTotal = 0;
+  ventasClienteTotales: DetalleVentasClienteTotales = {
+    transacciones: 0,
+    ventasSinIva: 0,
+    ventasConIva: 0,
+    dias: 0,
+    ultimaVenta: '',
+  };
+  private readonly ventasClientePage$ = new Subject<{
+    offset: number;
+    q: string;
+    append: boolean;
+  }>();
+  private readonly quickFilterVentasCliente$ = new Subject<string>();
+  private ventasClienteAppendPending = false;
 
   // Filtro por año (obligatorio en API) y mes (opcional; vacío = año completo)
   anio: string = new Date().getFullYear().toString();
@@ -195,6 +246,8 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
   private _ventasDetalladasRowsCache: any[] = [];
   private _ventasPorProductoRowsCache: any[] = [];
   private _ventasPorClienteRowsCache: any[] = [];
+  /** Binding directo para OnPush (evitar getter + *ngIf). */
+  ventasPorClienteRows: any[] = [];
   pinnedBottomRowDataVentasProducto: any[] = [];
   pinnedBottomRowDataVentasCliente: any[] = [];
   private _lastDatosHash: string = '';
@@ -343,6 +396,8 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
     this.cargarOpcionesFiltros();
     this.configurarAGGrid();
     this.configurarAGGridClientes();
+    this.wireDetalleVentasProductoStreams();
+    this.wireDetalleVentasClienteStreams();
     this.inicializarDatos();
     // Marcar como inicializado después de un pequeño delay para evitar emitir durante la inicialización
     setTimeout(() => {
@@ -353,14 +408,20 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
         if (user?.tipo === 'Administrador') {
           this.emitirFiltrosAlPadre();
         }
-      } else if (Object.keys(this.filtrosInteractivos).length > 0) {
-        this.aplicarFiltrosInteractivos();
+      } else {
+        this.cargarDetalleVentasProductoPagina(0);
+        this.cargarDetalleVentasClientePagina(0);
+        if (Object.keys(this.filtrosInteractivos).length > 0) {
+          this.aplicarFiltrosInteractivos();
+        }
       }
       this.cdr.markForCheck();
     }, 100);
   }
 
   ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
     this.dashboardDataService.guardarFiltrosUI('Ventas', {
       anio: this.anio,
       mes: this.mes,
@@ -426,6 +487,20 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
       this.ordenarArraysIniciales();
       this.datos = this.datosFiltrados;
       this.recalcularRowsCache();
+    }
+
+    // Si el lazy de clientes resolvió vacío y ahora llegaron detalladas, armar filas localmente.
+    if (
+      this.ventasClienteListo &&
+      this._ventasPorClienteRowsCache.length === 0 &&
+      (this.datos?.ventasDetalladas?.length ?? 0) > 0
+    ) {
+      const local = this.buildVentasClienteDesdeDetalladas();
+      if (local.items.length > 0) {
+        this.ventasClienteTotal = local.total;
+        this.ventasClienteTotales = local.totales;
+        this.applyVentasClientePageRows(local.items, local.totales, false);
+      }
     }
 
     this.cdr.markForCheck();
@@ -513,9 +588,8 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
 
     this.ventasPorProductoGridOptions = {
       pagination: true,
-      paginationPageSize: 20,
+      paginationPageSize: 25,
       suppressMenuHide: true,
-      quickFilterText: '',
       getRowClass: (params: any) => {
         if (params.node.rowPinned === 'bottom') {
           return 'ag-row-total';
@@ -525,16 +599,260 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
       onGridReady: (params: any) => {
         this.gridApi = params.api;
         this.gridColumnApi = params.columnApi;
-        setTimeout(() => params.api.sizeColumnsToFit(), 0);
-      },
-      onRowDataUpdated: () => {
         this.recalcularTotalesVentasProducto();
+        setTimeout(() => params.api.sizeColumnsToFit(), 0);
         this.cdr.markForCheck();
+      },
+      onPaginationChanged: () => {
+        this.maybeLoadMoreVentasProductoFromGrid();
       },
       onFilterChanged: () => {
         this.onFilterChangedVentasProducto();
-      }
+      },
     };
+  }
+
+  private wireDetalleVentasProductoStreams(): void {
+    this.ventasProductoPage$
+      .pipe(
+        switchMap(({ offset, q, append }) => {
+          this.ventasProductoAppendPending = append;
+          this.ventasProductoLoading = true;
+          this.cdr.markForCheck();
+          return this.dashboardDataService.obtenerDetalleVentasProductoPagina(
+            this.getFiltrosDetalleVentasProducto(),
+            {
+              limite: this.ventasProductoPageSize,
+              offset,
+              q: q || undefined,
+            },
+          );
+        }),
+        takeUntil(this.destroy$),
+      )
+      .subscribe({
+        next: (page) => {
+          this.ventasProductoOffset = page.offset;
+          this.ventasProductoTotal = page.total;
+          this.ventasProductoTotales = page.totales;
+          const append =
+            this.ventasProductoAppendPending && (page.items?.length ?? 0) > 0;
+          this.applyVentasProductoPageRows(page.items, page.totales, append);
+          this.ventasProductoAppendPending = false;
+          this.ventasProductoListo = true;
+          this.ventasProductoLoading = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.ventasProductoAppendPending = false;
+          this.ventasProductoLoading = false;
+          this.ventasProductoListo = true;
+          this.cdr.markForCheck();
+        },
+      });
+
+    this.quickFilterVentasProducto$
+      .pipe(
+        debounceTime(300),
+        distinctUntilChanged(),
+        takeUntil(this.destroy$),
+      )
+      .subscribe(() => {
+        this.cargarDetalleVentasProductoPagina(0);
+      });
+  }
+
+  /** Filtros panel + overrides interactivos (charts). */
+  private getFiltrosDetalleVentasProducto(): any {
+    if (!this.anio) {
+      this.anio = new Date().getFullYear().toString();
+    }
+    const idsEstado = this.estadosVenta.map((e) => e.id);
+    const filtros: any = {
+      anio: this.anio,
+      sucursal: this.filtroAdSucursalParaApiAplicado(),
+      estado: this.filtroAdMultiAString(
+        this.filtroAdEstadoTodasImplicitasAplicado,
+        this.filtroAdEstadoSeleccionadasAplicado,
+        idsEstado,
+      ),
+      canal: this.filtroAdMultiAString(
+        this.filtroAdCanalTodasImplicitasAplicado,
+        this.filtroAdCanalSeleccionadasAplicado,
+        this.idsDeListaFiltro(this.canales),
+      ),
+      cliente: this.filtroAdMultiAString(
+        this.filtroAdClienteTodasImplicitasAplicado,
+        this.filtroAdClienteSeleccionadasAplicado,
+        this.idsDeListaFiltro(this.clientes),
+      ),
+      vendedor: this.filtroAdMultiAString(
+        this.filtroAdVendedorTodasImplicitasAplicado,
+        this.filtroAdVendedorSeleccionadasAplicado,
+        this.idsDeListaFiltro(this.vendedores),
+      ),
+    };
+    if (this.mes) filtros.mes = this.mes;
+
+    const catCsv = this.filtroAdMultiAString(
+      this.filtroCatTodasImplicitasAplicado,
+      this.filtroCatSeleccionadasAplicado,
+      this.idsDeListaFiltro(this.categoriasProductos),
+    );
+    if (catCsv) filtros.categoria = catCsv;
+
+    const prodCsv = this.filtroAdMultiAString(
+      this.filtroProdTodasImplicitasAplicado,
+      this.filtroProdSeleccionadasAplicado,
+      this.idsDeListaFiltro(this.productos),
+    );
+    if (prodCsv) {
+      const partes = prodCsv.split(',').map((s) => s.trim()).filter(Boolean);
+      if (partes.length === 1) {
+        const one = partes[0];
+        const n = Number(one);
+        filtros.idProducto =
+          Number.isFinite(n) && String(n) === one ? n : one;
+      } else {
+        filtros.idProducto = prodCsv;
+      }
+    }
+
+    if (this.filtrosInteractivos.categoria) {
+      filtros.categoria = this.filtrosInteractivos.categoria;
+    }
+    if (
+      this.filtrosInteractivos.idProducto != null &&
+      String(this.filtrosInteractivos.idProducto).trim() !== ''
+    ) {
+      filtros.idProducto = this.filtrosInteractivos.idProducto;
+    }
+    if (this.filtrosInteractivos.canal) {
+      filtros.canal = this.filtrosInteractivos.canal;
+    }
+    if (this.filtrosInteractivos.vendedor) {
+      filtros.vendedor = this.filtrosInteractivos.vendedor;
+    }
+    // Cliente interactivo va por `q` (nombre), no por `cliente` (IDs del panel).
+    if (this.filtrosInteractivos.mes) {
+      const idx = this.mesesNombres.findIndex(
+        (m) =>
+          m.toLowerCase() ===
+          String(this.filtrosInteractivos.mes).toLowerCase(),
+      );
+      if (idx >= 0) filtros.mes = String(idx + 1);
+    }
+    return filtros;
+  }
+
+  private getVentasProductoSearchQ(): string {
+    const typed = this.quickFilterText.trim();
+    if (typed) return typed;
+    return (
+      this.filtrosInteractivos.productoNombre ||
+      this.filtrosInteractivos.formaPago ||
+      ''
+    ).trim();
+  }
+
+  cargarDetalleVentasProductoPagina(offset: number, append = false): void {
+    this.ventasProductoPage$.next({
+      offset: Math.max(0, offset),
+      q: this.getVentasProductoSearchQ(),
+      append,
+    });
+  }
+
+  private maybeLoadMoreVentasProductoFromGrid(): void {
+    if (!this.gridApi || this.ventasProductoLoading || !this.ventasProductoListo) {
+      return;
+    }
+    const loaded = this._ventasPorProductoRowsCache.length;
+    if (loaded >= this.ventasProductoTotal) return;
+    const pageSize = this.gridApi.paginationGetPageSize() || 25;
+    const currentPage = this.gridApi.paginationGetCurrentPage();
+    const lastLoadedPage = Math.max(0, Math.ceil(loaded / pageSize) - 1);
+    if (currentPage >= lastLoadedPage) {
+      this.cargarDetalleVentasProductoPagina(loaded, true);
+    }
+  }
+
+  private mapVentasProductoRows(items: any[]): any[] {
+    return (items ?? []).map((item: any) => {
+      const ventasSinIVA = item.ventasSinIVA || 0;
+      const descuento = item.descuento || 0;
+      const costoTotal = item.costoTotal || 0;
+      return {
+        categoria: item.categoria || '-',
+        producto: item.producto || '-',
+        formaPago: item.formaPago || '-',
+        cantidad: item.cantidad || 0,
+        precioUnitario: item.precioUnitario || 0,
+        descuento,
+        ventasSinIVA,
+        costoTotal,
+        utilidad:
+          item.utilidad != null
+            ? item.utilidad
+            : this.utilidadVentasProducto(ventasSinIVA, descuento, costoTotal),
+        isTotal: false,
+      };
+    });
+  }
+
+  private applyVentasProductoPageRows(
+    items: any[],
+    totales: DetalleVentasProductoTotales,
+    append = false,
+  ): void {
+    const mapped = this.mapVentasProductoRows(items);
+    if (append && this._ventasPorProductoRowsCache.length > 0) {
+      this._ventasPorProductoRowsCache = [
+        ...this._ventasPorProductoRowsCache,
+        ...mapped,
+      ];
+    } else {
+      this._ventasPorProductoRowsCache = mapped;
+      if (this.gridApi) {
+        this.gridApi.paginationGoToFirstPage();
+      }
+    }
+    this.aplicarPinnedTotalesVentasProducto(totales);
+  }
+
+  private aplicarPinnedTotalesVentasProducto(
+    totales: DetalleVentasProductoTotales,
+  ): void {
+    if (
+      totales.cantidad !== 0 ||
+      totales.ventasSinIVA !== 0 ||
+      totales.descuento !== 0 ||
+      totales.costoTotal !== 0 ||
+      totales.utilidad !== 0
+    ) {
+      this.pinnedBottomRowDataVentasProducto = [
+        {
+          categoria: 'TOTAL',
+          producto: '',
+          formaPago: '',
+          cantidad: totales.cantidad,
+          precioUnitario: null,
+          descuento: totales.descuento,
+          ventasSinIVA: totales.ventasSinIVA,
+          costoTotal: totales.costoTotal,
+          utilidad: totales.utilidad,
+        },
+      ];
+    } else {
+      this.pinnedBottomRowDataVentasProducto = [];
+    }
+  }
+
+  private csvEscape(value: string): string {
+    if (/[",\n\r]/.test(value)) {
+      return `"${value.replace(/"/g, '""')}"`;
+    }
+    return value;
   }
 
   configurarAGGridClientes(): void {
@@ -603,10 +921,9 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
 
     this.ventasPorClienteGridOptions = {
       pagination: true,
-      paginationPageSize: 20,
+      paginationPageSize: 25,
       suppressMenuHide: true,
       suppressHorizontalScroll: false,
-      quickFilterText: '',
       defaultColDef: {
         resizable: true,
         sortable: true,
@@ -638,17 +955,266 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
       onGridReady: (params: any) => {
         this.clienteGridApi = params.api;
         this.clienteGridColumnApi = params.columnApi;
-      },
-      onRowDataUpdated: () => {
+        // OnPush + *ngIf: el grid monta después del fetch; empujar filas ya cacheadas.
+        if (this.ventasPorClienteRows.length > 0) {
+          params.api.setRowData(this.ventasPorClienteRows);
+        }
+        if (this.pinnedBottomRowDataVentasCliente.length > 0) {
+          params.api.setPinnedBottomRowData(this.pinnedBottomRowDataVentasCliente);
+        }
         this.recalcularTotalesVentasCliente();
         this.cdr.markForCheck();
+      },
+      onFirstDataRendered: (params: any) => {
+        // Forzar layout tras primer paint (evita body-viewport en 0px).
+        params.api.resetRowHeights?.();
+      },
+      onPaginationChanged: () => {
+        this.maybeLoadMoreVentasClienteFromGrid();
       },
       onFilterChanged: () => {
         this.onFilterChangedVentasCliente();
       },
       suppressExcelExport: false,
-      suppressCsvExport: false
+      suppressCsvExport: false,
     };
+  }
+
+  private wireDetalleVentasClienteStreams(): void {
+    this.ventasClientePage$
+      .pipe(
+        switchMap(({ offset, q, append }) => {
+          this.ventasClienteAppendPending = append;
+          this.ventasClienteLoading = true;
+          this.cdr.markForCheck();
+          return this.dashboardDataService.obtenerDetalleVentasClientePagina(
+            this.getFiltrosDetalleVentasProducto(),
+            {
+              limite: this.ventasClientePageSize,
+              offset,
+              q: q || undefined,
+            },
+          );
+        }),
+        takeUntil(this.destroy$),
+      )
+      .subscribe({
+        next: (page) => {
+          const append =
+            this.ventasClienteAppendPending && (page.items?.length ?? 0) > 0;
+          let items = page.items ?? [];
+          let totales = page.totales;
+          let total = page.total;
+
+          // ponytail: si la vista/API detalle-clientes viene vacía, armar filas desde ventasDetalladas
+          if (!append && items.length === 0) {
+            const local = this.buildVentasClienteDesdeDetalladas();
+            if (local.items.length > 0) {
+              items = local.items;
+              totales = local.totales;
+              total = local.total;
+            }
+          }
+
+          this.ventasClienteOffset = page.offset;
+          this.ventasClienteTotal = total;
+          this.ventasClienteTotales = totales;
+          this.applyVentasClientePageRows(items, totales, append);
+          this.ventasClienteAppendPending = false;
+          this.ventasClienteListo = true;
+          this.ventasClienteLoading = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          const local = this.buildVentasClienteDesdeDetalladas();
+          if (local.items.length > 0) {
+            this.ventasClienteOffset = 0;
+            this.ventasClienteTotal = local.total;
+            this.ventasClienteTotales = local.totales;
+            this.applyVentasClientePageRows(local.items, local.totales, false);
+          }
+          this.ventasClienteAppendPending = false;
+          this.ventasClienteLoading = false;
+          this.ventasClienteListo = true;
+          this.cdr.markForCheck();
+        },
+      });
+
+    this.quickFilterVentasCliente$
+      .pipe(
+        debounceTime(300),
+        distinctUntilChanged(),
+        takeUntil(this.destroy$),
+      )
+      .subscribe(() => {
+        this.cargarDetalleVentasClientePagina(0);
+      });
+  }
+
+  private getVentasClienteSearchQ(): string {
+    const typed = this.quickFilterTextCliente.trim();
+    if (typed) return typed;
+    return (this.filtrosInteractivos.cliente || '').trim();
+  }
+
+  cargarDetalleVentasClientePagina(offset: number, append = false): void {
+    this.ventasClientePage$.next({
+      offset: Math.max(0, offset),
+      q: this.getVentasClienteSearchQ(),
+      append,
+    });
+  }
+
+  private maybeLoadMoreVentasClienteFromGrid(): void {
+    if (
+      !this.clienteGridApi ||
+      this.ventasClienteLoading ||
+      !this.ventasClienteListo
+    ) {
+      return;
+    }
+    const loaded = this._ventasPorClienteRowsCache.length;
+    if (loaded >= this.ventasClienteTotal) return;
+    const pageSize = this.clienteGridApi.paginationGetPageSize() || 25;
+    const currentPage = this.clienteGridApi.paginationGetCurrentPage();
+    const lastLoadedPage = Math.max(0, Math.ceil(loaded / pageSize) - 1);
+    if (currentPage >= lastLoadedPage) {
+      this.cargarDetalleVentasClientePagina(loaded, true);
+    }
+  }
+
+  private mapVentasClienteRows(items: any[]): any[] {
+    return (items ?? []).map((item: any) => ({
+      cliente: item.cliente || '-',
+      ultimaVenta: item.ultimaVenta || '-',
+      dias: item.dias || 0,
+      transacciones: item.transacciones || 0,
+      ventasSinIva: this.formatCurrency(item.ventasSinIva || 0),
+      ventasSinIvaOriginal: item.ventasSinIva || 0,
+      ventasConIva: this.formatCurrency(item.ventasConIva || 0),
+      ventasConIvaOriginal: item.ventasConIva || 0,
+      isTotal: false,
+    }));
+  }
+
+  /** Fallback local cuando /detalle-clientes no trae filas. */
+  private buildVentasClienteDesdeDetalladas(): {
+    items: any[];
+    total: number;
+    totales: DetalleVentasClienteTotales;
+  } {
+    const empty = {
+      items: [] as any[],
+      total: 0,
+      totales: {
+        transacciones: 0,
+        ventasSinIva: 0,
+        ventasConIva: 0,
+        dias: 0,
+        ultimaVenta: '',
+      },
+    };
+    const ventas =
+      this.datosFiltrados?.ventasDetalladas?.length
+        ? this.datosFiltrados.ventasDetalladas
+        : this.datos?.ventasDetalladas?.length
+          ? this.datos.ventasDetalladas
+          : this.datosOriginales?.ventasDetalladas ?? [];
+    if (!ventas.length) return empty;
+
+    this.recalcularVentasPorCliente(ventas);
+    let items = [...(this.datosFiltrados.ventasPorCliente ?? [])];
+    const q = this.getVentasClienteSearchQ().toLowerCase();
+    if (q) {
+      items = items.filter((i) =>
+        String(i.cliente ?? '')
+          .toLowerCase()
+          .includes(q),
+      );
+    }
+    const totales = items.reduce(
+      (acc, i) => ({
+        transacciones: acc.transacciones + (Number(i.transacciones) || 0),
+        ventasSinIva: acc.ventasSinIva + (Number(i.ventasSinIva) || 0),
+        ventasConIva: acc.ventasConIva + (Number(i.ventasConIva) || 0),
+        dias: Math.max(acc.dias, Number(i.dias) || 0),
+        ultimaVenta: acc.ultimaVenta,
+      }),
+      {
+        transacciones: 0,
+        ventasSinIva: 0,
+        ventasConIva: 0,
+        dias: 0,
+        ultimaVenta: '',
+      },
+    );
+    const fechas = items
+      .map((i) => String(i.ultimaVenta ?? ''))
+      .filter((f) => f && f !== '-');
+    if (fechas.length) {
+      fechas.sort((a, b) => {
+        const dateA = new Date(a.split('/').reverse().join('-'));
+        const dateB = new Date(b.split('/').reverse().join('-'));
+        return dateB.getTime() - dateA.getTime();
+      });
+      totales.ultimaVenta = fechas[0];
+    }
+    return { items, total: items.length, totales };
+  }
+
+  private applyVentasClientePageRows(
+    items: any[],
+    totales: DetalleVentasClienteTotales,
+    append = false,
+  ): void {
+    const mapped = this.mapVentasClienteRows(items);
+    if (append && this._ventasPorClienteRowsCache.length > 0) {
+      this._ventasPorClienteRowsCache = [
+        ...this._ventasPorClienteRowsCache,
+        ...mapped,
+      ];
+    } else {
+      this._ventasPorClienteRowsCache = mapped;
+      if (this.clienteGridApi) {
+        this.clienteGridApi.paginationGoToFirstPage();
+      }
+    }
+    // Nueva referencia para que OnPush + ag-grid detecten el cambio.
+    this.ventasPorClienteRows = [...this._ventasPorClienteRowsCache];
+    if (this.clienteGridApi) {
+      this.clienteGridApi.setRowData(this.ventasPorClienteRows);
+    }
+    this.aplicarPinnedTotalesVentasCliente(totales);
+    if (this.clienteGridApi && this.pinnedBottomRowDataVentasCliente) {
+      this.clienteGridApi.setPinnedBottomRowData(
+        this.pinnedBottomRowDataVentasCliente,
+      );
+    }
+  }
+
+  private aplicarPinnedTotalesVentasCliente(
+    totales: DetalleVentasClienteTotales,
+  ): void {
+    if (
+      totales.transacciones !== 0 ||
+      totales.ventasSinIva !== 0 ||
+      totales.ventasConIva !== 0
+    ) {
+      this.pinnedBottomRowDataVentasCliente = [
+        {
+          cliente: 'Total',
+          ultimaVenta: totales.ultimaVenta || '-',
+          dias: totales.dias,
+          transacciones: totales.transacciones,
+          ventasSinIva: this.formatCurrency(totales.ventasSinIva),
+          ventasSinIvaOriginal: totales.ventasSinIva,
+          ventasConIva: this.formatCurrency(totales.ventasConIva),
+          ventasConIvaOriginal: totales.ventasConIva,
+        },
+      ];
+    } else {
+      this.pinnedBottomRowDataVentasCliente = [];
+    }
   }
 
   copiarSeleccionAlPortapapelesClientes(): void {
@@ -1329,6 +1895,8 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
     }
 
     this.filtrosCambiados.emit(filtros);
+    this.cargarDetalleVentasProductoPagina(0);
+    this.cargarDetalleVentasClientePagina(0);
   }
 
   private _bloquearFiltros(): void {
@@ -1384,13 +1952,7 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
       this._ventasDetalladasRowsCache = [];
     }
 
-    // Recalcular ventas por producto
-    this._ventasPorProductoRowsCache = this.calcularVentasPorProductoRows();
-    this.recalcularTotalesVentasProducto();
-
-    // Recalcular ventas por cliente
-    this._ventasPorClienteRowsCache = this.calcularVentasPorClienteRows();
-    this.recalcularTotalesVentasCliente();
+    // Detalle por producto / cliente: carga lazy.
   }
 
   get ventasDetalladasRows(): any[] {
@@ -1457,19 +2019,7 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   get totalVentasPorProducto(): any {
-    if (!this.datos.ventasPorProducto || this.datos.ventasPorProducto.length === 0) {
-      return { cantidad: 0, ventasSinIVA: 0, descuento: 0, costoTotal: 0, utilidad: 0 };
-    }
-    const totales = this.datos.ventasPorProducto.reduce((totals: any, item: any) => ({
-      cantidad: totals.cantidad + (item.cantidad || 0),
-      ventasSinIVA: totals.ventasSinIVA + (item.ventasSinIVA || 0),
-      descuento: totals.descuento + (item.descuento || 0),
-      costoTotal: totals.costoTotal + (item.costoTotal || 0),
-    }), { cantidad: 0, ventasSinIVA: 0, descuento: 0, costoTotal: 0 });
-    return {
-      ...totales,
-      utilidad: this.utilidadVentasProducto(totales.ventasSinIVA, totales.descuento, totales.costoTotal),
-    };
+    return { ...this.ventasProductoTotales };
   }
 
   private calcularVentasPorClienteRows(): any[] {
@@ -1488,39 +2038,11 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
     }));
   }
 
-  get ventasPorClienteRows(): any[] {
-    return this._ventasPorClienteRowsCache;
-  }
-
   get totalVentasPorCliente(): any {
-    if (!this.datos.ventasPorCliente || this.datos.ventasPorCliente.length === 0) {
-      return { transacciones: 0, ventasSinIva: 0, ventasConIva: 0, ventas: 0, dias: 0, ultimaVenta: '' };
-    }
-    const totales = this.datos.ventasPorCliente.reduce((totals: any, item: any) => ({
-      transacciones: totals.transacciones + (item.transacciones || 0),
-      ventasSinIva: totals.ventasSinIva + (item.ventasSinIva || 0),
-      ventasConIva: totals.ventasConIva + (item.ventasConIva || 0),
-      ventas: totals.ventas + (item.ventas || 0),
-      dias: Math.max(totals.dias || 0, item.dias || 0),
-      ultimaVenta: item.ultimaVenta || totals.ultimaVenta || ''
-    }), { transacciones: 0, ventasSinIva: 0, ventasConIva: 0, ventas: 0, dias: 0, ultimaVenta: '' });
-
-    // Obtener la fecha más reciente
-    const fechas = this.datos.ventasPorCliente
-      .map((item: any) => item.ultimaVenta)
-      .filter((fecha: string) => fecha && fecha !== '-');
-
-    if (fechas.length > 0) {
-      // Ordenar fechas y tomar la más reciente
-      fechas.sort((a: string, b: string) => {
-        const dateA = new Date(a.split('/').reverse().join('-'));
-        const dateB = new Date(b.split('/').reverse().join('-'));
-        return dateB.getTime() - dateA.getTime();
-      });
-      totales.ultimaVenta = fechas[0];
-    }
-
-    return totales;
+    return {
+      ...this.ventasClienteTotales,
+      ventas: this.ventasClienteTotales.ventasConIva,
+    };
   }
 
   exportarACSV(data: any[], columns: any[], filename: string): void {
@@ -1556,85 +2078,141 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
     URL.revokeObjectURL(url);
   }
 
-  // Métodos para AG Grid
+  // Métodos para AG Grid (detalle por producto — server-side)
   onQuickFilterChange(): void {
-    if (this.gridApi) {
-      this.gridApi.setQuickFilter(this.quickFilterText);
-    }
+    this.quickFilterVentasProducto$.next(this.quickFilterText.trim());
   }
 
   exportarCSV(): void {
-    if (this.gridApi) {
-      const fecha = new Date().toISOString().split('T')[0];
-      this.gridApi.exportDataAsCsv({
-        fileName: `ventas-por-producto-${fecha}.csv`,
-        processCellCallback: (params: any) => {
-          // Excluir la fila de totales del export si es necesario, o incluirla
-          return params.value || '';
-        }
-      });
-    }
+    this.exportarVentasProductoCompletoCsv();
   }
 
   exportarExcel(): void {
-    // AG Grid Community solo soporta CSV
-    // Para Excel necesitarías ag-grid-enterprise
-    // Por ahora exportamos como CSV con extensión .xlsx (puede abrirse en Excel)
-    if (this.gridApi) {
-      const fecha = new Date().toISOString().split('T')[0];
-      this.gridApi.exportDataAsCsv({
-        fileName: `ventas-por-producto-${fecha}.csv`,
-        processCellCallback: (params: any) => {
-          return params.value || '';
-        }
+    this.exportarVentasProductoCompletoCsv();
+  }
+
+  private exportarVentasProductoCompletoCsv(): void {
+    if (this.ventasProductoExporting) return;
+    this.ventasProductoExporting = true;
+    this.cdr.markForCheck();
+    this.dashboardDataService
+      .obtenerDetalleVentasProductoCompleto(this.getFiltrosDetalleVentasProducto(), {
+        q: this.getVentasProductoSearchQ() || undefined,
+      })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (page) => {
+          const fecha = new Date().toISOString().split('T')[0];
+          const cols = this.ventasPorProductoColumnDefs.filter((c) => c.field);
+          const header = cols
+            .map((c) => this.csvEscape(String(c.headerName || c.field)))
+            .join(',');
+          const lines = (page.items ?? []).map((item: any) =>
+            cols
+              .map((c) => {
+                const field = c.field || '';
+                const raw = item[field];
+                return this.csvEscape(
+                  raw === null || raw === undefined ? '' : String(raw),
+                );
+              })
+              .join(','),
+          );
+          const csv = [header, ...lines].join('\n');
+          const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `ventas-por-producto-${fecha}.csv`;
+          a.click();
+          URL.revokeObjectURL(url);
+          this.ventasProductoExporting = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.ventasProductoExporting = false;
+          this.cdr.markForCheck();
+        },
       });
-    }
   }
 
   limpiarFiltrosGrid(): void {
     if (this.gridApi) {
       this.gridApi.setFilterModel(null);
-      this.quickFilterText = '';
-      this.gridApi.setQuickFilter('');
     }
+    this.quickFilterText = '';
+    this.cargarDetalleVentasProductoPagina(0);
   }
 
   onQuickFilterClienteChange(): void {
-    if (this.clienteGridApi) {
-      this.clienteGridApi.setQuickFilter(this.quickFilterTextCliente);
-    }
+    this.quickFilterVentasCliente$.next(this.quickFilterTextCliente.trim());
   }
 
   exportarClientesCSV(): void {
-    if (this.clienteGridApi) {
-      const fecha = new Date().toISOString().split('T')[0];
-      this.clienteGridApi.exportDataAsCsv({
-        fileName: `ventas-por-cliente-${fecha}.csv`,
-        processCellCallback: (params: any) => {
-          return params.value || '';
-        }
-      });
-    }
+    this.exportarVentasClienteCompletoCsv();
   }
 
   exportarClientesExcel(): void {
-    if (this.clienteGridApi) {
-      const fecha = new Date().toISOString().split('T')[0];
-      this.clienteGridApi.exportDataAsCsv({
-        fileName: `ventas-por-cliente-${fecha}.csv`,
-        processCellCallback: (params: any) => {
-          return params.value || '';
-        }
+    this.exportarVentasClienteCompletoCsv();
+  }
+
+  private exportarVentasClienteCompletoCsv(): void {
+    if (this.ventasClienteExporting) return;
+    this.ventasClienteExporting = true;
+    this.cdr.markForCheck();
+    this.dashboardDataService
+      .obtenerDetalleVentasClienteCompleto(this.getFiltrosDetalleVentasProducto(), {
+        q: this.getVentasClienteSearchQ() || undefined,
+      })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (page) => {
+          const fecha = new Date().toISOString().split('T')[0];
+          const cols = [
+            { field: 'cliente', headerName: 'Cliente' },
+            { field: 'ultimaVenta', headerName: 'Última venta' },
+            { field: 'dias', headerName: 'Días' },
+            { field: 'transacciones', headerName: 'Transacciones' },
+            { field: 'ventasSinIva', headerName: 'Ventas Sin IVA' },
+            { field: 'ventasConIva', headerName: 'Ventas Con IVA' },
+          ];
+          const header = cols
+            .map((c) => this.csvEscape(String(c.headerName || c.field)))
+            .join(',');
+          const lines = (page.items ?? []).map((item: any) =>
+            cols
+              .map((c) => {
+                const raw = item[c.field];
+                return this.csvEscape(
+                  raw === null || raw === undefined ? '' : String(raw),
+                );
+              })
+              .join(','),
+          );
+          const csv = [header, ...lines].join('\n');
+          const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `ventas-por-cliente-${fecha}.csv`;
+          a.click();
+          URL.revokeObjectURL(url);
+          this.ventasClienteExporting = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.ventasClienteExporting = false;
+          this.cdr.markForCheck();
+        },
       });
-    }
   }
 
   limpiarFiltrosClienteGrid(): void {
     if (this.clienteGridApi) {
       this.clienteGridApi.setFilterModel(null);
-      this.quickFilterTextCliente = '';
-      this.clienteGridApi.setQuickFilter('');
     }
+    this.quickFilterTextCliente = '';
+    this.cargarDetalleVentasClientePagina(0);
   }
 
   // Operaciones básicas de celda
@@ -1828,6 +2406,13 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
     if (key === 'productoNombre' || key === 'idProducto') {
       delete this.filtrosInteractivos.idProducto;
       delete this.filtrosInteractivos.productoNombre;
+      this.quickFilterText = '';
+    } else if (key === 'formaPago') {
+      delete this.filtrosInteractivos.formaPago;
+      this.quickFilterText = '';
+    } else if (key === 'cliente') {
+      delete this.filtrosInteractivos.cliente;
+      this.quickFilterTextCliente = '';
     } else {
       delete (this.filtrosInteractivos as any)[key];
     }
@@ -1858,8 +2443,10 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
     if (!event?.name) return;
     if (this.filtrosInteractivos.formaPago === event.name) {
       delete this.filtrosInteractivos.formaPago;
+      this.quickFilterText = '';
     } else {
       this.filtrosInteractivos.formaPago = event.name;
+      this.quickFilterText = event.name;
     }
     this.aplicarFiltrosInteractivos();
   }
@@ -1886,18 +2473,22 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
     if (idStr && activeId === idStr) {
       delete this.filtrosInteractivos.idProducto;
       delete this.filtrosInteractivos.productoNombre;
+      this.quickFilterText = '';
     } else if (
       !idStr &&
       this.filtrosInteractivos.productoNombre === event.name
     ) {
       delete this.filtrosInteractivos.productoNombre;
       delete this.filtrosInteractivos.idProducto;
+      this.quickFilterText = '';
     } else if (id != null) {
       this.filtrosInteractivos.idProducto = id;
       this.filtrosInteractivos.productoNombre = event.name;
+      this.quickFilterText = event.name;
     } else {
       this.filtrosInteractivos.productoNombre = event.name;
       delete this.filtrosInteractivos.idProducto;
+      this.quickFilterText = event.name;
     }
     this.aplicarFiltrosInteractivos();
   }
@@ -1906,8 +2497,10 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
     if (!event?.name) return;
     if (this.filtrosInteractivos.cliente === event.name) {
       delete this.filtrosInteractivos.cliente;
+      this.quickFilterTextCliente = '';
     } else {
       this.filtrosInteractivos.cliente = event.name;
+      this.quickFilterTextCliente = event.name;
     }
     this.aplicarFiltrosInteractivos();
   }
@@ -1932,8 +2525,10 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
       ? this.datosOriginales
       : (this.datos || {});
 
-    // ponytail: sin ventasDetalladas aún no se puede filtrar localmente
+    // ponytail: sin ventasDetalladas aún no se puede filtrar charts localmente
     if (!datosBase.ventasDetalladas?.length) {
+      this.cargarDetalleVentasProductoPagina(0);
+      this.cargarDetalleVentasClientePagina(0);
       this.cdr.markForCheck();
       return;
     }
@@ -1953,8 +2548,10 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
     // Actualizar los datos que se muestran (crear nueva referencia para que Angular detecte cambios)
     this.datos = this.clonarDatos(this.datosFiltrados);
 
-    // Recalcular cache y marcar para detección de cambios
+    // Recalcular cache auxiliar; detalle producto/cliente en servidor
     this.recalcularRowsCache();
+    this.cargarDetalleVentasProductoPagina(0);
+    this.cargarDetalleVentasClientePagina(0);
     this.cdr.markForCheck();
   }
 
@@ -2035,11 +2632,7 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
     this.recalcularVentasVsPresupuesto();
     this.recalcularVentasVsAnioAnterior();
 
-    // Recalcular ventas por producto (tabla detallada)
-    this.recalcularVentasPorProducto(ventasFiltradas);
-
-    // Recalcular ventas por cliente (tabla detallada)
-    this.recalcularVentasPorCliente(ventasFiltradas);
+    // Detalle producto/cliente: paginado en servidor.
   }
 
   /**
@@ -2530,17 +3123,27 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
 
   limpiarFiltrosInteractivos(): void {
     this.filtrosInteractivos = {};
+    this.quickFilterText = '';
+    this.quickFilterTextCliente = '';
     if (Object.keys(this.datosOriginales).length > 0) {
       this.datosFiltrados = this.clonarDatos(this.datosOriginales);
       this.recalcularTodosLosGraficos();
       this.recalcularMetricas();
       this.datos = this.clonarDatos(this.datosFiltrados);
       this.recalcularRowsCache();
+      if (this.inicializado) {
+        this.cargarDetalleVentasProductoPagina(0);
+        this.cargarDetalleVentasClientePagina(0);
+      }
       this.cdr.markForCheck();
     } else if (this.datos) {
       this.datosFiltrados = this.clonarDatos(this.datos);
       this.datos = this.datosFiltrados;
       this.recalcularRowsCache();
+      if (this.inicializado) {
+        this.cargarDetalleVentasProductoPagina(0);
+        this.cargarDetalleVentasClientePagina(0);
+      }
       this.cdr.markForCheck();
     }
   }
@@ -2570,120 +3173,19 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
     return filtros.join(', ');
   }
 
-  recalcularTotalesVentasProducto(desdeFiltroColumnaGrid = false): void {
-    let cantidad = 0;
-    let ventasSinIVA = 0;
-    let descuento = 0;
-    let costoTotal = 0;
-
-    const acumular = (item: any): void => {
-      cantidad += (item.cantidad || 0);
-      ventasSinIVA += (item.ventasSinIVA || 0);
-      descuento += (item.descuento || 0);
-      costoTotal += (item.costoTotal || 0);
-    };
-
-    const usarGridFiltrado =
-      desdeFiltroColumnaGrid && this.gridApi && this.gridApi.isAnyFilterPresent();
-
-    if (usarGridFiltrado) {
-      this.gridApi.forEachNodeAfterFilter((node: any) => {
-        if (!node.data || node.rowPinned) return;
-        acumular(node.data);
-      });
-    } else {
-      const fuente = this._ventasPorProductoRowsCache.length
-        ? this._ventasPorProductoRowsCache
-        : (this.datos?.ventasPorProducto ?? []);
-      fuente.forEach(acumular);
-    }
-
-    const utilidad = this.utilidadVentasProducto(ventasSinIVA, descuento, costoTotal);
-
-    if (cantidad > 0 || ventasSinIVA > 0 || descuento > 0 || costoTotal > 0 || utilidad !== 0) {
-      this.pinnedBottomRowDataVentasProducto = [{
-        categoria: 'TOTAL',
-        producto: '',
-        formaPago: '',
-        cantidad: cantidad,
-        precioUnitario: null,
-        descuento: descuento,
-        ventasSinIVA: ventasSinIVA,
-        costoTotal: costoTotal,
-        utilidad: utilidad
-      }];
-    } else {
-      this.pinnedBottomRowDataVentasProducto = [];
-    }
+  /** Totales pinned desde API (`totales`); no sumar solo la página cargada. */
+  recalcularTotalesVentasProducto(_desdeFiltroColumnaGrid = false): void {
+    this.aplicarPinnedTotalesVentasProducto(this.ventasProductoTotales);
   }
 
   onFilterChangedVentasProducto(): void {
-    this.recalcularTotalesVentasProducto(true);
+    this.recalcularTotalesVentasProducto();
     this.cdr.markForCheck();
   }
 
+  /** Totales pinned desde API (`totales`); no sumar solo la página cargada. */
   recalcularTotalesVentasCliente(): void {
-    let transacciones = 0;
-    let ventasSinIvaVal = 0;
-    let ventasConIvaVal = 0;
-    let diasMax = 0;
-    let ultimaVentaStr = '';
-
-    if (this.clienteGridApi) {
-      const fechas: string[] = [];
-      this.clienteGridApi.forEachNodeAfterFilter((node: any) => {
-        if (node.data) {
-          transacciones += (node.data.transacciones || 0);
-          ventasSinIvaVal += (node.data.ventasSinIvaOriginal || 0);
-          ventasConIvaVal += (node.data.ventasConIvaOriginal || 0);
-          diasMax = Math.max(diasMax, node.data.dias || 0);
-          if (node.data.ultimaVenta && node.data.ultimaVenta !== '-') {
-            fechas.push(node.data.ultimaVenta);
-          }
-        }
-      });
-      if (fechas.length > 0) {
-        fechas.sort((a: string, b: string) => {
-          const dateA = new Date(a.split('/').reverse().join('-'));
-          const dateB = new Date(b.split('/').reverse().join('-'));
-          return dateB.getTime() - dateA.getTime();
-        });
-        ultimaVentaStr = fechas[0];
-      }
-    } else if (this.datos.ventasPorCliente) {
-      const datesList = this.datos.ventasPorCliente
-        .map((item: any) => item.ultimaVenta)
-        .filter((fecha: string) => fecha && fecha !== '-');
-      if (datesList.length > 0) {
-        datesList.sort((a: string, b: string) => {
-          const dateA = new Date(a.split('/').reverse().join('-'));
-          const dateB = new Date(b.split('/').reverse().join('-'));
-          return dateB.getTime() - dateA.getTime();
-        });
-        ultimaVentaStr = datesList[0];
-      }
-      this.datos.ventasPorCliente.forEach((item: any) => {
-        transacciones += (item.transacciones || 0);
-        ventasSinIvaVal += (item.ventasSinIva || 0);
-        ventasConIvaVal += (item.ventasConIva || 0);
-        diasMax = Math.max(diasMax, item.dias || 0);
-      });
-    }
-
-    if (transacciones > 0) {
-      this.pinnedBottomRowDataVentasCliente = [{
-        cliente: 'Total',
-        ultimaVenta: ultimaVentaStr || '-',
-        dias: diasMax,
-        transacciones: transacciones,
-        ventasSinIva: this.formatCurrency(ventasSinIvaVal),
-        ventasSinIvaOriginal: ventasSinIvaVal,
-        ventasConIva: this.formatCurrency(ventasConIvaVal),
-        ventasConIvaOriginal: ventasConIvaVal
-      }];
-    } else {
-      this.pinnedBottomRowDataVentasCliente = [];
-    }
+    this.aplicarPinnedTotalesVentasCliente(this.ventasClienteTotales);
   }
 
   onFilterChangedVentasCliente(): void {

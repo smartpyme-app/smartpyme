@@ -15,6 +15,14 @@
             </div>
         </div>
     </ng-template>
+    <ng-template #ventasTablePlaceholder>
+        <div class="d-flex align-items-center justify-content-center text-primary" style="min-height: 420px;"
+            aria-busy="true" aria-live="polite">
+            <div class="spinner-border" role="status" style="width: 2.5rem; height: 2.5rem;">
+                <span class="visually-hidden">Cargando tabla…</span>
+            </div>
+        </div>
+    </ng-template>
     <ng-template #ventasMetricasPlaceholder>
         <div class="d-flex align-items-center justify-content-center text-primary" style="min-height: 96px;"
             aria-busy="true" aria-live="polite">
@@ -442,8 +450,10 @@
                                             </div>
                                             <!-- Botones de exportación -->
                                             <button class="btn btn-sm btn-outline-success" (click)="exportarExcel()"
-                                                title="Exportar a Excel">
-                                                <i class="fas fa-file-excel me-1"></i> Excel
+                                                title="Exportar a Excel"
+                                                [disabled]="ventasProductoExporting || ventasProductoLoading">
+                                                <i class="fas fa-file-excel me-1"></i>
+                                                {{ ventasProductoExporting ? 'Exportando…' : 'Excel' }}
                                             </button>
                                             <button class="btn btn-sm btn-outline-secondary"
                                                 (click)="limpiarFiltrosGrid()" title="Limpiar filtros">
@@ -453,19 +463,27 @@
                                     </div>
                                 </div>
                                 <div class="card-body px-3 py-0">
-                                    <ng-container
-                                        *ngIf="datos.ventasPorProducto !== undefined; else ventasListPlaceholder">
-                                        <ag-grid-angular #ventasPorProductoGrid
-                                            class="ag-theme-alpine ventas-producto-grid"
-                                            [rowData]="ventasPorProductoRows"
-                                            [pinnedBottomRowData]="pinnedBottomRowDataVentasProducto"
-                                            [columnDefs]="ventasPorProductoColumnDefs"
-                                            [gridOptions]="ventasPorProductoGridOptions" [defaultColDef]="{
+                                    <ng-container *ngIf="ventasProductoListo; else ventasTablePlaceholder">
+                                        <div class="position-relative">
+                                            <div *ngIf="ventasProductoLoading"
+                                                class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+                                                style="background: rgba(255,255,255,0.55); z-index: 2;">
+                                                <div class="spinner-border spinner-border-sm text-secondary" role="status">
+                                                    <span class="visually-hidden">Cargando…</span>
+                                                </div>
+                                            </div>
+                                            <ag-grid-angular #ventasPorProductoGrid
+                                                class="ag-theme-alpine ventas-producto-grid"
+                                                [rowData]="ventasPorProductoRows"
+                                                [pinnedBottomRowData]="pinnedBottomRowDataVentasProducto"
+                                                [columnDefs]="ventasPorProductoColumnDefs"
+                                                [gridOptions]="ventasPorProductoGridOptions" [defaultColDef]="{
                                                 resizable: true,
                                                 sortable: true,
                                                 filter: true
                                             }" style="width: 100%; height: 450px;" [domLayout]="'normal'">
-                                        </ag-grid-angular>
+                                            </ag-grid-angular>
+                                        </div>
                                     </ng-container>
                                 </div>
                             </div>
@@ -527,8 +545,10 @@
                                                     (input)="onQuickFilterClienteChange()">
                                             </div>
                                             <button class="btn btn-sm btn-outline-success"
-                                                (click)="exportarClientesExcel()" title="Exportar a Excel">
-                                                <i class="fas fa-file-excel me-1"></i> Excel
+                                                (click)="exportarClientesExcel()" title="Exportar a Excel"
+                                                [disabled]="ventasClienteExporting || ventasClienteLoading">
+                                                <i class="fas fa-file-excel me-1"></i>
+                                                {{ ventasClienteExporting ? 'Exportando…' : 'Excel' }}
                                             </button>
                                             <button class="btn btn-sm btn-outline-secondary"
                                                 (click)="limpiarFiltrosClienteGrid()" title="Limpiar filtros">
@@ -538,18 +558,27 @@
                                     </div>
                                 </div>
                                 <div class="card-body px-3 py-0">
-                                    <ng-container
-                                        *ngIf="datos.ventasPorCliente !== undefined; else ventasListPlaceholder">
-                                        <ag-grid-angular #ventasPorClienteGrid
-                                            class="ag-theme-alpine ventas-cliente-grid" [rowData]="ventasPorClienteRows"
-                                            [pinnedBottomRowData]="pinnedBottomRowDataVentasCliente"
-                                            [columnDefs]="ventasPorClienteColumnDefs"
-                                            [gridOptions]="ventasPorClienteGridOptions" [defaultColDef]="{
+                                    <ng-container *ngIf="ventasClienteListo; else ventasTablePlaceholder">
+                                        <div class="position-relative">
+                                            <div *ngIf="ventasClienteLoading"
+                                                class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+                                                style="background: rgba(255,255,255,0.55); z-index: 2;">
+                                                <div class="spinner-border spinner-border-sm text-secondary" role="status">
+                                                    <span class="visually-hidden">Cargando…</span>
+                                                </div>
+                                            </div>
+                                            <ag-grid-angular #ventasPorClienteGrid
+                                                class="ag-theme-alpine ventas-cliente-grid"
+                                                [rowData]="ventasPorClienteRows"
+                                                [pinnedBottomRowData]="pinnedBottomRowDataVentasCliente"
+                                                [columnDefs]="ventasPorClienteColumnDefs"
+                                                [gridOptions]="ventasPorClienteGridOptions" [defaultColDef]="{
                                                 resizable: true,
                                                 sortable: true,
                                                 filter: true
                                             }" style="width: 100%; height: 450px;" [domLayout]="'normal'">
-                                        </ag-grid-angular>
+                                            </ag-grid-angular>
+                                        </div>
                                     </ng-container>
                                 </div>
                             </div>

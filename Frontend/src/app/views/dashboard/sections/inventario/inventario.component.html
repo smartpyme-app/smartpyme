@@ -31,11 +31,27 @@
             </div>
         </div>
     </ng-template>
+    <ng-template #invEsTableLoader>
+        <div class="d-flex align-items-center justify-content-center" style="min-height: 450px; color: #38528f;"
+            aria-busy="true" aria-live="polite">
+            <div class="spinner-border" role="status" style="width: 2.5rem; height: 2.5rem;">
+                <span class="visually-hidden">Cargando detalle de entradas y salidas…</span>
+            </div>
+        </div>
+    </ng-template>
     <ng-template #invAjustesBlockLoader>
         <div class="d-flex align-items-center justify-content-center rounded shadow-sm bg-white"
             style="min-height: 520px; color: #38528f;" aria-busy="true" aria-live="polite">
             <div class="spinner-border" role="status" style="width: 2.5rem; height: 2.5rem;">
                 <span class="visually-hidden">Cargando ajustes…</span>
+            </div>
+        </div>
+    </ng-template>
+    <ng-template #invAjustesTableLoader>
+        <div class="d-flex align-items-center justify-content-center" style="min-height: 450px; color: #38528f;"
+            aria-busy="true" aria-live="polite">
+            <div class="spinner-border" role="status" style="width: 2.5rem; height: 2.5rem;">
+                <span class="visually-hidden">Cargando detalle de ajustes…</span>
             </div>
         </div>
     </ng-template>
@@ -217,8 +233,10 @@
                                                     (input)="onQuickFilterChange()">
                                             </div>
                                             <button class="btn btn-sm btn-outline-success"
-                                                (click)="exportarExcel()" title="Exportar a Excel">
-                                                <i class="fas fa-file-excel me-1"></i> Excel
+                                                (click)="exportarExcel()" title="Exportar a Excel"
+                                                [disabled]="detalleExporting || detalleLoading">
+                                                <i class="fas fa-file-excel me-1"></i>
+                                                {{ detalleExporting ? 'Exportando…' : 'Excel' }}
                                             </button>
                                             <button class="btn btn-sm btn-outline-secondary"
                                                 (click)="limpiarFiltrosGrid()" title="Limpiar filtros">
@@ -228,18 +246,27 @@
                                     </div>
                                 </div>
                                 <div class="card-body px-3 py-0">
-                                    <ng-container *ngIf="datos?.detalleInventario !== undefined; else invProductosTableLoader">
-                                        <ag-grid-angular #inventarioProductosGrid
-                                            class="ag-theme-alpine inventario-productos-grid"
-                                            [rowData]="inventarioProductosRows"
-                                            [pinnedBottomRowData]="pinnedBottomRowDataInventario"
-                                            [columnDefs]="inventarioProductosColumnDefs"
-                                            [gridOptions]="inventarioProductosGridOptions" [defaultColDef]="{
-                                                resizable: true,
-                                                sortable: true,
-                                                filter: true
-                                            }" style="width: 100%; height: 450px;" [domLayout]="'normal'">
-                                        </ag-grid-angular>
+                                    <ng-container *ngIf="detalleListo; else invProductosTableLoader">
+                                        <div class="position-relative">
+                                            <div *ngIf="detalleLoading"
+                                                class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+                                                style="background: rgba(255,255,255,0.55); z-index: 2;">
+                                                <div class="spinner-border spinner-border-sm text-secondary" role="status">
+                                                    <span class="visually-hidden">Cargando…</span>
+                                                </div>
+                                            </div>
+                                            <ag-grid-angular #inventarioProductosGrid
+                                                class="ag-theme-alpine inventario-productos-grid"
+                                                [rowData]="inventarioProductosRows"
+                                                [pinnedBottomRowData]="pinnedBottomRowDataInventario"
+                                                [columnDefs]="inventarioProductosColumnDefs"
+                                                [gridOptions]="inventarioProductosGridOptions" [defaultColDef]="{
+                                                    resizable: true,
+                                                    sortable: true,
+                                                    filter: true
+                                                }" style="width: 100%; height: 450px;" [domLayout]="'normal'">
+                                            </ag-grid-angular>
+                                        </div>
                                     </ng-container>
                                 </div>
                             </div>
@@ -312,8 +339,10 @@
                                                         (input)="onQuickFilterChangeEntradasSalidas()">
                                                 </div>
                                                 <button class="btn btn-sm btn-outline-success"
-                                                    (click)="exportarExcelEntradasSalidas()" title="Exportar a Excel">
-                                                    <i class="fas fa-file-excel me-1"></i> Excel
+                                                    (click)="exportarExcelEntradasSalidas()" title="Exportar a Excel"
+                                                    [disabled]="esExporting || esLoading">
+                                                    <i class="fas fa-file-excel me-1"></i>
+                                                    {{ esExporting ? 'Exportando…' : 'Excel' }}
                                                 </button>
                                                 <button class="btn btn-sm btn-outline-secondary"
                                                     (click)="limpiarFiltrosGridEntradasSalidas()"
@@ -324,17 +353,28 @@
                                         </div>
                                     </div>
                                     <div class="card-body px-3 py-0">
-                                        <ag-grid-angular #entradasSalidasGrid
-                                            class="ag-theme-alpine entradas-salidas-grid"
-                                            [rowData]="entradasSalidasRows"
-                                            [pinnedBottomRowData]="pinnedBottomRowDataEntradasSalidas"
-                                            [columnDefs]="entradasSalidasColumnDefs"
-                                            [gridOptions]="entradasSalidasGridOptions" [defaultColDef]="{
-                                            resizable: true,
-                                            sortable: true,
-                                            filter: true
-                                        }" style="width: 100%; height: 450px;" [domLayout]="'normal'">
-                                        </ag-grid-angular>
+                                        <ng-container *ngIf="esListo; else invEsTableLoader">
+                                            <div class="position-relative">
+                                                <div *ngIf="esLoading"
+                                                    class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+                                                    style="background: rgba(255,255,255,0.55); z-index: 2;">
+                                                    <div class="spinner-border spinner-border-sm text-secondary" role="status">
+                                                        <span class="visually-hidden">Cargando…</span>
+                                                    </div>
+                                                </div>
+                                                <ag-grid-angular #entradasSalidasGrid
+                                                    class="ag-theme-alpine entradas-salidas-grid"
+                                                    [rowData]="entradasSalidasRows"
+                                                    [pinnedBottomRowData]="pinnedBottomRowDataEntradasSalidas"
+                                                    [columnDefs]="entradasSalidasColumnDefs"
+                                                    [gridOptions]="entradasSalidasGridOptions" [defaultColDef]="{
+                                                    resizable: true,
+                                                    sortable: true,
+                                                    filter: true
+                                                }" style="width: 100%; height: 450px;" [domLayout]="'normal'">
+                                                </ag-grid-angular>
+                                            </div>
+                                        </ng-container>
                                     </div>
                                 </div>
                             </div>
@@ -386,8 +426,10 @@
                                                         (input)="onQuickFilterChangeAjustes()">
                                                 </div>
                                                 <button type="button" class="btn btn-sm btn-outline-success"
-                                                    (click)="exportarExcelAjustes()" title="Exportar a Excel">
-                                                    <i class="fas fa-file-excel me-1"></i> Excel
+                                                    (click)="exportarExcelAjustes()" title="Exportar a Excel"
+                                                    [disabled]="ajustesExporting || ajustesLoading">
+                                                    <i class="fas fa-file-excel me-1"></i>
+                                                    {{ ajustesExporting ? 'Exportando…' : 'Excel' }}
                                                 </button>
                                                 <button type="button" class="btn btn-sm btn-outline-secondary"
                                                     (click)="limpiarFiltrosGridAjustes()" title="Limpiar filtros">
@@ -397,14 +439,27 @@
                                         </div>
                                     </div>
                                     <div class="card-body px-3 py-0" style="height: 450px; overflow: hidden;">
-                                        <ag-grid-angular #ajustesGrid class="ag-theme-alpine ajustes-grid"
-                                            [rowData]="ajustesRows" [columnDefs]="ajustesColumnDefs"
-                                            [gridOptions]="ajustesGridOptions" [defaultColDef]="{
-                                            resizable: true,
-                                            sortable: true,
-                                            filter: true
-                                        }" style="width: 100%; height: 100%;" [domLayout]="'normal'">
-                                        </ag-grid-angular>
+                                        <ng-container *ngIf="ajustesListo; else invAjustesTableLoader">
+                                            <div class="position-relative" style="height: 100%;">
+                                                <div *ngIf="ajustesLoading"
+                                                    class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+                                                    style="background: rgba(255,255,255,0.55); z-index: 2;">
+                                                    <div class="spinner-border spinner-border-sm text-secondary" role="status">
+                                                        <span class="visually-hidden">Cargando…</span>
+                                                    </div>
+                                                </div>
+                                                <ag-grid-angular #ajustesGrid class="ag-theme-alpine ajustes-grid"
+                                                    [rowData]="ajustesRows"
+                                                    [pinnedBottomRowData]="pinnedBottomRowDataAjustes"
+                                                    [columnDefs]="ajustesColumnDefs"
+                                                    [gridOptions]="ajustesGridOptions" [defaultColDef]="{
+                                                    resizable: true,
+                                                    sortable: true,
+                                                    filter: true
+                                                }" style="width: 100%; height: 100%;" [domLayout]="'normal'">
+                                                </ag-grid-angular>
+                                            </div>
+                                        </ng-container>
                                     </div>
                                 </div>
                             </div>

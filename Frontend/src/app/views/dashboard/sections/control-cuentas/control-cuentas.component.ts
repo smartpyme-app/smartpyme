@@ -1,4 +1,6 @@
 import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter, ViewChild, ChangeDetectorRef, ChangeDetectionStrategy, OnDestroy } from '@angular/core';
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged, switchMap, takeUntil } from 'rxjs/operators';
 import { DashboardDataService } from '../../services/dashboard-data.service';
 import { ColDef, GridOptions, GridApi, ColumnApi } from 'ag-grid-community';
 import { ApiService } from '@services/api.service';
@@ -12,6 +14,10 @@ import {
 } from '../../components/dropdown-multi-filtro/dropdown-multi-filtro.component';
 import { formatEmpresaCurrency } from '@helpers/currency-format.helper';
 import { MetricCard } from '../../models/chart-config.model';
+import {
+  DetalleCxcTotales,
+  DetalleCxpTotales,
+} from '../../services/cuentas-dashboard-data.service';
 
 @Component({
   selector: 'app-control-cuentas',
@@ -79,7 +85,7 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
   @ViewChild('detalleCuentasGrid') detalleCuentasGrid: any;
   @ViewChild('resumenCuentasPagarGrid') resumenCuentasPagarGrid: any;
 
-  // AG Grid configuration
+  // AG Grid configuration — CXC detalle (paginación lazy)
   detalleCuentasColumnDefs: ColDef[] = [];
   detalleCuentasGridOptions: GridOptions = {};
   resumenCuentasPagarColumnDefs: ColDef[] = [];
@@ -92,6 +98,43 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
   private resumenGridColumnApi!: ColumnApi;
   quickFilterText: string = '';
   quickFilterTextResumen: string = '';
+  cxcListo = false;
+  cxcLoading = false;
+  cxcExporting = false;
+  readonly cxcPageSize = 50;
+  cxcOffset = 0;
+  cxcTotal = 0;
+  cxcTotales: DetalleCxcTotales = {
+    ventasConIVA: 0,
+    montoAbonado: 0,
+    saldoPendiente: 0,
+  };
+  cxpListo = false;
+  cxpLoading = false;
+  cxpExporting = false;
+  readonly cxpPageSize = 50;
+  cxpOffset = 0;
+  cxpTotal = 0;
+  cxpTotales: DetalleCxpTotales = {
+    gastosTotalesConIVA: 0,
+    totalAbonado: 0,
+    saldoPendiente: 0,
+  };
+  private readonly destroy$ = new Subject<void>();
+  private readonly cxcPage$ = new Subject<{
+    offset: number;
+    q: string;
+    append: boolean;
+  }>();
+  private readonly quickFilterCxc$ = new Subject<string>();
+  private cxcAppendPending = false;
+  private readonly cxpPage$ = new Subject<{
+    offset: number;
+    q: string;
+    append: boolean;
+  }>();
+  private readonly quickFilterCxp$ = new Subject<string>();
+  private cxpAppendPending = false;
 
   anio: string = new Date().getFullYear().toString();
   mes: string = '';
@@ -236,79 +279,7 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
     }
     this._lastDatosHash = currentHash;
 
-    // Recalcular detalle de cuentas por cobrar
-    if (this.datos.detalleCuentasPorCobrar) {
-      const rows = this.datos.detalleCuentasPorCobrar.map((item: any) => ({
-        cliente: item.cliente || '-',
-        factura: item.factura || '-',
-        fechaVenta: item.fechaVenta || '-',
-        fechaPago: item.fechaPago || '-',
-        diasVencimiento: item.diasVencimiento || 0,
-        estado: item.estado || '-',
-        ventasConIVA: item.ventasConIVA || 0,
-        montoAbonado: item.montoAbonado || 0,
-        diasAbono: item.diasAbono || null,
-        saldoPendiente: item.saldoPendiente || 0,
-        isTotal: false
-      }));
-
-      // Calcular totales para la cache
-      const totales = this.datos.detalleCuentasPorCobrar.reduce((totals: any, item: any) => ({
-        ventasConIVA: totals.ventasConIVA + (item.ventasConIVA || 0),
-        montoAbonado: totals.montoAbonado + (item.montoAbonado || 0),
-        saldoPendiente: totals.saldoPendiente + (item.saldoPendiente || 0)
-      }), { ventasConIVA: 0, montoAbonado: 0, saldoPendiente: 0 });
-
-      this._totalesDetalleCuentasCache = totales;
-      this._detalleCuentasRowsCache = rows;
-    } else {
-      this._detalleCuentasRowsCache = [];
-      this._totalesDetalleCuentasCache = { ventasConIVA: 0, montoAbonado: 0, saldoPendiente: 0 };
-    }
-
-    // Recalcular resumen de cuentas por pagar
-    if (this.datos.resumenCuentasPorPagar) {
-      const rows = this.datos.resumenCuentasPorPagar.map((item: any) => ({
-        proveedor: item.proveedor != null && String(item.proveedor).trim() !== ''
-          ? String(item.proveedor).trim()
-          : '-',
-        correlativo:
-          item.correlativo != null && String(item.correlativo).trim() !== ''
-            ? String(item.correlativo).trim()
-            : '-',
-        fechaCompra: item.fechaCompra || '-',
-        vencimiento: item.vencimiento || '-',
-        diasVencimiento:
-          item.diasVencimiento !== undefined && item.diasVencimiento !== null
-            ? item.diasVencimiento
-            : 0,
-        estado: item.estado || '-',
-        gastosTotalesConIVA: item.gastosTotalesConIVA || 0,
-        totalAbonado: item.totalAbonado || 0,
-        ultimoAbono:
-          item.ultimoAbono != null && String(item.ultimoAbono).trim() !== ''
-            ? String(item.ultimoAbono).trim()
-            : '-',
-        saldoPendiente: item.saldoPendiente || 0,
-        isTotal: false,
-      }));
-
-      // Calcular totales para la cache
-      const totales = this.datos.resumenCuentasPorPagar.reduce((totals: any, item: any) => ({
-        gastosTotalesConIVA: totals.gastosTotalesConIVA + (item.gastosTotalesConIVA || 0),
-        totalAbonado: totals.totalAbonado + (item.totalAbonado || 0),
-        saldoPendiente: totals.saldoPendiente + (item.saldoPendiente || 0)
-      }), { gastosTotalesConIVA: 0, totalAbonado: 0, saldoPendiente: 0 });
-
-      this._totalesResumenCuentasPagarCache = totales;
-      this._resumenCuentasPagarRowsCache = rows;
-    } else {
-      this._resumenCuentasPagarRowsCache = [];
-      this._totalesResumenCuentasPagarCache = { gastosTotalesConIVA: 0, totalAbonado: 0, saldoPendiente: 0 };
-    }
-
-    this.recalcularTotalesCxc();
-    this.recalcularTotalesCxp();
+    // Detalle CXC / CXP: carga lazy; no vienen en el merge.
   }
 
   ngOnInit(): void {
@@ -321,6 +292,8 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
     this.cargarOpcionesFiltros();
     this.configurarAGGrid();
     this.configurarAGGridResumenPagar();
+    this.wireDetalleCxcStreams();
+    this.wireDetalleCxpStreams();
     // Guardar datos originales si existen
     if (this.datos && Object.keys(this.datos).length > 0) {
       this.datosOriginales = this.clonarDatos(this.datos);
@@ -331,11 +304,17 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
     setTimeout(() => {
       this.inicializado = true;
       this.filtrosListosParaEmitir = true;
+      if (tieneEstadoGuardado) {
+        this.cargarDetalleCxcPagina(0);
+        this.cargarDetalleCxpPagina(0);
+      }
       this.cdr.markForCheck();
     }, 100);
   }
 
   ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
     this.dashboardDataService.guardarFiltrosUI('Control de cuentas', {
       anio: this.anio,
       mes: this.mes,
@@ -391,6 +370,353 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
     }
   }
 
+  private wireDetalleCxcStreams(): void {
+    this.cxcPage$
+      .pipe(
+        switchMap(({ offset, q, append }) => {
+          this.cxcAppendPending = append;
+          this.cxcLoading = true;
+          this.cdr.markForCheck();
+          return this.dashboardDataService.obtenerDetalleCxcPagina(
+            this.getFiltrosCxcDetalle(),
+            { limite: this.cxcPageSize, offset, q: q || undefined },
+          );
+        }),
+        takeUntil(this.destroy$),
+      )
+      .subscribe({
+        next: (page) => {
+          this.cxcOffset = page.offset;
+          this.cxcTotal = page.total;
+          this.cxcTotales = page.totales;
+          const append =
+            this.cxcAppendPending && (page.items?.length ?? 0) > 0;
+          this.applyCxcPageRows(page.items, page.totales, append);
+          this.cxcAppendPending = false;
+          this.cxcListo = true;
+          this.cxcLoading = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.cxcAppendPending = false;
+          this.cxcLoading = false;
+          this.cxcListo = true;
+          this.cdr.markForCheck();
+        },
+      });
+
+    this.quickFilterCxc$
+      .pipe(
+        debounceTime(300),
+        distinctUntilChanged(),
+        takeUntil(this.destroy$),
+      )
+      .subscribe(() => {
+        this.cargarDetalleCxcPagina(0);
+      });
+  }
+
+  private wireDetalleCxpStreams(): void {
+    this.cxpPage$
+      .pipe(
+        switchMap(({ offset, q, append }) => {
+          this.cxpAppendPending = append;
+          this.cxpLoading = true;
+          this.cdr.markForCheck();
+          return this.dashboardDataService.obtenerDetalleCxpPagina(
+            this.getFiltrosCxpDetalle(),
+            { limite: this.cxpPageSize, offset, q: q || undefined },
+          );
+        }),
+        takeUntil(this.destroy$),
+      )
+      .subscribe({
+        next: (page) => {
+          this.cxpOffset = page.offset;
+          this.cxpTotal = page.total;
+          this.cxpTotales = page.totales;
+          const append =
+            this.cxpAppendPending && (page.items?.length ?? 0) > 0;
+          this.applyCxpPageRows(page.items, page.totales, append);
+          this.cxpAppendPending = false;
+          this.cxpListo = true;
+          this.cxpLoading = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.cxpAppendPending = false;
+          this.cxpLoading = false;
+          this.cxpListo = true;
+          this.cdr.markForCheck();
+        },
+      });
+
+    this.quickFilterCxp$
+      .pipe(
+        debounceTime(300),
+        distinctUntilChanged(),
+        takeUntil(this.destroy$),
+      )
+      .subscribe(() => {
+        this.cargarDetalleCxpPagina(0);
+      });
+  }
+
+  /** Filtros panel CXC + overrides interactivos (vigencia del chart). */
+  private getFiltrosCxcDetalle(): any {
+    const filtros: any = {
+      anio: this.anio || new Date().getFullYear().toString(),
+    };
+    if (this.mes) filtros.mes = this.mes;
+
+    const suc = this.filtroCxcSucursalParaApiAplicado();
+    if (suc !== '' && suc != null) filtros.sucursal = suc;
+
+    const cli = this.filtroMultiAString(
+      this.filtroCxcCliTodasImplicitasAplicado,
+      this.filtroCxcCliSeleccionadasAplicado,
+      this.idsDeListaFiltro(this.clientes),
+    );
+    if (cli) filtros.cliente = cli;
+
+    const vig = this.vigenciaParaApiAplicado();
+    if (vig) filtros.estadoVigencia = vig;
+
+    if (this.filtrosInteractivos.vigencia) {
+      filtros.estadoVigencia = this.filtrosInteractivos.vigencia;
+    }
+    return filtros;
+  }
+
+  private getCxcSearchQ(): string {
+    const typed = this.quickFilterText.trim();
+    if (typed) return typed;
+    return (this.filtrosInteractivos.cliente || '').trim();
+  }
+
+  cargarDetalleCxcPagina(offset: number, append = false): void {
+    this.cxcPage$.next({
+      offset: Math.max(0, offset),
+      q: this.getCxcSearchQ(),
+      append,
+    });
+  }
+
+  private maybeLoadMoreCxcFromGrid(): void {
+    if (!this.gridApi || this.cxcLoading || !this.cxcListo) return;
+    const loaded = this._detalleCuentasRowsCache.length;
+    if (loaded >= this.cxcTotal) return;
+    const pageSize = this.gridApi.paginationGetPageSize() || 25;
+    const currentPage = this.gridApi.paginationGetCurrentPage();
+    // Solo al llegar a la última página del buffer (evita prefetch en page 0 con chunk=50).
+    const lastLoadedPage = Math.max(0, Math.ceil(loaded / pageSize) - 1);
+    if (currentPage >= lastLoadedPage) {
+      this.cargarDetalleCxcPagina(loaded, true);
+    }
+  }
+
+  private mapCxcRows(items: any[]): any[] {
+    return (items ?? []).map((item: any) => ({
+      cliente: item.cliente || '-',
+      factura: item.factura || '-',
+      fechaVenta: item.fechaVenta || '-',
+      fechaPago: item.fechaPago || '-',
+      diasVencimiento: item.diasVencimiento || 0,
+      estado: item.estado || '-',
+      ventasConIVA: item.ventasConIVA || 0,
+      montoAbonado: item.montoAbonado || 0,
+      diasAbono: item.diasAbono || null,
+      saldoPendiente: item.saldoPendiente || 0,
+      isTotal: false,
+    }));
+  }
+
+  private applyCxcPageRows(
+    items: any[],
+    totales: DetalleCxcTotales,
+    append = false,
+  ): void {
+    const mapped = this.mapCxcRows(items);
+    if (append && this._detalleCuentasRowsCache.length > 0) {
+      this._detalleCuentasRowsCache = [
+        ...this._detalleCuentasRowsCache,
+        ...mapped,
+      ];
+    } else {
+      this._detalleCuentasRowsCache = mapped;
+      if (this.gridApi) {
+        this.gridApi.paginationGoToFirstPage();
+      }
+    }
+    this._totalesDetalleCuentasCache = { ...totales };
+    this.aplicarPinnedTotalesCxc(totales);
+  }
+
+  private aplicarPinnedTotalesCxc(totales: DetalleCxcTotales): void {
+    if (
+      totales.ventasConIVA !== 0 ||
+      totales.montoAbonado !== 0 ||
+      totales.saldoPendiente !== 0
+    ) {
+      this.pinnedBottomRowDataCxc = [
+        {
+          cliente: 'Total',
+          factura: '',
+          fechaVenta: '',
+          fechaPago: '',
+          diasVencimiento: '',
+          estado: '',
+          ventasConIVA: totales.ventasConIVA,
+          montoAbonado: totales.montoAbonado,
+          diasAbono: '',
+          saldoPendiente: totales.saldoPendiente,
+        },
+      ];
+    } else {
+      this.pinnedBottomRowDataCxc = [];
+    }
+  }
+
+  /** Filtros panel CXP + overrides interactivos (vigencia / proveedor). */
+  private getFiltrosCxpDetalle(): any {
+    const filtros: any = {
+      anio: this.anio || new Date().getFullYear().toString(),
+    };
+    if (this.mes) filtros.mes = this.mes;
+
+    const suc = this.filtroCxcSucursalParaApiAplicado();
+    if (suc !== '' && suc != null) filtros.sucursal = suc;
+
+    const prov = this.filtroMultiAString(
+      this.filtroCxpProvTodasImplicitasAplicado,
+      this.filtroCxpProvSeleccionadasAplicado,
+      this.idsDeListaFiltro(this.proveedores),
+    );
+    if (prov) filtros.proveedor = prov;
+
+    const cat = this.filtroMultiAString(
+      this.filtroCxpCatTodasImplicitasAplicado,
+      this.filtroCxpCatSeleccionadasAplicado,
+      this.idsDeListaFiltro(this.categoriasGasto),
+    );
+    if (cat) filtros.categoria = cat;
+
+    const vig = this.vigenciaParaApiAplicado();
+    if (vig) filtros.estadoVigencia = vig;
+
+    if (this.filtrosInteractivos.vigenciaPagar) {
+      filtros.estadoVigencia = this.filtrosInteractivos.vigenciaPagar;
+    }
+    return filtros;
+  }
+
+  private getCxpSearchQ(): string {
+    const typed = this.quickFilterTextResumen.trim();
+    if (typed) return typed;
+    return (this.filtrosInteractivos.proveedor || '').trim();
+  }
+
+  cargarDetalleCxpPagina(offset: number, append = false): void {
+    this.cxpPage$.next({
+      offset: Math.max(0, offset),
+      q: this.getCxpSearchQ(),
+      append,
+    });
+  }
+
+  private maybeLoadMoreCxpFromGrid(): void {
+    if (!this.resumenGridApi || this.cxpLoading || !this.cxpListo) return;
+    const loaded = this._resumenCuentasPagarRowsCache.length;
+    if (loaded >= this.cxpTotal) return;
+    const pageSize = this.resumenGridApi.paginationGetPageSize() || 25;
+    const currentPage = this.resumenGridApi.paginationGetCurrentPage();
+    // Solo al llegar a la última página del buffer (evita prefetch en page 0 con chunk=50).
+    const lastLoadedPage = Math.max(0, Math.ceil(loaded / pageSize) - 1);
+    if (currentPage >= lastLoadedPage) {
+      this.cargarDetalleCxpPagina(loaded, true);
+    }
+  }
+
+  private mapCxpRows(items: any[]): any[] {
+    return (items ?? []).map((item: any) => ({
+      proveedor:
+        item.proveedor != null && String(item.proveedor).trim() !== ''
+          ? String(item.proveedor).trim()
+          : '-',
+      correlativo:
+        item.correlativo != null && String(item.correlativo).trim() !== ''
+          ? String(item.correlativo).trim()
+          : '-',
+      fechaCompra: item.fechaCompra || '-',
+      vencimiento: item.vencimiento || '-',
+      diasVencimiento:
+        item.diasVencimiento !== undefined && item.diasVencimiento !== null
+          ? item.diasVencimiento
+          : 0,
+      estado: item.estado || '-',
+      gastosTotalesConIVA: item.gastosTotalesConIVA || 0,
+      totalAbonado: item.totalAbonado || 0,
+      ultimoAbono:
+        item.ultimoAbono != null && String(item.ultimoAbono).trim() !== ''
+          ? String(item.ultimoAbono).trim()
+          : '-',
+      saldoPendiente: item.saldoPendiente || 0,
+      isTotal: false,
+    }));
+  }
+
+  private applyCxpPageRows(
+    items: any[],
+    totales: DetalleCxpTotales,
+    append = false,
+  ): void {
+    const mapped = this.mapCxpRows(items);
+    if (append && this._resumenCuentasPagarRowsCache.length > 0) {
+      this._resumenCuentasPagarRowsCache = [
+        ...this._resumenCuentasPagarRowsCache,
+        ...mapped,
+      ];
+    } else {
+      this._resumenCuentasPagarRowsCache = mapped;
+      if (this.resumenGridApi) {
+        this.resumenGridApi.paginationGoToFirstPage();
+      }
+    }
+    this._totalesResumenCuentasPagarCache = { ...totales };
+    this.aplicarPinnedTotalesCxp(totales);
+  }
+
+  private aplicarPinnedTotalesCxp(totales: DetalleCxpTotales): void {
+    if (
+      totales.gastosTotalesConIVA !== 0 ||
+      totales.totalAbonado !== 0 ||
+      totales.saldoPendiente !== 0
+    ) {
+      this.pinnedBottomRowDataCxp = [
+        {
+          proveedor: '',
+          correlativo: '',
+          fechaCompra: 'Total',
+          vencimiento: '',
+          diasVencimiento: '',
+          estado: '',
+          gastosTotalesConIVA: totales.gastosTotalesConIVA,
+          totalAbonado: totales.totalAbonado,
+          ultimoAbono: '',
+          saldoPendiente: totales.saldoPendiente,
+        },
+      ];
+    } else {
+      this.pinnedBottomRowDataCxp = [];
+    }
+  }
+
+  private csvEscape(value: string): string {
+    if (/[",\n\r]/.test(value)) {
+      return `"${value.replace(/"/g, '""')}"`;
+    }
+    return value;
+  }
 
   cargarOpcionesFiltros(): void {
     const tieneEstadoGuardado = !!this.dashboardDataService.obtenerFiltrosUI('Control de cuentas');
@@ -850,6 +1176,8 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
     }
 
     this.filtrosCambiados.emit(filtros);
+    this.cargarDetalleCxcPagina(0);
+    this.cargarDetalleCxpPagina(0);
   }
 
   private _bloquearFiltros(): void {
@@ -942,15 +1270,19 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
       this.filtrosInteractivos.vigencia = event.name;
     }
     this.aplicarFiltrosInteractivos();
+    this.cargarDetalleCxcPagina(0);
   }
 
   onClienteCuentaClick(event: { name: string; amount: number }): void {
     if (this.filtrosInteractivos.cliente === event.name) {
       delete this.filtrosInteractivos.cliente;
+      this.quickFilterText = '';
     } else {
       this.filtrosInteractivos.cliente = event.name;
+      this.quickFilterText = event.name;
     }
     this.aplicarFiltrosInteractivos();
+    this.cargarDetalleCxcPagina(0);
   }
 
   onVigenciaPagarClick(event: { name: string; value: any; index: number }): void {
@@ -960,15 +1292,19 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
       this.filtrosInteractivos.vigenciaPagar = event.name;
     }
     this.aplicarFiltrosInteractivos();
+    this.cargarDetalleCxpPagina(0);
   }
 
   onProveedorCuentaClick(event: { name: string; amount: number }): void {
     if (this.filtrosInteractivos.proveedor === event.name) {
       delete this.filtrosInteractivos.proveedor;
+      this.quickFilterTextResumen = '';
     } else {
       this.filtrosInteractivos.proveedor = event.name;
+      this.quickFilterTextResumen = event.name;
     }
     this.aplicarFiltrosInteractivos();
+    this.cargarDetalleCxpPagina(0);
   }
 
   aplicarFiltrosInteractivos(): void {
@@ -998,69 +1334,7 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   filtrarDatos(): void {
-    // Filtrar detalle de cuentas por cobrar
-    if (this.datosFiltrados.detalleCuentasPorCobrar) {
-      let cuentasFiltradas = [...this.datosFiltrados.detalleCuentasPorCobrar];
-
-      if (this.filtrosInteractivos.cliente) {
-        cuentasFiltradas = cuentasFiltradas.filter((c: any) => 
-          c.cliente === this.filtrosInteractivos.cliente
-        );
-      }
-
-      if (this.filtrosInteractivos.vigencia) {
-        // Filtrar por vigencia (30, 60, 90 días, etc.)
-        const vigenciaLower = this.filtrosInteractivos.vigencia.toLowerCase();
-        cuentasFiltradas = cuentasFiltradas.filter((c: any) => {
-          const dias = c.diasVencimiento || 0;
-          if (vigenciaLower.includes('30')) {
-            return dias <= 30;
-          } else if (vigenciaLower.includes('60')) {
-            return dias > 30 && dias <= 60;
-          } else if (vigenciaLower.includes('90')) {
-            return dias > 60 && dias <= 90;
-          } else if (vigenciaLower.includes('90+') || vigenciaLower.includes('más')) {
-            return dias > 90;
-          }
-          return true;
-        });
-      }
-
-      this.datosFiltrados.detalleCuentasPorCobrar = cuentasFiltradas;
-    }
-
-    // Filtrar resumen de cuentas por pagar
-    if (this.datosFiltrados.resumenCuentasPorPagar) {
-      let cuentasFiltradas = [...this.datosFiltrados.resumenCuentasPorPagar];
-
-      if (this.filtrosInteractivos.proveedor) {
-        const nombre = this.filtrosInteractivos.proveedor.toLowerCase();
-        cuentasFiltradas = cuentasFiltradas.filter((c: any) => {
-          const p = (c.proveedor ?? '').toString().trim();
-          const etiqueta = p || 'Sin proveedor';
-          return etiqueta.toLowerCase() === nombre;
-        });
-      }
-
-      if (this.filtrosInteractivos.vigenciaPagar) {
-        const vigenciaLower = this.filtrosInteractivos.vigenciaPagar.toLowerCase();
-        cuentasFiltradas = cuentasFiltradas.filter((c: any) => {
-          const dias = c.diasVencimiento || 0;
-          if (vigenciaLower.includes('30')) {
-            return dias <= 30;
-          } else if (vigenciaLower.includes('60')) {
-            return dias > 30 && dias <= 60;
-          } else if (vigenciaLower.includes('90')) {
-            return dias > 60 && dias <= 90;
-          } else if (vigenciaLower.includes('90+') || vigenciaLower.includes('más')) {
-            return dias > 90;
-          }
-          return true;
-        });
-      }
-
-      this.datosFiltrados.resumenCuentasPorPagar = cuentasFiltradas;
-    }
+    // Detalle CXC / CXP: paginado en servidor (estado_vigencia / q).
   }
 
   recalcularTodosLosGraficos(): void {
@@ -1078,110 +1352,88 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   recalcularCuentasPorVigencia(): void {
-    if (!this.datosFiltrados.detalleCuentasPorCobrar) return;
+    // Chart desde API; opcionalmente resaltar vigencia interactiva
+    const configOriginal =
+      this.datosOriginales.cuentasPorVigenciaConfig ||
+      this.datos.cuentasPorVigenciaConfig;
+    if (!configOriginal) return;
 
-    const cuentas = this.datosFiltrados.detalleCuentasPorCobrar;
-    const vigenciaMap: { [key: string]: number } = {};
-
-    cuentas.forEach((c: any) => {
-      const dias = c.diasVencimiento || 0;
-      let categoria = '';
-      
-      if (dias <= 30) {
-        categoria = '0-30 días';
-      } else if (dias <= 60) {
-        categoria = '31-60 días';
-      } else if (dias <= 90) {
-        categoria = '61-90 días';
-      } else {
-        categoria = 'Más de 90 días';
+    if (
+      this.filtrosInteractivos.vigencia &&
+      configOriginal.labels &&
+      configOriginal.data
+    ) {
+      const labels: string[] = configOriginal.labels;
+      const idx = labels.findIndex(
+        (l) => l === this.filtrosInteractivos.vigencia,
+      );
+      if (idx !== -1) {
+        this.datosFiltrados.cuentasPorVigenciaConfig = {
+          ...configOriginal,
+          labels: [labels[idx]],
+          data: [configOriginal.data[idx]],
+        };
+        return;
       }
-
-      vigenciaMap[categoria] = (vigenciaMap[categoria] || 0) + (c.saldoPendiente || 0);
-    });
-
-    const data = Object.entries(vigenciaMap).map(([name, value]) => ({
-      name,
-      value: value as number
-    }));
-
-    if (this.datosFiltrados.cuentasPorVigenciaConfig) {
-      this.datosFiltrados.cuentasPorVigenciaConfig = {
-        ...this.datosFiltrados.cuentasPorVigenciaConfig,
-        data
-      };
     }
+    this.datosFiltrados.cuentasPorVigenciaConfig =
+      this.clonarDatos(configOriginal);
   }
 
   recalcularCuentasPorCobrarClientes(): void {
-    if (!this.datosFiltrados.detalleCuentasPorCobrar) return;
-
-    const cuentas = this.datosFiltrados.detalleCuentasPorCobrar;
-    const clientesMap: { [key: string]: number } = {};
-
-    cuentas.forEach((c: any) => {
-      const cliente = c.cliente || 'Sin cliente';
-      clientesMap[cliente] = (clientesMap[cliente] || 0) + (c.saldoPendiente || 0);
-    });
-
-    this.datosFiltrados.cuentasPorCobrarClientes = Object.entries(clientesMap)
-      .map(([name, amount]) => ({ name, amount: amount as number }))
-      .sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount));
+    const original =
+      this.datosOriginales.cuentasPorCobrarClientes ||
+      this.datos.cuentasPorCobrarClientes ||
+      [];
+    if (this.filtrosInteractivos.cliente) {
+      this.datosFiltrados.cuentasPorCobrarClientes = original.filter(
+        (c: any) => c.name === this.filtrosInteractivos.cliente,
+      );
+      return;
+    }
+    this.datosFiltrados.cuentasPorCobrarClientes = this.clonarDatos(original);
   }
 
   recalcularCuentasPorPagarVigencia(): void {
-    if (!this.datosFiltrados.resumenCuentasPorPagar) return;
+    const configOriginal =
+      this.datosOriginales.cuentasPorPagarVigenciaConfig ||
+      this.datos.cuentasPorPagarVigenciaConfig;
+    if (!configOriginal) return;
 
-    const cuentas = this.datosFiltrados.resumenCuentasPorPagar;
-    const vigenciaMap: { [key: string]: number } = {};
-
-    cuentas.forEach((c: any) => {
-      const dias = c.diasVencimiento || 0;
-      let categoria = '';
-      
-      if (dias <= 30) {
-        categoria = '0-30 días';
-      } else if (dias <= 60) {
-        categoria = '31-60 días';
-      } else if (dias <= 90) {
-        categoria = '61-90 días';
-      } else {
-        categoria = 'Más de 90 días';
+    if (
+      this.filtrosInteractivos.vigenciaPagar &&
+      configOriginal.labels &&
+      configOriginal.data
+    ) {
+      const labels: string[] = configOriginal.labels;
+      const idx = labels.findIndex(
+        (l) => l === this.filtrosInteractivos.vigenciaPagar,
+      );
+      if (idx !== -1) {
+        this.datosFiltrados.cuentasPorPagarVigenciaConfig = {
+          ...configOriginal,
+          labels: [labels[idx]],
+          data: [configOriginal.data[idx]],
+        };
+        return;
       }
-
-      vigenciaMap[categoria] = (vigenciaMap[categoria] || 0) + (c.saldoPendiente || 0);
-    });
-
-    const data = Object.entries(vigenciaMap).map(([name, value]) => ({
-      name,
-      value: value as number
-    }));
-
-    if (this.datosFiltrados.cuentasPorPagarVigenciaConfig) {
-      this.datosFiltrados.cuentasPorPagarVigenciaConfig = {
-        ...this.datosFiltrados.cuentasPorPagarVigenciaConfig,
-        data
-      };
     }
+    this.datosFiltrados.cuentasPorPagarVigenciaConfig =
+      this.clonarDatos(configOriginal);
   }
 
   recalcularCuentasPorPagarProveedores(): void {
-    if (!this.datosFiltrados.resumenCuentasPorPagar) return;
-
-    const cuentas = this.datosFiltrados.resumenCuentasPorPagar;
-    const proveedoresMap: { [key: string]: number } = {};
-
-    cuentas.forEach((c: any) => {
-      // Necesitamos obtener el proveedor de alguna manera
-      // Por ahora, asumimos que hay un campo proveedor o similar
-      // Esto puede necesitar ajuste según la estructura real de datos
-      const proveedor = c.proveedor || 'Sin proveedor';
-      proveedoresMap[proveedor] = (proveedoresMap[proveedor] || 0) + (c.saldoPendiente || 0);
-    });
-
-    this.datosFiltrados.cuentasPorPagarProveedores = Object.entries(proveedoresMap)
-      .map(([name, amount]) => ({ name, amount: amount as number }))
-      .sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount));
+    const original =
+      this.datosOriginales.cuentasPorPagarProveedores ||
+      this.datos.cuentasPorPagarProveedores ||
+      [];
+    if (this.filtrosInteractivos.proveedor) {
+      this.datosFiltrados.cuentasPorPagarProveedores = original.filter(
+        (c: any) => c.name === this.filtrosInteractivos.proveedor,
+      );
+      return;
+    }
+    this.datosFiltrados.cuentasPorPagarProveedores = this.clonarDatos(original);
   }
 
   recalcularMetricas(): void {
@@ -1236,6 +1488,8 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
 
   limpiarFiltrosInteractivos(): void {
     this.filtrosInteractivos = {};
+    this.quickFilterText = '';
+    this.quickFilterTextResumen = '';
     // Restaurar datos originales
     if (Object.keys(this.datosOriginales).length > 0) {
       this.datosFiltrados = this.clonarDatos(this.datosOriginales);
@@ -1246,6 +1500,10 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
       this.datos = this.datosFiltrados;
     }
     this.recalcularRowsCache();
+    if (this.inicializado) {
+      this.cargarDetalleCxcPagina(0);
+      this.cargarDetalleCxpPagina(0);
+    }
     this.cdr.markForCheck();
   }
 
@@ -1405,6 +1663,8 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
         sortable: true,
         filter: true
       },
+      pagination: true,
+      paginationPageSize: 25,
       getRowClass: (params: any) => {
         if (params.node.rowPinned === 'bottom') {
           return 'ag-row-total-pagar';
@@ -1432,9 +1692,8 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
         this.recalcularTotalesCxp();
         this.cdr.markForCheck();
       },
-      onFilterChanged: () => {
-        this.recalcularTotalesCxp();
-        this.cdr.markForCheck();
+      onPaginationChanged: () => {
+        this.maybeLoadMoreCxpFromGrid();
       },
       suppressExcelExport: false,
       suppressCsvExport: false
@@ -1449,126 +1708,79 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
     return this._totalesResumenCuentasPagarCache;
   }
 
+  /** Totales pinned desde API (`totales`); no sumar solo la página cargada. */
   recalcularTotalesCxc(): void {
-    let ventasConIVA = 0;
-    let montoAbonado = 0;
-    let saldoPendiente = 0;
-    let count = 0;
-
-    if (this.gridApi) {
-      this.gridApi.forEachNodeAfterFilter((node) => {
-        if (node.data) {
-          ventasConIVA += (node.data.ventasConIVA || 0);
-          montoAbonado += (node.data.montoAbonado || 0);
-          saldoPendiente += (node.data.saldoPendiente || 0);
-          count++;
-        }
-      });
-    } else if (this._detalleCuentasRowsCache && this._detalleCuentasRowsCache.length > 0) {
-      this._detalleCuentasRowsCache.forEach((item: any) => {
-        ventasConIVA += (item.ventasConIVA || 0);
-        montoAbonado += (item.montoAbonado || 0);
-        saldoPendiente += (item.saldoPendiente || 0);
-        count++;
-      });
-    }
-
-    if (count > 0) {
-      this.pinnedBottomRowDataCxc = [{
-        cliente: 'Total',
-        factura: '',
-        fechaVenta: '',
-        fechaPago: '',
-        diasVencimiento: '',
-        estado: '',
-        ventasConIVA: ventasConIVA,
-        montoAbonado: montoAbonado,
-        diasAbono: '',
-        saldoPendiente: saldoPendiente
-      }];
-    } else {
-      this.pinnedBottomRowDataCxc = [];
-    }
+    this.aplicarPinnedTotalesCxc(this.cxcTotales);
   }
 
+  /** Totales pinned desde API (`totales`); no sumar solo la página cargada. */
   recalcularTotalesCxp(): void {
-    let gastosTotalesConIVA = 0;
-    let totalAbonado = 0;
-    let saldoPendiente = 0;
-    let count = 0;
-
-    if (this.resumenGridApi) {
-      this.resumenGridApi.forEachNodeAfterFilter((node) => {
-        if (node.data) {
-          gastosTotalesConIVA += (node.data.gastosTotalesConIVA || 0);
-          totalAbonado += (node.data.totalAbono || node.data.totalAbonado || 0);
-          saldoPendiente += (node.data.saldoPendiente || 0);
-          count++;
-        }
-      });
-    } else if (this._resumenCuentasPagarRowsCache && this._resumenCuentasPagarRowsCache.length > 0) {
-      this._resumenCuentasPagarRowsCache.forEach((item: any) => {
-        gastosTotalesConIVA += (item.gastosTotalesConIVA || 0);
-        totalAbonado += (item.totalAbono || item.totalAbonado || 0);
-        saldoPendiente += (item.saldoPendiente || 0);
-        count++;
-      });
-    }
-
-    if (count > 0) {
-      this.pinnedBottomRowDataCxp = [{
-        proveedor: '',
-        correlativo: '',
-        fechaCompra: 'Total',
-        vencimiento: '',
-        diasVencimiento: '',
-        estado: '',
-        gastosTotalesConIVA: gastosTotalesConIVA,
-        totalAbonado: totalAbonado,
-        ultimoAbono: '',
-        saldoPendiente: saldoPendiente
-      }];
-    } else {
-      this.pinnedBottomRowDataCxp = [];
-    }
+    this.aplicarPinnedTotalesCxp(this.cxpTotales);
   }
 
   onQuickFilterChangeResumen(): void {
-    if (this.resumenGridApi) {
-      this.resumenGridApi.setQuickFilter(this.quickFilterTextResumen);
-    }
+    this.quickFilterCxp$.next(this.quickFilterTextResumen.trim());
   }
 
   exportarCSVResumen(): void {
-    if (this.resumenGridApi) {
-      const fecha = new Date().toISOString().split('T')[0];
-      this.resumenGridApi.exportDataAsCsv({
-        fileName: `resumen-cuentas-por-pagar-${fecha}.csv`,
-        processCellCallback: (params: any) => {
-          return params.value || '';
-        }
-      });
-    }
+    this.exportarCxpCompletoCsv();
   }
 
   exportarExcelResumen(): void {
-    if (this.resumenGridApi) {
-      const fecha = new Date().toISOString().split('T')[0];
-      this.resumenGridApi.exportDataAsCsv({
-        fileName: `resumen-cuentas-por-pagar-${fecha}.csv`,
-        processCellCallback: (params: any) => {
-          return params.value || '';
-        }
+    this.exportarCxpCompletoCsv();
+  }
+
+  private exportarCxpCompletoCsv(): void {
+    if (this.cxpExporting) return;
+    this.cxpExporting = true;
+    this.cdr.markForCheck();
+    this.dashboardDataService
+      .obtenerDetalleCxpCompleto(this.getFiltrosCxpDetalle(), {
+        q: this.getCxpSearchQ() || undefined,
+      })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (page) => {
+          const fecha = new Date().toISOString().split('T')[0];
+          const cols = this.resumenCuentasPagarColumnDefs.filter((c) => c.field);
+          const header = cols
+            .map((c) => this.csvEscape(String(c.headerName || c.field)))
+            .join(',');
+          const lines = (page.items ?? []).map((item: any) =>
+            cols
+              .map((c) => {
+                const field = c.field || '';
+                const raw = item[field];
+                return this.csvEscape(
+                  raw === null || raw === undefined ? '' : String(raw),
+                );
+              })
+              .join(','),
+          );
+          const csv = [header, ...lines].join('\n');
+          const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `resumen-cuentas-por-pagar-${fecha}.csv`;
+          a.click();
+          URL.revokeObjectURL(url);
+          this.cxpExporting = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.cxpExporting = false;
+          this.cdr.markForCheck();
+        },
       });
-    }
   }
 
   limpiarFiltrosGridResumen(): void {
     if (this.resumenGridApi) {
       this.resumenGridApi.setFilterModel(null);
-      this.quickFilterTextResumen = '';
-      this.resumenGridApi.setQuickFilter('');
     }
+    this.quickFilterTextResumen = '';
+    this.cargarDetalleCxpPagina(0);
   }
 
   copiarSeleccionAlPortapapelesResumen(): void {
@@ -1807,6 +2019,8 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
         sortable: true,
         filter: true
       },
+      pagination: true,
+      paginationPageSize: 25,
       getRowClass: (params: any) => {
         if (params.node.rowPinned === 'bottom') {
           return 'ag-row-total';
@@ -1834,9 +2048,8 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
         this.recalcularTotalesCxc();
         this.cdr.markForCheck();
       },
-      onFilterChanged: () => {
-        this.recalcularTotalesCxc();
-        this.cdr.markForCheck();
+      onPaginationChanged: () => {
+        this.maybeLoadMoreCxcFromGrid();
       },
       suppressExcelExport: false,
       suppressCsvExport: false
@@ -1852,41 +2065,68 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   onQuickFilterChange(): void {
-    if (this.gridApi) {
-      this.gridApi.setQuickFilter(this.quickFilterText);
-    }
+    this.quickFilterCxc$.next(this.quickFilterText.trim());
   }
 
   exportarCSV(): void {
-    if (this.gridApi) {
-      const fecha = new Date().toISOString().split('T')[0];
-      this.gridApi.exportDataAsCsv({
-        fileName: `detalle-cuentas-por-cobrar-${fecha}.csv`,
-        processCellCallback: (params: any) => {
-          return params.value || '';
-        }
-      });
-    }
+    this.exportarCxcCompletoCsv();
   }
 
   exportarExcel(): void {
-    if (this.gridApi) {
-      const fecha = new Date().toISOString().split('T')[0];
-      this.gridApi.exportDataAsCsv({
-        fileName: `detalle-cuentas-por-cobrar-${fecha}.csv`,
-        processCellCallback: (params: any) => {
-          return params.value || '';
-        }
+    this.exportarCxcCompletoCsv();
+  }
+
+  private exportarCxcCompletoCsv(): void {
+    if (this.cxcExporting) return;
+    this.cxcExporting = true;
+    this.cdr.markForCheck();
+    this.dashboardDataService
+      .obtenerDetalleCxcCompleto(this.getFiltrosCxcDetalle(), {
+        q: this.getCxcSearchQ() || undefined,
+      })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (page) => {
+          const fecha = new Date().toISOString().split('T')[0];
+          const cols = this.detalleCuentasColumnDefs.filter((c) => c.field);
+          const header = cols
+            .map((c) => this.csvEscape(String(c.headerName || c.field)))
+            .join(',');
+          const lines = (page.items ?? []).map((item: any) =>
+            cols
+              .map((c) => {
+                const field = c.field || '';
+                const raw = item[field];
+                return this.csvEscape(
+                  raw === null || raw === undefined ? '' : String(raw),
+                );
+              })
+              .join(','),
+          );
+          const csv = [header, ...lines].join('\n');
+          const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `detalle-cuentas-por-cobrar-${fecha}.csv`;
+          a.click();
+          URL.revokeObjectURL(url);
+          this.cxcExporting = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.cxcExporting = false;
+          this.cdr.markForCheck();
+        },
       });
-    }
   }
 
   limpiarFiltrosGrid(): void {
     if (this.gridApi) {
       this.gridApi.setFilterModel(null);
-      this.quickFilterText = '';
-      this.gridApi.setQuickFilter('');
     }
+    this.quickFilterText = '';
+    this.cargarDetalleCxcPagina(0);
   }
 
   copiarAlPortapapeles(texto: string): void {

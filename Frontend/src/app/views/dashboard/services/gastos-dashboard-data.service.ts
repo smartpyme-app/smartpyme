@@ -1,7 +1,25 @@
 import { Injectable } from '@angular/core';
 import { Observable, forkJoin, merge, of } from 'rxjs';
-import { map, switchMap, startWith, scan, catchError } from 'rxjs/operators';
+import { map, scan, catchError } from 'rxjs/operators';
 import { DashboardAnalyticsApiService } from './dashboard-analytics-api.service';
+
+export interface DetalleGastosTotales {
+  gastosConIVA: number;
+}
+
+export interface DetalleGastosPagina {
+  items: any[];
+  total: number;
+  limite: number;
+  offset: number;
+  totales: DetalleGastosTotales;
+}
+
+export interface DetalleGastosPageParams {
+  limite: number;
+  offset: number;
+  q?: string;
+}
 
 @Injectable({
   providedIn: 'root',
@@ -120,15 +138,170 @@ export class GastosDashboardDataService {
     };
   }
 
+  private mapDetalleGastosItem(i: any) {
+    return {
+      fecha: i.fecha,
+      proveedor: i.proveedor,
+      concepto: i.concepto,
+      documento: i.doc ?? i.documento,
+      correlativo: i.correlativo,
+      gastosConIVA: i.gastosConIva ?? i.gastosConIVA,
+    };
+  }
+
+  private sumarTotalesDetalleGastos(items: any[]): DetalleGastosTotales {
+    return (items ?? []).reduce(
+      (acc, i) => ({
+        gastosConIVA: acc.gastosConIVA + (Number(i.gastosConIVA) || 0),
+      }),
+      { gastosConIVA: 0 },
+    );
+  }
+
+  normalizarDetalleGastosResponse(
+    data: any,
+    page: { limite: number; offset: number },
+    q?: string,
+  ): DetalleGastosPagina {
+    const qNorm = q != null ? String(q).trim().toLowerCase() : '';
+
+    if (Array.isArray(data)) {
+      let all = data.map((i) => this.mapDetalleGastosItem(i));
+      if (qNorm) {
+        all = all.filter(
+          (i) =>
+            String(i.proveedor ?? '')
+              .toLowerCase()
+              .includes(qNorm) ||
+            String(i.concepto ?? '')
+              .toLowerCase()
+              .includes(qNorm) ||
+            String(i.documento ?? '')
+              .toLowerCase()
+              .includes(qNorm) ||
+            String(i.correlativo ?? '')
+              .toLowerCase()
+              .includes(qNorm),
+        );
+      }
+      const limite = page.limite > 0 ? page.limite : all.length;
+      const offset = page.offset >= 0 ? page.offset : 0;
+      const items =
+        page.limite > 0 ? all.slice(offset, offset + limite) : all;
+      return {
+        items,
+        total: all.length,
+        limite,
+        offset,
+        totales: this.sumarTotalesDetalleGastos(all),
+      };
+    }
+
+    const rawItems = data?.items ?? data?.data ?? [];
+    const items = (Array.isArray(rawItems) ? rawItems : []).map((i: any) =>
+      this.mapDetalleGastosItem(i),
+    );
+    const totalesApi = data?.totales;
+    const totales =
+      totalesApi && typeof totalesApi === 'object'
+        ? {
+            gastosConIVA:
+              Number(totalesApi.gastosConIVA ?? totalesApi.gastosConIva) || 0,
+          }
+        : this.sumarTotalesDetalleGastos(items);
+
+    return {
+      items,
+      total: Number(data?.total) >= 0 ? Number(data.total) : items.length,
+      limite: Number(data?.limite) >= 0 ? Number(data.limite) : page.limite,
+      offset: Number(data?.offset) >= 0 ? Number(data.offset) : page.offset,
+      totales,
+    };
+  }
+
+  private buildDetalleGastosUrl(
+    filtros: any,
+    opts?: { limite?: number; offset?: number; q?: string },
+  ): string {
+    const api = this.analytics.baseUrl;
+    const p = this.analytics.params(filtros);
+    const pExtra = this.filtrosExtraQuery(filtros);
+    let url = `${api}/api/gastos/detalle?${p}${pExtra}`;
+    if (opts?.limite != null) {
+      url += `&limite=${opts.limite}`;
+    }
+    if (opts?.offset != null) {
+      url += `&offset=${opts.offset}`;
+    }
+    const q = opts?.q != null ? String(opts.q).trim() : '';
+    if (q) {
+      url += `&q=${encodeURIComponent(q)}`;
+    }
+    return url;
+  }
+
+  obtenerDetalleGastosPagina(
+    filtros: any = {},
+    page: DetalleGastosPageParams,
+  ): Observable<DetalleGastosPagina> {
+    const limite = page.limite > 0 ? page.limite : 50;
+    const offset = page.offset >= 0 ? page.offset : 0;
+    const url = this.buildDetalleGastosUrl(filtros, {
+      limite,
+      offset,
+      q: page.q,
+    });
+    return this.analytics.getSafe(url).pipe(
+      map((data) =>
+        this.normalizarDetalleGastosResponse(data, { limite, offset }, page.q),
+      ),
+      catchError((err) => {
+        console.error('Error loading /api/gastos/detalle (página):', err);
+        return of({
+          items: [],
+          total: 0,
+          limite,
+          offset,
+          totales: { gastosConIVA: 0 },
+        });
+      }),
+    );
+  }
+
+  obtenerDetalleGastosCompleto(
+    filtros: any = {},
+    opts: { q?: string } = {},
+  ): Observable<DetalleGastosPagina> {
+    const url = this.buildDetalleGastosUrl(filtros, { q: opts.q });
+    return this.analytics.getSafe(url).pipe(
+      map((data) =>
+        this.normalizarDetalleGastosResponse(
+          data,
+          { limite: 0, offset: 0 },
+          opts.q,
+        ),
+      ),
+      catchError((err) => {
+        console.error('Error loading /api/gastos/detalle (completo):', err);
+        return of({
+          items: [],
+          total: 0,
+          limite: 0,
+          offset: 0,
+          totales: { gastosConIVA: 0 },
+        });
+      }),
+    );
+  }
+
   private mapearGastosPesado(raw: {
     porCategoria: any;
     porConcepto: any;
     porFormaPago: any;
     porProveedor: any;
-    detalle: any;
     gastosDetallados?: any;
   }): Record<string, unknown> {
-    const { porCategoria, porConcepto, porFormaPago, porProveedor, detalle, gastosDetallados } =
+    const { porCategoria, porConcepto, porFormaPago, porProveedor, gastosDetallados } =
       raw;
     return {
       gastosPorCategoriaConfig: {
@@ -157,14 +330,6 @@ export class GastosDashboardDataService {
       gastosPorProveedor: (porProveedor ?? []).map((i: any) => ({
         name: i.name,
         amount: i.amount,
-      })),
-      detalleGastos: (detalle ?? []).map((i: any) => ({
-        fecha: i.fecha,
-        proveedor: i.proveedor,
-        concepto: i.concepto,
-        documento: i.doc,
-        correlativo: i.correlativo,
-        gastosConIVA: i.gastosConIva,
       })),
       gastosDetallados: gastosDetallados ?? [],
     };
@@ -315,23 +480,6 @@ export class GastosDashboardDataService {
       })
     );
 
-    const detalle$ = safe(`/api/gastos/detalle?${p}${pExtra}`).pipe(
-      map(detalle => ({
-        detalleGastos: (detalle ?? []).map((i: any) => ({
-          fecha: i.fecha,
-          proveedor: i.proveedor,
-          concepto: i.concepto,
-          documento: i.doc,
-          correlativo: i.correlativo,
-          gastosConIVA: i.gastosConIva,
-        }))
-      })),
-      catchError(err => {
-        console.error('Error loading /api/gastos/detalle:', err);
-        return of({ detalleGastos: [] });
-      })
-    );
-
     const gastosDetallados$ = safe(`/api/gastos/detalladas?${p}${pExtra}`).pipe(
       map(gastosDetallados => ({
         gastosDetallados: gastosDetallados ?? []
@@ -363,7 +511,6 @@ export class GastosDashboardDataService {
       porConcepto$,
       porFormaPago$,
       porProveedor$,
-      detalle$,
       gastosDetallados$
     ).pipe(
       scan(deepMergeScan, {})
@@ -388,7 +535,6 @@ export class GastosDashboardDataService {
       porProveedor: safe(
         `/api/gastos/por-proveedor?${p}${pExtra}&limite=10`,
       ),
-      detalle: safe(`/api/gastos/detalle?${p}${pExtra}`),
       gastosDetallados: safe(`/api/gastos/detalladas?${p}${pExtra}`),
     }).pipe(
       map((all) => ({
@@ -403,7 +549,6 @@ export class GastosDashboardDataService {
           porConcepto: all.porConcepto,
           porFormaPago: all.porFormaPago,
           porProveedor: all.porProveedor,
-          detalle: all.detalle,
           gastosDetallados: all.gastosDetallados,
         }),
       })),
