@@ -290,11 +290,11 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
       this.inicializarDatos();
     }
 
+    // Siempre emitir al padre tras restaurar UI; si no, al reentrar al dashboard
+    // el padre queda sin datos y la vista se queda en loaders.
     setTimeout(() => {
       this.filtrosListosParaEmitir = true;
-      if (tieneEstadoGuardado) {
-        this.cargarDetalleGastosPagina(0);
-      }
+      this.aplicarFiltros();
       this.cdr.markForCheck();
     }, 100);
   }
@@ -1068,6 +1068,7 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
     );
     // null = ninguno seleccionado → no tiene sentido pedir datos, salir temprano
     if (prov === null) {
+      this._desbloquearFiltros();
       return;
     }
     if (prov) {
@@ -1079,6 +1080,7 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
       this.idsDeListaFiltro(this.tiposGasto),
     );
     if (tipo === null) {
+      this._desbloquearFiltros();
       return;
     }
     if (tipo) {
@@ -1090,6 +1092,7 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
       this.idsDeListaFiltro(this.estadosGasto),
     );
     if (est === null) {
+      this._desbloquearFiltros();
       return;
     }
     if (est) {
@@ -1099,6 +1102,7 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
       filtros.mes = this.mes;
     }
     this.filtrosCambiados.emit(filtros);
+    this._desbloquearSiPadreOmiteRecarga();
     this.cargarDetalleGastosPagina(0);
   }
 
@@ -1116,6 +1120,15 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
     }
     this.filtrosLocked = false;
     this.cdr.markForCheck();
+  }
+
+  /** Si el padre omite la recarga (mismos filtros), datosCompletos no cambia y el overlay se queda. */
+  private _desbloquearSiPadreOmiteRecarga(): void {
+    setTimeout(() => {
+      if (this.datosCompletos) {
+        this._desbloquearFiltros();
+      }
+    }, 0);
   }
 
 
@@ -1516,6 +1529,8 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
     this.datosFiltrados.gastosPorConceptoConfig = {
       title: '',
       type: 'bar',
+      collapseExcessBars: true,
+      initialVisibleBars: 5,
       labels,
       data,
       colors: ['#F19447'],

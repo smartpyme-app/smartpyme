@@ -63,6 +63,7 @@ class SucursalesController extends Controller
        
         $sucursales = Sucursal::orderby('nombre')
                                 ->where('activo', true)
+                                ->where('id_empresa', JWTAuth::parseToken()->authenticate()->id_empresa)
                                 ->get();
 
         return Response()->json($sucursales, 200);

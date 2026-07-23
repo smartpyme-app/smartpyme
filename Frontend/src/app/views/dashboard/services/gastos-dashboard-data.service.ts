@@ -316,6 +316,8 @@ export class GastosDashboardDataService {
       },
       gastosPorConceptoConfig: {
         type: 'bar',
+        collapseExcessBars: true,
+        initialVisibleBars: 5,
         labels: (porConcepto ?? []).map((i: any) => i.name),
         data: (porConcepto ?? []).map((i: any) => i.amount),
         colors: ['#F19447'],
@@ -443,6 +445,8 @@ export class GastosDashboardDataService {
       map(porConcepto => ({
         gastosPorConceptoConfig: {
           type: 'bar',
+          collapseExcessBars: true,
+          initialVisibleBars: 5,
           labels: (porConcepto ?? []).map((i: any) => i.name),
           data: (porConcepto ?? []).map((i: any) => i.amount),
           colors: ['#F19447'],
@@ -452,7 +456,16 @@ export class GastosDashboardDataService {
       })),
       catchError(err => {
         console.error('Error loading /api/gastos/por-concepto:', err);
-        return of({ gastosPorConceptoConfig: { type: 'bar', labels: [], data: [], colors: ['#F19447'] } });
+        return of({
+          gastosPorConceptoConfig: {
+            type: 'bar',
+            collapseExcessBars: true,
+            initialVisibleBars: 5,
+            labels: [],
+            data: [],
+            colors: ['#F19447'],
+          },
+        });
       })
     );
 

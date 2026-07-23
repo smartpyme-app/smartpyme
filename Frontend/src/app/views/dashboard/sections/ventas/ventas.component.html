@@ -244,24 +244,26 @@
                                     <div class="ventas-card-title mb-0">{{ getTituloGraficoVentas() }}</div>
                                 </div>
                                 <div class="card-body">
-                                    <ng-container *ngIf="vistaMetricas === 'mes'">
-                                        <app-line-chart *ngIf="datos.ventasPorMesConfig; else ventasChartPlaceholder"
-                                            [config]="datos.ventasPorMesConfig" (itemClick)="onMesClick($event)">
-                                        </app-line-chart>
-                                    </ng-container>
-                                    <ng-container *ngIf="vistaMetricas === 'presupuesto'">
-                                        <app-bar-chart
-                                            *ngIf="datos.ventasVsPresupuestoConfig; else ventasChartPlaceholder"
-                                            [config]="datos.ventasVsPresupuestoConfig" (itemClick)="onMesClick($event)">
-                                        </app-bar-chart>
-                                    </ng-container>
-                                    <ng-container *ngIf="vistaMetricas === 'anio'">
-                                        <app-bar-chart
-                                            *ngIf="datos.ventasVsAnioAnteriorConfig; else ventasChartPlaceholder"
-                                            [config]="datos.ventasVsAnioAnteriorConfig"
-                                            (itemClick)="onMesClick($event)">
-                                        </app-bar-chart>
-                                    </ng-container>
+                                    <app-chart-expandable [title]="getTituloGraficoVentas()">
+                                        <ng-container *ngIf="vistaMetricas === 'mes'">
+                                            <app-line-chart *ngIf="datos.ventasPorMesConfig; else ventasChartPlaceholder"
+                                                [config]="datos.ventasPorMesConfig" (itemClick)="onMesClick($event)">
+                                            </app-line-chart>
+                                        </ng-container>
+                                        <ng-container *ngIf="vistaMetricas === 'presupuesto'">
+                                            <app-bar-chart
+                                                *ngIf="datos.ventasVsPresupuestoConfig; else ventasChartPlaceholder"
+                                                [config]="datos.ventasVsPresupuestoConfig" (itemClick)="onMesClick($event)">
+                                            </app-bar-chart>
+                                        </ng-container>
+                                        <ng-container *ngIf="vistaMetricas === 'anio'">
+                                            <app-bar-chart
+                                                *ngIf="datos.ventasVsAnioAnteriorConfig; else ventasChartPlaceholder"
+                                                [config]="datos.ventasVsAnioAnteriorConfig"
+                                                (itemClick)="onMesClick($event)">
+                                            </app-bar-chart>
+                                        </ng-container>
+                                    </app-chart-expandable>
                                 </div>
                             </div>
                         </div>
@@ -273,13 +275,15 @@
                                     <div class="ventas-card-title mb-0">Ventas por canal</div>
                                 </div>
                                 <div class="card-body">
-                                    <ng-container
-                                        *ngIf="datos.ventasPorCanal !== undefined; else ventasListPlaceholder">
-                                        <app-accounts-list title=""
-                                            [accounts]="(datosFiltrados.ventasPorCanal || datos.ventasPorCanal || [])"
-                                            type="receivable" (itemClick)="onCanalClick($event)">
-                                        </app-accounts-list>
-                                    </ng-container>
+                                    <app-chart-expandable title="Ventas por canal">
+                                        <ng-container
+                                            *ngIf="datos.ventasPorCanal !== undefined; else ventasListPlaceholder">
+                                            <app-accounts-list title=""
+                                                [accounts]="(datosFiltrados.ventasPorCanal || datos.ventasPorCanal || [])"
+                                                type="receivable" (itemClick)="onCanalClick($event)">
+                                            </app-accounts-list>
+                                        </ng-container>
+                                    </app-chart-expandable>
                                 </div>
                             </div>
                         </div>
@@ -291,11 +295,13 @@
                                     <div class="ventas-card-title mb-0">Ventas por vendedor</div>
                                 </div>
                                 <div class="card-body">
-                                    <app-bar-chart
-                                        *ngIf="datos.ventasPorVendedorChartConfig; else ventasChartPlaceholder"
-                                        [config]="datos.ventasPorVendedorChartConfig"
-                                        (itemClick)="onVendedorClick($event)">
-                                    </app-bar-chart>
+                                    <app-chart-expandable title="Ventas por vendedor">
+                                        <app-bar-chart
+                                            *ngIf="datos.ventasPorVendedorChartConfig; else ventasChartPlaceholder"
+                                            [config]="datos.ventasPorVendedorChartConfig"
+                                            (itemClick)="onVendedorClick($event)">
+                                        </app-bar-chart>
+                                    </app-chart-expandable>
                                 </div>
                             </div>
                         </div>
@@ -307,11 +313,13 @@
                                     <div class="ventas-card-title mb-0">Ventas totales por forma de pago</div>
                                 </div>
                                 <div class="card-body">
-                                    <app-treemap-chart
-                                        *ngIf="datos.ventasPorFormaPagoConfig; else ventasChartPlaceholder"
-                                        [config]="datos.ventasPorFormaPagoConfig"
-                                        (itemClick)="onFormaPagoClick($event)">
-                                    </app-treemap-chart>
+                                    <app-chart-expandable title="Ventas totales por forma de pago">
+                                        <app-treemap-chart
+                                            *ngIf="datos.ventasPorFormaPagoConfig; else ventasChartPlaceholder"
+                                            [config]="datos.ventasPorFormaPagoConfig"
+                                            (itemClick)="onFormaPagoClick($event)">
+                                        </app-treemap-chart>
+                                    </app-chart-expandable>
                                 </div>
                             </div>
                         </div>
@@ -400,12 +408,15 @@
                                     <div class="ventas-card-title mb-0">Ventas totales por categoría</div>
                                 </div>
                                 <div class="card-body">
-                                    <ng-container
-                                        *ngIf="datos.ventasPorCategoria !== undefined; else ventasListPlaceholder">
-                                        <app-accounts-list title="" [accounts]="datos.ventasPorCategoria || []"
-                                            type="receivable" (itemClick)="onCategoriaClick($event)">
-                                        </app-accounts-list>
-                                    </ng-container>
+                                    <app-chart-expandable title="Ventas totales por categoría">
+                                        <ng-container
+                                            *ngIf="datos.ventasPorCategoria !== undefined; else ventasListPlaceholder">
+                                            <app-accounts-list title="" [accounts]="datos.ventasPorCategoria || []"
+                                                type="receivable" [collapseExcessBars]="true"
+                                                (itemClick)="onCategoriaClick($event)">
+                                            </app-accounts-list>
+                                        </ng-container>
+                                    </app-chart-expandable>
                                 </div>
                             </div>
                         </div>
@@ -417,12 +428,15 @@
                                     <div class="ventas-card-title mb-0">Top 15 productos más vendidos</div>
                                 </div>
                                 <div class="card-body">
-                                    <ng-container
-                                        *ngIf="datos.topProductosVendidos !== undefined; else ventasListPlaceholder">
-                                        <app-accounts-list title="" [accounts]="datos.topProductosVendidos || []"
-                                            type="receivable" (itemClick)="onProductoClick($event)">
-                                        </app-accounts-list>
-                                    </ng-container>
+                                    <app-chart-expandable title="Top 15 productos más vendidos">
+                                        <ng-container
+                                            *ngIf="datos.topProductosVendidos !== undefined; else ventasListPlaceholder">
+                                            <app-accounts-list title="" [accounts]="datos.topProductosVendidos || []"
+                                                type="receivable" [collapseExcessBars]="true"
+                                                (itemClick)="onProductoClick($event)">
+                                            </app-accounts-list>
+                                        </ng-container>
+                                    </app-chart-expandable>
                                 </div>
                             </div>
                         </div>
@@ -432,60 +446,62 @@
                     <div class="row">
                         <div class="col-12">
                             <div class="card">
-                                <div class="card-header bg-white border-0 py-3">
-                                    <div class="d-flex flex-column justify-content-between gap-2">
-                                        <div class="ventas-card-title mb-0 text-center">Detalle de ventas por producto
-                                        </div>
-                                        <div
-                                            class="d-flex flex-wrap gap-2 align-items-center justify-content-end w-100">
-                                            <!-- Buscador global -->
-                                            <div class="input-group"
-                                                style="flex: 1 1 200px; max-width: 350px; min-width: 200px;">
-                                                <span class="input-group-text bg-white border-end-0">
-                                                    <i class="fas fa-search text-muted"></i>
-                                                </span>
-                                                <input type="text" class="form-control border-start-0"
-                                                    placeholder="Buscar..." [(ngModel)]="quickFilterText"
-                                                    (input)="onQuickFilterChange()">
+                                <app-chart-expandable title="Detalle de ventas por producto">
+                                    <div class="card-header bg-white border-0 py-3">
+                                        <div class="d-flex flex-column justify-content-between gap-2">
+                                            <div class="ventas-card-title mb-0 text-center">Detalle de ventas por producto
                                             </div>
-                                            <!-- Botones de exportación -->
-                                            <button class="btn btn-sm btn-outline-success" (click)="exportarExcel()"
-                                                title="Exportar a Excel"
-                                                [disabled]="ventasProductoExporting || ventasProductoLoading">
-                                                <i class="fas fa-file-excel me-1"></i>
-                                                {{ ventasProductoExporting ? 'Exportando…' : 'Excel' }}
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-secondary"
-                                                (click)="limpiarFiltrosGrid()" title="Limpiar filtros">
-                                                <i class="fas fa-filter me-1"></i> Limpiar
-                                            </button>
+                                            <div
+                                                class="d-flex flex-wrap gap-2 align-items-center justify-content-end w-100">
+                                                <!-- Buscador global -->
+                                                <div class="input-group"
+                                                    style="flex: 1 1 200px; max-width: 350px; min-width: 200px;">
+                                                    <span class="input-group-text bg-white border-end-0">
+                                                        <i class="fas fa-search text-muted"></i>
+                                                    </span>
+                                                    <input type="text" class="form-control border-start-0"
+                                                        placeholder="Buscar..." [(ngModel)]="quickFilterText"
+                                                        (input)="onQuickFilterChange()">
+                                                </div>
+                                                <!-- Botones de exportación -->
+                                                <button class="btn btn-sm btn-outline-success" (click)="exportarExcel()"
+                                                    title="Exportar a Excel"
+                                                    [disabled]="ventasProductoExporting || ventasProductoLoading">
+                                                    <i class="fas fa-file-excel me-1"></i>
+                                                    {{ ventasProductoExporting ? 'Exportando…' : 'Excel' }}
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-secondary"
+                                                    (click)="limpiarFiltrosGrid()" title="Limpiar filtros">
+                                                    <i class="fas fa-filter me-1"></i> Limpiar
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                <div class="card-body px-3 py-0">
-                                    <ng-container *ngIf="ventasProductoListo; else ventasTablePlaceholder">
-                                        <div class="position-relative">
-                                            <div *ngIf="ventasProductoLoading"
-                                                class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
-                                                style="background: rgba(255,255,255,0.55); z-index: 2;">
-                                                <div class="spinner-border spinner-border-sm text-secondary" role="status">
-                                                    <span class="visually-hidden">Cargando…</span>
+                                    <div class="card-body px-3 py-0">
+                                        <ng-container *ngIf="ventasProductoListo; else ventasTablePlaceholder">
+                                            <div class="position-relative">
+                                                <div *ngIf="ventasProductoLoading"
+                                                    class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+                                                    style="background: rgba(255,255,255,0.55); z-index: 2;">
+                                                    <div class="spinner-border spinner-border-sm text-secondary" role="status">
+                                                        <span class="visually-hidden">Cargando…</span>
+                                                    </div>
                                                 </div>
+                                                <ag-grid-angular #ventasPorProductoGrid
+                                                    class="ag-theme-alpine ventas-producto-grid"
+                                                    [rowData]="ventasPorProductoRows"
+                                                    [pinnedBottomRowData]="pinnedBottomRowDataVentasProducto"
+                                                    [columnDefs]="ventasPorProductoColumnDefs"
+                                                    [gridOptions]="ventasPorProductoGridOptions" [defaultColDef]="{
+                                                    resizable: true,
+                                                    sortable: true,
+                                                    filter: true
+                                                }" style="width: 100%; height: 450px;" [domLayout]="'normal'">
+                                                </ag-grid-angular>
                                             </div>
-                                            <ag-grid-angular #ventasPorProductoGrid
-                                                class="ag-theme-alpine ventas-producto-grid"
-                                                [rowData]="ventasPorProductoRows"
-                                                [pinnedBottomRowData]="pinnedBottomRowDataVentasProducto"
-                                                [columnDefs]="ventasPorProductoColumnDefs"
-                                                [gridOptions]="ventasPorProductoGridOptions" [defaultColDef]="{
-                                                resizable: true,
-                                                sortable: true,
-                                                filter: true
-                                            }" style="width: 100%; height: 450px;" [domLayout]="'normal'">
-                                            </ag-grid-angular>
-                                        </div>
-                                    </ng-container>
-                                </div>
+                                        </ng-container>
+                                    </div>
+                                </app-chart-expandable>
                             </div>
                         </div>
                     </div>
@@ -513,14 +529,17 @@
                         <div class="col-md-6 mb-2">
                             <div class="card h-100">
                                 <div class="card-header bg-white border-0 py-2 text-center">
-                                    <div class="ventas-card-title mb-0">Top 25 clientes</div>
+                                    <div class="ventas-card-title mb-0">Top clientes</div>
                                 </div>
                                 <div class="card-body">
-                                    <ng-container *ngIf="datos.topClientes !== undefined; else ventasListPlaceholder">
-                                        <app-accounts-list title="" [accounts]="datos.topClientes || []"
-                                            type="receivable" (itemClick)="onClienteClick($event)">
-                                        </app-accounts-list>
-                                    </ng-container>
+                                    <app-chart-expandable title="Top clientes">
+                                        <ng-container *ngIf="datos.topClientes !== undefined; else ventasListPlaceholder">
+                                            <app-accounts-list title="" [accounts]="datos.topClientes || []"
+                                                type="receivable" [collapseExcessBars]="true"
+                                                (itemClick)="onClienteClick($event)">
+                                            </app-accounts-list>
+                                        </ng-container>
+                                    </app-chart-expandable>
                                 </div>
                             </div>
                         </div>
@@ -528,59 +547,61 @@
                         <!-- Detalle de ventas por cliente -->
                         <div class="col-md-6 mb-2">
                             <div class="card h-100">
-                                <div class="card-header bg-white border-0 py-3">
-                                    <div class="d-flex flex-column justify-content-between gap-2">
-                                        <div class="ventas-card-title mb-0 text-center">Detalle de ventas por cliente
-                                        </div>
-                                        <div
-                                            class="d-flex flex-wrap gap-2 align-items-center justify-content-end w-100">
-                                            <!-- Buscador global -->
-                                            <div class="input-group"
-                                                style="flex: 1 1 200px; max-width: 350px; min-width: 200px;">
-                                                <span class="input-group-text bg-white border-end-0">
-                                                    <i class="fas fa-search text-muted"></i>
-                                                </span>
-                                                <input type="text" class="form-control border-start-0"
-                                                    placeholder="Buscar..." [(ngModel)]="quickFilterTextCliente"
-                                                    (input)="onQuickFilterClienteChange()">
+                                <app-chart-expandable title="Detalle de ventas por cliente">
+                                    <div class="card-header bg-white border-0 py-3">
+                                        <div class="d-flex flex-column justify-content-between gap-2">
+                                            <div class="ventas-card-title mb-0 text-center">Detalle de ventas por cliente
                                             </div>
-                                            <button class="btn btn-sm btn-outline-success"
-                                                (click)="exportarClientesExcel()" title="Exportar a Excel"
-                                                [disabled]="ventasClienteExporting || ventasClienteLoading">
-                                                <i class="fas fa-file-excel me-1"></i>
-                                                {{ ventasClienteExporting ? 'Exportando…' : 'Excel' }}
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-secondary"
-                                                (click)="limpiarFiltrosClienteGrid()" title="Limpiar filtros">
-                                                <i class="fas fa-filter me-1"></i> Limpiar
-                                            </button>
+                                            <div
+                                                class="d-flex flex-wrap gap-2 align-items-center justify-content-end w-100">
+                                                <!-- Buscador global -->
+                                                <div class="input-group"
+                                                    style="flex: 1 1 200px; max-width: 350px; min-width: 200px;">
+                                                    <span class="input-group-text bg-white border-end-0">
+                                                        <i class="fas fa-search text-muted"></i>
+                                                    </span>
+                                                    <input type="text" class="form-control border-start-0"
+                                                        placeholder="Buscar..." [(ngModel)]="quickFilterTextCliente"
+                                                        (input)="onQuickFilterClienteChange()">
+                                                </div>
+                                                <button class="btn btn-sm btn-outline-success"
+                                                    (click)="exportarClientesExcel()" title="Exportar a Excel"
+                                                    [disabled]="ventasClienteExporting || ventasClienteLoading">
+                                                    <i class="fas fa-file-excel me-1"></i>
+                                                    {{ ventasClienteExporting ? 'Exportando…' : 'Excel' }}
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-secondary"
+                                                    (click)="limpiarFiltrosClienteGrid()" title="Limpiar filtros">
+                                                    <i class="fas fa-filter me-1"></i> Limpiar
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                <div class="card-body px-3 py-0">
-                                    <ng-container *ngIf="ventasClienteListo; else ventasTablePlaceholder">
-                                        <div class="position-relative">
-                                            <div *ngIf="ventasClienteLoading"
-                                                class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
-                                                style="background: rgba(255,255,255,0.55); z-index: 2;">
-                                                <div class="spinner-border spinner-border-sm text-secondary" role="status">
-                                                    <span class="visually-hidden">Cargando…</span>
+                                    <div class="card-body px-3 py-0">
+                                        <ng-container *ngIf="ventasClienteListo; else ventasTablePlaceholder">
+                                            <div class="position-relative">
+                                                <div *ngIf="ventasClienteLoading"
+                                                    class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+                                                    style="background: rgba(255,255,255,0.55); z-index: 2;">
+                                                    <div class="spinner-border spinner-border-sm text-secondary" role="status">
+                                                        <span class="visually-hidden">Cargando…</span>
+                                                    </div>
                                                 </div>
+                                                <ag-grid-angular #ventasPorClienteGrid
+                                                    class="ag-theme-alpine ventas-cliente-grid"
+                                                    [rowData]="ventasPorClienteRows"
+                                                    [pinnedBottomRowData]="pinnedBottomRowDataVentasCliente"
+                                                    [columnDefs]="ventasPorClienteColumnDefs"
+                                                    [gridOptions]="ventasPorClienteGridOptions" [defaultColDef]="{
+                                                    resizable: true,
+                                                    sortable: true,
+                                                    filter: true
+                                                }" style="width: 100%; height: 450px;" [domLayout]="'normal'">
+                                                </ag-grid-angular>
                                             </div>
-                                            <ag-grid-angular #ventasPorClienteGrid
-                                                class="ag-theme-alpine ventas-cliente-grid"
-                                                [rowData]="ventasPorClienteRows"
-                                                [pinnedBottomRowData]="pinnedBottomRowDataVentasCliente"
-                                                [columnDefs]="ventasPorClienteColumnDefs"
-                                                [gridOptions]="ventasPorClienteGridOptions" [defaultColDef]="{
-                                                resizable: true,
-                                                sortable: true,
-                                                filter: true
-                                            }" style="width: 100%; height: 450px;" [domLayout]="'normal'">
-                                            </ag-grid-angular>
-                                        </div>
-                                    </ng-container>
-                                </div>
+                                        </ng-container>
+                                    </div>
+                                </app-chart-expandable>
                             </div>
                         </div>
                     </div>

@@ -300,14 +300,12 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
       this.datosFiltrados = this.clonarDatos(this.datos);
       this.recalcularRowsCache();
     }
-    // Marcar como inicializado después de un pequeño delay para evitar emitir durante la inicialización
+    // Siempre emitir al padre tras restaurar UI; si no, al reentrar al dashboard
+    // el padre queda sin datos y la vista se queda en loaders.
     setTimeout(() => {
       this.inicializado = true;
       this.filtrosListosParaEmitir = true;
-      if (tieneEstadoGuardado) {
-        this.cargarDetalleCxcPagina(0);
-        this.cargarDetalleCxpPagina(0);
-      }
+      this.aplicarFiltros();
       this.cdr.markForCheck();
     }, 100);
   }
@@ -1176,6 +1174,7 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
     }
 
     this.filtrosCambiados.emit(filtros);
+    this._desbloquearSiPadreOmiteRecarga();
     this.cargarDetalleCxcPagina(0);
     this.cargarDetalleCxpPagina(0);
   }
@@ -1194,6 +1193,15 @@ export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {
     }
     this.filtrosLocked = false;
     this.cdr.markForCheck();
+  }
+
+  /** Si el padre omite la recarga (mismos filtros), datosCompletos no cambia y el overlay se queda. */
+  private _desbloquearSiPadreOmiteRecarga(): void {
+    setTimeout(() => {
+      if (this.datosCompletos) {
+        this._desbloquearFiltros();
+      }
+    }, 0);
   }
 
 

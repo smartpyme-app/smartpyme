@@ -15,6 +15,7 @@ import { BarChartComponent } from './components/bar-chart/bar-chart.component';
 import { PieChartComponent } from './components/pie-chart/pie-chart.component';
 import { TreemapChartComponent } from './components/treemap-chart/treemap-chart.component';
 import { AccountsListComponent } from './components/accounts-list/accounts-list.component';
+import { ChartExpandableComponent } from './components/chart-expandable/chart-expandable.component';
 import { CashFlowGaugeComponent } from './components/cash-flow-gauge/cash-flow-gauge.component';
 import { BudgetCardComponent } from './components/budget-card/budget-card.component';
 import { FiltroFechaComponent } from './components/filtro-fecha/filtro-fecha.component';
@@ -51,6 +52,7 @@ import { PipesModule } from '@pipes/pipes.module';
     PieChartComponent,
     TreemapChartComponent,
     AccountsListComponent,
+    ChartExpandableComponent,
     CashFlowGaugeComponent,
     BudgetCardComponent,
     FiltroFechaComponent,
@@ -70,6 +72,7 @@ import { PipesModule } from '@pipes/pipes.module';
     PieChartComponent,
     TreemapChartComponent,
     AccountsListComponent,
+    ChartExpandableComponent,
     CashFlowGaugeComponent,
     BudgetCardComponent,
     FiltroFechaComponent,

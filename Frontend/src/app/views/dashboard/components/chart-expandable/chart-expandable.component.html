@@ -1,0 +1,37 @@
+<div
+  class="chart-expandable"
+  [class.is-expanded]="expanded"
+  [class.is-panel-open]="panelOpen">
+  <div
+    class="chart-expandable__backdrop"
+    *ngIf="expanded"
+    (click)="close()"
+    aria-hidden="true"></div>
+
+  <div
+    class="chart-expandable__sizer"
+    [style.min-height.px]="expanded ? placeholderHeight : null">
+    <div
+      class="chart-expandable__panel"
+      #panel
+      [attr.role]="expanded ? 'dialog' : null"
+      [attr.aria-modal]="expanded ? true : null"
+      [attr.aria-label]="title || 'Gráfico ampliado'">
+      <div class="chart-expandable__toolbar">
+        <span class="chart-expandable__title" *ngIf="expanded && title">{{ title }}</span>
+        <span class="chart-expandable__title-spacer" *ngIf="!(expanded && title)"></span>
+        <button
+          type="button"
+          class="chart-expandable__btn"
+          (click)="onToggleClick($event)"
+          [attr.aria-label]="expanded ? 'Cerrar vista ampliada' : 'Expandir gráfico'"
+          [attr.title]="expanded ? 'Cerrar' : 'Expandir'">
+          <i class="fas" [ngClass]="expanded ? 'fa-times' : 'fa-expand'" aria-hidden="true"></i>
+        </button>
+      </div>
+      <div class="chart-expandable__body">
+        <ng-content></ng-content>
+      </div>
+    </div>
+  </div>
+</div>

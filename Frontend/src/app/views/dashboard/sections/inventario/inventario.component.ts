@@ -292,17 +292,11 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
       this.ordenarArraysIniciales();
       this.recalcularRowsCache();
     }
-    // Marcar como inicializado después de un pequeño delay para evitar emitir durante la inicialización
+    // Siempre emitir al padre tras restaurar UI; si no, al reentrar al dashboard
+    // el padre queda sin datos y la vista se queda en loaders.
     setTimeout(() => {
       this.inicializado = true;
-      // ponytail: if no saved state, emit default filters on startup
-      if (!tieneEstadoGuardado) {
-        this.aplicarFiltros();
-      } else {
-        this.cargarDetallePagina(0);
-        this.cargarDetalleEsPagina(0);
-        this.cargarDetalleAjustesPagina(0);
-      }
+      this.aplicarFiltros();
       this.cdr.markForCheck();
     }, 100);
   }
@@ -914,6 +908,7 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
     };
     if (this.mes) filtros.mes = this.mes;
     this.filtrosCambiados.emit(filtros);
+    this._desbloquearSiPadreOmiteRecarga();
     this.cargarDetallePagina(0);
     this.cargarDetalleEsPagina(0);
     this.cargarDetalleAjustesPagina(0);
@@ -933,6 +928,15 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
     }
     this.filtrosLocked = false;
     this.cdr.markForCheck();
+  }
+
+  /** Si el padre omite la recarga (mismos filtros), datosCompletos no cambia y el overlay se queda. */
+  private _desbloquearSiPadreOmiteRecarga(): void {
+    setTimeout(() => {
+      if (this.datosCompletos) {
+        this._desbloquearFiltros();
+      }
+    }, 0);
   }
 
 

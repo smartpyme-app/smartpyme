@@ -179,7 +179,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   onFiltrosResultadosCambiados(filtros: any): void {
-    if (this.sonFiltrosIguales(this.filtrosPorSeccion['Resultados'], filtros)) {
+    // Solo omitir si ya terminó la carga: si no, el hijo queda en “Filtrando datos…”
+    // (emite al montar tras cambiar de tab y el padre hacía return sin tocar datosCompletos).
+    if (
+      this.sonFiltrosIguales(this.filtrosPorSeccion['Resultados'], filtros) &&
+      this.datosResultadosCompletos
+    ) {
       return;
     }
     this.cancelarSuscripcionActiva();
@@ -211,7 +216,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   onFiltrosGastosCambiados(filtros: any): void {
-    if (this.sonFiltrosIguales(this.filtrosPorSeccion['Gastos'], filtros)) {
+    if (
+      this.sonFiltrosIguales(this.filtrosPorSeccion['Gastos'], filtros) &&
+      this.datosGastosCompletos
+    ) {
       return;
     }
     this.cancelarSuscripcionActiva();
@@ -244,7 +252,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
 
   onFiltrosVentasCambiados(filtros: FiltrosConsultaVentasDashboard): void {
-    if (this.sonFiltrosIguales(this.filtrosPorSeccion['Ventas'], filtros)) {
+    if (
+      this.sonFiltrosIguales(this.filtrosPorSeccion['Ventas'], filtros) &&
+      this.datosVentasCompletos
+    ) {
       return;
     }
     this.cancelarSuscripcionActiva();
@@ -276,7 +287,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   onFiltrosControlCuentasCambiados(filtros: any): void {
-    if (this.sonFiltrosIguales(this.filtrosPorSeccion['Control de cuentas'], filtros)) {
+    if (
+      this.sonFiltrosIguales(this.filtrosPorSeccion['Control de cuentas'], filtros) &&
+      this.datosCuentasCompletos
+    ) {
       return;
     }
     this.cancelarSuscripcionActiva();
@@ -309,7 +323,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
 
   onFiltrosInventarioCambiados(filtros: any): void {
-    if (this.sonFiltrosIguales(this.filtrosPorSeccion['Inventario'], filtros)) {
+    if (
+      this.sonFiltrosIguales(this.filtrosPorSeccion['Inventario'], filtros) &&
+      this.datosInventarioCompletos
+    ) {
       return;
     }
     this.cancelarSuscripcionActiva();

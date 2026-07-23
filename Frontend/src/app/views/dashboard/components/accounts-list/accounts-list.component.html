@@ -3,6 +3,12 @@
     <div *ngIf="accounts && accounts.length > 0" class="chart-container" style="height: 400px;">
         <div echarts [options]="chartOption" (chartInit)="onChartInit($event)" class="w-100 h-100"></div>
     </div>
+    <div *ngIf="showCollapseToggle" class="text-center pt-1">
+        <button type="button" class="btn btn-link btn-sm text-decoration-none px-2 py-0"
+            (click)="toggleBarsCollapse()">
+            {{ barsExpanded ? 'Ver menos' : ('Ver más… (' + remainingBarsCount + ')') }}
+        </button>
+    </div>
     <div *ngIf="!accounts || accounts.length === 0" class="text-center p-4 text-muted">
         <p class="mb-0">No hay datos disponibles para mostrar</p>
     </div>

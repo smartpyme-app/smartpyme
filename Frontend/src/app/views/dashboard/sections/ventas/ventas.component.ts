@@ -399,21 +399,13 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
     this.wireDetalleVentasProductoStreams();
     this.wireDetalleVentasClienteStreams();
     this.inicializarDatos();
-    // Marcar como inicializado después de un pequeño delay para evitar emitir durante la inicialización
+    // Siempre emitir al padre tras restaurar UI; si no, al reentrar al dashboard
+    // el padre queda sin datos y la vista se queda en loaders.
     setTimeout(() => {
       this.inicializado = true;
-      // ponytail: if no saved state, admin users must emit default filters
-      if (!tieneEstadoGuardado) {
-        const user = this.apiService.auth_user();
-        if (user?.tipo === 'Administrador') {
-          this.emitirFiltrosAlPadre();
-        }
-      } else {
-        this.cargarDetalleVentasProductoPagina(0);
-        this.cargarDetalleVentasClientePagina(0);
-        if (Object.keys(this.filtrosInteractivos).length > 0) {
-          this.aplicarFiltrosInteractivos();
-        }
+      this.emitirFiltrosAlPadre();
+      if (Object.keys(this.filtrosInteractivos).length > 0) {
+        this.aplicarFiltrosInteractivos();
       }
       this.cdr.markForCheck();
     }, 100);
@@ -1895,6 +1887,7 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
     }
 
     this.filtrosCambiados.emit(filtros);
+    this._desbloquearSiPadreOmiteRecarga();
     this.cargarDetalleVentasProductoPagina(0);
     this.cargarDetalleVentasClientePagina(0);
   }
@@ -1913,6 +1906,15 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
     }
     this.filtrosLocked = false;
     this.cdr.markForCheck();
+  }
+
+  /** Si el padre omite la recarga (mismos filtros), datosCompletos no cambia y el overlay se queda. */
+  private _desbloquearSiPadreOmiteRecarga(): void {
+    setTimeout(() => {
+      if (this.datosCompletos) {
+        this._desbloquearFiltros();
+      }
+    }, 0);
   }
 
   // ponytail: delegates to hayFiltrosAdicionalesActivos — limpiarFiltros no longer touches dates

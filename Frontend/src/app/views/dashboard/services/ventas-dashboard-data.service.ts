@@ -177,6 +177,8 @@ export class VentasDashboardDataService {
       ventasPorVendedorChartConfig: {
         type: 'bar',
         highlightMaxBar: true,
+        collapseExcessBars: true,
+        initialVisibleBars: 5,
         colors: ['#7CABFF'],
         labels: (porVendedor ?? []).map((i: any) => i.name),
         data: (porVendedor ?? []).map((i: any) => i.amount),
@@ -803,6 +805,8 @@ export class VentasDashboardDataService {
         ventasPorVendedorChartConfig: {
           type: 'bar',
           highlightMaxBar: true,
+          collapseExcessBars: true,
+          initialVisibleBars: 5,
           colors: ['#7CABFF'],
           labels: (data ?? []).map((i: any) => i.name),
           data: (data ?? []).map((i: any) => i.amount),
@@ -810,7 +814,17 @@ export class VentasDashboardDataService {
       })),
       catchError(err => {
         console.error('Error loading /api/ventas/por-vendedor:', err);
-        return of({ ventasPorVendedor: [], ventasPorVendedorChartConfig: { type: 'bar', labels: [], data: [], colors: ['#7CABFF'] } });
+        return of({
+          ventasPorVendedor: [],
+          ventasPorVendedorChartConfig: {
+            type: 'bar',
+            collapseExcessBars: true,
+            initialVisibleBars: 5,
+            labels: [],
+            data: [],
+            colors: ['#7CABFF'],
+          },
+        });
       })
     );
 

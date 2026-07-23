@@ -13,6 +13,8 @@ export class BarChartComponent implements OnInit, OnChanges {
 
   chartOption: any = {};
   echartsInstance: any;
+  /** Con `collapseExcessBars`: false = tope inicial; true = todas las barras. */
+  barsExpanded = false;
 
   ngOnInit(): void {
     this.initChart();
@@ -20,8 +22,72 @@ export class BarChartComponent implements OnInit, OnChanges {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['config'] && !changes['config'].firstChange) {
+      this.barsExpanded = false;
       this.initChart();
     }
+  }
+
+  get initialVisibleBars(): number {
+    return this.config?.initialVisibleBars ?? 10;
+  }
+
+  get totalBarCount(): number {
+    return this.config?.labels?.length ?? 0;
+  }
+
+  get showCollapseToggle(): boolean {
+    return !!(this.config?.collapseExcessBars && this.totalBarCount > this.initialVisibleBars);
+  }
+
+  get remainingBarsCount(): number {
+    return Math.max(0, this.totalBarCount - this.initialVisibleBars);
+  }
+
+  toggleBarsCollapse(): void {
+    this.barsExpanded = !this.barsExpanded;
+    this.initChart();
+  }
+
+  /** Config efectiva para pintar (recorte de barras si aplica). */
+  private getRenderConfig(): ChartConfig {
+    const src = this.config;
+    if (!src?.collapseExcessBars || this.barsExpanded) {
+      return src;
+    }
+    const n = this.initialVisibleBars;
+    const labels = src.labels;
+    if (!labels || labels.length <= n) {
+      return src;
+    }
+
+    const isMultiSeries =
+      Array.isArray(src.data) &&
+      src.data.length > 0 &&
+      typeof src.data[0] === 'object' &&
+      src.data[0].hasOwnProperty('name') &&
+      src.data[0].hasOwnProperty('data');
+
+    if (isMultiSeries) {
+      return {
+        ...src,
+        labels: labels.slice(0, n),
+        data: (src.data as any[]).map((serie) => ({
+          ...serie,
+          data: Array.isArray(serie.data) ? serie.data.slice(0, n) : serie.data,
+        })),
+      };
+    }
+
+    return {
+      ...src,
+      labels: labels.slice(0, n),
+      data: Array.isArray(src.data) ? (src.data as number[]).slice(0, n) : src.data,
+      ...((src as any).originalValues
+        ? { originalValues: (src as any).originalValues.slice(0, n) }
+        : {}),
+      ...(src.tooltipLabels ? { tooltipLabels: src.tooltipLabels.slice(0, n) } : {}),
+      ...(src.porcentajes ? { porcentajes: src.porcentajes.slice(0, n) } : {}),
+    };
   }
 
   private formatCompactBarLabel(value: number, exactUnder1000 = false): string {
@@ -72,6 +138,21 @@ export class BarChartComponent implements OnInit, OnChanges {
       return;
     }
 
+    // Recorte temporal para pintar; el @Input completo se restaura al final
+    // (toggle / getters siguen leyendo el dataset original).
+    const fullConfig = this.config;
+    this.config = this.getRenderConfig();
+    try {
+      this.buildBarChartOption();
+    } finally {
+      this.config = fullConfig;
+    }
+
+    this.attachItemClickHandler();
+    this.refreshChartSize();
+  }
+
+  private buildBarChartOption(): void {
     // Verificar si es un gráfico de múltiples series (ventas y gastos)
     const isMultiSeries = Array.isArray(this.config.data) &&
       this.config.data.length > 0 &&
@@ -424,9 +505,6 @@ export class BarChartComponent implements OnInit, OnChanges {
       }),
       ...(dataZoom ? { dataZoom } : {})
     };
-
-    this.attachItemClickHandler();
-    this.refreshChartSize();
   }
 
   private refreshChartSize(): void {

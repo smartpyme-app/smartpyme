@@ -676,17 +676,11 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
       this.aplicarDefectoMesFlujoEfectivo();
     }
     this.cargarSucursales();
-    // Marcar como inicializado después de un pequeño delay
+    // Siempre emitir al padre: el estado UI se restaura arriba, pero al reentrar
+    // al dashboard el padre nace sin datos; si no emitimos, se queda en loaders.
     setTimeout(() => {
       this.inicializado = true;
-      if (!tieneEstadoGuardado) {
-        this.aplicarFiltros();
-      } else {
-        this.cargarCashflowVentasPagina(0);
-        this.cargarCashflowGastosPagina(0);
-        this.cargarAbonosCxcPagina(0);
-        this.cargarAbonosCxpPagina(0);
-      }
+      this.aplicarFiltros();
       this.cdr.markForCheck();
     }, 100);
   }
@@ -807,6 +801,7 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
 
     // Emitir evento al componente padre para recargar datos
     this.filtrosCambiados.emit(filtros);
+    this._desbloquearSiPadreOmiteRecarga();
     this.cargarCashflowVentasPagina(0);
     this.cargarCashflowGastosPagina(0);
     this.cargarAbonosCxcPagina(0);
@@ -1328,6 +1323,15 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
     }
     this.filtrosLocked = false;
     this.cdr.markForCheck();
+  }
+
+  /** Si el padre omite la recarga (mismos filtros), datosCompletos no cambia y el overlay se queda. */
+  private _desbloquearSiPadreOmiteRecarga(): void {
+    setTimeout(() => {
+      if (this.datosCompletos) {
+        this._desbloquearFiltros();
+      }
+    }, 0);
   }
 
   formatCurrency(value: number): string {
