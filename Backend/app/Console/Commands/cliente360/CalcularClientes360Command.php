@@ -158,8 +158,8 @@ class CalcularClientes360Command extends Command
     private function calcularRFMMasivo()
     {
         DB::transaction(function () {
-            // Limpiar tabla
-            DB::table('cliente_metricas_rfm')->truncate();
+            // delete (no truncate): TRUNCATE hace COMMIT implícito en MySQL y rompe DB::transaction()
+            DB::table('cliente_metricas_rfm')->delete();
 
             // PASO 1: Insertar métricas básicas sin scores
             DB::statement("
@@ -409,7 +409,7 @@ class CalcularClientes360Command extends Command
     {
         DB::transaction(function () {
             // Limpiar tabla
-            DB::table('cliente_productos_top')->truncate();
+            DB::table('cliente_productos_top')->delete();
 
             // Insertar top 10 productos por cliente (solo empresas con fidelización)
             DB::statement("
@@ -462,7 +462,7 @@ class CalcularClientes360Command extends Command
     {
         DB::transaction(function () {
             // Limpiar tabla
-            DB::table('cliente_ventas_mensuales')->truncate();
+            DB::table('cliente_ventas_mensuales')->delete();
 
             DB::statement("
                 INSERT INTO cliente_ventas_mensuales (
@@ -505,7 +505,7 @@ class CalcularClientes360Command extends Command
     {
         DB::transaction(function () {
             // Limpiar tabla
-            DB::table('cliente_fidelizacion_snapshot')->truncate();
+            DB::table('cliente_fidelizacion_snapshot')->delete();
 
             $hasIdEmpresa = Schema::hasColumn('cliente_fidelizacion_snapshot', 'id_empresa');
 
@@ -617,7 +617,7 @@ class CalcularClientes360Command extends Command
     {
         DB::transaction(function () {
             // Limpiar tabla
-            DB::table('cliente_actividad_reciente')->truncate();
+            DB::table('cliente_actividad_reciente')->delete();
 
             // Insertar últimas 10 ventas por cliente (solo empresas con fidelización)
             DB::statement("
@@ -694,7 +694,7 @@ class CalcularClientes360Command extends Command
     {
         DB::transaction(function () {
             // Limpiar tabla
-            DB::table('cliente_categorias_preferidas')->truncate();
+            DB::table('cliente_categorias_preferidas')->delete();
 
             // INSERT MASIVO - Calcular categorías por cliente con ranking (solo empresas con fidelización)
             DB::statement("
