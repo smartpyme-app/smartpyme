@@ -136,6 +136,10 @@ class LoteAsignacionService
     {
         $registros = DetalleVentaLote::where('id_detalle_venta', $detalle->id)->get();
 
+        // Stock primero, kardex después: total_cantidad debe ser el saldo post-movimiento.
+        $inventario->stock = (float) $inventario->stock + $cantidadBase;
+        $inventario->save();
+
         if ($registros->isNotEmpty()) {
             foreach ($registros as $registro) {
                 $lote = Lote::find($registro->lote_id);
@@ -148,7 +152,10 @@ class LoteAsignacionService
                     'lote_id' => $registro->lote_id,
                 ]);
             }
-        } elseif ($detalle->lote_id) {
+            return;
+        }
+
+        if ($detalle->lote_id) {
             $lote = Lote::find($detalle->lote_id);
             if ($lote) {
                 $lote->stock = (float) $lote->stock + $cantidadBase;
@@ -158,12 +165,10 @@ class LoteAsignacionService
             $inventario->kardex($venta, $cantidadBase * -1, null, null, null, [
                 'lote_id' => $detalle->lote_id,
             ]);
-        } else {
-            $inventario->kardex($venta, $cantidadBase * -1);
+            return;
         }
 
-        $inventario->stock = (float) $inventario->stock + $cantidadBase;
-        $inventario->save();
+        $inventario->kardex($venta, $cantidadBase * -1);
     }
 
     /**
@@ -178,6 +183,10 @@ class LoteAsignacionService
     ): void {
         $registros = DetalleVentaLote::where('id_detalle_venta', $detalle->id)->get();
 
+        // Stock primero, kardex después: total_cantidad debe ser el saldo post-movimiento.
+        $inventario->stock = max(0, (float) $inventario->stock - $cantidadBase);
+        $inventario->save();
+
         if ($registros->isNotEmpty()) {
             foreach ($registros as $registro) {
                 $lote = Lote::find($registro->lote_id);
@@ -190,9 +199,6 @@ class LoteAsignacionService
                     'lote_id' => $registro->lote_id,
                 ]);
             }
-
-            $inventario->stock = max(0, (float) $inventario->stock - $cantidadBase);
-            $inventario->save();
             return;
         }
 
@@ -206,12 +212,10 @@ class LoteAsignacionService
             $inventario->kardex($venta, $cantidadBase, $precio, null, null, [
                 'lote_id' => $detalle->lote_id,
             ]);
-        } else {
-            $inventario->kardex($venta, $cantidadBase, $precio);
+            return;
         }
 
-        $inventario->stock = max(0, (float) $inventario->stock - $cantidadBase);
-        $inventario->save();
+        $inventario->kardex($venta, $cantidadBase, $precio);
     }
 
     /**
@@ -484,6 +488,10 @@ class LoteAsignacionService
     ): void {
         $revertido = false;
 
+        // Stock primero, kardex después: total_cantidad debe ser el saldo post-movimiento.
+        $inventario->stock = (float) $inventario->stock + $cantidadBase;
+        $inventario->save();
+
         foreach ($registros as $registro) {
             $lote = Lote::find($registro->lote_id);
             if ($lote) {
@@ -507,12 +515,12 @@ class LoteAsignacionService
             $inventario->kardex($documento, $cantidadBase * -1, $precio, null, null, array_merge($kardexOpts, [
                 'lote_id' => $loteIdLegacy,
             ]));
-        } elseif (!$revertido) {
-            $inventario->kardex($documento, $cantidadBase * -1, $precio, null, null, $kardexOpts);
+            return;
         }
 
-        $inventario->stock = (float) $inventario->stock + $cantidadBase;
-        $inventario->save();
+        if (!$revertido) {
+            $inventario->kardex($documento, $cantidadBase * -1, $precio, null, null, $kardexOpts);
+        }
     }
 
     /**
