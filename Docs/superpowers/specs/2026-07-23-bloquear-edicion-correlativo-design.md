@@ -1,7 +1,7 @@
 # Diseño: Bloquear edición de correlativo (ventas / compras)
 
 **Fecha:** 2026-07-23  
-**Estado:** Pendiente revisión de usuario  
+**Estado:** Implementado  
 **Tipo:** Nueva preferencia de sistema  
 **Fuera de alcance:** Bloqueo al crear venta/compra; pantallas de recurrentes; facturación create/v2 create
 

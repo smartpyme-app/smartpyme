@@ -499,6 +499,12 @@ class VentasController extends Controller
                 }
             }
 
+            // Preferencia: no permitir cambiar correlativo al editar
+            $empresaVenta = Empresa::find($venta->id_empresa);
+            if ($empresaVenta && $empresaVenta->bloqueaEdicionCorrelativo()) {
+                $request->merge(['correlativo' => $venta->correlativo]);
+            }
+
             // El frontend ya envía el total sin propina, así que no necesitamos ajustarlo
             $venta->fill($request->all());
             $venta->save();

@@ -652,6 +652,20 @@
                         </div>
                         <div class="col-12 col-xl-6 d-flex">
                             <div class="empresa-pref-tile w-100">
+                                <p class="empresa-pref-desc small text-muted mb-0">Impide modificar el correlativo al
+                                    editar una venta y la referencia al editar una compra.</p>
+                                <div class="form-switch bg-light-info rounded">
+                                    <label for="bloquear_edicion_correlativo">Bloquear edición de correlativo</label>
+                                    <input class="form-check-input float-end" type="checkbox" role="switch"
+                                        id="bloquear_edicion_correlativo"
+                                        [checked]="isBloquearEdicionCorrelativoEnabled()"
+                                        (change)="toggleBloquearEdicionCorrelativo()"
+                                        name="bloquear_edicion_correlativo">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-xl-6 d-flex">
+                            <div class="empresa-pref-tile w-100">
                                 <p class="empresa-pref-desc small text-muted mb-0">Mostrar campos contables (Tipo de
                                     operación y Tipo de ingreso) en ventas.</p>
                                 <div class="form-switch bg-light-info rounded">

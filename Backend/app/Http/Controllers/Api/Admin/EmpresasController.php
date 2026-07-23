@@ -863,6 +863,7 @@ class EmpresasController extends Controller
             'cotizacion_mostrar_descripcion',
             'cotizacion_mostrar_imagenes_productos',
             'bloquear_cotizaciones_vendedores',
+            'bloquear_edicion_correlativo',
             'ventas_puede_cambiar_vendedor_facturacion',
             'mostrar_campos_contables',
             'inventario_fraccionado',
