@@ -1189,6 +1189,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
                 cotizacion_mostrar_descripcion: true, // Mostrar descripción en PDF/vista de cotizaciones
                 cotizacion_mostrar_imagenes_productos: false, // Mostrar imágenes de productos en cotizaciones
                 bloquear_cotizaciones_vendedores: false, // Restringir cotizaciones a usuarios Ventas / Ventas Limitado (solo propias, sin facturar/editar desde listado)
+                bloquear_edicion_correlativo: false, // Impide editar correlativo (ventas) / referencia (compras) en modales de edición
                 ventas_puede_cambiar_vendedor_facturacion: false, // Ventas/Limitado pueden elegir vendedor al facturar
                 dte_mostrar_descripcion_producto: true, // Descripción extendida del catálogo en PDF de factura y CCF (DTE)
                 fidelizacion_activa: false, // Activar fidelización de clientes para configurar
@@ -1439,6 +1440,26 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
 
     public toggleBloquearCotizacionesVendedores() {
         this.updateBloquearCotizacionesVendedores(!this.isBloquearCotizacionesVendedoresEnabled());
+    }
+
+    public isBloquearEdicionCorrelativoEnabled(): boolean {
+        return this.getCustomConfig('configuraciones', 'bloquear_edicion_correlativo', false);
+    }
+
+    public updateBloquearEdicionCorrelativo(enabled: boolean) {
+        this.addCustomConfig('configuraciones', 'bloquear_edicion_correlativo', enabled);
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                enabled
+                    ? 'La edición de correlativo en ventas y referencia en compras quedó bloqueada.'
+                    : 'La edición de correlativo en ventas y referencia en compras quedó habilitada.'
+            );
+        });
+    }
+
+    public toggleBloquearEdicionCorrelativo() {
+        this.updateBloquearEdicionCorrelativo(!this.isBloquearEdicionCorrelativoEnabled());
     }
 
     // Métodos para configuraciones de lotes

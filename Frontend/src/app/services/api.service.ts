@@ -732,6 +732,13 @@ export class ApiService {
         return cfg?.bloquear_cotizaciones_vendedores === true;
     }
 
+    /** Empresa activó bloquear edición de correlativo/referencia en modales de edición (Mi cuenta). */
+    empresaBloqueaEdicionCorrelativo(): boolean {
+        const u = this.auth_user();
+        const cfg = u?.empresa?.custom_empresa?.configuraciones as { bloquear_edicion_correlativo?: boolean } | undefined;
+        return cfg?.bloquear_edicion_correlativo === true;
+    }
+
     /**
      * Bloqueos de UI/API extra (facturar cotización desde menú, editar, detalles, cambiar estado): rol Ventas + opción empresa.
      * El listado solo cotizaciones propias usa isVentas() y no depende de esta opción.

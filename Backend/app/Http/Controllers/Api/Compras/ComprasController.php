@@ -263,6 +263,12 @@ class ComprasController extends Controller
                 }
             }
         
+        // Preferencia: no permitir cambiar referencia al editar
+        $empresaCompra = \App\Models\Admin\Empresa::find($compra->id_empresa);
+        if ($empresaCompra && $empresaCompra->bloqueaEdicionCorrelativo()) {
+            $request->merge(['referencia' => $compra->referencia]);
+        }
+
         $compra->fill($request->except(['detalles', 'dte']));
         $this->aplicarIdentificadoresDteImportado($compra, $request);
         $compra->save();

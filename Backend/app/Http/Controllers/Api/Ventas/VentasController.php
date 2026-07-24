@@ -13,6 +13,8 @@ use Illuminate\Http\Request;
 use JWTAuth;
 use Carbon\Carbon;
 use App\Services\FidelizacionCliente\ConsumoPuntosService as FidelizacionConsumoPuntosService;
+use App\Services\FidelizacionCliente\ReversionPuntosService;
+use Illuminate\Support\Facades\Log;
 
 use App\Models\Ventas\Venta;
 use App\Models\Ventas\Impuesto;
@@ -56,7 +58,6 @@ use App\Exports\CuentasCobrarExport;
 use App\Mail\ReporteVentasPorVendedor;
 use Maatwebsite\Excel\Facades\Excel;
 // use Auth;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
@@ -393,6 +394,7 @@ class VentasController extends Controller
             }
 
             $webhookPaquetesFacturadosBulk = false;
+            $anulandoVenta = ($venta->estado != 'Anulada') && (($request['estado'] ?? null) == 'Anulada');
 
             // Ajustar stocks
             foreach ($venta->detalles as $detalle) {
@@ -496,6 +498,24 @@ class VentasController extends Controller
                             WebhookPaqueteVentaDispatcher::dispatch((int) $pid);
                         }
                     }
+                }
+            }
+
+            // Preferencia: no permitir cambiar correlativo al editar
+            $empresaVenta = Empresa::find($venta->id_empresa);
+            if ($empresaVenta && $empresaVenta->bloqueaEdicionCorrelativo()) {
+                $request->merge(['correlativo' => $venta->correlativo]);
+            }
+
+            // Revertir puntos de fidelización al anular (ganados + restaurar canjeados)
+            if ($anulandoVenta) {
+                try {
+                    app(ReversionPuntosService::class)->revertirPorAnulacion($venta);
+                } catch (\Throwable $e) {
+                    Log::error('Error al revertir puntos por anulación de venta', [
+                        'venta_id' => $venta->id,
+                        'error' => $e->getMessage(),
+                    ]);
                 }
             }
 

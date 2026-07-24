@@ -743,6 +743,7 @@ class Empresa extends Model
             'configuraciones' => [
                 'ticket_en_pdf' => false,
                 'bloquear_cotizaciones_vendedores' => false,
+                'bloquear_edicion_correlativo' => false,
                 'dte_mostrar_descripcion_producto' => true,
                 'inventario_reporte_analisis_ventas_mensual' => false,
             ],
@@ -929,6 +930,14 @@ class Empresa extends Model
     {
         return (bool) $this->getCustomConfigValue('configuraciones', 'barcode_correlativo_automatico', false)
             || (bool) $this->getCustomConfigValue('configuraciones', 'sku_correlativo_automatico', false);
+    }
+
+    /**
+     * Impide modificar correlativo (ventas) / referencia (compras) al editar desde el listado.
+     */
+    public function bloqueaEdicionCorrelativo(): bool
+    {
+        return (bool) $this->getCustomConfigValue('configuraciones', 'bloquear_edicion_correlativo', false);
     }
 
     /**
