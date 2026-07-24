@@ -90,12 +90,21 @@ export class AdminUsuariosComponent implements OnInit {
 
     setSucursales(){
         this.sucursales = this.sucursalesList.filter((item:any) => item.id_empresa == this.usuario.id_empresa);
-        this.usuario.id_sucursal = this.sucursales[0].id;
-        console.log(this.sucursales);
+        if (!this.sucursales.length) {
+            this.usuario.id_sucursal = null;
+            this.usuario.id_bodega = null;
+            return;
+        }
+        const stillValid = this.sucursales.some((s: any) => s.id == this.usuario.id_sucursal);
+        if (!stillValid) {
+            this.usuario.id_sucursal = this.sucursales[0].id;
+            this.selectSucursal();
+        }
     }
 
     selectSucursal(){
-        this.usuario.id_bodega = this.bodegas[0].id;
+        const bodegasSucursal = (this.bodegas || []).filter((b: any) => b.id_sucursal == this.usuario.id_sucursal);
+        this.usuario.id_bodega = bodegasSucursal.length ? bodegasSucursal[0].id : null;
     }
 
     public setPagination(event:any):void{
