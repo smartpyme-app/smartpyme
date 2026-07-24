@@ -1,5 +1,6 @@
-import { Component, OnInit, TemplateRef, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+﻿import { Component, OnInit, TemplateRef, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { PipesModule } from '@pipes/pipes.module';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -24,7 +25,7 @@ import { porcentajeIvaDetalle, redondearMoneda } from '@utils/impuestos-venta.ut
     selector: 'app-venta',
     templateUrl: './venta.component.html',
     standalone: true,
-    imports: [CommonModule, PipesModule, RouterModule, FormsModule, CrearAbonoVentaComponent, EditarAbonoComponent, LazyImageDirective, TooltipModule],
+    imports: [CommonModule, PipesModule, RouterModule, FormsModule, CrearAbonoVentaComponent, EditarAbonoComponent, LazyImageDirective, TooltipModule, CurrencyPipe],
     changeDetection: ChangeDetectionStrategy.OnPush,
 
 })

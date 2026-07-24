@@ -1,5 +1,6 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+﻿import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
@@ -18,7 +19,7 @@ import { LazyImageDirective } from '../../../../../directives/lazy-image.directi
     selector: 'app-tienda-venta-paquetes',
     templateUrl: './tienda-venta-paquetes.component.html',
     standalone: true,
-    imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, LazyImageDirective],
+    imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, LazyImageDirective, CurrencyPipe],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TiendaVentaPaquetesComponent extends BasePaginatedModalComponent implements OnInit {

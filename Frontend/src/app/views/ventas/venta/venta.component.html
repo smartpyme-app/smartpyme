@@ -1,4 +1,4 @@
-<style>
+﻿<style>
 .product-zoom-img {
     cursor: zoom-in;
     transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
@@ -338,7 +338,7 @@
                           <b>Descuento por puntos</b>
                           <small class="text-muted d-block" *ngIf="venta?.puntos_canjeados">{{ venta.puntos_canjeados }} pts canjeados</small>
                         </td>
-                        <td class="text-end text-success"><b>{{ venta?.descuento_puntos | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-end text-success"><b>{{ venta?.descuento_puntos | currency }}</b></td>
                       </tr>
                     }
                     @if (venta.propina > 0) {

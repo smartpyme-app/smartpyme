@@ -1,5 +1,6 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
+﻿import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule } from '@angular/forms';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
@@ -13,7 +14,7 @@ import { normalizarPorcentajeImpuestoDetalle, redondearMoneda } from '@utils/imp
   selector: 'app-tienda-venta-paquetes-v2',
   templateUrl: './tienda-venta-paquetes-v2.component.html',
   standalone: true,
-  imports: [CommonModule, FormsModule]
+  imports: [CommonModule, FormsModule, CurrencyPipe]
 })
 export class TiendaVentaPaquetesV2Component implements OnInit {
 

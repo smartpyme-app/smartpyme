@@ -1,4 +1,4 @@
-<style>
+﻿<style>
 .product-zoom-img {
     cursor: zoom-in;
     transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
@@ -228,7 +228,7 @@
                         </select>
                         <small class="text-muted d-block mt-1" *ngIf="venta.cobrar_impuestos && detalle.precio"
                             style="font-size: 0.7rem; line-height: 1.2;">
-                            Sin IVA: {{ detalle.precio | currency:'USD':'symbol':'1.2' }}
+                            Sin IVA: {{ detalle.precio | currency }}
                         </small>
                     </td>
                     <td style="width: 100px;" *ngIf="mostrarCuentaTercerosEnLinea">
