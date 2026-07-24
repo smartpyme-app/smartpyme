@@ -1,11 +1,14 @@
 import { Component, EventEmitter, Input, OnInit, Output, OnChanges, SimpleChanges } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { BoxfulApiService } from '@services/boxful/boxful-api.service';
 import { AlertService } from '@services/alert.service';
 
 @Component({
   selector: 'app-boxful-shipment-details',
   templateUrl: './boxful-shipment-details.component.html',
-  styleUrls: ['./boxful-shipment-details.component.css']
+  styleUrls: ['./boxful-shipment-details.component.css'],
+  standalone: true,
+  imports: [CommonModule],
 })
 export class BoxfulShipmentDetailsComponent implements OnInit, OnChanges {
   @Input() shipmentId!: string;

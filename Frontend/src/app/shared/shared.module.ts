@@ -115,12 +115,11 @@ import { VerHistorialButtonComponent } from '../views/planillas/empleados/shared
     SelectSearchComponent,
     VerHistorialButtonComponent,
     SafeHtmlPipe,
-  ],
-  declarations: [
     ActivarLotesMasivoComponent,
     BoxfulShippingSelectorComponent,
     BoxfulShipmentDetailsComponent,
   ],
+  declarations: [],
   exports: [
     BusquedaClienteComponent,
     BusquedaProductoComponent,

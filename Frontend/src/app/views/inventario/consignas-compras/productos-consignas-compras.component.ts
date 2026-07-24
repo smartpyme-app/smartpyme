@@ -1,11 +1,28 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
+import { PopoverModule } from 'ngx-bootstrap/popover';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { FilterPipe } from '@pipes/filter.pipe';
+import { TruncatePipe } from '@pipes/truncate.pipe';
 
 @Component({
   selector: 'app-productos-consignas-compras',
   templateUrl: './productos-consignas-compras.component.html',
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    RouterModule,
+    TooltipModule,
+    PopoverModule,
+    FilterPipe,
+    TruncatePipe,
+  ],
 })
 export class ProductosConsignasComprasComponent implements OnInit {
   public compras: any[] = [];

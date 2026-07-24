@@ -1,14 +1,21 @@
 import { Component, OnInit, Output, EventEmitter, TemplateRef, ViewChild } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import Swal from 'sweetalert2';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { FilterPipe } from '@pipes/filter.pipe';
+import { NotificacionesContainerComponent } from '../notificaciones/notificaciones-container.component';
 
 @Component({
   selector: 'app-activar-lotes-masivo',
   templateUrl: './activar-lotes-masivo.component.html',
-  styleUrls: ['./activar-lotes-masivo.component.css']
+  styleUrls: ['./activar-lotes-masivo.component.css'],
+  standalone: true,
+  imports: [CommonModule, FormsModule, TooltipModule, FilterPipe, NotificacionesContainerComponent],
 })
 export class ActivarLotesMasivoComponent implements OnInit {
 

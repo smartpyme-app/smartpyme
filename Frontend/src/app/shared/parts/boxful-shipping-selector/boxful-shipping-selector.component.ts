@@ -1,6 +1,8 @@
 import { Component, EventEmitter, Input, OnInit, Output, OnChanges, OnDestroy, SimpleChanges } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { BoxfulApiService, BoxfulState, BoxfulCity } from '@services/boxful/boxful-api.service';
@@ -9,7 +11,9 @@ import { AlertService } from '@services/alert.service';
 @Component({
   selector: 'app-boxful-shipping-selector',
   templateUrl: './boxful-shipping-selector.component.html',
-  styleUrls: ['./boxful-shipping-selector.component.css']
+  styleUrls: ['./boxful-shipping-selector.component.css'],
+  standalone: true,
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, TooltipModule],
 })
 export class BoxfulShippingSelectorComponent implements OnInit, OnChanges, OnDestroy {
   @Input() clienteId!: number;

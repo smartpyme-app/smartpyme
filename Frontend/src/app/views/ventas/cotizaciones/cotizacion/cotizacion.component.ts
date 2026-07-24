@@ -858,8 +858,17 @@ if (
     }
   }
 
+  /** Alinea switches UI con `estado` al cargar (credito/consigna no vienen del API). */
+  private syncVentaCreditoConsignaFlagsFromEstado(): void {
+    if (!this.venta) return;
+    const e = this.venta.estado;
+    this.venta.consigna = e === 'Consigna';
+    this.venta.credito = e === 'Pendiente' || e === 'Consigna';
+  }
+
   public updateVenta(venta: any) {
     this.venta = venta;
+    this.syncVentaCreditoConsignaFlagsFromEstado();
     this.sumTotal();
   }
 

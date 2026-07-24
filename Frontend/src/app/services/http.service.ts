@@ -109,13 +109,13 @@ export class HttpService {
       .pipe(retry(0), catchError(this.handleError));
   }
 
-  patch(url: string, id: number, model: any): Observable<any> {
+  patch(url: string, id: string | number, model: any): Observable<any> {
     return this.http
       .patch<any>(`${this.apiUrl}${url}/${id}`, model)
       .pipe(retry(0), catchError(this.handleError));
   }
 
-  delete(url: string, id: number): Observable<any> {
+  delete(url: string, id: string | number): Observable<any> {
     return this.http
       .delete<any>(this.apiUrl + url + id)
       .pipe(retry(0), catchError(this.handleError));
