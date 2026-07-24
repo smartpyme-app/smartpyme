@@ -183,7 +183,7 @@
             @if (!validacionesPrevias.balanceCuadra && validacionesPrevias.balanceCuadraConTolerancia) {
               <span>
                 Diferencia menor<br>
-                <small>${{ validacionesPrevias.diferenciaBalance | number:'1.2-2' }}</small>
+                <small>{{ validacionesPrevias.diferenciaBalance | currency }}</small>
               </span>
             }
             @if (!validacionesPrevias.balanceCuadraConTolerancia) {

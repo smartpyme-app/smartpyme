@@ -1,5 +1,6 @@
 import { Component, OnInit, TemplateRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { AlertService } from '@services/alert.service';
@@ -18,7 +19,7 @@ import { TranslatePipe } from '@ngx-translate/core';
     selector: 'app-libro-compras',
     templateUrl: './libro-compras.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, SumPipe, LazyImageDirective, TranslatePipe],
+    imports: [CommonModule, RouterModule, FormsModule, SumPipe, LazyImageDirective, TranslatePipe, CurrencyPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 

@@ -87,7 +87,7 @@
         @endif
         <h1>{{ $empresa->nombre }}</h1>
         <h2>ESTADO DE FLUJOS DE EFECTIVO</h2>
-        <p class="sub">Método indirecto con conciliación de efectivo — USD</p>
+        <p class="sub">Método indirecto con conciliación de efectivo — {{ \App\Helpers\CurrencyHelper::code($empresa) }}</p>
         <p class="sub">{{ $flujo['periodo_actual']['titulo'] ?? '' }}</p>
         @if($mc && !empty($flujo['periodo_anterior']['titulo'] ?? ''))
             <p class="sub">Comparado con: {{ $flujo['periodo_anterior']['titulo'] }}</p>

@@ -2,6 +2,7 @@
 
 namespace App\Services\Contabilidad\NotasEstadosFinancieros;
 
+use App\Helpers\CurrencyHelper;
 use App\Models\Admin\Empresa;
 use App\Models\Bancos\Cuenta as CuentaBancaria;
 use App\Models\Contabilidad\Configuracion;
@@ -211,7 +212,7 @@ class NotasEstadosFinancierosService
         $cfg = $ctx['contabilidad_config'];
         $manual = (array) ($ctx['contenido_manual'][3] ?? []);
         $politicas = [
-            'moneda_funcional' => 'Dólares estadounidenses (USD)',
+            'moneda_funcional' => CurrencyHelper::label($ctx['empresa']),
             'inventarios' => 'PEPS (FIFO) conforme NIC 2, cuando aplica',
             'depreciacion' => 'Línea recta sobre vida útil estimada de activos',
             'reconocimiento_ingresos' => 'Al devengarse la prestación del servicio o entrega del bien',

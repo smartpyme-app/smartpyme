@@ -44,7 +44,7 @@
                     <span class="text-muted small fw-semibold text-uppercase">Total previsto</span>
                 </div>
                 <p class="fs-3 fw-bold text-primary mb-0">
-                    {{ datos.total_general | currency:'USD':'symbol':'1.2-2' }}
+                    {{ datos.total_general | currency }}
                 </p>
                 <small class="text-muted">{{ datos.periodo.inicio }} → {{ datos.periodo.fin }}</small>
             </div>
@@ -60,7 +60,7 @@
                         datos.total_nuevas_count }}</span>
                 </div>
                 <p class="fs-3 fw-bold text-success mb-0">
-                    {{ datos.total_nuevas | currency:'USD':'symbol':'1.2-2' }}
+                    {{ datos.total_nuevas | currency }}
                 </p>
             </div>
         </div>
@@ -72,7 +72,7 @@
                     <span class="text-muted small fw-semibold text-uppercase">Renovaciones</span>
                 </div>
                 <p class="fs-3 fw-bold text-warning mb-0">
-                    {{ datos.total_renovaciones | currency:'USD':'symbol':'1.2-2' }}
+                    {{ datos.total_renovaciones | currency }}
                 </p>
             </div>
         </div>

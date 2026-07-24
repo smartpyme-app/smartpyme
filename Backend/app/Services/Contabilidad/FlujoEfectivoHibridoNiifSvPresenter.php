@@ -2,6 +2,8 @@
 
 namespace App\Services\Contabilidad;
 
+use App\Helpers\CurrencyHelper;
+use App\Models\Admin\Empresa;
 use Carbon\Carbon;
 
 /**
@@ -94,9 +96,10 @@ class FlujoEfectivoHibridoNiifSvPresenter
         $ff = $fechaFin->copy()->endOfDay();
 
         $actual = $this->computeOnePeriod($empresaId, $fi, $ff);
+        $empresa = Empresa::with('currency')->find($empresaId);
 
         $out = [
-            'moneda' => 'USD',
+            'moneda' => CurrencyHelper::code($empresa),
             'mostrar_comparativa' => $comparar,
             'periodo_actual' => [
                 'fecha_inicio' => $fi->toDateString(),

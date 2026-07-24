@@ -1,5 +1,6 @@
 import { Component, OnInit, TemplateRef, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule } from '@angular/forms';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
@@ -15,7 +16,7 @@ import { PaginationComponent } from '@shared/parts/pagination/pagination.compone
     selector: 'app-empleados-ventas',
     templateUrl: './empleados-ventas.component.html',
     standalone: true,
-    imports: [CommonModule, FormsModule, FilterPipe, TranslatePipe, TooltipModule, PaginationComponent],
+    imports: [CommonModule, FormsModule, FilterPipe, TranslatePipe, TooltipModule, PaginationComponent, CurrencyPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 

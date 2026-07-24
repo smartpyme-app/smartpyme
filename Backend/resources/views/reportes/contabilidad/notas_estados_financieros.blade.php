@@ -1,5 +1,7 @@
 @php
     $fmt = fn ($n) => number_format((float) $n, 2);
+    $simbolo = \App\Helpers\CurrencyHelper::symbol($empresa);
+    $codigoMoneda = \App\Helpers\CurrencyHelper::code($empresa);
     $notasLista = $notas['notas'] ?? [];
     ksort($notasLista);
     $completitud = $notas['completitud'] ?? [];
@@ -30,7 +32,7 @@
     <div class="header">
         <h1>{{ $empresa->nombre }}</h1>
         <h2>NOTAS A LOS ESTADOS FINANCIEROS</h2>
-        <p>Periodo del {{ $fecha_inicio }} al {{ $fecha_fin }} (USD)</p>
+        <p>Periodo del {{ $fecha_inicio }} al {{ $fecha_fin }} ({{ $codigoMoneda }})</p>
         <p>Completitud: {{ $completitud['porcentaje'] ?? 0 }}% — {{ $completitud['completas'] ?? 0 }}/{{ $completitud['total_notas'] ?? 0 }} notas completas</p>
     </div>
 
@@ -55,8 +57,8 @@
                 <p class="texto">{{ $contenido['texto'] }}</p>
             @elseif($numero == 4 && isset($contenido['total_efectivo']))
                 <table>
-                    <tr><td>Total efectivo y equivalentes (Balance)</td><td class="amt">${{ $fmt($contenido['total_efectivo']) }}</td></tr>
-                    <tr><td>Total módulo bancos</td><td class="amt">${{ $fmt($contenido['total_modulo_bancos'] ?? 0) }}</td></tr>
+                    <tr><td>Total efectivo y equivalentes (Balance)</td><td class="amt">{{ $simbolo }}{{ $fmt($contenido['total_efectivo']) }}</td></tr>
+                    <tr><td>Total módulo bancos</td><td class="amt">{{ $simbolo }}{{ $fmt($contenido['total_modulo_bancos'] ?? 0) }}</td></tr>
                 </table>
                 @if(!empty($contenido['cuentas']))
                     <table>
@@ -65,21 +67,21 @@
                             <tr>
                                 <td>{{ $c['banco'] ?? '' }}</td>
                                 <td>{{ $c['numero'] ?? '' }}</td>
-                                <td class="amt">${{ $fmt($c['saldo_modulo_bancos'] ?? 0) }}</td>
+                                <td class="amt">{{ $simbolo }}{{ $fmt($c['saldo_modulo_bancos'] ?? 0) }}</td>
                             </tr>
                         @endforeach
                     </table>
                 @endif
             @elseif($numero == 5)
                 <table>
-                    <tr><td>CxC bruto</td><td class="amt">${{ $fmt($contenido['cuentas_por_cobrar_bruto'] ?? 0) }}</td></tr>
-                    <tr><td>Provisión incobrables</td><td class="amt">${{ $fmt($contenido['provision_balance'] ?? 0) }}</td></tr>
-                    <tr><td>Neto</td><td class="amt">${{ $fmt($contenido['neto'] ?? 0) }}</td></tr>
+                    <tr><td>CxC bruto</td><td class="amt">{{ $simbolo }}{{ $fmt($contenido['cuentas_por_cobrar_bruto'] ?? 0) }}</td></tr>
+                    <tr><td>Provisión incobrables</td><td class="amt">{{ $simbolo }}{{ $fmt($contenido['provision_balance'] ?? 0) }}</td></tr>
+                    <tr><td>Neto</td><td class="amt">{{ $simbolo }}{{ $fmt($contenido['neto'] ?? 0) }}</td></tr>
                 </table>
             @elseif($numero == 10 && isset($contenido['conciliacion']))
                 <table>
                     @foreach($contenido['conciliacion'] as $fila)
-                        <tr><td>{{ $fila['concepto'] ?? '' }}</td><td class="amt">${{ $fmt($fila['monto'] ?? 0) }}</td></tr>
+                        <tr><td>{{ $fila['concepto'] ?? '' }}</td><td class="amt">{{ $simbolo }}{{ $fmt($fila['monto'] ?? 0) }}</td></tr>
                     @endforeach
                 </table>
             @else
@@ -95,7 +97,7 @@
                 @foreach($notas['validaciones_cruzadas'] as $v)
                     <tr>
                         <td>{{ $v['descripcion'] ?? '' }}</td>
-                        <td>{{ ($v['cuadra'] ?? false) ? 'OK' : 'DIF: $'.$fmt($v['diferencia'] ?? 0) }}</td>
+                        <td>{{ ($v['cuadra'] ?? false) ? 'OK' : 'DIF: '.$simbolo.$fmt($v['diferencia'] ?? 0) }}</td>
                     </tr>
                 @endforeach
             </table>

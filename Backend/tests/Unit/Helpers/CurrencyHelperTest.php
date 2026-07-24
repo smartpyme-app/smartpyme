@@ -33,4 +33,20 @@ final class CurrencyHelperTest extends TestCase
 
         $this->assertSame('$', CurrencyHelper::symbol($empresa));
     }
+
+    public function test_code_returns_moneda_or_usd(): void
+    {
+        $empresa = new Empresa(['moneda' => 'hnl']);
+
+        $this->assertSame('HNL', CurrencyHelper::code($empresa));
+    }
+
+    public function test_label_uses_currency_name_when_present(): void
+    {
+        $currency = new Currency(['currency_code' => 'CRC', 'currency_name' => 'Colón costarricense']);
+        $empresa = new Empresa(['moneda' => 'CRC']);
+        $empresa->setRelation('currency', $currency);
+
+        $this->assertSame('Colón costarricense (CRC)', CurrencyHelper::label($empresa));
+    }
 }

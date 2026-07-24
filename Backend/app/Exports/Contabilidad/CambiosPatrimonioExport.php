@@ -2,6 +2,7 @@
 
 namespace App\Exports\Contabilidad;
 
+use App\Helpers\CurrencyHelper;
 use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithMultipleSheets;
@@ -39,7 +40,7 @@ class CambiosPatrimonioMatrizSheet implements FromArray, WithTitle, ShouldAutoSi
     {
         $rows = [];
         $rows[] = [$this->empresaNombre];
-        $rows[] = ['ESTADO DE CAMBIOS EN EL PATRIMONIO NETO — USD'];
+        $rows[] = ['ESTADO DE CAMBIOS EN EL PATRIMONIO NETO — ' . ($this->estado['moneda'] ?? CurrencyHelper::code())];
         $rows[] = [$this->estado['periodo_titulo'] ?? ''];
         $rows[] = ['Utilidad neta: ref. estado de resultados NIIF. Reserva legal: 7% hasta 20% capital (Art. 123 C. Comercio SV).'];
         $rows[] = [];

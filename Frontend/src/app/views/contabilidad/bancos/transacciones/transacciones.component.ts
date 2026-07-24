@@ -1,5 +1,6 @@
 import { Component, OnInit, TemplateRef, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { PopoverModule } from 'ngx-bootstrap/popover';
@@ -17,7 +18,7 @@ import Swal from 'sweetalert2';
     selector: 'app-transacciones',
     templateUrl: './transacciones.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, PopoverModule, TooltipModule, PaginationComponent],
+    imports: [CommonModule, RouterModule, FormsModule, PopoverModule, TooltipModule, PaginationComponent, CurrencyPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 

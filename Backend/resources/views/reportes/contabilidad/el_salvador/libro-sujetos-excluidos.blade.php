@@ -17,7 +17,7 @@
     </style>
 </head>
 <body>
-    @php $empresa = Auth::user()->empresa()->with('currency')->first(); $simbolo_moneda = ($empresa && $empresa->currency) ? $empresa->currency->currency_symbol : '$'; @endphp
+    @php $empresa = Auth::user()->empresa()->with('currency')->first(); $simbolo_moneda = \App\Helpers\CurrencyHelper::symbol($empresa); @endphp
 
     <h1 class="text-center">LIBRO DE COMPRAS A SUJETOS EXCLUIDOS</h1>
     <h2 class="text-center">{{ Auth::user()->empresa()->pluck('nombre')->first() }}</h2>

@@ -16,7 +16,7 @@
         <th colspan="6" style="text-align: center; font-size: 14px;"><strong>Al {{ $month_name }} de {{ $year }}</strong></th>
     </tr>
     <tr>
-        <th colspan="6" style="text-align: center; font-size: 12px;"><strong>(Expresado en US Dólares)</strong></th>
+        <th colspan="6" style="text-align: center; font-size: 12px;"><strong>(Expresado en {{ \App\Helpers\CurrencyHelper::label($empresa) }})</strong></th>
     </tr>
     <tr></tr>
     <tr>

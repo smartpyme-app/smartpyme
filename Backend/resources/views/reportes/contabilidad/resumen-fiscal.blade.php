@@ -24,7 +24,7 @@
 <body>
 @php
     $empresa = Auth::user()->empresa()->with('currency')->first();
-    $simbolo = ($empresa && $empresa->currency) ? $empresa->currency->currency_symbol : '$';
+    $simbolo = \App\Helpers\CurrencyHelper::symbol($empresa);
     $periodo = $resumen['periodo'] ?? [];
     $inicio = $periodo['inicio'] ?? null;
     $fin = $periodo['fin'] ?? null;

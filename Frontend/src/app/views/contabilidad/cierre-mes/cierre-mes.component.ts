@@ -1,11 +1,13 @@
 import { Component, OnInit, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { formatEmpresaCurrency } from '@helpers/currency-format.helper';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -13,7 +15,7 @@ import Swal from 'sweetalert2';
     templateUrl: './cierre-mes.component.html',
     styleUrls: ['./cierre-mes.component.scss'],
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule],
+    imports: [CommonModule, RouterModule, FormsModule, CurrencyPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CierreMesComponent implements OnInit {
@@ -385,11 +387,11 @@ export class CierreMesComponent implements OnInit {
                       Balance de Movimientos:
                     </h6>
                     <div class="bg-light p-3 rounded">
-                      <p><strong>✅ Total Debe:</strong> ${balanceFinal.totales?.debe.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</p>
-                      <p><strong>✅ Total Haber:</strong> ${balanceFinal.totales?.haber.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</p>
+                      <p><strong>✅ Total Debe:</strong> ${formatEmpresaCurrency(balanceFinal.totales?.debe, this.apiService.auth_user()?.empresa)}</p>
+                      <p><strong>✅ Total Haber:</strong> ${formatEmpresaCurrency(balanceFinal.totales?.haber, this.apiService.auth_user()?.empresa)}</p>
                       <p><strong>✅ Diferencia:</strong>
                         <span class="${balanceFinal.totales?.cuadra_movimientos ? 'text-success' : balanceFinal.totales?.cuadra_movimientos_con_tolerancia ? 'text-warning' : 'text-danger'}">
-                          ${balanceFinal.totales?.diferencia_movimientos.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+                          ${formatEmpresaCurrency(balanceFinal.totales?.diferencia_movimientos, this.apiService.auth_user()?.empresa)}
                         </span>
                         ${balanceFinal.totales?.cuadra_movimientos ?
                           '<i class="fa fa-check-circle text-success ms-2"></i>' :

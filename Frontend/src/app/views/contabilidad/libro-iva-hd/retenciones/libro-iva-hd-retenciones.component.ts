@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { Router } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -18,7 +19,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 @Component({
   selector: 'app-libro-iva-hd-retenciones',
   standalone: true,
-  imports: [CommonModule, LibroIvaHdNavComponent, LibroIvaPeriodoFiltrosComponent, TranslatePipe],
+  imports: [CommonModule, LibroIvaHdNavComponent, LibroIvaPeriodoFiltrosComponent, TranslatePipe, CurrencyPipe],
   templateUrl: './libro-iva-hd-retenciones.component.html',
 })
 export class LibroIvaHdRetencionesComponent implements OnInit {

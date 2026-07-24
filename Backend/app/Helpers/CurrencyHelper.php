@@ -39,6 +39,36 @@ class CurrencyHelper
         return '$';
     }
 
+    public static function code(?Empresa $empresa = null): string
+    {
+        $empresa = $empresa ?? self::resolveEmpresa();
+
+        if ($empresa) {
+            $code = strtoupper((string) ($empresa->moneda ?? ''));
+            if ($code !== '') {
+                return $code;
+            }
+        }
+
+        return 'USD';
+    }
+
+    public static function label(?Empresa $empresa = null): string
+    {
+        $empresa = $empresa ?? self::resolveEmpresa();
+        $code = self::code($empresa);
+
+        if ($empresa) {
+            $empresa->loadMissing('currency');
+            $name = trim((string) ($empresa->currency->currency_name ?? ''));
+            if ($name !== '') {
+                return $name . ' (' . $code . ')';
+            }
+        }
+
+        return $code;
+    }
+
     public static function excelFormat(?Empresa $empresa = null): string
     {
         $symbol = self::symbol($empresa);

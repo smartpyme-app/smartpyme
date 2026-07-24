@@ -66,7 +66,7 @@
         @endif
         <h2>ESTADO DE CAMBIOS EN EL PATRIMONIO NETO</h2>
         <p class="sub">{{ $estado['periodo_titulo'] ?? '' }}</p>
-        <p class="sub">(Expresado en Dólares de los Estados Unidos de América)</p>
+        <p class="sub">(Expresado en {{ \App\Helpers\CurrencyHelper::label($empresa) }})</p>
     </div>
 
     <p class="nota">

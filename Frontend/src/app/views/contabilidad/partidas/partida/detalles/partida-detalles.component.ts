@@ -1,5 +1,6 @@
 import { Component, OnInit, OnChanges, SimpleChanges, EventEmitter, Input, Output, TemplateRef, ViewChild, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { NgSelectModule } from '@ng-select/ng-select';
@@ -16,7 +17,7 @@ import Swal from 'sweetalert2';
     selector: 'app-partida-detalles',
     templateUrl: './partida-detalles.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, CurrencyPipe],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PartidaDetallesComponent extends BaseModalComponent implements OnInit, OnChanges {

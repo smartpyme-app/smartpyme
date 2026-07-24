@@ -1,5 +1,6 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '@services/api.service';
 import { getEmpresaCurrencySymbol } from '@helpers/currency-format.helper';
@@ -11,7 +12,7 @@ import { WebdatarocksComponent, WebdatarocksPivotModule } from '@webdatarocks/ng
     selector: 'app-flujo-efectivo',
     templateUrl: './flujo-efectivo.component.html',
     standalone: true,
-    imports: [CommonModule, FormsModule, TooltipModule, WebdatarocksPivotModule],
+    imports: [CommonModule, FormsModule, TooltipModule, WebdatarocksPivotModule, CurrencyPipe],
 })
 export class FlujoEfectivoComponent implements OnInit {
 

@@ -1,5 +1,6 @@
 import { Component, OnInit, TemplateRef, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
@@ -16,7 +17,7 @@ import Swal from 'sweetalert2';
     selector: 'app-cuentas',
     templateUrl: './cuentas.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, TooltipModule, PaginationComponent],
+    imports: [CommonModule, RouterModule, FormsModule, TooltipModule, PaginationComponent, CurrencyPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 
