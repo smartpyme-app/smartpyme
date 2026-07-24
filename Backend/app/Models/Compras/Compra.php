@@ -23,7 +23,7 @@ class Compra extends AuditableModel {
         'sello_mh',
         'fecha',
         'estado',
-        // 'tipo',
+        'es_consigna',
         'forma_pago',
         'tipo_documento',
         // 'condicion',
@@ -40,7 +40,7 @@ class Compra extends AuditableModel {
         'exenta',
         'percepcion',
         'renta_retenida',
-        // 'iva_retenido',
+        'iva_retenido',
         'descuento',
         'recurrente',
         'cotizacion',
@@ -82,6 +82,12 @@ class Compra extends AuditableModel {
         return is_string($value) ? json_decode($value,true) : $value;
     }
 
+    protected $casts = [
+        'es_consigna' => 'boolean',
+        'dte_migrated_at' => 'datetime',
+        'dte_invalidacion_migrated_at' => 'datetime',
+    ];
+
     public function getSaldoAttribute(){
         return round($this->total - $this->abonos()->where('estado', 'Confirmado')->sum('total'),2);
     }
@@ -96,7 +102,10 @@ class Compra extends AuditableModel {
     }
 
     public function getNombreProveedorAttribute()
-    {   $proveedor = $this->proveedor()->first();
+    {
+        $proveedor = $this->relationLoaded('proveedor')
+            ? $this->proveedor
+            : $this->proveedor()->first();
         if ($proveedor) {
             return $proveedor->tipo == 'Empresa' ? $proveedor->nombre_empresa : $proveedor->nombre . ' ' . $proveedor->apellido;
         }

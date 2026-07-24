@@ -28,7 +28,7 @@ export class LoginAbacoComponent implements OnInit {
     private route: ActivatedRoute,
     private alertService: AlertService,
     private promocionalService: PromocionalService,
-  ) {}
+  ) { }
 
   ngOnInit() {
     localStorage.clear();

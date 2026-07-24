@@ -81,6 +81,13 @@
                     </div>
                 </li>
             }
+            @if (apiService.canAccederOperacionesInventario()) {
+                <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: false}">
+                    <a [routerLink]="['/consignas']" tooltip="Consignas" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1 fw-bold">
+                        <img appLazyImage="/assets/icons/package.png" class="icon me-2">Consignas
+                    </a>
+                </li>
+            }
             @if (apiService.hasPermission('servicios.ver')) {
                 <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
                     <a [routerLink]="['/servicios']" tooltip="Servicios" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
@@ -167,8 +174,6 @@
                     </div>
                 </li>
             }
-            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
-            </li>
             @if (usuario.empresa.modulo_citas && apiService.hasPermission('citas.ver')) {
                 <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
                     <a [routerLink]="['/citas']" tooltip="Citas" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">

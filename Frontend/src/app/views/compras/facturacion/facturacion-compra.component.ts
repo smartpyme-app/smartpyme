@@ -41,6 +41,7 @@ import {
   descuentoDesdeLineaDte,
   totalLineaDesdeDte,
 } from '@services/compras/compra-detalle-desde-dte.util';
+import { esDocumentoCompraSinIvaFiscal } from '../../../constants/documento.constants';
 
 @Component({
     selector: 'app-facturacion-compra',
@@ -295,6 +296,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
         'Sujeto excluido',
         'Recibo',
         'Factura de exportación',
+        'Factura de remisión',
         'Documento contable de liquidación'
       ];
       if (resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR) {
@@ -500,6 +502,12 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
   }
 
     public sumTotal() {
+        if (esDocumentoCompraSinIvaFiscal(this.compra?.tipo_documento)) {
+            this.compra.cobrar_impuestos = false;
+            this.compra.cobrar_percepcion = false;
+            this.compra.retencion = 0;
+        }
+
         // Asegurar que detalles e impuestos existen
         if (!this.compra.detalles || !Array.isArray(this.compra.detalles)) {
             this.compra.detalles = [];
@@ -665,6 +673,23 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
                 this.compra.referencia = documento.correlativo;
             }
         }
+        if (esDocumentoCompraSinIvaFiscal(this.compra.tipo_documento)) {
+            const documento = this.documentos.find((x: any) => x.nombre === this.compra.tipo_documento);
+            if (documento) {
+                this.compra.referencia = documento.correlativo;
+            }
+            this.compra.cobrar_impuestos = false;
+            this.compra.cobrar_percepcion = false;
+            this.compra.retencion = 0;
+            this.compra.tipo_operacion = 'No Gravada';
+        } else if (!this.compra.id) {
+            this.compra.cobrar_impuestos = this.apiService.auth_user().empresa.cobra_iva == 'Si';
+        }
+        this.sumTotal();
+    }
+
+    public esCompraSinIvaFiscal(): boolean {
+        return esDocumentoCompraSinIvaFiscal(this.compra?.tipo_documento);
     }
 
     // Facturar

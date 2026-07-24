@@ -25,13 +25,14 @@ import { HaciendaContribuyenteClientService } from '@services/facturacion-electr
 import { forkJoin } from 'rxjs';
 import { map, distinctUntilChanged, finalize } from 'rxjs/operators';
 import { TranslatePipe } from '@ngx-translate/core';
+import { SharedModule } from '@shared/shared.module';
 
 @Component({
     selector: 'app-empresa',
     templateUrl: './empresa.component.html',
     styleUrls: ['./empresa.component.css'],
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, FilterPipe, TabsModule, NgxMaskDirective, LazyImageDirective, TranslatePipe],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, FilterPipe, TabsModule, NgxMaskDirective, LazyImageDirective, TranslatePipe, SharedModule],
 
 })
 export class EmpresaComponent implements OnInit, AfterViewInit {
@@ -82,11 +83,16 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
 
     @ViewChild('feSvCertificadoInput')
     private feSvCertificadoInputRef?: ElementRef<HTMLInputElement>;
+    public showBoxfulPassword: boolean = false;
+    public testingConnection: boolean = false;
+    public savingBoxful: boolean = false;
+    public disconnectingBoxful: boolean = false;
     public canales: any = [];
     public tieneAccesoPropina: boolean = false;
     public tieneAccesoModuloRestaurantePedidos: boolean = false;
     public tieneAccesoTransformacionProductos: boolean = false;
     public tieneAccesoModuloPresentacionesProductos: boolean = false;
+    public tieneAccesoBoxFul: boolean = false;
     public tieneAccesoFidelizacionGlobal: boolean = false;
 
     public customConfig: any = {
@@ -141,6 +147,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         this.verificarAccesoModuloRestaurantePedidos();
         this.verificarAccesoTransformacionProductos();
         this.verificarAccesoModuloPresentacionesProductos();
+        this.verificarAccesoBoxFul();
         
         this.funcionalidadesService.verificarAcceso('fidelizacion-clientes').subscribe({
             next: (tieneAcceso) => { this.tieneAccesoFidelizacionGlobal = tieneAcceso; },
@@ -2395,7 +2402,8 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
             'Facturación electrónica': 'facturacion-electronica',
             'Integraciones': 'integraciones',
             'WooCommerce': 'woocommerce',
-            'Shopify': 'shopify'
+            'Shopify': 'shopify',
+            'Integración BoxFul': 'boxful'
         };
         return headingMap[heading] ?? null;
     }
@@ -2444,6 +2452,17 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         });
     }
 
+    public verificarAccesoBoxFul() {
+        this.funcionalidadesService.verificarAcceso('integracion-boxful').subscribe({
+            next: (acceso) => {
+                this.tieneAccesoBoxFul = acceso;
+            },
+            error: () => {
+                this.tieneAccesoBoxFul = false;
+            }
+        });
+    }
+
     public getVistaModuloRestaurantePedidos(): 'restaurante' | 'pedidos' | 'ambos' {
         const v = this.getCustomConfig('configuraciones', 'vista_modulo_restaurante_pedidos', 'ambos');
         if (v === 'restaurante' || v === 'pedidos' || v === 'ambos') {
@@ -2482,6 +2501,104 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
                 this.router.navigate(['/login']);
 
                 Swal.fire('Cache limpiado', 'El cache ha sido limpiado y la sesión cerrada. Por favor, inicia sesión nuevamente.', 'success');
+            }
+        });
+    }
+
+    public toggleBoxfulPassword() {
+        this.showBoxfulPassword = !this.showBoxfulPassword;
+    }
+
+    public saveBoxfulCredentials() {
+        if (!this.empresa.boxful_email || this.empresa.boxful_email.trim() === '') {
+            this.alertService.error('El correo de la cuenta de Boxful es requerido');
+            return;
+        }
+        if (!this.empresa.has_boxful_password && (!this.empresa.boxful_password || this.empresa.boxful_password.trim() === '')) {
+            this.alertService.error('La contraseña de la cuenta de Boxful es requerida');
+            return;
+        }
+
+        this.savingBoxful = true;
+        this.onSubmit().then(() => {
+            this.savingBoxful = false;
+        }).catch(err => {
+            this.savingBoxful = false;
+            this.alertService.error(err?.message || err || 'Error al guardar credenciales de Boxful');
+        });
+    }
+
+    public testBoxfulConnection() {
+        if (!this.empresa.boxful_email || this.empresa.boxful_email.trim() === '') {
+            this.alertService.error('El correo de la cuenta de Boxful es requerido');
+            return;
+        }
+        if (!this.empresa.has_boxful_password && (!this.empresa.boxful_password || this.empresa.boxful_password.trim() === '')) {
+            this.alertService.error('La contraseña de la cuenta de Boxful es requerida');
+            return;
+        }
+
+        this.testingConnection = true;
+
+        this.onSubmit().then(() => {
+            this.apiService.getAll('boxful/test-connection').subscribe(
+                (response: any) => {
+                    this.testingConnection = false;
+                    Swal.fire({
+                        title: 'Conexión Exitosa',
+                        text: response.message || 'Conexión con Boxful establecida correctamente.',
+                        icon: 'success',
+                        confirmButtonText: 'Aceptar'
+                    });
+                },
+                (error: any) => {
+                    this.testingConnection = false;
+                    Swal.fire({
+                        title: 'Error de Conexión',
+                        text: error.error && error.error.message ? error.error.message : 'No se pudo conectar a la API de Boxful.',
+                        icon: 'error',
+                        confirmButtonText: 'Aceptar'
+                    });
+                }
+            );
+        });
+    }
+
+    public disconnectBoxful() {
+        Swal.fire({
+            title: '¿Está seguro?',
+            text: 'Se eliminarán sus credenciales almacenadas y se desconectará de Boxful.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, desconectar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                this.disconnectingBoxful = true;
+                this.apiService.store('boxful/disconnect', {}).subscribe(
+                    (response: any) => {
+                        this.disconnectingBoxful = false;
+                        this.empresa.boxful_email = '';
+                        this.empresa.boxful_password = '';
+                        this.empresa.has_boxful_password = false;
+                        this.loadAll();
+                        Swal.fire({
+                            title: 'Desconexión Exitosa',
+                            text: response.message || 'Se ha desconectado de Boxful correctamente.',
+                            icon: 'success',
+                            confirmButtonText: 'Aceptar'
+                        });
+                    },
+                    (error: any) => {
+                        this.disconnectingBoxful = false;
+                        Swal.fire({
+                            title: 'Error al desconectar',
+                            text: error.error && error.error.message ? error.error.message : 'No se pudo desconectar de Boxful.',
+                            icon: 'error',
+                            confirmButtonText: 'Aceptar'
+                        });
+                    }
+                );
             }
         });
     }

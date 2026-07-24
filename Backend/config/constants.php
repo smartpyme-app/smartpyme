@@ -78,6 +78,7 @@ return [
     'TIPO_DOCUMENTO_CREDITO_FISCAL' => 'Crédito fiscal',
     'TIPO_DOCUMENTO_COTIZACION' => 'Cotización',
     'TIPO_DOCUMENTO_ORDEN_COMPRA' => 'Orden de compra',
+    'TIPO_DOCUMENTO_FACTURA_REMISION' => 'Factura de remisión',
 
     'TIPO_USUARIO_ADMINISTRADOR' => 'Administrador',
     'TIPO_USUARIO_VENDEDOR' => 'Vendedor',

@@ -168,9 +168,10 @@ class Empresa extends Model
         'custom_empresa' => 'json',
         'importacion_productos_shopify' => 'boolean',
         'shopify_sync_bidirectional' => 'boolean',
-        'webhook_paquete_venta_enabled' => 'boolean',
-        'restringir_gastos_supervisor_limitado' => 'boolean',
         'restringir_compras_supervisor_limitado' => 'boolean',
+    ];
+
+    protected $hidden = [
     ];
 
     protected $appends = [
@@ -187,6 +188,10 @@ class Empresa extends Model
         'status_conexion_shopify',
         'is_current_user_connected_to_shopify',
         'frecuencia_pago_label',
+        'has_boxful_password',
+        'boxful_email',
+        'boxful_client_id',
+        'boxful_status',
         'usa_impresion_html',
     ];
 
@@ -765,6 +770,71 @@ class Empresa extends Model
         $this->save();
 
         return $defaultConfig;
+    }
+
+    /**
+     * Relación con las integraciones de la empresa (hasOne).
+     */
+    public function integracion()
+    {
+        return $this->hasOne(Integracion::class, 'id_empresa')->where('proveedor', 'boxful');
+    }
+
+    /**
+     * Obtiene o crea el registro de integración de la empresa.
+     */
+    public function obtenerOcrearIntegracion()
+    {
+        if (!$this->relationLoaded('integracion') || !$this->integracion) {
+            $integracion = $this->integracion()->firstOrCreate([
+                'id_empresa' => $this->id,
+                'proveedor' => 'boxful'
+            ]);
+            $this->setRelation('integracion', $integracion);
+        }
+        return $this->integracion;
+    }
+
+    /**
+     * Accesor dinámico para obtener el correo de Boxful.
+     */
+    public function getBoxfulEmailAttribute()
+    {
+        return $this->integracion ? $this->integracion->boxful_email : null;
+    }
+
+    /**
+     * Accesor dinámico para obtener el clientId de Boxful.
+     */
+    public function getBoxfulClientIdAttribute()
+    {
+        $integracion = $this->integracion;
+        if ($integracion && $integracion->estado !== 'disconnected' && empty($integracion->boxful_client_id)) {
+            try {
+                $service = new \App\Services\BoxFul\BoxFulService($this);
+                $service->getAccessToken(); // Dispara la autorecuperación en BoxFulService
+                $integracion->refresh();
+            } catch (\Exception $e) {
+                // Silencioso si falla (por ejemplo, si no hay credenciales o token válido aún)
+            }
+        }
+        return $integracion ? $integracion->boxful_client_id : null;
+    }
+
+    /**
+     * Accesor dinámico para obtener el estado de conexión con Boxful.
+     */
+    public function getBoxfulStatusAttribute()
+    {
+        return $this->integracion ? ($this->integracion->boxful_status ?? 'disconnected') : 'disconnected';
+    }
+
+    /**
+     * Accesor dinámico para determinar si la contraseña de Boxful está configurada.
+     */
+    public function getHasBoxfulPasswordAttribute(): bool
+    {
+        return $this->integracion ? (bool) ($this->integracion->has_boxful_password) : false;
     }
 
     /**

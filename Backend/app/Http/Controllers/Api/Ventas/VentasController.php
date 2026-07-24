@@ -54,9 +54,12 @@ use App\Models\Inventario\Paquete;
 use App\Services\Webhooks\WebhookPaqueteVentaDispatcher;
 use App\Models\Contabilidad\Proyecto;
 use App\Models\Eventos\Evento;
+use App\Models\Admin\Canal;
 use App\Models\Restaurante\PedidoRestaurante;
 use App\Services\Restaurante\PedidoCanalInventarioService;
+use Illuminate\Support\Str;
 use App\Services\Inventario\ConversionInventarioService;
+use App\Services\Inventario\ConsignaDisponibleService;
 use App\Services\Inventario\LoteAsignacionService;
 use App\Services\Inventario\StockDisponibleService;
 use Luecano\NumeroALetras\NumeroALetras;
@@ -213,6 +216,11 @@ class VentasController extends Controller
             ->where('cotizacion', 0)
             ->when($request->buscador, fn ($query) => $this->aplicarFiltroBuscador($query, (string) $request->buscador))
             ->with(['cliente', 'usuario', 'vendedor', 'sucursal', 'canal', 'documento', 'proyecto'])
+            ->with(['paquetes' => function ($query) {
+                $query->where('transportista', 'Boxful')
+                    ->select('id', 'id_venta', 'num_guia', 'transportista', 'wr', 'peso', 'estado', 'id_cliente')
+                    ->with('boxfulShipment');
+            }])
             ->with(['devolucionesNcNd' => function ($query) {
                 $query->with('documento:id,nombre');
             }])
@@ -441,118 +449,135 @@ class VentasController extends Controller
             'id_usuario'        => 'required',
         ]);
 
-        // Buscar la venta respetando el scope global de empresa
-        $venta = Venta::where('id', $request->id)->with('detalles')->first();
+        DB::beginTransaction();
 
-        if (!$venta) {
-            return response()->json(['error' => 'No se encontro ningun registro.', 'code' => 404], 404);
-        }
+        try {
+            // Bloquear la venta para evitar anulación concurrente / doble reversión de stock
+            $venta = Venta::with('detalles')->where('id', $request->id)->lockForUpdate()->first();
 
-        $webhookPaquetesFacturadosBulk = false;
-
-        // Ajustar stocks
-        foreach ($venta->detalles as $detalle) {
-
-            // ── Resolución del factor de conversión (presentaciones) ──────────
-            $factorPresentacion = 1;
-            if (!empty($detalle->id_presentacion)) {
-                $presentacion = \App\Models\Inventario\ProductoPresentacion::find($detalle->id_presentacion);
-                if ($presentacion) {
-                    $factorPresentacion = (float) $presentacion->factor_conversion;
-                }
+            if (!$venta) {
+                DB::rollBack();
+                return response()->json(['error' => 'No se encontro ningun registro.', 'code' => 404], 404);
             }
-            // Cantidad en unidades base que se mueve en inventario/Kardex
-            $cantidadBase = ConversionInventarioService::calcularCantidadBase(
-                $detalle->cantidad,
-                $factorPresentacion
-            );
 
-            $inventario = Inventario::where('id_producto', $detalle->id_producto)->where('id_bodega', $venta->id_bodega)->first();
+            $webhookPaquetesFacturadosBulk = false;
 
-            // Anular venta y regresar stock
-            if (($venta->estado != 'Anulada') && ($request['estado'] == 'Anulada')) {
+            // Ajustar stocks
+            foreach ($venta->detalles as $detalle) {
 
-                if ($inventario) {
-                    LoteAsignacionService::revertirEntrada($detalle, $venta, $inventario, $cantidadBase);
+                // ── Resolución del factor de conversión (presentaciones) ──────────
+                $factorPresentacion = 1;
+                if (!empty($detalle->id_presentacion)) {
+                    $presentacion = \App\Models\Inventario\ProductoPresentacion::find($detalle->id_presentacion);
+                    if ($presentacion) {
+                        $factorPresentacion = (float) $presentacion->factor_conversion;
+                    }
                 }
+                // Cantidad en unidades base que se mueve en inventario/Kardex
+                $cantidadBase = ConversionInventarioService::calcularCantidadBase(
+                    $detalle->cantidad,
+                    $factorPresentacion
+                );
 
-                // Inventario compuestos (los compuestos no usan presentaciones: su factor es siempre 1)
-                foreach ($detalle->composiciones()->get() as $comp) {
-                    $inventario = Inventario::where('id_producto', $comp->id_producto)
-                        ->where('id_bodega', $venta->id_bodega)->first();
+                $inventario = Inventario::where('id_producto', $detalle->id_producto)
+                    ->where('id_bodega', $venta->id_bodega)
+                    ->lockForUpdate()
+                    ->first();
+
+                // Anular venta y regresar stock
+                if (($venta->estado != 'Anulada') && ($request['estado'] == 'Anulada')) {
 
                     if ($inventario) {
-                        $cantidadCompBase = ConversionInventarioService::calcularCantidadBase(
-                            $detalle->cantidad * $comp->cantidad,
-                            1
-                        );
-                        $inventario->stock += $cantidadCompBase;
-                        $inventario->save();
-                        $inventario->kardex($venta, $cantidadCompBase * -1);
+                        LoteAsignacionService::revertirEntrada($detalle, $venta, $inventario, $cantidadBase);
                     }
+
+                    // Inventario compuestos (los compuestos no usan presentaciones: su factor es siempre 1)
+                    foreach ($detalle->composiciones()->get() as $comp) {
+                        $inventario = Inventario::where('id_producto', $comp->id_producto)
+                            ->where('id_bodega', $venta->id_bodega)
+                            ->lockForUpdate()
+                            ->first();
+
+                        if ($inventario) {
+                            $cantidadCompBase = ConversionInventarioService::calcularCantidadBase(
+                                $detalle->cantidad * $comp->cantidad,
+                                1
+                            );
+                            $inventario->stock += $cantidadCompBase;
+                            $inventario->save();
+                            $inventario->kardex($venta, $cantidadCompBase * -1);
+                        }
+                    }
+
+                    // Abonos
+                    foreach ($venta->abonos as $abono) {
+                        $abono->estado = 'Cancelado';
+                        $abono->save();
+                    }
+
+                    // Paquetes de la venta: cambiar estado a En bodega
+                    Paquete::where('id_venta', $venta->id)->update(['estado' => 'En bodega']);
                 }
-
-                // Abonos
-                foreach ($venta->abonos as $abono) {
-                    $abono->estado = 'Cancelado';
-                    $abono->save();
-                }
-
-                // Paquetes de la venta: cambiar estado a En bodega
-                Paquete::where('id_venta', $venta->id)->update(['estado' => 'En bodega']);
-            }
-            // Cancelar anulación de venta y descargar stock
-            if (($venta->estado == 'Anulada') && ($request['estado'] != 'Anulada')) {
-                if ($inventario) {
-                    LoteAsignacionService::reactivarSalidaDesdeDetalle(
-                        $detalle,
-                        $venta,
-                        $inventario,
-                        $cantidadBase,
-                        (float) ($detalle->precio ?? 0)
-                    );
-                }
-
-                // Inventario compuestos
-                foreach ($detalle->composiciones()->get() as $comp) {
-                    $inventario = Inventario::where('id_producto', $comp->id_producto)
-                        ->where('id_bodega', $venta->id_bodega)->first();
-
+                // Cancelar anulación de venta y descargar stock
+                if (($venta->estado == 'Anulada') && ($request['estado'] != 'Anulada')) {
                     if ($inventario) {
-                        $cantidadCompBase = ConversionInventarioService::calcularCantidadBase(
-                            $detalle->cantidad * $comp->cantidad,
-                            1
+                        LoteAsignacionService::reactivarSalidaDesdeDetalle(
+                            $detalle,
+                            $venta,
+                            $inventario,
+                            $cantidadBase,
+                            (float) ($detalle->precio ?? 0)
                         );
-                        $inventario->stock -= $cantidadCompBase;
-                        $inventario->save();
-                        $inventario->kardex($venta, $cantidadCompBase);
                     }
-                }
 
-                // Abonos
-                foreach ($venta->abonos as $abono) {
-                    $abono->estado = 'Confirmado';
-                    $abono->save();
-                }
-                // Paquetes de la venta: al revertir anulación quedan Facturados (update masivo no dispara observer)
-                Paquete::where('id_venta', $venta->id)->update(['estado' => 'Facturado']);
-                if (!$webhookPaquetesFacturadosBulk) {
-                    $webhookPaquetesFacturadosBulk = true;
-                    $idsPaquetes = Paquete::withoutGlobalScopes()
-                        ->where('id_venta', $venta->id)
-                        ->pluck('id');
-                    foreach ($idsPaquetes as $pid) {
-                        WebhookPaqueteVentaDispatcher::dispatch((int) $pid);
+                    // Inventario compuestos
+                    foreach ($detalle->composiciones()->get() as $comp) {
+                        $inventario = Inventario::where('id_producto', $comp->id_producto)
+                            ->where('id_bodega', $venta->id_bodega)
+                            ->lockForUpdate()
+                            ->first();
+
+                        if ($inventario) {
+                            $cantidadCompBase = ConversionInventarioService::calcularCantidadBase(
+                                $detalle->cantidad * $comp->cantidad,
+                                1
+                            );
+                            $inventario->stock -= $cantidadCompBase;
+                            $inventario->save();
+                            $inventario->kardex($venta, $cantidadCompBase);
+                        }
+                    }
+
+                    // Abonos
+                    foreach ($venta->abonos as $abono) {
+                        $abono->estado = 'Confirmado';
+                        $abono->save();
+                    }
+                    // Paquetes de la venta: al revertir anulación quedan Facturados (update masivo no dispara observer)
+                    Paquete::where('id_venta', $venta->id)->update(['estado' => 'Facturado']);
+                    if (!$webhookPaquetesFacturadosBulk) {
+                        $webhookPaquetesFacturadosBulk = true;
+                        $idsPaquetes = Paquete::withoutGlobalScopes()
+                            ->where('id_venta', $venta->id)
+                            ->pluck('id');
+                        foreach ($idsPaquetes as $pid) {
+                            WebhookPaqueteVentaDispatcher::dispatch((int) $pid);
+                        }
                     }
                 }
             }
+
+            // El frontend ya envía el total sin propina, así que no necesitamos ajustarlo
+            $venta->fill($request->all());
+            $venta->save();
+
+            DB::commit();
+
+            return Response()->json($venta, 200);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
         }
-
-        // El frontend ya envía el total sin propina, así que no necesitamos ajustarlo
-        $venta->fill($request->all());
-        $venta->save();
-
-        return Response()->json($venta, 200);
     }
 
     public function delete($id)
@@ -585,12 +610,30 @@ class VentasController extends Controller
     public function facturacion(FacturacionRequest $request)
     {
         $user = auth()->user();
+        $consignaDisponibleService = app(ConsignaDisponibleService::class);
+        $consignaDisponibleService->normalizarRequestVentaConsigna($request);
+
+        if ($errorConsigna = $consignaDisponibleService->validarVentaConsigna($request)) {
+            return response()->json(['error' => $errorConsigna], 422);
+        }
+
+        if ($errorOrigen = $consignaDisponibleService->validarOrigenStockEnFacturacion($request)) {
+            return response()->json(['error' => $errorOrigen], 422);
+        }
 
         try {
             $this->facturacionService->assertReglasNegocio($user, $request);
 
             $venta = $this->facturacionService->procesar($user, $request);
 
+            if ((int) ($request->cotizacion ?? 0) === 0) {
+                $this->crearPaqueteStubBoxfulSiAplica($venta);
+            }
+
+            $venta->load(['paquetes' => function ($query) {
+                $query->where('transportista', 'Boxful')
+                    ->select('id', 'id_venta', 'num_guia', 'transportista', 'wr', 'peso', 'estado', 'id_cliente');
+            }]);
             return Response()->json($venta, 200);
         } catch (FacturacionException $e) {
             return Response()->json(['error' => $e->getMessage()], $e->httpStatus);
@@ -1855,6 +1898,68 @@ class VentasController extends Controller
         return \Maatwebsite\Excel\Facades\Excel::download($export, $configuracion->tipo_reporte . '-' . $fechaInicio . '-' . $fechaFin . '.xlsx');
     }
 
+    /**
+     * Crea un paquete BoxFul pendiente ligado a la venta (sin guía ni llamada a BoxFul).
+     */
+    private function crearPaqueteStubBoxfulSiAplica(Venta $venta): ?int
+    {
+        if ($venta->estado === 'Anulada' || empty($venta->id_canal)) {
+            return null;
+        }
+
+        $canal = Canal::find($venta->id_canal);
+        if (!$canal || strcasecmp((string) $canal->nombre, 'Boxful') !== 0) {
+            return null;
+        }
+
+        $stubId = Paquete::withoutGlobalScopes()
+            ->where('id_venta', $venta->id)
+            ->where('transportista', 'Boxful')
+            ->where(function ($q) {
+                $q->whereNull('num_guia')->orWhere('num_guia', '');
+            })
+            ->value('id');
+
+        if ($stubId) {
+            return (int) $stubId;
+        }
+
+        // Si ya hay guía BoxFul, no crear otro stub
+        $conGuia = Paquete::withoutGlobalScopes()
+            ->where('id_venta', $venta->id)
+            ->where('transportista', 'Boxful')
+            ->whereNotNull('num_guia')
+            ->where('num_guia', '!=', '')
+            ->exists();
+
+        if ($conGuia) {
+            return null;
+        }
+
+        $user = Auth::user();
+        $detalles = $venta->detalles()->get();
+        $primerDetalle = $detalles->first();
+
+        $paquete = new Paquete();
+        $paquete->id_empresa = $venta->id_empresa ?? $user->id_empresa;
+        $paquete->id_usuario = $venta->id_usuario ?? $user->id;
+        $paquete->id_sucursal = $venta->id_sucursal ?? $user->id_sucursal;
+        $paquete->id_venta = $venta->id;
+        $paquete->id_cliente = $venta->id_cliente;
+        $paquete->id_venta_detalle = $detalles->count() === 1 && $primerDetalle ? $primerDetalle->id : null;
+        $paquete->fecha = $venta->fecha ?? now();
+        $paquete->wr = 'BOXFUL-' . strtoupper(Str::random(8));
+        $paquete->transportista = 'Boxful';
+        $paquete->estado = 'Pendiente';
+        $paquete->peso = 0;
+        $paquete->piezas = 1;
+        $paquete->precio = $venta->total ?? 0;
+        $paquete->nota = 'Stub BoxFul desde venta #' . $venta->id;
+        $paquete->save();
+
+        return (int) $paquete->id;
+    }
+
     public function getNumerosIdentificacion()
     {
         $numsIds = Venta::select('num_identificacion')
@@ -1866,4 +1971,5 @@ class VentasController extends Controller
 
         return response()->json($numsIds, 200);
     }
+
 }

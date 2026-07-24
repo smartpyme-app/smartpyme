@@ -7,6 +7,8 @@ import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { PipesModule } from '@pipes/pipes.module';
 import { SharedModule } from '@shared/shared.module';
+import { FacturacionModule } from '../ventas/facturacion/facturacion.module';
+import { NgSelectModule } from '@ng-select/ng-select';
 
 import { PedidosShellComponent } from './pedidos-shell.component';
 import { PedidosListaComponent } from './pedidos-lista/pedidos-lista.component';
@@ -28,6 +30,8 @@ import { PedidosRoutingModule } from './pedidos-routing.module';
     TooltipModule.forRoot(),
     PopoverModule.forRoot(),
     SharedModule,
+    FacturacionModule,
+    NgSelectModule,
     PedidosRoutingModule
   ]
 })

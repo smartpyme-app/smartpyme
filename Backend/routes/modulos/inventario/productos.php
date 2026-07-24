@@ -87,6 +87,10 @@ Route::delete('/producto/composicion/opcion/{id}', [OpcionesController::class, '
     Route::post('/producto/sucursal',          [ConsignasController::class, 'store']);
     Route::delete('/producto/sucursal/{id}',   [ConsignasController::class, 'delete']);
     Route::get('/productos/consignas/exportar',        [ConsignasController::class, 'export']);
+    Route::get('/productos/consignas-compras',         [ConsignasController::class, 'indexCompras']);
+    Route::get('/productos/consignas-compras/exportar', [ConsignasController::class, 'exportCompras']);
+    Route::get('/productos/consigna-disponible',      [ConsignasController::class, 'disponible']);
+    Route::get('/productos/consigna-ventas',          [ConsignasController::class, 'ventasConsignaCompra']);
 
 // Promociones
     Route::get('promociones',        [PromocionesController::class, 'index']);

@@ -31,7 +31,7 @@
         </div>
         <div class="form-group col-md-4 col-lg-2">
             <label for="tipo_documento">Documento</label>
-            <select name="tipo_documento" [(ngModel)]="compra.tipo_documento" class="form-select">
+            <select name="tipo_documento" [(ngModel)]="compra.tipo_documento" (change)="selectTipoDocumento()" class="form-select">
                 @for (documento of documentos; track documento.nombre || $index) {
                   <option [value]="documento.nombre">{{ documento.nombre }}</option>
                 }
@@ -71,6 +71,7 @@
                     <tr>
                         <th>Producto</th>
                         <th style="width: 150px;">Cantidad</th>
+                        <th style="width: 120px;" class="text-center">Vendido</th>
                         <th style="width: 150px;" class="text-right">Costo</th>
                         <th style="width: 150px;" class="text-right">% Descuento</th>
                         <th style="width: 100px;" class="text-right">Total</th>
@@ -95,6 +96,11 @@
                         </td>
                         <td style="width: 150px;">
                             <input type="number" [(ngModel)]="detalle.cantidad" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control" name="cantidad">
+                        </td>
+                        <td style="width: 120px;" class="text-center">
+                            <button type="button" class="btn btn-sm btn-outline-primary" (click)="openModalVentasDetalle(mventasDetalle, detalle)" [disabled]="loadingVentasDetalle">
+                                <i class="fa fa-chart-line"></i>
+                            </button>
                         </td>
                         <td style="width: 150px;" class="text-right"> {{ detalle.costo  | currency}} </td>
                         <td style="width: 150px;" class="text-right"> {{ detalle.descuento  | currency}} </td>
@@ -131,6 +137,20 @@
                         <td style="width: 150px;" class="text-right"> {{ compra.iva | currency}} </td>
                         <td style="width: 50px;"></td>
                     </tr>
+                    @if (compra.cobrar_percepcion) {
+                      <tr>
+                        <td class="text-right"><b>Percepción</b></td>
+                        <td style="width: 150px;" class="text-right"> {{ compra.percepcion | currency}} </td>
+                        <td style="width: 50px;"></td>
+                      </tr>
+                    }
+                    @if (compra.retencion) {
+                      <tr>
+                        <td class="text-right"><b>Retención</b></td>
+                        <td style="width: 150px;" class="text-right"> {{ compra.iva_retenido | currency}} </td>
+                        <td style="width: 50px;"></td>
+                      </tr>
+                    }
                     <tr>
                         <td class="text-right"> <b>Total</b> </td>
                         <td style="width: 150px;" class="text-right"><b> {{ compra.total | currency}}</b> </td>
@@ -146,6 +166,12 @@
 <section class="card border-0 p-3 mb-3">
     <div class="row">
         <h6 class="mt-3">Detalles de facturación</h6>
+        @if (compra.cotizacion == 0) {
+          <div class="form-group col-md-4 col-lg-3">
+            <label for="fecha_pago">Fecha de pago:</label><br>
+            <input type="date" class="form-control" [(ngModel)]="compra.fecha_pago" name="fecha_pago" id="fecha_pago">
+          </div>
+        }
         <div class="form-group col-md-6 col-lg-3">
             <label for="forma_pago">Forma de pago</label>
             <select name="forma_pago" [(ngModel)]="compra.forma_pago" (change)="cambioMetodoDePago()" class="form-select">
@@ -159,12 +185,47 @@
             <label for="detalle_banco">Bancos</label>
             <select name="detalle_banco" [(ngModel)]="compra.detalle_banco" class="form-select">
                 <option value="">Seleccione aquí</option>
-                @for (banco of bancos; track banco.id) {
-                  <option [value]="banco.nombre">{{ banco.nombre }}</option>
+                @if (apiService.isModuloBancos()) {
+                  @for (banco of bancos; track banco.id) {
+                    <option [value]="banco.nombre_banco">{{ banco.nombre_banco }} - {{ banco.numero }}</option>
+                  }
+                } @else {
+                  @for (banco of bancos; track banco.id) {
+                    <option [value]="banco.nombre">{{ banco.nombre }}</option>
+                  }
                 }
             </select>
           </div>
         }
+        <div class="form-group col-md-6 col-lg-3 without-label">
+            <div class="form-switch bg-light-info rounded">
+              <label for="cobrar_impuestos">Con IVA ({{ apiService.auth_user().empresa.iva | number:'1.0' }}%)</label>
+              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="compra.cobrar_impuestos" name="compra.cobrar_impuestos" [disabled]="esCompraSinIvaFiscal()">
+            </div>
+        </div>
+        <div class="form-group col-md-6 col-lg-3 without-label">
+            <div class="form-switch bg-light-info rounded">
+              <label for="percepcion">Percepción</label>
+              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="compra.cobrar_percepcion" name="compra.cobrar_percepcion" [disabled]="esCompraSinIvaFiscal()">
+            </div>
+        </div>
+        <div class="form-group col-sm-6 col-lg-2">
+            <label for="tipo_clasificacion">Clasificación:</label>
+            <select name="tipo_clasificacion" class="form-select" [(ngModel)]="compra.tipo_clasificacion">
+                <option value="">Seleccione aquí</option>
+                <option value="Costo">Costo</option>
+                <option value="Gasto">Gasto</option>
+            </select>
+        </div>
+        <div class="form-group col-sm-6 col-lg-2">
+            <label for="tipo_operacion">Tipo de operación:</label>
+            <select name="tipo_operacion" class="form-select" [(ngModel)]="compra.tipo_operacion">
+                <option value="">Seleccione aquí</option>
+                <option value="Gravada">Gravada</option>
+                <option value="No Gravada">No Gravada</option>
+                <option value="Excluido">Excluido</option>
+            </select>
+        </div>
     </div>
     <div class="row mt-5">
         <div class="col-md-12">
@@ -268,5 +329,50 @@
     </div>
     <div class="modal-footer">
         <button type="button" class="btn btn-secondary" (click)="productosModal.hide()">Cancelar</button>
+    </div>
+</ng-template>
+
+<ng-template #mventasDetalle>
+    <div class="modal-header">
+        <h4 class="modal-title">{{ detalleVendido?.nombre_producto }} — vendido desde consigna</h4>
+        <button type="button" class="btn-close" (click)="closeModal()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <p class="mb-3">
+            Cantidad vendida desde consigna de compra:
+            <strong>{{ cantidadVendidaDetalle }}</strong>
+        </p>
+        @if (ventasConsignaDetalle?.length) {
+          <div class="table-responsive" style="max-height: 280px; overflow-y: auto;">
+            <table class="table table-sm table-hover">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Cliente</th>
+                        <th>Documento</th>
+                        <th class="text-end">Cantidad</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (venta of ventasConsignaDetalle; track venta.id || $index) {
+                      <tr>
+                        <td>{{ venta.fecha | date:'dd/MM/yyyy' }}</td>
+                        <td>{{ venta.cliente }}</td>
+                        <td>{{ venta.nombre_documento }} #{{ venta.correlativo }}</td>
+                        <td class="text-end">{{ venta.cantidad }}</td>
+                      </tr>
+                    }
+                </tbody>
+            </table>
+          </div>
+        } @else {
+          <p class="text-muted mb-0">No hay ventas registradas desde consigna para este producto.</p>
+        }
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeModal()">Cerrar</button>
+        <button type="button" class="btn btn-primary" (click)="ajustarCantidadVendida()">
+            Ajustar cantidad
+        </button>
     </div>
 </ng-template>

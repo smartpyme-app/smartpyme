@@ -217,6 +217,7 @@
       (update)="updateVenta($event)"
       (sumTotal)="sumTotal()"
       (alMenosUnPaqueteConCuentaTerceros)="onAlMenosUnPaqueteCuentaTerceros()"
+      (selectCliente)="setCliente($event)"
     ></app-venta-detalles-v2>
 
     <div class="row">
@@ -313,8 +314,9 @@
         </div>
         <div class="form-group col-md-6 col-lg-3 without-label" *ngIf="apiService.auth_user().empresa.venta_consigna && venta.cotizacion != 1 && apiService.auth_user().tipo != 'Ventas Limitado'">
             <div class="form-switch border rounded">
-              <label for="consigna">Consigna</label>
-              <input [disabled]="!venta.credito" class="form-check-input float-end" type="checkbox" role="switch" (change)="setConsigna()" [(ngModel)]="venta.consigna" name="venta.credito">
+                <label for="consigna">Consigna</label>
+                <input [disabled]="!venta.credito" class="form-check-input float-end" type="checkbox" role="switch"
+                    (change)="setConsigna()" [(ngModel)]="venta.consigna" name="venta.consigna">
             </div>
         </div>
         <div class="form-group col-md-4 col-lg-3" *ngIf="venta.cotizacion == 1">
@@ -403,6 +405,12 @@
                 <option value="">Seleccione aquí</option>
                 <option [value]="canal.id" *ngFor="let canal of canales">{{ canal.nombre }}</option>
             </select>
+        </div>
+        <div class="form-group col-md-12" *ngIf="mostrarAlertaEnvioBoxful()">
+            <div class="alert alert-info mb-0 py-2" role="alert">
+                <i class="fa fa-truck me-2"></i>
+                Esta venta podrá generar un envío BoxFul desde el listado de ventas, una vez guardada.
+            </div>
         </div>
         <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1">
             <label for="id_vendedor">Vendedor</label>
@@ -506,6 +514,8 @@
         </div>
     </div>
 </section>
+
+
 
 <ng-template #mfacturar>
   <div class="modal-header">
@@ -691,3 +701,13 @@
     </button>
   </div>
 </ng-template>
+
+<app-boxful-shipping-selector *ngIf="mostrarModalBoxful && boxfulClienteId"
+  [clienteId]="boxfulClienteId"
+  [ventaId]="boxfulVentaId"
+  [paqueteData]="boxfulPaqueteData"
+  [sugerirCod]="boxfulSugerirCod"
+  [montoCodSugerido]="boxfulMontoCod"
+  (guiaGenerada)="onBoxfulGuiaGenerada($event)"
+  (cerrar)="cerrarModalBoxful()">
+</app-boxful-shipping-selector>

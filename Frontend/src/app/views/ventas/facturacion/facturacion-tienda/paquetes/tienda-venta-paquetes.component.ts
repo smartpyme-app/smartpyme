@@ -27,6 +27,7 @@ export class TiendaVentaPaquetesComponent extends BasePaginatedModalComponent im
     @Output() productoSelect = new EventEmitter();
     /** Si en la grilla (pág. actual) hay al menos un paquete con cuenta a terceros &gt; 0. */
     @Output() alMenosUnPaqueteConCuentaTerceros = new EventEmitter<void>();
+    @Output() selectCliente = new EventEmitter<any>();
 
     public paquetes: PaginatedResponse<any> = {} as PaginatedResponse;
     public clientes:any = [];
@@ -188,6 +189,9 @@ export class TiendaVentaPaquetesComponent extends BasePaginatedModalComponent im
             }
             if(!this.venta.id_cliente && paquete.id_cliente){
                 this.venta.id_cliente = paquete.id_cliente;
+                this.apiService.read('cliente/', paquete.id_cliente).pipe(this.untilDestroyed()).subscribe((cliente: any) => {
+                    this.selectCliente.emit(cliente);
+                });
             }
             this.detalle = Object.assign({}, this.servicio);
             this.detalle.id_producto    = this.servicio.id;

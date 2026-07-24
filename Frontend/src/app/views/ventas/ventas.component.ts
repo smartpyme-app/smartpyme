@@ -27,6 +27,8 @@ import { PaginationComponent } from '@shared/parts/pagination/pagination.compone
 import { CrearAbonoVentaComponent } from '@shared/modals/crear-abono-venta/crear-abono-venta.component';
 import { TruncatePipe } from '@pipes/truncate.pipe';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
+import { BoxfulApiService } from '@services/boxful/boxful-api.service';
+import { SharedModule } from '@shared/shared.module';
 import Swal from 'sweetalert2';
 import { LazyImageDirective } from '../../directives/lazy-image.directive';
 import { Subject } from 'rxjs';
@@ -48,9 +50,9 @@ export type VentasExportPeriodoTipo = 'detalles' | 'ventas' | 'general';
     selector: 'app-ventas',
     templateUrl: './ventas.component.html',
     standalone: true,
-    imports: [CommonModule, PipesModule, RouterModule, FormsModule, ImportarExcelComponent, PaginationComponent, CrearAbonoVentaComponent, TruncatePipe, PopoverModule, TooltipModule, NgSelectModule, LazyImageDirective, AlertsHaciendaComponent, FeCrEmisionAvanzadoComponent, NotificacionesContainerComponent],
+    imports: [CommonModule, PipesModule, RouterModule, FormsModule, ImportarExcelComponent, PaginationComponent, CrearAbonoVentaComponent, TruncatePipe, PopoverModule, TooltipModule, NgSelectModule, LazyImageDirective, AlertsHaciendaComponent, FeCrEmisionAvanzadoComponent, NotificacionesContainerComponent, SharedModule],
     changeDetection: ChangeDetectionStrategy.OnPush,
-
+    styleUrls: ['./ventas.component.css'],
 })
 export class VentasComponent extends BaseCrudComponent<any> implements OnInit, OnDestroy {
   private readonly facturacionElectronica = inject(FacturacionElectronicaService);
@@ -60,6 +62,18 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
   private searchSubject$ = new Subject<void>();
   public ventas: any = {};
   public venta: any = {};
+  // BoxFul: generar envío desde listado de ventas
+  public mostrarModalBoxful = false;
+  public boxfulClienteId: number | null = null;
+  public boxfulVentaId: number | null = null;
+  public boxfulSugerirCod = false;
+  public boxfulMontoCod: number | null = null;
+  public boxfulPaqueteData: any = { peso: 1, alto: 11, ancho: 43, largo: 47.5, es_fragil: false, id: null, parcels: [] };
+  public tieneBoxful = false;
+  public mostrarDetallesEnvio = false;
+  public selectedShipmentId = '';
+  public cargandoTrackingBoxful = false;
+  public trackingInfo: any = null;
   public sending: boolean = false;
   public downloadingDetalles: boolean = false;
   public downloadingVentas: boolean = false;
@@ -199,6 +213,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     protected override modalManager: ModalManagerService,
     private sharedDataService: SharedDataService,
     private funcionalidadesService: FuncionalidadesService,
+    private boxfulApiService: BoxfulApiService,
     private cdr: ChangeDetectorRef
   ) {
     super(apiService, alertService, modalManager, {
@@ -254,6 +269,17 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
   ngOnInit() {
     this.usuario = this.apiService.auth_user();
     this.verificarAccesoContabilidad();
+
+    this.apiService.getAll('boxful/status')
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (res: any) => {
+          this.tieneBoxful = !!(res && res.connected);
+        },
+        error: () => {
+          this.tieneBoxful = false;
+        }
+      });
 
     this.searchSubject$.pipe(
       debounceTime(400),
@@ -1994,6 +2020,199 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
       this.resetExportPeriodo();
       this.prefillExportPeriodoDesdeListado();
     }
+  }
+
+  private esPaqueteBoxful(p: any): boolean {
+    return p?.transportista === 'Boxful' || p?.transportista === 'boxful';
+  }
+
+  private shipmentDePaquete(p: any): any | null {
+    return p?.boxful_shipment || p?.boxfulShipment || null;
+  }
+
+  private paqueteBoxfulPendiente(venta: any): any | null {
+    const paquetes = venta?.paquetes || [];
+    return paquetes.find((p: any) =>
+      this.esPaqueteBoxful(p) && (!p.num_guia || String(p.num_guia).trim() === '')
+    ) || null;
+  }
+
+  /** Paquete BoxFul con guía ya generada (num_guia o registro boxful_shipments). */
+  private paqueteBoxfulConEnvio(venta: any): any | null {
+    const paquetes = venta?.paquetes || [];
+    return paquetes.find((p: any) => {
+      if (!this.esPaqueteBoxful(p)) {
+        return false;
+      }
+      const bs = this.shipmentDePaquete(p);
+      const guia = (bs?.shipment_number || p.num_guia || '').toString().trim();
+      return !!guia;
+    }) || null;
+  }
+
+  boxfulShipmentDeVenta(venta: any): any | null {
+    const p = this.paqueteBoxfulConEnvio(venta);
+    if (!p) {
+      return null;
+    }
+    const bs = this.shipmentDePaquete(p);
+    if (bs) {
+      return bs;
+    }
+    return p.num_guia ? { shipment_number: p.num_guia, boxful_shipment_id: null } : null;
+  }
+
+  tieneEnvioBoxful(venta: any): boolean {
+    return this.tieneBoxful && !!this.boxfulShipmentDeVenta(venta)?.shipment_number;
+  }
+
+  puedeVerDetallesEnvioBoxful(venta: any): boolean {
+    return !!this.boxfulShipmentDeVenta(venta)?.boxful_shipment_id;
+  }
+
+  puedeGenerarEnvioBoxful(venta: any): boolean {
+    if (!this.tieneBoxful || !venta || venta.estado === 'Anulada') {
+      return false;
+    }
+    const canalNombre = venta.canal?.nombre || venta.nombre_canal || '';
+    if (String(canalNombre).toLowerCase() !== 'boxful') {
+      return false;
+    }
+    if (!venta.id_cliente) {
+      return false;
+    }
+    return !!this.paqueteBoxfulPendiente(venta);
+  }
+
+  generarEnvioBoxful(venta: any): void {
+    const paquete = this.paqueteBoxfulPendiente(venta);
+    if (!paquete) {
+      this.alertService.error('No hay paquete BoxFul pendiente para esta venta.');
+      return;
+    }
+
+    this.boxfulVentaId = venta.id;
+    this.boxfulClienteId = venta.id_cliente;
+    this.boxfulSugerirCod = venta.condicion === 'Crédito' || !!venta.credito;
+    this.boxfulMontoCod = parseFloat(venta.total || 0) || null;
+    this.boxfulPaqueteData = {
+      id: paquete.id,
+      peso: paquete.peso || 1,
+      alto: 11,
+      ancho: 43,
+      largo: 47.5,
+      es_fragil: false,
+      parcels: [{
+        id: null,
+        peso: paquete.peso || 1,
+        alto: 11,
+        ancho: 43,
+        largo: 47.5,
+        es_fragil: false,
+        contenido: '',
+        valor: parseFloat(venta.total || 50)
+      }]
+    };
+    this.mostrarModalBoxful = true;
+  }
+
+  verDetallesEnvioBoxful(venta: any): void {
+    const shipmentId = this.boxfulShipmentDeVenta(venta)?.boxful_shipment_id;
+    if (!shipmentId) {
+      this.alertService.error('No hay detalle de envío BoxFul para esta venta.');
+      return;
+    }
+    this.selectedShipmentId = shipmentId;
+    this.mostrarDetallesEnvio = true;
+  }
+
+  onCerrarDetallesEnvioBoxful(): void {
+    this.mostrarDetallesEnvio = false;
+    this.selectedShipmentId = '';
+    this.filtrarVentas(false);
+  }
+
+  verTrackingPaqueteBoxful(venta: any, template: TemplateRef<any>): void {
+    const shipmentNumber = this.boxfulShipmentDeVenta(venta)?.shipment_number;
+    if (!shipmentNumber) {
+      this.alertService.error('No hay número de guía para rastrear.');
+      return;
+    }
+
+    this.trackingInfo = null;
+    this.cargandoTrackingBoxful = true;
+    this.modalRef = this.modalService.show(template, { class: 'modal-md' });
+
+    this.boxfulApiService.getTracking(shipmentNumber).subscribe({
+      next: (res) => {
+        this.trackingInfo = res;
+        this.cargandoTrackingBoxful = false;
+      },
+      error: (err) => {
+        this.alertService.error(err);
+        this.cargandoTrackingBoxful = false;
+        this.modalRef?.hide();
+      }
+    });
+  }
+
+  getTrackingShipment(): any {
+    if (!this.trackingInfo) {
+      return null;
+    }
+    return this.trackingInfo.shipment || this.trackingInfo.shipmentData || this.trackingInfo;
+  }
+
+  getTrackingSteps(): any[] {
+    const s = this.getTrackingShipment();
+    if (!s) {
+      return [];
+    }
+
+    const currentStatus = s.status !== undefined ? s.status : -1;
+    const history = s.statusHistory || [];
+    const createdAt = s.createdAt;
+
+    const findDateInHistory = (keywords: string[], statusVal: number): any => {
+      let found = history.find((h: any) => h.status === statusVal);
+      if (found?.createdAt) {
+        return found.createdAt;
+      }
+      found = history.find((h: any) => {
+        const desc = (h.statusDescription || h.status || '').toLowerCase();
+        return keywords.some((k) => desc.includes(k));
+      });
+      return found?.createdAt || null;
+    };
+
+    return [
+      { key: 'creado', label: 'Creado', completed: currentStatus >= -1, date: createdAt },
+      { key: 'registrado', label: 'Registrado', completed: currentStatus >= 1, date: findDateInHistory(['registrado', 'registrada'], 1) },
+      { key: 'recolectado', label: 'Recolectado', completed: currentStatus >= 2, date: findDateInHistory(['recolectado', 'recolectada', 'pickup'], 2) },
+      { key: 'ruta', label: 'Ruta a destino', completed: currentStatus >= 3, date: findDateInHistory(['ruta', 'transito', 'camino', 'transit'], 3) },
+      { key: 'entregado', label: 'Entregado', completed: currentStatus >= 4, date: findDateInHistory(['entregado', 'entregada', 'delivered'], 4) },
+    ];
+  }
+
+  onBoxfulGuiaGenerada(guia: any): void {
+    // No cerrar el modal aquí: el wizard muestra el paso 3 de confirmación (PDF/tracking).
+    const numGuia = guia?.shipmentNumber || guia?.data?.shipmentNumber || guia?.id || guia?.data?.id || '';
+    if (numGuia) {
+      this.alertService.success('Guía BoxFul generada', `Envío #${numGuia} vinculado a la venta.`);
+    } else {
+      this.alertService.success('Guía BoxFul generada', '');
+    }
+    this.filtrarVentas(false);
+  }
+
+  cerrarModalBoxful(): void {
+    this.mostrarModalBoxful = false;
+    this.boxfulVentaId = null;
+    this.boxfulClienteId = null;
+    this.boxfulSugerirCod = false;
+    this.boxfulMontoCod = null;
+    this.boxfulPaqueteData = { peso: 1, alto: 11, ancho: 43, largo: 47.5, es_fragil: false, id: null, parcels: [] };
+    this.filtrarVentas(false);
   }
 
 }

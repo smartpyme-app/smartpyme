@@ -42,6 +42,9 @@ import {
   sumarTotalEncabezadoVenta,
   copiarImpuestosProductoAlDetalle,
 } from '@utils/impuestos-venta.util';
+import { esVentaPorConsigna, sincronizarFlagConsignaVenta, aplicarEstadoConsignaEnVenta } from '@utils/venta-consigna.util';
+import { FACTURA_REMISION, esVentaConsignaRemision } from '../../../../constants/documento.constants';
+import { SharedModule } from '@shared/shared.module';
 
 @Component({
     selector: 'app-facturacion',
@@ -59,7 +62,8 @@ import {
         CrearClienteComponent,
         BuscadorClientesComponent,
         CrearProyectoComponent,
-        TranslatePipe
+        TranslatePipe,
+        SharedModule,
     ],
     providers: [SumPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
@@ -72,6 +76,8 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
   public proyectos: any = [];
   public usuarios: any = [];
   public documentos: any = [];
+  private documentosSucursal: any[] = [];
+  private documentosLoadSeq = 0;
   public formaPagos: any = [];
   public sucursales: any = [];
   public bodegas: any = [];
@@ -177,6 +183,134 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     this.router.routeReuseStrategy.shouldReuseRoute = function () {
       return false;
     };
+  }
+
+  // Integración Boxful
+  public paqueteData: any = { peso: 1, alto: 10, ancho: 10, largo: 10, es_fragil: false, id: null };
+  private lastSyncedPaqueteId: number | null = null;
+  public tieneBoxful = false;
+  public mostrarModalBoxful = false;
+  public boxfulVentaId: number | null = null;
+  public boxfulClienteId: number | null = null;
+  public boxfulSugerirCod = false;
+  public boxfulMontoCod: number | null = null;
+  public boxfulPaqueteData: any = {
+    peso: 1, alto: 11, ancho: 43, largo: 47.5, es_fragil: false, id: null, parcels: []
+  };
+
+  esCanalBoxful(): boolean {
+    if (!this.venta.id_canal || !this.canales) return false;
+    const canal = this.canales.find((c: any) => c.id == this.venta.id_canal);
+    return !!(canal && canal.nombre === 'Boxful');
+  }
+
+  mostrarAlertaEnvioBoxful(): boolean {
+    return this.tieneBoxful && this.esCanalBoxful() && this.venta.cotizacion != 1;
+  }
+
+  private debePreguntarEnvioBoxful(): boolean {
+    return this.mostrarAlertaEnvioBoxful() && !!this.venta?.id;
+  }
+
+  private preguntarGenerarEnvioBoxful(venta: any): void {
+    Swal.fire({
+      title: 'Envío BoxFul',
+      text: 'La venta se guardó correctamente. ¿Desea generar el envío BoxFul ahora o hacerlo después desde el listado de ventas?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Generar ahora',
+      cancelButtonText: 'Después',
+      reverseButtons: true,
+      allowOutsideClick: false,
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.abrirWizardBoxfulDesdeVenta(venta);
+      } else {
+        this.router.navigate(['/ventas']);
+        this.alertService.success(
+          'Venta creada',
+          'Puede generar el envío BoxFul después desde el listado de ventas.'
+        );
+      }
+    });
+  }
+
+  private resolverPaqueteStubBoxful(venta: any): any | null {
+    const paquetes = venta?.paquetes || this.venta?.paquetes || [];
+    const stub = (paquetes as any[]).find((p) =>
+      (p.transportista === 'Boxful' || p.transportista === 'boxful')
+      && (!p.num_guia || String(p.num_guia).trim() === '' || String(p.num_guia).startsWith('PENDING-'))
+    );
+    if (stub?.id) {
+      return stub;
+    }
+    if (venta?.boxful_paquete_stub_id || this.venta?.boxful_paquete_stub_id) {
+      return { id: venta?.boxful_paquete_stub_id || this.venta?.boxful_paquete_stub_id, peso: 1 };
+    }
+    if (this.paqueteData?.id) {
+      return { id: this.paqueteData.id, peso: this.paqueteData.peso || 1 };
+    }
+    return null;
+  }
+
+  private abrirWizardBoxfulDesdeVenta(venta: any): void {
+    if (!venta?.id_cliente) {
+      this.alertService.warning(
+        'Atención',
+        'La venta no tiene cliente asignado. Genere el envío después desde el listado de ventas.'
+      );
+      this.router.navigate(['/ventas']);
+      return;
+    }
+
+    const stub = this.resolverPaqueteStubBoxful(venta);
+    const peso = parseFloat(stub?.peso || 1) || 1;
+
+    this.boxfulVentaId = venta.id;
+    this.boxfulClienteId = venta.id_cliente;
+    this.boxfulSugerirCod = !!(venta.credito || venta.condicion === 'Crédito' || this.venta?.credito || this.venta?.condicion === 'Crédito');
+    this.boxfulMontoCod = parseFloat(venta.total || this.venta?.total || 0) || null;
+    this.boxfulPaqueteData = {
+      id: stub?.id || null,
+      peso,
+      alto: 11,
+      ancho: 43,
+      largo: 47.5,
+      es_fragil: false,
+      parcels: [{
+        peso,
+        alto: 11,
+        ancho: 43,
+        largo: 47.5,
+        es_fragil: false,
+        contenido: '',
+        valor: parseFloat(venta.total || 50)
+      }]
+    };
+    this.mostrarModalBoxful = true;
+    this.alertService.success('Venta creada', 'Complete los datos del envío BoxFul.');
+  }
+
+  onBoxfulGuiaGenerada(guia: any): void {
+    const numGuia = guia?.shipmentNumber || guia?.data?.shipmentNumber || '';
+    if (numGuia) {
+      this.alertService.success('Logística Boxful', `Guía #${numGuia} generada correctamente.`);
+    }
+    if (Array.isArray(guia?.warnings) && guia.warnings.length) {
+      this.alertService.warning('Atención', guia.warnings.join(' '));
+    }
+  }
+
+  cerrarModalBoxful(): void {
+    this.mostrarModalBoxful = false;
+    this.boxfulVentaId = null;
+    this.boxfulClienteId = null;
+    this.boxfulSugerirCod = false;
+    this.boxfulMontoCod = null;
+    this.boxfulPaqueteData = {
+      peso: 1, alto: 11, ancho: 43, largo: 47.5, es_fragil: false, id: null, parcels: []
+    };
+    this.router.navigate(['/ventas']);
   }
 
   ngOnInit() {
@@ -352,6 +486,17 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
       }
     );
 
+    this.apiService.getAll('boxful/status').pipe(this.untilDestroyed()).subscribe({
+      next: (res: any) => {
+        this.tieneBoxful = !!(res && res.connected);
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.tieneBoxful = false;
+        this.cdr.markForCheck();
+      }
+    });
+
     this.apiService.getAll('impuestos').pipe(this.untilDestroyed()).subscribe(
       (impuestos) => {
         // Filtrar solo los impuestos que aplican a ventas
@@ -391,75 +536,133 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
   }
 
   public cargarDocumentos() {
+    const seq = ++this.documentosLoadSeq;
     this.apiService.getAll('documentos/list').pipe(this.untilDestroyed()).subscribe(
       (documentos) => {
-        let list = (documentos || []).filter(
-          (doc: any) => doc.id_sucursal == this.venta.id_sucursal
-        );
-
-        if (this.venta.cotizacion == 1) {
-          list = list.filter((x: any) => x.nombre == 'Cotización');
-          if (list.length === 0) {
-            this.alertService.error('Debe crear un documento de cotización');
-          }
-        } else {
-          const cr = resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR;
-          list = list.filter(
-            (doc: any) =>
-              doc.nombre === 'Factura' ||
-              (cr && doc.nombre === NOMBRE_DOCUMENTO_CR.factura) ||
-              doc.nombre === 'Crédito fiscal' ||
-              doc.nombre === 'Factura de exportación' ||
-              doc.nombre === 'Factura comercial' ||
-              doc.nombre === 'Ticket' ||
-              (cr && doc.nombre === NOMBRE_DOCUMENTO_CR.tiquete) ||
-              doc.nombre === 'Recibo' ||
-              doc.nombre === 'Sujeto excluido'
-          );
+        if (seq !== this.documentosLoadSeq) {
+          return;
         }
-
-        this.documentos = list;
-
-        const docActual = this.documentos.find(
-          (x: any) => x.id == this.venta.id_documento
+        const idSucursal = this.obtenerIdSucursalDocumentos();
+        this.documentosSucursal = (documentos || []).filter(
+          (doc: any) =>
+            idSucursal != null && Number(doc.id_sucursal) === Number(idSucursal)
         );
-
-        if (!docActual) {
-          const pred = this.documentos.find((x: any) => x.predeterminado == 1);
-          if (pred) {
-            this.setDocumento(pred.id);
-          } else if (this.documentos.length > 0) {
-            this.setDocumento(this.documentos[0].id);
-          } else {
-            this.venta.id_documento = null;
-            this.venta.correlativo = null;
-            this.venta.nombre_documento = undefined;
-            if (this.facturarCotizacion) {
-              this.documentoFiscalListo = false;
-              this.alertService.error(
-                'Debe configurar un documento fiscal (Factura o Crédito fiscal) en la sucursal antes de facturar la cotización.'
-              );
-            }
-          }
-        } else {
-          this.venta.nombre_documento = docActual.nombre;
-          if (
-            this.venta.correlativo == null ||
-            this.venta.correlativo === ''
-          ) {
-            this.venta.correlativo = docActual.correlativo;
-          }
-          if (this.facturarCotizacion) {
-            this.documentoFiscalListo = true;
-          }
-        }
+        this.aplicarFiltroDocumentosVenta();
         this.cdr.markForCheck();
       },
       (error) => {
+        if (seq !== this.documentosLoadSeq) {
+          return;
+        }
         this.alertService.error(error);
         this.cdr.markForCheck();
       }
     );
+  }
+
+  /** Prioriza la sucursal de la bodega seleccionada; si no hay, usa la de la venta. */
+  private obtenerIdSucursalDocumentos(): number | null {
+    const bodega = this.bodegas?.find(
+      (b: any) => Number(b.id) === Number(this.venta?.id_bodega)
+    );
+    if (bodega?.id_sucursal != null && bodega.id_sucursal !== '') {
+      return Number(bodega.id_sucursal);
+    }
+    if (this.venta?.id_sucursal != null && this.venta.id_sucursal !== '') {
+      return Number(this.venta.id_sucursal);
+    }
+    return null;
+  }
+
+  private aplicarFiltroDocumentosVenta(): void {
+    if (this.venta.cotizacion == 1) {
+      this.documentos = this.documentosSucursal.filter(
+        (x: any) => x.nombre == 'Cotización'
+      );
+      if (this.documentos.length === 0) {
+        this.alertService.error('Debe crear un documento de cotización');
+      }
+      const documento = this.documentos.find((x: any) => x.nombre == 'Cotización');
+      if (documento) {
+        this.venta.id_documento = documento.id;
+        this.venta.correlativo = documento.correlativo;
+      }
+      return;
+    }
+
+    if (esVentaConsignaRemision(this.venta)) {
+      this.documentos = this.documentosSucursal.filter(
+        (doc: any) => doc.nombre === FACTURA_REMISION
+      );
+      this.seleccionarDocumentoRemisionConsigna();
+      return;
+    }
+
+    const cr = resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR;
+    this.documentos = this.documentosSucursal.filter(
+      (doc: any) =>
+        doc.nombre === 'Factura' ||
+        (cr && doc.nombre === NOMBRE_DOCUMENTO_CR.factura) ||
+        doc.nombre === 'Crédito fiscal' ||
+        doc.nombre === 'Factura de exportación' ||
+        doc.nombre === 'Factura comercial' ||
+        doc.nombre === 'Ticket' ||
+        (cr && doc.nombre === NOMBRE_DOCUMENTO_CR.tiquete) ||
+        doc.nombre === 'Recibo' ||
+        doc.nombre === 'Sujeto excluido'
+    );
+
+    const docActual = this.documentos.find(
+      (x: any) => x.id == this.venta.id_documento
+    );
+
+    if (!docActual) {
+      const pred = this.documentos.find((x: any) => x.predeterminado == 1);
+      if (pred) {
+        this.setDocumento(pred.id);
+      } else if (this.documentos.length > 0) {
+        this.setDocumento(this.documentos[0].id);
+      } else {
+        this.venta.id_documento = null;
+        this.venta.correlativo = null;
+        this.venta.nombre_documento = undefined;
+        if (this.facturarCotizacion) {
+          this.documentoFiscalListo = false;
+          this.alertService.error(
+            'Debe configurar un documento fiscal (Factura o Crédito fiscal) en la sucursal antes de facturar la cotización.'
+          );
+        }
+      }
+    } else {
+      this.venta.nombre_documento = docActual.nombre;
+      if (
+        this.venta.correlativo == null ||
+        this.venta.correlativo === ''
+      ) {
+        this.venta.correlativo = docActual.correlativo;
+      }
+      if (this.facturarCotizacion) {
+        this.documentoFiscalListo = true;
+      }
+    }
+  }
+
+  private seleccionarDocumentoRemisionConsigna(): void {
+    const documento = this.documentos.find((x: any) => x.nombre === FACTURA_REMISION);
+    if (!documento) {
+      this.alertService.warning(
+        'Consigna',
+        'No hay un documento "Factura de remisión" configurado para esta sucursal.'
+      );
+      return;
+    }
+
+    this.venta.id_documento = documento.id;
+    this.venta.correlativo = documento.correlativo;
+    this.venta.cobrar_impuestos = false;
+    this.venta.percepcion = 0;
+    this.venta.iva_percibido = 0;
+    this.sumTotal();
   }
 
   public cargarDatosIniciales() {
@@ -615,6 +818,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
         .subscribe(
           (venta) => {
             this.venta = this.adaptarCotizacionVentaSiAplica(venta, isCotizacion);
+            sincronizarFlagConsignaVenta(this.venta);
             this.retencionIvaGcUsuarioDecidio = true;
             this.normalizarDetallesTipoGravado(this.venta);
             hidratarImpuestosProductosEnDetalles(
@@ -1052,7 +1256,34 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     detalle.precio = Number(mejor.precio);
     detalle.precios[0] = { precio: detalle.precio };
   }
+
+  private syncPaqueteData(): void {
+    if (!this.venta || !this.venta.detalles || !Array.isArray(this.venta.detalles)) {
+      this.lastSyncedPaqueteId = null;
+      this.paqueteData.id = null;
+      return;
+    }
+    const pkgDetail = this.venta.detalles.find((d: any) => d.id_paquete);
+    if (pkgDetail) {
+      const pkgId = pkgDetail.id_paquete;
+      if (pkgId !== this.lastSyncedPaqueteId) {
+        this.lastSyncedPaqueteId = pkgId;
+        this.paqueteData.id = pkgId;
+        this.paqueteData.peso = parseFloat(pkgDetail.peso || pkgDetail.cantidad || 1);
+        this.paqueteData.alto = parseFloat(pkgDetail.alto || 10);
+        this.paqueteData.ancho = parseFloat(pkgDetail.ancho || 10);
+        this.paqueteData.largo = parseFloat(pkgDetail.largo || 10);
+        this.paqueteData.es_fragil = !!pkgDetail.es_fragil;
+        this.paqueteData.valor = parseFloat(pkgDetail.total || 50);
+      }
+    } else {
+      this.lastSyncedPaqueteId = null;
+      this.paqueteData.id = null;
+    }
+  }
+
   public sumTotal() {
+    this.syncPaqueteData();
     if (this.venta.cobrar_impuestos) {
       const sinImpuestosEnVenta =
         !this.venta.impuestos ||
@@ -1092,11 +1323,14 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     }
 
     const empresaIva = Number(this.apiService.auth_user()?.empresa?.iva ?? 0);
+    const paisEmpresa = this.apiService.auth_user()?.empresa?.pais;
     this.venta.detalles.forEach((d: any) => {
       if (String(d?.tipo_gravado || '').toLowerCase() === 'exonerada') {
         return;
       }
-      calcularMontosLineaDetalle(d, !!this.venta.cobrar_impuestos, empresaIva);
+      calcularMontosLineaDetalle(d, !!this.venta.cobrar_impuestos, empresaIva, {
+        paisEmpresa,
+      });
     });
 
     this.venta.sub_total = Number(sumarSubTotalEncabezadoVenta(this.venta.detalles)).toFixed(4);
@@ -1135,7 +1369,8 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
       this.venta.impuestos,
       this.venta.detalles,
       !!this.venta.cobrar_impuestos,
-      empresaIva
+      empresaIva,
+      paisEmpresa
     );
     this.venta.iva = ivaEncabezado.toFixed(4);
 
@@ -1437,9 +1672,30 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
 
     public setConsigna() {
         if (this.venta.consigna) {
+            if (!this.venta.id_cliente) {
+                this.alertService.warning('Consigna', 'Seleccione un cliente para ventas por consigna.');
+                this.venta.consigna = false;
+                return;
+            }
+            if (this.venta.detalles?.length) {
+                this.venta.detalles = [];
+                this.alertService.warning(
+                    'Consigna',
+                    'Se vació el detalle. Toda la factura quedará en consigna; no puede mezclar líneas de venta normal y consigna.'
+                );
+                this.sumTotal();
+            }
             this.venta.estado = 'Consigna';
+            this.venta.credito = true;
+            this.venta.condicion = 'Crédito';
+            this.aplicarFiltroDocumentosVenta();
         } else {
+            if (this.venta.detalles?.length) {
+                this.venta.detalles = [];
+                this.sumTotal();
+            }
             this.setCredito();
+            this.aplicarFiltroDocumentosVenta();
         }
     }
 
@@ -1453,6 +1709,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
 
     public updateVenta(venta: any) {
         this.venta = venta;
+        sincronizarFlagConsignaVenta(this.venta);
         this.syncVentaCreditoConsignaFlagsFromEstado();
         this.sumTotal();
     }
@@ -1705,6 +1962,9 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
   }
 
   public onFacturar() {
+    if (this.saving || this.emiting) {
+      return;
+    }
     if (
       this.facturarCotizacion &&
       (!this.documentoFiscalListo ||
@@ -1775,15 +2035,26 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
           this.venta.recibido = this.venta.total;
         }
 
-        if (this.venta.forma_pago == 'Wompi') {
+        if (this.venta.forma_pago == 'Wompi' && !this.venta.consigna) {
           this.venta.estado = 'Pendiente';
         }
+        aplicarEstadoConsignaEnVenta(this.venta);
         this.onSubmit();
       }
     });
   }
 
   private tieneDetallesInvalidosParaFacturar(): boolean {
+    if (this.venta.id_documento == null || this.venta.id_documento === '') {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Documento requerido',
+        text: 'Debe seleccionar un documento para procesar la venta.',
+        confirmButtonText: 'Entendido',
+      });
+      return true;
+    }
+
     const detalles = this.venta.detalles || [];
 
     const sinCantidad = detalles.find((detalle: any) => {
@@ -1812,6 +2083,13 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
       return true;
     }
 
+    if (esVentaPorConsigna(this.venta)) {
+      if (!this.venta.id_cliente) {
+        this.alertService.error('Debe seleccionar un cliente para ventas por consigna.');
+        return true;
+      }
+    }
+
     return false;
   }
 
@@ -1827,6 +2105,9 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
 
   // Guardar venta
   public onSubmit() {
+    if (this.saving || this.emiting) {
+      return;
+    }
     this.saving = true;
 
     // Si se esta duplicando una venta, esta ya no se marca como recurrente para
@@ -1845,6 +2126,8 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     if (this.pedidoCanalId) {
       (this.venta as any).id_pedido_canal = this.pedidoCanalId;
     }
+
+    aplicarEstadoConsignaEnVenta(this.venta);
 
     // Asegurar que usuarios "Ventas Limitado" siempre tengan ventas al contado
     if (this.apiService.auth_user().tipo === 'Ventas Limitado') {
@@ -1927,6 +2210,8 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
               this.navegarPostFacturaPreCuenta(this.venta.id);
             } else if (this.pedidoCanalId && this.venta.id) {
               this.navegarPostFacturaPedidoCanal(this.venta.id);
+            } else if (this.debePreguntarEnvioBoxful()) {
+              this.preguntarGenerarEnvioBoxful(venta);
             } else {
               this.router.navigate(['/ventas']);
               this.alertService.success(
@@ -1946,6 +2231,8 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
             this.navegarPostFacturaPreCuenta(this.venta.id);
           } else if (this.pedidoCanalId && this.venta.id) {
             this.navegarPostFacturaPedidoCanal(this.venta.id);
+          } else if (this.debePreguntarEnvioBoxful()) {
+            this.preguntarGenerarEnvioBoxful(venta);
           } else {
             this.router.navigate(['/ventas']);
             this.alertService.success(
@@ -1963,9 +2250,35 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
       },
       (error) => {
         this.alertService.error(error);
-        this.saving = false;
+        if (this.esErrorRedAmbiguoAlFacturar(error)) {
+          const habilitar = confirm(
+            'No se confirmó la respuesta del servidor. La venta pudo haberse guardado.\n\n' +
+              'Revise el listado de ventas antes de reintentar.\n\n' +
+              '¿Desea habilitar de nuevo el botón de facturar?'
+          );
+          if (habilitar) {
+            this.saving = false;
+          }
+        } else {
+          this.saving = false;
+        }
         this.cdr.markForCheck();
       }
+    );
+  }
+
+  private esErrorRedAmbiguoAlFacturar(error: any): boolean {
+    const status = error?.status;
+    if (status === 0 || status === 502 || status === 503 || status === 504) {
+      return true;
+    }
+    const texto = String(
+      error?.message || error?.statusText || error?.name || ''
+    ).toLowerCase();
+    return (
+      texto.includes('timeout') ||
+      texto.includes('gateway timeout') ||
+      texto.includes('unknown error')
     );
   }
 
@@ -2018,10 +2331,20 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
 
   emitirDTE() {
     this.emiting = true;
+    const ventaPreDte = { ...this.venta };
     this.facturacionElectronica
       .emitirDTE(this.venta)
       .then((venta) => {
-        this.venta = venta;
+        this.venta = { ...ventaPreDte, ...venta };
+        if (ventaPreDte.paquetes && !this.venta.paquetes) {
+          this.venta.paquetes = ventaPreDte.paquetes;
+        }
+        if (ventaPreDte.boxful_paquete_stub_id && !this.venta.boxful_paquete_stub_id) {
+          this.venta.boxful_paquete_stub_id = ventaPreDte.boxful_paquete_stub_id;
+        }
+        if (ventaPreDte.id_canal && !this.venta.id_canal) {
+          this.venta.id_canal = ventaPreDte.id_canal;
+        }
         this.syncVentaCreditoConsignaFlagsFromEstado();
         this.alertService.success(
           this.countryI18n.fe('emitSuccessTitle'),
@@ -2037,6 +2360,8 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
           this.navegarPostFacturaPreCuenta(this.venta.id);
         } else if (this.pedidoCanalId && this.venta.id) {
           this.navegarPostFacturaPedidoCanal(this.venta.id);
+        } else if (this.debePreguntarEnvioBoxful()) {
+          this.preguntarGenerarEnvioBoxful(this.venta);
         } else {
           this.cargarDatosIniciales();
           this.router.navigate(['/venta/crear']);
@@ -2057,6 +2382,12 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
         }
         const msg = typeof error === 'string' ? error : error?.message ?? error;
         this.alertService.warning('El documento no fue emitido.', msg);
+        if (this.debePreguntarEnvioBoxful()) {
+          this.preguntarGenerarEnvioBoxful(this.venta);
+        } else {
+          this.cargarDatosIniciales();
+          this.router.navigate(['/venta/crear']);
+        }
         this.cdr.markForCheck();
       });
   }
@@ -2078,46 +2409,10 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
   }
 
   public setBodega() {
-
-    let bodegaSeleccionada = this.bodegas.find((b: any) => b.id == this.venta.id_bodega);
-    // console.log("bodega", bodegaSeleccionada);
-    this.venta.id_sucursal = bodegaSeleccionada.id_sucursal;
-
+    const bodegaSeleccionada = this.bodegas.find((b: any) => b.id == this.venta.id_bodega);
     if (bodegaSeleccionada) {
-      // console.log("bodegaSeleccionada", bodegaSeleccionada);
       this.venta.id_sucursal = bodegaSeleccionada.id_sucursal;
-
-      this.apiService.getAll('documentos/list').pipe(this.untilDestroyed()).subscribe(
-        (documentos) => {
-          this.documentos = documentos.filter(
-            (x: any) => x.id_sucursal == this.venta.id_sucursal
-          );
-
-          if (this.venta.cotizacion == 1) {
-            this.documentos = this.documentos.filter(
-              (x: any) => x.nombre == 'Cotización'
-            );
-          } else {
-            this.documentos = this.documentos.filter(
-              (x: any) =>
-                x.nombre !== 'Cotización' && x.nombre !== 'Orden de compra'
-            );
-          }
-          this.cdr.markForCheck();
-
-          let documentoPredeterminado = this.documentos.find(
-            (x: any) => x.predeterminado == 1
-          );
-          if (documentoPredeterminado) {
-            this.setDocumento(documentoPredeterminado.id);
-          } else if (this.documentos.length > 0) {
-            this.setDocumento(this.documentos[0].id);
-          }
-        },
-        (error) => {
-          this.alertService.error(error);
-        }
-      );
+      this.cargarDocumentos();
     }
   }
 

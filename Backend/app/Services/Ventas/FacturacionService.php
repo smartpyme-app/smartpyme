@@ -2,6 +2,8 @@
 
 namespace App\Services\Ventas;
 
+use App\Constants\DocumentoConstants;
+use App\Constants\OrigenStockVentaConstants;
 use App\Exceptions\FacturacionException;
 use App\Models\Admin\Documento;
 use App\Models\Admin\Empresa;
@@ -139,6 +141,8 @@ class FacturacionService
                     $documento = Documento::where('id', $request->id_documento)
                                 ->lockForUpdate()
                                 ->firstOrFail();
+
+                    $this->aplicarReglasVentaRemisionConsigna($venta, $documento, $request);
     
                     $venta->correlativo = $documento->correlativo;
                     $documento->increment('correlativo');
@@ -153,6 +157,10 @@ class FacturacionService
                     else
                         $detalle = new Detalle;
                     $det['id_venta'] = $venta->id;
+
+                    if (!OrigenStockVentaConstants::esConsignaCompra($det['origen_stock'] ?? null)) {
+                        $det['origen_stock'] = OrigenStockVentaConstants::NORMAL;
+                    }
     
                     // ── Cálculos de Costos con Presentaciones ──
                     $factorDet = 1;
@@ -521,5 +529,18 @@ class FacturacionService
             DB::rollBack();
             throw new FacturacionException($e->getMessage(), 400);
         }
+    }
+
+    private function aplicarReglasVentaRemisionConsigna(Venta $venta, Documento $documento, Request $request): void
+    {
+        $esConsigna = $request->input('estado') === 'Consigna' || $request->boolean('consigna');
+        if (!$esConsigna || !DocumentoConstants::esCompraSinIvaFiscal($documento->nombre)) {
+            return;
+        }
+
+        $venta->iva = 0;
+        $venta->iva_percibido = 0;
+        $venta->iva_retenido = 0;
+        $venta->total = round((float) $venta->sub_total, 2);
     }
 }

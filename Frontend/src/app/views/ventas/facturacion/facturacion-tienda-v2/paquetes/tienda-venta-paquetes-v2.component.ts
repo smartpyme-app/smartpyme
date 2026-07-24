@@ -20,6 +20,7 @@ export class TiendaVentaPaquetesV2Component implements OnInit {
     @Input() venta: any = {};
     @Output() productoSelect = new EventEmitter();
     @Output() alMenosUnPaqueteConCuentaTerceros = new EventEmitter<void>();
+    @Output() selectCliente = new EventEmitter<any>();
     modalRef!: BsModalRef;
 
     public paquetes:any = [];
@@ -185,6 +186,9 @@ export class TiendaVentaPaquetesV2Component implements OnInit {
             }
             if(!this.venta.id_cliente && paquete.id_cliente){
                 this.venta.id_cliente = paquete.id_cliente;
+                this.apiService.read('cliente/', paquete.id_cliente).subscribe((cliente: any) => {
+                    this.selectCliente.emit(cliente);
+                });
             }
             this.detalle = Object.assign({}, this.servicio);
             this.detalle.id_producto    = this.servicio.id;

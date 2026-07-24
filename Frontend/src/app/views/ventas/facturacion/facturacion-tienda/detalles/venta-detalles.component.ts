@@ -20,10 +20,18 @@ import {
     sincronizarTipoGravadoPorCobroIva,
 } from '@utils/impuestos-venta.util';
 import {
+    ORIGEN_STOCK_NORMAL,
+    normalizarOrigenStock,
+    preguntarOrigenStockSiAplica,
+    validarCantidadOrigenConsignaCompra,
+    esOrigenConsignaCompra,
+} from '@utils/venta-consigna.util';
+import {
     autoDistribuirCantidadesLotes,
     asignacionLotesExcedeStock,
     factorConversionDetalle,
     limpiarAsignacionLotesDetalle,
+    limpiarLotesSiCambioCantidad,
     stockBaseAUnidadesDetalle,
     textoResumenLotesDetalle,
     totalAsignadoUnidadesLotes,
@@ -68,7 +76,7 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
   @Input() usuarios: any = {};
   /** Desde facturación: al activar, muestra en cada línea el input Cta. terceros junto a Precio. */
   @Input() habilitarCuentaTerceros = false;
-  @Input() customFields: any = {};  // Agregar input
+  @Input() customFields: any = {};
   @Input() selectedCustomFields: number[] = [];
   @Input() cotizacion: number = 0;
   @Input() mode: "create" | "edit" | "show" = "create";
@@ -82,6 +90,7 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
   @Output() update = new EventEmitter();
   @Output() sumTotal = new EventEmitter();
   @Output() alMenosUnPaqueteConCuentaTerceros = new EventEmitter<void>();
+  @Output() selectCliente = new EventEmitter<any>();
   override modalRef!: BsModalRef;
   public zoomImageUrl: string = '';
 
@@ -175,7 +184,8 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
         return porcentajeIvaDetalle(
             detalle,
             this.apiService.auth_user()?.empresa?.iva,
-            !!this.venta.cobrar_impuestos
+            !!this.venta.cobrar_impuestos,
+            this.apiService.auth_user()?.empresa?.pais
         );
     }
 
@@ -203,24 +213,47 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
     }
 
     public updateTotal(detalle:any){
-        const cantidad = parseFloat(detalle.cantidad ?? 0) || 0;
-        const precio = parseFloat(detalle.precio ?? 0) || 0;
+        const aplicar = () => {
+            const cantidad = parseFloat(detalle.cantidad ?? 0) || 0;
+            const precio = parseFloat(detalle.precio ?? 0) || 0;
 
-        if(detalle.descuento_porcentaje){
-            detalle.descuento = Number((cantidad * (precio * (detalle.descuento_porcentaje / 100))).toFixed(4));
-        }else if(detalle.descuento_monto){
-            detalle.descuento = Number((cantidad * detalle.descuento_monto).toFixed(4));
-        }else{
-            detalle.descuento = 0;
+            if(detalle.descuento_porcentaje){
+                detalle.descuento = Number((cantidad * (precio * (detalle.descuento_porcentaje / 100))).toFixed(4));
+            }else if(detalle.descuento_monto){
+                detalle.descuento = Number((cantidad * detalle.descuento_monto).toFixed(4));
+            }else{
+                detalle.descuento = 0;
+            }
+
+            detalle.total_costo  = (cantidad * parseFloat(detalle.costo ?? 0)).toFixed(4);
+            if (!this.skipLimpiarLotes && detalle.inventario_por_lotes && this.getLotesMetodologia() === 'Manual') {
+                limpiarAsignacionLotesDetalle(detalle);
+            }
+            this.aplicarTipoGravado(detalle);
+            this.update.emit(this.venta);
+            this.sumTotal.emit();
+        };
+
+        if (esOrigenConsignaCompra(detalle.origen_stock)) {
+            validarCantidadOrigenConsignaCompra(this.apiService, this.alertService, this.venta, detalle)
+                .subscribe((ok) => {
+                    if (ok) {
+                        aplicar();
+                    }
+                });
+            return;
         }
 
-        detalle.total_costo  = (cantidad * parseFloat(detalle.costo ?? 0)).toFixed(4);
-        if (!this.skipLimpiarLotes && detalle.inventario_por_lotes && this.getLotesMetodologia() === 'Manual') {
-            limpiarAsignacionLotesDetalle(detalle);
-        }
-        this.aplicarTipoGravado(detalle);
-        this.update.emit(this.venta);
-        this.sumTotal.emit();
+        aplicar();
+    }
+
+    /** Recalcula totales; limpia lotes solo si el usuario cambió la cantidad. */
+    public onCantidadChange(detalle: any): void {
+        limpiarLotesSiCambioCantidad(detalle, {
+            skipLimpiarLotes: this.skipLimpiarLotes,
+            metodologiaManual: this.getLotesMetodologia() === 'Manual',
+        });
+        this.updateTotal(detalle);
     }
 
     public onTipoGravadoChange(detalle: any) {
@@ -258,7 +291,6 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
 
   public openModalCompuesto(template: TemplateRef<any>, composicion: any) {
     this.composicion = composicion;
-    console.log(this.composicion);
     this.openModal(template, { class: 'modal-md', backdrop: 'static' });
   }
 
@@ -280,8 +312,25 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
 
   // Agregar detalle
   productoSelect(producto: any): void {
+    preguntarOrigenStockSiAplica(this.apiService, this.venta, producto).subscribe((origen) => {
+      if (origen === null) {
+        return;
+      }
+      const productoConOrigen = { ...producto, origen_stock: origen };
+      if (esOrigenConsignaCompra(origen)) {
+        validarCantidadOrigenConsignaCompra(this.apiService, this.alertService, this.venta, productoConOrigen)
+          .subscribe((ok) => {
+            if (ok) {
+              this.procesarProductoSelect(productoConOrigen);
+            }
+          });
+        return;
+      }
+      this.procesarProductoSelect(productoConOrigen);
+    });
+  }
 
-            // Validar stock solo para productos (no servicios)
+  private procesarProductoSelect(producto: any): void {
             if (producto.tipo != 'Servicio' && producto.stock !== null && producto.stock !== undefined) {
                 // Verificar si hay suficiente stock para la cantidad solicitada
                 const stockDisponible = parseFloat(producto.stock) || 0;
@@ -361,22 +410,22 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
     this.detalle = Object.assign({}, producto);
     this.detalle.id = null;
 
-    copiarImpuestosProductoAlDetalle(
+            copiarImpuestosProductoAlDetalle(
       this.detalle,
       producto,
       this.apiService.auth_user()?.empresa?.iva ?? 0
     );
 
-    // Campos de presentación para el backend (main / producción)
     this.detalle.id_presentacion = producto.id_presentacion ?? null;
     this.detalle.factor_conversion = producto.factor_conversion ?? 1;
+    this.detalle.origen_stock = normalizarOrigenStock(producto.origen_stock ?? ORIGEN_STOCK_NORMAL);
 
-    // Agrupar solo si coinciden producto y presentación (caja vs unidad = líneas distintas)
     let detalle = null;
     if (this.apiService.auth_user().empresa.agrupar_detalles_venta) {
       detalle = this.venta.detalles.find((x: any) =>
         x.id_producto === this.detalle.id_producto &&
-        (x.id_presentacion ?? null) === (this.detalle.id_presentacion ?? null)
+        (x.id_presentacion ?? null) === (this.detalle.id_presentacion ?? null) &&
+        normalizarOrigenStock(x.origen_stock) === this.detalle.origen_stock
       );
     }
 

@@ -259,6 +259,7 @@
       (update)="updateVenta($event)"
       (sumTotal)="sumTotal()"
       (alMenosUnPaqueteConCuentaTerceros)="onAlMenosUnPaqueteCuentaTerceros()"
+      (selectCliente)="setCliente($event)"
     ></app-venta-detalles>
 
     <div class="row">
@@ -357,6 +358,14 @@
 </section>
 
 <section class="card border-0 p-3 mb-3">
+<div class="row">
+    <div class="form-group col-md-12" *ngIf="mostrarAlertaEnvioBoxful()">
+        <div class="alert alert-info mb-0 py-2" role="alert">
+            <i class="fa fa-truck me-2"></i>
+            Esta venta podrá generar un envío BoxFul desde el listado de ventas, una vez guardada.
+        </div>
+    </div>
+</div>
     <div class="row">
         <h6 class="mt-3">Detalles de facturación</h6>
         <!-- Estado: {{ venta.estado }} -->
@@ -368,12 +377,12 @@
                 </div>
             </div>
         }
-      @if (apiService.auth_user().empresa.venta_consigna) {
+      @if (apiService.auth_user().empresa.venta_consigna && venta.cotizacion != 1 && apiService.auth_user().tipo != 'Ventas Limitado') {
           <div class="form-group col-md-6 col-lg-3 without-label" [hidden]="!venta.credito">
         <div class="form-switch border rounded">
           <label for="consigna">Consigna</label>
           <input [disabled]="!venta.credito" class="form-check-input float-end" type="checkbox" role="switch"
-                 (change)="setConsigna()" [(ngModel)]="venta.consigna" name="venta.credito">
+                 (change)="setConsigna()" [(ngModel)]="venta.consigna" name="venta.consigna">
         </div>
       </div>
       }
@@ -584,6 +593,8 @@
         </div>
     </div>
 </section>
+
+
 
 <ng-template #mfacturar>
   <div class="modal-header">
@@ -841,3 +852,13 @@
     </button>
   </div>
 </ng-template>
+
+<app-boxful-shipping-selector *ngIf="mostrarModalBoxful && boxfulClienteId"
+  [clienteId]="boxfulClienteId"
+  [ventaId]="boxfulVentaId"
+  [paqueteData]="boxfulPaqueteData"
+  [sugerirCod]="boxfulSugerirCod"
+  [montoCodSugerido]="boxfulMontoCod"
+  (guiaGenerada)="onBoxfulGuiaGenerada($event)"
+  (cerrar)="cerrarModalBoxful()">
+</app-boxful-shipping-selector>

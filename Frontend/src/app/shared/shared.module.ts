@@ -10,6 +10,9 @@ import { TagInputModule } from 'ngx-chips';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { NgxMaskDirective, NgxMaskPipe } from 'ngx-mask';
 import { TranslatePipe } from '@ngx-translate/core';
+import { NgxEchartsModule } from 'ngx-echarts';
+import * as echarts from 'echarts';
+import { SafeHtmlPipe } from '@pipes/safe-html.pipe';
 import { BusquedaClienteComponent } from './modals/busqueda-cliente/busqueda-cliente.component';
 import { BusquedaProductoComponent } from './modals/busqueda-producto/busqueda-producto.component';
 import { ClienteDireccionComponent } from './modals/cliente-direccion/cliente-direccion.component';
@@ -50,6 +53,13 @@ import { AuthorizationViewComponent } from './authorization/authorization-view/a
 
 import { CrearDepartamentoComponent } from './modals/crear-departamento-empresa/crear-departamento-empresa.component';
 import { CrearAreaEmpresaComponent } from './modals/crear-area-empresa/crear-area-empresa.component';
+import { ThreedsModalComponent } from '../auth/register/pago/modal/threeds-modal.component';
+import { AlertsHaciendaComponent } from './parts/alerts-hacienda/alerts-hacienda.component';
+import { SelectSearchComponent } from './parts/select-search/select-search.component';
+import { ActivarLotesMasivoComponent } from './parts/activar-lotes-masivo/activar-lotes-masivo.component';
+import { BoxfulShippingSelectorComponent } from './parts/boxful-shipping-selector/boxful-shipping-selector.component';
+import { BoxfulShipmentDetailsComponent } from './parts/boxful-shipment-details/boxful-shipment-details.component';
+import { VerHistorialButtonComponent } from '../views/planillas/empleados/shared/ver-historial-button.component';
 
 @NgModule({
   imports: [
@@ -62,6 +72,7 @@ import { CrearAreaEmpresaComponent } from './modals/crear-area-empresa/crear-are
     NgxMaskDirective,
     NgxMaskPipe,
     TranslatePipe,
+    NgxEchartsModule.forRoot({ echarts }),
     TooltipModule.forRoot(),
     PopoverModule.forRoot(),
     BusquedaClienteComponent,
@@ -99,6 +110,16 @@ import { CrearAreaEmpresaComponent } from './modals/crear-area-empresa/crear-are
     AuthorizationViewComponent,
     CrearDepartamentoComponent,
     CrearAreaEmpresaComponent,
+    ThreedsModalComponent,
+    AlertsHaciendaComponent,
+    SelectSearchComponent,
+    VerHistorialButtonComponent,
+    SafeHtmlPipe,
+  ],
+  declarations: [
+    ActivarLotesMasivoComponent,
+    BoxfulShippingSelectorComponent,
+    BoxfulShipmentDetailsComponent,
   ],
   exports: [
     BusquedaClienteComponent,
@@ -137,6 +158,15 @@ import { CrearAreaEmpresaComponent } from './modals/crear-area-empresa/crear-are
     CrearDepartamentoComponent,
     CrearAreaEmpresaComponent,
     TranslatePipe,
+    ThreedsModalComponent,
+    VerHistorialButtonComponent,
+    SafeHtmlPipe,
+    AlertsHaciendaComponent,
+    SelectSearchComponent,
+    NgxEchartsModule,
+    ActivarLotesMasivoComponent,
+    BoxfulShippingSelectorComponent,
+    BoxfulShipmentDetailsComponent,
   ],
   providers: [AlertService],
 })

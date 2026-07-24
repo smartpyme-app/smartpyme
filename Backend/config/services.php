@@ -88,6 +88,15 @@ return [
         'enabled' => env('SHOPIFY_ENABLED', false),
         'webhook_secret' => env('SHOPIFY_WEBHOOK_SECRET'),
     ],
+    'boxful' => [
+        'env' => env('BOXFUL_ENV', 'development'), // 'production' or 'development'
+        'urls' => [
+            // 'production' => 'https://api.goboxful.com',
+            'production' => 'https://devapi.goboxful.com',
+            'development' => 'https://devapi.goboxful.com',
+            
+        ],
+    ],
 
     /*
     | Ruta al ejecutable openssl.exe (Windows). FE Costa Rica (dgt-cr-signer) invoca el CLI.

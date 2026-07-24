@@ -142,6 +142,7 @@ class Cliente extends AuditableModel {
         return $this->hasMany('App\Models\Cotizaciones\Cotizacion', 'id_cliente');
     }
 
+
     public function eventos()
     {
         return $this->hasMany('App\Models\Eventos\Evento', 'id_cliente');

@@ -276,8 +276,8 @@
                     <div class="form-group col-12 col-md-6 col-lg-4" *ngIf="tieneAccesoPropina">
                         <label for="propina_porcentaje">Propina</label>
                         <div class="input-group">
-                            <input type="number" class="form-control" [(ngModel)]="empresa.propina_porcentaje" name="propina_porcentaje"
-                                placeholder="Escriba aquí">
+                            <input type="number" class="form-control" [(ngModel)]="empresa.propina_porcentaje"
+                                name="propina_porcentaje" placeholder="Escriba aquí">
                             <span class="input-group-text">%</span>
                         </div>
                     </div>
@@ -421,7 +421,8 @@
                     <div *ngIf="tieneAccesoModuloRestaurantePedidos" class="form-group col-12 col-md-8 col-xl-6 mt-2">
                         <h4 class="mb-2 fw-bold">Restaurantes y pedidos</h4>
                         <p class="text-muted small mb-2">
-                            Su empresa tiene activa la funcionalidad <strong>Restaurantes y pedidos</strong> (asignada en el administrador).
+                            Su empresa tiene activa la funcionalidad <strong>Restaurantes y pedidos</strong> (asignada
+                            en el administrador).
                             Elija qué entradas mostrar en el menú lateral de la aplicación.
                         </p>
                         <label for="vista_modulo_rp_select" class="form-label">Mostrar en el menú</label>
@@ -568,7 +569,8 @@
                     </div>
                   </div>
 
-                    <div class="row" *ngIf="apiService.auth_user().tipo == 'Administrador' || apiService.auth_user().tipo == 'Super Admin'">
+                    <div class="row"
+                        *ngIf="apiService.auth_user().tipo == 'Administrador' || apiService.auth_user().tipo == 'Super Admin'">
                         <h4 class="mb-0 fw-bold">Supervisor limitado</h4>
                         <div class="form-group col-md-12 col-xl-8 without-label">
                             <div class="form-switch bg-light-info rounded">
@@ -577,27 +579,31 @@
                                 </label>
                                 <input class="form-check-input float-end" type="checkbox" role="switch"
                                     id="restringir_gastos_supervisor_limitado"
-                                    [(ngModel)]="empresa.restringir_gastos_supervisor_limitado"
-                                    (change)="onSubmit()"
+                                    [(ngModel)]="empresa.restringir_gastos_supervisor_limitado" (change)="onSubmit()"
                                     name="restringir_gastos_supervisor_limitado">
                             </div>
                             <small class="text-muted d-block">
-                                Si está activa, ese rol no verá el menú de gastos y no podrá crear, editar ni eliminar gastos; el resto del módulo de compras no se oculta. Desactivada por defecto. Tras cambiar esta opción, los supervisores limitados pueden pulsar Gastos una vez para actualizar el menú, o cerrar sesión y volver a entrar.
+                                Si está activa, ese rol no verá el menú de gastos y no podrá crear, editar ni eliminar
+                                gastos; el resto del módulo de compras no se oculta. Desactivada por defecto. Tras
+                                cambiar esta opción, los supervisores limitados pueden pulsar Gastos una vez para
+                                actualizar el menú, o cerrar sesión y volver a entrar.
                             </small>
                         </div>
                         <div class="form-group col-md-12 col-xl-8 without-label">
                             <div class="form-switch bg-light-info rounded">
                                 <label for="restringir_compras_supervisor_limitado" class="form-label">
-                                    <strong>Supervisor limitado con acceso restringido a compras y órdenes de compra</strong>
+                                    <strong>Supervisor limitado con acceso restringido a compras y órdenes de
+                                        compra</strong>
                                 </label>
                                 <input class="form-check-input float-end" type="checkbox" role="switch"
                                     id="restringir_compras_supervisor_limitado"
-                                    [(ngModel)]="empresa.restringir_compras_supervisor_limitado"
-                                    (change)="onSubmit()"
+                                    [(ngModel)]="empresa.restringir_compras_supervisor_limitado" (change)="onSubmit()"
                                     name="restringir_compras_supervisor_limitado">
                             </div>
                             <small class="text-muted d-block">
-                                Si está activa, ese rol solo podrá ver detalles de compras y órdenes de compra: no podrá editar estados, imprimir, ver montos en la previsualización ni usar otras acciones del listado. Desactivada por defecto.
+                                Si está activa, ese rol solo podrá ver detalles de compras y órdenes de compra: no podrá
+                                editar estados, imprimir, ver montos en la previsualización ni usar otras acciones del
+                                listado. Desactivada por defecto.
                             </small>
                         </div>
                     </div>
@@ -666,17 +672,20 @@
                         </div>
                         <div class="col-12 col-xl-6 d-flex">
                             <div class="empresa-pref-tile w-100">
-                                <p class="empresa-pref-desc small text-muted mb-0">Vender sin stock sin autorización.</p>
+                                <p class="empresa-pref-desc small text-muted mb-0">Vender sin stock sin autorización.
+                                </p>
                                 <div class="form-switch bg-light-info rounded">
                                     <label for="vender_sin_stock">Vender sin stock</label>
                                     <input class="form-check-input float-end" type="checkbox" role="switch"
-                                        (change)="onSubmit()" [(ngModel)]="empresa.vender_sin_stock" name="vender_sin_stock">
+                                        (change)="onSubmit()" [(ngModel)]="empresa.vender_sin_stock"
+                                        name="vender_sin_stock">
                                 </div>
                             </div>
                         </div>
                         <div class="col-12 col-xl-6 d-flex">
                             <div class="empresa-pref-tile w-100">
-                                <p class="empresa-pref-desc small text-muted mb-0">Permitir cambiar el precio en facturación.</p>
+                                <p class="empresa-pref-desc small text-muted mb-0">Permitir cambiar el precio en
+                                    facturación.</p>
                                 <div class="form-switch bg-light-info rounded">
                                     <label for="editar_precio_venta">Editar precio</label>
                                     <input class="form-check-input float-end" type="checkbox" role="switch"
@@ -687,7 +696,8 @@
                         </div>
                         <div class="col-12 col-xl-6 d-flex">
                             <div class="empresa-pref-tile w-100">
-                                <p class="empresa-pref-desc small text-muted mb-0">Puedes agrupar todos los detalles en una sola descripción.</p>
+                                <p class="empresa-pref-desc small text-muted mb-0">Puedes agrupar todos los detalles en
+                                    una sola descripción.</p>
                                 <div class="form-switch bg-light-info rounded">
                                     <label for="agrupar_detalles_venta">Agrupar detalles</label>
                                     <input class="form-check-input float-end" type="checkbox" role="switch"
@@ -698,7 +708,8 @@
                         </div>
                         <div class="col-12 col-xl-6 d-flex">
                             <div class="empresa-pref-tile w-100">
-                                <p class="empresa-pref-desc small text-muted mb-0">Editar las descripciones de los detalles de productos.</p>
+                                <p class="empresa-pref-desc small text-muted mb-0">Editar las descripciones de los
+                                    detalles de productos.</p>
                                 <div class="form-switch bg-light-info rounded">
                                     <label for="editar_descripcion_venta">Editar descripciones</label>
                                     <input class="form-check-input float-end" type="checkbox" role="switch"
@@ -710,9 +721,7 @@
                         <div class="col-12 col-xl-6 d-flex">
                             <div class="empresa-pref-tile w-100">
                                 <p class="empresa-pref-desc small text-muted mb-0">Versión de facturación.</p>
-                                <select class="form-select"
-                                    id="version_facturacion"
-                                    [value]="getVersionFacturacion()"
+                                <select class="form-select" id="version_facturacion" [value]="getVersionFacturacion()"
                                     (change)="updateVersionFacturacion($any($event.target).value)"
                                     name="version_facturacion">
                                     <option value="original">{{ 'country.tax.priceModeWithoutTaxDesc' | translate }}</option>
@@ -722,7 +731,8 @@
                         </div>
                         <div class="col-12 col-xl-6 d-flex">
                             <div class="empresa-pref-tile w-100">
-                                <p class="empresa-pref-desc small text-muted mb-0">Mostrar campos contables (Tipo de operación y Tipo de ingreso) en ventas.</p>
+                                <p class="empresa-pref-desc small text-muted mb-0">Mostrar campos contables (Tipo de
+                                    operación y Tipo de ingreso) en ventas.</p>
                                 <div class="form-switch bg-light-info rounded">
                                     <label for="mostrar_campos_contables">Mostrar campos contables</label>
                                     <input class="form-check-input float-end" type="checkbox" role="switch"
@@ -733,7 +743,8 @@
                         </div>
                         <div class="col-12 col-xl-6 d-flex">
                             <div class="empresa-pref-tile w-100">
-                                <p class="empresa-pref-desc small text-muted mb-0">Se imprimirá el documento al momento de procesar la venta.</p>
+                                <p class="empresa-pref-desc small text-muted mb-0">Se imprimirá el documento al momento
+                                    de procesar la venta.</p>
                                 <div class="form-switch bg-light-info rounded">
                                     <label for="impresion_en_facturacion">Imprimir en facturación</label>
                                     <input class="form-check-input float-end" type="checkbox" role="switch"
@@ -744,9 +755,11 @@
                         </div>
                         <div class="col-12 col-xl-6 d-flex">
                             <div class="empresa-pref-tile w-100">
-                                <p class="empresa-pref-desc small text-muted mb-0">Muestra la nota configurada en el documento (Factura, Ticket, etc.) al imprimir desde facturación.</p>
+                                <p class="empresa-pref-desc small text-muted mb-0">Muestra la nota configurada en el
+                                    documento (Factura, Ticket, etc.) al imprimir desde facturación.</p>
                                 <div class="form-switch bg-light-info rounded">
-                                    <label for="mostrar_nota_documento_impresion">Mostrar nota del documento al imprimir</label>
+                                    <label for="mostrar_nota_documento_impresion">Mostrar nota del documento al
+                                        imprimir</label>
                                     <input class="form-check-input float-end" type="checkbox" role="switch"
                                         id="mostrar_nota_documento_impresion"
                                         [checked]="isMostrarNotaDocumentoImpresion()"
@@ -757,7 +770,8 @@
                         </div>
                         <div class="col-12 col-xl-6 d-flex">
                             <div class="empresa-pref-tile w-100">
-                                <p class="empresa-pref-desc small text-muted mb-0">Permitir seleccionar un vendedor por cada detalle de venta.</p>
+                                <p class="empresa-pref-desc small text-muted mb-0">Permitir seleccionar un vendedor por
+                                    cada detalle de venta.</p>
                                 <div class="form-switch bg-light-info rounded">
                                     <label for="vendedor_detalle_venta">Vendedor por detalle</label>
                                     <input class="form-check-input float-end" type="checkbox" role="switch"
@@ -768,9 +782,13 @@
                         </div>
                         <div class="col-12 col-xl-6 d-flex">
                             <div class="empresa-pref-tile w-100">
-                                <p class="empresa-pref-desc small text-muted mb-0">Permite a usuarios <strong>Ventas</strong> y <strong>Ventas limitado</strong> elegir otro vendedor al crear la venta (misma lista que administrador).</p>
+                                <p class="empresa-pref-desc small text-muted mb-0">Permite a usuarios
+                                    <strong>Ventas</strong> y <strong>Ventas limitado</strong> elegir otro vendedor al
+                                    crear la venta (misma lista que administrador).
+                                </p>
                                 <div class="form-switch bg-light-info rounded">
-                                    <label for="ventas_puede_cambiar_vendedor_facturacion">Ventas pueden cambiar vendedor al facturar</label>
+                                    <label for="ventas_puede_cambiar_vendedor_facturacion">Ventas pueden cambiar
+                                        vendedor al facturar</label>
                                     <input class="form-check-input float-end" type="checkbox" role="switch"
                                         id="ventas_puede_cambiar_vendedor_facturacion"
                                         [checked]="isVentasPuedeCambiarVendedorFacturacion()"
@@ -781,7 +799,8 @@
                         </div>
                         <div class="col-12 col-xl-6 d-flex">
                             <div class="empresa-pref-tile w-100">
-                                <p class="empresa-pref-desc small text-muted mb-0">Permitir cambiar el tipo de impuesto (Gravada, Exenta, No sujeta) de productos.</p>
+                                <p class="empresa-pref-desc small text-muted mb-0">Permitir cambiar el tipo de impuesto
+                                    (Gravada, Exenta, No sujeta) de productos.</p>
                                 <div class="form-switch bg-light-info rounded">
                                     <label for="cambiar_tipo_impuesto_venta">Cambiar tipo de impuesto en venta</label>
                                     <input class="form-check-input float-end" type="checkbox" role="switch"
@@ -796,18 +815,21 @@
                                 <div class="mt-auto">
                                     <div class="input-group">
                                         <span class="input-group-text">{{ empresa.moneda || 'USD' }}</span>
-                                        <input type="number" class="form-control" [(ngModel)]="empresa.monto_minimo_retencion_iva_gc"
-                                            id="monto_minimo_retencion_iva_gc"
-                                            name="monto_minimo_retencion_iva_gc" min="0" step="0.01"
-                                            placeholder="100">
+                                        <input type="number" class="form-control"
+                                            [(ngModel)]="empresa.monto_minimo_retencion_iva_gc"
+                                            id="monto_minimo_retencion_iva_gc" name="monto_minimo_retencion_iva_gc"
+                                            min="0" step="0.01" placeholder="100">
                                     </div>
-                                    <small class="text-muted d-block mt-1">La retención automática solo aplica si el subtotal de la operación es <strong>mayor o igual</strong> a este monto (por defecto 100).</small>
+                                    <small class="text-muted d-block mt-1">La retención automática solo aplica si el
+                                        subtotal de la operación es <strong>mayor o igual</strong> a este monto (por
+                                        defecto 100).</small>
                                 </div>
                             </div>
                         </div>
                         <div class="col-12 col-xl-6 d-flex">
                             <div class="empresa-pref-tile w-100">
-                                <p class="empresa-pref-desc small text-muted mb-0">Habilitará el modulo para configurar Facturación Electrónica.</p>
+                                <p class="empresa-pref-desc small text-muted mb-0">Habilitará el modulo para configurar
+                                    Facturación Electrónica.</p>
                                 <div class="form-switch bg-light-info rounded">
                                     <label for="facturacion_electronica">Facturación electrónica</label>
                                     <input class="form-check-input float-end" type="checkbox" role="switch"
@@ -818,7 +840,8 @@
                         </div>
                         <div class="col-12 col-xl-6 d-flex">
                             <div class="empresa-pref-tile w-100">
-                                <p class="empresa-pref-desc small text-muted mb-0">Los usuarios de tipo "Vendedor" podrán crear y editar productos.</p>
+                                <p class="empresa-pref-desc small text-muted mb-0">Los usuarios de tipo "Vendedor"
+                                    podrán crear y editar productos.</p>
                                 <div class="form-switch bg-light-info rounded">
                                     <label for="vendedor_inventario">Gestión de productos por vendedores</label>
                                     <input class="form-check-input float-end" type="checkbox" role="switch"
@@ -829,11 +852,13 @@
                         </div>
                         <div class="col-12 col-xl-6 d-flex">
                             <div class="empresa-pref-tile w-100">
-                                <p class="empresa-pref-desc small text-muted mb-0">Tendrás la opción de hacer ventas a consigna.</p>
+                                <p class="empresa-pref-desc small text-muted mb-0">Tendrás la opción de hacer ventas a
+                                    consigna.</p>
                                 <div class="form-switch bg-light-info rounded">
                                     <label for="venta_consigna">Venta a consigna</label>
                                     <input class="form-check-input float-end" type="checkbox" role="switch"
-                                        (change)="onSubmit()" [(ngModel)]="empresa.venta_consigna" name="venta_consigna">
+                                        (change)="onSubmit()" [(ngModel)]="empresa.venta_consigna"
+                                        name="venta_consigna">
                                 </div>
                             </div>
                         </div>
@@ -850,22 +875,23 @@
                         </div>
                         <div class="col-12 col-xl-6 d-flex">
                             <div class="empresa-pref-tile w-100">
-                                <p class="empresa-pref-desc small text-muted mb-0">Permite gestionar cuentas bancarias de la empresa en la sección Finanzas.</p>
+                                <p class="empresa-pref-desc small text-muted mb-0">Permite gestionar cuentas bancarias
+                                    de la empresa en la sección Finanzas.</p>
                                 <div class="form-switch bg-light-info rounded">
                                     <label for="modulo_bancos">Habilitar módulo de bancos</label>
                                     <input class="form-check-input float-end" type="checkbox" role="switch"
-                                        id="modulo_bancos"
-                                        [checked]="isModuloBancos()"
-                                        (change)="toggleModuloBancos()"
+                                        id="modulo_bancos" [checked]="isModuloBancos()" (change)="toggleModuloBancos()"
                                         name="modulo_bancos">
                                 </div>
                             </div>
                         </div>
                         <div class="col-12 col-xl-6 d-flex">
                             <div class="empresa-pref-tile w-100">
-                                <p class="empresa-pref-desc small text-muted mb-0">Activa categorías de gastos, departamentos y áreas en el formulario de gastos.</p>
+                                <p class="empresa-pref-desc small text-muted mb-0">Activa categorías de gastos,
+                                    departamentos y áreas en el formulario de gastos.</p>
                                 <div class="form-switch bg-light-info rounded">
-                                    <label for="gastos_categorias_personalizadas">Habilitar categorías de gastos personalizadas</label>
+                                    <label for="gastos_categorias_personalizadas">Habilitar categorías de gastos
+                                        personalizadas</label>
                                     <input class="form-check-input float-end" type="checkbox" role="switch"
                                         id="gastos_categorias_personalizadas"
                                         [checked]="isGastosCategoriasPersonalizadasHabilitadas()"
@@ -877,11 +903,14 @@
                         <div class="col-12 col-xl-6 d-flex">
                             <div class="empresa-pref-tile w-100">
                                 <div class="empresa-pref-desc small text-muted mb-0">
-                                    <p class="mb-1">Muestra el saldo pendiente del cliente al seleccionarlo en facturación.</p>
-                                    <span class="d-block text-muted" style="font-size: 0.92em;">Útil para consultar el saldo de cobro pendiente antes de facturar.</span>
+                                    <p class="mb-1">Muestra el saldo pendiente del cliente al seleccionarlo en
+                                        facturación.</p>
+                                    <span class="d-block text-muted" style="font-size: 0.92em;">Útil para consultar el
+                                        saldo de cobro pendiente antes de facturar.</span>
                                 </div>
                                 <div class="form-switch bg-light-info rounded">
-                                    <label for="estado_cuenta_en_facturacion">Habilitar estado de cuenta en facturación</label>
+                                    <label for="estado_cuenta_en_facturacion">Habilitar estado de cuenta en
+                                        facturación</label>
                                     <input class="form-check-input float-end" type="checkbox" role="switch"
                                         id="estado_cuenta_en_facturacion"
                                         [checked]="isEstadoCuentaEnFacturacionHabilitado()"
@@ -915,9 +944,12 @@
                                 (change)="updateLotesMetodologia($any($event.target).value)"
                                 name="lotes_metodologia">
                                 <option value="Manual">Manual (Selección manual del lote)</option>
-                                <option value="FIFO">FIFO - First In First Out (Primero en entrar, primero en salir)</option>
-                                <option value="LIFO">LIFO - Last In First Out (Último en entrar, primero en salir)</option>
-                                <option value="FEFO">FEFO - First Expired First Out (Primero en vencer, primero en salir)</option>
+                                <option value="FIFO">FIFO - First In First Out (Primero en entrar, primero en salir)
+                                </option>
+                                <option value="LIFO">LIFO - Last In First Out (Último en entrar, primero en salir)
+                                </option>
+                                <option value="FEFO">FEFO - First Expired First Out (Primero en vencer, primero en
+                                    salir)</option>
                             </select>
                             <small class="text-muted">
                                 Define cómo se seleccionarán automáticamente los lotes al realizar ventas.
@@ -930,12 +962,12 @@
                                     id="lotes_dias_anticipacion"
                                     [value]="getLotesDiasAnticipacion()"
                                     (change)="updateLotesDiasAnticipacion($any($event.target).value)"
-                                    name="lotes_dias_anticipacion"
-                                    min="1" max="365">
+                                    name="lotes_dias_anticipacion" min="1" max="365">
                                 <span class="input-group-text">días</span>
                             </div>
                             <small class="text-muted">
-                                Número de días antes del vencimiento para mostrar alertas de productos próximos a vencer.
+                                Número de días antes del vencimiento para mostrar alertas de productos próximos a
+                                vencer.
                             </small>
                         </div>
                         <div class="form-group col-md-6 mt-3" *ngIf="isLotesActivo()">
@@ -955,10 +987,8 @@
                             <div class="form-switch bg-light-info rounded">
                                 <label for="componente_quimico_activo">Habilitar componente químico</label>
                                 <input class="form-check-input float-end" type="checkbox" role="switch"
-                                    id="componente_quimico_activo"
-                                    [checked]="isComponenteQuimicoHabilitado()"
-                                    (change)="toggleComponenteQuimicoActivo()"
-                                    name="componente_quimico_activo">
+                                    id="componente_quimico_activo" [checked]="isComponenteQuimicoHabilitado()"
+                                    (change)="toggleComponenteQuimicoActivo()" name="componente_quimico_activo">
                             </div>
                             <small class="text-muted">
                                 Muestra el campo componente químico en productos y lo incluye en las búsquedas.
@@ -971,59 +1001,60 @@
                     <h4 class="mb-0 fw-bold mb-3">Inventario</h4>
                     <div class="form-group col-md-12 col-xl-6" *ngIf="tieneAccesoModuloPresentacionesProductos">
                         <p class="text-muted small mb-2">
-                            Su empresa tiene activa la funcionalidad <strong>Módulo de Presentaciones</strong> (asignada en el administrador).
+                            Su empresa tiene activa la funcionalidad <strong>Módulo de Presentaciones</strong> (asignada
+                            en el administrador).
                         </p>
-                        <p class="mb-2">Permite definir presentaciones alternativas (caja, blister, etc.) en productos y usarlas en ventas e inventario.</p>
+                        <p class="mb-2">Permite definir presentaciones alternativas (caja, blister, etc.) en productos y
+                            usarlas en ventas e inventario.</p>
                         <div class="form-switch bg-light-info rounded">
                             <label for="modulo_presentaciones">Módulo de presentaciones</label>
                             <input class="form-check-input float-end" type="checkbox" role="switch"
-                                id="modulo_presentaciones"
-                                [checked]="isModuloPresentaciones()"
-                                (change)="toggleModuloPresentaciones()"
-                                name="modulo_presentaciones">
+                                id="modulo_presentaciones" [checked]="isModuloPresentaciones()"
+                                (change)="toggleModuloPresentaciones()" name="modulo_presentaciones">
                         </div>
                     </div>
                     <div class="form-group col-md-12 col-xl-6">
-                        <p>Asignar automáticamente el <strong>código de barras</strong> como número correlativo al crear productos (solo dígitos, según el máximo numérico existente en la empresa).</p>
+                        <p>Asignar automáticamente el <strong>código de barras</strong> como número correlativo al crear
+                            productos (solo dígitos, según el máximo numérico existente en la empresa).</p>
                         <div class="form-switch bg-light-info rounded">
                             <label for="barcode_correlativo_automatico">Código de barras correlativo automático</label>
                             <input class="form-check-input float-end" type="checkbox" role="switch"
-                                id="barcode_correlativo_automatico"
-                                [checked]="isBarcodeCorrelativoAutomatico()"
-                                (change)="toggleBarcodeCorrelativoAutomatico()"
-                                name="barcode_correlativo_automatico">
+                                id="barcode_correlativo_automatico" [checked]="isBarcodeCorrelativoAutomatico()"
+                                (change)="toggleBarcodeCorrelativoAutomatico()" name="barcode_correlativo_automatico">
                         </div>
                     </div>
                     <div class="form-group col-md-12 col-xl-6">
-                        <p>Mostrar la suma de stock de todos los productos que coinciden con la búsqueda y filtros en la vista de inventario.</p>
+                        <p>Mostrar la suma de stock de todos los productos que coinciden con la búsqueda y filtros en la
+                            vista de inventario.</p>
                         <div class="form-switch bg-light-info rounded">
-                            <label for="inventario_sumar_stock_busquedas">Mostrar total de stock en búsquedas y filtros</label>
+                            <label for="inventario_sumar_stock_busquedas">Mostrar total de stock en búsquedas y
+                                filtros</label>
                             <input class="form-check-input float-end" type="checkbox" role="switch"
-                                id="inventario_sumar_stock_busquedas"
-                                [checked]="isInventarioSumarStockBusquedas()"
+                                id="inventario_sumar_stock_busquedas" [checked]="isInventarioSumarStockBusquedas()"
                                 (change)="toggleInventarioSumarStockBusquedas()"
                                 name="inventario_sumar_stock_busquedas">
                         </div>
                     </div>
                     <div *ngIf="tieneAccesoTransformacionProductos" class="form-group col-md-12 col-xl-6">
                         <p>
-                            Su empresa tiene activa la funcionalidad <strong>Transformación de productos</strong> (asignada en el administrador).
-                            Active esta opción para permitir convertir un producto en otros (entradas y salidas de stock) desde inventario.
+                            Su empresa tiene activa la funcionalidad <strong>Transformación de productos</strong>
+                            (asignada en el administrador).
+                            Active esta opción para permitir convertir un producto en otros (entradas y salidas de
+                            stock) desde inventario.
                         </p>
                         <div class="form-switch bg-light-info rounded">
                             <label for="transformacion_productos_activo">Habilitar transformación de productos</label>
                             <input class="form-check-input float-end" type="checkbox" role="switch"
-                                id="transformacion_productos_activo"
-                                [checked]="isTransformacionProductosActivo()"
-                                (change)="toggleTransformacionProductosActivo()"
-                                name="transformacion_productos_activo">
+                                id="transformacion_productos_activo" [checked]="isTransformacionProductosActivo()"
+                                (change)="toggleTransformacionProductosActivo()" name="transformacion_productos_activo">
                         </div>
                     </div>
-                    
+
                     <div class="form-group col-md-12 col-xl-6">
                         <p>Habilitar reporte de proyeccción de inventario</p>
                         <div class="form-switch bg-light-info rounded">
-                            <label for="inventario_reporte_analisis_ventas_mensual">Reporte Excel inventario vs ventas (año corrido hasta el mes actual)</label>
+                            <label for="inventario_reporte_analisis_ventas_mensual">Reporte Excel inventario vs ventas
+                                (año corrido hasta el mes actual)</label>
                             <input class="form-check-input float-end" type="checkbox" role="switch"
                                 id="inventario_reporte_analisis_ventas_mensual"
                                 [checked]="isInventarioReporteAnalisisVentasMensual()"
@@ -1031,7 +1062,7 @@
                                 name="inventario_reporte_analisis_ventas_mensual">
                         </div>
                     </div>
-                    
+
                     <div class="form-group col-md-6">
                         <label for="valor_inventario">Valor de inventario:</label>
                         <select class="form-select" [(ngModel)]="empresa.valor_inventario" name="valor_inventario">
@@ -1055,7 +1086,8 @@
                           <textarea name="terms" class="form-control" rows="6" [(ngModel)]="empresa.cotizacion_compras_terminos"></textarea>
                     </div> -->
                     <p class="pt-5">
-                        ¿Quieres limpiar el cache del sistema? Esto hará que se reinicie la aplicación y se cierre la sesión.
+                        ¿Quieres limpiar el cache del sistema? Esto hará que se reinicie la aplicación y se cierre la
+                        sesión.
                         <a (click)="limpiarCacheYLogout()" class="btn btn-link">Limpiar cache y cerrar sesión</a>
                     </p>
                     <p class="my-3">
@@ -1339,14 +1371,14 @@
                                     <strong>Activar envío al facturar paquete</strong>
                                 </label>
                                 <input class="form-check-input float-end" type="checkbox" role="switch"
-                                    id="webhook_paquete_enabled"
-                                    [(ngModel)]="empresa.webhook_paquete_venta_enabled"
-                                    name="webhook_paquete_venta_enabled"
-                                    (change)="onSubmit()">
+                                    id="webhook_paquete_enabled" [(ngModel)]="empresa.webhook_paquete_venta_enabled"
+                                    name="webhook_paquete_venta_enabled" (change)="onSubmit()">
                             </div>
                             <small class="text-muted">
-                                Cuando un paquete pasa a estado Facturado por una venta, SmartPYME puede enviar un POST JSON a la URL que indique.
-                                Opcional: firma HMAC en la cabecera <code>X-SmartPyme-Signature</code> (prefijo <code>sha256=</code>) y/o token Bearer.
+                                Cuando un paquete pasa a estado Facturado por una venta, SmartPYME puede enviar un POST
+                                JSON a la URL que indique.
+                                Opcional: firma HMAC en la cabecera <code>X-SmartPyme-Signature</code> (prefijo
+                                <code>sha256=</code>) y/o token Bearer.
                             </small>
                         </div>
                     </div>
@@ -1357,7 +1389,8 @@
                             placeholder="https://ejemplo.com/webhooks/paquetes" (blur)="onSubmit()">
                     </div>
                     <div class="form-group mb-3">
-                        <label class="form-label" for="webhook_paquete_secret">Secreto para firma HMAC (opcional)</label>
+                        <label class="form-label" for="webhook_paquete_secret">Secreto para firma HMAC
+                            (opcional)</label>
                         <input type="password" class="form-control" id="webhook_paquete_secret"
                             [(ngModel)]="empresa.webhook_paquete_venta_secret" name="webhook_paquete_venta_secret"
                             placeholder="Compartido con el sistema receptor" autocomplete="off" (blur)="onSubmit()">
@@ -1413,23 +1446,27 @@
                                 </button>
                             </div>
                             <small class="text-muted d-block mt-2">
-                                Configure esta URL en WooCommerce (webhooks de <strong>pedido</strong>, p. ej. pedido creado) para registrar ventas en SmartPyme.
+                                Configure esta URL en WooCommerce (webhooks de <strong>pedido</strong>, p. ej. pedido
+                                creado) para registrar ventas en SmartPyme.
                             </small>
                         </div>
 
                         <div class="col-12" *ngIf="empresa.woocommerce_product_webhook_url">
                             <label class="form-label">URL Webhook de producto (Woo → SmartPyme):</label>
                             <div class="input-group">
-                                <input type="text" class="form-control" [value]="empresa.woocommerce_product_webhook_url"
-                                    readonly>
+                                <input type="text" class="form-control"
+                                    [value]="empresa.woocommerce_product_webhook_url" readonly>
                                 <button class="btn btn-secondary" type="button"
-                                    (click)="copyToClipboard(empresa.woocommerce_product_webhook_url)" tooltip="Copiar URL">
+                                    (click)="copyToClipboard(empresa.woocommerce_product_webhook_url)"
+                                    tooltip="Copiar URL">
                                     <i class="fa fa-copy"></i>
                                 </button>
                             </div>
                             <small class="text-muted d-block mt-2">
-                                En WooCommerce → Ajustes → Avanzado → Webhooks, cree <strong>Producto creado</strong> y <strong>Producto actualizado</strong>
-                                con esta URL (y opcional <strong>Producto eliminado</strong>) para sincronizar catálogo a SmartPyme cuando el modo lo permita.
+                                En WooCommerce → Ajustes → Avanzado → Webhooks, cree <strong>Producto creado</strong> y
+                                <strong>Producto actualizado</strong>
+                                con esta URL (y opcional <strong>Producto eliminado</strong>) para sincronizar catálogo
+                                a SmartPyme cuando el modo lo permita.
                             </small>
                         </div>
 
@@ -1474,16 +1511,21 @@
                             </small>
                         </div>
 
-                        <div class="col-12" *ngIf="empresa.status_conexion_woocommerce === 'connected' || empresa.woocommerce_store_url">
-                            <label for="woocommerce_sync_mode" class="form-label">Sincronización de catálogo e inventario</label>
+                        <div class="col-12"
+                            *ngIf="empresa.status_conexion_woocommerce === 'connected' || empresa.woocommerce_store_url">
+                            <label for="woocommerce_sync_mode" class="form-label">Sincronización de catálogo e
+                                inventario</label>
                             <select class="form-select" id="woocommerce_sync_mode" name="woocommerce_sync_mode"
                                 [(ngModel)]="empresa.woocommerce_sync_mode" (change)="onSubmit()">
                                 <option value="bidirectional">Bidireccional (ambos lados se pueden actualizar)</option>
-                                <option value="wc_to_sp">Solo de WooCommerce hacia SmartPyme (la tienda manda; no se envía a WooCommerce)</option>
-                                <option value="sp_to_wc">Solo de SmartPyme hacia WooCommerce (SmartPyme manda; no se importa CSV de la tienda)</option>
+                                <option value="wc_to_sp">Solo de WooCommerce hacia SmartPyme (la tienda manda; no se
+                                    envía a WooCommerce)</option>
+                                <option value="sp_to_wc">Solo de SmartPyme hacia WooCommerce (SmartPyme manda; no se
+                                    importa CSV de la tienda)</option>
                             </select>
                             <small class="text-muted d-block mt-1">
-                                Los pedidos de la tienda en línea siempre se reciben en SmartPyme con el canal de arriba; esta opción solo define catálogo e inventario.
+                                Los pedidos de la tienda en línea siempre se reciben en SmartPyme con el canal de
+                                arriba; esta opción solo define catálogo e inventario.
                             </small>
                         </div>
 
@@ -1505,8 +1547,8 @@
                             }
 
                             <div class="text-end mt-3">
-                                <button tooltip="Enviar los productos de SmartPyme a WooCommerce" (click)="exportarWooCommerce()"
-                                    class="btn btn-light me-2"
+                                <button tooltip="Enviar los productos de SmartPyme a WooCommerce"
+                                    (click)="exportarWooCommerce()" class="btn btn-light me-2"
                                     *ngIf="empresa.status_conexion_woocommerce === 'connected' && woocommerceModoPuedeEnviarATienda()">
                                     <img src="/assets/icons/upload-cloud.png" class="icon me-2">
                                     Exportar productos
@@ -1520,7 +1562,8 @@
                                   </button>
 
                                 <button tooltip="Importar productos desde CSV de WooCommerce"
-                                    (click)="openImportarWooCommerceCsv(importarWooCommerceCsvModal)" class="btn btn-light me-2"
+                                    (click)="openImportarWooCommerceCsv(importarWooCommerceCsvModal)"
+                                    class="btn btn-light me-2"
                                     *ngIf="empresa.status_conexion_woocommerce === 'connected' && woocommerceModoPuedeImportarDesdeWoo()">
                                     <i class="fa fa-file-csv me-2"></i>
                                     Importar desde CSV
@@ -1690,6 +1733,83 @@
         </section>
     </tab>
 
+    <tab heading="Integración BoxFul" *ngIf="tieneAccesoBoxFul" [active]="activeTabSlug === 'boxful'" (selectTab)="onTabSelect($event)">
+        <section class="bg-white p-4 rounded mb-3 shadow-sm border border-light">
+            <div class="d-flex align-items-center mb-4 pb-2 border-bottom">
+                <div class="bg-light-primary rounded-circle p-2 me-3 d-inline-flex justify-content-center align-items-center"
+                    style="width: 45px; height: 45px; background-color: #e3f2fd;">
+                    <i class="fa fa-cubes text-primary fs-4" style="color: #007bff;"></i>
+                </div>
+                <div>
+                    <h5 class="mb-1 fw-bold">Integración con Boxful</h5>
+                    <p class="text-muted mb-0 small">Gestione la conexión automática con el servicio de envíos de
+                        Boxful.</p>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <!-- Email Input -->
+                <div class="col-md-6">
+                    <div class="form-group mb-3">
+                        <label for="boxful_email" class="form-label mb-2">Correo de Cuenta Boxful</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0">
+                                <i class="fa fa-envelope-o text-muted"></i>
+                            </span>
+                            <input type="email" class="form-control border-start-0 ps-0" id="boxful_email"
+                                [(ngModel)]="empresa.boxful_email" name="boxful_email" placeholder="ejemplo@correo.com">
+                        </div>
+                        <small class="text-muted d-block mt-1">El correo registrado en su cuenta de Boxful.</small>
+                    </div>
+                </div>
+
+                <!-- Password Input -->
+                <div class="col-md-6">
+                    <div class="form-group mb-3">
+                        <label for="boxful_password" class="form-label mb-2">Contraseña Boxful</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0">
+                                <i class="fa fa-key text-muted"></i>
+                            </span>
+                            <input [type]="showBoxfulPassword ? 'text' : 'password'"
+                                class="form-control border-start-0 border-end-0 ps-0" id="boxful_password"
+                                [(ngModel)]="empresa.boxful_password" name="boxful_password"
+                                [placeholder]="empresa.has_boxful_password ? '••••••••' : 'Escriba la contraseña de su cuenta'">
+                            <button class="btn btn-outline-secondary border-start-0" type="button"
+                                (click)="toggleBoxfulPassword()" style="border: 1px solid #ced4da;">
+                                <i class="fa" [ngClass]="showBoxfulPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
+                            </button>
+                        </div>
+                        <small class="text-muted d-block mt-1">La contraseña correspondiente a su cuenta de
+                            Boxful.</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-12 d-flex justify-content-end">
+                    <button class="btn btn-light text-danger me-2" type="button"
+                        *ngIf="empresa.boxful_email || empresa.has_boxful_password"
+                        [disabled]="disconnectingBoxful"
+                        (click)="disconnectBoxful()">
+                        <i class="fa me-2" [ngClass]="disconnectingBoxful ? 'fa-spinner fa-spin' : 'fa-unlink'"></i>
+                        Desconectar Boxful
+                    </button>
+                    <button class="btn btn-light text-info me-2" type="button"
+                        [disabled]="testingConnection || !empresa.boxful_email || (!empresa.has_boxful_password && !empresa.boxful_password)"
+                        (click)="testBoxfulConnection()">
+                        <i class="fa me-2" [ngClass]="testingConnection ? 'fa-spinner fa-spin' : 'fa-plug'"></i>
+                        Probar Conexión
+                    </button>
+                    <button class="btn btn-primary" type="button" [disabled]="savingBoxful"
+                        (click)="saveBoxfulCredentials()">
+                        <i class="fa me-2" [ngClass]="savingBoxful ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+                        Guardar Credenciales
+                    </button>
+                </div>
+            </div>
+        </section>
+    </tab>
 
 </tabset>
 
@@ -1800,8 +1920,8 @@
             Exporte sus productos desde WooCommerce (Productos → Exportar) y cargue aquí el archivo CSV
             para importarlos al sistema. Los productos existentes se actualizarán; los nuevos se crearán.
         </p>
-        <input type="file" class="form-control mb-3" #fileInputWooCommerce
-            accept=".csv,.txt,.xlsx,.xls" (change)="setFileWooCommerceCsv($event)">
+        <input type="file" class="form-control mb-3" #fileInputWooCommerce accept=".csv,.txt,.xlsx,.xls"
+            (change)="setFileWooCommerceCsv($event)">
     </div>
     <div class="modal-footer">
         <button type="button" class="btn btn-secondary" (click)="modalRef.hide()">Cancelar</button>

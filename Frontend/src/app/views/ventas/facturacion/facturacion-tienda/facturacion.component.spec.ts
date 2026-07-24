@@ -1,4 +1,5 @@
 import { SumPipe } from '@pipes/sum.pipe';
+import Swal from 'sweetalert2';
 import { FacturacionComponent } from './facturacion.component';
 
 describe('FacturacionComponent', () => {
@@ -97,5 +98,177 @@ describe('FacturacionComponent', () => {
     expect(component.venta.iva).toBe('0.0000');
     expect(component.venta.impuestos[1].monto).toBe(5);
     expect(component.venta.total).toBe('105.00');
+  });
+
+  it('al cambiar bodega de la misma sucursal recarga documentos sin vaciarlos', () => {
+    const component: any = Object.create(FacturacionComponent.prototype);
+    component.bodegas = [
+      { id: 1, id_sucursal: 10, nombre: 'A' },
+      { id: 2, id_sucursal: 10, nombre: 'B' },
+    ];
+    component.venta = { id_bodega: '2', id_sucursal: 10, cotizacion: 0 };
+    component.cargarDocumentos = jasmine.createSpy('cargarDocumentos');
+
+    component.setBodega();
+
+    expect(component.venta.id_bodega).toBe(2);
+    expect(component.venta.id_sucursal).toBe(10);
+    expect(component.cargarDocumentos).toHaveBeenCalled();
+  });
+
+  it('al cambiar bodega de otra sucursal recarga documentos por sucursal', () => {
+    const component: any = Object.create(FacturacionComponent.prototype);
+    component.bodegas = [
+      { id: 1, id_sucursal: 10, nombre: 'A' },
+      { id: 2, id_sucursal: 20, nombre: 'B' },
+    ];
+    component.venta = { id_bodega: '2', id_sucursal: 10, cotizacion: 0 };
+    component.cargarDocumentos = jasmine.createSpy('cargarDocumentos');
+
+    component.setBodega();
+
+    expect(component.venta.id_sucursal).toBe(20);
+    expect(component.cargarDocumentos).toHaveBeenCalled();
+  });
+
+  it('no falla si la bodega seleccionada no existe en la lista', () => {
+    const component: any = Object.create(FacturacionComponent.prototype);
+    component.bodegas = [{ id: 1, id_sucursal: 10, nombre: 'A' }];
+    component.venta = { id_bodega: 999, id_sucursal: 10 };
+    component.cargarDocumentos = jasmine.createSpy('cargarDocumentos');
+
+    expect(() => component.setBodega()).not.toThrow();
+    expect(component.venta.id_sucursal).toBe(10);
+    expect(component.cargarDocumentos).not.toHaveBeenCalled();
+  });
+
+  it('filtra documentos por la sucursal de la bodega seleccionada', () => {
+    const component: any = Object.create(FacturacionComponent.prototype);
+    component.documentosLoadSeq = 0;
+    component.nombresDocumentosVentaNormales = [
+      'Factura',
+      'Crédito fiscal',
+      'Ticket',
+    ];
+    component.bodegas = [{ id: 5, id_sucursal: 10, nombre: 'Principal' }];
+    component.venta = { id_bodega: 5, id_sucursal: 99, cotizacion: 0 };
+    component.documentosSucursal = [];
+    component.documentos = [];
+    const docsApi = [
+      { id: 1, nombre: 'Factura', id_sucursal: 10, predeterminado: 1, correlativo: 1 },
+      { id: 2, nombre: 'Crédito fiscal', id_sucursal: 10, predeterminado: 0, correlativo: 2 },
+      { id: 3, nombre: 'Factura', id_sucursal: 20, predeterminado: 0, correlativo: 3 },
+      { id: 4, nombre: 'Cotización', id_sucursal: 10, predeterminado: 0, correlativo: 4 },
+    ];
+    component.apiService = {
+      getAll: jasmine.createSpy('getAll').and.callFake(() => ({
+        subscribe: (ok: any) => ok(docsApi),
+      })),
+    };
+    component.alertService = { error: jasmine.createSpy('error') };
+
+    component.cargarDocumentos();
+
+    expect(component.documentos.map((d: any) => d.nombre)).toEqual([
+      'Factura',
+      'Crédito fiscal',
+    ]);
+    expect(component.venta.id_documento).toBe(1);
+  });
+
+  it('bloquea facturar si id_documento está vacío', () => {
+    const component: any = Object.create(FacturacionComponent.prototype);
+    component.venta = {
+      id_documento: null,
+      detalles: [{ cantidad: 1, total: 10, descripcion: 'Prod' }],
+    };
+    spyOn(Swal, 'fire');
+
+    expect(component.tieneDetallesInvalidosParaFacturar()).toBeTrue();
+    expect(Swal.fire).toHaveBeenCalled();
+  });
+
+  it('al reiniciar documento tras cargar venta base limpia y recarga documentos', () => {
+    const component: any = Object.create(FacturacionComponent.prototype);
+    component.venta = { id_documento: 99, correlativo: 5 };
+    component.cargarDocumentos = jasmine.createSpy('cargarDocumentos');
+
+    component.reiniciarDocumentoTrasCargarVentaBase();
+
+    expect(component.venta.id_documento).toBeNull();
+    expect(component.venta.correlativo).toBeNull();
+    expect(component.cargarDocumentos).toHaveBeenCalled();
+  });
+
+  it('emitirDTE envía un snapshot y no la referencia de this.venta', async () => {
+    const component: any = Object.create(FacturacionComponent.prototype);
+    const ventaObj = { id: 5, id_documento: 1, nombre_documento: 'Factura' };
+    component.venta = ventaObj;
+    component.preCuentaId = null;
+    component.pedidoCanalId = null;
+    component.mhService = {
+      emitirDTE: jasmine.createSpy('emitirDTE').and.returnValue(Promise.reject('tipo no permitido')),
+    };
+    component.alertService = { warning: jasmine.createSpy('warning') };
+    component.debePreguntarEnvioBoxful = () => false;
+    component.cargarDatosIniciales = jasmine.createSpy('cargarDatosIniciales');
+    component.router = { navigate: jasmine.createSpy('navigate') };
+
+    component.emitirDTE();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const arg = component.mhService.emitirDTE.calls.mostRecent().args[0];
+    expect(arg).not.toBe(ventaObj);
+    expect(arg.id).toBe(5);
+    expect(arg.id_documento).toBe(1);
+    expect(component.cargarDatosIniciales).toHaveBeenCalled();
+  });
+
+  it('no vuelve a facturar si saving o emiting ya estan activos', () => {
+    const component: any = Object.create(FacturacionComponent.prototype);
+    component.saving = true;
+    component.emiting = false;
+    component.mensajeErrorBanco = '';
+    component.requiereBanco = () => false;
+    component.tieneDetallesInvalidosParaFacturar = () => false;
+    component.onSubmit = jasmine.createSpy('onSubmit');
+    spyOn(window, 'confirm').and.returnValue(true);
+
+    component.onFacturar();
+
+    expect(component.onSubmit).not.toHaveBeenCalled();
+  });
+
+  it('no dispara un segundo store mientras saving es true', () => {
+    const component: any = Object.create(FacturacionComponent.prototype);
+    component.saving = true;
+    component.emiting = false;
+    component.apiService = { store: jasmine.createSpy('store') };
+
+    component.onSubmit();
+
+    expect(component.apiService.store).not.toHaveBeenCalled();
+  });
+
+  it('en error de red ambiguo no rehabilita saving si el usuario cancela', () => {
+    const component: any = Object.create(FacturacionComponent.prototype);
+    component.saving = false;
+    component.emiting = false;
+    component.duplicarventa = false;
+    component.pedidoCanalId = null;
+    component.venta = { monto_pago: 10, efectivo: 10, total: 10, detalles: [] };
+    component.apiService = {
+      auth_user: () => ({ tipo: 'Admin', empresa: {} }),
+      store: jasmine.createSpy('store').and.callFake(() => ({
+        subscribe: (_ok: any, err: any) => err({ status: 0 }),
+      })),
+    };
+    component.alertService = { error: jasmine.createSpy('error') };
+    spyOn(window, 'confirm').and.returnValue(false);
+
+    component.onSubmit();
+
+    expect(component.saving).toBeTrue();
   });
 });
