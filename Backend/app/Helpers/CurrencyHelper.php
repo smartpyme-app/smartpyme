@@ -7,6 +7,19 @@ use Illuminate\Support\Facades\Auth;
 
 class CurrencyHelper
 {
+    /** Misma tabla que Frontend currency-format.helper.ts */
+    private const FALLBACK_SYMBOLS = [
+        'USD' => '$',
+        'HNL' => 'L',
+        'GTQ' => 'Q',
+        'CRC' => '₡',
+        'NIO' => 'C$',
+        'PAB' => 'B/.',
+        'BZD' => 'BZ$',
+        'MXN' => '$',
+        'EUR' => '€',
+    ];
+
     public static function symbol(?Empresa $empresa = null): string
     {
         $empresa = $empresa ?? self::resolveEmpresa();
@@ -15,6 +28,11 @@ class CurrencyHelper
             $empresa->loadMissing('currency');
             if ($empresa->currency && $empresa->currency->currency_symbol) {
                 return $empresa->currency->currency_symbol;
+            }
+
+            $code = strtoupper((string) ($empresa->moneda ?? ''));
+            if ($code !== '' && isset(self::FALLBACK_SYMBOLS[$code])) {
+                return self::FALLBACK_SYMBOLS[$code];
             }
         }
 

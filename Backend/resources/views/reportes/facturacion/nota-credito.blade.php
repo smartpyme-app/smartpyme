@@ -40,7 +40,7 @@
 </head>
 <body>
 {{-- <body onload="javascript:print();"> --}}
-    @php $simbolo_moneda = ($venta->empresa && $venta->empresa->currency) ? $venta->empresa->currency->currency_symbol : '$'; @endphp
+    @php $simbolo_moneda = \App\Helpers\CurrencyHelper::symbol($venta->empresa); @endphp
 
         <table>
             <tbody>
