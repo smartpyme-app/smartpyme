@@ -31,11 +31,27 @@
             </div>
         </div>
     </ng-template>
+    <ng-template #invEsTableLoader>
+        <div class="d-flex align-items-center justify-content-center" style="min-height: 450px; color: #38528f;"
+            aria-busy="true" aria-live="polite">
+            <div class="spinner-border" role="status" style="width: 2.5rem; height: 2.5rem;">
+                <span class="visually-hidden">Cargando detalle de entradas y salidas…</span>
+            </div>
+        </div>
+    </ng-template>
     <ng-template #invAjustesBlockLoader>
         <div class="d-flex align-items-center justify-content-center rounded shadow-sm bg-white"
             style="min-height: 520px; color: #38528f;" aria-busy="true" aria-live="polite">
             <div class="spinner-border" role="status" style="width: 2.5rem; height: 2.5rem;">
                 <span class="visually-hidden">Cargando ajustes…</span>
+            </div>
+        </div>
+    </ng-template>
+    <ng-template #invAjustesTableLoader>
+        <div class="d-flex align-items-center justify-content-center" style="min-height: 450px; color: #38528f;"
+            aria-busy="true" aria-live="polite">
+            <div class="spinner-border" role="status" style="width: 2.5rem; height: 2.5rem;">
+                <span class="visually-hidden">Cargando detalle de ajustes…</span>
             </div>
         </div>
     </ng-template>
@@ -186,14 +202,16 @@
                                     <div class="inv-card-title mb-0">Stock por Categoría</div>
                                 </div>
                                 <div class="card-body">
-                                    <ng-container
-                                        *ngIf="(datosFiltrados && datosFiltrados.stockPorCategoriaConfig) || datos.stockPorCategoriaConfig; else invChartLoader">
-                                        <app-bar-chart
-                                            [config]="(datosFiltrados && datosFiltrados.stockPorCategoriaConfig) ? datosFiltrados.stockPorCategoriaConfig : datos.stockPorCategoriaConfig"
-                                            (itemClick)="onCategoriaStockClick($event)"
-                                            height="400px">
-                                        </app-bar-chart>
-                                    </ng-container>
+                                    <app-chart-expandable title="Stock por Categoría">
+                                        <ng-container
+                                            *ngIf="(datosFiltrados && datosFiltrados.stockPorCategoriaConfig) || datos.stockPorCategoriaConfig; else invChartLoader">
+                                            <app-bar-chart
+                                                [config]="(datosFiltrados && datosFiltrados.stockPorCategoriaConfig) ? datosFiltrados.stockPorCategoriaConfig : datos.stockPorCategoriaConfig"
+                                                (itemClick)="onCategoriaStockClick($event)"
+                                                height="400px">
+                                            </app-bar-chart>
+                                        </ng-container>
+                                    </app-chart-expandable>
                                 </div>
                             </div>
                         </div>
@@ -201,47 +219,60 @@
                         <!-- Tabla de detalle de inventario (derecha) -->
                         <div class="col-md-6 mb-3">
                             <div class="card h-100">
-                                <div class="card-header bg-white border-0 py-3">
-                                    <div class="d-flex flex-column justify-content-between gap-2">
-                                        <div class="inv-card-title mb-0 text-center">Detalle de inventario de
-                                            productos</div>
-                                        <div
-                                            class="d-flex flex-wrap gap-2 align-items-center justify-content-end w-100">
-                                            <div class="input-group"
-                                                style="flex: 1 1 200px; max-width: 350px; min-width: 200px;">
-                                                <span class="input-group-text bg-white border-end-0">
-                                                    <i class="fas fa-search text-muted"></i>
-                                                </span>
-                                                <input type="text" class="form-control border-start-0"
-                                                    placeholder="Buscar..." [(ngModel)]="quickFilterText"
-                                                    (input)="onQuickFilterChange()">
+                                <app-chart-expandable title="Detalle de inventario de productos">
+                                    <div class="card-header bg-white border-0 py-3">
+                                        <div class="d-flex flex-column justify-content-between gap-2">
+                                            <div class="inv-card-title mb-0 text-center">Detalle de inventario de
+                                                productos</div>
+                                            <div
+                                                class="d-flex flex-wrap gap-2 align-items-center justify-content-end w-100">
+                                                <div class="input-group"
+                                                    style="flex: 1 1 200px; max-width: 350px; min-width: 200px;">
+                                                    <span class="input-group-text bg-white border-end-0">
+                                                        <i class="fas fa-search text-muted"></i>
+                                                    </span>
+                                                    <input type="text" class="form-control border-start-0"
+                                                        placeholder="Buscar..." [(ngModel)]="quickFilterText"
+                                                        (input)="onQuickFilterChange()">
+                                                </div>
+                                                <button class="btn btn-sm btn-outline-success"
+                                                    (click)="exportarExcel()" title="Exportar a Excel"
+                                                    [disabled]="detalleExporting || detalleLoading">
+                                                    <i class="fas fa-file-excel me-1"></i>
+                                                    {{ detalleExporting ? 'Exportando…' : 'Excel' }}
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-secondary"
+                                                    (click)="limpiarFiltrosGrid()" title="Limpiar filtros">
+                                                    <i class="fas fa-filter me-1"></i> Limpiar
+                                                </button>
                                             </div>
-                                            <button class="btn btn-sm btn-outline-success"
-                                                (click)="exportarExcel()" title="Exportar a Excel">
-                                                <i class="fas fa-file-excel me-1"></i> Excel
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-secondary"
-                                                (click)="limpiarFiltrosGrid()" title="Limpiar filtros">
-                                                <i class="fas fa-filter me-1"></i> Limpiar
-                                            </button>
                                         </div>
                                     </div>
-                                </div>
-                                <div class="card-body px-3 py-0">
-                                    <ng-container *ngIf="datos?.detalleInventario !== undefined; else invProductosTableLoader">
-                                        <ag-grid-angular #inventarioProductosGrid
-                                            class="ag-theme-alpine inventario-productos-grid"
-                                            [rowData]="inventarioProductosRows"
-                                            [pinnedBottomRowData]="pinnedBottomRowDataInventario"
-                                            [columnDefs]="inventarioProductosColumnDefs"
-                                            [gridOptions]="inventarioProductosGridOptions" [defaultColDef]="{
-                                                resizable: true,
-                                                sortable: true,
-                                                filter: true
-                                            }" style="width: 100%; height: 450px;" [domLayout]="'normal'">
-                                        </ag-grid-angular>
-                                    </ng-container>
-                                </div>
+                                    <div class="card-body px-3 py-0">
+                                        <ng-container *ngIf="detalleListo; else invProductosTableLoader">
+                                            <div class="position-relative">
+                                                <div *ngIf="detalleLoading"
+                                                    class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+                                                    style="background: rgba(255,255,255,0.55); z-index: 2;">
+                                                    <div class="spinner-border spinner-border-sm text-secondary" role="status">
+                                                        <span class="visually-hidden">Cargando…</span>
+                                                    </div>
+                                                </div>
+                                                <ag-grid-angular #inventarioProductosGrid
+                                                    class="ag-theme-alpine inventario-productos-grid"
+                                                    [rowData]="inventarioProductosRows"
+                                                    [pinnedBottomRowData]="pinnedBottomRowDataInventario"
+                                                    [columnDefs]="inventarioProductosColumnDefs"
+                                                    [gridOptions]="inventarioProductosGridOptions" [defaultColDef]="{
+                                                        resizable: true,
+                                                        sortable: true,
+                                                        filter: true
+                                                    }" style="width: 100%; height: 450px;" [domLayout]="'normal'">
+                                                </ag-grid-angular>
+                                            </div>
+                                        </ng-container>
+                                    </div>
+                                </app-chart-expandable>
                             </div>
                         </div>
 
@@ -295,47 +326,62 @@
                         <div class="row">
                             <div class="col-12">
                                 <div class="card">
-                                    <div class="card-header bg-white border-0 py-3">
-                                        <div class="d-flex flex-column justify-content-between gap-2">
-                                            <div class="inv-card-title mb-0 text-center">Detalle entradas y salidas por
-                                                producto</div>
-                                            <div
-                                                class="d-flex flex-wrap gap-2 align-items-center justify-content-end w-100">
-                                                <div class="input-group"
-                                                    style="flex: 1 1 200px; max-width: 350px; min-width: 200px;">
-                                                    <span class="input-group-text bg-white border-end-0">
-                                                        <i class="fas fa-search text-muted"></i>
-                                                    </span>
-                                                    <input type="text" class="form-control border-start-0"
-                                                        placeholder="Buscar..."
-                                                        [(ngModel)]="quickFilterTextEntradasSalidas"
-                                                        (input)="onQuickFilterChangeEntradasSalidas()">
+                                    <app-chart-expandable title="Detalle entradas y salidas por producto">
+                                        <div class="card-header bg-white border-0 py-3">
+                                            <div class="d-flex flex-column justify-content-between gap-2">
+                                                <div class="inv-card-title mb-0 text-center">Detalle entradas y salidas por
+                                                    producto</div>
+                                                <div
+                                                    class="d-flex flex-wrap gap-2 align-items-center justify-content-end w-100">
+                                                    <div class="input-group"
+                                                        style="flex: 1 1 200px; max-width: 350px; min-width: 200px;">
+                                                        <span class="input-group-text bg-white border-end-0">
+                                                            <i class="fas fa-search text-muted"></i>
+                                                        </span>
+                                                        <input type="text" class="form-control border-start-0"
+                                                            placeholder="Buscar..."
+                                                            [(ngModel)]="quickFilterTextEntradasSalidas"
+                                                            (input)="onQuickFilterChangeEntradasSalidas()">
+                                                    </div>
+                                                    <button class="btn btn-sm btn-outline-success"
+                                                        (click)="exportarExcelEntradasSalidas()" title="Exportar a Excel"
+                                                        [disabled]="esExporting || esLoading">
+                                                        <i class="fas fa-file-excel me-1"></i>
+                                                        {{ esExporting ? 'Exportando…' : 'Excel' }}
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-secondary"
+                                                        (click)="limpiarFiltrosGridEntradasSalidas()"
+                                                        title="Limpiar filtros">
+                                                        <i class="fas fa-filter me-1"></i> Limpiar
+                                                    </button>
                                                 </div>
-                                                <button class="btn btn-sm btn-outline-success"
-                                                    (click)="exportarExcelEntradasSalidas()" title="Exportar a Excel">
-                                                    <i class="fas fa-file-excel me-1"></i> Excel
-                                                </button>
-                                                <button class="btn btn-sm btn-outline-secondary"
-                                                    (click)="limpiarFiltrosGridEntradasSalidas()"
-                                                    title="Limpiar filtros">
-                                                    <i class="fas fa-filter me-1"></i> Limpiar
-                                                </button>
                                             </div>
                                         </div>
-                                    </div>
-                                    <div class="card-body px-3 py-0">
-                                        <ag-grid-angular #entradasSalidasGrid
-                                            class="ag-theme-alpine entradas-salidas-grid"
-                                            [rowData]="entradasSalidasRows"
-                                            [pinnedBottomRowData]="pinnedBottomRowDataEntradasSalidas"
-                                            [columnDefs]="entradasSalidasColumnDefs"
-                                            [gridOptions]="entradasSalidasGridOptions" [defaultColDef]="{
-                                            resizable: true,
-                                            sortable: true,
-                                            filter: true
-                                        }" style="width: 100%; height: 450px;" [domLayout]="'normal'">
-                                        </ag-grid-angular>
-                                    </div>
+                                        <div class="card-body px-3 py-0">
+                                            <ng-container *ngIf="esListo; else invEsTableLoader">
+                                                <div class="position-relative">
+                                                    <div *ngIf="esLoading"
+                                                        class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+                                                        style="background: rgba(255,255,255,0.55); z-index: 2;">
+                                                        <div class="spinner-border spinner-border-sm text-secondary" role="status">
+                                                            <span class="visually-hidden">Cargando…</span>
+                                                        </div>
+                                                    </div>
+                                                    <ag-grid-angular #entradasSalidasGrid
+                                                        class="ag-theme-alpine entradas-salidas-grid"
+                                                        [rowData]="entradasSalidasRows"
+                                                        [pinnedBottomRowData]="pinnedBottomRowDataEntradasSalidas"
+                                                        [columnDefs]="entradasSalidasColumnDefs"
+                                                        [gridOptions]="entradasSalidasGridOptions" [defaultColDef]="{
+                                                        resizable: true,
+                                                        sortable: true,
+                                                        filter: true
+                                                    }" style="width: 100%; height: 450px;" [domLayout]="'normal'">
+                                                    </ag-grid-angular>
+                                                </div>
+                                            </ng-container>
+                                        </div>
+                                    </app-chart-expandable>
                                 </div>
                             </div>
                         </div>
@@ -370,42 +416,59 @@
                         <div class="row">
                             <div class="col-12">
                                 <div class="card">
-                                    <div class="card-header bg-white border-0 py-3">
-                                        <div class="d-flex flex-column justify-content-between gap-2">
-                                            <div class="inv-card-title mb-0 text-center">Detalle de ajustes de
-                                                inventario por producto</div>
-                                            <div
-                                                class="d-flex flex-wrap gap-2 align-items-center justify-content-end w-100">
-                                                <div class="input-group"
-                                                    style="flex: 1 1 200px; max-width: 350px; min-width: 200px;">
-                                                    <span class="input-group-text bg-white border-end-0">
-                                                        <i class="fas fa-search text-muted"></i>
-                                                    </span>
-                                                    <input type="text" class="form-control border-start-0"
-                                                        placeholder="Buscar..." [(ngModel)]="quickFilterTextAjustes"
-                                                        (input)="onQuickFilterChangeAjustes()">
+                                    <app-chart-expandable title="Detalle de ajustes de inventario por producto">
+                                        <div class="card-header bg-white border-0 py-3">
+                                            <div class="d-flex flex-column justify-content-between gap-2">
+                                                <div class="inv-card-title mb-0 text-center">Detalle de ajustes de
+                                                    inventario por producto</div>
+                                                <div
+                                                    class="d-flex flex-wrap gap-2 align-items-center justify-content-end w-100">
+                                                    <div class="input-group"
+                                                        style="flex: 1 1 200px; max-width: 350px; min-width: 200px;">
+                                                        <span class="input-group-text bg-white border-end-0">
+                                                            <i class="fas fa-search text-muted"></i>
+                                                        </span>
+                                                        <input type="text" class="form-control border-start-0"
+                                                            placeholder="Buscar..." [(ngModel)]="quickFilterTextAjustes"
+                                                            (input)="onQuickFilterChangeAjustes()">
+                                                    </div>
+                                                    <button type="button" class="btn btn-sm btn-outline-success"
+                                                        (click)="exportarExcelAjustes()" title="Exportar a Excel"
+                                                        [disabled]="ajustesExporting || ajustesLoading">
+                                                        <i class="fas fa-file-excel me-1"></i>
+                                                        {{ ajustesExporting ? 'Exportando…' : 'Excel' }}
+                                                    </button>
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                        (click)="limpiarFiltrosGridAjustes()" title="Limpiar filtros">
+                                                        <i class="fas fa-filter me-1"></i> Limpiar
+                                                    </button>
                                                 </div>
-                                                <button type="button" class="btn btn-sm btn-outline-success"
-                                                    (click)="exportarExcelAjustes()" title="Exportar a Excel">
-                                                    <i class="fas fa-file-excel me-1"></i> Excel
-                                                </button>
-                                                <button type="button" class="btn btn-sm btn-outline-secondary"
-                                                    (click)="limpiarFiltrosGridAjustes()" title="Limpiar filtros">
-                                                    <i class="fas fa-filter me-1"></i> Limpiar
-                                                </button>
                                             </div>
                                         </div>
-                                    </div>
-                                    <div class="card-body px-3 py-0" style="height: 450px; overflow: hidden;">
-                                        <ag-grid-angular #ajustesGrid class="ag-theme-alpine ajustes-grid"
-                                            [rowData]="ajustesRows" [columnDefs]="ajustesColumnDefs"
-                                            [gridOptions]="ajustesGridOptions" [defaultColDef]="{
-                                            resizable: true,
-                                            sortable: true,
-                                            filter: true
-                                        }" style="width: 100%; height: 100%;" [domLayout]="'normal'">
-                                        </ag-grid-angular>
-                                    </div>
+                                        <div class="card-body px-3 py-0" style="height: 450px; overflow: hidden;">
+                                            <ng-container *ngIf="ajustesListo; else invAjustesTableLoader">
+                                                <div class="position-relative" style="height: 100%;">
+                                                    <div *ngIf="ajustesLoading"
+                                                        class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+                                                        style="background: rgba(255,255,255,0.55); z-index: 2;">
+                                                        <div class="spinner-border spinner-border-sm text-secondary" role="status">
+                                                            <span class="visually-hidden">Cargando…</span>
+                                                        </div>
+                                                    </div>
+                                                    <ag-grid-angular #ajustesGrid class="ag-theme-alpine ajustes-grid"
+                                                        [rowData]="ajustesRows"
+                                                        [pinnedBottomRowData]="pinnedBottomRowDataAjustes"
+                                                        [columnDefs]="ajustesColumnDefs"
+                                                        [gridOptions]="ajustesGridOptions" [defaultColDef]="{
+                                                        resizable: true,
+                                                        sortable: true,
+                                                        filter: true
+                                                    }" style="width: 100%; height: 100%;" [domLayout]="'normal'">
+                                                    </ag-grid-angular>
+                                                </div>
+                                            </ng-container>
+                                        </div>
+                                    </app-chart-expandable>
                                 </div>
                             </div>
                         </div>

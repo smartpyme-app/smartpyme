@@ -179,9 +179,11 @@
                             </div>
                         </div>
                         <div class="card-body">
-                            <app-pie-chart *ngIf="datos.cuentasPorVigenciaConfig; else cuentasCxcChartLoader"
-                                [config]="datos.cuentasPorVigenciaConfig" (itemClick)="onVigenciaClick($event)">
-                            </app-pie-chart>
+                            <app-chart-expandable title="Cuentas por cobrar según vigencia">
+                                <app-pie-chart *ngIf="datos.cuentasPorVigenciaConfig; else cuentasCxcChartLoader"
+                                    [config]="datos.cuentasPorVigenciaConfig" (itemClick)="onVigenciaClick($event)">
+                                </app-pie-chart>
+                            </app-chart-expandable>
                         </div>
                     </div>
                 </div>
@@ -196,12 +198,14 @@
                             </div>
                         </div>
                         <div class="card-body">
-                            <ng-container
-                                *ngIf="datos.cuentasPorCobrarClientes !== undefined; else cuentasCxcListLoader">
-                                <app-accounts-list title="" [accounts]="datos.cuentasPorCobrarClientes || []"
-                                    type="receivable" (itemClick)="onClienteCuentaClick($event)">
-                                </app-accounts-list>
-                            </ng-container>
+                            <app-chart-expandable title="Cuentas por cobrar clientes">
+                                <ng-container
+                                    *ngIf="datos.cuentasPorCobrarClientes !== undefined; else cuentasCxcListLoader">
+                                    <app-accounts-list title="" [accounts]="datos.cuentasPorCobrarClientes || []"
+                                        type="receivable" (itemClick)="onClienteCuentaClick($event)">
+                                    </app-accounts-list>
+                                </ng-container>
+                            </app-chart-expandable>
                         </div>
                     </div>
                 </div>
@@ -211,43 +215,54 @@
             <div class="row mt-3">
                 <div class="col-12">
                     <div class="card">
-                        <div class="card-header bg-white border-0 py-3">
-                            <div class="d-flex flex-column gap-2 align-items-center w-100">
-                                <h5 class="mb-0 fw-bold text-center w-100">Detalle de cuentas por cobrar</h5>
-                                <div class="d-flex flex-wrap gap-2 align-items-center justify-content-end w-100"
-                                    *ngIf="datos.detalleCuentasPorCobrar !== undefined">
-                                    <div class="input-group inv-ag-grid-toolbar-search">
-                                        <span class="input-group-text bg-white border-end-0">
-                                            <i class="fas fa-search text-muted"></i>
-                                        </span>
-                                        <input type="text" class="form-control border-start-0" placeholder="Buscar..."
-                                            [(ngModel)]="quickFilterText" (input)="onQuickFilterChange()">
+                        <app-chart-expandable title="Detalle de cuentas por cobrar">
+                            <div class="card-header bg-white border-0 py-3">
+                                <div class="d-flex flex-column gap-2 align-items-center w-100">
+                                    <h5 class="mb-0 fw-bold text-center w-100">Detalle de cuentas por cobrar</h5>
+                                    <div class="d-flex flex-wrap gap-2 align-items-center justify-content-end w-100">
+                                        <div class="input-group inv-ag-grid-toolbar-search">
+                                            <span class="input-group-text bg-white border-end-0">
+                                                <i class="fas fa-search text-muted"></i>
+                                            </span>
+                                            <input type="text" class="form-control border-start-0" placeholder="Buscar..."
+                                                [(ngModel)]="quickFilterText" (input)="onQuickFilterChange()">
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-outline-success"
+                                            (click)="exportarExcel()" title="Exportar a Excel"
+                                            [disabled]="cxcExporting || cxcLoading">
+                                            <i class="fas fa-file-excel me-1"></i>
+                                            {{ cxcExporting ? 'Exportando…' : 'Excel' }}
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                                            (click)="limpiarFiltrosGrid()" title="Limpiar filtros">
+                                            <i class="fas fa-filter me-1"></i> Limpiar
+                                        </button>
                                     </div>
-                                    <button type="button" class="btn btn-sm btn-outline-success"
-                                        (click)="exportarExcel()" title="Exportar a Excel">
-                                        <i class="fas fa-file-excel me-1"></i> Excel
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary"
-                                        (click)="limpiarFiltrosGrid()" title="Limpiar filtros">
-                                        <i class="fas fa-filter me-1"></i> Limpiar
-                                    </button>
                                 </div>
                             </div>
-                        </div>
-                        <div class="card-body px-3 py-0">
-                            <ng-container
-                                *ngIf="datos.detalleCuentasPorCobrar !== undefined; else cuentasCxcTableLoader">
-                                <ag-grid-angular #detalleCuentasGrid class="ag-theme-alpine detalle-cuentas-grid"
-                                    [rowData]="detalleCuentasRows" [pinnedBottomRowData]="pinnedBottomRowDataCxc"
-                                    [columnDefs]="detalleCuentasColumnDefs" [gridOptions]="detalleCuentasGridOptions"
-                                    [defaultColDef]="{
-                                        resizable: true,
-                                        sortable: true,
-                                        filter: true
-                                    }" style="width: 100%; height: 450px;" [domLayout]="'normal'">
-                                </ag-grid-angular>
-                            </ng-container>
-                        </div>
+                            <div class="card-body px-3 py-0">
+                                <ng-container *ngIf="cxcListo; else cuentasCxcTableLoader">
+                                    <div class="position-relative">
+                                        <div *ngIf="cxcLoading"
+                                            class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+                                            style="background: rgba(255,255,255,0.55); z-index: 2;">
+                                            <div class="spinner-border spinner-border-sm text-secondary" role="status">
+                                                <span class="visually-hidden">Cargando…</span>
+                                            </div>
+                                        </div>
+                                        <ag-grid-angular #detalleCuentasGrid class="ag-theme-alpine detalle-cuentas-grid"
+                                            [rowData]="detalleCuentasRows" [pinnedBottomRowData]="pinnedBottomRowDataCxc"
+                                            [columnDefs]="detalleCuentasColumnDefs" [gridOptions]="detalleCuentasGridOptions"
+                                            [defaultColDef]="{
+                                                resizable: true,
+                                                sortable: true,
+                                                filter: true
+                                            }" style="width: 100%; height: 450px;" [domLayout]="'normal'">
+                                        </ag-grid-angular>
+                                    </div>
+                                </ng-container>
+                            </div>
+                        </app-chart-expandable>
                     </div>
                 </div>
             </div>
@@ -372,11 +387,13 @@
                             </div>
                         </div>
                         <div class="card-body">
-                            <app-pie-chart
-                                *ngIf="datos.cuentasPorPagarVigenciaConfig !== undefined; else cuentasCxpChartLoader"
-                                [config]="datos.cuentasPorPagarVigenciaConfig"
-                                (itemClick)="onVigenciaPagarClick($event)">
-                            </app-pie-chart>
+                            <app-chart-expandable title="Cuentas por pagar según vigencia">
+                                <app-pie-chart
+                                    *ngIf="datos.cuentasPorPagarVigenciaConfig !== undefined; else cuentasCxpChartLoader"
+                                    [config]="datos.cuentasPorPagarVigenciaConfig"
+                                    (itemClick)="onVigenciaPagarClick($event)">
+                                </app-pie-chart>
+                            </app-chart-expandable>
                         </div>
                     </div>
                 </div>
@@ -391,12 +408,14 @@
                             </div>
                         </div>
                         <div class="card-body">
-                            <ng-container
-                                *ngIf="datos.cuentasPorPagarProveedores !== undefined; else cuentasCxpListLoader">
-                                <app-accounts-list title="" [accounts]="datos.cuentasPorPagarProveedores || []"
-                                    type="payable" (itemClick)="onProveedorCuentaClick($event)">
-                                </app-accounts-list>
-                            </ng-container>
+                            <app-chart-expandable title="Cuentas por pagar proveedores">
+                                <ng-container
+                                    *ngIf="datos.cuentasPorPagarProveedores !== undefined; else cuentasCxpListLoader">
+                                    <app-accounts-list title="" [accounts]="datos.cuentasPorPagarProveedores || []"
+                                        type="payable" (itemClick)="onProveedorCuentaClick($event)">
+                                    </app-accounts-list>
+                                </ng-container>
+                            </app-chart-expandable>
                         </div>
                     </div>
                 </div>
@@ -406,45 +425,57 @@
             <div class="row">
                 <div class="col-12">
                     <div class="card">
-                        <div class="card-header bg-white border-0 py-3">
-                            <div class="d-flex flex-column gap-2 align-items-center w-100">
-                                <h5 class="mb-0 fw-bold text-center w-100" style="color: #F19447;">
-                                    Resumen de cuentas por pagar</h5>
-                                <div class="d-flex flex-wrap gap-2 align-items-center justify-content-end w-100"
-                                    *ngIf="datos.resumenCuentasPorPagar !== undefined">
-                                    <div class="input-group inv-ag-grid-toolbar-search">
-                                        <span class="input-group-text bg-white border-end-0">
-                                            <i class="fas fa-search text-muted"></i>
-                                        </span>
-                                        <input type="text" class="form-control border-start-0" placeholder="Buscar..."
-                                            [(ngModel)]="quickFilterTextResumen" (input)="onQuickFilterChangeResumen()">
+                        <app-chart-expandable title="Resumen de cuentas por pagar">
+                            <div class="card-header bg-white border-0 py-3">
+                                <div class="d-flex flex-column gap-2 align-items-center w-100">
+                                    <h5 class="mb-0 fw-bold text-center w-100" style="color: #F19447;">
+                                        Resumen de cuentas por pagar</h5>
+                                    <div class="d-flex flex-wrap gap-2 align-items-center justify-content-end w-100">
+                                        <div class="input-group inv-ag-grid-toolbar-search">
+                                            <span class="input-group-text bg-white border-end-0">
+                                                <i class="fas fa-search text-muted"></i>
+                                            </span>
+                                            <input type="text" class="form-control border-start-0" placeholder="Buscar..."
+                                                [(ngModel)]="quickFilterTextResumen" (input)="onQuickFilterChangeResumen()">
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-outline-success"
+                                            (click)="exportarExcelResumen()" title="Exportar a Excel"
+                                            [disabled]="cxpExporting || cxpLoading">
+                                            <i class="fas fa-file-excel me-1"></i>
+                                            {{ cxpExporting ? 'Exportando…' : 'Excel' }}
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                                            (click)="limpiarFiltrosGridResumen()" title="Limpiar filtros">
+                                            <i class="fas fa-filter me-1"></i> Limpiar
+                                        </button>
                                     </div>
-                                    <button type="button" class="btn btn-sm btn-outline-success"
-                                        (click)="exportarExcelResumen()" title="Exportar a Excel">
-                                        <i class="fas fa-file-excel me-1"></i> Excel
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary"
-                                        (click)="limpiarFiltrosGridResumen()" title="Limpiar filtros">
-                                        <i class="fas fa-filter me-1"></i> Limpiar
-                                    </button>
                                 </div>
                             </div>
-                        </div>
-                        <div class="card-body px-3 py-0">
-                            <ng-container
-                                *ngIf="datos.resumenCuentasPorPagar !== undefined; else cuentasCxpTableLoader">
-                                <ag-grid-angular #resumenCuentasPagarGrid
-                                    class="ag-theme-alpine resumen-cuentas-pagar-grid"
-                                    [rowData]="resumenCuentasPagarRows" [pinnedBottomRowData]="pinnedBottomRowDataCxp"
-                                    [columnDefs]="resumenCuentasPagarColumnDefs"
-                                    [gridOptions]="resumenCuentasPagarGridOptions" [defaultColDef]="{
-                                                resizable: true,
-                                                sortable: true,
-                                                filter: true
-                                            }" style="width: 100%; height: 450px;" [domLayout]="'normal'">
-                                </ag-grid-angular>
-                            </ng-container>
-                        </div>
+                            <div class="card-body px-3 py-0">
+                                <ng-container *ngIf="cxpListo; else cuentasCxpTableLoader">
+                                    <div class="position-relative">
+                                        <div *ngIf="cxpLoading"
+                                            class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+                                            style="background: rgba(255,255,255,0.55); z-index: 2;">
+                                            <div class="spinner-border spinner-border-sm text-secondary" role="status">
+                                                <span class="visually-hidden">Cargando…</span>
+                                            </div>
+                                        </div>
+                                        <ag-grid-angular #resumenCuentasPagarGrid
+                                            class="ag-theme-alpine resumen-cuentas-pagar-grid"
+                                            [rowData]="resumenCuentasPagarRows"
+                                            [pinnedBottomRowData]="pinnedBottomRowDataCxp"
+                                            [columnDefs]="resumenCuentasPagarColumnDefs"
+                                            [gridOptions]="resumenCuentasPagarGridOptions" [defaultColDef]="{
+                                                    resizable: true,
+                                                    sortable: true,
+                                                    filter: true
+                                                }" style="width: 100%; height: 450px;" [domLayout]="'normal'">
+                                        </ag-grid-angular>
+                                    </div>
+                                </ng-container>
+                            </div>
+                        </app-chart-expandable>
                     </div>
                 </div>
             </div>

@@ -15,10 +15,15 @@ export class AccountsListComponent implements OnInit, OnChanges {
   @Input() title: string = '';
   @Input() accounts: AccountItem[] = [];
   @Input() type: 'receivable' | 'payable' = 'receivable';
+  /** Si es true y hay más ítems que `initialVisibleBars`, muestra tope + “Ver más…”. */
+  @Input() collapseExcessBars = false;
+  /** Ítems visibles antes de “Ver más…” (default 10). */
+  @Input() initialVisibleBars = 10;
   @Output() itemClick = new EventEmitter<{ name: string; amount: number }>();
 
   chartOption: any = {};
   echartsInstance: any;
+  barsExpanded = false;
 
   constructor(private currencyFormat: CurrencyFormatService) {}
 
@@ -35,6 +40,7 @@ export class AccountsListComponent implements OnInit, OnChanges {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['accounts'] && !changes['accounts'].firstChange) {
+      this.barsExpanded = false;
       this.initChart();
     }
   }
@@ -42,6 +48,27 @@ export class AccountsListComponent implements OnInit, OnChanges {
   get sortedAccounts(): AccountItem[] {
     if (!this.accounts || !Array.isArray(this.accounts)) return []; // ← agregar
     return [...this.accounts].sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount));
+  }
+
+  get showCollapseToggle(): boolean {
+    return this.collapseExcessBars && this.sortedAccounts.length > this.initialVisibleBars;
+  }
+
+  get remainingBarsCount(): number {
+    return Math.max(0, this.sortedAccounts.length - this.initialVisibleBars);
+  }
+
+  toggleBarsCollapse(): void {
+    this.barsExpanded = !this.barsExpanded;
+    this.initChart();
+  }
+
+  private getVisibleAccounts(): AccountItem[] {
+    const sorted = this.sortedAccounts;
+    if (!this.collapseExcessBars || this.barsExpanded || sorted.length <= this.initialVisibleBars) {
+      return sorted;
+    }
+    return sorted.slice(0, this.initialVisibleBars);
   }
 
   private formatBarAmount(value: number): string {
@@ -63,7 +90,7 @@ export class AccountsListComponent implements OnInit, OnChanges {
       return;
     }
 
-    const sorted = this.sortedAccounts;
+    const sorted = this.getVisibleAccounts();
     const labels = sorted.map(a => a.name);
     const data = sorted.map(a => Math.abs(a.amount));
     const color = this.type === 'payable' ? '#F19447' : '#7CABFF';

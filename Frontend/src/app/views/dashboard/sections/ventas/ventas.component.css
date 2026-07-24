@@ -320,13 +320,14 @@
     z-index: 1 !important;
 }
 
-/* Eliminar bordes gruesos y sombras */
+/* Eliminar bordes gruesos y sombras.
+   No forzar height:100% aquí: colapsa el body-viewport de ag-grid
+   (solo se ve header/pinned y parece que no hay filas). */
 ::ng-deep .ventas-cliente-grid.ag-theme-alpine,
 ::ng-deep .ventas-cliente-grid .ag-root-wrapper {
     border: none !important;
     box-shadow: none !important;
     background-color: #ffffff !important;
-    height: 100% !important;
 }
 
 /* Asegurar que el viewport tenga altura y scroll */

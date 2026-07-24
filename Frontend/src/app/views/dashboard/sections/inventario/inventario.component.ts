@@ -1,4 +1,6 @@
 import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter, ViewChild, ChangeDetectorRef, ChangeDetectionStrategy, OnDestroy } from '@angular/core';
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged, switchMap, takeUntil } from 'rxjs/operators';
 import { DashboardDataService } from '../../services/dashboard-data.service';
 import { ApiService } from '@services/api.service';
 import {
@@ -12,6 +14,11 @@ import {
 import { ColDef, GridOptions, GridApi, ColumnApi } from 'ag-grid-community';
 import { formatEmpresaCurrency, getEmpresaCurrencySymbol } from '@helpers/currency-format.helper';
 import { MetricCard } from '../../models/chart-config.model';
+import {
+  DetalleProductosTotales,
+  DetalleAjustesTotales,
+  DetalleEsTotales,
+} from '../../services/inventario-dashboard-data.service';
 
 @Component({
   selector: 'app-inventario',
@@ -58,28 +65,82 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
   @ViewChild('entradasSalidasGrid') entradasSalidasGrid: any;
   @ViewChild('ajustesGrid') ajustesGrid: any;
 
-  // AG Grid configuration - Inventario productos
+  // AG Grid configuration - Inventario productos (paginación server-side)
   inventarioProductosColumnDefs: ColDef[] = [];
   inventarioProductosGridOptions: GridOptions = {};
   pinnedBottomRowDataInventario: any[] = [];
   private gridApi!: GridApi;
   private gridColumnApi!: ColumnApi;
   quickFilterText: string = '';
+  detalleListo = false;
+  detalleLoading = false;
+  detalleExporting = false;
+  /** Chunks del API; la UI pagina con ag-grid a 15 (como antes). */
+  readonly detallePageSize = 50;
+  detalleOffset = 0;
+  detalleTotal = 0;
+  detalleTotales: DetalleProductosTotales = {
+    stock: 0,
+    inversionPromedio: 0,
+    ventasEsperadas: 0,
+  };
+  private readonly destroy$ = new Subject<void>();
+  private readonly detallePage$ = new Subject<{
+    offset: number;
+    q: string;
+    append: boolean;
+  }>();
+  private readonly quickFilter$ = new Subject<string>();
+  private detalleAppendPending = false;
 
-  // AG Grid configuration - Entradas y salidas
+  // AG Grid configuration - Entradas y salidas (paginación lazy)
   entradasSalidasColumnDefs: ColDef[] = [];
   entradasSalidasGridOptions: GridOptions = {};
   pinnedBottomRowDataEntradasSalidas: any[] = [];
   private entradasSalidasGridApi!: GridApi;
   private entradasSalidasGridColumnApi!: ColumnApi;
   quickFilterTextEntradasSalidas: string = '';
+  esListo = false;
+  esLoading = false;
+  esExporting = false;
+  readonly esPageSize = 50;
+  esOffset = 0;
+  esTotal = 0;
+  esTotales: DetalleEsTotales = {
+    entradas: 0,
+    valorEntradas: 0,
+    salidas: 0,
+    valorSalidas: 0,
+  };
+  private readonly esPage$ = new Subject<{
+    offset: number;
+    q: string;
+    append: boolean;
+  }>();
+  private readonly quickFilterEs$ = new Subject<string>();
+  private esAppendPending = false;
 
-  // AG Grid configuration - Ajustes
+  // AG Grid configuration - Ajustes (paginación lazy, mismo patrón que detalle productos)
   ajustesColumnDefs: ColDef[] = [];
   ajustesGridOptions: GridOptions = {};
+  pinnedBottomRowDataAjustes: any[] = [];
   private ajustesGridApi!: GridApi;
   private ajustesGridColumnApi!: ColumnApi;
   quickFilterTextAjustes: string = '';
+  ajustesListo = false;
+  ajustesLoading = false;
+  ajustesExporting = false;
+  readonly ajustesPageSize = 50;
+  ajustesOffset = 0;
+  ajustesTotal = 0;
+  ajustesTotales: DetalleAjustesTotales = { costoTotal: 0 };
+  private readonly ajustesPage$ = new Subject<{
+    offset: number;
+    q: string;
+    append: boolean;
+  }>();
+  private readonly quickFilterAjustes$ = new Subject<string>();
+  private ajustesAppendPending = false;
 
   anio: string = new Date().getFullYear().toString();
   mes: string = '';
@@ -219,6 +280,10 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
     this.configurarAGGrid();
     this.configurarAGGridEntradasSalidas();
     this.configurarAGGridAjustes();
+    this.wireDetalleProductosStreams();
+    this.wireDetalleAjustesStreams();
+    this.wireDetalleEsStreams();
+
     // Guardar datos originales si existen
     if (this.datos && Object.keys(this.datos).length > 0) {
       this.datosOriginales = this.clonarDatos(this.datos);
@@ -227,18 +292,18 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
       this.ordenarArraysIniciales();
       this.recalcularRowsCache();
     }
-    // Marcar como inicializado después de un pequeño delay para evitar emitir durante la inicialización
+    // Siempre emitir al padre tras restaurar UI; si no, al reentrar al dashboard
+    // el padre queda sin datos y la vista se queda en loaders.
     setTimeout(() => {
       this.inicializado = true;
-      // ponytail: if no saved state, emit default filters on startup
-      if (!tieneEstadoGuardado) {
-        this.aplicarFiltros();
-      }
+      this.aplicarFiltros();
       this.cdr.markForCheck();
     }, 100);
   }
 
   ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
     this.dashboardDataService.guardarFiltrosUI('Inventario', {
       anio: this.anio,
       mes: this.mes,
@@ -278,6 +343,403 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
     }
   }
 
+  private wireDetalleProductosStreams(): void {
+    this.detallePage$
+      .pipe(
+        switchMap(({ offset, q, append }) => {
+          this.detalleAppendPending = append;
+          this.detalleLoading = true;
+          this.cdr.markForCheck();
+          return this.dashboardDataService.obtenerDetalleProductosPagina(
+            this.getFiltrosDetalle(),
+            { limite: this.detallePageSize, offset, q: q || undefined },
+          );
+        }),
+        takeUntil(this.destroy$),
+      )
+      .subscribe({
+        next: (page) => {
+          this.detalleOffset = page.offset;
+          this.detalleTotal = page.total;
+          this.detalleTotales = page.totales;
+          const append = this.detalleAppendPending && (page.items?.length ?? 0) > 0;
+          this.applyDetallePageRows(page.items, page.totales, append);
+          this.detalleAppendPending = false;
+          this.detalleListo = true;
+          this.detalleLoading = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.detalleAppendPending = false;
+          this.detalleLoading = false;
+          this.detalleListo = true;
+          this.cdr.markForCheck();
+        },
+      });
+
+    this.quickFilter$
+      .pipe(
+        debounceTime(300),
+        distinctUntilChanged(),
+        takeUntil(this.destroy$),
+      )
+      .subscribe(() => {
+        this.cargarDetallePagina(0);
+      });
+  }
+
+  /** Filtros snapshot del panel + overrides interactivos (categoría del chart). */
+  private getFiltrosDetalle(): any {
+    const filtros: any = {
+      sucursal: this.filtroAdSucursalTodasImplicitasAplicado
+        ? ''
+        : this.filtroAdSucursalSeleccionadasAplicado[0] || '',
+      categoria: this.filtroAdCategoriaTodasImplicitasAplicado
+        ? ''
+        : this.filtroAdCategoriaSeleccionadasAplicado[0] || '',
+      producto: this.filtroAdProductoTodasImplicitasAplicado
+        ? ''
+        : this.filtroAdProductoSeleccionadasAplicado[0] || '',
+      proveedor: this.filtroAdProveedorTodasImplicitasAplicado
+        ? ''
+        : this.filtroAdProveedorSeleccionadasAplicado[0] || '',
+    };
+    if (this.filtrosInteractivos.categoria) {
+      filtros.categoria = this.filtrosInteractivos.categoria;
+    }
+    return filtros;
+  }
+
+  /** Recarga desde offset (0 = reset). append=true concatena el siguiente chunk. */
+  cargarDetallePagina(offset: number, append = false): void {
+    const q = this.quickFilterText.trim();
+    this.detallePage$.next({
+      offset: Math.max(0, offset),
+      q,
+      append,
+    });
+  }
+
+  /** Si el usuario llega a la última página del buffer, pide el siguiente chunk al API. */
+  private maybeLoadMoreDetalleFromGrid(): void {
+    if (!this.gridApi || this.detalleLoading || !this.detalleListo) return;
+    const loaded = this._inventarioProductosRowsCache.length;
+    if (loaded >= this.detalleTotal) return;
+    const pageSize = this.gridApi.paginationGetPageSize() || 25;
+    const currentPage = this.gridApi.paginationGetCurrentPage();
+    // Evita prefetch en page 0 cuando chunk API (50) = 2 páginas UI (25).
+    const lastLoadedPage = Math.max(0, Math.ceil(loaded / pageSize) - 1);
+    if (currentPage >= lastLoadedPage) {
+      this.cargarDetallePagina(loaded, true);
+    }
+  }
+
+  private mapDetalleRows(items: any[]): any[] {
+    return (items ?? []).map((item: any) => ({
+      producto: item.producto || '-',
+      stock: item.stock || 0,
+      costo: item.costo || 0,
+      inversionPromedio: item.inversionPromedio || 0,
+      precio: item.precio || 0,
+      ventasEsperadas: item.ventasEsperadas || 0,
+    }));
+  }
+
+  private applyDetallePageRows(
+    items: any[],
+    totales: DetalleProductosTotales,
+    append = false,
+  ): void {
+    const mapped = this.mapDetalleRows(items);
+    if (append && this._inventarioProductosRowsCache.length > 0) {
+      this._inventarioProductosRowsCache = [
+        ...this._inventarioProductosRowsCache,
+        ...mapped,
+      ];
+    } else {
+      this._inventarioProductosRowsCache = mapped;
+      if (this.gridApi) {
+        this.gridApi.paginationGoToFirstPage();
+      }
+    }
+    this._totalInventarioProductosCache = { ...totales };
+    if (
+      totales.stock !== 0 ||
+      totales.inversionPromedio !== 0 ||
+      totales.ventasEsperadas !== 0
+    ) {
+      this.pinnedBottomRowDataInventario = [
+        {
+          producto: 'Total',
+          stock: totales.stock,
+          costo: null,
+          inversionPromedio: totales.inversionPromedio,
+          precio: null,
+          ventasEsperadas: totales.ventasEsperadas,
+        },
+      ];
+    } else {
+      this.pinnedBottomRowDataInventario = [];
+    }
+  }
+
+  private wireDetalleAjustesStreams(): void {
+    this.ajustesPage$
+      .pipe(
+        switchMap(({ offset, q, append }) => {
+          this.ajustesAppendPending = append;
+          this.ajustesLoading = true;
+          this.cdr.markForCheck();
+          return this.dashboardDataService.obtenerDetalleAjustesPagina(
+            this.getFiltrosAjustes(),
+            { limite: this.ajustesPageSize, offset, q: q || undefined },
+          );
+        }),
+        takeUntil(this.destroy$),
+      )
+      .subscribe({
+        next: (page) => {
+          this.ajustesOffset = page.offset;
+          this.ajustesTotal = page.total;
+          this.ajustesTotales = page.totales;
+          const append =
+            this.ajustesAppendPending && (page.items?.length ?? 0) > 0;
+          this.applyAjustesPageRows(page.items, page.totales, append);
+          this.ajustesAppendPending = false;
+          this.ajustesListo = true;
+          this.ajustesLoading = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.ajustesAppendPending = false;
+          this.ajustesLoading = false;
+          this.ajustesListo = true;
+          this.cdr.markForCheck();
+        },
+      });
+
+    this.quickFilterAjustes$
+      .pipe(
+        debounceTime(300),
+        distinctUntilChanged(),
+        takeUntil(this.destroy$),
+      )
+      .subscribe(() => {
+        this.cargarDetalleAjustesPagina(0);
+      });
+  }
+
+  /** Filtros panel (anio/mes) para ajustes. */
+  private getFiltrosAjustes(): any {
+    const filtros = this.getFiltrosDetalle();
+    filtros.anio = this.anio;
+    if (this.mes) filtros.mes = this.mes;
+    return filtros;
+  }
+
+  /** Filtros para E/S detalle: panel + mes interactivo del chart. */
+  private getFiltrosMovimientos(): any {
+    const filtros = this.getFiltrosAjustes();
+    if (this.filtrosInteractivos.mes) {
+      const meses = [
+        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+      ];
+      const idx = meses.findIndex(
+        (m) =>
+          m.toLowerCase() === this.filtrosInteractivos.mes?.toLowerCase(),
+      );
+      if (idx !== -1) filtros.mes = idx + 1;
+    }
+    return filtros;
+  }
+
+  private wireDetalleEsStreams(): void {
+    this.esPage$
+      .pipe(
+        switchMap(({ offset, q, append }) => {
+          this.esAppendPending = append;
+          this.esLoading = true;
+          this.cdr.markForCheck();
+          return this.dashboardDataService.obtenerDetalleEsPagina(
+            this.getFiltrosMovimientos(),
+            { limite: this.esPageSize, offset, q: q || undefined },
+          );
+        }),
+        takeUntil(this.destroy$),
+      )
+      .subscribe({
+        next: (page) => {
+          this.esOffset = page.offset;
+          this.esTotal = page.total;
+          this.esTotales = page.totales;
+          const append =
+            this.esAppendPending && (page.items?.length ?? 0) > 0;
+          this.applyEsPageRows(page.items, page.totales, append);
+          this.esAppendPending = false;
+          this.esListo = true;
+          this.esLoading = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.esAppendPending = false;
+          this.esLoading = false;
+          this.esListo = true;
+          this.cdr.markForCheck();
+        },
+      });
+
+    this.quickFilterEs$
+      .pipe(
+        debounceTime(300),
+        distinctUntilChanged(),
+        takeUntil(this.destroy$),
+      )
+      .subscribe(() => {
+        this.cargarDetalleEsPagina(0);
+      });
+  }
+
+  cargarDetalleEsPagina(offset: number, append = false): void {
+    const q = this.quickFilterTextEntradasSalidas.trim();
+    this.esPage$.next({
+      offset: Math.max(0, offset),
+      q,
+      append,
+    });
+  }
+
+  private maybeLoadMoreEsFromGrid(): void {
+    if (!this.entradasSalidasGridApi || this.esLoading || !this.esListo) {
+      return;
+    }
+    const loaded = this._entradasSalidasRowsCache.length;
+    if (loaded >= this.esTotal) return;
+    const pageSize = this.entradasSalidasGridApi.paginationGetPageSize() || 25;
+    const currentPage = this.entradasSalidasGridApi.paginationGetCurrentPage();
+    const lastLoadedPage = Math.max(0, Math.ceil(loaded / pageSize) - 1);
+    if (currentPage >= lastLoadedPage) {
+      this.cargarDetalleEsPagina(loaded, true);
+    }
+  }
+
+  private mapEsRows(items: any[]): any[] {
+    return (items ?? []).map((item: any) => ({
+      fecha: String(item.fecha ?? '').trim() || '-',
+      mes: item.mes ?? null,
+      producto: item.producto || '-',
+      concepto: item.concepto || '-',
+      referencia: item.referencia || '-',
+      entradas: item.entradas ?? null,
+      valorEntradas: item.valorEntradas ?? null,
+      salidas: item.salidas ?? null,
+      valorSalidas: item.valorSalidas ?? null,
+    }));
+  }
+
+  private applyEsPageRows(
+    items: any[],
+    totales: DetalleEsTotales,
+    append = false,
+  ): void {
+    const mapped = this.mapEsRows(items);
+    if (append && this._entradasSalidasRowsCache.length > 0) {
+      this._entradasSalidasRowsCache = [
+        ...this._entradasSalidasRowsCache,
+        ...mapped,
+      ];
+    } else {
+      this._entradasSalidasRowsCache = mapped;
+      if (this.entradasSalidasGridApi) {
+        this.entradasSalidasGridApi.paginationGoToFirstPage();
+      }
+    }
+    if (totales.entradas > 0 || totales.salidas > 0) {
+      this.pinnedBottomRowDataEntradasSalidas = [
+        {
+          fecha: 'Total',
+          producto: '',
+          concepto: '',
+          referencia: '',
+          entradas: totales.entradas,
+          valorEntradas: totales.valorEntradas,
+          salidas: totales.salidas,
+          valorSalidas: totales.valorSalidas,
+        },
+      ];
+    } else {
+      this.pinnedBottomRowDataEntradasSalidas = [];
+    }
+  }
+
+  cargarDetalleAjustesPagina(offset: number, append = false): void {
+    const q = this.quickFilterTextAjustes.trim();
+    this.ajustesPage$.next({
+      offset: Math.max(0, offset),
+      q,
+      append,
+    });
+  }
+
+  private maybeLoadMoreAjustesFromGrid(): void {
+    if (!this.ajustesGridApi || this.ajustesLoading || !this.ajustesListo) {
+      return;
+    }
+    const loaded = this._ajustesRowsCache.length;
+    if (loaded >= this.ajustesTotal) return;
+    const pageSize = this.ajustesGridApi.paginationGetPageSize() || 25;
+    const currentPage = this.ajustesGridApi.paginationGetCurrentPage();
+    const lastLoadedPage = Math.max(0, Math.ceil(loaded / pageSize) - 1);
+    if (currentPage >= lastLoadedPage) {
+      this.cargarDetalleAjustesPagina(loaded, true);
+    }
+  }
+
+  private mapAjustesRows(items: any[]): any[] {
+    return (items ?? []).map((item: any) => ({
+      fecha: item.fecha || '-',
+      producto: item.producto || '-',
+      concepto: item.concepto || '-',
+      stockInicial: item.stockInicial || 0,
+      stockReal: item.stockReal || 0,
+      ajuste: item.ajuste || 0,
+      costoTotal: item.costoTotal || 0,
+      isTotal: false,
+    }));
+  }
+
+  private applyAjustesPageRows(
+    items: any[],
+    totales: DetalleAjustesTotales,
+    append = false,
+  ): void {
+    const mapped = this.mapAjustesRows(items);
+    if (append && this._ajustesRowsCache.length > 0) {
+      this._ajustesRowsCache = [...this._ajustesRowsCache, ...mapped];
+    } else {
+      this._ajustesRowsCache = mapped;
+      if (this.ajustesGridApi) {
+        this.ajustesGridApi.paginationGoToFirstPage();
+      }
+    }
+    this._totalAjustesCache = { ...totales };
+    if (totales.costoTotal !== 0) {
+      this.pinnedBottomRowDataAjustes = [
+        {
+          fecha: 'Total',
+          producto: '',
+          concepto: '',
+          stockInicial: '',
+          stockReal: '',
+          ajuste: '',
+          costoTotal: totales.costoTotal,
+          isTotal: true,
+        },
+      ];
+    } else {
+      this.pinnedBottomRowDataAjustes = [];
+    }
+  }
 
   cargarOpcionesFiltros(): void {
     this.filtrosCatalogo.sucursalesParaFiltro().subscribe({
@@ -446,6 +908,10 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
     };
     if (this.mes) filtros.mes = this.mes;
     this.filtrosCambiados.emit(filtros);
+    this._desbloquearSiPadreOmiteRecarga();
+    this.cargarDetallePagina(0);
+    this.cargarDetalleEsPagina(0);
+    this.cargarDetalleAjustesPagina(0);
   }
 
   private _bloquearFiltros(): void {
@@ -462,6 +928,15 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
     }
     this.filtrosLocked = false;
     this.cdr.markForCheck();
+  }
+
+  /** Si el padre omite la recarga (mismos filtros), datosCompletos no cambia y el overlay se queda. */
+  private _desbloquearSiPadreOmiteRecarga(): void {
+    setTimeout(() => {
+      if (this.datosCompletos) {
+        this._desbloquearFiltros();
+      }
+    }, 0);
   }
 
 
@@ -607,7 +1082,7 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
         filter: true
       },
       pagination: true,
-      paginationPageSize: 15,
+      paginationPageSize: 25,
       enableCellTextSelection: true,
       ensureDomOrder: true,
       onCellDoubleClicked: (params: any) => {
@@ -632,9 +1107,8 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
         this.gridApi = params.api;
         this.gridColumnApi = params.columnApi;
       },
-      onFilterChanged: () => {
-        this.recalcularTotalesInventario();
-        this.cdr.markForCheck();
+      onPaginationChanged: () => {
+        this.maybeLoadMoreDetalleFromGrid();
       },
       suppressExcelExport: false,
       suppressCsvExport: false
@@ -654,125 +1128,7 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
     }
     this._lastDatosHash = currentHash;
 
-    // Recalcular inventario productos
-    if (datos.detalleInventario) {
-      const rows = datos.detalleInventario.map((item: any) => ({
-        producto: item.producto || '-',
-        stock: item.stock || 0,
-        costo: item.costo || 0,
-        inversionPromedio: item.inversionPromedio || 0,
-        precio: item.precio || 0,
-        ventasEsperadas: item.ventasEsperadas || 0,
-      }));
-
-      // Calcular totales
-      const totales = datos.detalleInventario.reduce((totals: any, item: any) => ({
-        stock: totals.stock + (item.stock || 0),
-        inversionPromedio: totals.inversionPromedio + (item.inversionPromedio || 0),
-        ventasEsperadas: totals.ventasEsperadas + (item.ventasEsperadas || 0)
-      }), { stock: 0, inversionPromedio: 0, ventasEsperadas: 0 });
-
-      this._totalInventarioProductosCache = totales;
-
-      // Pinned bottom row de totales
-      if (totales.stock !== 0 || totales.inversionPromedio !== 0) {
-        this.pinnedBottomRowDataInventario = [{
-          producto: 'Total',
-          stock: totales.stock,
-          costo: null,
-          inversionPromedio: totales.inversionPromedio,
-          precio: null,
-          ventasEsperadas: totales.ventasEsperadas,
-        }];
-      } else {
-        this.pinnedBottomRowDataInventario = [];
-      }
-
-      this._inventarioProductosRowsCache = rows;
-    } else {
-      this._inventarioProductosRowsCache = [];
-      this.pinnedBottomRowDataInventario = [];
-      this._totalInventarioProductosCache = { stock: 0, inversionPromedio: 0, ventasEsperadas: 0 };
-    }
-
-    // Recalcular entradas y salidas
-    if (datos.detalleEntradasSalidas) {
-      this._entradasSalidasRowsCache = datos.detalleEntradasSalidas.map((item: any) => ({
-        fecha: String(item.fecha ?? '').trim() || '-',
-        mes: item.mes ?? null,
-        producto: item.producto || '-',
-        concepto: item.concepto || '-',
-        referencia: item.referencia || '-',
-        entradas: item.entradas ?? null,
-        valorEntradas: item.valorEntradas ?? null,
-        salidas: item.salidas ?? null,
-        valorSalidas: item.valorSalidas ?? null,
-      }));
-
-      // Calcular totales para la fila fija inferior (pinned bottom row)
-      const totEntradas = this._entradasSalidasRowsCache.reduce((s: number, r: any) => s + (r.entradas || 0), 0);
-      const totValEntradas = this._entradasSalidasRowsCache.reduce((s: number, r: any) => s + (r.valorEntradas || 0), 0);
-      const totSalidas = this._entradasSalidasRowsCache.reduce((s: number, r: any) => s + (r.salidas || 0), 0);
-      const totValSalidas = this._entradasSalidasRowsCache.reduce((s: number, r: any) => s + (r.valorSalidas || 0), 0);
-
-      if (totEntradas > 0 || totSalidas > 0) {
-        this.pinnedBottomRowDataEntradasSalidas = [{
-          fecha: 'Total',
-          producto: '',
-          concepto: '',
-          referencia: '',
-          entradas: totEntradas,
-          valorEntradas: totValEntradas,
-          salidas: totSalidas,
-          valorSalidas: totValSalidas,
-        }];
-      } else {
-        this.pinnedBottomRowDataEntradasSalidas = [];
-      }
-    } else {
-      this._entradasSalidasRowsCache = [];
-      this.pinnedBottomRowDataEntradasSalidas = [];
-    }
-
-    // Recalcular ajustes
-    if (datos.detalleAjustes) {
-      const rows = datos.detalleAjustes.map((item: any) => ({
-        fecha: item.fecha || '-',
-        producto: item.producto || '-',
-        concepto: item.concepto || '-',
-        stockInicial: item.stockInicial || 0,
-        stockReal: item.stockReal || 0,
-        ajuste: item.ajuste || 0,
-        costoTotal: item.costoTotal || 0,
-        isTotal: false
-      }));
-
-      // Calcular total de ajustes
-      const totales = datos.detalleAjustes.reduce((totals: any, item: any) => ({
-        costoTotal: totals.costoTotal + (item.costoTotal || 0)
-      }), { costoTotal: 0 });
-
-      this._totalAjustesCache = totales;
-
-      // Agregar fila de totales
-      if (totales.costoTotal !== 0) {
-        rows.push({
-          fecha: 'Total',
-          producto: '',
-          concepto: '',
-          stockInicial: '',
-          stockReal: '',
-          ajuste: '',
-          costoTotal: totales.costoTotal,
-          isTotal: true
-        });
-      }
-
-      this._ajustesRowsCache = rows;
-    } else {
-      this._ajustesRowsCache = [];
-      this._totalAjustesCache = { costoTotal: 0 };
-    }
+    // Detalle productos / E/S / ajustes: carga lazy aparte (no vienen en el merge).
   }
 
   get inventarioProductosRows(): any[] {
@@ -784,108 +1140,117 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   onQuickFilterChange(): void {
-    if (this.gridApi) {
-      this.gridApi.setQuickFilter(this.quickFilterText);
-    }
+    this.quickFilter$.next(this.quickFilterText.trim());
   }
 
+  /** Totales pinned vienen del API (`totales`); no recalcular desde filas parciales. */
   recalcularTotalesInventario(): void {
-    let stock = 0;
-    let inversionPromedio = 0;
-    let ventasEsperadas = 0;
-
-    if (this.gridApi) {
-      this.gridApi.forEachNodeAfterFilter((node: any) => {
-        if (node.data) {
-          stock += (node.data.stock || 0);
-          inversionPromedio += (node.data.inversionPromedio || 0);
-          ventasEsperadas += (node.data.ventasEsperadas || 0);
-        }
-      });
-    } else {
-      return;
-    }
-
-    if (stock > 0 || inversionPromedio > 0) {
-      this.pinnedBottomRowDataInventario = [{
-        producto: 'Total',
-        stock,
-        costo: null,
-        inversionPromedio,
-        precio: null,
-        ventasEsperadas,
-      }];
+    const t = this.detalleTotales;
+    if (t.stock !== 0 || t.inversionPromedio !== 0 || t.ventasEsperadas !== 0) {
+      this.pinnedBottomRowDataInventario = [
+        {
+          producto: 'Total',
+          stock: t.stock,
+          costo: null,
+          inversionPromedio: t.inversionPromedio,
+          precio: null,
+          ventasEsperadas: t.ventasEsperadas,
+        },
+      ];
     } else {
       this.pinnedBottomRowDataInventario = [];
     }
   }
 
+  /** Totales pinned desde API (`totales`); no sumar solo la página cargada. */
   recalcularTotalesEntradasSalidas(): void {
-    let entradas = 0;
-    let valorEntradas = 0;
-    let salidas = 0;
-    let valorSalidas = 0;
-
-    if (this.entradasSalidasGridApi) {
-      this.entradasSalidasGridApi.forEachNodeAfterFilter((node: any) => {
-        if (node.data) {
-          entradas += (node.data.entradas || 0);
-          valorEntradas += (node.data.valorEntradas || 0);
-          salidas += (node.data.salidas || 0);
-          valorSalidas += (node.data.valorSalidas || 0);
-        }
-      });
-    } else {
-      return;
-    }
-
-    if (entradas > 0 || salidas > 0) {
-      this.pinnedBottomRowDataEntradasSalidas = [{
-        fecha: 'Total',
-        producto: '',
-        concepto: '',
-        referencia: '',
-        entradas,
-        valorEntradas,
-        salidas,
-        valorSalidas,
-      }];
+    const t = this.esTotales;
+    if (t.entradas > 0 || t.salidas > 0) {
+      this.pinnedBottomRowDataEntradasSalidas = [
+        {
+          fecha: 'Total',
+          producto: '',
+          concepto: '',
+          referencia: '',
+          entradas: t.entradas,
+          valorEntradas: t.valorEntradas,
+          salidas: t.salidas,
+          valorSalidas: t.valorSalidas,
+        },
+      ];
     } else {
       this.pinnedBottomRowDataEntradasSalidas = [];
     }
   }
 
   exportarCSV(): void {
-    if (this.gridApi) {
-      const fecha = new Date().toISOString().split('T')[0];
-      this.gridApi.exportDataAsCsv({
-        fileName: `inventario-productos-${fecha}.csv`,
-        processCellCallback: (params: any) => {
-          return params.value || '';
-        }
-      });
-    }
+    this.exportarDetalleCompletoCsv();
   }
 
   exportarExcel(): void {
-    // AG Grid Community solo soporta CSV
-    if (this.gridApi) {
-      const fecha = new Date().toISOString().split('T')[0];
-      this.gridApi.exportDataAsCsv({
-        fileName: `inventario-productos-${fecha}.csv`,
-        processCellCallback: (params: any) => {
-          return params.value || '';
-        }
+    // AG Grid Community solo soporta CSV — pide el listado completo al API
+    this.exportarDetalleCompletoCsv();
+  }
+
+  private exportarDetalleCompletoCsv(): void {
+    if (this.detalleExporting) return;
+    this.detalleExporting = true;
+    this.cdr.markForCheck();
+    const q = this.quickFilterText.trim();
+    this.dashboardDataService
+      .obtenerDetalleProductosCompleto(this.getFiltrosDetalle(), {
+        q: q || undefined,
+      })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (page) => {
+          const fecha = new Date().toISOString().split('T')[0];
+          const cols = this.inventarioProductosColumnDefs.filter((c) => c.field);
+          const header = cols
+            .map((c) => this.csvEscape(String(c.headerName || c.field)))
+            .join(',');
+          const lines = (page.items ?? []).map((item: any) =>
+            cols
+              .map((c) => {
+                const field = c.field || '';
+                const raw = item[field];
+                return this.csvEscape(
+                  raw === null || raw === undefined ? '' : String(raw),
+                );
+              })
+              .join(','),
+          );
+          const csv = [header, ...lines].join('\n');
+          const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `inventario-productos-${fecha}.csv`;
+          a.click();
+          URL.revokeObjectURL(url);
+          this.detalleExporting = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.detalleExporting = false;
+          this.cdr.markForCheck();
+        },
       });
+  }
+
+  private csvEscape(value: string): string {
+    if (/[",\n\r]/.test(value)) {
+      return `"${value.replace(/"/g, '""')}"`;
     }
+    return value;
   }
 
   limpiarFiltrosGrid(): void {
     if (this.gridApi) {
       this.gridApi.setFilterModel(null);
-      this.quickFilterText = '';
-      this.gridApi.setQuickFilter('');
     }
+    this.quickFilterText = '';
+    this.cargarDetallePagina(0);
   }
 
   copiarAlPortapapeles(texto: string): void {
@@ -1027,6 +1392,9 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
       this.filtrosInteractivos.categoria = event.name;
     }
     this.aplicarFiltrosInteractivos();
+    this.cargarDetallePagina(0);
+    this.cargarDetalleEsPagina(0);
+    this.cargarDetalleAjustesPagina(0);
   }
 
   configurarAGGridEntradasSalidas(): void {
@@ -1126,7 +1494,7 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
         filter: true
       },
       pagination: true,
-      paginationPageSize: 15,
+      paginationPageSize: 25,
       enableCellTextSelection: true,
       ensureDomOrder: true,
       onCellDoubleClicked: (params: any) => {
@@ -1152,9 +1520,8 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
         this.entradasSalidasGridApi = params.api;
         this.entradasSalidasGridColumnApi = params.columnApi;
       },
-      onFilterChanged: () => {
-        this.recalcularTotalesEntradasSalidas();
-        this.cdr.markForCheck();
+      onPaginationChanged: () => {
+        this.maybeLoadMoreEsFromGrid();
       },
       suppressExcelExport: false,
       suppressCsvExport: false
@@ -1166,41 +1533,69 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   onQuickFilterChangeEntradasSalidas(): void {
-    if (this.entradasSalidasGridApi) {
-      this.entradasSalidasGridApi.setQuickFilter(this.quickFilterTextEntradasSalidas);
-    }
+    this.quickFilterEs$.next(this.quickFilterTextEntradasSalidas.trim());
   }
 
   exportarCSVEntradasSalidas(): void {
-    if (this.entradasSalidasGridApi) {
-      const fecha = new Date().toISOString().split('T')[0];
-      this.entradasSalidasGridApi.exportDataAsCsv({
-        fileName: `entradas-salidas-${fecha}.csv`,
-        processCellCallback: (params: any) => {
-          return params.value || '';
-        }
-      });
-    }
+    this.exportarEsCompletoCsv();
   }
 
   exportarExcelEntradasSalidas(): void {
-    if (this.entradasSalidasGridApi) {
-      const fecha = new Date().toISOString().split('T')[0];
-      this.entradasSalidasGridApi.exportDataAsCsv({
-        fileName: `entradas-salidas-${fecha}.csv`,
-        processCellCallback: (params: any) => {
-          return params.value || '';
-        }
+    this.exportarEsCompletoCsv();
+  }
+
+  private exportarEsCompletoCsv(): void {
+    if (this.esExporting) return;
+    this.esExporting = true;
+    this.cdr.markForCheck();
+    const q = this.quickFilterTextEntradasSalidas.trim();
+    this.dashboardDataService
+      .obtenerDetalleEsCompleto(this.getFiltrosMovimientos(), {
+        q: q || undefined,
+      })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (page) => {
+          const fecha = new Date().toISOString().split('T')[0];
+          const cols = this.entradasSalidasColumnDefs.filter((c) => c.field);
+          const header = cols
+            .map((c) => this.csvEscape(String(c.headerName || c.field)))
+            .join(',');
+          const lines = (page.items ?? []).map((item: any) =>
+            cols
+              .map((c) => {
+                const field = c.field || '';
+                const raw = item[field];
+                return this.csvEscape(
+                  raw === null || raw === undefined ? '' : String(raw),
+                );
+              })
+              .join(','),
+          );
+          const csv = [header, ...lines].join('\n');
+          const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `entradas-salidas-${fecha}.csv`;
+          a.click();
+          URL.revokeObjectURL(url);
+          this.esExporting = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.esExporting = false;
+          this.cdr.markForCheck();
+        },
       });
-    }
   }
 
   limpiarFiltrosGridEntradasSalidas(): void {
     if (this.entradasSalidasGridApi) {
       this.entradasSalidasGridApi.setFilterModel(null);
-      this.quickFilterTextEntradasSalidas = '';
-      this.entradasSalidasGridApi.setQuickFilter('');
     }
+    this.quickFilterTextEntradasSalidas = '';
+    this.cargarDetalleEsPagina(0);
   }
 
   copiarSeleccionAlPortapapelesEntradasSalidas(): void {
@@ -1307,6 +1702,7 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
       this.filtrosInteractivos.mes = event.name;
     }
     this.aplicarFiltrosInteractivos();
+    this.cargarDetalleEsPagina(0);
   }
 
   /**
@@ -1344,59 +1740,7 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   filtrarDatosInventario(): void {
-    // Filtrar detalle de inventario por categoría (usando el gráfico de stock por categoría)
-    if (this.filtrosInteractivos.categoria && this.datosFiltrados.detalleInventario) {
-      // Filtrar productos que pertenezcan a la categoría seleccionada
-      // Esto requiere que los datos de detalleInventario tengan información de categoría
-      // Por ahora, el filtro se aplica principalmente al gráfico
-    }
-
-    // Filtrar detalle de entradas y salidas por mes
-    if (this.filtrosInteractivos.mes && this.datosFiltrados.detalleEntradasSalidas) {
-      const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
-                     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-      const mesIndex = meses.findIndex(m => m.toLowerCase() === this.filtrosInteractivos.mes?.toLowerCase());
-      
-      if (mesIndex !== -1) {
-        const datosOriginales = this.datosOriginales.detalleEntradasSalidas || [];
-        this.datosFiltrados.detalleEntradasSalidas = datosOriginales.filter((item: any) => {
-          if (item.mes != null && item.mes >= 1 && item.mes <= 12) {
-            return item.mes === mesIndex + 1;
-          }
-          if (!item.fecha) return false;
-          const partes = String(item.fecha).split('/');
-          if (partes.length === 3) {
-            const mes = parseInt(partes[1], 10) - 1;
-            return mes === mesIndex;
-          }
-          const f = String(item.fecha).trim().toLowerCase();
-          const m = meses[mesIndex].toLowerCase();
-          return f === m || f.startsWith(`${m} `);
-        });
-      }
-    }
-
-    // Filtrar detalle de inventario por producto
-    if (this.filtrosInteractivos.producto) {
-      if (this.datosFiltrados.detalleInventario) {
-        const datosOriginales = this.datosOriginales.detalleInventario || [];
-        this.datosFiltrados.detalleInventario = datosOriginales.filter((item: any) => {
-          return item.producto && item.producto.toLowerCase().includes(this.filtrosInteractivos.producto?.toLowerCase() || '');
-        });
-      }
-      if (this.datosFiltrados.detalleEntradasSalidas) {
-        const datosOriginales = this.datosOriginales.detalleEntradasSalidas || [];
-        this.datosFiltrados.detalleEntradasSalidas = datosOriginales.filter((item: any) => {
-          return item.producto && item.producto.toLowerCase().includes(this.filtrosInteractivos.producto?.toLowerCase() || '');
-        });
-      }
-      if (this.datosFiltrados.detalleAjustes) {
-        const datosOriginales = this.datosOriginales.detalleAjustes || [];
-        this.datosFiltrados.detalleAjustes = datosOriginales.filter((item: any) => {
-          return item.producto && item.producto.toLowerCase().includes(this.filtrosInteractivos.producto?.toLowerCase() || '');
-        });
-      }
-    }
+    // Detalles de productos / E/S / ajustes: paginados en servidor (mes, categoria, q).
   }
 
   recalcularTodosLosGraficos(): void {
@@ -1439,94 +1783,41 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   recalcularEntradasSalidasPorMes(): void {
-    if (!this.datosFiltrados.detalleEntradasSalidas) return;
+    // Filtrar el chart desde la config de API (ya no hay detalle completo en memoria)
+    const configOriginal =
+      this.datosOriginales.entradasSalidasPorMesConfig ||
+      this.datos.entradasSalidasPorMesConfig;
+    if (!configOriginal) return;
 
-    const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
-                   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-    
-    const entradasPorMes: { [key: string]: number } = {};
-    const salidasPorMes: { [key: string]: number } = {};
-
-    this.datosFiltrados.detalleEntradasSalidas.forEach((item: any) => {
-      let mesNombre: string | null = null;
-      if (item.mes != null && item.mes >= 1 && item.mes <= 12) {
-        mesNombre = meses[item.mes - 1];
-      } else if (item.fecha) {
-        const partes = String(item.fecha).split('/');
-        if (partes.length === 3) {
-          const mes = parseInt(partes[1], 10) - 1;
-          if (mes >= 0 && mes < 12) mesNombre = meses[mes];
-        } else {
-          const f = String(item.fecha).trim().toLowerCase();
-          const idx = meses.findIndex(
-            (m) =>
-              f === m.toLowerCase() ||
-              f.startsWith(`${m.toLowerCase()} `),
-          );
-          if (idx !== -1) mesNombre = meses[idx];
-        }
+    if (this.filtrosInteractivos.mes && configOriginal.labels && configOriginal.data) {
+      const labels: string[] = configOriginal.labels;
+      const mesIndex = labels.findIndex(
+        (l) => l === this.filtrosInteractivos.mes,
+      );
+      if (mesIndex !== -1) {
+        const series = Array.isArray(configOriginal.data)
+          ? configOriginal.data.map((s: any) => ({
+              ...s,
+              data: [s.data?.[mesIndex] ?? 0],
+            }))
+          : configOriginal.data;
+        this.datosFiltrados.entradasSalidasPorMesConfig = {
+          ...configOriginal,
+          labels: [labels[mesIndex]],
+          data: series,
+        };
+      } else {
+        this.datosFiltrados.entradasSalidasPorMesConfig =
+          this.clonarDatos(configOriginal);
       }
-      if (!mesNombre) return;
-
-      const ent = Number(item.entradas) || 0;
-      const sal = Number(item.salidas) || 0;
-      if (ent) entradasPorMes[mesNombre] = (entradasPorMes[mesNombre] || 0) + ent;
-      if (sal) salidasPorMes[mesNombre] = (salidasPorMes[mesNombre] || 0) + sal;
-    });
-
-    // Si hay filtro de mes, mostrar solo ese mes
-    if (this.filtrosInteractivos.mes) {
-      const mesFiltrado = this.filtrosInteractivos.mes;
-      this.datosFiltrados.entradasSalidasPorMesConfig = {
-        ...this.datosFiltrados.entradasSalidasPorMesConfig,
-        labels: [mesFiltrado],
-        data: [
-          {
-            name: 'Entradas',
-            data: [entradasPorMes[mesFiltrado] || 0]
-          },
-          {
-            name: 'Salidas',
-            data: [salidasPorMes[mesFiltrado] || 0]
-          }
-        ]
-      };
     } else {
-      // Mostrar todos los meses con datos
-      const labels = meses.filter(m => entradasPorMes[m] !== undefined || salidasPorMes[m] !== undefined);
-      this.datosFiltrados.entradasSalidasPorMesConfig = {
-        ...this.datosFiltrados.entradasSalidasPorMesConfig,
-        labels: labels.length > 0 ? labels : meses,
-        data: [
-          {
-            name: 'Entradas',
-            data: labels.length > 0 ? labels.map(m => entradasPorMes[m] || 0) : meses.map(() => 0)
-          },
-          {
-            name: 'Salidas',
-            data: labels.length > 0 ? labels.map(m => salidasPorMes[m] || 0) : meses.map(() => 0)
-          }
-        ]
-      };
+      this.datosFiltrados.entradasSalidasPorMesConfig =
+        this.clonarDatos(configOriginal);
     }
   }
 
   recalcularMetricasEntradasSalidas(): void {
-    if (!this.datosFiltrados.detalleEntradasSalidas) return;
-
-    const totalEntradas = this.datosFiltrados.detalleEntradasSalidas.reduce((sum: number, item: any) => 
-      sum + (item.entradas || 0), 0);
-    const totalSalidas = this.datosFiltrados.detalleEntradasSalidas.reduce((sum: number, item: any) => 
-      sum + (item.salidas || 0), 0);
-    const totalUtilidad = this.datosFiltrados.detalleEntradasSalidas.reduce((sum: number, item: any) => 
-      sum + ((item.valorEntradas || 0) - (item.valorSalidas || 0)), 0);
-
-    if (!this.datosFiltrados.entradasSalidas) {
-      this.datosFiltrados.entradasSalidas = {};
-    }
-    this.datosFiltrados.entradasSalidas.entradas = totalEntradas;
-    this.datosFiltrados.entradasSalidas.salidas = totalSalidas;
-    this.datosFiltrados.entradasSalidas.utilidadEsperada = totalUtilidad;
+    // Cards vienen de /es/cards; sin detalle completo no se recalculan aquí.
   }
 
   recalcularMetricas(): void {
@@ -1560,6 +1851,11 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
       this.datos = this.datosFiltrados;
     }
     this.recalcularRowsCache();
+    if (this.inicializado) {
+      this.cargarDetallePagina(0);
+      this.cargarDetalleEsPagina(0);
+      this.cargarDetalleAjustesPagina(0);
+    }
     this.cdr.markForCheck();
   }
 
@@ -1686,6 +1982,8 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
         sortable: true,
         filter: true
       },
+      pagination: true,
+      paginationPageSize: 25,
       getRowClass: (params: any) => {
         if (params.data?.isTotal) {
           return 'ag-row-total';
@@ -1717,6 +2015,9 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
         this.ajustesGridApi = params.api;
         this.ajustesGridColumnApi = params.columnApi;
       },
+      onPaginationChanged: () => {
+        this.maybeLoadMoreAjustesFromGrid();
+      },
       suppressExcelExport: false,
       suppressCsvExport: false
     };
@@ -1731,41 +2032,69 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   onQuickFilterChangeAjustes(): void {
-    if (this.ajustesGridApi) {
-      this.ajustesGridApi.setQuickFilter(this.quickFilterTextAjustes);
-    }
+    this.quickFilterAjustes$.next(this.quickFilterTextAjustes.trim());
   }
 
   exportarCSVAjustes(): void {
-    if (this.ajustesGridApi) {
-      const fecha = new Date().toISOString().split('T')[0];
-      this.ajustesGridApi.exportDataAsCsv({
-        fileName: `ajustes-inventario-${fecha}.csv`,
-        processCellCallback: (params: any) => {
-          return params.value || '';
-        }
-      });
-    }
+    this.exportarAjustesCompletoCsv();
   }
 
   exportarExcelAjustes(): void {
-    if (this.ajustesGridApi) {
-      const fecha = new Date().toISOString().split('T')[0];
-      this.ajustesGridApi.exportDataAsCsv({
-        fileName: `ajustes-inventario-${fecha}.csv`,
-        processCellCallback: (params: any) => {
-          return params.value || '';
-        }
+    this.exportarAjustesCompletoCsv();
+  }
+
+  private exportarAjustesCompletoCsv(): void {
+    if (this.ajustesExporting) return;
+    this.ajustesExporting = true;
+    this.cdr.markForCheck();
+    const q = this.quickFilterTextAjustes.trim();
+    this.dashboardDataService
+      .obtenerDetalleAjustesCompleto(this.getFiltrosAjustes(), {
+        q: q || undefined,
+      })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (page) => {
+          const fecha = new Date().toISOString().split('T')[0];
+          const cols = this.ajustesColumnDefs.filter((c) => c.field);
+          const header = cols
+            .map((c) => this.csvEscape(String(c.headerName || c.field)))
+            .join(',');
+          const lines = (page.items ?? []).map((item: any) =>
+            cols
+              .map((c) => {
+                const field = c.field || '';
+                const raw = item[field];
+                return this.csvEscape(
+                  raw === null || raw === undefined ? '' : String(raw),
+                );
+              })
+              .join(','),
+          );
+          const csv = [header, ...lines].join('\n');
+          const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `ajustes-inventario-${fecha}.csv`;
+          a.click();
+          URL.revokeObjectURL(url);
+          this.ajustesExporting = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.ajustesExporting = false;
+          this.cdr.markForCheck();
+        },
       });
-    }
   }
 
   limpiarFiltrosGridAjustes(): void {
     if (this.ajustesGridApi) {
       this.ajustesGridApi.setFilterModel(null);
-      this.quickFilterTextAjustes = '';
-      this.ajustesGridApi.setQuickFilter('');
     }
+    this.quickFilterTextAjustes = '';
+    this.cargarDetalleAjustesPagina(0);
   }
 
   copiarSeleccionAlPortapapelesAjustes(): void {
@@ -1870,28 +2199,39 @@ export class InventarioComponent implements OnInit, OnChanges, OnDestroy {
   onProductoClickInventario(producto: string): void {
     if (this.filtrosInteractivos.producto === producto) {
       delete this.filtrosInteractivos.producto;
+      this.quickFilterText = '';
     } else {
       this.filtrosInteractivos.producto = producto;
+      this.quickFilterText = producto;
     }
     this.aplicarFiltrosInteractivos();
+    this.cargarDetallePagina(0);
+    this.cargarDetalleEsPagina(0);
+    this.cargarDetalleAjustesPagina(0);
   }
 
   onProductoClickEntradasSalidas(producto: string): void {
     if (this.filtrosInteractivos.producto === producto) {
       delete this.filtrosInteractivos.producto;
+      this.quickFilterTextEntradasSalidas = '';
     } else {
       this.filtrosInteractivos.producto = producto;
+      this.quickFilterTextEntradasSalidas = producto;
     }
     this.aplicarFiltrosInteractivos();
+    this.cargarDetalleEsPagina(0);
   }
 
   onProductoClickAjustes(producto: string): void {
     if (this.filtrosInteractivos.producto === producto) {
       delete this.filtrosInteractivos.producto;
+      this.quickFilterTextAjustes = '';
     } else {
       this.filtrosInteractivos.producto = producto;
+      this.quickFilterTextAjustes = producto;
     }
     this.aplicarFiltrosInteractivos();
+    this.cargarDetalleAjustesPagina(0);
   }
 
   /**

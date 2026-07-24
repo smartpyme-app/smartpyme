@@ -210,22 +210,24 @@
                                     <div class="gastos-card-title mb-0">{{ getTituloGraficoGastos() }}</div>
                                 </div>
                                 <div class="card-body">
-                                    <ng-container *ngIf="vistaMetricas === 'mes'">
-                                        <app-line-chart *ngIf="datos.gastosPorMesConfig; else gastosChartLoader"
-                                            [config]="datos.gastosPorMesConfig" (itemClick)="onMesClick($event)">
-                                        </app-line-chart>
-                                    </ng-container>
-                                    <ng-container *ngIf="vistaMetricas === 'presupuesto'">
-                                        <app-bar-chart *ngIf="datos.gastosVsPresupuestoConfig; else gastosChartLoader"
-                                            [config]="datos.gastosVsPresupuestoConfig" (itemClick)="onMesClick($event)">
-                                        </app-bar-chart>
-                                    </ng-container>
-                                    <ng-container *ngIf="vistaMetricas === 'anio'">
-                                        <app-bar-chart *ngIf="datos.gastosVsAnioAnteriorConfig; else gastosChartLoader"
-                                            [config]="datos.gastosVsAnioAnteriorConfig"
-                                            (itemClick)="onMesClick($event)">
-                                        </app-bar-chart>
-                                    </ng-container>
+                                    <app-chart-expandable [title]="getTituloGraficoGastos()">
+                                        <ng-container *ngIf="vistaMetricas === 'mes'">
+                                            <app-line-chart *ngIf="datos.gastosPorMesConfig; else gastosChartLoader"
+                                                [config]="datos.gastosPorMesConfig" (itemClick)="onMesClick($event)">
+                                            </app-line-chart>
+                                        </ng-container>
+                                        <ng-container *ngIf="vistaMetricas === 'presupuesto'">
+                                            <app-bar-chart *ngIf="datos.gastosVsPresupuestoConfig; else gastosChartLoader"
+                                                [config]="datos.gastosVsPresupuestoConfig" (itemClick)="onMesClick($event)">
+                                            </app-bar-chart>
+                                        </ng-container>
+                                        <ng-container *ngIf="vistaMetricas === 'anio'">
+                                            <app-bar-chart *ngIf="datos.gastosVsAnioAnteriorConfig; else gastosChartLoader"
+                                                [config]="datos.gastosVsAnioAnteriorConfig"
+                                                (itemClick)="onMesClick($event)">
+                                            </app-bar-chart>
+                                        </ng-container>
+                                    </app-chart-expandable>
                                 </div>
                             </div>
                         </div>
@@ -237,11 +239,13 @@
                                     <div class="gastos-card-title mb-0">Gastos totales por categoría de costos</div>
                                 </div>
                                 <div class="card-body">
-                                    <app-bar-chart
-                                        *ngIf="datos.gastosPorCategoriaConfig !== undefined; else gastosChartLoader"
-                                        [config]="datos.gastosPorCategoriaConfig"
-                                        (itemClick)="onCategoriaClick($event)">
-                                    </app-bar-chart>
+                                    <app-chart-expandable title="Gastos totales por categoría de costos">
+                                        <app-bar-chart
+                                            *ngIf="datos.gastosPorCategoriaConfig !== undefined; else gastosChartLoader"
+                                            [config]="datos.gastosPorCategoriaConfig"
+                                            (itemClick)="onCategoriaClick($event)">
+                                        </app-bar-chart>
+                                    </app-chart-expandable>
                                 </div>
                             </div>
                         </div>
@@ -253,10 +257,12 @@
                                     <div class="gastos-card-title mb-0">Gastos por concepto</div>
                                 </div>
                                 <div class="card-body">
-                                    <app-bar-chart
-                                        *ngIf="datos.gastosPorConceptoConfig !== undefined; else gastosChartLoader"
-                                        [config]="datos.gastosPorConceptoConfig" (itemClick)="onConceptoClick($event)">
-                                    </app-bar-chart>
+                                    <app-chart-expandable title="Gastos por concepto">
+                                        <app-bar-chart
+                                            *ngIf="datos.gastosPorConceptoConfig !== undefined; else gastosChartLoader"
+                                            [config]="datos.gastosPorConceptoConfig" (itemClick)="onConceptoClick($event)">
+                                        </app-bar-chart>
+                                    </app-chart-expandable>
                                 </div>
                             </div>
                         </div>
@@ -268,11 +274,13 @@
                                     <div class="gastos-card-title mb-0">Gastos totales por forma de pago</div>
                                 </div>
                                 <div class="card-body">
-                                    <app-treemap-chart
-                                        *ngIf="datos.gastosPorFormaPagoConfig !== undefined; else gastosChartLoader"
-                                        [config]="datos.gastosPorFormaPagoConfig"
-                                        (itemClick)="onFormaPagoClick($event)">
-                                    </app-treemap-chart>
+                                    <app-chart-expandable title="Gastos totales por forma de pago">
+                                        <app-treemap-chart
+                                            *ngIf="datos.gastosPorFormaPagoConfig !== undefined; else gastosChartLoader"
+                                            [config]="datos.gastosPorFormaPagoConfig"
+                                            (itemClick)="onFormaPagoClick($event)">
+                                        </app-treemap-chart>
+                                    </app-chart-expandable>
                                 </div>
                             </div>
                         </div>
@@ -281,47 +289,59 @@
                         <!-- Tabla: Detalle de gastos -->
                         <div class="col-12 col-lg-6 mb-2">
                             <div class="card h-100">
-                                <div class="card-header bg-white border-0 py-3">
-                                    <div class="d-flex flex-column justify-content-between gap-2">
-                                        <div class="gastos-card-title mb-0 text-center">Detalle de gastos</div>
-                                        <div class="d-flex flex-wrap gap-2 align-items-center justify-content-end w-100"
-                                            *ngIf="datos.detalleGastos !== undefined">
-                                            <div class="input-group"
-                                                style="flex: 1 1 200px; max-width: 350px; min-width: 200px;">
-                                                <span class="input-group-text bg-white border-end-0">
-                                                    <i class="fas fa-search text-muted"></i>
-                                                </span>
-                                                <input type="text" class="form-control border-start-0"
-                                                    placeholder="Buscar..." [(ngModel)]="quickFilterTextGastos"
-                                                    (input)="onQuickFilterChangeGastos()">
+                                <app-chart-expandable title="Detalle de gastos">
+                                    <div class="card-header bg-white border-0 py-3">
+                                        <div class="d-flex flex-column justify-content-between gap-2">
+                                            <div class="gastos-card-title mb-0 text-center">Detalle de gastos</div>
+                                            <div class="d-flex flex-wrap gap-2 align-items-center justify-content-end w-100">
+                                                <div class="input-group"
+                                                    style="flex: 1 1 200px; max-width: 350px; min-width: 200px;">
+                                                    <span class="input-group-text bg-white border-end-0">
+                                                        <i class="fas fa-search text-muted"></i>
+                                                    </span>
+                                                    <input type="text" class="form-control border-start-0"
+                                                        placeholder="Buscar..." [(ngModel)]="quickFilterTextGastos"
+                                                        (input)="onQuickFilterChangeGastos()">
+                                                </div>
+                                                <button type="button" class="btn btn-sm btn-outline-success"
+                                                    (click)="exportarExcelGastos()" title="Exportar a Excel"
+                                                    [disabled]="gastosExporting || gastosLoading">
+                                                    <i class="fas fa-file-excel me-1"></i>
+                                                    {{ gastosExporting ? 'Exportando…' : 'Excel' }}
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                    (click)="limpiarFiltrosGastos()" title="Limpiar filtros">
+                                                    <i class="fas fa-filter me-1"></i> Limpiar
+                                                </button>
                                             </div>
-                                            <button type="button" class="btn btn-sm btn-outline-success"
-                                                (click)="exportarExcelGastos()" title="Exportar a Excel">
-                                                <i class="fas fa-file-excel me-1"></i> Excel
-                                            </button>
-                                            <button type="button" class="btn btn-sm btn-outline-secondary"
-                                                (click)="limpiarFiltrosGastos()" title="Limpiar filtros">
-                                                <i class="fas fa-filter me-1"></i> Limpiar
-                                            </button>
                                         </div>
                                     </div>
-                                </div>
-                                <div class="card-body px-3 py-0 gastos-detalle-grid-body">
-                                    <ng-container *ngIf="datos.detalleGastos !== undefined; else gastosTableLoader">
-                                        <ag-grid-angular #detalleGastosGrid class="ag-theme-alpine detalle-gastos-grid"
-                                            [rowData]="detalleGastosRows"
-                                            [pinnedBottomRowData]="pinnedBottomRowDataGastos"
-                                            [columnDefs]="detalleGastosColumnDefs"
-                                            [gridOptions]="detalleGastosGridOptions" [defaultColDef]="{
-                                                resizable: true,
-                                                sortable: true,
-                                                filter: true
-                                            }" style="width: 100%; flex: 1; min-height: 0;" [domLayout]="'normal'"
-                                            (gridReady)="onGridReadyGastos($event)"
-                                            (filterChanged)="onFilterChangedGastos()">
-                                        </ag-grid-angular>
-                                    </ng-container>
-                                </div>
+                                    <div class="card-body px-3 py-0 gastos-detalle-grid-body">
+                                        <ng-container *ngIf="gastosListo; else gastosTableLoader">
+                                            <div class="position-relative h-100 d-flex flex-column" style="min-height: 0;">
+                                                <div *ngIf="gastosLoading"
+                                                    class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+                                                    style="background: rgba(255,255,255,0.55); z-index: 2;">
+                                                    <div class="spinner-border spinner-border-sm text-secondary" role="status">
+                                                        <span class="visually-hidden">Cargando…</span>
+                                                    </div>
+                                                </div>
+                                                <ag-grid-angular #detalleGastosGrid class="ag-theme-alpine detalle-gastos-grid"
+                                                    [rowData]="detalleGastosRows"
+                                                    [pinnedBottomRowData]="pinnedBottomRowDataGastos"
+                                                    [columnDefs]="detalleGastosColumnDefs"
+                                                    [gridOptions]="detalleGastosGridOptions" [defaultColDef]="{
+                                                    resizable: true,
+                                                    sortable: true,
+                                                    filter: true
+                                                }" style="width: 100%; flex: 1; min-height: 0;" [domLayout]="'normal'"
+                                                    (gridReady)="onGridReadyGastos($event)"
+                                                    (filterChanged)="onFilterChangedGastos()">
+                                                </ag-grid-angular>
+                                            </div>
+                                        </ng-container>
+                                    </div>
+                                </app-chart-expandable>
                             </div>
                         </div>
 
@@ -332,11 +352,14 @@
                                     <div class="gastos-card-title mb-0">Gastos por proveedor</div>
                                 </div>
                                 <div class="card-body">
-                                    <ng-container *ngIf="datos.gastosPorProveedor !== undefined; else gastosListLoader">
-                                        <app-accounts-list title="" [accounts]="datos.gastosPorProveedor || []"
-                                            type="payable" (itemClick)="onProveedorClick($event)">
-                                        </app-accounts-list>
-                                    </ng-container>
+                                    <app-chart-expandable title="Gastos por proveedor">
+                                        <ng-container *ngIf="datos.gastosPorProveedor !== undefined; else gastosListLoader">
+                                            <app-accounts-list title="" [accounts]="datos.gastosPorProveedor || []"
+                                                type="payable" [collapseExcessBars]="true"
+                                                (itemClick)="onProveedorClick($event)">
+                                            </app-accounts-list>
+                                        </ng-container>
+                                    </app-chart-expandable>
                                 </div>
                             </div>
                         </div>
