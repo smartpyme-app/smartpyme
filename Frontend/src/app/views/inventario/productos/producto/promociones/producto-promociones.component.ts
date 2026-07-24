@@ -1,5 +1,6 @@
-import { Component, OnInit, TemplateRef, Input, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+﻿import { Component, OnInit, TemplateRef, Input, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -16,7 +17,7 @@ declare var $:any;
     selector: 'app-producto-promociones',
     templateUrl: './producto-promociones.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule],
+    imports: [CommonModule, RouterModule, CurrencyPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ProductoPromocionesComponent extends BaseModalComponent implements OnInit {

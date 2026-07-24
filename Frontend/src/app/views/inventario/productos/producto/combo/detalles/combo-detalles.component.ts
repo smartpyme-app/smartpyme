@@ -1,5 +1,6 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ViewChild, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+﻿import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ViewChild, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { BuscadorProductoComponent } from '../buscador-producto/buscador-producto.component';
@@ -17,7 +18,7 @@ import Swal from 'sweetalert2';
     selector: 'app-producto-combo-detalles',
     templateUrl: './combo-detalles.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, BuscadorProductoComponent, LazyImageDirective],
+    imports: [CommonModule, RouterModule, FormsModule, BuscadorProductoComponent, LazyImageDirective, CurrencyPipe],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ComboDetallesComponent extends BaseModalComponent implements OnInit {

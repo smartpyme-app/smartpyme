@@ -1,4 +1,4 @@
-<section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
+﻿<section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
     <h2 class="page-heading">Salida de inventario</h2>
     <button class="btn btn-light text-danger" onclick="history.back()"><i class="fa fa-arrow-left"></i> Regresar</button>
 </section>
@@ -73,7 +73,7 @@
                                     </td>
                                     <td class="text-center"><input type="number" (change)="updateDetalle(detalle)" [(ngModel)]="detalle.cantidad" class="form-control text-center"></td>
                                     <td class="text-center"><input type="number" (change)="updateDetalle(detalle)" [(ngModel)]="detalle.costo" class="form-control text-center"></td>
-                                    <td class="text-end">{{ detalle.total | currency:'USD':'symbol':'1.2'}}</td>
+                                    <td class="text-end">{{ detalle.total | currency}}</td>
                                 </tr>
                             </tbody>
                         </table>

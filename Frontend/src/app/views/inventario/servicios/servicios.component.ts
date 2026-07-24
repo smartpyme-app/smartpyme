@@ -12,12 +12,13 @@ import { PaginationComponent } from '@shared/parts/pagination/pagination.compone
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
 import { TranslatePipe } from '@ngx-translate/core';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 
 @Component({
     selector: 'app-servicios',
     templateUrl: './servicios.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, ImportarExcelComponent, PaginationComponent, LazyImageDirective, TranslatePipe],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, ImportarExcelComponent, PaginationComponent, LazyImageDirective, TranslatePipe, CurrencyPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ServiciosComponent extends BaseCrudComponent<any> implements OnInit {

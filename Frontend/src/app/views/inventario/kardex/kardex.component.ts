@@ -1,5 +1,6 @@
-import { Component, OnInit, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef, OnDestroy } from '@angular/core';
+﻿import { Component, OnInit, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -21,7 +22,7 @@ import {
     selector: 'app-kardex',
     templateUrl: './kardex.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, CurrencyPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class KardexComponent implements OnInit, OnDestroy {

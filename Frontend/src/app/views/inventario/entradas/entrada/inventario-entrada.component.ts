@@ -1,5 +1,6 @@
-import { Component, OnInit, TemplateRef,  ViewChild, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+﻿import { Component, OnInit, TemplateRef,  ViewChild, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -16,7 +17,7 @@ import { BsModalRef, BsModalService } from 'ngx-bootstrap/modal';
     selector: 'app-inventario-entrada',
     templateUrl: './inventario-entrada.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, BuscadorProductosComponent],
+    imports: [CommonModule, RouterModule, FormsModule, BuscadorProductosComponent, CurrencyPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class InventarioEntradaComponent extends BaseModalComponent implements OnInit {

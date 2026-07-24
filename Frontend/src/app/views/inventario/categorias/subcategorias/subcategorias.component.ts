@@ -7,6 +7,7 @@ import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
+import { getEmpresaCurrencySymbol } from '@helpers/currency-format.helper';
 @Component({
     selector: 'app-subcategorias',
     templateUrl: './subcategorias.component.html',
@@ -23,6 +24,10 @@ export class SubCategoriasComponent extends BaseModalComponent implements OnInit
     public subcategoria:any = {};
     public categorias:any = [];
     public cambio:any = {};
+
+    get currencySymbol(): string {
+        return getEmpresaCurrencySymbol(this.apiService.auth_user()?.empresa);
+    }
 
     // Img Upload
     public file?:File;

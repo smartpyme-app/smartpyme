@@ -1,4 +1,4 @@
-<section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
+﻿<section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
     <h2 class="page-heading">Consignas</h2>
 </section>
 
@@ -58,7 +58,7 @@
                                 {{ compra.estado }}
                             </span>
                         </td>
-                        <td class="text-end">{{ compra.total | currency:'USD':'symbol':'1.2' }}</td>
+                        <td class="text-end">{{ compra.total | currency }}</td>
                         <td class="text-center">
                             <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
                                 <i class="fa fa-ellipsis-vertical fa-fw"></i>
@@ -107,8 +107,8 @@
                     <td>{{ detalle.producto }}</td>
                     <td>{{ detalle.codigo }}</td>
                     <td class="text-end">{{ detalle.cantidad }}</td>
-                    <td class="text-end">{{ detalle.costo | currency:'USD':'symbol':'1.2' }}</td>
-                    <td class="text-end">{{ detalle.total | currency:'USD':'symbol':'1.2' }}</td>
+                    <td class="text-end">{{ detalle.costo | currency }}</td>
+                    <td class="text-end">{{ detalle.total | currency }}</td>
                 </tr>
             </tbody>
         </table>

@@ -1,5 +1,6 @@
-import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+﻿import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { NgSelectModule } from '@ng-select/ng-select';
@@ -15,7 +16,7 @@ import { LazyImageDirective } from '../../../directives/lazy-image.directive';
     selector: 'app-productos-consignas',
     templateUrl: './productos-consignas.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, FilterPipe, PaginationComponent, LazyImageDirective],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, FilterPipe, PaginationComponent, LazyImageDirective, CurrencyPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ProductosConsignasComponent extends BaseCrudComponent<any> implements OnInit {

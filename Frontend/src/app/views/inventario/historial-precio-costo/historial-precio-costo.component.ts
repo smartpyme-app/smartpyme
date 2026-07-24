@@ -1,11 +1,17 @@
 import { Component, Input, OnChanges, OnInit, SimpleChanges } from '@angular/core';
-
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { NgChartsModule } from 'ng2-charts';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
+import { getEmpresaCurrencySymbol } from '@helpers/currency-format.helper';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
 @Component({
   selector: 'app-historial-precio-costo',
   templateUrl: './historial-precio-costo.component.html',
+  standalone: true,
+  imports: [CommonModule, FormsModule, NgChartsModule, CurrencyPipe],
 })
 export class HistorialPrecioCostoComponent implements OnInit, OnChanges {
 
@@ -29,7 +35,7 @@ export class HistorialPrecioCostoComponent implements OnInit, OnChanges {
       y: {
         beginAtZero: false,
         ticks: {
-          callback: (value: number) => '$' + Number(value).toFixed(2),
+          callback: (value: number) => this.currencySymbol + Number(value).toFixed(2),
         },
       },
     },
@@ -40,6 +46,10 @@ export class HistorialPrecioCostoComponent implements OnInit, OnChanges {
     public apiService: ApiService,
     private alertService: AlertService
   ) {}
+
+  get currencySymbol(): string {
+    return getEmpresaCurrencySymbol(this.apiService.auth_user()?.empresa);
+  }
 
   ngOnInit(): void {
     const hoy = this.apiService.date();

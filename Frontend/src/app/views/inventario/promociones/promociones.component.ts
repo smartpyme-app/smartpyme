@@ -1,5 +1,6 @@
-import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+﻿import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
@@ -14,7 +15,7 @@ import * as moment from 'moment';
     selector: 'app-promociones',
     templateUrl: './promociones.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, PaginationComponent],
+    imports: [CommonModule, RouterModule, FormsModule, PaginationComponent, CurrencyPipe],
     providers: [FilterPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })

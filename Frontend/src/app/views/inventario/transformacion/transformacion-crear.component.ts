@@ -8,6 +8,7 @@ import { AlertService } from '../../../services/alert.service';
 import { TransformacionService } from './transformacion.service';
 import { BuscadorProductosComponent } from '@shared/parts/buscador-productos/buscador-productos.component';
 import { TranslatePipe } from '@ngx-translate/core';
+import { getEmpresaCurrencySymbol } from '@helpers/currency-format.helper';
 
 @Component({
   selector: 'app-transformacion-crear',
@@ -31,6 +32,10 @@ export class TransformacionCrearComponent implements OnInit {
   public medidas: any = [];
   public impuestos: any[] = [];
   public usuario: any = {};
+
+  get currencySymbol(): string {
+    return getEmpresaCurrencySymbol(this.usuario?.empresa ?? this.apiService.auth_user()?.empresa);
+  }
   public nuevoProducto: any = {
       nombre: '', codigo: '', id_categoria: null, medida: null,
       costo: null, costo_promedio: 0, precio: null, precio_final: null,

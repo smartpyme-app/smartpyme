@@ -1,5 +1,6 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+﻿import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
@@ -14,15 +15,13 @@ import { TruncatePipe } from '@pipes/truncate.pipe';
   selector: 'app-productos-consignas-compras',
   templateUrl: './productos-consignas-compras.component.html',
   standalone: true,
-  imports: [
-    CommonModule,
+  imports: [CommonModule,
     FormsModule,
     RouterModule,
     TooltipModule,
     PopoverModule,
     FilterPipe,
-    TruncatePipe,
-  ],
+    TruncatePipe, CurrencyPipe],
 })
 export class ProductosConsignasComprasComponent implements OnInit {
   public compras: any[] = [];

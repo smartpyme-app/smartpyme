@@ -1,5 +1,6 @@
-import { Component, OnInit, TemplateRef, Input, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+﻿import { Component, OnInit, TemplateRef, Input, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -17,7 +18,7 @@ import { TranslatePipe } from '@ngx-translate/core';
     selector: 'app-producto-combo',
     templateUrl: './producto-combo.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, ComboDetallesComponent, TranslatePipe],
+    imports: [CommonModule, RouterModule, FormsModule, ComboDetallesComponent, TranslatePipe, CurrencyPipe],
     providers: [SumPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
