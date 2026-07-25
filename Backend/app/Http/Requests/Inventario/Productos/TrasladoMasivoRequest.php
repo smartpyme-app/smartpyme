@@ -27,6 +27,9 @@ class TrasladoMasivoRequest extends FormRequest
             'productos' => 'required|array|min:1',
             'productos.*.id_producto' => 'required|integer|exists:productos,id',
             'productos.*.cantidad' => 'required|numeric|min:0.01',
+            'productos.*.lote_id' => 'nullable|integer|exists:lotes,id',
+            'productos.*.lote_id_destino' => 'nullable|integer|exists:lotes,id',
+            'productos.*.lotes_asignados' => 'nullable|array',
         ];
     }
 

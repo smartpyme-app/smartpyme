@@ -130,23 +130,31 @@ class FacturacionService
                     $saltarActualizarInventario = true;
                 }
     
-                if ($request->id)
+                if ($request->id) {
                     $venta = Venta::findOrFail($request->id);
-                else
+                } else {
                     $venta = new Venta;
-    
+                }
+
+                // Conservar correlativo ya emitido en re-guardados (evitar saltos / reuso).
+                $correlativoExistente = $request->id ? $venta->correlativo : null;
+
                 // El frontend ya envía el total sin propina, así que no necesitamos ajustarlo
                 $venta->fill($request->all());
-    
-                    $documento = Documento::where('id', $request->id_documento)
-                                ->lockForUpdate()
-                                ->firstOrFail();
 
-                    $this->aplicarReglasVentaRemisionConsigna($venta, $documento, $request);
-    
+                $documento = Documento::where('id', $request->id_documento)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                $this->aplicarReglasVentaRemisionConsigna($venta, $documento, $request);
+
+                if ($request->id) {
+                    $venta->correlativo = $correlativoExistente;
+                } else {
                     $venta->correlativo = $documento->correlativo;
                     $documento->increment('correlativo');
-    
+                }
+
                 $venta->save();
     
                 // Guardamos los detalles
