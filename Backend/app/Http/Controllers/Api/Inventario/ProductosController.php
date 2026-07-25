@@ -38,6 +38,7 @@ use App\Exports\PlantillaProductosImportExport;
 use App\Exports\TrasladoLineasUiExport;
 use App\Exports\ShopifyExport;
 use App\Services\Inventario\ProductoImportacionDteService;
+use App\Services\Inventario\LoteAsignacionService;
 use App\Services\Inventario\MigrarStockALotesService;
 use App\Services\Inventario\StockDisponibleService;
 use App\Services\ShopifyTransformer;
@@ -1583,10 +1584,16 @@ class ProductosController extends Controller
         try {
             $trasladosExitosos = 0;
             $errores = [];
+            $user = Auth::user();
+            $empresa = Empresa::find($user->id_empresa);
+            $lotesActivo = $empresa ? $empresa->isLotesActivo() : false;
+            $metodologia = $empresa ? $empresa->getLotesMetodologia() : 'FIFO';
+            $idBodegaOrigen = (int) $request->id_bodega_origen;
+            $idBodegaDestino = (int) $request->id_bodega_destino;
 
             foreach ($request->productos as $productoData) {
                 $idProducto = $productoData['id_producto'];
-                $cantidad = $productoData['cantidad'];
+                $cantidad = (float) $productoData['cantidad'];
 
 
                 if ($cantidad <= 0) {
@@ -1600,12 +1607,20 @@ class ProductosController extends Controller
                     continue;
                 }
 
+                if ($producto->inventario_por_lotes && $lotesActivo && $metodologia === 'Manual') {
+                    $tieneLotes = !empty($productoData['lote_id']) || !empty($productoData['lotes_asignados']);
+                    if (!$tieneLotes) {
+                        $errores[] = "Debe distribuir o seleccionar lotes para el producto {$producto->nombre}.";
+                        continue;
+                    }
+                }
+
                 $origen = Inventario::where('id_producto', $producto->id)
-                    ->where('id_bodega', $request->id_bodega_origen)
+                    ->where('id_bodega', $idBodegaOrigen)
                     ->first();
 
                 $destino = Inventario::where('id_producto', $producto->id)
-                    ->where('id_bodega', $request->id_bodega_destino)
+                    ->where('id_bodega', $idBodegaDestino)
                     ->first();
 
 
@@ -1619,39 +1634,15 @@ class ProductosController extends Controller
                     $errores[] = "La sucursal origen no tiene stock suficiente para el producto {$producto->nombre}.";
                     continue;
                 }
-                $user = Auth::user();
 
-
-                $traslado = new Traslado();
-                $traslado->id_producto = $idProducto;
-                $traslado->id_bodega_de = $request->id_bodega_origen;
-                $traslado->id_bodega = $request->id_bodega_destino;
-                $traslado->concepto = $request->concepto;
-                $traslado->cantidad = $cantidad;
-                $traslado->id_usuario = $user->id;
-                $traslado->id_empresa = $user->id_empresa;
-                $traslado->estado = 'Confirmado';
-                $traslado->save();
-
-
-                $origen->stock -= $cantidad;
-                $origen->save();
-                $origen->kardex($traslado, $cantidad * -1);
-                if ($destino) {
-                    $destino->stock += $cantidad;
-                    $destino->save();
-                    $destino->kardex($traslado, $cantidad);
-                } else {
+                if (!$destino) {
                     $destino = Inventario::firstOrCreate(
                         [
                             'id_producto' => $idProducto,
-                            'id_bodega' => $request->id_bodega_destino,
+                            'id_bodega' => $idBodegaDestino,
                         ],
                         ['stock' => 0, 'stock_minimo' => 0, 'stock_maximo' => 0]
                     );
-                    $destino->stock += $cantidad;
-                    $destino->save();
-                    $destino->kardex($traslado, $cantidad);
                 }
 
 
@@ -1667,11 +1658,11 @@ class ProductosController extends Controller
                     }
 
                     $origenComp = Inventario::where('id_producto', $comp->id_compuesto)
-                        ->where('id_bodega', $request->id_bodega_origen)
+                        ->where('id_bodega', $idBodegaOrigen)
                         ->first();
 
                     $destinoComp = Inventario::where('id_producto', $comp->id_compuesto)
-                        ->where('id_bodega', $request->id_bodega_destino)
+                        ->where('id_bodega', $idBodegaDestino)
                         ->first();
 
                     if (!$origenComp || !$destinoComp) {
@@ -1694,28 +1685,87 @@ class ProductosController extends Controller
                     continue;
                 }
 
-                // Actualizar inventario de las composiciones
-                foreach ($producto->composiciones as $comp) {
-                    $origenComp = Inventario::where('id_producto', $comp->id_compuesto)
-                        ->where('id_bodega', $request->id_bodega_origen)
-                        ->first();
+                DB::beginTransaction();
+                try {
+                    $traslado = new Traslado();
+                    $traslado->id_producto = $idProducto;
+                    $traslado->id_bodega_de = $idBodegaOrigen;
+                    $traslado->id_bodega = $idBodegaDestino;
+                    $traslado->concepto = $request->concepto;
+                    $traslado->cantidad = $cantidad;
+                    $traslado->id_usuario = $user->id;
+                    $traslado->id_empresa = $user->id_empresa;
+                    $traslado->estado = 'Confirmado';
+                    $traslado->save();
 
-                    $destinoComp = Inventario::where('id_producto', $comp->id_compuesto)
-                        ->where('id_bodega', $request->id_bodega_destino)
-                        ->first();
+                    if ($producto->inventario_por_lotes && $lotesActivo) {
+                        $asignaciones = LoteAsignacionService::resolverAsignacionesSalida(
+                            $producto,
+                            $idBodegaOrigen,
+                            $cantidad,
+                            $metodologia,
+                            $lotesActivo,
+                            !empty($productoData['lote_id']) ? (int) $productoData['lote_id'] : null,
+                            $productoData['lotes_asignados'] ?? null
+                        );
 
-                    $cantidadComp = $cantidad * $comp->cantidad;
+                        if (empty($asignaciones)) {
+                            if ($metodologia === 'Manual') {
+                                throw new \Exception("Debe seleccionar un lote para el producto {$producto->nombre}.");
+                            }
+                            throw new \Exception("No hay lotes con stock suficiente para el producto {$producto->nombre}.");
+                        }
 
-                    $origenComp->stock -= $cantidadComp;
-                    $origenComp->save();
-                    $origenComp->kardex($traslado, $cantidadComp * -1);
+                        $pivotRows = LoteAsignacionService::aplicarTrasladoLotes(
+                            $asignaciones,
+                            $producto,
+                            $idBodegaOrigen,
+                            $idBodegaDestino,
+                            $traslado,
+                            $origen,
+                            $destino,
+                            !empty($productoData['lote_id_destino']) ? (int) $productoData['lote_id_destino'] : null
+                        );
+                        LoteAsignacionService::sincronizarTrasladoLotes($traslado->id, $pivotRows);
+                        $traslado->lote_id = count($pivotRows) === 1 ? $pivotRows[0]['lote_id'] : null;
+                        $traslado->lote_id_destino = count($pivotRows) === 1 ? ($pivotRows[0]['lote_id_destino'] ?? null) : null;
+                        $traslado->save();
+                    } else {
+                        $origen->stock -= $cantidad;
+                        $origen->save();
+                        $origen->kardex($traslado, $cantidad * -1);
 
-                    $destinoComp->stock += $cantidadComp;
-                    $destinoComp->save();
-                    $destinoComp->kardex($traslado, $cantidadComp);
+                        $destino->stock += $cantidad;
+                        $destino->save();
+                        $destino->kardex($traslado, $cantidad);
+                    }
+
+                    foreach ($producto->composiciones as $comp) {
+                        $origenComp = Inventario::where('id_producto', $comp->id_compuesto)
+                            ->where('id_bodega', $idBodegaOrigen)
+                            ->first();
+
+                        $destinoComp = Inventario::where('id_producto', $comp->id_compuesto)
+                            ->where('id_bodega', $idBodegaDestino)
+                            ->first();
+
+                        $cantidadComp = $cantidad * $comp->cantidad;
+
+                        $origenComp->stock -= $cantidadComp;
+                        $origenComp->save();
+                        $origenComp->kardex($traslado, $cantidadComp * -1);
+
+                        $destinoComp->stock += $cantidadComp;
+                        $destinoComp->save();
+                        $destinoComp->kardex($traslado, $cantidadComp);
+                    }
+
+                    DB::commit();
+                    $trasladosExitosos++;
+                } catch (\Exception $e) {
+                    DB::rollBack();
+                    $errores[] = $e->getMessage();
                 }
-
-                $trasladosExitosos++;
             }
 
             if ($trasladosExitosos == 0) {
