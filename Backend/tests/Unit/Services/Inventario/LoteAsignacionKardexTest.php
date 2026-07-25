@@ -78,6 +78,17 @@ class LoteAsignacionKardexTest extends TestCase
         );
     }
 
+    public function test_resolver_lote_destino_copia_datos_del_origen_al_crear(): void
+    {
+        $source = $this->methodSource(LoteAsignacionService::class, 'resolverLoteDestinoTraslado');
+
+        $this->assertStringContainsString("'numero_lote' => \$loteOrigen->numero_lote", $source);
+        $this->assertStringContainsString("'fecha_vencimiento' => \$loteOrigen->fecha_vencimiento", $source);
+        $this->assertStringContainsString("'fecha_fabricacion' => \$loteOrigen->fecha_fabricacion", $source);
+        $this->assertStringContainsString("'observaciones' => \$loteOrigen->observaciones", $source);
+        $this->assertStringContainsString('Lote::create([', $source);
+    }
+
     private function methodSource(string $class, string $method): string
     {
         $ref = new ReflectionMethod($class, $method);

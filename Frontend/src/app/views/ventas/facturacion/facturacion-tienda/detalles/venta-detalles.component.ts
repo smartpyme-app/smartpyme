@@ -148,9 +148,6 @@ export class VentaDetallesComponent implements OnInit {
             }
 
             detalle.total_costo  = (cantidad * parseFloat(detalle.costo ?? 0)).toFixed(4);
-            if (!this.skipLimpiarLotes && detalle.inventario_por_lotes && this.getLotesMetodologia() === 'Manual') {
-                limpiarAsignacionLotesDetalle(detalle);
-            }
             this.aplicarTipoGravado(detalle);
             this.update.emit(this.venta);
             this.sumTotal.emit();

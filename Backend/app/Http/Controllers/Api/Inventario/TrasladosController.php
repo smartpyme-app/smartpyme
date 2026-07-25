@@ -148,22 +148,23 @@ class TrasladosController extends Controller
                 if ($metodologia === 'Manual') {
                     throw new \Exception('Debe seleccionar un lote para este producto.');
                 }
-            } else {
-                $pivotRows = LoteAsignacionService::aplicarTrasladoLotes(
-                    $asignaciones,
-                    $producto,
-                    (int) $request->id_bodega_de,
-                    (int) $request->id_bodega,
-                    $traslado,
-                    $origen,
-                    $destino,
-                    $request->lote_id_destino ? (int) $request->lote_id_destino : null
-                );
-                LoteAsignacionService::sincronizarTrasladoLotes($traslado->id, $pivotRows);
-                $traslado->lote_id = count($pivotRows) === 1 ? $pivotRows[0]['lote_id'] : null;
-                $traslado->lote_id_destino = count($pivotRows) === 1 ? ($pivotRows[0]['lote_id_destino'] ?? null) : null;
-                $traslado->save();
+                throw new \Exception('No hay lotes con stock suficiente para este producto.');
             }
+
+            $pivotRows = LoteAsignacionService::aplicarTrasladoLotes(
+                $asignaciones,
+                $producto,
+                (int) $request->id_bodega_de,
+                (int) $request->id_bodega,
+                $traslado,
+                $origen,
+                $destino,
+                $request->lote_id_destino ? (int) $request->lote_id_destino : null
+            );
+            LoteAsignacionService::sincronizarTrasladoLotes($traslado->id, $pivotRows);
+            $traslado->lote_id = count($pivotRows) === 1 ? $pivotRows[0]['lote_id'] : null;
+            $traslado->lote_id_destino = count($pivotRows) === 1 ? ($pivotRows[0]['lote_id_destino'] ?? null) : null;
+            $traslado->save();
         } else {
             $origen->stock -= $cantidadBase;
             $origen->save();
@@ -314,22 +315,23 @@ class TrasladosController extends Controller
                         if ($metodologia === 'Manual') {
                             throw new \Exception("Debe seleccionar un lote para el producto {$producto->nombre}.");
                         }
-                    } else {
-                        $pivotRows = LoteAsignacionService::aplicarTrasladoLotes(
-                            $asignaciones,
-                            $producto,
-                            (int) $request->origen_id,
-                            (int) $request->destino_id,
-                            $traslado,
-                            $origen,
-                            $destino,
-                            !empty($detalleData['lote_id_destino']) ? (int) $detalleData['lote_id_destino'] : null
-                        );
-                        LoteAsignacionService::sincronizarTrasladoLotes($traslado->id, $pivotRows);
-                        $traslado->lote_id = count($pivotRows) === 1 ? $pivotRows[0]['lote_id'] : null;
-                        $traslado->lote_id_destino = count($pivotRows) === 1 ? ($pivotRows[0]['lote_id_destino'] ?? null) : null;
-                        $traslado->save();
+                        throw new \Exception("No hay lotes con stock suficiente para el producto {$producto->nombre}.");
                     }
+
+                    $pivotRows = LoteAsignacionService::aplicarTrasladoLotes(
+                        $asignaciones,
+                        $producto,
+                        (int) $request->origen_id,
+                        (int) $request->destino_id,
+                        $traslado,
+                        $origen,
+                        $destino,
+                        !empty($detalleData['lote_id_destino']) ? (int) $detalleData['lote_id_destino'] : null
+                    );
+                    LoteAsignacionService::sincronizarTrasladoLotes($traslado->id, $pivotRows);
+                    $traslado->lote_id = count($pivotRows) === 1 ? $pivotRows[0]['lote_id'] : null;
+                    $traslado->lote_id_destino = count($pivotRows) === 1 ? ($pivotRows[0]['lote_id_destino'] ?? null) : null;
+                    $traslado->save();
                 } else {
                     $origen->stock -= $cantidadBase;
                     $origen->save();
@@ -485,31 +487,14 @@ class TrasladosController extends Controller
                 $loteOrigen->stock = max(0, $stockDisponible - $cantidadRequerida);
                 $loteOrigen->save();
 
-                if ($traslado->lote_id_destino) {
-                    $loteDestino = Lote::findOrFail($traslado->lote_id_destino);
-                    $loteDestino->stock += $cantidadBase;
-                    $loteDestino->save();
-                } else {
-                    $loteDestino = Lote::where('id_producto', $producto->id)
-                        ->where('id_bodega', $traslado->id_bodega)
-                        ->where('numero_lote', $loteOrigen->numero_lote)
-                        ->first();
-                    if ($loteDestino) {
-                        $loteDestino->stock += $cantidadBase;
-                        $loteDestino->save();
-                    } else {
-                        Lote::create([
-                            'id_producto' => $producto->id,
-                            'id_bodega' => $traslado->id_bodega,
-                            'numero_lote' => $loteOrigen->numero_lote,
-                            'fecha_vencimiento' => $loteOrigen->fecha_vencimiento,
-                            'fecha_fabricacion' => $loteOrigen->fecha_fabricacion,
-                            'stock' => $cantidadBase,
-                            'stock_inicial' => $cantidadBase,
-                            'id_empresa' => Auth::user()->id_empresa,
-                        ]);
-                    }
-                }
+                $loteDestino = LoteAsignacionService::resolverLoteDestinoTraslado(
+                    $producto,
+                    (int) $traslado->id_bodega,
+                    $loteOrigen,
+                    $cantidadBase,
+                    $traslado->lote_id_destino ? (int) $traslado->lote_id_destino : null
+                );
+                $traslado->lote_id_destino = $loteDestino->id;
             }
 
             $origen = Inventario::where('id_producto', $producto->id)->where('id_bodega', $traslado->id_bodega_de)->first();

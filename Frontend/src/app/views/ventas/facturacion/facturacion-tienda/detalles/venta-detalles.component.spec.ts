@@ -53,6 +53,19 @@ describe('VentaDetallesComponent', () => {
     expect(detalle.lote).toEqual({ id: 7, numero_lote: 'A-1' });
   });
 
+  it('al aplicar descuento no elimina la asignación de lotes', () => {
+    const component = createComponent();
+    const detalle = detalleConLotes();
+
+    detalle.descuento_porcentaje = 10;
+    component.updateTotal(detalle);
+
+    expect(detalle.lotes_asignados).toEqual([{ lote_id: 7, numero_lote: 'A-1', cantidad: 2 }]);
+    expect(detalle.lote_id).toBe(7);
+    expect(detalle.lote).toEqual({ id: 7, numero_lote: 'A-1' });
+    expect(detalle.descuento).toBeGreaterThan(0);
+  });
+
   it('al cambiar la cantidad sí elimina la asignación de lotes', () => {
     const component = createComponent();
     const detalle = detalleConLotes();

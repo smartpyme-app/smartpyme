@@ -309,9 +309,6 @@ export class VentaDetallesV2Component implements OnInit {
             detalle.descuento_con_iva = redondearMoneda(descuentoConIva);
 
             detalle.total_costo  = (cantidad * parseFloat(detalle.costo ?? 0)).toFixed(4);
-            if (!this.skipLimpiarLotes && detalle.inventario_por_lotes && this.getLotesMetodologia() === 'Manual') {
-                limpiarAsignacionLotesDetalle(detalle);
-            }
             this.aplicarTipoGravado(detalle);
             this.update.emit(this.venta);
             this.sumTotal.emit();

@@ -716,7 +716,10 @@ class LoteAsignacionService
         }
     }
 
-    private static function resolverLoteDestinoTraslado(
+    /**
+     * Reutiliza o crea el lote en la bodega destino con la misma información del origen.
+     */
+    public static function resolverLoteDestinoTraslado(
         Producto $producto,
         int $idBodegaDestino,
         Lote $loteOrigen,
@@ -758,6 +761,7 @@ class LoteAsignacionService
             'numero_lote' => $loteOrigen->numero_lote,
             'fecha_vencimiento' => $loteOrigen->fecha_vencimiento,
             'fecha_fabricacion' => $loteOrigen->fecha_fabricacion,
+            'observaciones' => $loteOrigen->observaciones,
             'stock' => $cantidad,
             'stock_inicial' => $cantidad,
             'id_empresa' => Auth::user()->id_empresa ?? $producto->id_empresa,
