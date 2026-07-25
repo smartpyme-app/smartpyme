@@ -2,6 +2,8 @@
 
 namespace App\Exports\ReportesAutomaticos\VentasPorVendedor;
 
+use App\Helpers\CountryTermsHelper;
+use App\Models\Admin\Empresa;
 use App\Models\Ventas\Detalle;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\FromCollection;
@@ -51,6 +53,10 @@ class VentasPorVendedorExport implements FromCollection, WithHeadings, WithMappi
 
     public function headings(): array
     {
+        $empresa = $this->id_empresa
+            ? Empresa::find($this->id_empresa)
+            : (Auth::check() ? Auth::user()->empresa : null);
+
         return [
             'Fecha',
             'Cliente',
@@ -70,7 +76,7 @@ class VentasPorVendedorExport implements FromCollection, WithHeadings, WithMappi
             'Costo',
             'Precio',
             'Descuento',
-            'IVA',
+            CountryTermsHelper::tax('taxLabel', $empresa),
             'Utilidad',
             'Total',
             'Empresa',

@@ -30,6 +30,8 @@
       "priceWithTaxColon": "Precio con IVA:",
       "taxLabel": "IVA",
       "taxLabelColon": "IVA:",
+      "taxNameExamplePlaceholder": "Ej. IVA, Retención, etc.",
+      "totalWithoutTax": "Total sin IVA",
       "taxWithRate": "Con IVA ({{rate}}%)",
       "taxWithShort": "Con IVA",
       "chargeTax": "Cobrar IVA",

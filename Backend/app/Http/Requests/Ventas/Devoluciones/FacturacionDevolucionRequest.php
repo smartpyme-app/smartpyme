@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Ventas\Devoluciones;
 
+use App\Helpers\CountryTermsHelper;
 use Illuminate\Foundation\Http\FormRequest;
 
 class FacturacionDevolucionRequest extends FormRequest
@@ -96,7 +97,7 @@ class FacturacionDevolucionRequest extends FormRequest
             'fecha' => 'fecha',
             'tipo' => 'tipo',
             'detalles' => 'detalles',
-            'iva' => 'IVA',
+            'iva' => CountryTermsHelper::tax('taxLabel'),
             'total_costo' => 'total de costo',
             'sub_total' => 'subtotal',
             'total' => 'total',

@@ -158,7 +158,7 @@
                 <td class="text-right">{{ $simboloMonedaEmpresa }} {{ number_format($compra->sub_total, 2) }}</td>
             </tr>
             <tr>
-                <td colspan="4" class="text-right">IVA</td>
+                <td colspan="4" class="text-right">{{ \App\Helpers\CountryTermsHelper::tax('taxLabel', $compra->empresa ?? null) }}</td>
                 <td class="text-right">{{ $simboloMonedaEmpresa }} {{ number_format($compra->iva, 2) }}</td>
             </tr>
             <tr>

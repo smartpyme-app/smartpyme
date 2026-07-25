@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\Constants\OrigenStockVentaConstants;
+use App\Helpers\CountryTermsHelper;
 use App\Models\Admin\Empresa;
 use App\Models\Inventario\Paquete;
 use App\Models\Ventas\Detalle;
@@ -47,6 +48,9 @@ class VentasDetallesExport implements FromQuery, WithHeadings, WithMapping, With
     }
 
     public function headings():array{
+        $empresa = $this->idEmpresaFiltro ? Empresa::find($this->idEmpresaFiltro) : null;
+        $taxLabel = CountryTermsHelper::tax('taxLabel', $empresa);
+
         $headings = [
             'Fecha',
             'Cliente',
@@ -69,7 +73,7 @@ class VentasDetallesExport implements FromQuery, WithHeadings, WithMapping, With
             'Costo',
             'Precio',
             'Descuento',
-            'IVA',
+            $taxLabel,
             'Utilidad',
             'Total',
             'Empresa',

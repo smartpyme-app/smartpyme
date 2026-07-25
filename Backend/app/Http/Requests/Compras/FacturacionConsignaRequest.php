@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Compras;
 
+use App\Helpers\CountryTermsHelper;
 use Illuminate\Foundation\Http\FormRequest;
 
 class FacturacionConsignaRequest extends FormRequest
@@ -98,7 +99,7 @@ class FacturacionConsignaRequest extends FormRequest
             'tipo_documento' => 'tipo de documento',
             'id_proveedor' => 'proveedor',
             'detalles' => 'detalles',
-            'iva' => 'IVA',
+            'iva' => CountryTermsHelper::tax('taxLabel'),
             'forma_pago' => 'forma de pago',
             'sub_total' => 'subtotal',
             'total' => 'total',

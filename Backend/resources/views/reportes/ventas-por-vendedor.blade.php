@@ -1,3 +1,9 @@
+@php
+    $empresaTerminos = isset($datos['id_empresa'])
+        ? \App\Models\Admin\Empresa::find($datos['id_empresa'])
+        : null;
+    $taxLabel = \App\Helpers\CountryTermsHelper::tax('taxLabel', $empresaTerminos);
+@endphp
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -84,7 +90,7 @@
             @elseif($datos['tipo_reporte'] === 'detalle-ventas-totales')
                 <p>Incluye una línea por venta con montos, estado, cliente y demás columnas configuradas en el sistema.</p>
             @elseif($datos['tipo_reporte'] === 'detalle-ventas-por-producto')
-                <p>Incluye una fila por cada producto vendido en el período, con cantidades, precios, IVA y sucursal, según la configuración de la empresa.</p>
+                <p>Incluye una fila por cada producto vendido en el período, con cantidades, precios, {{ $taxLabel }} y sucursal, según la configuración de la empresa.</p>
             @endif
 
             <p style="background-color: #f8f8f8; padding: 12px 15px; border-left: 4px solid #1775e5; margin: 20px 0; font-size: 14px;">

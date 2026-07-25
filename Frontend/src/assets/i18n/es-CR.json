@@ -30,6 +30,8 @@
       "priceWithTaxColon": "Precio con impuesto:",
       "taxLabel": "Impuesto",
       "taxLabelColon": "Impuesto:",
+      "taxNameExamplePlaceholder": "Ej. Impuesto, Retención, etc.",
+      "totalWithoutTax": "Total sin impuesto",
       "taxWithRate": "Con impuesto ({{rate}}%)",
       "taxWithShort": "Con impuesto",
       "chargeTax": "Cobrar impuesto",

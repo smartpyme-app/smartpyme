@@ -73,7 +73,7 @@
     @endphp
     <p>Subtotal consumo: {{ $simbolo }}{{ number_format($preCuenta->subtotal ?? 0, 2) }}</p>
     @if($montoIva > 0)
-    <p>IVA: {{ $simbolo }}{{ number_format($montoIva, 2) }}</p>
+    <p>{{ \App\Helpers\CountryTermsHelper::tax('taxLabelColon', $empresa) }} {{ $simbolo }}{{ number_format($montoIva, 2) }}</p>
     @endif
     @if($pctProp > 0)
     <p>Propina ({{ number_format($pctProp, 2) }}%): {{ $simbolo }}{{ number_format($montoProp, 2) }}</p>

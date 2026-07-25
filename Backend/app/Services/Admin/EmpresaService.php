@@ -2,6 +2,7 @@
 
 namespace App\Services\Admin;
 
+use App\Helpers\CountryTermsHelper;
 use App\Models\Admin\Empresa;
 use App\Models\Admin\Canal;
 use App\Models\Admin\Documento;
@@ -195,7 +196,7 @@ class EmpresaService
         ]);
 
         Impuesto::create([
-            'nombre' => 'IVA',
+            'nombre' => CountryTermsHelper::tax('taxLabel', $empresa),
             'porcentaje' => $empresa->iva,
             'id_empresa' => $empresa->id
         ]);

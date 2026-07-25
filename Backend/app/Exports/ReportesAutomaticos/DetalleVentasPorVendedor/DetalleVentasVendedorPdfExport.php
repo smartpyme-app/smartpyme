@@ -4,6 +4,8 @@ namespace App\Exports\ReportesAutomaticos\DetalleVentasPorVendedor;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Helpers\CountryTermsHelper;
+use App\Models\Admin\Empresa;
 use App\Services\Ventas\VentaMontosPorVendedorService;
 use Exception;
 use Mpdf\Mpdf;
@@ -698,6 +700,8 @@ class DetalleVentasVendedorPdfExport
     
     public function getHeadings()
     {
+        $empresa = $this->id_empresa ? Empresa::find($this->id_empresa) : null;
+
         return [
             'Vendedor', 
             'Correlativo', 
@@ -707,7 +711,7 @@ class DetalleVentasVendedorPdfExport
             'Precio', 
             'Descuento', 
             'Subtotal',
-            'IVA',
+            CountryTermsHelper::tax('taxLabel', $empresa),
             'Total'
         ];
     }

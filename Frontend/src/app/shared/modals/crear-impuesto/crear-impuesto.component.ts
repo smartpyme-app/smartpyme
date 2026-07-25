@@ -2,6 +2,7 @@ import { Component, OnInit, TemplateRef, Output, Input, EventEmitter, inject  } 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { TranslatePipe } from '@ngx-translate/core';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -13,7 +14,7 @@ import { BaseModalComponent } from '../../base/base-modal.component';
     selector: 'app-crear-impuesto',
     templateUrl: './crear-impuesto.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule],
+    imports: [CommonModule, RouterModule, FormsModule, TranslatePipe],
 
 })
 export class CrearImpuestoComponent extends BaseModalComponent implements OnInit {

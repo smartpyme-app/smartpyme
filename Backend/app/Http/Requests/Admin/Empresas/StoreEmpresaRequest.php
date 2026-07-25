@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Admin\Empresas;
 
+use App\Helpers\CountryTermsHelper;
+use App\Models\Admin\Empresa;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -36,14 +38,16 @@ class StoreEmpresaRequest extends FormRequest
      */
     public function messages(): array
     {
+        $tax = $this->taxLabel();
+
         return [
             'id.exists' => 'La empresa no existe.',
             'nombre.required' => 'El nombre de la empresa es obligatorio.',
             'nombre.max' => 'El nombre no puede exceder 255 caracteres.',
-            'iva.required' => 'El IVA es obligatorio.',
-            'iva.numeric' => 'El IVA debe ser un número.',
-            'iva.min' => 'El IVA no puede ser negativo.',
-            'iva.max' => 'El IVA no puede ser mayor a 100.',
+            'iva.required' => "El {$tax} es obligatorio.",
+            'iva.numeric' => "El {$tax} debe ser un número.",
+            'iva.min' => "El {$tax} no puede ser negativo.",
+            'iva.max' => "El {$tax} no puede ser mayor a 100.",
             'file.file' => 'El archivo debe ser válido.',
             'file.image' => 'El archivo debe ser una imagen.',
             'file.mimes' => 'La imagen debe ser de tipo: jpeg, png, jpg, gif o svg.',
@@ -59,9 +63,17 @@ class StoreEmpresaRequest extends FormRequest
     {
         return [
             'nombre' => 'nombre de la empresa',
-            'iva' => 'IVA',
+            'iva' => $this->taxLabel(),
             'file' => 'logo',
         ];
+    }
+
+    private function taxLabel(): string
+    {
+        return CountryTermsHelper::tax('taxLabel', new Empresa([
+            'pais' => $this->input('pais'),
+            'cod_pais' => $this->input('cod_pais'),
+        ]));
     }
 
     /**

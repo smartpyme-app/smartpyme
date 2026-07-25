@@ -156,13 +156,7 @@
                 @elseif ($compra->iva > 0)
                 <tr>
                     <td colspan="2"></td>
-                    <td class="text-right">
-                        @if ($compra->empresa->pais == 'Honduras')
-                            ISV
-                        @else
-                            IVA
-                        @endif
-                    </td>
+                    <td class="text-right">{{ \App\Helpers\CountryTermsHelper::tax('taxLabel', $compra->empresa) }}</td>
                     <td class="text-right">{{ $compra->empresa->currency->currency_symbol }}{{ number_format($compra->iva, 2) }}</td>
                 </tr>
                 @endif

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Helpers\CountryTermsHelper;
 use App\Models\Admin\Canal;
 use App\Models\Admin\Documento;
 use Illuminate\Http\Request;
@@ -399,7 +400,7 @@ class EmpresasController extends Controller
         ]);
 
         Impuesto::create([
-            'nombre' => 'IVA',
+            'nombre' => CountryTermsHelper::tax('taxLabel', $empresa),
             'porcentaje' => $empresa->iva,
             'id_empresa' => $empresa->id
         ]);

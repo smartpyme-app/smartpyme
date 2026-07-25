@@ -18,6 +18,7 @@ import {
 
 import Swal from 'sweetalert2';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
+import { TranslatePipe } from '@ngx-translate/core';
 
 import {
     calcularDescuentoDesdePrecioConIva,
@@ -63,6 +64,7 @@ import {
     TiendaVentaCitasComponent,
     FeCrExoneracionDetalleModalComponent,
     CurrencyPipe,
+    TranslatePipe,
   ]
 })
 export class VentaDetallesV2Component implements OnInit {

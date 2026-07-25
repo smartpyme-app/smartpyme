@@ -137,7 +137,7 @@
                 </tr>
                 <tr>
                     <td colspan="2"></td>
-                    <td class="text-right">IVA</td>
+                    <td class="text-right">{{ \App\Helpers\CountryTermsHelper::tax('taxLabel', $venta->empresa) }}</td>
                     <td class="text-right">{{ $simbolo_moneda }}{{ number_format($venta->iva, 2) }}</td>
                 </tr>
                 <tr>

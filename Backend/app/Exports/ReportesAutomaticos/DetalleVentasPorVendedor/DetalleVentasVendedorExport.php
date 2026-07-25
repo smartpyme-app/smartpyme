@@ -116,7 +116,7 @@ class DetalleVentasVendedorExport implements WithMultipleSheets
         // Crear una hoja para cada vendedor
         foreach ($this->vendedoresUnicos as $vendedor) {
             $ventasVendedor = $this->detalleVentas->where('nombre_vendedor', $vendedor);
-            $sheets[] = new DetalleVentasVendedorSheet($vendedor, $ventasVendedor);
+            $sheets[] = new DetalleVentasVendedorSheet($vendedor, $ventasVendedor, $this->id_empresa);
         }
         
         return $sheets;
