@@ -10,11 +10,12 @@ import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { SumPipe } from '@pipes/sum.pipe';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 @Component({
     selector: 'app-buscador-productos',
     templateUrl: './buscador-productos.component.html',
     standalone: true,
-    imports: [CommonModule, FormsModule, RouterModule, ReactiveFormsModule, SumPipe],
+    imports: [CommonModule, FormsModule, RouterModule, ReactiveFormsModule, SumPipe, CurrencyPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class BuscadorProductosComponent implements OnInit {

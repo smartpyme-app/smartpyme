@@ -31,7 +31,7 @@
 </head>
 {{-- <body> --}}
 <body onload="javascript:print();">
-    @php $simbolo_moneda = optional($empresa->currency)->currency_symbol ?? '$'; @endphp
+    @php $simbolo_moneda = \App\Helpers\CurrencyHelper::symbol($empresa); @endphp
     <div class="text-center">
         <h3>{{ $empresa->nombre }}</h3>
         <p>{{ $empresa->sector }}</p>
