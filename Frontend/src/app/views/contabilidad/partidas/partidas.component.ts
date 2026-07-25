@@ -1,5 +1,6 @@
 import { Component, OnInit, TemplateRef, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { PopoverModule } from 'ngx-bootstrap/popover';
@@ -20,7 +21,7 @@ import Swal from 'sweetalert2';
     templateUrl: './partidas.component.html',
     styleUrls: ['./partidas.component.scss'],
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, PopoverModule, NgSelectModule, SharedModule],
+    imports: [CommonModule, RouterModule, FormsModule, PopoverModule, NgSelectModule, SharedModule, CurrencyPipe],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PartidasComponent extends BasePaginatedModalComponent implements OnInit {

@@ -1,5 +1,6 @@
 import { Component, OnInit, TemplateRef, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { NgSelectModule } from '@ng-select/ng-select';
@@ -15,7 +16,7 @@ import Swal from 'sweetalert2';
     selector: 'app-conciliaciones',
     templateUrl: './conciliaciones.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, ReactiveFormsModule, NgSelectModule],
+    imports: [CommonModule, RouterModule, FormsModule, ReactiveFormsModule, NgSelectModule, CurrencyPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 

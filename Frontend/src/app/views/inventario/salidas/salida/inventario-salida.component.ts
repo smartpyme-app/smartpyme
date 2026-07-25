@@ -1,5 +1,6 @@
-import { Component, OnInit, TemplateRef, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+﻿import { Component, OnInit, TemplateRef, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { BuscadorProductosComponent } from '@shared/parts/buscador-productos/buscador-productos.component';
@@ -17,7 +18,7 @@ import { textoResumenLotesDetalle } from '@utils/lotes-venta.util';
     selector: 'app-inventario-salida',
     templateUrl: './inventario-salida.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, BuscadorProductosComponent, SharedModule],
+    imports: [CommonModule, RouterModule, FormsModule, BuscadorProductosComponent, SharedModule, CurrencyPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class InventarioSalidaComponent extends BaseModalComponent implements OnInit {

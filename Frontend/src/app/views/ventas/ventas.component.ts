@@ -1,6 +1,7 @@
-import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef, OnDestroy, ViewChild, inject } from '@angular/core';
+﻿import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef, OnDestroy, ViewChild, inject } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { PipesModule } from '@pipes/pipes.module';
 import { FormsModule } from '@angular/forms';
 import { PopoverModule } from 'ngx-bootstrap/popover';
@@ -50,7 +51,7 @@ export type VentasExportPeriodoTipo = 'detalles' | 'ventas' | 'general';
     selector: 'app-ventas',
     templateUrl: './ventas.component.html',
     standalone: true,
-    imports: [CommonModule, PipesModule, RouterModule, FormsModule, ImportarExcelComponent, PaginationComponent, CrearAbonoVentaComponent, TruncatePipe, PopoverModule, TooltipModule, NgSelectModule, LazyImageDirective, AlertsHaciendaComponent, FeCrEmisionAvanzadoComponent, NotificacionesContainerComponent, SharedModule],
+    imports: [CommonModule, PipesModule, RouterModule, FormsModule, ImportarExcelComponent, PaginationComponent, CrearAbonoVentaComponent, TruncatePipe, PopoverModule, TooltipModule, NgSelectModule, LazyImageDirective, AlertsHaciendaComponent, FeCrEmisionAvanzadoComponent, NotificacionesContainerComponent, SharedModule, CurrencyPipe],
     changeDetection: ChangeDetectionStrategy.OnPush,
     styleUrls: ['./ventas.component.css'],
 })

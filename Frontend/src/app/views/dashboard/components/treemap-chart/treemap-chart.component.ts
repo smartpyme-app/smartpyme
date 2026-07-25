@@ -1,5 +1,6 @@
 import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter } from '@angular/core';
 import { ChartConfig } from '../../models/chart-config.model';
+import { CurrencyFormatService } from '@services/currency-format.service';
 
 import { CommonModule } from '@angular/common';
 import { NgxEchartsModule } from 'ngx-echarts';
@@ -18,6 +19,8 @@ export class TreemapChartComponent implements OnInit, OnChanges {
   chartOption: any = {};
   echartsInstance: any;
 
+  constructor(private currencyFormat: CurrencyFormatService) {}
+
   ngOnInit(): void {
     this.initChart();
   }
@@ -26,6 +29,13 @@ export class TreemapChartComponent implements OnInit, OnChanges {
     if (changes['config'] && !changes['config'].firstChange) {
       this.initChart();
     }
+  }
+
+  private formatMoney(value: number): string {
+    return this.currencyFormat.getSymbol() + new Intl.NumberFormat('es-GT', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(value);
   }
 
   initChart(): void {
@@ -93,11 +103,7 @@ export class TreemapChartComponent implements OnInit, OnChanges {
         trigger: 'item',
         formatter: (params: any) => {
           const value = params.value || params.data?.value || 0;
-          const formattedValue = '$' + new Intl.NumberFormat('es-GT', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-          }).format(value);
-          return `${params.name}<br/>${formattedValue}`;
+          return `${params.name}<br/>${this.formatMoney(value)}`;
         }
       },
       series: [
@@ -115,10 +121,7 @@ export class TreemapChartComponent implements OnInit, OnChanges {
             formatter: (params: any) => {
               const name = params.name || '';
               const value = params.value || params.data?.value || 0;
-              const formattedValue = '$' + new Intl.NumberFormat('es-GT', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-              }).format(value);
+              const formattedValue = this.formatMoney(value);
               
               if (name.length > 15) {
                 return name.substring(0, 15) + '...\n' + formattedValue;

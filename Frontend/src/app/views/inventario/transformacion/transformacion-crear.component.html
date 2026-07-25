@@ -168,7 +168,7 @@
                 <div class="form-group col-sm-6">
                     <label>Costo <span class="text-danger">*</span></label>
                     <div class="input-group">
-                        <span class="input-group-text">{{ usuario?.empresa?.currency?.currency_symbol || '$' }}</span>
+                        <span class="input-group-text">{{ currencySymbol }}</span>
                         <input type="number" class="form-control" [(ngModel)]="nuevoProducto.costo" name="costo"
                             placeholder="0.00" required>
                     </div>
@@ -187,7 +187,7 @@
                     <label>{{ 'country.tax.priceWithoutTax' | translate
                         }}</label>
                     <div class="input-group">
-                        <span class="input-group-text">{{ usuario?.empresa?.currency?.currency_symbol || '$' }}</span>
+                        <span class="input-group-text">{{ currencySymbol }}</span>
                         <input type="number" class="form-control" (change)="calPrecioFinal()" (keyup)="calPrecioFinal()"
                             [(ngModel)]="nuevoProducto.precio" name="precio" placeholder="0.00">
                     </div>
@@ -196,7 +196,7 @@
                     <label>{{ 'country.tax.priceWithTax' | translate
                         }}</label>
                     <div class="input-group">
-                        <span class="input-group-text">{{ usuario?.empresa?.currency?.currency_symbol || '$' }}</span>
+                        <span class="input-group-text">{{ currencySymbol }}</span>
                         <input type="number" class="form-control" (change)="calPrecioBase()" (keyup)="calPrecioBase()"
                             [(ngModel)]="nuevoProducto.precio_final" name="precio_final" placeholder="0.00">
                     </div>

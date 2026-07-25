@@ -1,5 +1,6 @@
 import { Component, OnInit, TemplateRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router } from '@angular/router';
@@ -21,7 +22,7 @@ import { TranslatePipe } from '@ngx-translate/core';
     selector: 'app-contribuyentes',
     templateUrl: './contribuyentes.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, SumPipe, TruncatePipe, LazyImageDirective, TranslatePipe],
+    imports: [CommonModule, RouterModule, FormsModule, SumPipe, TruncatePipe, LazyImageDirective, TranslatePipe, CurrencyPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 

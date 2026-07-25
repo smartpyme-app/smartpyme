@@ -1,5 +1,6 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+﻿import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 
@@ -13,7 +14,7 @@ import { BaseModalComponent } from '@shared/base/base-modal.component';
     selector: 'app-metodos-de-pago',
     templateUrl: './metodos-de-pago.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule],
+    imports: [CommonModule, RouterModule, FormsModule, CurrencyPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class MetodosDePagoComponent extends BaseModalComponent implements OnInit {

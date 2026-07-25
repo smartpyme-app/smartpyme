@@ -2,6 +2,8 @@
 
 namespace App\Exports;
 
+use App\Helpers\CountryTermsHelper;
+use App\Models\Admin\Empresa;
 use App\Models\Compras\Detalle;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\FromCollection;
@@ -22,6 +24,11 @@ class ComprasDetallesExport implements FromCollection, WithHeadings, WithMapping
     }
 
     public function headings():array{
+        $empresa = Auth::check() ? Auth::user()->empresa : null;
+        if (!$empresa && $this->request && $this->request->id_empresa) {
+            $empresa = Empresa::find($this->request->id_empresa);
+        }
+
         return[
             'Fecha',
             'Proveedor',
@@ -38,7 +45,7 @@ class ComprasDetallesExport implements FromCollection, WithHeadings, WithMapping
             'Cantidad',
             'Costo',
             'Sub Total',
-            'IVA',
+            CountryTermsHelper::tax('taxLabel', $empresa),
             'Descuento',
             'Percepción',
             'Total',

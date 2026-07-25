@@ -1610,7 +1610,8 @@ class VentasController extends Controller
                 'asunto' => $asunto,
                 'automatico' => true,
                 'tipo_reporte' => $configuracion->tipo_reporte,
-                'empresa' => $empresa->nombre
+                'empresa' => $empresa->nombre,
+                'id_empresa' => $empresa->id,
             ];
 
             $destinatarios = $configuracion->destinatarios;
@@ -1787,7 +1788,8 @@ class VentasController extends Controller
                 'asunto' => $asunto ?: "Reporte de Prueba: " . $configuracion->tipo_reporte . " - " . Carbon::today()->format('d/m/Y'),
                 'esPrueba' => true,
                 'tipo_reporte' => $configuracion->tipo_reporte,
-                'empresa' => $empresa->nombre
+                'empresa' => $empresa->nombre,
+                'id_empresa' => $empresa->id,
             ];
 
             Mail::to($destinatarios)->send(new ReporteVentasPorVendedor($datos));

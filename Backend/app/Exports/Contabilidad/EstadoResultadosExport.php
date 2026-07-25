@@ -2,6 +2,7 @@
 
 namespace App\Exports\Contabilidad;
 
+use App\Helpers\CurrencyHelper;
 use App\Services\Contabilidad\EstadoResultadosNiifSvPresenter;
 use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
@@ -111,7 +112,7 @@ class EstadoResultadosHojaCascada implements FromArray, WithEvents, WithTitle, S
                 $sheet->setCellValue('A' . $row, $this->empresa);
                 $sheet->mergeCells("A{$row}:{$lastCol}{$row}");
                 $row++;
-                $sheet->setCellValue('A' . $row, 'ESTADO DE RESULTADOS (NIIF PYMES — El Salvador) — en USD, sin IVA en ingresos/gastos');
+                $sheet->setCellValue('A' . $row, 'ESTADO DE RESULTADOS (NIIF PYMES — El Salvador) — en ' . CurrencyHelper::code() . ', sin IVA en ingresos/gastos');
                 $sheet->mergeCells("A{$row}:{$lastCol}{$row}");
                 $row++;
                 $sheet->setCellValue('A' . $row, (string) ($this->estado['periodo_titulo'] ?? ''));
@@ -307,7 +308,7 @@ class EstadoResultadosHojaParametros implements FromArray, WithTitle, WithEvents
                 $s->setCellValue('B2', (float) ($c['isr_tasa'] ?? 0.30));
                 $s->setCellValue('A3', 'Tasa pago a cuenta (1,75% ing. brutos) — edite B3:');
                 $s->setCellValue('B3', 0.0175);
-                $s->setCellValue('A4', 'Umbral anual (USD) para 25% ISR:');
+                $s->setCellValue('A4', 'Umbral anual (' . CurrencyHelper::code() . ') para 25% ISR:');
                 $s->setCellValue('B4', 150000);
                 $s->setCellValue('A5', 'Ingreso gravable proyectado a anual (del período):');
                 $s->setCellValue('B5', (float) ($this->estado['L']['ingresos_gravables_proyectados'] ?? 0));

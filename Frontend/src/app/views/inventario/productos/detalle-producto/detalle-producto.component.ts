@@ -4,12 +4,13 @@ import { ActivatedRoute, RouterModule } from '@angular/router';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { HistorialPrecioCostoComponent } from '../../historial-precio-costo/historial-precio-costo.component';
 
 @Component({
   selector: 'app-detalle-producto',
   templateUrl: './detalle-producto.component.html',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, HistorialPrecioCostoComponent],
 })
 export class DetalleProductoComponent implements OnInit {
 

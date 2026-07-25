@@ -1,9 +1,11 @@
-import { Component, OnInit, TemplateRef, ViewChild, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+﻿import { Component, OnInit, TemplateRef, ViewChild, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { SumPipe }     from '@pipes/sum.pipe';
+import { TranslatePipe } from '@ngx-translate/core';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
@@ -22,7 +24,7 @@ import { LazyImageDirective } from '../../../../directives/lazy-image.directive'
     selector: 'app-facturacion-consigna',
     templateUrl: './facturacion-consigna.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, LazyImageDirective],
+    imports: [CommonModule, RouterModule, FormsModule, LazyImageDirective, TranslatePipe, CurrencyPipe],
     providers: [SumPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })

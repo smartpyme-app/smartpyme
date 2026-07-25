@@ -16,7 +16,7 @@
         <th colspan="3" style="text-align: center; font-size: 14px;"><strong>Del 1 al {{ date('t', mktime(0, 0, 0, $month, 1, $year)) }} de {{ $month_name }} de {{ $year }}</strong></th>
     </tr>
     <tr>
-        <th colspan="3" style="text-align: center; font-size: 12px;"><strong>(Expresado en US Dólares)</strong></th>
+        <th colspan="3" style="text-align: center; font-size: 12px;"><strong>(Expresado en {{ \App\Helpers\CurrencyHelper::label($empresa) }})</strong></th>
     </tr>
     <tr></tr>
     <tr>

@@ -1,4 +1,4 @@
-<div class="ml-5 mb-4">
+﻿<div class="ml-5 mb-4">
     @for (subcategoria of subcategorias; track subcategoria.id) {
         <div>
             <div class="p-1 pb-2 border">
@@ -137,7 +137,7 @@
                 <label>Comisión </label>
                 <div class="input-group">
                     @if (subcategoria.tipo_comision == 'Monto Fijo') {
-                        <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
+                        <span class="input-group-text">{{ currencySymbol }}</span>
 
                   }
                     <input type="number" class="form-control" [(ngModel)]="subcategoria.comision" name="comision">

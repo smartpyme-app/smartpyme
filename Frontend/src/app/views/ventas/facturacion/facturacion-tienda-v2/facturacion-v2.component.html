@@ -235,7 +235,7 @@
                             <b>Descuento por puntos</b>
                             <small class="d-block text-muted">{{ formatNumber(puntosCanjeados) }} puntos canjeados</small>
                         </td>
-                        <td style="width: 150px;" class="text-right"> -{{ descuentoPuntos | currency:'USD':'symbol':'1.2'}} </td>
+                        <td style="width: 150px;" class="text-right"> -{{ descuentoPuntos | currency}} </td>
                         <td style="width: 50px;">
                             <button type="button" class="btn btn-sm btn-outline-warning" (click)="abrirModalPuntos()" title="Editar descuento por puntos">
                                 <i class="fas fa-edit"></i>

@@ -1,4 +1,4 @@
-<div *ngIf="producto?.id">
+﻿<div *ngIf="producto?.id">
     <form name="formHistorialPrecioCosto" (ngSubmit)="loadAll()" class="row g-2 mb-3 align-items-end">
         <div class="col-6 col-md-3">
             <label class="form-label small mb-1">Del</label>
@@ -33,13 +33,13 @@
             <div class="col-6 col-lg-3">
                 <div class="border rounded px-2 py-2 h-100">
                     <small class="text-muted d-block">Precio actual</small>
-                    <strong class="small">{{ producto.precio | currency:'USD':'symbol':'1.2-4' }}</strong>
+                    <strong class="small">{{ producto.precio | currency }}</strong>
                 </div>
             </div>
             <div class="col-6 col-lg-3">
                 <div class="border rounded px-2 py-2 h-100">
                     <small class="text-muted d-block">Costo actual</small>
-                    <strong class="small">{{ (producto.costo ?? producto.costo_promedio) | currency:'USD':'symbol':'1.2-4' }}</strong>
+                    <strong class="small">{{ (producto.costo ?? producto.costo_promedio) | currency }}</strong>
                 </div>
             </div>
             <div class="col-6 col-lg-3">
@@ -102,7 +102,7 @@
                                 {{ ev.tipo === 'precio' ? 'Precio' : 'Costo' }}
                             </span>
                         </td>
-                        <td class="text-end">{{ ev.valor | currency:'USD':'symbol':'1.2-4' }}</td>
+                        <td class="text-end">{{ ev.valor | currency }}</td>
                         <td>{{ ev.referencia }}</td>
                         <td>{{ ev.usuario || '—' }}</td>
                     </tr>

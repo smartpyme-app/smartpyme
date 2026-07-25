@@ -9,6 +9,7 @@ use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Events\AfterSheet;
 use Illuminate\Http\Request;
+use App\Helpers\CountryTermsHelper;
 use App\Models\Inventario\Kardex;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Lote;
@@ -126,6 +127,8 @@ class KardexFarmaciasExport implements FromCollection, WithHeadings, WithMapping
         $nombreEmpresa = $empresa ? ($empresa->nombre ?? '') : '';
         $nit = $empresa ? ($empresa->nit ?? '') : '';
         $nrc = $empresa ? ($empresa->ncr ?? '') : '';
+        $nitLabel = CountryTermsHelper::tax('nitColon', $empresa);
+        $ncrLabel = CountryTermsHelper::tax('ncrColon', $empresa);
         $nombreProducto = $producto ? ($producto->nombre ?? '') : '—';
         $medida = $producto ? ($producto->medida ?? '—') : '—';
         $numeroLote = $lote ? ($lote->numero_lote ?? '—') : '—';
@@ -135,7 +138,7 @@ class KardexFarmaciasExport implements FromCollection, WithHeadings, WithMapping
         $textoRango = $inicio && $fin ? "DEL {$inicio} AL {$fin}" : '';
 
         return [
-            AfterSheet::class => function (AfterSheet $event) use ($nombreEmpresa, $nit, $nrc, $nombreProducto, $medida, $numeroLote, $textoRango) {
+            AfterSheet::class => function (AfterSheet $event) use ($nombreEmpresa, $nit, $nrc, $nitLabel, $ncrLabel, $nombreProducto, $medida, $numeroLote, $textoRango) {
                 $sheet = $event->sheet->getDelegate();
 
                 // Insertar 6 filas al inicio para el encabezado
@@ -159,9 +162,9 @@ class KardexFarmaciasExport implements FromCollection, WithHeadings, WithMapping
                 $sheet->getStyle('A3')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
                 $sheet->getStyle('A3')->getFont()->setBold(true)->setSize(11);
 
-                // Fila 4: NIT y NRC (NIT a la izquierda, NRC a la derecha)
-                $sheet->setCellValue('A4', 'NIT: ' . $nit);
-                $sheet->setCellValue('P4', 'NRC: ' . $nrc);
+                // Fila 4: identificación fiscal (términos por país)
+                $sheet->setCellValue('A4', $nitLabel . ' ' . $nit);
+                $sheet->setCellValue('P4', $ncrLabel . ' ' . $nrc);
                 $sheet->getStyle('A4')->getFont()->setSize(9);
                 $sheet->getStyle('P4')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
                 $sheet->getStyle('P4')->getFont()->setSize(9);

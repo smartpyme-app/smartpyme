@@ -19,6 +19,8 @@
     <button onclick="window.close();">Cerrar</button>
   </div>
 
+  @php $simbolo = \App\Helpers\CurrencyHelper::symbol($empresa); @endphp
+
   <div class="text-center">
     <p><strong>{{ $empresa->nombre ?? 'Restaurante' }}</strong></p>
   </div>
@@ -55,8 +57,8 @@
               <br><small><em>{{ $od->notas }}</em></small>
             @endif
           </td>
-          <td class="text-right">{{ number_format($od->precio_unitario ?? 0, 2) }}</td>
-          <td class="text-right">{{ number_format($sub, 2) }}</td>
+          <td class="text-right">{{ $simbolo }}{{ number_format($od->precio_unitario ?? 0, 2) }}</td>
+          <td class="text-right">{{ $simbolo }}{{ number_format($sub, 2) }}</td>
         </tr>
       @endforeach
     </tbody>
@@ -69,14 +71,14 @@
       $montoProp = (float) ($preCuenta->propina_monto ?? 0);
       $montoIva = (float) ($preCuenta->impuesto ?? 0);
     @endphp
-    <p>Subtotal consumo: {{ number_format($preCuenta->subtotal ?? 0, 2) }}</p>
+    <p>Subtotal consumo: {{ $simbolo }}{{ number_format($preCuenta->subtotal ?? 0, 2) }}</p>
     @if($montoIva > 0)
-    <p>IVA: {{ number_format($montoIva, 2) }}</p>
+    <p>{{ \App\Helpers\CountryTermsHelper::tax('taxLabelColon', $empresa) }} {{ $simbolo }}{{ number_format($montoIva, 2) }}</p>
     @endif
     @if($pctProp > 0)
-    <p>Propina ({{ number_format($pctProp, 2) }}%): {{ number_format($montoProp, 2) }}</p>
+    <p>Propina ({{ number_format($pctProp, 2) }}%): {{ $simbolo }}{{ number_format($montoProp, 2) }}</p>
     @endif
-    <p><strong>TOTAL: {{ number_format($preCuenta->total ?? 0, 2) }}</strong></p>
+    <p><strong>TOTAL: {{ $simbolo }}{{ number_format($preCuenta->total ?? 0, 2) }}</strong></p>
   </div>
   <hr>
   <p class="text-center"><strong>--- GRACIAS POR SU VISITA ---</strong></p>

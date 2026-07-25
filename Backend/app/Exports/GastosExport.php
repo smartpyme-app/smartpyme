@@ -6,7 +6,10 @@ use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Illuminate\Http\Request;
+use App\Helpers\CountryTermsHelper;
+use App\Models\Admin\Empresa;
 use App\Models\Compras\Gastos\Gasto;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
 class GastosExport implements FromCollection, WithHeadings, WithMapping
@@ -22,6 +25,11 @@ class GastosExport implements FromCollection, WithHeadings, WithMapping
     }
 
     public function headings():array{
+        $empresa = Auth::check() ? Auth::user()->empresa : null;
+        if (!$empresa && $this->request && $this->request->id_empresa) {
+            $empresa = Empresa::find($this->request->id_empresa);
+        }
+
         return[
             'Fecha',
             'Concepto',
@@ -39,8 +47,8 @@ class GastosExport implements FromCollection, WithHeadings, WithMapping
             'NIT',
             'Registro',
             'Subtotal',
-            'IVA',
-            'IVA retenido',
+            CountryTermsHelper::tax('taxLabel', $empresa),
+            CountryTermsHelper::tax('taxRetained', $empresa),
             'Total',
             'Observaciones',
         ];

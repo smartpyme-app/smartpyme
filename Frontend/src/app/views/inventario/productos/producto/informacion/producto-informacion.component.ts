@@ -31,6 +31,7 @@ import { mapCabysApiResponseToOptions, CabysSelectOption } from '@services/factu
 import { HaciendaCabysClientService } from '@services/facturacion-electronica/hacienda-cabys-client.service';
 import { CrearCategoriaComponent } from '@shared/modals/crear-categoria/crear-categoria.component';
 import { TranslatePipe } from '@ngx-translate/core';
+import { getEmpresaCurrencySymbol } from '@helpers/currency-format.helper';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -77,6 +78,10 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
 
   readonly compareCabys = (a: CabysSelectOption, b: CabysSelectOption): boolean =>
     !!(a && b && a.codigo === b.codigo);
+
+  get currencySymbol(): string {
+    return getEmpresaCurrencySymbol(this.apiService.auth_user()?.empresa);
+  }
 
   constructor(
     public apiService: ApiService,

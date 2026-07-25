@@ -1,5 +1,6 @@
-import { Component, OnInit, TemplateRef, ViewChild, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+﻿import { Component, OnInit, TemplateRef, ViewChild, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { TranslatePipe } from '@ngx-translate/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -43,8 +44,7 @@ import { LazyImageDirective } from '../../../../directives/lazy-image.directive'
         CrearClienteComponent,
         CrearProyectoComponent,
         LazyImageDirective,
-        TranslatePipe
-    ],
+        TranslatePipe, CurrencyPipe],
     providers: [SumPipe],
     changeDetection: ChangeDetectionStrategy.OnPush,
     

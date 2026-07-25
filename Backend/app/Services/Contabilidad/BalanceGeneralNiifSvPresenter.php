@@ -4,13 +4,15 @@ namespace App\Services\Contabilidad;
 
 use App\Models\Contabilidad\Catalogo\Cuenta;
 use App\Models\Contabilidad\Partidas\Detalle;
+use App\Helpers\CurrencyHelper;
+use App\Models\Admin\Empresa;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
  * Presentación de Balance General (Estado de Situación Financiera) según estructura NIIF para PYMES,
- * orientado a El Salvador (CVPCPA), en USD.
+ * orientado a El Salvador (CVPCPA); moneda según empresa.
  *
  * Clasifica cuentas de detalle (hojas del catálogo) en líneas estándar; saldos no clasificados
  * van a partidas genéricas "Otros …" del bloque correspondiente.
@@ -23,8 +25,11 @@ class BalanceGeneralNiifSvPresenter
     public function build(int $empresaId, Carbon $startDate, Carbon $endDate): array
     {
         $computed = $this->computeRawLines($empresaId, $startDate, $endDate);
+        $report = $this->composeReport($endDate, $computed['utilidad_ejercicio_computada']);
+        $empresa = Empresa::with('currency')->find($empresaId);
+        $report['moneda'] = CurrencyHelper::code($empresa);
 
-        return $this->composeReport($endDate, $computed['utilidad_ejercicio_computada']);
+        return $report;
     }
 
     /**
@@ -540,7 +545,6 @@ class BalanceGeneralNiifSvPresenter
         return [
             'fecha_corte' => $fechaCorte->toDateString(),
             'fecha_corte_label' => $fechaLabel,
-            'moneda' => 'USD',
             'nota_metodologia' => 'Inventarios: método PEPS (FIFO) según NIC 2, cuando aplica.',
             'activo_corriente' => $this->blockActivoCorriente($L, $activoCorriente),
             'activo_no_corriente' => $this->blockActivoNoCorriente($L, $activoNoCorriente),

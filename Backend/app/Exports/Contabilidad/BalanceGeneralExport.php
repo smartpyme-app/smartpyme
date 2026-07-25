@@ -2,6 +2,7 @@
 
 namespace App\Exports\Contabilidad;
 
+use App\Helpers\CurrencyHelper;
 use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithEvents;
@@ -45,7 +46,7 @@ class BalanceGeneralExport implements FromArray, ShouldAutoSize, WithEvents, Wit
                 $sheet->mergeCells('A2:C2');
                 $sheet->setCellValue('A3', 'Al ' . ($this->balance['fecha_corte_label'] ?? ''));
                 $sheet->mergeCells('A3:C3');
-                $sheet->setCellValue('A4', 'Expresado en dólares estadounidenses (USD)');
+                $sheet->setCellValue('A4', 'Expresado en ' . CurrencyHelper::label());
                 $sheet->mergeCells('A4:C4');
                 if (! empty($this->balance['nota_metodologia'])) {
                     $sheet->setCellValue('A5', $this->balance['nota_metodologia']);

@@ -1,5 +1,6 @@
 import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
@@ -12,7 +13,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     selector: 'app-caja-devoluciones',
     templateUrl: './caja-devoluciones.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule],
+    imports: [CommonModule, RouterModule, CurrencyPipe],
     
 })
 

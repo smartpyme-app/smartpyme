@@ -82,7 +82,7 @@
             <label for="precio">{{ 'country.tax.priceWithoutTax' | translate }}</label>
             <div class="input-group">
                 <!-- <span class="input-group-text">$</span> -->
-                <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
+                <span class="input-group-text">{{ currencySymbol }}</span>
                 <input type="number" class="form-control" (change)="calPrecioFinal()" (keyup)="calPrecioFinal()" [(ngModel)]="producto.precio" name="precio" placeholder="$0.00" required>
             </div>
         </div>
@@ -90,7 +90,7 @@
             <label for="costo">Costo <small class="text-muted" style="font-size: 10px;">(Última compra)</small></label>
             <div class="input-group">
                 <!-- <span class="input-group-text">$</span> -->
-                <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
+                <span class="input-group-text">{{ currencySymbol }}</span>
                 <input type="number" class="form-control" (change)="actualizarCostoPromedio();" [(ngModel)]="producto.costo" name="costo" placeholder="Escribe aquí" required>
             </div>
         </div>
@@ -98,7 +98,7 @@
             <label for="costo">Costo <small class="text-muted" style="font-size: 10px;">(Promedio)</small></label>
             <div class="input-group">
                 <!-- <span class="input-group-text">$</span> -->
-                <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
+                <span class="input-group-text">{{ currencySymbol }}</span>
                 <input type="number" class="form-control" (change)="actualizarCosto();" [(ngModel)]="producto.costo_promedio" name="costo_promedio" placeholder="Escribe aquí" required>
             </div>
         </div>
@@ -106,7 +106,7 @@
             <label for="tipo_impuesto">Ganancia</label>
             <div class="input-group">
                 <!-- <span class="input-group-text">$</span> -->
-                <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
+                <span class="input-group-text">{{ currencySymbol }}</span>
                 <input type="number" class="form-control" disabled value="{{ (producto.precio - (apiService.auth_user().empresa.valor_inventario == 'promedio' ? producto.costo_promedio : producto.costo)).toFixed(2)}}">
             </div>
         </div>
@@ -145,7 +145,7 @@
             <label class="fw-bold" for="precio_final">{{ 'country.tax.priceWithTaxColon' | translate }}</label>
             <div class="input-group">
                 <!-- <span class="input-group-text">$</span> -->
-                <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
+                <span class="input-group-text">{{ currencySymbol }}</span>
                 <input type="number" placeholder="Escribe aquí" class="form-control" (change)="calPrecioBase()" (keyup)="calPrecioBase()" [(ngModel)]="producto.precio_final" name="precio_final">
             </div>
         </div>
@@ -155,14 +155,14 @@
             <div class="form-group col-md-4 col-lg-2" *ngIf="!loading && producto.tipo != 'Materia prima'">
                 <label for="costo_anterior">Costo anterior</label>
                 <div class="input-group">
-                    <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
+                    <span class="input-group-text">{{ currencySymbol }}</span>
                     <input type="number" disabled class="form-control" [(ngModel)]="producto.costo_anterior" name="costo_anterior" placeholder="$0.00" required>
                 </div>
             </div>
             <div class="form-group col-md-4 col-lg-2" *ngIf="!loading && producto.tipo != 'Materia prima'">
                 <label for="costo_promedio">Costo promedio</label>
                 <div class="input-group">
-                    <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
+                    <span class="input-group-text">{{ currencySymbol }}</span>
                     <input type="number" disabled class="form-control" [(ngModel)]="producto.costo_promedio" name="costo_promedio" placeholder="$0.00" required>
                 </div>
             </div>

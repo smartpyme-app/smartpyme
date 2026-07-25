@@ -2,6 +2,8 @@
 
 namespace App\Services\Contabilidad;
 
+use App\Helpers\CurrencyHelper;
+use App\Models\Admin\Empresa;
 use App\Models\Contabilidad\Catalogo\Cuenta;
 use App\Models\Contabilidad\Partidas\Detalle;
 use Carbon\Carbon;
@@ -57,9 +59,10 @@ class CambiosPatrimonioNiifSvPresenter
 
         $columnas = $this->resolveColumnasVisibles($bloques);
         $validaciones = $this->validarReporte($bloques);
+        $empresa = Empresa::with('currency')->find($empresaId);
 
         return [
-            'moneda' => 'USD',
+            'moneda' => CurrencyHelper::code($empresa),
             'periodo_titulo' => $this->formatPeriodoTitulo($fi, $ff),
             'incluir_dos_anios' => $incluirDosAnios,
             'mostrar_solo_movimientos' => $soloMovimientos,

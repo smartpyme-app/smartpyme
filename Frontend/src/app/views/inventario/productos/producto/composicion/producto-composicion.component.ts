@@ -1,5 +1,6 @@
-import { Component, OnInit, TemplateRef, Input, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+﻿import { Component, OnInit, TemplateRef, Input, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -18,7 +19,7 @@ import { TooltipModule } from 'ngx-bootstrap/tooltip';
     selector: 'app-producto-composicion',
     templateUrl: './producto-composicion.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, NotificacionesContainerComponent, BuscadorProductosComponent, TooltipModule],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, NotificacionesContainerComponent, BuscadorProductosComponent, TooltipModule, CurrencyPipe],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProductoComposicionComponent extends BaseModalComponent implements OnInit {

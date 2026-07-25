@@ -1,5 +1,6 @@
-import { Component, Input, OnChanges, OnInit, SimpleChanges, TemplateRef } from '@angular/core';
+﻿import { Component, Input, OnChanges, OnInit, SimpleChanges, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule } from '@angular/forms';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
@@ -11,7 +12,7 @@ import { ApiService } from '@services/api.service';
   templateUrl: './producto-presentaciones.component.html',
   styleUrls: ['./producto-presentaciones.component.scss'],
   standalone: true,
-  imports: [CommonModule, FormsModule, TooltipModule],
+  imports: [CommonModule, FormsModule, TooltipModule, CurrencyPipe],
 })
 export class ProductoPresentacionesComponent implements OnInit, OnChanges {
 

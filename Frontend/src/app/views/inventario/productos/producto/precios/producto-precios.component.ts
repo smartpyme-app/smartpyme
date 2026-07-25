@@ -1,5 +1,6 @@
-import { Component, OnInit, TemplateRef, Input, AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+﻿import { Component, OnInit, TemplateRef, Input, AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -11,6 +12,7 @@ import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { LazyImageDirective } from '../../../../../directives/lazy-image.directive';
 import { TranslatePipe } from '@ngx-translate/core';
+import { getEmpresaCurrencySymbol } from '@helpers/currency-format.helper';
 
 declare var bootstrap: any;
 
@@ -18,7 +20,7 @@ declare var bootstrap: any;
     selector: 'app-producto-precios',
     templateUrl: './producto-precios.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, LazyImageDirective, TranslatePipe],
+    imports: [CommonModule, RouterModule, FormsModule, LazyImageDirective, TranslatePipe, CurrencyPipe],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProductoPreciosComponent extends BaseModalComponent implements OnInit, AfterViewInit {
@@ -27,6 +29,10 @@ export class ProductoPreciosComponent extends BaseModalComponent implements OnIn
     public precio: any = {};
     public usuarios: any = [];
     public buscador:string = '';
+
+    get currencySymbol(): string {
+        return getEmpresaCurrencySymbol(this.apiService.auth_user()?.empresa);
+    }
 
     constructor(
         public apiService: ApiService, 

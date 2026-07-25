@@ -31,7 +31,7 @@
 </head>
 <body>
 {{-- <body onload="javascript:print();"> --}}
-    @php $simbolo_moneda = optional($empresa->currency)->currency_symbol ?? '$'; @endphp
+    @php $simbolo_moneda = \App\Helpers\CurrencyHelper::symbol($empresa); @endphp
     <p class="no-print">
         <button onClick="window.print();" autofocus>Imprimir</button>
         <button onClick="window.close();" autofocus>Cerrar</button>

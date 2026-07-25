@@ -2,6 +2,7 @@
 
 namespace App\Exports;
 
+use App\Helpers\CountryTermsHelper;
 use App\Models\Admin\Empresa;
 use App\Models\Ventas\Venta;
 use Maatwebsite\Excel\Concerns\FromQuery;
@@ -68,6 +69,10 @@ class VentasExport implements FromQuery, WithHeadings, WithMapping, WithChunkRea
 
     public function headings(): array
     {
+        $empresa = $this->resolveEmpresa($this->request);
+        $taxLabel = CountryTermsHelper::tax('taxLabel', $empresa);
+        $totalWithoutTax = CountryTermsHelper::tax('totalWithoutTax', $empresa);
+
         $columnas = [
             'Fecha',
             'Cliente',
@@ -87,9 +92,9 @@ class VentasExport implements FromQuery, WithHeadings, WithMapping, WithChunkRea
             'Cuenta terceros',
             'Sub Total',
             'Descuento',
-            'IVA',
+            $taxLabel,
             'Utilidad',
-            'Total sin IVA',
+            $totalWithoutTax,
             'Total',
             'Propina',
             'Empresa',
@@ -104,6 +109,18 @@ class VentasExport implements FromQuery, WithHeadings, WithMapping, WithChunkRea
         }
 
         return $columnas;
+    }
+
+    private function resolveEmpresa($request): ?Empresa
+    {
+        if (auth()->check()) {
+            return auth()->user()->empresa;
+        }
+        if ($request && $request->id_empresa) {
+            return Empresa::query()->find($request->id_empresa);
+        }
+
+        return null;
     }
 
     /**

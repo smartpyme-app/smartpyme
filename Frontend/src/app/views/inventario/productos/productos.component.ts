@@ -1,5 +1,6 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+﻿import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
@@ -32,8 +33,7 @@ import { TranslatePipe } from '@ngx-translate/core';
     selector: 'app-productos',
     templateUrl: './productos.component.html',
     standalone: true,
-    imports: [
-        CommonModule,
+    imports: [CommonModule,
         FormsModule,
         RouterModule,
         NgSelectModule,
@@ -42,8 +42,7 @@ import { TranslatePipe } from '@ngx-translate/core';
         ImportarExcelComponent,
         PaginationComponent,
         NotificacionesContainerComponent,
-        TranslatePipe,
-    ],
+        TranslatePipe, CurrencyPipe],
 })
 export class ProductosComponent implements OnInit {
 

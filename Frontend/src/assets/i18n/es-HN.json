@@ -30,6 +30,8 @@
       "priceWithTaxColon": "Precio con ISV:",
       "taxLabel": "ISV",
       "taxLabelColon": "ISV:",
+      "taxNameExamplePlaceholder": "Ej. ISV, Retención, etc.",
+      "totalWithoutTax": "Total sin ISV",
       "taxWithRate": "Con ISV ({{rate}}%)",
       "taxWithShort": "Con ISV",
       "chargeTax": "Cobrar ISV",

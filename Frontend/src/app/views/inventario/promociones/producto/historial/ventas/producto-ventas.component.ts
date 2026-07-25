@@ -4,6 +4,7 @@ import { AlertService } from '../../../../../../services/alert.service';
 import { ApiService } from '../../../../../../services/api.service';
 import { ModalManagerService } from '../../../../../../services/modal-manager.service';
 import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 
 declare var $:any;
@@ -11,6 +12,8 @@ declare var $:any;
 @Component({
   selector: 'app-producto-ventas',
   templateUrl: './producto-ventas.component.html',
+  standalone: true,
+  imports: [CommonModule, CurrencyPipe],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 

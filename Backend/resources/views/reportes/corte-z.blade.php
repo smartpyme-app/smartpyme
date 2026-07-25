@@ -94,7 +94,7 @@
       <tr><td>SUB TOTAL:</td> <td>{{ $simbolo_moneda }}{{ number_format($corte->subtotal,2 ) }}</td> </tr>
       <tr><td>EXENTA:</td> <td>{{ $simbolo_moneda }}{{ number_format($corte->exenta,2 ) }}</td> </tr>
       <tr><td>NO SUJETA:</td> <td>{{ $simbolo_moneda }}{{ number_format($corte->no_sujeta,2 ) }}</td> </tr>
-      <tr><td>IVA:</td> <td>{{ $simbolo_moneda }}{{ number_format($corte->iva,2 ) }}</td> </tr>
+      <tr><td>{{ \App\Helpers\CountryTermsHelper::tax('taxLabelColon', $empresa) }}</td> <td>{{ $simbolo_moneda }}{{ number_format($corte->iva,2 ) }}</td> </tr>
       {{-- <tr><td>PERCEPCION:</td> <td>{{ $simbolo_moneda }}{{ number_format($corte->iva_retenido,2 ) }}</td> </tr> --}}
       <tr><td>RETENCION:</td> <td>{{ $simbolo_moneda }}{{ number_format($corte->iva_retenido,2 ) }}</td> </tr>
       <tr><td>SALDO INICIAL:</b></td> <td><b>{{ $simbolo_moneda }}{{ number_format($corte->saldo_inicial,2 ) }}</td> </tr>

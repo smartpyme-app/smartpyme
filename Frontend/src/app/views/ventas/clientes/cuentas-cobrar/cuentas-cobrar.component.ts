@@ -1,5 +1,6 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+﻿import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { PipesModule } from '@pipes/pipes.module';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -16,7 +17,7 @@ import { ApiService } from '@services/api.service';
   selector: 'app-cuentas-cobrar',
   templateUrl: './cuentas-cobrar.component.html',
   standalone: true,
-  imports: [CommonModule, PipesModule, FormsModule, RouterModule, TooltipModule, ModalModule, PopoverModule, TruncatePipe, PaginationComponent]
+  imports: [CommonModule, PipesModule, FormsModule, RouterModule, TooltipModule, ModalModule, PopoverModule, TruncatePipe, PaginationComponent, CurrencyPipe]
 })
 export class CuentasCobrarComponent implements OnInit {
 

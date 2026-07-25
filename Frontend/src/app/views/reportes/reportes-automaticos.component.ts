@@ -22,6 +22,7 @@ import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Pipe({
     name: 'replace',
@@ -46,6 +47,7 @@ export class ReplacePipe implements PipeTransform {
         NgSelectModule,
         PaginationComponent,
         NotificacionesContainerComponent,
+        TranslatePipe,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
     

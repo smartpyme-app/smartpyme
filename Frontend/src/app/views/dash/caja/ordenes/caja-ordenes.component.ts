@@ -1,5 +1,6 @@
 import { Component, OnInit, TemplateRef, Input, Output, EventEmitter, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -14,7 +15,7 @@ import { BaseModalComponent } from '../../../../shared/base/base-modal.component
     selector: 'app-caja-ordenes',
     templateUrl: './caja-ordenes.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule],
+    imports: [CommonModule, RouterModule, CurrencyPipe],
     
 })
 export class CajaOrdenesComponent extends BaseModalComponent implements OnInit {

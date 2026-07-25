@@ -42,6 +42,7 @@
 
 </head>
 <body>
+@php $simbolo = \App\Helpers\CurrencyHelper::symbol($cuenta->empresa ?? $cuenta->empresa()->with('currency')->first()); @endphp
 {{-- <body onload="javascript:print();"> --}}
 
         <h3 class="text-center">{{ $cuenta->empresa()->pluck('nombre')->first() }}</h3>
@@ -67,16 +68,16 @@
                     <td class="border-bottom"> {{ $transaccion->concepto  }}</td>
                     <td class="border-bottom text-right"> 
                         @if ($transaccion->tipo == 'Cargo')
-                            ${{ number_format($transaccion->total, 2) }}
+                            {{ $simbolo }}{{ number_format($transaccion->total, 2) }}
                         @endif
                     </td>
                     <td class="border-bottom text-right"> 
                         @if ($transaccion->tipo == 'Abono')
-                            ${{ number_format($transaccion->total, 2) }}
+                            {{ $simbolo }}{{ number_format($transaccion->total, 2) }}
                         @endif
                     </td>
                     {{-- <td class="border-bottom text-right"> 
-                        ${{ number_format($transaccion->saldo, 2) }}
+                        {{ $simbolo }}{{ number_format($transaccion->saldo, 2) }}
                     </th> --}}
                 </tr>
                 @endforeach
@@ -85,13 +86,13 @@
                 <tr>
                     <td colspan="1"></td>
                     <td class="text-right"><b>Totales:</b></td>
-                    <td class="text-right"><b>${{ number_format($cuenta->transacciones->where('tipo', 'Cargo')->sum('total'), 2) }}</b></td>
-                    <td class="text-right"><b>${{ number_format($cuenta->transacciones->where('tipo', 'Abono')->sum('total'), 2) }}</b></td>
+                    <td class="text-right"><b>{{ $simbolo }}{{ number_format($cuenta->transacciones->where('tipo', 'Cargo')->sum('total'), 2) }}</b></td>
+                    <td class="text-right"><b>{{ $simbolo }}{{ number_format($cuenta->transacciones->where('tipo', 'Abono')->sum('total'), 2) }}</b></td>
                 </tr>
                 <tr>
                     <td colspan="1"></td>
                     <td colspan="2" class="text-right"><b>Saldo:</b></td>
-                    <td class="text-right"><b>${{ number_format($cuenta->saldo, 2) }}</b></td>
+                    <td class="text-right"><b>{{ $simbolo }}{{ number_format($cuenta->saldo, 2) }}</b></td>
                 </tr>
             </tfoot>
         </table>

@@ -277,7 +277,7 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
     },
     {
       prop: 'ventasSinIVA',
-      name: 'Ventas totales sin IVA',
+      name: this.countryI18n.tax('salesTotalWithoutTax'),
       size: 180,
       sortable: true,
       filterable: true

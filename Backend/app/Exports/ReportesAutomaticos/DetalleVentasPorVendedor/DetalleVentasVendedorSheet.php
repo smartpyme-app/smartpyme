@@ -2,6 +2,8 @@
 
 namespace App\Exports\ReportesAutomaticos\DetalleVentasPorVendedor;
 
+use App\Helpers\CountryTermsHelper;
+use App\Models\Admin\Empresa;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -15,11 +17,13 @@ class DetalleVentasVendedorSheet implements FromCollection, WithHeadings, WithMa
 {
     private $vendedor;
     private $ventas;
+    private $idEmpresa;
 
-    public function __construct($vendedor, $ventas)
+    public function __construct($vendedor, $ventas, $idEmpresa = null)
     {
         $this->vendedor = $vendedor;
         $this->ventas = $ventas;
+        $this->idEmpresa = $idEmpresa;
     }
 
     /**
@@ -110,6 +114,8 @@ class DetalleVentasVendedorSheet implements FromCollection, WithHeadings, WithMa
      */
     public function headings(): array
     {
+        $empresa = $this->idEmpresa ? Empresa::find($this->idEmpresa) : null;
+
         return [
             'Vendedor',
             'Correlativo',
@@ -124,7 +130,7 @@ class DetalleVentasVendedorSheet implements FromCollection, WithHeadings, WithMa
             'Precio',
             'Descuento',
             'Subtotal',
-            'IVA',
+            CountryTermsHelper::tax('taxLabel', $empresa),
             'Total',
             'Transacciones'
         ];

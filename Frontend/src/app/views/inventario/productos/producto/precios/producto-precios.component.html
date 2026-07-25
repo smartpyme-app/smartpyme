@@ -72,14 +72,14 @@
             <div class="form-group col-md-6 col-lg-4">
                 <label for="" class="fw-medium">{{ 'country.tax.priceWithoutTaxColon' | translate }}</label>
                 <div class="input-group">
-                    <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
+                    <span class="input-group-text">{{ currencySymbol }}</span>
                     <input id="precio" type="number" class="form-control" (change)="calPrecioFinal()" (keyup)="calPrecioFinal()"  [(ngModel)]="precio.precio" name="precio" focus="true">
                 </div>
             </div>
             <div class="form-group col-md-6 col-lg-4">
                 <label for="" class="fw-medium">{{ 'country.tax.priceWithTaxColon' | translate }}</label>
                 <div class="input-group">
-                    <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
+                    <span class="input-group-text">{{ currencySymbol }}</span>
                     <input id="precio_final" type="number" class="form-control" (change)="calPrecioBase()" (keyup)="calPrecioBase()" [(ngModel)]="precio.precio_final" name="precio_final">
                 </div>
             </div>

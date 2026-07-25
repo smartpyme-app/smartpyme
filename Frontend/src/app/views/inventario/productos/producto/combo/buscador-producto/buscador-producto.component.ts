@@ -1,5 +1,6 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+﻿import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule, ReactiveFormsModule, FormControl } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { NgSelectModule } from '@ng-select/ng-select';
@@ -21,11 +22,9 @@ import { LazyImageDirective } from '../../../../../../directives/lazy-image.dire
     selector: 'app-buscar-producto',
     templateUrl: './buscador-producto.component.html',
     standalone: true,
-    imports: [
-      CommonModule, FormsModule, ReactiveFormsModule, RouterModule,
+    imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule,
       NgSelectModule, PopoverModule, TooltipModule,
-      SumPipe, FilterPipe, LazyImageDirective, PaginationComponent,
-    ],
+      SumPipe, FilterPipe, LazyImageDirective, PaginationComponent, CurrencyPipe],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BuscadorProductoComponent extends BaseModalComponent implements OnInit {

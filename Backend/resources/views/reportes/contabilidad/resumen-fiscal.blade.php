@@ -24,7 +24,7 @@
 <body>
 @php
     $empresa = Auth::user()->empresa()->with('currency')->first();
-    $simbolo = ($empresa && $empresa->currency) ? $empresa->currency->currency_symbol : '$';
+    $simbolo = \App\Helpers\CurrencyHelper::symbol($empresa);
     $periodo = $resumen['periodo'] ?? [];
     $inicio = $periodo['inicio'] ?? null;
     $fin = $periodo['fin'] ?? null;
@@ -32,6 +32,7 @@
     $iva = $resumen['iva'] ?? [];
     $pago = $resumen['pago_a_cuenta_iva'] ?? [];
     $fmt = fn ($n) => $simbolo.' '.number_format((float) $n, 2);
+    $taxRetained = \App\Helpers\CountryTermsHelper::tax('taxRetained', $empresa);
 @endphp
 
 <h1>RESUMEN FISCAL</h1>
@@ -126,7 +127,7 @@
                 <th>Resumen</th>
                 <th class="text-right">Valor neto</th>
                 <th class="text-right">Débito fiscal</th>
-                <th class="text-right">IVA retenido</th>
+                <th class="text-right">{{ $taxRetained }}</th>
                 <th class="text-right">Total ventas</th>
             </tr>
         </thead>

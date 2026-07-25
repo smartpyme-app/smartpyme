@@ -269,11 +269,7 @@
             </div>
             <div class="total-row">
                 <span>
-                    @if ($venta->empresa->pais == 'Honduras')
-                        ISV (15%):
-                    @else
-                        IVA (13%):
-                    @endif
+                    {{ \App\Helpers\CountryTermsHelper::tax('taxRateLabel', $venta->empresa, ['rate' => $venta->empresa->iva ?? 13]) }}:
                 </span>
                 <span>{{ $venta->empresa->currency->currency_symbol ?? '$' }} {{ number_format($venta->iva, 2) }}</span>
             </div>

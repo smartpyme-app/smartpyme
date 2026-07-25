@@ -1,5 +1,6 @@
 import { Component, OnInit, TemplateRef, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
@@ -14,7 +15,7 @@ declare var $:any;
     selector: 'app-detalle-compras',
     templateUrl: './detalle-compras.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, TranslatePipe],
+    imports: [CommonModule, RouterModule, FormsModule, TranslatePipe, CurrencyPipe],
     changeDetection: ChangeDetectionStrategy.OnPush,
     
 })

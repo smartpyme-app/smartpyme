@@ -2,6 +2,7 @@
 
 namespace App\Exports\Contabilidad;
 
+use App\Helpers\CurrencyHelper;
 use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithTitle;
@@ -23,7 +24,7 @@ class FlujoEfectivoExport implements FromArray, WithTitle, ShouldAutoSize
     {
         $rows = [];
         $rows[] = [$this->empresaNombre];
-        $rows[] = ['ESTADO DE FLUJOS DE EFECTIVO (indirecto + conciliación) — USD'];
+        $rows[] = ['ESTADO DE FLUJOS DE EFECTIVO (indirecto + conciliación) — ' . ($this->flujo['moneda'] ?? CurrencyHelper::code())];
         $rows[] = ['Período actual: ' . (string) ($this->flujo['periodo_actual']['titulo'] ?? '')];
         if ($this->comparar && ! empty($this->flujo['periodo_anterior']['titulo'] ?? '')) {
             $rows[] = ['Período anterior: ' . (string) $this->flujo['periodo_anterior']['titulo']];

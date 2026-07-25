@@ -61,7 +61,7 @@
             </span>
             
             <span class="col-2 text-end">
-                <span class="badge bg-info p-1">{{ producto.precio | currency:'USD':'symbol':'1.0-6'}}</span>
+                <span class="badge bg-info p-1">{{ (apiService.auth_user().empresa?.currency?.currency_symbol || '$') }}{{ producto.precio | number:'1.0-6':'en-US' }}</span>
             </span>
         </a>
     </ul>

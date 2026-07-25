@@ -15,7 +15,7 @@
     </style>
 </head>
 <body>
-    @php $empresa = Auth::user()->empresa()->with('currency')->first(); $simbolo = ($empresa && $empresa->currency) ? $empresa->currency->currency_symbol : 'L'; @endphp
+    @php $empresa = Auth::user()->empresa()->with('currency')->first(); $simbolo = \App\Helpers\CurrencyHelper::symbol($empresa); @endphp
 
     <h1 class="text-center">COMPROBANTE DE RETENCIÓN</h1>
     <h2 class="text-center">{{ Auth::user()->empresa()->pluck('nombre')->first() }}</h2>

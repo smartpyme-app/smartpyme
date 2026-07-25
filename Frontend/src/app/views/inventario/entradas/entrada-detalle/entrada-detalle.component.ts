@@ -1,5 +1,6 @@
-import { Component, OnInit, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+﻿import { Component, OnInit, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -11,7 +12,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     selector: 'app-entrada-detalle',
     templateUrl: './entrada-detalle.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule],
+    imports: [CommonModule, RouterModule, CurrencyPipe],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EntradaDetalleComponent implements OnInit {

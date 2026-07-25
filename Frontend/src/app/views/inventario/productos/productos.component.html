@@ -1,4 +1,4 @@
-<section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
+﻿<section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
     <h2 class="page-heading">Inventario</h2>
 
     <div class="d-flex">
@@ -168,9 +168,9 @@
                         <td class="d-none d-md-table-cell">{{ producto.codigo }}</td>
                         <td class="d-none d-md-table-cell" *ngIf="isComponenteQuimicoHabilitado()">{{
                             producto.componente_quimico || '-' }}</td>
-                        <td class="text-right">{{ producto.precio | currency:'USD':'symbol':'1.2' }}</td>
+                        <td class="text-right">{{ producto.precio | currency }}</td>
                         <td class="text-right">{{ (producto.precio * 1) + (producto.precio *
-                            (getPorcentajeProducto(producto) / 100) ) | currency:'USD':'symbol':'1.2' }}</td>
+                            (getPorcentajeProducto(producto) / 100) ) | currency }}</td>
                         <td class="text-center">
                             <!-- Si tiene lotes activados, mostrar stock de lotes -->
                             <div *ngIf="producto.inventario_por_lotes">

@@ -18,7 +18,7 @@
 <body>
     @php
         $empresa = Auth::user()->empresa()->with('currency')->first();
-        $simbolo = ($empresa && $empresa->currency) ? $empresa->currency->currency_symbol : 'L';
+        $simbolo = \App\Helpers\CurrencyHelper::symbol($empresa);
         $filasPdf = collect($libroventas ?? []);
         $totalesPdf = \App\Exports\Contabilidad\Honduras\LibroVentasExport::filaTotales($filasPdf);
     @endphp
