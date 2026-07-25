@@ -315,13 +315,21 @@ class PedidoRestauranteController extends Controller
             return response()->json(['error' => 'El pedido no tiene líneas de detalle'], 422);
         }
 
-        $detalles = $pedido->detalles->map(function ($d) use ($user) {
-            $empresa = Empresa::find($user->id_empresa);
-            $ivaEmpresa = $empresa ? max(0, (float) ($empresa->iva ?? 0)) : 0;
+        // En pedidos canal el precio (y descuento) se capturan como monto final / con IVA.
+        // Al preparar la factura se desglosa a base sin IVA para facturación v1/v2.
+        $empresa = Empresa::find($user->id_empresa);
+        $ivaEmpresa = $empresa ? max(0, (float) ($empresa->iva ?? 0)) : 0;
+
+        $detalles = $pedido->detalles->map(function ($d) use ($ivaEmpresa) {
             $pct = $d->producto->porcentaje_impuesto ?? $ivaEmpresa;
             $pct = max(0, (float) $pct);
-            $precioSinIva = (float) $d->precio;
-            $precioConIva = $pct > 0 ? round($precioSinIva * (1 + $pct / 100), 4) : $precioSinIva;
+            $factor = $pct > 0 ? (1 + $pct / 100) : 1;
+
+            $precioConIva = (float) $d->precio;
+            $precioSinIva = $pct > 0 ? round($precioConIva / $factor, 4) : $precioConIva;
+
+            $descuentoConIva = (float) ($d->descuento ?? 0);
+            $descuentoSinIva = $pct > 0 ? round($descuentoConIva / $factor, 4) : $descuentoConIva;
 
             return [
                 'id_producto' => $d->producto_id,
@@ -331,7 +339,7 @@ class PedidoRestauranteController extends Controller
                 'precio_con_iva' => $precioConIva,
                 'porcentaje_impuesto' => $pct,
                 'descripcion' => $d->producto->nombre ?? '',
-                'descuento' => (float) ($d->descuento ?? 0),
+                'descuento' => $descuentoSinIva,
             ];
         })->values()->toArray();
 
@@ -343,6 +351,7 @@ class PedidoRestauranteController extends Controller
             'fecha' => $pedido->fecha ? $pedido->fecha->format('Y-m-d') : null,
             'subtotal' => (float) $pedido->subtotal,
             'total' => (float) $pedido->total,
+            // `precio` en detalles ya viene desglosado (sin IVA); el pedido original era con IVA.
             'precios_sin_iva' => true,
             'canal' => $pedido->canal,
             'referencia_externa' => $pedido->referencia_externa,

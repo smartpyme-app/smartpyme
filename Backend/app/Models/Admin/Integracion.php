@@ -2,9 +2,11 @@
 
 namespace App\Models\Admin;
 
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class Integracion extends Model
 {
@@ -78,7 +80,9 @@ class Integracion extends Model
      */
     public function getCredential(string $key, $default = null)
     {
-        return $this->credenciales[$key] ?? $default;
+        $credenciales = $this->safeCredenciales();
+
+        return $credenciales[$key] ?? $default;
     }
 
     /**
@@ -87,9 +91,27 @@ class Integracion extends Model
      */
     public function setCredentials(array $data): self
     {
-        $current = $this->credenciales ?? [];
+        $current = $this->safeCredenciales() ?? [];
         $this->credenciales = array_merge($current, $data);
         return $this;
+    }
+
+    /**
+     * Lee credenciales cifradas sin tumbar el request si el MAC/APP_KEY no coinciden.
+     */
+    protected function safeCredenciales(): ?array
+    {
+        try {
+            return $this->credenciales;
+        } catch (DecryptException $e) {
+            Log::warning('No se pudieron descifrar credenciales de integración', [
+                'integracion_id' => $this->id,
+                'id_empresa' => $this->id_empresa,
+                'proveedor' => $this->proveedor,
+            ]);
+
+            return null;
+        }
     }
 
     /**
@@ -161,7 +183,7 @@ class Integracion extends Model
      */
     public function getBoxfulAccessTokenAttribute()
     {
-        return $this->access_token;
+        return $this->safeEncryptedAttribute('access_token');
     }
 
     public function setBoxfulAccessTokenAttribute($value)
@@ -231,7 +253,26 @@ class Integracion extends Model
      */
     public function hasValidToken(): bool
     {
-        return !empty($this->access_token) && !$this->isTokenExpired();
+        return !empty($this->safeEncryptedAttribute('access_token')) && !$this->isTokenExpired();
+    }
+
+    /**
+     * Lee un atributo cifrado sin tumbar el request si el MAC/APP_KEY no coinciden.
+     */
+    protected function safeEncryptedAttribute(string $attribute)
+    {
+        try {
+            return $this->getAttribute($attribute);
+        } catch (DecryptException $e) {
+            Log::warning('No se pudo descifrar atributo de integración', [
+                'integracion_id' => $this->id,
+                'id_empresa' => $this->id_empresa,
+                'proveedor' => $this->proveedor,
+                'attribute' => $attribute,
+            ]);
+
+            return null;
+        }
     }
 
     // ========================================

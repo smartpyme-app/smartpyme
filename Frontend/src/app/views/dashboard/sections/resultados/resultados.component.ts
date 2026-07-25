@@ -11,6 +11,8 @@ import {
   ChangeDetectionStrategy,
   OnDestroy,
 } from '@angular/core';
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged, switchMap, takeUntil } from 'rxjs/operators';
 import { DashboardDataService } from '../../services/dashboard-data.service';
 import { CashFlowItem } from '../../models/chart-config.model';
 
@@ -21,6 +23,12 @@ import { DropdownMultiFiltroSelection } from '../../components/dropdown-multi-fi
 import { DashboardFiltrosCatalogoService } from '../../services/dashboard-filtros-catalogo.service';
 import { ColDef, GridOptions, GridApi, themeQuartz, AllCommunityModule } from 'ag-grid-community';
 import { formatEmpresaCurrency, getEmpresaCurrencySymbol } from '@helpers/currency-format.helper';
+import {
+  CashflowVentasTotales,
+  CashflowGastosTotales,
+  AbonosCxcTotales,
+  AbonosCxpTotales,
+} from '../../services/resultados-dashboard-data.service';
 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -64,14 +72,83 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
 
   // Propiedades cacheadas para evitar recálculos
   private _ventasRowsCache: any[] = [];
+  /** Binding directo OnPush para ag-grid Ventas del mes. */
+  ventasRows: any[] = [];
+  ventasListo = false;
+  ventasLoading = false;
+  ventasExporting = false;
+  readonly ventasPageSize = 50;
+  ventasOffset = 0;
+  ventasTotal = 0;
+  ventasTotales: CashflowVentasTotales = { monto: 0 };
+  private readonly destroy$ = new Subject<void>();
+  private readonly ventasPage$ = new Subject<{
+    offset: number;
+    q: string;
+    append: boolean;
+  }>();
+  private readonly quickFilterVentas$ = new Subject<string>();
+  private ventasAppendPending = false;
+
   private _gastosRowsCache: any[] = [];
+  /** Binding directo OnPush para ag-grid Gastos del mes. */
+  gastosRows: any[] = [];
+  gastosListo = false;
+  gastosLoading = false;
+  gastosExporting = false;
+  readonly gastosPageSize = 50;
+  gastosOffset = 0;
+  gastosTotal = 0;
+  gastosTotales: CashflowGastosTotales = { monto: 0 };
+  private readonly gastosPage$ = new Subject<{
+    offset: number;
+    q: string;
+    append: boolean;
+  }>();
+  private readonly quickFilterGastos$ = new Subject<string>();
+  private gastosAppendPending = false;
+
   private _cobrar30RowsCache: any[] = [];
   private _pagar30RowsCache: any[] = [];
   private _totalCobrar30Cache: number = 0;
   private _totalPagar30Cache: number = 0;
 
   private _abonosCxcRowsCache: any[] = [];
+  /** Binding directo OnPush para ag-grid Abonos CXC. */
+  abonosCxcRows: any[] = [];
+  abonosCxcListo = false;
+  abonosCxcLoading = false;
+  abonosCxcExporting = false;
+  readonly abonosCxcPageSize = 50;
+  abonosCxcOffset = 0;
+  abonosCxcTotal = 0;
+  abonosCxcTotalesApi: AbonosCxcTotales = { monto: 0 };
+  private readonly abonosCxcPage$ = new Subject<{
+    offset: number;
+    q: string;
+    append: boolean;
+  }>();
+  private readonly quickFilterAbonosCxc$ = new Subject<string>();
+  private abonosCxcAppendPending = false;
+
   private _abonosCxpRowsCache: any[] = [];
+  /** Binding directo OnPush para ag-grid Abonos CXP. */
+  abonosCxpRows: any[] = [];
+  abonosCxpListo = false;
+  abonosCxpLoading = false;
+  abonosCxpExporting = false;
+  readonly abonosCxpPageSize = 50;
+  abonosCxpOffset = 0;
+  abonosCxpTotal = 0;
+  abonosCxpTotalesApi: AbonosCxpTotales = { monto: 0 };
+  private readonly abonosCxpPage$ = new Subject<{
+    offset: number;
+    q: string;
+    append: boolean;
+  }>();
+  private readonly quickFilterAbonosCxp$ = new Subject<string>();
+  private abonosCxpAppendPending = false;
+
   private _totalAbonosCxcCache: number = 0;
   private _totalAbonosCxpCache: number = 0;
 
@@ -432,11 +509,7 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
     }
     this._lastDatosHash = currentHash;
 
-    this._ventasRowsCache = this.datos?.cashflow?.ventas || [];
-    this._gastosRowsCache = this.datos?.cashflow?.gastos || [];
-
-    const nVentas = this._ventasRowsCache.length;
-    const nGastos = this._gastosRowsCache.length;
+    // Ventas/gastos cashflow: carga lazy (no vienen en el merge).
 
     this._cobrar30RowsCache = this.datos?.cuentas30?.cobrar || [];
     this._pagar30RowsCache = this.datos?.cuentas30?.pagar || [];
@@ -450,24 +523,7 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
       0
     );
 
-    // 👇 NUEVO: Calcular cache de abonos
-    this._abonosCxcRowsCache = this.datos?.abonos?.cxc || [];
-    this._abonosCxpRowsCache = this.datos?.abonos?.cxp || [];
-
-    this._totalAbonosCxcCache = this._abonosCxcRowsCache.reduce(
-      (acc, curr) => acc + (curr.monto || 0),
-      0
-    );
-    this._totalAbonosCxpCache = this._abonosCxpRowsCache.reduce(
-      (acc, curr) => acc + (curr.monto || 0),
-      0
-    );
-
-    // Recalcular filas fijas de totales
-    this.recalcularTotalesVentas();
-    this.recalcularTotalesGastos();
-    this.recalcularTotalesAbonosCxc();
-    this.recalcularTotalesAbonosCxp();
+    // Abonos CXC/CXP: lazy.
   }
 
   configurarAGGrid(): void {
@@ -496,10 +552,20 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
       getRowClass: getRowClassCallback,
       onGridReady: (params: any) => {
         this.ventasGridApi = params.api;
+        if (this.ventasRows.length > 0) {
+          params.api.setRowData(this.ventasRows);
+        }
+        if (this.pinnedBottomRowDataVentas.length > 0) {
+          params.api.setPinnedBottomRowData(this.pinnedBottomRowDataVentas);
+        }
         sizeToFit(params.api);
+        this.recalcularTotalesVentas();
       },
       onFirstDataRendered: (params: any) => sizeToFit(params.api),
       onGridSizeChanged: (params: any) => sizeToFit(params.api),
+      onPaginationChanged: () => {
+        this.maybeLoadMoreVentasFromGrid();
+      },
       onFilterChanged: () => {
         this.onFilterChangedVentas();
       }
@@ -515,10 +581,20 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
       getRowClass: getRowClassCallback,
       onGridReady: (params: any) => {
         this.gastosGridApi = params.api;
+        if (this.gastosRows.length > 0) {
+          params.api.setRowData(this.gastosRows);
+        }
+        if (this.pinnedBottomRowDataGastos.length > 0) {
+          params.api.setPinnedBottomRowData(this.pinnedBottomRowDataGastos);
+        }
         sizeToFit(params.api);
+        this.recalcularTotalesGastos();
       },
       onFirstDataRendered: (params: any) => sizeToFit(params.api),
       onGridSizeChanged: (params: any) => sizeToFit(params.api),
+      onPaginationChanged: () => {
+        this.maybeLoadMoreGastosFromGrid();
+      },
       onFilterChanged: () => {
         this.onFilterChangedGastos();
       }
@@ -565,10 +641,20 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
       getRowClass: getRowClassCallback,
       onGridReady: (params: any) => {
         this.abonosCxcGridApi = params.api;
+        if (this.abonosCxcRows.length > 0) {
+          params.api.setRowData(this.abonosCxcRows);
+        }
+        if (this.pinnedBottomRowDataAbonosCxc.length > 0) {
+          params.api.setPinnedBottomRowData(this.pinnedBottomRowDataAbonosCxc);
+        }
         sizeToFit(params.api);
+        this.recalcularTotalesAbonosCxc();
       },
       onFirstDataRendered: (params: any) => sizeToFit(params.api),
       onGridSizeChanged: (params: any) => sizeToFit(params.api),
+      onPaginationChanged: () => {
+        this.maybeLoadMoreAbonosCxcFromGrid();
+      },
       onFilterChanged: () => {
         this.onFilterChangedAbonosCxc();
       }
@@ -584,10 +670,20 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
       getRowClass: getRowClassCallback,
       onGridReady: (params: any) => {
         this.abonosCxpGridApi = params.api;
+        if (this.abonosCxpRows.length > 0) {
+          params.api.setRowData(this.abonosCxpRows);
+        }
+        if (this.pinnedBottomRowDataAbonosCxp.length > 0) {
+          params.api.setPinnedBottomRowData(this.pinnedBottomRowDataAbonosCxp);
+        }
         sizeToFit(params.api);
+        this.recalcularTotalesAbonosCxp();
       },
       onFirstDataRendered: (params: any) => sizeToFit(params.api),
       onGridSizeChanged: (params: any) => sizeToFit(params.api),
+      onPaginationChanged: () => {
+        this.maybeLoadMoreAbonosCxpFromGrid();
+      },
       onFilterChanged: () => {
         this.onFilterChangedAbonosCxp();
       }
@@ -596,6 +692,10 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
 
   ngOnInit(): void {
     this.configurarAGGrid();
+    this.wireCashflowVentasStreams();
+    this.wireCashflowGastosStreams();
+    this.wireAbonosCxcStreams();
+    this.wireAbonosCxpStreams();
 
     const savedState = this.dashboardDataService.obtenerFiltrosUI('Resultados');
     const tieneEstadoGuardado = !!savedState;
@@ -611,17 +711,18 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
       this.aplicarDefectoMesFlujoEfectivo();
     }
     this.cargarSucursales();
-    // Marcar como inicializado después de un pequeño delay
+    // Siempre emitir al padre: el estado UI se restaura arriba, pero al reentrar
+    // al dashboard el padre nace sin datos; si no emitimos, se queda en loaders.
     setTimeout(() => {
       this.inicializado = true;
-      if (!tieneEstadoGuardado) {
-        this.aplicarFiltros();
-      }
+      this.aplicarFiltros();
       this.cdr.markForCheck();
     }, 100);
   }
 
   ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
     this.dashboardDataService.guardarFiltrosUI('Resultados', {
       anioSeleccionado: this.anioSeleccionado,
       mesFlujoEfectivo: this.mesFlujoEfectivo,
@@ -735,6 +836,511 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
 
     // Emitir evento al componente padre para recargar datos
     this.filtrosCambiados.emit(filtros);
+    this._desbloquearSiPadreOmiteRecarga();
+    this.cargarCashflowVentasPagina(0);
+    this.cargarCashflowGastosPagina(0);
+    this.cargarAbonosCxcPagina(0);
+    this.cargarAbonosCxpPagina(0);
+  }
+
+  private getFiltrosCashflowDetalle(): any {
+    const allIds = this.sucursales.map((s) => s.id);
+    const sel = this.sucursalesSeleccionadas;
+    const sucursal =
+      this.sucursalesTodasImplicitas ||
+      sel.length === 0 ||
+      (allIds.length > 0 &&
+        sel.length === allIds.length &&
+        allIds.every((id) => sel.includes(id)))
+        ? 'todas'
+        : [...sel];
+    const filtros: any = {
+      anio: this.anioSeleccionado,
+      sucursal,
+    };
+    if (this.mesFlujoEfectivo != null) {
+      filtros.mes = this.mesFlujoEfectivo;
+    }
+    return filtros;
+  }
+
+  private wireCashflowVentasStreams(): void {
+    this.ventasPage$
+      .pipe(
+        switchMap(({ offset, q, append }) => {
+          this.ventasAppendPending = append;
+          this.ventasLoading = true;
+          this.cdr.markForCheck();
+          return this.dashboardDataService.obtenerCashflowVentasPagina(
+            this.getFiltrosCashflowDetalle(),
+            {
+              limite: this.ventasPageSize,
+              offset,
+              q: q || undefined,
+            },
+          );
+        }),
+        takeUntil(this.destroy$),
+      )
+      .subscribe({
+        next: (page) => {
+          this.ventasOffset = page.offset;
+          this.ventasTotal = page.total;
+          this.ventasTotales = page.totales;
+          const append =
+            this.ventasAppendPending && (page.items?.length ?? 0) > 0;
+          this.applyVentasPageRows(page.items, page.totales, append);
+          this.ventasAppendPending = false;
+          this.ventasListo = true;
+          this.ventasLoading = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.ventasAppendPending = false;
+          this.ventasLoading = false;
+          this.ventasListo = true;
+          this.cdr.markForCheck();
+        },
+      });
+
+    this.quickFilterVentas$
+      .pipe(
+        debounceTime(300),
+        distinctUntilChanged(),
+        takeUntil(this.destroy$),
+      )
+      .subscribe(() => {
+        this.cargarCashflowVentasPagina(0);
+      });
+  }
+
+  cargarCashflowVentasPagina(offset: number, append = false): void {
+    this.ventasPage$.next({
+      offset: Math.max(0, offset),
+      q: (this.quickFilterVentas || '').trim(),
+      append,
+    });
+  }
+
+  private maybeLoadMoreVentasFromGrid(): void {
+    if (!this.ventasGridApi || this.ventasLoading || !this.ventasListo) {
+      return;
+    }
+    const loaded = this._ventasRowsCache.length;
+    if (loaded >= this.ventasTotal) return;
+    const pageSize = this.ventasGridApi.paginationGetPageSize() || 25;
+    const currentPage = this.ventasGridApi.paginationGetCurrentPage();
+    const lastLoadedPage = Math.max(0, Math.ceil(loaded / pageSize) - 1);
+    if (currentPage >= lastLoadedPage) {
+      this.cargarCashflowVentasPagina(loaded, true);
+    }
+  }
+
+  private applyVentasPageRows(
+    items: any[],
+    totales: CashflowVentasTotales,
+    append = false,
+  ): void {
+    const mapped = (items ?? []).map((v: any) => ({
+      cliente: v.cliente || '-',
+      factura: v.factura || '',
+      monto: Number(v.monto) || 0,
+    }));
+    if (append && this._ventasRowsCache.length > 0) {
+      this._ventasRowsCache = [...this._ventasRowsCache, ...mapped];
+    } else {
+      this._ventasRowsCache = mapped;
+      if (this.ventasGridApi) {
+        this.ventasGridApi.paginationGoToFirstPage();
+      }
+    }
+    this.ventasRows = [...this._ventasRowsCache];
+    if (this.ventasGridApi) {
+      this.ventasGridApi.setRowData(this.ventasRows);
+    }
+    this.aplicarPinnedTotalesVentas(totales);
+    this.actualizarVentasPivot();
+  }
+
+  private aplicarPinnedTotalesVentas(totales: CashflowVentasTotales): void {
+    if ((totales?.monto || 0) !== 0) {
+      this.pinnedBottomRowDataVentas = [
+        { cliente: 'Total', factura: '', monto: totales.monto },
+      ];
+    } else {
+      this.pinnedBottomRowDataVentas = [];
+    }
+    if (this.ventasGridApi) {
+      this.ventasGridApi.setPinnedBottomRowData(this.pinnedBottomRowDataVentas);
+    }
+  }
+
+  private csvEscape(value: string): string {
+    if (/[",\n\r]/.test(value)) {
+      return `"${value.replace(/"/g, '""')}"`;
+    }
+    return value;
+  }
+
+  private wireCashflowGastosStreams(): void {
+    this.gastosPage$
+      .pipe(
+        switchMap(({ offset, q, append }) => {
+          this.gastosAppendPending = append;
+          this.gastosLoading = true;
+          this.cdr.markForCheck();
+          return this.dashboardDataService.obtenerCashflowGastosPagina(
+            this.getFiltrosCashflowDetalle(),
+            {
+              limite: this.gastosPageSize,
+              offset,
+              q: q || undefined,
+            },
+          );
+        }),
+        takeUntil(this.destroy$),
+      )
+      .subscribe({
+        next: (page) => {
+          this.gastosOffset = page.offset;
+          this.gastosTotal = page.total;
+          this.gastosTotales = page.totales;
+          const append =
+            this.gastosAppendPending && (page.items?.length ?? 0) > 0;
+          this.applyGastosPageRows(page.items, page.totales, append);
+          this.gastosAppendPending = false;
+          this.gastosListo = true;
+          this.gastosLoading = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.gastosAppendPending = false;
+          this.gastosLoading = false;
+          this.gastosListo = true;
+          this.cdr.markForCheck();
+        },
+      });
+
+    this.quickFilterGastos$
+      .pipe(
+        debounceTime(300),
+        distinctUntilChanged(),
+        takeUntil(this.destroy$),
+      )
+      .subscribe(() => {
+        this.cargarCashflowGastosPagina(0);
+      });
+  }
+
+  cargarCashflowGastosPagina(offset: number, append = false): void {
+    this.gastosPage$.next({
+      offset: Math.max(0, offset),
+      q: (this.quickFilterGastos || '').trim(),
+      append,
+    });
+  }
+
+  private maybeLoadMoreGastosFromGrid(): void {
+    if (!this.gastosGridApi || this.gastosLoading || !this.gastosListo) {
+      return;
+    }
+    const loaded = this._gastosRowsCache.length;
+    if (loaded >= this.gastosTotal) return;
+    const pageSize = this.gastosGridApi.paginationGetPageSize() || 25;
+    const currentPage = this.gastosGridApi.paginationGetCurrentPage();
+    const lastLoadedPage = Math.max(0, Math.ceil(loaded / pageSize) - 1);
+    if (currentPage >= lastLoadedPage) {
+      this.cargarCashflowGastosPagina(loaded, true);
+    }
+  }
+
+  private applyGastosPageRows(
+    items: any[],
+    totales: CashflowGastosTotales,
+    append = false,
+  ): void {
+    const mapped = (items ?? []).map((g: any) => ({
+      proveedor: g.proveedor || '-',
+      factura: g.factura || '',
+      monto: Number(g.monto) || 0,
+    }));
+    if (append && this._gastosRowsCache.length > 0) {
+      this._gastosRowsCache = [...this._gastosRowsCache, ...mapped];
+    } else {
+      this._gastosRowsCache = mapped;
+      if (this.gastosGridApi) {
+        this.gastosGridApi.paginationGoToFirstPage();
+      }
+    }
+    this.gastosRows = [...this._gastosRowsCache];
+    if (this.gastosGridApi) {
+      this.gastosGridApi.setRowData(this.gastosRows);
+    }
+    this.aplicarPinnedTotalesGastos(totales);
+    this.actualizarGastosPivot();
+  }
+
+  private aplicarPinnedTotalesGastos(totales: CashflowGastosTotales): void {
+    if ((totales?.monto || 0) !== 0) {
+      this.pinnedBottomRowDataGastos = [
+        { proveedor: 'Total', factura: '', monto: totales.monto },
+      ];
+    } else {
+      this.pinnedBottomRowDataGastos = [];
+    }
+    if (this.gastosGridApi) {
+      this.gastosGridApi.setPinnedBottomRowData(this.pinnedBottomRowDataGastos);
+    }
+  }
+
+  private wireAbonosCxcStreams(): void {
+    this.abonosCxcPage$
+      .pipe(
+        switchMap(({ offset, q, append }) => {
+          this.abonosCxcAppendPending = append;
+          this.abonosCxcLoading = true;
+          this.cdr.markForCheck();
+          return this.dashboardDataService.obtenerAbonosCxcPagina(
+            this.getFiltrosCashflowDetalle(),
+            {
+              limite: this.abonosCxcPageSize,
+              offset,
+              q: q || undefined,
+            },
+          );
+        }),
+        takeUntil(this.destroy$),
+      )
+      .subscribe({
+        next: (page) => {
+          this.abonosCxcOffset = page.offset;
+          this.abonosCxcTotal = page.total;
+          this.abonosCxcTotalesApi = page.totales;
+          const append =
+            this.abonosCxcAppendPending && (page.items?.length ?? 0) > 0;
+          this.applyAbonosCxcPageRows(page.items, page.totales, append);
+          this.abonosCxcAppendPending = false;
+          this.abonosCxcListo = true;
+          this.abonosCxcLoading = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.abonosCxcAppendPending = false;
+          this.abonosCxcLoading = false;
+          this.abonosCxcListo = true;
+          this.cdr.markForCheck();
+        },
+      });
+
+    this.quickFilterAbonosCxc$
+      .pipe(
+        debounceTime(300),
+        distinctUntilChanged(),
+        takeUntil(this.destroy$),
+      )
+      .subscribe(() => {
+        this.cargarAbonosCxcPagina(0);
+      });
+  }
+
+  cargarAbonosCxcPagina(offset: number, append = false): void {
+    this.abonosCxcPage$.next({
+      offset: Math.max(0, offset),
+      q: (this.quickFilterAbonosCxc || '').trim(),
+      append,
+    });
+  }
+
+  private maybeLoadMoreAbonosCxcFromGrid(): void {
+    if (
+      !this.abonosCxcGridApi ||
+      this.abonosCxcLoading ||
+      !this.abonosCxcListo
+    ) {
+      return;
+    }
+    const loaded = this._abonosCxcRowsCache.length;
+    if (loaded >= this.abonosCxcTotal) return;
+    const pageSize = this.abonosCxcGridApi.paginationGetPageSize() || 25;
+    const currentPage = this.abonosCxcGridApi.paginationGetCurrentPage();
+    const lastLoadedPage = Math.max(0, Math.ceil(loaded / pageSize) - 1);
+    if (currentPage >= lastLoadedPage) {
+      this.cargarAbonosCxcPagina(loaded, true);
+    }
+  }
+
+  private applyAbonosCxcPageRows(
+    items: any[],
+    totales: AbonosCxcTotales,
+    append = false,
+  ): void {
+    const mapped = (items ?? []).map((i: any) => ({
+      factura: i.factura || '',
+      cliente: i.cliente || '-',
+      vence: i.vence || '',
+      diasVencimiento: Number(i.diasVencimiento) || 0,
+      monto: Number(i.monto) || 0,
+    }));
+    if (append && this._abonosCxcRowsCache.length > 0) {
+      this._abonosCxcRowsCache = [...this._abonosCxcRowsCache, ...mapped];
+    } else {
+      this._abonosCxcRowsCache = mapped;
+      if (this.abonosCxcGridApi) {
+        this.abonosCxcGridApi.paginationGoToFirstPage();
+      }
+    }
+    this.abonosCxcRows = [...this._abonosCxcRowsCache];
+    this._totalAbonosCxcCache = totales?.monto || 0;
+    if (this.abonosCxcGridApi) {
+      this.abonosCxcGridApi.setRowData(this.abonosCxcRows);
+    }
+    this.aplicarPinnedTotalesAbonosCxc(totales);
+  }
+
+  private aplicarPinnedTotalesAbonosCxc(totales: AbonosCxcTotales): void {
+    if ((totales?.monto || 0) !== 0) {
+      this.pinnedBottomRowDataAbonosCxc = [
+        {
+          cliente: 'Total',
+          factura: '',
+          vence: '',
+          diasVencimiento: null,
+          monto: totales.monto,
+        },
+      ];
+    } else {
+      this.pinnedBottomRowDataAbonosCxc = [];
+    }
+    if (this.abonosCxcGridApi) {
+      this.abonosCxcGridApi.setPinnedBottomRowData(
+        this.pinnedBottomRowDataAbonosCxc,
+      );
+    }
+  }
+
+  private wireAbonosCxpStreams(): void {
+    this.abonosCxpPage$
+      .pipe(
+        switchMap(({ offset, q, append }) => {
+          this.abonosCxpAppendPending = append;
+          this.abonosCxpLoading = true;
+          this.cdr.markForCheck();
+          return this.dashboardDataService.obtenerAbonosCxpPagina(
+            this.getFiltrosCashflowDetalle(),
+            {
+              limite: this.abonosCxpPageSize,
+              offset,
+              q: q || undefined,
+            },
+          );
+        }),
+        takeUntil(this.destroy$),
+      )
+      .subscribe({
+        next: (page) => {
+          this.abonosCxpOffset = page.offset;
+          this.abonosCxpTotal = page.total;
+          this.abonosCxpTotalesApi = page.totales;
+          const append =
+            this.abonosCxpAppendPending && (page.items?.length ?? 0) > 0;
+          this.applyAbonosCxpPageRows(page.items, page.totales, append);
+          this.abonosCxpAppendPending = false;
+          this.abonosCxpListo = true;
+          this.abonosCxpLoading = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.abonosCxpAppendPending = false;
+          this.abonosCxpLoading = false;
+          this.abonosCxpListo = true;
+          this.cdr.markForCheck();
+        },
+      });
+
+    this.quickFilterAbonosCxp$
+      .pipe(
+        debounceTime(300),
+        distinctUntilChanged(),
+        takeUntil(this.destroy$),
+      )
+      .subscribe(() => {
+        this.cargarAbonosCxpPagina(0);
+      });
+  }
+
+  cargarAbonosCxpPagina(offset: number, append = false): void {
+    this.abonosCxpPage$.next({
+      offset: Math.max(0, offset),
+      q: (this.quickFilterAbonosCxp || '').trim(),
+      append,
+    });
+  }
+
+  private maybeLoadMoreAbonosCxpFromGrid(): void {
+    if (
+      !this.abonosCxpGridApi ||
+      this.abonosCxpLoading ||
+      !this.abonosCxpListo
+    ) {
+      return;
+    }
+    const loaded = this._abonosCxpRowsCache.length;
+    if (loaded >= this.abonosCxpTotal) return;
+    const pageSize = this.abonosCxpGridApi.paginationGetPageSize() || 25;
+    const currentPage = this.abonosCxpGridApi.paginationGetCurrentPage();
+    const lastLoadedPage = Math.max(0, Math.ceil(loaded / pageSize) - 1);
+    if (currentPage >= lastLoadedPage) {
+      this.cargarAbonosCxpPagina(loaded, true);
+    }
+  }
+
+  private applyAbonosCxpPageRows(
+    items: any[],
+    totales: AbonosCxpTotales,
+    append = false,
+  ): void {
+    const mapped = (items ?? []).map((i: any) => ({
+      factura: i.factura || '',
+      proveedor: i.proveedor || '-',
+      vence: i.vence || '',
+      diasVencimiento: Number(i.diasVencimiento) || 0,
+      monto: Number(i.monto) || 0,
+    }));
+    if (append && this._abonosCxpRowsCache.length > 0) {
+      this._abonosCxpRowsCache = [...this._abonosCxpRowsCache, ...mapped];
+    } else {
+      this._abonosCxpRowsCache = mapped;
+      if (this.abonosCxpGridApi) {
+        this.abonosCxpGridApi.paginationGoToFirstPage();
+      }
+    }
+    this.abonosCxpRows = [...this._abonosCxpRowsCache];
+    this._totalAbonosCxpCache = totales?.monto || 0;
+    if (this.abonosCxpGridApi) {
+      this.abonosCxpGridApi.setRowData(this.abonosCxpRows);
+    }
+    this.aplicarPinnedTotalesAbonosCxp(totales);
+  }
+
+  private aplicarPinnedTotalesAbonosCxp(totales: AbonosCxpTotales): void {
+    if ((totales?.monto || 0) !== 0) {
+      this.pinnedBottomRowDataAbonosCxp = [
+        {
+          proveedor: 'Total',
+          factura: '',
+          vence: '',
+          diasVencimiento: null,
+          monto: totales.monto,
+        },
+      ];
+    } else {
+      this.pinnedBottomRowDataAbonosCxp = [];
+    }
+    if (this.abonosCxpGridApi) {
+      this.abonosCxpGridApi.setPinnedBottomRowData(
+        this.pinnedBottomRowDataAbonosCxp,
+      );
+    }
   }
 
   private _bloquearFiltros(): void {
@@ -752,6 +1358,15 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
     }
     this.filtrosLocked = false;
     this.cdr.markForCheck();
+  }
+
+  /** Si el padre omite la recarga (mismos filtros), datosCompletos no cambia y el overlay se queda. */
+  private _desbloquearSiPadreOmiteRecarga(): void {
+    setTimeout(() => {
+      if (this.datosCompletos) {
+        this._desbloquearFiltros();
+      }
+    }, 0);
   }
 
   formatCurrency(value: number): string {
@@ -819,45 +1434,17 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
     }
   ];
 
-  get ventasRows(): any[] {
-    return this.filtrarVentas(this._ventasRowsCache);
-  }
-
-  get gastosRows(): any[] {
-    return this.filtrarGastos(this._gastosRowsCache);
-  }
-
-  filtrarVentas(rows: any[]): any[] {
-    if (!this.busquedaVentas) return rows;
-    const busqueda = this.busquedaVentas.toLowerCase();
-    return rows.filter(row =>
-      (row.cliente || '').toLowerCase().includes(busqueda) ||
-      (row.factura || '').toLowerCase().includes(busqueda) ||
-      (row.monto || '').toLowerCase().includes(busqueda)
-    );
-  }
-
-  filtrarGastos(rows: any[]): any[] {
-    if (!this.busquedaGastos) return rows;
-    const busqueda = this.busquedaGastos.toLowerCase();
-    return rows.filter(row =>
-      (row.proveedor || '').toLowerCase().includes(busqueda) ||
-      (row.factura || '').toLowerCase().includes(busqueda) ||
-      (row.monto || '').toLowerCase().includes(busqueda)
-    );
-  }
-
   onBusquedaGastosChange(): void {
   }
 
   // ─── Quick-filter handlers ─────────────────────────────────────────────────
 
   onQuickFilterVentasChange(): void {
-    // El binding [quickFilterText] en el template propaga el valor automáticamente
+    this.quickFilterVentas$.next((this.quickFilterVentas || '').trim());
   }
 
   onQuickFilterGastosChange(): void {
-    // El binding [quickFilterText] en el template propaga el valor automáticamente
+    this.quickFilterGastos$.next((this.quickFilterGastos || '').trim());
   }
 
   onQuickFilterCobrar30Change(): void {
@@ -869,11 +1456,11 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   onQuickFilterAbonosCxcChange(): void {
-    // El binding [quickFilterText] en el template propaga el valor automáticamente
+    this.quickFilterAbonosCxc$.next((this.quickFilterAbonosCxc || '').trim());
   }
 
   onQuickFilterAbonosCxpChange(): void {
-    // El binding [quickFilterText] en el template propaga el valor automáticamente
+    this.quickFilterAbonosCxp$.next((this.quickFilterAbonosCxp || '').trim());
   }
 
   // ─── Limpiar filtros ───────────────────────────────────────────────────────
@@ -883,6 +1470,7 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
     if (this.ventasGridApi) {
       this.ventasGridApi.setFilterModel(null);
     }
+    this.cargarCashflowVentasPagina(0);
   }
 
   limpiarFiltrosGastos(): void {
@@ -890,6 +1478,7 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
     if (this.gastosGridApi) {
       this.gastosGridApi.setFilterModel(null);
     }
+    this.cargarCashflowGastosPagina(0);
   }
 
   limpiarFiltrosCobrar30(): void {
@@ -911,6 +1500,7 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
     if (this.abonosCxcGridApi) {
       this.abonosCxcGridApi.setFilterModel(null);
     }
+    this.cargarAbonosCxcPagina(0);
   }
 
   limpiarFiltrosAbonosCxp(): void {
@@ -918,6 +1508,7 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
     if (this.abonosCxpGridApi) {
       this.abonosCxpGridApi.setFilterModel(null);
     }
+    this.cargarAbonosCxpPagina(0);
   }
 
   // ─── Exportar CSV ──────────────────────────────────────────────────────────
@@ -965,13 +1556,91 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   exportarVentasExcel(): void {
-    const fecha = new Date().toISOString().split('T')[0];
-    this.exportarComoExcel(this.ventasGridApi, `ventas-mes-${fecha}.xlsx`);
+    if (this.ventasExporting) return;
+    this.ventasExporting = true;
+    this.cdr.markForCheck();
+    this.dashboardDataService
+      .obtenerCashflowVentasCompleto(this.getFiltrosCashflowDetalle(), {
+        q: (this.quickFilterVentas || '').trim() || undefined,
+      })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (page) => {
+          const fecha = new Date().toISOString().split('T')[0];
+          const cols = this.ventasColumnDefs.filter((c) => c.field);
+          const header = cols
+            .map((c) => this.csvEscape(String(c.headerName || c.field)))
+            .join(',');
+          const lines = (page.items ?? []).map((item: any) =>
+            cols
+              .map((c) => {
+                const raw = item[c.field || ''];
+                return this.csvEscape(
+                  raw === null || raw === undefined ? '' : String(raw),
+                );
+              })
+              .join(','),
+          );
+          const csv = [header, ...lines].join('\n');
+          const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `ventas-mes-${fecha}.csv`;
+          a.click();
+          URL.revokeObjectURL(url);
+          this.ventasExporting = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.ventasExporting = false;
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   exportarGastosExcel(): void {
-    const fecha = new Date().toISOString().split('T')[0];
-    this.exportarComoExcel(this.gastosGridApi, `gastos-mes-${fecha}.xlsx`);
+    if (this.gastosExporting) return;
+    this.gastosExporting = true;
+    this.cdr.markForCheck();
+    this.dashboardDataService
+      .obtenerCashflowGastosCompleto(this.getFiltrosCashflowDetalle(), {
+        q: (this.quickFilterGastos || '').trim() || undefined,
+      })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (page) => {
+          const fecha = new Date().toISOString().split('T')[0];
+          const cols = this.gastosColumnDefs.filter((c) => c.field);
+          const header = cols
+            .map((c) => this.csvEscape(String(c.headerName || c.field)))
+            .join(',');
+          const lines = (page.items ?? []).map((item: any) =>
+            cols
+              .map((c) => {
+                const raw = item[c.field || ''];
+                return this.csvEscape(
+                  raw === null || raw === undefined ? '' : String(raw),
+                );
+              })
+              .join(','),
+          );
+          const csv = [header, ...lines].join('\n');
+          const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `gastos-mes-${fecha}.csv`;
+          a.click();
+          URL.revokeObjectURL(url);
+          this.gastosExporting = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.gastosExporting = false;
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   exportarCobrar30Excel(): void {
@@ -985,13 +1654,91 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   exportarAbonosCxcExcel(): void {
-    const fecha = new Date().toISOString().split('T')[0];
-    this.exportarComoExcel(this.abonosCxcGridApi, `abonos-cxc-${fecha}.xlsx`);
+    if (this.abonosCxcExporting) return;
+    this.abonosCxcExporting = true;
+    this.cdr.markForCheck();
+    this.dashboardDataService
+      .obtenerAbonosCxcCompleto(this.getFiltrosCashflowDetalle(), {
+        q: (this.quickFilterAbonosCxc || '').trim() || undefined,
+      })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (page) => {
+          const fecha = new Date().toISOString().split('T')[0];
+          const cols = this.abonosCxcColumnDefs.filter((c) => c.field);
+          const header = cols
+            .map((c) => this.csvEscape(String(c.headerName || c.field)))
+            .join(',');
+          const lines = (page.items ?? []).map((item: any) =>
+            cols
+              .map((c) => {
+                const raw = item[c.field || ''];
+                return this.csvEscape(
+                  raw === null || raw === undefined ? '' : String(raw),
+                );
+              })
+              .join(','),
+          );
+          const csv = [header, ...lines].join('\n');
+          const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `abonos-cxc-${fecha}.csv`;
+          a.click();
+          URL.revokeObjectURL(url);
+          this.abonosCxcExporting = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.abonosCxcExporting = false;
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   exportarAbonosCxpExcel(): void {
-    const fecha = new Date().toISOString().split('T')[0];
-    this.exportarComoExcel(this.abonosCxpGridApi, `abonos-cxp-${fecha}.xlsx`);
+    if (this.abonosCxpExporting) return;
+    this.abonosCxpExporting = true;
+    this.cdr.markForCheck();
+    this.dashboardDataService
+      .obtenerAbonosCxpCompleto(this.getFiltrosCashflowDetalle(), {
+        q: (this.quickFilterAbonosCxp || '').trim() || undefined,
+      })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (page) => {
+          const fecha = new Date().toISOString().split('T')[0];
+          const cols = this.abonosCxpColumnDefs.filter((c) => c.field);
+          const header = cols
+            .map((c) => this.csvEscape(String(c.headerName || c.field)))
+            .join(',');
+          const lines = (page.items ?? []).map((item: any) =>
+            cols
+              .map((c) => {
+                const raw = item[c.field || ''];
+                return this.csvEscape(
+                  raw === null || raw === undefined ? '' : String(raw),
+                );
+              })
+              .join(','),
+          );
+          const csv = [header, ...lines].join('\n');
+          const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `abonos-cxp-${fecha}.csv`;
+          a.click();
+          URL.revokeObjectURL(url);
+          this.abonosCxpExporting = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.abonosCxpExporting = false;
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   // ── WebDataRocks: Ventas ─────────────────────────────────────────────────
@@ -1329,14 +2076,6 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
     return this._totalPagar30Cache;
   }
 
-  get abonosCxcRows(): any[] {
-    return this._abonosCxcRowsCache;
-  }
-
-  get abonosCxpRows(): any[] {
-    return this._abonosCxpRowsCache;
-  }
-
   get totalAbonosCxc(): number {
     return this._totalAbonosCxcCache;
   }
@@ -1345,22 +2084,9 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
     return this._totalAbonosCxpCache;
   }
 
+  /** Totales pinned desde API (`totales`); no sumar solo la página cargada. */
   recalcularTotalesVentas(): void {
-    let total = 0;
-    if (this.ventasGridApi && !this.ventasGridApi.isDestroyed()) {
-      this.ventasGridApi.forEachNodeAfterFilter((node: any) => {
-        if (node.data) {
-          total += (node.data.monto || 0);
-        }
-      });
-    } else {
-      total = (this.datos?.cashflow?.ventas || []).reduce((acc: number, curr: any) => acc + (curr.monto || 0), 0);
-    }
-    this.pinnedBottomRowDataVentas = [{
-      cliente: 'Total',
-      factura: '',
-      monto: total
-    }];
+    this.aplicarPinnedTotalesVentas(this.ventasTotales);
   }
 
   onFilterChangedVentas(): void {
@@ -1368,22 +2094,9 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
     this.cdr.markForCheck();
   }
 
+  /** Totales pinned desde API (`totales`); no sumar solo la página cargada. */
   recalcularTotalesGastos(): void {
-    let total = 0;
-    if (this.gastosGridApi && !this.gastosGridApi.isDestroyed()) {
-      this.gastosGridApi.forEachNodeAfterFilter((node: any) => {
-        if (node.data) {
-          total += (node.data.monto || 0);
-        }
-      });
-    } else {
-      total = (this.datos?.cashflow?.gastos || []).reduce((acc: number, curr: any) => acc + (curr.monto || 0), 0);
-    }
-    this.pinnedBottomRowDataGastos = [{
-      proveedor: 'Total',
-      factura: '',
-      monto: total
-    }];
+    this.aplicarPinnedTotalesGastos(this.gastosTotales);
   }
 
   onFilterChangedGastos(): void {
@@ -1391,24 +2104,9 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
     this.cdr.markForCheck();
   }
 
+  /** Totales pinned desde API (`totales`); no sumar solo la página cargada. */
   recalcularTotalesAbonosCxc(): void {
-    let total = 0;
-    if (this.abonosCxcGridApi && !this.abonosCxcGridApi.isDestroyed()) {
-      this.abonosCxcGridApi.forEachNodeAfterFilter((node: any) => {
-        if (node.data) {
-          total += (node.data.monto || 0);
-        }
-      });
-    } else {
-      total = (this.datos?.abonos?.cxc || []).reduce((acc: number, curr: any) => acc + (curr.monto || 0), 0);
-    }
-    this.pinnedBottomRowDataAbonosCxc = [{
-      cliente: 'Total',
-      factura: '',
-      vence: '',
-      diasVencimiento: null,
-      monto: total
-    }];
+    this.aplicarPinnedTotalesAbonosCxc(this.abonosCxcTotalesApi);
   }
 
   onFilterChangedAbonosCxc(): void {
@@ -1416,24 +2114,9 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
     this.cdr.markForCheck();
   }
 
+  /** Totales pinned desde API (`totales`); no sumar solo la página cargada. */
   recalcularTotalesAbonosCxp(): void {
-    let total = 0;
-    if (this.abonosCxpGridApi && !this.abonosCxpGridApi.isDestroyed()) {
-      this.abonosCxpGridApi.forEachNodeAfterFilter((node: any) => {
-        if (node.data) {
-          total += (node.data.monto || 0);
-        }
-      });
-    } else {
-      total = (this.datos?.abonos?.cxp || []).reduce((acc: number, curr: any) => acc + (curr.monto || 0), 0);
-    }
-    this.pinnedBottomRowDataAbonosCxp = [{
-      proveedor: 'Total',
-      factura: '',
-      vence: '',
-      diasVencimiento: null,
-      monto: total
-    }];
+    this.aplicarPinnedTotalesAbonosCxp(this.abonosCxpTotalesApi);
   }
 
   onFilterChangedAbonosCxp(): void {
@@ -1443,24 +2126,36 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
 
   onVentasGridReady(params: any): void {
     this.ventasGridApi = params.api;
+    if (this.ventasRows.length > 0) {
+      params.api.setRowData(this.ventasRows);
+    }
     try { params.api.sizeColumnsToFit(); } catch { }
     this.recalcularTotalesVentas();
   }
 
   onGastosGridReady(params: any): void {
     this.gastosGridApi = params.api;
+    if (this.gastosRows.length > 0) {
+      params.api.setRowData(this.gastosRows);
+    }
     try { params.api.sizeColumnsToFit(); } catch { }
     this.recalcularTotalesGastos();
   }
 
   onAbonosCxcGridReady(params: any): void {
     this.abonosCxcGridApi = params.api;
+    if (this.abonosCxcRows.length > 0) {
+      params.api.setRowData(this.abonosCxcRows);
+    }
     try { params.api.sizeColumnsToFit(); } catch { }
     this.recalcularTotalesAbonosCxc();
   }
 
   onAbonosCxpGridReady(params: any): void {
     this.abonosCxpGridApi = params.api;
+    if (this.abonosCxpRows.length > 0) {
+      params.api.setRowData(this.abonosCxpRows);
+    }
     try { params.api.sizeColumnsToFit(); } catch { }
     this.recalcularTotalesAbonosCxp();
   }

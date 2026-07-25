@@ -1,4 +1,6 @@
 import { Component, EventEmitter, Input, OnInit, OnChanges, SimpleChanges, Output, ViewChild, ChangeDetectorRef, ChangeDetectionStrategy, OnDestroy, inject } from '@angular/core';
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged, switchMap, takeUntil } from 'rxjs/operators';
 import { DashboardDataService } from '../../services/dashboard-data.service';
 import { ColDef, GridOptions, GridApi, themeQuartz, AllCommunityModule } from 'ag-grid-community';
 import { AgGridAngular } from 'ag-grid-angular';
@@ -13,6 +15,7 @@ import {
 } from '../../components/dropdown-multi-filtro/dropdown-multi-filtro.component';
 import { formatEmpresaCurrency } from '@helpers/currency-format.helper';
 import { MetricCard } from '../../models/chart-config.model';
+import { DetalleGastosTotales } from '../../services/gastos-dashboard-data.service';
 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -118,8 +121,23 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
   // Quick filter text
   quickFilterTextGastos: string = '';
 
-  // AG Grid options
+  // AG Grid options — detalle paginado lazy
   detalleGastosGridOptions: GridOptions = {};
+  gastosListo = false;
+  gastosLoading = false;
+  gastosExporting = false;
+  readonly gastosPageSize = 50;
+  gastosOffset = 0;
+  gastosTotal = 0;
+  gastosTotales: DetalleGastosTotales = { gastosConIVA: 0 };
+  private readonly destroy$ = new Subject<void>();
+  private readonly gastosPage$ = new Subject<{
+    offset: number;
+    q: string;
+    append: boolean;
+  }>();
+  private readonly quickFilterGastos$ = new Subject<string>();
+  private gastosAppendPending = false;
 
   anio: string = new Date().getFullYear().toString();
   mes: string = '';
@@ -297,6 +315,7 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
 
     // Configurar AG Grid
     this.configurarAGGrid();
+    this.wireDetalleGastosStreams();
     this.cargarOpcionesFiltros();
 
     // Intentar inicializar si ya hay datos
@@ -304,12 +323,18 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
       this.inicializarDatos();
     }
 
+    // Siempre emitir al padre tras restaurar UI; si no, al reentrar al dashboard
+    // el padre queda sin datos y la vista se queda en loaders.
     setTimeout(() => {
       this.filtrosListosParaEmitir = true;
+      this.aplicarFiltros();
+      this.cdr.markForCheck();
     }, 100);
   }
 
   ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
     this.dashboardDataService.guardarFiltrosUI('Gastos', {
       anio: this.anio,
       mes: this.mes,
@@ -664,69 +689,291 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
       suppressHorizontalScroll: false,
       onGridReady: (params: any) => {
         this.detalleGastosGridApi = params.api;
-      }
+        this.recalcularTotalesGastos();
+        this.cdr.markForCheck();
+      },
+      onPaginationChanged: () => {
+        this.maybeLoadMoreGastosFromGrid();
+      },
     };
+  }
+
+  private wireDetalleGastosStreams(): void {
+    this.gastosPage$
+      .pipe(
+        switchMap(({ offset, q, append }) => {
+          this.gastosAppendPending = append;
+          this.gastosLoading = true;
+          this.cdr.markForCheck();
+          return this.dashboardDataService.obtenerDetalleGastosPagina(
+            this.getFiltrosDetalleGastos(),
+            { limite: this.gastosPageSize, offset, q: q || undefined },
+          );
+        }),
+        takeUntil(this.destroy$),
+      )
+      .subscribe({
+        next: (page) => {
+          this.gastosOffset = page.offset;
+          this.gastosTotal = page.total;
+          this.gastosTotales = page.totales;
+          const append =
+            this.gastosAppendPending && (page.items?.length ?? 0) > 0;
+          this.applyGastosPageRows(page.items, page.totales, append);
+          this.gastosAppendPending = false;
+          this.gastosListo = true;
+          this.gastosLoading = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.gastosAppendPending = false;
+          this.gastosLoading = false;
+          this.gastosListo = true;
+          this.cdr.markForCheck();
+        },
+      });
+
+    this.quickFilterGastos$
+      .pipe(
+        debounceTime(300),
+        distinctUntilChanged(),
+        takeUntil(this.destroy$),
+      )
+      .subscribe(() => {
+        this.cargarDetalleGastosPagina(0);
+      });
+  }
+
+  /** Filtros panel + overrides interactivos (categoría / mes del chart). */
+  private getFiltrosDetalleGastos(): any {
+    const filtros: any = {
+      anio: this.anio || new Date().getFullYear().toString(),
+    };
+    if (this.mes) filtros.mes = this.mes;
+
+    const suc = this.filtroGastoSucursalParaApiAplicado();
+    if (suc !== '' && suc != null) filtros.sucursal = suc;
+
+    const prov = this.filtroGastoMultiAString(
+      this.filtroGastoProvTodasImplicitasAplicado,
+      this.filtroGastoProvSeleccionadasAplicado,
+      this.idsDeListaFiltro(this.proveedores),
+    );
+    if (prov) filtros.proveedor = prov;
+
+    const tipo = this.filtroGastoMultiAString(
+      this.filtroGastoTipoTodasImplicitasAplicado,
+      this.filtroGastoTipoSeleccionadasAplicado,
+      this.idsDeListaFiltro(this.tiposGasto),
+    );
+    if (tipo) filtros.tipoGasto = tipo;
+
+    const est = this.filtroGastoMultiAString(
+      this.filtroGastoEstTodasImplicitasAplicado,
+      this.filtroGastoEstSeleccionadasAplicado,
+      this.idsDeListaFiltro(this.estadosGasto),
+    );
+    if (est) filtros.estadoGasto = est;
+
+    if (this.filtrosInteractivos.categoria) {
+      filtros.categoria = this.filtrosInteractivos.categoria;
+    }
+    if (this.filtrosInteractivos.mes) {
+      const meses = [
+        'Enero',
+        'Febrero',
+        'Marzo',
+        'Abril',
+        'Mayo',
+        'Junio',
+        'Julio',
+        'Agosto',
+        'Septiembre',
+        'Octubre',
+        'Noviembre',
+        'Diciembre',
+      ];
+      const idx = meses.findIndex(
+        (m) =>
+          m.toLowerCase() ===
+          String(this.filtrosInteractivos.mes).toLowerCase(),
+      );
+      if (idx >= 0) filtros.mes = String(idx + 1);
+    }
+    return filtros;
+  }
+
+  private getGastosSearchQ(): string {
+    const typed = this.quickFilterTextGastos.trim();
+    if (typed) return typed;
+    return (
+      this.filtrosInteractivos.proveedor ||
+      this.filtrosInteractivos.concepto ||
+      this.filtrosInteractivos.formaPago ||
+      ''
+    ).trim();
+  }
+
+  cargarDetalleGastosPagina(offset: number, append = false): void {
+    this.gastosPage$.next({
+      offset: Math.max(0, offset),
+      q: this.getGastosSearchQ(),
+      append,
+    });
+  }
+
+  private maybeLoadMoreGastosFromGrid(): void {
+    if (!this.detalleGastosGridApi || this.gastosLoading || !this.gastosListo) {
+      return;
+    }
+    const loaded = this._detalleGastosRowsCache.length;
+    if (loaded >= this.gastosTotal) return;
+    const pageSize = this.detalleGastosGridApi.paginationGetPageSize() || 25;
+    const currentPage = this.detalleGastosGridApi.paginationGetCurrentPage();
+    // Solo al llegar a la última página del buffer (evita prefetch en page 0 con chunk=50).
+    const lastLoadedPage = Math.max(0, Math.ceil(loaded / pageSize) - 1);
+    if (currentPage >= lastLoadedPage) {
+      this.cargarDetalleGastosPagina(loaded, true);
+    }
+  }
+
+  private mapGastosRows(items: any[]): any[] {
+    return (items ?? []).map((gasto: any) => ({
+      fecha: gasto.fecha || '-',
+      proveedor: gasto.proveedor || '-',
+      concepto: gasto.concepto || '-',
+      documento: gasto.documento || '-',
+      correlativo: gasto.correlativo || '-',
+      gastosConIVA: gasto.gastosConIVA || 0,
+      isTotal: false,
+    }));
+  }
+
+  private applyGastosPageRows(
+    items: any[],
+    totales: DetalleGastosTotales,
+    append = false,
+  ): void {
+    const mapped = this.mapGastosRows(items);
+    if (append && this._detalleGastosRowsCache.length > 0) {
+      this._detalleGastosRowsCache = [
+        ...this._detalleGastosRowsCache,
+        ...mapped,
+      ];
+    } else {
+      this._detalleGastosRowsCache = mapped;
+      if (this.detalleGastosGridApi) {
+        this.detalleGastosGridApi.paginationGoToFirstPage();
+      }
+    }
+    this._totalDetalleGastosCache = this.formatCurrency(
+      totales.gastosConIVA || 0,
+    );
+    this.aplicarPinnedTotalesGastos(totales);
+  }
+
+  private aplicarPinnedTotalesGastos(totales: DetalleGastosTotales): void {
+    if (totales.gastosConIVA !== 0) {
+      this.pinnedBottomRowDataGastos = [
+        {
+          fecha: 'Total',
+          proveedor: '',
+          concepto: '',
+          documento: '',
+          correlativo: '',
+          gastosConIVA: totales.gastosConIVA,
+        },
+      ];
+    } else {
+      this.pinnedBottomRowDataGastos = [];
+    }
+  }
+
+  private csvEscape(value: string): string {
+    if (/[",\n\r]/.test(value)) {
+      return `"${value.replace(/"/g, '""')}"`;
+    }
+    return value;
   }
 
   onGridReadyGastos(params: any): void {
     this.detalleGastosGridApi = params.api;
+    this.recalcularTotalesGastos();
   }
 
-  /** Recalcula el total pinned basándose en las filas visibles tras filtrar */
+  /** Totales pinned desde API (`totales`); no sumar solo la página cargada. */
+  recalcularTotalesGastos(): void {
+    this.aplicarPinnedTotalesGastos(this.gastosTotales);
+  }
+
   onFilterChangedGastos(): void {
-    if (!this.detalleGastosGridApi || this.detalleGastosGridApi.isDestroyed()) return;
-
-    let total = 0;
-    this.detalleGastosGridApi.forEachNodeAfterFilter((node: any) => {
-      if (node.data) {
-        total += (node.data.gastosConIVA || 0);
-      }
-    });
-
-    this.pinnedBottomRowDataGastos = [{
-      fecha: 'Total',
-      proveedor: '',
-      concepto: '',
-      documento: '',
-      correlativo: '',
-      gastosConIVA: total
-    }];
-
-    this._totalDetalleGastosCache = this.formatCurrency(total);
+    this.recalcularTotalesGastos();
     this.cdr.markForCheck();
   }
 
   onQuickFilterChangeGastos(): void {
-    if (this.detalleGastosGridApi) {
-      this.detalleGastosGridApi.setGridOption('quickFilterText', this.quickFilterTextGastos);
-      this.cdr.markForCheck();
-    }
+    this.quickFilterGastos$.next(this.quickFilterTextGastos.trim());
   }
 
   exportarCSVGastos(): void {
-    if (this.detalleGastosGridApi) {
-      const fecha = new Date().toISOString().split('T')[0];
-      this.detalleGastosGridApi.exportDataAsCsv({
-        fileName: `detalle-gastos-${fecha}.csv`
-      });
-    }
+    this.exportarGastosCompletoCsv();
   }
 
   exportarExcelGastos(): void {
-    if (this.detalleGastosGridApi) {
-      const fecha = new Date().toISOString().split('T')[0];
-      this.detalleGastosGridApi.exportDataAsCsv({
-        fileName: `detalle-gastos-${fecha}.csv`
+    this.exportarGastosCompletoCsv();
+  }
+
+  private exportarGastosCompletoCsv(): void {
+    if (this.gastosExporting) return;
+    this.gastosExporting = true;
+    this.cdr.markForCheck();
+    this.dashboardDataService
+      .obtenerDetalleGastosCompleto(this.getFiltrosDetalleGastos(), {
+        q: this.getGastosSearchQ() || undefined,
+      })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (page) => {
+          const fecha = new Date().toISOString().split('T')[0];
+          const cols = this.detalleGastosColumnDefs.filter((c) => c.field);
+          const header = cols
+            .map((c) => this.csvEscape(String(c.headerName || c.field)))
+            .join(',');
+          const lines = (page.items ?? []).map((item: any) =>
+            cols
+              .map((c) => {
+                const field = c.field || '';
+                const raw = item[field];
+                return this.csvEscape(
+                  raw === null || raw === undefined ? '' : String(raw),
+                );
+              })
+              .join(','),
+          );
+          const csv = [header, ...lines].join('\n');
+          const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `detalle-gastos-${fecha}.csv`;
+          a.click();
+          URL.revokeObjectURL(url);
+          this.gastosExporting = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.gastosExporting = false;
+          this.cdr.markForCheck();
+        },
       });
-    }
   }
 
   limpiarFiltrosGastos(): void {
     if (this.detalleGastosGridApi) {
       this.detalleGastosGridApi.setFilterModel(null);
-      this.quickFilterTextGastos = '';
-      this.detalleGastosGridApi.setGridOption('quickFilterText', '');
     }
+    this.quickFilterTextGastos = '';
+    this.cargarDetalleGastosPagina(0);
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -771,19 +1018,15 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
       this.inicializado = true;
       this.recalcularRowsCache();
 
-      // Recalcular todos los gráficos con los datos iniciales
-      if (this.datosFiltrados.detalleGastos) {
-        this.recalcularMetricas();
-        this.recalcularGastosPorMes();
-        this.recalcularGastosVsPresupuesto();
-        this.recalcularGastosVsAnioAnterior();
-        this.recalcularGastosPorCategoria();
-        this.recalcularGastosPorConcepto();
-        this.recalcularGastosPorProveedor();
-        this.recalcularGastosPorFormaPago();
-      } else {
-        // console.error('GastosComponent - No se puede inicializar: falta detalleGastos');
-      }
+      // Detalle grid: lazy (cargarDetalleGastosPagina). Gráficos/métricas desde merge.
+      this.recalcularMetricas();
+      this.recalcularGastosPorMes();
+      this.recalcularGastosVsPresupuesto();
+      this.recalcularGastosVsAnioAnterior();
+      this.recalcularGastosPorCategoria();
+      this.recalcularGastosPorConcepto();
+      this.recalcularGastosPorProveedor();
+      this.recalcularGastosPorFormaPago();
 
       this.cdr.markForCheck();
     } else {
@@ -859,6 +1102,7 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
     );
     // null = ninguno seleccionado → no tiene sentido pedir datos, salir temprano
     if (prov === null) {
+      this._desbloquearFiltros();
       return;
     }
     if (prov) {
@@ -870,6 +1114,7 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
       this.idsDeListaFiltro(this.tiposGasto),
     );
     if (tipo === null) {
+      this._desbloquearFiltros();
       return;
     }
     if (tipo) {
@@ -881,6 +1126,7 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
       this.idsDeListaFiltro(this.estadosGasto),
     );
     if (est === null) {
+      this._desbloquearFiltros();
       return;
     }
     if (est) {
@@ -890,6 +1136,8 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
       filtros.mes = this.mes;
     }
     this.filtrosCambiados.emit(filtros);
+    this._desbloquearSiPadreOmiteRecarga();
+    this.cargarDetalleGastosPagina(0);
   }
 
   private _bloquearFiltros(): void {
@@ -906,6 +1154,15 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
     }
     this.filtrosLocked = false;
     this.cdr.markForCheck();
+  }
+
+  /** Si el padre omite la recarga (mismos filtros), datosCompletos no cambia y el overlay se queda. */
+  private _desbloquearSiPadreOmiteRecarga(): void {
+    setTimeout(() => {
+      if (this.datosCompletos) {
+        this._desbloquearFiltros();
+      }
+    }, 0);
   }
 
 
@@ -933,6 +1190,7 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
 
   limpiarFiltrosInteractivos(): void {
     this.filtrosInteractivos = {};
+    this.quickFilterTextGastos = '';
     // Restaurar datos originales
     if (Object.keys(this.datosOriginales).length > 0) {
       this.datosFiltrados = this.clonarDatos(this.datosOriginales);
@@ -944,6 +1202,9 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
       // Actualizar referencia - crear nuevo objeto para forzar detección de cambios
       this.datos = this.clonarDatos(this.datosFiltrados);
       this.recalcularRowsCache();
+      if (this.inicializado) {
+        this.cargarDetalleGastosPagina(0);
+      }
       this.cdr.markForCheck();
     }
   }
@@ -956,7 +1217,11 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
 
   limpiarFiltroIndividual(key: string): void {
     delete (this.filtrosInteractivos as any)[key];
+    if (key === 'proveedor' || key === 'concepto' || key === 'formaPago') {
+      this.quickFilterTextGastos = '';
+    }
     this.aplicarFiltrosInteractivos();
+    this.cargarDetalleGastosPagina(0);
   }
 
   onMesClick(event: any): void {
@@ -967,6 +1232,7 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
         this.filtrosInteractivos.mes = event.name;
       }
       this.aplicarFiltrosInteractivos();
+      this.cargarDetalleGastosPagina(0);
     }
   }
 
@@ -978,6 +1244,7 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
         this.filtrosInteractivos.categoria = event.name;
       }
       this.aplicarFiltrosInteractivos();
+      this.cargarDetalleGastosPagina(0);
     }
   }
 
@@ -985,10 +1252,13 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
     if (event && event.name) {
       if (this.filtrosInteractivos.concepto === event.name) {
         delete this.filtrosInteractivos.concepto;
+        this.quickFilterTextGastos = '';
       } else {
         this.filtrosInteractivos.concepto = event.name;
+        this.quickFilterTextGastos = event.name;
       }
       this.aplicarFiltrosInteractivos();
+      this.cargarDetalleGastosPagina(0);
     }
   }
 
@@ -996,10 +1266,13 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
     if (event && event.name) {
       if (this.filtrosInteractivos.formaPago === event.name) {
         delete this.filtrosInteractivos.formaPago;
+        this.quickFilterTextGastos = '';
       } else {
         this.filtrosInteractivos.formaPago = event.name;
+        this.quickFilterTextGastos = event.name;
       }
       this.aplicarFiltrosInteractivos();
+      this.cargarDetalleGastosPagina(0);
     }
   }
 
@@ -1007,10 +1280,13 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
     if (event && event.name) {
       if (this.filtrosInteractivos.proveedor === event.name) {
         delete this.filtrosInteractivos.proveedor;
+        this.quickFilterTextGastos = '';
       } else {
         this.filtrosInteractivos.proveedor = event.name;
+        this.quickFilterTextGastos = event.name;
       }
       this.aplicarFiltrosInteractivos();
+      this.cargarDetalleGastosPagina(0);
     }
   }
 
@@ -1069,22 +1345,8 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
     // Crear una copia profunda de los datos para filtrar
     this.datosFiltrados = this.clonarDatos(datosBase);
 
-    // Filtrar los gastos detallados
+    // Filtrar los gastos detallados (gráficos); detalle grid = paginado en servidor.
     this.filtrarGastosDetallados();
-
-    // Actualizar detalleGastos en base a los gastos detallados filtrados
-    if (this.tieneFiltrosInteractivos()) {
-      this.datosFiltrados.detalleGastos = (this.datosFiltrados.gastosDetallados || []).map((g: any) => ({
-        fecha: g.fecha,
-        proveedor: g.proveedor,
-        concepto: g.concepto,
-        documento: g.doc,
-        correlativo: g.correlativo,
-        gastosConIVA: g.gastosConIva,
-      }));
-    } else {
-      this.datosFiltrados.detalleGastos = this.clonarDatos(datosBase.detalleGastos || []);
-    }
 
     // Recalcular todos los gráficos
     this.recalcularTodosLosGraficos();
@@ -1095,7 +1357,6 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
     // Actualizar referencia expuesta
     this.datos = this.clonarDatos(this.datosFiltrados);
 
-    // Recalcular filas de cache y forzar detección
     this.recalcularRowsCache();
     this.cdr.markForCheck();
   }
@@ -1109,8 +1370,6 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   recalcularMetricas(): void {
-    if (!this.datosFiltrados.detalleGastos) return;
-
     /**
      * Sin filtros interactivos (clics en gráficos), las cards deben reflejar el JSON de
      * `/api/gastos/cards` (`metricasGastos`). Recalcular desde detalle pisaba esos valores
@@ -1127,7 +1386,13 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
       return;
     }
 
-    const gastos = this.datosFiltrados.detalleGastos;
+    // Con filtros interactivos: métricas desde gastosDetallados (no del grid paginado).
+    if (!this.datosFiltrados.gastosDetallados) return;
+
+    const gastos = (this.datosFiltrados.gastosDetallados || []).map((g: any) => ({
+      fecha: g.fecha,
+      gastosConIVA: g.gastosConIva ?? g.gastosConIVA ?? 0,
+    }));
     const gastosConIVA = gastos.reduce(
       (sum: number, g: any) => sum + (g.gastosConIVA || 0),
       0,
@@ -1155,16 +1420,16 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
 
     const mesAnt = mesRef === 0 ? 11 : mesRef - 1;
     const anioAnt = mesRef === 0 ? anioRef - 1 : anioRef;
-    const gastosMesAnterior =
-      this.datosOriginales.detalleGastos?.reduce((sum: number, g: any) => {
+    const originalDetallados = this.datosOriginales.gastosDetallados || [];
+    const gastosMesAnterior = originalDetallados.reduce((sum: number, g: any) => {
         if (!g?.fecha) return sum;
         const fecha = new Date(g.fecha);
         if (Number.isNaN(fecha.getTime())) return sum;
         if (fecha.getFullYear() !== anioAnt || fecha.getMonth() !== mesAnt) {
           return sum;
         }
-        return sum + (g.gastosConIVA || 0);
-      }, 0) ?? 0;
+        return sum + (g.gastosConIva ?? g.gastosConIVA ?? 0);
+      }, 0);
 
     const variacion = gastosMesActual - gastosMesAnterior;
     const aumentoPorcentaje =
@@ -1298,6 +1563,8 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
     this.datosFiltrados.gastosPorConceptoConfig = {
       title: '',
       type: 'bar',
+      collapseExcessBars: true,
+      initialVisibleBars: 5,
       labels,
       data,
       colors: ['#F19447'],
@@ -1492,7 +1759,7 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   /**
-   * Recalcula todas las filas cacheadas
+   * Recalcula cache auxiliar. Detalle grid: carga lazy (no viene en el merge).
    */
   private recalcularRowsCache(): void {
     const datos = this.datosFiltrados && Object.keys(this.datosFiltrados).length > 0 ? this.datosFiltrados : this.datos;
@@ -1501,39 +1768,6 @@ export class GastosComponent implements OnInit, OnChanges, OnDestroy {
       return; // No hay cambios
     }
     this._lastDatosHash = currentHash;
-
-    // Recalcular detalle de gastos
-    if (datos.detalleGastos) {
-      this._detalleGastosRowsCache = datos.detalleGastos.map((gasto: any) => ({
-        fecha: gasto.fecha || '-',
-        proveedor: gasto.proveedor || '-',
-        concepto: gasto.concepto || '-',
-        documento: gasto.documento || '-',
-        correlativo: gasto.correlativo || '-',
-        gastosConIVA: gasto.gastosConIVA || 0, // Mantener como número para AG Grid
-        isTotal: false
-      }));
-
-      // Calcular total
-      const total = datos.detalleGastos.reduce((sum: number, gasto: any) => {
-        return sum + (gasto.gastosConIVA || 0);
-      }, 0);
-      this._totalDetalleGastosCache = this.formatCurrency(total);
-
-      // Actualizar fila de totales pinned
-      this.pinnedBottomRowDataGastos = [{
-        fecha: 'Total',
-        proveedor: '',
-        concepto: '',
-        documento: '',
-        correlativo: '',
-        gastosConIVA: total
-      }];
-    } else {
-      this._detalleGastosRowsCache = [];
-      this._totalDetalleGastosCache = this.formatCurrency(0);
-      this.pinnedBottomRowDataGastos = [];
-    }
   }
 
   get detalleGastosRows(): any[] {

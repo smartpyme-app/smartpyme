@@ -25,6 +25,10 @@ export interface ChartConfig {
   graduatedOpacity?: boolean; // Opcional: si es true, la opacidad de las barras se gradúa según su monto
   showLineLabels?: boolean; // Opcional: si es false, oculta las etiquetas en los puntos de las líneas (default: true)
   isCurrency?: boolean; // Opcional: si es false, no muestra el símbolo de moneda $
+  /** Si es true y hay más barras que `initialVisibleBars`, muestra solo ese tope + “Ver más…”. */
+  collapseExcessBars?: boolean;
+  /** Barras visibles antes de “Ver más…” (default 10). */
+  initialVisibleBars?: number;
 }
 
 export interface MetricCard {
