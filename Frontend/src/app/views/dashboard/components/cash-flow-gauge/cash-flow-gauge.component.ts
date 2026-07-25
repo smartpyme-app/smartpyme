@@ -1,4 +1,5 @@
 import { Component, Input, OnInit, OnChanges, SimpleChanges } from '@angular/core';
+import { CurrencyFormatService } from '@services/currency-format.service';
 
 import { CommonModule } from '@angular/common';
 import { NgxEchartsModule } from 'ngx-echarts';
@@ -16,6 +17,8 @@ export class CashFlowGaugeComponent implements OnInit, OnChanges {
   
   gaugeOption: any = {};
 
+  constructor(private currencyFormat: CurrencyFormatService) {}
+
   ngOnInit(): void {
     this.initGauge();
   }
@@ -30,6 +33,7 @@ export class CashFlowGaugeComponent implements OnInit, OnChanges {
     const maxValue = this.minRequired || 100;
     const percentage = maxValue > 0 ? Math.min((this.current / maxValue) * 100, 100) : 0;
     const remaining = 100 - percentage;
+    const symbol = this.currencyFormat.getSymbol();
     
     this.gaugeOption = {
       tooltip: {
@@ -79,7 +83,7 @@ export class CashFlowGaugeComponent implements OnInit, OnChanges {
           left: 'center',
           top: '60%',
           style: {
-            text: '$' + this.current.toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+            text: symbol + this.current.toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
             fontSize: 14,
             fontWeight: 'bold',
             fill: '#333'
@@ -90,7 +94,7 @@ export class CashFlowGaugeComponent implements OnInit, OnChanges {
           left: 'center',
           top: '75%',
           style: {
-            text: '$' + maxValue.toLocaleString('es-GT', { maximumFractionDigits: 0 }),
+            text: symbol + maxValue.toLocaleString('es-GT', { maximumFractionDigits: 0 }),
             fontSize: 11,
             fill: '#666'
           }

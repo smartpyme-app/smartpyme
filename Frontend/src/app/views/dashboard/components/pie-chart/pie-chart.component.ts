@@ -1,5 +1,6 @@
 import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter, OnDestroy } from '@angular/core';
 import { ChartConfig } from '../../models/chart-config.model';
+import { CurrencyFormatService } from '@services/currency-format.service';
 
 import { CommonModule } from '@angular/common';
 import { NgxEchartsModule } from 'ngx-echarts';
@@ -17,6 +18,8 @@ export class PieChartComponent implements OnInit, OnChanges, OnDestroy {
   
   chartOption: any = {};
   echartsInstance: any;
+
+  constructor(private currencyFormat: CurrencyFormatService) {}
 
   ngOnInit(): void {
     this.initChart();
@@ -39,11 +42,12 @@ export class PieChartComponent implements OnInit, OnChanges, OnDestroy {
 
     const formatMoney = (value: number) => {
       const v = Number(value) || 0;
+      const symbol = this.currencyFormat.getSymbol();
       const formatted = Math.abs(v).toLocaleString('es-GT', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       });
-      return v < 0 ? `($${formatted})` : `$${formatted}`;
+      return v < 0 ? `(${symbol}${formatted})` : `${symbol}${formatted}`;
     };
 
     // Preparar datos: objetos { name, value } o arrays paralelos labels[] + data[] (p. ej. CXC vigencia)

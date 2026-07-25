@@ -1,5 +1,6 @@
 import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter, OnDestroy } from '@angular/core';
 import { ChartConfig } from '../../models/chart-config.model';
+import { CurrencyFormatService } from '@services/currency-format.service';
 
 import { CommonModule } from '@angular/common';
 import { NgxEchartsModule } from 'ngx-echarts';
@@ -18,6 +19,8 @@ export class BarChartComponent implements OnInit, OnChanges, OnDestroy {
 
   chartOption: any = {};
   echartsInstance: any;
+
+  constructor(private currencyFormat: CurrencyFormatService) {}
 
   ngOnInit(): void {
     this.initChart();
@@ -260,12 +263,13 @@ export class BarChartComponent implements OnInit, OnChanges, OnDestroy {
     }
 
     const isCurrency = this.config.isCurrency !== false;
+    const currencyPrefix = isCurrency ? this.currencyFormat.getSymbol() : '';
 
     const barTooltipFormatter = (params: any) => {
       const resolveLabel = (item: any) =>
         this.config.tooltipLabels?.[item.dataIndex] ?? item.name;
 
-      const prefix = isCurrency ? '$' : '';
+      const prefix = currencyPrefix;
       if (Array.isArray(params)) {
         const label = resolveLabel(params[0]);
         let result = label + '<br/>';
@@ -337,7 +341,7 @@ export class BarChartComponent implements OnInit, OnChanges, OnDestroy {
           formatter: (value: number) => {
             const absValue = Math.abs(value);
             const sign = value >= 0 ? '' : '-';
-            const prefix = isCurrency ? '$' : '';
+            const prefix = currencyPrefix;
             if (absValue >= 1000000) {
               return `${sign}${prefix}${(Math.floor((absValue / 1000000) * 10) / 10).toFixed(1)}M`;
             } else if (absValue >= 1000) {
@@ -467,11 +471,12 @@ export class BarChartComponent implements OnInit, OnChanges, OnDestroy {
 
     const formatMoney = (value: number) => {
       const v = Number(value);
+      const symbol = this.currencyFormat.getSymbol();
       const formatted = Math.abs(v).toLocaleString('es-GT', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       });
-      return v < 0 ? `(${formatted})` : formatted;
+      return v < 0 ? `(${symbol}${formatted})` : `${symbol}${formatted}`;
     };
 
     const pctLabel = (dataIndex: number, params: any): string => {
@@ -504,7 +509,7 @@ export class BarChartComponent implements OnInit, OnChanges, OnDestroy {
           const pctLine = pct ? `Participación: ${pct}` : '';
           return [
             `${params.marker} <b>${params.name}</b>`,
-            `Importe: $${val}`,
+            `Importe: ${val}`,
             pctLine,
           ].filter(Boolean).join('<br/>');
         },

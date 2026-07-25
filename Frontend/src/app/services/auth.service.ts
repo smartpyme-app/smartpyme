@@ -6,6 +6,7 @@ import { HttpService } from '@services/http.service';
 import { PermissionService } from '@services/permission.service';
 import { ConstantsService } from '@services/constants.service';
 import { CountryI18nService } from '@services/country-i18n.service';
+import { FuncionalidadesService } from '@services/functionalities.service';
 
 @Injectable({
   providedIn: 'root'
@@ -28,6 +29,8 @@ export class AuthService {
         }
         localStorage.setItem('SP_token', JSON.stringify(data.token));
         localStorage.setItem('SP_auth_user', JSON.stringify(data.user));
+        // La caché de funcionalidades pudo cargarse sin token (accesos: []); invalidar tras login.
+        this.injector.get(FuncionalidadesService).limpiarCache();
         return this.injector
           .get(CountryI18nService)
           .applyForEmpresa(data.user.empresa)
@@ -67,6 +70,7 @@ export class AuthService {
     }
     localStorage.clear();
     this.permissionService.clearPermissions();
+    this.injector.get(FuncionalidadesService).limpiarCache();
     this.injector.get(CountryI18nService).applyForEmpresa(null).subscribe();
   }
 

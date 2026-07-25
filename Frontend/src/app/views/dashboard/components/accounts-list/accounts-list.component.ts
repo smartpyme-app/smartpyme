@@ -54,14 +54,15 @@ export class AccountsListComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   private formatBarAmount(value: number): string {
+    const symbol = this.currencyFormat.getSymbol();
     const absValue = Math.abs(value);
     if (absValue >= 1000000) {
-      return `$${(Math.floor((absValue / 1000000) * 10) / 10).toFixed(1)}M`;
+      return `${symbol}${(Math.floor((absValue / 1000000) * 10) / 10).toFixed(1)}M`;
     }
     if (absValue >= 1000) {
-      return `$${(Math.floor((absValue / 1000) * 10) / 10).toFixed(1)}K`;
+      return `${symbol}${(Math.floor((absValue / 1000) * 10) / 10).toFixed(1)}K`;
     }
-    return `$${absValue.toLocaleString('es-GT', {
+    return `${symbol}${absValue.toLocaleString('es-GT', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })}`;
@@ -92,7 +93,7 @@ export class AccountsListComponent implements OnInit, OnChanges, OnDestroy {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2
             });
-            return `${params[0].name}<br/>$${formattedValue}`;
+            return `${params[0].name}<br/>${this.currencyFormat.getSymbol()}${formattedValue}`;
           }
           return '';
         }

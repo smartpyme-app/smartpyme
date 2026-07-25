@@ -88,8 +88,9 @@ export class LineChartComponent implements OnInit, OnChanges, OnDestroy {
     const formatLineTooltipValue = (value: number) => {
       const v = Number(value);
       if (Number.isNaN(v)) return '';
+      const symbol = this.currencyFormat.getSymbol();
       const formatted = Math.abs(v).toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      return v < 0 ? `($${formatted})` : `$${formatted}`;
+      return v < 0 ? `(${symbol}${formatted})` : `${symbol}${formatted}`;
     };
 
     this.chartOption = {
