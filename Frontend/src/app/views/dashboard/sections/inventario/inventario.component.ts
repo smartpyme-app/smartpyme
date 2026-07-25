@@ -28,6 +28,7 @@ import { PipesModule } from '@pipes/pipes.module';
 import { DropdownMultiFiltroComponent } from '../../components/dropdown-multi-filtro/dropdown-multi-filtro.component';
 import { ChartCardComponent } from '../../components/chart-card/chart-card.component';
 import { BarChartComponent } from '../../components/bar-chart/bar-chart.component';
+import { ChartExpandableComponent } from '../../components/chart-expandable/chart-expandable.component';
 
 @Component({
   selector: 'app-inventario',
@@ -43,7 +44,8 @@ import { BarChartComponent } from '../../components/bar-chart/bar-chart.componen
     PipesModule,
     DropdownMultiFiltroComponent,
     ChartCardComponent,
-    BarChartComponent
+    BarChartComponent,
+    ChartExpandableComponent
   ]
 })
 export class InventarioComponent implements OnInit, OnChanges, OnDestroy {

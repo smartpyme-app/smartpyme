@@ -29,6 +29,7 @@ import { TreemapChartComponent } from '../../components/treemap-chart/treemap-ch
 import { LineChartComponent } from '../../components/line-chart/line-chart.component';
 import { BarChartComponent } from '../../components/bar-chart/bar-chart.component';
 import { AccountsListComponent } from '../../components/accounts-list/accounts-list.component';
+import { ChartExpandableComponent } from '../../components/chart-expandable/chart-expandable.component';
 import { CountryI18nService } from '@services/country-i18n.service';
 
 @Component({
@@ -49,7 +50,8 @@ import { CountryI18nService } from '@services/country-i18n.service';
     TreemapChartComponent,
     LineChartComponent,
     BarChartComponent,
-    AccountsListComponent
+    AccountsListComponent,
+    ChartExpandableComponent
   ]
 })
 export class GastosComponent implements OnInit, OnChanges, OnDestroy {

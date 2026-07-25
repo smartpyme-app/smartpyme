@@ -41,6 +41,7 @@ import { BarChartComponent } from '../../components/bar-chart/bar-chart.componen
 import { AccountsListComponent } from '../../components/accounts-list/accounts-list.component';
 import { ChartCardComponent } from '../../components/chart-card/chart-card.component';
 import { BudgetCardComponent } from '../../components/budget-card/budget-card.component';
+import { ChartExpandableComponent } from '../../components/chart-expandable/chart-expandable.component';
 
 @Component({
   selector: 'app-resultados',
@@ -59,7 +60,8 @@ import { BudgetCardComponent } from '../../components/budget-card/budget-card.co
     BarChartComponent,
     AccountsListComponent,
     ChartCardComponent,
-    BudgetCardComponent
+    BudgetCardComponent,
+    ChartExpandableComponent
   ]
 })
 export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {

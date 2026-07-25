@@ -34,6 +34,7 @@ import { LineChartComponent } from '../../components/line-chart/line-chart.compo
 import { BarChartComponent } from '../../components/bar-chart/bar-chart.component';
 import { AccountsListComponent } from '../../components/accounts-list/accounts-list.component';
 import { TreemapChartComponent } from '../../components/treemap-chart/treemap-chart.component';
+import { ChartExpandableComponent } from '../../components/chart-expandable/chart-expandable.component';
 import { CountryI18nService } from '@services/country-i18n.service';
 
 @Component({
@@ -54,7 +55,8 @@ import { CountryI18nService } from '@services/country-i18n.service';
     LineChartComponent,
     BarChartComponent,
     AccountsListComponent,
-    TreemapChartComponent
+    TreemapChartComponent,
+    ChartExpandableComponent
   ]
 })
 export class VentasComponent implements OnInit, OnChanges, OnDestroy {

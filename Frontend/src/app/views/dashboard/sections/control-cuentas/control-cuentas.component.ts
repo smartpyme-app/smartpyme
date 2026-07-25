@@ -30,6 +30,7 @@ import { DropdownMultiFiltroComponent } from '../../components/dropdown-multi-fi
 import { ChartCardComponent } from '../../components/chart-card/chart-card.component';
 import { PieChartComponent } from '../../components/pie-chart/pie-chart.component';
 import { AccountsListComponent } from '../../components/accounts-list/accounts-list.component';
+import { ChartExpandableComponent } from '../../components/chart-expandable/chart-expandable.component';
 
 @Component({
   selector: 'app-control-cuentas',
@@ -47,7 +48,8 @@ import { AccountsListComponent } from '../../components/accounts-list/accounts-l
     DropdownMultiFiltroComponent,
     ChartCardComponent,
     PieChartComponent,
-    AccountsListComponent
+    AccountsListComponent,
+    ChartExpandableComponent
   ]
 })
 export class ControlCuentasComponent implements OnInit, OnChanges, OnDestroy {

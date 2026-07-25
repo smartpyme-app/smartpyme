@@ -11,6 +11,7 @@ import {
   ChangeDetectorRef,
   Renderer2,
 } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { AgGridAngular } from 'ag-grid-angular';
 import * as echarts from 'echarts';
 
@@ -18,6 +19,8 @@ import * as echarts from 'echarts';
   selector: 'app-chart-expandable',
   templateUrl: './chart-expandable.component.html',
   styleUrls: ['./chart-expandable.component.css'],
+  standalone: true,
+  imports: [CommonModule]
 })
 export class ChartExpandableComponent implements AfterViewInit, OnDestroy {
   @Input() title = '';
