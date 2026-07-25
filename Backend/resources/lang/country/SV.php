@@ -6,6 +6,10 @@
  */
 return [
     'tax' => [
+        'nit' => 'NIT',
+        'nitColon' => 'NIT:',
+        'ncr' => 'NCR',
+        'ncrColon' => 'NCR:',
         'taxLabel' => 'IVA',
         'taxLabelColon' => 'IVA:',
         'taxWithRate' => 'Con IVA (:rate%)',

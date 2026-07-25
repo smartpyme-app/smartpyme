@@ -6,6 +6,10 @@
  */
 return [
     'tax' => [
+        'nit' => 'NIT',
+        'nitColon' => 'NIT:',
+        'ncr' => 'Registro tributario',
+        'ncrColon' => 'Registro tributario:',
         'taxLabel' => 'Impuesto',
         'taxLabelColon' => 'Impuesto:',
         'taxWithRate' => 'Con impuesto (:rate%)',

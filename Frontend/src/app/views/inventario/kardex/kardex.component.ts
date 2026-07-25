@@ -4,6 +4,7 @@ import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
+import { TranslatePipe } from '@ngx-translate/core';
 import { Subject, of, Subscription } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/operators';
 
@@ -22,7 +23,7 @@ import {
     selector: 'app-kardex',
     templateUrl: './kardex.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, CurrencyPipe],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, CurrencyPipe, TranslatePipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class KardexComponent implements OnInit, OnDestroy {

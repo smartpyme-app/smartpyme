@@ -14,6 +14,8 @@ final class CountryTermsHelperTest extends TestCase
 
         $this->assertSame('ISV', CountryTermsHelper::tax('taxLabel', $empresa));
         $this->assertSame('ISV:', CountryTermsHelper::tax('taxLabelColon', $empresa));
+        $this->assertSame('RTN:', CountryTermsHelper::tax('nitColon', $empresa));
+        $this->assertSame('RTN:', CountryTermsHelper::tax('ncrColon', $empresa));
     }
 
     public function test_tax_label_is_iva_for_el_salvador(): void

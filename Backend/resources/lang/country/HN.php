@@ -6,6 +6,10 @@
  */
 return [
     'tax' => [
+        'nit' => 'RTN',
+        'nitColon' => 'RTN:',
+        'ncr' => 'RTN',
+        'ncrColon' => 'RTN:',
         'taxLabel' => 'ISV',
         'taxLabelColon' => 'ISV:',
         'taxWithRate' => 'Con ISV (:rate%)',

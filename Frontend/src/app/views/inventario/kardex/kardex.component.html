@@ -83,8 +83,8 @@
             <p class="mb-0 small">TARJETA DE CONTROL DE INVENTARIOS DE MATERIALES DEL {{ filtros.inicio | date:'dd/MM/yyyy' }} AL {{ filtros.fin | date:'dd/MM/yyyy' }}</p>
             <p class="mb-0">COSTO PROMEDIO</p>
             <div class="d-flex justify-content-between small mt-1">
-                <span><strong>NIT:</strong> {{ apiService.auth_user()?.empresa?.nit || '—' }}</span>
-                <span><strong>NRC:</strong> {{ apiService.auth_user()?.empresa?.ncr || '—' }}</span>
+                <span><strong>{{ 'country.tax.nitColon' | translate }}</strong> {{ apiService.auth_user()?.empresa?.nit || '—' }}</span>
+                <span><strong>{{ 'country.tax.ncrColon' | translate }}</strong> {{ apiService.auth_user()?.empresa?.ncr || '—' }}</span>
             </div>
         </div>
         <div class="row small border-top pt-2 mt-2" *ngIf="mostrarLote">
