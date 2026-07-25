@@ -553,10 +553,10 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
       onGridReady: (params: any) => {
         this.ventasGridApi = params.api;
         if (this.ventasRows.length > 0) {
-          params.api.setRowData(this.ventasRows);
+          params.api.setGridOption('rowData', this.ventasRows);
         }
         if (this.pinnedBottomRowDataVentas.length > 0) {
-          params.api.setPinnedBottomRowData(this.pinnedBottomRowDataVentas);
+          params.api.setGridOption('pinnedBottomRowData', this.pinnedBottomRowDataVentas);
         }
         sizeToFit(params.api);
         this.recalcularTotalesVentas();
@@ -582,10 +582,10 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
       onGridReady: (params: any) => {
         this.gastosGridApi = params.api;
         if (this.gastosRows.length > 0) {
-          params.api.setRowData(this.gastosRows);
+          params.api.setGridOption('rowData', this.gastosRows);
         }
         if (this.pinnedBottomRowDataGastos.length > 0) {
-          params.api.setPinnedBottomRowData(this.pinnedBottomRowDataGastos);
+          params.api.setGridOption('pinnedBottomRowData', this.pinnedBottomRowDataGastos);
         }
         sizeToFit(params.api);
         this.recalcularTotalesGastos();
@@ -642,10 +642,10 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
       onGridReady: (params: any) => {
         this.abonosCxcGridApi = params.api;
         if (this.abonosCxcRows.length > 0) {
-          params.api.setRowData(this.abonosCxcRows);
+          params.api.setGridOption('rowData', this.abonosCxcRows);
         }
         if (this.pinnedBottomRowDataAbonosCxc.length > 0) {
-          params.api.setPinnedBottomRowData(this.pinnedBottomRowDataAbonosCxc);
+          params.api.setGridOption('pinnedBottomRowData', this.pinnedBottomRowDataAbonosCxc);
         }
         sizeToFit(params.api);
         this.recalcularTotalesAbonosCxc();
@@ -671,10 +671,10 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
       onGridReady: (params: any) => {
         this.abonosCxpGridApi = params.api;
         if (this.abonosCxpRows.length > 0) {
-          params.api.setRowData(this.abonosCxpRows);
+          params.api.setGridOption('rowData', this.abonosCxpRows);
         }
         if (this.pinnedBottomRowDataAbonosCxp.length > 0) {
-          params.api.setPinnedBottomRowData(this.pinnedBottomRowDataAbonosCxp);
+          params.api.setGridOption('pinnedBottomRowData', this.pinnedBottomRowDataAbonosCxp);
         }
         sizeToFit(params.api);
         this.recalcularTotalesAbonosCxp();
@@ -956,7 +956,7 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
     }
     this.ventasRows = [...this._ventasRowsCache];
     if (this.ventasGridApi) {
-      this.ventasGridApi.setRowData(this.ventasRows);
+      this.ventasGridApi.setGridOption('rowData', this.ventasRows);
     }
     this.aplicarPinnedTotalesVentas(totales);
     this.actualizarVentasPivot();
@@ -971,7 +971,7 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
       this.pinnedBottomRowDataVentas = [];
     }
     if (this.ventasGridApi) {
-      this.ventasGridApi.setPinnedBottomRowData(this.pinnedBottomRowDataVentas);
+      this.ventasGridApi.setGridOption('pinnedBottomRowData', this.pinnedBottomRowDataVentas);
     }
   }
 
@@ -1074,7 +1074,7 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
     }
     this.gastosRows = [...this._gastosRowsCache];
     if (this.gastosGridApi) {
-      this.gastosGridApi.setRowData(this.gastosRows);
+      this.gastosGridApi.setGridOption('rowData', this.gastosRows);
     }
     this.aplicarPinnedTotalesGastos(totales);
     this.actualizarGastosPivot();
@@ -1089,7 +1089,7 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
       this.pinnedBottomRowDataGastos = [];
     }
     if (this.gastosGridApi) {
-      this.gastosGridApi.setPinnedBottomRowData(this.pinnedBottomRowDataGastos);
+      this.gastosGridApi.setGridOption('pinnedBottomRowData', this.pinnedBottomRowDataGastos);
     }
   }
 
@@ -1192,7 +1192,7 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
     this.abonosCxcRows = [...this._abonosCxcRowsCache];
     this._totalAbonosCxcCache = totales?.monto || 0;
     if (this.abonosCxcGridApi) {
-      this.abonosCxcGridApi.setRowData(this.abonosCxcRows);
+      this.abonosCxcGridApi.setGridOption('rowData', this.abonosCxcRows);
     }
     this.aplicarPinnedTotalesAbonosCxc(totales);
   }
@@ -1212,7 +1212,7 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
       this.pinnedBottomRowDataAbonosCxc = [];
     }
     if (this.abonosCxcGridApi) {
-      this.abonosCxcGridApi.setPinnedBottomRowData(
+      this.abonosCxcGridApi.setGridOption('pinnedBottomRowData', 
         this.pinnedBottomRowDataAbonosCxc,
       );
     }
@@ -1317,7 +1317,7 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
     this.abonosCxpRows = [...this._abonosCxpRowsCache];
     this._totalAbonosCxpCache = totales?.monto || 0;
     if (this.abonosCxpGridApi) {
-      this.abonosCxpGridApi.setRowData(this.abonosCxpRows);
+      this.abonosCxpGridApi.setGridOption('rowData', this.abonosCxpRows);
     }
     this.aplicarPinnedTotalesAbonosCxp(totales);
   }
@@ -1337,7 +1337,7 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
       this.pinnedBottomRowDataAbonosCxp = [];
     }
     if (this.abonosCxpGridApi) {
-      this.abonosCxpGridApi.setPinnedBottomRowData(
+      this.abonosCxpGridApi.setGridOption('pinnedBottomRowData', 
         this.pinnedBottomRowDataAbonosCxp,
       );
     }
@@ -2127,7 +2127,7 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
   onVentasGridReady(params: any): void {
     this.ventasGridApi = params.api;
     if (this.ventasRows.length > 0) {
-      params.api.setRowData(this.ventasRows);
+      params.api.setGridOption('rowData', this.ventasRows);
     }
     try { params.api.sizeColumnsToFit(); } catch { }
     this.recalcularTotalesVentas();
@@ -2136,7 +2136,7 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
   onGastosGridReady(params: any): void {
     this.gastosGridApi = params.api;
     if (this.gastosRows.length > 0) {
-      params.api.setRowData(this.gastosRows);
+      params.api.setGridOption('rowData', this.gastosRows);
     }
     try { params.api.sizeColumnsToFit(); } catch { }
     this.recalcularTotalesGastos();
@@ -2145,7 +2145,7 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
   onAbonosCxcGridReady(params: any): void {
     this.abonosCxcGridApi = params.api;
     if (this.abonosCxcRows.length > 0) {
-      params.api.setRowData(this.abonosCxcRows);
+      params.api.setGridOption('rowData', this.abonosCxcRows);
     }
     try { params.api.sizeColumnsToFit(); } catch { }
     this.recalcularTotalesAbonosCxc();
@@ -2154,7 +2154,7 @@ export class ResultadosComponent implements OnInit, OnChanges, OnDestroy {
   onAbonosCxpGridReady(params: any): void {
     this.abonosCxpGridApi = params.api;
     if (this.abonosCxpRows.length > 0) {
-      params.api.setRowData(this.abonosCxpRows);
+      params.api.setGridOption('rowData', this.abonosCxpRows);
     }
     try { params.api.sizeColumnsToFit(); } catch { }
     this.recalcularTotalesAbonosCxp();

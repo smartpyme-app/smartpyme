@@ -984,10 +984,10 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
         this.clienteGridColumnApi = params.api;
         // OnPush + *ngIf: el grid monta después del fetch; empujar filas ya cacheadas.
         if (this.ventasPorClienteRows.length > 0) {
-          params.api.setRowData(this.ventasPorClienteRows);
+          params.api.setGridOption('rowData', this.ventasPorClienteRows);
         }
         if (this.pinnedBottomRowDataVentasCliente.length > 0) {
-          params.api.setPinnedBottomRowData(this.pinnedBottomRowDataVentasCliente);
+          params.api.setGridOption('pinnedBottomRowData', this.pinnedBottomRowDataVentasCliente);
         }
         setTimeout(() => {
           params.api.sizeColumnsToFit();
@@ -1212,11 +1212,11 @@ export class VentasComponent implements OnInit, OnChanges, OnDestroy {
     // Nueva referencia para que OnPush + ag-grid detecten el cambio.
     this.ventasPorClienteRows = [...this._ventasPorClienteRowsCache];
     if (this.clienteGridApi) {
-      this.clienteGridApi.setRowData(this.ventasPorClienteRows);
+      this.clienteGridApi.setGridOption('rowData', this.ventasPorClienteRows);
     }
     this.aplicarPinnedTotalesVentasCliente(totales);
     if (this.clienteGridApi && this.pinnedBottomRowDataVentasCliente) {
-      this.clienteGridApi.setPinnedBottomRowData(
+      this.clienteGridApi.setGridOption('pinnedBottomRowData', 
         this.pinnedBottomRowDataVentasCliente,
       );
     }
