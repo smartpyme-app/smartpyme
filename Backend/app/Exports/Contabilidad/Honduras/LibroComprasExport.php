@@ -171,12 +171,11 @@ class LibroComprasExport implements FromCollection, WithMapping, WithHeadings, W
         $r = $item->registro;
         $m = (int) $item->mult;
         $proveedor = $r->proveedor ?? (method_exists($r, 'proveedor') ? $r->proveedor()->first() : null);
-        $tipo = (string) ($r->tipo_documento ?? '');
-        $esImportacion = $tipo === 'Importación';
-        $esSujetoExcluido = $tipo === 'Sujeto excluido';
-        $columnas = $esSujetoExcluido
-            ? ['compras_exentas' => 0, 'compras_gravadas' => 0, 'credito_fiscal' => 0]
-            : LibroIvaMontosHelper::columnasCompra($r, $m);
+        $esSujetoExcluido = (string) ($r->tipo_documento ?? '') === 'Sujeto excluido';
+        $columnas = LibroIvaMontosHelper::columnasCompra($r, $m);
+        if ($esSujetoExcluido) {
+            $columnas = array_fill_keys(array_keys($columnas), 0.0);
+        }
 
         return [
             'no' => $no,
@@ -185,12 +184,12 @@ class LibroComprasExport implements FromCollection, WithMapping, WithHeadings, W
             'nrc' => (string) ($proveedor?->ncr ?? ''),
             'nit_o_dui' => (string) ($proveedor?->nit ?? $proveedor?->dui ?? ''),
             'nombre_proveedor' => (string) ($r->nombre_proveedor ?? ''),
-            'exentas_internas' => $esImportacion ? 0.0 : (float) $columnas['compras_exentas'],
+            'exentas_internas' => (float) $columnas['compras_exentas'],
             'exentas_internaciones' => 0.0,
-            'exentas_importaciones' => $esImportacion ? (float) $columnas['importaciones_exentas'] : 0.0,
-            'gravadas_internas' => $esImportacion ? 0.0 : (float) $columnas['compras_gravadas'],
+            'exentas_importaciones' => (float) $columnas['importaciones_exentas'],
+            'gravadas_internas' => (float) $columnas['compras_gravadas'],
             'gravadas_internaciones' => 0.0,
-            'gravadas_importaciones' => $esImportacion ? (float) $columnas['importaciones_gravadas'] : 0.0,
+            'gravadas_importaciones' => (float) $columnas['importaciones_gravadas'],
             'credito_fiscal' => (float) $columnas['credito_fiscal'],
             'fovial' => 0.0,
             'cotrans' => 0.0,
