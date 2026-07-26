@@ -1,5 +1,5 @@
 <section class="bg-white p-4 rounded mb-3">
-  <h2 class="mb-0">{{ 'country.tax.libroIva.pageTitle' | translate }}</h2>
+  <h2 class="mb-0">Libro de Compras</h2>
 </section>
 
 <div class="bg-white p-4 rounded mb-3">
@@ -28,7 +28,7 @@
     <div class="card border-0 shadow-sm">
       <div class="card-body py-5 text-center"><span class="badge bg-primary">Cargando...</span></div>
     </div>
-  } @else if ((compras?.length ?? 0) === 0) {
+  } @else if (filas.length === 0) {
     <div class="card border-0 shadow-sm bg-light bg-opacity-25">
       <div class="card-body py-5 text-center">
         <p class="text-muted mb-0">No hay registros para el periodo seleccionado.</p>
@@ -39,38 +39,78 @@
       <table class="table table-bordered table-hover mr-top">
         <thead>
           <tr>
-            <th>Fecha de Documento</th>
-            <th>Fecha de Contabilización</th>
-            <th>Documento / DUA Importación</th>
-            <th>Documento de adquisiciones FYDUCA</th>
-            <th>Proveedor</th>
-            <th>Registro Tributario Nacional del proveedor</th>
-            <th>Descripción de la compra</th>
-            <th>No. de Factura de la compra</th>
-            <th class="text-end">Importe Compra Exenta</th>
-            <th class="text-end">Importe Compra Gravada</th>
-            <th class="text-end">Impuesto Sobre Ventas</th>
-            <th class="text-end">Importe Importación</th>
+            <th rowspan="2">No.</th>
+            <th rowspan="2">FECHA DE<br>EMISION</th>
+            <th rowspan="2">N° DE<br>DOCUMENTO</th>
+            <th rowspan="2">NRC</th>
+            <th rowspan="2">NIT O DUI DE<br>SUJETO<br>EXCLUIDO</th>
+            <th rowspan="2">NOMBRE DE<br>PROVEEDOR</th>
+            <th colspan="3">COMPRAS EXENTAS</th>
+            <th colspan="3">COMPRAS GRAVADAS</th>
+            <th colspan="4">CONTRIBUCION ESPECIAL</th>
+            <th rowspan="2">ANTICIPO A CUENTA<br>IVA PERCIBIDO</th>
+            <th rowspan="2">TOTAL<br>COMPRAS</th>
+            <th rowspan="2">RETENCION A<br>TERCEROS</th>
+            <th rowspan="2">COMPRAS A<br>SUJETOS<br>EXCLUIDOS</th>
+          </tr>
+          <tr>
+            <th>INTERNAS</th>
+            <th>INTERNACIONES</th>
+            <th>IMPORTACIONES</th>
+            <th>INTERNAS</th>
+            <th>INTERNACIONES</th>
+            <th>IMPORTACIONES</th>
+            <th>CREDITO<br>FISCAL</th>
+            <th>FOVIAL</th>
+            <th>COTRANS</th>
+            <th>CESC</th>
           </tr>
         </thead>
         <tbody>
-          @for (row of compras; track $index) {
+          @for (row of filas; track row.no) {
             <tr>
-              <td>{{ $any(row).fecha_documento | date:'dd/MM/yyyy' }}</td>
-              <td>{{ $any(row).fecha_contabilizacion | date:'dd/MM/yyyy' }}</td>
-              <td>{{ $any(row).documento_dua_importacion }}</td>
-              <td>{{ $any(row).documento_fyduca }}</td>
-              <td>{{ $any(row).proveedor }}</td>
-              <td>{{ $any(row).rtn_proveedor }}</td>
-              <td>{{ $any(row).descripcion_compra }}</td>
-              <td>{{ $any(row).no_factura_compra }}</td>
-              <td class="text-end">{{ $any(row).importe_exenta | currency }}</td>
-              <td class="text-end">{{ $any(row).importe_gravada | currency }}</td>
-              <td class="text-end">{{ $any(row).impuesto_ventas | currency }}</td>
-              <td class="text-end">{{ ($any(row).importe_importacion ?? 0) | currency }}</td>
+              <td>{{ row.no }}</td>
+              <td>{{ row.fecha_emision | date:'dd/MM/yyyy' }}</td>
+              <td>{{ row.numero_documento }}</td>
+              <td>{{ row.nrc }}</td>
+              <td>{{ row.nit_o_dui }}</td>
+              <td>{{ row.nombre_proveedor }}</td>
+              <td class="text-end">{{ row.exentas_internas | currency }}</td>
+              <td class="text-end">{{ row.exentas_internaciones | currency }}</td>
+              <td class="text-end">{{ row.exentas_importaciones | currency }}</td>
+              <td class="text-end">{{ row.gravadas_internas | currency }}</td>
+              <td class="text-end">{{ row.gravadas_internaciones | currency }}</td>
+              <td class="text-end">{{ row.gravadas_importaciones | currency }}</td>
+              <td class="text-end">{{ row.credito_fiscal | currency }}</td>
+              <td class="text-end">{{ row.fovial | currency }}</td>
+              <td class="text-end">{{ row.cotrans | currency }}</td>
+              <td class="text-end">{{ row.cesc | currency }}</td>
+              <td class="text-end">{{ row.anticipo_iva_percibido | currency }}</td>
+              <td class="text-end">{{ row.total | currency }}</td>
+              <td class="text-end">{{ row.retencion_terceros | currency }}</td>
+              <td class="text-end">{{ row.compras_sujetos_excluidos | currency }}</td>
             </tr>
           }
         </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="6" class="text-center"><b>TOTAL</b></td>
+            <td class="text-end"><b>{{ totales.exentas_internas | currency }}</b></td>
+            <td class="text-end"><b>{{ totales.exentas_internaciones | currency }}</b></td>
+            <td class="text-end"><b>{{ totales.exentas_importaciones | currency }}</b></td>
+            <td class="text-end"><b>{{ totales.gravadas_internas | currency }}</b></td>
+            <td class="text-end"><b>{{ totales.gravadas_internaciones | currency }}</b></td>
+            <td class="text-end"><b>{{ totales.gravadas_importaciones | currency }}</b></td>
+            <td class="text-end"><b>{{ totales.credito_fiscal | currency }}</b></td>
+            <td class="text-end"><b>{{ totales.fovial | currency }}</b></td>
+            <td class="text-end"><b>{{ totales.cotrans | currency }}</b></td>
+            <td class="text-end"><b>{{ totales.cesc | currency }}</b></td>
+            <td class="text-end"><b>{{ totales.anticipo_iva_percibido | currency }}</b></td>
+            <td class="text-end"><b>{{ totales.total | currency }}</b></td>
+            <td class="text-end"><b>{{ totales.retencion_terceros | currency }}</b></td>
+            <td class="text-end"><b>{{ totales.compras_sujetos_excluidos | currency }}</b></td>
+          </tr>
+        </tfoot>
       </table>
     </div>
   }

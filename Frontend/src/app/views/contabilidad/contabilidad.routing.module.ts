@@ -191,6 +191,26 @@ const routes: Routes = [
 
         {
 
+          path: 'libro-iva-hd/contribuyentes',
+
+          loadComponent: () => import('@views/contabilidad/libro-iva-hd/contribuyentes/libro-iva-hd-contribuyentes.component').then(m => m.LibroIvaHdContribuyentesComponent),
+
+          title: 'Libro IVA contribuyentes'
+
+        },
+
+        {
+
+          path: 'libro-iva-hd/consumidor-final',
+
+          loadComponent: () => import('@views/contabilidad/libro-iva-hd/consumidor-final/libro-iva-hd-consumidor-final.component').then(m => m.LibroIvaHdConsumidorFinalComponent),
+
+          title: 'Libro IVA consumidor final'
+
+        },
+
+        {
+
           path: 'libro-iva-hd/compras',
 
           loadComponent: () => import('@views/contabilidad/libro-iva-hd/compras/libro-iva-hd-compras.component').then(m => m.LibroIvaHdComprasComponent),

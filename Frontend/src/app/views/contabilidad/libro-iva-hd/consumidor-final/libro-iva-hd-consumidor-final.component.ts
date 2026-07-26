@@ -16,77 +16,52 @@ import {
 import { descargarBlob, manejarErrorDescargaLibroIva } from '@views/contabilidad/libro-iva-shared/libro-iva-descarga.util';
 import { TranslatePipe } from '@ngx-translate/core';
 
-interface LibroComprasHnFila {
+interface LibroConsumidoresHnFila {
   no: number;
-  fecha_emision: string;
-  numero_documento: string;
-  nrc: string;
-  nit_o_dui: string;
-  nombre_proveedor: string;
-  exentas_internas: number;
-  exentas_internaciones: number;
-  exentas_importaciones: number;
-  gravadas_internas: number;
-  gravadas_internaciones: number;
-  gravadas_importaciones: number;
+  fecha: string;
+  factura_no: string;
+  cai_no: string;
+  maquina_registradora: string;
+  exentas: number;
+  exoneradas: number;
+  gravadas_15: number;
+  gravadas_18: number;
+  total_ventas: number;
+  cuenta_terceros: number;
+}
+
+interface LibroConsumidoresHnResumen {
+  total_exentas: number;
+  total_exoneradas: number;
+  netas_15: number;
+  netas_18: number;
+  debito_fiscal: number;
   credito_fiscal: number;
-  fovial: number;
-  cotrans: number;
-  cesc: number;
-  anticipo_iva_percibido: number;
-  total: number;
-  retencion_terceros: number;
-  compras_sujetos_excluidos: number;
 }
 
-interface LibroComprasHnTotales {
-  exentas_internas: number;
-  exentas_internaciones: number;
-  exentas_importaciones: number;
-  gravadas_internas: number;
-  gravadas_internaciones: number;
-  gravadas_importaciones: number;
-  credito_fiscal: number;
-  fovial: number;
-  cotrans: number;
-  cesc: number;
-  anticipo_iva_percibido: number;
-  total: number;
-  retencion_terceros: number;
-  compras_sujetos_excluidos: number;
+interface LibroConsumidoresHnResponse {
+  filas: LibroConsumidoresHnFila[];
+  resumen: LibroConsumidoresHnResumen;
 }
 
-interface LibroComprasHnResponse {
-  filas: LibroComprasHnFila[];
-  totales: LibroComprasHnTotales;
-}
-
-const TOTALES_VACIOS: LibroComprasHnTotales = {
-  exentas_internas: 0,
-  exentas_internaciones: 0,
-  exentas_importaciones: 0,
-  gravadas_internas: 0,
-  gravadas_internaciones: 0,
-  gravadas_importaciones: 0,
+const RESUMEN_VACIO: LibroConsumidoresHnResumen = {
+  total_exentas: 0,
+  total_exoneradas: 0,
+  netas_15: 0,
+  netas_18: 0,
+  debito_fiscal: 0,
   credito_fiscal: 0,
-  fovial: 0,
-  cotrans: 0,
-  cesc: 0,
-  anticipo_iva_percibido: 0,
-  total: 0,
-  retencion_terceros: 0,
-  compras_sujetos_excluidos: 0,
 };
 
 @Component({
-  selector: 'app-libro-iva-hd-compras',
+  selector: 'app-libro-iva-hd-consumidor-final',
   standalone: true,
   imports: [CommonModule, LibroIvaHdNavComponent, LibroIvaPeriodoFiltrosComponent, TranslatePipe, CurrencyPipe],
-  templateUrl: './libro-iva-hd-compras.component.html',
+  templateUrl: './libro-iva-hd-consumidor-final.component.html',
 })
-export class LibroIvaHdComprasComponent implements OnInit {
-  filas: LibroComprasHnFila[] = [];
-  totales: LibroComprasHnTotales = { ...TOTALES_VACIOS };
+export class LibroIvaHdConsumidorFinalComponent implements OnInit {
+  filas: LibroConsumidoresHnFila[] = [];
+  resumen: LibroConsumidoresHnResumen = { ...RESUMEN_VACIO };
   years: number[] = [];
   sucursales: unknown[] = [];
   loading = false;
@@ -119,18 +94,42 @@ export class LibroIvaHdComprasComponent implements OnInit {
     );
   }
 
+  get totalExentas(): number {
+    return this.filas.reduce((s, r) => s + (r.exentas || 0), 0);
+  }
+
+  get totalExoneradas(): number {
+    return this.filas.reduce((s, r) => s + (r.exoneradas || 0), 0);
+  }
+
+  get totalGravadas15(): number {
+    return this.filas.reduce((s, r) => s + (r.gravadas_15 || 0), 0);
+  }
+
+  get totalGravadas18(): number {
+    return this.filas.reduce((s, r) => s + (r.gravadas_18 || 0), 0);
+  }
+
+  get totalVentas(): number {
+    return this.filas.reduce((s, r) => s + (r.total_ventas || 0), 0);
+  }
+
+  get totalCuentaTerceros(): number {
+    return this.filas.reduce((s, r) => s + (r.cuenta_terceros || 0), 0);
+  }
+
   loadData(): void {
     aplicarRangoMesLibroIva(this.filtros);
     this.loading = true;
-    this.apiService.getAll('libro-iva-hd/compras', this.filtros).subscribe(
-      (data: LibroComprasHnResponse) => {
+    this.apiService.getAll('libro-iva-hd/consumidores', this.filtros).subscribe(
+      (data: LibroConsumidoresHnResponse) => {
         this.filas = data?.filas ?? [];
-        this.totales = data?.totales ? { ...TOTALES_VACIOS, ...data.totales } : { ...TOTALES_VACIOS };
+        this.resumen = data?.resumen ? { ...RESUMEN_VACIO, ...data.resumen } : { ...RESUMEN_VACIO };
         this.loading = false;
       },
       (error) => {
         this.filas = [];
-        this.totales = { ...TOTALES_VACIOS };
+        this.resumen = { ...RESUMEN_VACIO };
         this.alertService.error(error);
         this.loading = false;
       }
@@ -140,9 +139,9 @@ export class LibroIvaHdComprasComponent implements OnInit {
   descargarExcel(): void {
     aplicarRangoMesLibroIva(this.filtros);
     this.downloading = true;
-    this.apiService.export('libro-iva-hd/compras/descargar-libro', this.filtros).subscribe(
+    this.apiService.export('libro-iva-hd/consumidores/descargar-libro', this.filtros).subscribe(
       (data: Blob) => {
-        descargarBlob(data, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'Libro-compras.xlsx');
+        descargarBlob(data, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'Libro-consumidores.xlsx');
         this.downloading = false;
       },
       (error) => {
@@ -156,7 +155,7 @@ export class LibroIvaHdComprasComponent implements OnInit {
     aplicarRangoMesLibroIva(this.filtros);
     const token = this.apiService.auth_token();
     const query = new URLSearchParams(this.filtros as Record<string, string>).toString();
-    const url = `${this.apiService.baseUrl}/api/libro-iva-hd/compras?${query}&formato=pdf&token=${token}`;
+    const url = `${this.apiService.baseUrl}/api/libro-iva-hd/consumidores?${query}&formato=pdf&token=${token}`;
     window.open(url, '_blank');
   }
 }
