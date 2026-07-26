@@ -183,9 +183,9 @@ const routes: Routes = [
 
           path: 'libro-iva-hd/ventas',
 
-          loadComponent: () => import('@views/contabilidad/libro-iva-hd/ventas/libro-iva-hd-ventas.component').then(m => m.LibroIvaHdVentasComponent),
+          redirectTo: 'libro-iva-hd/contribuyentes',
 
-          title: 'Libro IVA ventas'
+          pathMatch: 'full'
 
         },
 

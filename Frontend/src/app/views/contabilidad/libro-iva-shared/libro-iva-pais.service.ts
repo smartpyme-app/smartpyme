@@ -48,7 +48,7 @@ export class LibroIvaPaisService {
       case 'cr':
         return ['/libro-iva-cr/ventas'];
       case 'hd':
-        return ['/libro-iva-hd/ventas'];
+        return ['/libro-iva-hd/contribuyentes'];
       default:
         return ['/libro-iva-general/ventas'];
     }
