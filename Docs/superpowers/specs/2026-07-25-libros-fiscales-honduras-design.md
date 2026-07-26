@@ -161,4 +161,3 @@ Filtro documento: `Crédito fiscal`. Incluir devoluciones con signo negativo.
 - Reutilizar `LibroIvaMontosHelper` y filtros de periodo/sucursal existentes.
 - Eliminar o dejar de referenciar el export SAR unificado de ventas HN una vez existan consumidor + contribuyente.
 - Un check runnable mínimo por libro (test unitario pequeño de mapeo/totales), sin frameworks de fixtures pesados.
-`)
