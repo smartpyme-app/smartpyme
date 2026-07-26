@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Api\Contabilidad\LibrosIva;
 
-use App\Http\Controllers\Api\Contabilidad\LibrosIva\Concerns\HandlesLibrosIvaSar;
+use App\Exports\Contabilidad\Honduras\LibroComprasExport;
+use App\Exports\Contabilidad\Honduras\LibroConsumidoresExport;
+use App\Exports\Contabilidad\Honduras\LibroContribuyentesExport;
 use App\Http\Controllers\Api\Contabilidad\LibrosIva\Concerns\InteractsWithLibrosIva;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Contabilidad\LibrosIVA\BaseLibroIVARequest;
@@ -15,11 +17,11 @@ use App\Services\Contabilidad\LibroIvaResumenFiscalService;
 use App\Services\Contabilidad\LibrosIva\LibroIvaPaisResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
 
 class LibrosIvaHdController extends Controller
 {
     use InteractsWithLibrosIva;
-    use HandlesLibrosIvaSar;
 
     public function __construct(
         FacturacionElectronicaHelperService $facturacionElectronicaHelper,
@@ -38,32 +40,97 @@ class LibrosIvaHdController extends Controller
         }
     }
 
-    public function ventas(BaseLibroIVARequest $request)
+    public function consumidores(BaseLibroIVARequest $request)
     {
         $this->assertHonduras();
+        $export = new LibroConsumidoresExport();
+        $export->filter($request);
 
-        return $this->ventasSarJson($request);
+        if ($request->formato === 'pdf') {
+            $data = $export->rowsForApi();
+
+            return app('dompdf.wrapper')
+                ->loadView('reportes.contabilidad.honduras.libro-consumidores', [
+                    'filas' => $data['filas'],
+                    'resumen' => $data['resumen'],
+                    'request' => $request,
+                ])
+                ->setPaper('legal', 'landscape')
+                ->stream('libro-consumidores.pdf');
+        }
+
+        return response()->json($export->rowsForApi());
     }
 
-    public function ventasLibroExport(BaseLibroIVARequest $request)
+    public function consumidoresLibroExport(BaseLibroIVARequest $request)
     {
         $this->assertHonduras();
+        $export = new LibroConsumidoresExport();
+        $export->filter($request);
 
-        return $this->ventasSarExcel($request);
+        return Excel::download($export, 'Libro-consumidores.xlsx');
+    }
+
+    public function contribuyentes(BaseLibroIVARequest $request)
+    {
+        $this->assertHonduras();
+        $export = new LibroContribuyentesExport();
+        $export->filter($request);
+
+        if ($request->formato === 'pdf') {
+            $data = $export->rowsForApi();
+
+            return app('dompdf.wrapper')
+                ->loadView('reportes.contabilidad.honduras.libro-contribuyentes', [
+                    'filas' => $data['filas'],
+                    'resumen_operaciones' => $data['resumen_operaciones'],
+                    'request' => $request,
+                ])
+                ->setPaper('legal', 'landscape')
+                ->stream('libro-contribuyentes.pdf');
+        }
+
+        return response()->json($export->rowsForApi());
+    }
+
+    public function contribuyentesLibroExport(BaseLibroIVARequest $request)
+    {
+        $this->assertHonduras();
+        $export = new LibroContribuyentesExport();
+        $export->filter($request);
+
+        return Excel::download($export, 'Libro-contribuyentes.xlsx');
     }
 
     public function compras(BaseLibroIVARequest $request)
     {
         $this->assertHonduras();
+        $export = new LibroComprasExport();
+        $export->filter($request);
 
-        return $this->comprasSarJson($request);
+        if ($request->formato === 'pdf') {
+            $data = $export->rowsForApi();
+
+            return app('dompdf.wrapper')
+                ->loadView('reportes.contabilidad.honduras.libro-compras', [
+                    'filas' => $data['filas'],
+                    'totales' => $data['totales'],
+                    'request' => $request,
+                ])
+                ->setPaper('legal', 'landscape')
+                ->stream('libro-compras.pdf');
+        }
+
+        return response()->json($export->rowsForApi());
     }
 
     public function comprasLibroExport(BaseLibroIVARequest $request)
     {
         $this->assertHonduras();
+        $export = new LibroComprasExport();
+        $export->filter($request);
 
-        return $this->comprasSarExcel($request);
+        return Excel::download($export, 'Libro-compras.xlsx');
     }
 
     public function retenciones(Request $request): JsonResponse

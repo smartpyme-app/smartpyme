@@ -194,7 +194,8 @@ class LibroComprasExport implements FromCollection, WithMapping, WithHeadings, W
             'fovial' => 0.0,
             'cotrans' => 0.0,
             'cesc' => 0.0,
-            'anticipo_iva_percibido' => (float) ($r->percepcion ?? 0) * $m,
+            // Compra usa `percepcion`; Gasto/Devolución usan `iva_percibido`.
+            'anticipo_iva_percibido' => (float) ($r->percepcion ?? $r->iva_percibido ?? 0) * $m,
             'total' => (float) ($r->total ?? 0) * $m,
             'retencion_terceros' => (float) ($r->iva_retenido ?? 0) * $m,
             'compras_sujetos_excluidos' => $esSujetoExcluido ? (float) $r->total * $m : 0.0,

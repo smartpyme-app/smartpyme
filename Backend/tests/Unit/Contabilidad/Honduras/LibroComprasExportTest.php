@@ -129,6 +129,26 @@ class LibroComprasExportTest extends TestCase
         $this->assertSame(0.0, $row['cesc']);
     }
 
+    public function test_gasto_usa_iva_percibido_cuando_no_hay_percepcion(): void
+    {
+        $registro = (object) [
+            'fecha' => '2026-07-05',
+            'referencia' => 'GAS-001',
+            'tipo_documento' => 'Crédito fiscal',
+            'nombre_proveedor' => 'Proveedor Gasto',
+            'sub_total' => 80.0,
+            'iva' => 12.0,
+            'total' => 92.0,
+            'iva_percibido' => 3.5,
+            'iva_retenido' => 0.0,
+            'proveedor' => (object) ['ncr' => '0801', 'nit' => 'NIT-G', 'dui' => null],
+        ];
+
+        $row = $this->invokeMap((object) ['registro' => $registro, 'mult' => 1], 5);
+
+        $this->assertSame(3.5, $row['anticipo_iva_percibido']);
+    }
+
     private function invokeMap(object $item, int $no): array
     {
         $export = new LibroComprasExport();
