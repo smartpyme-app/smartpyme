@@ -10,11 +10,14 @@ use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithEvents;
+use Maatwebsite\Excel\Events\AfterSheet;
 use Maatwebsite\Excel\Events\BeforeSheet;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use App\Constants\DocumentoConstants;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
 
 /**
  * Libro de compras - Formato Honduras (SAR).
@@ -77,10 +80,58 @@ class LibroComprasExport implements FromCollection, WithMapping, WithHeadings, W
     {
         return [
             BeforeSheet::class => function (BeforeSheet $event) {
+                $empresa = Auth::user()?->empresa()->first();
                 $event->sheet->insertNewRowBefore(1, 4);
                 $event->sheet->setCellValue('A1', 'LIBRO DE COMPRAS');
-                $event->sheet->setCellValue('A2', Auth::user()->empresa()->pluck('nombre')->first());
-                $event->sheet->setCellValue('A4', 'Mes: ' . ucfirst(Carbon::parse($this->request->inicio)->translatedFormat('F')) . ' - Año: ' . Carbon::parse($this->request->inicio)->format('Y'));
+                $event->sheet->setCellValue('A2', $empresa->nombre ?? '');
+                $event->sheet->setCellValue('A3', 'NIT: ' . ($empresa->nit ?? '') . '  NRC: ' . ($empresa->ncr ?? ''));
+                $event->sheet->setCellValue(
+                    'A4',
+                    'Mes: ' . ucfirst(Carbon::parse($this->request->inicio)->translatedFormat('F'))
+                        . ' - Año: ' . Carbon::parse($this->request->inicio)->format('Y')
+                );
+            },
+            AfterSheet::class => function (AfterSheet $event) {
+                $sheet = $event->sheet->getDelegate();
+                $lastCol = 'T';
+                $headerRow = 5;
+                $lastDataRow = max($headerRow, $sheet->getHighestRow());
+                $totalRow = $lastDataRow + 1;
+
+                $sheet->getStyle("A1:{$lastCol}4")->getFont()->setBold(true);
+                $sheet->getStyle("A{$headerRow}:{$lastCol}{$headerRow}")->getFont()->setBold(true);
+                $sheet->getStyle("A{$headerRow}:{$lastCol}{$headerRow}")->getAlignment()
+                    ->setWrapText(true)
+                    ->setHorizontal(Alignment::HORIZONTAL_CENTER)
+                    ->setVertical(Alignment::VERTICAL_CENTER);
+
+                if ($lastDataRow >= $headerRow) {
+                    $sheet->getStyle("A{$headerRow}:{$lastCol}{$lastDataRow}")
+                        ->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+                }
+
+                if ($lastDataRow > $headerRow) {
+                    $sheet->getStyle("G" . ($headerRow + 1) . ":{$lastCol}{$lastDataRow}")
+                        ->getNumberFormat()->setFormatCode('#,##0.00');
+                }
+
+                // ponytail: totales vía rowsForApi (2ª consulta) para no reimplementar sumas (techo: cachear filas en map).
+                $totales = $this->rowsForApi()['totales'];
+                $sheet->setCellValue("A{$totalRow}", 'TOTAL');
+                $cols = ['G','H','I','J','K','L','M','N','O','P','Q','R','S','T'];
+                $keys = self::CLAVES_MONETARIAS;
+                foreach ($cols as $i => $col) {
+                    $sheet->setCellValue("{$col}{$totalRow}", round((float) ($totales[$keys[$i]] ?? 0), 2));
+                }
+                $sheet->getStyle("A{$totalRow}:{$lastCol}{$totalRow}")->getFont()->setBold(true);
+                $sheet->getStyle("G{$totalRow}:{$lastCol}{$totalRow}")
+                    ->getNumberFormat()->setFormatCode('#,##0.00');
+                $sheet->getStyle("A{$totalRow}:{$lastCol}{$totalRow}")
+                    ->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+
+                $firmaRow = $totalRow + 2;
+                $sheet->setCellValue("A{$firmaRow}", '__________________________');
+                $sheet->setCellValue('A' . ($firmaRow + 1), 'Nombre y Firma de Contador');
             },
         ];
     }

@@ -9,11 +9,14 @@ use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithEvents;
+use Maatwebsite\Excel\Events\AfterSheet;
 use Maatwebsite\Excel\Events\BeforeSheet;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
 
 /**
  * Libro de ventas a contribuyentes - Formato Honduras (SAR).
@@ -64,10 +67,97 @@ class LibroContribuyentesExport implements FromCollection, WithMapping, WithHead
     {
         return [
             BeforeSheet::class => function (BeforeSheet $event) {
+                $empresa = Auth::user()?->empresa()->first();
                 $event->sheet->insertNewRowBefore(1, 4);
                 $event->sheet->setCellValue('A1', 'LIBRO DE VENTAS A CONTRIBUYENTES');
-                $event->sheet->setCellValue('A2', Auth::user()->empresa()->pluck('nombre')->first());
-                $event->sheet->setCellValue('A4', 'Mes: ' . ucfirst(Carbon::parse($this->request->inicio)->translatedFormat('F')) . ' - Año: ' . Carbon::parse($this->request->inicio)->format('Y'));
+                $event->sheet->setCellValue('A2', $empresa->nombre ?? '');
+                $event->sheet->setCellValue('A3', 'NIT: ' . ($empresa->nit ?? '') . '  NRC: ' . ($empresa->ncr ?? ''));
+                $event->sheet->setCellValue(
+                    'A4',
+                    'Mes: ' . ucfirst(Carbon::parse($this->request->inicio)->translatedFormat('F'))
+                        . ' - Año: ' . Carbon::parse($this->request->inicio)->format('Y')
+                );
+            },
+            AfterSheet::class => function (AfterSheet $event) {
+                $sheet = $event->sheet->getDelegate();
+                $lastCol = 'N';
+                $headerRow = 5;
+                $lastDataRow = max($headerRow, $sheet->getHighestRow());
+                $totalRow = $lastDataRow + 1;
+
+                $sheet->getStyle("A1:{$lastCol}4")->getFont()->setBold(true);
+                $sheet->getStyle("A{$headerRow}:{$lastCol}{$headerRow}")->getFont()->setBold(true);
+                $sheet->getStyle("A{$headerRow}:{$lastCol}{$headerRow}")->getAlignment()
+                    ->setWrapText(true)
+                    ->setHorizontal(Alignment::HORIZONTAL_CENTER)
+                    ->setVertical(Alignment::VERTICAL_CENTER);
+
+                if ($lastDataRow >= $headerRow) {
+                    $sheet->getStyle("A{$headerRow}:{$lastCol}{$lastDataRow}")
+                        ->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+                }
+
+                if ($lastDataRow > $headerRow) {
+                    $sheet->getStyle('F' . ($headerRow + 1) . ":{$lastCol}{$lastDataRow}")
+                        ->getNumberFormat()->setFormatCode('#,##0.00');
+                }
+
+                // ponytail: 2ª consulta vía rowsForApi para TOTAL+resumen (techo: cachear en map).
+                $api = $this->rowsForApi();
+                $filas = $api['filas'];
+                $resumen = $api['resumen_operaciones'];
+                $sum = static fn (string $k) => round(array_sum(array_column($filas, $k)), 2);
+
+                $sheet->setCellValue("A{$totalRow}", 'TOTAL');
+                foreach ([
+                    'F' => 'exentas',
+                    'G' => 'no_sujetas',
+                    'H' => 'gravadas_locales',
+                    'I' => 'debito_fiscal',
+                    'J' => 'cta_terceros',
+                    'K' => 'debito_cta_terceros',
+                    'L' => 'iva_percibido',
+                    'M' => 'iva_retenido',
+                    'N' => 'total',
+                ] as $col => $key) {
+                    $sheet->setCellValue("{$col}{$totalRow}", $sum($key));
+                }
+                $sheet->getStyle("A{$totalRow}:{$lastCol}{$totalRow}")->getFont()->setBold(true);
+                $sheet->getStyle("F{$totalRow}:{$lastCol}{$totalRow}")
+                    ->getNumberFormat()->setFormatCode('#,##0.00');
+                $sheet->getStyle("A{$totalRow}:{$lastCol}{$totalRow}")
+                    ->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+
+                $r = $totalRow + 2;
+                $sheet->setCellValue("A{$r}", 'Resumen Operaciones');
+                $sheet->setCellValue("B{$r}", 'Gravadas');
+                $sheet->setCellValue("C{$r}", 'Exportaciones');
+                $sheet->setCellValue("D{$r}", 'Debito Fiscal');
+                $sheet->setCellValue("E{$r}", 'IVA Percibido');
+                $sheet->setCellValue("F{$r}", 'IVA Retenido');
+                $sheet->getStyle("A{$r}:F{$r}")->getFont()->setBold(true);
+                $r++;
+
+                foreach ([
+                    'Total' => 'totales_detalle',
+                    'Consumidor Final' => 'consumidor_final',
+                    'Contribuyentes' => 'contribuyentes',
+                    'Ventas a Cta de Terceros' => 'cta_terceros',
+                ] as $label => $bloque) {
+                    $vals = $resumen[$bloque] ?? [];
+                    $sheet->setCellValue("A{$r}", $label);
+                    $sheet->setCellValue("B{$r}", round((float) ($vals['gravadas'] ?? 0), 2));
+                    $sheet->setCellValue("C{$r}", round((float) ($vals['exportaciones'] ?? 0), 2));
+                    $sheet->setCellValue("D{$r}", round((float) ($vals['debito_fiscal'] ?? 0), 2));
+                    $sheet->setCellValue("E{$r}", round((float) ($vals['iva_percibido'] ?? 0), 2));
+                    $sheet->setCellValue("F{$r}", round((float) ($vals['iva_retenido'] ?? 0), 2));
+                    $sheet->getStyle("B{$r}:F{$r}")->getNumberFormat()->setFormatCode('#,##0.00');
+                    $r++;
+                }
+
+                $r++;
+                $sheet->setCellValue("A{$r}", '__________________________');
+                $sheet->setCellValue('A' . ($r + 1), 'Nombre y Firma de Contador');
             },
         ];
     }
