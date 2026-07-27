@@ -8,6 +8,8 @@ use App\Models\Ventas\Abono;
 use App\Models\Ventas\Venta;
 use App\Models\Inventario\Paquete;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use App\Services\Comisiones\ComisionService;
 use App\Exports\AbonosVentasExport;
 use Maatwebsite\Excel\Facades\Excel;
 use JWTAuth;
@@ -141,6 +143,16 @@ class AbonosController extends Controller
             if ($venta && $venta->saldo <= 0) {
                 $venta->estado = 'Pagada';
                 $venta->save();
+
+                try {
+                    $venta->loadMissing('detalles.producto');
+                    app(ComisionService::class)->registrarVentaPagada($venta);
+                } catch (\Throwable $e) {
+                    Log::error('comisiones: fallo al registrar venta', [
+                        'venta' => $venta->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
 
                 // Actualziar si es paquete
                     $paquetes = Paquete::where('id_venta', $venta->id)->get();

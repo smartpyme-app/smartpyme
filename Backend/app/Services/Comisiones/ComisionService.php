@@ -4,6 +4,7 @@ namespace App\Services\Comisiones;
 
 use App\Models\Admin\EmpresaFuncionalidad;
 use App\Models\Comisiones\ComisionMovimiento;
+use App\Models\Comisiones\ComisionPeriodo;
 use App\Models\Ventas\Devoluciones\Devolucion;
 use App\Models\Ventas\Venta;
 use App\Services\Funcionalidades\FuncionalidadAccess;
@@ -54,6 +55,7 @@ class ComisionService
      * @param  Closure(int): ?Venta|null  $obtenerVentaConDetalles
      * @param  Closure(int): \Illuminate\Support\Collection<int, Devolucion>|null  $obtenerDevolucionesActivas
      * @param  Closure(int, int): void|null  $eliminarAjusteDevolucion
+     * @param  ComisionLiquidacionService|null  $liquidacionService
      */
     public function __construct(
         private ComisionPeriodoService $periodoService,
@@ -67,8 +69,10 @@ class ComisionService
         ?Closure $obtenerMovimientosVenta = null,
         ?Closure $obtenerVentaConDetalles = null,
         ?Closure $obtenerDevolucionesActivas = null,
-        ?Closure $eliminarAjusteDevolucion = null
+        ?Closure $eliminarAjusteDevolucion = null,
+        private ?ComisionLiquidacionService $liquidacionService = null
     ) {
+        $this->liquidacionService ??= new ComisionLiquidacionService();
         $this->tieneFuncionalidad = $tieneFuncionalidad
             ?? fn (int $idEmpresa, string $slug) => FuncionalidadAccess::empresaTieneSlug($idEmpresa, $slug);
         $this->obtenerConfigComisiones = $obtenerConfigComisiones
@@ -179,7 +183,17 @@ class ComisionService
             'fecha_evento' => $fecha,
         ];
 
-        return ($this->persistirAjuste)($where, $values);
+        $ajuste = ($this->persistirAjuste)($where, $values);
+
+        if ($periodo->estado === ComisionPeriodo::ESTADO_CERRADO) {
+            $this->liquidacionService->recalcularParaVendedorPeriodo(
+                (int) $movimientoOriginal->id_empresa,
+                (int) $periodo->id,
+                (int) $movimientoOriginal->id_vendedor
+            );
+        }
+
+        return $ajuste;
     }
 
     public function ajustarPorAnulacionVenta(int $idVenta, ?DateTimeInterface $fechaEvento = null): void

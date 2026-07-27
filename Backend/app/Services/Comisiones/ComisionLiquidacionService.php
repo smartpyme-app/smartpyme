@@ -67,6 +67,34 @@ class ComisionLiquidacionService
         });
     }
 
+    public function recalcularParaVendedorPeriodo(int $idEmpresa, int $idPeriodo, int $idVendedor): void
+    {
+        $periodo = ComisionPeriodo::withoutGlobalScope('empresa')
+            ->where('id_empresa', $idEmpresa)
+            ->find($idPeriodo);
+
+        if ($periodo === null || $periodo->estado !== ComisionPeriodo::ESTADO_CERRADO) {
+            return;
+        }
+
+        $total = ComisionMovimiento::withoutGlobalScope('empresa')
+            ->where('id_empresa', $idEmpresa)
+            ->where('id_periodo', $idPeriodo)
+            ->where('id_vendedor', $idVendedor)
+            ->sum('monto_comision');
+
+        ComisionLiquidacion::withoutGlobalScope('empresa')->updateOrCreate(
+            [
+                'id_empresa' => $idEmpresa,
+                'id_periodo' => $idPeriodo,
+                'id_vendedor' => $idVendedor,
+            ],
+            [
+                'total_comision' => round((float) $total, 4),
+            ]
+        );
+    }
+
     public function marcarLiquidacionPagada(int $idEmpresa, int $idLiquidacion): ComisionLiquidacion
     {
         return DB::transaction(function () use ($idEmpresa, $idLiquidacion) {

@@ -5,6 +5,7 @@ namespace Tests\Unit\Services\Comisiones;
 use App\Models\Comisiones\ComisionMovimiento;
 use App\Models\Comisiones\ComisionPeriodo;
 use App\Services\Comisiones\ComisionBaseCalculator;
+use App\Services\Comisiones\ComisionLiquidacionService;
 use App\Services\Comisiones\ComisionPeriodoService;
 use App\Services\Comisiones\ComisionPorcentajeResolver;
 use App\Services\Comisiones\ComisionService;
@@ -180,5 +181,117 @@ class ComisionServiceAjustePeriodoTest extends TestCase
         $this->assertCount(1, $guardados);
         $this->assertSame(-80.0, (float) $guardados[0]['monto_base']);
         $this->assertSame(-1.6, (float) $guardados[0]['monto_comision']);
+    }
+
+    public function test_ajuste_en_periodo_cerrado_recalcula_liquidacion(): void
+    {
+        $recalcularCalls = [];
+        $liquidacionService = $this->createMock(ComisionLiquidacionService::class);
+        $liquidacionService->expects($this->once())
+            ->method('recalcularParaVendedorPeriodo')
+            ->willReturnCallback(function (int $idEmpresa, int $idPeriodo, int $idVendedor) use (&$recalcularCalls) {
+                $recalcularCalls[] = compact('idEmpresa', 'idPeriodo', 'idVendedor');
+            });
+
+        $periodoCerrado = (object) [
+            'id' => 3,
+            'estado' => ComisionPeriodo::ESTADO_CERRADO,
+            'fecha_fin' => '2026-06-30',
+        ];
+
+        $periodoService = new ComisionPeriodoService(
+            fn (int $id) => $id === 3 ? $periodoCerrado : null,
+            fn () => $this->fail('findNextAbierto no debe llamarse'),
+            fn () => $this->fail('firstOrCreate no debe llamarse')
+        );
+
+        $svc = new ComisionService(
+            $periodoService,
+            new ComisionPorcentajeResolver(fn () => null, fn () => null),
+            new ComisionBaseCalculator(),
+            fn () => true,
+            fn () => ['base_calculo' => 'subtotal_sin_iva'],
+            fn () => new stdClass(),
+            fn () => (object) ['id' => 901],
+            null,
+            null,
+            null,
+            null,
+            null,
+            $liquidacionService
+        );
+
+        $original = (object) [
+            'id' => 500,
+            'id_empresa' => 1,
+            'id_periodo' => 3,
+            'id_vendedor' => 5,
+            'id_venta' => 50,
+            'id_detalle_venta' => 100,
+            'id_categoria' => 10,
+            'id_subcategoria' => null,
+            'monto_base' => 100,
+            'porcentaje_aplicado' => 2,
+            'monto_comision' => 2,
+            'fecha_evento' => '2026-06-10',
+        ];
+
+        $svc->registrarAjustePorDevolucion($original, 50, false, Carbon::parse('2026-07-01'));
+
+        $this->assertCount(1, $recalcularCalls);
+        $this->assertSame(1, $recalcularCalls[0]['idEmpresa']);
+        $this->assertSame(3, $recalcularCalls[0]['idPeriodo']);
+        $this->assertSame(5, $recalcularCalls[0]['idVendedor']);
+    }
+
+    public function test_ajuste_en_periodo_abierto_no_recalcula_liquidacion(): void
+    {
+        $liquidacionService = $this->createMock(ComisionLiquidacionService::class);
+        $liquidacionService->expects($this->never())->method('recalcularParaVendedorPeriodo');
+
+        $periodoAbierto = (object) [
+            'id' => 1,
+            'estado' => ComisionPeriodo::ESTADO_ABIERTO,
+            'fecha_fin' => '2026-07-31',
+        ];
+
+        $periodoService = new ComisionPeriodoService(
+            fn () => $periodoAbierto,
+            fn () => null,
+            fn () => $periodoAbierto
+        );
+
+        $svc = new ComisionService(
+            $periodoService,
+            new ComisionPorcentajeResolver(fn () => null, fn () => null),
+            new ComisionBaseCalculator(),
+            fn () => true,
+            fn () => ['base_calculo' => 'subtotal_sin_iva'],
+            fn () => new stdClass(),
+            fn () => (object) ['id' => 901],
+            null,
+            null,
+            null,
+            null,
+            null,
+            $liquidacionService
+        );
+
+        $original = (object) [
+            'id' => 500,
+            'id_empresa' => 1,
+            'id_periodo' => 1,
+            'id_vendedor' => 5,
+            'id_venta' => 50,
+            'id_detalle_venta' => 100,
+            'id_categoria' => null,
+            'id_subcategoria' => null,
+            'monto_base' => 100,
+            'porcentaje_aplicado' => 2,
+            'monto_comision' => 2,
+            'fecha_evento' => '2026-07-10',
+        ];
+
+        $svc->registrarAjustePorDevolucion($original, 80, false, Carbon::parse('2026-07-20'));
     }
 }
