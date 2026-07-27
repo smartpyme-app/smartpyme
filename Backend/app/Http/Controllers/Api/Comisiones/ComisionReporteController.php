@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers\Api\Comisiones;
 
+use App\Exports\Comisiones\ComisionesPorVendedorSheetsExport;
 use App\Http\Controllers\Controller;
 use App\Services\Comisiones\ComisionReporteService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ComisionReporteController extends Controller
 {
@@ -33,19 +36,37 @@ class ComisionReporteController extends Controller
         ]);
     }
 
-    public function exportExcel(Request $request): JsonResponse
+    public function exportExcel(Request $request): BinaryFileResponse|JsonResponse
     {
-        return response()->json([
-            'success' => false,
-            'message' => 'Exportación Excel pendiente de implementación (Task 7).',
-        ], 501);
+        $rango = $this->reporteService->validarRangoExport($request);
+        $idEmpresa = (int) $request->user()->id_empresa;
+
+        $export = new ComisionesPorVendedorSheetsExport(
+            $this->reporteService,
+            $idEmpresa,
+            $rango['desde'],
+            $rango['hasta']
+        );
+
+        $filename = sprintf(
+            'comisiones-%s-%s.xlsx',
+            $rango['desde'],
+            $rango['hasta']
+        );
+
+        return Excel::download($export, $filename);
     }
 
-    public function comprobantePdf(Request $request, int $id_vendedor): JsonResponse
+    public function comprobantePdf(Request $request, int $id_vendedor)
     {
-        return response()->json([
-            'success' => false,
-            'message' => 'Comprobante PDF pendiente de implementación (Task 7).',
-        ], 501);
+        $periodoId = $this->reporteService->validarComprobante($request);
+        $idEmpresa = (int) $request->user()->id_empresa;
+
+        $datos = $this->reporteService->datosComprobante($idEmpresa, $id_vendedor, $periodoId);
+
+        $pdf = app('dompdf.wrapper')->loadView('reportes.comisiones.comprobante', $datos);
+        $pdf->setPaper('US Letter', 'portrait');
+
+        return $pdf->stream('comprobante-comision-' . $id_vendedor . '.pdf');
     }
 }

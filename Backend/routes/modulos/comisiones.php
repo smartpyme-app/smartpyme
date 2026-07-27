@@ -17,4 +17,6 @@ Route::middleware(['verificar.funcionalidad:comisiones-vendedores'])->group(func
     Route::post('comisiones/liquidaciones/{id}/pagar', [ComisionLiquidacionController::class, 'pagar']);
 
     Route::get('comisiones/movimientos', [ComisionReporteController::class, 'movimientos']);
+    Route::get('comisiones/export', [ComisionReporteController::class, 'exportExcel']);
+    Route::get('comisiones/comprobante/{id_vendedor}', [ComisionReporteController::class, 'comprobantePdf']);
 });
