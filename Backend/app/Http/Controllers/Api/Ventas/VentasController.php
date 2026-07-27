@@ -14,6 +14,7 @@ use JWTAuth;
 use Carbon\Carbon;
 use App\Services\FidelizacionCliente\ConsumoPuntosService as FidelizacionConsumoPuntosService;
 use App\Services\FidelizacionCliente\ReversionPuntosService;
+use App\Services\Comisiones\ComisionService;
 use Illuminate\Support\Facades\Log;
 
 use App\Models\Ventas\Venta;
@@ -522,6 +523,20 @@ class VentasController extends Controller
             // El frontend ya envía el total sin propina, así que no necesitamos ajustarlo
             $venta->fill($request->all());
             $venta->save();
+
+            if ($anulandoVenta) {
+                try {
+                    app(ComisionService::class)->ajustarPorAnulacionVenta(
+                        (int) $venta->id,
+                        $venta->fecha_anulacion ?? now()
+                    );
+                } catch (\Throwable $e) {
+                    Log::error('comisiones: fallo al ajustar por anulación de venta', [
+                        'venta' => $venta->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
 
             DB::commit();
 
@@ -1089,6 +1104,18 @@ class VentasController extends Controller
                 }
             }
 
+            if ($venta->estado == 'Pagada') {
+                try {
+                    $venta->load('detalles.producto');
+                    app(ComisionService::class)->registrarVentaPagada($venta);
+                } catch (\Throwable $e) {
+                    Log::error('comisiones: fallo al registrar venta', [
+                        'venta' => $venta->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
             // Paquete stub BoxFul para generar envío desde ventas (sin llamar a la API BoxFul)
             if ((int) ($request->cotizacion ?? 0) === 0) {
                 $this->crearPaqueteStubBoxfulSiAplica($venta);
@@ -1221,6 +1248,16 @@ class VentasController extends Controller
                     ]);
                     // No se interrumpe la transacción por errores en puntos
                 }
+            }
+
+            try {
+                $venta->load('detalles.producto');
+                app(ComisionService::class)->registrarVentaPagada($venta);
+            } catch (\Throwable $e) {
+                Log::error('comisiones: fallo al registrar venta', [
+                    'venta' => $venta->id,
+                    'error' => $e->getMessage(),
+                ]);
             }
 
             DB::commit();

@@ -4,6 +4,8 @@ namespace App\Services\Comisiones;
 
 use App\Models\Admin\EmpresaFuncionalidad;
 use App\Models\Comisiones\ComisionMovimiento;
+use App\Models\Ventas\Devoluciones\Devolucion;
+use App\Models\Ventas\Venta;
 use App\Services\Funcionalidades\FuncionalidadAccess;
 use Carbon\Carbon;
 use Closure;
@@ -136,6 +138,122 @@ class ComisionService
         ];
 
         return ($this->persistirAjuste)($where, $values);
+    }
+
+    public function ajustarPorAnulacionVenta(int $idVenta, ?DateTimeInterface $fechaEvento = null): void
+    {
+        $movimientos = ComisionMovimiento::withoutGlobalScope('empresa')
+            ->where('id_venta', $idVenta)
+            ->where('origen', ComisionMovimiento::ORIGEN_VENTA)
+            ->get();
+
+        if ($movimientos->isEmpty()) {
+            return;
+        }
+
+        if (! ($this->tieneFuncionalidad)((int) $movimientos->first()->id_empresa, self::SLUG_COMISIONES)) {
+            return;
+        }
+
+        $fecha = $fechaEvento ?? now();
+
+        foreach ($movimientos as $movimiento) {
+            $this->registrarAjustePorDevolucion(
+                $movimiento,
+                (float) $movimiento->monto_base,
+                true,
+                $fecha
+            );
+        }
+    }
+
+    public function syncAjustesPorDevolucion(object $devolucion): void
+    {
+        if (($devolucion->tipo ?? null) === 'descuento_ajuste') {
+            return;
+        }
+
+        if (! ($this->tieneFuncionalidad)((int) $devolucion->id_empresa, self::SLUG_COMISIONES)) {
+            return;
+        }
+
+        $idVenta = (int) $devolucion->id_venta;
+        $venta = Venta::with('detalles')->find($idVenta);
+        if ($venta === null) {
+            return;
+        }
+
+        $config = ($this->obtenerConfigComisiones)((int) $devolucion->id_empresa);
+        $baseCalculo = $config['base_calculo'] ?? 'subtotal_sin_iva';
+
+        $devolucionesActivas = Devolucion::withoutGlobalScope('empresa')
+            ->where('id_venta', $idVenta)
+            ->where('enable', true)
+            ->where('tipo', '!=', 'descuento_ajuste')
+            ->with('detalles')
+            ->get();
+
+        $movimientos = ComisionMovimiento::withoutGlobalScope('empresa')
+            ->where('id_venta', $idVenta)
+            ->where('origen', ComisionMovimiento::ORIGEN_VENTA)
+            ->get();
+
+        if ($movimientos->isEmpty()) {
+            return;
+        }
+
+        $detallesPorId = $venta->detalles->keyBy('id');
+        $cantidadPorProducto = $venta->detalles
+            ->groupBy('id_producto')
+            ->map(fn ($grupo) => (float) $grupo->sum('cantidad'));
+
+        $baseDevueltaPorProducto = [];
+        foreach ($devolucionesActivas as $devolucionActiva) {
+            foreach ($devolucionActiva->detalles as $detalleDevolucion) {
+                $idProducto = (int) $detalleDevolucion->id_producto;
+                $baseDevueltaPorProducto[$idProducto] = ($baseDevueltaPorProducto[$idProducto] ?? 0.0)
+                    + $this->calculator->calcular($detalleDevolucion, $baseCalculo);
+            }
+        }
+
+        $fechaEvento = $devolucion->fecha ?? now();
+
+        foreach ($movimientos as $movimiento) {
+            $detalleVenta = $detallesPorId->get($movimiento->id_detalle_venta);
+            if ($detalleVenta === null) {
+                continue;
+            }
+
+            $idProducto = (int) $detalleVenta->id_producto;
+            $cantidadTotalProducto = $cantidadPorProducto[$idProducto] ?? 0.0;
+            if ($cantidadTotalProducto <= 0) {
+                continue;
+            }
+
+            $participacionLinea = (float) $detalleVenta->cantidad / $cantidadTotalProducto;
+            $baseDevueltaProducto = (float) ($baseDevueltaPorProducto[$idProducto] ?? 0.0);
+            $montoBaseDevueltoAcumulado = min(
+                (float) $movimiento->monto_base,
+                round($baseDevueltaProducto * $participacionLinea, 4)
+            );
+
+            if ($montoBaseDevueltoAcumulado <= 0) {
+                ComisionMovimiento::withoutGlobalScope('empresa')
+                    ->where('id_empresa', (int) $movimiento->id_empresa)
+                    ->where('origen', ComisionMovimiento::ORIGEN_AJUSTE_DEVOLUCION)
+                    ->where('id_movimiento_origen', (int) $movimiento->id)
+                    ->delete();
+
+                continue;
+            }
+
+            $this->registrarAjustePorDevolucion(
+                $movimiento,
+                $montoBaseDevueltoAcumulado,
+                false,
+                $fechaEvento
+            );
+        }
     }
 
     public function registrarDesdeRedencion(

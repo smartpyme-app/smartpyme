@@ -26,6 +26,8 @@ use JWTAuth;
 use Auth;
 use Illuminate\Support\Str;
 use App\Services\FidelizacionCliente\DevolucionPuntosService;
+use App\Services\Comisiones\ComisionService;
+use Illuminate\Support\Facades\Log;
 
 class DevolucionVentasController extends Controller
 {
@@ -238,6 +240,16 @@ class DevolucionVentasController extends Controller
 
         $venta->refresh();
         $this->devolucionPuntosService->syncPuntosParaDevolucion($venta);
+
+        try {
+            app(ComisionService::class)->syncAjustesPorDevolucion($venta);
+        } catch (\Throwable $e) {
+            Log::error('comisiones: fallo al ajustar por devolución', [
+                'devolucion' => $venta->id,
+                'venta' => $venta->id_venta,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return Response()->json($venta, 200);
 
@@ -500,6 +512,16 @@ class DevolucionVentasController extends Controller
 
         $devolucion->refresh();
         $this->devolucionPuntosService->syncPuntosParaDevolucion($devolucion);
+
+        try {
+            app(ComisionService::class)->syncAjustesPorDevolucion($devolucion);
+        } catch (\Throwable $e) {
+            Log::error('comisiones: fallo al ajustar por devolución', [
+                'devolucion' => $devolucion->id,
+                'venta' => $devolucion->id_venta,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         DB::commit();
         return Response()->json($devolucion, 200);
