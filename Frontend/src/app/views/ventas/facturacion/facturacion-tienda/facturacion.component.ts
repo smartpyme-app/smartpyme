@@ -438,10 +438,23 @@ export class FacturacionComponent implements OnInit {
     return null;
   }
 
+  /** Asegura bodega+sucursal usables antes de filtrar documentos. */
   private sincronizarSucursalDesdeBodega(): void {
-    const bodega = this.bodegas?.find(
+    if (!this.bodegas?.length) {
+      return;
+    }
+    let bodega = this.bodegas.find(
       (b: any) => Number(b.id) === Number(this.venta?.id_bodega)
     );
+    // Bodega inválida/ausente: tomar una de la sucursal; si no hay, la primera disponible.
+    if (!bodega && this.venta?.id_sucursal != null && this.venta.id_sucursal !== '') {
+      bodega = this.bodegas.find(
+        (b: any) => Number(b.id_sucursal) === Number(this.venta.id_sucursal)
+      );
+    }
+    if (!bodega) {
+      bodega = this.bodegas[0];
+    }
     if (bodega?.id_sucursal != null && bodega.id_sucursal !== '') {
       this.venta.id_sucursal = bodega.id_sucursal;
       this.venta.id_bodega = Number(bodega.id);
@@ -457,6 +470,7 @@ export class FacturacionComponent implements OnInit {
       if (documento) {
         this.venta.id_documento = documento.id;
         this.venta.correlativo = documento.correlativo;
+        this.venta.nombre_documento = documento.nombre;
       }
       return;
     }
@@ -489,6 +503,7 @@ export class FacturacionComponent implements OnInit {
       if (documento) {
         this.venta.id_documento = documento.id;
         this.venta.correlativo = documento.correlativo;
+        this.venta.nombre_documento = documento.nombre;
       }
     }
   }
@@ -505,6 +520,7 @@ export class FacturacionComponent implements OnInit {
 
     this.venta.id_documento = documento.id;
     this.venta.correlativo = documento.correlativo;
+    this.venta.nombre_documento = documento.nombre;
     this.venta.cobrar_impuestos = false;
     this.venta.percepcion = 0;
     this.venta.iva_percibido = 0;
@@ -830,8 +846,11 @@ export class FacturacionComponent implements OnInit {
       );
       console.log(this.venta);
     }
-    // Tras resetear la venta (p. ej. al quedarse en facturación) hay que reasignar documento/correlativo.
-    this.cargarDocumentos();
+    // Solo si ya hay bodegas (p. ej. tras emitir y quedarse); en el 1er ingreso las carga loadData.
+    if (this.bodegas?.length) {
+      this.sincronizarSucursalDesdeBodega();
+      this.cargarDocumentos();
+    }
   }
   // Método para procesar productos de orden de compra
   public procesarProductosOrdenCompra(detalles: any[]) {

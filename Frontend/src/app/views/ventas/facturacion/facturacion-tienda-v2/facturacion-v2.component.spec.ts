@@ -192,6 +192,20 @@ describe('FacturacionV2Component', () => {
     expect(component.cargarDocumentos).not.toHaveBeenCalled();
   });
 
+  it('con bodega inválida toma una bodega de la sucursal para filtrar documentos', () => {
+    const component: any = Object.create(FacturacionV2Component.prototype);
+    component.bodegas = [
+      { id: 1, id_sucursal: 10, nombre: 'A' },
+      { id: 2, id_sucursal: 20, nombre: 'B' },
+    ];
+    component.venta = { id_bodega: 999, id_sucursal: 10 };
+
+    component.sincronizarSucursalDesdeBodega();
+
+    expect(component.venta.id_bodega).toBe(1);
+    expect(component.venta.id_sucursal).toBe(10);
+  });
+
   it('filtra documentos por la sucursal de la bodega seleccionada', () => {
     const component: any = Object.create(FacturacionV2Component.prototype);
     component.documentosLoadSeq = 0;
@@ -224,6 +238,7 @@ describe('FacturacionV2Component', () => {
       'Crédito fiscal',
     ]);
     expect(component.venta.id_documento).toBe(1);
+    expect(component.venta.nombre_documento).toBe('Factura');
   });
 
   it('bloquea facturar si id_documento está vacío', () => {
