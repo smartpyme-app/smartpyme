@@ -2,10 +2,7 @@
 
 namespace App\Services\Comisiones;
 
-use App\Models\Admin\EmpresaFuncionalidad;
-use App\Models\Comisiones\ComisionMovimiento;
 use App\Models\Comisiones\ComisionPeriodo;
-use App\Services\Funcionalidades\FuncionalidadAccess;
 use Carbon\Carbon;
 use Closure;
 
@@ -71,7 +68,9 @@ class ComisionPeriodoService
             return $next;
         }
 
-        return $this->periodoParaFecha((int) $original->id_empresa, Carbon::now());
+        $fechaFallback = Carbon::parse($periodo->fecha_fin)->addDay()->startOfMonth();
+
+        return $this->periodoParaFecha((int) $original->id_empresa, $fechaFallback);
     }
 
     /** @return array{findPeriodoById: Closure, findNextAbiertoAfter: Closure, firstOrCreatePeriodo: Closure} */
