@@ -27,6 +27,7 @@ export class SidebarAdminComponent implements OnInit, OnDestroy {
     public paquetesIsCollapsed:boolean = true;
     public planillaIsCollapsed:boolean = true;
     public lealtadClientesIsCollapsed:boolean = true;
+    public comisionesIsCollapsed:boolean = true;
     public restauranteIsCollapsed:boolean = true;
     public pedidosIsCollapsed:boolean = true;
     public adminIsCollapsed:boolean = true;
@@ -37,6 +38,7 @@ export class SidebarAdminComponent implements OnInit, OnDestroy {
     public items: any = [];
     public notificaciones: any = [];
     public tieneFidelizacionHabilitada = false;
+    public tieneComisionesHabilitada = false;
     public tieneModuloRestaurante = false;
     public mostrarMenuRestaurante = false;
     public mostrarMenuPedidos = false;
@@ -110,6 +112,11 @@ export class SidebarAdminComponent implements OnInit, OnDestroy {
         } else {
             this.lealtadClientesIsCollapsed = JSON.parse(localStorage.getItem('lealtadClientesIsCollapsed')!);
         }
+        if (!localStorage.getItem('comisionesIsCollapsed')) {
+            localStorage.setItem('comisionesIsCollapsed', this.comisionesIsCollapsed.toString());
+        } else {
+            this.comisionesIsCollapsed = JSON.parse(localStorage.getItem('comisionesIsCollapsed')!);
+        }
         if (!localStorage.getItem('restauranteIsCollapsed')) {
             localStorage.setItem('restauranteIsCollapsed', this.restauranteIsCollapsed.toString());
         } else {
@@ -142,6 +149,7 @@ export class SidebarAdminComponent implements OnInit, OnDestroy {
 
         this.loadNotificaciones();
         this.verificarFidelizacionHabilitada();
+        this.verificarComisionesHabilitada();
         this.verificarModuloRestauranteHabilitado();
         this.verificarDescargaDtesHabilitada();
 
@@ -149,6 +157,7 @@ export class SidebarAdminComponent implements OnInit, OnDestroy {
             .pipe(takeUntil(this.destroy$))
             .subscribe(() => {
                 this.verificarFidelizacionHabilitada();
+                this.verificarComisionesHabilitada();
                 this.verificarModuloRestauranteHabilitado();
                 this.verificarDescargaDtesHabilitada();
             });
@@ -160,6 +169,7 @@ export class SidebarAdminComponent implements OnInit, OnDestroy {
             )
             .subscribe(() => {
                 this.verificarFidelizacionHabilitada();
+                this.verificarComisionesHabilitada();
                 this.verificarModuloRestauranteHabilitado();
                 this.verificarDescargaDtesHabilitada();
                 this.actualizarMenusRestaurantePedidos();
@@ -175,6 +185,13 @@ export class SidebarAdminComponent implements OnInit, OnDestroy {
         this.funcionalidadesService.verificarAcceso('fidelizacion-clientes').subscribe({
             next: (tieneAcceso) => { this.tieneFidelizacionHabilitada = tieneAcceso && this.apiService.isFidelizacionActiva(); },
             error: () => { this.tieneFidelizacionHabilitada = false; }
+        });
+    }
+
+    private verificarComisionesHabilitada(): void {
+        this.funcionalidadesService.verificarAcceso('comisiones-vendedores').subscribe({
+            next: (tieneAcceso) => { this.tieneComisionesHabilitada = tieneAcceso; },
+            error: () => { this.tieneComisionesHabilitada = false; }
         });
     }
 
@@ -315,6 +332,15 @@ export class SidebarAdminComponent implements OnInit, OnDestroy {
         this.toggleSidebarMenu();
     }
 
+    toggleComisiones() {
+        if (this.comisionesIsCollapsed) {
+            this.closeAll();
+        }
+        this.comisionesIsCollapsed = !this.comisionesIsCollapsed;
+        localStorage.setItem('comisionesIsCollapsed', this.comisionesIsCollapsed.toString());
+        this.toggleSidebarMenu();
+    }
+
     toggleRestaurante() {
         if (this.restauranteIsCollapsed) {
             this.closeAll();
@@ -367,6 +393,8 @@ export class SidebarAdminComponent implements OnInit, OnDestroy {
         localStorage.setItem('planillaIsCollapsed', this.planillaIsCollapsed.toString());
         this.lealtadClientesIsCollapsed = true;
         localStorage.setItem('lealtadClientesIsCollapsed', this.lealtadClientesIsCollapsed.toString());
+        this.comisionesIsCollapsed = true;
+        localStorage.setItem('comisionesIsCollapsed', this.comisionesIsCollapsed.toString());
         this.restauranteIsCollapsed = true;
         localStorage.setItem('restauranteIsCollapsed', this.restauranteIsCollapsed.toString());
         this.pedidosIsCollapsed = true;

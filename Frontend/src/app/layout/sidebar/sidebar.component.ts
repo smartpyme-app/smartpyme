@@ -27,6 +27,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
     public paquetesIsCollapsed:boolean = true;
     public planillaIsCollapsed:boolean = true;
     public lealtadClientesIsCollapsed:boolean = true;
+    public comisionesIsCollapsed:boolean = true;
     public licenciasIsCollapsed:boolean = true;
     public usuario: any = {};
     public isVisible: boolean = false;
@@ -38,6 +39,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
     public notificaciones: any = [];
     public authUser: any = {};
     public tieneFidelizacionHabilitada: boolean = false;
+    public tieneComisionesHabilitada: boolean = false;
     public tieneModuloRestaurante: boolean = false;
     public tieneDescargaDtesHabilitada: boolean = false;
     /** Menú Restaurante si la funcionalidad «Restaurantes y pedidos» está activa y la empresa lo eligió en preferencias */
@@ -105,6 +107,11 @@ export class SidebarComponent implements OnInit, OnDestroy {
         }else{
             this.lealtadClientesIsCollapsed = JSON.parse(localStorage.getItem('lealtadClientesIsCollapsed')!);
         }
+        if (!localStorage.getItem('comisionesIsCollapsed')) {
+            localStorage.setItem('comisionesIsCollapsed', this.comisionesIsCollapsed.toString());
+        } else {
+            this.comisionesIsCollapsed = JSON.parse(localStorage.getItem('comisionesIsCollapsed')!);
+        }
         if (!localStorage.getItem('licenciasIsCollapsed')) {
             localStorage.setItem('licenciasIsCollapsed', this.licenciasIsCollapsed.toString());
         }else{
@@ -137,6 +144,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
         this.loadNotificaciones();
         this.usuarioLogueado();
         this.verificarFidelizacionHabilitada();
+        this.verificarComisionesHabilitada();
         this.verificarModuloRestauranteHabilitado();
         this.verificarDescargaDtesHabilitada();
 
@@ -144,6 +152,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
             .pipe(takeUntil(this.destroy$))
             .subscribe(() => {
                 this.verificarFidelizacionHabilitada();
+                this.verificarComisionesHabilitada();
                 this.verificarModuloRestauranteHabilitado();
                 this.verificarDescargaDtesHabilitada();
             });
@@ -156,6 +165,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
                 if (currentUser && (!this.authUser || this.authUser.id !== currentUser.id)) {
                     this.usuarioLogueado();
                     this.verificarFidelizacionHabilitada();
+                    this.verificarComisionesHabilitada();
                     this.verificarModuloRestauranteHabilitado();
                     this.verificarDescargaDtesHabilitada();
                 } else {
@@ -280,6 +290,15 @@ export class SidebarComponent implements OnInit, OnDestroy {
         this.toggleSidebarMenu();
     }
 
+    toggleComisiones() {
+        if (this.comisionesIsCollapsed) {
+            this.closeAll();
+        }
+        this.comisionesIsCollapsed = !this.comisionesIsCollapsed;
+        localStorage.setItem('comisionesIsCollapsed', this.comisionesIsCollapsed.toString());
+        this.toggleSidebarMenu();
+    }
+
     toggleLicencias() {
         if(this.licenciasIsCollapsed){
             this.closeAll();    
@@ -325,6 +344,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
         localStorage.setItem('paquetesIsCollapsed', this.paquetesIsCollapsed.toString());
         this.lealtadClientesIsCollapsed = true;
         localStorage.setItem('lealtadClientesIsCollapsed', this.lealtadClientesIsCollapsed.toString());
+        this.comisionesIsCollapsed = true;
+        localStorage.setItem('comisionesIsCollapsed', this.comisionesIsCollapsed.toString());
         this.restauranteIsCollapsed = true;
         localStorage.setItem('restauranteIsCollapsed', this.restauranteIsCollapsed.toString());
         this.pedidosIsCollapsed = true;
@@ -359,6 +380,17 @@ export class SidebarComponent implements OnInit, OnDestroy {
             error: (error) => {
                 console.error('Error al verificar acceso a fidelización:', error);
                 this.tieneFidelizacionHabilitada = false;
+            }
+        });
+    }
+
+    private verificarComisionesHabilitada() {
+        this.funcionalidadesService.verificarAcceso('comisiones-vendedores').subscribe({
+            next: (tieneAcceso: boolean) => {
+                this.tieneComisionesHabilitada = tieneAcceso;
+            },
+            error: () => {
+                this.tieneComisionesHabilitada = false;
             }
         });
     }

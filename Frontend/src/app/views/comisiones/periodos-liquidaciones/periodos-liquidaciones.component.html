@@ -1,0 +1,122 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+  <h2 class="page-heading">Períodos y liquidaciones</h2>
+  <button class="btn btn-default" (click)="loadPeriodos()" [disabled]="loading">
+    <i class="fa fa-refresh me-2"></i> Recargar
+  </button>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+  <div class="d-flex justify-content-end mb-3">
+    <select class="form-select w-auto" [(ngModel)]="filtroEstado" (change)="loadPeriodos()">
+      <option value="">Todos los estados</option>
+      <option value="abierto">Abierto</option>
+      <option value="cerrado">Cerrado</option>
+      <option value="pagado">Pagado</option>
+    </select>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-borderless table-hover mb-0">
+      <thead>
+        <tr>
+          <th style="width: 40px;"></th>
+          <th>Período</th>
+          <th>Estado</th>
+          <th>Liquidaciones</th>
+          <th class="text-end">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngIf="loading">
+          <td colspan="5" class="text-center">
+            <span class="badge bg-primary">Cargando...</span>
+          </td>
+        </tr>
+        <tr *ngIf="!loading && periodos.length === 0">
+          <td colspan="5" class="text-center">
+            <span class="badge bg-secondary">No hay períodos registrados</span>
+          </td>
+        </tr>
+        <ng-container *ngFor="let periodo of periodos">
+          <tr>
+            <td>
+              <button
+                *ngIf="periodo.liquidaciones?.length"
+                type="button"
+                class="btn btn-sm btn-link p-0"
+                (click)="toggleExpand(periodo.id)">
+                <i class="fa" [ngClass]="expandedPeriodoId === periodo.id ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+              </button>
+            </td>
+            <td>
+              {{ formatFecha(periodo.fecha_inicio) }} — {{ formatFecha(periodo.fecha_fin) }}
+            </td>
+            <td>
+              <span class="badge py-2" [ngClass]="estadoBadgeClass(periodo.estado)">
+                {{ periodo.estado | titlecase }}
+              </span>
+            </td>
+            <td>{{ periodo.liquidaciones?.length || 0 }}</td>
+            <td class="text-end">
+              <button
+                *ngIf="periodo.estado === 'abierto'"
+                type="button"
+                class="btn btn-warning btn-sm"
+                (click)="cerrarPeriodo(periodo)"
+                [disabled]="procesandoPeriodoId === periodo.id">
+                <span *ngIf="procesandoPeriodoId === periodo.id" class="spinner-border spinner-border-sm me-1"></span>
+                Cerrar período
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="expandedPeriodoId === periodo.id">
+            <td colspan="5" class="p-0">
+              <table class="table table-sm mb-0 ms-4" *ngIf="periodo.liquidaciones?.length; else sinLiquidaciones">
+                <thead>
+                  <tr class="text-muted">
+                    <th>Vendedor</th>
+                    <th>Total comisión</th>
+                    <th>Estado pago</th>
+                    <th class="text-end">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let liq of periodo.liquidaciones">
+                    <td>{{ liq.vendedor?.name || ('Vendedor #' + liq.id_vendedor) }}</td>
+                    <td>{{ liq.total_comision | number:'1.2-2' }}</td>
+                    <td>
+                      <span class="badge" [ngClass]="liq.pagado_at ? 'bg-success' : 'bg-secondary'">
+                        {{ liq.pagado_at ? 'Pagado' : 'Pendiente' }}
+                      </span>
+                    </td>
+                    <td class="text-end">
+                      <button
+                        type="button"
+                        class="btn btn-outline-secondary btn-sm me-1"
+                        (click)="descargarComprobante(liq.id_vendedor, periodo.id, liq.vendedor?.name || 'vendedor')"
+                        tooltip="Comprobante PDF">
+                        <i class="fa fa-file-pdf-o"></i> PDF
+                      </button>
+                      <button
+                        *ngIf="!liq.pagado_at && periodo.estado !== 'abierto'"
+                        type="button"
+                        class="btn btn-primary btn-sm"
+                        (click)="pagarLiquidacion(liq.id)"
+                        [disabled]="procesandoLiquidacionId === liq.id">
+                        <span *ngIf="procesandoLiquidacionId === liq.id" class="spinner-border spinner-border-sm me-1"></span>
+                        Pagar
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <ng-template #sinLiquidaciones>
+                <p class="text-muted ms-4 mb-2">Sin liquidaciones. Cierre el período para generarlas.</p>
+              </ng-template>
+            </td>
+          </tr>
+        </ng-container>
+      </tbody>
+    </table>
+  </div>
+</section>

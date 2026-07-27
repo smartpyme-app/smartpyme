@@ -113,6 +113,11 @@ const routes: Routes = [
           path: '',
           loadChildren: () => import('./views/fidelizacion/fidelizacion.module').then(m => m.FidelizacionModule),
         },
+        // Comisiones vendedores
+        {
+          path: '',
+          loadChildren: () => import('./views/comisiones/comisiones.module').then(m => m.ComisionesModule),
+        },
         // DTE Management
         {
           path: '',
