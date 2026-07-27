@@ -1250,14 +1250,16 @@ class VentasController extends Controller
                 }
             }
 
-            try {
-                $venta->load('detalles.producto');
-                app(ComisionService::class)->registrarVentaPagada($venta);
-            } catch (\Throwable $e) {
-                Log::error('comisiones: fallo al registrar venta', [
-                    'venta' => $venta->id,
-                    'error' => $e->getMessage(),
-                ]);
+            if ($venta->estado == 'Pagada') {
+                try {
+                    $venta->load('detalles.producto');
+                    app(ComisionService::class)->registrarVentaPagada($venta);
+                } catch (\Throwable $e) {
+                    Log::error('comisiones: fallo al registrar venta', [
+                        'venta' => $venta->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
             }
 
             DB::commit();

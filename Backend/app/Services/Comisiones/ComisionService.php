@@ -32,12 +32,28 @@ class ComisionService
     /** @var Closure(array<string, mixed>, array<string, mixed>): object */
     private Closure $persistirAjuste;
 
+    /** @var Closure(int): \Illuminate\Support\Collection<int, ComisionMovimiento> */
+    private Closure $obtenerMovimientosVenta;
+
+    /** @var Closure(int): ?Venta */
+    private Closure $obtenerVentaConDetalles;
+
+    /** @var Closure(int): \Illuminate\Support\Collection<int, Devolucion> */
+    private Closure $obtenerDevolucionesActivas;
+
+    /** @var Closure(int, int): void */
+    private Closure $eliminarAjusteDevolucion;
+
     /**
      * @param  Closure(int, string): bool|null  $tieneFuncionalidad
      * @param  Closure(int): array<string, mixed>|null  $obtenerConfigComisiones
      * @param  Closure(array<string, mixed>, array<string, mixed>): object|null  $persistirMovimiento
      * @param  Closure(array<string, mixed>, array<string, mixed>): object|null  $persistirAjuste
      * @param  Closure(int): array<string, mixed>|null  $obtenerConfigGiftCards
+     * @param  Closure(int): \Illuminate\Support\Collection<int, ComisionMovimiento>|null  $obtenerMovimientosVenta
+     * @param  Closure(int): ?Venta|null  $obtenerVentaConDetalles
+     * @param  Closure(int): \Illuminate\Support\Collection<int, Devolucion>|null  $obtenerDevolucionesActivas
+     * @param  Closure(int, int): void|null  $eliminarAjusteDevolucion
      */
     public function __construct(
         private ComisionPeriodoService $periodoService,
@@ -47,7 +63,11 @@ class ComisionService
         ?Closure $obtenerConfigComisiones = null,
         ?Closure $persistirMovimiento = null,
         ?Closure $persistirAjuste = null,
-        ?Closure $obtenerConfigGiftCards = null
+        ?Closure $obtenerConfigGiftCards = null,
+        ?Closure $obtenerMovimientosVenta = null,
+        ?Closure $obtenerVentaConDetalles = null,
+        ?Closure $obtenerDevolucionesActivas = null,
+        ?Closure $eliminarAjusteDevolucion = null
     ) {
         $this->tieneFuncionalidad = $tieneFuncionalidad
             ?? fn (int $idEmpresa, string $slug) => FuncionalidadAccess::empresaTieneSlug($idEmpresa, $slug);
@@ -61,6 +81,28 @@ class ComisionService
         $this->persistirAjuste = $persistirAjuste
             ?? fn (array $where, array $values) => ComisionMovimiento::withoutGlobalScope('empresa')
                 ->updateOrCreate($where, $values);
+        $this->obtenerMovimientosVenta = $obtenerMovimientosVenta
+            ?? fn (int $idVenta) => ComisionMovimiento::withoutGlobalScope('empresa')
+                ->where('id_venta', $idVenta)
+                ->where('origen', ComisionMovimiento::ORIGEN_VENTA)
+                ->get();
+        $this->obtenerVentaConDetalles = $obtenerVentaConDetalles
+            ?? fn (int $idVenta) => Venta::with('detalles')->find($idVenta);
+        $this->obtenerDevolucionesActivas = $obtenerDevolucionesActivas
+            ?? fn (int $idVenta) => Devolucion::withoutGlobalScope('empresa')
+                ->where('id_venta', $idVenta)
+                ->where('enable', true)
+                ->where('tipo', '!=', 'descuento_ajuste')
+                ->with('detalles')
+                ->get();
+        $this->eliminarAjusteDevolucion = $eliminarAjusteDevolucion
+            ?? function (int $idEmpresa, int $idMovimientoOrigen): void {
+                ComisionMovimiento::withoutGlobalScope('empresa')
+                    ->where('id_empresa', $idEmpresa)
+                    ->where('origen', ComisionMovimiento::ORIGEN_AJUSTE_DEVOLUCION)
+                    ->where('id_movimiento_origen', $idMovimientoOrigen)
+                    ->delete();
+            };
     }
 
     public function registrarVentaPagada(object $venta): void
@@ -142,10 +184,7 @@ class ComisionService
 
     public function ajustarPorAnulacionVenta(int $idVenta, ?DateTimeInterface $fechaEvento = null): void
     {
-        $movimientos = ComisionMovimiento::withoutGlobalScope('empresa')
-            ->where('id_venta', $idVenta)
-            ->where('origen', ComisionMovimiento::ORIGEN_VENTA)
-            ->get();
+        $movimientos = ($this->obtenerMovimientosVenta)($idVenta);
 
         if ($movimientos->isEmpty()) {
             return;
@@ -178,7 +217,7 @@ class ComisionService
         }
 
         $idVenta = (int) $devolucion->id_venta;
-        $venta = Venta::with('detalles')->find($idVenta);
+        $venta = ($this->obtenerVentaConDetalles)($idVenta);
         if ($venta === null) {
             return;
         }
@@ -186,17 +225,9 @@ class ComisionService
         $config = ($this->obtenerConfigComisiones)((int) $devolucion->id_empresa);
         $baseCalculo = $config['base_calculo'] ?? 'subtotal_sin_iva';
 
-        $devolucionesActivas = Devolucion::withoutGlobalScope('empresa')
-            ->where('id_venta', $idVenta)
-            ->where('enable', true)
-            ->where('tipo', '!=', 'descuento_ajuste')
-            ->with('detalles')
-            ->get();
+        $devolucionesActivas = ($this->obtenerDevolucionesActivas)($idVenta);
 
-        $movimientos = ComisionMovimiento::withoutGlobalScope('empresa')
-            ->where('id_venta', $idVenta)
-            ->where('origen', ComisionMovimiento::ORIGEN_VENTA)
-            ->get();
+        $movimientos = ($this->obtenerMovimientosVenta)($idVenta);
 
         if ($movimientos->isEmpty()) {
             return;
@@ -238,11 +269,7 @@ class ComisionService
             );
 
             if ($montoBaseDevueltoAcumulado <= 0) {
-                ComisionMovimiento::withoutGlobalScope('empresa')
-                    ->where('id_empresa', (int) $movimiento->id_empresa)
-                    ->where('origen', ComisionMovimiento::ORIGEN_AJUSTE_DEVOLUCION)
-                    ->where('id_movimiento_origen', (int) $movimiento->id)
-                    ->delete();
+                ($this->eliminarAjusteDevolucion)((int) $movimiento->id_empresa, (int) $movimiento->id);
 
                 continue;
             }
