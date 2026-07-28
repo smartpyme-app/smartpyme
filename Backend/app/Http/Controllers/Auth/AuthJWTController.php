@@ -576,6 +576,15 @@ class AuthJWTController extends Controller
                 $empresa->fecha_cancelacion = now();
                 $empresa->save();
 
+                $suscripcion->setRelation('empresa', $empresa);
+                $suscripcion->loadMissing(['plan']);
+                app(\App\Services\Suscripcion\RegistrarSuscripcionBaja::class)->registrar(
+                    $suscripcion,
+                    \App\Models\SuscripcionBaja::MOTIVO_CANCELACION_VOLUNTARIA,
+                    now(),
+                    $request->motivo_cancelacion
+                );
+
                 // No desactivamos al usuario inmediatamente, lo haremos cuando venza su período actual
                 Log::info('Suscripción cancelada', [
                     'usuario_id' => $usuario->id,

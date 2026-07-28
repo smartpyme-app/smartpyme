@@ -109,6 +109,11 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->appendOutputTo(storage_path('logs/suscripciones-reporte-flujo-caja-mensual.log'));
 
+        $schedule->command('suscripciones:reporte-bajas-mensual')
+            ->monthlyOn(1, '08:30')
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/suscripciones-reporte-bajas-mensual.log'));
+
         foreach ([7, 15, 22, 31] as $diaReporteCategoriaSucursal) {
             $schedule->command('reporte:ventas-por-categoria-sucursal')
                 ->monthlyOn($diaReporteCategoriaSucursal, '08:00')

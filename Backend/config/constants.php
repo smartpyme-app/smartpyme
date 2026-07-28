@@ -99,6 +99,9 @@ return [
     /** Reporte mensual de flujo de caja (Excel): entradas esperadas por quincena. */
     'MAIL_REPORTE_FLUJO_CAJA_MENSUAL' => "alejandro.a@smartpyme.sv",
 
+    /** Reporte mensual de bajas (HTML+Excel). Destinatario de diseño/pruebas. */
+    'MAIL_REPORTE_BAJAS_SUSCRIPCION' => 'alejandro.a@smartpyme.sv',
+
     'FRECUENCIA_PAGO_MENSUAL' => 'Mensual',
     'FRECUENCIA_PAGO_TRIMESTRAL' => 'Trimestral',
     'FRECUENCIA_PAGO_ANUAL' => 'Anual',
