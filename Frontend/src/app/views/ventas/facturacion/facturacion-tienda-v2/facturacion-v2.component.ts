@@ -23,6 +23,8 @@ import { VentaDetallesV2Component } from './detalles/venta-detalles-v2.component
 import { CrearProyectoComponent } from '@shared/modals/crear-proyecto/crear-proyecto.component';
 import { MetodosDePagoComponent } from '../facturacion-tienda/metodos-de-pago/metodos-de-pago.component';
 import { FidelizacionService, PuntosDisponiblesInfo, ConfiguracionCliente } from '@services/fidelizacion.service';
+import { GiftCardsService, GiftCardLookup } from '@services/gift-cards.service';
+import { esFormaPagoGiftCard, montoPagoGiftCardVenta, ventaUsaGiftCard } from '@utils/gift-card.util';
 import { MHService } from '@services/MH.service';
 import { RestauranteService } from '@services/restaurante.service';
 import Swal from 'sweetalert2';
@@ -100,6 +102,10 @@ export class FacturacionV2Component implements OnInit {
   public tieneFidelizacionHabilitada: boolean = false;
   public mensajeValidacionFecha: string = '';
   public mensajeErrorBanco: string = '';
+  public giftCardsActivo = false;
+  public giftCardInfo: GiftCardLookup | null = null;
+  public giftCardLookupError = '';
+  public giftCardLookupLoading = false;
 
   /** Si está activo, se muestra el monto; el importe es siempre la suma de `cuenta_a_terceros` en las líneas (no se edita en cabecera). */
   public habilitarCuentaTerceros = false;
@@ -153,6 +159,7 @@ export class FacturacionV2Component implements OnInit {
     private funcionalidadesService: FuncionalidadesService,
     private restauranteService: RestauranteService,
     private fidelizacionService: FidelizacionService,
+    private giftCardsService: GiftCardsService,
     private countryI18n: CountryI18nService,
   ) {
     this.router.routeReuseStrategy.shouldReuseRoute = function () {
@@ -262,6 +269,7 @@ export class FacturacionV2Component implements OnInit {
     this.loadData();
     this.verificarAccesoPropina();
     this.verificarFidelizacionHabilitada();
+    this.verificarGiftCardsActivo();
   }
 
   public loadData() {
@@ -1047,6 +1055,7 @@ export class FacturacionV2Component implements OnInit {
     this.venta.efectivo = this.formaPagos.find(
       (item: any) => item.nombre == 'Efectivo'
     )?.total;
+    this.syncGiftCardFieldsAfterPagoChange();
     this.actualizarCambioEfectivo();
     console.log(this.venta);
   }
@@ -1644,9 +1653,10 @@ export class FacturacionV2Component implements OnInit {
                 item.total = null;
             });
         }
+        this.syncGiftCardFieldsAfterPagoChange();
 
         // Si módulo bancos: asignar banco por defecto del método de pago
-        if (this.apiService.isModuloBancos() && this.venta.forma_pago && this.venta.forma_pago !== 'Efectivo' && this.venta.forma_pago !== 'Wompi' && this.venta.forma_pago !== 'Multiple') {
+        if (this.apiService.isModuloBancos() && this.requiereBanco()) {
             const formaPagoSeleccionada = this.formaPagos.find((fp: any) => fp.nombre === this.venta.forma_pago);
             if (formaPagoSeleccionada?.banco?.nombre_banco) {
                 this.venta.detalle_banco = formaPagoSeleccionada.banco.nombre_banco;
@@ -1738,6 +1748,10 @@ export class FacturacionV2Component implements OnInit {
     }
 
     if (this.tieneDetallesInvalidosParaFacturar()) {
+      return;
+    }
+
+    if (!this.validarGiftCardAntesFacturar()) {
       return;
     }
 
@@ -1932,7 +1946,85 @@ export class FacturacionV2Component implements OnInit {
     return this.venta.forma_pago &&
            this.venta.forma_pago !== 'Efectivo' &&
            this.venta.forma_pago !== 'Wompi' &&
-           this.venta.forma_pago !== 'Multiple';
+           this.venta.forma_pago !== 'Multiple' &&
+           !esFormaPagoGiftCard(this.venta.forma_pago);
+  }
+
+  public esFormaPagoGiftCard(nombre: string | null | undefined): boolean {
+    return esFormaPagoGiftCard(nombre);
+  }
+
+  public requiereCodigoGiftCard(): boolean {
+    return this.giftCardsActivo && ventaUsaGiftCard(this.venta, this.formaPagos);
+  }
+
+  public consultarGiftCard(): void {
+    const codigo = (this.venta.codigo_gift_card || '').trim();
+    this.giftCardLookupError = '';
+    this.giftCardInfo = null;
+
+    if (!codigo) {
+      return;
+    }
+
+    this.giftCardLookupLoading = true;
+    this.giftCardsService.getByCodigo(codigo).subscribe({
+      next: (response) => {
+        this.giftCardInfo = response.data;
+        this.giftCardLookupLoading = false;
+      },
+      error: (error) => {
+        this.giftCardInfo = null;
+        this.giftCardLookupError = error?.error?.message || 'Gift card no encontrada';
+        this.giftCardLookupLoading = false;
+      },
+    });
+  }
+
+  private validarGiftCardAntesFacturar(): boolean {
+    if (!this.requiereCodigoGiftCard()) {
+      return true;
+    }
+
+    const codigo = (this.venta.codigo_gift_card || '').trim();
+    if (!codigo) {
+      this.alertService.error('Ingrese el código de la gift card.');
+      return false;
+    }
+
+    const montoGift = montoPagoGiftCardVenta(this.venta, this.formaPagos);
+    if (this.giftCardInfo && this.giftCardInfo.codigo !== codigo) {
+      this.alertService.warning('Gift card', 'Consulte el saldo del código ingresado antes de facturar.');
+      return false;
+    }
+
+    if (this.giftCardInfo && this.giftCardInfo.estado !== 'activa') {
+      this.alertService.error(`La gift card está ${this.giftCardInfo.estado}.`);
+      return false;
+    }
+
+    if (this.giftCardInfo && this.giftCardInfo.saldo < montoGift) {
+      this.alertService.error('Saldo insuficiente en la gift card.');
+      return false;
+    }
+
+    this.venta.codigo_gift_card = codigo;
+    return true;
+  }
+
+  private syncGiftCardFieldsAfterPagoChange(): void {
+    if (!this.requiereCodigoGiftCard()) {
+      this.venta.codigo_gift_card = '';
+      this.giftCardInfo = null;
+      this.giftCardLookupError = '';
+    }
+  }
+
+  private verificarGiftCardsActivo(): void {
+    this.funcionalidadesService.verificarAcceso('gift-cards').subscribe({
+      next: (acceso) => { this.giftCardsActivo = acceso; },
+      error: () => { this.giftCardsActivo = false; },
+    });
   }
 
   // Guardar venta

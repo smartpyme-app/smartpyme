@@ -462,7 +462,29 @@
                 </div>
             </div>
         }
-        @if (venta.cotizacion != 1 && venta.forma_pago && venta.forma_pago !== 'Efectivo' && venta.forma_pago !== 'Wompi') {
+        @if (giftCardsActivo && requiereCodigoGiftCard()) {
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="codigo_gift_card">Código gift card</label>
+                <div class="input-group">
+                    <input id="codigo_gift_card" autocomplete="off" class="form-control" type="text"
+                        [(ngModel)]="venta.codigo_gift_card" name="codigo_gift_card"
+                        (blur)="consultarGiftCard()" placeholder="Ej. GC-XXXX">
+                    <button type="button" class="btn btn-outline-secondary" (click)="consultarGiftCard()"
+                        [disabled]="giftCardLookupLoading">
+                        <i class="fa fa-search"></i>
+                    </button>
+                </div>
+                @if (giftCardInfo) {
+                    <small class="text-muted d-block mt-1">
+                        Saldo: {{ giftCardInfo.saldo | currency }} · {{ giftCardInfo.estado }}
+                    </small>
+                }
+                @if (giftCardLookupError) {
+                    <small class="text-danger d-block mt-1">{{ giftCardLookupError }}</small>
+                }
+            </div>
+        }
+        @if (venta.cotizacion != 1 && venta.forma_pago && venta.forma_pago !== 'Efectivo' && venta.forma_pago !== 'Wompi' && !esFormaPagoGiftCard(venta.forma_pago)) {
             <div class="form-group col-md-6 col-lg-3">
                 <label for="detalle_banco">Bancos</label>
                 <select name="detalle_banco" [(ngModel)]="venta.detalle_banco" class="form-select">

@@ -28,6 +28,8 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { FilterPipe } from '@pipes/filter.pipe';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { FidelizacionService, PuntosDisponiblesInfo, ConfiguracionCliente } from '@services/fidelizacion.service';
+import { GiftCardsService, GiftCardLookup } from '@services/gift-cards.service';
+import { esFormaPagoGiftCard, montoPagoGiftCardVenta, ventaUsaGiftCard } from '@utils/gift-card.util';
 import Swal from 'sweetalert2';
 import { BsModalRef, BsModalService } from 'ngx-bootstrap/modal';
 import { CountryI18nService } from '@services/country-i18n.service';
@@ -112,6 +114,10 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
   public tieneFidelizacionHabilitada: boolean = false;
   public mensajeValidacionFecha: string = '';
   public mensajeErrorBanco: string = '';
+  public giftCardsActivo = false;
+  public giftCardInfo: GiftCardLookup | null = null;
+  public giftCardLookupError = '';
+  public giftCardLookupLoading = false;
   public contabilidadHabilitada: boolean = false;
 
   /** Si está activo, se muestra el monto; el importe es siempre la suma de `cuenta_a_terceros` en las líneas (no se edita en cabecera). */
@@ -177,7 +183,8 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     private sharedDataService: SharedDataService,
     private fidelizacionService: FidelizacionService,
     private funcionalidadesService: FuncionalidadesService,
-    private restauranteService: RestauranteService
+    private restauranteService: RestauranteService,
+    private giftCardsService: GiftCardsService,
   ) {
     super(modalManager, alertService);
     this.router.routeReuseStrategy.shouldReuseRoute = function () {
@@ -319,6 +326,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     this.loadData();
     this.verificarAccesoPropina();
     this.verificarFidelizacionHabilitada();
+    this.verificarGiftCardsActivo();
   }
 
   verificarAccesoContabilidad() {
@@ -1208,6 +1216,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     this.venta.efectivo = this.formaPagos.find(
       (item: any) => item.nombre == 'Efectivo'
     )?.total;
+    this.syncGiftCardFieldsAfterPagoChange();
     this.actualizarCambioEfectivo();
     console.log(this.venta);
   }
@@ -1722,21 +1731,19 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
                 item.total = null;
             });
         }
+        this.syncGiftCardFieldsAfterPagoChange();
 
-        // Si el método de pago no es "Efectivo", "Wompi" ni "Multiple", asignar el banco por defecto del método de pago
-        if (this.venta.forma_pago && this.venta.forma_pago !== 'Efectivo' && this.venta.forma_pago !== 'Multiple' && this.venta.forma_pago !== 'Wompi') {
+        // Si el método de pago requiere banco, asignar el banco por defecto del método de pago
+        if (this.requiereBanco()) {
             const formaPagoSeleccionada = this.formaPagos.find((fp: any) => fp.nombre === this.venta.forma_pago);
 
             if (formaPagoSeleccionada && formaPagoSeleccionada.banco && formaPagoSeleccionada.banco.nombre_banco) {
-                // Si la forma de pago tiene un banco asignado, usarlo
                 this.venta.detalle_banco = formaPagoSeleccionada.banco.nombre_banco;
             } else {
-                // Si no tiene banco asignado, limpiar el campo
                 this.venta.detalle_banco = '';
             }
             this.mensajeErrorBanco = '';
-        } else if (this.venta.forma_pago === 'Efectivo' || this.venta.forma_pago === 'Wompi') {
-            // Si es efectivo o Wompi, limpiar el campo de banco
+        } else if (!this.requiereBanco()) {
             this.venta.detalle_banco = '';
             this.mensajeErrorBanco = '';
         }
@@ -1991,6 +1998,10 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
       return;
     }
 
+    if (!this.validarGiftCardAntesFacturar()) {
+      return;
+    }
+
     if (this.venta.cobrar_impuestos) {
       const sinImpuestosEnVenta =
         !this.venta.impuestos ||
@@ -2100,7 +2111,92 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     return this.venta.forma_pago &&
            this.venta.forma_pago !== 'Efectivo' &&
            this.venta.forma_pago !== 'Wompi' &&
-           this.venta.forma_pago !== 'Multiple';
+           this.venta.forma_pago !== 'Multiple' &&
+           !esFormaPagoGiftCard(this.venta.forma_pago);
+  }
+
+  public esFormaPagoGiftCard(nombre: string | null | undefined): boolean {
+    return esFormaPagoGiftCard(nombre);
+  }
+
+  public requiereCodigoGiftCard(): boolean {
+    return this.giftCardsActivo && ventaUsaGiftCard(this.venta, this.formaPagos);
+  }
+
+  public consultarGiftCard(): void {
+    const codigo = (this.venta.codigo_gift_card || '').trim();
+    this.giftCardLookupError = '';
+    this.giftCardInfo = null;
+
+    if (!codigo) {
+      return;
+    }
+
+    this.giftCardLookupLoading = true;
+    this.giftCardsService.getByCodigo(codigo).subscribe({
+      next: (response) => {
+        this.giftCardInfo = response.data;
+        this.giftCardLookupLoading = false;
+        this.cdr.markForCheck();
+      },
+      error: (error) => {
+        this.giftCardInfo = null;
+        this.giftCardLookupError = error?.error?.message || 'Gift card no encontrada';
+        this.giftCardLookupLoading = false;
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  private validarGiftCardAntesFacturar(): boolean {
+    if (!this.requiereCodigoGiftCard()) {
+      return true;
+    }
+
+    const codigo = (this.venta.codigo_gift_card || '').trim();
+    if (!codigo) {
+      this.alertService.error('Ingrese el código de la gift card.');
+      return false;
+    }
+
+    const montoGift = montoPagoGiftCardVenta(this.venta, this.formaPagos);
+    if (this.giftCardInfo && this.giftCardInfo.codigo !== codigo) {
+      this.alertService.warning('Gift card', 'Consulte el saldo del código ingresado antes de facturar.');
+      return false;
+    }
+
+    if (this.giftCardInfo && this.giftCardInfo.estado !== 'activa') {
+      this.alertService.error(`La gift card está ${this.giftCardInfo.estado}.`);
+      return false;
+    }
+
+    if (this.giftCardInfo && this.giftCardInfo.saldo < montoGift) {
+      this.alertService.error('Saldo insuficiente en la gift card.');
+      return false;
+    }
+
+    this.venta.codigo_gift_card = codigo;
+    return true;
+  }
+
+  private syncGiftCardFieldsAfterPagoChange(): void {
+    if (!this.requiereCodigoGiftCard()) {
+      this.venta.codigo_gift_card = '';
+      this.giftCardInfo = null;
+      this.giftCardLookupError = '';
+    }
+  }
+
+  private verificarGiftCardsActivo(): void {
+    this.funcionalidadesService.verificarAcceso('gift-cards').subscribe({
+      next: (acceso) => {
+        this.giftCardsActivo = acceso;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.giftCardsActivo = false;
+      },
+    });
   }
 
   // Guardar venta

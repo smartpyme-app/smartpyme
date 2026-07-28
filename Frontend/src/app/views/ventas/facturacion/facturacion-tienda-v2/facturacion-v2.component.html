@@ -384,7 +384,23 @@
                 <app-metodos-de-pago [venta]="venta" [formaPagos]="formaPagos" (update)="totalPorMetodoDePago()"></app-metodos-de-pago>
             </div>
         </div>
-        <div class="form-group col-md-6 col-lg-3" *ngIf="venta.forma_pago != 'Efectivo' && venta.forma_pago != 'Wompi' && venta.forma_pago != 'Multiple'">
+        <div class="form-group col-md-6 col-lg-3" *ngIf="giftCardsActivo && requiereCodigoGiftCard()">
+            <label for="codigo_gift_card">Código gift card</label>
+            <div class="input-group">
+                <input id="codigo_gift_card" autocomplete="off" class="form-control" type="text"
+                    [(ngModel)]="venta.codigo_gift_card" name="codigo_gift_card"
+                    (blur)="consultarGiftCard()" placeholder="Ej. GC-XXXX">
+                <button type="button" class="btn btn-outline-secondary" (click)="consultarGiftCard()"
+                    [disabled]="giftCardLookupLoading">
+                    <i class="fa fa-search"></i>
+                </button>
+            </div>
+            <small class="text-muted d-block mt-1" *ngIf="giftCardInfo">
+                Saldo: {{ giftCardInfo.saldo | currency }} · {{ giftCardInfo.estado }}
+            </small>
+            <small class="text-danger d-block mt-1" *ngIf="giftCardLookupError">{{ giftCardLookupError }}</small>
+        </div>
+        <div class="form-group col-md-6 col-lg-3" *ngIf="requiereBanco()">
             <label for="detalle_banco">Bancos <span class="text-danger">*</span></label>
             <select name="detalle_banco" [(ngModel)]="venta.detalle_banco" (change)="mensajeErrorBanco = ''" class="form-select" [class.is-invalid]="mensajeErrorBanco" required>
                 <option value="">Seleccione aquí</option>
