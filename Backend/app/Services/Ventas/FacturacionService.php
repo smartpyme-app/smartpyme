@@ -534,6 +534,15 @@ class FacturacionService
                             'error' => $e->getMessage(),
                         ]);
                     }
+
+                    try {
+                        app(\App\Services\GiftCards\GiftCardEmitService::class)->emitirDesdeVenta($venta);
+                    } catch (\Throwable $e) {
+                        Log::error('gift-cards: fallo al emitir desde venta', [
+                            'venta' => $venta->id,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
                 }
     
                 DB::commit();

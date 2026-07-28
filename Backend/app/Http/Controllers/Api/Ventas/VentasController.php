@@ -16,6 +16,7 @@ use Carbon\Carbon;
 use App\Services\FidelizacionCliente\ConsumoPuntosService as FidelizacionConsumoPuntosService;
 use App\Services\FidelizacionCliente\ReversionPuntosService;
 use App\Services\Comisiones\ComisionService;
+use App\Services\GiftCards\GiftCardEmitService;
 use Illuminate\Support\Facades\Log;
 
 use App\Models\Ventas\Venta;
@@ -782,6 +783,15 @@ class VentasController extends Controller
                     app(ComisionService::class)->registrarVentaPagada($venta);
                 } catch (\Throwable $e) {
                     Log::error('comisiones: fallo al registrar venta', [
+                        'venta' => $venta->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+
+                try {
+                    app(GiftCardEmitService::class)->emitirDesdeVenta($venta);
+                } catch (\Throwable $e) {
+                    Log::error('gift-cards: fallo al emitir desde venta', [
                         'venta' => $venta->id,
                         'error' => $e->getMessage(),
                     ]);
