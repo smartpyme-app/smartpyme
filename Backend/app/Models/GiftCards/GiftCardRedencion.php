@@ -26,11 +26,13 @@ class GiftCardRedencion extends Model
         'id_categoria',
         'id_subcategoria',
         'id_comision_movimiento',
+        'reversed_at',
     ];
 
     protected $casts = [
         'monto' => 'decimal:4',
         'saldo_resultante' => 'decimal:4',
+        'reversed_at' => 'datetime',
     ];
 
     protected static function boot()

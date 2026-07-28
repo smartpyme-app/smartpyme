@@ -17,6 +17,7 @@ use App\Services\FidelizacionCliente\ConsumoPuntosService as FidelizacionConsumo
 use App\Services\FidelizacionCliente\ReversionPuntosService;
 use App\Services\Comisiones\ComisionService;
 use App\Services\GiftCards\GiftCardEmitService;
+use App\Services\GiftCards\GiftCardReverseService;
 use Illuminate\Support\Facades\Log;
 
 use App\Models\Ventas\Venta;
@@ -591,7 +592,16 @@ class VentasController extends Controller
                 }
 
                 try {
-                    app(ComisionService::class)->ajustarPorAnulacionVenta($venta);
+                    app(GiftCardReverseService::class)->revertirPorAnulacion($venta);
+                } catch (\Throwable $e) {
+                    Log::error('gift-cards: fallo al revertir redención por anulación', [
+                        'venta' => $venta->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+
+                try {
+                    app(ComisionService::class)->ajustarPorAnulacionVenta((int) $venta->id);
                 } catch (\Throwable $e) {
                     Log::error('comisiones: fallo al ajustar por anulación', [
                         'venta' => $venta->id,

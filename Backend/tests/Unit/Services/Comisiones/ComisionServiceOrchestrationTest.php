@@ -387,4 +387,29 @@ class ComisionServiceOrchestrationTest extends TestCase
         $this->assertSame([], $guardados);
         $this->assertCount(1, $eliminados);
     }
+
+    public function test_prorrateo_gift_evita_doble_comision(): void
+    {
+        $calculator = new ComisionBaseCalculator();
+        $detalle = (object) [
+            'gravada' => 100.0,
+            'exenta' => 0.0,
+            'no_sujeta' => 0.0,
+        ];
+
+        $fraccionGift = 0.4;
+        $baseCompleta = $calculator->calcular($detalle, 'subtotal_sin_iva');
+        $baseVenta = round($baseCompleta * (1 - $fraccionGift), 4);
+
+        $detalleRedencion = clone $detalle;
+        foreach (['gravada', 'exenta', 'no_sujeta'] as $campo) {
+            $detalleRedencion->{$campo} = round((float) $detalle->{$campo} * $fraccionGift, 4);
+        }
+        $baseRedencion = $calculator->calcular($detalleRedencion, 'subtotal_sin_iva');
+
+        $this->assertSame(60.0, $baseVenta);
+        $this->assertSame(40.0, $baseRedencion);
+        $this->assertSame(100.0, round($baseVenta + $baseRedencion, 4));
+        $this->assertLessThan($baseCompleta * 2, $baseVenta + $baseRedencion);
+    }
 }
