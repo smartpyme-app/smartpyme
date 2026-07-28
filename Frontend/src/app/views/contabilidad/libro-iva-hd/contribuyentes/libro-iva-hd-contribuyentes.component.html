@@ -1,0 +1,144 @@
+<section class="bg-white p-4 rounded mb-3">
+  <h2 class="mb-0">Libro de Ventas a Contribuyentes</h2>
+</section>
+
+<div class="bg-white p-4 rounded mb-3">
+  <div class="d-flex flex-wrap gap-2 mb-3">
+    <app-libro-iva-hd-nav />
+    <div class="ms-auto d-flex gap-2 align-items-center">
+      <app-libro-iva-periodo-filtros
+        [filtros]="filtros"
+        [years]="years"
+        [sucursales]="sucursales"
+        (periodoChange)="loadData()"
+      />
+      <div class="dropdown">
+        <button class="btn btn-default dropdown-toggle" type="button" data-bs-toggle="dropdown" [disabled]="downloading">
+          Descargas
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li><button class="dropdown-item" (click)="descargarExcel()">{{ 'country.tax.libroIva.fiscalSalesExcel' | translate }}</button></li>
+          <li><button class="dropdown-item" (click)="descargarPdf()">{{ 'country.tax.libroIva.fiscalSalesPdf' | translate }}</button></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  @if (loading) {
+    <div class="card border-0 shadow-sm">
+      <div class="card-body py-5 text-center"><span class="badge bg-primary">Cargando...</span></div>
+    </div>
+  } @else if (filas.length === 0) {
+    <div class="card border-0 shadow-sm bg-light bg-opacity-25">
+      <div class="card-body py-5 text-center">
+        <p class="text-muted mb-0">No hay registros para el periodo seleccionado.</p>
+      </div>
+    </div>
+  } @else {
+    <div class="table-responsive bg-white">
+      <table class="table table-bordered table-hover mr-top">
+        <thead>
+          <tr>
+            <th>No.</th>
+            <th>Fecha<br>Emisión</th>
+            <th>Numero<br>Correlativo de<br>Documento</th>
+            <th>NRC</th>
+            <th>Nombre del Contribuyente</th>
+            <th>Ventas<br>Exentas</th>
+            <th>No Sujetas</th>
+            <th>Gravadas<br>Locales</th>
+            <th>Débito Fiscal</th>
+            <th>Ventas a Cuenta de<br>Terceros</th>
+            <th>Debito F. a Cta.<br>De Terceros</th>
+            <th>IVA Percibido</th>
+            <th>IVA Retenido</th>
+            <th>Total Ventas</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of filas; track row.no) {
+            <tr>
+              <td>{{ row.no }}</td>
+              <td>{{ row.fecha | date:'dd/MM/yyyy' }}</td>
+              <td>{{ row.correlativo }}</td>
+              <td>{{ row.nrc }}</td>
+              <td>{{ row.nombre }}</td>
+              <td class="text-end">{{ row.exentas | currency }}</td>
+              <td class="text-end">{{ row.no_sujetas | currency }}</td>
+              <td class="text-end">{{ row.gravadas_locales | currency }}</td>
+              <td class="text-end">{{ row.debito_fiscal | currency }}</td>
+              <td class="text-end">{{ row.cta_terceros | currency }}</td>
+              <td class="text-end">{{ row.debito_cta_terceros | currency }}</td>
+              <td class="text-end">{{ row.iva_percibido | currency }}</td>
+              <td class="text-end">{{ row.iva_retenido | currency }}</td>
+              <td class="text-end">{{ row.total | currency }}</td>
+            </tr>
+          }
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="5" class="text-center"><b>TOTAL</b></td>
+            <td class="text-end"><b>{{ totalExentas | currency }}</b></td>
+            <td class="text-end"><b>{{ totalNoSujetas | currency }}</b></td>
+            <td class="text-end"><b>{{ totalGravadasLocales | currency }}</b></td>
+            <td class="text-end"><b>{{ totalDebitoFiscal | currency }}</b></td>
+            <td class="text-end"><b>{{ totalCtaTerceros | currency }}</b></td>
+            <td class="text-end"><b>{{ totalDebitoCtaTerceros | currency }}</b></td>
+            <td class="text-end"><b>{{ totalIvaPercibido | currency }}</b></td>
+            <td class="text-end"><b>{{ totalIvaRetenido | currency }}</b></td>
+            <td class="text-end"><b>{{ totalGeneral | currency }}</b></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <div class="table-responsive bg-white mt-3">
+      <table class="table table-bordered mb-0">
+        <thead>
+          <tr>
+            <th>Resumen Operaciones</th>
+            <th>Gravadas</th>
+            <th>Exportaciones</th>
+            <th>Debito Fiscal</th>
+            <th>IVA Percibido</th>
+            <th>IVA Retenido</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><b>Total</b></td>
+            <td class="text-end">{{ resumenOperaciones.totales_detalle.gravadas | currency }}</td>
+            <td class="text-end">{{ resumenOperaciones.totales_detalle.exportaciones | currency }}</td>
+            <td class="text-end">{{ resumenOperaciones.totales_detalle.debito_fiscal | currency }}</td>
+            <td class="text-end">{{ resumenOperaciones.totales_detalle.iva_percibido | currency }}</td>
+            <td class="text-end">{{ resumenOperaciones.totales_detalle.iva_retenido | currency }}</td>
+          </tr>
+          <tr>
+            <td>Consumidor Final</td>
+            <td class="text-end">{{ resumenOperaciones.consumidor_final.gravadas | currency }}</td>
+            <td class="text-end">{{ resumenOperaciones.consumidor_final.exportaciones | currency }}</td>
+            <td class="text-end">{{ resumenOperaciones.consumidor_final.debito_fiscal | currency }}</td>
+            <td class="text-end">{{ resumenOperaciones.consumidor_final.iva_percibido | currency }}</td>
+            <td class="text-end">{{ resumenOperaciones.consumidor_final.iva_retenido | currency }}</td>
+          </tr>
+          <tr>
+            <td>Contribuyentes</td>
+            <td class="text-end">{{ resumenOperaciones.contribuyentes.gravadas | currency }}</td>
+            <td class="text-end">{{ resumenOperaciones.contribuyentes.exportaciones | currency }}</td>
+            <td class="text-end">{{ resumenOperaciones.contribuyentes.debito_fiscal | currency }}</td>
+            <td class="text-end">{{ resumenOperaciones.contribuyentes.iva_percibido | currency }}</td>
+            <td class="text-end">{{ resumenOperaciones.contribuyentes.iva_retenido | currency }}</td>
+          </tr>
+          <tr>
+            <td>Ventas a Cta de Terceros</td>
+            <td class="text-end">{{ resumenOperaciones.cta_terceros.gravadas | currency }}</td>
+            <td class="text-end">{{ resumenOperaciones.cta_terceros.exportaciones | currency }}</td>
+            <td class="text-end">{{ resumenOperaciones.cta_terceros.debito_fiscal | currency }}</td>
+            <td class="text-end">{{ resumenOperaciones.cta_terceros.iva_percibido | currency }}</td>
+            <td class="text-end">{{ resumenOperaciones.cta_terceros.iva_retenido | currency }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

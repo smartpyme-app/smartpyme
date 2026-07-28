@@ -183,9 +183,29 @@ const routes: Routes = [
 
           path: 'libro-iva-hd/ventas',
 
-          loadComponent: () => import('@views/contabilidad/libro-iva-hd/ventas/libro-iva-hd-ventas.component').then(m => m.LibroIvaHdVentasComponent),
+          redirectTo: 'libro-iva-hd/contribuyentes',
 
-          title: 'Libro IVA ventas'
+          pathMatch: 'full'
+
+        },
+
+        {
+
+          path: 'libro-iva-hd/contribuyentes',
+
+          loadComponent: () => import('@views/contabilidad/libro-iva-hd/contribuyentes/libro-iva-hd-contribuyentes.component').then(m => m.LibroIvaHdContribuyentesComponent),
+
+          title: 'Libro IVA contribuyentes'
+
+        },
+
+        {
+
+          path: 'libro-iva-hd/consumidor-final',
+
+          loadComponent: () => import('@views/contabilidad/libro-iva-hd/consumidor-final/libro-iva-hd-consumidor-final.component').then(m => m.LibroIvaHdConsumidorFinalComponent),
+
+          title: 'Libro IVA consumidor final'
 
         },
 
