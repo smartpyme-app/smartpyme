@@ -1939,7 +1939,7 @@ class VentasController extends Controller
                     'id_empresa' => $empresa->id,
                     'inicio' => $fechaInicio,
                     'fin' => $fechaFin,
-                    'id_sucursal' => !empty($configuracion->sucursales) ? $configuracion->sucursales[0] : '',
+                    'sucursales' => $configuracion->sucursales ?? [],
                 ]);
                 $export = new CobrosPorVendedorExport();
                 $export->filter($request);
@@ -2114,7 +2114,7 @@ class VentasController extends Controller
                     'id_empresa' => $configuracion->id_empresa,
                     'inicio' => $fechaInicio,
                     'fin' => $fechaFin,
-                    'id_sucursal' => !empty($configuracion->sucursales) ? $configuracion->sucursales[0] : '',
+                    'sucursales' => $configuracion->sucursales ?? [],
                 ]);
                 $export = new CobrosPorVendedorExport();
                 $export->filter($request);
@@ -2305,7 +2305,7 @@ class VentasController extends Controller
                     'id_empresa' => $configuracion->id_empresa,
                     'inicio' => $fechaInicio,
                     'fin' => $fechaFin,
-                    'id_sucursal' => !empty($configuracion->sucursales) ? $configuracion->sucursales[0] : '',
+                    'sucursales' => $configuracion->sucursales ?? [],
                 ]);
                 $export = new CobrosPorVendedorExport();
                 $export->filter($request);
