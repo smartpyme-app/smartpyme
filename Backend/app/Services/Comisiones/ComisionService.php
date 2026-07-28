@@ -5,6 +5,7 @@ namespace App\Services\Comisiones;
 use App\Models\Admin\EmpresaFuncionalidad;
 use App\Models\Comisiones\ComisionMovimiento;
 use App\Models\Comisiones\ComisionPeriodo;
+use App\Models\Indicador;
 use App\Models\Ventas\Devoluciones\Devolucion;
 use App\Models\Ventas\Venta;
 use App\Services\Funcionalidades\FuncionalidadAccess;
@@ -119,6 +120,8 @@ class ComisionService
         $baseCalculo = $config['base_calculo'] ?? 'subtotal_sin_iva';
         $fechaEvento = $venta->fecha_pago ?? $venta->fecha ?? now();
         $periodo = $this->periodoService->periodoParaFecha((int) $venta->id_empresa, Carbon::parse($fechaEvento));
+        // ponytail: prorrateo proporcional por total de venta; ceiling = no line-level payment allocation; upgrade = per-line gift application
+        $fraccionGift = $this->fraccionGiftCardEnVenta($venta);
 
         foreach ($venta->detalles as $detalle) {
             $this->registrarLineaVenta(
@@ -130,7 +133,8 @@ class ComisionService
                 $periodo,
                 $fechaEvento,
                 ComisionMovimiento::ORIGEN_VENTA,
-                null
+                null,
+                $fraccionGift
             );
         }
     }
@@ -361,7 +365,8 @@ class ComisionService
         $periodo,
         $fechaEvento,
         string $origen,
-        ?int $idGiftCardRedencion
+        ?int $idGiftCardRedencion,
+        float $fraccionGift = 0.0
     ): ?ComisionMovimiento {
         $producto = $detalle->producto ?? null;
         $idCategoria = $producto ? (int) ($producto->id_categoria ?? 0) : null;
@@ -397,6 +402,12 @@ class ComisionService
         }
 
         $base = $this->calculator->calcular($detalle, $baseCalculo);
+        if ($origen === ComisionMovimiento::ORIGEN_VENTA && $fraccionGift > 0) {
+            $base = round($base * (1 - min(1.0, $fraccionGift)), 4);
+        }
+        if ($base <= 0) {
+            return null;
+        }
         $montoComision = round($base * ($pct / 100), 4);
 
         $where = [
@@ -442,6 +453,28 @@ class ComisionService
         $idGiftCards = $giftConfig['id_categoria_gift_cards'] ?? null;
 
         return $idGiftCards !== null && (int) $idGiftCards === $idCategoria;
+    }
+
+    private function fraccionGiftCardEnVenta(object $venta): float
+    {
+        $totalVenta = (float) ($venta->total ?? 0);
+        if ($totalVenta <= 0) {
+            return 0.0;
+        }
+
+        $montoGift = 0.0;
+        $metodos = $venta->metodos_de_pago ?? null;
+        if ($metodos !== null && count($metodos) > 0) {
+            foreach ($metodos as $metodo) {
+                if (Indicador::esFormaPagoGiftCard($metodo->nombre ?? null)) {
+                    $montoGift += (float) ($metodo->total ?? 0);
+                }
+            }
+        } elseif (Indicador::esFormaPagoGiftCard($venta->forma_pago ?? null)) {
+            $montoGift = $totalVenta;
+        }
+
+        return min(1.0, $montoGift / $totalVenta);
     }
 
     private function vendedorEfectivo(?int $detalleVendedor, ?int $ventaVendedor): ?int

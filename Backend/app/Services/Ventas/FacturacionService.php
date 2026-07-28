@@ -526,7 +526,16 @@ class FacturacionService
 
                 if ($venta->estado == 'Pagada') {
                     try {
-                        $venta->loadMissing('detalles.producto');
+                        $venta->loadMissing(['detalles.producto', 'metodos_de_pago']);
+                        app(\App\Services\GiftCards\GiftCardRedeemService::class)->redeemDesdeVenta($venta, $request);
+                    } catch (\Throwable $e) {
+                        Log::error('gift-cards: fallo al redimir en venta', [
+                            'venta' => $venta->id,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+
+                    try {
                         app(\App\Services\Comisiones\ComisionService::class)->registrarVentaPagada($venta);
                     } catch (\Throwable $e) {
                         Log::error('comisiones: fallo al registrar venta', [
