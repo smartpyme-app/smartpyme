@@ -167,7 +167,7 @@ class MHFactura extends Model
         return [
               "tipoDocumento" => $this->venta->cliente->tipo_documento, //36 NIT 13 DUI
               "numDocumento" => $this->venta->cliente->num_documento,
-              "nrc" => $this->venta->cliente->ncr ? str_replace('-', '', $this->venta->cliente->ncr) : NULL,
+              "nrc" => NULL, // Factura 01: MH exige nrc null en receptor; el NCR del cliente solo aplica en CCF.
               "nombre" => $this->venta->nombre_cliente,
               "codActividad" => $this->venta->cliente->cod_giro ? $this->venta->cliente->cod_giro : NULL,
               "descActividad" => $this->venta->cliente->giro ? $this->venta->cliente->giro : NULL,

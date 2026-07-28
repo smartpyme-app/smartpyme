@@ -24,6 +24,7 @@ class InventarioImport implements ToModel, WithHeadingRow, WithStartRow
     protected $sinCambios = 0;
     protected $errores = 0;
     protected $sinInventario = 0;
+    protected $creados = 0;
 
     public function __construct($detalleAjuste, $idBodegaSeleccionada)
     {
@@ -117,15 +118,22 @@ class InventarioImport implements ToModel, WithHeadingRow, WithStartRow
                 Log::info("Fila #{$this->procesados} - Nota: Nombre en Excel '{$nombreEnExcel}' vs BD '{$producto->nombre}' - usando BD");
             }
             
-            // Buscar el inventario
-            $inventario = Inventario::where('id_producto', $idProducto)
-                ->where('id_bodega', $idBodega)
-                ->first();
-            
-            if (!$inventario) {
-                $this->sinInventario++;
-                Log::warning("Fila #{$this->procesados} - No se encontró inventario para producto '{$producto->nombre}' (ID: {$idProducto}) en bodega {$idBodega}");
-                return null;
+            // Crear inventario si no existe para esta bodega (stock inicial 0; el ajuste aplica stock_nuevo)
+            $inventario = Inventario::firstOrCreate(
+                [
+                    'id_producto' => $idProducto,
+                    'id_bodega' => $idBodega,
+                ],
+                [
+                    'stock' => 0,
+                    'stock_minimo' => 0,
+                    'stock_maximo' => 0,
+                ]
+            );
+
+            if ($inventario->wasRecentlyCreated) {
+                $this->creados++;
+                Log::info("Fila #{$this->procesados} - Inventario creado para producto '{$producto->nombre}' (ID: {$idProducto}) en bodega {$idBodega}");
             }
             
             // Calcular la diferencia
@@ -188,6 +196,7 @@ class InventarioImport implements ToModel, WithHeadingRow, WithStartRow
             'actualizados' => $this->actualizados,
             'sin_cambios' => $this->sinCambios,
             'sin_inventario' => $this->sinInventario,
+            'creados' => $this->creados,
             'errores' => $this->errores
         ];
     }
@@ -201,14 +210,14 @@ class InventarioImport implements ToModel, WithHeadingRow, WithStartRow
         Log::info("Total de filas procesadas: {$this->procesados}");
         Log::info("Productos actualizados: {$this->actualizados}");
         Log::info("Productos sin cambios: {$this->sinCambios}");
-        Log::info("Productos sin inventario en bodega: {$this->sinInventario}");
+        Log::info("Inventarios creados en bodega: {$this->creados}");
         Log::info("Errores encontrados: {$this->errores}");
         
         $noActualizados = $this->procesados - $this->actualizados;
         Log::info("Total de filas NO actualizadas: {$noActualizados}");
         
-        if ($this->sinInventario > 0) {
-            Log::warning("ATENCIÓN: {$this->sinInventario} productos no tienen inventario en la bodega seleccionada.");
+        if ($this->creados > 0) {
+            Log::info("INFO: Se crearon {$this->creados} inventarios que no existían en la bodega seleccionada.");
         }
         if ($this->errores > 0) {
             Log::warning("ATENCIÓN: {$this->errores} filas tuvieron errores. Revisa los logs anteriores para más detalles.");

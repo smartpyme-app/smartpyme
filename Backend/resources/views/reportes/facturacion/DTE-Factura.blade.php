@@ -166,8 +166,8 @@
                             @endif
                         </p>
                         <p><b>Núm de Documento:</b> {{ $DTE['receptor']['numDocumento'] }}
-                            @if (!empty($DTE['receptor']['nrc']))
-                                <b> &nbsp;&nbsp;&nbsp; NRC:</b> {{ $DTE['receptor']['nrc'] }}
+                            @if ($registro->id_cliente && $registro->cliente()->pluck('ncr')->first())
+                                <b> &nbsp;&nbsp;&nbsp; NRC:</b> {{ $registro->cliente()->pluck('ncr')->first() }}
                             @endif
                         </p>
                         <p><b>Act. económica:</b> {{ $DTE['receptor']['descActividad'] }}</p>

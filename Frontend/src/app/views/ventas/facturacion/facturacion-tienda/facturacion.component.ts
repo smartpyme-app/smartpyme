@@ -78,6 +78,17 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
   public documentos: any = [];
   private documentosSucursal: any[] = [];
   private documentosLoadSeq = 0;
+  private readonly nombresDocumentosVentaNormales = [
+    'Factura',
+    'Crédito fiscal',
+    'Factura de exportación',
+    'Factura comercial',
+    'Ticket',
+    'Recibo',
+    'Sujeto excluido',
+    NOMBRE_DOCUMENTO_CR.factura,
+    NOMBRE_DOCUMENTO_CR.tiquete,
+  ];
   public formaPagos: any = [];
   public sucursales: any = [];
   public bodegas: any = [];
@@ -420,6 +431,9 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
       .subscribe({
         next: (bodegas) => {
           this.bodegas = bodegas;
+          // Alinear sucursal con la bodega y recargar documentos (el filtro es por sucursal).
+          this.sincronizarSucursalDesdeBodega();
+          this.cargarDocumentos();
           this.cdr.markForCheck();
         },
         error: (error) => {
@@ -574,6 +588,29 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     return null;
   }
 
+  /** Asegura bodega+sucursal usables antes de filtrar documentos. */
+  private sincronizarSucursalDesdeBodega(): void {
+    if (!this.bodegas?.length) {
+      return;
+    }
+    let bodega = this.bodegas.find(
+      (b: any) => Number(b.id) === Number(this.venta?.id_bodega)
+    );
+    // Bodega inválida/ausente: tomar una de la sucursal; si no hay, la primera disponible.
+    if (!bodega && this.venta?.id_sucursal != null && this.venta.id_sucursal !== '') {
+      bodega = this.bodegas.find(
+        (b: any) => Number(b.id_sucursal) === Number(this.venta.id_sucursal)
+      );
+    }
+    if (!bodega) {
+      bodega = this.bodegas[0];
+    }
+    if (bodega?.id_sucursal != null && bodega.id_sucursal !== '') {
+      this.venta.id_sucursal = bodega.id_sucursal;
+      this.venta.id_bodega = Number(bodega.id);
+    }
+  }
+
   private aplicarFiltroDocumentosVenta(): void {
     if (this.venta.cotizacion == 1) {
       this.documentos = this.documentosSucursal.filter(
@@ -586,6 +623,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
       if (documento) {
         this.venta.id_documento = documento.id;
         this.venta.correlativo = documento.correlativo;
+        this.venta.nombre_documento = documento.nombre;
       }
       return;
     }
@@ -598,19 +636,16 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
       return;
     }
 
-    const cr = resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR;
-    this.documentos = this.documentosSucursal.filter(
-      (doc: any) =>
-        doc.nombre === 'Factura' ||
-        (cr && doc.nombre === NOMBRE_DOCUMENTO_CR.factura) ||
-        doc.nombre === 'Crédito fiscal' ||
-        doc.nombre === 'Factura de exportación' ||
-        doc.nombre === 'Factura comercial' ||
-        doc.nombre === 'Ticket' ||
-        (cr && doc.nombre === NOMBRE_DOCUMENTO_CR.tiquete) ||
-        doc.nombre === 'Recibo' ||
-        doc.nombre === 'Sujeto excluido'
+    const porWhitelist = this.documentosSucursal.filter((doc: any) =>
+      this.nombresDocumentosVentaNormales.includes(String(doc.nombre || '').trim())
     );
+    // Si no hay match exacto de nombres, no dejar el select vacío: excluir solo cotización/OC.
+    this.documentos = porWhitelist.length
+      ? porWhitelist
+      : this.documentosSucursal.filter(
+          (doc: any) =>
+            doc.nombre !== 'Cotización' && doc.nombre !== 'Orden de compra'
+        );
 
     const docActual = this.documentos.find(
       (x: any) => x.id == this.venta.id_documento
@@ -659,6 +694,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
 
     this.venta.id_documento = documento.id;
     this.venta.correlativo = documento.correlativo;
+    this.venta.nombre_documento = documento.nombre;
     this.venta.cobrar_impuestos = false;
     this.venta.percepcion = 0;
     this.venta.iva_percibido = 0;
@@ -1009,7 +1045,11 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     );
     console.log(this.venta);
     }
-    this.cargarDocumentos();
+    // Solo si ya hay bodegas (p. ej. tras emitir y quedarse); en el 1er ingreso las carga loadData.
+    if (this.bodegas?.length) {
+      this.sincronizarSucursalDesdeBodega();
+      this.cargarDocumentos();
+    }
   }
     // Método para procesar productos de orden de compra
   public procesarProductosOrdenCompra(detalles: any[]) {
