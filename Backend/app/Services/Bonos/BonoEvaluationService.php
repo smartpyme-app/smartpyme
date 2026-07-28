@@ -25,6 +25,9 @@ class BonoEvaluationService
     /** @var Closure(int, string, string): array<int> */
     private Closure $obtenerVendedoresConVentas;
 
+    /** @var Closure(int, int, string, string): array<int> */
+    private Closure $obtenerVendedoresConPendiente;
+
     /** @var Closure(array<string, mixed>): ?object */
     private Closure $buscarBonoGenerado;
 
@@ -34,6 +37,9 @@ class BonoEvaluationService
     /** @var Closure(object, array<string, mixed>): void */
     private Closure $actualizarBonoGenerado;
 
+    /** @var Closure(object): void */
+    private Closure $eliminarBonoGenerado;
+
     /** @var Closure(array<string, mixed>): void */
     private Closure $registrarEvaluacion;
 
@@ -41,9 +47,11 @@ class BonoEvaluationService
      * @param  Closure(?int): array<int>|null  $obtenerEmpresasActivas
      * @param  Closure(int): Collection<int, BonoRegla>|null  $obtenerReglasActivas
      * @param  Closure(int, string, string): array<int>|null  $obtenerVendedoresConVentas
+     * @param  Closure(int, int, string, string): array<int>|null  $obtenerVendedoresConPendiente
      * @param  Closure(array<string, mixed>): ?object|null  $buscarBonoGenerado
      * @param  Closure(array<string, mixed>): object|null  $crearBonoGenerado
      * @param  Closure(object, array<string, mixed>): void|null  $actualizarBonoGenerado
+     * @param  Closure(object): void|null  $eliminarBonoGenerado
      * @param  Closure(array<string, mixed>): void|null  $registrarEvaluacion
      */
     public function __construct(
@@ -52,9 +60,11 @@ class BonoEvaluationService
         ?Closure $obtenerEmpresasActivas = null,
         ?Closure $obtenerReglasActivas = null,
         ?Closure $obtenerVendedoresConVentas = null,
+        ?Closure $obtenerVendedoresConPendiente = null,
         ?Closure $buscarBonoGenerado = null,
         ?Closure $crearBonoGenerado = null,
         ?Closure $actualizarBonoGenerado = null,
+        ?Closure $eliminarBonoGenerado = null,
         ?Closure $registrarEvaluacion = null,
     ) {
         $this->obtenerEmpresasActivas = $obtenerEmpresasActivas
@@ -66,6 +76,8 @@ class BonoEvaluationService
                 ->get();
         $this->obtenerVendedoresConVentas = $obtenerVendedoresConVentas
             ?? fn (int $idEmpresa, string $desde, string $hasta) => $this->vendedoresConVentasEnPeriodo($idEmpresa, $desde, $hasta);
+        $this->obtenerVendedoresConPendiente = $obtenerVendedoresConPendiente
+            ?? fn (int $idEmpresa, int $idRegla, string $desde, string $hasta) => $this->vendedoresConPendienteEnPeriodo($idEmpresa, $idRegla, $desde, $hasta);
         $this->buscarBonoGenerado = $buscarBonoGenerado
             ?? fn (array $unique) => BonoGenerado::withoutGlobalScope('empresa')->where($unique)->first();
         $this->crearBonoGenerado = $crearBonoGenerado
@@ -75,6 +87,12 @@ class BonoEvaluationService
                 BonoGenerado::withoutGlobalScope('empresa')
                     ->where('id', $bono->id)
                     ->update($values);
+            };
+        $this->eliminarBonoGenerado = $eliminarBonoGenerado
+            ?? function (object $bono): void {
+                BonoGenerado::withoutGlobalScope('empresa')
+                    ->where('id', $bono->id)
+                    ->delete();
             };
         $this->registrarEvaluacion = $registrarEvaluacion
             ?? fn (array $payload) => BonoEvaluacion::withoutGlobalScope('empresa')->create($payload);
@@ -112,12 +130,14 @@ class BonoEvaluationService
     private function evaluarEmpresa(int $idEmpresa, string $desde, string $hasta): array
     {
         $resumen = $this->resumenVacio();
-        $vendedores = ($this->obtenerVendedoresConVentas)($idEmpresa, $desde, $hasta);
+        $vendedoresConVentas = ($this->obtenerVendedoresConVentas)($idEmpresa, $desde, $hasta);
 
         foreach (($this->obtenerReglasActivas)($idEmpresa) as $regla) {
             ++$resumen['reglas_evaluadas'];
 
-            foreach ($vendedores as $idVendedor) {
+            $candidatos = $this->vendedoresParaRegla($regla, $idEmpresa, $desde, $hasta, $vendedoresConVentas);
+
+            foreach ($candidatos as $idVendedor) {
                 ++$resumen['vendedores_procesados'];
                 $ventas = $this->metaCalculator->ventasVendedorPeriodo($idEmpresa, (int) $idVendedor, $desde, $hasta);
                 $monto = $this->evaluator->calcular($regla->tipo, $regla->config ?? [], $ventas);
@@ -129,7 +149,25 @@ class BonoEvaluationService
         return $resumen;
     }
 
-    /** @return 'creados'|'actualizados'|'omitidos_monto'|'protegidos' */
+    /**
+     * @param  array<int>  $vendedoresConVentas
+     * @return array<int>
+     */
+    private function vendedoresParaRegla(object $regla, int $idEmpresa, string $desde, string $hasta, array $vendedoresConVentas): array
+    {
+        $alcance = (string) ($regla->alcance ?? BonoRegla::ALCANCE_GLOBAL);
+        $pendientes = ($this->obtenerVendedoresConPendiente)($idEmpresa, (int) $regla->id, $desde, $hasta);
+
+        if ($alcance === BonoRegla::ALCANCE_VENDEDORES) {
+            $ids = array_map('intval', (array) ($regla->id_vendedores ?? []));
+
+            return array_values(array_unique(array_merge($ids, $pendientes)));
+        }
+
+        return array_values(array_unique(array_merge($vendedoresConVentas, $pendientes)));
+    }
+
+    /** @return 'creados'|'actualizados'|'omitidos_monto'|'protegidos'|'eliminados' */
     private function persistirBono(
         int $idEmpresa,
         int $idVendedor,
@@ -139,10 +177,6 @@ class BonoEvaluationService
         float $ventas,
         float $monto,
     ): string {
-        if ($monto <= 0) {
-            return 'omitidos_monto';
-        }
-
         $unique = [
             'id_empresa' => $idEmpresa,
             'id_vendedor' => $idVendedor,
@@ -155,6 +189,16 @@ class BonoEvaluationService
 
         if ($existing && in_array($existing->estado, [BonoGenerado::ESTADO_APROBADO, BonoGenerado::ESTADO_PAGADO], true)) {
             return 'protegidos';
+        }
+
+        if ($monto <= 0) {
+            if ($existing && $existing->estado === BonoGenerado::ESTADO_PENDIENTE) {
+                ($this->eliminarBonoGenerado)($existing);
+
+                return 'eliminados';
+            }
+
+            return 'omitidos_monto';
         }
 
         $values = [
@@ -221,6 +265,21 @@ class BonoEvaluationService
             ->all();
     }
 
+    /** @return array<int> */
+    private function vendedoresConPendienteEnPeriodo(int $idEmpresa, int $idRegla, string $desde, string $hasta): array
+    {
+        return BonoGenerado::withoutGlobalScope('empresa')
+            ->where('id_empresa', $idEmpresa)
+            ->where('id_regla', $idRegla)
+            ->where('periodo_inicio', $desde)
+            ->where('periodo_fin', $hasta)
+            ->where('estado', BonoGenerado::ESTADO_PENDIENTE)
+            ->pluck('id_vendedor')
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
+    }
+
     /** @return array<string, int> */
     private function resumenVacio(): array
     {
@@ -232,6 +291,7 @@ class BonoEvaluationService
             'actualizados' => 0,
             'omitidos_monto' => 0,
             'protegidos' => 0,
+            'eliminados' => 0,
         ];
     }
 
@@ -241,7 +301,7 @@ class BonoEvaluationService
     {
         ++$target['empresas'];
 
-        foreach (['reglas_evaluadas', 'vendedores_procesados', 'creados', 'actualizados', 'omitidos_monto', 'protegidos'] as $key) {
+        foreach (['reglas_evaluadas', 'vendedores_procesados', 'creados', 'actualizados', 'omitidos_monto', 'protegidos', 'eliminados'] as $key) {
             $target[$key] += $partial[$key] ?? 0;
         }
     }

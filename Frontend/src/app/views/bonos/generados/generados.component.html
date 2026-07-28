@@ -7,7 +7,7 @@
 
 <section class="bg-white p-4 rounded mb-3">
   <h5 class="mb-3">Calcular período</h5>
-  <p class="text-muted mb-3">Evalúa las reglas activas y genera o actualiza bonos pendientes.</p>
+  <p class="text-muted mb-3">Evalúa las reglas activas y genera o actualiza bonos pendientes. Los que ya no cumplen la meta se eliminan (aprobados/pagados no se tocan).</p>
   <div class="row g-3 align-items-end">
     <div class="col-md-3">
       <label class="form-label">Desde</label>
@@ -77,24 +77,24 @@
             </span>
           </td>
           <td class="text-end">
-            <button
-              *ngIf="bono.estado === 'pendiente'"
-              type="button"
-              class="btn btn-warning btn-sm me-1"
-              (click)="aprobar(bono)"
-              [disabled]="procesandoId === bono.id">
-              <span *ngIf="procesandoId === bono.id" class="spinner-border spinner-border-sm me-1"></span>
-              Aprobar
-            </button>
-            <button
-              *ngIf="bono.estado === 'aprobado'"
-              type="button"
-              class="btn btn-primary btn-sm"
-              (click)="pagar(bono)"
-              [disabled]="procesandoId === bono.id">
-              <span *ngIf="procesandoId === bono.id" class="spinner-border spinner-border-sm me-1"></span>
-              Pagar
-            </button>
+            <ng-container *ngIf="tieneAcciones(bono)">
+              <span class="btn" [popover]="accionesBono" [outsideClick]="true" tooltip="Acciones">
+                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+              </span>
+              <ng-template #accionesBono>
+                <div class="d-flex flex-column align-items-start">
+                  <a *ngIf="bono.estado === 'pendiente'" class="btn" (click)="aprobar(bono)">
+                    <i class="fa fa-fw fa-check"></i> Aprobar
+                  </a>
+                  <a *ngIf="bono.estado === 'aprobado'" class="btn" (click)="pagar(bono)">
+                    <i class="fa fa-fw fa-money"></i> Pagar
+                  </a>
+                  <a *ngIf="bono.estado === 'aprobado' || bono.estado === 'pagado'" class="btn" (click)="descargarComprobante(bono)">
+                    <i class="fa fa-fw fa-file-pdf-o"></i> Imprimir PDF
+                  </a>
+                </div>
+              </ng-template>
+            </ng-container>
           </td>
         </tr>
       </tbody>

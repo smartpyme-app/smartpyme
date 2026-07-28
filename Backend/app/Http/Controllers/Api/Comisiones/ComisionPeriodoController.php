@@ -27,6 +27,19 @@ class ComisionPeriodoController extends Controller
         ]);
     }
 
+    public function show(Request $request, int $id): JsonResponse
+    {
+        $periodo = $this->liquidacionService->obtenerPeriodo(
+            (int) $request->user()->id_empresa,
+            $id
+        );
+
+        return response()->json([
+            'success' => true,
+            'data' => $periodo,
+        ]);
+    }
+
     public function cerrar(Request $request, int $id): JsonResponse
     {
         $periodo = $this->liquidacionService->cerrarPeriodo(

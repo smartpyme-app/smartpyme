@@ -370,9 +370,8 @@ class ComisionService
     ): ?ComisionMovimiento {
         $producto = $detalle->producto ?? null;
         $idCategoria = $producto ? (int) ($producto->id_categoria ?? 0) : null;
-        $idSubcategoria = $producto && ! empty($producto->subcategoria_id)
-            ? (int) $producto->subcategoria_id
-            : null;
+        $rawSub = $producto->id_subcategoria ?? $producto->subcategoria_id ?? null;
+        $idSubcategoria = $producto && ! empty($rawSub) ? (int) $rawSub : null;
 
         if ($idCategoria === 0) {
             $idCategoria = null;

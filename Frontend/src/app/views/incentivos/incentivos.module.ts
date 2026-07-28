@@ -2,6 +2,7 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { ModalModule } from 'ngx-bootstrap/modal';
 import { SharedModule } from '@shared/shared.module';
 import { PipesModule } from '@pipes/pipes.module';
 
@@ -16,7 +17,8 @@ import { DashboardComponent } from './dashboard/dashboard.component';
     RouterModule,
     IncentivosRoutingModule,
     SharedModule,
-    PipesModule
+    PipesModule,
+    ModalModule.forRoot()
   ]
 })
 export class IncentivosModule {}

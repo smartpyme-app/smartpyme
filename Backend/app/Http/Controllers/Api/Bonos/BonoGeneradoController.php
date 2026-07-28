@@ -65,4 +65,17 @@ class BonoGeneradoController extends Controller
             'message' => 'Bono marcado como pagado.',
         ]);
     }
+
+    public function comprobantePdf(Request $request, int $id)
+    {
+        $datos = $this->generadoService->datosComprobante(
+            (int) $request->user()->id_empresa,
+            $id
+        );
+
+        $pdf = app('dompdf.wrapper')->loadView('reportes.bonos.comprobante', $datos);
+        $pdf->setPaper('US Letter', 'portrait');
+
+        return $pdf->stream('comprobante-bono-' . $id . '.pdf');
+    }
 }

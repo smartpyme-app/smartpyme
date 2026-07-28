@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { ComisionMovimiento, ComisionesService } from '@services/comisiones.service';
+import { ComisionesService } from '@services/comisiones.service';
 
 @Component({
   selector: 'app-reportes-comisiones',
@@ -14,8 +14,8 @@ export class ReportesComponent implements OnInit {
   hasta = '';
   downloading = false;
   loadingMovimientos = false;
-  movimientos: ComisionMovimiento[] = [];
-  meta = { current_page: 1, last_page: 1, per_page: 25, total: 0 };
+  movimientos: any = {};
+  filtros: any = { page: 1, paginate: 25 };
 
   constructor(
     private comisionesService: ComisionesService,
@@ -54,11 +54,10 @@ export class ReportesComponent implements OnInit {
     });
   }
 
-  loadMovimientos(page = 1): void {
+  loadMovimientos(): void {
     this.loadingMovimientos = true;
     const params: Record<string, unknown> = {
-      paginate: 25,
-      page
+      ...this.filtros,
     };
     if (this.desde) {
       params['desde'] = this.desde;
@@ -69,8 +68,13 @@ export class ReportesComponent implements OnInit {
 
     this.comisionesService.getMovimientos(params).subscribe({
       next: (response) => {
-        this.movimientos = response.data ?? [];
-        this.meta = response.meta ?? this.meta;
+        this.movimientos = {
+          data: response.data ?? [],
+          current_page: response.meta?.current_page ?? 1,
+          last_page: response.meta?.last_page ?? 1,
+          per_page: response.meta?.per_page ?? 25,
+          total: response.meta?.total ?? 0,
+        };
         this.loadingMovimientos = false;
       },
       error: (error) => {
@@ -81,12 +85,15 @@ export class ReportesComponent implements OnInit {
   }
 
   filtrarMovimientos(): void {
-    this.loadMovimientos(1);
+    this.filtros.page = 1;
+    this.loadMovimientos();
   }
 
-  changePage(page: number): void {
-    if (page >= 1 && page <= this.meta.last_page) {
-      this.loadMovimientos(page);
+  setPagination(event: any): void {
+    if (!event || typeof event.page === 'undefined') {
+      return;
     }
+    this.filtros.page = event.page;
+    this.loadMovimientos();
   }
 }

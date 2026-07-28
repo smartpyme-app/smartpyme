@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 import { AlertService } from '@services/alert.service';
-import { ApiService } from '@services/api.service';
 import { ComisionPeriodo, ComisionesService } from '@services/comisiones.service';
 
 @Component({
@@ -13,14 +13,12 @@ export class PeriodosLiquidacionesComponent implements OnInit {
   periodos: ComisionPeriodo[] = [];
   loading = false;
   procesandoPeriodoId: number | null = null;
-  procesandoLiquidacionId: number | null = null;
   filtroEstado = '';
-  expandedPeriodoId: number | null = null;
 
   constructor(
     private comisionesService: ComisionesService,
     private alertService: AlertService,
-    private apiService: ApiService
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -41,8 +39,8 @@ export class PeriodosLiquidacionesComponent implements OnInit {
     });
   }
 
-  toggleExpand(id: number): void {
-    this.expandedPeriodoId = this.expandedPeriodoId === id ? null : id;
+  verDetalles(periodo: ComisionPeriodo): void {
+    this.router.navigate(['/comisiones/periodos', periodo.id]);
   }
 
   cerrarPeriodo(periodo: ComisionPeriodo): void {
@@ -60,37 +58,6 @@ export class PeriodosLiquidacionesComponent implements OnInit {
       error: (error) => {
         this.alertService.error(error);
         this.procesandoPeriodoId = null;
-      }
-    });
-  }
-
-  pagarLiquidacion(liquidacionId: number): void {
-    if (!confirm('¿Marcar esta liquidación como pagada?')) {
-      return;
-    }
-
-    this.procesandoLiquidacionId = liquidacionId;
-    this.comisionesService.pagarLiquidacion(liquidacionId).subscribe({
-      next: (response) => {
-        this.alertService.success('Éxito', response.message || 'Liquidación pagada.');
-        this.loadPeriodos();
-        this.procesandoLiquidacionId = null;
-      },
-      error: (error) => {
-        this.alertService.error(error);
-        this.procesandoLiquidacionId = null;
-      }
-    });
-  }
-
-  descargarComprobante(idVendedor: number, periodoId: number, nombreVendedor: string): void {
-    this.comisionesService.descargarComprobante(idVendedor, periodoId).subscribe({
-      next: (blob) => {
-        const filename = `comprobante-comision-${nombreVendedor.replace(/\s+/g, '-')}.pdf`;
-        this.apiService.downloadFile(blob, filename);
-      },
-      error: (error) => {
-        this.alertService.error(error);
       }
     });
   }

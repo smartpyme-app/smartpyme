@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { AlertService } from '@services/alert.service';
+import { ApiService } from '@services/api.service';
 import { BonoGenerado, BonosService } from '@services/bonos.service';
 
 @Component({
@@ -21,7 +22,8 @@ export class GeneradosComponent implements OnInit {
 
   constructor(
     private bonosService: BonosService,
-    private alertService: AlertService
+    private alertService: AlertService,
+    private apiService: ApiService
   ) {}
 
   ngOnInit(): void {
@@ -68,6 +70,7 @@ export class GeneradosComponent implements OnInit {
         const msg = [
           `Creados: ${resumen.creados}`,
           `Actualizados: ${resumen.actualizados}`,
+          `Eliminados: ${resumen.eliminados ?? 0}`,
           `Omitidos (sin monto): ${resumen.omitidos_monto}`,
           `Protegidos: ${resumen.protegidos}`
         ].join(' · ');
@@ -118,6 +121,24 @@ export class GeneradosComponent implements OnInit {
         this.procesandoId = null;
       }
     });
+  }
+
+  descargarComprobante(bono: BonoGenerado): void {
+    const nombre = (bono.vendedor?.name || 'vendedor').replace(/\s+/g, '-');
+    this.bonosService.descargarComprobante(bono.id).subscribe({
+      next: (blob) => {
+        this.apiService.downloadFile(blob, `comprobante-bono-${nombre}.pdf`);
+      },
+      error: (error) => {
+        this.alertService.error(error);
+      }
+    });
+  }
+
+  tieneAcciones(bono: BonoGenerado): boolean {
+    return bono.estado === 'pendiente'
+      || bono.estado === 'aprobado'
+      || bono.estado === 'pagado';
   }
 
   estadoBadgeClass(estado: string): string {

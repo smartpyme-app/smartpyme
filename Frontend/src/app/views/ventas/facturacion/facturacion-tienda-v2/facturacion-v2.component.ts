@@ -135,6 +135,9 @@ export class FacturacionV2Component implements OnInit {
   modalRef!: BsModalRef;
   modalCredito!: BsModalRef;
   modalPuntosRef!: BsModalRef;
+  modalGiftCardsRef?: BsModalRef;
+  public giftCardsEmitidas: GiftCardLookup[] = [];
+  private ventaPostFacturaPendiente: any = null;
 
   @ViewChild('msupervisor')
   public supervisorTemplate!: TemplateRef<any>;
@@ -144,6 +147,9 @@ export class FacturacionV2Component implements OnInit {
 
   @ViewChild('mcredito')
   public creditoTemplate!: TemplateRef<any>;
+
+  @ViewChild('mgiftCardsEmitidas')
+  public giftCardsEmitidasTemplate!: TemplateRef<any>;
 
   @ViewChild(VentaDetallesV2Component)
   private ventaDetallesV2?: VentaDetallesV2Component;
@@ -2092,6 +2098,53 @@ export class FacturacionV2Component implements OnInit {
             );
         }
 
+        if (this.modalRef) {
+          this.modalRef.hide();
+        }
+        this.saving = false;
+
+        const giftCards = venta?.gift_cards_emitidas ?? [];
+        if (Array.isArray(giftCards) && giftCards.length > 0) {
+          this.giftCardsEmitidas = giftCards;
+          this.ventaPostFacturaPendiente = venta;
+          this.modalGiftCardsRef = this.modalService.show(this.giftCardsEmitidasTemplate, {
+            class: 'modal-md',
+            backdrop: 'static',
+          });
+          return;
+        }
+
+        this.continuarTrasFacturar(venta);
+      },
+      (error) => {
+        this.alertService.error(error);
+        this.saving = false;
+      }
+    );
+  }
+
+  public copiarCodigoGiftCard(codigo: string): void {
+    if (!codigo || !navigator?.clipboard) {
+      return;
+    }
+    navigator.clipboard.writeText(codigo).then(
+      () => this.alertService.success('Copiado', 'Código copiado al portapapeles.'),
+      () => this.alertService.warning('Atención', 'No se pudo copiar el código.')
+    );
+  }
+
+  public continuarTrasGiftCardsEmitidas(): void {
+    const venta = this.ventaPostFacturaPendiente;
+    this.modalGiftCardsRef?.hide();
+    this.modalGiftCardsRef = undefined;
+    this.giftCardsEmitidas = [];
+    this.ventaPostFacturaPendiente = null;
+    if (venta) {
+      this.continuarTrasFacturar(venta);
+    }
+  }
+
+  private continuarTrasFacturar(venta: any): void {
         if (
           this.venta.cotizacion != 1 &&
           this.apiService.auth_user().empresa.impresion_en_facturacion
@@ -2135,17 +2188,6 @@ export class FacturacionV2Component implements OnInit {
             );
           }
         }
-
-        if (this.modalRef) {
-          this.modalRef.hide();
-        }
-        this.saving = false;
-      },
-      (error) => {
-        this.alertService.error(error);
-        this.saving = false;
-      }
-    );
   }
 
   //Limpiar

@@ -4,6 +4,7 @@ import { LayoutComponent } from '../../layout/layout.component';
 import { FuncionalidadGuard } from '@guards/funcionalidad.guard';
 import { ConfigCategoriasComponent } from './config-categorias/config-categorias.component';
 import { PeriodosLiquidacionesComponent } from './periodos-liquidaciones/periodos-liquidaciones.component';
+import { PeriodoDetalleComponent } from './periodo-detalle/periodo-detalle.component';
 import { ReportesComponent } from './reportes/reportes.component';
 
 const routes: Routes = [
@@ -28,6 +29,11 @@ const routes: Routes = [
         path: 'comisiones/periodos',
         component: PeriodosLiquidacionesComponent,
         title: 'Períodos y liquidaciones'
+      },
+      {
+        path: 'comisiones/periodos/:id',
+        component: PeriodoDetalleComponent,
+        title: 'Detalle del período'
       },
       {
         path: 'comisiones/reportes',

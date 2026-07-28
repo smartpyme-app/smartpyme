@@ -5,7 +5,6 @@ namespace App\Services\Comisiones;
 use App\Models\Comisiones\ComisionCategoriaConfig;
 use App\Models\Comisiones\ComisionSubcategoriaConfig;
 use App\Models\Inventario\Categorias\Categoria;
-use App\Models\Inventario\Categorias\SubCategoria;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
@@ -24,19 +23,35 @@ class ComisionConfigService
             ->get()
             ->keyBy('id_subcategoria');
 
+        $hijos = Categoria::query()
+            ->where('id_empresa', $idEmpresa)
+            ->where('enable', '1')
+            ->where(function ($q) {
+                $q->where('subcategoria', 1)
+                    ->orWhereNotNull('id_cate_padre');
+            })
+            ->orderBy('nombre')
+            ->get()
+            ->groupBy(fn (Categoria $c) => (int) ($c->id_cate_padre ?? 0));
+
+        // Padres: filas de categorias que no son subcategoría
         return Categoria::query()
             ->where('id_empresa', $idEmpresa)
             ->where('enable', '1')
+            ->where(function ($q) {
+                $q->where('subcategoria', 0)
+                    ->orWhere(function ($q2) {
+                        $q2->whereNull('subcategoria')
+                            ->whereNull('id_cate_padre');
+                    });
+            })
             ->orderBy('nombre')
             ->get()
-            ->map(function (Categoria $categoria) use ($configs, $subConfigs, $idEmpresa) {
+            ->map(function (Categoria $categoria) use ($configs, $subConfigs, $hijos) {
                 $config = $configs->get($categoria->id);
 
-                $subcategorias = SubCategoria::query()
-                    ->where('categoria_id', $categoria->id)
-                    ->orderBy('nombre')
-                    ->get()
-                    ->map(function (SubCategoria $sub) use ($subConfigs, $idEmpresa) {
+                $subcategorias = ($hijos->get($categoria->id) ?? collect())
+                    ->map(function (Categoria $sub) use ($subConfigs) {
                         $subConfig = $subConfigs->get($sub->id);
 
                         return [
@@ -111,9 +126,14 @@ class ComisionConfigService
 
     private function assertSubcategoriaEmpresa(int $idEmpresa, int $idSubcategoria): void
     {
-        $exists = SubCategoria::query()
+        // Subcategorías = filas hijas en `categorias` (no existe categoria_subcategorias en prod)
+        $exists = Categoria::query()
+            ->where('id_empresa', $idEmpresa)
             ->where('id', $idSubcategoria)
-            ->whereHas('categoria', fn ($q) => $q->where('id_empresa', $idEmpresa))
+            ->where(function ($q) {
+                $q->where('subcategoria', 1)
+                    ->orWhereNotNull('id_cate_padre');
+            })
             ->exists();
 
         if (! $exists) {

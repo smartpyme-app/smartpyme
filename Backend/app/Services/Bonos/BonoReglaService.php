@@ -34,6 +34,7 @@ class BonoReglaService
     {
         $payload = $this->normalizarPayload($data);
         $this->validarConfig($payload['tipo'], $payload['config']);
+        $this->validarAlcance($payload['alcance'], $payload['id_vendedores']);
 
         return BonoRegla::query()->create([
             'id_empresa' => $idEmpresa,
@@ -47,6 +48,7 @@ class BonoReglaService
         $regla = $this->obtener($idEmpresa, $id);
         $payload = $this->normalizarPayload($data, $regla);
         $this->validarConfig($payload['tipo'], $payload['config']);
+        $this->validarAlcance($payload['alcance'], $payload['id_vendedores']);
 
         $regla->update($payload);
 
@@ -61,17 +63,33 @@ class BonoReglaService
         return $regla->fresh();
     }
 
-    /** @param  array<string, mixed>  $data
-     * @return array{nombre: string, tipo: string, ventana: string, config: array<string, mixed>, activo: bool} */
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array{nombre: string, tipo: string, ventana: string, config: array<string, mixed>, activo: bool, alcance: string, id_vendedores: array<int>|null}
+     */
     private function normalizarPayload(array $data, ?BonoRegla $existing = null): array
     {
         $tipo = (string) ($data['tipo'] ?? $existing?->tipo ?? '');
         $ventana = (string) ($data['ventana'] ?? $existing?->ventana ?? BonoRegla::VENTANA_MENSUAL);
+        $alcance = (string) ($data['alcance'] ?? $existing?->alcance ?? BonoRegla::ALCANCE_GLOBAL);
 
         if (! in_array($tipo, [BonoRegla::TIPO_META_FIJA, BonoRegla::TIPO_ESCALONADO], true)) {
             throw ValidationException::withMessages([
                 'tipo' => ['El tipo de regla no es válido.'],
             ]);
+        }
+
+        if (! in_array($alcance, [BonoRegla::ALCANCE_GLOBAL, BonoRegla::ALCANCE_VENDEDORES], true)) {
+            throw ValidationException::withMessages([
+                'alcance' => ['El alcance debe ser global o vendedores.'],
+            ]);
+        }
+
+        $idVendedores = $data['id_vendedores'] ?? $existing?->id_vendedores ?? null;
+        if ($alcance === BonoRegla::ALCANCE_GLOBAL) {
+            $idVendedores = null;
+        } elseif (is_array($idVendedores)) {
+            $idVendedores = array_values(array_unique(array_map('intval', $idVendedores)));
         }
 
         return [
@@ -80,6 +98,8 @@ class BonoReglaService
             'ventana' => $ventana,
             'config' => (array) ($data['config'] ?? $existing?->config ?? []),
             'activo' => (bool) ($data['activo'] ?? $existing?->activo ?? true),
+            'alcance' => $alcance,
+            'id_vendedores' => $idVendedores,
         ];
     }
 
@@ -99,6 +119,16 @@ class BonoReglaService
         if (empty($config['tramos']) || ! is_array($config['tramos'])) {
             throw ValidationException::withMessages([
                 'config' => ['escalonado requiere tramos en config.'],
+            ]);
+        }
+    }
+
+    /** @param  array<int>|null  $idVendedores */
+    private function validarAlcance(string $alcance, ?array $idVendedores): void
+    {
+        if ($alcance === BonoRegla::ALCANCE_VENDEDORES && empty($idVendedores)) {
+            throw ValidationException::withMessages([
+                'id_vendedores' => ['Seleccione al menos un vendedor para reglas por vendedor.'],
             ]);
         }
     }

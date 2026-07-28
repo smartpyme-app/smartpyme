@@ -47,7 +47,8 @@ export interface ComisionMovimiento {
   id_categoria: number;
   monto_comision: number;
   monto_base: number;
-  porcentaje: number;
+  porcentaje?: number;
+  porcentaje_aplicado?: number;
   origen: string;
   fecha_evento: string;
   vendedor?: ComisionVendedor;
@@ -59,6 +60,12 @@ export interface ComisionApiResponse<T> {
   success: boolean;
   data: T;
   message?: string;
+  meta?: {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+  };
 }
 
 export interface ComisionMovimientosResponse {
@@ -79,8 +86,8 @@ export class ComisionesService {
 
   constructor(private apiService: ApiService) {}
 
-  getCategorias(): Observable<ComisionApiResponse<ComisionCategoriaConfig[]>> {
-    return this.apiService.getAll('comisiones/config/categorias');
+  getCategorias(filtros: Record<string, unknown> = {}): Observable<ComisionApiResponse<ComisionCategoriaConfig[]>> {
+    return this.apiService.getAll('comisiones/config/categorias', filtros);
   }
 
   actualizarCategoria(idCategoria: number, porcentaje: number): Observable<ComisionApiResponse<unknown>> {
@@ -94,6 +101,10 @@ export class ComisionesService {
   getPeriodos(estado?: string): Observable<ComisionApiResponse<ComisionPeriodo[]>> {
     const params = estado ? { estado } : {};
     return this.apiService.getAll('comisiones/periodos', params);
+  }
+
+  getPeriodo(id: number): Observable<ComisionApiResponse<ComisionPeriodo>> {
+    return this.apiService.read('comisiones/periodos/', id);
   }
 
   cerrarPeriodo(id: number): Observable<ComisionApiResponse<ComisionPeriodo>> {

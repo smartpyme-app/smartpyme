@@ -72,6 +72,12 @@
                 @if (usuario.empresa.modulo_proyectos) {
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/proyectos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/share-2.png" class="icon me-2">Proyectos</a></li>
                 }
+                @if (tieneIncentivosHabilitada) {
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/incentivos/vendedores']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/clipboard.png" class="icon me-2">Incentivos</a></li>
+                }
+                @if (tieneGiftCardsHabilitada) {
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/gift-cards/consulta']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/money-transaction.png" class="icon me-2">Gift Cards</a></li>
+                }
               </ul>
 
                 </div>
@@ -184,14 +190,6 @@
                             </li>
                         </ul>
                     </div>
-                </li>
-            }
-            @if (tieneIncentivosHabilitada) {
-                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="mb-1">
-                    <a [routerLink]="['/incentivos/vendedores']"
-                        class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1 link-body-emphasis text-decoration-none">
-                        <img src="/assets/icons/clipboard.png" class="icon me-2">Incentivos
-                    </a>
                 </li>
             }
             <li *ngIf="tieneComisionesHabilitada" class="mb-1">

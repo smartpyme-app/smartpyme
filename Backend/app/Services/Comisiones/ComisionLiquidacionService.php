@@ -27,6 +27,14 @@ class ComisionLiquidacionService
         return $query->get();
     }
 
+    public function obtenerPeriodo(int $idEmpresa, int $idPeriodo): ComisionPeriodo
+    {
+        return ComisionPeriodo::query()
+            ->where('id_empresa', $idEmpresa)
+            ->with(['liquidaciones.vendedor'])
+            ->findOrFail($idPeriodo);
+    }
+
     public function cerrarPeriodo(int $idEmpresa, int $idPeriodo): ComisionPeriodo
     {
         return DB::transaction(function () use ($idEmpresa, $idPeriodo) {

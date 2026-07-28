@@ -30,6 +30,30 @@
         <option value="mensual">Mensual</option>
       </select>
     </div>
+
+    <div class="col-md-4">
+      <label class="form-label">Alcance</label>
+      <select class="form-select" [(ngModel)]="form.alcance">
+        <option value="global">Global (todos los vendedores)</option>
+        <option value="vendedores">Por vendedor</option>
+      </select>
+    </div>
+    <div class="col-md-8" *ngIf="form.alcance === 'vendedores'">
+      <label class="form-label">Vendedores</label>
+      <div class="border rounded p-2" style="max-height: 180px; overflow-y: auto;">
+        <div class="form-check" *ngFor="let v of vendedores">
+          <input
+            class="form-check-input"
+            type="checkbox"
+            [id]="'vend-' + v.id"
+            [checked]="vendedorSeleccionado(v.id)"
+            (change)="toggleVendedor(v.id, $any($event.target).checked)">
+          <label class="form-check-label" [for]="'vend-' + v.id">{{ v.name }}</label>
+        </div>
+        <p *ngIf="!vendedores.length" class="text-muted mb-0 small">No hay usuarios disponibles.</p>
+      </div>
+    </div>
+
     <div class="col-12">
       <div class="form-check">
         <input class="form-check-input" type="checkbox" id="reglaActiva" [(ngModel)]="form.activo">
@@ -94,6 +118,7 @@
         <tr>
           <th>Nombre</th>
           <th>Tipo</th>
+          <th>Alcance</th>
           <th>Configuración</th>
           <th>Estado</th>
           <th class="text-end">Acciones</th>
@@ -101,14 +126,15 @@
       </thead>
       <tbody>
         <tr *ngIf="loading">
-          <td colspan="5" class="text-center"><span class="badge bg-primary">Cargando...</span></td>
+          <td colspan="6" class="text-center"><span class="badge bg-primary">Cargando...</span></td>
         </tr>
         <tr *ngIf="!loading && reglas.length === 0">
-          <td colspan="5" class="text-center"><span class="badge bg-secondary">No hay reglas</span></td>
+          <td colspan="6" class="text-center"><span class="badge bg-secondary">No hay reglas</span></td>
         </tr>
         <tr *ngFor="let regla of reglas">
           <td><strong>{{ regla.nombre }}</strong></td>
           <td>{{ tipoLabel(regla.tipo) }}</td>
+          <td>{{ alcanceLabel(regla) }}</td>
           <td>{{ configResumen(regla) }}</td>
           <td>
             <span class="badge py-2" [ngClass]="regla.activo ? 'bg-success' : 'bg-secondary'">
@@ -116,8 +142,19 @@
             </span>
           </td>
           <td class="text-end">
-            <button type="button" class="btn btn-outline-primary btn-sm me-1" (click)="editarRegla(regla)">Editar</button>
-            <button *ngIf="regla.activo" type="button" class="btn btn-outline-danger btn-sm" (click)="desactivarRegla(regla)">Desactivar</button>
+            <span class="btn" [popover]="accionesRegla" [outsideClick]="true" tooltip="Acciones">
+              <i class="fa fa-ellipsis-vertical fa-fw"></i>
+            </span>
+            <ng-template #accionesRegla>
+              <div class="d-flex flex-column align-items-start">
+                <a class="btn" (click)="editarRegla(regla)">
+                  <i class="fa fa-fw fa-pencil"></i> Editar
+                </a>
+                <a *ngIf="regla.activo" class="btn" (click)="desactivarRegla(regla)">
+                  <i class="fa fa-fw fa-ban"></i> Desactivar
+                </a>
+              </div>
+            </ng-template>
           </td>
         </tr>
       </tbody>

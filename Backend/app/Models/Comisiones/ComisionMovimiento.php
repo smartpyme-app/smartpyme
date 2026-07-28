@@ -4,7 +4,6 @@ namespace App\Models\Comisiones;
 
 use App\Models\Admin\Empresa;
 use App\Models\Inventario\Categorias\Categoria;
-use App\Models\Inventario\Categorias\SubCategoria;
 use App\Models\User;
 use App\Models\Ventas\Detalle;
 use App\Models\Ventas\Venta;
@@ -87,7 +86,8 @@ class ComisionMovimiento extends Model
 
     public function subcategoria()
     {
-        return $this->belongsTo(SubCategoria::class, 'id_subcategoria');
+        // id_subcategoria → categorias.id (fila hija)
+        return $this->belongsTo(Categoria::class, 'id_subcategoria');
     }
 
     public function movimientoOrigen()

@@ -556,7 +556,7 @@ class FacturacionService
     
                 DB::commit();
                 $venta->refresh();
-                $venta->load(['detalles', 'cliente', 'impuestos']);
+                $venta->load(['detalles', 'cliente', 'impuestos', 'giftCardsEmitidas']);
 
                 return $venta;
 

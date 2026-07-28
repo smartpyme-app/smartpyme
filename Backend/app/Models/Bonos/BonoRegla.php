@@ -16,6 +16,9 @@ class BonoRegla extends Model
 
     const VENTANA_MENSUAL = 'mensual';
 
+    const ALCANCE_GLOBAL = 'global';
+    const ALCANCE_VENDEDORES = 'vendedores';
+
     protected $fillable = [
         'id_empresa',
         'nombre',
@@ -23,11 +26,14 @@ class BonoRegla extends Model
         'ventana',
         'config',
         'activo',
+        'alcance',
+        'id_vendedores',
     ];
 
     protected $casts = [
         'config' => 'array',
         'activo' => 'boolean',
+        'id_vendedores' => 'array',
     ];
 
     protected static function boot()

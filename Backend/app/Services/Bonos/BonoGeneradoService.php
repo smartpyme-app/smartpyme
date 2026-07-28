@@ -95,6 +95,26 @@ class BonoGeneradoService
         });
     }
 
+    /** @return array{bono: BonoGenerado, empresa: \App\Models\Admin\Empresa|null} */
+    public function datosComprobante(int $idEmpresa, int $id): array
+    {
+        $bono = BonoGenerado::query()
+            ->where('id_empresa', $idEmpresa)
+            ->with(['vendedor', 'regla', 'aprobadoPor', 'empresa'])
+            ->findOrFail($id);
+
+        if (! in_array($bono->estado, [BonoGenerado::ESTADO_APROBADO, BonoGenerado::ESTADO_PAGADO], true)) {
+            throw ValidationException::withMessages([
+                'estado' => ['Solo se puede imprimir comprobante de bonos aprobados o pagados.'],
+            ]);
+        }
+
+        return [
+            'bono' => $bono,
+            'empresa' => $bono->empresa,
+        ];
+    }
+
     private function obtenerParaTransicion(int $idEmpresa, int $id): BonoGenerado
     {
         if ($this->findForUpdate !== null) {

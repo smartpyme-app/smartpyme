@@ -15,35 +15,45 @@ class ComisionPorcentajeResolver
     private Closure $findSub;
 
     /**
-     * @param  Closure(int, int): float|int|string|null  $findCat
-     * @param  Closure(int, int): float|int|string|null  $findSub
+     * @param  Closure(int, int): float|int|string|null|null  $findCat
+     * @param  Closure(int, int): float|int|string|null|null  $findSub
      */
-    public function __construct(Closure $findCat, Closure $findSub)
+    public function __construct(?Closure $findCat = null, ?Closure $findSub = null)
     {
-        $this->findCat = $findCat;
-        $this->findSub = $findSub;
+        // Defaults for container DI; tests can inject stubs.
+        $this->findCat = $findCat ?? self::defaultFindCat();
+        $this->findSub = $findSub ?? self::defaultFindSub();
     }
 
     public static function fromDatabase(): self
     {
-        return new self(
-            function (int $idEmpresa, int $idCategoria) {
-                $config = ComisionCategoriaConfig::withoutGlobalScope('empresa')
-                    ->where('id_empresa', $idEmpresa)
-                    ->where('id_categoria', $idCategoria)
-                    ->first();
+        return new self();
+    }
 
-                return $config?->porcentaje;
-            },
-            function (int $idEmpresa, int $idSubcategoria) {
-                $config = ComisionSubcategoriaConfig::withoutGlobalScope('empresa')
-                    ->where('id_empresa', $idEmpresa)
-                    ->where('id_subcategoria', $idSubcategoria)
-                    ->first();
+    /** @return Closure(int, int): float|int|string|null */
+    private static function defaultFindCat(): Closure
+    {
+        return function (int $idEmpresa, int $idCategoria) {
+            $config = ComisionCategoriaConfig::withoutGlobalScope('empresa')
+                ->where('id_empresa', $idEmpresa)
+                ->where('id_categoria', $idCategoria)
+                ->first();
 
-                return $config?->porcentaje;
-            }
-        );
+            return $config?->porcentaje;
+        };
+    }
+
+    /** @return Closure(int, int): float|int|string|null */
+    private static function defaultFindSub(): Closure
+    {
+        return function (int $idEmpresa, int $idSubcategoria) {
+            $config = ComisionSubcategoriaConfig::withoutGlobalScope('empresa')
+                ->where('id_empresa', $idEmpresa)
+                ->where('id_subcategoria', $idSubcategoria)
+                ->first();
+
+            return $config?->porcentaje;
+        };
     }
 
     public function resolver(int $idEmpresa, ?int $idCategoria, ?int $idSubcategoria): float

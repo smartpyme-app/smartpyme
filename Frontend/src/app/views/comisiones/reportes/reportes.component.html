@@ -25,7 +25,13 @@
 
 <section class="bg-white p-4 rounded mb-3">
   <div class="d-flex justify-content-between align-items-center mb-3">
-    <h5 class="mb-0">Movimientos</h5>
+    <div>
+      <h5 class="mb-1">Movimientos</h5>
+      <p class="text-muted small mb-0">
+        Aquí se listan las comisiones generadas. Requiere: % &gt; 0 en la categoría del producto,
+        venta en estado Pagada, y vendedor (el del detalle si existe; si no, el de la venta).
+      </p>
+    </div>
     <button class="btn btn-default btn-sm" (click)="filtrarMovimientos()" [disabled]="loadingMovimientos">
       <i class="fa fa-filter me-1"></i> Filtrar por fechas
     </button>
@@ -50,34 +56,26 @@
             <span class="badge bg-primary">Cargando...</span>
           </td>
         </tr>
-        <tr *ngIf="!loadingMovimientos && movimientos.length === 0">
-          <td colspan="7" class="text-center">
-            <span class="badge bg-secondary">Sin movimientos en el rango</span>
+        <tr *ngIf="!loadingMovimientos && (!movimientos?.data || movimientos.data.length === 0)">
+          <td colspan="7" class="text-center text-muted">
+            Sin movimientos. Si ya vendió, revise que la categoría (ej. Vestidos) tenga % &gt; 0
+            en Configuración y que la venta esté Pagada.
           </td>
         </tr>
-        <tr *ngFor="let mov of movimientos">
+        <tr *ngFor="let mov of movimientos?.data">
           <td>{{ mov.fecha_evento | date:'yyyy-MM-dd' }}</td>
           <td>{{ mov.vendedor?.name || ('#' + mov.id_vendedor) }}</td>
           <td>{{ mov.categoria?.nombre || '—' }}</td>
           <td>{{ mov.origen }}</td>
           <td>{{ mov.monto_base | number:'1.2-2' }}</td>
-          <td>{{ mov.porcentaje | number:'1.2-2' }}%</td>
+          <td>{{ (mov.porcentaje_aplicado ?? mov.porcentaje) | number:'1.2-2' }}%</td>
           <td>{{ mov.monto_comision | number:'1.2-2' }}</td>
         </tr>
       </tbody>
     </table>
   </div>
 
-  <div class="d-flex justify-content-between align-items-center mt-3" *ngIf="meta.last_page > 1">
-    <small class="text-muted">{{ meta.total }} movimientos</small>
-    <div class="btn-group btn-group-sm">
-      <button class="btn btn-default" (click)="changePage(meta.current_page - 1)" [disabled]="meta.current_page <= 1">
-        Anterior
-      </button>
-      <button class="btn btn-default disabled">{{ meta.current_page }} / {{ meta.last_page }}</button>
-      <button class="btn btn-default" (click)="changePage(meta.current_page + 1)" [disabled]="meta.current_page >= meta.last_page">
-        Siguiente
-      </button>
-    </div>
+  <div class="col-12" *ngIf="movimientos && movimientos.last_page && movimientos.last_page > 1">
+    <app-pagination [items]="movimientos" (setPagination)="setPagination($event)"></app-pagination>
   </div>
 </section>

@@ -178,6 +178,7 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit, OnDe
         this.verificarFidelizacionHabilitada();
         this.verificarComisionesHabilitada();
         this.verificarBonosHabilitada();
+        this.verificarGiftCardsHabilitada();
         this.verificarModuloRestauranteHabilitado();
         this.verificarDescargaDtesHabilitada();
 
@@ -188,6 +189,7 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit, OnDe
                 this.verificarFidelizacionHabilitada();
                 this.verificarComisionesHabilitada();
                 this.verificarBonosHabilitada();
+                this.verificarGiftCardsHabilitada();
                 this.verificarModuloRestauranteHabilitado();
                 this.verificarDescargaDtesHabilitada();
             });
@@ -202,6 +204,7 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit, OnDe
                 this.verificarFidelizacionHabilitada();
                 this.verificarComisionesHabilitada();
                 this.verificarBonosHabilitada();
+                this.verificarGiftCardsHabilitada();
                 this.verificarModuloRestauranteHabilitado();
                 this.verificarDescargaDtesHabilitada();
                 this.actualizarMenusRestaurantePedidos();
@@ -231,6 +234,13 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit, OnDe
         this.funcionalidadesService.verificarAcceso('bonos-vendedores').subscribe({
             next: (tieneAcceso) => { this.tieneBonosHabilitada = tieneAcceso; },
             error: () => { this.tieneBonosHabilitada = false; }
+        });
+    }
+
+    private verificarGiftCardsHabilitada(): void {
+        this.funcionalidadesService.verificarAcceso('gift-cards').subscribe({
+            next: (tieneAcceso) => { this.tieneGiftCardsHabilitada = tieneAcceso; },
+            error: () => { this.tieneGiftCardsHabilitada = false; }
         });
     }
 

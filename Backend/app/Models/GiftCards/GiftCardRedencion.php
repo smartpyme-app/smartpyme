@@ -5,7 +5,6 @@ namespace App\Models\GiftCards;
 use App\Models\Admin\Empresa;
 use App\Models\Comisiones\ComisionMovimiento;
 use App\Models\Inventario\Categorias\Categoria;
-use App\Models\Inventario\Categorias\SubCategoria;
 use App\Models\User;
 use App\Models\Ventas\Venta;
 use Auth;
@@ -73,7 +72,7 @@ class GiftCardRedencion extends Model
 
     public function subcategoria()
     {
-        return $this->belongsTo(SubCategoria::class, 'id_subcategoria');
+        return $this->belongsTo(Categoria::class, 'id_subcategoria');
     }
 
     public function comisionMovimiento()

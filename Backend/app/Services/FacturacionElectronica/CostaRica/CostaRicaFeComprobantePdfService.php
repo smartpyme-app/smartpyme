@@ -28,7 +28,7 @@ final class CostaRicaFeComprobantePdfService
     public function generarTicketImpresion(int $ventaId, Empresa $empresa)
     {
         $venta = Venta::query()
-            ->with(['detalles', 'cliente', 'empresa', 'sucursal'])
+            ->with(['detalles', 'cliente', 'empresa', 'sucursal', 'giftCardsEmitidas'])
             ->findOrFail($ventaId);
 
         $documento = Documento::findOrFail($venta->id_documento);

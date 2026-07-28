@@ -14,6 +14,8 @@ export interface BonoRegla {
   ventana: string;
   config: { meta?: number; bono?: number; tramos?: BonoTramo[] };
   activo: boolean;
+  alcance: 'global' | 'vendedores';
+  id_vendedores: number[] | null;
 }
 
 export interface BonoGenerado {
@@ -40,6 +42,7 @@ export interface BonoEvaluacionResumen {
   actualizados: number;
   omitidos_monto: number;
   protegidos: number;
+  eliminados?: number;
   periodo?: { inicio: string; fin: string };
 }
 
@@ -55,6 +58,8 @@ export interface BonoReglaPayload {
   ventana?: string;
   config: BonoRegla['config'];
   activo?: boolean;
+  alcance: 'global' | 'vendedores';
+  id_vendedores?: number[] | null;
 }
 
 @Injectable({
@@ -94,6 +99,10 @@ export class BonosService {
 
   pagar(id: number): Observable<BonoApiResponse<BonoGenerado>> {
     return this.apiService.store(`bonos/generados/${id}/pagar`, {});
+  }
+
+  descargarComprobante(id: number): Observable<Blob> {
+    return this.apiService.export(`bonos/generados/${id}/comprobante`, {});
   }
 
   evaluar(periodoInicio?: string, periodoFin?: string): Observable<BonoApiResponse<BonoEvaluacionResumen>> {

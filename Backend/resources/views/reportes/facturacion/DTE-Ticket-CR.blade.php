@@ -217,6 +217,8 @@
         Consulta: atv.hacienda.go.cr
     </p>
 
+    @include('reportes.facturacion.partials.gift-cards-emitidas')
+
     @include('reportes.facturacion.partials.documento-nota')
 
     <br>

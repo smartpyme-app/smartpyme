@@ -1,10 +1,12 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, TemplateRef } from '@angular/core';
+import { BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import {
   IncentivosService,
   VendedorIncentivosDetalle,
   VendedorIncentivosResumen
 } from '@services/incentivos.service';
+import { ModalManagerService } from '@services/modal-manager.service';
 
 @Component({
   selector: 'app-incentivos-dashboard',
@@ -18,11 +20,13 @@ export class DashboardComponent implements OnInit {
   loadingDetalle = false;
   vendedores: VendedorIncentivosResumen[] = [];
   detalle: VendedorIncentivosDetalle | null = null;
-  vendedorSeleccionadoId: number | null = null;
+  vendedorSeleccionado: VendedorIncentivosResumen | null = null;
+  modalRef?: BsModalRef;
 
   constructor(
     private incentivosService: IncentivosService,
-    private alertService: AlertService
+    private alertService: AlertService,
+    private modalManager: ModalManagerService
   ) {}
 
   ngOnInit(): void {
@@ -45,7 +49,7 @@ export class DashboardComponent implements OnInit {
 
     this.loading = true;
     this.detalle = null;
-    this.vendedorSeleccionadoId = null;
+    this.vendedorSeleccionado = null;
 
     this.incentivosService.listarVendedores(this.desde, this.hasta).subscribe({
       next: (response) => {
@@ -59,9 +63,14 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  verDetalle(vendedor: VendedorIncentivosResumen): void {
-    this.vendedorSeleccionadoId = vendedor.id_vendedor;
+  verDetalle(template: TemplateRef<unknown>, vendedor: VendedorIncentivosResumen): void {
+    this.vendedorSeleccionado = vendedor;
+    this.detalle = null;
     this.loadingDetalle = true;
+    this.modalRef = this.modalManager.openModal(template, {
+      class: 'modal-lg modal-dialog-scrollable',
+      backdrop: true
+    });
 
     this.incentivosService.detalleVendedor(vendedor.id_vendedor, this.desde, this.hasta).subscribe({
       next: (response) => {
@@ -75,7 +84,34 @@ export class DashboardComponent implements OnInit {
     });
   }
 
+  cerrarModal(): void {
+    this.modalManager.closeModal(this.modalRef);
+    this.detalle = null;
+    this.vendedorSeleccionado = null;
+    this.loadingDetalle = false;
+  }
+
   totalGeneral(total: { comisiones: number; bonos_aprobados_o_pagados: number }): number {
     return (total?.comisiones ?? 0) + (total?.bonos_aprobados_o_pagados ?? 0);
+  }
+
+  estadoBonoClass(estado: string): string {
+    switch (estado) {
+      case 'pendiente':
+        return 'bg-warning text-dark';
+      case 'aprobado':
+        return 'bg-info';
+      case 'pagado':
+        return 'bg-success';
+      default:
+        return 'bg-secondary';
+    }
+  }
+
+  progresoPct(actual: number, meta: number): number {
+    if (!meta || meta <= 0) {
+      return 0;
+    }
+    return Math.min(100, Math.round((actual / meta) * 100));
   }
 }

@@ -12,6 +12,7 @@ Route::middleware(['verificar.funcionalidad:comisiones-vendedores'])->group(func
     Route::put('comisiones/config/subcategorias/{id_subcategoria}', [ComisionConfigController::class, 'actualizarSubcategoria']);
 
     Route::get('comisiones/periodos', [ComisionPeriodoController::class, 'index']);
+    Route::get('comisiones/periodos/{id}', [ComisionPeriodoController::class, 'show']);
     Route::post('comisiones/periodos/{id}/cerrar', [ComisionPeriodoController::class, 'cerrar']);
 
     Route::post('comisiones/liquidaciones/{id}/pagar', [ComisionLiquidacionController::class, 'pagar']);

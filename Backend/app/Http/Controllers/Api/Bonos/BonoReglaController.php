@@ -49,6 +49,9 @@ class BonoReglaController extends Controller
             'ventana' => 'nullable|string|max:32',
             'config' => 'required|array',
             'activo' => 'nullable|boolean',
+            'alcance' => 'nullable|string|in:global,vendedores',
+            'id_vendedores' => 'nullable|array',
+            'id_vendedores.*' => 'integer|min:1',
         ]);
 
         $regla = $this->reglaService->crear(
@@ -71,6 +74,9 @@ class BonoReglaController extends Controller
             'ventana' => 'nullable|string|max:32',
             'config' => 'sometimes|required|array',
             'activo' => 'nullable|boolean',
+            'alcance' => 'nullable|string|in:global,vendedores',
+            'id_vendedores' => 'nullable|array',
+            'id_vendedores.*' => 'integer|min:1',
         ]);
 
         $regla = $this->reglaService->actualizar(

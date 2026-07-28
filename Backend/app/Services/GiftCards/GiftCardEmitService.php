@@ -81,7 +81,9 @@ class GiftCardEmitService
                 continue;
             }
 
-            $monto = (float) $detalle->total;
+            // Face value = lo cobrado al cliente. En facturación v2 `total` es sin IVA
+            // y el IVA va en `iva` del detalle (26.55 + 3.45 = 30).
+            $monto = round((float) ($detalle->total ?? 0) + (float) ($detalle->iva ?? 0), 4);
             if ($monto <= 0) {
                 continue;
             }
