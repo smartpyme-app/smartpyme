@@ -133,6 +133,11 @@ export const routes: Routes = [
           path: '',
           loadChildren: () => import('./views/comisiones/comisiones.module').then(m => m.ComisionesModule),
         },
+        // Gift cards
+        {
+          path: '',
+          loadChildren: () => import('./views/gift-cards/gift-cards.module').then(m => m.GiftCardsModule),
+        },
         // DTE Management (ruta explícita; evita colisión con otros lazy modules en path '')
         {
           path: 'dte-management',

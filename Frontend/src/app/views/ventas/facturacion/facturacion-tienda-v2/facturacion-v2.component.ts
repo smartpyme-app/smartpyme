@@ -1992,18 +1992,18 @@ export class FacturacionV2Component implements OnInit {
       return false;
     }
 
-    const montoGift = montoPagoGiftCardVenta(this.venta, this.formaPagos);
-    if (this.giftCardInfo && this.giftCardInfo.codigo !== codigo) {
+    if (!this.giftCardInfo || this.giftCardInfo.codigo !== codigo) {
       this.alertService.warning('Gift card', 'Consulte el saldo del código ingresado antes de facturar.');
       return false;
     }
 
-    if (this.giftCardInfo && this.giftCardInfo.estado !== 'activa') {
+    const montoGift = montoPagoGiftCardVenta(this.venta, this.formaPagos);
+    if (this.giftCardInfo.estado !== 'activa') {
       this.alertService.error(`La gift card está ${this.giftCardInfo.estado}.`);
       return false;
     }
 
-    if (this.giftCardInfo && this.giftCardInfo.saldo < montoGift) {
+    if (this.giftCardInfo.saldo < montoGift) {
       this.alertService.error('Saldo insuficiente en la gift card.');
       return false;
     }

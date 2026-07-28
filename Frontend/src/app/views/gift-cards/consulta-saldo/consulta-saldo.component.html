@@ -1,0 +1,74 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+  <h2 class="page-heading">Consulta saldo — Gift Cards</h2>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+  <h5 class="mb-3">Buscar por código</h5>
+  <div class="row g-3 align-items-end">
+    <div class="col-md-4">
+      <label class="form-label">Código</label>
+      <input type="text" class="form-control" [(ngModel)]="codigo" (keyup.enter)="consultar()" placeholder="Ej. GC-001">
+    </div>
+    <div class="col-md-3">
+      <button class="btn btn-primary" (click)="consultar()" [disabled]="lookupLoading">
+        <span *ngIf="lookupLoading" class="spinner-border spinner-border-sm me-2"></span>
+        Consultar
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="lookupError" class="alert alert-warning mt-3 mb-0">{{ lookupError }}</div>
+
+  <div *ngIf="card" class="mt-3 p-3 border rounded">
+    <div class="row">
+      <div class="col-md-3"><strong>Código:</strong> {{ card.codigo }}</div>
+      <div class="col-md-3"><strong>Saldo:</strong> {{ card.saldo | number:'1.2-2' }}</div>
+      <div class="col-md-3"><strong>Estado:</strong> {{ card.estado }}</div>
+      <div class="col-md-3"><strong>Monto inicial:</strong> {{ card.monto_inicial | number:'1.2-2' }}</div>
+    </div>
+  </div>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+  <h5 class="mb-3">Gift cards emitidas</h5>
+
+  <div class="table-responsive">
+    <table class="table table-borderless table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Saldo</th>
+          <th>Estado</th>
+          <th>Monto inicial</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngIf="listLoading">
+          <td colspan="5" class="text-center"><span class="badge bg-primary">Cargando...</span></td>
+        </tr>
+        <tr *ngIf="!listLoading && cards.length === 0">
+          <td colspan="5" class="text-center"><span class="badge bg-secondary">Sin gift cards</span></td>
+        </tr>
+        <tr *ngFor="let item of cards">
+          <td>{{ item.codigo }}</td>
+          <td>{{ item.saldo | number:'1.2-2' }}</td>
+          <td>{{ item.estado }}</td>
+          <td>{{ item.monto_inicial | number:'1.2-2' }}</td>
+          <td>
+            <button class="btn btn-default btn-sm" (click)="codigo = item.codigo; consultar()">Consultar</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="d-flex justify-content-between align-items-center mt-3" *ngIf="meta.last_page > 1">
+    <small class="text-muted">{{ meta.total }} gift cards</small>
+    <div class="btn-group btn-group-sm">
+      <button class="btn btn-default" (click)="changePage(meta.current_page - 1)" [disabled]="meta.current_page <= 1">Anterior</button>
+      <button class="btn btn-default disabled">{{ meta.current_page }} / {{ meta.last_page }}</button>
+      <button class="btn btn-default" (click)="changePage(meta.current_page + 1)" [disabled]="meta.current_page >= meta.last_page">Siguiente</button>
+    </div>
+  </div>
+</section>

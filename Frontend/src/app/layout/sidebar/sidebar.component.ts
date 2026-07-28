@@ -63,6 +63,7 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
     public authUser: any = {};
     public tieneFidelizacionHabilitada: boolean = false;
     public tieneComisionesHabilitada: boolean = false;
+    public tieneGiftCardsHabilitada: boolean = false;
     public modules: any = [];
     public contabilidadHabilitada: boolean = false;
     public tieneModuloRestaurante: boolean = false;
@@ -196,6 +197,7 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
         this.verificarAccesoContabilidad();
         this.verificarFidelizacionHabilitada();
         this.verificarComisionesHabilitada();
+        this.verificarGiftCardsHabilitada();
         this.verificarModuloRestauranteHabilitado();
         this.verificarDescargaDtesHabilitada();
 
@@ -205,6 +207,7 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
                 this.verificarAccesoContabilidad();
                 this.verificarFidelizacionHabilitada();
                 this.verificarComisionesHabilitada();
+                this.verificarGiftCardsHabilitada();
                 this.verificarModuloRestauranteHabilitado();
                 this.verificarDescargaDtesHabilitada();
             });
@@ -218,6 +221,7 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
                     this.verificarAccesoContabilidad();
                     this.verificarFidelizacionHabilitada();
                     this.verificarComisionesHabilitada();
+                    this.verificarGiftCardsHabilitada();
                     this.verificarModuloRestauranteHabilitado();
                     this.verificarDescargaDtesHabilitada();
                 } else {
@@ -497,6 +501,17 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
             error: () => {
                 this.tieneComisionesHabilitada = false;
             }
+        });
+    }
+
+    private verificarGiftCardsHabilitada() {
+        this.funcionalidadesService.verificarAcceso('gift-cards').subscribe({
+            next: (tieneAcceso: boolean) => {
+                this.tieneGiftCardsHabilitada = tieneAcceso;
+            },
+            error: () => {
+                this.tieneGiftCardsHabilitada = false;
+            },
         });
     }
 
