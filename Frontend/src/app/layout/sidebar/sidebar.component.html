@@ -289,6 +289,17 @@
               </ul>
             </div>
           </li>
+          <li *ngIf="tieneBonosHabilitada" class="mb-1">
+            <button (click)="toggleBonos()" tooltip="Bonos" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!bonosIsCollapsed" aria-controls="collapseBonos">
+              <img src="/assets/icons/money-transaction.png" class="icon me-2">Bonos
+            </button>
+            <div [collapse]="bonosIsCollapsed" [isAnimated]="true">
+              <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/bonos/reglas']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/settings.png" class="icon me-2">Reglas</a></li>
+                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/bonos/generados']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/clipboard.png" class="icon me-2">Generados</a></li>
+              </ul>
+            </div>
+          </li>
           <li *ngIf="tieneGiftCardsHabilitada" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="mb-1">
             <a [routerLink]="['/gift-cards/consulta']" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1 link-body-emphasis text-decoration-none">
               <img src="/assets/icons/money-transaction.png" class="icon me-2">Gift Cards

@@ -37,6 +37,7 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit, OnDe
     public planillaIsCollapsed:boolean = true;
     public lealtadClientesIsCollapsed:boolean = true;
     public comisionesIsCollapsed:boolean = true;
+    public bonosIsCollapsed:boolean = true;
     public restauranteIsCollapsed:boolean = true;
     public pedidosIsCollapsed:boolean = true;
     public adminIsCollapsed:boolean = true;
@@ -50,6 +51,7 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit, OnDe
     public contabilidadHabilitada: boolean = false;
     public tieneFidelizacionHabilitada = false;
     public tieneComisionesHabilitada = false;
+    public tieneBonosHabilitada = false;
     public tieneModuloRestaurante = false;
     public mostrarMenuRestaurante = false;
     public mostrarMenuPedidos = false;
@@ -130,6 +132,11 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit, OnDe
         } else {
             this.comisionesIsCollapsed = JSON.parse(localStorage.getItem('comisionesIsCollapsed')!);
         }
+        if (!localStorage.getItem('bonosIsCollapsed')) {
+            localStorage.setItem('bonosIsCollapsed', this.bonosIsCollapsed.toString());
+        } else {
+            this.bonosIsCollapsed = JSON.parse(localStorage.getItem('bonosIsCollapsed')!);
+        }
         if (!localStorage.getItem('restauranteIsCollapsed')) {
             localStorage.setItem('restauranteIsCollapsed', this.restauranteIsCollapsed.toString());
         } else {
@@ -165,6 +172,7 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit, OnDe
         this.verificarAccesoContabilidad();
         this.verificarFidelizacionHabilitada();
         this.verificarComisionesHabilitada();
+        this.verificarBonosHabilitada();
         this.verificarModuloRestauranteHabilitado();
         this.verificarDescargaDtesHabilitada();
 
@@ -174,6 +182,7 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit, OnDe
                 this.verificarAccesoContabilidad();
                 this.verificarFidelizacionHabilitada();
                 this.verificarComisionesHabilitada();
+                this.verificarBonosHabilitada();
                 this.verificarModuloRestauranteHabilitado();
                 this.verificarDescargaDtesHabilitada();
             });
@@ -187,6 +196,7 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit, OnDe
                 this.verificarAccesoContabilidad();
                 this.verificarFidelizacionHabilitada();
                 this.verificarComisionesHabilitada();
+                this.verificarBonosHabilitada();
                 this.verificarModuloRestauranteHabilitado();
                 this.verificarDescargaDtesHabilitada();
                 this.actualizarMenusRestaurantePedidos();
@@ -209,6 +219,13 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit, OnDe
         this.funcionalidadesService.verificarAcceso('comisiones-vendedores').subscribe({
             next: (tieneAcceso) => { this.tieneComisionesHabilitada = tieneAcceso; },
             error: () => { this.tieneComisionesHabilitada = false; }
+        });
+    }
+
+    private verificarBonosHabilitada(): void {
+        this.funcionalidadesService.verificarAcceso('bonos-vendedores').subscribe({
+            next: (tieneAcceso) => { this.tieneBonosHabilitada = tieneAcceso; },
+            error: () => { this.tieneBonosHabilitada = false; }
         });
     }
 
@@ -372,6 +389,15 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit, OnDe
         this.toggleSidebarMenu();
     }
 
+    toggleBonos() {
+        if (this.bonosIsCollapsed) {
+            this.closeAll();
+        }
+        this.bonosIsCollapsed = !this.bonosIsCollapsed;
+        localStorage.setItem('bonosIsCollapsed', this.bonosIsCollapsed.toString());
+        this.toggleSidebarMenu();
+    }
+
     toggleRestaurante() {
         if (this.restauranteIsCollapsed) {
             this.closeAll();
@@ -426,6 +452,8 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit, OnDe
         localStorage.setItem('lealtadClientesIsCollapsed', this.lealtadClientesIsCollapsed.toString());
         this.comisionesIsCollapsed = true;
         localStorage.setItem('comisionesIsCollapsed', this.comisionesIsCollapsed.toString());
+        this.bonosIsCollapsed = true;
+        localStorage.setItem('bonosIsCollapsed', this.bonosIsCollapsed.toString());
         this.restauranteIsCollapsed = true;
         localStorage.setItem('restauranteIsCollapsed', this.restauranteIsCollapsed.toString());
         this.pedidosIsCollapsed = true;
