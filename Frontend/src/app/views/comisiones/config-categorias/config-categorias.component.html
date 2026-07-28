@@ -1,0 +1,108 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+  <h2 class="page-heading">Configuración de comisiones por categoría</h2>
+  <button class="btn btn-default" (click)="loadCategorias()" [disabled]="loading" tooltip="Recargar">
+    <i class="fa fa-refresh me-2"></i> Recargar
+  </button>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+  <p class="text-muted mb-3">
+    Defina el porcentaje de comisión por categoría. Puede configurar un override por subcategoría.
+  </p>
+
+  <div class="table-responsive">
+    <table class="table table-borderless table-hover mb-0">
+      <thead>
+        <tr>
+          <th style="width: 40px;"></th>
+          <th>Categoría</th>
+          <th style="width: 160px;">Porcentaje (%)</th>
+          <th style="width: 120px;" class="text-end">Acción</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngIf="loading">
+          <td colspan="4" class="text-center">
+            <span class="badge bg-primary">Cargando...</span>
+          </td>
+        </tr>
+        <tr *ngIf="!loading && categorias.length === 0">
+          <td colspan="4" class="text-center">
+            <span class="badge bg-secondary">No hay categorías activas</span>
+          </td>
+        </tr>
+        <ng-container *ngFor="let categoria of categorias">
+          <tr>
+            <td>
+              <button
+                *ngIf="categoria.subcategorias?.length"
+                type="button"
+                class="btn btn-sm btn-link p-0"
+                (click)="toggleExpand(categoria.id_categoria)">
+                <i class="fa" [ngClass]="expandedCategoriaId === categoria.id_categoria ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+              </button>
+            </td>
+            <td><strong>{{ categoria.nombre }}</strong></td>
+            <td>
+              <input
+                type="number"
+                class="form-control form-control-sm"
+                [(ngModel)]="categoria.porcentaje"
+                min="0"
+                max="100"
+                step="0.01">
+            </td>
+            <td class="text-end">
+              <button
+                type="button"
+                class="btn btn-primary btn-sm"
+                (click)="guardarCategoria(categoria)"
+                [disabled]="savingCategoriaId === categoria.id_categoria">
+                <span *ngIf="savingCategoriaId === categoria.id_categoria" class="spinner-border spinner-border-sm me-1"></span>
+                Guardar
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="expandedCategoriaId === categoria.id_categoria && categoria.subcategorias?.length">
+            <td colspan="4" class="p-0">
+              <table class="table table-sm mb-0 ms-4">
+                <thead>
+                  <tr class="text-muted">
+                    <th>Subcategoría</th>
+                    <th style="width: 160px;">Override (%)</th>
+                    <th style="width: 120px;" class="text-end">Acción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let sub of categoria.subcategorias">
+                    <td>{{ sub.nombre }}</td>
+                    <td>
+                      <input
+                        type="number"
+                        class="form-control form-control-sm"
+                        [(ngModel)]="sub.porcentaje"
+                        min="0"
+                        max="100"
+                        step="0.01"
+                        placeholder="Hereda categoría">
+                    </td>
+                    <td class="text-end">
+                      <button
+                        type="button"
+                        class="btn btn-outline-primary btn-sm"
+                        (click)="guardarSubcategoria(sub)"
+                        [disabled]="savingSubcategoriaId === sub.id_subcategoria">
+                        <span *ngIf="savingSubcategoriaId === sub.id_subcategoria" class="spinner-border spinner-border-sm me-1"></span>
+                        Guardar
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </td>
+          </tr>
+        </ng-container>
+      </tbody>
+    </table>
+  </div>
+</section>

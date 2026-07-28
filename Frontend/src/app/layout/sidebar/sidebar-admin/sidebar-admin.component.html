@@ -186,6 +186,29 @@
                     </div>
                 </li>
             }
+            <li *ngIf="tieneComisionesHabilitada" class="mb-1">
+                <button (click)="toggleComisiones()" tooltip="Comisiones" [adaptivePosition]="false" placement="right"
+                    class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1"
+                    [attr.aria-expanded]="!comisionesIsCollapsed" aria-controls="collapseComisionesAdmin">
+                    <img src="/assets/icons/clipboard.png" class="icon me-2">Comisiones
+                </button>
+                <div [collapse]="comisionesIsCollapsed" [isAnimated]="true">
+                    <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                        <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a
+                                [routerLink]="['/comisiones/configuracion']"
+                                class="link-body-emphasis d-inline-flex text-decoration-none"><img
+                                    src="/assets/icons/settings.png" class="icon me-2">Configuración</a></li>
+                        <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a
+                                [routerLink]="['/comisiones/periodos']"
+                                class="link-body-emphasis d-inline-flex text-decoration-none"><img
+                                    src="/assets/icons/clipboard.png" class="icon me-2">Períodos</a></li>
+                        <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a
+                                [routerLink]="['/comisiones/reportes']"
+                                class="link-body-emphasis d-inline-flex text-decoration-none"><img
+                                    src="/assets/icons/download.png" class="icon me-2">Reportes</a></li>
+                    </ul>
+                </div>
+            </li>
             <li *ngIf="mostrarMenuRestaurante" class="mb-1">
                 <button (click)="toggleRestaurante()" tooltip="Restaurante" [adaptivePosition]="false" placement="right"
                     class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1"

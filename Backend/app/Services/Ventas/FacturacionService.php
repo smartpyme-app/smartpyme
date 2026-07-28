@@ -523,6 +523,18 @@ class FacturacionService
                         // No se interrumpe la transacción por errores en puntos de acumulación
                     }
                 }
+
+                if ($venta->estado == 'Pagada') {
+                    try {
+                        $venta->loadMissing('detalles.producto');
+                        app(\App\Services\Comisiones\ComisionService::class)->registrarVentaPagada($venta);
+                    } catch (\Throwable $e) {
+                        Log::error('comisiones: fallo al registrar venta', [
+                            'venta' => $venta->id,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                }
     
                 DB::commit();
                 $venta->refresh();

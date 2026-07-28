@@ -128,6 +128,11 @@ export const routes: Routes = [
           path: '',
           loadChildren: () => import('./views/fidelizacion/fidelizacion.module').then(m => m.FidelizacionModule),
         },
+        // Comisiones vendedores
+        {
+          path: '',
+          loadChildren: () => import('./views/comisiones/comisiones.module').then(m => m.ComisionesModule),
+        },
         // DTE Management (ruta explícita; evita colisión con otros lazy modules en path '')
         {
           path: 'dte-management',

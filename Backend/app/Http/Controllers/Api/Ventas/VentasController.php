@@ -15,6 +15,7 @@ use JWTAuth;
 use Carbon\Carbon;
 use App\Services\FidelizacionCliente\ConsumoPuntosService as FidelizacionConsumoPuntosService;
 use App\Services\FidelizacionCliente\ReversionPuntosService;
+use App\Services\Comisiones\ComisionService;
 use Illuminate\Support\Facades\Log;
 
 use App\Models\Ventas\Venta;
@@ -587,6 +588,15 @@ class VentasController extends Controller
                         'error' => $e->getMessage(),
                     ]);
                 }
+
+                try {
+                    app(ComisionService::class)->ajustarPorAnulacionVenta($venta);
+                } catch (\Throwable $e) {
+                    Log::error('comisiones: fallo al ajustar por anulación', [
+                        'venta' => $venta->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
             }
 
             // El frontend ya envía el total sin propina, así que no necesitamos ajustarlo
@@ -763,6 +773,18 @@ class VentasController extends Controller
                         'error' => $e->getMessage()
                     ]);
                     // No se interrumpe la transacción por errores en puntos
+                }
+            }
+
+            if ($venta->estado == 'Pagada') {
+                try {
+                    $venta->loadMissing('detalles.producto');
+                    app(ComisionService::class)->registrarVentaPagada($venta);
+                } catch (\Throwable $e) {
+                    Log::error('comisiones: fallo al registrar venta', [
+                        'venta' => $venta->id,
+                        'error' => $e->getMessage(),
+                    ]);
                 }
             }
 

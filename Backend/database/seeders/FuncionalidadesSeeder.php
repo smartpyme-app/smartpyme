@@ -81,6 +81,24 @@ class FuncionalidadesSeeder extends Seeder
                 'descripcion' => 'Permite integrar con el servicio de envíos BoxFul',
                 'orden' => 9
             ],
+            [
+                'nombre' => 'Comisiones de Vendedores',
+                'slug' => 'comisiones-vendedores',
+                'descripcion' => 'Comisiones por categoría/subcategoría de producto con ledger y liquidación',
+                'orden' => 20
+            ],
+            [
+                'nombre' => 'Bonos de Vendedores',
+                'slug' => 'bonos-vendedores',
+                'descripcion' => 'Motor de bonos por reglas (independiente de comisiones)',
+                'orden' => 21
+            ],
+            [
+                'nombre' => 'Gift Cards',
+                'slug' => 'gift-cards',
+                'descripcion' => 'Emisión y redención de gift cards con saldo parcial',
+                'orden' => 22
+            ],
             //Se pueden agregar mas funcionalidades con el mismo formato
         ];
 

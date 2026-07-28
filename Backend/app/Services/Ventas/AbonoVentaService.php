@@ -210,6 +210,16 @@ class AbonoVentaService
             $venta->estado = 'Pagada';
             $venta->save();
 
+            try {
+                $venta->loadMissing('detalles.producto');
+                app(\App\Services\Comisiones\ComisionService::class)->registrarVentaPagada($venta);
+            } catch (\Throwable $e) {
+                Log::error('comisiones: fallo al registrar venta', [
+                    'venta' => $venta->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
             // Actualizar paquetes relacionados
             $paquetes = Paquete::where('id_venta', $venta->id)->get();
             foreach ($paquetes as $paquete) {

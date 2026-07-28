@@ -8,6 +8,8 @@ use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use App\Models\Ventas\Venta;
 use App\Models\Recibo;
 use App\Http\Requests\Recibos\StoreReciboRequest;
+use App\Services\Comisiones\ComisionService;
+use Illuminate\Support\Facades\Log;
 
 class RecibosController extends Controller
 {
@@ -24,6 +26,16 @@ class RecibosController extends Controller
         if ($venta && $venta->saldo <= 0) {
             $venta->estado = 'Pagada';
             $venta->save();
+
+            try {
+                $venta->loadMissing('detalles.producto');
+                app(ComisionService::class)->registrarVentaPagada($venta);
+            } catch (\Throwable $e) {
+                Log::error('comisiones: fallo al registrar venta', [
+                    'venta' => $venta->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
 
         return Response()->json($recibo, 200);

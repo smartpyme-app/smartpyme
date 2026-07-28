@@ -50,6 +50,7 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
     public contabilidadIsCollapsed:boolean = true;
     public bancosIsCollapsed:boolean = true;
     public lealtadClientesIsCollapsed:boolean = true;
+    public comisionesIsCollapsed:boolean = true;
     public licenciasIsCollapsed:boolean = true;
     public usuario: any = {};
     public isVisible: boolean = false;
@@ -61,6 +62,7 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
     public notificaciones: any = [];
     public authUser: any = {};
     public tieneFidelizacionHabilitada: boolean = false;
+    public tieneComisionesHabilitada: boolean = false;
     public modules: any = [];
     public contabilidadHabilitada: boolean = false;
     public tieneModuloRestaurante: boolean = false;
@@ -154,6 +156,11 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
         }else{
             this.lealtadClientesIsCollapsed = JSON.parse(localStorage.getItem('lealtadClientesIsCollapsed')!);
         }
+        if (!localStorage.getItem('comisionesIsCollapsed')) {
+            localStorage.setItem('comisionesIsCollapsed', this.comisionesIsCollapsed.toString());
+        } else {
+            this.comisionesIsCollapsed = JSON.parse(localStorage.getItem('comisionesIsCollapsed')!);
+        }
         if (!localStorage.getItem('licenciasIsCollapsed')) {
             localStorage.setItem('licenciasIsCollapsed', this.licenciasIsCollapsed.toString());
         }else{
@@ -188,6 +195,7 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
         this.usuarioLogueado();
         this.verificarAccesoContabilidad();
         this.verificarFidelizacionHabilitada();
+        this.verificarComisionesHabilitada();
         this.verificarModuloRestauranteHabilitado();
         this.verificarDescargaDtesHabilitada();
 
@@ -196,6 +204,7 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
             .subscribe(() => {
                 this.verificarAccesoContabilidad();
                 this.verificarFidelizacionHabilitada();
+                this.verificarComisionesHabilitada();
                 this.verificarModuloRestauranteHabilitado();
                 this.verificarDescargaDtesHabilitada();
             });
@@ -208,6 +217,7 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
                     this.usuarioLogueado();
                     this.verificarAccesoContabilidad();
                     this.verificarFidelizacionHabilitada();
+                    this.verificarComisionesHabilitada();
                     this.verificarModuloRestauranteHabilitado();
                     this.verificarDescargaDtesHabilitada();
                 } else {
@@ -347,6 +357,15 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
         this.toggleSidebarMenu();
     }
 
+    toggleComisiones() {
+        if (this.comisionesIsCollapsed) {
+            this.closeAll();
+        }
+        this.comisionesIsCollapsed = !this.comisionesIsCollapsed;
+        localStorage.setItem('comisionesIsCollapsed', this.comisionesIsCollapsed.toString());
+        this.toggleSidebarMenu();
+    }
+
     toggleLicencias() {
         if(this.licenciasIsCollapsed){
             this.closeAll();
@@ -415,6 +434,8 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
         localStorage.setItem('paquetesIsCollapsed', this.paquetesIsCollapsed.toString());
         this.lealtadClientesIsCollapsed = true;
         localStorage.setItem('lealtadClientesIsCollapsed', this.lealtadClientesIsCollapsed.toString());
+        this.comisionesIsCollapsed = true;
+        localStorage.setItem('comisionesIsCollapsed', this.comisionesIsCollapsed.toString());
         this.restauranteIsCollapsed = true;
         localStorage.setItem('restauranteIsCollapsed', this.restauranteIsCollapsed.toString());
         this.pedidosIsCollapsed = true;
@@ -464,6 +485,17 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
             error: (error) => {
                 console.error('Error al verificar acceso a fidelización:', error);
                 this.tieneFidelizacionHabilitada = false;
+            }
+        });
+    }
+
+    private verificarComisionesHabilitada() {
+        this.funcionalidadesService.verificarAcceso('comisiones-vendedores').subscribe({
+            next: (tieneAcceso: boolean) => {
+                this.tieneComisionesHabilitada = tieneAcceso;
+            },
+            error: () => {
+                this.tieneComisionesHabilitada = false;
             }
         });
     }

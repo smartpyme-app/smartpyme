@@ -65,6 +65,7 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 
 	// Lealtad
 	require base_path('routes/modulos/fidelizacion.php');
+	require base_path('routes/modulos/comisiones.php');
 
 	// Restaurante
 	require base_path('routes/modulos/restaurante.php');
