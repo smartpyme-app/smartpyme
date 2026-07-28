@@ -186,6 +186,14 @@
                     </div>
                 </li>
             }
+            @if (tieneIncentivosHabilitada) {
+                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="mb-1">
+                    <a [routerLink]="['/incentivos/vendedores']"
+                        class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1 link-body-emphasis text-decoration-none">
+                        <img src="/assets/icons/clipboard.png" class="icon me-2">Incentivos
+                    </a>
+                </li>
+            }
             <li *ngIf="tieneComisionesHabilitada" class="mb-1">
                 <button (click)="toggleComisiones()" tooltip="Comisiones" [adaptivePosition]="false" placement="right"
                     class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1"

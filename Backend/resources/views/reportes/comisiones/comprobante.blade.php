@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <title>Comprobante de comisión - {{ $vendedor->name }}</title>
+    <title>Comprobante de incentivos - {{ $vendedor->name }}</title>
     <style>
         * { margin: 0; font-family: DejaVu Sans, sans-serif; }
         body { margin: 40px; color: #333; font-size: 12px; }
@@ -18,10 +18,12 @@
         .firma-linea { border-top: 1px solid #333; width: 260px; margin: 48px auto 8px; }
         .firma-texto { text-align: center; color: #666; }
         .total-row td { font-weight: bold; background: #f0f8ff; }
+        .resumen-total { margin-top: 24px; padding: 12px; background: #f0f8ff; border: 1px solid #ccc; }
+        .resumen-total p { margin: 4px 0; }
     </style>
 </head>
 <body>
-    <h1>Comprobante de comisión</h1>
+    <h1>Comprobante de comisión e incentivos</h1>
     <p>Generado el {{ now()->format('d/m/Y H:i') }}</p>
 
     <div class="meta">
@@ -70,6 +72,41 @@
             </tr>
         </tfoot>
     </table>
+
+    @if(!empty($bonos))
+        <h2>Detalle de bonos</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Regla</th>
+                    <th>Estado</th>
+                    <th class="text-right">Monto</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($bonos as $bono)
+                    <tr>
+                        <td>{{ $bono['nombre'] }}</td>
+                        <td>{{ ucfirst($bono['estado']) }}</td>
+                        <td class="text-right">{{ number_format((float) $bono['monto'], 2) }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+            <tfoot>
+                <tr class="total-row">
+                    <td colspan="2" class="text-right">Bonos aprobados o pagados</td>
+                    <td class="text-right">{{ number_format((float) $totalAPagar['bonos_aprobados_o_pagados'], 2) }}</td>
+                </tr>
+            </tfoot>
+        </table>
+    @endif
+
+    <div class="resumen-total">
+        <p><strong>Total a pagar (desglosado)</strong></p>
+        <p>Comisiones: {{ number_format((float) $totalAPagar['comisiones'], 2) }}</p>
+        <p>Bonos (aprobados/pagados): {{ number_format((float) $totalAPagar['bonos_aprobados_o_pagados'], 2) }}</p>
+        <p><strong>Total general: {{ number_format((float) $totalAPagar['comisiones'] + (float) $totalAPagar['bonos_aprobados_o_pagados'], 2) }}</strong></p>
+    </div>
 
     <div class="firma">
         <div class="firma-linea"></div>

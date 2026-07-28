@@ -66,6 +66,10 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
     public tieneComisionesHabilitada: boolean = false;
     public tieneBonosHabilitada: boolean = false;
     public tieneGiftCardsHabilitada: boolean = false;
+
+    public get tieneIncentivosHabilitada(): boolean {
+        return this.tieneComisionesHabilitada || this.tieneBonosHabilitada || this.tieneGiftCardsHabilitada;
+    }
     public modules: any = [];
     public contabilidadHabilitada: boolean = false;
     public tieneModuloRestaurante: boolean = false;

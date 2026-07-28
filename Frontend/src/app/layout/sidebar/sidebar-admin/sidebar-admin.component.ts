@@ -52,6 +52,11 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit, OnDe
     public tieneFidelizacionHabilitada = false;
     public tieneComisionesHabilitada = false;
     public tieneBonosHabilitada = false;
+    public tieneGiftCardsHabilitada = false;
+
+    public get tieneIncentivosHabilitada(): boolean {
+        return this.tieneComisionesHabilitada || this.tieneBonosHabilitada || this.tieneGiftCardsHabilitada;
+    }
     public tieneModuloRestaurante = false;
     public mostrarMenuRestaurante = false;
     public mostrarMenuPedidos = false;

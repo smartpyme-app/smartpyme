@@ -6,6 +6,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
+import { FuncionalidadesService } from '@services/functionalities.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { getEmpresaCurrencySymbol } from '@helpers/currency-format.helper';
 @Component({
@@ -24,6 +25,7 @@ export class SubCategoriasComponent extends BaseModalComponent implements OnInit
     public subcategoria:any = {};
     public categorias:any = [];
     public cambio:any = {};
+    public tieneComisionesVendedores = false;
 
     get currencySymbol(): string {
         return getEmpresaCurrencySymbol(this.apiService.auth_user()?.empresa);
@@ -41,12 +43,23 @@ export class SubCategoriasComponent extends BaseModalComponent implements OnInit
         public apiService: ApiService, 
         protected override alertService: AlertService,
         protected override modalManager: ModalManagerService,
+        private funcionalidadesService: FuncionalidadesService,
         private cdr: ChangeDetectorRef
     ){
         super(modalManager, alertService);
     }
 
     ngOnInit() {
+        this.funcionalidadesService.verificarAcceso('comisiones-vendedores').subscribe({
+            next: (tieneAcceso) => {
+                this.tieneComisionesVendedores = tieneAcceso;
+                this.cdr.markForCheck();
+            },
+            error: () => {
+                this.tieneComisionesVendedores = false;
+                this.cdr.markForCheck();
+            }
+        });
         // this.loadAll(this.categoria_id);
     }
 

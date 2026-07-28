@@ -1,0 +1,107 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+  <h2 class="page-heading">Dashboard de incentivos por vendedor</h2>
+  <button class="btn btn-default" (click)="loadVendedores()" [disabled]="loading">
+    <i class="fa fa-refresh me-2"></i> Recargar
+  </button>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+  <div class="row g-3 align-items-end mb-4">
+    <div class="col-md-3">
+      <label class="form-label">Desde</label>
+      <input type="date" class="form-control" [(ngModel)]="desde">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Hasta</label>
+      <input type="date" class="form-control" [(ngModel)]="hasta">
+    </div>
+    <div class="col-md-3">
+      <button class="btn btn-primary" (click)="loadVendedores()" [disabled]="loading">
+        <span *ngIf="loading" class="spinner-border spinner-border-sm me-1"></span>
+        Filtrar
+      </button>
+    </div>
+  </div>
+
+  <p class="text-muted mb-3">Vista consolidada de comisiones, bonos y gift cards. Total a pagar siempre desglosado.</p>
+
+  <div class="table-responsive">
+    <table class="table table-borderless table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Vendedor</th>
+          <th class="text-end">Comisiones</th>
+          <th class="text-end">Bonos (aprob./pag.)</th>
+          <th class="text-end">Total</th>
+          <th class="text-end">Detalle</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngIf="loading">
+          <td colspan="5" class="text-center"><span class="badge bg-primary">Cargando...</span></td>
+        </tr>
+        <tr *ngIf="!loading && vendedores.length === 0">
+          <td colspan="5" class="text-center"><span class="badge bg-secondary">Sin vendedores en el período</span></td>
+        </tr>
+        <tr *ngFor="let v of vendedores" [class.table-active]="vendedorSeleccionadoId === v.id_vendedor">
+          <td>{{ v.nombre }}</td>
+          <td class="text-end">{{ v.total_a_pagar.comisiones | number:'1.2-2' }}</td>
+          <td class="text-end">{{ v.total_a_pagar.bonos_aprobados_o_pagados | number:'1.2-2' }}</td>
+          <td class="text-end"><strong>{{ totalGeneral(v.total_a_pagar) | number:'1.2-2' }}</strong></td>
+          <td class="text-end">
+            <button type="button" class="btn btn-outline-primary btn-sm" (click)="verDetalle(v)">Ver</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section *ngIf="vendedorSeleccionadoId" class="bg-white p-4 rounded mb-3">
+  <h3 class="h5 mb-3">Detalle del vendedor</h3>
+  <div *ngIf="loadingDetalle" class="text-center"><span class="badge bg-primary">Cargando detalle...</span></div>
+
+  <div *ngIf="!loadingDetalle && detalle">
+    <div *ngIf="detalle.ventas_por_categoria?.length" class="mb-4">
+      <h4 class="h6">Ventas por categoría</h4>
+      <ul class="list-unstyled mb-0">
+        <li *ngFor="let v of detalle.ventas_por_categoria">{{ v.nombre }}: {{ v.monto | number:'1.2-2' }}</li>
+      </ul>
+    </div>
+
+    <div *ngIf="detalle.comisiones" class="mb-4">
+      <h4 class="h6">Comisiones (total {{ detalle.comisiones.total | number:'1.2-2' }})</h4>
+      <ul class="list-unstyled mb-0">
+        <li *ngFor="let c of detalle.comisiones.por_categoria">{{ c.nombre }}: {{ c.monto | number:'1.2-2' }}</li>
+        <li *ngIf="detalle.comisiones.por_redencion_gift">Redención gift card: {{ detalle.comisiones.por_redencion_gift | number:'1.2-2' }}</li>
+      </ul>
+    </div>
+
+    <div *ngIf="detalle.bonos?.length" class="mb-4">
+      <h4 class="h6">Bonos</h4>
+      <ul class="list-unstyled mb-0">
+        <li *ngFor="let b of detalle.bonos">{{ b.nombre }} ({{ b.estado }}): {{ b.monto | number:'1.2-2' }}</li>
+      </ul>
+    </div>
+
+    <div *ngIf="detalle.redenciones_gift?.length" class="mb-4">
+      <h4 class="h6">Redenciones gift card</h4>
+      <ul class="list-unstyled mb-0">
+        <li *ngFor="let r of detalle.redenciones_gift">{{ r.codigo }}: {{ r.monto | number:'1.2-2' }}</li>
+      </ul>
+    </div>
+
+    <div *ngIf="detalle.progreso_bono?.length" class="mb-4">
+      <h4 class="h6">Progreso hacia meta de bono</h4>
+      <ul class="list-unstyled mb-0">
+        <li *ngFor="let p of detalle.progreso_bono">{{ p.regla }}: {{ p.actual | number:'1.2-2' }} / {{ p.meta | number:'1.2-2' }} (faltan {{ p.faltante | number:'1.2-2' }})</li>
+      </ul>
+    </div>
+
+    <div class="border-top pt-3">
+      <p class="mb-1">Comisiones: <strong>{{ detalle.total_a_pagar.comisiones | number:'1.2-2' }}</strong></p>
+      <p class="mb-1">Bonos (aprobados/pagados): <strong>{{ detalle.total_a_pagar.bonos_aprobados_o_pagados | number:'1.2-2' }}</strong></p>
+      <p class="mb-0">Total a pagar: <strong>{{ totalGeneral(detalle.total_a_pagar) | number:'1.2-2' }}</strong></p>
+    </div>
+  </div>
+</section>

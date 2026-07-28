@@ -2,15 +2,22 @@
 
 namespace App\Services\Comisiones;
 
+use App\Models\Bonos\BonoGenerado;
 use App\Models\Comisiones\ComisionMovimiento;
 use App\Models\Comisiones\ComisionPeriodo;
 use App\Models\User;
+use App\Services\Incentivos\VendedorConsolidadoService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 
 class ComisionReporteService
 {
+    public function __construct(
+        private ?VendedorConsolidadoService $consolidadoService = null
+    ) {
+        $this->consolidadoService ??= app(VendedorConsolidadoService::class);
+    }
     public static function etiquetaOrigen(string $origen): string
     {
         return match ($origen) {
@@ -99,7 +106,25 @@ class ComisionReporteService
 
         $total = (float) $movimientos->sum('monto_comision');
 
-        return compact('vendedor', 'periodo', 'movimientos', 'total');
+        $desde = $periodo->fecha_inicio->toDateString();
+        $hasta = $periodo->fecha_fin->toDateString();
+
+        $bonos = $this->consolidadoService->bonosComprobante($idEmpresa, $idVendedor, $desde, $hasta);
+        $totalBonosPagables = (float) BonoGenerado::withoutGlobalScope('empresa')
+            ->where('id_empresa', $idEmpresa)
+            ->where('id_vendedor', $idVendedor)
+            ->where('periodo_inicio', '<=', $hasta)
+            ->where('periodo_fin', '>=', $desde)
+            ->whereIn('estado', [BonoGenerado::ESTADO_APROBADO, BonoGenerado::ESTADO_PAGADO])
+            ->sum('monto');
+
+        $totalAPagar = [
+            'comisiones' => round($total, 2),
+            'bonos_aprobados_o_pagados' => round($totalBonosPagables, 2),
+            'desglose' => true,
+        ];
+
+        return compact('vendedor', 'periodo', 'movimientos', 'total', 'bonos', 'totalAPagar');
     }
 
     public function validarRangoExport(Request $request): array
