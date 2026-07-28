@@ -33,6 +33,24 @@ class ProductosExport implements FromCollection, WithHeadings, WithMapping
         return $empresa && $empresa->isComponenteQuimicoHabilitado();
     }
 
+    /**
+     * Stock para Excel: lotes si el producto los usa y la empresa los tiene activos; si no, inventarios.
+     * Misma regla que ProductosController::calcularStockBaseParaBusqueda / StockDisponibleService.
+     *
+     * @param  object  $producto  Producto (o stub) con inventarios/lotes cargados
+     * @return float|string
+     */
+    public static function stockParaExport($producto, bool $lotesActivo)
+    {
+        if (!empty($producto->inventario_por_lotes) && $lotesActivo) {
+            $stockSum = (float) $producto->lotes->sum('stock');
+        } else {
+            $stockSum = (float) $producto->inventarios->sum('stock');
+        }
+
+        return $stockSum ?: '0';
+    }
+
     public function headings(): array
     {
         $headings = [
@@ -62,7 +80,8 @@ class ProductosExport implements FromCollection, WithHeadings, WithMapping
     public function map($row): array
     {
         $etiquetas = $row->etiquetas;
-        $stockSum = $row->inventarios->sum('stock');
+        $lotesActivo = $row->empresa && $row->empresa->isLotesActivo();
+        $stockSum = self::stockParaExport($row, $lotesActivo);
 
         // Obtener la empresa y verificar si tiene shopify_store_url configurado
         $nombreProducto = $row->nombre;
@@ -87,7 +106,7 @@ class ProductosExport implements FromCollection, WithHeadings, WithMapping
             number_format($row->precio, 2),
             number_format($row->precio - $row->costo, 2),
             number_format($row->precio + ($row->precio * ($row->empresa()->pluck('iva')->first() ? $row->empresa()->pluck('iva')->first() / 100 : 0)), 2),
-            $stockSum ? $stockSum : '0',
+            $stockSum,
             $row->proveedores()->count() ? $row->proveedores()->first()->nombre_proveedor : '',
             $row->enable ? 'Activo' : 'Inactivo',
             // $etiquetas,
@@ -100,6 +119,10 @@ class ProductosExport implements FromCollection, WithHeadings, WithMapping
     {
         $request = $this->request;
         return Producto::with(['inventarios' => function ($q) use ($request) {
+            if ($request->id_bodega) {
+                $q->where('id_bodega', $request->id_bodega);
+            }
+        }, 'lotes' => function ($q) use ($request) {
             if ($request->id_bodega) {
                 $q->where('id_bodega', $request->id_bodega);
             }
