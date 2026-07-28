@@ -5,6 +5,7 @@ import { ComisionPeriodo, ComisionesService } from '@services/comisiones.service
 
 @Component({
   selector: 'app-periodos-liquidaciones-comisiones',
+  standalone: false,
   templateUrl: './periodos-liquidaciones.component.html',
   styleUrls: ['./periodos-liquidaciones.component.css']
 })

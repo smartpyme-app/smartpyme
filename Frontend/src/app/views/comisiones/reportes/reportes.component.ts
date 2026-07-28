@@ -5,6 +5,7 @@ import { ComisionMovimiento, ComisionesService } from '@services/comisiones.serv
 
 @Component({
   selector: 'app-reportes-comisiones',
+  standalone: false,
   templateUrl: './reportes.component.html',
   styleUrls: ['./reportes.component.css']
 })

@@ -8,6 +8,7 @@ import {
 
 @Component({
   selector: 'app-incentivos-dashboard',
+  standalone: false,
   templateUrl: './dashboard.component.html'
 })
 export class DashboardComponent implements OnInit {

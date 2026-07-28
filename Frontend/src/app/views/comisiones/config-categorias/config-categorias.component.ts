@@ -8,6 +8,7 @@ import {
 
 @Component({
   selector: 'app-config-categorias-comisiones',
+  standalone: false,
   templateUrl: './config-categorias.component.html',
   styleUrls: ['./config-categorias.component.css']
 })

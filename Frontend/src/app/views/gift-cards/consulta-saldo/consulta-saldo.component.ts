@@ -4,6 +4,7 @@ import { GiftCardLookup, GiftCardsService } from '@services/gift-cards.service';
 
 @Component({
   selector: 'app-consulta-saldo-gift-cards',
+  standalone: false,
   templateUrl: './consulta-saldo.component.html',
 })
 export class ConsultaSaldoComponent implements OnInit {
