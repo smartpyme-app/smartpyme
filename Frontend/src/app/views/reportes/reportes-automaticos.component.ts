@@ -101,6 +101,7 @@ export class ReportesAutomaticosComponent implements OnInit {
   public fechaFin: string = '';
   public fechaHoy: string = new Date().toISOString().split('T')[0];
   public sucursales: any[] = [];
+  public sucursalesDescarga: any[] = [];
   public tipoReporte: string = '';
   public reportesDisponiblesPdf: string[] = [
     'ventas-por-categoria-vendedor',
@@ -686,6 +687,7 @@ export class ReportesAutomaticosComponent implements OnInit {
   public descargarReporte(config: any, template: TemplateRef<any>, tipo: string = 'excel') {
     this.configReporteActual = config;
     this.tipoReporte = tipo;
+    this.initSucursalesDescarga(config);
 
     if (config.tipo_reporte === 'inventario-por-sucursal') {
       this.seleccionarPeriodo('mes');
@@ -703,6 +705,14 @@ export class ReportesAutomaticosComponent implements OnInit {
     }
   }
 
+  private initSucursalesDescarga(config: any): void {
+    const heredadas = [...(config?.sucursales || [])];
+    this.sucursalesDescarga =
+      heredadas.length > 0
+        ? heredadas
+        : this.sucursales.map((s) => s.id);
+  }
+
   public descargarReporteDirecto() {
     let tipo = this.configReporteActual?.tipo_reporte;
     tipo = this.tiposReporte.find((t: any) => t.tipo === tipo)?.nombre || tipo;
@@ -714,7 +724,9 @@ export class ReportesAutomaticosComponent implements OnInit {
       id: this.configReporteActual?.id,
       fecha_inicio: this.fechaInicio,
       fecha_fin: this.fechaFin,
-      sucursales: this.configReporteActual?.sucursales || [],
+      sucursales: this.sucursalesDescarga.length
+        ? this.sucursalesDescarga
+        : this.sucursales.map((s) => s.id),
     };
 
     // Determinar la ruta y tipo de archivo según el tipo de reporte
@@ -843,7 +855,9 @@ export class ReportesAutomaticosComponent implements OnInit {
       id: this.configReporteActual?.id,
       fecha_inicio: this.fechaInicio,
       fecha_fin: this.fechaFin,
-      sucursales: this.configReporteActual?.sucursales || [],
+      sucursales: this.sucursalesDescarga.length
+        ? this.sucursalesDescarga
+        : this.sucursales.map((s) => s.id),
     };
 
     // Determinar la ruta y tipo de archivo según el tipo de reporte
@@ -1091,6 +1105,22 @@ export class ReportesAutomaticosComponent implements OnInit {
       this.configuracionActual.sucursales = [];
     } else {
       this.configuracionActual.sucursales = this.sucursales.map((s) => s.id);
+    }
+  }
+
+  public isAllSucursalesDescargaSelected(): boolean {
+    return (
+      this.sucursalesDescarga?.length > 0 &&
+      this.sucursales.length > 0 &&
+      this.sucursalesDescarga.length === this.sucursales.length
+    );
+  }
+
+  public toggleSelectAllSucursalesDescarga(): void {
+    if (this.isAllSucursalesDescargaSelected()) {
+      this.sucursalesDescarga = [];
+    } else {
+      this.sucursalesDescarga = this.sucursales.map((s) => s.id);
     }
   }
 

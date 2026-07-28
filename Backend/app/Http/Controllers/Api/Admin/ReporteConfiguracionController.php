@@ -277,6 +277,11 @@ class ReporteConfiguracionController extends Controller
         $fecha_inicio = $request->fecha_inicio;
         $fecha_fin = $request->fecha_fin;
 
+        // Override en memoria (no persiste): sucursales del request para esta prueba
+        if ($request->has('sucursales') && is_array($request->sucursales)) {
+            $configuracion->sucursales = $this->normalizarSucursales($request->sucursales);
+        }
+
         try {
             switch ($configuracion->tipo_reporte) {
                 case 'ventas-por-vendedor':
@@ -405,6 +410,11 @@ class ReporteConfiguracionController extends Controller
 
         if (!$fecha_inicio || !$fecha_fin) {
             return response()->json(['error' => 'Debe especificar fechas de inicio y fin'], 422);
+        }
+
+        // Override en memoria (no persiste): sucursales del request para esta descarga
+        if ($request->has('sucursales') && is_array($request->sucursales)) {
+            $configuracion->sucursales = $this->normalizarSucursales($request->sucursales);
         }
 
         try {
