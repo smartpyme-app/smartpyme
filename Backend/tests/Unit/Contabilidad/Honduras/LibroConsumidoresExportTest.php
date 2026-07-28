@@ -43,6 +43,17 @@ class LibroConsumidoresExportTest extends TestCase
         $this->assertNotContains('Crédito fiscal', LibroConsumidoresExport::TIPOS_CONSUMIDOR);
     }
 
+    public function test_encabezado_excel_usa_ventas_gravadas_con_subcolumnas(): void
+    {
+        $export = new LibroConsumidoresExport();
+        $headings = $export->headings();
+
+        $this->assertSame('Ventas Gravadas', $headings[7]);
+        $this->assertSame('', $headings[8]);
+        $this->assertSame('N° de Maquina registradora', $headings[4]);
+        $this->assertSame('Total Ventas', $headings[9]);
+    }
+
     public function test_usa_cai_de_empresa_cuando_documento_no_tiene_resolucion(): void
     {
         $venta = (object) [

@@ -59,26 +59,50 @@ class LibroConsumidoresExport implements FromCollection, WithMapping, WithHeadin
         return [
             BeforeSheet::class => function (BeforeSheet $event) {
                 $empresa = Auth::user()?->empresa()->first();
-                $event->sheet->insertNewRowBefore(1, 4);
-                $event->sheet->setCellValue('A1', 'LIBRO DE VENTAS A CONSUMIDOR FINAL');
-                $event->sheet->setCellValue('A2', $empresa->nombre ?? '');
-                $event->sheet->setCellValue('A3', 'NIT: ' . ($empresa->nit ?? '') . '  NRC: ' . ($empresa->ncr ?? ''));
-                $event->sheet->setCellValue(
+                $sheet = $event->sheet;
+                // Filas 1–6: encabezado SAR; fila 7: headings; AfterSheet agrega fila 8 (15%/18%).
+                $sheet->insertNewRowBefore(1, 6);
+                $sheet->setCellValue('A2', $empresa->nombre ?? '');
+                $sheet->setCellValue('A3', 'LIBRO DE VENTAS A CONSUMIDOR FINAL');
+                $sheet->setCellValue(
                     'A4',
-                    'Mes: ' . ucfirst(Carbon::parse($this->request->inicio)->translatedFormat('F'))
-                        . ' - Año: ' . Carbon::parse($this->request->inicio)->format('Y')
+                    'MES: ' . ucfirst(Carbon::parse($this->request->inicio)->translatedFormat('F'))
                 );
+                $sheet->setCellValue(
+                    'J4',
+                    'AÑO: ' . Carbon::parse($this->request->inicio)->format('Y')
+                );
+                $sheet->setCellValue('A5', 'NIT: ' . ($empresa->nit ?? ''));
+                $sheet->setCellValue('J5', 'NRC: ' . ($empresa->ncr ?? ''));
             },
             AfterSheet::class => function (AfterSheet $event) {
                 $sheet = $event->sheet->getDelegate();
                 $lastCol = 'K';
-                $headerRow = 5;
-                $lastDataRow = max($headerRow, $sheet->getHighestRow());
+                $headerRow = 7;
+                $subHeaderRow = 8;
+
+                // Fila secundaria del encabezado oficial (Ventas Gravadas → 15% | 18%).
+                $sheet->insertNewRowBefore($subHeaderRow, 1);
+                $sheet->setCellValue("H{$headerRow}", 'Ventas Gravadas');
+                $sheet->setCellValue("H{$subHeaderRow}", '15%');
+                $sheet->setCellValue("I{$subHeaderRow}", '18%');
+
+                foreach (['A', 'B', 'C', 'D', 'E', 'F', 'G', 'J', 'K'] as $col) {
+                    $sheet->mergeCells("{$col}{$headerRow}:{$col}{$subHeaderRow}");
+                }
+                $sheet->mergeCells("H{$headerRow}:I{$headerRow}");
+                $sheet->mergeCells("A2:{$lastCol}2");
+                $sheet->mergeCells("A3:{$lastCol}3");
+
+                $firstDataRow = $subHeaderRow + 1;
+                $lastDataRow = max($subHeaderRow, $sheet->getHighestRow());
                 $totalRow = $lastDataRow + 1;
 
-                $sheet->getStyle("A1:{$lastCol}4")->getFont()->setBold(true);
-                $sheet->getStyle("A{$headerRow}:{$lastCol}{$headerRow}")->getFont()->setBold(true);
-                $sheet->getStyle("A{$headerRow}:{$lastCol}{$headerRow}")->getAlignment()
+                $sheet->getStyle("A2:{$lastCol}5")->getFont()->setBold(true);
+                $sheet->getStyle('A2:A3')->getAlignment()
+                    ->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                $sheet->getStyle("A{$headerRow}:{$lastCol}{$subHeaderRow}")->getFont()->setBold(true);
+                $sheet->getStyle("A{$headerRow}:{$lastCol}{$subHeaderRow}")->getAlignment()
                     ->setWrapText(true)
                     ->setHorizontal(Alignment::HORIZONTAL_CENTER)
                     ->setVertical(Alignment::VERTICAL_CENTER);
@@ -88,8 +112,8 @@ class LibroConsumidoresExport implements FromCollection, WithMapping, WithHeadin
                         ->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
                 }
 
-                if ($lastDataRow > $headerRow) {
-                    $sheet->getStyle('F' . ($headerRow + 1) . ":{$lastCol}{$lastDataRow}")
+                if ($lastDataRow >= $firstDataRow) {
+                    $sheet->getStyle("F{$firstDataRow}:{$lastCol}{$lastDataRow}")
                         ->getNumberFormat()->setFormatCode('#,##0.00');
                 }
 
@@ -144,11 +168,11 @@ class LibroConsumidoresExport implements FromCollection, WithMapping, WithHeadin
             'Fecha',
             'Factura N°',
             'CAI N°',
-            'N° de Máquina registradora',
+            'N° de Maquina registradora',
             'Ventas Exentas',
             'Ventas Exoneradas',
-            'Ventas Gravadas 15%',
-            'Ventas Gravadas 18%',
+            'Ventas Gravadas',
+            '',
             'Total Ventas',
             'Ventas a Cuenta de Terceros',
         ];
