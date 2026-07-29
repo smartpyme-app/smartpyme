@@ -111,9 +111,9 @@ class EnviarReportesAutomaticos extends Command
     
     private function enviarReporte(ReporteConfiguracion $configuracion)
     {
+        [$fecha_inicio, $fecha_fin] = $configuracion->rangoFechas();
+        $this->info("Período {$configuracion->periodo}: {$fecha_inicio} → {$fecha_fin}");
 
-        $fecha_inicio = Carbon::today()->format('Y-m-d');
-        $fecha_fin = Carbon::today()->format('Y-m-d');
         switch ($configuracion->tipo_reporte) {
             case 'ventas-por-vendedor':
                 $controller = new VentasController();

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin\ReporteConfiguracion;
 
+use App\Support\ReportePeriodo;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -24,6 +25,7 @@ class StoreReporteConfiguracionRequest extends FormRequest
             'nombre_reporte' => ['nullable', 'string'],
             'tipo_reporte' => ['required', 'string'],
             'frecuencia' => ['required', 'string', Rule::in(['diario', 'semanal', 'mensual'])],
+            'periodo' => ['nullable', 'string', Rule::in(ReportePeriodo::PERIODOS)],
             'destinatarios' => ['required', 'array', 'min:1'],
             'destinatarios.*' => ['required', 'email'],
             'sucursales' => ['nullable', 'array'],

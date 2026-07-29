@@ -7,7 +7,7 @@ import {
   ChangeDetectionStrategy,
   ChangeDetectorRef
 } from '@angular/core';
-import { ConfiguracionReporte, crearConfiguracionDefault, TIPOS_REPORTE } from '../../models/configuracion-reporte.interface';
+import { ConfiguracionReporte, crearConfiguracionDefault, labelPeriodo, PERIODOS_REPORTE, TIPOS_REPORTE } from '../../models/configuracion-reporte.interface';
 import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 
 import { BsModalRef } from 'ngx-bootstrap/modal';
@@ -79,6 +79,8 @@ export class ReportesAutomaticosComponent extends BasePaginatedModalComponent im
     { id: 7, nombre: 'Domingo', seleccionado: false },
   ];
   public diasMes: number[] = Array.from({ length: 31 }, (_, i) => i + 1);
+  public periodosReporte = PERIODOS_REPORTE;
+  public labelPeriodo = labelPeriodo;
   public tiposReporteActivos: string[] = [];
   public categorias: any[] = [];
   //Estado Financiero Consolidado por Sucursales
@@ -270,6 +272,9 @@ export class ReportesAutomaticosComponent extends BasePaginatedModalComponent im
       this.configuracionActual = crearConfiguracionDefault();
     } else {
       this.configuracionActual = { ...configuracion };
+      if (!this.configuracionActual.periodo) {
+        this.configuracionActual.periodo = 'hoy';
+      }
 
       // Reiniciar todas las categorías
       this.categorias.forEach((categoria) => {

@@ -2,6 +2,7 @@
 
 namespace App\Models\Admin;
 
+use App\Support\ReportePeriodo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
@@ -17,6 +18,7 @@ class ReporteConfiguracion extends Model
         'tipo_reporte',
         'activo',
         'frecuencia',
+        'periodo',
         'dias_semana',
         'dia_mes',
         'envio_matutino',
@@ -93,5 +95,13 @@ class ReporteConfiguracion extends Model
     public function empresa()
     {
         return $this->belongsTo(Empresa::class, 'id_empresa');
+    }
+
+    /**
+     * @return array{0: string, 1: string} [fecha_inicio, fecha_fin]
+     */
+    public function rangoFechas(?Carbon $referencia = null): array
+    {
+        return ReportePeriodo::rango($this->periodo, $referencia);
     }
 }

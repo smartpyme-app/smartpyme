@@ -71,6 +71,7 @@
             <th>Nombre</th>
             <th>Tipo de Reporte</th>
             <th>Frecuencia</th>
+            <th>Período</th>
             <th>Horarios</th>
             <th>Destinatarios</th>
             <th>Estado</th>
@@ -81,7 +82,7 @@
           @if (configuraciones?.total < 1 && !loading) {
             <tr>
               <td
-                colspan="7"
+                colspan="8"
                 class="text-center"
               >
                 <span class="badge bg-primary"
@@ -92,7 +93,7 @@
           }
           @if (loading) {
             <tr>
-              <td colspan="7" class="text-center">
+              <td colspan="8" class="text-center">
                 <span class="badge bg-primary">Cargando...</span>
               </td>
             </tr>
@@ -166,6 +167,7 @@
                 <span>Mensual (Día {{ config.dia_mes }})</span>
               }
             </td>
+            <td>{{ labelPeriodo(config.periodo) }}</td>
             <td>
               <div class="d-flex flex-wrap gap-1">
                 @if (config.envio_matutino) {
@@ -735,6 +737,27 @@
         </div>
         </div>
       }
+
+      <div class="form-group mb-3">
+        <label for="periodo" class="form-label fw-bold"
+          >Período de datos</label
+        >
+        <select
+          name="periodo"
+          id="periodo"
+          class="form-select"
+          [(ngModel)]="configuracionActual.periodo"
+          required
+        >
+          @for (p of periodosReporte; track p.value) {
+            <option [value]="p.value">{{ p.label }}</option>
+          }
+        </select>
+        <small class="form-text text-muted">
+          En cada envío automático se recalcula el rango de fechas según este
+          período.
+        </small>
+      </div>
 
       <div class="form-group mb-3">
         <label for="frecuencia" class="form-label fw-bold"
