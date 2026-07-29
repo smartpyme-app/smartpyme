@@ -52,6 +52,7 @@ class LibroConsumidoresExportTest extends TestCase
         $this->assertSame('', $headings[8]);
         $this->assertSame('N° de Maquina registradora', $headings[4]);
         $this->assertSame('Total Ventas', $headings[9]);
+        $this->assertSame('A7', $export->startCell());
     }
 
     public function test_usa_cai_de_empresa_cuando_documento_no_tiene_resolucion(): void

@@ -6,6 +6,7 @@ use App\Models\Ventas\Venta;
 use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
 use App\Services\Contabilidad\LibroIvaMontosHelper;
 use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithCustomStartCell;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithEvents;
@@ -22,7 +23,7 @@ use PhpOffice\PhpSpreadsheet\Style\Border;
  * Libro de ventas a consumidor final - Formato Honduras (SAR).
  * Columnas según formato oficial.
  */
-class LibroConsumidoresExport implements FromCollection, WithMapping, WithHeadings, WithEvents
+class LibroConsumidoresExport implements FromCollection, WithMapping, WithHeadings, WithCustomStartCell, WithEvents
 {
     public $request;
 
@@ -54,14 +55,18 @@ class LibroConsumidoresExport implements FromCollection, WithMapping, WithHeadin
         $this->request = $request;
     }
 
+    /** Encabezado SAR en filas 1–6; columnas empiezan en fila 7. */
+    public function startCell(): string
+    {
+        return 'A7';
+    }
+
     public function registerEvents(): array
     {
         return [
             BeforeSheet::class => function (BeforeSheet $event) {
                 $empresa = Auth::user()?->empresa()->first();
                 $sheet = $event->sheet;
-                // Filas 1–6: encabezado SAR; fila 7: headings; AfterSheet agrega fila 8 (15%/18%).
-                $sheet->insertNewRowBefore(1, 6);
                 $sheet->setCellValue('A2', $empresa->nombre ?? '');
                 $sheet->setCellValue('A3', 'LIBRO DE VENTAS A CONSUMIDOR FINAL');
                 $sheet->setCellValue(
