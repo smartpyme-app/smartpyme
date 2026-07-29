@@ -95,7 +95,7 @@
                     </a>
                 </li>
             }
-            @if (apiService.hasPermission('ventas.ver')) {
+            @if (apiService.hasPermission('ventas.ver') || tieneIncentivosHabilitada || tieneGiftCardsHabilitada) {
                 <li class="mb-1">
                     <button (click)="toggleVentas()" tooltip="Ventas" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!ventasIsCollapsed" aria-controls="ventas">
                         <img appLazyImage="/assets/icons/trending-up.png" class="icon me-2">Ventas
@@ -123,6 +123,12 @@
                             }
                             @if (contabilidadHabilitada && apiService.hasPermission('ventas.ordenes_produccion.ver')) {
                                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/ordenes/produccion']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/share-2.png" class="icon me-2">Órdenes de producción</a></li>
+                            }
+                            @if (tieneIncentivosHabilitada) {
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/incentivos/vendedores']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/clipboard.png" class="icon me-2">Incentivos</a></li>
+                            }
+                            @if (tieneGiftCardsHabilitada) {
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/gift-cards/consulta']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/money-transaction.png" class="icon me-2">Gift Cards</a></li>
                             }
                         </ul>
                     </div>
@@ -274,6 +280,29 @@
                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/fidelizacion/clientes']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/user.png" class="icon me-2">Clientes</a></li>
                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/fidelizacion/configuracion-cliente']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/settings.png" class="icon me-2">Configuración Cliente</a></li>
                 <!-- <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/planilla/detalles']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/clipboard.png" class="icon me-2">Detalles planilla</a></li> -->
+              </ul>
+            </div>
+          </li>
+          <li *ngIf="tieneComisionesHabilitada" class="mb-1">
+            <button (click)="toggleComisiones()" tooltip="Comisiones" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!comisionesIsCollapsed" aria-controls="collapseComisiones">
+              <img src="/assets/icons/clipboard.png" class="icon me-2">Comisiones
+            </button>
+            <div [collapse]="comisionesIsCollapsed" [isAnimated]="true">
+              <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/comisiones/configuracion']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/settings.png" class="icon me-2">Configuración</a></li>
+                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/comisiones/periodos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/clipboard.png" class="icon me-2">Períodos</a></li>
+                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/comisiones/reportes']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/download.png" class="icon me-2">Reportes</a></li>
+              </ul>
+            </div>
+          </li>
+          <li *ngIf="tieneBonosHabilitada" class="mb-1">
+            <button (click)="toggleBonos()" tooltip="Bonos" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!bonosIsCollapsed" aria-controls="collapseBonos">
+              <img src="/assets/icons/money-transaction.png" class="icon me-2">Bonos
+            </button>
+            <div [collapse]="bonosIsCollapsed" [isAnimated]="true">
+              <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/bonos/reglas']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/settings.png" class="icon me-2">Reglas</a></li>
+                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/bonos/generados']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/clipboard.png" class="icon me-2">Generados</a></li>
               </ul>
             </div>
           </li>

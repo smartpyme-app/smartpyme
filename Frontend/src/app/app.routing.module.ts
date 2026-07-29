@@ -128,6 +128,26 @@ export const routes: Routes = [
           path: '',
           loadChildren: () => import('./views/fidelizacion/fidelizacion.module').then(m => m.FidelizacionModule),
         },
+        // Comisiones vendedores
+        {
+          path: '',
+          loadChildren: () => import('./views/comisiones/comisiones.module').then(m => m.ComisionesModule),
+        },
+        // Gift cards
+        {
+          path: '',
+          loadChildren: () => import('./views/gift-cards/gift-cards.module').then(m => m.GiftCardsModule),
+        },
+        // Bonos vendedores
+        {
+          path: '',
+          loadChildren: () => import('./views/bonos/bonos.module').then(m => m.BonosModule),
+        },
+        // Dashboard consolidado incentivos
+        {
+          path: '',
+          loadChildren: () => import('./views/incentivos/incentivos.module').then(m => m.IncentivosModule),
+        },
         // DTE Management (ruta explícita; evita colisión con otros lazy modules en path '')
         {
           path: 'dte-management',

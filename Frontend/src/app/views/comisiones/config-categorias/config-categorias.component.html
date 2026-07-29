@@ -1,0 +1,138 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+  <h2 class="page-heading">Configuración de comisiones por categoría</h2>
+  <button class="btn btn-default" (click)="loadCategorias()" [disabled]="loading" tooltip="Recargar">
+    <i class="fa fa-refresh me-2"></i> Recargar
+  </button>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+  <p class="text-muted mb-3">
+    Defina el porcentaje de comisión por categoría (debe ser &gt; 0 para que se genere comisión al vender).
+    Puede configurar un override por subcategoría.
+  </p>
+
+  <div class="table-responsive">
+    <table class="table table-borderless table-hover mb-0">
+      <thead>
+        <tr>
+          <th style="width: 40px;"></th>
+          <th>Categoría</th>
+          <th style="width: 160px;">Porcentaje (%)</th>
+          <th style="width: 80px;" class="text-center">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngIf="loading">
+          <td colspan="4" class="text-center">
+            <span class="badge bg-primary">Cargando...</span>
+          </td>
+        </tr>
+        <tr *ngIf="!loading && (!categorias?.data || categorias.data.length === 0)">
+          <td colspan="4" class="text-center">
+            <span class="badge bg-secondary">No hay categorías activas</span>
+          </td>
+        </tr>
+        <ng-container *ngFor="let categoria of categorias?.data">
+          <tr>
+            <td>
+              <button
+                *ngIf="categoria.subcategorias?.length"
+                type="button"
+                class="btn btn-sm btn-link p-0"
+                (click)="toggleExpand(categoria.id_categoria)">
+                <i class="fa" [ngClass]="expandedCategoriaId === categoria.id_categoria ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+              </button>
+            </td>
+            <td><strong>{{ categoria.nombre }}</strong></td>
+            <td>{{ formatoPorcentaje(categoria.porcentaje) }}</td>
+            <td class="text-center">
+              <span class="btn" [popover]="accionesCategoria" [outsideClick]="true" tooltip="Acciones">
+                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+              </span>
+              <ng-template #accionesCategoria>
+                <div class="d-flex flex-column align-items-start">
+                  <a class="btn" (click)="abrirEditarCategoria(modalEditar, categoria)">
+                    <i class="fa fa-fw fa-edit"></i> Editar
+                  </a>
+                </div>
+              </ng-template>
+            </td>
+          </tr>
+          <tr *ngIf="expandedCategoriaId === categoria.id_categoria && categoria.subcategorias?.length">
+            <td colspan="4" class="p-0">
+              <table class="table table-sm mb-0 ms-4">
+                <thead>
+                  <tr class="text-muted">
+                    <th>Subcategoría</th>
+                    <th style="width: 160px;">Override (%)</th>
+                    <th style="width: 80px;" class="text-center">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let sub of categoria.subcategorias">
+                    <td>{{ sub.nombre }}</td>
+                    <td>{{ formatoPorcentaje(sub.porcentaje) }}</td>
+                    <td class="text-center">
+                      <span class="btn" [popover]="accionesSub" [outsideClick]="true" tooltip="Acciones">
+                        <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                      </span>
+                      <ng-template #accionesSub>
+                        <div class="d-flex flex-column align-items-start">
+                          <a class="btn" (click)="abrirEditarSubcategoria(modalEditar, sub, categoria.nombre)">
+                            <i class="fa fa-fw fa-edit"></i> Editar
+                          </a>
+                        </div>
+                      </ng-template>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </td>
+          </tr>
+        </ng-container>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="col-12" *ngIf="categorias && categorias.last_page && categorias.last_page > 1">
+    <app-pagination [items]="categorias" (setPagination)="setPagination($event)"></app-pagination>
+  </div>
+</section>
+
+<ng-template #modalEditar>
+  <div class="modal-header">
+    <div class="modal-title">
+      <h2>{{ editEsSubcategoria ? 'Editar comisión de subcategoría' : 'Editar comisión de categoría' }}</h2>
+    </div>
+    <button type="button" class="btn-close" (click)="cerrarModal()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <div class="mb-3">
+      <label class="form-label">{{ editEsSubcategoria ? 'Subcategoría' : 'Categoría' }}</label>
+      <input type="text" class="form-control" [value]="editNombre" readonly>
+    </div>
+    <div class="mb-3" *ngIf="editEsSubcategoria">
+      <label class="form-label">Categoría padre</label>
+      <input type="text" class="form-control" [value]="editPadreNombre" readonly>
+    </div>
+    <div class="mb-3">
+      <label class="form-label" for="edit-porcentaje">Porcentaje (%)</label>
+      <input
+        id="edit-porcentaje"
+        type="number"
+        class="form-control"
+        [(ngModel)]="editPorcentaje"
+        min="0"
+        max="100"
+        step="0.01"
+        [placeholder]="editEsSubcategoria ? 'Hereda categoría' : '0'">
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-default" (click)="cerrarModal()" [disabled]="saving">Cancelar</button>
+    <button type="button" class="btn btn-primary" (click)="guardarDesdeModal()" [disabled]="saving">
+      <span *ngIf="saving" class="spinner-border spinner-border-sm me-1"></span>
+      Guardar
+    </button>
+  </div>
+</ng-template>

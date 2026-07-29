@@ -203,6 +203,8 @@
 
     <p class="text-center"><small>G = GRAVADO &nbsp;&nbsp; E = EXENTO &nbsp;&nbsp; N = NO SUJETO</small></p>
 
+    @include('reportes.facturacion.partials.gift-cards-emitidas')
+
     @if($venta->total > 200)
     <br>
     {{-- <p>LLENAR SI LA VENTA ES MAYOR/IGUAL A $200.00</p> --}}

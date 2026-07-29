@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Requests\Admin\EmpresasFuncionalidades\ActualizarFuncionalidadRequest;
 use App\Http\Requests\Admin\EmpresasFuncionalidades\ActualizarMultipleFuncionalidadesRequest;
+use App\Services\GiftCards\GiftCardCategoryBootstrap;
 
 class EmpresasFuncionalidadesController extends Controller
 {
@@ -75,6 +76,9 @@ class EmpresasFuncionalidadesController extends Controller
                 ]
             );
 
+            $this->bootstrapGiftCardsIfActivated($empresaFunc);
+            $empresaFunc->refresh();
+
             return response()->json([
                 'success' => true,
                 'message' => 'Funcionalidad actualizada correctamente',
@@ -94,7 +98,7 @@ class EmpresasFuncionalidadesController extends Controller
             DB::beginTransaction();
 
             foreach ($request->funcionalidades as $func) {
-                EmpresaFuncionalidad::updateOrCreate(
+                $empresaFunc = EmpresaFuncionalidad::updateOrCreate(
                     [
                         'id_empresa' => $request->id_empresa,
                         'id_funcionalidad' => $func['id']
@@ -104,6 +108,8 @@ class EmpresasFuncionalidadesController extends Controller
                         'configuracion' => $func['configuracion'] ?? null
                     ]
                 );
+
+                $this->bootstrapGiftCardsIfActivated($empresaFunc);
             }
 
             DB::commit();
@@ -235,5 +241,24 @@ class EmpresasFuncionalidadesController extends Controller
             Log::error("Error al obtener configuración de funcionalidad: " . $e->getMessage());
             return response()->json(['configuracion' => null]);
         }
+    }
+
+    private function bootstrapGiftCardsIfActivated(EmpresaFuncionalidad $empresaFunc): void
+    {
+        if (! $empresaFunc->activo) {
+            return;
+        }
+
+        $funcionalidad = $empresaFunc->funcionalidad ?? Funcionalidad::find($empresaFunc->id_funcionalidad);
+        if ($funcionalidad === null || $funcionalidad->slug !== GiftCardCategoryBootstrap::SLUG) {
+            return;
+        }
+
+        $empresa = Empresa::find($empresaFunc->id_empresa);
+        if ($empresa === null) {
+            return;
+        }
+
+        app(GiftCardCategoryBootstrap::class)->ensureForEmpresa($empresa);
     }
 }

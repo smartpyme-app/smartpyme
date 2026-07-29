@@ -151,6 +151,12 @@ class Kernel extends ConsoleKernel
             ->appendOutputTo(storage_path('logs/fidelizacion-expiracion-puntos.log'))
             ->emailOutputOnFailure('jose.e@smartpyme.sv');
 
+        $schedule->command('bonos:evaluar')
+            ->dailyAt('02:30')
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->appendOutputTo(storage_path('logs/bonos-evaluar.log'));
+
         if (config('dte.schedule_enabled')) {
             $schedule->command('dte:migrate-to-s3')
                 ->dailyAt('02:45')

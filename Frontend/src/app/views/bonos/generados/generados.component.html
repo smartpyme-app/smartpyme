@@ -1,0 +1,103 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+  <h2 class="page-heading">Bonos generados</h2>
+  <button class="btn btn-default" (click)="loadBonos()" [disabled]="loading">
+    <i class="fa fa-refresh me-2"></i> Recargar
+  </button>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+  <h5 class="mb-3">Calcular período</h5>
+  <p class="text-muted mb-3">Evalúa las reglas activas y genera o actualiza bonos pendientes. Los que ya no cumplen la meta se eliminan (aprobados/pagados no se tocan).</p>
+  <div class="row g-3 align-items-end">
+    <div class="col-md-3">
+      <label class="form-label">Desde</label>
+      <input type="date" class="form-control" [(ngModel)]="evalPeriodoInicio">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Hasta</label>
+      <input type="date" class="form-control" [(ngModel)]="evalPeriodoFin">
+    </div>
+    <div class="col-md-3">
+      <button class="btn btn-primary" (click)="calcularPeriodo()" [disabled]="evaluando">
+        <span *ngIf="evaluando" class="spinner-border spinner-border-sm me-1"></span>
+        <i *ngIf="!evaluando" class="fa fa-calculator me-2"></i>
+        Calcular período
+      </button>
+    </div>
+  </div>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+  <div class="row g-3 mb-3">
+    <div class="col-md-3">
+      <select class="form-select" [(ngModel)]="filtroEstado" (change)="loadBonos()">
+        <option value="">Todos los estados</option>
+        <option value="pendiente">Pendiente</option>
+        <option value="aprobado">Aprobado</option>
+        <option value="pagado">Pagado</option>
+      </select>
+    </div>
+    <div class="col-md-3">
+      <input type="date" class="form-control" [(ngModel)]="filtroPeriodoInicio" (change)="loadBonos()" placeholder="Período inicio">
+    </div>
+    <div class="col-md-3">
+      <input type="date" class="form-control" [(ngModel)]="filtroPeriodoFin" (change)="loadBonos()" placeholder="Período fin">
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-borderless table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Vendedor</th>
+          <th>Regla</th>
+          <th>Período</th>
+          <th>Ventas base</th>
+          <th>Bono</th>
+          <th>Estado</th>
+          <th class="text-end">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngIf="loading">
+          <td colspan="7" class="text-center"><span class="badge bg-primary">Cargando...</span></td>
+        </tr>
+        <tr *ngIf="!loading && bonos.length === 0">
+          <td colspan="7" class="text-center"><span class="badge bg-secondary">No hay bonos generados</span></td>
+        </tr>
+        <tr *ngFor="let bono of bonos">
+          <td>{{ bono.vendedor?.name || ('Vendedor #' + bono.id_vendedor) }}</td>
+          <td>{{ bono.regla?.nombre || ('Regla #' + bono.id_regla) }}</td>
+          <td>{{ formatFecha(bono.periodo_inicio) }} — {{ formatFecha(bono.periodo_fin) }}</td>
+          <td>{{ bono.monto_ventas_base | number:'1.2-2' }}</td>
+          <td>{{ bono.monto | number:'1.2-2' }}</td>
+          <td>
+            <span class="badge py-2" [ngClass]="estadoBadgeClass(bono.estado)">
+              {{ bono.estado | titlecase }}
+            </span>
+          </td>
+          <td class="text-end">
+            <ng-container *ngIf="tieneAcciones(bono)">
+              <span class="btn" [popover]="accionesBono" [outsideClick]="true" tooltip="Acciones">
+                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+              </span>
+              <ng-template #accionesBono>
+                <div class="d-flex flex-column align-items-start">
+                  <a *ngIf="bono.estado === 'pendiente'" class="btn" (click)="aprobar(bono)">
+                    <i class="fa fa-fw fa-check"></i> Aprobar
+                  </a>
+                  <a *ngIf="bono.estado === 'aprobado'" class="btn" (click)="pagar(bono)">
+                    <i class="fa fa-fw fa-money"></i> Pagar
+                  </a>
+                  <a *ngIf="bono.estado === 'aprobado' || bono.estado === 'pagado'" class="btn" (click)="descargarComprobante(bono)">
+                    <i class="fa fa-fw fa-file-pdf-o"></i> Imprimir PDF
+                  </a>
+                </div>
+              </ng-template>
+            </ng-container>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>

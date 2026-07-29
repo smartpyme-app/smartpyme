@@ -312,6 +312,11 @@ class Venta extends AuditableModel {
         return $this->hasMany('App\Models\Ventas\Detalle','id_venta');
     }
 
+    public function giftCardsEmitidas()
+    {
+        return $this->hasMany(\App\Models\GiftCards\GiftCard::class, 'id_venta_emision');
+    }
+
     public function abonos(){
         return $this->hasMany('App\Models\Ventas\Abono','id_venta');
     }

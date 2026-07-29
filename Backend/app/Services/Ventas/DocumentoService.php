@@ -37,7 +37,7 @@ class DocumentoService
             return $this->generarDTE($ventaId, $empresa);
         }
 
-        $venta = Venta::where('id', $ventaId)->with('detalles', 'empresa')->firstOrFail();
+        $venta = Venta::where('id', $ventaId)->with('detalles', 'empresa', 'giftCardsEmitidas')->firstOrFail();
         $documento = Documento::findOrfail($venta->id_documento);
 
         switch ($documento->nombre) {
@@ -73,7 +73,7 @@ class DocumentoService
      */
     public function generarDTE(int $ventaId, Empresa $empresa)
     {
-        $venta = Venta::where('id', $ventaId)->with('detalles', 'cliente', 'empresa')->firstOrFail();
+        $venta = Venta::where('id', $ventaId)->with('detalles', 'cliente', 'empresa', 'giftCardsEmitidas')->firstOrFail();
         $DTE = $venta->dte;
 
         if (!$DTE) {
@@ -118,6 +118,8 @@ class DocumentoService
      */
     public function generarTicket(Venta $venta, Empresa $empresa, Documento $documento)
     {
+        $venta->loadMissing('giftCardsEmitidas');
+
         $ticketEnPdf = isset($empresa->custom_empresa['configuraciones']['ticket_en_pdf']) &&
             $empresa->custom_empresa['configuraciones']['ticket_en_pdf'] == true;
 
