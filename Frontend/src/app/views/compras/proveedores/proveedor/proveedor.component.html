@@ -304,15 +304,17 @@
                         <label for="nombre_empresa">Empresa:</label>
                         <input type="text" class="form-control" placeholder="Escribe aquí" name="nombre_empresa" [(ngModel)]="proveedor.nombre_empresa">
                     </div>
-                    <div class="form-group col-6 col-lg-3">
+                    <div class="form-group col-6" [ngClass]="apiService.auth_user().empresa.pais == 'El Salvador' ? 'col-lg-3' : 'col-lg-6'">
                         <label for="nit">{{ 'country.tax.nitColon' | translate }}</label>
                         <input type="text" class="form-control" placeholder="Escribe aquí" name="nit" [(ngModel)]="proveedor.nit"
                             (ngModelChange)="onNitProveedorChange()" [dropSpecialCharacters]="false" mask={{apiService.auth_user().empresa.validador_nit}}>
                     </div>
+                    @if (apiService.auth_user().empresa.pais == 'El Salvador') {
                     <div class="form-group col-6 col-lg-3">
                         <label for="ncr">{{ 'country.tax.ncrColon' | translate }}</label>
                         <input type="text" class="form-control" placeholder="Escribe aquí" name="ncr" [(ngModel)]="proveedor.ncr">
                     </div>
+                    }
                     <div class="form-group col-md-6 col-lg-3">
                         <label for="tipo_contribuyente">Tipo de contribuyente:</label>
                         <select class="form-select" [(ngModel)]="proveedor.tipo_contribuyente" name="tipo_contribuyente">
