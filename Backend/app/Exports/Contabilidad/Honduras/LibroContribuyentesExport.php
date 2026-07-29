@@ -6,6 +6,7 @@ use App\Models\Ventas\Venta;
 use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
 use App\Services\Contabilidad\LibroIvaMontosHelper;
 use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithCustomStartCell;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithEvents;
@@ -22,7 +23,7 @@ use PhpOffice\PhpSpreadsheet\Style\Border;
  * Libro de ventas a contribuyentes - Formato Honduras (SAR).
  * Columnas según formato oficial.
  */
-class LibroContribuyentesExport implements FromCollection, WithMapping, WithHeadings, WithEvents
+class LibroContribuyentesExport implements FromCollection, WithMapping, WithHeadings, WithCustomStartCell, WithEvents
 {
     public $request;
 
@@ -63,31 +64,70 @@ class LibroContribuyentesExport implements FromCollection, WithMapping, WithHead
         $this->request = $request;
     }
 
+    /** Encabezado SAR en filas 1–6; columnas empiezan en fila 7. */
+    public function startCell(): string
+    {
+        return 'A7';
+    }
+
     public function registerEvents(): array
     {
         return [
             BeforeSheet::class => function (BeforeSheet $event) {
                 $empresa = Auth::user()?->empresa()->first();
-                $event->sheet->insertNewRowBefore(1, 4);
-                $event->sheet->setCellValue('A1', 'LIBRO DE VENTAS A CONTRIBUYENTES');
-                $event->sheet->setCellValue('A2', $empresa->nombre ?? '');
-                $event->sheet->setCellValue('A3', 'NIT: ' . ($empresa->nit ?? '') . '  NRC: ' . ($empresa->ncr ?? ''));
-                $event->sheet->setCellValue(
+                $sheet = $event->sheet;
+                $sheet->setCellValue('A2', $empresa->nombre ?? '');
+                $sheet->setCellValue('A3', 'LIBRO DE VENTAS A CONTRIBUYENTES');
+                $sheet->setCellValue(
                     'A4',
-                    'Mes: ' . ucfirst(Carbon::parse($this->request->inicio)->translatedFormat('F'))
-                        . ' - Año: ' . Carbon::parse($this->request->inicio)->format('Y')
+                    'MES: ' . ucfirst(Carbon::parse($this->request->inicio)->translatedFormat('F'))
                 );
+                $sheet->setCellValue(
+                    'G4',
+                    'AÑO: ' . Carbon::parse($this->request->inicio)->format('Y')
+                );
+                $sheet->setCellValue('A5', 'NIT: ' . ($empresa->nit ?? ''));
+                $sheet->setCellValue('G5', 'NRC: ' . ($empresa->ncr ?? ''));
             },
             AfterSheet::class => function (AfterSheet $event) {
                 $sheet = $event->sheet->getDelegate();
                 $lastCol = 'N';
-                $headerRow = 5;
-                $lastDataRow = max($headerRow, $sheet->getHighestRow());
+                $headerRow = 7;
+                $subHeaderRow = 8;
+
+                // Fila secundaria: subcolumnas bajo el grupo "Ventas" (F–N).
+                $sheet->insertNewRowBefore($subHeaderRow, 1);
+                $sheet->setCellValue("F{$headerRow}", 'Ventas');
+                foreach ([
+                    'F' => 'Exentas',
+                    'G' => 'No Sujetas',
+                    'H' => 'Gravadas Locales',
+                    'I' => 'Débito Fiscal',
+                    'J' => 'Ventas a Cuenta de Terceros',
+                    'K' => 'Debito F. a Cta. De Terceros',
+                    'L' => 'IVA Percibido',
+                    'M' => 'IVA Retenido',
+                    'N' => 'Total Ventas',
+                ] as $col => $label) {
+                    $sheet->setCellValue("{$col}{$subHeaderRow}", $label);
+                }
+
+                foreach (['A', 'B', 'C', 'D', 'E'] as $col) {
+                    $sheet->mergeCells("{$col}{$headerRow}:{$col}{$subHeaderRow}");
+                }
+                $sheet->mergeCells("F{$headerRow}:{$lastCol}{$headerRow}");
+                $sheet->mergeCells("A2:{$lastCol}2");
+                $sheet->mergeCells("A3:{$lastCol}3");
+
+                $firstDataRow = $subHeaderRow + 1;
+                $lastDataRow = max($subHeaderRow, $sheet->getHighestRow());
                 $totalRow = $lastDataRow + 1;
 
-                $sheet->getStyle("A1:{$lastCol}4")->getFont()->setBold(true);
-                $sheet->getStyle("A{$headerRow}:{$lastCol}{$headerRow}")->getFont()->setBold(true);
-                $sheet->getStyle("A{$headerRow}:{$lastCol}{$headerRow}")->getAlignment()
+                $sheet->getStyle("A2:{$lastCol}5")->getFont()->setBold(true);
+                $sheet->getStyle('A2:A3')->getAlignment()
+                    ->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                $sheet->getStyle("A{$headerRow}:{$lastCol}{$subHeaderRow}")->getFont()->setBold(true);
+                $sheet->getStyle("A{$headerRow}:{$lastCol}{$subHeaderRow}")->getAlignment()
                     ->setWrapText(true)
                     ->setHorizontal(Alignment::HORIZONTAL_CENTER)
                     ->setVertical(Alignment::VERTICAL_CENTER);
@@ -97,8 +137,8 @@ class LibroContribuyentesExport implements FromCollection, WithMapping, WithHead
                         ->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
                 }
 
-                if ($lastDataRow > $headerRow) {
-                    $sheet->getStyle('F' . ($headerRow + 1) . ":{$lastCol}{$lastDataRow}")
+                if ($lastDataRow >= $firstDataRow) {
+                    $sheet->getStyle("F{$firstDataRow}:{$lastCol}{$lastDataRow}")
                         ->getNumberFormat()->setFormatCode('#,##0.00');
                 }
 
@@ -108,7 +148,10 @@ class LibroContribuyentesExport implements FromCollection, WithMapping, WithHead
                 $resumen = $api['resumen_operaciones'];
                 $sum = static fn (string $k) => round(array_sum(array_column($filas, $k)), 2);
 
+                $sheet->mergeCells("A{$totalRow}:E{$totalRow}");
                 $sheet->setCellValue("A{$totalRow}", 'TOTAL');
+                $sheet->getStyle("A{$totalRow}")->getAlignment()
+                    ->setHorizontal(Alignment::HORIZONTAL_CENTER);
                 foreach ([
                     'F' => 'exentas',
                     'G' => 'no_sujetas',
@@ -129,35 +172,45 @@ class LibroContribuyentesExport implements FromCollection, WithMapping, WithHead
                     ->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
 
                 $r = $totalRow + 2;
-                $sheet->setCellValue("A{$r}", 'Resumen Operaciones');
-                $sheet->setCellValue("B{$r}", 'Gravadas');
-                $sheet->setCellValue("C{$r}", 'Exportaciones');
-                $sheet->setCellValue("D{$r}", 'Debito Fiscal');
-                $sheet->setCellValue("E{$r}", 'IVA Percibido');
-                $sheet->setCellValue("F{$r}", 'IVA Retenido');
-                $sheet->getStyle("A{$r}:F{$r}")->getFont()->setBold(true);
+                $sheet->setCellValue("E{$r}", 'Resumen Operaciones');
+                $sheet->setCellValue("F{$r}", 'Gravadas');
+                $sheet->setCellValue("G{$r}", 'Exportaciones');
+                $sheet->setCellValue("H{$r}", 'Debito Fiscal');
+                $sheet->setCellValue("I{$r}", 'IVA Percibido');
+                $sheet->setCellValue("J{$r}", 'IVA Retenido');
+                $sheet->getStyle("E{$r}:J{$r}")->getFont()->setBold(true);
+                $sheet->getStyle("E{$r}:J{$r}")
+                    ->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
                 $r++;
 
                 foreach ([
-                    'Total' => 'totales_detalle',
                     'Consumidor Final' => 'consumidor_final',
                     'Contribuyentes' => 'contribuyentes',
                     'Ventas a Cta de Terceros' => 'cta_terceros',
+                    'Total' => 'totales_detalle',
                 ] as $label => $bloque) {
                     $vals = $resumen[$bloque] ?? [];
-                    $sheet->setCellValue("A{$r}", $label);
-                    $sheet->setCellValue("B{$r}", round((float) ($vals['gravadas'] ?? 0), 2));
-                    $sheet->setCellValue("C{$r}", round((float) ($vals['exportaciones'] ?? 0), 2));
-                    $sheet->setCellValue("D{$r}", round((float) ($vals['debito_fiscal'] ?? 0), 2));
-                    $sheet->setCellValue("E{$r}", round((float) ($vals['iva_percibido'] ?? 0), 2));
-                    $sheet->setCellValue("F{$r}", round((float) ($vals['iva_retenido'] ?? 0), 2));
-                    $sheet->getStyle("B{$r}:F{$r}")->getNumberFormat()->setFormatCode('#,##0.00');
+                    $sheet->setCellValue("E{$r}", $label);
+                    $sheet->setCellValue("F{$r}", round((float) ($vals['gravadas'] ?? 0), 2));
+                    $sheet->setCellValue("G{$r}", round((float) ($vals['exportaciones'] ?? 0), 2));
+                    $sheet->setCellValue("H{$r}", round((float) ($vals['debito_fiscal'] ?? 0), 2));
+                    $sheet->setCellValue("I{$r}", round((float) ($vals['iva_percibido'] ?? 0), 2));
+                    $sheet->setCellValue("J{$r}", round((float) ($vals['iva_retenido'] ?? 0), 2));
+                    $sheet->getStyle("F{$r}:J{$r}")->getNumberFormat()->setFormatCode('#,##0.00');
+                    $sheet->getStyle("E{$r}:J{$r}")
+                        ->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
                     $r++;
                 }
 
-                $r++;
-                $sheet->setCellValue("A{$r}", '__________________________');
-                $sheet->setCellValue('A' . ($r + 1), 'Nombre y Firma de Contador');
+                $r += 2;
+                $sheet->mergeCells("E{$r}:J{$r}");
+                $sheet->setCellValue("E{$r}", '__________________________');
+                $sheet->getStyle("E{$r}")->getAlignment()
+                    ->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                $sheet->mergeCells('E' . ($r + 1) . ':J' . ($r + 1));
+                $sheet->setCellValue('E' . ($r + 1), 'Nombre y Firma de Contador');
+                $sheet->getStyle('E' . ($r + 1))->getAlignment()
+                    ->setHorizontal(Alignment::HORIZONTAL_CENTER);
             },
         ];
     }
@@ -165,20 +218,20 @@ class LibroContribuyentesExport implements FromCollection, WithMapping, WithHead
     public function headings(): array
     {
         return [
-            'N°',
-            'Fecha',
-            'N° Correlativo',
+            'No.',
+            'Fecha Emisión',
+            'Numero Correlativo de Documento',
             'NRC',
-            'Nombre del cliente',
-            'Ventas Exentas',
-            'Ventas No Sujetas',
-            'Ventas Gravadas Locales',
-            'Débito Fiscal',
-            'Ventas a Cuenta de Terceros',
-            'Débito Fiscal Cta. Terceros',
-            'IVA Percibido',
-            'IVA Retenido',
-            'Total',
+            'Nombre del Contribuyente',
+            'Ventas',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
         ];
     }
 

@@ -51,6 +51,19 @@ class LibroContribuyentesExportTest extends TestCase
         $this->assertNotContains('Factura de exportación', LibroContribuyentesExport::TIPOS_CONTRIBUYENTE);
     }
 
+    public function test_encabezado_excel_usa_grupo_ventas_y_arranca_en_a7(): void
+    {
+        $export = new LibroContribuyentesExport();
+        $headings = $export->headings();
+
+        $this->assertSame('A7', $export->startCell());
+        $this->assertSame('No.', $headings[0]);
+        $this->assertSame('Nombre del Contribuyente', $headings[4]);
+        $this->assertSame('Ventas', $headings[5]);
+        $this->assertSame('', $headings[6]);
+        $this->assertCount(14, $headings);
+    }
+
     public function test_devolucion_se_registra_con_montos_negativos(): void
     {
         $devolucion = (object) [

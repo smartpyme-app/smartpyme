@@ -37,6 +37,7 @@
     <div class="meta">
         <span>MES: {{ ucfirst(\Carbon\Carbon::parse($inicio)->translatedFormat('F')) }}</span>
         <span>AÑO: {{ \Carbon\Carbon::parse($inicio)->format('Y') }}</span>
+        <br>
         <span>NIT: {{ $empresa->nit ?? '' }}</span>
         <span>NRC: {{ $empresa->ncr ?? '' }}</span>
     </div>
@@ -44,12 +45,15 @@
     <table>
         <thead>
             <tr>
-                <th>No.</th>
-                <th>Fecha<br>Emisión</th>
-                <th>Numero<br>Correlativo de<br>Documento</th>
-                <th>NRC</th>
-                <th>Nombre del Contribuyente</th>
-                <th>Ventas<br>Exentas</th>
+                <th rowspan="2">No.</th>
+                <th rowspan="2">Fecha<br>Emisión</th>
+                <th rowspan="2">Numero<br>Correlativo de<br>Documento</th>
+                <th rowspan="2">NRC</th>
+                <th rowspan="2">Nombre del Contribuyente</th>
+                <th colspan="9">Ventas</th>
+            </tr>
+            <tr>
+                <th>Exentas</th>
                 <th>No Sujetas</th>
                 <th>Gravadas<br>Locales</th>
                 <th>Débito Fiscal</th>
@@ -109,14 +113,6 @@
         </thead>
         <tbody>
             <tr>
-                <td><b>Total</b></td>
-                <td class="text-right">{{ number_format((float) ($totalesDetalle['gravadas'] ?? 0), 2) }}</td>
-                <td class="text-right">{{ number_format((float) ($totalesDetalle['exportaciones'] ?? 0), 2) }}</td>
-                <td class="text-right">{{ number_format((float) ($totalesDetalle['debito_fiscal'] ?? 0), 2) }}</td>
-                <td class="text-right">{{ number_format((float) ($totalesDetalle['iva_percibido'] ?? 0), 2) }}</td>
-                <td class="text-right">{{ number_format((float) ($totalesDetalle['iva_retenido'] ?? 0), 2) }}</td>
-            </tr>
-            <tr>
                 <td>Consumidor Final</td>
                 <td class="text-right">{{ number_format((float) ($consumidorFinal['gravadas'] ?? 0), 2) }}</td>
                 <td class="text-right">{{ number_format((float) ($consumidorFinal['exportaciones'] ?? 0), 2) }}</td>
@@ -139,6 +135,14 @@
                 <td class="text-right">{{ number_format((float) ($ctaTerceros['debito_fiscal'] ?? 0), 2) }}</td>
                 <td class="text-right">{{ number_format((float) ($ctaTerceros['iva_percibido'] ?? 0), 2) }}</td>
                 <td class="text-right">{{ number_format((float) ($ctaTerceros['iva_retenido'] ?? 0), 2) }}</td>
+            </tr>
+            <tr>
+                <td><b>Total</b></td>
+                <td class="text-right">{{ number_format((float) ($totalesDetalle['gravadas'] ?? 0), 2) }}</td>
+                <td class="text-right">{{ number_format((float) ($totalesDetalle['exportaciones'] ?? 0), 2) }}</td>
+                <td class="text-right">{{ number_format((float) ($totalesDetalle['debito_fiscal'] ?? 0), 2) }}</td>
+                <td class="text-right">{{ number_format((float) ($totalesDetalle['iva_percibido'] ?? 0), 2) }}</td>
+                <td class="text-right">{{ number_format((float) ($totalesDetalle['iva_retenido'] ?? 0), 2) }}</td>
             </tr>
         </tbody>
     </table>
