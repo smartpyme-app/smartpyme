@@ -4,7 +4,9 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use App\Models\Suscripcion;
+use App\Models\SuscripcionBaja;
 use App\Models\User;
+use App\Services\Suscripcion\RegistrarSuscripcionBaja;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
@@ -24,7 +26,7 @@ class VerificarSuscripcion extends Command
             $this->verificarPeriodosPrueba();
             $this->verificarSuscripcionesVencidas();
             $this->procesarSuscripcionesCanceladas();
-            // $this->verificarInactividad();
+            $this->verificarInactividad();
 
             $this->info('Verificación completada exitosamente');
             Log::channel('suscripciones')->info('Verificación completada exitosamente');
@@ -124,6 +126,12 @@ class VerificarSuscripcion extends Command
             }
 
             try {
+                // Snapshot antes de poner montos en 0.
+                app(RegistrarSuscripcionBaja::class)->registrar(
+                    $suscripcion,
+                    SuscripcionBaja::MOTIVO_INACTIVIDAD
+                );
+
                 $suscripcion->update([
                     'estado' => $inactivo,
                 ]);
@@ -293,6 +301,13 @@ class VerificarSuscripcion extends Command
     private function desactivarCuenta(Suscripcion $suscripcion)
     {
         try {
+            // Snapshot antes de poner montos en 0.
+            $suscripcion->loadMissing(['empresa', 'plan']);
+            app(RegistrarSuscripcionBaja::class)->registrar(
+                $suscripcion,
+                SuscripcionBaja::MOTIVO_FALTA_PAGO
+            );
+
             $suscripcion->update([
                 'estado' => config('constants.ESTADO_SUSCRIPCION_INACTIVO'),
             ]);

@@ -243,7 +243,8 @@ class SuscripcionesController extends Controller
                 $suscripcion->direccion_factura = $request->direccion_factura;
             }
 
-            if ($validated['estado'] === 'Cancelado') {
+            $pasoACancelado = $validated['estado'] === 'Cancelado';
+            if ($pasoACancelado) {
                 if (empty($request->motivo_cancelacion)) {
                     return response()->json([
                         'success' => false,
@@ -269,6 +270,16 @@ class SuscripcionesController extends Controller
 
             // Actualizar campos monto_mensual y monto_anual en la empresa
             $empresa = Empresa::findOrFail($validated['empresa_id']);
+            if ($pasoACancelado) {
+                $suscripcion->setRelation('empresa', $empresa);
+                $suscripcion->loadMissing(['plan']);
+                app(\App\Services\Suscripcion\RegistrarSuscripcionBaja::class)->registrar(
+                    $suscripcion,
+                    \App\Models\SuscripcionBaja::MOTIVO_CANCELACION_VOLUNTARIA,
+                    now(),
+                    $request->motivo_cancelacion
+                );
+            }
             $empresa->sincronizarMontosDesdeSuscripcion($suscripcion->monto, $suscripcion->tipo_plan);
             if ($request->has('monto_mensual')) {
                 $empresa->monto_mensual = $request->input('monto_mensual');
@@ -330,6 +341,10 @@ class SuscripcionesController extends Controller
             ]);
 
             $suscripcion = Suscripcion::findOrFail($validated['id']);
+            $estadoAnterior = (string) $suscripcion->estado;
+            $canceladoLiteral = config('constants.ESTADO_SUSCRIPCION_CANCELADO');
+            $pasaACancelado = strcasecmp(trim($validated['estado']), (string) $canceladoLiteral) === 0
+                && strcasecmp(trim($estadoAnterior), (string) $canceladoLiteral) !== 0;
 
             if ($request->input('plan.id') != $suscripcion->plan_id) {
                 $plan = Plan::findOrFail($request->input('plan.id'));
@@ -360,6 +375,9 @@ class SuscripcionesController extends Controller
                 'motivo_cancelacion' => $request->input('motivo_cancelacion'),
                 'metodo_pago' => $request->input('metodo_pago'),
             ];
+            if ($pasaACancelado) {
+                $datosActualizacion['fecha_cancelacion'] = now();
+            }
             if ($request->exists('comentarios')) {
                 $datosActualizacion['comentarios'] = $request->input('comentarios');
             }
@@ -371,6 +389,17 @@ class SuscripcionesController extends Controller
 
             // Actualizar campos monto_mensual y monto_anual en la empresa
             $empresa = Empresa::findOrFail($suscripcion->empresa_id);
+            if ($pasaACancelado) {
+                $suscripcion->setRelation('empresa', $empresa);
+                $suscripcion->loadMissing(['plan']);
+                app(\App\Services\Suscripcion\RegistrarSuscripcionBaja::class)->registrar(
+                    $suscripcion,
+                    \App\Models\SuscripcionBaja::MOTIVO_CANCELACION_VOLUNTARIA,
+                    now(),
+                    $request->input('motivo_cancelacion')
+                );
+                $empresa->fecha_cancelacion = now();
+            }
             $empresa->sincronizarMontosDesdeSuscripcion($suscripcion->monto, $suscripcion->tipo_plan);
             if ($request->has('monto_mensual')) {
                 $empresa->monto_mensual = $request->input('monto_mensual');
@@ -957,7 +986,7 @@ class SuscripcionesController extends Controller
 
     public function cancelSuscription(Request $request)
     {
-        $suscripcion = Suscripcion::findOrFail($request->id);
+        $suscripcion = Suscripcion::with(['empresa', 'plan'])->findOrFail($request->id);
         $suscripcion->estado = config('constants.ESTADO_SUSCRIPCION_CANCELADO');
         $suscripcion->motivo_cancelacion = $request->motivo_cancelacion;
         $suscripcion->fecha_cancelacion = now();
@@ -966,6 +995,14 @@ class SuscripcionesController extends Controller
         $empresa = Empresa::findOrFail($suscripcion->usuario->empresa->id);
         $empresa->fecha_cancelacion = now();
         $empresa->save();
+
+        $suscripcion->setRelation('empresa', $empresa);
+        app(\App\Services\Suscripcion\RegistrarSuscripcionBaja::class)->registrar(
+            $suscripcion,
+            \App\Models\SuscripcionBaja::MOTIVO_CANCELACION_VOLUNTARIA,
+            now(),
+            $request->motivo_cancelacion
+        );
 
         return response()->json($suscripcion, 200);
     }
