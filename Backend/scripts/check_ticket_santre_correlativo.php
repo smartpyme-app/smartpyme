@@ -9,14 +9,11 @@ function numFacturaDisplay(string $correlativo, ?string $prefijo, ?string $prefS
 {
     $corr = str_pad($correlativo, 8, '0', STR_PAD_LEFT);
     if ($prefSucursal !== null && trim($prefSucursal) !== '') {
-        return rtrim(trim($prefSucursal), '-').'-'.$corr;
+        return trim($prefSucursal).' '.$corr;
     }
     $pref = trim((string) $prefijo);
-    if ($pref !== '') {
-        return rtrim($pref, '-').'-'.$corr;
-    }
 
-    return $corr;
+    return $pref !== '' ? $pref.$corr : $corr;
 }
 
 function assertEq(string $label, $got, $expected): void
@@ -30,8 +27,8 @@ function assertEq(string $label, $got, $expected): void
 
 assertEq('pad-only', numFacturaDisplay('439', null), '00000439');
 assertEq('prefijo-doc', numFacturaDisplay('439', '001-001-01-'), '001-001-01-00000439');
-assertEq('prefijo-sin-guion', numFacturaDisplay('439', '001-001-01'), '001-001-01-00000439');
-assertEq('prefijo-sucursal', numFacturaDisplay('439', 'X', '001-001-01-'), '001-001-01-00000439');
+assertEq('prefijo-sin-guion', numFacturaDisplay('439', '001-001-01'), '001-001-0100000439');
+assertEq('prefijo-sucursal', numFacturaDisplay('439', 'X', '001-001-01-'), '001-001-01- 00000439');
 
 echo "All checks passed.\n";
 exit(0);

@@ -3,8 +3,8 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     @php
-        $docLblMeta = strtoupper(trim((string) ($documento->nombre ?? 'TICKET')));
-        $etiquetaNumero = $docLblMeta === 'RECIBO' ? 'RECIBO' : 'FACTURA';
+        $docLblMeta = strtoupper(trim((string) ($documento->nombre ?? 'FACTURA')));
+        $etiquetaNumero = $docLblMeta === 'TICKET' ? 'TICKET' : ($docLblMeta === 'RECIBO' ? 'RECIBO' : 'FACTURA');
     @endphp
     <title>{{ $empresa->nombre }} — {{ $etiquetaNumero }} {{ $venta->correlativo }}</title>
     <style>
@@ -75,24 +75,20 @@
             ? $sucursalVenta->nombre
             : 'Principal';
 
-        // Correlativo HN: mismo patrón Accesorios (prefijo + 8 dígitos)
+        // Correlativo: misma lógica que Factura-Accesorios-HN-Ticket (prefijo + 8 dígitos)
         $corr = str_pad((string) $venta->correlativo, 8, '0', STR_PAD_LEFT);
         $prefPorSucursalJson = data_get($empresa->custom_empresa, 'configuraciones.prefijo_factura_santre_por_sucursal', []);
         $prefPorSucursal = is_array($prefPorSucursalJson) ? $prefPorSucursalJson : [];
         $idSucVenta = $venta->id_sucursal;
         $prefFijoSucursal = null;
-        if ($idSucVenta !== null) {
+        if (is_array($prefPorSucursal) && $idSucVenta !== null) {
             $prefFijoSucursal = $prefPorSucursal[(string) $idSucVenta] ?? $prefPorSucursal[$idSucVenta] ?? null;
         }
         if ($prefFijoSucursal !== null && trim((string) $prefFijoSucursal) !== '') {
-            $numFacturaDisplay = rtrim(trim((string) $prefFijoSucursal), '-').'-'.$corr;
+            $numFacturaDisplay = trim((string) $prefFijoSucursal).' '.$corr;
         } else {
             $pref = trim((string) ($documento->prefijo ?? ''));
-            if ($pref !== '') {
-                $numFacturaDisplay = rtrim($pref, '-').'-'.$corr;
-            } else {
-                $numFacturaDisplay = $corr;
-            }
+            $numFacturaDisplay = $pref !== '' ? $pref.$corr : $corr;
         }
 
         $fechaEmision = \Carbon\Carbon::parse($venta->fecha);
@@ -101,8 +97,18 @@
         $nombreCliente = trim((string) ($venta->nombre_cliente ?? '')) !== ''
             ? $venta->nombre_cliente
             : 'Consumidor final';
+        $codCliente = $venta->id_cliente && $cliente && $cliente->codigo_cliente !== null && $cliente->codigo_cliente !== ''
+            ? $cliente->codigo_cliente
+            : '0';
+        $rtnCliente = '';
+        if ($venta->id_cliente && $cliente) {
+            $rtnCliente = trim((string) ($cliente->nit ?? ''));
+            if ($rtnCliente === '') {
+                $rtnCliente = trim((string) ($cliente->dui ?? ''));
+            }
+        }
 
-        $ivaEmpresa = (float) ($venta->empresa()->pluck('iva')->first() ?? 15);
+        $ivaEmpresa = (float) ($venta->empresa()->pluck('iva')->first() ?? 18);
         $iva_15 = 0.0;
         $iva_18 = 0.0;
         $gravada_15 = 0.0;
@@ -169,19 +175,19 @@
         $subTot = (float) ($venta->sub_total ?? ($gravada_15 + $gravada_18));
         $imptoExento = (float) ($venta->exenta ?? 0);
 
-        // CAI / rango / fecha límite — mismas claves que Accesorios HN
+        // CAI / rango / fecha límite — mismas claves y formato que Accesorios HN
         $cai = data_get($empresa->custom_empresa, 'configuraciones.factura_cai') ?: $documento->resolucion;
         $rangoAuth = data_get($empresa->custom_empresa, 'configuraciones.factura_rango_autorizado') ?: $documento->rangos;
         $fechaLimiteCai = data_get($empresa->custom_empresa, 'configuraciones.factura_fecha_limite');
         if ($fechaLimiteCai) {
             try {
-                $fechaLimiteFmt = \Carbon\Carbon::parse($fechaLimiteCai)->locale('es')->isoFormat('D [de] MMMM [de] YYYY H:mm');
+                $fechaLimiteFmt = \Carbon\Carbon::parse($fechaLimiteCai)->format('d/m/Y');
             } catch (\Throwable $e) {
                 $fechaLimiteFmt = $fechaLimiteCai;
             }
         } else {
             $fechaLimiteFmt = $documento->fecha
-                ? \Carbon\Carbon::parse($documento->fecha)->locale('es')->isoFormat('D [de] MMMM [de] YYYY H:mm')
+                ? \Carbon\Carbon::parse($documento->fecha)->format('d/m/Y')
                 : '';
         }
 
@@ -233,7 +239,10 @@
 
     <div class="sec">
         <p class="sec-title">Información del cliente</p>
-        <p class="muted"><span class="b">Nombre:</span> {{ $nombreCliente }}</p>
+        @if ($rtnCliente !== '')
+            <p class="muted"><span class="b">RTN:</span> {{ $rtnCliente }}</p>
+        @endif
+        <p class="muted"><span class="b">Nombre:</span> {{ $codCliente }} - {{ $nombreCliente }}</p>
     </div>
 
     <hr class="d">
