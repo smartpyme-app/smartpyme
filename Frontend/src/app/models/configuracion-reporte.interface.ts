@@ -22,23 +22,29 @@ export interface ConfiguracionReporte {
     updated_at?: string;
   }
 
+  /** Catálogo UI (8 opciones). Claves alineadas con ReportePeriodo backend. */
   export const PERIODOS_REPORTE: { value: string; label: string }[] = [
-    { value: 'hoy', label: 'Hoy' },
-    { value: 'ayer', label: 'Ayer' },
+    { value: 'hoy', label: 'Del día' },
     { value: 'ultimos3', label: 'Últimos 3 días' },
-    { value: 'ultimos7', label: 'Últimos 7 días' },
-    { value: 'semana', label: 'Esta semana' },
-    { value: 'semanaAnterior', label: 'Semana anterior' },
-    { value: 'ultimas2Semanas', label: 'Últimas 2 semanas' },
-    { value: 'mes', label: 'Este mes' },
-    { value: 'mesAnterior', label: 'Mes anterior' },
+    { value: 'ultimos7', label: 'Última semana' },
+    { value: 'ultimos15', label: 'Últimos 15 días' },
+    { value: 'mes', label: 'Mes' },
     { value: 'ultimos3Meses', label: 'Últimos 3 meses' },
     { value: 'ultimos6Meses', label: 'Últimos 6 meses' },
-    { value: 'trimestre', label: 'Este trimestre' },
-    { value: 'trimestreAnterior', label: 'Trimestre anterior' },
-    { value: 'anio', label: 'Este año' },
-    { value: 'anioAnterior', label: 'Año anterior' },
+    { value: 'anio', label: 'Año' },
   ];
+
+  /** Labels para configs guardadas con claves fuera del catálogo nuevo. */
+  const PERIODOS_LEGACY: Record<string, string> = {
+    ayer: 'Ayer',
+    semana: 'Esta semana',
+    semanaAnterior: 'Semana anterior',
+    ultimas2Semanas: 'Últimas 2 semanas',
+    mesAnterior: 'Mes anterior',
+    trimestre: 'Este trimestre',
+    trimestreAnterior: 'Trimestre anterior',
+    anioAnterior: 'Año anterior',
+  };
   
   export const TIPOS_REPORTE = {
     VENTAS_POR_VENDEDOR: 'ventas-por-vendedor',
@@ -73,7 +79,11 @@ export interface ConfiguracionReporte {
 
   export function labelPeriodo(periodo?: string | null): string {
     if (!periodo) {
-      return 'Hoy';
+      return 'Del día';
     }
-    return PERIODOS_REPORTE.find((p) => p.value === periodo)?.label ?? periodo;
+    return (
+      PERIODOS_REPORTE.find((p) => p.value === periodo)?.label ??
+      PERIODOS_LEGACY[periodo] ??
+      periodo
+    );
   }

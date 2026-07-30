@@ -10,21 +10,24 @@ use Carbon\Carbon;
  */
 class ReportePeriodo
 {
+    /** Catálogo UI actual + claves legacy (configs ya guardadas). */
     public const PERIODOS = [
         'hoy',
-        'ayer',
         'ultimos3',
         'ultimos7',
+        'ultimos15',
+        'mes',
+        'ultimos3Meses',
+        'ultimos6Meses',
+        'anio',
+        // legacy
+        'ayer',
         'semana',
         'semanaAnterior',
         'ultimas2Semanas',
-        'mes',
         'mesAnterior',
-        'ultimos3Meses',
-        'ultimos6Meses',
         'trimestre',
         'trimestreAnterior',
-        'anio',
         'anioAnterior',
     ];
 
@@ -53,6 +56,10 @@ class ReportePeriodo
 
             case 'ultimos7':
                 $inicio = $hoy->copy()->subDays(6);
+                break;
+
+            case 'ultimos15':
+                $inicio = $hoy->copy()->subDays(14);
                 break;
 
             case 'semana':
@@ -104,7 +111,7 @@ class ReportePeriodo
 
             case 'anio':
                 $inicio = $hoy->copy()->startOfYear();
-                $fin = $hoy->copy()->endOfYear()->startOfDay();
+                $fin = $hoy->copy();
                 break;
 
             case 'anioAnterior':
