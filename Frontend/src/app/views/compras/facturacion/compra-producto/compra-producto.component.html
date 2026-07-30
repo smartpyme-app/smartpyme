@@ -56,7 +56,7 @@
                     </span>
 
                     <!-- Precio Compra -->
-                    <span class="text-end" style="min-width:70px">
+                    <span *ngIf="!ocultarCosto()" class="text-end" style="min-width:70px">
                         <span class="badge bg-info p-1">
                             {{ (producto.costo * (producto.factor_conversion || 1)) | currency:'USD':'symbol':'1.2' }}
                         </span>
