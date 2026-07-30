@@ -36,8 +36,13 @@ export class CompraProductoComponent implements OnInit {
         return this.apiService.isComponenteQuimicoHabilitado();
     }
 
+    /** Oculta el costo en el buscador para Supervisor limitado. */
+    public ocultarCosto(): boolean {
+        return this.apiService.isSupervisorLimitado();
+    }
+
     constructor( 
-        private apiService: ApiService, private alertService: AlertService,
+        public apiService: ApiService, private alertService: AlertService,
         private modalService: BsModalService, private sumPipe:SumPipe,
         
     ) { }
