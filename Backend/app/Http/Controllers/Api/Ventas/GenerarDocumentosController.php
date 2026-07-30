@@ -103,6 +103,42 @@ class GenerarDocumentosController extends Controller
 
             $empresa = Empresa::findOrfail(Auth::user()->id_empresa);
 
+            // SANTRÉ S de RL (818) — solo Ticket/Recibo
+            if (Auth::user()->id_empresa == 818) {
+                $cliente = Cliente::withoutGlobalScope('empresa')->find($venta->id_cliente);
+                $venta->load('detalles.producto');
+                $formatter = new NumeroALetras();
+                $n = explode('.', number_format((float) $venta->total, 2, '.', ''));
+                $dolares = $formatter->toWords((float) $n[0]);
+                $centavosNum = str_pad(isset($n[1]) ? $n[1] : '00', 2, '0', STR_PAD_LEFT);
+
+                $imprimePdf = isset($empresa->custom_empresa['configuraciones']['ticket_en_pdf'])
+                    && $empresa->custom_empresa['configuraciones']['ticket_en_pdf'] == true;
+
+                if ($imprimePdf) {
+                    $venta->pdf = true;
+                    $pdf = app('dompdf.wrapper')->loadView(
+                        'reportes.facturacion.formatos_empresas.Ticket-Santre',
+                        compact('venta', 'empresa', 'documento', 'cliente', 'dolares', 'centavosNum')
+                    );
+                    $alto_base = 320;
+                    $alto_por_producto = 22;
+                    $total_lineas = max(1, $venta->detalles->count());
+                    $notaExtra = $documento->nota ? min(45, (substr_count((string) $documento->nota, "\n") + 1) * 5) : 0;
+                    $alto_total_mm = $alto_base + ($total_lineas * $alto_por_producto) + $notaExtra;
+                    $alto_total_pt = $alto_total_mm * 2.83465;
+                    $ancho_pt = 80 * 2.83465;
+                    $pdf->setPaper([0, 0, $ancho_pt, $alto_total_pt]);
+                    return $pdf->stream('ticket-santre.pdf');
+                }
+
+                $venta->pdf = false;
+                return view(
+                    'reportes.facturacion.formatos_empresas.Ticket-Santre',
+                    compact('venta', 'empresa', 'documento', 'cliente', 'dolares', 'centavosNum')
+                );
+            }
+
             $usarTicketAccesoriosHn = (
                 (isset($empresa->custom_empresa['configuraciones']['factura_ticket_accesorios_hn']) &&
                     $empresa->custom_empresa['configuraciones']['factura_ticket_accesorios_hn'] == true)
