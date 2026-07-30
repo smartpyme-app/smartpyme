@@ -75,21 +75,33 @@
             ? $sucursalVenta->nombre
             : 'Principal';
 
-        // Correlativo: misma lógica que Factura-Accesorios-HN-Ticket (prefijo + 8 dígitos)
+        // Correlativo HN: prefijo + 8 dígitos (p. ej. 001-001-01-00000001).
+        // El UI de documentos no captura `prefijo`; Accesorios lo cubre con mapa por sucursal.
+        // Aquí: sucursal → documento.prefijo → prefijo extraído del rango autorizado (Serie).
         $corr = str_pad((string) $venta->correlativo, 8, '0', STR_PAD_LEFT);
         $prefPorSucursalJson = data_get($empresa->custom_empresa, 'configuraciones.prefijo_factura_santre_por_sucursal', []);
         $prefPorSucursal = is_array($prefPorSucursalJson) ? $prefPorSucursalJson : [];
         $idSucVenta = $venta->id_sucursal;
-        $prefFijoSucursal = null;
-        if (is_array($prefPorSucursal) && $idSucVenta !== null) {
+        $pref = '';
+        if ($idSucVenta !== null) {
             $prefFijoSucursal = $prefPorSucursal[(string) $idSucVenta] ?? $prefPorSucursal[$idSucVenta] ?? null;
+            if ($prefFijoSucursal !== null && trim((string) $prefFijoSucursal) !== '') {
+                $pref = trim((string) $prefFijoSucursal);
+            }
         }
-        if ($prefFijoSucursal !== null && trim((string) $prefFijoSucursal) !== '') {
-            $numFacturaDisplay = trim((string) $prefFijoSucursal).' '.$corr;
-        } else {
+        if ($pref === '') {
             $pref = trim((string) ($documento->prefijo ?? ''));
-            $numFacturaDisplay = $pref !== '' ? $pref.$corr : $corr;
         }
+        if ($pref === '') {
+            $rangoParaPref = (string) (
+                data_get($empresa->custom_empresa, 'configuraciones.factura_rango_autorizado')
+                ?: ($documento->rangos ?? '')
+            );
+            if (preg_match('/(\d{3}-\d{3}-\d{2}-)/', $rangoParaPref, $mPref)) {
+                $pref = $mPref[1];
+            }
+        }
+        $numFacturaDisplay = $pref !== '' ? rtrim($pref, '-').'-'.$corr : $corr;
 
         $fechaEmision = \Carbon\Carbon::parse($venta->fecha);
         $fechaEmisionFmt = $fechaEmision->locale('es')->isoFormat('D [de] MMMM [de] YYYY HH:mm');
