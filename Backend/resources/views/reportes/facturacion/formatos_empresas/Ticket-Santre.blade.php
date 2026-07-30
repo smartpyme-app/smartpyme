@@ -28,6 +28,7 @@
         .up { text-transform: uppercase; }
         .mt1 { margin-top: 2pt; }
         .mt2 { margin-top: 4pt; }
+        .logo { max-height: 72px; max-width: 100%; }
         .sec { font-size: 7.5pt; margin-top: 5pt; }
         .sec-title { font-weight: bold; font-size: 8pt; margin-bottom: 2pt; }
         .muted { font-size: 7pt; }
@@ -210,7 +211,45 @@
         }
     @endphp
 
-    <p class="cen b up" style="font-size: 11pt;">{{ strtoupper($empresa->nombre) }}</p>
+    <div class="cen">
+        @php
+            $logoRaw = ($venta->empresa && $venta->empresa->logo) ? $venta->empresa->logo : ($empresa->logo ?? null);
+            $logoRel = null;
+            if ($logoRaw) {
+                $logoRel = ltrim(str_replace('\\', '/', (string) $logoRaw), '/');
+                if ($logoRel === '' || strpos($logoRel, '..') !== false) {
+                    $logoRel = null;
+                }
+            }
+            $logoSrc = null;
+            if ($logoRel) {
+                $fullLogo = public_path('img'.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $logoRel));
+                if (is_file($fullLogo) && is_readable($fullLogo)) {
+                    if (!empty($venta->pdf)) {
+                        $ext = strtolower(pathinfo($fullLogo, PATHINFO_EXTENSION));
+                        if ($ext === 'png') {
+                            $mime = 'image/png';
+                        } elseif ($ext === 'gif') {
+                            $mime = 'image/gif';
+                        } elseif ($ext === 'webp') {
+                            $mime = 'image/webp';
+                        } elseif ($ext === 'svg') {
+                            $mime = 'image/svg+xml';
+                        } else {
+                            $mime = 'image/jpeg';
+                        }
+                        $logoSrc = 'data:'.$mime.';base64,'.base64_encode(file_get_contents($fullLogo));
+                    } else {
+                        $logoSrc = asset('img/'.$logoRel);
+                    }
+                }
+            }
+        @endphp
+        @if ($logoSrc)
+            <img class="logo" src="{{ $logoSrc }}" alt="">
+        @endif
+        <p class="b up mt1" style="font-size: 11pt;">{{ strtoupper($empresa->nombre) }}</p>
+    </div>
 
     <div class="sec">
         <p class="sec-title">Información de contacto</p>
