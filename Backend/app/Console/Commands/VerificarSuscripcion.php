@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use App\Models\Admin\Empresa;
 use App\Models\Suscripcion;
 use App\Models\SuscripcionBaja;
 use App\Models\User;
@@ -140,7 +141,7 @@ class VerificarSuscripcion extends Command
                     $usuario->update(['enable' => false]);
                 }
 
-                $this->reiniciarMontosFinancieros($suscripcion, $usuario, 'inactividad general (> 45 días)', true);
+                $this->reiniciarMontosFinancieros($suscripcion, $empresa, 'inactividad general (> 45 días)', true);
 
                 $this->info("Suscripción {$suscripcion->id} desactivada por inactividad general (> 45 días sin login)");
                 Log::channel('suscripciones')->info('Suscripción desactivada por inactividad general (> 45 días)', [
@@ -180,14 +181,16 @@ class VerificarSuscripcion extends Command
     private function procesarDesactivacionCancelada(Suscripcion $suscripcion)
     {
         try {
+            $suscripcion->loadMissing('empresa');
             $usuario = User::find($suscripcion->usuario_id);
+            $empresa = $suscripcion->empresa;
 
             if (!$usuario) {
                 $this->warn('Usuario no encontrado para suscripción cancelada ID: ' . $suscripcion->id);
                 return;
             }
 
-            $this->reiniciarMontosFinancieros($suscripcion, $usuario, 'cancelación');
+            $this->reiniciarMontosFinancieros($suscripcion, $empresa, 'cancelación');
 
             $usuario->update(['enable' => false]);
 
@@ -313,7 +316,7 @@ class VerificarSuscripcion extends Command
             ]);
 
             $usuario = $suscripcion->usuario;
-            $this->reiniciarMontosFinancieros($suscripcion, $usuario, 'falta de pago', true);
+            $this->reiniciarMontosFinancieros($suscripcion, $suscripcion->empresa, 'falta de pago', true);
 
             if ($usuario) {
                 $usuario->update(['enable' => false]);
@@ -331,7 +334,7 @@ class VerificarSuscripcion extends Command
 
     private function reiniciarMontosFinancieros(
         Suscripcion $suscripcion,
-        ?User $usuario,
+        ?Empresa $empresa,
         string $motivo,
         bool $desactivarEmpresa = false
     ): void {
@@ -341,7 +344,8 @@ class VerificarSuscripcion extends Command
             'suscripcion_id' => $suscripcion->id,
         ]);
 
-        if (!$usuario?->empresa) {
+        // No usar $usuario->empresa: en soporte/multi-empresa apunta al cliente en contexto.
+        if (!$empresa) {
             return;
         }
 
@@ -355,14 +359,14 @@ class VerificarSuscripcion extends Command
             $datosEmpresa['activo'] = false;
         }
 
-        $usuario->empresa->update($datosEmpresa);
+        $empresa->update($datosEmpresa);
 
         $mensajeEmpresa = $desactivarEmpresa
             ? "Empresa desactivada y montos reiniciados a 0 por {$motivo}"
             : "Montos de empresa reiniciados a 0 por {$motivo}";
 
         Log::channel('suscripciones')->info($mensajeEmpresa, [
-            'empresa_id' => $usuario->empresa->id,
+            'empresa_id' => $empresa->id,
             'suscripcion_id' => $suscripcion->id,
         ]);
     }
