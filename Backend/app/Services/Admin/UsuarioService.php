@@ -200,6 +200,7 @@ class UsuarioService
         ]);
 
         $usuario->roles()->sync([$rolId]);
+        $usuario->syncTipoFromRole($rolId);
 
         return true;
     }

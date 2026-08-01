@@ -1018,7 +1018,7 @@ class SuscripcionesController extends Controller
             // ->where('id_sucursal', $request->id_sucursal)
             ->where('id_empresa', $request->input('params.id_empresa'))
             ->where(function ($query) {
-                $query->where('tipo', config('constants.TIPO_USUARIO_ADMINISTRADOR'))
+                $query->whereIn('tipo', [config('constants.TIPO_USUARIO_ADMINISTRADOR', 'Administrador'), 'Super Administrador'])
                     ->orWhereHas('roles', function ($q) {
                         $q->whereIn('name', [
                             config('constants.ROL_ADMIN', 'admin'),

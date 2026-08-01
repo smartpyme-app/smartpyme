@@ -150,6 +150,7 @@ class UsuariosController extends Controller
             if ((int) $rolActual !== (int) $request->rol_id) {
                 $usuario->roles()->sync([(int) $request->rol_id]);
             }
+            $usuario->syncTipoFromRole($request->rol_id);
         }
 
         $usuario->load('roles');
