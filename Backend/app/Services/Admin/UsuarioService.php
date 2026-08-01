@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Intervention\Image\ImageManagerStatic as Image;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
+use Spatie\Permission\PermissionRegistrar;
 
 class UsuarioService
 {
@@ -200,6 +201,9 @@ class UsuarioService
         ]);
 
         $usuario->roles()->sync([$rolId]);
+
+        // Limpiar caché de Spatie para que el cambio sea inmediato
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         return true;
     }
