@@ -1017,7 +1017,15 @@ class SuscripcionesController extends Controller
             ->where('enable', true)
             // ->where('id_sucursal', $request->id_sucursal)
             ->where('id_empresa', $request->input('params.id_empresa'))
-            ->where('tipo', config('constants.TIPO_USUARIO_ADMINISTRADOR'))
+            ->where(function ($query) {
+                $query->where('tipo', config('constants.TIPO_USUARIO_ADMINISTRADOR'))
+                    ->orWhereHas('roles', function ($q) {
+                        $q->whereIn('name', [
+                            config('constants.ROL_ADMIN', 'admin'),
+                            config('constants.ROL_SUPER_ADMIN', 'super_admin')
+                        ]);
+                    });
+            })
             ->orderBy('name', 'asc')
             ->get();
     }
