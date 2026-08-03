@@ -135,6 +135,43 @@ export class ApiService {
         );
     }
 
+    /** Encola generación asíncrona de reporte (responde 202 + id). */
+    encolarReporteExportacion(url: string, body: any): Observable<{ id: number; estado: string; message?: string }> {
+        return this.http.post<{ id: number; estado: string; message?: string }>(this.apiUrl + url, body, {
+            headers: new HttpHeaders({
+                'Authorization': 'Bearer ' + this.auth_token()
+            })
+        }).pipe(retry(0), catchError(this.handleError));
+    }
+
+    estadoReporteExportacion(id: number): Observable<{ id: number; estado: string; formato?: string; nombre_archivo?: string; error?: string }> {
+        return this.http.get<{ id: number; estado: string; formato?: string; nombre_archivo?: string; error?: string }>(
+            this.apiUrl + 'reportes-configuracion/exportaciones/' + id,
+            {
+                headers: new HttpHeaders({
+                    'Authorization': 'Bearer ' + this.auth_token()
+                })
+            }
+        ).pipe(retry(0), catchError(this.handleError));
+    }
+
+    descargarReporteExportacion(id: number): Observable<Blob> {
+        return this.http.get(this.apiUrl + 'reportes-configuracion/exportaciones/' + id + '/archivo', {
+            responseType: 'blob',
+            observe: 'response',
+            headers: new HttpHeaders({
+                'Authorization': 'Bearer ' + this.auth_token()
+            })
+        }).pipe(
+            map(response => {
+                return new Blob([response.body!], {
+                    type: response.headers.get('Content-Type') || 'application/octet-stream'
+                });
+            }),
+            catchError(this.handleError)
+        );
+    }
+
     logout() {
         let data:any = {};
         if (this.autenticated()) {

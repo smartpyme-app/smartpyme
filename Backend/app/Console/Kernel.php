@@ -35,7 +35,14 @@ class Kernel extends ConsoleKernel
         //      ->dailyAt('23:59');
         $schedule->command('reportes:enviar')
             ->everyFiveMinutes()
+            ->withoutOverlapping()
+            ->runInBackground()
             ->appendOutputTo(storage_path('logs/reportes-automaticos.log'));
+
+        $schedule->command('reportes:limpiar-exportaciones')
+            ->dailyAt('03:30')
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/reportes-automaticos-limpieza.log'));
 
         $schedule->command('metricas:empresas')
             ->dailyAt('03:00')
