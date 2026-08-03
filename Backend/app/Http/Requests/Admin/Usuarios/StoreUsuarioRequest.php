@@ -53,7 +53,7 @@ class StoreUsuarioRequest extends FormRequest
                 'email',
                 Rule::unique('users', 'email')->ignore($id),
             ],
-            'tipo'          => 'required|string',
+            'tipo'          => 'nullable|string',
             'id_empresa'    => 'required|integer|exists:empresas,id',
             'id_sucursal'   => 'required|integer|exists:sucursales,id',
             'id_bodega'     => 'required|integer|exists:sucursal_bodegas,id',
@@ -154,6 +154,28 @@ class StoreUsuarioRequest extends FormRequest
         if ($this->has('telefono') && $this->telefono) {
             $this->merge([
                 'telefono' => preg_replace('/[^0-9]/', '', $this->telefono),
+            ]);
+        }
+
+        // Derivar tipo legacy si no viene en el request
+        if (!$this->filled('tipo')) {
+            $tipo = null;
+            if ($this->filled('rol_id')) {
+                $role = \Spatie\Permission\Models\Role::find($this->rol_id);
+                if ($role) {
+                    if ($role->name === config('constants.ROL_SUPER_ADMIN', 'super_admin')) {
+                        $tipo = 'Super Administrador';
+                    } elseif ($role->name === config('constants.ROL_ADMIN', 'admin')) {
+                        $tipo = config('constants.TIPO_USUARIO_ADMINISTRADOR', 'Administrador');
+                    } elseif (in_array($role->name, [config('constants.ROL_USUARIO_VENDEDOR', 'usuario_vendedor'), 'usuario_ventas', 'vendedor'])) {
+                        $tipo = config('constants.TIPO_USUARIO_VENDEDOR', 'Vendedor');
+                    } else {
+                        $tipo = ucfirst(str_replace('_', ' ', $role->name));
+                    }
+                }
+            }
+            $this->merge([
+                'tipo' => $tipo ?? 'Usuario',
             ]);
         }
     }
