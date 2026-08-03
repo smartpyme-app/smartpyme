@@ -174,9 +174,11 @@ class AuthJWTController extends Controller
     {
         $empresa = Empresa::where('id', $id_empresa)->firstOrFail();
 
+        $fromAddress = config('mail.from.address') ?: (env('MAIL_FROM_ADDRESS') ?: 'no-reply@smartpyme.app');
+
         if ($empresa->pagos()->count() == 0) {
-            Mail::send('mails.bienvenida', ['empresa' => $empresa], function ($m) use ($empresa) {
-                $m->from(env('MAIL_FROM_ADDRESS'), 'SmartPyme')
+            Mail::send('mails.bienvenida', ['empresa' => $empresa], function ($m) use ($empresa, $fromAddress) {
+                $m->from($fromAddress, 'SmartPyme')
                     ->to($empresa->correo)
                     ->subject('¡Bienvenido a SmartPyme!');
             });
@@ -203,9 +205,10 @@ class AuthJWTController extends Controller
         ];
 
         // Notificar
-        Mail::send('mails.notificacion', ['data' => $data], function ($m) use ($data) {
-            $m->from(env('MAIL_FROM_ADDRESS'), 'SmartPyme')
-                ->to(env('MAIL_TO_ADDRESS'))
+        $toAddress = env('MAIL_TO_ADDRESS', 'contact@smartpyme.sv');
+        Mail::send('mails.notificacion', ['data' => $data], function ($m) use ($data, $fromAddress, $toAddress) {
+            $m->from($fromAddress, 'SmartPyme')
+                ->to($toAddress)
                 ->cc('gabrielaq@smartpyme.sv')
                 ->cc('contact@smartpyme.sv')
                 ->subject('Se ha registrado una nueva cuenta en SmartPyme');

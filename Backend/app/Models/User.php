@@ -95,12 +95,17 @@ class User extends Authenticatable implements JWTSubject
 
     public function bienvenida()
     {
-        $usuario = User::where('id', $this->id)->with('empresa')->first();
-        Mail::send('mails.bienvenida-usuario', ['usuario' => $usuario], function ($m) use ($usuario) {
-            $m->from(env('MAIL_FROM_ADDRESS'), 'SmartPyme')
-                ->to($this->email)
-                ->subject('¡Bienvenido a SmartPyme!');
-        });
+        try {
+            $usuario = User::where('id', $this->id)->with('empresa')->first();
+            $fromAddress = config('mail.from.address') ?: (env('MAIL_FROM_ADDRESS') ?: 'no-reply@smartpyme.app');
+            Mail::send('mails.bienvenida-usuario', ['usuario' => $usuario], function ($m) use ($fromAddress) {
+                $m->from($fromAddress, 'SmartPyme')
+                    ->to($this->email)
+                    ->subject('¡Bienvenido a SmartPyme!');
+            });
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Error al enviar correo de bienvenida: ' . $e->getMessage());
+        }
     }
 
     public function getNombreSucursalAttribute()
