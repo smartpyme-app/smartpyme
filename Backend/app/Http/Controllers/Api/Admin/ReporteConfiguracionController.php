@@ -2,19 +2,14 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
-use App\Exports\ReportesAutomaticos\DetalleVentasPorVendedor\DetalleVentasVendedorPdfExport;
-use App\Exports\ReportesAutomaticos\VentasPorCategoriaPorVendedor\VentasPorCategoriaVendedorPdfExport;
-use App\Http\Controllers\Api\Ventas\VentasController;
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\InventarioController;
+use App\Jobs\GenerarReporteAutomaticoJob;
 use App\Models\Admin\ReporteConfiguracion;
+use App\Models\Admin\ReporteExportacion;
 use App\Models\Admin\Sucursal;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Mail;
-
 
 class ReporteConfiguracionController extends Controller
 {
@@ -31,12 +26,10 @@ class ReporteConfiguracionController extends Controller
             });
         }
 
-        // Ordenamiento
         $orden = $request->has('orden') ? $request->orden : 'created_at';
         $direccion = $request->has('direccion') ? $request->direccion : 'desc';
         $query->orderBy($orden, $direccion);
 
-        // Paginación
         $paginate = $request->has('paginate') ? $request->paginate : 10;
 
         return $query->paginate($paginate);
@@ -125,11 +118,10 @@ class ReporteConfiguracionController extends Controller
 
         return response()->json($configuracion, 200);
     }
-    
+
     public function show($id)
     {
         $configuracion = ReporteConfiguracion::findOrFail($id);
-
 
         if ($configuracion->id_empresa !== Auth::user()->id_empresa) {
             return response()->json(['error' => 'No tiene permiso para ver esta configuración'], 403);
@@ -161,7 +153,6 @@ class ReporteConfiguracionController extends Controller
                     ->where('id', '!=', $id)
                     ->get();
 
-                // Verificar si hay alguna configuración con sucursales equivalentes
                 foreach ($configuracionesActivas as $configActiva) {
                     if ($this->sonSucursalesEquivalentes($configuracion->sucursales, $configActiva->sucursales)) {
                         $configActiva->activo = false;
@@ -219,29 +210,22 @@ class ReporteConfiguracionController extends Controller
 
     private function normalizarSucursales($sucursales)
     {
- 
         if (is_array($sucursales)) {
             return collect($sucursales)->sort()->values()->toArray();
-        }
-  
-        else if (is_string($sucursales)) {
+        } elseif (is_string($sucursales)) {
             try {
                 return collect(json_decode($sucursales, true))->sort()->values()->toArray();
             } catch (\Exception $e) {
                 return [];
             }
         }
- 
-        else {
-            return [];
-        }
-    }
 
+        return [];
+    }
 
     public function destroy($id)
     {
         $configuracion = ReporteConfiguracion::findOrFail($id);
-
 
         if ($configuracion->id_empresa !== Auth::user()->id_empresa) {
             return response()->json(['error' => 'No tiene permiso para eliminar esta configuración'], 403);
@@ -252,12 +236,14 @@ class ReporteConfiguracionController extends Controller
         return response()->json(['message' => 'Configuración eliminada correctamente'], 200);
     }
 
-
     public function enviarPrueba(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'id_configuracion' => 'required|exists:reporte_configuraciones,id',
             'email_prueba' => 'nullable|email',
+            'fecha_inicio' => 'required|date',
+            'fecha_fin' => 'required|date|after_or_equal:fecha_inicio',
+            'sucursales' => 'nullable|array',
         ]);
 
         if ($validator->fails()) {
@@ -270,128 +256,101 @@ class ReporteConfiguracionController extends Controller
             return response()->json(['error' => 'No tiene permiso para usar esta configuración'], 403);
         }
 
-        if (!$request->fecha_inicio || !$request->fecha_fin) {
-            return response()->json(['error' => 'Debe seleccionar un período válido'], 422);
+        $sucursales = $request->has('sucursales') && is_array($request->sucursales)
+            ? $this->normalizarSucursales($request->sucursales)
+            : $this->normalizarSucursales($configuracion->sucursales);
+
+        $destinatarios = $request->email_prueba
+            ? [$request->email_prueba]
+            : ($configuracion->destinatarios ?? []);
+
+        if (empty($destinatarios)) {
+            return response()->json(['error' => 'Debe indicar al menos un destinatario'], 422);
         }
 
-        $fecha_inicio = $request->fecha_inicio;
-        $fecha_fin = $request->fecha_fin;
+        $exportacion = $this->encolarExportacion(
+            $configuracion,
+            $request->fecha_inicio,
+            $request->fecha_fin,
+            $sucursales,
+            ReporteExportacion::MODO_EMAIL,
+            ReporteExportacion::FORMATO_EXCEL,
+            $destinatarios
+        );
 
-        // Override en memoria (no persiste): sucursales del request para esta prueba
-        if ($request->has('sucursales') && is_array($request->sucursales)) {
-            $configuracion->sucursales = $this->normalizarSucursales($request->sucursales);
-        }
-
-        try {
-            switch ($configuracion->tipo_reporte) {
-                case 'ventas-por-vendedor':
-                    $controller = new VentasController();
-
-
-                    $destinatarios = $request->email_prueba
-                        ? [$request->email_prueba]
-                        : $configuracion->destinatarios;
-
-
-                    $resultado = $controller->enviarReporteProgramadoTest($configuracion, $destinatarios, $fecha_inicio, $fecha_fin);
-                    return response()->json(['message' => 'Reporte enviado correctamente'], 200);
-                case 'ventas-por-categoria-vendedor':
-                    $controller = new VentasController();
-
-                    $destinatarios = $request->email_prueba
-                        ? [$request->email_prueba]
-                        : $configuracion->destinatarios;
-
-                    $resultado = $controller->enviarReporteProgramadoTest($configuracion, $destinatarios, $fecha_inicio, $fecha_fin);
-
-                    return response()->json(['message' => 'Reporte enviado correctamente'], 200);
-                case 'estado-financiero-consolidado-sucursales':
-                    $controller = new VentasController();
-
-                    $destinatarios = $request->email_prueba
-                        ? [$request->email_prueba]
-                        : $configuracion->destinatarios;
-
-                    $resultado = $controller->enviarReporteProgramadoTest($configuracion, $destinatarios, $fecha_inicio, $fecha_fin);
-
-                    return response()->json(['message' => 'Reporte enviado correctamente'], 200);
-
-
-                case 'detalle-ventas-vendedor':
-                    $controller = new VentasController();
-
-                    $destinatarios = $request->email_prueba
-                        ? [$request->email_prueba]
-                        : $configuracion->destinatarios;
-
-                    $resultado = $controller->enviarReporteProgramadoTest($configuracion, $destinatarios, $fecha_inicio, $fecha_fin);
-                    return response()->json(['message' => 'Reporte enviado correctamente'], 200);
-                case 'inventario-por-sucursal':
-                    $controller = new VentasController();
-                        
-                    $destinatarios = $request->email_prueba
-                    ? [$request->email_prueba]
-                    : $configuracion->destinatarios;
-
-                    $resultado = $controller->enviarReporteProgramadoTest($configuracion, $destinatarios, $fecha_inicio, $fecha_fin);
-                    return response()->json(['message' => 'Reporte enviado correctamente'], 200);
-                case 'ventas-por-utilidades':
-                    $controller = new VentasController();
-
-                    $destinatarios = $request->email_prueba
-                        ? [$request->email_prueba]
-                        : $configuracion->destinatarios;
-
-                    $resultado = $controller->enviarReporteProgramadoTest($configuracion, $destinatarios, $fecha_inicio, $fecha_fin);
-                    return response()->json(['message' => 'Reporte enviado correctamente'], 200);
-                case 'cobros-por-vendedor':
-                    $controller = new VentasController();
-
-                    $destinatarios = $request->email_prueba
-                        ? [$request->email_prueba]
-                        : $configuracion->destinatarios;
-
-                    $resultado = $controller->enviarReporteProgramadoTest($configuracion, $destinatarios, $fecha_inicio, $fecha_fin);
-                    return response()->json(['message' => 'Reporte enviado correctamente'], 200);
-                case 'ventas-compras-por-marca-proveedor':
-                    $controller = new VentasController();
-
-                    $destinatarios = $request->email_prueba
-                        ? [$request->email_prueba]
-                        : $configuracion->destinatarios;
-
-                    $resultado = $controller->enviarReporteProgramadoTest($configuracion, $destinatarios, $fecha_inicio, $fecha_fin);
-                    return response()->json(['message' => 'Reporte enviado correctamente'], 200);
-                case 'detalle-ventas-totales':
-                    $controller = new VentasController();
-
-                    $destinatarios = $request->email_prueba
-                        ? [$request->email_prueba]
-                        : $configuracion->destinatarios;
-
-                    $resultado = $controller->enviarReporteProgramadoTest($configuracion, $destinatarios, $fecha_inicio, $fecha_fin);
-                    return response()->json(['message' => 'Reporte enviado correctamente'], 200);
-                case 'detalle-ventas-por-producto':
-                    $controller = new VentasController();
-
-                    $destinatarios = $request->email_prueba
-                        ? [$request->email_prueba]
-                        : $configuracion->destinatarios;
-
-                    $resultado = $controller->enviarReporteProgramadoTest($configuracion, $destinatarios, $fecha_inicio, $fecha_fin);
-                    return response()->json(['message' => 'Reporte enviado correctamente'], 200);
-                default:
-                    return response()->json(['error' => 'Tipo de reporte no implementado'], 422);
-            }
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'Error al enviar el reporte: ' . $e->getMessage()], 500);
-        }
+        return response()->json([
+            'id' => $exportacion->id,
+            'estado' => $exportacion->estado,
+            'message' => 'El reporte se está generando y se enviará al correo cuando esté listo.',
+        ], 202);
     }
 
     public function exportar(Request $request)
     {
+        return $this->encolarDescarga($request, ReporteExportacion::FORMATO_EXCEL);
+    }
+
+    public function exportarPDF(Request $request)
+    {
+        return $this->encolarDescarga($request, ReporteExportacion::FORMATO_PDF);
+    }
+
+    public function estadoExportacion($id)
+    {
+        $exportacion = ReporteExportacion::findOrFail($id);
+
+        if ($exportacion->id_empresa !== Auth::user()->id_empresa) {
+            return response()->json(['error' => 'No tiene permiso para ver esta exportación'], 403);
+        }
+
+        return response()->json([
+            'id' => $exportacion->id,
+            'estado' => $exportacion->estado,
+            'formato' => $exportacion->formato,
+            'nombre_archivo' => $exportacion->nombre_archivo,
+            'error' => $exportacion->error,
+        ]);
+    }
+
+    public function descargarExportacion($id)
+    {
+        $exportacion = ReporteExportacion::findOrFail($id);
+
+        if ($exportacion->id_empresa !== Auth::user()->id_empresa) {
+            return response()->json(['error' => 'No tiene permiso para descargar esta exportación'], 403);
+        }
+
+        if ($exportacion->modo !== ReporteExportacion::MODO_DOWNLOAD) {
+            return response()->json(['error' => 'Esta exportación no es descargable'], 422);
+        }
+
+        if ($exportacion->estado !== ReporteExportacion::ESTADO_DONE) {
+            return response()->json([
+                'error' => 'El archivo aún no está listo',
+                'estado' => $exportacion->estado,
+            ], 409);
+        }
+
+        $path = $exportacion->absolutePath();
+        if (!$path || !file_exists($path)) {
+            return response()->json(['error' => 'Archivo no encontrado'], 404);
+        }
+
+        $nombre = $exportacion->nombre_archivo ?: basename($path);
+        $mime = $this->mimeFromNombre($nombre);
+
+        return response()->download($path, $nombre, [
+            'Content-Type' => $mime,
+        ]);
+    }
+
+    private function encolarDescarga(Request $request, string $formato)
+    {
         $validator = Validator::make($request->all(), [
             'id' => 'required|exists:reporte_configuraciones,id',
+            'fecha_inicio' => 'required|date',
+            'fecha_fin' => 'required|date|after_or_equal:fecha_inicio',
+            'sucursales' => 'sometimes|array',
         ]);
 
         if ($validator->fails()) {
@@ -404,187 +363,70 @@ class ReporteConfiguracionController extends Controller
             return response()->json(['error' => 'No tiene permiso para usar esta configuración'], 403);
         }
 
-
-        $fecha_inicio = $request->fecha_inicio;
-        $fecha_fin = $request->fecha_fin;
-
-        if (!$fecha_inicio || !$fecha_fin) {
-            return response()->json(['error' => 'Debe especificar fechas de inicio y fin'], 422);
-        }
-
-        // Override en memoria (no persiste): sucursales del request para esta descarga
-        if ($request->has('sucursales') && is_array($request->sucursales)) {
-            $configuracion->sucursales = $this->normalizarSucursales($request->sucursales);
-        }
-
-        try {
-            switch ($configuracion->tipo_reporte) {
-                case 'ventas-por-vendedor':
-                    $controller = new VentasController();
-                    $resultado = $controller->exportarReporteProgramado($configuracion, $fecha_inicio, $fecha_fin);
-                    return $resultado;
-                case 'ventas-por-categoria-vendedor':
-                    $controller = new VentasController();
-                    $resultado = $controller->exportarReporteProgramado($configuracion, $fecha_inicio, $fecha_fin);
-                    return $resultado;
-                case 'estado-financiero-consolidado-sucursales':
-                    $controller = new VentasController();
-                    $resultado = $controller->exportarReporteProgramado($configuracion, $fecha_inicio, $fecha_fin);
-                    return $resultado;
-                case 'detalle-ventas-vendedor':
-                    $controller = new VentasController();
-                    $resultado = $controller->exportarReporteProgramado($configuracion, $fecha_inicio, $fecha_fin);
-                    return $resultado;
-                case 'inventario-por-sucursal':
-                    $controller = new InventarioController();
-                    $resultado = $controller->exportarReporteProgramado($configuracion, $fecha_inicio, $fecha_fin);
-                    return $resultado;
-                case 'ventas-por-utilidades':
-                    $controller = new VentasController();
-                    $resultado = $controller->exportarReporteProgramado($configuracion, $fecha_inicio, $fecha_fin);
-                    return $resultado;
-                case 'cobros-por-vendedor':
-                    $controller = new VentasController();
-                    $resultado = $controller->exportarReporteProgramado($configuracion, $fecha_inicio, $fecha_fin);
-                    return $resultado;
-                case 'ventas-compras-por-marca-proveedor':
-                    $controller = new VentasController();
-                    $resultado = $controller->exportarReporteProgramado($configuracion, $fecha_inicio, $fecha_fin);
-                    return $resultado;
-                case 'detalle-ventas-totales':
-                    $controller = new VentasController();
-                    $resultado = $controller->exportarReporteProgramado($configuracion, $fecha_inicio, $fecha_fin);
-                    return $resultado;
-                case 'detalle-ventas-por-producto':
-                    $controller = new VentasController();
-                    $resultado = $controller->exportarReporteProgramado($configuracion, $fecha_inicio, $fecha_fin);
-                    return $resultado;
-                default:
-                    return response()->json(['error' => 'Tipo de reporte no implementado'], 422);
+        if ($formato === ReporteExportacion::FORMATO_PDF) {
+            $soportados = ['ventas-por-categoria-vendedor', 'detalle-ventas-vendedor'];
+            if (!in_array($configuracion->tipo_reporte, $soportados, true)) {
+                return response()->json(['error' => 'Formato PDF no disponible para este tipo de reporte'], 422);
             }
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'Error al exportar el reporte: ' . $e->getMessage()], 500);
         }
+
+        $sucursales = $request->has('sucursales') && is_array($request->sucursales)
+            ? $this->normalizarSucursales($request->sucursales)
+            : $this->normalizarSucursales($configuracion->sucursales);
+
+        $exportacion = $this->encolarExportacion(
+            $configuracion,
+            $request->fecha_inicio,
+            $request->fecha_fin,
+            $sucursales,
+            ReporteExportacion::MODO_DOWNLOAD,
+            $formato
+        );
+
+        return response()->json([
+            'id' => $exportacion->id,
+            'estado' => $exportacion->estado,
+            'message' => 'El reporte se está generando. Consulte el estado para descargarlo.',
+        ], 202);
     }
 
-    public function exportarPDF(Request $request)
-    {
-        // Iniciar el registro de logs
-        Log::info('Iniciando exportación de PDF', [
-            'request_data' => $request->all()
+    private function encolarExportacion(
+        ReporteConfiguracion $configuracion,
+        string $fechaInicio,
+        string $fechaFin,
+        array $sucursales,
+        string $modo,
+        string $formato,
+        ?array $destinatarios = null
+    ): ReporteExportacion {
+        $exportacion = ReporteExportacion::create([
+            'id_empresa' => $configuracion->id_empresa,
+            'id_usuario' => Auth::id(),
+            'id_configuracion' => $configuracion->id,
+            'modo' => $modo,
+            'formato' => $formato,
+            'estado' => ReporteExportacion::ESTADO_PENDING,
+            'fecha_inicio' => $fechaInicio,
+            'fecha_fin' => $fechaFin,
+            'sucursales' => $sucursales,
+            'destinatarios' => $destinatarios,
         ]);
-        
-        try {
-            // Validar datos de entrada
-            $validatedData = $request->validate([
-                'id' => 'required|integer',
-                'fecha_inicio' => 'required|date',
-                'fecha_fin' => 'required|date|after_or_equal:fecha_inicio',
-                'sucursales' => 'sometimes|array',
-            ]);
-            
-            Log::info('Datos validados correctamente', [
-                'validatedData' => $validatedData
-            ]);
-            
-            try {
-                // Buscar la configuración
-                $configuracion = ReporteConfiguracion::findOrFail($validatedData['id']);
-                Log::info('Configuración encontrada', [
-                    'id' => $configuracion->id,
-                    'tipo_reporte' => $configuracion->tipo_reporte,
-                    'id_empresa' => $configuracion->id_empresa
-                ]);
-                
-                // Actualizar sucursales si se proporcionaron
-                if (isset($validatedData['sucursales'])) {
-                    $configuracion->sucursales = $validatedData['sucursales'];
-                    Log::info('Sucursales actualizadas', [
-                        'sucursales' => $configuracion->sucursales
-                    ]);
-                }
-        
-                // Verificar si existe un exportador PDF para este tipo de reporte
-                Log::info('Preparando exportador para tipo de reporte', [
-                    'tipo_reporte' => $configuracion->tipo_reporte
-                ]);
-                
-                switch ($configuracion->tipo_reporte) {
-                    case 'ventas-por-categoria-vendedor':
-                        Log::info('Creando exportador VentasPorCategoriaVendedorPdfExport');
-                        $exporter = new VentasPorCategoriaVendedorPdfExport(
-                            $validatedData['fecha_inicio'],
-                            $validatedData['fecha_fin'],
-                            $configuracion->id_empresa,
-                            $configuracion,
-                            $configuracion->sucursales
-                        );
-                        Log::info('Exportador creado, iniciando download()');
-                        try {
-                            $response = $exporter->download();
-                            Log::info('Download completado exitosamente');
-                            return $response;
-                        } catch (\Exception $e) {
-                            Log::error('Error en el método download() de VentasPorCategoriaVendedorPdfExport', [
-                                'error' => $e->getMessage(),
-                                'trace' => $e->getTraceAsString()
-                            ]);
-                            throw $e; // Re-lanzar para ser capturado por el catch exterior
-                        }
-                        
-                    case 'detalle-ventas-vendedor':
-                        Log::info('Creando exportador DetalleVentasVendedorPdfExport');
-                        $exporter = new DetalleVentasVendedorPdfExport(
-                            $validatedData['fecha_inicio'],
-                            $validatedData['fecha_fin'],
-                            $configuracion->id_empresa,
-                            $configuracion,
-                            $configuracion->sucursales
-                        );
-                        Log::info('Exportador creado, iniciando download()');
-                        try {
-                            $response = $exporter->download();
-                            Log::info('Download completado exitosamente');
-                            return $response;
-                        } catch (\Exception $e) {
-                            Log::error('Error en el método download() de DetalleVentasVendedorPdfExport', [
-                                'error' => $e->getMessage(),
-                                'file' => $e->getFile(),
-                                'line' => $e->getLine(),
-                                'trace' => $e->getTraceAsString()
-                            ]);
-                            throw $e; // Re-lanzar para ser capturado por el catch exterior
-                        }
-                        
-                    default:
-                        Log::warning('Formato PDF no disponible para el tipo de reporte', [
-                            'tipo_reporte' => $configuracion->tipo_reporte
-                        ]);
-                        return response()->json(['error' => 'Formato PDF no disponible para este tipo de reporte'], 422);
-                }
-            } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-                Log::error('Configuración de reporte no encontrada', [
-                    'id' => $validatedData['id'] ?? null,
-                    'error' => $e->getMessage()
-                ]);
-                return response()->json(['error' => 'La configuración de reporte solicitada no existe'], 404);
-            }
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            Log::error('Error de validación en la solicitud', [
-                'errors' => $e->errors(),
-                'request_data' => $request->all()
-            ]);
-            return response()->json(['error' => 'Datos de solicitud inválidos', 'details' => $e->errors()], 422);
-        } catch (\Exception $e) {
-            Log::error('Error no controlado al exportar reporte PDF', [
-                'error' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString(),
-                'request_data' => $request->all()
-            ]);
-            
-            return response()->json(['error' => 'Error al generar el PDF: ' . $e->getMessage()], 500);
+
+        GenerarReporteAutomaticoJob::dispatch($exportacion->id);
+
+        return $exportacion;
+    }
+
+    private function mimeFromNombre(string $nombre): string
+    {
+        $ext = strtolower(pathinfo($nombre, PATHINFO_EXTENSION));
+        if ($ext === 'zip') {
+            return 'application/zip';
         }
+        if ($ext === 'pdf') {
+            return 'application/pdf';
+        }
+
+        return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
     }
 }
