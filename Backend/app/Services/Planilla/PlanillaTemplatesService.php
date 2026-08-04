@@ -13,6 +13,8 @@ class PlanillaTemplatesService
      */
     public static function getConfiguracionPorPais($codPais)
     {
+        $codPais = strtoupper((string) $codPais);
+
         switch ($codPais) {
             case 'SV':
                 return self::getConfiguracionSalvador();
@@ -27,7 +29,9 @@ class PlanillaTemplatesService
             case 'PA':
                 return self::getConfiguracionPanama();
             default:
-                return self::getConfiguracionSalvador();
+                throw new \InvalidArgumentException(
+                    "No hay plantilla de planilla para el país '{$codPais}'"
+                );
         }
     }
 

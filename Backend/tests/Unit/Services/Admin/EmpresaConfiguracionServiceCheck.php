@@ -1,0 +1,28 @@
+<?php
+
+namespace Tests\Unit\Services\Admin;
+
+use App\Models\EmpresaConfiguracion;
+use App\Services\Planilla\PlanillaTemplatesService;
+use PHPUnit\Framework\TestCase;
+
+/**
+ * Check mínimo: plantilla CR ≠ SV y país desconocido no cae a SV.
+ */
+class EmpresaConfiguracionServiceCheck extends TestCase
+{
+    public function test_plantilla_cr_no_es_sv(): void
+    {
+        $cr = PlanillaTemplatesService::getConfiguracionPorPais('CR');
+        $sv = PlanillaTemplatesService::getConfiguracionPorPais('SV');
+
+        $this->assertNotEquals($sv, $cr);
+        $this->assertSame(EmpresaConfiguracion::MODULO_PLANILLAS, 'planillas');
+    }
+
+    public function test_pais_desconocido_lanza(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        PlanillaTemplatesService::getConfiguracionPorPais('XX');
+    }
+}
