@@ -1,5 +1,5 @@
 <div class="container-fluid py-4">
-  <div class="row mb-3">
+  <div class="row mb-2">
     <div class="col">
       <h2 class="mb-0">Mapa de Mesas</h2>
     </div>
@@ -10,6 +10,31 @@
       <button type="button" class="btn btn-primary" (click)="openModalMesa(templateMesa)">
         <img src="/assets/icons/plus-stroke.png" class="icon me-2" alt=""> Nueva mesa
       </button>
+    </div>
+  </div>
+
+  <div class="row mb-3">
+    <div class="col-12 col-md-6 col-lg-4">
+      <div class="input-group zona-search">
+        <span class="input-group-text"><i class="fa fa-search"></i></span>
+        <input
+          type="search"
+          class="form-control"
+          placeholder="Buscar zona…"
+          [(ngModel)]="filtroZona"
+          name="filtroZona"
+          autocomplete="off"
+        >
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          *ngIf="filtroZona"
+          (click)="limpiarFiltroZona()"
+          title="Limpiar búsqueda"
+        >
+          <i class="fa fa-times"></i>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -35,7 +60,7 @@
   </div>
 
   <div class="card border-0 shadow-sm">
-    <div class="card-body p-4">
+    <div class="card-body p-3 p-md-4">
       <div *ngIf="loading" class="text-center py-5">
         <span class="spinner-border spinner-border-sm me-2"></span> Cargando mesas...
       </div>
@@ -48,6 +73,10 @@
       </div>
 
       <div *ngIf="!loading && mesas.length > 0">
+        <div *ngIf="mesasPorZona.length === 0" class="text-center py-4 text-muted">
+          Ninguna zona coincide con «{{ filtroZona.trim() }}».
+          <button type="button" class="btn btn-link btn-sm" (click)="limpiarFiltroZona()">Limpiar</button>
+        </div>
         <div *ngFor="let grupo of mesasPorZona" class="mb-4">
           <h5 class="mb-3 text-muted">{{ grupo.nombre }}</h5>
           <div class="mesa-grid">
@@ -55,7 +84,7 @@
               <button
                 type="button"
                 class="btn btn-sm btn-light mesa-edit-btn"
-                (click)="openModalMesa(templateMesa, mesa)"
+                (click)="openModalMesa(templateMesa, mesa); $event.stopPropagation()"
                 title="Editar mesa"
               >
                 <i class="fa fa-cog"></i>
