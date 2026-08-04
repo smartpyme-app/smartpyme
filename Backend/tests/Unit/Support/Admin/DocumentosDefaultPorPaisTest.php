@@ -17,7 +17,7 @@ final class DocumentosDefaultPorPaisTest extends TestCase
         $nombres = DocumentosDefaultPorPais::nombres($empresa);
 
         $this->assertSame(
-            ['Ticket', 'Factura', 'Cotización', 'Orden de compra'],
+            ['Ticket', 'Factura sin RTN', 'Cotización', 'Orden de compra'],
             $nombres
         );
         $this->assertNotContains('Crédito fiscal', $nombres);

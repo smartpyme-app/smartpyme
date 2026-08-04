@@ -31,7 +31,7 @@ final class DocumentosDefaultPorPais
         if ($cod === FacturacionElectronicaCountryResolver::CODIGO_HONDURAS) {
             return [
                 config('constants.TIPO_DOCUMENTO_TICKET', 'Ticket'),
-                config('constants.TIPO_DOCUMENTO_FACTURA', 'Factura'),
+                'Factura sin RTN',
                 config('constants.TIPO_DOCUMENTO_COTIZACION', 'Cotización'),
                 config('constants.TIPO_DOCUMENTO_ORDEN_COMPRA', 'Orden de compra'),
             ];
