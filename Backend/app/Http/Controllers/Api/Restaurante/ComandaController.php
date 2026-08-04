@@ -186,7 +186,7 @@ class ComandaController extends Controller
         })->findOrFail($id);
 
         $validated = $request->validate([
-            'estado' => 'required|in:pendiente,preparando,listo',
+            'estado' => 'required|in:pendiente,preparando,listo,servido',
         ]);
 
         $comanda->update($validated);

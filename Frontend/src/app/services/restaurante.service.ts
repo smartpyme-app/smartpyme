@@ -144,7 +144,10 @@ export class RestauranteService {
     return this.api.getAll(BASE + 'comandas');
   }
 
-  actualizarEstadoComanda(comandaId: number, estado: 'pendiente' | 'preparando' | 'listo'): Observable<any> {
+  actualizarEstadoComanda(
+    comandaId: number,
+    estado: 'pendiente' | 'preparando' | 'listo' | 'servido'
+  ): Observable<any> {
     return this.api.putToUrl(`restaurante/comandas/${comandaId}/estado`, { estado });
   }
 
