@@ -34,7 +34,7 @@ class LibroConsumidoresExport implements FromCollection, WithMapping, WithHeadin
     private int $index = 1;
 
     /** @var list<string> */
-    public const TIPOS_CONSUMIDOR = ['Factura', 'Factura de exportación'];
+    public const TIPOS_CONSUMIDOR = ['Factura', 'Factura sin RTN', 'Factura de exportación', 'Ticket'];
 
     /** @var list<string> */
     private const CLAVES_FILA = [

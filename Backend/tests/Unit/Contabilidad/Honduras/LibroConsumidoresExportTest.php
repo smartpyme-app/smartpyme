@@ -36,10 +36,13 @@ class LibroConsumidoresExportTest extends TestCase
         $this->assertSame('000-001-01-00000001', $row['factura_no']);
     }
 
-    public function test_clasifica_solo_factura_y_factura_de_exportacion_como_consumidor_final(): void
+    public function test_clasifica_ventas_consumidor_final_incluyendo_rtn_y_ticket(): void
     {
         $this->assertContains('Factura', LibroConsumidoresExport::TIPOS_CONSUMIDOR);
+        $this->assertContains('Factura sin RTN', LibroConsumidoresExport::TIPOS_CONSUMIDOR);
         $this->assertContains('Factura de exportación', LibroConsumidoresExport::TIPOS_CONSUMIDOR);
+        $this->assertContains('Ticket', LibroConsumidoresExport::TIPOS_CONSUMIDOR);
+        $this->assertNotContains('Factura con RTN', LibroConsumidoresExport::TIPOS_CONSUMIDOR);
         $this->assertNotContains('Crédito fiscal', LibroConsumidoresExport::TIPOS_CONSUMIDOR);
     }
 

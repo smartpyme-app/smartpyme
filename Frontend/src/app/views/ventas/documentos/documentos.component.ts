@@ -16,6 +16,7 @@ import {
     DocumentoNombreOption,
     esDocumentoFiscalHn,
     formatoCorrelativoHn,
+    NOMBRE_DOCUMENTO_HN,
     NUMERO_EMISION_OPCIONES_HN,
 } from './documento-nombre-options';
 
@@ -135,6 +136,9 @@ export class DocumentosComponent extends BaseCrudComponent<any> implements OnIni
                 this.documento.id_sucursal = this.apiService.auth_user().id_sucursal;
                 this.documento.activo = true;
                 this.documento.correlativo = 1;
+                if (this.esHonduras && !this.documento.nombre) {
+                    this.documento.nombre = NOMBRE_DOCUMENTO_HN.facturaSinRtn;
+                }
                 this.onNombreDocumentoChange();
             }
             

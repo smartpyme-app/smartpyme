@@ -31,7 +31,7 @@ class LibroContribuyentesExport implements FromCollection, WithMapping, WithHead
     private int $index = 1;
 
     /** @var list<string> */
-    public const TIPOS_CONTRIBUYENTE = ['Crédito fiscal'];
+    public const TIPOS_CONTRIBUYENTE = ['Factura con RTN', 'Factura', 'Crédito fiscal'];
 
     /** @var list<string> */
     private const CLAVES_FILA = [
