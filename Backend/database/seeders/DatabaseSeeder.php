@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             FidelizacionFuncionalidadSeeder::class,
             MHTableSeeder::class,
             DteTipoMapeoSeeder::class,
+            PaisConfiguracionDocumentosSeeder::class,
             RestauranteFuncionalidadSeeder::class,
             // PaquetesTableSeeder::class,
             // EmpresaTableSeeder::class,
