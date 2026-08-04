@@ -67,6 +67,8 @@ export const NOMBRE_DOCUMENTO_HN = {
 export const DOCUMENTO_NOMBRE_OPCIONES_HN: DocumentoNombreOption[] = [
   { value: NOMBRE_DOCUMENTO_HN.facturaConRtn, label: NOMBRE_DOCUMENTO_HN.facturaConRtn },
   { value: NOMBRE_DOCUMENTO_HN.facturaSinRtn, label: NOMBRE_DOCUMENTO_HN.facturaSinRtn },
+  /** Legacy: series ya creadas como «Factura» antes del split con/sin RTN. */
+  { value: 'Factura', label: 'Factura' },
   { value: NOMBRE_DOCUMENTO_HN.ticket, label: NOMBRE_DOCUMENTO_HN.ticket },
   { value: NOMBRE_DOCUMENTO_HN.boletaCompra, label: NOMBRE_DOCUMENTO_HN.boletaCompra },
   { value: NOMBRE_DOCUMENTO_HN.notaCredito, label: NOMBRE_DOCUMENTO_HN.notaCredito },
@@ -153,6 +155,7 @@ export function nombresDocumentosVentaNormales(
     return [
       NOMBRE_DOCUMENTO_HN.facturaConRtn,
       NOMBRE_DOCUMENTO_HN.facturaSinRtn,
+      'Factura', // legacy series pre–split RTN
       NOMBRE_DOCUMENTO_HN.ticket,
       'Recibo',
       NOMBRE_DOCUMENTO_HN.guiaRemision,
@@ -181,6 +184,7 @@ export function nombresDocumentosCompraPermitidos(
     return [
       NOMBRE_DOCUMENTO_HN.facturaConRtn,
       NOMBRE_DOCUMENTO_HN.facturaSinRtn,
+      'Factura', // legacy series pre–split RTN
       NOMBRE_DOCUMENTO_HN.ticket,
       'Recibo',
       NOMBRE_DOCUMENTO_HN.boletaCompra,

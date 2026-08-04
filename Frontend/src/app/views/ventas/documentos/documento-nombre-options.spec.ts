@@ -37,7 +37,7 @@ describe('documentoNombreOpciones', () => {
     expect(values).not.toContain('Sujeto excluido');
     expect(values).not.toContain('Factura de exportación');
     expect(values).not.toContain('Factura comercial');
-    expect(values).not.toContain('Factura');
+    expect(values).toContain('Factura'); // legacy pre–split RTN
     expect(values).toContain(NOMBRE_DOCUMENTO_HN.facturaConRtn);
     expect(values).toContain(NOMBRE_DOCUMENTO_HN.facturaSinRtn);
     expect(values).toContain(NOMBRE_DOCUMENTO_HN.boletaCompra);
@@ -46,11 +46,11 @@ describe('documentoNombreOpciones', () => {
     expect(values).toContain(NOMBRE_DOCUMENTO_HN.comprobanteRetencion);
   });
 
-  it('venta HN incluye Factura con/sin RTN, Ticket/Recibo/Guía/Abono y no Crédito fiscal', () => {
+  it('venta HN incluye Factura con/sin RTN, legacy Factura, Ticket/Recibo/Guía/Abono y no Crédito fiscal', () => {
     const names = nombresDocumentosVentaNormales({ pais: 'Honduras' });
     expect(names).toContain(NOMBRE_DOCUMENTO_HN.facturaConRtn);
     expect(names).toContain(NOMBRE_DOCUMENTO_HN.facturaSinRtn);
-    expect(names).not.toContain('Factura');
+    expect(names).toContain('Factura');
     expect(names).toContain(NOMBRE_DOCUMENTO_HN.ticket);
     expect(names).toContain('Recibo');
     expect(names).toContain(NOMBRE_DOCUMENTO_HN.guiaRemision);
@@ -58,11 +58,11 @@ describe('documentoNombreOpciones', () => {
     expect(names).not.toContain('Crédito fiscal');
   });
 
-  it('compra HN incluye Factura con/sin RTN, boleta/honorarios/retención y no Crédito fiscal', () => {
+  it('compra HN incluye Factura con/sin RTN, legacy Factura, boleta/honorarios/retención y no Crédito fiscal', () => {
     const names = nombresDocumentosCompraPermitidos({ pais: 'Honduras' });
     expect(names).toContain(NOMBRE_DOCUMENTO_HN.facturaConRtn);
     expect(names).toContain(NOMBRE_DOCUMENTO_HN.facturaSinRtn);
-    expect(names).not.toContain('Factura');
+    expect(names).toContain('Factura');
     expect(names).toContain(NOMBRE_DOCUMENTO_HN.boletaCompra);
     expect(names).toContain(NOMBRE_DOCUMENTO_HN.reciboHonorarios);
     expect(names).toContain(NOMBRE_DOCUMENTO_HN.comprobanteRetencion);
