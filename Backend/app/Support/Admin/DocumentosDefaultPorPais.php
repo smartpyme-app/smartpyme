@@ -17,10 +17,21 @@ final class DocumentosDefaultPorPais
     /** @return list<string> */
     public static function nombres(?Empresa $empresa): array
     {
-        if (FacturacionElectronicaCountryResolver::resolveCodigoPaisFe($empresa) === FacturacionElectronicaCountryResolver::CODIGO_COSTA_RICA) {
+        $cod = FacturacionElectronicaCountryResolver::resolveCodigoPaisFe($empresa);
+
+        if ($cod === FacturacionElectronicaCountryResolver::CODIGO_COSTA_RICA) {
             return [
                 self::CR_TIQUETE,
                 self::CR_FACTURA,
+                config('constants.TIPO_DOCUMENTO_COTIZACION', 'Cotización'),
+                config('constants.TIPO_DOCUMENTO_ORDEN_COMPRA', 'Orden de compra'),
+            ];
+        }
+
+        if ($cod === FacturacionElectronicaCountryResolver::CODIGO_HONDURAS) {
+            return [
+                config('constants.TIPO_DOCUMENTO_TICKET', 'Ticket'),
+                config('constants.TIPO_DOCUMENTO_FACTURA', 'Factura'),
                 config('constants.TIPO_DOCUMENTO_COTIZACION', 'Cotización'),
                 config('constants.TIPO_DOCUMENTO_ORDEN_COMPRA', 'Orden de compra'),
             ];

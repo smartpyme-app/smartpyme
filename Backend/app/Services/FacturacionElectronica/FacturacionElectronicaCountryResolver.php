@@ -13,6 +13,8 @@ final class FacturacionElectronicaCountryResolver
 
     public const CODIGO_COSTA_RICA = 'CR';
 
+    public const CODIGO_HONDURAS = 'HN';
+
     public static function codPais(?Empresa $empresa): string
     {
         if ($empresa === null) {
@@ -50,7 +52,7 @@ final class FacturacionElectronicaCountryResolver
         }
 
         $cod = strtoupper(trim((string) ($empresa->cod_pais ?? '')));
-        if ($cod !== '' && in_array($cod, ['SV', 'CR', 'GT', 'HN'], true)) {
+        if ($cod !== '' && in_array($cod, ['SV', 'CR', 'GT', self::CODIGO_HONDURAS], true)) {
             return $cod;
         }
 
@@ -78,10 +80,10 @@ final class FacturacionElectronicaCountryResolver
             return 'GT';
         }
         if (str_contains($nombre, 'honduras')) {
-            return 'HN';
+            return self::CODIGO_HONDURAS;
         }
         $upper = strtoupper($nombre);
-        if (in_array($upper, ['SV', 'CR', 'GT', 'HN'], true)) {
+        if (in_array($upper, ['SV', 'CR', 'GT', self::CODIGO_HONDURAS], true)) {
             return $upper;
         }
 
