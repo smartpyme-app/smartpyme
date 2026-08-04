@@ -10,7 +10,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { FacturacionElectronicaService } from '@services/facturacion-electronica/facturacion-electronica.service';
 import { FE_PAIS_CR, FE_PAIS_SV, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
-import { NOMBRE_DOCUMENTO_CR } from '@views/ventas/documentos/documento-nombre-options';
+import { nombresDocumentosVentaNormales as nombresVentaPorPais } from '@views/ventas/documentos/documento-nombre-options';
 import { migrarExoneracionCrLegacyADetalles as migrarExoneracionLegacyUtil } from '@shared/modals/fe-cr-exoneracion-detalle/fe-cr-exoneracion-detalle.util';
 import { xmlComprobanteDesdeRechazoFeCr } from '@services/facturacion-electronica/fe-cr-http-error.util';
 import { abrirVentanaTextoFeCr } from '@services/facturacion-electronica/fe-cr-abrir-xml.util';
@@ -78,17 +78,6 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
   public documentos: any = [];
   private documentosSucursal: any[] = [];
   private documentosLoadSeq = 0;
-  private readonly nombresDocumentosVentaNormales = [
-    'Factura',
-    'Crédito fiscal',
-    'Factura de exportación',
-    'Factura comercial',
-    'Ticket',
-    'Recibo',
-    'Sujeto excluido',
-    NOMBRE_DOCUMENTO_CR.factura,
-    NOMBRE_DOCUMENTO_CR.tiquete,
-  ];
   public formaPagos: any = [];
   public sucursales: any = [];
   public bodegas: any = [];
@@ -637,7 +626,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     }
 
     const porWhitelist = this.documentosSucursal.filter((doc: any) =>
-      this.nombresDocumentosVentaNormales.includes(String(doc.nombre || '').trim())
+      nombresVentaPorPais(this.apiService.auth_user()?.empresa).includes(String(doc.nombre || '').trim())
     );
     // Si no hay match exacto de nombres, no dejar el select vacío: excluir solo cotización/OC.
     this.documentos = porWhitelist.length

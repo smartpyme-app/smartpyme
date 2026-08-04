@@ -159,11 +159,6 @@ describe('FacturacionComponent', () => {
   it('filtra documentos por la sucursal de la bodega seleccionada', () => {
     const component: any = Object.create(FacturacionComponent.prototype);
     component.documentosLoadSeq = 0;
-    component.nombresDocumentosVentaNormales = [
-      'Factura',
-      'Crédito fiscal',
-      'Ticket',
-    ];
     component.bodegas = [{ id: 5, id_sucursal: 10, nombre: 'Principal' }];
     component.venta = { id_bodega: 5, id_sucursal: 99, cotizacion: 0 };
     component.documentosSucursal = [];
@@ -175,6 +170,7 @@ describe('FacturacionComponent', () => {
       { id: 4, nombre: 'Cotización', id_sucursal: 10, predeterminado: 0, correlativo: 4 },
     ];
     component.apiService = {
+      auth_user: () => ({ empresa: {} }),
       getAll: jasmine.createSpy('getAll').and.callFake(() => ({
         subscribe: (ok: any) => ok(docsApi),
       })),
