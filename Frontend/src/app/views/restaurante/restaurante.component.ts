@@ -14,6 +14,7 @@ import { AlertService } from '@services/alert.service';
 export class RestauranteComponent implements OnInit {
   mesas: Mesa[] = [];
   zonas: ZonaRestaurante[] = [];
+  filtroZona = '';
   loading = false;
   modalRef?: BsModalRef;
   modalAbrirRef?: BsModalRef;
@@ -64,7 +65,16 @@ export class RestauranteComponent implements OnInit {
       }
       grupos.get(zona)!.mesas.push(mesa);
     }
-    return Array.from(grupos.values()).sort((a, b) => a.orden - b.orden || a.nombre.localeCompare(b.nombre));
+    const q = this.filtroZona.trim().toLowerCase();
+    let lista = Array.from(grupos.values());
+    if (q) {
+      lista = lista.filter((g) => g.nombre.toLowerCase().includes(q));
+    }
+    return lista.sort((a, b) => a.orden - b.orden || a.nombre.localeCompare(b.nombre));
+  }
+
+  limpiarFiltroZona(): void {
+    this.filtroZona = '';
   }
 
   cargarMesas(): void {
