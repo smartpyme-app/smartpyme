@@ -62,7 +62,7 @@
               <button
                 type="button"
                 class="btn btn-sm btn-light mesa-edit-btn"
-                (click)="openModalMesa(templateMesa, mesa); $event.stopPropagation()"
+                (click)="onEditarMesaClick($event, templateMesa, mesa)"
                 tooltip="Editar mesa"
                 [adaptivePosition]="false"
                 placement="top"

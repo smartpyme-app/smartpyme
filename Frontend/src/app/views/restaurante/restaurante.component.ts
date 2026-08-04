@@ -227,13 +227,33 @@ export class RestauranteComponent implements OnInit {
   }
 
   openModalMesa(template: TemplateRef<any>, mesa?: Mesa): void {
+    // Evitar que quede otro modal de acción/sesión encima del de edición.
+    this.modalAccionLibreRef?.hide();
+    this.modalAbrirRef?.hide();
+    this.modalReservarRef?.hide();
+    this.modalMesaReservadaRef?.hide();
+
     this.mesaSeleccionada = mesa || null;
+    // Solo campos editables (no clonar sesión/reservas anidadas).
     this.mesaForm = mesa
-      ? { ...mesa, zona_id: mesa.zona_id ?? mesa.zona_restaurante?.id ?? null }
+      ? {
+          numero: mesa.numero,
+          capacidad: mesa.capacidad,
+          zona_id: mesa.zona_id ?? mesa.zona_restaurante?.id ?? null,
+          orden: mesa.orden ?? 0,
+          activo: mesa.activo,
+        }
       : { numero: '', capacidad: 4, zona_id: null, orden: 0, activo: true };
     this.cargarZonas();
     this.alertService.modal = true;
     this.modalRef = this.modalService.show(template, { class: 'modal-lg', backdrop: 'static' });
+  }
+
+  /** Parar el bubble hacia onClickMesa (abrir/reservar/cuenta) antes de abrir edición. */
+  onEditarMesaClick(event: Event, template: TemplateRef<any>, mesa: Mesa): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.openModalMesa(template, mesa);
   }
 
   guardarMesa(event?: Event): void {
