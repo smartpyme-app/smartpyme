@@ -1,4 +1,4 @@
-import { FE_PAIS_CR, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
+import { FE_PAIS_CR, FE_PAIS_HN, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
 
 export interface DocumentoNombreOption {
   value: string;
@@ -52,6 +52,32 @@ export const DOCUMENTO_NOMBRE_OPCIONES_CR: DocumentoNombreOption[] = [
   { value: NOMBRE_DOCUMENTO_CR.abonoVenta, label: NOMBRE_DOCUMENTO_CR.abonoVenta },
 ];
 
+export const NOMBRE_DOCUMENTO_HN = {
+  factura: 'Factura',
+  ticket: 'Ticket',
+  boletaCompra: 'Boleta de compra',
+  notaCredito: 'Nota de crédito',
+  notaDebito: 'Nota de débito',
+  reciboHonorarios: 'Recibo por honorarios profesionales',
+  guiaRemision: 'Guía de remisión',
+  comprobanteRetencion: 'Comprobante de retención',
+} as const;
+
+export const DOCUMENTO_NOMBRE_OPCIONES_HN: DocumentoNombreOption[] = [
+  { value: NOMBRE_DOCUMENTO_HN.factura, label: NOMBRE_DOCUMENTO_HN.factura },
+  { value: NOMBRE_DOCUMENTO_HN.ticket, label: NOMBRE_DOCUMENTO_HN.ticket },
+  { value: NOMBRE_DOCUMENTO_HN.boletaCompra, label: NOMBRE_DOCUMENTO_HN.boletaCompra },
+  { value: NOMBRE_DOCUMENTO_HN.notaCredito, label: NOMBRE_DOCUMENTO_HN.notaCredito },
+  { value: NOMBRE_DOCUMENTO_HN.notaDebito, label: NOMBRE_DOCUMENTO_HN.notaDebito },
+  { value: NOMBRE_DOCUMENTO_HN.reciboHonorarios, label: NOMBRE_DOCUMENTO_HN.reciboHonorarios },
+  { value: NOMBRE_DOCUMENTO_HN.guiaRemision, label: NOMBRE_DOCUMENTO_HN.guiaRemision },
+  { value: NOMBRE_DOCUMENTO_HN.comprobanteRetencion, label: NOMBRE_DOCUMENTO_HN.comprobanteRetencion },
+  { value: 'Cotización', label: 'Cotización' },
+  { value: 'Orden de compra', label: 'Orden de compra' },
+  { value: 'Recibo', label: 'Recibo' },
+  { value: 'Abono de Venta', label: 'Abono de Venta' },
+];
+
 /** El Salvador y resto: lista completa (incluye Crédito fiscal, DTE SV, etc.). */
 export const DOCUMENTO_NOMBRE_OPCIONES_DEFAULT: DocumentoNombreOption[] = [
   { value: 'Factura', label: 'Factura' },
@@ -71,7 +97,85 @@ export const DOCUMENTO_NOMBRE_OPCIONES_DEFAULT: DocumentoNombreOption[] = [
 export function documentoNombreOpciones(
   empresa: { cod_pais?: string | null; pais?: string | null } | null | undefined
 ): DocumentoNombreOption[] {
-  return resolveCodigoPaisFe(empresa) === FE_PAIS_CR
-    ? DOCUMENTO_NOMBRE_OPCIONES_CR
-    : DOCUMENTO_NOMBRE_OPCIONES_DEFAULT;
+  const cod = resolveCodigoPaisFe(empresa);
+  if (cod === FE_PAIS_CR) {
+    return DOCUMENTO_NOMBRE_OPCIONES_CR;
+  }
+  if (cod === FE_PAIS_HN) {
+    return DOCUMENTO_NOMBRE_OPCIONES_HN;
+  }
+  return DOCUMENTO_NOMBRE_OPCIONES_DEFAULT;
+}
+
+export function nombresDocumentosVentaNormales(
+  empresa: { cod_pais?: string | null; pais?: string | null } | null | undefined
+): string[] {
+  const cod = resolveCodigoPaisFe(empresa);
+  if (cod === FE_PAIS_HN) {
+    return [
+      'Factura',
+      'Ticket',
+      'Recibo',
+      NOMBRE_DOCUMENTO_HN.guiaRemision,
+      'Abono de Venta',
+    ];
+  }
+  return [
+    'Factura',
+    'Crédito fiscal',
+    'Factura de exportación',
+    'Factura comercial',
+    'Ticket',
+    'Recibo',
+    'Sujeto excluido',
+    NOMBRE_DOCUMENTO_CR.factura,
+    NOMBRE_DOCUMENTO_CR.tiquete,
+    'Abono de Venta',
+  ];
+}
+
+export function nombresDocumentosCompraPermitidos(
+  empresa: { cod_pais?: string | null; pais?: string | null } | null | undefined
+): string[] {
+  const cod = resolveCodigoPaisFe(empresa);
+  if (cod === FE_PAIS_HN) {
+    return [
+      'Factura',
+      'Ticket',
+      'Recibo',
+      NOMBRE_DOCUMENTO_HN.boletaCompra,
+      NOMBRE_DOCUMENTO_HN.reciboHonorarios,
+      NOMBRE_DOCUMENTO_HN.comprobanteRetencion,
+    ];
+  }
+  const base = [
+    'Factura',
+    'Crédito fiscal',
+    'Ticket',
+    'Recibo',
+    'Sujeto excluido',
+    'Factura de exportación',
+    'Factura de remisión',
+    'Documento contable de liquidación',
+  ];
+  if (cod === FE_PAIS_CR) {
+    return [
+      ...base,
+      NOMBRE_DOCUMENTO_CR.factura,
+      NOMBRE_DOCUMENTO_CR.tiquete,
+      NOMBRE_DOCUMENTO_CR.fecCompra,
+      'Compra electrónica',
+    ];
+  }
+  return base;
+}
+
+/** Tipos SV que no deben ofrecerse en gastos de empresas HN. */
+export function nombresDocumentoExcluidosGastoHn(): string[] {
+  return [
+    'Crédito fiscal',
+    'Sujeto excluido',
+    'Factura de exportación',
+    'Factura comercial',
+  ];
 }

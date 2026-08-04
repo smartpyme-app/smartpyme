@@ -1,6 +1,7 @@
 /** Alineado con Backend\app\Services\FacturacionElectronica\FacturacionElectronicaCountryResolver */
 export const FE_PAIS_SV = 'SV';
 export const FE_PAIS_CR = 'CR';
+export const FE_PAIS_HN = 'HN';
 
 const FE_LOCALE_CODIGOS = new Set(['SV', 'CR', 'GT', 'HN']);
 
