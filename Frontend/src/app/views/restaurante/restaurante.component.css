@@ -20,6 +20,10 @@
   gap: 1rem;
 }
 
+.mesa-wrap {
+  position: relative;
+}
+
 .mesa-item {
   aspect-ratio: 1;
   border-radius: 12px;
@@ -37,9 +41,9 @@
   position: absolute;
   top: 0.25rem;
   right: 0.25rem;
+  z-index: 3;
   padding: 0.2rem 0.4rem;
-  opacity: 0.85;
-  z-index: 2;
+  opacity: 0.9;
   pointer-events: auto;
 }
 
