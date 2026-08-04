@@ -51,29 +51,28 @@
         <div *ngFor="let grupo of mesasPorZona" class="mb-4">
           <h5 class="mb-3 text-muted">{{ grupo.nombre }}</h5>
           <div class="mesa-grid">
-            <div
-              *ngFor="let mesa of grupo.mesas"
-              class="mesa-item"
-              [style.background-color]="colorMesa(mesa)"
-              [class.mesa-inactiva]="!mesa.activo"
-              (click)="mesa.activo && onClickMesa(mesa)"
-              [class.cursor-pointer]="mesa.activo && (mesa.estado === 'libre' || mesa.estado === 'ocupada' || mesa.estado === 'pendiente_pago' || mesa.estado === 'reservada')"
-            >
+            <div *ngFor="let mesa of grupo.mesas" class="mesa-wrap">
               <button
                 type="button"
                 class="btn btn-sm btn-light mesa-edit-btn"
-                (click)="openModalMesa(templateMesa, mesa); $event.stopPropagation()"
-                tooltip="Editar mesa"
-                [adaptivePosition]="false"
-                placement="top"
+                (click)="openModalMesa(templateMesa, mesa)"
+                title="Editar mesa"
               >
                 <i class="fa fa-cog"></i>
               </button>
-              <div class="mesa-numero">{{ mesa.numero }}</div>
-              <div class="mesa-info" *ngIf="mesa.capacidad">Cap. {{ mesa.capacidad }}</div>
-              <div class="mesa-tiempo" *ngIf="mesa.tiempo_abierta">{{ mesa.tiempo_abierta }}</div>
-              <div class="mesa-tiempo" *ngIf="mesa.estado === 'reservada' && mesa.reservas_activas?.[0]">
-                {{ mesa.reservas_activas[0].hora_reserva }}
+              <div
+                class="mesa-item"
+                [style.background-color]="colorMesa(mesa)"
+                [class.mesa-inactiva]="!mesa.activo"
+                (click)="mesa.activo && onClickMesa(mesa)"
+                [class.cursor-pointer]="mesa.activo && (mesa.estado === 'libre' || mesa.estado === 'ocupada' || mesa.estado === 'pendiente_pago' || mesa.estado === 'reservada')"
+              >
+                <div class="mesa-numero">{{ mesa.numero }}</div>
+                <div class="mesa-info" *ngIf="mesa.capacidad">Cap. {{ mesa.capacidad }}</div>
+                <div class="mesa-tiempo" *ngIf="mesa.tiempo_abierta">{{ mesa.tiempo_abierta }}</div>
+                <div class="mesa-tiempo" *ngIf="mesa.estado === 'reservada' && mesa.reservas_activas?.[0]">
+                  {{ mesa.reservas_activas[0].hora_reserva }}
+                </div>
               </div>
             </div>
           </div>
@@ -144,6 +143,9 @@
       </button>
       <button type="button" class="btn btn-outline-primary" (click)="abrirReservarDesdeAccion()">
         <i class="fa fa-calendar-check me-2"></i> Reservar
+      </button>
+      <button type="button" class="btn btn-outline-secondary" (click)="editarMesaDesdeAccion(templateMesa)">
+        <i class="fa fa-cog me-2"></i> Editar mesa
       </button>
     </div>
   </div>

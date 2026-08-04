@@ -145,7 +145,7 @@
         <div class="row">
             <div class="form-group col-md-6">
                 <label for="documento.nombre">Nombre</label>
-                <select class="form-select" [(ngModel)]="documento.nombre" name="documento.nombre">
+                <select class="form-select" [(ngModel)]="documento.nombre" name="documento.nombre" (ngModelChange)="onNombreDocumentoChange()">
                     @for (opt of opcionesNombreDocumento(); track opt.value) {
                         <option [value]="opt.value">{{ opt.label }}</option>
                     }
@@ -165,6 +165,19 @@
                 <label for="documento.correlativo">Correlativo</label>
                 <input type="text" class="form-control" [(ngModel)]="documento.correlativo" name="documento.correlativo">
             </div>
+            @if (showNumeroEmision()) {
+                <div class="form-group col-md-6">
+                    <label for="documento.numero_emision">Nº emisión</label>
+                    <select class="form-select" [(ngModel)]="documento.numero_emision" name="documento.numero_emision" required>
+                        @for (opt of numeroEmisionOpciones; track opt) {
+                            <option [value]="opt">{{ opt }}</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-group col-12">
+                    <small class="text-muted">Vista previa correlativo: {{ previewCorrelativo() }}</small>
+                </div>
+            }
             <div class="form-group col-md-6">
                 <label for="documento.rangos">Serie</label>
                 <input type="text" class="form-control" [(ngModel)]="documento.rangos" name="documento.rangos">
@@ -223,7 +236,7 @@
           <div class="row">
               <div class="form-group col-md-6">
                   <label for="documento.nombre">Nombre</label>
-                  <select class="form-select" [(ngModel)]="documento.nombre" name="documento.nombre" [disabled]="nuevaResolucion">
+                  <select class="form-select" [(ngModel)]="documento.nombre" name="documento.nombre" [disabled]="nuevaResolucion" (ngModelChange)="onNombreDocumentoChange()">
                       @for (opt of opcionesNombreDocumento(); track opt.value) {
                           <option [value]="opt.value">{{ opt.label }}</option>
                       }
@@ -243,6 +256,19 @@
                   <label for="documento.correlativo">Correlativo</label>
                   <input type="text" class="form-control" [(ngModel)]="documento.correlativo" name="documento.correlativo">
               </div>
+              @if (showNumeroEmision()) {
+                  <div class="form-group col-md-6">
+                      <label for="documento.numero_emision">Nº emisión</label>
+                      <select class="form-select" [(ngModel)]="documento.numero_emision" name="documento.numero_emision" required>
+                          @for (opt of numeroEmisionOpciones; track opt) {
+                              <option [value]="opt">{{ opt }}</option>
+                          }
+                      </select>
+                  </div>
+                  <div class="form-group col-12">
+                      <small class="text-muted">Vista previa correlativo: {{ previewCorrelativo() }}</small>
+                  </div>
+              }
               <div class="form-group col-md-6">
                   <label for="documento.rangos">Serie</label>
                   <input type="text" class="form-control" [(ngModel)]="documento.rangos" name="documento.rangos">

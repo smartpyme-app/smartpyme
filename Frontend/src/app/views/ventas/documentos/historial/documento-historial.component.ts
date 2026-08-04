@@ -8,7 +8,14 @@ import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
-import { documentoNombreOpciones, DocumentoNombreOption } from '../documento-nombre-options';
+import { FE_PAIS_HN, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
+import {
+    documentoNombreOpciones,
+    DocumentoNombreOption,
+    esDocumentoFiscalHn,
+    formatoCorrelativoHn,
+    NUMERO_EMISION_OPCIONES_HN,
+} from '../documento-nombre-options';
 
 @Component({
     selector: 'app-documento-historial',
@@ -28,8 +35,22 @@ export class DocumentoHistorialComponent extends BasePaginatedModalComponent imp
     };
     public sucursales: any = [];
 
+    readonly numeroEmisionOpciones = NUMERO_EMISION_OPCIONES_HN;
+
     opcionesNombreDocumento(): DocumentoNombreOption[] {
         return documentoNombreOpciones(this.apiService.auth_user()?.empresa);
+    }
+
+    get esHonduras(): boolean {
+        return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_HN;
+    }
+
+    showNumeroEmision(documento: { nombre?: string } = this.documento): boolean {
+        return this.esHonduras && esDocumentoFiscalHn(documento?.nombre);
+    }
+
+    previewCorrelativo(documento: { numero_emision?: string; correlativo?: string | number } = this.documento): string {
+        return formatoCorrelativoHn(documento?.numero_emision, documento?.correlativo);
     }
 
     constructor(

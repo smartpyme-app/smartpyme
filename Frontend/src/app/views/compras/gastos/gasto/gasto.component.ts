@@ -24,10 +24,11 @@ import * as moment from 'moment';
 import { LazyImageDirective } from '../../../../directives/lazy-image.directive';
 import { firstValueFrom, forkJoin } from 'rxjs';
 import { DocumentoImportService } from '@services/compras/documento-import.service';
-import { FE_PAIS_CR, esElSalvadorFe as empresaEsElSalvador, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
+import { FE_PAIS_CR, FE_PAIS_HN, esElSalvadorFe as empresaEsElSalvador, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
 import {
   esTipoFacturaElectronicaCompraCr,
   NOMBRE_DOCUMENTO_CR,
+  nombresDocumentoExcluidosGastoHn,
 } from '@views/ventas/documentos/documento-nombre-options';
 
 @Component({
@@ -493,6 +494,10 @@ export class GastoComponent implements OnInit {
             x.nombre != 'Nota de débito' &&
             x.nombre != NOMBRE_DOCUMENTO_CR.notaDebito
         );
+        if (resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_HN) {
+          const excluidos = new Set(nombresDocumentoExcluidosGastoHn());
+          this.documentos = this.documentos.filter((x: any) => !excluidos.has(x.nombre));
+        }
         if (!this.gasto.tipo_documento) {
           this.gasto.tipo_documento =
             resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR

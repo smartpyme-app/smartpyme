@@ -36,7 +36,7 @@ export class CocinaComponent implements OnInit {
     });
   }
 
-  cambiarEstado(comanda: any, estado: 'pendiente' | 'preparando' | 'listo'): void {
+  cambiarEstado(comanda: any, estado: 'pendiente' | 'preparando' | 'listo' | 'servido'): void {
     this.actualizandoId = comanda.id;
     this.restauranteService.actualizarEstadoComanda(comanda.id, estado).subscribe({
       next: () => {
@@ -48,6 +48,10 @@ export class CocinaComponent implements OnInit {
         this.actualizandoId = null;
       }
     });
+  }
+
+  marcarServida(comanda: any): void {
+    this.cambiarEstado(comanda, 'servido');
   }
 
   imprimir(comanda: any): void {

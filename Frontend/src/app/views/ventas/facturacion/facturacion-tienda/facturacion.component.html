@@ -46,8 +46,12 @@
         </div>
         <div class="form-group col-md-4 col-lg-2">
             <label for="correlativo">Correlativo</label>
-            <input type="number" class="form-control" [(ngModel)]="venta.correlativo" name="correlativo"
-                id="correlativo">
+            @if (mostrarCorrelativoHnFormato) {
+                <input type="text" class="form-control" [value]="correlativoDisplay" readonly id="correlativo">
+            } @else {
+                <input type="number" class="form-control" [(ngModel)]="venta.correlativo" name="correlativo"
+                    id="correlativo">
+            }
         </div>
     </div>
     <div class="row">
@@ -600,7 +604,7 @@
   <div class="modal-header">
     <div class="modal-title text-center w-100">
         <p class="my-0">{{venta.tipo_documento}}</p>
-        <h3>{{venta.correlativo}}</h3>
+        <h3>{{ correlativoDisplay }}</h3>
     </div>
     <button type="button" class="close float-end btn-option" aria-label="Close" (click)="modalRef.hide()">
       <span aria-hidden="true">&times;</span>

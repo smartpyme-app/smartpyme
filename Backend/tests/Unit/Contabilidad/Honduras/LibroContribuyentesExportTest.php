@@ -44,10 +44,12 @@ class LibroContribuyentesExportTest extends TestCase
         $this->assertSame(126.0, $row['total']);
     }
 
-    public function test_clasifica_solo_credito_fiscal_como_contribuyente(): void
+    public function test_clasifica_ventas_contribuyente_incluyendo_factura_con_rtn(): void
     {
+        $this->assertContains('Factura con RTN', LibroContribuyentesExport::TIPOS_CONTRIBUYENTE);
+        $this->assertContains('Factura', LibroContribuyentesExport::TIPOS_CONTRIBUYENTE);
         $this->assertContains('Crédito fiscal', LibroContribuyentesExport::TIPOS_CONTRIBUYENTE);
-        $this->assertNotContains('Factura', LibroContribuyentesExport::TIPOS_CONTRIBUYENTE);
+        $this->assertNotContains('Factura sin RTN', LibroContribuyentesExport::TIPOS_CONTRIBUYENTE);
         $this->assertNotContains('Factura de exportación', LibroContribuyentesExport::TIPOS_CONTRIBUYENTE);
     }
 

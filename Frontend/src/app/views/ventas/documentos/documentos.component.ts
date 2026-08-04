@@ -10,7 +10,15 @@ import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { FilterPipe } from '@pipes/filter.pipe';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
-import { documentoNombreOpciones, DocumentoNombreOption } from './documento-nombre-options';
+import { FE_PAIS_HN, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
+import {
+    documentoNombreOpciones,
+    DocumentoNombreOption,
+    esDocumentoFiscalHn,
+    formatoCorrelativoHn,
+    NOMBRE_DOCUMENTO_HN,
+    NUMERO_EMISION_OPCIONES_HN,
+} from './documento-nombre-options';
 
 @Component({
     selector: 'app-documentos',
@@ -32,8 +40,33 @@ export class DocumentosComponent extends BaseCrudComponent<any> implements OnIni
     public nuevaResolucion:boolean = false;
     public change:boolean = false;
 
+    readonly numeroEmisionOpciones = NUMERO_EMISION_OPCIONES_HN;
+
     opcionesNombreDocumento(): DocumentoNombreOption[] {
         return documentoNombreOpciones(this.apiService.auth_user()?.empresa);
+    }
+
+    get esHonduras(): boolean {
+        return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_HN;
+    }
+
+    showNumeroEmision(documento: { nombre?: string } = this.documento): boolean {
+        return this.esHonduras && esDocumentoFiscalHn(documento?.nombre);
+    }
+
+    previewCorrelativo(documento: { numero_emision?: string; correlativo?: string | number } = this.documento): string {
+        return formatoCorrelativoHn(documento?.numero_emision, documento?.correlativo);
+    }
+
+    onNombreDocumentoChange(): void {
+        if (this.showNumeroEmision()) {
+            if (!this.documento.numero_emision) {
+                this.documento.numero_emision = '01';
+            }
+        } else {
+            this.documento.numero_emision = null;
+        }
+        this.cdr.markForCheck();
     }
 
     constructor(
@@ -103,6 +136,10 @@ export class DocumentosComponent extends BaseCrudComponent<any> implements OnIni
                 this.documento.id_sucursal = this.apiService.auth_user().id_sucursal;
                 this.documento.activo = true;
                 this.documento.correlativo = 1;
+                if (this.esHonduras && !this.documento.nombre) {
+                    this.documento.nombre = NOMBRE_DOCUMENTO_HN.facturaSinRtn;
+                }
+                this.onNombreDocumentoChange();
             }
             
             try {
@@ -140,6 +177,10 @@ export class DocumentosComponent extends BaseCrudComponent<any> implements OnIni
 
     public override async onSubmit(item?: any): Promise<void> {
         const documentoToSave = item || this.documento;
+        if (this.showNumeroEmision(documentoToSave) && !String(documentoToSave.numero_emision ?? '').trim()) {
+            this.alertService.error('Seleccione el número de emisión.');
+            return;
+        }
         documentoToSave.nuevaResolucion = this.nuevaResolucion;
         await super.onSubmit(documentoToSave);
     }

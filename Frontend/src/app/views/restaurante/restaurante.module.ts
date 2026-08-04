@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { PopoverModule } from 'ngx-bootstrap/popover';
+import { ModalModule } from 'ngx-bootstrap/modal';
 import { PipesModule } from '@pipes/pipes.module';
 import { SharedModule } from '@shared/shared.module';
 
@@ -27,6 +28,7 @@ import { RestauranteRoutingModule } from './restaurante-routing.module';
     PipesModule,
     TooltipModule.forRoot(),
     PopoverModule.forRoot(),
+    ModalModule.forRoot(),
     RestauranteRoutingModule,
     SharedModule
   ]

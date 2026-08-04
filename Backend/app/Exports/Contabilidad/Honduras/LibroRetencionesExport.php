@@ -4,6 +4,7 @@ namespace App\Exports\Contabilidad\Honduras;
 
 use App\Models\Ventas\Venta;
 use App\Models\Compras\Compra;
+use App\Support\Honduras\FormatoCorrelativoHn;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -56,7 +57,7 @@ class LibroRetencionesExport implements FromCollection, WithMapping, WithHeading
     {
         $request = $this->request;
 
-        $ventas = Venta::with(['cliente'])
+        $ventas = Venta::with(['cliente', 'documento'])
             ->where('estado', '!=', 'Anulada')
             ->where('iva_retenido', '>', 0)
             ->where('cotizacion', 0)
@@ -88,7 +89,10 @@ class LibroRetencionesExport implements FromCollection, WithMapping, WithHeading
         if ($esVenta) {
             $fecha = $r->fecha;
             $numComprobante = trim((string) ($r->numero_control ?? $r->correlativo ?? ''));
-            $numFactura = trim((string) $r->correlativo);
+            $numFactura = FormatoCorrelativoHn::format(
+                optional($r->documento)->numero_emision,
+                $r->correlativo
+            );
             $agenteRetenedor = $r->nombre_cliente ?? '';
             $rtn = optional($r->cliente)->nit ?? optional($r->cliente)->ncr ?? '';
             $baseRetencion = (float) $r->sub_total;

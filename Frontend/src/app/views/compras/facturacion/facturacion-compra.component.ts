@@ -32,6 +32,7 @@ import { FE_PAIS_CR, FE_PAIS_SV, esElSalvadorFe as empresaEsElSalvador, resolveC
 import {
     esTipoFacturaElectronicaCompraCr,
     NOMBRE_DOCUMENTO_CR,
+    nombresDocumentosCompraPermitidos,
 } from '@views/ventas/documentos/documento-nombre-options';
 import { BsModalRef } from 'ngx-bootstrap/modal';
 import { DocumentoImportService } from '@services/compras/documento-import.service';
@@ -287,26 +288,8 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
     }
 
     public cargarDocumentos(){
-      // Lista de documentos permitidos para compras
-      const documentosPermitidos = [
-        'Factura',
-        'Crédito fiscal',
-        'Ticket',
-        'Recibo',
-        'Sujeto excluido',
-        'Recibo',
-        'Factura de exportación',
-        'Factura de remisión',
-        'Documento contable de liquidación'
-      ];
-      if (resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR) {
-        documentosPermitidos.push(
-          NOMBRE_DOCUMENTO_CR.factura,
-          NOMBRE_DOCUMENTO_CR.tiquete,
-          NOMBRE_DOCUMENTO_CR.fecCompra,
-          'Compra electrónica',
-        );
-      }
+      const empresa = this.apiService.auth_user()?.empresa;
+      const documentosPermitidos = nombresDocumentosCompraPermitidos(empresa);
 
         this.sharedDataService.getDocumentos()
           .pipe(this.untilDestroyed())

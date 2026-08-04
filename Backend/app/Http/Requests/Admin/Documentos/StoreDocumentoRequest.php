@@ -2,10 +2,26 @@
 
 namespace App\Http\Requests\Admin\Documentos;
 
+use App\Models\Admin\Empresa;
+use App\Services\FacturacionElectronica\FacturacionElectronicaCountryResolver;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreDocumentoRequest extends FormRequest
 {
+    /** @var list<string> */
+    private const NOMBRES_FISCALES_HN = [
+        'Factura con RTN',
+        'Factura sin RTN',
+        'Ticket',
+        'Boleta de compra',
+        'Nota de crédito',
+        'Nota de débito',
+        'Recibo por honorarios profesionales',
+        'Guía de remisión',
+        'Comprobante de retención',
+    ];
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -19,6 +35,19 @@ class StoreDocumentoRequest extends FormRequest
      */
     public function rules(): array
     {
+        $numeroEmisionRule = ['nullable', 'string'];
+
+        $empresa = Empresa::find($this->input('id_empresa'));
+        $nombre = $this->input('nombre');
+
+        if (
+            $empresa !== null
+            && FacturacionElectronicaCountryResolver::resolveCodigoPaisFe($empresa) === FacturacionElectronicaCountryResolver::CODIGO_HONDURAS
+            && in_array($nombre, self::NOMBRES_FISCALES_HN, true)
+        ) {
+            $numeroEmisionRule = ['required', 'string', Rule::in(self::numerosEmisionHn())];
+        }
+
         return [
             'nombre' => ['required', 'string', 'max:255'],
             'correlativo' => ['required', 'string', 'max:255'],
@@ -37,7 +66,17 @@ class StoreDocumentoRequest extends FormRequest
             'fecha' => ['nullable', 'date'],
             'caja_id' => ['nullable', 'integer', 'exists:cajas,id'],
             'change' => ['nullable', 'boolean'],
+            'numero_emision' => $numeroEmisionRule,
         ];
+    }
+
+    /** @return list<string> */
+    private static function numerosEmisionHn(): array
+    {
+        return array_map(
+            static fn (int $n): string => str_pad((string) $n, 2, '0', STR_PAD_LEFT),
+            range(1, 20)
+        );
     }
 
     /**

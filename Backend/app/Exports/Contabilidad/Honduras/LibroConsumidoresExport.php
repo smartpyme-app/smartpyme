@@ -5,6 +5,7 @@ namespace App\Exports\Contabilidad\Honduras;
 use App\Models\Ventas\Venta;
 use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
 use App\Services\Contabilidad\LibroIvaMontosHelper;
+use App\Support\Honduras\FormatoCorrelativoHn;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithCustomStartCell;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -33,7 +34,7 @@ class LibroConsumidoresExport implements FromCollection, WithMapping, WithHeadin
     private int $index = 1;
 
     /** @var list<string> */
-    public const TIPOS_CONSUMIDOR = ['Factura', 'Factura de exportación'];
+    public const TIPOS_CONSUMIDOR = ['Factura', 'Factura sin RTN', 'Factura de exportación', 'Ticket'];
 
     /** @var list<string> */
     private const CLAVES_FILA = [
@@ -272,7 +273,10 @@ class LibroConsumidoresExport implements FromCollection, WithMapping, WithHeadin
         return [
             'no' => $no,
             'fecha' => (string) $registro->fecha,
-            'factura_no' => trim((string) ($registro->correlativo ?? '')),
+            'factura_no' => FormatoCorrelativoHn::format(
+                $documento->numero_emision ?? null,
+                $registro->correlativo
+            ),
             'cai_no' => $cai,
             // ponytail: no existe fuente de N° de máquina registradora en el modelo (techo: agregar campo cuando exista POS fiscal).
             'maquina_registradora' => '',

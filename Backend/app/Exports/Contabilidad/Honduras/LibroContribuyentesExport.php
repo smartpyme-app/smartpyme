@@ -5,6 +5,7 @@ namespace App\Exports\Contabilidad\Honduras;
 use App\Models\Ventas\Venta;
 use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
 use App\Services\Contabilidad\LibroIvaMontosHelper;
+use App\Support\Honduras\FormatoCorrelativoHn;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithCustomStartCell;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -30,7 +31,7 @@ class LibroContribuyentesExport implements FromCollection, WithMapping, WithHead
     private int $index = 1;
 
     /** @var list<string> */
-    public const TIPOS_CONTRIBUYENTE = ['Crédito fiscal'];
+    public const TIPOS_CONTRIBUYENTE = ['Factura con RTN', 'Factura', 'Crédito fiscal'];
 
     /** @var list<string> */
     private const CLAVES_FILA = [
@@ -284,11 +285,15 @@ class LibroContribuyentesExport implements FromCollection, WithMapping, WithHead
     private function mapVenta(object $venta, int $no, int $mult = 1): array
     {
         $cliente = $venta->cliente ?? null;
+        $documento = $venta->documento ?? null;
 
         return [
             'no' => $no,
             'fecha' => (string) $venta->fecha,
-            'correlativo' => trim((string) ($venta->correlativo ?? '')),
+            'correlativo' => FormatoCorrelativoHn::format(
+                $documento->numero_emision ?? null,
+                $venta->correlativo
+            ),
             'nrc' => (string) ($cliente?->ncr ?? ''),
             'nombre' => (string) ($venta->nombre_cliente ?? $cliente?->nombre ?? ''),
             'exentas' => round(LibroIvaMontosHelper::ventasExentas($venta) * $mult, 2),

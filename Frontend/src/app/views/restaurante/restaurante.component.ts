@@ -135,6 +135,13 @@ export class RestauranteComponent implements OnInit {
     });
   }
 
+  editarMesaDesdeAccion(template: TemplateRef<any>): void {
+    const mesa = this.mesaSeleccionada;
+    this.modalAccionLibreRef?.hide();
+    if (!mesa) return;
+    this.openModalMesa(template, mesa);
+  }
+
   crearReserva(event?: Event): void {
     event?.preventDefault();
     if (!this.reservaForm.mesa_id || !this.reservaForm.fecha_reserva || !this.reservaForm.hora_reserva) {
@@ -227,13 +234,31 @@ export class RestauranteComponent implements OnInit {
   }
 
   openModalMesa(template: TemplateRef<any>, mesa?: Mesa): void {
+    // Evitar que quede otro modal de acción/sesión encima del de edición.
+    this.modalAccionLibreRef?.hide();
+    this.modalAbrirRef?.hide();
+    this.modalReservarRef?.hide();
+    this.modalMesaReservadaRef?.hide();
+    this.modalRef?.hide();
+
     this.mesaSeleccionada = mesa || null;
+    // Solo campos editables (no clonar sesión/reservas anidadas).
     this.mesaForm = mesa
-      ? { ...mesa, zona_id: mesa.zona_id ?? mesa.zona_restaurante?.id ?? null }
+      ? {
+          numero: mesa.numero,
+          capacidad: mesa.capacidad,
+          zona_id: mesa.zona_id ?? mesa.zona_restaurante?.id ?? null,
+          orden: mesa.orden ?? 0,
+          activo: mesa.activo,
+        }
       : { numero: '', capacidad: 4, zona_id: null, orden: 0, activo: true };
     this.cargarZonas();
     this.alertService.modal = true;
-    this.modalRef = this.modalService.show(template, { class: 'modal-lg', backdrop: 'static' });
+    this.modalRef = this.modalService.show(template, {
+      class: 'modal-lg',
+      backdrop: 'static',
+      ignoreBackdropClick: true,
+    });
   }
 
   guardarMesa(event?: Event): void {
