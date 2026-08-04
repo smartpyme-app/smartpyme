@@ -465,8 +465,9 @@ export class FacturacionV2Component implements OnInit {
       this.seleccionarDocumentoRemisionConsigna();
       return;
     }
+    const nombresVenta = nombresVentaPorPais(this.apiService.auth_user()?.empresa);
     const porWhitelist = this.documentosSucursal.filter((doc: any) =>
-      nombresVentaPorPais(this.apiService.auth_user()?.empresa).includes(String(doc.nombre || '').trim())
+      nombresVenta.includes(String(doc.nombre || '').trim())
     );
     // Si no hay match exacto de nombres, no dejar el select vacío: excluir solo cotización/OC.
     this.documentos = porWhitelist.length

@@ -2,8 +2,13 @@ import {
   DOCUMENTO_NOMBRE_OPCIONES_CR,
   DOCUMENTO_NOMBRE_OPCIONES_DEFAULT,
   DOCUMENTO_NOMBRE_OPCIONES_HN,
+  NOMBRE_DOCUMENTO_CR,
   NOMBRE_DOCUMENTO_HN,
   documentoNombreOpciones,
+  esNombreNotaCredito,
+  esNombreNotaCreditoODebito,
+  esNombreNotaDebito,
+  nombresDocumentoExcluidosGastoHn,
   nombresDocumentosCompraPermitidos,
   nombresDocumentosVentaNormales,
 } from './documento-nombre-options';
@@ -56,5 +61,34 @@ describe('documentoNombreOpciones', () => {
 
   it('compra SV sigue incluyendo Crédito fiscal', () => {
     expect(nombresDocumentosCompraPermitidos({ pais: 'El Salvador' })).toContain('Crédito fiscal');
+  });
+
+  it('nombresDocumentoExcluidosGastoHn devuelve los cuatro tipos SV-only', () => {
+    expect(nombresDocumentoExcluidosGastoHn()).toEqual([
+      'Crédito fiscal',
+      'Sujeto excluido',
+      'Factura de exportación',
+      'Factura comercial',
+    ]);
+  });
+});
+
+describe('esNombreNotaCredito / esNombreNotaDebito', () => {
+  it('reconoce nota de crédito SV y CR', () => {
+    expect(esNombreNotaCredito('Nota de crédito')).toBe(true);
+    expect(esNombreNotaCredito(NOMBRE_DOCUMENTO_CR.notaCredito)).toBe(true);
+    expect(esNombreNotaCredito('Factura')).toBe(false);
+  });
+
+  it('reconoce nota de débito SV y CR', () => {
+    expect(esNombreNotaDebito('Nota de débito')).toBe(true);
+    expect(esNombreNotaDebito(NOMBRE_DOCUMENTO_CR.notaDebito)).toBe(true);
+    expect(esNombreNotaDebito('Factura')).toBe(false);
+  });
+
+  it('esNombreNotaCreditoODebito agrupa crédito y débito', () => {
+    expect(esNombreNotaCreditoODebito('Nota de crédito')).toBe(true);
+    expect(esNombreNotaCreditoODebito(NOMBRE_DOCUMENTO_CR.notaDebito)).toBe(true);
+    expect(esNombreNotaCreditoODebito('Factura')).toBe(false);
   });
 });
