@@ -53,7 +53,8 @@ export const DOCUMENTO_NOMBRE_OPCIONES_CR: DocumentoNombreOption[] = [
 ];
 
 export const NOMBRE_DOCUMENTO_HN = {
-  factura: 'Factura',
+  facturaConRtn: 'Factura con RTN',
+  facturaSinRtn: 'Factura sin RTN',
   ticket: 'Ticket',
   boletaCompra: 'Boleta de compra',
   notaCredito: 'Nota de crédito',
@@ -64,7 +65,8 @@ export const NOMBRE_DOCUMENTO_HN = {
 } as const;
 
 export const DOCUMENTO_NOMBRE_OPCIONES_HN: DocumentoNombreOption[] = [
-  { value: NOMBRE_DOCUMENTO_HN.factura, label: NOMBRE_DOCUMENTO_HN.factura },
+  { value: NOMBRE_DOCUMENTO_HN.facturaConRtn, label: NOMBRE_DOCUMENTO_HN.facturaConRtn },
+  { value: NOMBRE_DOCUMENTO_HN.facturaSinRtn, label: NOMBRE_DOCUMENTO_HN.facturaSinRtn },
   { value: NOMBRE_DOCUMENTO_HN.ticket, label: NOMBRE_DOCUMENTO_HN.ticket },
   { value: NOMBRE_DOCUMENTO_HN.boletaCompra, label: NOMBRE_DOCUMENTO_HN.boletaCompra },
   { value: NOMBRE_DOCUMENTO_HN.notaCredito, label: NOMBRE_DOCUMENTO_HN.notaCredito },
@@ -77,6 +79,42 @@ export const DOCUMENTO_NOMBRE_OPCIONES_HN: DocumentoNombreOption[] = [
   { value: 'Recibo', label: 'Recibo' },
   { value: 'Abono de Venta', label: 'Abono de Venta' },
 ];
+
+/** Números de emisión SAR Honduras (01–20). */
+export const NUMERO_EMISION_OPCIONES_HN: string[] = Array.from({ length: 20 }, (_, i) =>
+  String(i + 1).padStart(2, '0')
+);
+
+const NOMBRES_FISCALES_HN: readonly string[] = [
+  NOMBRE_DOCUMENTO_HN.facturaConRtn,
+  NOMBRE_DOCUMENTO_HN.facturaSinRtn,
+  NOMBRE_DOCUMENTO_HN.ticket,
+  NOMBRE_DOCUMENTO_HN.boletaCompra,
+  NOMBRE_DOCUMENTO_HN.notaCredito,
+  NOMBRE_DOCUMENTO_HN.notaDebito,
+  NOMBRE_DOCUMENTO_HN.reciboHonorarios,
+  NOMBRE_DOCUMENTO_HN.guiaRemision,
+  NOMBRE_DOCUMENTO_HN.comprobanteRetencion,
+];
+
+export function esDocumentoFiscalHn(nombre: string | null | undefined): boolean {
+  return NOMBRES_FISCALES_HN.includes(String(nombre ?? '').trim());
+}
+
+/** Mismo criterio que `App\Support\Honduras\FormatoCorrelativoHn::format`. */
+export function formatoCorrelativoHn(
+  numeroEmision: string | null | undefined,
+  correlativo: string | number | null | undefined
+): string {
+  const corr = String(correlativo ?? '');
+  const em = String(numeroEmision ?? '').trim();
+  if (em === '') {
+    return corr;
+  }
+  const nn = (em.replace(/\D/g, '') || '0').padStart(2, '0');
+  const digits = corr.replace(/\D/g, '') || '0';
+  return `001-001-${nn}-${digits.padStart(8, '0')}`;
+}
 
 /** El Salvador y resto: lista completa (incluye Crédito fiscal, DTE SV, etc.). */
 export const DOCUMENTO_NOMBRE_OPCIONES_DEFAULT: DocumentoNombreOption[] = [
@@ -113,8 +151,9 @@ export function nombresDocumentosVentaNormales(
   const cod = resolveCodigoPaisFe(empresa);
   if (cod === FE_PAIS_HN) {
     return [
-      'Factura',
-      'Ticket',
+      NOMBRE_DOCUMENTO_HN.facturaConRtn,
+      NOMBRE_DOCUMENTO_HN.facturaSinRtn,
+      NOMBRE_DOCUMENTO_HN.ticket,
       'Recibo',
       NOMBRE_DOCUMENTO_HN.guiaRemision,
       'Abono de Venta',
@@ -140,8 +179,9 @@ export function nombresDocumentosCompraPermitidos(
   const cod = resolveCodigoPaisFe(empresa);
   if (cod === FE_PAIS_HN) {
     return [
-      'Factura',
-      'Ticket',
+      NOMBRE_DOCUMENTO_HN.facturaConRtn,
+      NOMBRE_DOCUMENTO_HN.facturaSinRtn,
+      NOMBRE_DOCUMENTO_HN.ticket,
       'Recibo',
       NOMBRE_DOCUMENTO_HN.boletaCompra,
       NOMBRE_DOCUMENTO_HN.reciboHonorarios,
