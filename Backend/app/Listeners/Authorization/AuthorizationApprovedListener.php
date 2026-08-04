@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\Compras\ComprasController;
 use App\Http\Controllers\Api\Compras\Cotizaciones\CotizacionesController;
 use Illuminate\Support\Facades\Log;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 class AuthorizationApprovedListener
 {
@@ -100,10 +101,9 @@ class AuthorizationApprovedListener
                                 return;
                             }
                             
-                            // Obtener roles actuales usando Spatie
-                            $currentRoles = $user->getRoleNames()->toArray();
-                            
-                            $user->syncRoles([$rol->name]);
+                            // Usar sync por ID para evitar colisión de nombres entre empresas
+                            $user->roles()->sync([$rol->id]);
+                            app(PermissionRegistrar::class)->forgetCachedPermissions();
 
                             // Alinear tipo legacy cuando el nombre de rol tiene mapeo conocido
                             $rolToTipo = [

@@ -592,18 +592,12 @@ class RolePermissionService
      */
     private function eliminarPermisosPersonalizados(Module $module): void
     {
-        $modulePermissionsToDelete = ModulePermission::where(function ($query) use ($module) {
+        // Solo desvincula el ModulePermission del módulo.
+        // NO elimina el Permission global — hacerlo lo quitaría de TODOS los roles/usuarios.
+        ModulePermission::where(function ($query) use ($module) {
             $query->where('module_id', $module->id)
                 ->orWhereIn('submodule_id', $module->submodules->pluck('id'));
-        })->where('permission_type', 'custom')->get();
-
-        foreach ($modulePermissionsToDelete as $mp) {
-            $permission = Permission::find($mp->permission_id);
-            $mp->delete();
-            if ($permission) {
-                $permission->delete();
-            }
-        }
+        })->where('permission_type', 'custom')->delete();
     }
 
     /**
