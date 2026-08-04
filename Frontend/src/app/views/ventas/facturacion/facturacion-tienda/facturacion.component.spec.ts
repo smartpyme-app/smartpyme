@@ -282,4 +282,16 @@ describe('FacturacionComponent', () => {
 
     expect(component.saving).toBeTrue();
   });
+
+  it('correlativoDisplay formatea HN sin mutar venta.correlativo', () => {
+    const component: any = Object.create(FacturacionComponent.prototype);
+    component.apiService = {
+      auth_user: () => ({ empresa: { pais: 'Honduras', cod_pais: 'HN' } }),
+    };
+    component.documentos = [{ id: 1, nombre: 'Factura con RTN', numero_emision: '01' }];
+    component.venta = { id_documento: 1, correlativo: 439 };
+
+    expect(component.correlativoDisplay).toBe('001-001-01-00000439');
+    expect(component.venta.correlativo).toBe(439);
+  });
 });

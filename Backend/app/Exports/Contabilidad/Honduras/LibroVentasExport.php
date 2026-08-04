@@ -4,6 +4,7 @@ namespace App\Exports\Contabilidad\Honduras;
 
 use App\Models\Ventas\Venta;
 use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
+use App\Support\Honduras\FormatoCorrelativoHn;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -89,7 +90,7 @@ class LibroVentasExport implements FromCollection, WithMapping, WithHeadings, Wi
     {
         $request = $this->request;
 
-        return DevolucionVenta::with(['cliente', 'venta'])
+        return DevolucionVenta::with(['cliente', 'venta', 'venta.documento', 'documento'])
             ->where('enable', true)
             ->whereHas('venta', function ($query) {
                 $query->where('estado', '!=', 'Anulada');
@@ -136,7 +137,10 @@ class LibroVentasExport implements FromCollection, WithMapping, WithHeadings, Wi
             'fecha' => $venta->fecha,
             'rtn' => $cliente->nit ?? $cliente->ncr ?? '',
             'descripcion' => $docNombre,
-            'no_factura' => trim((string) $venta->correlativo),
+            'no_factura' => FormatoCorrelativoHn::format(
+                optional($venta->documento)->numero_emision,
+                $venta->correlativo
+            ),
             'importe_exenta' => $venta->iva == 0 && ! $esExportacion ? (float) $venta->sub_total : 0,
             'importe_gravada' => $venta->iva > 0 ? (float) $venta->sub_total : 0,
             'importe_exonerada' => (float) ($venta->no_sujeta ?? 0),
@@ -149,19 +153,28 @@ class LibroVentasExport implements FromCollection, WithMapping, WithHeadings, Wi
     {
         $cliente = optional($devolucion->cliente);
         $ventaOriginal = $devolucion->venta;
+        $documento = $devolucion->documento ?? $ventaOriginal?->documento;
 
         return [
             'fecha' => $devolucion->fecha,
             'rtn' => $cliente->nit ?? $cliente->ncr ?? '',
             'descripcion' => 'Nota de crédito',
-            'no_factura' => trim((string) $devolucion->correlativo),
+            'no_factura' => FormatoCorrelativoHn::format(
+                $documento->numero_emision ?? null,
+                $devolucion->correlativo
+            ),
             'importe_exenta' => $devolucion->exenta > 0 ? -1 * (float) $devolucion->exenta : 0,
             'importe_gravada' => $devolucion->sub_total > 0 ? -1 * (float) $devolucion->sub_total : 0,
             'importe_exonerada' => 0,
             'impuesto_ventas' => $devolucion->iva > 0 ? -1 * (float) $devolucion->iva : 0,
             'importe_exportacion' => 0,
             'fecha_factura_relacionada' => $ventaOriginal ? $ventaOriginal->fecha : '',
-            'numero_factura_relacionada' => $ventaOriginal ? trim((string) $ventaOriginal->correlativo) : '',
+            'numero_factura_relacionada' => $ventaOriginal
+                ? FormatoCorrelativoHn::format(
+                    optional($ventaOriginal->documento)->numero_emision,
+                    $ventaOriginal->correlativo
+                )
+                : '',
         ];
     }
 

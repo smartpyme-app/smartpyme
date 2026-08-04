@@ -12,9 +12,12 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
 import { FacturacionElectronicaService } from '@services/facturacion-electronica/facturacion-electronica.service';
-import { FE_PAIS_CR, FE_PAIS_SV, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
+import { FE_PAIS_CR, FE_PAIS_HN, FE_PAIS_SV, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
 import { migrarExoneracionCrLegacyADetalles as migrarExoneracionLegacyUtil } from '@shared/modals/fe-cr-exoneracion-detalle/fe-cr-exoneracion-detalle.util';
-import { nombresDocumentosVentaNormales as nombresVentaPorPais } from '@views/ventas/documentos/documento-nombre-options';
+import {
+  formatoCorrelativoHn,
+  nombresDocumentosVentaNormales as nombresVentaPorPais,
+} from '@views/ventas/documentos/documento-nombre-options';
 import { xmlComprobanteDesdeRechazoFeCr } from '@services/facturacion-electronica/fe-cr-http-error.util';
 import { abrirVentanaTextoFeCr } from '@services/facturacion-electronica/fe-cr-abrir-xml.util';
 import { BuscadorClientesComponent } from '@shared/parts/buscador-clientes/buscador-clientes.component';
@@ -1108,6 +1111,27 @@ export class FacturacionV2Component implements OnInit {
   /** Catálogo MH (incoterm, recinto, régimen) y DTE 11: solo El Salvador. */
   esFacturacionElSalvador(): boolean {
     return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_SV;
+  }
+
+  get esHondurasFacturacion(): boolean {
+    return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_HN;
+  }
+
+  private documentoVentaSeleccionado(): any {
+    return this.documentos.find((x: any) => x.id == this.venta.id_documento);
+  }
+
+  get mostrarCorrelativoHnFormato(): boolean {
+    const doc = this.documentoVentaSeleccionado();
+    return this.esHondurasFacturacion && !!String(doc?.numero_emision ?? '').trim();
+  }
+
+  get correlativoDisplay(): string {
+    const doc = this.documentoVentaSeleccionado();
+    if (this.mostrarCorrelativoHnFormato) {
+      return formatoCorrelativoHn(doc.numero_emision, this.venta.correlativo);
+    }
+    return String(this.venta.correlativo ?? '');
   }
 
   /**
