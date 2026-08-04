@@ -22,6 +22,7 @@ class DocumentosDefaultPorPaisTest extends TestCase
         $this->assertContains(DocumentosDefaultPorPais::CR_FACTURA, $cr['nombres']);
         $this->assertContains('Crédito fiscal', $sv['nombres']);
         $this->assertContains('Factura sin RTN', $hn['nombres']);
+        $this->assertContains('Factura con RTN', $hn['nombres']);
         $this->assertNotContains('Crédito fiscal', $hn['nombres']);
         $this->assertEmpty(array_diff($sv['seed'], $sv['nombres']));
         $this->assertEmpty(array_diff($cr['seed'], $cr['nombres']));

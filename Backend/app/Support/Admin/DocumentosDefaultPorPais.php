@@ -52,24 +52,31 @@ final class DocumentosDefaultPorPais
         }
 
         if ($pais === FacturacionElectronicaCountryResolver::CODIGO_HONDURAS) {
+            // Alineado con Frontend DOCUMENTO_NOMBRE_OPCIONES_HN
             $nombres = [
-                'Ticket',
+                'Factura con RTN',
                 'Factura sin RTN',
+                'Factura', // legacy
+                'Ticket',
+                'Boleta de compra',
+                'Nota de crédito',
+                'Nota de débito',
+                'Recibo por honorarios profesionales',
+                'Guía de remisión',
+                'Comprobante de retención',
                 'Cotización',
                 'Orden de compra',
                 'Recibo',
-                'Nota de crédito',
-                'Nota de débito',
                 'Abono de Venta',
             ];
 
             return [
                 'nombres' => $nombres,
                 'seed' => [
-                    config('constants.TIPO_DOCUMENTO_TICKET', 'Ticket'),
+                    'Ticket',
                     'Factura sin RTN',
-                    config('constants.TIPO_DOCUMENTO_COTIZACION', 'Cotización'),
-                    config('constants.TIPO_DOCUMENTO_ORDEN_COMPRA', 'Orden de compra'),
+                    'Cotización',
+                    'Orden de compra',
                 ],
             ];
         }
@@ -92,12 +99,13 @@ final class DocumentosDefaultPorPais
 
         return [
             'nombres' => $nombres,
+            // literales: plantilla usable sin bootstrap Laravel (tests)
             'seed' => [
-                config('constants.TIPO_DOCUMENTO_TICKET', 'Ticket'),
-                config('constants.TIPO_DOCUMENTO_FACTURA', 'Factura'),
-                config('constants.TIPO_DOCUMENTO_CREDITO_FISCAL', 'Crédito fiscal'),
-                config('constants.TIPO_DOCUMENTO_COTIZACION', 'Cotización'),
-                config('constants.TIPO_DOCUMENTO_ORDEN_COMPRA', 'Orden de compra'),
+                'Ticket',
+                'Factura',
+                'Crédito fiscal',
+                'Cotización',
+                'Orden de compra',
             ],
         ];
     }
