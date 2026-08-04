@@ -748,6 +748,9 @@ export class PlanillaDetalleComponent implements OnInit {
       return;
     }
 
+    // Recalcular salario + ISSS/AFP/renta/neto con los días actuales antes de persistir
+    this.calcularTotalesUnificado();
+
     this.saving = true;
 
     const tipoContratoGuardar = this.detalleSeleccionado.empleado?.tipo_contrato || 1;
