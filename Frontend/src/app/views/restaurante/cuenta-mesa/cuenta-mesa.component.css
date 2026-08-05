@@ -1,4 +1,29 @@
 /* Estilos cuenta mesa */
+
+/* Layout A: catálogo (~60%) a la izquierda, orden fija a la derecha; apilado en móvil. */
+.pos-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr);
+  gap: 1rem;
+  min-height: calc(100vh - 120px);
+  align-items: stretch;
+}
+.pos-orden {
+  position: sticky;
+  top: 0.5rem;
+  max-height: calc(100vh - 100px);
+  overflow: auto;
+}
+@media (max-width: 767.98px) {
+  .pos-shell {
+    grid-template-columns: 1fr;
+  }
+  .pos-orden {
+    position: static;
+    max-height: none;
+  }
+}
+
 .solicitar-cuenta-opciones {
   display: flex;
   flex-direction: column;

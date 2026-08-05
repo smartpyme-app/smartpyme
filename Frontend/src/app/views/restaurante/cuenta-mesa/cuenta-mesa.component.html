@@ -11,9 +11,9 @@
     <span class="spinner-border spinner-border-sm me-2"></span> Cargando cuenta...
   </div>
 
-  <div *ngIf="!loading && sesion" class="row">
-    <div class="col-lg-8">
-      <div class="card border-0 shadow-sm mb-4">
+  <div class="pos-shell" *ngIf="!loading && sesion">
+    <div class="pos-catalog">
+      <div class="card border-0 shadow-sm mb-3">
         <div class="card-header bg-light d-flex flex-wrap justify-content-between align-items-center gap-2">
           <div>
             <h5 class="mb-0">
@@ -30,16 +30,25 @@
             </div>
           </div>
         </div>
-        <div class="card-body">
-          <p class="text-muted small mb-3" *ngIf="sesion.observaciones">
+        <div class="card-body" *ngIf="sesion.observaciones">
+          <p class="text-muted small mb-0">
             <strong>Observaciones:</strong> {{ sesion.observaciones }}
           </p>
+        </div>
+      </div>
 
-          <div class="mb-4" *ngIf="puedeOperarOrden">
-            <label class="form-label">Agregar producto o servicio</label>
-            <app-buscador-productos (selectProducto)="onProductoSelect($event)"></app-buscador-productos>
-          </div>
+      <div class="card border-0 shadow-sm" *ngIf="puedeOperarOrden">
+        <div class="card-body">
+          <label class="form-label">Agregar producto o servicio</label>
+          <app-buscador-productos (selectProducto)="onProductoSelect($event)"></app-buscador-productos>
+        </div>
+      </div>
+    </div>
 
+    <aside class="pos-orden">
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body">
+          <h6 class="mb-3">Orden</h6>
           <div class="table-responsive">
             <table class="table table-sm table-hover mb-0">
               <thead>
@@ -99,10 +108,8 @@
           </div>
         </div>
       </div>
-    </div>
 
-    <div class="col-lg-4">
-      <div class="card border-0 shadow-sm sticky-top">
+      <div class="card border-0 shadow-sm">
         <div class="card-body">
           <h6 class="mb-3">Resumen</h6>
           <div class="d-flex justify-content-between mb-2">
@@ -165,7 +172,7 @@
           </div>
         </div>
       </div>
-    </div>
+    </aside>
   </div>
 </div>
 
