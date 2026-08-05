@@ -86,6 +86,10 @@ class PosMenuController extends Controller
             return response()->json(['error' => 'Usuario sin empresa asociada'], 400);
         }
 
+        SubCategoria::where('id', $id)
+            ->whereHas('categoria', fn ($q) => $q->where('id_empresa', $user->id_empresa))
+            ->firstOrFail();
+
         $productos = Producto::where('id_subcategoria', $id)
             ->where('enable', true)
             ->orderBy('nombre')
