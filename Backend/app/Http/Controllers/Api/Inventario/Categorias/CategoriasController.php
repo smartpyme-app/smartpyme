@@ -142,18 +142,39 @@ class CategoriasController extends Controller
         $this->deleteCategoriaImgFile($categoria->img);
 
         $file = $request->file('file');
+        if (! $file) {
+            throw new \RuntimeException('No se recibió el archivo de imagen.');
+        }
+
+        // Mismo patrón que ImagenesController / logos: encode + write bajo public/img.
+        // Prefijo en productos/: esa carpeta ya es servible en producción (default.jpg de categorias
+        // existe, pero uploads nuevos a categorias/ no aparecen detrás de nginx — multi-nodo o path).
         $resize = Image::make($file)->resize(750, 750, function ($constraint) {
             $constraint->aspectRatio();
             $constraint->upsize();
         })->encode('jpg', 75);
         $hash = md5($resize->__toString());
-        $relative = "categorias/{$hash}.jpg";
-        $dir = public_path('img/categorias');
-        if (! is_dir($dir)) {
-            mkdir($dir, 0755, true);
-        }
-        $resize->save(public_path('img/' . $relative), 50);
+        $relative = 'productos/categoria_'.$hash.'.jpg';
+        $fullPath = public_path('img/'.$relative);
+        $dir = dirname($fullPath);
 
+        if (! is_dir($dir) && ! mkdir($dir, 0755, true) && ! is_dir($dir)) {
+            throw new \RuntimeException('No se pudo crear el directorio de imágenes.');
+        }
+
+        // Intervention save a veces no falla con excepción si el path no es el docroot real;
+        // escribir bytes y verificar evita guardar la ruta en BD sin archivo servible.
+        $bytes = $resize->__toString();
+        if (@file_put_contents($fullPath, $bytes) === false) {
+            throw new \RuntimeException('No se pudo guardar la imagen de la categoría en disco.');
+        }
+        @chmod($fullPath, 0644);
+
+        if (! is_file($fullPath) || filesize($fullPath) < 1) {
+            throw new \RuntimeException('La imagen no quedó disponible en: '.$fullPath);
+        }
+
+        // Sin slash inicial: el FE arma `{api}/img/{img}` (igual que productos).
         return $relative;
     }
 
@@ -163,7 +184,11 @@ class CategoriasController extends Controller
         if ($path === '' || str_ends_with($path, 'default.jpg') || str_ends_with($path, 'default.png')) {
             return;
         }
-        $full = public_path('img/' . $path);
+        // Solo borrar fotos de categoría que hayamos creado nosotros.
+        if (! str_starts_with($path, 'categorias/') && ! str_starts_with($path, 'productos/categoria_')) {
+            return;
+        }
+        $full = public_path('img/'.$path);
         if (is_file($full)) {
             @unlink($full);
         }

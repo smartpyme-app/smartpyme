@@ -163,6 +163,7 @@ export class PosCatalogoComponent implements OnInit, OnDestroy {
   }
 
   imgUrl(img?: string | null): string {
-    return `${this.apiService.baseUrl}/img/${img}`;
+    const path = String(img || '').replace(/^\/+/, '');
+    return `${this.apiService.baseUrl}/img/${path}`;
   }
 }
