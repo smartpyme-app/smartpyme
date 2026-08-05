@@ -60,6 +60,20 @@ export class CuentaMesaComponent implements OnInit {
     return this.sesion?.id ?? 0;
   }
 
+  /** Etiqueta POS: "Mesa 5 — Terraza" (o solo el número si no hay zona). */
+  get mesaConZonaLabel(): string {
+    const numero = this.sesion?.mesa?.numero;
+    if (numero == null || numero === '') {
+      return 'Mesa';
+    }
+    const zona =
+      this.sesion?.mesa?.zona_restaurante?.nombre ||
+      this.sesion?.mesa?.zona ||
+      '';
+    const zonaTrim = String(zona).trim();
+    return zonaTrim ? `Mesa ${numero} — ${zonaTrim}` : `Mesa ${numero}`;
+  }
+
   puedeAutorizarOperacionesRestaurante(): boolean {
     const t = String(this.apiService.auth_user()?.tipo || '').toLowerCase().trim();
     return ['administrador', 'admin', 'gerente'].includes(t);

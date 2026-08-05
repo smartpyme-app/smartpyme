@@ -17,7 +17,7 @@
         <div class="card-header bg-light d-flex flex-wrap justify-content-between align-items-center gap-2">
           <div>
             <h5 class="mb-0">
-              Mesa {{ sesion.mesa?.numero }}
+              {{ mesaConZonaLabel }}
               <span class="badge ms-2" [class.bg-warning]="sesion.estado === 'abierta'" [class.bg-info]="sesion.estado === 'pre_cuenta'">
                 {{ sesion.estado === 'abierta' ? 'Abierta' : 'Pre-cuenta' }}
               </span>
