@@ -18,11 +18,12 @@ class EmpresaConfiguracionServiceCheck extends TestCase
 
         $this->assertNotEquals($sv, $cr);
         $this->assertSame(EmpresaConfiguracion::MODULO_PLANILLAS, 'planillas');
+        $this->assertSame(\App\Models\PaisConfiguracion::MODULO_PLANILLAS, 'planillas');
     }
 
     public function test_pais_desconocido_lanza(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        PlanillaTemplatesService::getConfiguracionPorPais('XX');
+        PlanillaTemplatesService::plantilla('XX');
     }
 }

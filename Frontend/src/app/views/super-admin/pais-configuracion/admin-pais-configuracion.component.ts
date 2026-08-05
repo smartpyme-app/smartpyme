@@ -27,8 +27,20 @@ export class AdminPaisConfiguracionComponent implements OnInit {
   jsonError = '';
   modalRef!: BsModalRef;
 
-  readonly paises = ['SV', 'CR', 'HN'];
-  readonly modulosSugeridos = ['documentos', 'impuestos', 'retenciones'];
+  readonly paises = ['SV', 'CR', 'HN', 'GT', 'NI', 'PA'];
+  readonly modulosSugeridos = ['documentos', 'planillas', 'impuestos', 'retenciones'];
+
+  resumen(row: any): string {
+    const c = row?.configuracion;
+    if (c?.nombres?.length) {
+      const seed = c?.seed?.length ? ` · ${c.seed.length} seed` : '';
+      return `${c.nombres.length} nombres${seed}`;
+    }
+    if (c?.conceptos && typeof c.conceptos === 'object') {
+      return `${Object.keys(c.conceptos).length} conceptos`;
+    }
+    return 'objeto JSON';
+  }
 
   constructor(
     public apiService: ApiService,
@@ -132,6 +144,7 @@ export class AdminPaisConfiguracionComponent implements OnInit {
         this.saving = false;
         this.modalRef?.hide();
         this.alertService.success(
+          'Guardado',
           this.editando ? 'Configuración actualizada.' : 'Configuración creada.'
         );
         this.loadAll();
@@ -156,7 +169,7 @@ export class AdminPaisConfiguracionComponent implements OnInit {
       if (!result.isConfirmed) return;
       this.apiService.delete('pais-configuracion/', row.id).subscribe({
         next: () => {
-          this.alertService.success('Configuración eliminada.');
+          this.alertService.success('Eliminado', 'Configuración eliminada.');
           this.loadAll();
         },
         error: (err) => this.alertService.error(err),

@@ -10,6 +10,8 @@ class PaisConfiguracion extends Model
 
     public const MODULO_DOCUMENTOS = 'documentos';
 
+    public const MODULO_PLANILLAS = 'planillas';
+
     protected $fillable = [
         'pais',
         'modulo',

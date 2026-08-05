@@ -56,16 +56,7 @@
             <tr>
               <td><span class="badge bg-primary">{{ row.pais }}</span></td>
               <td>{{ row.modulo }}</td>
-              <td class="text-muted small">
-                @if (row.configuracion?.nombres?.length) {
-                  {{ row.configuracion.nombres.length }} nombres
-                  @if (row.configuracion?.seed?.length) {
-                    · {{ row.configuracion.seed.length }} seed
-                  }
-                } @else {
-                  objeto JSON
-                }
-              </td>
+              <td class="text-muted small">{{ resumen(row) }}</td>
               <td class="small text-muted">{{ row.updated_at | date: 'short' }}</td>
               <td class="text-end">
                 <button class="btn btn-sm btn-link" tooltip="Editar" (click)="openEditar(row, meditar)">
