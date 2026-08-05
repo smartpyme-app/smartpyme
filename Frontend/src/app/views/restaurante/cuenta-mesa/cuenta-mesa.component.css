@@ -14,6 +14,20 @@
   max-height: calc(100vh - 100px);
   overflow: auto;
 }
+.pos-catalog {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.pos-catalogo-card {
+  flex: 1;
+  min-height: 420px;
+  display: flex;
+  flex-direction: column;
+}
+.pos-catalogo-card .card-body {
+  min-height: 0;
+}
 @media (max-width: 767.98px) {
   .pos-shell {
     grid-template-columns: 1fr;

@@ -43,6 +43,9 @@ export class CuentaMesaComponent implements OnInit {
   itemsTrasladoIds: number[] = [];
   trasladando = false;
 
+  productoSheet: any = null;
+  mostrarSheetAgregar = false;
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -145,15 +148,22 @@ export class CuentaMesaComponent implements OnInit {
     });
   }
 
-  onProductoSelect(producto: any): void {
-    this.restauranteService.agregarItem(this.sesionId, {
-      producto_id: producto.id,
-      cantidad: 1,
-      notas: ''
-    }).subscribe({
+  onProductoCatalogo(producto: any): void {
+    this.productoSheet = producto;
+    this.mostrarSheetAgregar = true;
+  }
+
+  onCancelarSheetAgregar(): void {
+    this.mostrarSheetAgregar = false;
+    this.productoSheet = null;
+  }
+
+  onConfirmarAgregar(payload: { producto_id: number; cantidad: number; notas: string }): void {
+    this.restauranteService.agregarItem(this.sesionId, payload).subscribe({
       next: () => {
+        this.mostrarSheetAgregar = false;
+        this.productoSheet = null;
         this.cargarSesion();
-        this.alertService.success('Producto agregado', `${producto.nombre} añadido a la orden.`);
       },
       error: (err) => this.alertService.error(err)
     });
