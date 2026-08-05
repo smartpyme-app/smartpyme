@@ -12,6 +12,7 @@ import { RestauranteComponent } from './restaurante.component';
 import { CuentaMesaComponent } from './cuenta-mesa/cuenta-mesa.component';
 import { PosCatalogoComponent } from './cuenta-mesa/pos-catalogo/pos-catalogo.component';
 import { PosSheetAgregarComponent } from './cuenta-mesa/pos-sheet-agregar/pos-sheet-agregar.component';
+import { PosFlujoCuentaComponent } from './cuenta-mesa/pos-flujo-cuenta/pos-flujo-cuenta.component';
 import { CocinaComponent } from './cocina/cocina.component';
 import { ZonasRestauranteComponent } from './zonas/zonas-restaurante.component';
 import { RestauranteRoutingModule } from './restaurante-routing.module';
@@ -22,6 +23,7 @@ import { RestauranteRoutingModule } from './restaurante-routing.module';
     CuentaMesaComponent,
     PosCatalogoComponent,
     PosSheetAgregarComponent,
+    PosFlujoCuentaComponent,
     CocinaComponent,
     ZonasRestauranteComponent
   ],

@@ -1,0 +1,123 @@
+.cuenta-opciones {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.cuenta-opcion {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  cursor: pointer;
+  background: #fff;
+}
+.cuenta-opcion:hover {
+  background: #f8f9fa;
+  border-color: #0d6efd;
+}
+.cuenta-opcion input {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+}
+.cuenta-opcion .opcion-texto {
+  flex: 1;
+  font-size: 15px;
+  line-height: 1.4;
+  color: #212529;
+}
+.cuenta-opcion.opcion-seleccionada {
+  border-color: #0d6efd;
+  background: #e7f1ff;
+}
+.cuenta-opcion.opcion-seleccionada .opcion-texto {
+  font-weight: 500;
+}
+.cuenta-dividir {
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.cuenta-stepper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: 220px;
+}
+.cuenta-stepper input {
+  max-width: 90px;
+}
+.cuenta-stepper button {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+}
+
+.cuenta-tabs {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+}
+.cuenta-tab {
+  flex-shrink: 0;
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+.cuenta-tab.activa {
+  background: #0d6efd;
+  border-color: #0d6efd;
+  color: #fff;
+  font-weight: 500;
+}
+
+.cuenta-items-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 260px;
+  overflow-y: auto;
+}
+.cuenta-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 48px;
+  padding: 12px 14px;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  background: #fff;
+  text-align: left;
+}
+.cuenta-item.parcial {
+  border-color: #ffc107;
+  background: #fff9e6;
+}
+.cuenta-item.completo {
+  border-color: #198754;
+  background: #eaf7ef;
+}
+.cuenta-item-nombre {
+  font-weight: 500;
+  flex: 1;
+}
+.cuenta-item-detalle {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.15rem;
+  font-size: 0.8rem;
+}
+.cuenta-item-mia {
+  color: #495057;
+}
