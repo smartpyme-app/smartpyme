@@ -2,6 +2,7 @@
 
 namespace App\Imports;
 
+use App\Imports\Concerns\ParsesComandaExcelColumns;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Categorias\Categoria;
 use App\Models\Inventario\Bodega;
@@ -21,6 +22,7 @@ use JWTAuth;
 
 class Productos implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyRows
 {
+    use ParsesComandaExcelColumns;
     private $numRows = 0;
     private $usuario;
     private $bodegas;
@@ -195,6 +197,9 @@ class Productos implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyRo
         $producto->barcode = $row['codigo_de_barra'];
         $producto->enable  = true;
         $producto->id_empresa =  $this->usuario->id_empresa;
+        $genera = $this->parseGeneraComanda($row['genera_comanda'] ?? null);
+        $producto->genera_comanda = $genera;
+        $producto->destino_comanda = $this->parseDestinoComanda($row['destino_comanda'] ?? null, $genera);
         $producto->save();
 
         if (isset($id_proveedor)) {
@@ -317,6 +322,8 @@ class Productos implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyRo
             'costo' => 'required|numeric',
             'categoria' => 'required|string',
             'proveedor_apellido' => 'required_with:proveedor_nombre',
+            'genera_comanda' => 'nullable',
+            'destino_comanda' => 'nullable|string',
         ];
     }
 

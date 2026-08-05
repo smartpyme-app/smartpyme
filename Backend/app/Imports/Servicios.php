@@ -3,6 +3,7 @@
 namespace App\Imports;
 
 use App\Imports\Concerns\NormalizesClienteExcelRow;
+use App\Imports\Concerns\ParsesComandaExcelColumns;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Categorias\Categoria;
 use Maatwebsite\Excel\Concerns\ToModel;
@@ -21,6 +22,7 @@ use JWTAuth;
 class Servicios implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyRows, WithCalculatedFormulas, WithMultipleSheets
 {
     use NormalizesClienteExcelRow;
+    use ParsesComandaExcelColumns;
 
     private $numRows = 0;
 
@@ -31,7 +33,7 @@ class Servicios implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyRo
 
     public function prepareForValidation(array $row, $index): array
     {
-        $stringKeys = ['nombre', 'categoria', 'codigo', 'descripcion'];
+        $stringKeys = ['nombre', 'categoria', 'codigo', 'descripcion', 'genera_comanda', 'destino_comanda'];
         $row = $this->applyExcelRowNormalization($row, $stringKeys, false);
 
         if (empty($row['precio'] ?? null) && isset($row['precio_sin_iva']) && $row['precio_sin_iva'] !== '') {
@@ -140,6 +142,9 @@ class Servicios implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyRo
         $producto->tipo = 'Servicio';
         $producto->enable = true;
         $producto->id_empresa = $usuario->id_empresa;
+        $genera = $this->parseGeneraComanda($row['genera_comanda'] ?? null);
+        $producto->genera_comanda = $genera;
+        $producto->destino_comanda = $this->parseDestinoComanda($row['destino_comanda'] ?? null, $genera);
         $producto->save();
 
         ++$this->numRows;
@@ -156,6 +161,8 @@ class Servicios implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyRo
             'categoria' => 'required|string',
             'codigo' => 'nullable|string',
             'descripcion' => 'nullable|string',
+            'genera_comanda' => 'nullable',
+            'destino_comanda' => 'nullable|string',
         ];
     }
 
