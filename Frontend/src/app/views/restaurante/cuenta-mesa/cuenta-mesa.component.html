@@ -128,7 +128,7 @@
             <strong>{{ totalGeneralOrdenAbierta() | currency }}</strong>
           </div>
           <hr>
-          <div class="d-grid gap-2" *ngIf="puedeOperarOrden">
+          <div class="d-grid gap-2 pos-orden-acciones" *ngIf="puedeOperarOrden">
             <button type="button" class="btn btn-lg btn-outline-primary" [disabled]="!hayItemsPendientes || enviandoComanda"
               (click)="enviarACocina()">
               <span *ngIf="!enviandoComanda"><i class="fa fa-paper-plane me-2"></i>Enviar</span>

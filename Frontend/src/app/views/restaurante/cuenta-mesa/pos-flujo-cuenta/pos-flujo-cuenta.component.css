@@ -107,6 +107,10 @@
   border-color: #198754;
   background: #eaf7ef;
 }
+.cuenta-item.sin-asignar {
+  border-color: #adb5bd;
+  background: #f8f9fa;
+}
 .cuenta-item-nombre {
   font-weight: 500;
   flex: 1;

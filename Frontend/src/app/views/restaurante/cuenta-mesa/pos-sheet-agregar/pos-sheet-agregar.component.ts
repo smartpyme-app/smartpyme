@@ -37,7 +37,7 @@ export class PosSheetAgregarComponent implements OnChanges {
   }
 
   onConfirmar(): void {
-    if (!this.producto?.id || this.cantidad < 0.01) {
+    if (!this.producto?.id || !Number.isFinite(this.cantidad) || this.cantidad < 0.01) {
       return;
     }
     this.confirmar.emit({
