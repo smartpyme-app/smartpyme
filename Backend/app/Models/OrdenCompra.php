@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\AuditableModel;
 use App\Models\Authorization\Authorization;
+use App\Support\Admin\ImpuestosDefaultPorPais;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -148,12 +149,14 @@ class OrdenCompra extends AuditableModel
 
     public function getPercepcionAttribute()
     {
-        // Calcular percepción (1% si aplica)
         if ($this->cobrar_percepcion) {
             $subtotal = $this->sub_total;
-            $percepcion = $subtotal * 0.01; // 1% de percepción
+            $frac = ImpuestosDefaultPorPais::fraccionPercepcion($this->empresa);
+            $percepcion = $subtotal * $frac;
+
             return round($percepcion, 2);
         }
+
         return 0;
     }
 }

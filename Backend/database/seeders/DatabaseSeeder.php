@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
             DteTipoMapeoSeeder::class,
             PaisConfiguracionDocumentosSeeder::class,
             PaisConfiguracionPlanillasSeeder::class,
+            PaisConfiguracionImpuestosSeeder::class,
             RestauranteFuncionalidadSeeder::class,
             // PaquetesTableSeeder::class,
             // EmpresaTableSeeder::class,
