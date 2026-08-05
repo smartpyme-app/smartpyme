@@ -83,12 +83,12 @@ Route::delete('/producto/composicion/opcion/{id}', [OpcionesController::class, '
     Route::delete('/producto/sucursal/{id}',   [SucursalesController::class, 'delete']);
 
 // Consignas
-    Route::get('/productos/consignas',         [ConsignasController::class, 'index']);
+    Route::get('/productos/consignas',         [ConsignasController::class, 'index'])->middleware('permission:consignas.ver');
     Route::post('/producto/sucursal',          [ConsignasController::class, 'store']);
     Route::delete('/producto/sucursal/{id}',   [ConsignasController::class, 'delete']);
-    Route::get('/productos/consignas/exportar',        [ConsignasController::class, 'export']);
-    Route::get('/productos/consignas-compras',         [ConsignasController::class, 'indexCompras']);
-    Route::get('/productos/consignas-compras/exportar', [ConsignasController::class, 'exportCompras']);
+    Route::get('/productos/consignas/exportar',        [ConsignasController::class, 'export'])->middleware('permission:consignas.ver');
+    Route::get('/productos/consignas-compras',         [ConsignasController::class, 'indexCompras'])->middleware('permission:consignas.ver');
+    Route::get('/productos/consignas-compras/exportar', [ConsignasController::class, 'exportCompras'])->middleware('permission:consignas.ver');
     Route::get('/productos/consigna-disponible',      [ConsignasController::class, 'disponible']);
     Route::get('/productos/consigna-ventas',          [ConsignasController::class, 'ventasConsignaCompra']);
 

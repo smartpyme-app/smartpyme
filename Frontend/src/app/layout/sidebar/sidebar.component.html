@@ -81,7 +81,7 @@
                     </div>
                 </li>
             }
-            @if (apiService.canAccederOperacionesInventario()) {
+            @if (apiService.canAccederOperacionesInventario() && apiService.hasPermission('consignas.ver')) {
                 <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: false}">
                     <a [routerLink]="['/consignas']" tooltip="Consignas" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1 fw-bold">
                         <img appLazyImage="/assets/icons/package.png" class="icon me-2">Consignas
@@ -213,22 +213,26 @@
                     </div>
                 </li>
             }
-          @if (!apiService.hasPermission('planilla.ver')) {
+          @if (apiService.hasPermission('planilla.ver')) {
               <li class="mb-1">
                   <button (click)="togglePlanilla()" tooltip="Planilla" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!planillaIsCollapsed" aria-controls="collapsePlanilla">
                       <img appLazyImage="/assets/icons/clipboard.png" class="icon me-2">Planilla
                   </button>
                   <div [collapse]="planillaIsCollapsed" [isAnimated]="true">
                       <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                          @if (!apiService.hasPermission('planilla.empleados.ver')) {
+                          @if (apiService.hasPermission('planilla.empleados.ver')) {
                               <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/planilla/empleados']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/user.png" class="icon me-2">Empleados</a></li>
                           }
-                          @if (!apiService.hasPermission('planilla.registros.ver')) {
+                          @if (apiService.hasPermission('planilla.registros.ver')) {
                               <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/planilla/']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/clipboard.png" class="icon me-2">Planillas</a></li>
                           }
-                        <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/planilla/aguinaldos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/gift.png" class="icon me-2">Aguinaldos</a></li>
-                        <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/planilla/prestamos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/clipboard.png" class="icon me-2">Préstamos</a></li>
-                          @if (!apiService.hasPermission('planilla.configuracion.ver')) {
+                          @if (apiService.hasPermission('planilla.registros.ver')) {
+                              <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/planilla/aguinaldos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/gift.png" class="icon me-2">Aguinaldos</a></li>
+                          }
+                          @if (apiService.hasPermission('planilla.registros.ver')) {
+                              <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/planilla/prestamos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/clipboard.png" class="icon me-2">Préstamos</a></li>
+                          }
+                          @if (apiService.hasPermission('planilla.configuracion.ver')) {
                               <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/planilla/configuracion-planilla']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/settings.png" class="icon me-2">Configuración Planillas</a></li>
                           }
                           <!-- <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/planilla/detalles']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/clipboard.png" class="icon me-2">Detalles planilla</a></li> -->
@@ -288,7 +292,7 @@
               </ul>
             </div>
           </li>
-          <li *ngIf="mostrarMenuRestaurante" class="mb-1">
+          <li *ngIf="mostrarMenuRestaurante && apiService.hasPermission('restaurante.ver')" class="mb-1">
             <button (click)="toggleRestaurante()" tooltip="Restaurante" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!restauranteIsCollapsed" aria-controls="collapseRestaurante">
               <img src="/assets/icons/layout.png" class="icon me-2">Restaurante
             </button>
@@ -300,7 +304,7 @@
               </ul>
             </div>
           </li>
-          <li *ngIf="mostrarMenuPedidos" class="mb-1">
+          <li *ngIf="mostrarMenuPedidos && apiService.hasPermission('pedidos.ver')" class="mb-1">
             <button (click)="togglePedidos()" tooltip="Pedidos" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!pedidosIsCollapsed" aria-controls="collapsePedidos">
               <img src="/assets/icons/shopping-cart.png" class="icon me-2">Pedidos
             </button>
@@ -334,20 +338,22 @@
             @if (apiService.hasPermission('ayuda.ver')) {
                 <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/ayuda']" tooltip="Ayuda" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1"><img appLazyImage="/assets/icons/life-buoy.png" class="icon me-2">Ayuda</a></li>
             }
-            <li *ngIf="apiService.auth_user().tipo != 'Contador'" class="mb-1" tourAnchor="tour.configuracion" id="tour.configuracion">
+            <li class="mb-1" tourAnchor="tour.configuracion" id="tour.configuracion">
                 <button (click)="togglePreferencias()" tooltip="Configuraciones" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!preferenciasIsCollapsed" aria-controls="collapseBasic">
                         <img appLazyImage="/assets/icons/sliders.png" class="icon me-2">Configuraciones
                 </button>
                 <div [collapse]="preferenciasIsCollapsed" [isAnimated]="true">
                   <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/usuarios']" tooltip="Usuarios" [adaptivePosition]="false" placement="right" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/user.png" class="icon me-2">Usuarios</a></li>
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/sucursales']" tooltip="Sucursales" [adaptivePosition]="false" placement="right" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/home.png" class="icon me-2">Sucursales</a></li>
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/suscripcion']" tooltip="Mi suscripción" [adaptivePosition]="false" placement="right" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/star.png" class="icon me-2">Mi suscripción</a></li>
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/mi-cuenta']" tooltip="Mi cuenta" [adaptivePosition]="false" placement="right" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/settings.png" class="icon me-2">Mi cuenta</a></li>
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/reportes-automaticos']" tooltip="Reportes automáticos" [adaptivePosition]="false" placement="right" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/inbox-stroke.png" class="icon me-2">Reportes automáticos</a></li>
-                    @if (apiService.hasPermission('auditoria.ver')) {
-                      <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/auditoria']" tooltip="Auditoría" [adaptivePosition]="false" placement="right" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/check-square.png" class="icon me-2">Auditoría</a></li>
+                    @if (apiService.hasPermission('organizacion.usuarios.ver')) {
+                      <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/usuarios']" tooltip="Usuarios" [adaptivePosition]="false" placement="right" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/user.png" class="icon me-2">Usuarios</a></li>
                     }
+                    @if (apiService.hasPermission('administracion.sucursales.ver')) {
+                      <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/sucursales']" tooltip="Sucursales" [adaptivePosition]="false" placement="right" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/home.png" class="icon me-2">Sucursales</a></li>
+                    }
+                    @if (apiService.validateRole('admin', true)) {
+                      <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/suscripcion']" tooltip="Mi suscripción" [adaptivePosition]="false" placement="right" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/star.png" class="icon me-2">Mi suscripción</a></li>
+                    }
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/mi-cuenta']" tooltip="Mi cuenta" [adaptivePosition]="false" placement="right" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/settings.png" class="icon me-2">Mi cuenta</a></li>
                   </ul>
                 </div>
             </li>

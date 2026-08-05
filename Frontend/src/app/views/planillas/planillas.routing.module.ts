@@ -1,7 +1,7 @@
 import {NgModule} from '@angular/core';
 import {RouterModule, Routes} from '@angular/router';
 import {LayoutComponent} from '../../layout/layout.component';
-import {AdminGuard} from '../../guards/admin.guard';
+import {PermissionGuard} from '../../guards/permission.guard';
 import {PlanillasComponent} from './planillas.component';
 import {EmpleadosComponent} from './empleados/empleados.component';
 import {AdministrarEmpleadoComponent} from './empleados/administrar-empleado.component';
@@ -18,28 +18,33 @@ const routes: Routes = [
     path: 'planilla',
     component: LayoutComponent,
     title: 'Planillas',
+    canActivate: [PermissionGuard],
+    data: { permission: 'planilla.ver' },
     children: [
-      {path: '', component: PlanillasComponent, title: 'Planillas'},
-      {path: 'empleados', component: EmpleadosComponent, title: 'Empleados'},
-      {path: 'empleado/crear', component: AdministrarEmpleadoComponent, title: 'Empleado'},
+      {path: '', component: PlanillasComponent, title: 'Planillas', canActivate: [PermissionGuard], data: { permission: 'planilla.registros.ver' }},
+      {path: 'empleados', component: EmpleadosComponent, title: 'Empleados', canActivate: [PermissionGuard], data: { permission: 'planilla.empleados.ver' }},
+      {path: 'empleado/crear', component: AdministrarEmpleadoComponent, title: 'Empleado', canActivate: [PermissionGuard], data: { permission: 'planilla.empleados.crear' }},
       {
         path: 'empleado/editar/:id',
         component: AdministrarEmpleadoComponent,
         title: 'Empleado',
+        canActivate: [PermissionGuard],
+        data: { permission: 'planilla.empleados.editar' },
       },
-      {path: 'detalle/:id', component: PlanillaDetalleComponent, title: 'Planilla'},
-
-      {path: 'planilla/:id/boletas', component: BoletaPagoComponent, title: 'Boletas'},
+      {path: 'detalle/:id', component: PlanillaDetalleComponent, title: 'Planilla', canActivate: [PermissionGuard], data: { permission: 'planilla.registros.ver' }},
+      {path: 'planilla/:id/boletas', component: BoletaPagoComponent, title: 'Boletas', canActivate: [PermissionGuard], data: { permission: 'planilla.registros.ver' }},
       {
         path: 'planilla/:id/boleta/:detalleId',
         component: BoletaPagoComponent,
         title: 'Boleta',
+        canActivate: [PermissionGuard],
+        data: { permission: 'planilla.registros.ver' },
       },
-      {path: 'boletas/:id', component: VerBoletasComponent, title: 'Boletas'},
-      {path: 'configuracion-planilla', component: ConfiguracionPlanillaComponent, title: 'Configuración de planilla'},
-      {path: 'aguinaldos', component: AguinaldosComponent, title: 'Aguinaldos'},
-      {path: 'aguinaldo/detalle/:id', component: AguinaldoDetalleComponent, title: 'Aguinaldo'},
-      {path: 'prestamos', component: PrestamosComponent, title: 'Préstamos'}
+      {path: 'boletas/:id', component: VerBoletasComponent, title: 'Boletas', canActivate: [PermissionGuard], data: { permission: 'planilla.registros.ver' }},
+      {path: 'configuracion-planilla', component: ConfiguracionPlanillaComponent, title: 'Configuración de planilla', canActivate: [PermissionGuard], data: { permission: 'planilla.configuracion.ver' }},
+      {path: 'aguinaldos', component: AguinaldosComponent, title: 'Aguinaldos', canActivate: [PermissionGuard], data: { permission: 'planilla.registros.ver' }},
+      {path: 'aguinaldo/detalle/:id', component: AguinaldoDetalleComponent, title: 'Aguinaldo', canActivate: [PermissionGuard], data: { permission: 'planilla.registros.ver' }},
+      {path: 'prestamos', component: PrestamosComponent, title: 'Préstamos', canActivate: [PermissionGuard], data: { permission: 'planilla.registros.ver' }}
     ],
   },
 ];

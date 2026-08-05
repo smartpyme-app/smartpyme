@@ -5,46 +5,23 @@ use Illuminate\Support\Facades\Route;
 
 Route::group(['prefix' => 'aguinaldos', 'middleware' => ['auth:api']], function () {
     Route::controller(AguinaldosController::class)->group(function () {
-        // Listar aguinaldos
-        Route::get('/', 'index');
-        
-        // Crear aguinaldo vacío
-        Route::post('/', 'store');
-        
-        // Ver detalle de aguinaldo
-        Route::get('/{id}', 'show');
-        
-        // Actualizar fecha de cálculo
-        Route::put('/{id}/fecha-calculo', 'actualizarFechaCalculo');
-        
-        // Agregar empleado al aguinaldo
-        Route::post('/{id}/agregar-empleado', 'agregarEmpleado');
-        
-        // Procesar pago del aguinaldo
-        Route::post('/{id}/pagar', 'processPayment');
-        
-        // Exportar aguinaldo
-        Route::get('/{id}/excel', 'exportExcel');
-        Route::get('/{id}/pdf', 'exportPDF');
-        
-        // Eliminar aguinaldo
-        Route::delete('/{id}', 'destroy');
-        
-        // Obtener sugerencia de aguinaldo
-        Route::post('/sugerencia', 'obtenerSugerenciaAguinaldo');
-        
-        // Calcular preview de aguinaldo
-        Route::post('/preview', 'calcularPreview');
+        Route::get('/', 'index')->middleware('permission:planilla.registros.ver');
+        Route::post('/', 'store')->middleware('permission:planilla.registros.crear');
+        Route::get('/{id}', 'show')->middleware('permission:planilla.registros.ver');
+        Route::put('/{id}/fecha-calculo', 'actualizarFechaCalculo')->middleware('permission:planilla.registros.editar');
+        Route::post('/{id}/agregar-empleado', 'agregarEmpleado')->middleware('permission:planilla.registros.editar');
+        Route::post('/{id}/pagar', 'processPayment')->middleware('permission:planilla.registros.editar');
+        Route::get('/{id}/excel', 'exportExcel')->middleware('permission:planilla.registros.ver');
+        Route::get('/{id}/pdf', 'exportPDF')->middleware('permission:planilla.registros.ver');
+        Route::delete('/{id}', 'destroy')->middleware('permission:planilla.registros.eliminar');
+        Route::post('/sugerencia', 'obtenerSugerenciaAguinaldo')->middleware('permission:planilla.registros.ver');
+        Route::post('/preview', 'calcularPreview')->middleware('permission:planilla.registros.ver');
     });
 });
 
-// Rutas para detalles de aguinaldo
 Route::group(['prefix' => 'aguinaldo-detalles', 'middleware' => ['auth:api']], function () {
     Route::controller(AguinaldosController::class)->group(function () {
-        // Actualizar detalle (monto y recalcular)
-        Route::put('/{id}', 'actualizarEmpleado');
-        
-        // Eliminar empleado del aguinaldo
-        Route::delete('/{id}', 'eliminarEmpleado');
+        Route::put('/{id}', 'actualizarEmpleado')->middleware('permission:planilla.registros.editar');
+        Route::delete('/{id}', 'eliminarEmpleado')->middleware('permission:planilla.registros.eliminar');
     });
 });

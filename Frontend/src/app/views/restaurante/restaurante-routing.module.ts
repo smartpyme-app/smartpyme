@@ -1,6 +1,8 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { LayoutComponent } from '../../layout/layout.component';
+import { PermissionGuard } from '../../guards/permission.guard';
+import { FuncionalidadGuard } from '../../guards/funcionalidad.guard';
 import { RestauranteComponent } from './restaurante.component';
 import { CuentaMesaComponent } from './cuenta-mesa/cuenta-mesa.component';
 import { CocinaComponent } from './cocina/cocina.component';
@@ -11,6 +13,11 @@ const routes: Routes = [
     path: '',
     component: LayoutComponent,
     title: 'Restaurante',
+    canActivate: [FuncionalidadGuard, PermissionGuard],
+    data: {
+      funcionalidadSlug: 'modulo-restaurante',
+      permission: 'restaurante.ver',
+    },
     children: [
       {
         path: '',

@@ -297,7 +297,8 @@ export class ImportarExcelComponent implements OnInit, OnDestroy {
             });
     }
 
-    public downloadTemplate() {
+    public downloadTemplate(event?: Event) {
+        event?.preventDefault();
         const url = `${this.nombre.toLowerCase()}/plantilla`;
         this.apiService.download(url)
           .pipe(takeUntil(this.destroy$))

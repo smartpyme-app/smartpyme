@@ -9,51 +9,44 @@ use App\Http\Controllers\Api\Planilla\PlanillaImportController;
 use Illuminate\Support\Facades\Route;
 
 Route::group(['prefix' => 'planillas', 'middleware' => ['jwt.auth']], function () {
-    
-    // CRUD básico de planillas
     Route::controller(PlanillaController::class)->group(function () {
-        Route::get('/', 'index');
-        Route::post('/', 'store');
-        Route::post('/generate', 'store'); // Alias para compatibilidad
-        Route::get('/detalles', 'show');
-        Route::post('update/{id}', 'update');
-        Route::delete('/{id}', 'destroy');
+        Route::get('/', 'index')->middleware('permission:planilla.registros.ver');
+        Route::post('/', 'store')->middleware('permission:planilla.registros.crear');
+        Route::post('/generate', 'store')->middleware('permission:planilla.registros.crear');
+        Route::get('/detalles', 'show')->middleware('permission:planilla.registros.ver');
+        Route::post('update/{id}', 'update')->middleware('permission:planilla.registros.editar');
+        Route::delete('/{id}', 'destroy')->middleware('permission:planilla.registros.eliminar');
     });
 
-    // Gestión de detalles de planilla
     Route::controller(PlanillaDetalleController::class)->group(function () {
-        Route::post('detalles/editar/{id}', 'update');
-        Route::post('detalles/retirar/{id}', 'retirar');
-        Route::post('detalles/incluir/{id}', 'incluir');
+        Route::post('detalles/editar/{id}', 'update')->middleware('permission:planilla.registros.editar');
+        Route::post('detalles/retirar/{id}', 'retirar')->middleware('permission:planilla.registros.editar');
+        Route::post('detalles/incluir/{id}', 'incluir')->middleware('permission:planilla.registros.editar');
     });
 
-    // Aprobación y pago de planillas
     Route::controller(PlanillaAprobacionController::class)->group(function () {
-        Route::post('/aprobar/{id}', 'approve');
-        Route::post('/revertir/{id}', 'revert');
-        Route::post('{id}/pagar', 'processPayment');
+        Route::post('/aprobar/{id}', 'approve')->middleware('permission:planilla.registros.editar');
+        Route::post('/revertir/{id}', 'revert')->middleware('permission:planilla.registros.editar');
+        Route::post('{id}/pagar', 'processPayment')->middleware('permission:planilla.registros.editar');
     });
 
-    // Cálculos y recálculos
     Route::controller(PlanillaCalculoController::class)->group(function () {
-        Route::post('recalculo-renta/{id}', 'recalcularRenta');
-        Route::get('detalle-calculo-renta/{detalleId}', 'obtenerDetalleCalculoRenta');
-        Route::post('validar-calculo-renta', 'validarCalculoRenta');
+        Route::post('recalculo-renta/{id}', 'recalcularRenta')->middleware('permission:planilla.registros.editar');
+        Route::get('detalle-calculo-renta/{detalleId}', 'obtenerDetalleCalculoRenta')->middleware('permission:planilla.registros.ver');
+        Route::post('validar-calculo-renta', 'validarCalculoRenta')->middleware('permission:planilla.registros.ver');
     });
 
-    // Exportaciones
     Route::controller(PlanillaExportController::class)->group(function () {
-        Route::get('{id}/excel', 'exportExcel');
-        Route::get('{id}/pdf', 'exportPDF');
-        Route::get('{id}/boletas', 'generarBoletas');
-        Route::get('detalles/{id}/boleta', 'generarBoletaIndividual');
-        Route::get('descuentos-patronales/{id}', 'obtenerDescuentosPatronales');
-        Route::get('detalles/exportar', 'exportarDetallesPlanilla');
-        Route::get('plantilla-importacion', 'descargarPlantilla');
+        Route::get('{id}/excel', 'exportExcel')->middleware('permission:planilla.registros.ver');
+        Route::get('{id}/pdf', 'exportPDF')->middleware('permission:planilla.registros.ver');
+        Route::get('{id}/boletas', 'generarBoletas')->middleware('permission:planilla.registros.ver');
+        Route::get('detalles/{id}/boleta', 'generarBoletaIndividual')->middleware('permission:planilla.registros.ver');
+        Route::get('descuentos-patronales/{id}', 'obtenerDescuentosPatronales')->middleware('permission:planilla.registros.ver');
+        Route::get('detalles/exportar', 'exportarDetallesPlanilla')->middleware('permission:planilla.registros.ver');
+        Route::get('plantilla-importacion', 'descargarPlantilla')->middleware('permission:planilla.registros.ver');
     });
 
-    // Importaciones
     Route::controller(PlanillaImportController::class)->group(function () {
-        Route::post('/importar', 'importar');
+        Route::post('/importar', 'importar')->middleware('permission:planilla.registros.crear');
     });
 });
