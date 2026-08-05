@@ -17,6 +17,8 @@ class ServiciosPlantillaExport implements FromCollection, WithHeadings
             'precio',
             'codigo',
             'descripcion',
+            'marca',
+            'impuesto',
             'genera_comanda',
             'destino_comanda',
         ];

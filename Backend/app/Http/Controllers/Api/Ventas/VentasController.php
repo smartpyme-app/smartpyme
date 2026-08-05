@@ -45,6 +45,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Admin\Empresa;
 use App\Models\Admin\Caja;
 use App\Models\Admin\Documento;
+use App\Support\Honduras\DocumentoImpresionHn;
 use App\Models\Ventas\Clientes\Cliente;
 use App\Models\Ventas\Impuesto;
 use App\Models\Ventas\MetodoDePago;
@@ -828,11 +829,10 @@ class VentasController extends Controller
 
         $venta = Venta::where('id', $id)->with('detalles', 'empresa')->firstOrFail();
         $documento = Documento::findOrfail($venta->id_documento);
+        $empresa = Empresa::findOrfail(Auth::user()->id_empresa);
 
         if ($documento->nombre == 'Ticket' || $documento->nombre == 'Recibo') {
             $documento = Documento::findOrfail($venta->id_documento);
-
-            $empresa = Empresa::findOrfail(Auth::user()->id_empresa);
 
             if (
                 (isset($empresa->custom_empresa['configuraciones']['factura_ticket_accesorios_hn']) &&
@@ -855,17 +855,11 @@ class VentasController extends Controller
             return view('reportes.facturacion.ticket', compact('venta', 'empresa', 'documento'));
         }
 
-        if ($documento->nombre == 'Factura') {
+        if ($documento->nombre == 'Factura' || DocumentoImpresionHn::aplica($empresa, $documento)) {
             $cliente = Cliente::withoutGlobalScope('empresa')->find($venta->id_cliente);
 
-            $empresa = Empresa::findOrfail(Auth::user()->id_empresa);
-
             // Accesorios HN (716) o flag en custom_empresa
-            if (
-                (isset($empresa->custom_empresa['configuraciones']['factura_ticket_accesorios_hn']) &&
-                    $empresa->custom_empresa['configuraciones']['factura_ticket_accesorios_hn'] == true)
-                || Auth::user()->id_empresa == 716
-            ) {
+            if (DocumentoImpresionHn::usaTicketAccesorios($empresa, $documento->nombre)) {
                 $venta->load('detalles.producto');
                 $formatter = new NumeroALetras();
                 $n = explode('.', number_format((float) $venta->total, 2, '.', ''));
@@ -895,6 +889,17 @@ class VentasController extends Controller
             $centavos = $formatter->toWords($n[1]);
 
             //return response()->json($n);
+
+            // Documentos fiscales HN: plantilla de empresa o default de país, nunca la cadena de facturas.
+            $vistaHn = DocumentoImpresionHn::resolverVista($empresa, $documento);
+            if ($vistaHn !== null) {
+                $venta->loadMissing('detalles.producto', 'sucursal');
+                $centavos = DocumentoImpresionHn::centavos($venta->total);
+                $pdf = app('dompdf.wrapper')->loadView($vistaHn, compact('venta', 'empresa', 'cliente', 'dolares', 'centavos', 'documento'));
+                $pdf->setPaper('US Letter', 'portrait');
+
+                return $pdf->stream($empresa->nombre . '-documento-' . $venta->correlativo . '.pdf');
+            }
 
             if (Auth::user()->id_empresa == 38) { //38
                 $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.velo', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));

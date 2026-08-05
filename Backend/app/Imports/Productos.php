@@ -3,6 +3,7 @@
 namespace App\Imports;
 
 use App\Imports\Concerns\ParsesComandaExcelColumns;
+use App\Imports\Concerns\ParsesProductoExcelColumns;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Categorias\Categoria;
 use App\Models\Inventario\Bodega;
@@ -23,6 +24,8 @@ use JWTAuth;
 class Productos implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyRows
 {
     use ParsesComandaExcelColumns;
+    use ParsesProductoExcelColumns;
+
     private $numRows = 0;
     private $usuario;
     private $bodegas;
@@ -192,7 +195,10 @@ class Productos implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyRo
         $producto->id_subcategoria = $id_subcategoria ?? null;
         $producto->codigo = $row['codigo'];
         $producto->descripcion = $row['descripcion'];
-        $producto->marca = $row['marca'];
+        $marca = $this->parseMarcaExcelValue($row['marca'] ?? null);
+        if ($marca !== null || ! $producto->exists) {
+            $producto->marca = $marca;
+        }
         $producto->medida = $row['unidad_medida'];
         $producto->barcode = $row['codigo_de_barra'];
         $producto->enable  = true;
@@ -201,6 +207,12 @@ class Productos implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyRo
         $producto->genera_comanda = $genera;
         $producto->destino_comanda = $this->parseDestinoComanda($row['destino_comanda'] ?? null, $genera);
         $producto->save();
+
+        $this->applyImpuestoExcelToProducto(
+            $producto,
+            $row['impuesto'] ?? null,
+            (int) $this->usuario->id_empresa
+        );
 
         if (isset($id_proveedor)) {
             ProductoProveedor::create([
@@ -322,6 +334,8 @@ class Productos implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyRo
             'costo' => 'required|numeric',
             'categoria' => 'required|string',
             'proveedor_apellido' => 'required_with:proveedor_nombre',
+            'marca' => 'nullable|string',
+            'impuesto' => 'nullable',
             'genera_comanda' => 'nullable',
             'destino_comanda' => 'nullable|string',
         ];
