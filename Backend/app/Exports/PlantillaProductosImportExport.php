@@ -31,6 +31,7 @@ class PlantillaProductosImportExport implements FromArray, WithHeadings, WithTit
             'codigo',
             'descripcion',
             'marca',
+            'impuesto',
             'unidad_medida',
             'codigo_de_barra',
             'proveedor_nombre',
