@@ -9,12 +9,13 @@ import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { CategoriaCuentasComponent } from './cuentas/categoria-cuentas.component';
 import { FuncionalidadesService } from '@services/functionalities.service';
+import { LazyImageDirective } from '../../../directives/lazy-image.directive';
 
 @Component({
     selector: 'app-categorias',
     templateUrl: './categorias.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, PaginationComponent, CategoriaCuentasComponent],
+    imports: [CommonModule, RouterModule, FormsModule, PaginationComponent, CategoriaCuentasComponent, LazyImageDirective],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 
@@ -25,6 +26,11 @@ export class CategoriasComponent extends BaseCrudComponent<any> implements OnIni
     public sucursales: any = [];
     public catalogo: any = [];
     public contabilidadHabilitada: boolean = false;
+
+    public file: File | null = null;
+    public preview = false;
+    public url_img_preview = '';
+    public quitarImg = false;
 
     constructor(
         apiService: ApiService, 
@@ -128,6 +134,7 @@ export class CategoriasComponent extends BaseCrudComponent<any> implements OnIni
     // setPagination() ahora se hereda de BaseFilteredPaginatedComponent
 
     override openModal(template: TemplateRef<any>, categoria?: any) {
+        this.resetImgState();
         // Si se está editando una categoría existente, cargar las cuentas
         if (categoria?.id) {
             this.loading = true;
@@ -167,14 +174,106 @@ export class CategoriasComponent extends BaseCrudComponent<any> implements OnIni
     // Asegurar que id_empresa siempre esté presente antes de guardar
     public override async onSubmit(item?: any, isStatusChange: boolean = false): Promise<void> {
         const categoriaToSave = item || this.categoria;
-        
+
         // Asegurar que id_empresa esté presente si no existe
         if (!categoriaToSave.id_empresa) {
             categoriaToSave.id_empresa = this.apiService.auth_user()?.id_empresa;
         }
-        
-        // Llamar al método heredado
-        await super.onSubmit(categoriaToSave, isStatusChange);
+
+        if (isStatusChange || (!this.file && !this.quitarImg)) {
+            await super.onSubmit(categoriaToSave, isStatusChange);
+            return;
+        }
+
+        const formData = new FormData();
+        const keys = ['id', 'nombre', 'descripcion', 'id_empresa', 'enable', 'subcategoria', 'id_cate_padre'];
+        for (const key of keys) {
+            const val = categoriaToSave[key];
+            if (val === undefined || val === null) {
+                continue;
+            }
+            formData.append(key, val === true || val === false ? (val ? '1' : '0') : String(val));
+        }
+        if (this.file) {
+            formData.append('file', this.file);
+        }
+        if (this.quitarImg) {
+            formData.append('quitar_img', '1');
+        }
+
+        this.loading = true;
+        this.saving = true;
+        this.cdr.markForCheck();
+        try {
+            const isNew = !categoriaToSave.id;
+            const savedItem = await this.apiService.store('categoria', formData)
+                .pipe(this.untilDestroyed())
+                .toPromise();
+            (this as any).categoria = savedItem;
+            if (isNew) {
+                this.addItemToList(savedItem);
+            } else {
+                this.updateItemInList(savedItem);
+            }
+            this.alertService.success(
+                isNew ? 'Categoria creada' : 'Categoria guardada',
+                isNew ? 'La categoria fue añadida exitosamente.' : 'La categoria fue guardada exitosamente.'
+            );
+            this.resetImgState();
+            if (this.modalRef) {
+                this.closeModal();
+            }
+            this.filtrarCategorias();
+        } catch (error: any) {
+            this.alertService.error(error);
+        } finally {
+            this.loading = false;
+            this.saving = false;
+            this.cdr.markForCheck();
+        }
+    }
+
+    setFile(event: any): void {
+        const chosen = event?.target?.files?.[0];
+        if (!chosen) {
+            return;
+        }
+        if (chosen.size > 2 * 1024 * 1024) {
+            this.alertService.warning('Archivo grande', 'La imagen no debe superar 2 MB.');
+            event.target.value = '';
+            return;
+        }
+        this.file = chosen;
+        this.quitarImg = false;
+        const reader = new FileReader();
+        reader.onload = () => {
+            this.url_img_preview = String(reader.result || '');
+            this.preview = true;
+            this.cdr.markForCheck();
+        };
+        reader.readAsDataURL(chosen);
+        this.cdr.markForCheck();
+    }
+
+    quitarImagen(): void {
+        this.file = null;
+        this.preview = false;
+        this.url_img_preview = '';
+        this.quitarImg = true;
+        this.categoria = { ...this.categoria, img: null };
+        this.cdr.markForCheck();
+    }
+
+    imgSrc(img?: string | null): string {
+        const path = String(img || '').replace(/^\//, '');
+        return `${this.apiService.baseUrl}/img/${path}`;
+    }
+
+    private resetImgState(): void {
+        this.file = null;
+        this.preview = false;
+        this.url_img_preview = '';
+        this.quitarImg = false;
     }
 
     public verificarSiExiste() {

@@ -24,6 +24,9 @@ class StoreCategoriaRequest extends FormRequest
             'nombre' => ['required', 'string', 'max:255'],
             'descripcion' => ['nullable', 'string', 'max:255'],
             'id_empresa' => ['required', 'integer', 'exists:empresas,id'],
+            'enable' => ['nullable'],
+            'file' => ['nullable', 'file', 'image', 'max:2048'],
+            'quitar_img' => ['nullable'],
         ];
     }
 

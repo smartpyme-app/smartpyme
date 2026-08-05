@@ -13,6 +13,7 @@ use App\Models\Admin\EmpresaFuncionalidad;
 use App\Exports\CategoriasExport;
 use App\Imports\Categorias;
 use Illuminate\Support\Facades\Log;
+use Intervention\Image\ImageManagerStatic as Image;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Http\Requests\Inventario\Categorias\StoreCategoriaRequest;
 use App\Http\Requests\Inventario\Categorias\ImportCategoriasRequest;
@@ -116,19 +117,56 @@ class CategoriasController extends Controller
 
     public function store(StoreCategoriaRequest $request)
     {
-
-        if($request->id)
+        if ($request->id) {
             $categoria = Categoria::findOrFail($request->id);
-        else
+        } else {
             $categoria = new Categoria;
+        }
 
-//        dd($request);
+        $categoria->fill($request->except(['file', 'quitar_img']));
 
-        $categoria->fill($request->all());
+        if ($request->boolean('quitar_img')) {
+            $this->deleteCategoriaImgFile($categoria->img);
+            $categoria->img = null;
+        } elseif ($request->hasFile('file')) {
+            $categoria->img = $this->handleCategoriaImgUpload($request, $categoria);
+        }
+
         $categoria->save();
 
         return Response()->json($categoria, 200);
+    }
 
+    private function handleCategoriaImgUpload(Request $request, Categoria $categoria): string
+    {
+        $this->deleteCategoriaImgFile($categoria->img);
+
+        $file = $request->file('file');
+        $resize = Image::make($file)->resize(750, 750, function ($constraint) {
+            $constraint->aspectRatio();
+            $constraint->upsize();
+        })->encode('jpg', 75);
+        $hash = md5($resize->__toString());
+        $relative = "categorias/{$hash}.jpg";
+        $dir = public_path('img/categorias');
+        if (! is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+        $resize->save(public_path('img/' . $relative), 50);
+
+        return $relative;
+    }
+
+    private function deleteCategoriaImgFile(?string $img): void
+    {
+        $path = ltrim((string) $img, '/');
+        if ($path === '' || str_ends_with($path, 'default.jpg') || str_ends_with($path, 'default.png')) {
+            return;
+        }
+        $full = public_path('img/' . $path);
+        if (is_file($full)) {
+            @unlink($full);
+        }
     }
 
     public function delete($id)
