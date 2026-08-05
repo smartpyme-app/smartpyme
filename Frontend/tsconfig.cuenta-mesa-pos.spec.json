@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./out-tsc/spec",
+    "types": ["jasmine"]
+  },
+  "include": [
+    "src/app/views/restaurante/cuenta-mesa/pos/pos-menu-nav.spec.ts",
+    "src/app/views/restaurante/cuenta-mesa/pos/pos-menu-nav.ts",
+    "src/app/views/restaurante/cuenta-mesa/pos/pos-division.spec.ts",
+    "src/app/views/restaurante/cuenta-mesa/pos/pos-division.ts",
+    "src/**/*.d.ts"
+  ]
+}

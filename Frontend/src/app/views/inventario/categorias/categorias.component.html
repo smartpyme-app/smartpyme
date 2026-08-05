@@ -119,6 +119,31 @@
     <form autocomplete="off" (ngSubmit)="onSubmit()">
         <app-notificaciones-container></app-notificaciones-container>
         <div class="row mb-3">
+            <div class="col-12 text-center mb-3">
+                <figure class="img-thumbnail file-upload d-inline-flex justify-content-center align-items-center mb-2"
+                    style="min-height: 120px; min-width: 120px; cursor: pointer;" title="Agregar o cambiar imagen">
+                    @if (!categoria?.img && !preview) {
+                        <i class="fa fa-image fa-2x text-muted"></i>
+                    }
+                    @if (categoria?.img && !preview) {
+                        <img [appLazyImage]="imgSrc(categoria.img)" height="100" alt="Categoría">
+                    }
+                    @if (url_img_preview && preview) {
+                        <img [src]="url_img_preview" height="100" alt="Vista previa">
+                    }
+                    <input type="file" name="img" (change)="setFile($event)" accept="image/png, image/jpeg, image/jpg">
+                </figure>
+                <div class="d-flex justify-content-center gap-2">
+                    <label class="btn btn-sm btn-outline-primary mb-0 file-upload">
+                        {{ categoria?.img || preview ? 'Cambiar imagen' : 'Agregar imagen' }}
+                        <input type="file" (change)="setFile($event)" accept="image/png, image/jpeg, image/jpg" hidden>
+                    </label>
+                    @if (categoria?.img || preview) {
+                        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="quitarImagen()">Quitar</button>
+                    }
+                </div>
+                <small class="text-muted d-block mt-1">JPG o PNG, máx. 2 MB. Se muestra en el POS de restaurante.</small>
+            </div>
             <div class="form-group col-lg-8">
                 <label for="categoria.nombre">Nombre</label>
                 <input type="text" class="form-control" (change)="verificarSiExiste()" [(ngModel)]="categoria.nombre" name="categoria.nombre" focus="true">

@@ -23,13 +23,6 @@ export class CuentaMesaComponent implements OnInit {
   editNotas = '';
 
   mostrarModalCuenta = false;
-  modoCuenta: 'completo' | 'dividir' = 'completo';
-  tipoDivision: 'equitativa' | 'por_items' = 'equitativa';
-  numPagadores = 2;
-  /** orden_detalle_id → número de persona → cantidad a cargar en esa pre-cuenta */
-  cantidadesPagadorPorItem: Record<number, Record<number, number>> = {};
-  /** Último N de comensales usado al armar la grilla (evita reinicios al teclear). */
-  private ultimaMatrizNumPagadores = 0;
 
   mostrarModalEliminar = false;
   itemEliminar: any = null;
@@ -42,6 +35,9 @@ export class CuentaMesaComponent implements OnInit {
   mesaTrasladoDestinoId: number | null = null;
   itemsTrasladoIds: number[] = [];
   trasladando = false;
+
+  productoSheet: any = null;
+  mostrarSheetAgregar = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -145,15 +141,22 @@ export class CuentaMesaComponent implements OnInit {
     });
   }
 
-  onProductoSelect(producto: any): void {
-    this.restauranteService.agregarItem(this.sesionId, {
-      producto_id: producto.id,
-      cantidad: 1,
-      notas: ''
-    }).subscribe({
+  onProductoCatalogo(producto: any): void {
+    this.productoSheet = producto;
+    this.mostrarSheetAgregar = true;
+  }
+
+  onCancelarSheetAgregar(): void {
+    this.mostrarSheetAgregar = false;
+    this.productoSheet = null;
+  }
+
+  onConfirmarAgregar(payload: { producto_id: number; cantidad: number; notas: string }): void {
+    this.restauranteService.agregarItem(this.sesionId, payload).subscribe({
       next: () => {
+        this.mostrarSheetAgregar = false;
+        this.productoSheet = null;
         this.cargarSesion();
-        this.alertService.success('Producto agregado', `${producto.nombre} añadido a la orden.`);
       },
       error: (err) => this.alertService.error(err)
     });
@@ -384,139 +387,26 @@ export class CuentaMesaComponent implements OnInit {
       return;
     }
     this.mostrarModalCuenta = true;
-    this.modoCuenta = 'completo';
-    this.tipoDivision = 'equitativa';
-    this.numPagadores = Math.min(20, Math.max(2, Number(this.sesion?.num_comensales) || 2));
-    this.initMatrizDivisionPorItems();
-  }
-
-  private roundQty(x: number): number {
-    return Math.round(x * 100) / 100;
-  }
-
-  private initMatrizDivisionPorItems(): void {
-    this.cantidadesPagadorPorItem = {};
-    const items = this.sesion?.orden_detalle || [];
-    let n = Math.floor(Number(this.numPagadores));
-    if (!Number.isFinite(n) || n < 2) {
-      n = 2;
-    }
-    if (n > 20) {
-      n = 20;
-    }
-    this.numPagadores = n;
-    this.ultimaMatrizNumPagadores = n;
-    items.forEach((i: any) => {
-      const id = Number(i.id);
-      this.cantidadesPagadorPorItem[id] = {};
-      for (let p = 1; p <= n; p++) {
-        this.cantidadesPagadorPorItem[id][p] = p === 1 ? this.roundQty(Number(i.cantidad)) : 0;
-      }
-    });
-  }
-
-  onNumPagadoresCuentaBlur(): void {
-    let v = Math.floor(Number(this.numPagadores));
-    if (!Number.isFinite(v) || v < 2) {
-      v = 2;
-    }
-    if (v > 20) {
-      v = 20;
-    }
-    this.numPagadores = v;
-    if (this.mostrarModalCuenta && this.modoCuenta === 'dividir' && this.tipoDivision === 'por_items' && v !== this.ultimaMatrizNumPagadores) {
-      this.initMatrizDivisionPorItems();
-    }
-  }
-
-  onNumPagadoresModelChange(): void {
-    const v = Math.floor(Number(this.numPagadores));
-    if (!Number.isFinite(v) || v < 2 || v > 20) {
-      return;
-    }
-    if (this.mostrarModalCuenta && this.modoCuenta === 'dividir' && this.tipoDivision === 'por_items' && v !== this.ultimaMatrizNumPagadores) {
-      this.initMatrizDivisionPorItems();
-    }
-  }
-
-  onModoCuentaChange(): void {
-    if (this.modoCuenta === 'dividir' && this.tipoDivision === 'por_items') {
-      this.initMatrizDivisionPorItems();
-    }
-  }
-
-  onTipoDivisionCuentaChange(): void {
-    if (this.tipoDivision === 'por_items') {
-      this.initMatrizDivisionPorItems();
-    }
-  }
-
-  private validarMatrizDivisionPorItems(): boolean {
-    const items = this.sesion?.orden_detalle || [];
-    const n = Math.min(20, Math.max(2, Math.floor(Number(this.numPagadores)) || 2));
-    for (const item of items) {
-      let sum = 0;
-      const row = this.cantidadesPagadorPorItem[Number(item.id)] || {};
-      for (let p = 1; p <= n; p++) {
-        sum += Number(row[p] || 0);
-      }
-      const tot = this.roundQty(Number(item.cantidad));
-      sum = Math.round(sum * 100) / 100;
-      if (Math.abs(sum - tot) > 0.02) {
-        this.alertService.warning(
-          'Cantidades',
-          `«${item.producto?.nombre || 'Producto'}»: reparta ${tot} unidades entre las personas (suma actual: ${sum}).`
-        );
-        return false;
-      }
-    }
-    return true;
   }
 
   cerrarModalCuenta(): void {
+    if (this.solicitandoCuenta) return;
     this.mostrarModalCuenta = false;
   }
 
-  confirmarSolicitarCuenta(): void {
-    const body: Record<string, unknown> = {};
-    const nPag = Math.min(20, Math.max(2, Math.floor(Number(this.numPagadores)) || 2));
-
-    if (this.modoCuenta === 'dividir') {
-      if (this.tipoDivision === 'por_items' && !this.validarMatrizDivisionPorItems()) {
-        return;
-      }
-      const dividir: Record<string, unknown> = {
-        tipo: this.tipoDivision,
-        num_pagadores: nPag
-      };
-      if (this.tipoDivision === 'por_items') {
-        const asignaciones: { orden_detalle_id: number; pagador_index: number; cantidad: number }[] = [];
-        for (const item of this.sesion?.orden_detalle || []) {
-          const row = this.cantidadesPagadorPorItem[Number(item.id)] || {};
-          for (let p = 1; p <= nPag; p++) {
-            const q = Math.round(Number(row[p] || 0) * 10000) / 10000;
-            if (q > 0) {
-              asignaciones.push({ orden_detalle_id: Number(item.id), pagador_index: p, cantidad: q });
-            }
-          }
-        }
-        dividir['asignaciones'] = asignaciones;
-      }
-      body['dividir'] = dividir;
-    }
-
+  confirmarSolicitarCuenta(payload: { body: Record<string, unknown>; modoCuenta: 'completo' | 'dividir'; numPagadores: number }): void {
     this.solicitandoCuenta = true;
-    this.restauranteService.solicitarCuenta(this.sesionId, body).subscribe({
+    this.restauranteService.solicitarCuenta(this.sesionId, payload.body).subscribe({
       next: (res) => {
         this.solicitandoCuenta = false;
         this.cerrarModalCuenta();
         this.cargarSesion();
         const esArreglo = Array.isArray(res);
-        if (this.modoCuenta === 'completo' && !esArreglo && res?.id != null) {
+        if (payload.modoCuenta === 'completo' && !esArreglo && res?.id != null) {
           this.alertService.success('Pre-cuenta generada', 'Puede imprimirla desde la lista.');
           this.imprimirPreCuenta(Number(res.id));
-        } else if (this.modoCuenta === 'dividir') {
-          this.alertService.success('Cuenta dividida', `Se generaron ${nPag} pre-cuentas.`);
+        } else if (payload.modoCuenta === 'dividir') {
+          this.alertService.success('Cuenta dividida', `Se generaron ${payload.numPagadores} pre-cuentas.`);
         }
       },
       error: (err) => {
@@ -570,10 +460,6 @@ export class CuentaMesaComponent implements OnInit {
 
   get preCuentas(): any[] {
     return this.sesion?.pre_cuentas ?? this.sesion?.preCuentas ?? [];
-  }
-
-  get opcionesPagadores(): number[] {
-    return Array.from({ length: Math.min(20, Math.max(2, this.numPagadores)) }, (_, i) => i + 1);
   }
 
   subtotal(): number {

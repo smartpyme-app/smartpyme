@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\Restaurante\MesaController;
+use App\Http\Controllers\Api\Restaurante\PosMenuController;
 use App\Http\Controllers\Api\Restaurante\SesionMesaController;
 use App\Http\Controllers\Api\Restaurante\OrdenDetalleController;
 use App\Http\Controllers\Api\Restaurante\ComandaController;
@@ -18,6 +19,12 @@ Route::prefix('restaurante')
         Route::post('/mesas', [MesaController::class, 'store']);
         Route::get('/mesas/{id}', [MesaController::class, 'show']);
         Route::put('/mesas/{id}', [MesaController::class, 'update']);
+
+        // Catálogo táctil (POS Menu)
+        Route::get('/pos-menu/categorias', [PosMenuController::class, 'categorias']);
+        Route::get('/pos-menu/categorias/{id}/contenido', [PosMenuController::class, 'contenidoCategoria']);
+        Route::get('/pos-menu/subcategorias/{id}/productos', [PosMenuController::class, 'productosSubcategoria']);
+        Route::get('/pos-menu/buscar', [PosMenuController::class, 'buscar']);
 
         // Zonas
         Route::get('/zonas', [ZonaRestauranteController::class, 'index']);

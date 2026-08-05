@@ -1,44 +1,54 @@
 /* Estilos cuenta mesa */
-.solicitar-cuenta-opciones {
+
+/* Layout A: catálogo (~60%) a la izquierda, orden fija a la derecha; apilado en móvil. */
+.pos-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr);
+  gap: 1rem;
+  min-height: calc(100vh - 120px);
+  align-items: stretch;
+}
+.pos-orden {
+  position: sticky;
+  top: 0.5rem;
+  max-height: calc(100vh - 100px);
+  overflow: auto;
+}
+.pos-catalog {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  min-height: 0;
 }
-.solicitar-cuenta-opcion {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  border: 1px solid #dee2e6;
-  border-radius: 8px;
-  cursor: pointer;
-  background: #fff;
-}
-.solicitar-cuenta-opcion:hover {
-  background: #f8f9fa;
-  border-color: #0d6efd;
-}
-.solicitar-cuenta-opcion input {
-  flex-shrink: 0;
-  width: 18px;
-  height: 18px;
-  margin: 0;
-}
-.solicitar-cuenta-opcion .opcion-texto {
+.pos-catalogo-card {
   flex: 1;
-  font-size: 15px;
-  line-height: 1.4;
-  color: #212529;
+  min-height: 420px;
+  display: flex;
+  flex-direction: column;
 }
-.solicitar-cuenta-opcion.opcion-seleccionada {
-  border-color: #0d6efd;
-  background: #e7f1ff;
+.pos-catalogo-card .card-body {
+  min-height: 0;
 }
-.solicitar-cuenta-opcion.opcion-seleccionada .opcion-texto {
-  font-weight: 500;
-}
-.solicitar-cuenta-dividir {
-  padding: 16px;
-  background: #f8f9fa;
-  border-radius: 8px;
+@media (max-width: 767.98px) {
+  .pos-shell {
+    grid-template-columns: 1fr;
+  }
+  .pos-orden {
+    position: static;
+    max-height: none;
+  }
+  .pos-catalogo-card {
+    min-height: 280px;
+  }
+  .pos-orden-acciones {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    background: #fff;
+    padding: 0.75rem 0 0.25rem;
+    margin-top: 0.5rem;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
+  }
+  .pos-orden-acciones .btn-lg {
+    min-height: 48px;
+  }
 }

@@ -35,6 +35,8 @@ class PlantillaProductosImportExport implements FromArray, WithHeadings, WithTit
             'codigo_de_barra',
             'proveedor_nombre',
             'proveedor_apellido',
+            'genera_comanda',
+            'destino_comanda',
         ];
 
         $bodegas = Bodega::where('id_empresa', $user->id_empresa)
