@@ -14,6 +14,7 @@ use App\Models\Ventas\Clientes\Cliente;
 use App\Models\Ventas\Detalle;
 use App\Models\Ventas\Venta;
 use App\Services\Paquetes\PaqueteExternalImportService;
+use App\Support\Admin\ImpuestosDefaultPorPais;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -431,7 +432,7 @@ class VentaExternalService
 
         $precioConIva = isset($line['precio']) ? (float) $line['precio'] : (float) $producto->precio;
         $descuento = round((float) ($line['descuento'] ?? 0), 2);
-        $pct = (float) ($line['porcentaje_impuesto'] ?? $producto->porcentaje_impuesto ?? $empresa->iva ?? 13);
+        $pct = (float) ($line['porcentaje_impuesto'] ?? $producto->porcentaje_impuesto ?? ImpuestosDefaultPorPais::ivaFallback($empresa));
 
         $totalConIva = round(($precioConIva * $cantidad) - $descuento, 2);
         if ($totalConIva < 0) {

@@ -4,10 +4,31 @@ namespace Tests\Unit\Support\Admin;
 
 use App\Models\Admin\Empresa;
 use App\Support\Admin\DocumentosDefaultPorPais;
-use Tests\TestCase;
+use PHPUnit\Framework\TestCase;
 
-final class DocumentosDefaultPorPaisTest extends TestCase
+/**
+ * Check mínimo: plantillas SV/CR/HN y seed de alta empresa.
+ */
+class DocumentosDefaultPorPaisTest extends TestCase
 {
+    public function test_plantillas_sv_cr_hn(): void
+    {
+        $sv = DocumentosDefaultPorPais::plantilla('SV');
+        $cr = DocumentosDefaultPorPais::plantilla('CR');
+        $hn = DocumentosDefaultPorPais::plantilla('HN');
+
+        $this->assertNotEquals($sv['nombres'], $cr['nombres']);
+        $this->assertNotEquals($sv['nombres'], $hn['nombres']);
+        $this->assertContains(DocumentosDefaultPorPais::CR_FACTURA, $cr['nombres']);
+        $this->assertContains('Crédito fiscal', $sv['nombres']);
+        $this->assertContains('Factura sin RTN', $hn['nombres']);
+        $this->assertContains('Factura con RTN', $hn['nombres']);
+        $this->assertNotContains('Crédito fiscal', $hn['nombres']);
+        $this->assertEmpty(array_diff($sv['seed'], $sv['nombres']));
+        $this->assertEmpty(array_diff($cr['seed'], $cr['nombres']));
+        $this->assertEmpty(array_diff($hn['seed'], $hn['nombres']));
+    }
+
     public function test_defaults_honduras_sin_credito_fiscal(): void
     {
         $empresa = new Empresa();

@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Admin\Documento;
+use App\Models\Admin\Empresa;
+use App\Services\FacturacionElectronica\FacturacionElectronicaCountryResolver;
+use App\Support\Admin\DocumentosDefaultPorPais;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -58,6 +61,25 @@ class DocumentosController extends Controller
             ->orderBy('d1.nombre')
             ->get();
         return Response()->json($documentos, 200);
+    }
+
+    /**
+     * Catálogo de nombres para el select (pais_configuracion / plantilla por país).
+     */
+    public function nombresOpciones(Request $request)
+    {
+        $empresa = Auth::user()->empresa ?? Empresa::find(Auth::user()->id_empresa);
+        $pais = $request->query('pais')
+            ?: FacturacionElectronicaCountryResolver::resolveCodigoPaisFe($empresa);
+
+        $nombres = DocumentosDefaultPorPais::opciones($pais);
+
+        return response()->json([
+            'pais' => strtoupper((string) $pais),
+            'opciones' => array_map(static function (string $nombre) {
+                return ['value' => $nombre, 'label' => $nombre];
+            }, $nombres),
+        ], 200);
     }
 
 

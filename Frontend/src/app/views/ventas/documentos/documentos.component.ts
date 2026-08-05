@@ -42,8 +42,13 @@ export class DocumentosComponent extends BaseCrudComponent<any> implements OnIni
 
     readonly numeroEmisionOpciones = NUMERO_EMISION_OPCIONES_HN;
 
+    /** Opciones del select; API pais_configuracion con fallback local. */
+    private opcionesNombre: DocumentoNombreOption[] = [];
+
     opcionesNombreDocumento(): DocumentoNombreOption[] {
-        return documentoNombreOpciones(this.apiService.auth_user()?.empresa);
+        return this.opcionesNombre.length
+            ? this.opcionesNombre
+            : documentoNombreOpciones(this.apiService.auth_user()?.empresa);
     }
 
     get esHonduras(): boolean {
@@ -96,7 +101,23 @@ export class DocumentosComponent extends BaseCrudComponent<any> implements OnIni
     }
 
     ngOnInit() {
+        this.cargarOpcionesNombre();
         this.loadAll();
+    }
+
+    private cargarOpcionesNombre(): void {
+        this.opcionesNombre = documentoNombreOpciones(this.apiService.auth_user()?.empresa);
+        this.apiService.getAll('documentos/nombres-opciones').pipe(this.untilDestroyed()).subscribe({
+            next: (res: { opciones?: DocumentoNombreOption[] }) => {
+                if (Array.isArray(res?.opciones) && res.opciones.length) {
+                    this.opcionesNombre = res.opciones;
+                    this.cdr.markForCheck();
+                }
+            },
+            error: () => {
+                // ponytail: fallback ya cargado desde TS
+            },
+        });
     }
 
     public override async loadAll(): Promise<void> {

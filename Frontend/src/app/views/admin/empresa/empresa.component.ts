@@ -26,6 +26,10 @@ import { forkJoin } from 'rxjs';
 import { map, distinctUntilChanged, finalize } from 'rxjs/operators';
 import { TranslatePipe } from '@ngx-translate/core';
 import { SharedModule } from '@shared/shared.module';
+import {
+    aplicarImpuestosDefaultsAEmpresa,
+    codigoPaisDesdeNombre,
+} from './impuestos-default-por-pais';
 
 @Component({
     selector: 'app-empresa',
@@ -339,54 +343,8 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
     }
 
     setPais() {
-        // Mapeo de países a códigos ISO
-        const mapeoCodigosPais: { [key: string]: string } = {
-            'El Salvador': 'SV',
-            'Belice': 'BZ',
-            'Guatemala': 'GT',
-            'Honduras': 'HN',
-            'Nicaragua': 'NI',
-            'Costa Rica': 'CR',
-            'Panamá': 'PA',
-            'México': 'MX'
-        };
-
-        // Establecer el código de país
-        this.empresa.cod_pais = mapeoCodigosPais[this.empresa.pais] || null;
-
-        // Configurar moneda e IVA según el país
-        if (this.empresa.pais == 'El Salvador') {
-            this.empresa.moneda = 'USD';
-            this.empresa.iva = 13;
-        }
-        if (this.empresa.pais == 'Belice') {
-            this.empresa.moneda = 'BZD';
-            this.empresa.iva = 12.5;
-        }
-        if (this.empresa.pais == 'Guatemala') {
-            this.empresa.moneda = 'GTQ';
-            this.empresa.iva = 12;
-        }
-        if (this.empresa.pais == 'Honduras') {
-            this.empresa.moneda = 'HNL';
-            this.empresa.iva = 15;
-        }
-        if (this.empresa.pais == 'Nicaragua') {
-            this.empresa.moneda = 'NIO';
-            this.empresa.iva = 15;
-        }
-        if (this.empresa.pais == 'Costa Rica') {
-            this.empresa.moneda = 'CRC';
-            this.empresa.iva = 13;
-        }
-        if (this.empresa.pais == 'Panamá') {
-            this.empresa.moneda = 'PAB';
-            this.empresa.iva = 7;
-        }
-        if (this.empresa.pais == 'México') {
-            this.empresa.moneda = 'MXN';
-            this.empresa.iva = 16;
-        }
+        this.empresa.cod_pais = codigoPaisDesdeNombre(this.empresa.pais);
+        aplicarImpuestosDefaultsAEmpresa(this.empresa, { nombrePais: this.empresa.pais });
 
         // Limpiar códigos de ubicación cuando se cambia de país
         this.empresa.cod_departamento = " ";

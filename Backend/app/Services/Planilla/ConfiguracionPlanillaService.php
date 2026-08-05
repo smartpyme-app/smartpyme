@@ -3,10 +3,10 @@
 namespace App\Services\Planilla;
 
 use App\Constants\PlanillaConstants;
-use App\Models\EmpresaConfiguracionPlanilla;
 use App\Helpers\IsssHelper;
 use App\Helpers\RentaHelper;
 use App\Models\Admin\Empresa;
+use App\Services\Admin\EmpresaConfiguracionService;
 use Illuminate\Support\Facades\Log;
 
 class ConfiguracionPlanillaService
@@ -142,7 +142,12 @@ class ConfiguracionPlanillaService
 
     private function calcularConceptosConConfiguracion(array $datosEmpleado, $empresaId, string $tipoPlanilla)
     {
-        $configEmpresa = EmpresaConfiguracionPlanilla::obtenerOCrearConfiguracion($empresaId);
+        $configEmpresa = app(EmpresaConfiguracionService::class)->getPlanilla($empresaId);
+        if (!$configEmpresa) {
+            throw new \RuntimeException(
+                'No hay configuración de planilla. Use Importar Base antes de calcular.'
+            );
+        }
         $conceptos = $configEmpresa->getConceptos();
         
         $salarioDevengado = $datosEmpleado['salario_devengado'];
@@ -491,10 +496,10 @@ class ConfiguracionPlanillaService
     public function validarConfiguracion($empresaId)
     {
         try {
-            $configuracion = EmpresaConfiguracionPlanilla::obtenerConfiguracion($empresaId);
-            
+            $configuracion = app(EmpresaConfiguracionService::class)->getPlanilla($empresaId);
+
             if (!$configuracion) {
-                return ['valida' => false, 'mensaje' => 'No existe configuración para la empresa'];
+                return ['valida' => false, 'mensaje' => 'No existe configuración para la empresa. Use Importar Base.'];
             }
 
             $configuracion->validarConfiguracion();

@@ -182,6 +182,11 @@
                                     <img src="/assets/icons/pie-chart.png" class="icon me-2">Dashboards
                                 </a>
                             </li>
+                            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+                                <a [routerLink]="['/admin/pais-configuracion']" tooltip="Configuración por país" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                                    <img src="/assets/icons/settings.png" class="icon me-2">Config. por país
+                                </a>
+                            </li>
                         </ul>
                     </div>
                 </li>

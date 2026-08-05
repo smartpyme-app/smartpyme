@@ -29,8 +29,6 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\Auth;
-use App\Models\EmpresaConfiguracionPlanilla;
-use App\Services\Planilla\PlanillaTemplatesService;
 use App\Http\Requests\Admin\Empresas\StoreEmpresaRequest;
 use App\Http\Requests\Admin\Empresas\UpdatePagoRecurrenteRequest;
 use App\Http\Requests\Admin\Empresas\UpdateCustomConfigRequest;
@@ -410,22 +408,12 @@ class EmpresasController extends Controller
         $this->createPlanillaConfiguration($empresa);
     }
 
+    /**
+     * ponytail: ya no auto-crea planilla; el usuario usa Importar Base.
+     */
     private function createPlanillaConfiguration($empresa)
     {
-        try {
-            $codPais = $this->mapearCodigoPais($empresa->pais ?? 'El Salvador');
-
-            EmpresaConfiguracionPlanilla::create([
-                'empresa_id' => $empresa->id,
-                'cod_pais' => $codPais,
-                'configuracion' => PlanillaTemplatesService::getConfiguracionPorPais($codPais),
-                'activo' => true,
-                'fecha_vigencia_desde' => now(),
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error("Error creando configuración: {$e->getMessage()}");
-        }
+        // no-op
     }
 
     private function mapearCodigoPais($nombrePais)
