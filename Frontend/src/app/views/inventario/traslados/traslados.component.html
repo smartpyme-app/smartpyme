@@ -68,8 +68,8 @@
                 <option value="Cancelado">Cancelado</option>
             </select>
             <select name="id_bodega_de" (change)="filtrarTraslados()" [(ngModel)]="filtros.id_bodega_de" class="form-select bg-default select-width">
-                <option value="">Sucursal</option>
-                <option [value]="sucursal.id" *ngFor="let sucursal of sucursales">{{ sucursal.nombre }}</option>
+                <option value="">Bodega</option>
+                <option [value]="bodega.id" *ngFor="let bodega of bodegas">{{ bodega.nombre }}</option>
             </select>
         </div>
     </div>
@@ -299,20 +299,20 @@
                 </select>
             </div>
             <div class="form-group col-lg-6">
-                <label for="">Sucursal de:</label>
+                <label for="">Bodega de:</label>
                 <select [(ngModel)]="filtros.id_bodega_de" class="form-select" name="filtros.id_bodega_de">
                     <option value="">Todos</option>
-                    <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
-                        {{ sucursal.nombre }}
+                    <option *ngFor="let bodega of bodegas" [value]="bodega.id">
+                        {{ bodega.nombre }}
                     </option>
                 </select>
             </div>
             <div class="form-group col-lg-6">
-                <label for="">Sucursal para:</label>
+                <label for="">Bodega para:</label>
                 <select [(ngModel)]="filtros.id_bodega_para" class="form-select" name="filtros.id_bodega_para">
                     <option value="">Todos</option>
-                    <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
-                        {{ sucursal.nombre }}
+                    <option *ngFor="let bodega of bodegas" [value]="bodega.id">
+                        {{ bodega.nombre }}
                     </option>
                 </select>
             </div>

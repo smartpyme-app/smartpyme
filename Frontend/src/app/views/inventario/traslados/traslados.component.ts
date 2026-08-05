@@ -20,7 +20,7 @@ export class TrasladosComponent implements OnInit {
 
     public filtros:any = {};
     public productos:any = [];
-    public sucursales:any = [];
+    public bodegas:any = [];
     public conceptos:any = [];
     public producto:any = {};
     public productoFiltro:any = {};
@@ -63,8 +63,8 @@ export class TrasladosComponent implements OnInit {
             this.filtrarTraslados();
         });
 
-        this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
-            this.sucursales = sucursales;
+        this.apiService.getAll('bodegas/list').subscribe(bodegas => { 
+            this.bodegas = bodegas;
         }, error => {this.alertService.error(error); });
     }
 
