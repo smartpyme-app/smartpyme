@@ -32,6 +32,21 @@ export function asignarUnidades(
   return next;
 }
 
+/**
+ * Deja la línea entera en manos de una sola persona. Limpia la fila antes de
+ * asignar: si no, el tope `maxLinea` la recorta contra lo que ya tenía otra
+ * persona y la línea queda en cero (había que tocar dos veces).
+ */
+export function asignarExclusivo(
+  matriz: Record<number, Record<number, number>>,
+  ordenDetalleId: number,
+  persona: number,
+  cantidad: number,
+  maxLinea: number
+): Record<number, Record<number, number>> {
+  return asignarUnidades({ ...matriz, [ordenDetalleId]: {} }, ordenDetalleId, persona, cantidad, maxLinea);
+}
+
 export function lineaCompleta(
   matriz: Record<number, Record<number, number>>,
   ordenDetalleId: number,

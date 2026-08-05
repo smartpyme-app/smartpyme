@@ -1,8 +1,10 @@
 import {
+  asignarExclusivo,
   asignarUnidades,
   lineaCompleta,
   matrizValida,
-  buildAsignaciones
+  buildAsignaciones,
+  sumaPersonaLinea
 } from './pos-division';
 
 describe('pos-division', () => {
@@ -23,5 +25,23 @@ describe('pos-division', () => {
     m = asignarUnidades(m, 10, 2, 1, 1);
     expect(lineaCompleta(m, 10, 1, 2)).toBe(true);
     expect(m[10][2]).toBe(0);
+  });
+
+  it('reasigna una línea de 1 unidad con un solo toque', () => {
+    let m = asignarExclusivo({}, 10, 1, 1, 1);
+    expect(m[10][1]).toBe(1);
+
+    m = asignarExclusivo(m, 10, 2, 1, 1);
+    expect(m[10][2]).toBe(1);
+    expect(Number(m[10][1] || 0)).toBe(0);
+    expect(sumaPersonaLinea(m, 10, 2)).toBe(1);
+    expect(lineaCompleta(m, 10, 1, 2)).toBe(true);
+  });
+
+  it('no toca las demás líneas al reasignar', () => {
+    let m = asignarUnidades({}, 11, 1, 2, 2);
+    m = asignarExclusivo(m, 10, 1, 1, 1);
+    m = asignarExclusivo(m, 10, 2, 1, 1);
+    expect(m[11][1]).toBe(2);
   });
 });

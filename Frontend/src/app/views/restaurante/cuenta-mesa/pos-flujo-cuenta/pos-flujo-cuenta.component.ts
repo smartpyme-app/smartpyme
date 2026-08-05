@@ -2,6 +2,7 @@ import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from
 
 import { AlertService } from '@services/alert.service';
 import {
+  asignarExclusivo,
   asignarUnidades,
   buildAsignaciones,
   lineaCompleta,
@@ -81,8 +82,13 @@ export class PosFlujoCuentaComponent implements OnChanges {
   }
 
   onNumPagadoresChange(delta = 0): void {
-    this.numPagadores = this.clampPagadores(Number(this.numPagadores) + delta);
-    this.resetMatrizPorItems();
+    const actual = Number(this.numPagadores);
+    const siguiente = this.clampPagadores(actual + delta);
+    this.numPagadores = siguiente;
+    // El blur del input no debe borrar el reparto si el valor no cambió.
+    if (siguiente !== actual) {
+      this.resetMatrizPorItems();
+    }
   }
 
   onModoCuentaChange(): void {
@@ -105,11 +111,7 @@ export class PosFlujoCuentaComponent implements OnChanges {
     if (this.tipoDivision !== 'por_items') return;
     const max = Number(item.cantidad);
     if (max === 1) {
-      let m = this.matriz;
-      for (let p = 1; p <= this.numPagadores; p++) {
-        m = asignarUnidades(m, Number(item.id), p, p === this.personaActiva ? 1 : 0, max);
-      }
-      this.matriz = m;
+      this.matriz = asignarExclusivo(this.matriz, Number(item.id), this.personaActiva, 1, max);
       return;
     }
     this.cantidadPartir = this.cantidadAsignada(item, this.personaActiva);

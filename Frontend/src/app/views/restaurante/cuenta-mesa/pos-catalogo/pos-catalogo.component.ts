@@ -101,12 +101,11 @@ export class PosCatalogoComponent implements OnInit, OnDestroy {
   tapCategoria(cat: PosMenuCategoria): void {
     this.categoriaActual = cat;
     this.subcategoriaActual = null;
-    const modo = resolveCategoriaTap(cat.subcategorias_count);
     this.loading = true;
     this.restauranteService.posMenuContenidoCategoria(cat.id).subscribe({
       next: (res: PosMenuContenido) => {
         this.loading = false;
-        if (modo === 'subcategorias') {
+        if (resolveCategoriaTap(res?.modo, cat.subcategorias_count) === 'subcategorias') {
           this.subcategorias = (res?.items as PosMenuSubcategoria[]) || [];
           this.nivel = 'subcategorias';
         } else {
