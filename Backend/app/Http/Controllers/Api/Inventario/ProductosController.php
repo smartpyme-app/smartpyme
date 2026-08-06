@@ -1231,10 +1231,15 @@ class ProductosController extends Controller
      */
     public function plantillaImportacionProductos()
     {
-        return Excel::download(
-            new PlantillaProductosImportExport(),
-            'plantilla_importacion_productos.xlsx'
-        );
+        // Excel::raw + no-store: evita que proxy/caché sirva HTML/JSON como .xlsx
+        $content = Excel::raw(new PlantillaProductosImportExport(), \Maatwebsite\Excel\Excel::XLSX);
+
+        return response($content, 200, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="plantilla_importacion_productos.xlsx"',
+            'Cache-Control' => 'private, no-store, no-cache, must-revalidate',
+            'Pragma' => 'no-cache',
+        ]);
     }
 
     public function importarWooCommerce(Request $request)

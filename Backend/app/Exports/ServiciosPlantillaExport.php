@@ -2,9 +2,9 @@
 
 namespace App\Exports;
 
+use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
-use App\Models\Inventario\Producto;
 
 class ServiciosPlantillaExport implements FromCollection, WithHeadings
 {
@@ -26,8 +26,8 @@ class ServiciosPlantillaExport implements FromCollection, WithHeadings
 
     public function collection()
     {
-        // Retornar colección vacía para generar solo los encabezados
-        return Producto::where('id', 0)->get();
+        // Solo encabezados: no tocar BD (evita scopes de empresa / auth en la plantilla).
+        return new Collection([]);
     }
 }
 

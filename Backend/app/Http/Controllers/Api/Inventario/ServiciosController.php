@@ -229,9 +229,15 @@ class ServiciosController extends Controller
 
     public function downloadPlantilla()
     {
-        $export = new ServiciosPlantillaExport();
-        // Generar plantilla vacía con solo los encabezados
-        return Excel::download($export, 'plantilla_servicios.xlsx');
+        // Excel::raw evita BinaryFileResponse + caché intermedia sirviendo HTML/JSON como .xlsx
+        $content = Excel::raw(new ServiciosPlantillaExport(), \Maatwebsite\Excel\Excel::XLSX);
+
+        return response($content, 200, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="plantilla_servicios.xlsx"',
+            'Cache-Control' => 'private, no-store, no-cache, must-revalidate',
+            'Pragma' => 'no-cache',
+        ]);
     }
 
 }

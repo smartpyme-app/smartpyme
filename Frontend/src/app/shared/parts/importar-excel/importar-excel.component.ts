@@ -289,10 +289,12 @@ export class ImportarExcelComponent implements OnInit, OnDestroy {
             .pipe(takeUntil(this.destroy$))
             .subscribe({
                 next: (blob) => {
-                    this.apiService.downloadFile(blob, 'plantilla_importacion_productos.xlsx');
+                    this.guardarPlantillaSiEsXlsx(blob, 'plantilla_importacion_productos.xlsx');
                 },
-                error: () => {
-                    this.alertService.error('Error al descargar la plantilla de productos');
+                error: (err) => {
+                    this.alertService.error(
+                        err?.error?.message || 'Error al descargar la plantilla de productos'
+                    );
                 },
             });
     }
@@ -303,23 +305,35 @@ export class ImportarExcelComponent implements OnInit, OnDestroy {
         this.apiService.download(url)
           .pipe(takeUntil(this.destroy$))
           .subscribe({
-            next: (response) => {
-                const blob = new Blob([response], {
-                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                });
-                const urlDownload = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = urlDownload;
-                link.download = `plantilla_${this.nombre.toLowerCase()}.xlsx`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                window.URL.revokeObjectURL(urlDownload);
+            next: (blob) => {
+                this.guardarPlantillaSiEsXlsx(blob, `plantilla_${this.nombre.toLowerCase()}.xlsx`);
             },
-            error: () => {
-                this.alertService.error('Error al descargar la plantilla');
+            error: (err) => {
+                this.alertService.error(
+                    err?.error?.message || 'Error al descargar la plantilla'
+                );
             }
           });
+    }
+
+    /** Rechaza JSON/HTML guardados como .xlsx (firma ZIP: PK). */
+    private guardarPlantillaSiEsXlsx(blob: Blob, filename: string): void {
+        blob.slice(0, 2).arrayBuffer().then((buf) => {
+            const bytes = new Uint8Array(buf);
+            if (bytes[0] !== 0x50 || bytes[1] !== 0x4b) {
+                blob.slice(0, 180).text().then((preview) => {
+                    this.alertService.error(
+                        'La plantilla descargada no es un Excel válido. ' +
+                        (preview || '').replace(/\s+/g, ' ').slice(0, 120)
+                    );
+                });
+                return;
+            }
+            const typed = new Blob([blob], {
+                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            });
+            this.apiService.downloadFile(typed, filename);
+        });
     }
 
     public tryAgain() {

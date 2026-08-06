@@ -1,7 +1,7 @@
 import { Injectable, inject, Injector } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpErrorResponse } from '@angular/common/http';
 import { map, catchError, retry, timeout, switchMap } from 'rxjs/operators';
-import { Observable, throwError, from, of } from 'rxjs';
+import { Observable, throwError, from, of, defer } from 'rxjs';
 import { environment } from './../../environments/environment';
 import { AlertService } from '@services/alert.service';
 import { CountryI18nService } from '@services/country-i18n.service';
@@ -222,14 +222,75 @@ export class HttpService {
   download(url: string): Observable<Blob> {
     return this.http.get(`${this.apiUrl}${url}`, {
       responseType: 'blob',
+      observe: 'response',
       headers: new HttpHeaders({
         Authorization: 'Bearer ' + this.getAuthToken()
       })
     }).pipe(
-      map((response) => {
-        return new Blob([response]);
+      switchMap((response) => {
+        const body = response.body;
+        if (!body || body.size === 0) {
+          return throwError(() => ({
+            status: response.status,
+            error: { message: 'El archivo descargado está vacío' },
+          }));
+        }
+
+        const contentType = (
+          response.headers.get('Content-Type') ||
+          body.type ||
+          ''
+        ).toLowerCase();
+
+        // Errores Laravel/proxy a menudo llegan como blob JSON/HTML/texto con status 200
+        if (
+          contentType.includes('application/json') ||
+          contentType.includes('text/html') ||
+          contentType.includes('text/plain')
+        ) {
+          return defer(() => body.text()).pipe(
+            switchMap((text: string) => {
+              try {
+                const errJson = JSON.parse(text);
+                return throwError(() => ({
+                  status: response.status,
+                  error: {
+                    message:
+                      errJson.message || errJson.error || errJson.mensaje || text,
+                  },
+                }));
+              } catch {
+                return throwError(() => ({
+                  status: response.status,
+                  error: {
+                    message:
+                      text.slice(0, 200) ||
+                      'La descarga no es un archivo válido',
+                  },
+                }));
+              }
+            })
+          );
+        }
+
+        return of(body);
       }),
       catchError((error) => {
+        if (error?.error instanceof Blob) {
+          return defer(() => error.error.text() as Promise<string>).pipe(
+            switchMap((text: string) => {
+              let message = (text || '').slice(0, 200) || 'Error al descargar';
+              try {
+                const errJson = JSON.parse(text);
+                message =
+                  errJson.message || errJson.error || errJson.mensaje || message;
+              } catch {
+                /* texto plano */
+              }
+              return throwError(() => ({ ...error, error: { message } }));
+            })
+          );
+        }
         console.error('Error al descargar el archivo:', error);
         return throwError(() => error);
       })
