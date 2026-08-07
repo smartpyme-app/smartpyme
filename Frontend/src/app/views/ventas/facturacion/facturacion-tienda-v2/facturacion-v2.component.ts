@@ -104,6 +104,14 @@ export class FacturacionV2Component implements OnInit {
   public mensajeValidacionFecha: string = '';
   public mensajeErrorBanco: string = '';
 
+  /** Preview de tipo de cambio BCCR para el selector de moneda CR (Task 5, SP-2102). */
+  public tcPreview: { rate: number | null; date: string | null; loading: boolean; error: string | null } = {
+    rate: null,
+    date: null,
+    loading: false,
+    error: null,
+  };
+
   /** Si está activo, se muestra el monto; el importe es siempre la suma de `cuenta_a_terceros` en las líneas (no se edita en cabecera). */
   public habilitarCuentaTerceros = false;
 
@@ -562,6 +570,7 @@ export class FacturacionV2Component implements OnInit {
     this.venta.id_sucursal = this.apiService.auth_user().id_sucursal;
     this.venta.id_empresa = this.apiService.auth_user().id_empresa;
     this.migrarExoneracionCrLegacyADetalles();
+    this.inicializarMonedaVenta();
     let corte = JSON.parse(sessionStorage.getItem('SP_corte')!);
     if (corte) {
       this.venta.fecha = JSON.parse(sessionStorage.getItem('SP_corte')!).fecha;
@@ -649,6 +658,7 @@ export class FacturacionV2Component implements OnInit {
             );
             this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
             this.migrarExoneracionCrLegacyADetalles();
+            this.sincronizarPreviewMonedaDesdeVenta();
             this.sumTotal();
           },
           (error) => {
@@ -700,6 +710,7 @@ export class FacturacionV2Component implements OnInit {
             this.venta.detalles.forEach((detalle: any) => {
               detalle.id = null;
             });
+            this.refrescarMonedaTrasResetFecha();
             this.sumTotal();
           },
           (error) => {
@@ -752,6 +763,7 @@ export class FacturacionV2Component implements OnInit {
               this.venta.num_cotizacion = this.venta.id;
               this.venta.id = null;
               this.syncVentaCreditoConsignaFlagsFromEstado();
+              this.refrescarMonedaTrasResetFecha();
 
               const porcentajeIvaTotal = this.venta.cobrar_impuestos
                 ? this.apiService.auth_user()?.empresa?.iva || 0
@@ -1106,6 +1118,142 @@ export class FacturacionV2Component implements OnInit {
 
   esFeCostaRicaFacturacion(): boolean {
     return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR;
+  }
+
+  // ==================== MULTIMONEDA CR (Task 5, SP-2102) ====================
+
+  /** Spec §10.1: default = empresa.moneda si es CRC/USD; si no, CRC. */
+  private inicializarMonedaVenta(): void {
+    if (!this.esFeCostaRicaFacturacion()) {
+      return;
+    }
+    const monedaEmpresa = this.apiService.auth_user()?.empresa?.moneda;
+    this.venta.currency_code = monedaEmpresa === 'CRC' || monedaEmpresa === 'USD' ? monedaEmpresa : 'CRC';
+    if (this.venta.currency_code === 'USD') {
+      this.cargarTipoCambioPreview();
+    } else {
+      this.venta.exchange_rate = 1;
+      this.tcPreview = { rate: 1, date: this.venta.fecha, loading: false, error: null };
+    }
+  }
+
+  /** Duplicar venta / facturar cotización: nuevo documento (fecha hoy, sin dte) → refrescar TC del día si USD. */
+  private refrescarMonedaTrasResetFecha(): void {
+    if (!this.esFeCostaRicaFacturacion()) {
+      return;
+    }
+    if (this.venta.currency_code === 'USD') {
+      this.cargarTipoCambioPreview();
+    } else {
+      this.sincronizarPreviewMonedaDesdeVenta();
+    }
+  }
+
+  /** Al cargar una venta existente (editar/duplicar/facturar cotización): reflejar moneda ya persistida. */
+  private sincronizarPreviewMonedaDesdeVenta(): void {
+    if (!this.esFeCostaRicaFacturacion()) {
+      return;
+    }
+    if (!this.venta.currency_code) {
+      this.inicializarMonedaVenta();
+      return;
+    }
+    if (this.venta.currency_code === 'CRC') {
+      this.tcPreview = { rate: 1, date: this.venta.exchange_rate_date || this.venta.fecha, loading: false, error: null };
+      return;
+    }
+    const rate = parseFloat(this.venta.exchange_rate);
+    this.tcPreview = {
+      rate: Number.isFinite(rate) ? rate : null,
+      date: this.venta.exchange_rate_date || this.venta.fecha,
+      loading: false,
+      error: null,
+    };
+  }
+
+  get monedaVenta(): string {
+    return this.venta?.currency_code || 'CRC';
+  }
+
+  /** Post-emisión: selector y TC quedan inmutables (spec §10.1.6). */
+  get ventaYaEmitida(): boolean {
+    return !!this.venta?.dte;
+  }
+
+  get permitirEditarTipoCambioVentas(): boolean {
+    return !!this.apiService.auth_user()?.empresa?.custom_empresa?.facturacion_fe?.permitir_editar_tipo_cambio;
+  }
+
+  public onCurrencyCodeChange(): void {
+    if (this.venta.currency_code === 'CRC') {
+      this.venta.exchange_rate = 1;
+      this.tcPreview = { rate: 1, date: this.venta.fecha, loading: false, error: null };
+      return;
+    }
+    // Forzar refetch de BCCR: un exchange_rate=1 heredado de CRC no es válido para USD.
+    this.venta.exchange_rate = null;
+    this.cargarTipoCambioPreview();
+  }
+
+  public onFechaVentaChange(): void {
+    if (this.esFeCostaRicaFacturacion() && this.monedaVenta === 'USD' && !this.ventaYaEmitida) {
+      this.cargarTipoCambioPreview();
+    }
+  }
+
+  /** GET liviano a BCCR (indicador 318) solo para preview; la persistencia real la hace el backend al guardar. */
+  public cargarTipoCambioPreview(): void {
+    if (this.ventaYaEmitida) {
+      return;
+    }
+    const fecha = this.venta.fecha || this.apiService.date();
+    this.tcPreview = { rate: null, date: fecha, loading: true, error: null };
+    this.apiService.getAll('fe-cr/bccr-tipo-cambio', { fecha }).subscribe({
+      next: (res: any) => {
+        const rate = res?.rate != null ? parseFloat(res.rate) : null;
+        this.tcPreview = { rate, date: res?.date ?? fecha, loading: false, error: null };
+        // Sin flag de edición manual: el TC de la venta siempre refleja el de BCCR del día.
+        if (!this.permitirEditarTipoCambioVentas) {
+          this.venta.exchange_rate = rate;
+        } else if (this.venta.exchange_rate == null || this.venta.exchange_rate === '') {
+          this.venta.exchange_rate = rate;
+        }
+      },
+      error: (err: any) => {
+        const msg = err?.error?.error || err?.error?.message || 'No hay tipo de cambio BCCR disponible para esta fecha.';
+        this.tcPreview = { rate: null, date: fecha, loading: false, error: msg };
+        if (!this.permitirEditarTipoCambioVentas) {
+          this.venta.exchange_rate = null;
+        }
+      },
+    });
+  }
+
+  get crcEquivalentTotal(): number | null {
+    const total = parseFloat(this.venta?.total);
+    const rate = parseFloat(this.venta?.exchange_rate);
+    if (!Number.isFinite(total) || !Number.isFinite(rate)) {
+      return null;
+    }
+    return total * rate;
+  }
+
+  get crcEquivalentIva(): number | null {
+    const iva = parseFloat(this.venta?.iva);
+    const rate = parseFloat(this.venta?.exchange_rate);
+    if (!Number.isFinite(iva) || !Number.isFinite(rate)) {
+      return null;
+    }
+    return iva * rate;
+  }
+
+  /** Spec §10.1.4: sin TC usable, bloquear procesar/emitir con mensaje claro. */
+  get bloquearPorMonedaSinTc(): boolean {
+    if (!this.esFeCostaRicaFacturacion() || this.ventaYaEmitida || this.monedaVenta !== 'USD') {
+      return false;
+    }
+    const rate = parseFloat(this.venta?.exchange_rate);
+    return !Number.isFinite(rate) || rate <= 0 || rate === 1;
   }
 
   /** Catálogo MH (incoterm, recinto, régimen) y DTE 11: solo El Salvador. */
@@ -1782,6 +1930,13 @@ export class FacturacionV2Component implements OnInit {
     }
 
   public onFacturar() {
+    if (this.bloquearPorMonedaSinTc) {
+      this.alertService.error(
+        'No hay tipo de cambio BCCR disponible para USD en la fecha indicada. Verifique la fecha o intente más tarde.'
+      );
+      return;
+    }
+
     // Validar que si el método de pago requiere banco, este esté seleccionado
     this.mensajeErrorBanco = '';
 

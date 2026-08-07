@@ -83,6 +83,16 @@ export class VentaComponent implements OnInit {
         return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR;
     }
 
+    /** Task 5 (SP-2102): solo mostrar bloque de moneda si el documento quedó marcado en USD. */
+    get muestraMonedaDocumentoCr(): boolean {
+        return this.esFeCostaRica() && this.venta?.currency_code === 'USD';
+    }
+
+    get tipoCambioVentaFmt(): string | null {
+        const rate = parseFloat(this.venta?.exchange_rate);
+        return Number.isFinite(rate) ? rate.toFixed(5) : null;
+    }
+
     readonly detalleTieneExoneracionCr = detalleTieneExoneracionCr;
 
     etiquetaTipoGravado(detalle: any): string {

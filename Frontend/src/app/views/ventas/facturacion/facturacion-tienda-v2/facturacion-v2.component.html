@@ -9,7 +9,33 @@
     <div class="row">
         <div class="form-group col-md-4 col-lg-2">
             <label for="fecha">Fecha</label><br>
-            <input type="date" class="form-control" [(ngModel)]="venta.fecha" name="fecha" id="fecha">
+            <input type="date" class="form-control" [(ngModel)]="venta.fecha" (ngModelChange)="onFechaVentaChange()" name="fecha" id="fecha">
+        </div>
+        <div class="form-group col-md-4 col-lg-2" *ngIf="esFeCostaRicaFacturacion()">
+            <label for="currency_code">Moneda</label>
+            <select name="currency_code" id="currency_code" class="form-select" [(ngModel)]="venta.currency_code"
+                (ngModelChange)="onCurrencyCodeChange()" [disabled]="ventaYaEmitida">
+                <option value="CRC">CRC - Colones</option>
+                <option value="USD">USD - Dólares</option>
+            </select>
+        </div>
+        <div class="form-group col-md-4 col-lg-3" *ngIf="esFeCostaRicaFacturacion() && monedaVenta === 'USD'">
+            <label for="exchange_rate">Tipo de cambio (₡ por $)</label>
+            <input type="number" step="0.00001" min="0" class="form-control" name="exchange_rate" id="exchange_rate"
+                [(ngModel)]="venta.exchange_rate" (ngModelChange)="sumTotal()"
+                [readonly]="!permitirEditarTipoCambioVentas || ventaYaEmitida">
+            <small class="text-muted d-block" *ngIf="tcPreview.loading">Consultando BCCR...</small>
+            <small class="text-danger d-block" *ngIf="tcPreview.error">{{ tcPreview.error }}</small>
+            <small class="text-muted d-block" *ngIf="!tcPreview.loading && !tcPreview.error && tcPreview.date">
+                BCCR venta ref. {{ tcPreview.date }}<span *ngIf="permitirEditarTipoCambioVentas && !ventaYaEmitida"> (editable)</span>
+            </small>
+        </div>
+        <div class="form-group col-md-4 col-lg-3" *ngIf="esFeCostaRicaFacturacion() && monedaVenta === 'USD'">
+            <label>Equivalente en colones</label>
+            <div class="form-control-plaintext fw-bold">
+                {{ crcEquivalentTotal !== null ? ('₡' + (crcEquivalentTotal | number:'1.2-2')) : 'Sin TC' }}
+            </div>
+            <small class="text-muted d-block" *ngIf="crcEquivalentIva !== null">IVA: ₡{{ crcEquivalentIva | number:'1.2-2' }}</small>
         </div>
         <div class="form-group col-md-4 col-lg-3">
             <label for="id_usuario">Usuario</label>
