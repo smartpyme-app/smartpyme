@@ -17,6 +17,9 @@ use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Lote;
 use App\Models\Inventario\Kardex;
+use App\Models\Admin\Empresa;
+use App\Services\FacturacionElectronica\FacturacionElectronicaCountryResolver;
+use App\Support\FacturacionElectronica\CostaRica\DocumentoMoneda;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Carbon\Carbon;
@@ -338,6 +341,7 @@ class ComprasController extends Controller
             if ($compra->estado === 'Consigna') {
                 $compra->es_consigna = true;
             }
+            $this->resolverMonedaCr($compra, $request);
             $compra->save();
 
             if ($request->has('impuestos')) {
@@ -1183,6 +1187,31 @@ class ComprasController extends Controller
         $compra->percepcion = 0;
         $compra->tipo_operacion = 'No Gravada';
         $compra->total = round((float) $compra->sub_total, 2);
+    }
+
+    /**
+     * Resuelve currency_code/exchange_rate/CRC equivalent en compras de empresas CR (§7.4 spec multimoneda).
+     * Compras no editan TC en Fase 1 (siempre BCCR); `currency_code` solo cambia si el request lo envía
+     * explícito (aún no hay selector de moneda en UI — Task 6). Otros mercados quedan con defaults CRC/1.
+     */
+    private function resolverMonedaCr(Compra $compra, Request $request): void
+    {
+        $empresa = Empresa::find($compra->id_empresa);
+        if (! $empresa || FacturacionElectronicaCountryResolver::codPais($empresa) !== FacturacionElectronicaCountryResolver::CODIGO_COSTA_RICA) {
+            return;
+        }
+
+        $moneda = app(DocumentoMoneda::class)->resolve(
+            [
+                'currency_code' => $request->input('currency_code', $compra->currency_code ?? DocumentoMoneda::MONEDA_CRC),
+                'total' => (float) $compra->total,
+                'iva' => (float) $compra->iva,
+            ],
+            $empresa,
+            Carbon::parse($compra->fecha ?: now())
+        );
+
+        $compra->fill($moneda);
     }
 
     private function incrementarCorrelativoDocumentoCompraSiAplica(Compra $compra): void

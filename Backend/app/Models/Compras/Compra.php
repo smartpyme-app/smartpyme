@@ -61,6 +61,11 @@ class Compra extends AuditableModel {
         'tipo_clasificacion',
         'tipo_sector',
         'tipo_costo_gasto',
+        'currency_code',
+        'exchange_rate',
+        'exchange_rate_date',
+        'crc_equivalent_total',
+        'crc_equivalent_iva',
 
     );
 
@@ -86,6 +91,10 @@ class Compra extends AuditableModel {
         'es_consigna' => 'boolean',
         'dte_migrated_at' => 'datetime',
         'dte_invalidacion_migrated_at' => 'datetime',
+        'exchange_rate' => 'decimal:5',
+        'exchange_rate_date' => 'date',
+        'crc_equivalent_total' => 'decimal:5',
+        'crc_equivalent_iva' => 'decimal:5',
     ];
 
     public function getSaldoAttribute(){

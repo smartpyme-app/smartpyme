@@ -21,10 +21,13 @@ use App\Models\Ventas\Impuesto;
 use App\Models\Ventas\MetodoDePago;
 use App\Models\Ventas\Venta;
 use App\Services\FidelizacionCliente\ConsumoPuntosService as FidelizacionConsumoPuntosService;
+use App\Services\FacturacionElectronica\FacturacionElectronicaCountryResolver;
 use App\Services\Inventario\ConversionInventarioService;
 use App\Services\Inventario\LoteAsignacionService;
 use App\Services\Inventario\StockDisponibleService;
 use App\Services\Restaurante\PedidoCanalInventarioService;
+use App\Support\FacturacionElectronica\CostaRica\DocumentoMoneda;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -154,6 +157,8 @@ class FacturacionService
                     $venta->correlativo = $documento->correlativo;
                     $documento->increment('correlativo');
                 }
+
+                $this->resolverMonedaCr($venta, $empresa, $request);
 
                 $venta->save();
     
@@ -537,6 +542,33 @@ class FacturacionService
             DB::rollBack();
             throw new FacturacionException($e->getMessage(), 400);
         }
+    }
+
+    /**
+     * Resuelve currency_code/exchange_rate/CRC equivalent en ventas de empresas CR (§7.4 spec multimoneda).
+     * No aplica a otros mercados: quedan con los defaults CRC/1 de la migración.
+     * `$allowManualRate` queda fijo en false hasta Task 3 (flag `permitir_editar_tipo_cambio`); por ahora
+     * el TC en USD siempre viene de BCCR y `currency_code` solo cambia si el request lo envía explícito
+     * (aún no hay selector de moneda en UI — Task 5).
+     */
+    private function resolverMonedaCr(Venta $venta, Empresa $empresa, Request $request): void
+    {
+        if (FacturacionElectronicaCountryResolver::codPais($empresa) !== FacturacionElectronicaCountryResolver::CODIGO_COSTA_RICA) {
+            return;
+        }
+
+        $moneda = app(DocumentoMoneda::class)->resolve(
+            [
+                'currency_code' => $request->input('currency_code', $venta->currency_code ?? DocumentoMoneda::MONEDA_CRC),
+                'exchange_rate' => $request->input('exchange_rate'),
+                'total' => (float) $venta->total,
+                'iva' => (float) $venta->iva,
+            ],
+            $empresa,
+            Carbon::parse($venta->fecha ?: now())
+        );
+
+        $venta->fill($moneda);
     }
 
     private function aplicarReglasVentaRemisionConsigna(Venta $venta, Documento $documento, Request $request): void

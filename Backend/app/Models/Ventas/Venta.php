@@ -107,6 +107,11 @@ class Venta extends AuditableModel {
         'dte_invalidacion_s3_key',
         'dte_invalidacion_migrated_at',
         'fe_cr_exoneracion',
+        'currency_code',
+        'exchange_rate',
+        'exchange_rate_date',
+        'crc_equivalent_total',
+        'crc_equivalent_iva',
     );
 
     protected $hidden = [
@@ -134,6 +139,10 @@ class Venta extends AuditableModel {
         'dte_invalidacion_migrated_at' => 'datetime',
         'descuento_puntos' => 'decimal:2',
         'fe_cr_exoneracion' => 'array',
+        'exchange_rate' => 'decimal:5',
+        'exchange_rate_date' => 'date',
+        'crc_equivalent_total' => 'decimal:5',
+        'crc_equivalent_iva' => 'decimal:5',
     ];
 
     protected static function boot()

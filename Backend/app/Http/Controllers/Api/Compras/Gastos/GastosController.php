@@ -6,7 +6,11 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use JWTAuth;
 use App\Models\Admin\Documento;
+use App\Models\Admin\Empresa;
 use App\Models\Compras\Gastos\Gasto;
+use App\Services\FacturacionElectronica\FacturacionElectronicaCountryResolver;
+use App\Support\FacturacionElectronica\CostaRica\DocumentoMoneda;
+use Carbon\Carbon;
 use App\Services\Bancos\TransaccionesService;
 use App\Services\Bancos\ChequesService;
 use App\Services\Compras\Gastos\GastoService;
@@ -265,7 +269,7 @@ class GastosController extends Controller
             }
 
             if ($tieneMultiplesItems) {
-                $this->guardarConDetalles($gasto, $request->detalles, $request->input('tipo'));
+                $this->guardarConDetalles($gasto, $request->detalles, $request->input('tipo'), $request);
             } else {
                 $gasto->sub_total = $request->sub_total ?? 0;
                 $gasto->iva = $request->iva ?? 0;
@@ -275,6 +279,7 @@ class GastosController extends Controller
                 $gasto->total = $request->total ?? 0;
                 $gasto->concepto = $request->concepto;
                 $gasto->tipo = $request->input('tipo') ?? '';
+                $this->resolverMonedaCr($gasto, $request);
                 $gasto->save();
                 $this->sincronizarDetalleUnico($gasto, $request);
             }
@@ -290,7 +295,7 @@ class GastosController extends Controller
         });
     }
 
-    private function guardarConDetalles(Gasto $gasto, array $detalles, ?string $tipoCabecera = null): void
+    private function guardarConDetalles(Gasto $gasto, array $detalles, ?string $tipoCabecera = null, ?Request $request = null): void
     {
         $gasto->concepto = collect($detalles)->pluck('concepto')->take(1)->implode(', ');
         $tipoCabecera = is_string($tipoCabecera) ? trim($tipoCabecera) : '';
@@ -326,6 +331,9 @@ class GastosController extends Controller
         $gasto->iva_retenido = round($ivaRetenido, 2);
         $gasto->iva_percibido = round($ivaPercibido, 2);
         $gasto->total = round($total, 2);
+        if ($request) {
+            $this->resolverMonedaCr($gasto, $request);
+        }
         $gasto->save();
 
         $gasto->detalles()->delete();
@@ -616,6 +624,31 @@ class GastosController extends Controller
     /**
      * Asigna el correlativo activo de Sujeto excluido y lo incrementa (fuente de verdad en backend).
      */
+    /**
+     * Resuelve currency_code/exchange_rate/CRC equivalent en gastos de empresas CR (§7.4 spec multimoneda).
+     * Gastos no editan TC en Fase 1 (siempre BCCR); `currency_code` solo cambia si el request lo envía
+     * explícito (aún no hay selector de moneda en UI — Task 6). Otros mercados quedan con defaults CRC/1.
+     */
+    private function resolverMonedaCr(Gasto $gasto, Request $request): void
+    {
+        $empresa = Empresa::find($gasto->id_empresa);
+        if (! $empresa || FacturacionElectronicaCountryResolver::codPais($empresa) !== FacturacionElectronicaCountryResolver::CODIGO_COSTA_RICA) {
+            return;
+        }
+
+        $moneda = app(DocumentoMoneda::class)->resolve(
+            [
+                'currency_code' => $request->input('currency_code', $gasto->currency_code ?? DocumentoMoneda::MONEDA_CRC),
+                'total' => (float) $gasto->total,
+                'iva' => (float) $gasto->iva,
+            ],
+            $empresa,
+            Carbon::parse($gasto->fecha ?: now())
+        );
+
+        $gasto->fill($moneda);
+    }
+
     private function asignarCorrelativoSujetoExcluido(Gasto $gasto): void
     {
         if ($gasto->tipo_documento !== 'Sujeto excluido' || !$gasto->id_sucursal) {
