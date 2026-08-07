@@ -57,9 +57,9 @@ final class LibroIvaResumenFiscalService
         $ctxCompras = $this->contextoLibrosComprasCr($request);
 
         $totalVentas = round(
-            (float) $ventas->sum(fn (Venta $v) => (float) $v->total)
+            (float) $ventas->sum(fn (Venta $v) => $this->crcMontoLibroCr($v, 'total'))
             + (float) $devoluciones->sum(function (DevolucionVenta $d) {
-                $total = (float) $d->total;
+                $total = $this->crcMontoLibroCr($d, 'total');
 
                 return $total > 0 ? -$total : $total;
             }),
@@ -67,10 +67,10 @@ final class LibroIvaResumenFiscalService
         );
 
         $ivaDebito = round(
-            (float) $ventas->sum(fn (Venta $v) => (float) $v->iva)
-            - (float) $ventas->sum(fn (Venta $v) => (float) ($v->iva_devuelto ?? 0))
+            (float) $ventas->sum(fn (Venta $v) => $this->crcMontoLibroCr($v, 'iva'))
+            - (float) $ventas->sum(fn (Venta $v) => (float) ($v->iva_devuelto ?? 0) * $this->tasaCambioLibroCr($v))
             + (float) $devoluciones->sum(function (DevolucionVenta $d) {
-                $iva = (float) $d->iva;
+                $iva = $this->crcMontoLibroCr($d, 'iva');
 
                 return $iva > 0 ? -$iva : $iva;
             }),
@@ -85,7 +85,7 @@ final class LibroIvaResumenFiscalService
             'totales' => [
                 'ventas' => $totalVentas,
                 'compras' => $ctxCompras['total_compras'],
-                'compras_sin_devoluciones' => round((float) $comprasLibro->sum(fn (Compra $c) => (float) $c->total), 2),
+                'compras_sin_devoluciones' => round((float) $comprasLibro->sum(fn (Compra $c) => $this->crcMontoLibroCr($c, 'total')), 2),
                 'gastos' => $ctxCompras['total_gastos'],
             ],
             'ventas_por_impuesto' => $this->ventasPorImpuestoDesdeVentaImpuestos(
@@ -176,25 +176,25 @@ final class LibroIvaResumenFiscalService
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->get();
 
-        $creditoCompras = round((float) $compras->sum(fn (Compra $c) => (float) $c->iva), 2);
-        $creditoGastos = round((float) $gastos->sum(fn (Gasto $g) => (float) $g->iva), 2);
+        $creditoCompras = round((float) $compras->sum(fn (Compra $c) => $this->crcMontoLibroCr($c, 'iva')), 2);
+        $creditoGastos = round((float) $gastos->sum(fn (Gasto $g) => $this->crcMontoLibroCr($g, 'iva')), 2);
         $creditoDevoluciones = round((float) $devoluciones->sum(function (DevolucionCompra $d) {
-            $iva = (float) $d->iva;
+            $iva = $this->crcMontoLibroCr($d, 'iva');
 
             return $iva > 0 ? -$iva : $iva;
         }), 2);
 
         $totalCompras = round(
-            (float) $compras->sum(fn (Compra $c) => (float) $c->total)
+            (float) $compras->sum(fn (Compra $c) => $this->crcMontoLibroCr($c, 'total'))
             + (float) $devoluciones->sum(function (DevolucionCompra $d) {
-                $total = (float) $d->total;
+                $total = $this->crcMontoLibroCr($d, 'total');
 
                 return $total > 0 ? -$total : $total;
             }),
             2
         );
 
-        $totalGastos = round((float) $gastos->sum(fn (Gasto $g) => (float) $g->total), 2);
+        $totalGastos = round((float) $gastos->sum(fn (Gasto $g) => $this->crcMontoLibroCr($g, 'total')), 2);
         $ivaCredito = round($creditoCompras + $creditoGastos + $creditoDevoluciones, 2);
 
         return [
@@ -205,6 +205,35 @@ final class LibroIvaResumenFiscalService
             'credito_devoluciones' => $creditoDevoluciones,
             'iva_credito' => $ivaCredito,
         ];
+    }
+
+    /**
+     * Monto en colones de un documento CR (ventas/compras/gastos/devoluciones_venta): usa
+     * `crc_equivalent_total`/`crc_equivalent_iva` (Task 2) cuando existen; si no (p. ej.
+     * `devoluciones_compra`, que aún no tiene columnas de moneda), cae al monto nativo × TC
+     * del documento (§11 spec — CRC o moneda sin columna ⇒ TC 1).
+     */
+    private function crcMontoLibroCr(object $model, string $campoNativo): float
+    {
+        $campoCrc = $campoNativo === 'total' ? 'crc_equivalent_total' : 'crc_equivalent_iva';
+        $crc = method_exists($model, 'getAttribute') ? $model->getAttribute($campoCrc) : null;
+        if ($crc !== null) {
+            return (float) $crc;
+        }
+
+        return (float) ($model->{$campoNativo} ?? 0) * $this->tasaCambioLibroCr($model);
+    }
+
+    private function tasaCambioLibroCr(object $model): float
+    {
+        $codigo = method_exists($model, 'getAttribute') ? $model->getAttribute('currency_code') : null;
+        if (strtoupper(trim((string) ($codigo ?? 'CRC'))) !== 'USD') {
+            return 1.0;
+        }
+
+        $rate = (float) ($model->getAttribute('exchange_rate') ?? 0);
+
+        return $rate > 0.0 ? $rate : 1.0;
     }
 
     /**
