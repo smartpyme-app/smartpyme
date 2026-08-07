@@ -1853,6 +1853,27 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         this.updateDteMostrarDescripcionProducto(!this.isDteMostrarDescripcionProductoEnabled());
     }
 
+    // Costa Rica FE (SP-2097): permite tipo de cambio manual en ventas USD antes de emitir.
+    public isPermitirEditarTipoCambioVentasEnabled(): boolean {
+        return this.getCustomConfig('facturacion_fe', 'permitir_editar_tipo_cambio', false);
+    }
+
+    public updatePermitirEditarTipoCambioVentas(enabled: boolean) {
+        this.addCustomConfig('facturacion_fe', 'permitir_editar_tipo_cambio', enabled);
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                enabled
+                    ? 'Ahora se puede editar el tipo de cambio en ventas en USD antes de emitir.'
+                    : 'El tipo de cambio en ventas en USD volverá a tomarse siempre del BCCR.'
+            );
+        });
+    }
+
+    public togglePermitirEditarTipoCambioVentas() {
+        this.updatePermitirEditarTipoCambioVentas(!this.isPermitirEditarTipoCambioVentasEnabled());
+    }
+
     public isFidelizacionActiva(): boolean {
         return this.getCustomConfig('configuraciones', 'fidelizacion_activa', false);
     }

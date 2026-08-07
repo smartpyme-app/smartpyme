@@ -547,15 +547,21 @@ class FacturacionService
     /**
      * Resuelve currency_code/exchange_rate/CRC equivalent en ventas de empresas CR (§7.4 spec multimoneda).
      * No aplica a otros mercados: quedan con los defaults CRC/1 de la migración.
-     * `$allowManualRate` queda fijo en false hasta Task 3 (flag `permitir_editar_tipo_cambio`); por ahora
-     * el TC en USD siempre viene de BCCR y `currency_code` solo cambia si el request lo envía explícito
-     * (aún no hay selector de moneda en UI — Task 5).
+     * `$allowManualRate` es true solo si la empresa habilitó `facturacion_fe.permitir_editar_tipo_cambio`
+     * Y la venta aún no fue aceptada por Hacienda (Task 3, SP-2097); si el flag está apagado se ignora el
+     * `exchange_rate` del request. La inmutabilidad completa post-emisión (bloquear currency_code también)
+     * es Task 4/5. `currency_code` solo cambia si el request lo envía explícito (aún no hay selector de
+     * moneda en UI — Task 5).
      */
     private function resolverMonedaCr(Venta $venta, Empresa $empresa, Request $request): void
     {
         if (FacturacionElectronicaCountryResolver::codPais($empresa) !== FacturacionElectronicaCountryResolver::CODIGO_COSTA_RICA) {
             return;
         }
+
+        $documentoYaEmitido = ! empty($venta->dte);
+        $allowManualRate = ! $documentoYaEmitido
+            && (bool) $empresa->getCustomConfigValue('facturacion_fe', 'permitir_editar_tipo_cambio', false);
 
         $moneda = app(DocumentoMoneda::class)->resolve(
             [
@@ -565,7 +571,8 @@ class FacturacionService
                 'iva' => (float) $venta->iva,
             ],
             $empresa,
-            Carbon::parse($venta->fecha ?: now())
+            Carbon::parse($venta->fecha ?: now()),
+            $allowManualRate
         );
 
         $venta->fill($moneda);

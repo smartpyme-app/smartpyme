@@ -145,6 +145,21 @@
                             <option value="05">05 — Extranjero no domiciliado</option>
                         </select>
                     </div>
+                    <div class="form-group col-12 col-md-6 col-lg-4 without-label">
+                        <div class="form-switch bg-light-info rounded">
+                            <label for="fe_cr_permitir_editar_tipo_cambio" class="form-label">
+                                <strong>Permitir editar tipo de cambio en ventas</strong>
+                            </label>
+                            <input class="form-check-input float-end" type="checkbox" role="switch"
+                                id="fe_cr_permitir_editar_tipo_cambio"
+                                [checked]="isPermitirEditarTipoCambioVentasEnabled()"
+                                (change)="togglePermitirEditarTipoCambioVentas()"
+                                name="fe_cr_permitir_editar_tipo_cambio">
+                        </div>
+                        <small class="text-muted">
+                            Solo aplica a ventas en USD y antes de emitir el comprobante ante Hacienda.
+                        </small>
+                    </div>
                     }
                     <div class="form-group col-12 col-md-6 col-lg-4">
                         <label for="nit">{{ 'country.tax.nit' | translate }}</label>

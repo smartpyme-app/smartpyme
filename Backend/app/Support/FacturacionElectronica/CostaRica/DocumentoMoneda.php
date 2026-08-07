@@ -26,7 +26,9 @@ final class DocumentoMoneda
     /**
      * @param  array<string, mixed>  $input  'currency_code' (CRC|USD, default CRC), 'total', 'iva' (montos
      *                                        nativos), 'exchange_rate' (solo se usa si $allowManualRate).
-     * @param  Empresa  $empresa  Reservado para Task 3 (flag `facturacion_fe.permitir_editar_tipo_cambio`).
+     * @param  Empresa  $empresa  Reservado para validaciones futuras (ej. inmutabilidad post-emisión, Task 4/5).
+     *                            El flag `facturacion_fe.permitir_editar_tipo_cambio` (Task 3, SP-2097) ya se
+     *                            resuelve en el caller (solo ventas, pre-emisión) y se pasa como $allowManualRate.
      * @return array{currency_code: string, exchange_rate: float, exchange_rate_date: string, crc_equivalent_total: float, crc_equivalent_iva: float}
      */
     public function resolve(array $input, Empresa $empresa, \DateTimeInterface $fechaDoc, bool $allowManualRate = false): array
