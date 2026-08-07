@@ -8,15 +8,40 @@
   </div>
 }
 
+<!-- Sin configuración: importar plantilla del país -->
+@if (!loading && !configuracion) {
+  <div class="container-fluid">
+    <section class="bg-white p-4 rounded mb-3 text-center">
+      <h2 class="page-heading mb-3">Configuración de Planillas</h2>
+      <p class="text-muted mb-2">
+        País de la empresa: {{ empresaPais?.nombre_pais || obtenerNombrePais(codigoPaisMostrar) }}
+      </p>
+      <p class="mb-4">
+        Esta empresa aún no tiene una configuración de planilla.
+        Puedes importar la plantilla según el país de la empresa.
+      </p>
+      <button type="button" class="btn btn-primary" (click)="importarPlantillaPais()" [disabled]="importing">
+        @if (importing) {
+          <span class="spinner-border spinner-border-sm me-1"></span>
+          Importando...
+        } @else {
+          <i class="fas fa-download me-1"></i>
+          Importar plantilla de {{ empresaPais?.nombre_pais || obtenerNombrePais(codigoPaisMostrar) }}
+        }
+      </button>
+    </section>
+  </div>
+}
+
 <!-- Contenido Principal -->
-@if (!loading) {
+@if (!loading && configuracion) {
   <div class="container-fluid">
   <!-- Header -->
   <section class="bg-white p-4 rounded mb-3">
     <div class="d-flex justify-content-between">
       <h2 class="page-heading">Configuración de Planillas</h2>
       <p class="text-muted mb-0">
-        País: {{ obtenerNombrePais(configuracion?.cod_pais || 'SV') }}
+        País: {{ obtenerNombrePais(codigoPaisMostrar) }}
         @if (configuracion?.fecha_vigencia_desde) {
           <span class="ms-2">
             | Vigente desde: {{ configuracion.fecha_vigencia_desde | date:'short' }}

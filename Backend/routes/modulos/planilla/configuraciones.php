@@ -7,6 +7,7 @@ Route::group(['prefix' => 'planillas', 'middleware' => ['jwt.auth']], function (
     Route::controller(ConfiguracionPlanillaController::class)->group(function () {
             Route::get('/configuracion-planilla', [ConfiguracionPlanillaController::class, 'show']);
             Route::post('/configuracion-planilla', [ConfiguracionPlanillaController::class, 'update']);
+            Route::post('/configuracion-planilla/importar-plantilla', [ConfiguracionPlanillaController::class, 'importarPlantilla']);
             Route::get('/configuracion-planilla/plantillas', [ConfiguracionPlanillaController::class, 'obtenerPlantillas']);
             Route::get('/configuracion-planilla/tipos-conceptos', [ConfiguracionPlanillaController::class, 'obtenerTiposConceptos']);
             Route::post('/configuracion-planilla/probar', [ConfiguracionPlanillaController::class, 'probarCalculo']);

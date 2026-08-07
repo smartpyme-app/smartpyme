@@ -18,6 +18,33 @@
           <i class="fa fa-user me-2"></i>Información Empleado
         </a>
       </li>
+      <li class="nav-item">
+        <a
+          class="nav-link cursor-pointer"
+          [class.active]="activeTab === 'contacto'"
+          (click)="activeTab = 'contacto'"
+        >
+          <i class="fa fa-address-book me-2"></i>Información Contacto
+        </a>
+      </li>
+      <li class="nav-item">
+        <a
+          class="nav-link cursor-pointer"
+          [class.active]="activeTab === 'bancaria'"
+          (click)="activeTab = 'bancaria'"
+        >
+          <i class="fa fa-university me-2"></i>Información Bancaria
+        </a>
+      </li>
+      <li class="nav-item">
+        <a
+          class="nav-link cursor-pointer"
+          [class.active]="activeTab === 'emergencia'"
+          (click)="activeTab = 'emergencia'"
+        >
+          <i class="fa fa-phone me-2"></i>Contacto de Emergencia
+        </a>
+      </li>
       @if (empleado.id) {
         <li class="nav-item">
           <a
@@ -42,17 +69,45 @@
       }
     </ul>
 
-    <!-- Contenido de la pestaña Información -->
-    @if (activeTab === 'informacion') {
-      <div>
-      <form name="form" (ngSubmit)="onSubmit()">
-        <!-- Tu formulario existente -->
+    <ng-template #btnGuardarEmpleado>
+      <div class="d-flex justify-content-end gap-2 mt-4">
+        <button
+          type="submit"
+          [disabled]="
+            saving ||
+            !empleado.nombres ||
+            !empleado.apellidos ||
+            !empleado.dui ||
+            (esElSalvadorFe() && !empleado.dui_homologado && !empleado.nit)
+          "
+          class="btn btn-primary btn-lg"
+        >
+          @if (!saving) {
+            <span>
+              <i class="fa fa-save"></i>
+              {{ empleado.id ? "Actualizar" : "Guardar" }}
+            </span>
+          }
+          @if (saving) {
+            <span>
+              <i class="fa fa-spinner fa-spin"></i>
+              {{ empleado.id ? "Actualizando..." : "Guardando..." }}
+            </span>
+          }
+        </button>
+      </div>
+    </ng-template>
+
+    <!-- Contenido de pestañas de datos del empleado -->
+    @if (
+      activeTab === 'informacion' ||
+      activeTab === 'contacto' ||
+      activeTab === 'bancaria' ||
+      activeTab === 'emergencia'
+    ) {
+      <form name="formEmpleado" (ngSubmit)="onSubmit()">
+        @if (activeTab === 'informacion') {
         <div class="row">
-          <div class="card mb-5">
-            <div class="card-body">
-              <!-- <app-notificaciones-container></app-notificaciones-container> -->
-              <form name="form" (ngSubmit)="onSubmit()">
-                <div class="row">
                   <!-- Información Personal -->
                   <h5 class="col-12 pb-2 mb-2 fw-bold">Información Personal</h5>
                   <div class="form-group col-md-2">
@@ -398,20 +453,6 @@
                       </select>
                     </div>
                     <div class="form-group col-md-4">
-                      <div class="form-check mt-4">
-                        <input
-                          class="form-check-input"
-                          type="checkbox"
-                          id="tiene_conyuge_dependiente"
-                          [(ngModel)]="empleado.tiene_conyuge_dependiente"
-                          name="tiene_conyuge_dependiente"
-                        />
-                        <label class="form-check-label" for="tiene_conyuge_dependiente">
-                          Cónyuge dependiente (crédito fiscal)
-                        </label>
-                      </div>
-                    </div>
-                    <div class="form-group col-md-4">
                       <label for="cantidad_hijos_dependientes">Hijos dependientes:</label>
                       <input
                         type="number"
@@ -441,7 +482,22 @@
                       }
                     </select>
                   </div>
-
+                  @if (esCostaRicaFe()) {
+                    <div class="form-group col-md-4">
+                      <div class="form-check mt-4">
+                        <input
+                          class="form-check-input"
+                          type="checkbox"
+                          id="tiene_conyuge_dependiente"
+                          [(ngModel)]="empleado.tiene_conyuge_dependiente"
+                          name="tiene_conyuge_dependiente"
+                        />
+                        <label class="form-check-label" for="tiene_conyuge_dependiente">
+                          Cónyuge dependiente (crédito fiscal)
+                        </label>
+                      </div>
+                    </div>
+                  }
                   <!-- Opciones Avanzadas (solo SV: ISSS/AFP) -->
                   @if (esElSalvadorFe()) {
                     <div class="col-12 mt-4">
@@ -519,176 +575,153 @@
                     </div>
                   }
 
-                  <!-- Contacto -->
-                  <h5 class="col-12 pb-2 mb-2 mt-4">Información de Contacto</h5>
-                  <div class="form-group col-md-12">
-                    <label for="direccion">Dirección:</label>
-                    <textarea
-                      [(ngModel)]="empleado.direccion"
-                      name="direccion"
-                      class="form-control"
-                      rows="2"
-                      required
-                    ></textarea>
-                  </div>
-                  <div class="form-group col-md-6">
-                    <label for="telefono">Teléfono:</label>
-                    <input
-                      type="text"
-                      [(ngModel)]="empleado.telefono"
-                      name="telefono"
-                      class="form-control"
-                      required
-                    />
-                  </div>
-                  <div class="form-group col-md-6">
-                    <label for="email">Correo Electrónico:</label>
-                    <input
-                      type="email"
-                      [(ngModel)]="empleado.email"
-                      name="email"
-                      class="form-control"
-                      required
-                    />
-                  </div>
-
-                  <!-- Datos Bancarios -->
-                  <h5 class="col-12 pb-2 mb-2 mt-4">Datos Bancarios</h5>
-                  <div class="form-group col-md-6">
-                    <label for="banco">Banco:</label>
-                    <input
-                      type="text"
-                      [(ngModel)]="empleado.banco"
-                      name="banco"
-                      class="form-control"
-                    />
-                  </div>
-                  <div class="form-group col-md-6">
-                    <label for="tipo_cuenta">Tipo de Cuenta:</label>
-                    <select
-                      [(ngModel)]="empleado.tipo_cuenta"
-                      name="tipo_cuenta"
-                      class="form-select"
-                    >
-                      <option value="">Seleccione...</option>
-                      <option value="Ahorro">Ahorro</option>
-                      <option value="Corriente">Corriente</option>
-                    </select>
-                  </div>
-                  <div class="form-group col-md-6">
-                    <label for="numero_cuenta">Número de Cuenta:</label>
-                    <input
-                      type="text"
-                      [(ngModel)]="empleado.numero_cuenta"
-                      name="numero_cuenta"
-                      class="form-control"
-                    />
-                  </div>
-                  <div class="form-group col-md-6">
-                    <label for="titular_cuenta">Titular de la Cuenta:</label>
-                    <input
-                      type="text"
-                      [(ngModel)]="empleado.titular_cuenta"
-                      name="titular_cuenta"
-                      class="form-control"
-                    />
-                  </div>
-                  <div class="form-group col-md-6">
-                    <label for="forma_pago">Forma de Pago:</label>
-                    <select
-                      [(ngModel)]="empleado.forma_pago"
-                      name="forma_pago"
-                      class="form-select"
-                    >
-                      <option value="">Seleccione...</option>
-                      <option value="Transferencia">Transferencia bancaria</option>
-                      <option value="Cheque">Cheque</option>
-                      <option value="Efectivo">Efectivo</option>
-                    </select>
-                  </div>
-
-                  <!-- Contacto de Emergencia -->
-                  <h5 class="col-12 pb-2 mb-2 mt-4">Contacto de Emergencia</h5>
-                  <div class="form-group col-md-12">
-                    <label for="nombre_contacto">Nombre del Contacto:</label>
-                    <input
-                      type="text"
-                      [(ngModel)]="empleado.contacto_emergencia.nombre"
-                      name="nombre_contacto"
-                      class="form-control"
-                      required
-                    />
-                  </div>
-
-                  <div class="form-group col-md-6">
-                    <label for="relacion_contacto">Relación:</label>
-                    <input
-                      type="text"
-                      [(ngModel)]="empleado.contacto_emergencia.relacion"
-                      name="relacion_contacto"
-                      class="form-control"
-                      required
-                    />
-                  </div>
-
-                  <div class="form-group col-md-6">
-                    <label for="telefono_contacto"
-                      >Teléfono del Contacto:</label
-                    >
-                    <input
-                      type="text"
-                      [(ngModel)]="empleado.contacto_emergencia.telefono"
-                      name="telefono_contacto"
-                      class="form-control"
-                      required
-                    />
-                  </div>
-
-                  <div class="form-group col-md-12">
-                    <label for="direccion_contacto"
-                      >Dirección del Contacto:</label
-                    >
-                    <textarea
-                      [(ngModel)]="empleado.contacto_emergencia.direccion"
-                      name="direccion_contacto"
-                      class="form-control"
-                      rows="2"
-                      required
-                    ></textarea>
-                  </div>
-
-                  <div class="d-flex justify-content-end gap-2 mt-4">
-                    <button
-                      [disabled]="
-                        saving ||
-                        !empleado.nombres ||
-                        !empleado.apellidos ||
-                        !empleado.dui ||
-                        (esElSalvadorFe() && !empleado.dui_homologado && !empleado.nit)
-                      "
-                      class="btn btn-primary btn-lg"
-                    >
-                      @if (!saving) {
-                        <span>
-                          <i class="fa fa-save"></i>
-                          {{ empleado.id ? "Actualizar" : "Guardar" }} Empleado
-                        </span>
-                      }
-                      @if (saving) {
-                        <span>
-                          <i class="fa fa-spinner fa-spin"></i>
-                          {{ empleado.id ? "Actualizando..." : "Guardando..." }}
-                        </span>
-                      }
-                    </button>
-                  </div>
-                </div>
-              </form>
-            </div>
-          </div>
+                  <ng-container *ngTemplateOutlet="btnGuardarEmpleado"></ng-container>
         </div>
+        }
+
+        @if (activeTab === 'contacto') {
+        <div class="row">
+          <h5 class="col-12 pb-2 mb-2 fw-bold">Información de Contacto</h5>
+          <div class="form-group col-md-12">
+            <label for="direccion">Dirección:</label>
+            <textarea
+              [(ngModel)]="empleado.direccion"
+              name="direccion"
+              class="form-control"
+              rows="2"
+              required
+            ></textarea>
+          </div>
+          <div class="form-group col-md-6">
+            <label for="telefono">Teléfono:</label>
+            <input
+              type="text"
+              [(ngModel)]="empleado.telefono"
+              name="telefono"
+              class="form-control"
+              required
+            />
+          </div>
+          <div class="form-group col-md-6">
+            <label for="email">Correo Electrónico:</label>
+            <input
+              type="email"
+              [(ngModel)]="empleado.email"
+              name="email"
+              class="form-control"
+              required
+            />
+          </div>
+          <ng-container *ngTemplateOutlet="btnGuardarEmpleado"></ng-container>
+        </div>
+        }
+
+        @if (activeTab === 'bancaria') {
+        <div class="row">
+          <h5 class="col-12 pb-2 mb-2 fw-bold">Información Bancaria</h5>
+          <div class="form-group col-md-6">
+            <label for="banco">Banco:</label>
+            <input
+              type="text"
+              [(ngModel)]="empleado.banco"
+              name="banco"
+              class="form-control"
+            />
+          </div>
+          <div class="form-group col-md-6">
+            <label for="tipo_cuenta">Tipo de Cuenta:</label>
+            <select
+              [(ngModel)]="empleado.tipo_cuenta"
+              name="tipo_cuenta"
+              class="form-select"
+            >
+              <option value="">Seleccione...</option>
+              <option value="Ahorro">Ahorro</option>
+              <option value="Corriente">Corriente</option>
+            </select>
+          </div>
+          <div class="form-group col-md-6">
+            <label for="numero_cuenta">Número de Cuenta:</label>
+            <input
+              type="text"
+              [(ngModel)]="empleado.numero_cuenta"
+              name="numero_cuenta"
+              class="form-control"
+            />
+          </div>
+          <div class="form-group col-md-6">
+            <label for="titular_cuenta">Titular de la Cuenta:</label>
+            <input
+              type="text"
+              [(ngModel)]="empleado.titular_cuenta"
+              name="titular_cuenta"
+              class="form-control"
+            />
+          </div>
+          <div class="form-group col-md-6">
+            <label for="forma_pago">Forma de Pago:</label>
+            <select
+              [(ngModel)]="empleado.forma_pago"
+              name="forma_pago"
+              class="form-select"
+            >
+              <option value="">Seleccione...</option>
+              <option value="Transferencia">Transferencia bancaria</option>
+              <option value="Cheque">Cheque</option>
+              <option value="Efectivo">Efectivo</option>
+            </select>
+          </div>
+          <ng-container *ngTemplateOutlet="btnGuardarEmpleado"></ng-container>
+        </div>
+        }
+
+        @if (activeTab === 'emergencia') {
+        <div class="row">
+          <h5 class="col-12 pb-2 mb-2 fw-bold">Contacto de Emergencia</h5>
+          <div class="form-group col-md-12">
+            <label for="nombre_contacto">Nombre del Contacto:</label>
+            <input
+              type="text"
+              [(ngModel)]="empleado.contacto_emergencia.nombre"
+              name="nombre_contacto"
+              class="form-control"
+              required
+            />
+          </div>
+          <div class="form-group col-md-6">
+            <label for="relacion_contacto">Relación:</label>
+            <input
+              type="text"
+              [(ngModel)]="empleado.contacto_emergencia.relacion"
+              name="relacion_contacto"
+              class="form-control"
+              required
+            />
+          </div>
+          <div class="form-group col-md-6">
+            <label for="telefono_contacto">Teléfono del Contacto:</label>
+            <input
+              type="text"
+              [(ngModel)]="empleado.contacto_emergencia.telefono"
+              name="telefono_contacto"
+              class="form-control"
+              required
+            />
+          </div>
+          <div class="form-group col-md-12">
+            <label for="direccion_contacto">Dirección del Contacto:</label>
+            <textarea
+              [(ngModel)]="empleado.contacto_emergencia.direccion"
+              name="direccion_contacto"
+              class="form-control"
+              rows="2"
+              required
+            ></textarea>
+          </div>
+          <ng-container *ngTemplateOutlet="btnGuardarEmpleado"></ng-container>
+        </div>
+        }
       </form>
-      </div>
     }
 
     <!-- Contenido de la pestaña Historiales -->

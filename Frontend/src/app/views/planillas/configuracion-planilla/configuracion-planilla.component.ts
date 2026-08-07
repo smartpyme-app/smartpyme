@@ -34,6 +34,7 @@ export class ConfiguracionPlanillaComponent implements OnInit {
   
   loading = true;
   saving = false;
+  importing = false;
   probandoCalculo = false;
 
   // Modales
@@ -49,6 +50,7 @@ export class ConfiguracionPlanillaComponent implements OnInit {
   tiposConceptos: any = {};
   basesCalculo: any = {};
   plantillasPaises: { [cod: string]: PlantillaPais } = {};
+  empresaPais: { cod_pais: string; nombre_pais: string; pais?: string | null } | null = null;
   
   // Pestañas activas
   tabActiva = 'conceptos';
@@ -91,11 +93,12 @@ export class ConfiguracionPlanillaComponent implements OnInit {
     this.loading = true;
     
   this.configService.obtenerConfiguracion().pipe(this.untilDestroyed()).subscribe({
-    next: (response: any) => {
-      
-      this.configuracion = response;
-      
-      this.poblarFormulario();
+    next: (response) => {
+      this.configuracion = response.configuracion;
+      this.empresaPais = response.empresa_pais ?? null;
+      if (this.configuracion) {
+        this.poblarFormulario();
+      }
       this.loading = false;
       this.cdr.markForCheck();
     },
@@ -134,6 +137,35 @@ export class ConfiguracionPlanillaComponent implements OnInit {
         this.cdr.markForCheck();
       }
     });
+  }
+
+  importarPlantillaPais(): void {
+    const nombre = this.empresaPais?.nombre_pais
+      || this.obtenerNombrePais(this.empresaPais?.cod_pais || 'SV');
+
+    if (!confirm(`¿Importar la plantilla de ${nombre} para esta empresa?`)) {
+      return;
+    }
+
+    this.importing = true;
+    this.configService.importarPlantillaPais().pipe(this.untilDestroyed()).subscribe({
+      next: (config) => {
+        this.configuracion = config;
+        this.poblarFormulario();
+        this.importing = false;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.importing = false;
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  get codigoPaisMostrar(): string {
+    return this.configuracion?.cod_pais
+      || this.empresaPais?.cod_pais
+      || 'SV';
   }
 
   private createConfiguracionForm(): FormGroup {
@@ -642,9 +674,12 @@ guardarConcepto(): void {
 
   private cargarConfiguracionSinLoading(): void {
     this.configService.obtenerConfiguracion().pipe(this.untilDestroyed()).subscribe({
-      next: (response: any) => {
-        this.configuracion = response;
-        this.poblarFormulario();
+      next: (response) => {
+        this.configuracion = response.configuracion;
+        this.empresaPais = response.empresa_pais ?? this.empresaPais;
+        if (this.configuracion) {
+          this.poblarFormulario();
+        }
         this.cdr.markForCheck();
       },
       error: (error) => {

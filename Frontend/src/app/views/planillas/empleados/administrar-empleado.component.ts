@@ -829,6 +829,14 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
       this.empleado.nit = null;
     }
 
+    if (!this.empleado.email) {
+      this.alertService.error('El correo electrónico es requerido. Completa la pestaña Información Contacto.');
+      this.activeTab = 'contacto';
+      this.saving = false;
+      this.cdr.markForCheck();
+      return;
+    }
+
     if (this.esCostaRicaFe() && this.esJornadaParcial()) {
       const horas = Number(this.empleado.horas_jornada);
       if (!horas || horas <= 0) {

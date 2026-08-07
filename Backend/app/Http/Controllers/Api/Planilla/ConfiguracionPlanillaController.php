@@ -31,12 +31,21 @@ class   ConfiguracionPlanillaController extends Controller
     {
         try {
             $empresaId = $request->user()->id_empresa;
+            $empresa = Empresa::find($empresaId);
+            $codPaisEmpresa = EmpresaConfiguracionPlanilla::resolverCodigoPaisEmpresa($empresa);
 
             $configuracion = EmpresaConfiguracionPlanilla::obtenerConfiguracion($empresaId);
 
             if (!$configuracion) {
-                // Crear configuración por defecto si no existe
-                $configuracion = EmpresaConfiguracionPlanilla::obtenerOCrearConfiguracion($empresaId);
+                return response()->json([
+                    'success' => true,
+                    'data' => null,
+                    'empresa_pais' => [
+                        'cod_pais' => $codPaisEmpresa,
+                        'nombre_pais' => $this->getNombrePais($codPaisEmpresa),
+                        'pais' => $empresa->pais ?? null,
+                    ],
+                ]);
             }
 
             return response()->json([
@@ -45,7 +54,7 @@ class   ConfiguracionPlanillaController extends Controller
                     'id' => $configuracion->id,
                     'empresa_id' => $configuracion->empresa_id,
                     'cod_pais' => $configuracion->cod_pais,
-                    'pais_configuracion' => $configuracion->pais->nombre,
+                    'pais_configuracion' => $configuracion->pais->nombre ?? $this->getNombrePais($configuracion->cod_pais),
                     'configuracion' => $configuracion->configuracion,
                     'activo' => $configuracion->activo,
                     'fecha_vigencia_desde' => $configuracion->fecha_vigencia_desde,
@@ -54,7 +63,12 @@ class   ConfiguracionPlanillaController extends Controller
                     'configuraciones_generales' => $configuracion->getConfiguracionesGenerales(),
                     'deducciones' => $configuracion->getDeducciones(),
                     'ingresos' => $configuracion->getIngresos()
-                ]
+                ],
+                'empresa_pais' => [
+                    'cod_pais' => $codPaisEmpresa,
+                    'nombre_pais' => $this->getNombrePais($codPaisEmpresa),
+                    'pais' => $empresa->pais ?? null,
+                ],
             ]);
         } catch (\Exception $e) {
             Log::error('Error obteniendo configuración de planilla', [
@@ -65,6 +79,54 @@ class   ConfiguracionPlanillaController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error al obtener la configuración: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Crear configuración desde la plantilla del país de la empresa
+     */
+    public function importarPlantilla(Request $request): JsonResponse
+    {
+        try {
+            $empresaId = $request->user()->id_empresa;
+
+            if (EmpresaConfiguracionPlanilla::obtenerConfiguracion($empresaId)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'La empresa ya tiene una configuración de planilla activa'
+                ], 409);
+            }
+
+            $configuracion = EmpresaConfiguracionPlanilla::obtenerOCrearConfiguracion($empresaId);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Plantilla importada exitosamente',
+                'data' => [
+                    'id' => $configuracion->id,
+                    'empresa_id' => $configuracion->empresa_id,
+                    'cod_pais' => $configuracion->cod_pais,
+                    'pais_configuracion' => $this->getNombrePais($configuracion->cod_pais),
+                    'configuracion' => $configuracion->configuracion,
+                    'activo' => $configuracion->activo,
+                    'fecha_vigencia_desde' => $configuracion->fecha_vigencia_desde,
+                    'fecha_vigencia_hasta' => $configuracion->fecha_vigencia_hasta,
+                    'conceptos' => $configuracion->getConceptos(),
+                    'configuraciones_generales' => $configuracion->getConfiguracionesGenerales(),
+                    'deducciones' => $configuracion->getDeducciones(),
+                    'ingresos' => $configuracion->getIngresos()
+                ]
+            ], 201);
+        } catch (\Exception $e) {
+            Log::error('Error importando plantilla de planilla', [
+                'error' => $e->getMessage(),
+                'empresa_id' => $request->user()->id_empresa ?? null
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al importar la plantilla: ' . $e->getMessage()
             ], 500);
         }
     }

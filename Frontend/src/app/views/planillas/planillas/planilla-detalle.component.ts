@@ -378,10 +378,10 @@ export class PlanillaDetalleComponent implements OnInit {
 
   loadConceptosConfigurados() {
     this.configPlanillaService.obtenerConfiguracion().pipe(this.untilDestroyed()).subscribe({
-      next: (config) => {
+      next: (response) => {
         // Guardar la configuración completa para acceder a pais_configuracion
-        this.configPlanilla = config;
-        this.conceptosConfigurados = config?.configuracion?.conceptos || null;
+        this.configPlanilla = response.configuracion;
+        this.conceptosConfigurados = response.configuracion?.configuracion?.conceptos || null;
         this.cargarConceptosDeduccion();
         this.cdr.markForCheck();
       },
@@ -2342,9 +2342,9 @@ export class PlanillaDetalleComponent implements OnInit {
 
   public validarConfiguracionEmpresa(): void {
     this.configPlanillaService.obtenerConfiguracion().pipe(this.untilDestroyed()).subscribe({
-      next: (config) => {
-        if (config.configuracion.conceptos) {
-          const totalConceptos = Object.keys(config.configuracion.conceptos).length;
+      next: (response) => {
+        if (response.configuracion?.configuracion?.conceptos) {
+          const totalConceptos = Object.keys(response.configuracion.configuracion.conceptos).length;
         }
       },
       error: (error) => {
