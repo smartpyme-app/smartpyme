@@ -7,6 +7,7 @@ use App\Models\Admin\Impuesto;
 use App\Models\Inventario\Producto;
 use App\Models\Ventas\Devoluciones\Detalle as DetalleDevolucion;
 use App\Models\Ventas\Devoluciones\Devolucion;
+use App\Services\FacturacionElectronica\CostaRica\BccrTipoCambioClient;
 use App\Services\FacturacionElectronica\CostaRica\CostaRicaInvoiceFromVentaMapper;
 use App\Services\FacturacionElectronica\CostaRica\CostaRicaTipoCambioService;
 use Carbon\Carbon;
@@ -21,7 +22,9 @@ final class CostaRicaInvoiceFromVentaMapperTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->mapper = new CostaRicaInvoiceFromVentaMapper(new CostaRicaTipoCambioService());
+        $this->mapper = new CostaRicaInvoiceFromVentaMapper(
+            new CostaRicaTipoCambioService($this->createMock(BccrTipoCambioClient::class))
+        );
     }
 
     public function test_fecha_emision_xml_usa_hora_real_costa_rica(): void

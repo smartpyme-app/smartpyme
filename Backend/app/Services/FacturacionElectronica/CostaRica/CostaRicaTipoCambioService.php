@@ -3,62 +3,48 @@
 namespace App\Services\FacturacionElectronica\CostaRica;
 
 use App\Models\Admin\Empresa;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
+use App\Models\FacturacionElectronica\CostaRica\BccrTipoCambio;
+use Carbon\Carbon;
 
 /**
  * Tipo de cambio USD → CRC para comprobantes en dólares (venta / Hacienda CR).
- * Prioridad: custom_empresa.facturacion_fe.tipo_cambio_usd_crc, caché API, valor por defecto.
+ * Fuente única: BCCR indicador 318 (tipo de cambio de venta), cacheado por día en `bccr_tipos_cambio`.
+ * Sin fallback numérico: si el BCCR no responde, se lanza excepción (no se emite con un tipo de cambio inventado).
  */
 final class CostaRicaTipoCambioService
 {
-    private const CACHE_KEY = 'fe_cr_tipo_cambio_usd_crc';
+    public function __construct(private readonly BccrTipoCambioClient $client) {}
 
-    private const CACHE_TTL_SECONDS = 3600;
+    public function rateForDate(\DateTimeInterface $date): float
+    {
+        $day = Carbon::instance(\DateTimeImmutable::createFromInterface($date))->startOfDay();
 
-    private const FALLBACK_CRC_PER_USD = 520.0;
+        $row = BccrTipoCambio::query()->whereDate('date', $day)->first();
+        if ($row) {
+            return (float) $row->venta_reference_rate;
+        }
+
+        $rate = $this->client->fetchVentaRate($day);
+        if ($rate === null || $rate <= 0) {
+            throw new \RuntimeException('No hay tipo de cambio BCCR (318) para la fecha '.$day->toDateString());
+        }
+
+        BccrTipoCambio::query()->updateOrCreate(
+            ['date' => $day->toDateString()],
+            ['venta_reference_rate' => $rate, 'fetched_at' => now()]
+        );
+
+        return (float) $rate;
+    }
 
     /**
      * CRC por 1 USD (para campo exchange_rate cuando currency_code es USD).
      */
-    public function crcPorUsdVenta(Empresa $empresa): float
+    public function crcPorUsdVenta(Empresa $empresa, ?\DateTimeInterface $date = null): float
     {
-        $manual = $empresa->getCustomConfigValue('facturacion_fe', 'tipo_cambio_usd_crc', null);
-        if ($manual !== null && $manual !== '' && is_numeric($manual)) {
-            $v = (float) $manual;
+        // Ignora tipo_cambio_usd_crc manual y APIs genéricas / fallback 520: fuente única BCCR 318.
+        $date ??= now('America/Costa_Rica');
 
-            return $v > 0 ? $v : self::FALLBACK_CRC_PER_USD;
-        }
-
-        return (float) Cache::remember(self::CACHE_KEY, self::CACHE_TTL_SECONDS, function () {
-            return $this->fetchCrcPerUsdFromApis() ?? self::FALLBACK_CRC_PER_USD;
-        });
-    }
-
-    private function fetchCrcPerUsdFromApis(): ?float
-    {
-        $urls = [
-            'https://api.exchangerate.host/latest?base=USD&symbols=CRC',
-            'https://open.er-api.com/v6/latest/USD',
-        ];
-
-        foreach ($urls as $url) {
-            try {
-                $response = Http::timeout(12)->acceptJson()->get($url);
-                if (! $response->successful()) {
-                    continue;
-                }
-                $data = $response->json();
-                $rate = $data['rates']['CRC'] ?? null;
-                if (is_numeric($rate) && (float) $rate > 0) {
-                    return (float) $rate;
-                }
-            } catch (\Throwable $e) {
-                Log::debug('FE CR tipo cambio API falló', ['url' => $url, 'error' => $e->getMessage()]);
-            }
-        }
-
-        return null;
+        return $this->rateForDate($date);
     }
 }
