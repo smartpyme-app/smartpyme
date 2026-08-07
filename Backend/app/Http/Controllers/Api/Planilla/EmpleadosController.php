@@ -6,6 +6,7 @@ use App\Constants\PlanillaConstants;
 use App\Helpers\DocumentHelper;
 use App\Helpers\RentaHelper;
 use App\Http\Controllers\Controller;
+use App\Models\EmpresaConfiguracionPlanilla;
 use App\Models\Planilla\ContactoEmergencia;
 use App\Models\Planilla\DocumentoEmpleado;
 use App\Models\Planilla\Empleado;
@@ -89,12 +90,13 @@ class EmpleadosController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $request->validate(array_merge([
             'nombres' => 'required|string|max:100',
             'apellidos' => 'required|string|max:100',
             'dui' => [
                 'required',
                 'string',
+                'max:20',
                 Rule::unique('empleados', 'dui')
                     ->ignore($request->id)
                     ->where('id_empresa', auth()->user()->id_empresa),
@@ -131,7 +133,7 @@ class EmpleadosController extends Controller
             'configuracion_descuentos' => 'nullable|array',
             'configuracion_descuentos.aplicar_afp' => 'nullable|boolean',
             'configuracion_descuentos.aplicar_isss' => 'nullable|boolean'
-        ]);
+        ], $this->reglasCamposCr($request, true)));
 
         try {
             DB::beginTransaction();
@@ -160,6 +162,8 @@ class EmpleadosController extends Controller
                 'salario_base' => $request->salario_base,
                 'estado' => $request->estado ?? PlanillaConstants::ESTADO_EMPLEADO_ACTIVO,
             ];
+
+            $datosEmpleado = array_merge($datosEmpleado, $this->normalizarCamposCr($request));
 
             // Manejar configuracion_descuentos si viene en el request
             if ($request->has('configuracion_descuentos') && is_array($request->configuracion_descuentos)) {
@@ -267,7 +271,7 @@ class EmpleadosController extends Controller
         // Si no viene DUI, no validar
 
         // Validación con campos opcionales (sometimes)
-        $reglasValidacion = [
+        $reglasValidacion = array_merge([
             'nombres' => 'sometimes|string|max:100',
             'apellidos' => 'sometimes|string|max:100',
             'dui_homologado' => 'nullable|boolean',
@@ -298,7 +302,7 @@ class EmpleadosController extends Controller
             'configuracion_descuentos' => 'nullable|array',
             'configuracion_descuentos.aplicar_afp' => 'nullable|boolean',
             'configuracion_descuentos.aplicar_isss' => 'nullable|boolean'
-        ];
+        ], $this->reglasCamposCr($request, false, $empleado));
 
         // Agregar reglas de DUI solo si se definieron
         if (!empty($reglasDui)) {
@@ -321,6 +325,7 @@ class EmpleadosController extends Controller
                 'apellidos',
                 'dui',
                 'dui_homologado',
+                'id_type',
                 'nit',
                 'isss',
                 'afp',
@@ -329,8 +334,13 @@ class EmpleadosController extends Controller
                 'telefono',
                 'email',
                 'salario_base',
+                'tipo_salario',
+                'tiene_conyuge_dependiente',
+                'cantidad_hijos_dependientes',
                 'tipo_contrato',
                 'tipo_jornada',
+                'horas_jornada',
+                'categoria_ocupacional',
                 'fecha_ingreso',
                 'id_departamento',
                 'id_cargo',
@@ -349,8 +359,13 @@ class EmpleadosController extends Controller
                     continue;
                 }
 
+                if ($campo === 'tiene_conyuge_dependiente' && $request->has('tiene_conyuge_dependiente')) {
+                    $datosActualizar[$campo] = $request->boolean('tiene_conyuge_dependiente');
+                    continue;
+                }
+
                 if ($request->has($campo) && $request->$campo !== null) {
-                    if (in_array($campo, ['tipo_contrato', 'tipo_jornada'])) {
+                    if (in_array($campo, ['tipo_contrato', 'tipo_jornada', 'id_type', 'tipo_salario', 'cantidad_hijos_dependientes'])) {
                         $datosActualizar[$campo] = intval($request->$campo);
                     } elseif ($campo === 'configuracion_descuentos' && is_array($request->$campo)) {
                         // Asegurar que configuracion_descuentos tenga el formato correcto
@@ -997,6 +1012,10 @@ class EmpleadosController extends Controller
 
     private function reglasNit(Request $request, ?Empleado $empleado = null): array
     {
+        if ($this->empresaEsCostaRica()) {
+            return ['nullable', 'string'];
+        }
+
         $duiHomologado = $request->has('dui_homologado')
             ? $request->boolean('dui_homologado')
             : ($empleado ? (bool) $empleado->dui_homologado : false);
@@ -1004,5 +1023,68 @@ class EmpleadosController extends Controller
         return $duiHomologado
             ? ['nullable', 'string']
             : ['required', 'string'];
+    }
+
+    private function empresaEsCostaRica(): bool
+    {
+        $empresa = auth()->user()->empresa ?? null;
+
+        return EmpresaConfiguracionPlanilla::resolverCodigoPaisEmpresa($empresa) === 'CR';
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function reglasCamposCr(Request $request, bool $esStore, ?Empleado $empleado = null): array
+    {
+        $idTypes = implode(',', PlanillaConstants::idTypesCrValidos());
+        $tiposSalario = implode(',', PlanillaConstants::tiposSalarioValidos());
+        $cats = implode(',', PlanillaConstants::categoriasOcupacionalesCrKeys());
+        $esCr = $this->empresaEsCostaRica();
+
+        $req = $esCr && $esStore ? 'required' : ($esCr ? 'sometimes' : 'nullable');
+
+        $reglas = [
+            'id_type' => "{$req}|integer|in:{$idTypes}",
+            'tipo_salario' => "nullable|integer|in:{$tiposSalario}",
+            'horas_jornada' => 'nullable|numeric|min:0|max:48',
+            'categoria_ocupacional' => "{$req}|string|in:{$cats}",
+            'tiene_conyuge_dependiente' => 'nullable|boolean',
+            'cantidad_hijos_dependientes' => 'nullable|integer|min:0|max:20',
+        ];
+
+        if (!$esCr) {
+            $reglas['id_type'] = 'nullable|integer|in:' . $idTypes;
+            $reglas['categoria_ocupacional'] = 'nullable|string|in:' . $cats;
+        }
+
+        $tipoJornada = $request->has('tipo_jornada')
+            ? (int) $request->tipo_jornada
+            : ($empleado ? (int) $empleado->tipo_jornada : null);
+
+        if ($esCr && $tipoJornada === PlanillaConstants::TIPO_JORNADA_MEDIO_TIEMPO) {
+            $reglas['horas_jornada'] = ($esStore ? 'required' : 'sometimes') . '|numeric|min:0|max:48';
+        }
+
+        return $reglas;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function normalizarCamposCr(Request $request): array
+    {
+        return [
+            'id_type' => $request->has('id_type') ? (int) $request->id_type : null,
+            'tipo_salario' => $request->has('tipo_salario') && $request->tipo_salario !== null
+                ? (int) $request->tipo_salario
+                : PlanillaConstants::TIPO_SALARIO_FIJO,
+            'horas_jornada' => $request->has('horas_jornada') ? $request->horas_jornada : null,
+            'categoria_ocupacional' => $request->categoria_ocupacional ?? null,
+            'tiene_conyuge_dependiente' => $request->boolean('tiene_conyuge_dependiente'),
+            'cantidad_hijos_dependientes' => $request->has('cantidad_hijos_dependientes')
+                ? (int) $request->cantidad_hijos_dependientes
+                : 0,
+        ];
     }
 }
