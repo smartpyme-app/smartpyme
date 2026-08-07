@@ -516,7 +516,9 @@ class DevolucionVentasController extends Controller
     }
 
     public function generarDoc($id){
-        $venta = Devolucion::where('id', $id)->with('detalles', 'cliente')->firstOrFail();
+        $venta = Devolucion::where('id', $id)
+            ->with(['detalles.producto', 'cliente', 'venta', 'documento'])
+            ->firstOrFail();
 
         if(Auth::user()->id_empresa == 187 && $venta->nombre_documento == "Nota de crédito"){//187  OK V2
 
@@ -565,6 +567,30 @@ class DevolucionVentasController extends Controller
 
             $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.NC-Kiero', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
             $pdf->setPaper('Legal', 'portrait'); 
+        }
+        else if(Auth::user()->id_empresa == 420 && $venta->nombre_documento == "Nota de crédito"){//420 Inversiones Andre - Honduras
+            $cliente = Cliente::withoutGlobalScope('empresa')->find($venta->id_cliente);
+            $empresa = Empresa::findOrfail(Auth::user()->id_empresa);
+
+            $formatter = new NumeroALetras();
+            $n = explode(".", number_format($venta->total, 2));
+            $dolares = $formatter->toWords(floatval(str_replace(',', '', $n[0])));
+            $centavos = $formatter->toWords($n[1] ?? '00');
+
+            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.NC-Inversiones-Andre', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+            $pdf->setPaper('US Letter', 'portrait');
+        }
+        else if(Auth::user()->id_empresa == 420 && $venta->nombre_documento == "Nota de débito"){//420 Inversiones Andre - Honduras
+            $cliente = Cliente::withoutGlobalScope('empresa')->find($venta->id_cliente);
+            $empresa = Empresa::findOrfail(Auth::user()->id_empresa);
+
+            $formatter = new NumeroALetras();
+            $n = explode(".", number_format($venta->total, 2));
+            $dolares = $formatter->toWords(floatval(str_replace(',', '', $n[0])));
+            $centavos = $formatter->toWords($n[1] ?? '00');
+
+            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.ND-Inversiones-Andre', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+            $pdf->setPaper('US Letter', 'portrait');
         }else{
             $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.nota-credito', compact('venta'));
             $pdf->setPaper('US Letter', 'portrait');

@@ -81,7 +81,7 @@ class LibroVentasExport implements FromCollection, WithMapping, WithHeadings, Wi
             ->orderBy('correlativo')
             ->get();
 
-        $devoluciones = DevolucionVenta::with(['cliente', 'venta'])
+        $devoluciones = DevolucionVenta::with(['cliente', 'venta', 'documento'])
             ->where('enable', true)
             ->whereHas('venta', fn($q) => $q->where('estado', '!=', 'Anulada'))
             ->when($request->id_sucursal, fn($q) => $q->where('id_sucursal', $request->id_sucursal))
@@ -114,6 +114,11 @@ class LibroVentasExport implements FromCollection, WithMapping, WithHeadings, Wi
 
         $filasDevoluciones = $devoluciones->map(function ($d) {
             $ventaOriginal = $d->venta;
+            $nombreDoc = trim((string) (optional($d->documento)->nombre ?? $d->nombre_documento ?? ''));
+            $esNotaDebito = strcasecmp($nombreDoc, 'Nota de débito') === 0;
+            $signo = $esNotaDebito ? 1 : -1;
+            $descripcion = $esNotaDebito ? 'Nota de débito' : 'Nota de crédito';
+
             return [
                 'fecha' => $d->fecha,
                 'num_orden_exenta' => '',
@@ -124,17 +129,19 @@ class LibroVentasExport implements FromCollection, WithMapping, WithHeadings, Wi
                 'numero_factura_relacionada' => $ventaOriginal ? trim((string) $ventaOriginal->correlativo) : '',
                 'cliente' => $d->nombre_cliente,
                 'rtn' => optional($d->cliente)->nit ?? optional($d->cliente)->ncr ?? '',
-                'descripcion' => 'Nota de crédito',
+                'descripcion' => $descripcion,
                 'no_factura' => trim((string) $d->correlativo),
-                'importe_exenta' => $d->exenta > 0 ? -1 * (float) $d->exenta : 0,
-                'importe_gravada' => $d->sub_total > 0 ? -1 * (float) $d->sub_total : 0,
+                'importe_exenta' => $d->exenta > 0 ? $signo * (float) $d->exenta : 0,
+                'importe_gravada' => $d->sub_total > 0 ? $signo * (float) $d->sub_total : 0,
                 'importe_exonerada' => 0,
-                'impuesto_ventas' => $d->iva > 0 ? -1 * (float) $d->iva : 0,
+                'impuesto_ventas' => $d->iva > 0 ? $signo * (float) $d->iva : 0,
                 'importe_exportacion' => 0,
             ];
         });
 
-        return $filasVentas->merge($filasDevoluciones)->sortBy('fecha')->values();
+        // map() sobre Eloquent\Collection sigue siendo Eloquent\Collection;
+        // merge() ahí espera modelos (getKey). Pasar a Support\Collection.
+        return $filasVentas->toBase()->merge($filasDevoluciones)->sortBy('fecha')->values();
     }
 
     /**

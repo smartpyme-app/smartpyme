@@ -1743,6 +1743,21 @@ export class VentasComponent implements OnInit, OnDestroy {
     return !!this.boxfulShipmentDeVenta(venta)?.boxful_shipment_id;
   }
 
+  /**
+   * NC/ND: Crédito fiscal (SV y otros) o Factura en empresas de Honduras.
+   */
+  puedeCrearNotaCreditoDebito(venta: any): boolean {
+    if (!venta) {
+      return false;
+    }
+    const nombre = venta.nombre_documento;
+    if (nombre === 'Crédito fiscal') {
+      return true;
+    }
+    const pais = this.apiService.auth_user()?.empresa?.pais;
+    return pais === 'Honduras' && nombre === 'Factura';
+  }
+
   puedeGenerarEnvioBoxful(venta: any): boolean {
     if (!this.tieneBoxful || !venta || venta.estado === 'Anulada') {
       return false;
