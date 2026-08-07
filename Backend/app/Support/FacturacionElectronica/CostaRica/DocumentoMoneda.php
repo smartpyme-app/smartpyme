@@ -77,12 +77,16 @@ final class DocumentoMoneda
             throw new RuntimeException('Tipo de cambio inválido para USD: no puede ser igual a 1 (use CRC).');
         }
 
+        // Montos en BD = moneda empresa. Si la empresa es CRC, total/iva ya son colones.
+        $monedaEmpresa = strtoupper(trim((string) ($empresa->moneda ?? self::MONEDA_CRC)));
+        $montosYaEnCrc = $monedaEmpresa !== self::MONEDA_USD;
+
         return [
             'currency_code' => self::MONEDA_USD,
             'exchange_rate' => $rate,
             'exchange_rate_date' => $fecha->toDateString(),
-            'crc_equivalent_total' => round($total * $rate, 5),
-            'crc_equivalent_iva' => round($iva * $rate, 5),
+            'crc_equivalent_total' => round($montosYaEnCrc ? $total : $total * $rate, 5),
+            'crc_equivalent_iva' => round($montosYaEnCrc ? $iva : $iva * $rate, 5),
         ];
     }
 }

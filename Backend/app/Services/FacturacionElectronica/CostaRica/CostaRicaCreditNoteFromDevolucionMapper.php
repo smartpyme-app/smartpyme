@@ -64,6 +64,13 @@ final class CostaRicaCreditNoteFromDevolucionMapper
             return $this->invoiceMapper->lineaDesdeDetalleDevolucion($d, $empresa, $pctIva);
         })->all());
 
+        [$factorMoneda, $lineItems] = $this->invoiceMapper->convertirLineasEmpresaADocumentoFe(
+            $empresa,
+            (string) ($facturaOriginal->currency_code ?? $empresa->moneda ?? 'CRC'),
+            $facturaOriginal->exchange_rate,
+            $lineItems
+        );
+
         $referenced = [[
             'document_type' => '01',
             'document_number' => $claveFactura,
@@ -77,7 +84,7 @@ final class CostaRicaCreditNoteFromDevolucionMapper
             'receiver' => $receiver,
             'line_items' => $lineItems,
             'payments' => $this->invoiceMapper->pagosDesdeLineas($lineItems),
-            'summary' => $this->invoiceMapper->resumenDevolucionAlineadoLineas($devolucion, $lineItems),
+            'summary' => $this->invoiceMapper->resumenDevolucionAlineadoLineas($devolucion, $lineItems, $factorMoneda),
             'referenced_documents' => $referenced,
         ]);
     }

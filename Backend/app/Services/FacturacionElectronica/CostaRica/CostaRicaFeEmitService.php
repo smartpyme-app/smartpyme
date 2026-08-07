@@ -296,6 +296,17 @@ final class CostaRicaFeEmitService
             ]],
         ];
 
+        [, $lineItemsNd] = $this->mapper->convertirLineasEmpresaADocumentoFe(
+            $empresa,
+            (string) ($venta->currency_code ?? $empresa->moneda ?? 'CRC'),
+            $venta->exchange_rate,
+            [$line]
+        );
+        $line = $lineItemsNd[0];
+        $sub = (float) $line['sub_total'];
+        $iva = (float) $line['total_tax'];
+        $montoLineaDoc = (float) $line['total'];
+
         $summary = [
             'total_taxed_goods' => $sub,
             'total_exempt_goods' => 0.0,
@@ -310,7 +321,7 @@ final class CostaRicaFeEmitService
             'total_discounts' => 0.0,
             'total_net_sale' => $sub,
             'total_tax' => $iva,
-            'total' => round($montoLinea, 2),
+            'total' => round($montoLineaDoc, 2),
             'taxes' => [[
                 'tax_type' => '01',
                 'iva_type' => '08',
