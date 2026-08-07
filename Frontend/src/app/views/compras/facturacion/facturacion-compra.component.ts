@@ -144,6 +144,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
     public tcPreviewCompra: { rate: number | null; date: string | null; loading: boolean; error: string | null } = {
         rate: null, date: null, loading: false, error: null,
     };
+    public tieneMultimoneda: boolean = false;
 
     esFeCostaRicaCompra(): boolean {
         return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR;
@@ -153,13 +154,21 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
         return this.compra?.currency_code || 'CRC';
     }
 
+    get etiquetaOpcionUsdCompra(): string {
+        const rate = parseFloat(this.compra?.exchange_rate ?? this.tcPreviewCompra.rate);
+        if (Number.isFinite(rate) && rate > 0 && rate !== 1) {
+            return `USD (₡${rate.toFixed(2)})`;
+        }
+        return 'USD';
+    }
+
     get compraYaTieneDte(): boolean {
         return !!this.compra?.dte;
     }
 
     /** Spec §10.1/§10.2: default CRC salvo que la empresa use USD y sea moneda soportada. */
     private inicializarMonedaCompra(): void {
-        if (!this.esFeCostaRicaCompra()) {
+        if (!this.tieneMultimoneda) {
             return;
         }
         if (!this.compra.currency_code) {
@@ -170,7 +179,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
     }
 
     private sincronizarPreviewMonedaCompra(): void {
-        if (!this.esFeCostaRicaCompra()) {
+        if (!this.tieneMultimoneda) {
             return;
         }
         if (this.compra.currency_code === 'USD') {
@@ -192,7 +201,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
     }
 
     public onFechaCompraChange(): void {
-        if (this.esFeCostaRicaCompra() && this.monedaCompra === 'USD' && !this.compraYaTieneDte) {
+        if (this.tieneMultimoneda && this.monedaCompra === 'USD' && !this.compraYaTieneDte) {
             this.cargarTipoCambioPreviewCompra();
         }
     }
@@ -219,18 +228,21 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
         });
     }
 
-    get crcEquivalentTotalCompra(): number | null {
-        const total = parseFloat(this.compra?.total);
-        const rate = parseFloat(this.compra?.exchange_rate);
-        if (!Number.isFinite(total) || !Number.isFinite(rate)) {
+    get usdEquivalentTotalCompra(): number | null {
+        if (!this.tieneMultimoneda || this.monedaCompra !== 'USD') {
             return null;
         }
-        return total * rate;
+        const total = parseFloat(this.compra?.total);
+        const rate = parseFloat(this.compra?.exchange_rate);
+        if (!Number.isFinite(total) || !Number.isFinite(rate) || rate <= 0 || rate === 1) {
+            return null;
+        }
+        return total / rate;
     }
 
     /** Sin TC usable en USD, bloquear procesar/guardar con mensaje claro (spec §10.2/§14). */
     get bloquearCompraPorMonedaSinTc(): boolean {
-        if (!this.esFeCostaRicaCompra() || this.compraYaTieneDte || this.monedaCompra !== 'USD') {
+        if (!this.tieneMultimoneda || this.compraYaTieneDte || this.monedaCompra !== 'USD') {
             return false;
         }
         const rate = parseFloat(this.compra?.exchange_rate);
@@ -290,6 +302,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
 
         this.cargarDatosIniciales();
         this.verificarAccesoContabilidad();
+        this.verificarAccesoMultimoneda();
 
         // Cargar datos compartidos usando SharedDataService
         this.sharedDataService.getSucursales()
@@ -587,6 +600,24 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
           this.contabilidadHabilitada = false;
           this.cdr.markForCheck();
         }
+      });
+  }
+
+  verificarAccesoMultimoneda(): void {
+    this.funcionalidadesService.verificarAcceso('multimoneda')
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (acceso) => {
+          this.tieneMultimoneda = acceso;
+          if (acceso) {
+            this.inicializarMonedaCompra();
+          }
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.tieneMultimoneda = false;
+          this.cdr.markForCheck();
+        },
       });
   }
 

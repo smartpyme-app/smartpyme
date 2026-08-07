@@ -35,6 +35,7 @@ use App\Services\Ventas\DocumentoService;
 use App\Services\Ventas\ReporteService;
 use App\Services\Ventas\FacturacionConsignaService;
 use App\Services\Ventas\FacturacionService;
+use App\Support\FacturacionElectronica\CostaRica\DocumentoMoneda;
 use App\Services\Ventas\LibroIvaService;
 use App\Services\Ventas\CorteService;
 use App\Services\Ventas\CxcService;
@@ -591,7 +592,7 @@ class VentasController extends Controller
             }
 
             // El frontend ya envía el total sin propina, así que no necesitamos ajustarlo
-            $venta->fill($request->all());
+            $venta->fill($request->except(DocumentoMoneda::CAMPOS_PERSISTIDOS));
             $venta->save();
 
             DB::commit();
@@ -703,12 +704,19 @@ class VentasController extends Controller
             if (round($venta->total, 2) > round($request->total, 2)) {
                 // Crear consigna
                 $consigna = new Venta();
-                $consigna->fill($request->all());
+                $consigna->fill($request->except(DocumentoMoneda::CAMPOS_PERSISTIDOS));
                 $consigna->estado = 'Consigna';
                 $consigna->sub_total = $venta->sub_total - $request->sub_total;
                 $consigna->total_costo  = $venta->total_costo  - $request->total_costo;
                 $consigna->total = $venta->total - $request->total;
                 $consigna->iva = $venta->iva - $request->iva;
+                // Heredar moneda/TC de la venta origen (no del request).
+                $consigna->currency_code = $venta->currency_code ?? DocumentoMoneda::MONEDA_CRC;
+                $consigna->exchange_rate = $venta->exchange_rate ?? 1;
+                $consigna->exchange_rate_date = $venta->exchange_rate_date;
+                $rate = (float) ($consigna->exchange_rate ?: 1);
+                $consigna->crc_equivalent_total = round((float) $consigna->total * $rate, 5);
+                $consigna->crc_equivalent_iva = round((float) $consigna->iva * $rate, 5);
                 $consigna->save();
 
                 foreach ($request->detalles as $detalle) {

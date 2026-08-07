@@ -8,7 +8,6 @@ use JWTAuth;
 use App\Models\Admin\Documento;
 use App\Models\Admin\Empresa;
 use App\Models\Compras\Gastos\Gasto;
-use App\Services\FacturacionElectronica\FacturacionElectronicaCountryResolver;
 use App\Support\FacturacionElectronica\CostaRica\DocumentoMoneda;
 use Carbon\Carbon;
 use App\Services\Bancos\TransaccionesService;
@@ -625,20 +624,23 @@ class GastosController extends Controller
      * Asigna el correlativo activo de Sujeto excluido y lo incrementa (fuente de verdad en backend).
      */
     /**
-     * Resuelve currency_code/exchange_rate/CRC equivalent en gastos de empresas CR (§7.4 spec multimoneda).
-     * Gastos no editan TC en Fase 1 (siempre BCCR); `currency_code` solo cambia si el request lo envía
-     * explícito (aún no hay selector de moneda en UI — Task 6). Otros mercados quedan con defaults CRC/1.
+     * Resuelve currency_code/exchange_rate/CRC equivalent (§7.4).
+     * Requiere funcionalidad `multimoneda`; sin ella fuerza CRC. Gastos no editan TC (siempre BCCR).
      */
     private function resolverMonedaCr(Gasto $gasto, Request $request): void
     {
         $empresa = Empresa::find($gasto->id_empresa);
-        if (! $empresa || FacturacionElectronicaCountryResolver::codPais($empresa) !== FacturacionElectronicaCountryResolver::CODIGO_COSTA_RICA) {
+        if (! $empresa) {
             return;
         }
 
+        $currencyCode = $empresa->tieneFuncionalidadMultimoneda()
+            ? $request->input('currency_code', $gasto->currency_code ?? DocumentoMoneda::MONEDA_CRC)
+            : DocumentoMoneda::MONEDA_CRC;
+
         $moneda = app(DocumentoMoneda::class)->resolve(
             [
-                'currency_code' => $request->input('currency_code', $gasto->currency_code ?? DocumentoMoneda::MONEDA_CRC),
+                'currency_code' => $currencyCode,
                 'total' => (float) $gasto->total,
                 'iva' => (float) $gasto->iva,
             ],

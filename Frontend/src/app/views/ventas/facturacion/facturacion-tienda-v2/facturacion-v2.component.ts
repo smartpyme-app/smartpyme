@@ -100,17 +100,20 @@ export class FacturacionV2Component implements OnInit {
   public facturarCotizacion = false;
   public api: boolean = false;
   public tieneAccesoPropina: boolean = false;
+  public tieneMultimoneda: boolean = false;
   public tieneFidelizacionHabilitada: boolean = false;
   public mensajeValidacionFecha: string = '';
   public mensajeErrorBanco: string = '';
 
-  /** Preview de tipo de cambio BCCR para el selector de moneda CR (Task 5, SP-2102). */
+  /** Preview de tipo de cambio BCCR para el selector de moneda (Task 5, SP-2102). */
   public tcPreview: { rate: number | null; date: string | null; loading: boolean; error: string | null } = {
     rate: null,
     date: null,
     loading: false,
     error: null,
   };
+  public exchangeRateDraft: number | null = null;
+  private modalTipoCambioRef?: BsModalRef;
 
   /** Si está activo, se muestra el monto; el importe es siempre la suma de `cuenta_a_terceros` en las líneas (no se edita en cabecera). */
   public habilitarCuentaTerceros = false;
@@ -272,6 +275,7 @@ export class FacturacionV2Component implements OnInit {
     this.cargarDatosIniciales();
     this.loadData();
     this.verificarAccesoPropina();
+    this.verificarAccesoMultimoneda();
     this.verificarFidelizacionHabilitada();
   }
 
@@ -1122,9 +1126,9 @@ export class FacturacionV2Component implements OnInit {
 
   // ==================== MULTIMONEDA CR (Task 5, SP-2102) ====================
 
-  /** Spec §10.1: default = empresa.moneda si es CRC/USD; si no, CRC. */
+  /** Spec §10.1: default = empresa.moneda si es CRC/USD; si no, CRC. Requiere funcionalidad `multimoneda`. */
   private inicializarMonedaVenta(): void {
-    if (!this.esFeCostaRicaFacturacion()) {
+    if (!this.tieneMultimoneda) {
       return;
     }
     const monedaEmpresa = this.apiService.auth_user()?.empresa?.moneda;
@@ -1139,7 +1143,7 @@ export class FacturacionV2Component implements OnInit {
 
   /** Duplicar venta / facturar cotización: nuevo documento (fecha hoy, sin dte) → refrescar TC del día si USD. */
   private refrescarMonedaTrasResetFecha(): void {
-    if (!this.esFeCostaRicaFacturacion()) {
+    if (!this.tieneMultimoneda) {
       return;
     }
     if (this.venta.currency_code === 'USD') {
@@ -1151,7 +1155,7 @@ export class FacturacionV2Component implements OnInit {
 
   /** Al cargar una venta existente (editar/duplicar/facturar cotización): reflejar moneda ya persistida. */
   private sincronizarPreviewMonedaDesdeVenta(): void {
-    if (!this.esFeCostaRicaFacturacion()) {
+    if (!this.tieneMultimoneda) {
       return;
     }
     if (!this.venta.currency_code) {
@@ -1175,6 +1179,15 @@ export class FacturacionV2Component implements OnInit {
     return this.venta?.currency_code || 'CRC';
   }
 
+  get etiquetaOpcionUsd(): string {
+    const rate = parseFloat(this.venta?.exchange_rate);
+    // rate === 1 es el default de CRC; no es un TC USD válido.
+    if (Number.isFinite(rate) && rate > 0 && rate !== 1) {
+      return `USD (₡${rate.toFixed(2)})`;
+    }
+    return 'USD';
+  }
+
   /** Post-emisión: selector y TC quedan inmutables (spec §10.1.6). */
   get ventaYaEmitida(): boolean {
     return !!this.venta?.dte;
@@ -1182,6 +1195,43 @@ export class FacturacionV2Component implements OnInit {
 
   get permitirEditarTipoCambioVentas(): boolean {
     return !!this.apiService.auth_user()?.empresa?.custom_empresa?.facturacion_fe?.permitir_editar_tipo_cambio;
+  }
+
+  get puedeEditarTipoCambio(): boolean {
+    return this.tieneMultimoneda
+      && this.monedaVenta === 'USD'
+      && this.permitirEditarTipoCambioVentas
+      && !this.ventaYaEmitida;
+  }
+
+  public abrirModalTipoCambio(template: TemplateRef<any>): void {
+    if (!this.puedeEditarTipoCambio) {
+      return;
+    }
+    const actual = parseFloat(this.venta?.exchange_rate);
+    this.exchangeRateDraft = (Number.isFinite(actual) && actual > 0 && actual !== 1)
+      ? actual
+      : (this.tcPreview.rate ?? null);
+    this.modalTipoCambioRef = this.modalService.show(template, {
+      class: 'modal-sm',
+      backdrop: 'static',
+    });
+  }
+
+  public cerrarModalTipoCambio(): void {
+    this.modalTipoCambioRef?.hide();
+    this.modalTipoCambioRef = undefined;
+  }
+
+  public aplicarTipoCambioManual(): void {
+    const rate = parseFloat(String(this.exchangeRateDraft ?? ''));
+    if (!Number.isFinite(rate) || rate <= 0) {
+      this.alertService.error('Ingrese un tipo de cambio válido mayor a 0.');
+      return;
+    }
+    this.venta.exchange_rate = rate;
+    this.sumTotal();
+    this.cerrarModalTipoCambio();
   }
 
   public onCurrencyCodeChange(): void {
@@ -1196,7 +1246,7 @@ export class FacturacionV2Component implements OnInit {
   }
 
   public onFechaVentaChange(): void {
-    if (this.esFeCostaRicaFacturacion() && this.monedaVenta === 'USD' && !this.ventaYaEmitida) {
+    if (this.tieneMultimoneda && this.monedaVenta === 'USD' && !this.ventaYaEmitida) {
       this.cargarTipoCambioPreview();
     }
   }
@@ -1215,7 +1265,7 @@ export class FacturacionV2Component implements OnInit {
         // Sin flag de edición manual: el TC de la venta siempre refleja el de BCCR del día.
         if (!this.permitirEditarTipoCambioVentas) {
           this.venta.exchange_rate = rate;
-        } else if (this.venta.exchange_rate == null || this.venta.exchange_rate === '') {
+        } else if (this.venta.exchange_rate == null || this.venta.exchange_rate === '' || parseFloat(this.venta.exchange_rate) === 1) {
           this.venta.exchange_rate = rate;
         }
       },
@@ -1224,32 +1274,29 @@ export class FacturacionV2Component implements OnInit {
         this.tcPreview = { rate: null, date: fecha, loading: false, error: msg };
         if (!this.permitirEditarTipoCambioVentas) {
           this.venta.exchange_rate = null;
+        } else if (parseFloat(this.venta.exchange_rate) === 1) {
+          this.venta.exchange_rate = null;
         }
       },
     });
   }
 
-  get crcEquivalentTotal(): number | null {
+  /** Total en moneda empresa ÷ TC → dólares a cobrar al cliente. */
+  get usdEquivalentTotal(): number | null {
+    if (!this.tieneMultimoneda || this.monedaVenta !== 'USD') {
+      return null;
+    }
     const total = parseFloat(this.venta?.total);
     const rate = parseFloat(this.venta?.exchange_rate);
-    if (!Number.isFinite(total) || !Number.isFinite(rate)) {
+    if (!Number.isFinite(total) || !Number.isFinite(rate) || rate <= 0 || rate === 1) {
       return null;
     }
-    return total * rate;
-  }
-
-  get crcEquivalentIva(): number | null {
-    const iva = parseFloat(this.venta?.iva);
-    const rate = parseFloat(this.venta?.exchange_rate);
-    if (!Number.isFinite(iva) || !Number.isFinite(rate)) {
-      return null;
-    }
-    return iva * rate;
+    return total / rate;
   }
 
   /** Spec §10.1.4: sin TC usable, bloquear procesar/emitir con mensaje claro. */
   get bloquearPorMonedaSinTc(): boolean {
-    if (!this.esFeCostaRicaFacturacion() || this.ventaYaEmitida || this.monedaVenta !== 'USD') {
+    if (!this.tieneMultimoneda || this.ventaYaEmitida || this.monedaVenta !== 'USD') {
       return false;
     }
     const rate = parseFloat(this.venta?.exchange_rate);
@@ -2475,6 +2522,20 @@ export class FacturacionV2Component implements OnInit {
         }
     );
 }
+
+  public verificarAccesoMultimoneda(): void {
+    this.funcionalidadesService.verificarAcceso('multimoneda').subscribe({
+      next: (acceso) => {
+        this.tieneMultimoneda = acceso;
+        if (acceso) {
+          this.inicializarMonedaVenta();
+        }
+      },
+      error: () => {
+        this.tieneMultimoneda = false;
+      },
+    });
+  }
 
 public getTotalConPropina(): number {
     const total = parseFloat(this.venta?.total || 0);

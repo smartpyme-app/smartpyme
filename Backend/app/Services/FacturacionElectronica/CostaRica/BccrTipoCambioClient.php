@@ -6,11 +6,13 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Cliente del Web Service de Indicadores Económicos del BCCR.
+ * Cliente BCCR indicador 318 (tipo de cambio de VENTA).
  *
- * Indicador 318 = tipo de cambio de VENTA (referencia para comprobantes FE en USD).
+ * Preferencia: API REST SDDE (Bearer token del portal sdd.bccr.fi.cr).
+ * Fallback: WS SOAP legacy gee.bccr.fi.cr (a menudo 503 desde 2025).
  *
- * @see https://gee.bccr.fi.cr/Indicadores/Suscripciones/WS/wsindicadoreseconomicos.asmx
+ * @see https://sdd.bccr.fi.cr/es/IndicadoresEconomicos/Inicio/
+ * @see https://gee.bccr.fi.cr/indicadoreseconomicos/Documentos/DocumentosMetodologiasNotasTecnicas/Estandar_API_SDDE.pdf
  */
 class BccrTipoCambioClient
 {
@@ -18,16 +20,27 @@ class BccrTipoCambioClient
 
     public function fetchVentaRate(\DateTimeInterface $date): ?float
     {
-        $email = (string) config('services.bccr.email');
         $token = (string) config('services.bccr.token');
+        if ($token === '') {
+            Log::warning('BCCR: falta BCCR_WS_TOKEN; no se puede consultar tipo de cambio 318.');
 
-        if ($email === '' || $token === '') {
-            Log::warning('BCCR: faltan credenciales (BCCR_WS_EMAIL/BCCR_WS_TOKEN); no se puede consultar tipo de cambio 318.');
-
-            return null;
+            throw new \RuntimeException(
+                'Falta BCCR_WS_TOKEN en el servidor. Registro y token: https://sdd.bccr.fi.cr/es/IndicadoresEconomicos/Inicio/'
+            );
         }
 
         $fecha = $date instanceof \DateTimeImmutable ? $date : \DateTimeImmutable::createFromInterface($date);
+
+        $rate = $this->fetchViaSdde($fecha, $token);
+        if ($rate !== null) {
+            return $rate;
+        }
+
+        $email = (string) config('services.bccr.email');
+        if ($email === '') {
+            return null;
+        }
+
         $fechaFormato = $fecha->format('d/m/Y');
         $params = [
             'Indicador' => (string) config('services.bccr.indicador_venta', 318),
@@ -45,6 +58,72 @@ class BccrTipoCambioClient
         }
 
         return $this->fetchViaSoap($params);
+    }
+
+    private function fetchViaSdde(\DateTimeInterface $fecha, string $token): ?float
+    {
+        $indicador = (string) config('services.bccr.indicador_venta', 318);
+        $base = rtrim((string) config('services.bccr.sdde_url'), '/');
+        $fechaIso = $fecha->format('Y/m/d');
+        $url = "{$base}/indicadoresEconomicos/{$indicador}/series";
+        $timeout = (int) config('services.bccr.timeout_seconds', 25);
+
+        try {
+            $response = Http::timeout($timeout)
+                ->withToken($token)
+                ->acceptJson()
+                ->withHeaders([
+                    'User-Agent' => (string) config('services.bccr.user_agent', 'SmartPyme-BCCR/1'),
+                ])
+                ->get($url, [
+                    'fechaInicio' => $fechaIso,
+                    'fechaFin' => $fechaIso,
+                    'idioma' => 'es',
+                ]);
+
+            if (! $response->successful()) {
+                Log::warning('BCCR SDDE: respuesta HTTP no exitosa.', [
+                    'status' => $response->status(),
+                ]);
+
+                return null;
+            }
+
+            return $this->parseSddeSeriesResponse($response->json());
+        } catch (\Throwable $e) {
+            Log::warning('BCCR SDDE: fallo la petición de series.', ['error' => $e->getMessage()]);
+
+            return null;
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $json
+     */
+    public function parseSddeSeriesResponse(?array $json): ?float
+    {
+        if (! is_array($json)) {
+            return null;
+        }
+
+        $datos = $json['datos'] ?? null;
+        if (! is_array($datos) || $datos === []) {
+            return null;
+        }
+
+        $series = $datos[0]['series'] ?? null;
+        if (! is_array($series) || $series === []) {
+            return null;
+        }
+
+        $valor = $series[0]['valorDatoPorPeriodo'] ?? null;
+        if ($valor === null || $valor === '') {
+            return null;
+        }
+
+        $rate = (float) $valor;
+
+        return $rate > 0 ? $rate : null;
     }
 
     private function fetchViaGet(array $params): ?float

@@ -73,6 +73,12 @@ final class DocumentoImportService
             return;
         }
 
+        if ($empresa && ! $empresa->tieneFuncionalidadMultimoneda()) {
+            throw new DocumentoImportException(
+                'El documento está en USD. Habilite la funcionalidad Multimoneda para esta empresa en Super Admin.'
+            );
+        }
+
         $tipoCambioXml = (float) ($dto->resumen['exchange_rate_xml'] ?? 0);
         $fecha = $dto->identificacion['fechaEmision'] ?? null;
         if ($tipoCambioXml <= 0 || ! $fecha) {

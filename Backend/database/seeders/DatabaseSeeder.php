@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             RoleSeeder::class,
             UserRoleSeeder::class,
             FidelizacionFuncionalidadSeeder::class,
+            MultimonedaFuncionalidadSeeder::class,
             MHTableSeeder::class,
             DteTipoMapeoSeeder::class,
             PaisConfiguracionDocumentosSeeder::class,

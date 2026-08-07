@@ -23,7 +23,9 @@
 - Post-emisión: moneda/TC inmutables.
 - Multigiro: **fuera de alcance** (ticket aparte).
 - No tocar `Frontend/src/environments/environment.ts` (cambio local del usuario).
-- **NUNCA** usar `RefreshDatabase`, `migrate:fresh`, `migrate:refresh` ni ningún comando que dropee la BD de `.env`. Tests que necesiten tablas: SQLite `:memory:` creando solo lo necesario, o mocks sin DB (patrón CompraServiceTest / PlanillaServiceTest).
+- **NUNCA** usar `RefreshDatabase`, `migrate:fresh`, `migrate:refresh` ni ningún comando que dropee la BD de `.env`.
+- **NO escribir tests unitarios** en Tasks 2–7 (pedido explícito del usuario). No crear ni modificar `*Test.php` salvo bug de seguridad crítico.
+- No ejecutar `php artisan migrate` contra `.env` salvo que el usuario lo pida; solo escribir archivos de migración.
 - Una commit por tarea en `feat/cr-multimoneda` (el usuario lo pidió explícitamente).
 
 ## File map

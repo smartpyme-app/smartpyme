@@ -19,6 +19,15 @@ final class DocumentoMoneda
 
     public const MONEDA_USD = 'USD';
 
+    /** Campos que solo deben escribirse vía DocumentoMoneda::resolve (no mass-assignment del request). */
+    public const CAMPOS_PERSISTIDOS = [
+        'currency_code',
+        'exchange_rate',
+        'exchange_rate_date',
+        'crc_equivalent_total',
+        'crc_equivalent_iva',
+    ];
+
     private const MONEDAS_SOPORTADAS = [self::MONEDA_CRC, self::MONEDA_USD];
 
     public function __construct(private readonly CostaRicaTipoCambioService $tipoCambioService) {}

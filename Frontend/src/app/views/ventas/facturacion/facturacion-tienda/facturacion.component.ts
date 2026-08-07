@@ -112,10 +112,21 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
   };
   public customField: boolean = false;
   public tieneAccesoPropina: boolean = false;
+  public tieneMultimoneda: boolean = false;
   public tieneFidelizacionHabilitada: boolean = false;
   public mensajeValidacionFecha: string = '';
   public mensajeErrorBanco: string = '';
   public contabilidadHabilitada: boolean = false;
+
+  /** Preview de tipo de cambio BCCR para el selector de moneda. */
+  public tcPreview: { rate: number | null; date: string | null; loading: boolean; error: string | null } = {
+    rate: null,
+    date: null,
+    loading: false,
+    error: null,
+  };
+  public exchangeRateDraft: number | null = null;
+  private modalTipoCambioRef?: BsModalRef;
 
   /** Si está activo, se muestra el monto; el importe es siempre la suma de `cuenta_a_terceros` en las líneas (no se edita en cabecera). */
   public habilitarCuentaTerceros = false;
@@ -321,6 +332,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     this.verificarAccesoContabilidad();
     this.loadData();
     this.verificarAccesoPropina();
+    this.verificarAccesoMultimoneda();
     this.verificarFidelizacionHabilitada();
   }
 
@@ -743,6 +755,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     this.venta.id_vendedor = this.apiService.auth_user().id;
     this.venta.id_sucursal = this.apiService.auth_user().id_sucursal;
     this.venta.id_empresa = this.apiService.auth_user().id_empresa;
+    this.inicializarMonedaVenta();
     let corte = JSON.parse(sessionStorage.getItem('SP_corte')!);
     if (corte) {
       this.venta.fecha = JSON.parse(sessionStorage.getItem('SP_corte')!).fecha;
@@ -856,6 +869,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
             );
             this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
             this.syncVentaCreditoConsignaFlagsFromEstado();
+            this.sincronizarPreviewMonedaDesdeVenta();
             this.sumTotal();
 
             // Obtener todos los custom_field_ids únicos de los detalles
@@ -925,6 +939,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
             this.venta.detalles.forEach((detalle: any) => {
               detalle.id = null;
             });
+            this.refrescarMonedaTrasResetFecha();
             this.sumTotal();
             this.cdr.markForCheck();
           },
@@ -980,6 +995,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
               this.venta.detalles.forEach((detalle: any) => {
                 detalle.id = null;
               });
+              this.refrescarMonedaTrasResetFecha();
               this.sumTotal();
 
               // Para proyectos
@@ -1786,6 +1802,181 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
         return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR;
     }
 
+  // ==================== MULTIMONEDA CR ====================
+
+  /** Spec §10.1: default = empresa.moneda si es CRC/USD; si no, CRC. Requiere funcionalidad `multimoneda`. */
+  private inicializarMonedaVenta(): void {
+    if (!this.tieneMultimoneda) {
+      return;
+    }
+    const monedaEmpresa = this.apiService.auth_user()?.empresa?.moneda;
+    this.venta.currency_code = monedaEmpresa === 'CRC' || monedaEmpresa === 'USD' ? monedaEmpresa : 'CRC';
+    if (this.venta.currency_code === 'USD') {
+      this.cargarTipoCambioPreview();
+    } else {
+      this.venta.exchange_rate = 1;
+      this.tcPreview = { rate: 1, date: this.venta.fecha, loading: false, error: null };
+    }
+  }
+
+  private refrescarMonedaTrasResetFecha(): void {
+    if (!this.tieneMultimoneda) {
+      return;
+    }
+    if (this.venta.currency_code === 'USD') {
+      this.cargarTipoCambioPreview();
+    } else {
+      this.sincronizarPreviewMonedaDesdeVenta();
+    }
+  }
+
+  private sincronizarPreviewMonedaDesdeVenta(): void {
+    if (!this.tieneMultimoneda) {
+      return;
+    }
+    if (!this.venta.currency_code) {
+      this.inicializarMonedaVenta();
+      return;
+    }
+    if (this.venta.currency_code === 'CRC') {
+      this.tcPreview = { rate: 1, date: this.venta.exchange_rate_date || this.venta.fecha, loading: false, error: null };
+      return;
+    }
+    const rate = parseFloat(this.venta.exchange_rate);
+    this.tcPreview = {
+      rate: Number.isFinite(rate) ? rate : null,
+      date: this.venta.exchange_rate_date || this.venta.fecha,
+      loading: false,
+      error: null,
+    };
+  }
+
+  get monedaVenta(): string {
+    return this.venta?.currency_code || 'CRC';
+  }
+
+  get etiquetaOpcionUsd(): string {
+    const rate = parseFloat(this.venta?.exchange_rate);
+    // rate === 1 es el default de CRC; no es un TC USD válido.
+    if (Number.isFinite(rate) && rate > 0 && rate !== 1) {
+      return `USD (₡${rate.toFixed(2)})`;
+    }
+    return 'USD';
+  }
+
+  get ventaYaEmitida(): boolean {
+    return !!this.venta?.dte;
+  }
+
+  get permitirEditarTipoCambioVentas(): boolean {
+    return !!this.apiService.auth_user()?.empresa?.custom_empresa?.facturacion_fe?.permitir_editar_tipo_cambio;
+  }
+
+  get puedeEditarTipoCambio(): boolean {
+    return this.tieneMultimoneda
+      && this.monedaVenta === 'USD'
+      && this.permitirEditarTipoCambioVentas
+      && !this.ventaYaEmitida;
+  }
+
+  public abrirModalTipoCambio(template: TemplateRef<any>): void {
+    if (!this.puedeEditarTipoCambio) {
+      return;
+    }
+    const actual = parseFloat(this.venta?.exchange_rate);
+    this.exchangeRateDraft = (Number.isFinite(actual) && actual > 0 && actual !== 1)
+      ? actual
+      : (this.tcPreview.rate ?? null);
+    this.modalTipoCambioRef = this.modalService.show(template, {
+      class: 'modal-sm',
+      backdrop: 'static',
+    });
+  }
+
+  public cerrarModalTipoCambio(): void {
+    this.modalTipoCambioRef?.hide();
+    this.modalTipoCambioRef = undefined;
+  }
+
+  public aplicarTipoCambioManual(): void {
+    const rate = parseFloat(String(this.exchangeRateDraft ?? ''));
+    if (!Number.isFinite(rate) || rate <= 0) {
+      this.alertService.error('Ingrese un tipo de cambio válido mayor a 0.');
+      return;
+    }
+    this.venta.exchange_rate = rate;
+    this.sumTotal();
+    this.cerrarModalTipoCambio();
+    this.cdr.markForCheck();
+  }
+
+  public onCurrencyCodeChange(): void {
+    if (this.venta.currency_code === 'CRC') {
+      this.venta.exchange_rate = 1;
+      this.tcPreview = { rate: 1, date: this.venta.fecha, loading: false, error: null };
+      return;
+    }
+    this.venta.exchange_rate = null;
+    this.cargarTipoCambioPreview();
+  }
+
+  public onFechaVentaChange(): void {
+    if (this.tieneMultimoneda && this.monedaVenta === 'USD' && !this.ventaYaEmitida) {
+      this.cargarTipoCambioPreview();
+    }
+  }
+
+  public cargarTipoCambioPreview(): void {
+    if (this.ventaYaEmitida) {
+      return;
+    }
+    const fecha = this.venta.fecha || this.apiService.date();
+    this.tcPreview = { rate: null, date: fecha, loading: true, error: null };
+    this.apiService.getAll('fe-cr/bccr-tipo-cambio', { fecha }).pipe(this.untilDestroyed()).subscribe({
+      next: (res: any) => {
+        const rate = res?.rate != null ? parseFloat(res.rate) : null;
+        this.tcPreview = { rate, date: res?.date ?? fecha, loading: false, error: null };
+        if (!this.permitirEditarTipoCambioVentas) {
+          this.venta.exchange_rate = rate;
+        } else if (this.venta.exchange_rate == null || this.venta.exchange_rate === '' || parseFloat(this.venta.exchange_rate) === 1) {
+          this.venta.exchange_rate = rate;
+        }
+        this.cdr.markForCheck();
+      },
+      error: (err: any) => {
+        const msg = err?.error?.error || err?.error?.message || 'No hay tipo de cambio BCCR disponible para esta fecha.';
+        this.tcPreview = { rate: null, date: fecha, loading: false, error: msg };
+        if (!this.permitirEditarTipoCambioVentas) {
+          this.venta.exchange_rate = null;
+        } else if (parseFloat(this.venta.exchange_rate) === 1) {
+          this.venta.exchange_rate = null;
+        }
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  /** Total en moneda empresa ÷ TC → dólares a cobrar al cliente. */
+  get usdEquivalentTotal(): number | null {
+    if (!this.tieneMultimoneda || this.monedaVenta !== 'USD') {
+      return null;
+    }
+    const total = parseFloat(this.venta?.total);
+    const rate = parseFloat(this.venta?.exchange_rate);
+    if (!Number.isFinite(total) || !Number.isFinite(rate) || rate <= 0 || rate === 1) {
+      return null;
+    }
+    return total / rate;
+  }
+
+  get bloquearPorMonedaSinTc(): boolean {
+    if (!this.tieneMultimoneda || this.ventaYaEmitida || this.monedaVenta !== 'USD') {
+      return false;
+    }
+    const rate = parseFloat(this.venta?.exchange_rate);
+    return !Number.isFinite(rate) || rate <= 0 || rate === 1;
+  }
+
     get esHondurasFacturacion(): boolean {
         return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_HN;
     }
@@ -2017,6 +2208,12 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
 
   public onFacturar() {
     if (this.saving || this.emiting) {
+      return;
+    }
+    if (this.bloquearPorMonedaSinTc) {
+      this.alertService.error(
+        'No hay tipo de cambio BCCR disponible para USD en la fecha indicada. Verifique la fecha o intente más tarde.'
+      );
       return;
     }
     if (
@@ -2515,6 +2712,22 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
         }
     );
 }
+
+  public verificarAccesoMultimoneda(): void {
+    this.funcionalidadesService.verificarAcceso('multimoneda').pipe(this.untilDestroyed()).subscribe({
+      next: (acceso) => {
+        this.tieneMultimoneda = acceso;
+        if (acceso) {
+          this.inicializarMonedaVenta();
+        }
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.tieneMultimoneda = false;
+        this.cdr.markForCheck();
+      },
+    });
+  }
 
   /** Normaliza detalles: infiere tipo_gravado y sub_total si faltan (ventas existentes). Asegura gravada/exenta/no_sujeta para que el IVA cuadre. */
   /** Adapta payload de cotizacion_ventas al shape que usa FacturacionComponent. */

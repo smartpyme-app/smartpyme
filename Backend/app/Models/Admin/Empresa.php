@@ -977,6 +977,20 @@ class Empresa extends Model
     }
 
     /**
+     * Multimoneda: documentos en distintas monedas con tipo de cambio y conversión.
+     * Se habilita por empresa desde Super Admin → Funcionalidades (cualquier país).
+     */
+    public function tieneFuncionalidadMultimoneda(): bool
+    {
+        return $this->hasMany(\App\Models\Admin\EmpresaFuncionalidad::class, 'id_empresa')
+            ->whereHas('funcionalidad', function ($query) {
+                $query->where('slug', 'multimoneda');
+            })
+            ->where('activo', true)
+            ->exists();
+    }
+
+    /**
      * Verificar si el módulo de presentaciones de producto está activo (funcionalidad + preferencia en custom_empresa).
      */
     public function isModuloPresentaciones(): bool

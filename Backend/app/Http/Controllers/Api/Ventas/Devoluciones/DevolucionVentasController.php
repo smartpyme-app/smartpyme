@@ -28,6 +28,7 @@ use Auth;
 use Illuminate\Support\Str;
 use App\Http\Requests\Ventas\Devoluciones\StoreDevolucionRequest;
 use App\Http\Requests\Ventas\Devoluciones\UpdateDevolucionRequest;
+use App\Support\FacturacionElectronica\CostaRica\DocumentoMoneda;
 use App\Http\Requests\Ventas\Devoluciones\FacturacionDevolucionRequest;
 use App\Services\Ventas\DevolucionVentaService;
 use Illuminate\Support\Facades\Log;
@@ -234,7 +235,8 @@ class DevolucionVentasController extends Controller
             }
         }
 
-        $venta->fill($request->all());
+        $venta->fill($request->except(DocumentoMoneda::CAMPOS_PERSISTIDOS));
+        $this->aplicarMonedaDesdeVentaOrigen($venta);
         $venta->save();
 
         $venta->refresh();
@@ -318,7 +320,8 @@ class DevolucionVentasController extends Controller
                 $devolucion = new Devolucion;
             }
 
-            $devolucion->fill($request->all());
+            $devolucion->fill($request->except(DocumentoMoneda::CAMPOS_PERSISTIDOS));
+            $this->aplicarMonedaDesdeVentaOrigen($devolucion);
             $devolucion->save();
 
             // $venta = Venta::findOrFail($request['id_venta']);
@@ -526,5 +529,40 @@ class DevolucionVentasController extends Controller
         return Excel::download($ventas, 'ventas.xlsx');
     }
 
+    /**
+     * NC/ND heredan moneda/TC de la factura de venta (congelados; equivalentes según total/iva de la devolución).
+     */
+    private function aplicarMonedaDesdeVentaOrigen(Devolucion $devolucion): void
+    {
+        if (! $devolucion->id_venta) {
+            return;
+        }
+
+        $ventaOrigen = Venta::find($devolucion->id_venta);
+        if (! $ventaOrigen) {
+            return;
+        }
+
+        $currencyCode = strtoupper((string) ($ventaOrigen->currency_code ?? DocumentoMoneda::MONEDA_CRC));
+        if ($currencyCode !== DocumentoMoneda::MONEDA_USD) {
+            $currencyCode = DocumentoMoneda::MONEDA_CRC;
+        }
+
+        $rate = $currencyCode === DocumentoMoneda::MONEDA_USD
+            ? (float) ($ventaOrigen->exchange_rate ?? 0)
+            : 1.0;
+
+        if ($currencyCode === DocumentoMoneda::MONEDA_USD && ($rate <= 0 || $rate === 1.0)) {
+            $rate = 1.0;
+            $currencyCode = DocumentoMoneda::MONEDA_CRC;
+        }
+
+        $devolucion->currency_code = $currencyCode;
+        $devolucion->exchange_rate = $rate;
+        $devolucion->exchange_rate_date = $ventaOrigen->exchange_rate_date
+            ?? ($ventaOrigen->fecha ? Carbon::parse($ventaOrigen->fecha)->toDateString() : null);
+        $devolucion->crc_equivalent_total = round((float) $devolucion->total * $rate, 5);
+        $devolucion->crc_equivalent_iva = round((float) $devolucion->iva * $rate, 5);
+    }
 
 }

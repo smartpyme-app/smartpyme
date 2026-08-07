@@ -18,7 +18,6 @@ use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Lote;
 use App\Models\Inventario\Kardex;
 use App\Models\Admin\Empresa;
-use App\Services\FacturacionElectronica\FacturacionElectronicaCountryResolver;
 use App\Support\FacturacionElectronica\CostaRica\DocumentoMoneda;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -272,7 +271,7 @@ class ComprasController extends Controller
             $request->merge(['referencia' => $compra->referencia]);
         }
 
-        $compra->fill($request->except(['detalles', 'dte']));
+        $compra->fill($request->except(array_merge(['detalles', 'dte'], DocumentoMoneda::CAMPOS_PERSISTIDOS)));
         $this->aplicarIdentificadoresDteImportado($compra, $request);
         $compra->save();
 
@@ -335,7 +334,7 @@ class ComprasController extends Controller
             else
                 $compra = new Compra;
 
-            $compra->fill($request->except(['detalles', 'dte', 'impuestos']));
+            $compra->fill($request->except(array_merge(['detalles', 'dte', 'impuestos'], DocumentoMoneda::CAMPOS_PERSISTIDOS)));
             $this->aplicarReglasCompraSinIvaFiscal($compra);
             $this->aplicarIdentificadoresDteImportado($compra, $request);
             if ($compra->estado === 'Consigna') {
@@ -693,7 +692,7 @@ class ComprasController extends Controller
                 }
             }
 
-            $compra->fill($request->except(['detalles', 'id', 'estado']));
+            $compra->fill($request->except(array_merge(['detalles', 'id', 'estado'], DocumentoMoneda::CAMPOS_PERSISTIDOS)));
             $compra->tipo_documento = $request->tipo_documento;
             $compra->referencia = $request->referencia;
             $compra->total = $request->total;
@@ -1190,20 +1189,23 @@ class ComprasController extends Controller
     }
 
     /**
-     * Resuelve currency_code/exchange_rate/CRC equivalent en compras de empresas CR (§7.4 spec multimoneda).
-     * Compras no editan TC en Fase 1 (siempre BCCR); `currency_code` solo cambia si el request lo envía
-     * explícito (aún no hay selector de moneda en UI — Task 6). Otros mercados quedan con defaults CRC/1.
+     * Resuelve currency_code/exchange_rate/CRC equivalent (§7.4).
+     * Requiere funcionalidad `multimoneda`; sin ella fuerza CRC. Compras no editan TC (siempre BCCR).
      */
     private function resolverMonedaCr(Compra $compra, Request $request): void
     {
         $empresa = Empresa::find($compra->id_empresa);
-        if (! $empresa || FacturacionElectronicaCountryResolver::codPais($empresa) !== FacturacionElectronicaCountryResolver::CODIGO_COSTA_RICA) {
+        if (! $empresa) {
             return;
         }
 
+        $currencyCode = $empresa->tieneFuncionalidadMultimoneda()
+            ? $request->input('currency_code', $compra->currency_code ?? DocumentoMoneda::MONEDA_CRC)
+            : DocumentoMoneda::MONEDA_CRC;
+
         $moneda = app(DocumentoMoneda::class)->resolve(
             [
-                'currency_code' => $request->input('currency_code', $compra->currency_code ?? DocumentoMoneda::MONEDA_CRC),
+                'currency_code' => $currencyCode,
                 'total' => (float) $compra->total,
                 'iva' => (float) $compra->iva,
             ],

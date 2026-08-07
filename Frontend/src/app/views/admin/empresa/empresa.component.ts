@@ -93,6 +93,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
     public disconnectingBoxful: boolean = false;
     public canales: any = [];
     public tieneAccesoPropina: boolean = false;
+    public tieneMultimoneda: boolean = false;
     public tieneAccesoModuloRestaurantePedidos: boolean = false;
     public tieneAccesoTransformacionProductos: boolean = false;
     public tieneAccesoModuloPresentacionesProductos: boolean = false;
@@ -148,6 +149,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
 
         this.loadAll();
         this.verificarAccesoPropina();
+        this.verificarAccesoMultimoneda();
         this.verificarAccesoModuloRestaurantePedidos();
         this.verificarAccesoTransformacionProductos();
         this.verificarAccesoModuloPresentacionesProductos();
@@ -2418,6 +2420,17 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
                 this.tieneAccesoPropina = false;
             }
         );
+    }
+
+    public verificarAccesoMultimoneda(): void {
+        this.funcionalidadesService.verificarAcceso('multimoneda').subscribe({
+            next: (acceso) => {
+                this.tieneMultimoneda = acceso;
+            },
+            error: () => {
+                this.tieneMultimoneda = false;
+            },
+        });
     }
 
     public verificarAccesoModuloRestaurantePedidos() {

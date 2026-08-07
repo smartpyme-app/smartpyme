@@ -130,18 +130,19 @@ return [
     ],
 
     /*
-    | BCCR (Banco Central de Costa Rica) — Servicio de Indicadores Económicos.
-    | Indicador 318 = tipo de cambio de VENTA (referencia para comprobantes en USD).
-    | Requiere suscripción gratuita: https://www.bccr.fi.cr/seccion-indicadores-economicos/servicio-web
-    | Sin BCCR_WS_EMAIL/BCCR_WS_TOKEN el cliente retorna null (no hay fallback numérico).
+    | BCCR (Banco Central de Costa Rica) — tipo de cambio venta (indicador 318).
+    | Token JWT desde https://sdd.bccr.fi.cr/es/IndicadoresEconomicos/Inicio/ (Mi perfil).
+    | Preferencia: API REST SDDE; fallback: WS SOAP legacy (a menudo 503).
     */
     'bccr' => [
+        'sdde_url' => env('BCCR_SDDE_URL', 'https://apim.bccr.fi.cr/SDDE/api/Bccr.Ge.SDDE.Publico.Indicadores.API'),
         'url' => env('BCCR_WS_URL', 'https://gee.bccr.fi.cr/Indicadores/Suscripciones/WS/wsindicadoreseconomicos.asmx'),
         'email' => env('BCCR_WS_EMAIL'),
         'token' => env('BCCR_WS_TOKEN'),
         'name' => env('BCCR_WS_NAME', 'SmartPyme'),
         'indicador_venta' => 318,
         'timeout_seconds' => (int) env('BCCR_WS_TIMEOUT', 25),
+        'user_agent' => env('BCCR_WS_USER_AGENT', 'Mozilla/5.0 (compatible; SmartPyme-BCCR/1)'),
     ],
 
 ];

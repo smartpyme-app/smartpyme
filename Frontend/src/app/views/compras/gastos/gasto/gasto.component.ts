@@ -126,6 +126,7 @@ export class GastoComponent implements OnInit {
   public tcPreview: { rate: number | null; date: string | null; loading: boolean; error: string | null } = {
     rate: null, date: null, loading: false, error: null,
   };
+  public tieneMultimoneda: boolean = false;
 
   esFeCostaRicaGasto(): boolean {
     return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR;
@@ -133,6 +134,14 @@ export class GastoComponent implements OnInit {
 
   get monedaGasto(): string {
     return this.gasto?.currency_code || 'CRC';
+  }
+
+  get etiquetaOpcionUsdGasto(): string {
+    const rate = parseFloat(this.gasto?.exchange_rate ?? this.tcPreview.rate);
+    if (Number.isFinite(rate) && rate > 0 && rate !== 1) {
+      return `USD (₡${rate.toFixed(2)})`;
+    }
+    return 'USD';
   }
 
   get gastoYaTieneDte(): boolean {
@@ -150,7 +159,7 @@ export class GastoComponent implements OnInit {
   }
 
   public onFechaGastoChange(): void {
-    if (this.esFeCostaRicaGasto() && this.monedaGasto === 'USD' && !this.gastoYaTieneDte) {
+    if (this.tieneMultimoneda && this.monedaGasto === 'USD' && !this.gastoYaTieneDte) {
       this.cargarTipoCambioPreview();
     }
   }
@@ -179,7 +188,7 @@ export class GastoComponent implements OnInit {
 
   /** Al cargar un gasto existente (editar/duplicar) o tras importar XML: reflejar moneda ya presente. */
   private sincronizarPreviewMonedaGasto(): void {
-    if (!this.esFeCostaRicaGasto()) {
+    if (!this.tieneMultimoneda) {
       return;
     }
     if (!this.gasto.currency_code) {
@@ -191,25 +200,28 @@ export class GastoComponent implements OnInit {
       return;
     }
     const rate = parseFloat(this.gasto.exchange_rate);
-    if (Number.isFinite(rate) && rate > 0) {
+    if (Number.isFinite(rate) && rate > 0 && rate !== 1) {
       this.tcPreview = { rate, date: this.gasto.exchange_rate_date || this.gasto.fecha, loading: false, error: null };
     } else {
       this.cargarTipoCambioPreview();
     }
   }
 
-  get crcEquivalentTotalGasto(): number | null {
-    const total = parseFloat(this.gasto?.total);
-    const rate = parseFloat(this.gasto?.exchange_rate);
-    if (!Number.isFinite(total) || !Number.isFinite(rate)) {
+  get usdEquivalentTotalGasto(): number | null {
+    if (!this.tieneMultimoneda || this.monedaGasto !== 'USD') {
       return null;
     }
-    return total * rate;
+    const total = parseFloat(this.gasto?.total);
+    const rate = parseFloat(this.gasto?.exchange_rate);
+    if (!Number.isFinite(total) || !Number.isFinite(rate) || rate <= 0 || rate === 1) {
+      return null;
+    }
+    return total / rate;
   }
 
   /** Sin TC usable en USD, bloquear guardar con mensaje claro (spec §10.2/§14). */
   get bloquearGastoPorMonedaSinTc(): boolean {
-    if (!this.esFeCostaRicaGasto() || this.gastoYaTieneDte || this.monedaGasto !== 'USD') {
+    if (!this.tieneMultimoneda || this.gastoYaTieneDte || this.monedaGasto !== 'USD') {
       return false;
     }
     const rate = parseFloat(this.gasto?.exchange_rate);
@@ -220,6 +232,7 @@ export class GastoComponent implements OnInit {
         this.loadAll();
         this.loadDepartamentos();
         this.verificarAccesoContabilidad();
+        this.verificarAccesoMultimoneda();
 
     this.mostrar_otros_impuestos = false;
     this.impuestos_seleccionados = [];
@@ -457,7 +470,7 @@ export class GastoComponent implements OnInit {
       this.varios_items = false;
       this.detalles = [];
 
-      if (this.esFeCostaRicaGasto()) {
+      if (this.tieneMultimoneda) {
         this.gasto.currency_code = 'CRC';
         this.gasto.exchange_rate = 1;
         this.tcPreview = { rate: 1, date: this.gasto.fecha, loading: false, error: null };
@@ -1873,6 +1886,24 @@ export class GastoComponent implements OnInit {
           this.cargarCategorias();
           this.cdr.markForCheck();
         }
+      });
+  }
+
+  verificarAccesoMultimoneda(): void {
+    this.funcionalidadesService.verificarAcceso('multimoneda')
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (acceso) => {
+          this.tieneMultimoneda = acceso;
+          if (acceso) {
+            this.sincronizarPreviewMonedaGasto();
+          }
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.tieneMultimoneda = false;
+          this.cdr.markForCheck();
+        },
       });
   }
 

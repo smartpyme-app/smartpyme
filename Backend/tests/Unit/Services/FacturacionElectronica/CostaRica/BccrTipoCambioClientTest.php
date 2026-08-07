@@ -74,4 +74,25 @@ XML;
     {
         $this->assertNull($this->client->parseResponse(''));
     }
+
+    public function test_parse_sdde_series_response_reads_valor(): void
+    {
+        $json = [
+            'estado' => true,
+            'mensaje' => 'Consulta exitosa',
+            'datos' => [[
+                'codigoIndicador' => '318',
+                'nombreIndicador' => 'Tipo cambio venta',
+                'series' => [['fecha' => '2026-08-07', 'valorDatoPorPeriodo' => 454.06]],
+            ]],
+        ];
+
+        $this->assertSame(454.06, $this->client->parseSddeSeriesResponse($json));
+    }
+
+    public function test_parse_sdde_series_response_returns_null_when_empty(): void
+    {
+        $this->assertNull($this->client->parseSddeSeriesResponse(['estado' => true, 'datos' => []]));
+        $this->assertNull($this->client->parseSddeSeriesResponse(null));
+    }
 }
