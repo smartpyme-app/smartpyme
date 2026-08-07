@@ -4,6 +4,7 @@ namespace App\Services\Compras\Gastos;
 
 use App\Models\Compras\Gastos\Gasto;
 use App\Models\Compras\Proveedores\Proveedor;
+use App\Support\FacturacionElectronica\CostaRica\DocumentoMoneda;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 
@@ -175,6 +176,15 @@ class GastoImportService
         // Forma de pago
         if (isset($resumen['pagos']) && !empty($resumen['pagos'])) {
             $this->mapearFormaPago($gasto, $resumen['pagos']);
+        }
+
+        // Moneda (Task 6, SP-2099): validada/normalizada en DocumentoImportService antes de llegar aquí.
+        // El tipo de cambio real (BCCR) y el equivalente CRC se resuelven al guardar (resolverMonedaCr).
+        if (isset($resumen['currency_code'])) {
+            $codigoMoneda = strtoupper(trim((string) $resumen['currency_code']));
+            if (in_array($codigoMoneda, [DocumentoMoneda::MONEDA_CRC, DocumentoMoneda::MONEDA_USD], true)) {
+                $gasto->currency_code = $codigoMoneda;
+            }
         }
 
         // Condición de operación

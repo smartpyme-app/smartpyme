@@ -26,7 +26,24 @@
     <div class="row">
         <div class="form-group col-md-4 col-lg-2">
             <label for="fecha">Fecha</label><br>
-            <input type="date" class="form-control" [(ngModel)]="compra.fecha" name="fecha" id="fecha">
+            <input type="date" class="form-control" [(ngModel)]="compra.fecha" name="fecha" id="fecha" (ngModelChange)="onFechaCompraChange()">
+        </div>
+        <div class="form-group col-md-4 col-lg-2" *ngIf="esFeCostaRicaCompra()">
+            <label for="currency_code">Moneda</label>
+            <select name="currency_code" id="currency_code" class="form-select" [(ngModel)]="compra.currency_code"
+                (ngModelChange)="onCurrencyCodeChangeCompra()" [disabled]="compraYaTieneDte">
+                <option value="CRC">CRC - Colones</option>
+                <option value="USD">USD - Dólares</option>
+            </select>
+        </div>
+        <div class="form-group col-md-4 col-lg-3" *ngIf="esFeCostaRicaCompra() && monedaCompra === 'USD'">
+            <label>Tipo de cambio (₡ por $)</label>
+            <input type="number" class="form-control" [ngModel]="tcPreviewCompra.rate" name="tc_preview_compra" disabled readonly>
+            <small class="text-muted d-block" *ngIf="tcPreviewCompra.loading">Consultando BCCR...</small>
+            <small class="text-danger d-block" *ngIf="tcPreviewCompra.error">{{ tcPreviewCompra.error }}</small>
+            <small class="text-muted d-block" *ngIf="!tcPreviewCompra.loading && !tcPreviewCompra.error && tcPreviewCompra.date">
+                BCCR venta ref. {{ tcPreviewCompra.date }} · ₡{{ crcEquivalentTotalCompra !== null ? (crcEquivalentTotalCompra | number:'1.2-2') : '—' }}
+            </small>
         </div>
         <div class="form-group col-md-4 col-lg-3">
             <label for="id_usuario">Usuario</label>

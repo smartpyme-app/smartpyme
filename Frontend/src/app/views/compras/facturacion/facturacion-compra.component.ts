@@ -137,6 +137,106 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
         return empresaEsElSalvador(this.apiService.auth_user()?.empresa);
     }
 
+    // ==================== MULTIMONEDA CR (Task 6, SP-2099) ====================
+    // TC no editable en compras (spec §10.2): siempre refleja el BCCR del día de `fecha`;
+    // la persistencia real (BCCR + equivalente CRC) la resuelve el backend al guardar.
+
+    public tcPreviewCompra: { rate: number | null; date: string | null; loading: boolean; error: string | null } = {
+        rate: null, date: null, loading: false, error: null,
+    };
+
+    esFeCostaRicaCompra(): boolean {
+        return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR;
+    }
+
+    get monedaCompra(): string {
+        return this.compra?.currency_code || 'CRC';
+    }
+
+    get compraYaTieneDte(): boolean {
+        return !!this.compra?.dte;
+    }
+
+    /** Spec §10.1/§10.2: default CRC salvo que la empresa use USD y sea moneda soportada. */
+    private inicializarMonedaCompra(): void {
+        if (!this.esFeCostaRicaCompra()) {
+            return;
+        }
+        if (!this.compra.currency_code) {
+            const monedaEmpresa = this.apiService.auth_user()?.empresa?.moneda;
+            this.compra.currency_code = monedaEmpresa === 'CRC' || monedaEmpresa === 'USD' ? monedaEmpresa : 'CRC';
+        }
+        this.sincronizarPreviewMonedaCompra();
+    }
+
+    private sincronizarPreviewMonedaCompra(): void {
+        if (!this.esFeCostaRicaCompra()) {
+            return;
+        }
+        if (this.compra.currency_code === 'USD') {
+            this.cargarTipoCambioPreviewCompra();
+            return;
+        }
+        this.compra.exchange_rate = 1;
+        this.tcPreviewCompra = { rate: 1, date: this.compra.exchange_rate_date || this.compra.fecha, loading: false, error: null };
+    }
+
+    public onCurrencyCodeChangeCompra(): void {
+        if (this.compra.currency_code === 'CRC') {
+            this.compra.exchange_rate = 1;
+            this.tcPreviewCompra = { rate: 1, date: this.compra.fecha, loading: false, error: null };
+            return;
+        }
+        this.compra.exchange_rate = null;
+        this.cargarTipoCambioPreviewCompra();
+    }
+
+    public onFechaCompraChange(): void {
+        if (this.esFeCostaRicaCompra() && this.monedaCompra === 'USD' && !this.compraYaTieneDte) {
+            this.cargarTipoCambioPreviewCompra();
+        }
+    }
+
+    public cargarTipoCambioPreviewCompra(): void {
+        if (this.compraYaTieneDte) {
+            return;
+        }
+        const fecha = this.compra.fecha || this.apiService.date();
+        this.tcPreviewCompra = { rate: null, date: fecha, loading: true, error: null };
+        this.apiService.getAll('fe-cr/bccr-tipo-cambio', { fecha }).subscribe({
+            next: (res: any) => {
+                const rate = res?.rate != null ? parseFloat(res.rate) : null;
+                this.tcPreviewCompra = { rate, date: res?.date ?? fecha, loading: false, error: null };
+                this.compra.exchange_rate = rate;
+                this.cdr.markForCheck();
+            },
+            error: (err: any) => {
+                const msg = err?.error?.error || err?.error?.message || 'No hay tipo de cambio BCCR disponible para esta fecha.';
+                this.tcPreviewCompra = { rate: null, date: fecha, loading: false, error: msg };
+                this.compra.exchange_rate = null;
+                this.cdr.markForCheck();
+            },
+        });
+    }
+
+    get crcEquivalentTotalCompra(): number | null {
+        const total = parseFloat(this.compra?.total);
+        const rate = parseFloat(this.compra?.exchange_rate);
+        if (!Number.isFinite(total) || !Number.isFinite(rate)) {
+            return null;
+        }
+        return total * rate;
+    }
+
+    /** Sin TC usable en USD, bloquear procesar/guardar con mensaje claro (spec §10.2/§14). */
+    get bloquearCompraPorMonedaSinTc(): boolean {
+        if (!this.esFeCostaRicaCompra() || this.compraYaTieneDte || this.monedaCompra !== 'USD') {
+            return false;
+        }
+        const rate = parseFloat(this.compra?.exchange_rate);
+        return !Number.isFinite(rate) || rate <= 0 || rate === 1;
+    }
+
     public documentoImportService = inject(DocumentoImportService);
     private proveedorDesdeEmisor = inject(ProveedorDesdeEmisorService);
 
@@ -362,6 +462,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
         this.compra.id_empresa = this.apiService.auth_user().id_empresa;
         this.compra.incoterms = "FOB";
         this.compra.es_retaceo = false;
+        this.inicializarMonedaCompra();
         let corte = JSON.parse(sessionStorage.getItem('worder_corte')!);
         if (corte) {
             this.compra.fecha = JSON.parse(sessionStorage.getItem('worder_corte')!).fecha;
@@ -394,6 +495,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
                     this.syncCompraCreditoConsignaFlagsFromEstado();
                     // Si /impuestos respondió antes que esta lectura, los montos quedaron en 0; recalcular siempre
                     this.sumTotal();
+                    this.inicializarMonedaCompra();
                     this.loading = false;
                     this.cdr.markForCheck();
                 }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
@@ -424,11 +526,13 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
                 this.compra.cobrar_percepcion = (this.compra.percepcion > 0) ? true : false;
                 this.syncCompraCreditoConsignaFlagsFromEstado();                this.sumTotal();
                 this.compra.id = null;
+                this.compra.dte = null;
                 this.compra.tipo_documento = null;
                 this.compra.referencia = null;
                 this.compra.detalles.forEach((detalle:any) => {
                     detalle.id = null;
                 });
+                this.sincronizarPreviewMonedaCompra();
                 this.cdr.markForCheck();
             }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
         }
@@ -458,10 +562,12 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
                 this.compra.cotizacion = 0;
                 this.compra.num_orden_compra = this.compra.id;
                 this.compra.id = null;
+                this.compra.dte = null;
                 this.compra.detalles.forEach((detalle:any) => {
                     detalle.id = null;
                 });
                 this.sumTotal();
+                this.sincronizarPreviewMonedaCompra();
             }, error => {this.alertService.error(error); this.loading = false;});
         }
 
@@ -707,6 +813,14 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
 
     // Guardar compra
         public onSubmit() {
+            if (this.bloquearCompraPorMonedaSinTc) {
+                this.alertService.error(
+                    this.tcPreviewCompra.error || 'No hay tipo de cambio BCCR disponible para guardar esta compra en USD.'
+                );
+                this.saving = false;
+                return;
+            }
+
             // Validar que productos con lotes tengan lote_id
             if (this.compra.detalles && this.compra.detalles.length > 0) {
                 const lotesActivo = this.apiService.isLotesActivo();
@@ -1188,6 +1302,14 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
             if (totalOtros > 0) {
                 this.compra.otros_cargos = totalOtros;
             }
+        }
+
+        // Moneda del XML (Task 6, SP-2099): el backend ya validó CRC/USD; el TC final lo resuelve
+        // el servidor vía BCCR al guardar (no se usa el TipoCambio del XML como valor persistido).
+        if (this.esFeCostaRicaCompra()) {
+            const codigoMonedaXml = String(jsonData.resumen?.currency_code || '').toUpperCase();
+            this.compra.currency_code = codigoMonedaXml === 'USD' ? 'USD' : 'CRC';
+            this.sincronizarPreviewMonedaCompra();
         }
     }
 

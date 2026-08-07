@@ -17,7 +17,24 @@
         <div class="row">
             <div class="form-group col-md-4 col-lg-3">
                 <label for="">Fecha:</label>
-                <input type='date' class="form-control" name="fecha" [(ngModel)]="gasto.fecha"/>
+                <input type='date' class="form-control" name="fecha" [(ngModel)]="gasto.fecha" (ngModelChange)="onFechaGastoChange()"/>
+            </div>
+            <div class="form-group col-md-4 col-lg-2" *ngIf="esFeCostaRicaGasto()">
+                <label for="currency_code">Moneda</label>
+                <select name="currency_code" id="currency_code" class="form-select" [(ngModel)]="gasto.currency_code"
+                    (ngModelChange)="onCurrencyCodeChange()" [disabled]="gastoYaTieneDte">
+                    <option value="CRC">CRC - Colones</option>
+                    <option value="USD">USD - Dólares</option>
+                </select>
+            </div>
+            <div class="form-group col-md-4 col-lg-3" *ngIf="esFeCostaRicaGasto() && monedaGasto === 'USD'">
+                <label>Tipo de cambio (₡ por $)</label>
+                <input type="number" class="form-control" [ngModel]="tcPreview.rate" name="tc_preview_gasto" disabled readonly>
+                <small class="text-muted d-block" *ngIf="tcPreview.loading">Consultando BCCR...</small>
+                <small class="text-danger d-block" *ngIf="tcPreview.error">{{ tcPreview.error }}</small>
+                <small class="text-muted d-block" *ngIf="!tcPreview.loading && !tcPreview.error && tcPreview.date">
+                    BCCR venta ref. {{ tcPreview.date }} · ₡{{ crcEquivalentTotalGasto !== null ? (crcEquivalentTotalGasto | number:'1.2-2') : '—' }}
+                </small>
             </div>
             <div class="form-group col-md-4 col-lg-3">
                 <label for="id_usuario">Usuario:</label>

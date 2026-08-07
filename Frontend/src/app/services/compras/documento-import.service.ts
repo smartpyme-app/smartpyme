@@ -12,7 +12,8 @@ export interface DocumentoImportResponse {
     identificacion?: Record<string, unknown>;
     emisor?: Record<string, unknown>;
     cuerpoDocumento?: unknown[];
-    resumen?: Record<string, unknown>;
+    /** `currency_code`/`exchange_rate_xml`: moneda CR (Task 6, SP-2099); null si el documento no la trae. */
+    resumen?: Record<string, unknown> & { currency_code?: string | null; exchange_rate_xml?: number | null };
     selloRecibido?: string;
   };
   gasto?: Record<string, unknown>;

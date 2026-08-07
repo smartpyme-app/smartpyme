@@ -118,6 +118,104 @@ export class GastoComponent implements OnInit {
     return empresaEsElSalvador(this.apiService.auth_user()?.empresa);
   }
 
+  // ==================== MULTIMONEDA CR (Task 6, SP-2099) ====================
+  // TC no editable en compras/gastos (spec §10.2): siempre refleja el BCCR del día de `fecha`;
+  // la persistencia real (BCCR + equivalente CRC) la resuelve el backend al guardar.
+
+  /** Preview de tipo de cambio BCCR para el selector de moneda del gasto. */
+  public tcPreview: { rate: number | null; date: string | null; loading: boolean; error: string | null } = {
+    rate: null, date: null, loading: false, error: null,
+  };
+
+  esFeCostaRicaGasto(): boolean {
+    return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR;
+  }
+
+  get monedaGasto(): string {
+    return this.gasto?.currency_code || 'CRC';
+  }
+
+  get gastoYaTieneDte(): boolean {
+    return !!this.gasto?.dte;
+  }
+
+  public onCurrencyCodeChange(): void {
+    if (this.gasto.currency_code === 'CRC') {
+      this.gasto.exchange_rate = 1;
+      this.tcPreview = { rate: 1, date: this.gasto.fecha, loading: false, error: null };
+      return;
+    }
+    this.gasto.exchange_rate = null;
+    this.cargarTipoCambioPreview();
+  }
+
+  public onFechaGastoChange(): void {
+    if (this.esFeCostaRicaGasto() && this.monedaGasto === 'USD' && !this.gastoYaTieneDte) {
+      this.cargarTipoCambioPreview();
+    }
+  }
+
+  public cargarTipoCambioPreview(): void {
+    if (this.gastoYaTieneDte) {
+      return;
+    }
+    const fecha = this.gasto.fecha || this.apiService.date();
+    this.tcPreview = { rate: null, date: fecha, loading: true, error: null };
+    this.apiService.getAll('fe-cr/bccr-tipo-cambio', { fecha }).subscribe({
+      next: (res: any) => {
+        const rate = res?.rate != null ? parseFloat(res.rate) : null;
+        this.tcPreview = { rate, date: res?.date ?? fecha, loading: false, error: null };
+        this.gasto.exchange_rate = rate;
+        this.cdr.markForCheck();
+      },
+      error: (err: any) => {
+        const msg = err?.error?.error || err?.error?.message || 'No hay tipo de cambio BCCR disponible para esta fecha.';
+        this.tcPreview = { rate: null, date: fecha, loading: false, error: msg };
+        this.gasto.exchange_rate = null;
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  /** Al cargar un gasto existente (editar/duplicar) o tras importar XML: reflejar moneda ya presente. */
+  private sincronizarPreviewMonedaGasto(): void {
+    if (!this.esFeCostaRicaGasto()) {
+      return;
+    }
+    if (!this.gasto.currency_code) {
+      this.gasto.currency_code = 'CRC';
+    }
+    if (this.gasto.currency_code === 'CRC') {
+      this.gasto.exchange_rate = 1;
+      this.tcPreview = { rate: 1, date: this.gasto.exchange_rate_date || this.gasto.fecha, loading: false, error: null };
+      return;
+    }
+    const rate = parseFloat(this.gasto.exchange_rate);
+    if (Number.isFinite(rate) && rate > 0) {
+      this.tcPreview = { rate, date: this.gasto.exchange_rate_date || this.gasto.fecha, loading: false, error: null };
+    } else {
+      this.cargarTipoCambioPreview();
+    }
+  }
+
+  get crcEquivalentTotalGasto(): number | null {
+    const total = parseFloat(this.gasto?.total);
+    const rate = parseFloat(this.gasto?.exchange_rate);
+    if (!Number.isFinite(total) || !Number.isFinite(rate)) {
+      return null;
+    }
+    return total * rate;
+  }
+
+  /** Sin TC usable en USD, bloquear guardar con mensaje claro (spec §10.2/§14). */
+  get bloquearGastoPorMonedaSinTc(): boolean {
+    if (!this.esFeCostaRicaGasto() || this.gastoYaTieneDte || this.monedaGasto !== 'USD') {
+      return false;
+    }
+    const rate = parseFloat(this.gasto?.exchange_rate);
+    return !Number.isFinite(rate) || rate <= 0 || rate === 1;
+  }
+
 	ngOnInit(){
         this.loadAll();
         this.loadDepartamentos();
@@ -315,6 +413,7 @@ export class GastoComponent implements OnInit {
             this.detalles = [];
           }
 
+          this.sincronizarPreviewMonedaGasto();
           this.loading = false;
           this.cdr.markForCheck();
         },
@@ -357,6 +456,12 @@ export class GastoComponent implements OnInit {
       this.gasto.es_retaceo = false;
       this.varios_items = false;
       this.detalles = [];
+
+      if (this.esFeCostaRicaGasto()) {
+        this.gasto.currency_code = 'CRC';
+        this.gasto.exchange_rate = 1;
+        this.tcPreview = { rate: 1, date: this.gasto.fecha, loading: false, error: null };
+      }
 
       if (this.route.snapshot.queryParamMap.get('id_proyecto')!) {
         this.gasto.id_proyecto =
@@ -401,6 +506,7 @@ export class GastoComponent implements OnInit {
               this.mostrar_otros_impuestos = true;
               this.cargarImpuestosSeleccionados();
             }
+            this.sincronizarPreviewMonedaGasto();
             this.cdr.markForCheck();
           },
           (error) => {
@@ -804,6 +910,13 @@ export class GastoComponent implements OnInit {
   }
 
   public async onSubmit() {
+    if (this.bloquearGastoPorMonedaSinTc) {
+      this.alertService.error(
+        this.tcPreview.error || 'No hay tipo de cambio BCCR disponible para guardar este gasto en USD.'
+      );
+      return;
+    }
+
     this.saving = true;
 
     if (this.duplicargasto) {
@@ -1384,6 +1497,14 @@ export class GastoComponent implements OnInit {
         } else if (jsonData.resumen.montoTotalOperacion) {
           this.gasto.total = parseFloat(jsonData.resumen.montoTotalOperacion);
         }
+      }
+
+      // Moneda del XML (Task 6, SP-2099): el backend ya validó CRC/USD; el TC final lo resuelve
+      // el servidor vía BCCR al guardar (no se usa el TipoCambio del XML como valor persistido).
+      if (this.esFeCostaRicaGasto()) {
+        const codigoMonedaXml = String(jsonData.resumen?.currency_code || '').toUpperCase();
+        this.gasto.currency_code = codigoMonedaXml === 'USD' ? 'USD' : 'CRC';
+        this.sincronizarPreviewMonedaGasto();
       }
       // ponytail: OnPush requiere markForCheck tras mutar this.gasto / this.detalles
       this.cdr.markForCheck();
