@@ -90,8 +90,29 @@
 
                   <!-- Documentos -->
                   <h6 class="col-12 pb-2 mb-2 mt-4 fw-bold">Documentos</h6>
+                  @if (esCostaRicaFe()) {
+                    <div class="form-group col-md-3">
+                      <label for="id_type">Tipo de identificación:</label>
+                      <select
+                        [(ngModel)]="empleado.id_type"
+                        name="id_type"
+                        class="form-select"
+                        required
+                      >
+                        @for (t of idTypesCr; track t.value) {
+                          <option [ngValue]="t.value">{{ t.label }}</option>
+                        }
+                      </select>
+                    </div>
+                  }
                   <div class="form-group col-md-3">
-                    <label for="dui">{{ 'country.identity.nameColon' | translate }}</label>
+                    <label for="dui">
+                      @if (esCostaRicaFe()) {
+                        {{ labelIdentidadCr() }}
+                      } @else {
+                        {{ 'country.identity.nameColon' | translate }}
+                      }
+                    </label>
                     @if (esElSalvadorFe()) {
                       <input
                         type="text"
@@ -128,11 +149,11 @@
                         name="dui"
                         class="form-control"
                         required
-                        [placeholder]="'country.identity.placeholder' | translate"
+                        [placeholder]="esCostaRicaFe() ? (empleado.id_type === 2 ? 'DIMEX' : '1-2345-6789') : ('country.identity.placeholder' | translate)"
                       />
                     }
                   </div>
-                  @if (!esElSalvadorFe() || !empleado.dui_homologado) {
+                  @if (!esCostaRicaFe() && (!esElSalvadorFe() || !empleado.dui_homologado)) {
                     <div class="form-group col-md-3">
                       <label for="nit">{{ 'country.tax.nitColon' | translate }}</label>
                       @if (esElSalvadorFe()) {
@@ -175,6 +196,17 @@
                         name="afp"
                         class="form-control"
                         required
+                      />
+                    </div>
+                  }
+                  @if (esCostaRicaFe()) {
+                    <div class="form-group col-md-3">
+                      <label for="isss">Nº asegurado CCSS:</label>
+                      <input
+                        type="text"
+                        [(ngModel)]="empleado.isss"
+                        name="isss"
+                        class="form-control"
                       />
                     </div>
                   }
@@ -301,6 +333,22 @@
                     </select>
                   </div>
 
+                  @if (esCostaRicaFe() && esJornadaParcial()) {
+                    <div class="form-group col-md-4">
+                      <label for="horas_jornada">Horas de jornada:</label>
+                      <input
+                        type="number"
+                        step="0.5"
+                        min="0"
+                        max="48"
+                        [(ngModel)]="empleado.horas_jornada"
+                        name="horas_jornada"
+                        class="form-control"
+                        required
+                      />
+                    </div>
+                  }
+
                   <!-- Tipo de contrato -->
                   <div class="form-group col-md-4">
                     <label for="tipo_contrato">Tipo de Contrato:</label>
@@ -320,6 +368,61 @@
                       }
                     </select>
                   </div>
+
+                  @if (esCostaRicaFe()) {
+                    <div class="form-group col-md-4">
+                      <label for="categoria_ocupacional">Categoría ocupacional (CNS):</label>
+                      <select
+                        [(ngModel)]="empleado.categoria_ocupacional"
+                        name="categoria_ocupacional"
+                        class="form-select"
+                        required
+                      >
+                        <option [ngValue]="null">Seleccione...</option>
+                        @for (c of categoriasOcupacionalesCr; track c.value) {
+                          <option [ngValue]="c.value">{{ c.label }}</option>
+                        }
+                      </select>
+                    </div>
+                    <div class="form-group col-md-4">
+                      <label for="tipo_salario">Tipo de salario:</label>
+                      <select
+                        [(ngModel)]="empleado.tipo_salario"
+                        name="tipo_salario"
+                        class="form-select"
+                        required
+                      >
+                        @for (t of tiposSalario; track t.value) {
+                          <option [ngValue]="t.value">{{ t.label }}</option>
+                        }
+                      </select>
+                    </div>
+                    <div class="form-group col-md-4">
+                      <div class="form-check mt-4">
+                        <input
+                          class="form-check-input"
+                          type="checkbox"
+                          id="tiene_conyuge_dependiente"
+                          [(ngModel)]="empleado.tiene_conyuge_dependiente"
+                          name="tiene_conyuge_dependiente"
+                        />
+                        <label class="form-check-label" for="tiene_conyuge_dependiente">
+                          Cónyuge dependiente (crédito fiscal)
+                        </label>
+                      </div>
+                    </div>
+                    <div class="form-group col-md-4">
+                      <label for="cantidad_hijos_dependientes">Hijos dependientes:</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="20"
+                        [(ngModel)]="empleado.cantidad_hijos_dependientes"
+                        name="cantidad_hijos_dependientes"
+                        class="form-control"
+                      />
+                    </div>
+                  }
 
                   <!-- Estado -->
                   <div class="form-group col-md-4">

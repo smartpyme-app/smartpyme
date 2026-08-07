@@ -13,7 +13,10 @@ import { TemplateRef, ChangeDetectorRef } from '@angular/core';
 import { PlanillaConstants } from '../../../constants/planilla.constants';
 import { createDuration } from '@fullcalendar/core/internal';
 import { CountryI18nService } from '@services/country-i18n.service';
-import { esElSalvadorFe as empresaEsElSalvador } from '@services/facturacion-electronica/fe-pais.util';
+import {
+  esCostaRicaFe as empresaEsCostaRica,
+  esElSalvadorFe as empresaEsElSalvador,
+} from '@services/facturacion-electronica/fe-pais.util';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
@@ -69,6 +72,27 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
 
   public tiposDocumento = PlanillaConstants.TIPO_DOCUMENTO;
 
+  public idTypesCr = [
+    { value: 1, label: 'Cédula' },
+    { value: 2, label: 'DIMEX' },
+  ];
+  public tiposSalario = [
+    { value: 1, label: 'Fijo mensual' },
+    { value: 2, label: 'Por hora' },
+    { value: 3, label: 'Mixto (base + comisión)' },
+  ];
+  public categoriasOcupacionalesCr = [
+    { value: 'no_calificada', label: 'Trabajadores en ocupación no calificada' },
+    { value: 'semi_calificada', label: 'Trabajadores semi-calificados' },
+    { value: 'calificada', label: 'Trabajadores calificados' },
+    { value: 'especializada', label: 'Trabajadores especializados' },
+    { value: 'tecnico_medio', label: 'Técnicos medios de educación diversificada o asimilables' },
+    { value: 'tecnico_superior', label: 'Técnicos de educación superior o asimilables' },
+    { value: 'diplomado', label: 'Diplomados de educación superior o asimilables' },
+    { value: 'bachiller', label: 'Bachilleres universitarios o asimilables' },
+    { value: 'licenciado', label: 'Licenciados universitarios o asimilables' },
+  ];
+
   public documentos: any = {
     data: [],
     total: 0,
@@ -110,6 +134,18 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
     return empresaEsElSalvador(this.apiService.auth_user()?.empresa);
   }
 
+  esCostaRicaFe(): boolean {
+    return empresaEsCostaRica(this.apiService.auth_user()?.empresa);
+  }
+
+  labelIdentidadCr(): string {
+    return this.empleado?.id_type === 2 ? 'Número DIMEX:' : 'Número de cédula:';
+  }
+
+  esJornadaParcial(): boolean {
+    return Number(this.empleado?.tipo_jornada) === 2;
+  }
+
   ngOnInit() {
     this.loadAll();
     this.loadCatalogos();
@@ -120,6 +156,7 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
     this.distritos = JSON.parse(localStorage.getItem('distritos')!);
     this.municipios = JSON.parse(localStorage.getItem('municipios')!);
     const esSV = this.esElSalvadorFe();
+    const esCR = this.esCostaRicaFe();
     this.empleado = {
       estado: PlanillaConstants.ESTADOS_EMPLEADO.ACTIVO,
       tipo_contrato: PlanillaConstants.TIPOS_CONTRATO.PERMANENTE,
@@ -135,6 +172,16 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
         aplicar_isss: esSV,
       },
       dui_homologado: false,
+      ...(esCR
+        ? {
+            id_type: 1,
+            tipo_salario: 1,
+            tiene_conyuge_dependiente: false,
+            cantidad_hijos_dependientes: 0,
+            horas_jornada: null,
+            categoria_ocupacional: null,
+          }
+        : {}),
     };
     this.id_empresa = JSON.parse(
       localStorage.getItem('SP_auth_user')!
@@ -426,6 +473,7 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
 
   private inicializarEmpleado() {
     const esSV = this.esElSalvadorFe();
+    const esCR = this.esCostaRicaFe();
     this.empleado = {
       estado: PlanillaConstants.ESTADOS_EMPLEADO.ACTIVO,
       tipo_contrato: PlanillaConstants.TIPOS_CONTRATO.PERMANENTE,
@@ -441,6 +489,16 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
         aplicar_isss: esSV,
       },
       dui_homologado: false,
+      ...(esCR
+        ? {
+            id_type: 1,
+            tipo_salario: 1,
+            tiene_conyuge_dependiente: false,
+            cantidad_hijos_dependientes: 0,
+            horas_jornada: null,
+            categoria_ocupacional: null,
+          }
+        : {}),
     };
   }
 
@@ -769,6 +827,16 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
 
     if (this.empleado.dui_homologado) {
       this.empleado.nit = null;
+    }
+
+    if (this.esCostaRicaFe() && this.esJornadaParcial()) {
+      const horas = Number(this.empleado.horas_jornada);
+      if (!horas || horas <= 0) {
+        this.alertService.error('Indique las horas de jornada para tiempo parcial.');
+        this.saving = false;
+        this.cdr.markForCheck();
+        return;
+      }
     }
 
     // Asegurar que configuracion_descuentos tenga valores por defecto si no existe
