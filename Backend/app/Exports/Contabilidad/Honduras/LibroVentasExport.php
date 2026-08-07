@@ -139,7 +139,9 @@ class LibroVentasExport implements FromCollection, WithMapping, WithHeadings, Wi
             ];
         });
 
-        return $filasVentas->merge($filasDevoluciones)->sortBy('fecha')->values();
+        // map() sobre Eloquent\Collection sigue siendo Eloquent\Collection;
+        // merge() ahí espera modelos (getKey). Pasar a Support\Collection.
+        return $filasVentas->toBase()->merge($filasDevoluciones)->sortBy('fecha')->values();
     }
 
     /**
