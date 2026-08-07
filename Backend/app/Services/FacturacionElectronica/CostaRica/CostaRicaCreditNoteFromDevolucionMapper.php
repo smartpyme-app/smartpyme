@@ -33,12 +33,15 @@ final class CostaRicaCreditNoteFromDevolucionMapper
         $fechaFactura = Carbon::parse($facturaOriginal->fecha)->timezone('America/Costa_Rica')->format('Y-m-d\TH:i:sP');
 
         $saleCond = '01';
+        // Moneda/TC de la NC = los de la factura original: Hacienda exige coherencia con el comprobante referenciado.
         $header = $this->invoiceMapper->encabezadoDocumento(
             $empresa,
             $this->invoiceMapper->fechaEmisionXmlCr(),
             $secuencialNc,
             $saleCond,
-            $devolucion->sucursal
+            $devolucion->sucursal,
+            (string) ($facturaOriginal->currency_code ?? $empresa->moneda ?? 'CRC'),
+            $facturaOriginal->exchange_rate
         );
 
         $facturaOriginal->loadMissing('cliente');

@@ -53,8 +53,11 @@ final class CostaRicaInvoiceFromVentaMapper
         [$est, $ter] = $this->establecimientoYTerminalCr($empresa, $venta->sucursal);
         $seq = str_pad((string) $secuencialFactura, 10, '0', STR_PAD_LEFT);
 
-        $moneda = strtoupper((string) ($empresa->moneda ?? 'CRC')) === 'USD' ? 'USD' : 'CRC';
-        $tipoCambio = $moneda === 'USD' ? $this->tipoCambio->crcPorUsdVenta($empresa) : 1.0;
+        [$moneda, $tipoCambio] = $this->monedaYTipoCambioDocumento(
+            (string) ($venta->currency_code ?? $empresa->moneda ?? 'CRC'),
+            $venta->exchange_rate,
+            $empresa
+        );
 
         // Índices 0..n-1: el resumen y Hacienda (-111) emparejan líneas con el XML; sin array_values el map puede conservar
         // keys no secuenciales y desalinear servicios gravados vs mercancías gravadas.
@@ -138,15 +141,23 @@ final class CostaRicaInvoiceFromVentaMapper
      *
      * @param  string  $fechaIsoAmericaCr  Para FechaEmision use {@see fechaEmisionXmlCr()} (hora real de emisión).
      * @param  Sucursal|null  $sucursal  Sucursal de la operación (NC, ND, etc.); determina establecimiento y punto de venta como en FE SV.
+     * @param  string  $currencyCode  Moneda del documento origen (NC/ND deben coincidir con la factura referenciada).
+     * @param  mixed  $exchangeRate  Tipo de cambio del documento origen ya persistido (null si CRC o no disponible).
      */
-    public function encabezadoDocumento(Empresa $empresa, string $fechaIsoAmericaCr, int $secuencial, string $saleCondition = '01', ?Sucursal $sucursal = null): array
-    {
+    public function encabezadoDocumento(
+        Empresa $empresa,
+        string $fechaIsoAmericaCr,
+        int $secuencial,
+        string $saleCondition = '01',
+        ?Sucursal $sucursal = null,
+        string $currencyCode = 'CRC',
+        mixed $exchangeRate = null
+    ): array {
         $fecha = Carbon::parse($fechaIsoAmericaCr)->timezone('America/Costa_Rica');
         $dateIso = $fecha->format('Y-m-d\TH:i:sP');
         [$est, $ter] = $this->establecimientoYTerminalCr($empresa, $sucursal);
         $seq = str_pad((string) $secuencial, 10, '0', STR_PAD_LEFT);
-        $moneda = strtoupper((string) ($empresa->moneda ?? 'CRC')) === 'USD' ? 'USD' : 'CRC';
-        $tipoCambio = $moneda === 'USD' ? $this->tipoCambio->crcPorUsdVenta($empresa) : 1.0;
+        [$moneda, $tipoCambio] = $this->monedaYTipoCambioDocumento($currencyCode, $exchangeRate, $empresa);
 
         return [
             'date' => $dateIso,
@@ -446,6 +457,37 @@ final class CostaRicaInvoiceFromVentaMapper
     private function claveSeguridad8(): string
     {
         return str_pad((string) random_int(0, 99999999), 8, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Moneda y tipo de cambio del comprobante FE: lee del documento (ventas/compras/gastos ya lo persisten,
+     * Task 2/3), nunca de un fallback numérico inventado (ej. 520). Si el documento es USD pero no trae
+     * exchange_rate válido (dato viejo o sin re-guardar tras habilitar multimoneda), se intenta resolver
+     * BCCR una vez; si tampoco hay tipo de cambio disponible, falla con mensaje claro pidiendo re-guardar.
+     *
+     * @return array{0: string, 1: float}
+     */
+    private function monedaYTipoCambioDocumento(string $currencyCode, mixed $exchangeRateRaw, Empresa $empresa): array
+    {
+        $moneda = strtoupper(trim($currencyCode)) === 'USD' ? 'USD' : 'CRC';
+
+        if ($moneda === 'CRC') {
+            return ['CRC', 1.0];
+        }
+
+        $rate = $exchangeRateRaw !== null && $exchangeRateRaw !== '' ? (float) $exchangeRateRaw : 0.0;
+        if ($rate <= 0.0 || abs($rate - 1.0) < 0.00001) {
+            try {
+                $rate = $this->tipoCambio->crcPorUsdVenta($empresa);
+            } catch (\Throwable $e) {
+                throw new InvalidArgumentException(
+                    'El documento está en USD pero no tiene un tipo de cambio válido guardado (BCCR). '
+                    .'Vuelva a guardar la venta/compra/gasto para registrar el tipo de cambio antes de emitir. Detalle: '.$e->getMessage()
+                );
+            }
+        }
+
+        return ['USD', $rate];
     }
 
     private function condicionVenta(Venta $venta): string
@@ -1475,8 +1517,11 @@ final class CostaRicaInvoiceFromVentaMapper
         $dateIso = $fecha->format('Y-m-d\TH:i:sP');
         [$est, $ter] = $this->establecimientoYTerminalCr($empresa, $compra->sucursal);
         $seq = str_pad((string) $secuencial, 10, '0', STR_PAD_LEFT);
-        $moneda = strtoupper((string) ($empresa->moneda ?? 'CRC')) === 'USD' ? 'USD' : 'CRC';
-        $tipoCambio = $moneda === 'USD' ? $this->tipoCambio->crcPorUsdVenta($empresa) : 1.0;
+        [$moneda, $tipoCambio] = $this->monedaYTipoCambioDocumento(
+            (string) ($compra->currency_code ?? $empresa->moneda ?? 'CRC'),
+            $compra->exchange_rate,
+            $empresa
+        );
 
         // Índices 0..n-1: el resumen empareja por índice con detalles; sin values() el map puede conservar keys del modelo y desalinear servicios vs mercancías (-111 Hacienda).
         $lineItems = array_values($compra->detalles->map(fn (DetalleCompra $d) => $this->lineaCompra($d, $empresa, $compra))->all());
@@ -1528,8 +1573,11 @@ final class CostaRicaInvoiceFromVentaMapper
         $dateIso = $fecha->format('Y-m-d\TH:i:sP');
         [$est, $ter] = $this->establecimientoYTerminalCr($empresa, $gasto->sucursal);
         $seq = str_pad((string) $secuencial, 10, '0', STR_PAD_LEFT);
-        $moneda = strtoupper((string) ($empresa->moneda ?? 'CRC')) === 'USD' ? 'USD' : 'CRC';
-        $tipoCambio = $moneda === 'USD' ? $this->tipoCambio->crcPorUsdVenta($empresa) : 1.0;
+        [$moneda, $tipoCambio] = $this->monedaYTipoCambioDocumento(
+            (string) ($gasto->currency_code ?? $empresa->moneda ?? 'CRC'),
+            $gasto->exchange_rate,
+            $empresa
+        );
 
         $lineItems = array_values($gasto->detalles->map(fn (DetalleEgreso $d) => $this->lineaGastoFec($d, $empresa, $gasto))->all());
 

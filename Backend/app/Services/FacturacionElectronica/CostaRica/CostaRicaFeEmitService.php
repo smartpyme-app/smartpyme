@@ -38,6 +38,7 @@ final class CostaRicaFeEmitService
     {
         $venta = $this->cargarVenta($ventaId);
         $this->assertEmpresaCr($venta->empresa);
+        $this->assertMonedaDocumentoValidaCr($venta->currency_code, $venta->exchange_rate, 'la venta');
         $this->assertDatosExoneracionCrSiAplica($venta);
         if (! $this->esDocumentoFacturaCr($venta->nombre_documento)) {
             throw new RuntimeException('Use emisión de tiquete para documentos tipo Ticket/Tiquete.');
@@ -59,6 +60,7 @@ final class CostaRicaFeEmitService
     {
         $venta = $this->cargarVenta($ventaId);
         $this->assertEmpresaCr($venta->empresa);
+        $this->assertMonedaDocumentoValidaCr($venta->currency_code, $venta->exchange_rate, 'la venta');
         $this->assertDatosExoneracionCrSiAplica($venta);
         if (! $this->esDocumentoTiqueteCr($venta->nombre_documento)) {
             throw new RuntimeException('El documento de la venta debe ser Ticket o Tiquete para comprobante 04.');
@@ -89,6 +91,7 @@ final class CostaRicaFeEmitService
             throw new RuntimeException('La compra no tiene empresa asociada.');
         }
         $this->assertEmpresaCr($empresa);
+        $this->assertMonedaDocumentoValidaCr($compra->currency_code, $compra->exchange_rate, 'la compra');
         if (! $this->esDocumentoCompraElectronicaCr($compra->tipo_documento)) {
             throw new RuntimeException('El tipo de documento debe ser «Factura Electrónica de Compra» (o el nombre histórico «Compra electrónica») para emitir FEC (08).');
         }
@@ -118,6 +121,7 @@ final class CostaRicaFeEmitService
             throw new RuntimeException('El gasto no tiene empresa asociada.');
         }
         $this->assertEmpresaCr($empresa);
+        $this->assertMonedaDocumentoValidaCr($gasto->currency_code, $gasto->exchange_rate, 'el gasto');
         if (! $this->esDocumentoCompraElectronicaCr($gasto->tipo_documento)) {
             throw new RuntimeException('El tipo de documento debe ser «Factura Electrónica de Compra» (o el nombre histórico «Compra electrónica») para emitir FEC (08).');
         }
@@ -154,6 +158,8 @@ final class CostaRicaFeEmitService
         if (! $this->ventaFeCrAceptada($ventaOrigen)) {
             throw new RuntimeException('La factura original debe tener comprobante electrónico aceptado en Costa Rica.');
         }
+        // La NC hereda moneda/TC de la factura original (post-emisión son inmutables).
+        $this->assertMonedaDocumentoValidaCr($ventaOrigen->currency_code, $ventaOrigen->exchange_rate, 'la factura original');
 
         $sec = $this->secuencialDesdeCorrelativo($devolucion->correlativo);
         $data = $this->creditNoteMapper->buildDocumentData($devolucion, $empresa, $ventaOrigen, $sec);
@@ -227,6 +233,8 @@ final class CostaRicaFeEmitService
         if (! $this->ventaFeCrAceptada($venta)) {
             throw new RuntimeException('La venta debe tener factura electrónica aceptada para emitir nota de débito.');
         }
+        // La ND hereda moneda/TC de la factura original que ajusta.
+        $this->assertMonedaDocumentoValidaCr($venta->currency_code, $venta->exchange_rate, 'la factura original');
 
         $devolucionNd = $this->devolucionNotaDebitoParaVenta($venta);
         if ($this->devolucionTieneClaveFeCr($devolucionNd)) {
@@ -244,7 +252,16 @@ final class CostaRicaFeEmitService
         $sec = $this->secuencialDesdeCorrelativo($devolucionNd->correlativo);
         $saleCond = '01';
         $venta->loadMissing('sucursal');
-        $header = $this->mapper->encabezadoDocumento($empresa, $this->mapper->fechaEmisionXmlCr(), $sec, $saleCond, $venta->sucursal);
+        // Moneda/TC de la ND = los de la factura original que ajusta.
+        $header = $this->mapper->encabezadoDocumento(
+            $empresa,
+            $this->mapper->fechaEmisionXmlCr(),
+            $sec,
+            $saleCond,
+            $venta->sucursal,
+            (string) ($venta->currency_code ?? $empresa->moneda ?? 'CRC'),
+            $venta->exchange_rate
+        );
 
         $claveFactura = (string) $venta->codigo_generacion;
         $fechaFactura = \Carbon\Carbon::parse($venta->fecha)->timezone('America/Costa_Rica')->format('Y-m-d\TH:i:sP');
@@ -418,6 +435,38 @@ final class CostaRicaFeEmitService
     private function secuencialDesdeCorrelativo(mixed $correlativo): int
     {
         return (int) $correlativo;
+    }
+
+    /**
+     * Pre-validación previa a construir el XML: CRC exige exchange_rate == 1; USD exige exchange_rate > 0 y != 1.
+     * Evita depender del mapper (o de un fallback numérico) para detectar documentos con datos de moneda inconsistentes.
+     */
+    private function assertMonedaDocumentoValidaCr(mixed $currencyCode, mixed $exchangeRate, string $contexto): void
+    {
+        $codigo = strtoupper(trim((string) ($currencyCode ?? 'CRC')));
+        $rate = $exchangeRate !== null && $exchangeRate !== '' ? (float) $exchangeRate : null;
+
+        if ($codigo === 'CRC') {
+            if ($rate !== null && abs($rate - 1.0) > 0.00001) {
+                throw new RuntimeException(
+                    "Moneda CRC en {$contexto} requiere tipo de cambio igual a 1 (valor actual: {$rate}). Vuelva a guardar el documento."
+                );
+            }
+
+            return;
+        }
+
+        if ($codigo === 'USD') {
+            if ($rate === null || $rate <= 0 || abs($rate - 1.0) < 0.00001) {
+                throw new RuntimeException(
+                    "Moneda USD en {$contexto} requiere un tipo de cambio BCCR válido (mayor a 0 y distinto de 1). Vuelva a guardar el documento para registrar el tipo de cambio."
+                );
+            }
+
+            return;
+        }
+
+        throw new RuntimeException("Moneda no soportada en {$contexto}: {$codigo}. Solo CRC o USD.");
     }
 
     private function assertEmpresaCr($empresa): void
