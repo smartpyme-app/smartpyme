@@ -7,6 +7,7 @@ use App\Models\Restaurante\Mesa;
 use App\Models\Restaurante\OrdenDetalle;
 use App\Models\Restaurante\SesionMesa;
 use App\Services\Restaurante\RestauranteAutorizacionService;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -26,30 +27,47 @@ class SesionMesaController extends Controller
             'observaciones' => 'nullable|string|max:500',
         ]);
 
-        $mesa = Mesa::where('id_empresa', $user->id_empresa)->findOrFail($validated['mesa_id']);
+        try {
+            $sesion = DB::transaction(function () use ($user, $validated) {
+                $mesa = Mesa::where('id_empresa', $user->id_empresa)
+                    ->whereKey($validated['mesa_id'])
+                    ->lockForUpdate()
+                    ->firstOrFail();
 
-        $sesionActiva = SesionMesa::where('mesa_id', $mesa->id)
-            ->whereIn('estado', ['abierta', 'pre_cuenta'])
-            ->first();
+                $sesionActiva = SesionMesa::where('mesa_id', $mesa->id)
+                    ->whereIn('estado', ['abierta', 'pre_cuenta'])
+                    ->lockForUpdate()
+                    ->first();
 
-        if ($sesionActiva) {
+                if ($sesionActiva) {
+                    return null;
+                }
+
+                $nueva = SesionMesa::create([
+                    'mesa_id' => $mesa->id,
+                    'usuario_id' => $user->id,
+                    'id_empresa' => $user->id_empresa,
+                    'id_sucursal' => $user->id_sucursal ?? $mesa->id_sucursal,
+                    'num_comensales' => $validated['num_comensales'] ?? 1,
+                    'observaciones' => $validated['observaciones'] ?? null,
+                    'estado' => 'abierta',
+                    'opened_at' => now(),
+                ]);
+
+                $mesa->update(['estado' => 'ocupada']);
+
+                return $nueva;
+            });
+        } catch (UniqueConstraintViolationException $e) {
             return response()->json(['error' => 'La mesa ya tiene una sesión activa'], 422);
         }
 
-        $sesion = SesionMesa::create([
-            'mesa_id' => $mesa->id,
-            'usuario_id' => $user->id,
-            'id_empresa' => $user->id_empresa,
-            'id_sucursal' => $user->id_sucursal ?? $mesa->id_sucursal,
-            'num_comensales' => $validated['num_comensales'] ?? 1,
-            'observaciones' => $validated['observaciones'] ?? null,
-            'estado' => 'abierta',
-            'opened_at' => now(),
-        ]);
-
-        $mesa->update(['estado' => 'ocupada']);
+        if ($sesion === null) {
+            return response()->json(['error' => 'La mesa ya tiene una sesión activa'], 422);
+        }
 
         $sesion->load(['mesa.zonaRestaurante', 'mesero']);
+
         return response()->json($sesion, 201);
     }
 

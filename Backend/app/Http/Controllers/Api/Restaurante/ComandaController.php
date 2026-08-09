@@ -77,16 +77,35 @@ class ComandaController extends Controller
                 'comanda_id' => $comanda->id,
                 'orden_detalle_id' => $item->id,
             ]);
-            if ($destino === 'cocina') {
-                $item->update(['enviado_cocina' => true]);
-            } else {
-                $item->update(['enviado_barra' => true]);
-            }
         }
 
         $comanda->load(['detalles.ordenDetalle.producto']);
 
         return $comanda;
+    }
+
+    /**
+     * Marca enviado_* solo si aún estaba pendiente (update condicional anti-carrera).
+     *
+     * @param  array<int, OrdenDetalle>  $items
+     */
+    private function marcarItemsEnviados(array $items, string $destino): void
+    {
+        $ids = array_map(fn (OrdenDetalle $i) => (int) $i->id, $items);
+        if ($ids === []) {
+            return;
+        }
+
+        $col = $destino === 'barra' ? 'enviado_barra' : 'enviado_cocina';
+        $affected = OrdenDetalle::whereIn('id', $ids)
+            ->where($col, false)
+            ->update([$col => true]);
+
+        if ($affected !== count($ids)) {
+            throw new \RuntimeException(
+                "Conflicto al enviar comanda ({$destino}): otro proceso ya marcó uno o más ítems."
+            );
+        }
     }
 
     public function index(Request $request): JsonResponse
@@ -116,59 +135,69 @@ class ComandaController extends Controller
     public function store(Request $request, int $id): JsonResponse
     {
         $user = auth()->user();
-        $sesion = SesionMesa::where('id_empresa', $user->id_empresa)
-            ->whereIn('estado', ['abierta', 'pre_cuenta'])
-            ->with('mesa')
-            ->findOrFail($id);
 
-        $pendientes = OrdenDetalle::where('sesion_id', $sesion->id)
-            ->with('producto')
-            ->get();
-
-        $itemsCocina = [];
-        $itemsBarra = [];
-
-        foreach ($pendientes as $item) {
-            $producto = $item->producto;
-            if (! $producto) {
-                continue;
-            }
-            if ($this->itemPendienteCocina($item, $producto)) {
-                $itemsCocina[] = $item;
-            }
-            if ($this->itemPendienteBarra($item, $producto)) {
-                $itemsBarra[] = $item;
-            }
-        }
-
-        if ($itemsCocina === [] && $itemsBarra === []) {
-            return response()->json(['error' => 'No hay ítems pendientes por enviar'], 422);
-        }
-
-        $comandasCreadas = [];
-        $base = Comanda::where('sesion_id', $sesion->id)->count();
-        $n = $base;
-
-        DB::beginTransaction();
         try {
-            if ($itemsCocina !== []) {
-                $n++;
-                $c = $this->crearComandaSesion($sesion, 'cocina', $itemsCocina, $n);
-                if ($c) {
-                    $comandasCreadas[] = $c;
+            $comandasCreadas = DB::transaction(function () use ($user, $id) {
+                $sesion = SesionMesa::where('id_empresa', $user->id_empresa)
+                    ->whereIn('estado', ['abierta', 'pre_cuenta'])
+                    ->whereKey($id)
+                    ->lockForUpdate()
+                    ->with('mesa')
+                    ->firstOrFail();
+
+                $pendientes = OrdenDetalle::where('sesion_id', $sesion->id)
+                    ->with('producto')
+                    ->lockForUpdate()
+                    ->get();
+
+                $itemsCocina = [];
+                $itemsBarra = [];
+
+                foreach ($pendientes as $item) {
+                    $producto = $item->producto;
+                    if (! $producto) {
+                        continue;
+                    }
+                    if ($this->itemPendienteCocina($item, $producto)) {
+                        $itemsCocina[] = $item;
+                    }
+                    if ($this->itemPendienteBarra($item, $producto)) {
+                        $itemsBarra[] = $item;
+                    }
                 }
-            }
-            if ($itemsBarra !== []) {
-                $n++;
-                $c = $this->crearComandaSesion($sesion, 'barra', $itemsBarra, $n);
-                if ($c) {
-                    $comandasCreadas[] = $c;
+
+                if ($itemsCocina === [] && $itemsBarra === []) {
+                    return [];
                 }
-            }
-            DB::commit();
-        } catch (\Exception $e) {
-            DB::rollBack();
-            throw $e;
+
+                $comandasCreadas = [];
+                $n = Comanda::where('sesion_id', $sesion->id)->lockForUpdate()->count();
+
+                if ($itemsCocina !== []) {
+                    $n++;
+                    $c = $this->crearComandaSesion($sesion, 'cocina', $itemsCocina, $n);
+                    if ($c) {
+                        $this->marcarItemsEnviados($itemsCocina, 'cocina');
+                        $comandasCreadas[] = $c;
+                    }
+                }
+                if ($itemsBarra !== []) {
+                    $n++;
+                    $c = $this->crearComandaSesion($sesion, 'barra', $itemsBarra, $n);
+                    if ($c) {
+                        $this->marcarItemsEnviados($itemsBarra, 'barra');
+                        $comandasCreadas[] = $c;
+                    }
+                }
+
+                return $comandasCreadas;
+            });
+        } catch (\RuntimeException $e) {
+            return response()->json(['error' => $e->getMessage()], 409);
+        }
+
+        if ($comandasCreadas === []) {
+            return response()->json(['error' => 'No hay ítems pendientes por enviar'], 422);
         }
 
         return response()->json([

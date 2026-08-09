@@ -38,6 +38,7 @@ export class CuentaMesaComponent implements OnInit {
 
   productoSheet: any = null;
   mostrarSheetAgregar = false;
+  enviandoAgregar = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -161,18 +162,29 @@ export class CuentaMesaComponent implements OnInit {
   }
 
   onCancelarSheetAgregar(): void {
+    if (this.enviandoAgregar) {
+      return;
+    }
     this.mostrarSheetAgregar = false;
     this.productoSheet = null;
   }
 
   onConfirmarAgregar(payload: { producto_id: number; cantidad: number; notas: string }): void {
+    if (this.enviandoAgregar) {
+      return;
+    }
+    this.enviandoAgregar = true;
     this.restauranteService.agregarItem(this.sesionId, payload).subscribe({
       next: () => {
+        this.enviandoAgregar = false;
         this.mostrarSheetAgregar = false;
         this.productoSheet = null;
         this.cargarSesion();
       },
-      error: (err) => this.alertService.error(err)
+      error: (err) => {
+        this.enviandoAgregar = false;
+        this.alertService.error(err);
+      }
     });
   }
 

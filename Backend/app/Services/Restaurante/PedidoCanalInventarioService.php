@@ -26,6 +26,11 @@ class PedidoCanalInventarioService
      */
     public function aplicarSalidasAlConfirmar(PedidoRestaurante $pedido, int $idBodega): void
     {
+        // Idempotencia: una confirmación lógica = un descuento (también cubre BoxFul).
+        if ($pedido->inventario_descontado_at) {
+            return;
+        }
+
         $empresa = Empresa::findOrFail($pedido->id_empresa);
         $puedeVenderSinStock = $empresa->vender_sin_stock == 1;
         $lotesActivo = $empresa->isLotesActivo();
@@ -143,6 +148,10 @@ class PedidoCanalInventarioService
                 $metodologia
             );
         }
+
+        $pedido->inventario_descontado_at = now();
+        $pedido->id_bodega_inventario = $idBodega;
+        $pedido->save();
     }
 
     /**
@@ -150,6 +159,10 @@ class PedidoCanalInventarioService
      */
     public function revertirSalidasPedido(PedidoRestaurante $pedido, int $idBodega): void
     {
+        if (! $pedido->inventario_descontado_at) {
+            return;
+        }
+
         $pedido->load(['detalles', 'detalles.producto', 'detalles.producto.composiciones']);
 
         foreach ($pedido->detalles as $detalleRow) {
@@ -236,6 +249,10 @@ class PedidoCanalInventarioService
             $detalleRow->meta_inventario = null;
             $detalleRow->save();
         }
+
+        $pedido->inventario_descontado_at = null;
+        $pedido->id_bodega_inventario = null;
+        $pedido->save();
     }
 
     public static function ventaCoincideConPedido(PedidoRestaurante $pedido, array $detallesVenta): bool

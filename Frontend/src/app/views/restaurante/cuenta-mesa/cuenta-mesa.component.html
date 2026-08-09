@@ -268,5 +268,5 @@
 </div>
 
 <!-- Sheet agregar producto (catálogo táctil) -->
-<app-pos-sheet-agregar [producto]="productoSheet" [visible]="mostrarSheetAgregar"
+<app-pos-sheet-agregar [producto]="productoSheet" [visible]="mostrarSheetAgregar" [enviando]="enviandoAgregar"
   (confirmar)="onConfirmarAgregar($event)" (cancelar)="onCancelarSheetAgregar()"></app-pos-sheet-agregar>

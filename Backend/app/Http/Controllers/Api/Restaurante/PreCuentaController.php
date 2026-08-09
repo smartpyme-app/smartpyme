@@ -97,8 +97,15 @@ class PreCuentaController extends Controller
         }
 
         $sesionId = $preCuenta->sesion_id;
+        $ids = $preCuenta->ordenDetalles->pluck('id')->all();
+        $items = OrdenDetalle::where('sesion_id', $sesionId)
+            ->whereIn('id', $ids)
+            ->lockForUpdate()
+            ->get()
+            ->keyBy('id');
+
         foreach ($preCuenta->ordenDetalles as $od) {
-            $item = OrdenDetalle::where('sesion_id', $sesionId)->whereKey($od->id)->first();
+            $item = $items->get($od->id);
             if (!$item) {
                 continue;
             }
@@ -545,21 +552,35 @@ class PreCuentaController extends Controller
     public function marcarFacturada(Request $request, int $id): JsonResponse
     {
         $user = auth()->user();
-        $preCuenta = PreCuenta::whereHas('sesion', fn ($q) => $q->where('id_empresa', $user->id_empresa))
-            ->with(['sesion.mesa'])
-            ->findOrFail($id);
-
-        if ($preCuenta->estado === 'facturada') {
-            return response()->json(['error' => 'La pre-cuenta ya fue facturada'], 422);
-        }
 
         $validated = $request->validate([
             'factura_id' => 'required|integer|exists:ventas,id',
         ]);
 
-        $todasFacturadas = false;
-        DB::beginTransaction();
-        try {
+        $payload = DB::transaction(function () use ($user, $id, $validated) {
+            $preCuenta = PreCuenta::whereHas('sesion', fn ($q) => $q->where('id_empresa', $user->id_empresa))
+                ->whereKey($id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $preCuenta->load(['sesion.mesa']);
+
+            // Idempotente: ya facturada → no reliquidar ni cerrar de nuevo.
+            if ($preCuenta->estado === 'facturada') {
+                $sesion = $preCuenta->sesion;
+                $todasFacturadas = $sesion
+                    ? PreCuenta::where('sesion_id', $sesion->id)
+                        ->where('estado', '!=', 'facturada')
+                        ->doesntExist()
+                    : false;
+
+                return [
+                    'pre_cuenta' => $preCuenta->fresh(),
+                    'sesion_cerrada' => $todasFacturadas,
+                    'idempotent' => true,
+                ];
+            }
+
             $preCuenta->update([
                 'estado' => 'facturada',
                 'factura_id' => $validated['factura_id'],
@@ -568,28 +589,33 @@ class PreCuentaController extends Controller
             $preCuenta->load('ordenDetalles');
             $this->liquidarOrdenTrasFacturarPreCuenta($preCuenta);
 
-            $sesion = $preCuenta->sesion;
-            $todasFacturadas = PreCuenta::where('sesion_id', $sesion->id)
-                ->where('estado', '!=', 'facturada')
-                ->doesntExist();
+            $sesion = SesionMesa::whereKey($preCuenta->sesion_id)->lockForUpdate()->first();
+            $todasFacturadas = false;
 
-            if ($todasFacturadas) {
-                $sesion->update([
-                    'estado' => 'cerrada',
-                    'closed_at' => now(),
-                ]);
-                $sesion->mesa?->update(['estado' => 'libre']);
+            if ($sesion) {
+                $todasFacturadas = PreCuenta::where('sesion_id', $sesion->id)
+                    ->where('estado', '!=', 'facturada')
+                    ->doesntExist();
+
+                if ($todasFacturadas) {
+                    $sesion->update([
+                        'estado' => 'cerrada',
+                        'closed_at' => now(),
+                    ]);
+                    $sesion->mesa?->update(['estado' => 'libre']);
+                }
             }
 
-            DB::commit();
-        } catch (\Throwable $e) {
-            DB::rollBack();
-            throw $e;
-        }
+            return [
+                'pre_cuenta' => $preCuenta->fresh(),
+                'sesion_cerrada' => $todasFacturadas,
+                'idempotent' => false,
+            ];
+        });
 
         return response()->json([
-            'pre_cuenta' => $preCuenta->fresh(),
-            'sesion_cerrada' => $todasFacturadas,
+            'pre_cuenta' => $payload['pre_cuenta'],
+            'sesion_cerrada' => $payload['sesion_cerrada'],
         ]);
     }
 }

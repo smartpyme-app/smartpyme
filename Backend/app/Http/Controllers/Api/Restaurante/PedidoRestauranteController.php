@@ -203,32 +203,40 @@ class PedidoRestauranteController extends Controller
             'id_bodega' => 'nullable|integer',
         ]);
 
-        $pedido = PedidoRestaurante::where('id_empresa', $user->id_empresa)->findOrFail($id);
-
-        if ($pedido->estado !== 'borrador') {
-            return response()->json(['error' => 'Solo se pueden confirmar pedidos en borrador'], 422);
-        }
-
-        if ($pedido->detalles()->count() === 0) {
-            return response()->json(['error' => 'El pedido no tiene líneas para confirmar'], 422);
-        }
-
-        if ($request->filled('id_bodega')) {
-            $err = $this->validarBodegaEmpresa((int) $request->id_bodega, (int) $user->id_empresa);
-            if ($err) {
-                return $err;
-            }
-        }
-
-        if ($pedido->id_bodega) {
-            $err = $this->validarBodegaEmpresa((int) $pedido->id_bodega, (int) $user->id_empresa);
-            if ($err) {
-                return $err;
-            }
-        }
-
         try {
-            DB::transaction(function () use ($request, $pedido, $user) {
+            $pedido = DB::transaction(function () use ($request, $user, $id) {
+                $pedido = PedidoRestaurante::where('id_empresa', $user->id_empresa)
+                    ->whereKey($id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                // Retry real: ya confirmado con inventario descontado → no volver a descontar.
+                if ($pedido->estado === 'pendiente_facturar' && $pedido->inventario_descontado_at) {
+                    return $pedido;
+                }
+
+                if ($pedido->estado !== 'borrador') {
+                    throw new RuntimeException('Solo se pueden confirmar pedidos en borrador');
+                }
+
+                if ($pedido->detalles()->count() === 0) {
+                    throw new RuntimeException('El pedido no tiene líneas para confirmar');
+                }
+
+                if ($request->filled('id_bodega')) {
+                    $err = $this->validarBodegaEmpresa((int) $request->id_bodega, (int) $user->id_empresa);
+                    if ($err) {
+                        throw new RuntimeException('Bodega no válida para la empresa.');
+                    }
+                }
+
+                if ($pedido->id_bodega) {
+                    $err = $this->validarBodegaEmpresa((int) $pedido->id_bodega, (int) $user->id_empresa);
+                    if ($err) {
+                        throw new RuntimeException('Bodega no válida para la empresa.');
+                    }
+                }
+
                 $idBodega = (int) ($request->input('id_bodega') ?: $pedido->id_bodega ?: $user->id_bodega);
                 if ($idBodega <= 0) {
                     throw new RuntimeException('Indique una bodega en el pedido o al confirmar para descontar inventario.');
@@ -245,9 +253,14 @@ class PedidoRestauranteController extends Controller
                 $svc->aplicarSalidasAlConfirmar($pedido->fresh(['detalles']), $idBodega);
 
                 $pedido->update(['estado' => 'pendiente_facturar']);
+
+                return $pedido->fresh();
             });
         } catch (RuntimeException $e) {
-            return response()->json(['error' => $e->getMessage()], 400);
+            $msg = $e->getMessage();
+            $code = str_contains($msg, 'borrador') || str_contains($msg, 'líneas') ? 422 : 400;
+
+            return response()->json(['error' => $msg], $code);
         }
 
         $pedido->load(['detalles.producto', 'cliente', 'usuario', 'venta']);
