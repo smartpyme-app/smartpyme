@@ -9,3 +9,7 @@ Backend/composer.lock
 .idea/
 .worktrees/
 .superpowers/
+
+# graphify knowledge graph (regenerable locally; do not commit)
+graphify-out/
+**/graphify-out/
