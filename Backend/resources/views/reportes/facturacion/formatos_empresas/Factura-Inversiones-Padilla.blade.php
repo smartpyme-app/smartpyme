@@ -11,10 +11,13 @@
             color: #222;
         }
         @page {
-            margin: 1.1cm 1.3cm 1.1cm 1.3cm;
+            margin: 2cm 2cm 2cm 2cm;
             size: letter;
         }
-        #factura { width: 100%; }
+        #factura {
+            width: 100%;
+            padding: 4px 6px;
+        }
         p { margin: 0 0 2px 0; }
         table { width: 100%; border-collapse: collapse; }
         td, th { vertical-align: top; }
