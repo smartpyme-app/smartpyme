@@ -212,12 +212,7 @@ class   ConfiguracionPlanillaController extends Controller
     {
         try {
             $empresaId = $request->user()->id_empresa;
-            $codPais = $request->input('cod_pais');
-
-            $config = $this->empresaConfigService->importarBasePlanilla(
-                $empresaId,
-                $codPais ? strtoupper($codPais) : null
-            );
+            $config = $this->empresaConfigService->importarBasePlanilla($empresaId);
 
             return response()->json([
                 'success' => true,
