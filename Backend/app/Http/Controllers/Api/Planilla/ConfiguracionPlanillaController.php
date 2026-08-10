@@ -90,15 +90,28 @@ class   ConfiguracionPlanillaController extends Controller
     {
         try {
             $empresaId = $request->user()->id_empresa;
+            $forzar = $request->boolean('forzar', false) || $request->input('forzar') === true || $request->input('forzar') === 'true';
 
-            if (EmpresaConfiguracionPlanilla::obtenerConfiguracion($empresaId)) {
+            $configuracionActual = EmpresaConfiguracionPlanilla::obtenerConfiguracion($empresaId);
+
+            if ($configuracionActual && !$forzar) {
                 return response()->json([
                     'success' => false,
                     'message' => 'La empresa ya tiene una configuración de planilla activa'
                 ], 409);
             }
 
-            $configuracion = EmpresaConfiguracionPlanilla::obtenerOCrearConfiguracion($empresaId);
+            if ($configuracionActual && $forzar) {
+                $codPais = $configuracionActual->cod_pais ?? 'SV';
+                $plantillaBase = PlanillaTemplatesService::getConfiguracionPorPais($codPais);
+                $configuracionActual->update([
+                    'configuracion' => $plantillaBase,
+                    'updated_at' => now()
+                ]);
+                $configuracion = $configuracionActual->fresh();
+            } else {
+                $configuracion = EmpresaConfiguracionPlanilla::obtenerOCrearConfiguracion($empresaId);
+            }
 
             return response()->json([
                 'success' => true,

@@ -143,20 +143,23 @@ export class ConfiguracionPlanillaComponent implements OnInit {
     const nombre = this.empresaPais?.nombre_pais
       || this.obtenerNombrePais(this.empresaPais?.cod_pais || 'SV');
 
-    if (!confirm(`¿Importar la plantilla de ${nombre} para esta empresa?`)) {
+    if (!confirm(`¿Estás seguro de recargar la configuración base de ${nombre}? Se restablecerán los conceptos y parámetros oficiales del país.`)) {
       return;
     }
 
     this.importing = true;
-    this.configService.importarPlantillaPais().pipe(this.untilDestroyed()).subscribe({
+    this.configService.importarPlantillaPais(true).pipe(this.untilDestroyed()).subscribe({
       next: (config) => {
         this.configuracion = config;
         this.poblarFormulario();
         this.importing = false;
+        this.alertService.success('Éxito!','Configuración base recargada exitosamente');
         this.cdr.markForCheck();
       },
-      error: () => {
+      error: (err) => {
         this.importing = false;
+        const msg = err?.error?.message || err?.message || 'Error al recargar la configuración base del país';
+        this.alertService.error(msg);
         this.cdr.markForCheck();
       }
     });

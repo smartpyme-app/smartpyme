@@ -50,6 +50,9 @@ Route::group(['prefix' => 'planillas', 'middleware' => ['jwt.auth']], function (
         Route::get('descuentos-patronales/{id}', 'obtenerDescuentosPatronales');
         Route::get('detalles/exportar', 'exportarDetallesPlanilla');
         Route::get('plantilla-importacion', 'descargarPlantilla');
+        Route::get('{id}/reporte-ccss', 'reporteCCSS');
+        Route::get('{id}/reporte-d138', 'reporteD138');
+        Route::get('{id}/costo-patronal', 'reporteCostoPatronal');
     });
 
     // Importaciones

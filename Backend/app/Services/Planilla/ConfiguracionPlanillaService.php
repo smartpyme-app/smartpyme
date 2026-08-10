@@ -6,6 +6,8 @@ use App\Constants\PlanillaConstants;
 use App\Models\EmpresaConfiguracionPlanilla;
 use App\Helpers\IsssHelper;
 use App\Helpers\RentaHelper;
+use App\Helpers\CostaRicaCargasSocialesHelper;
+use App\Helpers\CostaRicaRentaHelper;
 use App\Models\Admin\Empresa;
 use Illuminate\Support\Facades\Log;
 
@@ -16,22 +18,31 @@ class ConfiguracionPlanillaService
         try {
             // Obtener país de la empresa
             $empresa = Empresa::find($empresaId);
-            $codigoPais = $empresa->cod_pais ?? 'SV';
-    
-            // 🔧 NUEVO: Forzar que El Salvador siempre use lógica estándar
+            $codigoPais = EmpresaConfiguracionPlanilla::resolverCodigoPaisEmpresa($empresa);
+
+            // 🔧 El Salvador siempre usa lógica estándar SV
             if ($codigoPais === 'SV') {
                 Log::info('🇸🇻 Forzando lógica estándar para El Salvador');
                 return $this->calcularConceptosElSalvador($datosEmpleado, $tipoPlanilla);
             }
-    
+
+            // 🇨🇷 Costa Rica: Usar motor especializado CR
+            if ($codigoPais === 'CR') {
+                Log::info('🇨🇷 Usando motor especializado para Costa Rica', [
+                    'empresa_id' => $empresaId,
+                    'tipo_planilla' => $tipoPlanilla
+                ]);
+                return $this->calcularConceptosCostaRica($datosEmpleado, $empresaId, $tipoPlanilla);
+            }
+
             // 🎯 Otros países: Usar configuración personalizada
-            Log::info('🌎 País diferente a SV - Usando configuración empresa', [
+            Log::info('🌎 País diferente a SV/CR - Usando configuración empresa', [
                 'pais' => $codigoPais,
                 'empresa_id' => $empresaId
             ]);
-    
+
             return $this->calcularConceptosConConfiguracion($datosEmpleado, $empresaId, $tipoPlanilla);
-    
+
         } catch (\Exception $e) {
             Log::error('❌ Error en ConfiguracionPlanillaService', [
                 'error' => $e->getMessage(),
@@ -126,6 +137,10 @@ class ConfiguracionPlanillaService
         $aportesPatronales = $resultados['isss_patronal'] + $resultados['afp_patronal'];
         
         return [
+            'pais_configuracion' => 'SV',
+            'version_tabla' => 'SV-ISSS-AFP-2025-V1',
+            'version_decreto' => 'Decreto No. 10 (2025)',
+            'fecha_vigencia_tabla' => '2025-01-01',
             'isss_empleado' => $resultados['isss_empleado'],
             'isss_patronal' => $resultados['isss_patronal'],
             'afp_empleado' => $resultados['afp_empleado'],
@@ -136,6 +151,100 @@ class ConfiguracionPlanillaService
                 'total_deducciones' => round($totalDeducciones, 2),
                 'sueldo_neto' => round($sueldoNeto, 2),
                 'aportes_patronales' => round($aportesPatronales, 2)
+            ]
+        ];
+    }
+
+    private function calcularConceptosCostaRica(array $datosEmpleado, $empresaId, string $tipoPlanilla)
+    {
+        $salarioDevengado = $datosEmpleado['salario_devengado'] ?? 0;
+        
+        $totalIngresos = $salarioDevengado + 
+                        ($datosEmpleado['monto_horas_extra'] ?? 0) +
+                        ($datosEmpleado['comisiones'] ?? 0) +
+                        ($datosEmpleado['bonificaciones'] ?? 0) +
+                        ($datosEmpleado['otros_ingresos'] ?? 0);
+
+        $tasaInsPorcentaje = $datosEmpleado['tasa_ins'] ?? null;
+        $esPatronoPequeno = $datosEmpleado['es_patrono_pequeno'] ?? false;
+
+        // 1. Cargas Sociales (CCSS e INS)
+        $cargasSociales = CostaRicaCargasSocialesHelper::calcularCargasSociales(
+            $totalIngresos,
+            $tipoPlanilla,
+            $tasaInsPorcentaje,
+            $esPatronoPequeno
+        );
+
+        // 2. Impuesto sobre la Renta (CR - sobre salario bruto directo con créditos familiares)
+        $cantidadHijos = $datosEmpleado['cantidad_hijos_dependientes'] ?? 0;
+        $tieneConyuge = $datosEmpleado['tiene_conyuge_dependiente'] ?? false;
+
+        $renta = CostaRicaRentaHelper::calcularRetencionRenta(
+            $totalIngresos,
+            $tipoPlanilla,
+            $cantidadHijos,
+            $tieneConyuge
+        );
+
+        // Deducciones adicionales (préstamos, anticipos, etc.)
+        $otrasDeducciones = ($datosEmpleado['prestamos'] ?? 0) +
+                           ($datosEmpleado['anticipos'] ?? 0) +
+                           ($datosEmpleado['otros_descuentos'] ?? 0) +
+                           ($datosEmpleado['descuentos_judiciales'] ?? 0);
+
+        $totalDeducciones = $cargasSociales['ccss_empleado'] + $renta + $otrasDeducciones;
+        $sueldoNeto = $totalIngresos - $totalDeducciones;
+        $totalAportesPatronales = $cargasSociales['ccss_patronal'] + $cargasSociales['ins_patronal'];
+
+        $conceptosPersonalizados = [
+            'ccss_empleado' => [
+                'nombre' => 'CCSS Empleado (10.83%)',
+                'codigo' => 'CCSS_EMP',
+                'valor' => $cargasSociales['ccss_empleado'],
+                'tipo' => 'deduccion',
+                'desglose' => $cargasSociales['desglose_empleado']
+            ],
+            'ccss_patronal' => [
+                'nombre' => 'CCSS Patronal (26.83%)',
+                'codigo' => 'CCSS_PAT',
+                'valor' => $cargasSociales['ccss_patronal'],
+                'tipo' => 'aporte_patronal',
+                'desglose' => $cargasSociales['desglose_patronal']
+            ],
+            'ins_patronal' => [
+                'nombre' => 'INS Riesgos del Trabajo',
+                'codigo' => 'INS_PAT',
+                'valor' => $cargasSociales['ins_patronal'],
+                'tipo' => 'aporte_patronal'
+            ],
+            'renta_cr' => [
+                'nombre' => 'Impuesto sobre la Renta CR',
+                'codigo' => 'RENTA_CR',
+                'valor' => round($renta, 2),
+                'tipo' => 'deduccion'
+            ]
+        ];
+
+        return [
+            'pais_configuracion' => 'CR',
+            'version_tabla' => 'CR-CCSS-2026-V1',
+            'version_decreto' => 'Decreto 45333-H (2026)',
+            'fecha_vigencia_tabla' => '2026-01-01',
+            'isss_empleado' => 0,
+            'isss_patronal' => 0,
+            'afp_empleado' => 0,
+            'afp_patronal' => 0,
+            'ccss_empleado' => $cargasSociales['ccss_empleado'],
+            'ccss_patronal' => $cargasSociales['ccss_patronal'],
+            'ins_patronal' => $cargasSociales['ins_patronal'],
+            'renta' => round($renta, 2),
+            'conceptos_personalizados' => $conceptosPersonalizados,
+            'totales' => [
+                'total_ingresos' => round($totalIngresos, 2),
+                'total_deducciones' => round($totalDeducciones, 2),
+                'sueldo_neto' => round($sueldoNeto, 2),
+                'aportes_patronales' => round($totalAportesPatronales, 2)
             ]
         ];
     }

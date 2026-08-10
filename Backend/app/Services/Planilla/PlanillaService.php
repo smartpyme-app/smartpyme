@@ -83,12 +83,23 @@ class PlanillaService
                 ($fechaInicio->day <= 15 ? '1-' : '2-') .
                 auth()->user()->id_sucursal;
 
+            // Resolver país y versionamiento de tablas
+            $empresa = Empresa::find(auth()->user()->id_empresa);
+            $codPais = EmpresaConfiguracionPlanilla::resolverCodigoPaisEmpresa($empresa);
+
+            $versionTabla = ($codPais === 'CR') ? 'CR-CCSS-2026-V1' : 'SV-ISSS-AFP-2025-V1';
+            $versionDecreto = ($codPais === 'CR') ? 'Decreto 45333-H (2026)' : 'Decreto No. 10 (2025)';
+            $fechaVigenciaTabla = ($codPais === 'CR') ? '2026-01-01' : '2025-01-01';
+
             // Crear nueva planilla
             $planilla = Planilla::create([
                 'codigo' => $codigo,
                 'fecha_inicio' => $fechaInicio,
                 'fecha_fin' => $fechaFin,
                 'tipo_planilla' => $datos['tipo_planilla'],
+                'version_tabla' => $versionTabla,
+                'version_decreto' => $versionDecreto,
+                'fecha_vigencia_tabla' => $fechaVigenciaTabla,
                 'estado' => PlanillaConstants::PLANILLA_BORRADOR,
                 'id_empresa' => auth()->user()->id_empresa,
                 'id_sucursal' => auth()->user()->id_sucursal,
@@ -380,6 +391,8 @@ class PlanillaService
                 'otros_descuentos' => 0,
                 'descuentos_judiciales' => 0,
                 'tipo_contrato' => $tipoContrato,
+                'tiene_conyuge_dependiente' => (bool) ($empleado->tiene_conyuge_dependiente ?? false),
+                'cantidad_hijos_dependientes' => (int) ($empleado->cantidad_hijos_dependientes ?? 0),
             ];
 
             $empresaId = auth()->user()->id_empresa;
@@ -420,7 +433,7 @@ class PlanillaService
                 $detalle->isss_patronal = 0;
                 $detalle->afp_empleado = 0;
                 $detalle->afp_patronal = 0;
-                $detalle->renta = 0;
+                $detalle->renta = $resultados['renta'] ?? 0;
             } else {
                 $detalle->isss_empleado = $resultados['isss_empleado'] ?? 0;
                 $detalle->isss_patronal = $resultados['isss_patronal'] ?? 0;

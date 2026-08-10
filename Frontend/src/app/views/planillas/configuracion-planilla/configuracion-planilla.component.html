@@ -90,6 +90,11 @@
         </button>
         <ul class="dropdown-menu">
           <li>
+            <a class="dropdown-item cursor-pointer" (click)="importarPlantillaPais()">
+              <i class="fas fa-sync-alt me-2"></i>Recargar configuración base
+            </a>
+          </li>
+          <li>
             <a class="dropdown-item" (click)="exportarConfiguracion()">
               <i class="fas fa-download me-2"></i>Exportar JSON
             </a>

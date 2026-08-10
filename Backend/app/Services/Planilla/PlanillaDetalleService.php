@@ -3,6 +3,7 @@
 namespace App\Services\Planilla;
 
 use App\Constants\PlanillaConstants;
+use App\Models\EmpresaConfiguracionPlanilla;
 use App\Models\Planilla\PlanillaDetalle;
 use App\Helpers\RentaHelper;
 use Illuminate\Support\Facades\DB;
@@ -10,6 +11,13 @@ use Illuminate\Support\Facades\Log;
 
 class PlanillaDetalleService
 {
+    protected $configuracionPlanillaService;
+
+    public function __construct(ConfiguracionPlanillaService $configuracionPlanillaService)
+    {
+        $this->configuracionPlanillaService = $configuracionPlanillaService;
+    }
+
     /**
      * Actualizar un detalle de planilla
      */
@@ -122,49 +130,88 @@ class PlanillaDetalleService
                 2
             );
 
-            // Calcular deducciones según tipo de contrato
-            if ($esContratoSinPrestaciones) {
+            // Determinar país de la empresa
+            $codPais = EmpresaConfiguracionPlanilla::resolverCodigoPaisEmpresa($planilla->empresa);
+
+            if ($codPais === 'CR') {
+                $datosEmpleado = [
+                    'salario_base' => $detalle->salario_base,
+                    'salario_devengado' => $detalle->salario_devengado,
+                    'dias_laborados' => $detalle->dias_laborados,
+                    'horas_extra' => $detalle->horas_extra,
+                    'monto_horas_extra' => $detalle->monto_horas_extra,
+                    'comisiones' => $detalle->comisiones,
+                    'bonificaciones' => $detalle->bonificaciones,
+                    'otros_ingresos' => $detalle->otros_ingresos,
+                    'prestamos' => $detalle->prestamos,
+                    'anticipos' => $detalle->anticipos,
+                    'otros_descuentos' => $detalle->otros_descuentos,
+                    'descuentos_judiciales' => $detalle->descuentos_judiciales,
+                    'tipo_contrato' => $tipoContrato,
+                    'tiene_conyuge_dependiente' => (bool) ($detalle->empleado->tiene_conyuge_dependiente ?? false),
+                    'cantidad_hijos_dependientes' => (int) ($detalle->empleado->cantidad_hijos_dependientes ?? 0),
+                ];
+
+                $resultados = $this->configuracionPlanillaService->calcularConceptos(
+                    $datosEmpleado,
+                    $planilla->id_empresa,
+                    $planilla->tipo_planilla
+                );
+
                 $detalle->isss_empleado = 0;
                 $detalle->isss_patronal = 0;
                 $detalle->afp_empleado = 0;
                 $detalle->afp_patronal = 0;
+                $detalle->renta = $resultados['renta'] ?? 0;
+                $detalle->conceptos_personalizados = $resultados['conceptos_personalizados'] ?? null;
+                $detalle->pais_configuracion = 'CR';
+                $detalle->total_descuentos = $resultados['totales']['total_deducciones'] ?? 0;
+                $detalle->sueldo_neto = $resultados['totales']['sueldo_neto'] ?? 0;
             } else {
-                $baseISSSEmpleado = min($detalle->total_ingresos, 1000);
-                $detalle->isss_empleado = round($baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO, 2);
-                $detalle->isss_patronal = round($baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_PATRONO, 2);
-                $detalle->afp_empleado = round($detalle->total_ingresos * PlanillaConstants::DESCUENTO_AFP_EMPLEADO, 2);
-                $detalle->afp_patronal = round($detalle->total_ingresos * PlanillaConstants::DESCUENTO_AFP_PATRONO, 2);
+                // Calcular deducciones según tipo de contrato (El Salvador)
+                if ($esContratoSinPrestaciones) {
+                    $detalle->isss_empleado = 0;
+                    $detalle->isss_patronal = 0;
+                    $detalle->afp_empleado = 0;
+                    $detalle->afp_patronal = 0;
+                } else {
+                    $baseISSSEmpleado = min($detalle->total_ingresos, 1000);
+                    $detalle->isss_empleado = round($baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO, 2);
+                    $detalle->isss_patronal = round($baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_PATRONO, 2);
+                    $detalle->afp_empleado = round($detalle->total_ingresos * PlanillaConstants::DESCUENTO_AFP_EMPLEADO, 2);
+                    $detalle->afp_patronal = round($detalle->total_ingresos * PlanillaConstants::DESCUENTO_AFP_PATRONO, 2);
+                }
+
+                // Calcular renta El Salvador
+                $salarioGravado = RentaHelper::calcularSalarioGravado(
+                    $detalle->total_ingresos,
+                    $detalle->isss_empleado,
+                    $detalle->afp_empleado,
+                    $planilla->tipo_planilla,
+                    $tipoContrato
+                );
+
+                $detalle->renta = RentaHelper::calcularRetencionRenta(
+                    $salarioGravado,
+                    $planilla->tipo_planilla,
+                    $tipoContrato
+                );
+
+                // Calcular total de deducciones El Salvador
+                $detalle->total_descuentos = round(
+                    $detalle->isss_empleado +
+                    $detalle->afp_empleado +
+                    $detalle->renta +
+                    $detalle->prestamos +
+                    $detalle->anticipos +
+                    $detalle->otros_descuentos +
+                    $detalle->descuentos_judiciales,
+                    2
+                );
+
+                // Calcular sueldo neto
+                $detalle->sueldo_neto = round($detalle->total_ingresos - $detalle->total_descuentos, 2);
             }
-
-            // Calcular renta
-            $salarioGravado = RentaHelper::calcularSalarioGravado(
-                $detalle->total_ingresos,
-                $detalle->isss_empleado,
-                $detalle->afp_empleado,
-                $planilla->tipo_planilla,
-                $tipoContrato
-            );
-
-            $detalle->renta = RentaHelper::calcularRetencionRenta(
-                $salarioGravado,
-                $planilla->tipo_planilla,
-                $tipoContrato
-            );
-
-            // Calcular total de deducciones
-            $detalle->total_descuentos = round(
-                $detalle->isss_empleado +
-                $detalle->afp_empleado +
-                $detalle->renta +
-                $detalle->prestamos +
-                $detalle->anticipos +
-                $detalle->otros_descuentos +
-                $detalle->descuentos_judiciales,
-                2
-            );
-
-            // Calcular sueldo neto
-            $detalle->sueldo_neto = round($detalle->total_ingresos - $detalle->total_descuentos, 2);
 
             $detalle->save();
 

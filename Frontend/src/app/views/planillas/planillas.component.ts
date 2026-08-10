@@ -135,6 +135,7 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
       },
       error: (error) => {
         this.alertService.error(error);
+        this.planillas = {} as PaginatedResponse;
         this.loading = false;
         this.cdr.markForCheck();
       },

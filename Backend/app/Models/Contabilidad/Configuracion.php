@@ -37,6 +37,18 @@ class Configuracion extends Model
         'estado_resultados_prefijos', // JSON opcional: cogs / gasto_venta / gasto_admin
         'id_cuenta_pedidos_transito',
         'id_cuenta_inventario_transitorio',
+
+        // Cuentas Contables Planilla
+        'id_cuenta_gasto_salarios',
+        'id_cuenta_gasto_cargas_patronales',
+        'id_cuenta_gasto_aguinaldo',
+        'id_cuenta_gasto_vacaciones',
+        'id_cuenta_pasivo_cargas_sociales',
+        'id_cuenta_pasivo_ins',
+        'id_cuenta_pasivo_retencion_renta',
+        'id_cuenta_pasivo_salarios_por_pagar',
+        'id_cuenta_pasivo_provision_aguinaldo',
+        'id_cuenta_pasivo_provision_vacaciones',
         'id_empresa',
     ];
 

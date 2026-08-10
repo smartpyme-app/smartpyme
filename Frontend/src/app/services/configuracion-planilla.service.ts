@@ -123,20 +123,22 @@ private readonly API_URL =  'planillas/configuracion-planilla';
   }
 
   /**
-   * Crear configuración desde la plantilla del país de la empresa
+   * Crear o recargar configuración desde la plantilla del país de la empresa
    */
-  importarPlantillaPais(): Observable<ConfiguracionPlanilla> {
-    return this.apiService.store(this.API_URL + '/importar-plantilla', {}).pipe(
+  importarPlantillaPais(forzar: boolean = false): Observable<ConfiguracionPlanilla> {
+    return this.apiService.store(this.API_URL + '/importar-plantilla', { forzar }).pipe(
       map(response => {
         if (response.success) {
           this.alertService.success('Éxito', response.message || 'Plantilla importada exitosamente');
           return response.data;
         } else {
-          throw new Error(response.message || 'Error al importar plantilla');
+          const msg = response.message || 'Error al importar plantilla';
+          this.alertService.error(msg);
+          throw new Error(msg);
         }
       }),
       catchError(error => {
-        const errorMsg = error.error?.message || 'Error al importar la plantilla del país';
+        const errorMsg = error.error?.message || error.message || 'Error al importar la plantilla del país';
         this.alertService.error(errorMsg);
         throw error;
       })

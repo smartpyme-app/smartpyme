@@ -123,5 +123,50 @@ class PlanillaExportController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Exportar Reporte de Planilla CCSS (Costa Rica)
+     */
+    public function reporteCCSS($id)
+    {
+        try {
+            return $this->exportService->exportarReporteCCSS($id);
+        } catch (\Exception $e) {
+            Log::error('Error exportando reporte CCSS: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Error al exportar reporte CCSS: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Exportar Reporte D-138 Renta (Costa Rica)
+     */
+    public function reporteD138($id)
+    {
+        try {
+            return $this->exportService->exportarReporteD138($id);
+        } catch (\Exception $e) {
+            Log::error('Error exportando reporte D138: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Error al exportar reporte D138: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Exportar Reporte Costo Patronal por Colaborador (Costa Rica)
+     */
+    public function reporteCostoPatronal($id)
+    {
+        try {
+            return $this->exportService->exportarReporteCostoPatronal($id);
+        } catch (\Exception $e) {
+            Log::error('Error exportando reporte de costo patronal: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Error al exportar reporte de costo patronal: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }
 

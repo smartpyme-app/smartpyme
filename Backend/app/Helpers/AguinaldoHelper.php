@@ -302,4 +302,23 @@ class AguinaldoHelper
             'calculos_completos' => $calculosEsperados
         ];
     }
+
+    /**
+     * Calcula el aguinaldo para Costa Rica (100% exento de ISR y CCSS)
+     * Período: 1 de diciembre del año anterior al 30 de noviembre del año actual.
+     * Fórmula: Suma de salarios devengados (ordinarios + extraordinarios) / 12
+     */
+    public static function calcularAguinaldoCostaRica(float $totalSalariosDicANov): array
+    {
+        $montoBruto = round(max(0, $totalSalariosDicANov) / 12.0, 2);
+
+        return [
+            'monto_bruto' => $montoBruto,
+            'monto_exento' => $montoBruto,
+            'monto_gravado' => 0.00,
+            'retencion_renta' => 0.00,
+            'ccss_trabajador' => 0.00,
+            'aguinaldo_neto' => $montoBruto
+        ];
+    }
 }
