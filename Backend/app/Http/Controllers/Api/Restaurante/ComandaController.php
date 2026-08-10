@@ -9,6 +9,7 @@ use App\Models\Restaurante\Comanda;
 use App\Models\Restaurante\ComandaDetalle;
 use App\Models\Restaurante\OrdenDetalle;
 use App\Models\Restaurante\SesionMesa;
+use App\Services\Restaurante\RestauranteIdempotencyService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -65,6 +66,7 @@ class ComandaController extends Controller
         $suf = $destino === 'barra' ? 'B' : 'C';
 
         $comanda = Comanda::create([
+            'id_empresa' => (int) $sesion->id_empresa,
             'sesion_id' => $sesion->id,
             'numero_comanda' => "C-{$numeroMesa}-{$correlativo}-{$suf}",
             'estado' => 'pendiente',
@@ -115,10 +117,8 @@ class ComandaController extends Controller
             return response()->json(['error' => 'Usuario sin empresa asociada'], 400);
         }
 
-        $comandas = Comanda::where(function ($q) use ($user) {
-            $q->whereHas('sesion', fn ($sq) => $sq->where('id_empresa', $user->id_empresa))
-                ->orWhereHas('pedido', fn ($pq) => $pq->where('id_empresa', $user->id_empresa));
-        })
+        // Filtro directo por id_empresa (denormalizado); evita whereHas costoso en cocina.
+        $comandas = Comanda::where('id_empresa', $user->id_empresa)
             ->whereIn('estado', ['pendiente', 'preparando', 'listo'])
             ->with([
                 'sesion.mesa',
@@ -134,85 +134,88 @@ class ComandaController extends Controller
 
     public function store(Request $request, int $id): JsonResponse
     {
-        $user = auth()->user();
+        return app(RestauranteIdempotencyService::class)->run(
+            'enviar_comanda',
+            $request,
+            function () use ($id) {
+                $user = auth()->user();
 
-        try {
-            $comandasCreadas = DB::transaction(function () use ($user, $id) {
-                $sesion = SesionMesa::where('id_empresa', $user->id_empresa)
-                    ->whereIn('estado', ['abierta', 'pre_cuenta'])
-                    ->whereKey($id)
-                    ->lockForUpdate()
-                    ->with('mesa')
-                    ->firstOrFail();
+                try {
+                    $comandasCreadas = DB::transaction(function () use ($user, $id) {
+                        $sesion = SesionMesa::where('id_empresa', $user->id_empresa)
+                            ->whereIn('estado', ['abierta', 'pre_cuenta'])
+                            ->whereKey($id)
+                            ->lockForUpdate()
+                            ->with('mesa')
+                            ->firstOrFail();
 
-                $pendientes = OrdenDetalle::where('sesion_id', $sesion->id)
-                    ->with('producto')
-                    ->lockForUpdate()
-                    ->get();
+                        $pendientes = OrdenDetalle::where('sesion_id', $sesion->id)
+                            ->with('producto')
+                            ->lockForUpdate()
+                            ->get();
 
-                $itemsCocina = [];
-                $itemsBarra = [];
+                        $itemsCocina = [];
+                        $itemsBarra = [];
 
-                foreach ($pendientes as $item) {
-                    $producto = $item->producto;
-                    if (! $producto) {
-                        continue;
-                    }
-                    if ($this->itemPendienteCocina($item, $producto)) {
-                        $itemsCocina[] = $item;
-                    }
-                    if ($this->itemPendienteBarra($item, $producto)) {
-                        $itemsBarra[] = $item;
-                    }
+                        foreach ($pendientes as $item) {
+                            $producto = $item->producto;
+                            if (! $producto) {
+                                continue;
+                            }
+                            if ($this->itemPendienteCocina($item, $producto)) {
+                                $itemsCocina[] = $item;
+                            }
+                            if ($this->itemPendienteBarra($item, $producto)) {
+                                $itemsBarra[] = $item;
+                            }
+                        }
+
+                        if ($itemsCocina === [] && $itemsBarra === []) {
+                            return [];
+                        }
+
+                        $comandasCreadas = [];
+                        $n = Comanda::where('sesion_id', $sesion->id)->lockForUpdate()->count();
+
+                        if ($itemsCocina !== []) {
+                            $n++;
+                            $c = $this->crearComandaSesion($sesion, 'cocina', $itemsCocina, $n);
+                            if ($c) {
+                                $this->marcarItemsEnviados($itemsCocina, 'cocina');
+                                $comandasCreadas[] = $c;
+                            }
+                        }
+                        if ($itemsBarra !== []) {
+                            $n++;
+                            $c = $this->crearComandaSesion($sesion, 'barra', $itemsBarra, $n);
+                            if ($c) {
+                                $this->marcarItemsEnviados($itemsBarra, 'barra');
+                                $comandasCreadas[] = $c;
+                            }
+                        }
+
+                        return $comandasCreadas;
+                    });
+                } catch (\RuntimeException $e) {
+                    return response()->json(['error' => $e->getMessage()], 409);
                 }
 
-                if ($itemsCocina === [] && $itemsBarra === []) {
-                    return [];
+                if ($comandasCreadas === []) {
+                    return response()->json(['error' => 'No hay ítems pendientes por enviar'], 422);
                 }
 
-                $comandasCreadas = [];
-                $n = Comanda::where('sesion_id', $sesion->id)->lockForUpdate()->count();
-
-                if ($itemsCocina !== []) {
-                    $n++;
-                    $c = $this->crearComandaSesion($sesion, 'cocina', $itemsCocina, $n);
-                    if ($c) {
-                        $this->marcarItemsEnviados($itemsCocina, 'cocina');
-                        $comandasCreadas[] = $c;
-                    }
-                }
-                if ($itemsBarra !== []) {
-                    $n++;
-                    $c = $this->crearComandaSesion($sesion, 'barra', $itemsBarra, $n);
-                    if ($c) {
-                        $this->marcarItemsEnviados($itemsBarra, 'barra');
-                        $comandasCreadas[] = $c;
-                    }
-                }
-
-                return $comandasCreadas;
-            });
-        } catch (\RuntimeException $e) {
-            return response()->json(['error' => $e->getMessage()], 409);
-        }
-
-        if ($comandasCreadas === []) {
-            return response()->json(['error' => 'No hay ítems pendientes por enviar'], 422);
-        }
-
-        return response()->json([
-            'comandas' => $comandasCreadas,
-            'primera' => $comandasCreadas[0] ?? null,
-        ], 201);
+                return response()->json([
+                    'comandas' => $comandasCreadas,
+                    'primera' => $comandasCreadas[0] ?? null,
+                ], 201);
+            }
+        );
     }
 
     public function actualizarEstado(Request $request, int $id): JsonResponse
     {
         $user = auth()->user();
-        $comanda = Comanda::where(function ($q) use ($user) {
-            $q->whereHas('sesion', fn ($sq) => $sq->where('id_empresa', $user->id_empresa))
-                ->orWhereHas('pedido', fn ($pq) => $pq->where('id_empresa', $user->id_empresa));
-        })->findOrFail($id);
+        $comanda = Comanda::where('id_empresa', $user->id_empresa)->findOrFail($id);
 
         $validated = $request->validate([
             'estado' => 'required|in:pendiente,preparando,listo,servido',
@@ -225,10 +228,7 @@ class ComandaController extends Controller
     public function imprimir(int $id)
     {
         $user = auth()->user();
-        $comanda = Comanda::where(function ($q) use ($user) {
-            $q->whereHas('sesion', fn ($sq) => $sq->where('id_empresa', $user->id_empresa))
-                ->orWhereHas('pedido', fn ($pq) => $pq->where('id_empresa', $user->id_empresa));
-        })
+        $comanda = Comanda::where('id_empresa', $user->id_empresa)
             ->with([
                 'sesion.mesa',
                 'sesion.mesero',

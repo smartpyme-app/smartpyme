@@ -6,8 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Restaurante\Mesa;
 use App\Models\Restaurante\Reserva;
 use App\Models\Restaurante\SesionMesa;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class ReservaController extends Controller
 {
@@ -37,13 +38,21 @@ class ReservaController extends Controller
         }
 
         $validated = $request->validate([
-            'mesa_id' => 'required|exists:restaurante_mesas,id',
+            'mesa_id' => [
+                'required',
+                'integer',
+                Rule::exists('restaurante_mesas', 'id')->where('id_empresa', $user->id_empresa),
+            ],
             'fecha_reserva' => 'required|date',
             'hora_reserva' => 'required|date_format:H:i',
             'cliente_nombre' => 'nullable|string|max:150',
             'cliente_telefono' => 'nullable|string|max:30',
             'observaciones' => 'nullable|string|max:500',
-            'cliente_id' => 'nullable|exists:clientes,id',
+            'cliente_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('clientes', 'id')->where('id_empresa', $user->id_empresa),
+            ],
         ]);
 
         $mesa = Mesa::where('id_empresa', $user->id_empresa)->findOrFail($validated['mesa_id']);

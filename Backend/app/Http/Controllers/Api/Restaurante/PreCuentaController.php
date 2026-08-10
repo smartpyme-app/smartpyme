@@ -9,11 +9,13 @@ use App\Models\Restaurante\OrdenDetalle;
 use App\Models\Restaurante\PreCuenta;
 use App\Models\Restaurante\PreCuentaOrdenDetalle;
 use App\Models\Restaurante\SesionMesa;
+use App\Services\Restaurante\RestauranteIdempotencyService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class PreCuentaController extends Controller
@@ -372,70 +374,76 @@ class PreCuentaController extends Controller
 
     public function generar(Request $request, int $id): JsonResponse
     {
-        $user = auth()->user();
-        $sesion = SesionMesa::where('id_empresa', $user->id_empresa)
-            ->with(['mesa'])
-            ->findOrFail($id);
+        return app(RestauranteIdempotencyService::class)->run(
+            'solicitar_cuenta',
+            $request,
+            function () use ($request, $id) {
+                $user = auth()->user();
+                $sesion = SesionMesa::where('id_empresa', $user->id_empresa)
+                    ->with(['mesa'])
+                    ->findOrFail($id);
 
-        if (!in_array($sesion->estado, ['abierta', 'pre_cuenta'])) {
-            return response()->json(['error' => 'La sesión no está abierta'], 422);
-        }
+                if (! in_array($sesion->estado, ['abierta', 'pre_cuenta'])) {
+                    return response()->json(['error' => 'La sesión no está abierta'], 422);
+                }
 
-        DB::beginTransaction();
-        try {
-            $this->anularPreCuentasPendientesDeSesion($sesion->id);
+                DB::beginTransaction();
+                try {
+                    $this->anularPreCuentasPendientesDeSesion($sesion->id);
 
-            $items = OrdenDetalle::where('sesion_id', $sesion->id)->with('producto')->get();
-            if ($items->isEmpty()) {
-                DB::rollBack();
+                    $items = OrdenDetalle::where('sesion_id', $sesion->id)->with('producto')->get();
+                    if ($items->isEmpty()) {
+                        DB::rollBack();
 
-                return response()->json(['error' => 'No hay ítems en la orden'], 422);
+                        return response()->json(['error' => 'No hay ítems en la orden'], 422);
+                    }
+
+                    $empresa = Empresa::find($user->id_empresa);
+                    $dividirPayload = $request->input('dividir');
+
+                    if (is_array($dividirPayload) && isset($dividirPayload['tipo'])) {
+                        $validatedDiv = $this->validarPayloadDividir($dividirPayload);
+                        $preCuentas = $this->ejecutarDivisionDesdeItems($sesion, $items, $empresa, $validatedDiv);
+                        DB::commit();
+
+                        return response()->json($preCuentas, 201);
+                    }
+
+                    $subtotal = $this->calcularSubtotalItems($items);
+                    $impuesto = $this->calcularImpuestoItems($items, $empresa);
+                    $t = $this->totalesPreCuentaConPropina($subtotal, $impuesto, $empresa);
+                    $numero = PreCuenta::where('sesion_id', $sesion->id)->count() + 1;
+
+                    $preCuenta = PreCuenta::create([
+                        'sesion_id' => $sesion->id,
+                        'subtotal' => $t['subtotal'],
+                        'descuento' => 0,
+                        'impuesto' => $t['impuesto'],
+                        'propina_monto' => $t['propina_monto'],
+                        'propina_porcentaje_aplicado' => $t['propina_porcentaje_aplicado'],
+                        'total' => $t['total'],
+                        'estado' => 'pendiente',
+                        'numero_pre_cuenta' => "PC-{$sesion->mesa->numero}-{$numero}",
+                    ]);
+
+                    foreach ($items as $item) {
+                        PreCuentaOrdenDetalle::create([
+                            'pre_cuenta_id' => $preCuenta->id,
+                            'orden_detalle_id' => $item->id,
+                        ]);
+                    }
+
+                    DB::commit();
+                } catch (\Throwable $e) {
+                    DB::rollBack();
+                    throw $e;
+                }
+
+                $preCuenta->load(['sesion.ordenDetalle.producto', 'sesion.mesa', 'sesion.mesero']);
+
+                return response()->json($preCuenta, 201);
             }
-
-            $empresa = Empresa::find($user->id_empresa);
-            $dividirPayload = $request->input('dividir');
-
-            if (is_array($dividirPayload) && isset($dividirPayload['tipo'])) {
-                $validatedDiv = $this->validarPayloadDividir($dividirPayload);
-                $preCuentas = $this->ejecutarDivisionDesdeItems($sesion, $items, $empresa, $validatedDiv);
-                DB::commit();
-
-                return response()->json($preCuentas, 201);
-            }
-
-            $subtotal = $this->calcularSubtotalItems($items);
-            $impuesto = $this->calcularImpuestoItems($items, $empresa);
-            $t = $this->totalesPreCuentaConPropina($subtotal, $impuesto, $empresa);
-            $numero = PreCuenta::where('sesion_id', $sesion->id)->count() + 1;
-
-            $preCuenta = PreCuenta::create([
-                'sesion_id' => $sesion->id,
-                'subtotal' => $t['subtotal'],
-                'descuento' => 0,
-                'impuesto' => $t['impuesto'],
-                'propina_monto' => $t['propina_monto'],
-                'propina_porcentaje_aplicado' => $t['propina_porcentaje_aplicado'],
-                'total' => $t['total'],
-                'estado' => 'pendiente',
-                'numero_pre_cuenta' => "PC-{$sesion->mesa->numero}-{$numero}",
-            ]);
-
-            foreach ($items as $item) {
-                PreCuentaOrdenDetalle::create([
-                    'pre_cuenta_id' => $preCuenta->id,
-                    'orden_detalle_id' => $item->id,
-                ]);
-            }
-
-            DB::commit();
-        } catch (\Throwable $e) {
-            DB::rollBack();
-            throw $e;
-        }
-
-        $preCuenta->load(['sesion.ordenDetalle.producto', 'sesion.mesa', 'sesion.mesero']);
-
-        return response()->json($preCuenta, 201);
+        );
     }
 
     public function dividir(Request $request, int $id): JsonResponse
@@ -551,71 +559,81 @@ class PreCuentaController extends Controller
 
     public function marcarFacturada(Request $request, int $id): JsonResponse
     {
-        $user = auth()->user();
+        return app(RestauranteIdempotencyService::class)->run(
+            'marcar_facturada',
+            $request,
+            function () use ($request, $id) {
+                $user = auth()->user();
 
-        $validated = $request->validate([
-            'factura_id' => 'required|integer|exists:ventas,id',
-        ]);
+                $validated = $request->validate([
+                    'factura_id' => [
+                        'required',
+                        'integer',
+                        Rule::exists('ventas', 'id')->where('id_empresa', $user->id_empresa),
+                    ],
+                ]);
 
-        $payload = DB::transaction(function () use ($user, $id, $validated) {
-            $preCuenta = PreCuenta::whereHas('sesion', fn ($q) => $q->where('id_empresa', $user->id_empresa))
-                ->whereKey($id)
-                ->lockForUpdate()
-                ->firstOrFail();
+                $payload = DB::transaction(function () use ($user, $id, $validated) {
+                    $preCuenta = PreCuenta::whereHas('sesion', fn ($q) => $q->where('id_empresa', $user->id_empresa))
+                        ->whereKey($id)
+                        ->lockForUpdate()
+                        ->firstOrFail();
 
-            $preCuenta->load(['sesion.mesa']);
+                    $preCuenta->load(['sesion.mesa']);
 
-            // Idempotente: ya facturada → no reliquidar ni cerrar de nuevo.
-            if ($preCuenta->estado === 'facturada') {
-                $sesion = $preCuenta->sesion;
-                $todasFacturadas = $sesion
-                    ? PreCuenta::where('sesion_id', $sesion->id)
-                        ->where('estado', '!=', 'facturada')
-                        ->doesntExist()
-                    : false;
+                    // Idempotente: ya facturada → no reliquidar ni cerrar de nuevo.
+                    if ($preCuenta->estado === 'facturada') {
+                        $sesion = $preCuenta->sesion;
+                        $todasFacturadas = $sesion
+                            ? PreCuenta::where('sesion_id', $sesion->id)
+                                ->where('estado', '!=', 'facturada')
+                                ->doesntExist()
+                            : false;
 
-                return [
-                    'pre_cuenta' => $preCuenta->fresh(),
-                    'sesion_cerrada' => $todasFacturadas,
-                    'idempotent' => true,
-                ];
-            }
+                        return [
+                            'pre_cuenta' => $preCuenta->fresh(),
+                            'sesion_cerrada' => $todasFacturadas,
+                            'idempotent' => true,
+                        ];
+                    }
 
-            $preCuenta->update([
-                'estado' => 'facturada',
-                'factura_id' => $validated['factura_id'],
-            ]);
-
-            $preCuenta->load('ordenDetalles');
-            $this->liquidarOrdenTrasFacturarPreCuenta($preCuenta);
-
-            $sesion = SesionMesa::whereKey($preCuenta->sesion_id)->lockForUpdate()->first();
-            $todasFacturadas = false;
-
-            if ($sesion) {
-                $todasFacturadas = PreCuenta::where('sesion_id', $sesion->id)
-                    ->where('estado', '!=', 'facturada')
-                    ->doesntExist();
-
-                if ($todasFacturadas) {
-                    $sesion->update([
-                        'estado' => 'cerrada',
-                        'closed_at' => now(),
+                    $preCuenta->update([
+                        'estado' => 'facturada',
+                        'factura_id' => $validated['factura_id'],
                     ]);
-                    $sesion->mesa?->update(['estado' => 'libre']);
-                }
+
+                    $preCuenta->load('ordenDetalles');
+                    $this->liquidarOrdenTrasFacturarPreCuenta($preCuenta);
+
+                    $sesion = SesionMesa::whereKey($preCuenta->sesion_id)->lockForUpdate()->first();
+                    $todasFacturadas = false;
+
+                    if ($sesion) {
+                        $todasFacturadas = PreCuenta::where('sesion_id', $sesion->id)
+                            ->where('estado', '!=', 'facturada')
+                            ->doesntExist();
+
+                        if ($todasFacturadas) {
+                            $sesion->update([
+                                'estado' => 'cerrada',
+                                'closed_at' => now(),
+                            ]);
+                            $sesion->mesa?->update(['estado' => 'libre']);
+                        }
+                    }
+
+                    return [
+                        'pre_cuenta' => $preCuenta->fresh(),
+                        'sesion_cerrada' => $todasFacturadas,
+                        'idempotent' => false,
+                    ];
+                });
+
+                return response()->json([
+                    'pre_cuenta' => $payload['pre_cuenta'],
+                    'sesion_cerrada' => $payload['sesion_cerrada'],
+                ]);
             }
-
-            return [
-                'pre_cuenta' => $preCuenta->fresh(),
-                'sesion_cerrada' => $todasFacturadas,
-                'idempotent' => false,
-            ];
-        });
-
-        return response()->json([
-            'pre_cuenta' => $payload['pre_cuenta'],
-            'sesion_cerrada' => $payload['sesion_cerrada'],
-        ]);
+        );
     }
 }

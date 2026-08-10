@@ -14,9 +14,10 @@ class Comanda extends AuditableModel
 
     public function transformAudit(array $data): array
     {
-        $data['id_empresa'] = $this->pedido_id
-            ? PedidoRestaurante::withoutGlobalScopes()->where('id', $this->pedido_id)->value('id_empresa')
-            : null;
+        $data['id_empresa'] = $this->id_empresa
+            ?? ($this->pedido_id
+                ? PedidoRestaurante::withoutGlobalScopes()->where('id', $this->pedido_id)->value('id_empresa')
+                : null);
         $data['id_empresa'] ??= auth()->user()?->id_empresa;
         $data['module'] = 'restaurante';
 
@@ -26,6 +27,7 @@ class Comanda extends AuditableModel
     protected $table = 'comandas_restaurante';
 
     protected $fillable = [
+        'id_empresa',
         'sesion_id',
         'pedido_id',
         'numero_comanda',

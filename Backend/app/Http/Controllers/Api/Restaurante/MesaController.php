@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Api\Restaurante;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Restaurante\MesaMapaDto;
 use App\Models\Restaurante\Mesa;
 use App\Models\Restaurante\ZonaRestaurante;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class MesaController extends Controller
 {
@@ -23,20 +25,36 @@ class MesaController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = auth()->user();
-        if (!$user || !$user->id_empresa) {
+        if (! $user || ! $user->id_empresa) {
             return response()->json(['error' => 'Usuario sin empresa asociada'], 400);
         }
 
         $query = Mesa::where('id_empresa', $user->id_empresa)
+            ->select([
+                'id',
+                'id_empresa',
+                'id_sucursal',
+                'numero',
+                'capacidad',
+                'zona_id',
+                'zona',
+                'estado',
+                'activo',
+                'orden',
+            ])
             ->when($request->id_sucursal, fn ($q) => $q->where('id_sucursal', $request->id_sucursal))
             ->when($request->activo !== null, fn ($q) => $q->where('activo', $request->boolean('activo')));
 
-        $mesas = $query->with(['sesionActiva', 'reservasActivas', 'zonaRestaurante'])
+        $mesas = $query->with([
+            'sesionActiva:id,mesa_id,estado,opened_at,num_comensales',
+            'reservasActivas:id,mesa_id,fecha_reserva,hora_reserva,cliente_nombre,estado',
+            'zonaRestaurante:id,nombre,orden,activo',
+        ])
             ->orderBy('orden')
             ->orderBy('numero')
             ->get();
 
-        $mesas->each(function ($mesa) {
+        $payload = $mesas->map(function (Mesa $mesa) {
             $sesion = $mesa->sesionActiva;
             $reserva = $mesa->reservasActivas->first();
 
@@ -49,24 +67,34 @@ class MesaController extends Controller
             } else {
                 $mesa->estado = 'libre';
             }
-        });
 
-        return response()->json($mesas);
+            return MesaMapaDto::fromModel($mesa);
+        })->values()->all();
+
+        return response()->json($payload);
     }
 
     public function store(Request $request): JsonResponse
     {
         $user = auth()->user();
-        if (!$user || !$user->id_empresa) {
+        if (! $user || ! $user->id_empresa) {
             return response()->json(['error' => 'Usuario sin empresa asociada'], 400);
         }
 
         $validated = $request->validate([
             'numero' => 'required|string|max:20',
             'capacidad' => 'nullable|integer|min:1|max:99',
-            'zona_id' => 'nullable|integer|exists:restaurante_zonas,id',
+            'zona_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('restaurante_zonas', 'id')->where('id_empresa', $user->id_empresa),
+            ],
             'zona' => 'nullable|string|max:50',
-            'id_sucursal' => 'nullable|integer|exists:empresa_sucursales,id',
+            'id_sucursal' => [
+                'nullable',
+                'integer',
+                Rule::exists('sucursales', 'id')->where('id_empresa', $user->id_empresa),
+            ],
             'orden' => 'nullable|integer|min:0',
         ]);
 
@@ -77,6 +105,7 @@ class MesaController extends Controller
 
         $mesa = Mesa::create($validated);
         $mesa->load('zonaRestaurante');
+
         return response()->json($mesa, 201);
     }
 
@@ -84,6 +113,7 @@ class MesaController extends Controller
     {
         $user = auth()->user();
         $mesa = Mesa::where('id_empresa', $user->id_empresa)->findOrFail($id);
+
         return response()->json($mesa);
     }
 
@@ -95,7 +125,11 @@ class MesaController extends Controller
         $validated = $request->validate([
             'numero' => 'sometimes|string|max:20',
             'capacidad' => 'nullable|integer|min:1|max:99',
-            'zona_id' => 'nullable|integer|exists:restaurante_zonas,id',
+            'zona_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('restaurante_zonas', 'id')->where('id_empresa', $user->id_empresa),
+            ],
             'zona' => 'nullable|string|max:50',
             'activo' => 'sometimes|boolean',
             'orden' => 'nullable|integer|min:0',
@@ -104,6 +138,7 @@ class MesaController extends Controller
         $this->sincronizarZonaTexto($validated, $user->id_empresa);
         $mesa->update($validated);
         $mesa->load('zonaRestaurante');
+
         return response()->json($mesa);
     }
 }

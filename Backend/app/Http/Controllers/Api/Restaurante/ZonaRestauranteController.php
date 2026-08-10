@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Restaurante\ZonaRestaurante;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class ZonaRestauranteController extends Controller
 {
@@ -35,7 +36,11 @@ class ZonaRestauranteController extends Controller
 
         $validated = $request->validate([
             'nombre' => 'required|string|max:80',
-            'id_sucursal' => 'nullable|integer',
+            'id_sucursal' => [
+                'nullable',
+                'integer',
+                Rule::exists('sucursales', 'id')->where('id_empresa', $user->id_empresa),
+            ],
             'orden' => 'nullable|integer|min:0',
             'activo' => 'sometimes|boolean',
         ]);
@@ -64,7 +69,11 @@ class ZonaRestauranteController extends Controller
 
         $validated = $request->validate([
             'nombre' => 'sometimes|string|max:80',
-            'id_sucursal' => 'nullable|integer',
+            'id_sucursal' => [
+                'nullable',
+                'integer',
+                Rule::exists('sucursales', 'id')->where('id_empresa', $user->id_empresa),
+            ],
             'orden' => 'nullable|integer|min:0',
             'activo' => 'sometimes|boolean',
         ]);
