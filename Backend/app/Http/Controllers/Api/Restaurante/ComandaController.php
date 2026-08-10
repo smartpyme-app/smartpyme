@@ -3,19 +3,25 @@
 namespace App\Http\Controllers\Api\Restaurante;
 
 use App\Http\Controllers\Controller;
-use App\Models\Admin\Empresa;
 use App\Models\Inventario\Producto;
 use App\Models\Restaurante\Comanda;
 use App\Models\Restaurante\ComandaDetalle;
 use App\Models\Restaurante\OrdenDetalle;
 use App\Models\Restaurante\SesionMesa;
 use App\Services\Restaurante\RestauranteIdempotencyService;
+use App\Services\Restaurante\RestauranteSideEffectDispatcher;
+use App\Services\Restaurante\RestauranteTicketHtmlService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class ComandaController extends Controller
 {
+    public function __construct(
+        private RestauranteSideEffectDispatcher $sideEffects,
+        private RestauranteTicketHtmlService $ticketHtml,
+    ) {}
+
     private function normalizarDestino(?string $dest): string
     {
         $d = strtolower(trim((string) $dest));
@@ -213,6 +219,10 @@ class ComandaController extends Controller
                     return response()->json(['error' => 'No hay ítems pendientes por enviar'], 422);
                 }
 
+                foreach ($comandasCreadas as $comanda) {
+                    $this->sideEffects->enqueueComandaTicket((int) $comanda->id, (int) $user->id_empresa);
+                }
+
                 return response()->json([
                     'comandas' => $comandasCreadas,
                     'primera' => $comandasCreadas[0] ?? null,
@@ -237,19 +247,8 @@ class ComandaController extends Controller
     public function imprimir(int $id)
     {
         $user = auth()->user();
-        $comanda = Comanda::where('id_empresa', $user->id_empresa)
-            ->with([
-                'sesion.mesa',
-                'sesion.mesero',
-                'pedido',
-                'detalles.ordenDetalle' => fn ($q) => $q->withTrashed()->with('producto'),
-                'detalles.pedidoDetalle.producto',
-            ])
-            ->findOrFail($id);
+        $html = $this->ticketHtml->rememberComandaHtml($id, (int) $user->id_empresa);
 
-        $empresa = Empresa::find($user->id_empresa);
-
-        return response()->view('restaurante.comanda-ticket', compact('comanda', 'empresa'))
-            ->header('Content-Type', 'text/html; charset=utf-8');
+        return response($html, 200)->header('Content-Type', 'text/html; charset=utf-8');
     }
 }

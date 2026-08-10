@@ -16,6 +16,8 @@ use App\Models\Ventas\Clientes\Cliente;
 use App\Services\Inventario\LoteAsignacionService;
 use App\Services\Restaurante\PedidoCanalInventarioService;
 use App\Services\Restaurante\RestauranteIdempotencyService;
+use App\Services\Restaurante\RestauranteSideEffectDispatcher;
+use App\Services\Restaurante\RestauranteTicketHtmlService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -25,6 +27,11 @@ use Symfony\Component\HttpFoundation\Response;
 
 class PedidoRestauranteController extends Controller
 {
+    public function __construct(
+        private RestauranteSideEffectDispatcher $sideEffects,
+        private RestauranteTicketHtmlService $ticketHtml,
+    ) {}
+
     public function index(Request $request): JsonResponse
     {
         $user = auth()->user();
@@ -211,6 +218,10 @@ class PedidoRestauranteController extends Controller
         } catch (\Throwable $e) {
             DB::rollBack();
             throw $e;
+        }
+
+        foreach ($comandasCreadas as $comanda) {
+            $this->sideEffects->enqueueComandaTicket((int) $comanda->id, (int) $user->id_empresa);
         }
 
         return response()->json([

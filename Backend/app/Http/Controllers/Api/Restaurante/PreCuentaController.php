@@ -11,6 +11,8 @@ use App\Models\Restaurante\PreCuentaOrdenDetalle;
 use App\Models\Restaurante\SesionMesa;
 use App\Services\Restaurante\MesaMapaCacheService;
 use App\Services\Restaurante\RestauranteIdempotencyService;
+use App\Services\Restaurante\RestauranteSideEffectDispatcher;
+use App\Services\Restaurante\RestauranteTicketHtmlService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Collection;
@@ -23,6 +25,8 @@ class PreCuentaController extends Controller
 {
     public function __construct(
         private MesaMapaCacheService $mapaCache,
+        private RestauranteSideEffectDispatcher $sideEffects,
+        private RestauranteTicketHtmlService $ticketHtml,
     ) {}
     /**
      * Propina según porcentaje de empresa (sin override por mesa). Base: subtotal de consumo (sin IVA).
@@ -158,27 +162,7 @@ class PreCuentaController extends Controller
      */
     private function lineasAgrupadasParaVista(iterable $items): array
     {
-        return collect($items)
-            ->groupBy(function ($i) {
-                $n = $i->notas ?? '';
-                $nk = trim((string) $n) === '' ? '' : trim((string) $n);
-
-                return $i->producto_id.'|'.round((float) $i->precio_unitario, 2).'|'.$nk;
-            })
-            ->map(function ($grupo) {
-                $first = $grupo->sortBy('id')->first();
-                $cant = (float) $grupo->sum(fn ($x) => $this->cantidadLineaParaPreCuenta($x));
-
-                return (object) [
-                    'cantidad' => $cant,
-                    'precio_unitario' => $first->precio_unitario,
-                    'notas' => $first->notas,
-                    'producto' => $first->producto ?? null,
-                    'producto_id' => $first->producto_id,
-                ];
-            })
-            ->values()
-            ->all();
+        return $this->ticketHtml->lineasAgrupadasParaVista($items);
     }
 
     /**
@@ -410,6 +394,10 @@ class PreCuentaController extends Controller
                         $preCuentas = $this->ejecutarDivisionDesdeItems($sesion, $items, $empresa, $validatedDiv);
                         DB::commit();
 
+                        foreach ($preCuentas as $pc) {
+                            $this->sideEffects->enqueuePreCuentaTicket((int) $pc->id, (int) $user->id_empresa);
+                        }
+
                         return response()->json($preCuentas, 201);
                     }
 
@@ -442,6 +430,8 @@ class PreCuentaController extends Controller
                     DB::rollBack();
                     throw $e;
                 }
+
+                $this->sideEffects->enqueuePreCuentaTicket((int) $preCuenta->id, (int) $user->id_empresa);
 
                 $preCuenta->load(['sesion.ordenDetalle.producto', 'sesion.mesa', 'sesion.mesero']);
 
@@ -476,6 +466,10 @@ class PreCuentaController extends Controller
         } catch (\Throwable $e) {
             DB::rollBack();
             throw $e;
+        }
+
+        foreach ($preCuentas as $pc) {
+            $this->sideEffects->enqueuePreCuentaTicket((int) $pc->id, (int) $user->id_empresa);
         }
 
         return response()->json($preCuentas, 201);
@@ -542,23 +536,9 @@ class PreCuentaController extends Controller
     public function imprimir(int $id)
     {
         $user = auth()->user();
-        $preCuenta = PreCuenta::whereHas('sesion', fn ($q) => $q->where('id_empresa', $user->id_empresa))
-            ->with(['sesion.mesa', 'sesion.mesero', 'sesion.ordenDetalle.producto', 'ordenDetalles.producto'])
-            ->findOrFail($id);
+        $html = $this->ticketHtml->rememberPreCuentaHtml($id, (int) $user->id_empresa);
 
-        $items = $preCuenta->ordenDetalles->isNotEmpty()
-            ? $preCuenta->ordenDetalles
-            : $preCuenta->sesion->ordenDetalle;
-
-        $itemsAgrupados = $this->lineasAgrupadasParaVista($items);
-
-        $empresa = Empresa::find($user->id_empresa);
-
-        return response()->view('restaurante.pre-cuenta-ticket', [
-            'preCuenta' => $preCuenta,
-            'items' => $itemsAgrupados,
-            'empresa' => $empresa,
-        ])->header('Content-Type', 'text/html; charset=utf-8');
+        return response($html, 200)->header('Content-Type', 'text/html; charset=utf-8');
     }
 
     public function marcarFacturada(Request $request, int $id): JsonResponse

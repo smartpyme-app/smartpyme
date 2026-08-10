@@ -12,6 +12,7 @@ use App\Models\Restaurante\OrdenDetalle;
 use App\Models\Restaurante\SesionMesa;
 use App\Services\Restaurante\RestauranteAutorizacionService;
 use App\Services\Restaurante\RestauranteIdempotencyService;
+use App\Services\Restaurante\RestauranteSideEffectDispatcher;
 use App\Services\Restaurante\RestauranteStockService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -23,6 +24,7 @@ class OrdenDetalleController extends Controller
     public function __construct(
         private RestauranteStockService $stockService,
         private RestauranteAutorizacionService $autorizacionService,
+        private RestauranteSideEffectDispatcher $sideEffects,
     ) {}
 
     private function normalizarNotas(?string $notasRaw): ?string
@@ -271,6 +273,8 @@ class OrdenDetalleController extends Controller
             DB::rollBack();
             throw $e;
         }
+
+        $this->sideEffects->enqueueComandaTicket((int) $comandaElim->id, (int) $user->id_empresa);
 
         return response()->json([
             'ok' => true,
