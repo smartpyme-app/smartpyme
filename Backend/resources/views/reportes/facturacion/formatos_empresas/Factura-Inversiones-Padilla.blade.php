@@ -9,24 +9,44 @@
             font-size: 9.5px;
             line-height: 1.35;
             color: #222;
+            width: 100%;
+            max-width: 100%;
+            overflow-x: hidden;
+            /* Impresión HTML: @page no aplica en pantalla; el padding es el margen real */
+            padding: 32px 36px 36px 36px;
+            background: #fff;
         }
         @page {
-            margin: 2cm 2cm 2cm 2cm;
+            margin: 1.8cm;
             size: letter;
+        }
+        @media print {
+            html, body { padding: 12px 16px; margin: 0; }
         }
         #factura {
             width: 100%;
-            padding: 4px 6px;
+            max-width: 100%;
+            overflow: hidden;
         }
-        p { margin: 0 0 2px 0; }
-        table { width: 100%; border-collapse: collapse; }
-        td, th { vertical-align: top; }
+        p { margin: 0 0 2px 0; word-wrap: break-word; overflow-wrap: anywhere; }
+        table {
+            width: 100%;
+            max-width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+        td, th {
+            vertical-align: top;
+            word-wrap: break-word;
+            overflow-wrap: anywhere;
+        }
 
-        .logo { max-height: 78px; width: auto; display: block; }
+        .logo { max-height: 68px; max-width: 180px; width: auto; display: block; }
         .header-right {
             text-align: right;
             font-size: 9.5px;
             line-height: 1.4;
+            padding-left: 12px;
         }
         .header-right .num-linea {
             font-size: 11px;
@@ -35,30 +55,29 @@
             margin-bottom: 4px;
         }
 
-        .meta {
-            margin-top: 14px;
-            margin-bottom: 10px;
-        }
+        .meta { margin-top: 14px; margin-bottom: 10px; }
         .meta td {
             font-size: 9px;
             line-height: 1.4;
-            padding: 0 6px 0 0;
+            padding: 0 8px 0 0;
         }
-        .meta .col-a { width: 32%; }
-        .meta .col-b { width: 38%; }
-        .meta .col-c { width: 22%; }
-        .meta .col-qr { width: 8%; text-align: right; padding-right: 0; }
+        .meta .col-a { width: 30%; }
+        .meta .col-b { width: 34%; }
+        .meta .col-c { width: 36%; }
         .meta b { color: #111; }
-        .qr-img { width: 58px; height: 58px; }
+        .cai-inner { width: 100%; table-layout: fixed; }
+        .cai-inner .cai-txt { width: 70%; padding-right: 4px; }
+        .cai-inner .cai-qr { width: 30%; text-align: right; padding: 0; }
+        .qr-img { width: 50px; height: 50px; }
 
-        #productos { margin-top: 4px; width: 100%; }
+        #productos { margin-top: 4px; }
         #productos thead th {
             background: #e8e8e8;
             border: none;
             border-bottom: 1px solid #bbb;
             font-size: 9px;
             font-weight: bold;
-            padding: 6px 5px;
+            padding: 6px 4px;
             text-align: left;
             color: #222;
         }
@@ -66,33 +85,31 @@
         #productos tbody td {
             border: none;
             border-bottom: 1px solid #eee;
-            padding: 6px 5px;
+            padding: 6px 4px;
             font-size: 9.5px;
-            vertical-align: top;
         }
-        #productos .col-prod { width: 44%; }
-        #productos .col-cant { width: 12%; text-align: right; }
-        #productos .col-precio { width: 14%; text-align: right; }
-        #productos .col-desc { width: 14%; text-align: right; }
+        #productos .col-prod { width: 40%; }
+        #productos .col-cant { width: 14%; text-align: right; }
+        #productos .col-precio { width: 15%; text-align: right; }
+        #productos .col-desc { width: 15%; text-align: right; }
         #productos .col-sub { width: 16%; text-align: right; }
 
         .wrap-totales { margin-top: 2px; }
         .wrap-totales .obs {
-            width: 52%;
+            width: 50%;
             font-size: 8.5px;
             color: #444;
             padding-right: 12px;
             padding-top: 2px;
         }
-        .wrap-totales .totales { width: 48%; }
-        .totales table { width: 100%; }
+        .wrap-totales .totales { width: 50%; }
         .totales td {
             padding: 1px 0;
             font-size: 9px;
             line-height: 1.35;
         }
-        .totales .lbl { text-align: left; padding-right: 10px; }
-        .totales .val { text-align: right; white-space: nowrap; width: 30%; }
+        .totales .lbl { text-align: left; padding-right: 8px; }
+        .totales .val { text-align: right; white-space: nowrap; width: 28%; }
         .totales .strong td { font-weight: bold; color: #111; }
 
         .letras {
@@ -101,13 +118,9 @@
             font-size: 9px;
             font-weight: bold;
             text-transform: uppercase;
-            letter-spacing: 0.2px;
         }
 
-        .ordenes {
-            margin-top: 12px;
-            font-size: 9px;
-        }
+        .ordenes { margin-top: 12px; }
         .ordenes td {
             width: 50%;
             padding: 2px 8px 2px 0;
@@ -126,7 +139,7 @@
             color: #111;
         }
         .formas ul {
-            margin: 0 0 0 16px;
+            margin: 0 0 0 18px;
             padding: 0;
         }
         .formas ul ul {
@@ -277,15 +290,14 @@
     ])));
 @endphp
 
-    {{-- Header: logo izq | datos empresa + número a la derecha --}}
     <table>
         <tr>
-            <td style="width: 42%; vertical-align: middle;">
+            <td style="width: 40%; vertical-align: middle;">
                 @if ($venta->empresa()->pluck('logo')->first())
                     <img class="logo" src="{{ asset('img/'.$venta->empresa()->pluck('logo')->first()) }}" alt="Logo">
                 @endif
             </td>
-            <td class="header-right" style="width: 58%;">
+            <td class="header-right" style="width: 60%;">
                 <p class="num-linea">Número de factura {{ $numFacturaDisplay }}</p>
                 @if ($direccionFactura)<p>{{ $direccionFactura }}</p>@endif
                 @if ($empresa->nit)<p>RTN# {{ $empresa->nit }}</p>@endif
@@ -295,7 +307,6 @@
         </tr>
     </table>
 
-    {{-- Meta 3 columnas + QR --}}
     <table class="meta">
         <tr>
             <td class="col-a">
@@ -313,25 +324,30 @@
                 <p><b>DIRECCIÓN:</b> {{ $direccionClienteFactura }}</p>
             </td>
             <td class="col-c">
-                @if ($cai)
-                    <p><b>CAI:</b> {{ $cai }}</p>
-                @endif
-                @if ($fechaLimiteFmt)
-                    <p><b>FECHA LÍMITE:</b> {{ $fechaLimiteFmt }}</p>
-                @endif
-                @if ($rangoAuth)
-                    <p><b>RANGO AUTORIZADO:</b> {{ $rangoAuth }}</p>
-                @endif
-            </td>
-            <td class="col-qr">
-                @if ($qrPayload !== '')
-                    <img class="qr-img" src="data:image/png;base64,{{ DNS2D::getBarcodePNG($qrPayload, 'QRCODE', 4, 4) }}" alt="QR">
-                @endif
+                <table class="cai-inner">
+                    <tr>
+                        <td class="cai-txt">
+                            @if ($cai)
+                                <p><b>CAI:</b> {{ $cai }}</p>
+                            @endif
+                            @if ($fechaLimiteFmt)
+                                <p><b>FECHA LÍMITE:</b> {{ $fechaLimiteFmt }}</p>
+                            @endif
+                            @if ($rangoAuth)
+                                <p><b>RANGO AUTORIZADO:</b> {{ $rangoAuth }}</p>
+                            @endif
+                        </td>
+                        <td class="cai-qr">
+                            @if ($qrPayload !== '')
+                                <img class="qr-img" src="data:image/png;base64,{{ DNS2D::getBarcodePNG($qrPayload, 'QRCODE', 4, 4) }}" alt="QR">
+                            @endif
+                        </td>
+                    </tr>
+                </table>
             </td>
         </tr>
     </table>
 
-    {{-- Productos --}}
     <table id="productos">
         <thead>
             <tr>
@@ -361,7 +377,6 @@
         </tbody>
     </table>
 
-    {{-- Observaciones izq + totales der (como PDF) --}}
     <table class="wrap-totales">
         <tr>
             <td class="obs">
