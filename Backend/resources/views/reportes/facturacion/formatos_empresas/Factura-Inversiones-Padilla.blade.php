@@ -21,7 +21,7 @@
             size: letter;
         }
         #factura {
-            padding: 0px 50px;
+            padding: 50px;
         }
         p { margin: 0 0 2px 0; }
         table { width: 100%; border-collapse: collapse; table-layout: fixed; }
