@@ -3,157 +3,93 @@
 <head>
     <title>{{ $empresa->nombre }} {{ $venta->nombre_documento }} - {{ $venta->correlativo }}</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        /* DomPDF: no usar padding/width 100% en body (desborda el papel). Márgenes solo con @page. */
+        * { margin: 0; padding: 0; }
         html, body {
-            font-family: DejaVu Sans, Arial, Helvetica, sans-serif;
-            font-size: 9.5px;
-            line-height: 1.35;
+            font-family: DejaVu Sans, sans-serif;
+            font-size: 9px;
+            line-height: 1.3;
             color: #222;
-            width: 100%;
-            max-width: 100%;
-            overflow-x: hidden;
-            /* Impresión HTML: @page no aplica en pantalla; el padding es el margen real */
-            padding: 32px 36px 36px 36px;
-            background: #fff;
         }
         @page {
-            margin: 1.8cm;
+            margin: 1.6cm 1.5cm 1.6cm 1.5cm;
             size: letter;
         }
-        @media print {
-            html, body { padding: 12px 16px; margin: 0; }
-        }
-        #factura {
-            width: 100%;
-            max-width: 100%;
-            overflow: hidden;
-        }
-        p { margin: 0 0 2px 0; word-wrap: break-word; overflow-wrap: anywhere; }
-        table {
-            width: 100%;
-            max-width: 100%;
-            border-collapse: collapse;
-            table-layout: fixed;
-        }
-        td, th {
-            vertical-align: top;
-            word-wrap: break-word;
-            overflow-wrap: anywhere;
-        }
+        #factura { width: 100%; }
+        p { margin: 0 0 2px 0; }
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        td, th { vertical-align: top; word-wrap: break-word; }
 
-        .logo { max-height: 68px; max-width: 180px; width: auto; display: block; }
-        .header-right {
-            text-align: right;
-            font-size: 9.5px;
-            line-height: 1.4;
-            padding-left: 12px;
-        }
+        .logo { height: 60px; width: auto; }
+        .header-right { text-align: right; font-size: 9px; line-height: 1.35; }
         .header-right .num-linea {
-            font-size: 11px;
+            font-size: 10.5px;
             font-weight: bold;
             color: #111;
-            margin-bottom: 4px;
+            margin-bottom: 3px;
         }
 
-        .meta { margin-top: 14px; margin-bottom: 10px; }
-        .meta td {
-            font-size: 9px;
-            line-height: 1.4;
-            padding: 0 8px 0 0;
-        }
-        .meta .col-a { width: 30%; }
-        .meta .col-b { width: 34%; }
-        .meta .col-c { width: 36%; }
+        .meta { margin-top: 12px; margin-bottom: 8px; }
+        .meta td { font-size: 8.5px; line-height: 1.35; padding-right: 6px; }
+        .meta .col-a { width: 28%; }
+        .meta .col-b { width: 36%; }
+        .meta .col-c { width: 24%; }
+        .meta .col-qr { width: 12%; text-align: center; padding-right: 0; }
         .meta b { color: #111; }
-        .cai-inner { width: 100%; table-layout: fixed; }
-        .cai-inner .cai-txt { width: 70%; padding-right: 4px; }
-        .cai-inner .cai-qr { width: 30%; text-align: right; padding: 0; }
-        .qr-img { width: 50px; height: 50px; }
+        .qr-img { width: 48px; height: 48px; }
 
-        #productos { margin-top: 4px; }
+        #productos { margin-top: 2px; }
         #productos thead th {
             background: #e8e8e8;
-            border: none;
             border-bottom: 1px solid #bbb;
-            font-size: 9px;
+            font-size: 8.5px;
             font-weight: bold;
-            padding: 6px 4px;
+            padding: 5px 3px;
             text-align: left;
-            color: #222;
         }
-        #productos thead th.right { text-align: right; }
+        #productos thead th.num { text-align: right; }
         #productos tbody td {
-            border: none;
             border-bottom: 1px solid #eee;
-            padding: 6px 4px;
-            font-size: 9.5px;
+            padding: 5px 3px;
+            font-size: 9px;
         }
-        #productos .col-prod { width: 40%; }
-        #productos .col-cant { width: 14%; text-align: right; }
+        #productos .col-prod { width: 42%; }
+        #productos .col-cant { width: 13%; text-align: right; }
         #productos .col-precio { width: 15%; text-align: right; }
         #productos .col-desc { width: 15%; text-align: right; }
-        #productos .col-sub { width: 16%; text-align: right; }
+        #productos .col-sub { width: 15%; text-align: right; }
 
         .wrap-totales { margin-top: 2px; }
-        .wrap-totales .obs {
-            width: 50%;
-            font-size: 8.5px;
-            color: #444;
-            padding-right: 12px;
-            padding-top: 2px;
-        }
-        .wrap-totales .totales { width: 50%; }
-        .totales td {
-            padding: 1px 0;
-            font-size: 9px;
-            line-height: 1.35;
-        }
-        .totales .lbl { text-align: left; padding-right: 8px; }
-        .totales .val { text-align: right; white-space: nowrap; width: 28%; }
+        .wrap-totales .obs { width: 48%; font-size: 8px; color: #444; padding-right: 8px; }
+        .wrap-totales .totales { width: 52%; }
+        .totales td { padding: 1px 0; font-size: 8.5px; }
+        .totales .lbl { text-align: left; padding-right: 6px; }
+        .totales .val { text-align: right; width: 26%; }
         .totales .strong td { font-weight: bold; color: #111; }
 
         .letras {
-            margin-top: 14px;
+            margin-top: 12px;
             text-align: center;
-            font-size: 9px;
+            font-size: 8.5px;
             font-weight: bold;
             text-transform: uppercase;
         }
 
-        .ordenes { margin-top: 12px; }
-        .ordenes td {
-            width: 50%;
-            padding: 2px 8px 2px 0;
-            font-size: 9px;
-        }
+        .ordenes { margin-top: 10px; }
+        .ordenes td { width: 50%; padding: 2px 6px 2px 0; font-size: 8.5px; }
 
-        .formas {
-            margin-top: 14px;
-            font-size: 9px;
-            line-height: 1.45;
-            color: #333;
-        }
-        .formas h4 {
-            font-size: 10px;
-            margin-bottom: 4px;
-            color: #111;
-        }
-        .formas ul {
-            margin: 0 0 0 18px;
-            padding: 0;
-        }
-        .formas ul ul {
-            margin: 2px 0 4px 18px;
-            list-style-type: disc;
-        }
-        .formas li { margin: 2px 0; }
+        .formas { margin-top: 12px; font-size: 8.5px; line-height: 1.4; color: #333; }
+        .formas h4 { font-size: 9.5px; margin-bottom: 3px; color: #111; }
+        .formas ul { margin: 0 0 0 14px; padding: 0; }
+        .formas ul ul { margin: 2px 0 3px 14px; list-style-type: disc; }
+        .formas li { margin: 1px 0; }
         .formas a { color: #1565c0; text-decoration: underline; }
         .formas .moratorio { font-weight: bold; color: #111; }
 
         .cierre {
-            margin-top: 16px;
+            margin-top: 14px;
             text-align: center;
-            font-size: 10px;
+            font-size: 9.5px;
             color: #333;
         }
     </style>
@@ -292,12 +228,12 @@
 
     <table>
         <tr>
-            <td style="width: 40%; vertical-align: middle;">
+            <td style="width: 38%;">
                 @if ($venta->empresa()->pluck('logo')->first())
                     <img class="logo" src="{{ asset('img/'.$venta->empresa()->pluck('logo')->first()) }}" alt="Logo">
                 @endif
             </td>
-            <td class="header-right" style="width: 60%;">
+            <td class="header-right" style="width: 62%;">
                 <p class="num-linea">Número de factura {{ $numFacturaDisplay }}</p>
                 @if ($direccionFactura)<p>{{ $direccionFactura }}</p>@endif
                 @if ($empresa->nit)<p>RTN# {{ $empresa->nit }}</p>@endif
@@ -324,26 +260,20 @@
                 <p><b>DIRECCIÓN:</b> {{ $direccionClienteFactura }}</p>
             </td>
             <td class="col-c">
-                <table class="cai-inner">
-                    <tr>
-                        <td class="cai-txt">
-                            @if ($cai)
-                                <p><b>CAI:</b> {{ $cai }}</p>
-                            @endif
-                            @if ($fechaLimiteFmt)
-                                <p><b>FECHA LÍMITE:</b> {{ $fechaLimiteFmt }}</p>
-                            @endif
-                            @if ($rangoAuth)
-                                <p><b>RANGO AUTORIZADO:</b> {{ $rangoAuth }}</p>
-                            @endif
-                        </td>
-                        <td class="cai-qr">
-                            @if ($qrPayload !== '')
-                                <img class="qr-img" src="data:image/png;base64,{{ DNS2D::getBarcodePNG($qrPayload, 'QRCODE', 4, 4) }}" alt="QR">
-                            @endif
-                        </td>
-                    </tr>
-                </table>
+                @if ($cai)
+                    <p><b>CAI:</b> {{ $cai }}</p>
+                @endif
+                @if ($fechaLimiteFmt)
+                    <p><b>FECHA LÍMITE:</b> {{ $fechaLimiteFmt }}</p>
+                @endif
+                @if ($rangoAuth)
+                    <p><b>RANGO AUTORIZADO:</b> {{ $rangoAuth }}</p>
+                @endif
+            </td>
+            <td class="col-qr">
+                @if ($qrPayload !== '')
+                    <img class="qr-img" src="data:image/png;base64,{{ DNS2D::getBarcodePNG($qrPayload, 'QRCODE', 3, 3) }}" alt="QR">
+                @endif
             </td>
         </tr>
     </table>
@@ -352,10 +282,10 @@
         <thead>
             <tr>
                 <th class="col-prod">Producto</th>
-                <th class="col-cant right">Cantidad</th>
-                <th class="col-precio right">Precio</th>
-                <th class="col-desc right">Descuento</th>
-                <th class="col-sub right">Subtotal</th>
+                <th class="col-cant num">Cantidad</th>
+                <th class="col-precio num">Precio</th>
+                <th class="col-desc num">Descuento</th>
+                <th class="col-sub num">Subtotal</th>
             </tr>
         </thead>
         <tbody>
