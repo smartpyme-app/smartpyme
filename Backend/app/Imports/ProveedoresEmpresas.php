@@ -31,7 +31,7 @@ class ProveedoresEmpresas implements ToModel, WithHeadingRow, WithValidation, Sk
     public function prepareForValidation(array $row, $index): array
     {
         $stringKeys = [
-            'nombre_empresa', 'ncr', 'giro', 'tipo_contribuyente', 'dui', 'nit',
+            'nombre_empresa', 'ncr', 'giro', 'tipo_contribuyente', 'dui', 'nit', 'rtn',
             'direccion', 'municipio', 'departamento', 'telefono', 'correo',
         ];
 
@@ -52,14 +52,19 @@ class ProveedoresEmpresas implements ToModel, WithHeadingRow, WithValidation, Sk
             return null;
         }
 
+        $rtn = isset($row['rtn']) ? trim((string) $row['rtn']) : '';
+        $ncr = isset($row['ncr']) ? trim((string) $row['ncr']) : '';
+        $nit = isset($row['nit']) ? trim((string) $row['nit']) : '';
+
         $proveedor = new Proveedor();
         $proveedor->nombre_empresa = $row['nombre_empresa'];
-        $proveedor->ncr = $row['ncr'];
-        $proveedor->giro = $row['giro'];
+        // Honduras: rtn; El Salvador: ncr/nit
+        $proveedor->ncr = $ncr !== '' ? $ncr : ($rtn !== '' ? $rtn : null);
+        $proveedor->giro = $row['giro'] ?? null;
         $proveedor->tipo = 'Empresa';
         $proveedor->tipo_contribuyente = $row['tipo_contribuyente'] ?? null;
         $proveedor->dui = $row['dui'] ?? null;
-        $proveedor->nit = $row['nit'] ?? null;
+        $proveedor->nit = $rtn !== '' ? $rtn : ($nit !== '' ? $nit : null);
         $proveedor->direccion = $row['direccion'] ?? null;
         $proveedor->municipio = $row['municipio'] ?? null;
         $proveedor->departamento = $row['departamento'] ?? null;
@@ -79,8 +84,10 @@ class ProveedoresEmpresas implements ToModel, WithHeadingRow, WithValidation, Sk
     {
         return [
             'nombre_empresa' => 'required|string',
-            'ncr' => 'required|string',
-            'giro' => 'required|string',
+            // SV exige ncr; HN puede enviar solo rtn
+            'ncr' => 'nullable|string',
+            'rtn' => 'nullable|string',
+            'giro' => 'nullable|string',
             'tipo_contribuyente' => 'nullable|string',
             'dui' => 'nullable|string',
             'nit' => 'nullable|string',

@@ -47,9 +47,69 @@ export class ImportarExcelComponent implements OnInit, OnDestroy {
     }
 
     /**
-     * Calcula la URL de la plantilla según el tipo y el país de la empresa
-     * Para clientes-personas y clientes-empresas, usa plantillas generales si no es El Salvador
-     * Retrocompatibilidad: Si no se puede determinar el país, usa plantilla de El Salvador
+     * Resuelve variante de plantilla según país de la empresa.
+     * sv: El Salvador (-format.xlsx)
+     * cr: Costa Rica (-format-cr.xlsx)
+     * hn: Honduras (-format-hn.xlsx)
+     * general: resto (-format-general.xlsx para clientes; -format.xlsx para proveedores)
+     */
+    private plantillaPorPais(empresa: { cod_pais?: string | null; pais?: string | null }): 'sv' | 'cr' | 'hn' | 'general' {
+        const codPais = empresa?.cod_pais;
+        const pais = (empresa?.pais ?? '').trim();
+        const paisLower = pais.toLowerCase();
+
+        if (codPais === 'SV') {
+            return 'sv';
+        }
+        if (codPais === 'CR') {
+            return 'cr';
+        }
+        if (codPais === 'HN') {
+            return 'hn';
+        }
+        if (codPais && codPais !== 'SV') {
+            // Código conocido distinto de SV; si el nombre dice Honduras/Costa Rica aún afinar abajo
+            if (paisLower === 'honduras') {
+                return 'hn';
+            }
+            if (paisLower === 'costa rica') {
+                return 'cr';
+            }
+            return 'general';
+        }
+        if (paisLower === 'el salvador') {
+            return 'sv';
+        }
+        if (paisLower === 'costa rica') {
+            return 'cr';
+        }
+        if (paisLower === 'honduras') {
+            return 'hn';
+        }
+        if (!pais) {
+            return 'sv';
+        }
+        return 'general';
+    }
+
+    private sufijoPlantilla(variante: 'sv' | 'cr' | 'hn' | 'general', tipo: 'clientes' | 'proveedores'): string {
+        if (variante === 'sv') {
+            return '-format.xlsx';
+        }
+        if (variante === 'cr') {
+            return '-format-cr.xlsx';
+        }
+        if (variante === 'hn') {
+            return '-format-hn.xlsx';
+        }
+        // general
+        return tipo === 'clientes' ? '-format-general.xlsx' : '-format.xlsx';
+    }
+
+    /**
+     * Calcula la URL de la plantilla según el tipo y el país de la empresa.
+     * Clientes/proveedores: SV / CR / HN / general.
+     * Retrocompatibilidad: sin país → El Salvador.
      */
     calcularPlantillaUrl(): void {
         const nombreArchivo = this.nombre.toLowerCase();
@@ -66,52 +126,30 @@ export class ImportarExcelComponent implements OnInit, OnDestroy {
             return;
         }
 
-        // Para clientes-personas y clientes-empresas, verificar país
-        if (nombreArchivo === 'clientes-personas' || nombreArchivo === 'clientes-empresas') {
+        const esClientes = nombreArchivo === 'clientes-personas' || nombreArchivo === 'clientes-empresas';
+        const esProveedores = nombreArchivo === 'proveedores-personas' || nombreArchivo === 'proveedores-empresas';
+
+        if (esClientes || esProveedores) {
             try {
                 const user = this.apiService.auth_user();
                 const empresa = user?.empresa;
 
-                // Si no hay empresa, usar plantilla de El Salvador (retrocompatibilidad)
                 if (!empresa) {
                     this.plantillaUrl = `${this.apiService.baseUrl}/docs/${nombreArchivo}-format.xlsx`;
                     return;
                 }
 
-                // Verificar si es El Salvador
-                const codPais = empresa?.cod_pais;
-                const pais = empresa?.pais?.trim() || '';
-
-                let esElSalvador = false;
-
-                // Si tiene código 'SV', es El Salvador
-                if (codPais === 'SV') {
-                    esElSalvador = true;
-                }
-                // Si cod_pais es diferente a 'SV' y no es null/undefined, no es El Salvador
-                else if (codPais && codPais !== 'SV') {
-                    esElSalvador = false;
-                }
-                // Si cod_pais es null/undefined, verificar campo pais
-                else {
-                    if (pais.toLowerCase() === 'el salvador') {
-                        esElSalvador = true;
-                    }
-                    // Si pais está vacío, asumir El Salvador (retrocompatibilidad)
-                    else if (!pais) {
-                        esElSalvador = true;
-                    }
-                    // Si tiene otro valor, no es El Salvador
-                    else {
-                        esElSalvador = false;
-                    }
+                const variante = this.plantillaPorPais(empresa);
+                // Proveedores: solo HN tiene plantilla dedicada por ahora (CR xlsx existe pero el import aún es SV).
+                if (esProveedores) {
+                    const sufijoProv = variante === 'hn' ? '-format-hn.xlsx' : '-format.xlsx';
+                    this.plantillaUrl = `${this.apiService.baseUrl}/docs/${nombreArchivo}${sufijoProv}`;
+                    return;
                 }
 
-                // Si es El Salvador, usar plantilla específica, sino usar general
-                const sufijo = esElSalvador ? '-format.xlsx' : '-format-general.xlsx';
+                const sufijo = this.sufijoPlantilla(variante, 'clientes');
                 this.plantillaUrl = `${this.apiService.baseUrl}/docs/${nombreArchivo}${sufijo}`;
             } catch (error) {
-                // En caso de error, usar plantilla de El Salvador (retrocompatibilidad)
                 this.plantillaUrl = `${this.apiService.baseUrl}/docs/${nombreArchivo}-format.xlsx`;
             }
         } else {

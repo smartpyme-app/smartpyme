@@ -101,7 +101,7 @@ class ClientesEmpresas implements ToModel, WithHeadingRow, WithValidation, WithC
     public function prepareForValidation(array $row, $index): array
     {
         $stringKeys = [
-            'nombre_empresa', 'ncr', 'giro', 'cod_giro', 'tipo_contribuyente', 'dui', 'nit',
+            'nombre_empresa', 'ncr', 'giro', 'cod_giro', 'tipo_contribuyente', 'dui', 'nit', 'rtn',
             'direccion', 'departamento', 'cod_departamento', 'municipio', 'cod_municipio',
             'distrito', 'cod_distrito', 'telefono', 'correo', 'pais',
             'numero_registro', 'identificacion_fiscal', 'n. de registro', 'n_de_registro',
@@ -119,8 +119,8 @@ class ClientesEmpresas implements ToModel, WithHeadingRow, WithValidation, WithC
         if ($this->esElSalvador) {
             $campoIdentificacion = $row['ncr'] ?? null;
         } else {
-            // Para otros países, aceptar ncr, numero_registro, identificacion_fiscal, n. de registro
-            $campoIdentificacion = $row['ncr'] ?? $row['numero_registro'] ?? $row['identificacion_fiscal'] ?? 
+            // Para otros países, aceptar ncr, rtn, numero_registro, identificacion_fiscal, n. de registro
+            $campoIdentificacion = $row['ncr'] ?? $row['rtn'] ?? $row['numero_registro'] ?? $row['identificacion_fiscal'] ?? 
                                    $row['n. de registro'] ?? $row['n_de_registro'] ?? null;
         }
         
@@ -152,7 +152,7 @@ class ClientesEmpresas implements ToModel, WithHeadingRow, WithValidation, WithC
         } else {
             // Para otros países, usar el campo como número de registro (texto libre)
             // Aceptar diferentes nombres de columnas
-            $numeroRegistro = $row['ncr'] ?? $row['numero_registro'] ?? $row['identificacion_fiscal'] ?? 
+            $numeroRegistro = $row['ncr'] ?? $row['rtn'] ?? $row['numero_registro'] ?? $row['identificacion_fiscal'] ?? 
                              $row['n. de registro'] ?? $row['n_de_registro'] ?? null;
         }
 
@@ -178,7 +178,7 @@ class ClientesEmpresas implements ToModel, WithHeadingRow, WithValidation, WithC
         $cliente->tipo = 'Empresa';
         $cliente->tipo_contribuyente = $row['tipo_contribuyente'] ?? null;
         $cliente->dui = $row['dui'] ?? null;
-        $cliente->nit = $row['nit'] ?? null;
+        $cliente->nit = $row['rtn'] ?? $row['nit'] ?? null;
         $cliente->empresa_direccion = $row['direccion'] ?? null;
         
         // Para El Salvador: usar códigos MH si están disponibles
