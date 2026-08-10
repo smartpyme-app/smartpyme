@@ -366,7 +366,7 @@
                     </tr>
                     @if (muestraMonedaDocumentoCr && equivalenteUsd != null) {
                         <tr class="text-muted">
-                            <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end">Total:</td>
+                            <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end">Total en dólares:</td>
                             <td class="text-end">${{ equivalenteUsd | number:'1.2-2' }}</td>
                         </tr>
                     }
