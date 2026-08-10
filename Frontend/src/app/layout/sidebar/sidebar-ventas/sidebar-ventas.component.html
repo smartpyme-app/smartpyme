@@ -84,7 +84,7 @@
                     <img src="/assets/icons/bell.png" class="icon me-2">Notificaciones
                 </a>
             </li>
-            @if (mostrarMenuRestaurante) {
+            @if (mostrarMenuRestaurante && apiService.hasPermission('restaurante.ver')) {
                 <li class="mb-1">
                     <button (click)="toggleRestaurante()" tooltip="Restaurante" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!restauranteIsCollapsed" aria-controls="collapseRestauranteVentas">
                         <img src="/assets/icons/layout.png" class="icon me-2">Restaurante
@@ -98,7 +98,7 @@
                     </div>
                 </li>
             }
-            @if (mostrarMenuPedidos) {
+            @if (mostrarMenuPedidos && apiService.hasPermission('pedidos.ver')) {
                 <li class="mb-1">
                     <button (click)="togglePedidos()" tooltip="Pedidos" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!pedidosIsCollapsed" aria-controls="collapsePedidosVentas">
                         <img src="/assets/icons/shopping-cart.png" class="icon me-2">Pedidos

@@ -289,34 +289,35 @@ export class ImportarExcelComponent implements OnInit, OnDestroy {
             .pipe(takeUntil(this.destroy$))
             .subscribe({
                 next: (blob) => {
-                    this.apiService.downloadFile(blob, 'plantilla_importacion_productos.xlsx');
+                    this.apiService.downloadFile(
+                        blob,
+                        'plantilla_importacion_productos.xlsx'
+                    );
                 },
-                error: () => {
-                    this.alertService.error('Error al descargar la plantilla de productos');
+                error: (err) => {
+                    this.alertService.error(
+                        err?.error?.message || 'Error al descargar la plantilla de productos'
+                    );
                 },
             });
     }
 
-    public downloadTemplate() {
+    public downloadTemplate(event?: Event) {
+        event?.preventDefault();
         const url = `${this.nombre.toLowerCase()}/plantilla`;
         this.apiService.download(url)
           .pipe(takeUntil(this.destroy$))
           .subscribe({
-            next: (response) => {
-                const blob = new Blob([response], {
-                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                });
-                const urlDownload = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = urlDownload;
-                link.download = `plantilla_${this.nombre.toLowerCase()}.xlsx`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                window.URL.revokeObjectURL(urlDownload);
+            next: (blob) => {
+                this.apiService.downloadFile(
+                    blob,
+                    `plantilla_${this.nombre.toLowerCase()}.xlsx`
+                );
             },
-            error: () => {
-                this.alertService.error('Error al descargar la plantilla');
+            error: (err) => {
+                this.alertService.error(
+                    err?.error?.message || 'Error al descargar la plantilla'
+                );
             }
           });
     }

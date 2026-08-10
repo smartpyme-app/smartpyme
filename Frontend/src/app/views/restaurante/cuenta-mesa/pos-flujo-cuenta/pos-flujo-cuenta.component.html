@@ -1,0 +1,122 @@
+<div class="modal fade" [class.show]="visible" [class.d-block]="visible" tabindex="-1" *ngIf="visible"
+  (click)="cerrar()" style="background: rgba(0,0,0,0.5);">
+  <div class="modal-dialog modal-dialog-centered modal-lg" (click)="$event.stopPropagation()">
+    <div class="modal-content shadow">
+      <div class="modal-header">
+        <h5 class="modal-title">Solicitar cuenta</h5>
+        <button type="button" class="btn-close" (click)="cerrar()" [disabled]="solicitando" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <p class="small text-muted mb-3">
+          Cada vez que confirme aquí, las pre-cuentas <strong>pendientes</strong> de esta mesa se sustituyen por las nuevas.
+          Las ya facturadas no se eliminan.
+        </p>
+
+        <p class="mb-2"><strong>¿Cómo desea cobrar?</strong></p>
+        <div class="cuenta-opciones mb-4">
+          <label class="cuenta-opcion" [class.opcion-seleccionada]="modoCuenta === 'completo'">
+            <input type="radio" name="modoCuenta" value="completo" [(ngModel)]="modoCuenta">
+            <span class="opcion-texto">Cobro completo (una sola cuenta)</span>
+          </label>
+          <label class="cuenta-opcion" [class.opcion-seleccionada]="modoCuenta === 'dividir'">
+            <input type="radio" name="modoCuenta" value="dividir" [(ngModel)]="modoCuenta" (ngModelChange)="onModoCuentaChange()">
+            <span class="opcion-texto">Dividir cuenta</span>
+          </label>
+        </div>
+
+        <div *ngIf="modoCuenta === 'dividir'" class="cuenta-dividir">
+          <p class="mb-2"><strong>Tipo de división</strong></p>
+          <div class="cuenta-opciones mb-3">
+            <label class="cuenta-opcion" [class.opcion-seleccionada]="tipoDivision === 'equitativa'">
+              <input type="radio" name="tipoDiv" value="equitativa" [(ngModel)]="tipoDivision" (ngModelChange)="onTipoDivisionChange()">
+              <span class="opcion-texto">Equitativa: repartir el total entre N personas</span>
+            </label>
+            <label class="cuenta-opcion" [class.opcion-seleccionada]="tipoDivision === 'por_items'">
+              <input type="radio" name="tipoDiv" value="por_items" [(ngModel)]="tipoDivision" (ngModelChange)="onTipoDivisionChange()">
+              <span class="opcion-texto">Por ítems: repartir unidades de cada línea entre personas</span>
+            </label>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Número de personas</label>
+            <div class="cuenta-stepper">
+              <button type="button" class="btn btn-outline-secondary" [disabled]="numPagadores <= 2" (click)="onNumPagadoresChange(-1)">
+                <i class="fa fa-minus"></i>
+              </button>
+              <input type="number" class="form-control text-center" min="2" max="20" [(ngModel)]="numPagadores" (blur)="onNumPagadoresChange(0)">
+              <button type="button" class="btn btn-outline-secondary" [disabled]="numPagadores >= 20" (click)="onNumPagadoresChange(1)">
+                <i class="fa fa-plus"></i>
+              </button>
+            </div>
+          </div>
+
+          <ng-container *ngIf="tipoDivision === 'por_items'">
+            <label class="form-label">Persona activa</label>
+            <div class="cuenta-tabs mb-3">
+              <button type="button" class="cuenta-tab" *ngFor="let p of personas" [class.activa]="p === personaActiva"
+                (click)="setPersonaActiva(p)">
+                Persona {{ p }}
+              </button>
+            </div>
+
+            <label class="form-label">Toque un ítem para asignarlo a la persona activa</label>
+            <div class="cuenta-items-lista">
+              <button type="button" class="cuenta-item" *ngFor="let item of items" (click)="onTapItem(item)"
+                [class.sin-asignar]="estadoLinea(item) === 'sin_asignar'"
+                [class.parcial]="estadoLinea(item) === 'parcial'"
+                [class.completo]="estadoLinea(item) === 'completo'">
+                <span class="cuenta-item-nombre">{{ item.producto?.nombre }}</span>
+                <span class="cuenta-item-detalle">
+                  <span class="badge" [class.bg-secondary]="estadoLinea(item) === 'sin_asignar'"
+                    [class.bg-warning]="estadoLinea(item) === 'parcial'" [class.bg-success]="estadoLinea(item) === 'completo'">
+                    {{ sumaAsignada(item) }} / {{ item.cantidad }}
+                  </span>
+                  <span class="cuenta-item-mia" *ngIf="cantidadAsignada(item, personaActiva) > 0">
+                    Tuyo: {{ cantidadAsignada(item, personaActiva) }}
+                  </span>
+                </span>
+              </button>
+              <p *ngIf="!items.length" class="text-muted small py-3 mb-0">No hay ítems en la orden.</p>
+            </div>
+          </ng-container>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" (click)="cerrar()" [disabled]="solicitando">Cancelar</button>
+        <button type="button" class="btn btn-primary" (click)="confirmar()" [disabled]="solicitando">
+          <span *ngIf="!solicitando">Confirmar</span>
+          <span *ngIf="solicitando">Procesando...</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Mini-prompt: unidades de una línea para la persona activa -->
+<div class="modal fade" [class.show]="!!itemPartir" [class.d-block]="!!itemPartir" tabindex="-1" *ngIf="itemPartir"
+  (click)="cancelarPartir()" style="background: rgba(0,0,0,0.6); z-index: 1060;">
+  <div class="modal-dialog modal-dialog-centered modal-sm" (click)="$event.stopPropagation()">
+    <div class="modal-content shadow">
+      <div class="modal-header">
+        <h6 class="modal-title mb-0">{{ itemPartir.producto?.nombre }}</h6>
+        <button type="button" class="btn-close" (click)="cancelarPartir()" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <p class="small text-muted mb-2">Unidades para Persona {{ personaActiva }} (total de la línea: {{ itemPartir.cantidad }})</p>
+        <div class="cuenta-stepper">
+          <button type="button" class="btn btn-outline-secondary" (click)="stepPartir(-0.5)">
+            <i class="fa fa-minus"></i>
+          </button>
+          <input type="number" class="form-control text-center" min="0" [max]="itemPartir.cantidad" step="0.01" [(ngModel)]="cantidadPartir">
+          <button type="button" class="btn btn-outline-secondary" (click)="stepPartir(0.5)">
+            <i class="fa fa-plus"></i>
+          </button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" (click)="cancelarPartir()">Cancelar</button>
+        <button type="button" class="btn btn-primary" (click)="confirmarPartir()">Asignar</button>
+      </div>
+    </div>
+  </div>
+</div>

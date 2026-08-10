@@ -4,6 +4,7 @@ import { LayoutComponent } from '@layout/layout.component';
 import { CitasGuard } from '@guards/citas.guard';
 import { InventarioOperacionesAdminGuard } from '@guards/inventario-operaciones-admin.guard';
 import { TransformacionProductosGuard } from '@guards/transformacion-productos.guard';
+import { PermissionGuard } from '@guards/permission.guard';
 
 import { ProductosComponent } from '@views/inventario/productos/productos.component';
 import { DetalleProductoComponent } from '@views/inventario/productos/detalle-producto/detalle-producto.component';
@@ -54,8 +55,8 @@ const routes: Routes = [
         { path: 'producto/editar/:id', component: ProductoComponent, title: 'Producto' },
 
 
-        { path: 'consignas', canActivate: [InventarioOperacionesAdminGuard], component: ProductosConsignasComprasComponent, title: 'Consignas' },
-        { path: 'consignas/ventas', canActivate: [InventarioOperacionesAdminGuard], component: ProductosConsignasComponent, title: 'Consignas' },
+        { path: 'consignas', canActivate: [InventarioOperacionesAdminGuard, PermissionGuard], data: { permission: 'consignas.ver' }, component: ProductosConsignasComprasComponent, title: 'Consignas' },
+        { path: 'consignas/ventas', canActivate: [InventarioOperacionesAdminGuard, PermissionGuard], data: { permission: 'consignas.ver' }, component: ProductosConsignasComponent, title: 'Consignas' },
         { path: 'consignas-compras', redirectTo: 'consignas', pathMatch: 'full' },
 
         { path: 'materias-primas', component: MateriasPrimaComponent, title: 'Materias primas' },

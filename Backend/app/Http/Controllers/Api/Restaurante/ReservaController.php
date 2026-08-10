@@ -140,7 +140,7 @@ class ReservaController extends Controller
         if ($sesionActiva) {
             return response()->json([
                 'message' => 'Mesa ya tiene sesión activa',
-                'sesion' => $sesionActiva->load(['mesa', 'mesero']),
+                'sesion' => $sesionActiva->load(['mesa.zonaRestaurante', 'mesero']),
             ]);
         }
 
@@ -158,6 +158,6 @@ class ReservaController extends Controller
         $reserva->update(['estado' => 'cumplida']);
         $reserva->mesa->update(['estado' => 'ocupada']);
 
-        return response()->json($sesion->load(['mesa', 'mesero']), 201);
+        return response()->json($sesion->load(['mesa.zonaRestaurante', 'mesero']), 201);
     }
 }

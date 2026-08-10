@@ -220,16 +220,37 @@ export class HttpService {
   }
 
   download(url: string): Observable<Blob> {
+    // Mismo patrón que export(): blob crudo. Sin validar magic bytes/Content-Type
+    // (en prod el Content-Type suele mentir y rompía plantillas/PDFs válidos).
     return this.http.get(`${this.apiUrl}${url}`, {
       responseType: 'blob',
       headers: new HttpHeaders({
-        Authorization: 'Bearer ' + this.getAuthToken()
-      })
-    }).pipe(
-      map((response) => {
-        return new Blob([response]);
+        Authorization: 'Bearer ' + this.getAuthToken(),
       }),
+    }).pipe(
+      map((response) => new Blob([response])),
       catchError((error) => {
+        if (error?.error instanceof Blob && error.error.type?.includes('application/json')) {
+          return from<string>(error.error.text()).pipe(
+            switchMap((text: string) => {
+              try {
+                const errJson = JSON.parse(text);
+                return throwError(() => ({
+                  ...error,
+                  error: {
+                    message:
+                      errJson.message || errJson.error || errJson.mensaje || text,
+                  },
+                }));
+              } catch {
+                return throwError(() => ({
+                  ...error,
+                  error: { message: 'Error al descargar el archivo' },
+                }));
+              }
+            })
+          );
+        }
         console.error('Error al descargar el archivo:', error);
         return throwError(() => error);
       })

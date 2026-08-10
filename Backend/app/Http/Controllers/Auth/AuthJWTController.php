@@ -27,11 +27,9 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Hash;
 use App\Mail\Notificacion;
 use App\Mail\NuevaEmpresaAbacoMailable;
-use App\Models\EmpresaConfiguracionPlanilla;
 use App\Models\Plan;
 use App\Models\Promocional;
 use App\Models\Suscripcion;
-use App\Services\Planilla\PlanillaTemplatesService;
 use App\Services\Suscripcion\SuscripcionService;
 use App\Services\Auth\AuthService;
 use App\Services\Payment\N1coService;
@@ -596,22 +594,12 @@ class AuthJWTController extends Controller
         }
     }
 
+    /**
+     * ponytail: ya no auto-crea planilla; el usuario usa Importar Base.
+     */
     private function createPlanillaConfiguration($empresa)
     {
-        try {
-            $codPais = $this->mapearCodigoPais($empresa->pais ?? 'El Salvador');
-
-            EmpresaConfiguracionPlanilla::create([
-                'empresa_id' => $empresa->id,
-                'cod_pais' => $codPais,
-                'configuracion' => PlanillaTemplatesService::getConfiguracionPorPais($codPais),
-                'activo' => true,
-                'fecha_vigencia_desde' => now(),
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error("Error creando configuración: {$e->getMessage()}");
-        }
+        // no-op
     }
 
     private function mapearCodigoPais($nombrePais)

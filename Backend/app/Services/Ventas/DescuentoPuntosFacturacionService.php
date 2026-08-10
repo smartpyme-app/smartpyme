@@ -3,6 +3,7 @@
 namespace App\Services\Ventas;
 
 use App\Models\Admin\Empresa;
+use App\Support\Admin\ImpuestosDefaultPorPais;
 use Illuminate\Http\Request;
 
 /**
@@ -104,7 +105,7 @@ class DescuentoPuntosFacturacionService
             return null;
         }
 
-        $pct = max(0.0, (float) ($empresa->iva ?? 13)) / 100.0;
+        $pct = max(0.0, ImpuestosDefaultPorPais::ivaFallback($empresa)) / 100.0;
         if ($pct <= 0.00001) {
             return null;
         }
@@ -212,7 +213,7 @@ class DescuentoPuntosFacturacionService
             $subTotalL = (float) ($d['sub_total'] ?? 0);
             $pctLinea = (float) ($d['porcentaje_impuesto'] ?? 0);
             if ($pctLinea <= 0.00001) {
-                $pctLinea = (float) ($empresa->iva ?? 13);
+                $pctLinea = ImpuestosDefaultPorPais::ivaFallback($empresa);
             }
             $pctLineaFrac = $pctLinea / 100.0;
 

@@ -49,7 +49,7 @@ class SesionMesaController extends Controller
 
         $mesa->update(['estado' => 'ocupada']);
 
-        $sesion->load(['mesa', 'mesero']);
+        $sesion->load(['mesa.zonaRestaurante', 'mesero']);
         return response()->json($sesion, 201);
     }
 
@@ -58,7 +58,7 @@ class SesionMesaController extends Controller
         $user = auth()->user();
         $sesion = SesionMesa::where('id_empresa', $user->id_empresa)
             ->with([
-                'mesa',
+                'mesa.zonaRestaurante',
                 'mesero',
                 'ordenDetalle.producto',
                 'preCuentas.ordenDetalles.producto',
@@ -79,7 +79,7 @@ class SesionMesaController extends Controller
         ]);
 
         $sesion->update($validated);
-        return response()->json($sesion->fresh(['mesa', 'mesero']));
+        return response()->json($sesion->fresh(['mesa.zonaRestaurante', 'mesero']));
     }
 
     public function cerrar(int $id): JsonResponse
@@ -113,7 +113,7 @@ class SesionMesaController extends Controller
         $sesion->mesa?->update(['estado' => 'ocupada']);
 
         $sesion->load([
-            'mesa',
+            'mesa.zonaRestaurante',
             'mesero',
             'ordenDetalle.producto',
             'preCuentas.ordenDetalles.producto',

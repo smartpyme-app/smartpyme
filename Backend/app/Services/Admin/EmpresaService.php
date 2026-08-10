@@ -13,9 +13,7 @@ use App\Models\Admin\Sucursal;
 use App\Models\Inventario\Bodega;
 use App\Models\Plan;
 use App\Models\User;
-use App\Models\EmpresaConfiguracionPlanilla;
 use App\Services\Suscripcion\SuscripcionService;
-use App\Services\Planilla\PlanillaTemplatesService;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -254,21 +252,12 @@ class EmpresaService
      * @param Empresa $empresa
      * @return void
      */
+    /**
+     * ponytail: ya no auto-crea planilla; el usuario usa Importar Base.
+     */
     public function crearConfiguracionPlanilla(Empresa $empresa): void
     {
-        try {
-            $codPais = $this->mapearCodigoPais($empresa->pais ?? 'El Salvador');
-
-            EmpresaConfiguracionPlanilla::create([
-                'empresa_id' => $empresa->id,
-                'cod_pais' => $codPais,
-                'configuracion' => PlanillaTemplatesService::getConfiguracionPorPais($codPais),
-                'activo' => true,
-                'fecha_vigencia_desde' => now(),
-            ]);
-        } catch (\Exception $e) {
-            Log::error("Error creando configuración de planilla: {$e->getMessage()}");
-        }
+        // no-op
     }
 
     /**

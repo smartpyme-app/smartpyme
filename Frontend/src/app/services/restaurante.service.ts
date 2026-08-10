@@ -38,6 +38,33 @@ export interface SesionMesa {
   orden_detalle?: any[];
 }
 
+export interface PosMenuCategoria {
+  id: number;
+  nombre: string;
+  img?: string | null;
+  subcategorias_count: number;
+}
+
+export interface PosMenuSubcategoria {
+  id: number;
+  nombre: string;
+  img?: string | null;
+}
+
+export interface PosMenuProducto {
+  id: number;
+  nombre: string;
+  precio: number;
+  img?: string | null;
+  tipo: string;
+  genera_comanda: boolean;
+}
+
+export interface PosMenuContenido {
+  modo: 'subcategorias' | 'productos';
+  items: PosMenuSubcategoria[] | PosMenuProducto[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class RestauranteService {
   constructor(private api: ApiService) {}
@@ -217,6 +244,23 @@ export class RestauranteService {
 
   eliminarPedido(id: number): Observable<{ ok: boolean }> {
     return this.api.delete(BASE + 'pedidos/', id);
+  }
+
+  // Catálogo táctil (POS Menu)
+  posMenuCategorias(): Observable<PosMenuCategoria[]> {
+    return this.api.getAll(BASE + 'pos-menu/categorias');
+  }
+
+  posMenuContenidoCategoria(id: number): Observable<PosMenuContenido> {
+    return this.api.getAll(BASE + `pos-menu/categorias/${id}/contenido`);
+  }
+
+  posMenuProductosSubcategoria(id: number): Observable<PosMenuProducto[]> {
+    return this.api.getAll(BASE + `pos-menu/subcategorias/${id}/productos`);
+  }
+
+  posMenuBuscar(q: string): Observable<PosMenuProducto[]> {
+    return this.api.getAll(BASE + 'pos-menu/buscar', { q });
   }
 }
 

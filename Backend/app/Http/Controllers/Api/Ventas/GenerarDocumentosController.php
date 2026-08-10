@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\DB;
 use App\Services\FacturacionElectronica\CostaRica\CostaRicaFeComprobantePdfService;
 use App\Services\FacturacionElectronica\FacturacionElectronicaCountryResolver;
 use App\Support\Admin\DocumentosDefaultPorPais;
+use App\Support\Honduras\DocumentoImpresionHn;
 // Usamos app('dompdf.wrapper') para evitar errores de Facade en producción
 
 use Auth;
@@ -188,17 +189,17 @@ class GenerarDocumentosController extends Controller
         }
 
 //        factura
-        if ($documento->nombre == 'Factura' || $documento->nombre == DocumentosDefaultPorPais::CR_FACTURA) {
+        if (
+            $documento->nombre == 'Factura'
+            || $documento->nombre == DocumentosDefaultPorPais::CR_FACTURA
+            || DocumentoImpresionHn::aplica($empresa, $documento)
+        ) {
             $cliente = Cliente::withoutGlobalScope('empresa')->find($venta->id_cliente);
 
             $empresa = Empresa::findOrfail(Auth::user()->id_empresa);
 
             // Accesorios HN (716) o flag en custom_empresa
-            if (
-                (isset($empresa->custom_empresa['configuraciones']['factura_ticket_accesorios_hn']) &&
-                    $empresa->custom_empresa['configuraciones']['factura_ticket_accesorios_hn'] == true)
-                || Auth::user()->id_empresa == 716
-            ) {
+            if (DocumentoImpresionHn::usaTicketAccesorios($empresa, $documento->nombre)) {
                 $venta->load('detalles.producto');
                 $formatter = new NumeroALetras();
                 $n = explode('.', number_format((float) $venta->total, 2, '.', ''));
@@ -240,6 +241,20 @@ class GenerarDocumentosController extends Controller
             $centavos = $formatter->toWords($n[1]);
 
             //return response()->json($n);
+
+            // Documentos fiscales HN: plantilla de empresa o default de país, nunca la cadena de facturas.
+            $vistaHn = DocumentoImpresionHn::resolverVista($empresa, $documento);
+            if ($vistaHn !== null) {
+                $venta->loadMissing('detalles.producto', 'sucursal');
+                $centavos = DocumentoImpresionHn::centavos($venta->total);
+
+                return $this->responderDocumentoImpresion(
+                    $vistaHn,
+                    compact('venta', 'empresa', 'cliente', 'dolares', 'centavos', 'documento'),
+                    fn ($pdf) => $pdf->setPaper('US Letter', 'portrait'),
+                    $empresa->nombre . '-documento-' . $venta->correlativo . '.pdf'
+                );
+            }
 
             if(Auth::user()->id_empresa == 38){ //38
                 $viewImpresion = 'reportes.facturacion.formatos_empresas.velo';

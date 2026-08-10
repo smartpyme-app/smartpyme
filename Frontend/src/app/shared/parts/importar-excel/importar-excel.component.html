@@ -31,8 +31,14 @@
                     <a role="button" href="#" class="link-primary" (click)="descargarPlantillaImportacionProductos($event)">Descargar plantilla</a>
                   </span>
 
+                  <!-- Servicios: plantilla dinámica desde la API (misma fuente que valida el importador) -->
+                  <span *ngIf="this.nombre === 'servicios'">
+                    Puede descargar la plantilla de Excel acá:
+                    <a role="button" href="#" class="link-primary" (click)="downloadTemplate($event)">Descargar plantilla</a>
+                  </span>
+
                   <!-- Plantilla estática (documento en /docs) -->
-                  <span *ngIf="this.nombre !== 'ventas' && this.nombre !== 'productos'">
+                  <span *ngIf="this.nombre !== 'ventas' && this.nombre !== 'productos' && this.nombre !== 'servicios'">
                     Puede descargar la plantilla de Excel acá:
                     <a [href]="plantillaUrlConCache" target="_blank">Descargar plantilla</a>
                   </span>

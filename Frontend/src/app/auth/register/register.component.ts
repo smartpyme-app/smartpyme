@@ -10,6 +10,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { PromocionalService, CodigoPromocional } from '@services/promocional.service';
+import { aplicarImpuestosDefaultsAEmpresa } from '@views/admin/empresa/impuestos-default-por-pais';
 
 
 @Component({
@@ -51,12 +52,11 @@ export class RegisterComponent implements OnInit {
             this.user.empresa = {};
 
             this.user.empresa.industria = '';
-            this.user.empresa.iva = 13;
             this.user.empresa.plan = '';
             this.user.empresa.tipo_plan = 'Mensual';
             this.user.empresa.frecuencia_pago = '';
             this.user.empresa.pais = 'El Salvador';
-            this.user.empresa.moneda = 'USD';
+            aplicarImpuestosDefaultsAEmpresa(this.user.empresa, { nombrePais: 'El Salvador' });
             this.user.empresa.total = 0;
 
             if (this.route.snapshot.queryParamMap.get('plan')!) {
@@ -343,35 +343,7 @@ export class RegisterComponent implements OnInit {
     }
 
     setModeda(){
-        if(this.user.empresa.pais == 'El Salvador'){
-            this.user.empresa.moneda = 'USD';
-            this.user.empresa.iva = 13;
-        }
-        if(this.user.empresa.pais == 'Belice'){
-            this.user.empresa.moneda = 'BZD';
-            this.user.empresa.iva = 12.5;
-        }
-        if(this.user.empresa.pais == 'Guatemala'){
-            this.user.empresa.moneda = 'GTQ';
-            this.user.empresa.iva = 12;
-        }
-        if(this.user.empresa.pais == 'Honduras'){
-            this.user.empresa.moneda = 'HNL';
-            this.user.empresa.iva = 15;
-        }
-        if(this.user.empresa.pais == 'Nicaragua'){
-            this.user.empresa.moneda = 'NIO';
-            this.user.empresa.iva = 15;
-        }
-        if(this.user.empresa.pais == 'Costa Rica'){
-            this.user.empresa.moneda = 'CRC';
-            this.user.empresa.iva = 13;
-        }
-        if(this.user.empresa.pais == 'Panamá'){
-            this.user.empresa.moneda = 'PAB';
-            this.user.empresa.iva = 7;
-        }
-        console.log(this.user);
+        aplicarImpuestosDefaultsAEmpresa(this.user.empresa, { nombrePais: this.user.empresa.pais });
     }
 
     submit() {

@@ -8,3 +8,4 @@ Backend/package-lock.json
 Backend/composer.lock
 .idea/
 .worktrees/
+.superpowers/

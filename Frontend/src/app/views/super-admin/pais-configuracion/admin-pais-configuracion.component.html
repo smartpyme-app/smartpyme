@@ -1,0 +1,132 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+  <h2 class="page-heading">Configuración por país</h2>
+  <button (click)="openCrear(meditar)" tooltip="Nueva configuración" class="btn btn-default">
+    <i class="fa fa-plus"></i> Añadir
+  </button>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+  <div class="row mb-3">
+    <div class="col-md-3 mb-2">
+      <select class="form-select" name="pais" [(ngModel)]="filtros.pais" (change)="applyFilter()">
+        <option value="">País</option>
+        @for (p of paises; track p) {
+          <option [value]="p">{{ p }}</option>
+        }
+      </select>
+    </div>
+    <div class="col-md-3 mb-2">
+      <select class="form-select" name="modulo" [(ngModel)]="filtros.modulo" (change)="applyFilter()">
+        <option value="">Módulo</option>
+        @for (m of modulosSugeridos; track m) {
+          <option [value]="m">{{ m }}</option>
+        }
+      </select>
+    </div>
+    <div class="col-md-6 mb-2">
+      <div class="input-group">
+        <span class="input-group-text bg-white border-end-0"><i class="fa fa-search text-muted"></i></span>
+        <input
+          type="search"
+          class="form-control border-start-0"
+          placeholder="Buscar…"
+          [(ngModel)]="filtros.buscador"
+          (ngModelChange)="applyFilter()"
+        />
+      </div>
+    </div>
+  </div>
+
+  @if (loading) {
+    <p class="text-muted mb-0">Cargando…</p>
+  } @else {
+    <div class="table-responsive">
+      <table class="table table-borderless table-hover mb-0">
+        <thead>
+          <tr>
+            <th>País</th>
+            <th>Módulo</th>
+            <th>Resumen</th>
+            <th>Actualizado</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of filtered; track row.id) {
+            <tr>
+              <td><span class="badge bg-primary">{{ row.pais }}</span></td>
+              <td>{{ row.modulo }}</td>
+              <td class="text-muted small">{{ resumen(row) }}</td>
+              <td class="small text-muted">{{ row.updated_at | date: 'short' }}</td>
+              <td class="text-end">
+                <button class="btn btn-sm btn-link" tooltip="Editar" (click)="openEditar(row, meditar)">
+                  <i class="fa fa-edit"></i>
+                </button>
+                <button class="btn btn-sm btn-link text-danger" tooltip="Eliminar" (click)="eliminar(row)">
+                  <i class="fa fa-trash"></i>
+                </button>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5" class="text-muted">Sin registros. Ejecuta el seeder o crea uno.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>
+
+<ng-template #meditar>
+  <div class="modal-header">
+    <h5 class="modal-title">{{ editando ? 'Editar' : 'Nueva' }} configuración por país</h5>
+    <button type="button" class="btn-close" (click)="modalRef.hide()"></button>
+  </div>
+  <div class="modal-body">
+    <div class="row mb-3">
+      <div class="col-md-4">
+        <label class="form-label">País</label>
+        <select class="form-select" name="formPais" [(ngModel)]="form.pais" [disabled]="editando">
+          @for (p of paises; track p) {
+            <option [value]="p">{{ p }}</option>
+          }
+        </select>
+      </div>
+      <div class="col-md-8">
+        <label class="form-label">Módulo</label>
+        <input
+          class="form-control"
+          name="formModulo"
+          list="modulos-sugeridos"
+          [(ngModel)]="form.modulo"
+          [readonly]="editando"
+          placeholder="documentos"
+        />
+        <datalist id="modulos-sugeridos">
+          @for (m of modulosSugeridos; track m) {
+            <option [value]="m"></option>
+          }
+        </datalist>
+      </div>
+    </div>
+    <label class="form-label">Configuración (JSON)</label>
+    <textarea
+      class="form-control font-monospace"
+      rows="16"
+      name="jsonText"
+      [(ngModel)]="jsonText"
+      (ngModelChange)="jsonError = ''"
+      spellcheck="false"
+    ></textarea>
+    @if (jsonError) {
+      <small class="text-danger">{{ jsonError }}</small>
+    }
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-default" (click)="modalRef.hide()" [disabled]="saving">Cancelar</button>
+    <button type="button" class="btn btn-primary" (click)="guardar()" [disabled]="saving">
+      {{ saving ? 'Guardando…' : 'Guardar' }}
+    </button>
+  </div>
+</ng-template>

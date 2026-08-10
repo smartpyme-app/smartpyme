@@ -76,6 +76,11 @@ const routes: Routes = [
           title: 'Códigos Promocionales'
         },
         {
+          path: 'pais-configuracion',
+          loadComponent: () => import('./pais-configuracion/admin-pais-configuracion.component').then(m => m.AdminPaisConfiguracionComponent),
+          title: 'Configuración por país'
+        },
+        {
           path: 'funcionalidades',
           loadComponent: () => import('@views/super-admin/funcionalidades/empresas-funcionalidades.component').then(m => m.EmpresasFuncionalidadesComponent),
           title: 'Funcionalidades'

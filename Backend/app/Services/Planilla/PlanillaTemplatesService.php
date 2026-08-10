@@ -3,16 +3,44 @@
 namespace App\Services\Planilla;
 
 use App\Constants\PlanillaConstants;
-
-use function Symfony\Component\VarDumper\Dumper\esc;
+use App\Models\PaisConfiguracion;
+use Illuminate\Support\Facades\Schema;
 
 class PlanillaTemplatesService
 {
     /**
-     * Obtener configuración por código de país
+     * Plantilla por país: pais_configuracion (modulo=planillas), fallback a código.
      */
     public static function getConfiguracionPorPais($codPais)
     {
+        $codPais = strtoupper((string) $codPais);
+
+        try {
+            if (Schema::hasTable('pais_configuracion')) {
+                $row = PaisConfiguracion::query()
+                    ->pais($codPais)
+                    ->modulo(PaisConfiguracion::MODULO_PLANILLAS)
+                    ->first();
+
+                $cfg = $row?->configuracion;
+                if (is_array($cfg) && ! empty($cfg['conceptos'])) {
+                    return $cfg;
+                }
+            }
+        } catch (\Throwable $e) {
+            // ponytail: tests / sin DB → plantilla en código
+        }
+
+        return self::plantilla($codPais);
+    }
+
+    /**
+     * Plantillas embebidas (también las usa el seeder).
+     */
+    public static function plantilla($codPais): array
+    {
+        $codPais = strtoupper((string) $codPais);
+
         switch ($codPais) {
             case 'SV':
                 return self::getConfiguracionSalvador();
@@ -27,7 +55,9 @@ class PlanillaTemplatesService
             case 'PA':
                 return self::getConfiguracionPanama();
             default:
-                return self::getConfiguracionSalvador();
+                throw new \InvalidArgumentException(
+                    "No hay plantilla de planilla para el país '{$codPais}'"
+                );
         }
     }
 

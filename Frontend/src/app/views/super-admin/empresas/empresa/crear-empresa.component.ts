@@ -14,6 +14,7 @@ import { FilterPipe } from '@pipes/filter.pipe';
 import { NgxMaskDirective } from 'ngx-mask';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { TranslatePipe } from '@ngx-translate/core';
+import { aplicarImpuestosDefaultsAEmpresa } from '@views/admin/empresa/impuestos-default-por-pais';
 
 @Component({
     selector: 'app-crear-empresa',
@@ -90,11 +91,10 @@ export class CrearEmpresaComponent extends BaseModalComponent implements OnInit 
         }else{
             this.empresa = {};
             this.empresa.industria = '';
-            this.empresa.iva = 13;
-            this.empresa.moneda = 'USD';
             this.empresa.plan = 'Emprendedor';
             this.empresa.tipo_plan = 'Mensual';
             this.empresa.pais = 'El Salvador';
+            aplicarImpuestosDefaultsAEmpresa(this.empresa, { nombrePais: 'El Salvador' });
             this.empresa.tipo_contribuyente = '';
             this.empresa.activo = 1;
             this.empresa.modulo_citas = 1;
@@ -170,39 +170,7 @@ export class CrearEmpresaComponent extends BaseModalComponent implements OnInit 
     }
 
     setPais(){
-        if(this.empresa.pais == 'El Salvador'){
-            this.empresa.moneda = 'USD';
-            this.empresa.iva = 13;
-        }
-        if(this.empresa.pais == 'Belice'){
-            this.empresa.moneda = 'BZD';
-            this.empresa.iva = 12.5;
-        }
-        if(this.empresa.pais == 'Guatemala'){
-            this.empresa.moneda = 'GTQ';
-            this.empresa.iva = 12;
-        }
-        if(this.empresa.pais == 'Honduras'){
-            this.empresa.moneda = 'HNL';
-            this.empresa.iva = 15;
-        }
-        if(this.empresa.pais == 'Nicaragua'){
-            this.empresa.moneda = 'NIO';
-            this.empresa.iva = 15;
-        }
-        if(this.empresa.pais == 'Costa Rica'){
-            this.empresa.moneda = 'CRC';
-            this.empresa.iva = 13;
-        }
-        if(this.empresa.pais == 'Panamá'){
-            this.empresa.moneda = 'PAB';
-            this.empresa.iva = 7;
-        }
-        if(this.empresa.pais == 'México'){
-            this.empresa.moneda = 'MXN';
-            this.empresa.iva = 16;
-        }
-        console.log(this.empresa);
+        aplicarImpuestosDefaultsAEmpresa(this.empresa, { nombrePais: this.empresa.pais });
     }
 
     public setPlan(){
