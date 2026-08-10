@@ -7,14 +7,13 @@ use Illuminate\Support\ServiceProvider;
 
 class BroadcastServiceProvider extends ServiceProvider
 {
-    /**
-     * Bootstrap any application services.
-     *
-     * @return void
-     */
-    public function boot()
+    public function boot(): void
     {
-        Broadcast::routes();
+        // Auth JWT (mismo guard que el API restaurante). Prefijo api → POST /api/broadcasting/auth
+        Broadcast::routes([
+            'middleware' => ['api', 'jwt.auth'],
+            'prefix' => 'api',
+        ]);
 
         require base_path('routes/channels.php');
     }

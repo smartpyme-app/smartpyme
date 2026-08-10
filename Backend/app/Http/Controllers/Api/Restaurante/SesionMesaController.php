@@ -11,6 +11,7 @@ use App\Models\Restaurante\SesionMesa;
 use App\Services\Restaurante\MesaMapaCacheService;
 use App\Services\Restaurante\RestauranteAutorizacionService;
 use App\Services\Restaurante\RestauranteIdempotencyService;
+use App\Services\Restaurante\RestauranteRealtimePublisher;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -21,6 +22,7 @@ class SesionMesaController extends Controller
 {
     public function __construct(
         private MesaMapaCacheService $mapaCache,
+        private RestauranteRealtimePublisher $realtime,
     ) {}
 
     public function store(Request $request): JsonResponse
@@ -85,6 +87,13 @@ class SesionMesaController extends Controller
 
                 $sesion->load(['mesa.zonaRestaurante', 'mesero']);
                 $this->mapaCache->invalidateEmpresa((int) $user->id_empresa);
+                $this->realtime->mapaChanged(
+                    (int) $user->id_empresa,
+                    (int) $sesion->mesa_id,
+                    'ocupada',
+                    (int) $sesion->id,
+                    'abrir_mesa'
+                );
 
                 return response()->json($sesion, 201);
             }
@@ -182,6 +191,13 @@ class SesionMesaController extends Controller
 
         $sesion->mesa->update(['estado' => 'libre']);
         $this->mapaCache->invalidateEmpresa((int) $user->id_empresa);
+        $this->realtime->mapaChanged(
+            (int) $user->id_empresa,
+            (int) $sesion->mesa_id,
+            'libre',
+            (int) $sesion->id,
+            'cerrar_mesa'
+        );
 
         return response()->json($sesion);
     }
@@ -202,6 +218,13 @@ class SesionMesaController extends Controller
         $sesion->update(['estado' => 'abierta']);
         $sesion->mesa?->update(['estado' => 'ocupada']);
         $this->mapaCache->invalidateEmpresa((int) $user->id_empresa);
+        $this->realtime->mapaChanged(
+            (int) $user->id_empresa,
+            (int) $sesion->mesa_id,
+            'ocupada',
+            (int) $sesion->id,
+            'reactivar_consumo'
+        );
 
         $sesion->load([
             'mesa.zonaRestaurante',
@@ -264,6 +287,20 @@ class SesionMesaController extends Controller
         }
 
         $this->mapaCache->invalidateEmpresa((int) $user->id_empresa);
+        $this->realtime->mapaChanged(
+            (int) $user->id_empresa,
+            (int) $sesionOrigen->mesa_id,
+            null,
+            (int) $sesionOrigen->id,
+            'trasladar_items'
+        );
+        $this->realtime->mapaChanged(
+            (int) $user->id_empresa,
+            (int) $sesionDest->mesa_id,
+            null,
+            (int) $sesionDest->id,
+            'trasladar_items'
+        );
 
         return response()->json(['ok' => true]);
     }

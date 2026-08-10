@@ -12,6 +12,7 @@ use App\Models\Restaurante\SesionMesa;
 use App\Services\Restaurante\MesaMapaCacheService;
 use App\Services\Restaurante\RestauranteIdempotencyService;
 use App\Services\Restaurante\RestauranteSideEffectDispatcher;
+use App\Services\Restaurante\RestauranteRealtimePublisher;
 use App\Services\Restaurante\RestauranteTicketHtmlService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -27,6 +28,7 @@ class PreCuentaController extends Controller
         private MesaMapaCacheService $mapaCache,
         private RestauranteSideEffectDispatcher $sideEffects,
         private RestauranteTicketHtmlService $ticketHtml,
+        private RestauranteRealtimePublisher $realtime,
     ) {}
     /**
      * Propina según porcentaje de empresa (sin override por mesa). Base: subtotal de consumo (sin IVA).
@@ -397,6 +399,13 @@ class PreCuentaController extends Controller
                         foreach ($preCuentas as $pc) {
                             $this->sideEffects->enqueuePreCuentaTicket((int) $pc->id, (int) $user->id_empresa);
                         }
+                        $this->realtime->mapaChanged(
+                            (int) $user->id_empresa,
+                            (int) $sesion->mesa_id,
+                            null,
+                            (int) $sesion->id,
+                            'solicitar_cuenta_dividir'
+                        );
 
                         return response()->json($preCuentas, 201);
                     }
@@ -432,6 +441,13 @@ class PreCuentaController extends Controller
                 }
 
                 $this->sideEffects->enqueuePreCuentaTicket((int) $preCuenta->id, (int) $user->id_empresa);
+                $this->realtime->mapaChanged(
+                    (int) $user->id_empresa,
+                    (int) $sesion->mesa_id,
+                    null,
+                    (int) $sesion->id,
+                    'solicitar_cuenta'
+                );
 
                 $preCuenta->load(['sesion.ordenDetalle.producto', 'sesion.mesa', 'sesion.mesero']);
 
@@ -471,6 +487,13 @@ class PreCuentaController extends Controller
         foreach ($preCuentas as $pc) {
             $this->sideEffects->enqueuePreCuentaTicket((int) $pc->id, (int) $user->id_empresa);
         }
+        $this->realtime->mapaChanged(
+            (int) $user->id_empresa,
+            (int) ($sesion->mesa_id ?? 0) ?: null,
+            null,
+            (int) $sesion->id,
+            'dividir_cuenta'
+        );
 
         return response()->json($preCuentas, 201);
     }
@@ -615,6 +638,13 @@ class PreCuentaController extends Controller
 
                 if (! empty($payload['sesion_cerrada']) || empty($payload['idempotent'])) {
                     $this->mapaCache->invalidateEmpresa((int) $user->id_empresa);
+                    $this->realtime->mapaChanged(
+                        (int) $user->id_empresa,
+                        null,
+                        ! empty($payload['sesion_cerrada']) ? 'libre' : null,
+                        null,
+                        'marcar_facturada'
+                    );
                 }
 
                 return response()->json([

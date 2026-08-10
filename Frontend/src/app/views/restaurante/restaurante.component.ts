@@ -14,6 +14,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { RestauranteService, Mesa, Reserva, ZonaRestaurante } from '@services/restaurante.service';
 import { AlertService } from '@services/alert.service';
+import { RestauranteRealtimeService } from '@services/restaurante-realtime.service';
 import { buildMesasPorZona, MesaZonaGrupo } from './mesas-por-zona';
 
 @Component({
@@ -60,12 +61,15 @@ export class RestauranteComponent implements OnInit {
     private restauranteService: RestauranteService,
     private alertService: AlertService,
     private modalService: BsModalService,
-    private router: Router
+    private router: Router,
+    private realtime: RestauranteRealtimeService,
   ) {}
 
   ngOnInit(): void {
     this.cargarMesas();
     this.cargarZonas();
+    this.realtime.watch('mapa', () => this.cargarMesas());
+    this.realtime.onRecover(() => this.cargarMesas());
   }
 
   cargarZonas(): void {

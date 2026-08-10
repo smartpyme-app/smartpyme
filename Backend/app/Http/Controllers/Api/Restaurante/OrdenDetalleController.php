@@ -13,6 +13,7 @@ use App\Models\Restaurante\SesionMesa;
 use App\Services\Restaurante\RestauranteAutorizacionService;
 use App\Services\Restaurante\RestauranteIdempotencyService;
 use App\Services\Restaurante\RestauranteSideEffectDispatcher;
+use App\Services\Restaurante\RestauranteRealtimePublisher;
 use App\Services\Restaurante\RestauranteStockService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -25,6 +26,7 @@ class OrdenDetalleController extends Controller
         private RestauranteStockService $stockService,
         private RestauranteAutorizacionService $autorizacionService,
         private RestauranteSideEffectDispatcher $sideEffects,
+        private RestauranteRealtimePublisher $realtime,
     ) {}
 
     private function normalizarNotas(?string $notasRaw): ?string
@@ -275,6 +277,13 @@ class OrdenDetalleController extends Controller
         }
 
         $this->sideEffects->enqueueComandaTicket((int) $comandaElim->id, (int) $user->id_empresa);
+        $this->realtime->cocinaChanged(
+            (int) $user->id_empresa,
+            (int) $comandaElim->id,
+            'eliminacion',
+            'pendiente',
+            'eliminar_item'
+        );
 
         return response()->json([
             'ok' => true,

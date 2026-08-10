@@ -17,6 +17,7 @@ use App\Services\Inventario\LoteAsignacionService;
 use App\Services\Restaurante\PedidoCanalInventarioService;
 use App\Services\Restaurante\RestauranteIdempotencyService;
 use App\Services\Restaurante\RestauranteSideEffectDispatcher;
+use App\Services\Restaurante\RestauranteRealtimePublisher;
 use App\Services\Restaurante\RestauranteTicketHtmlService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -30,6 +31,7 @@ class PedidoRestauranteController extends Controller
     public function __construct(
         private RestauranteSideEffectDispatcher $sideEffects,
         private RestauranteTicketHtmlService $ticketHtml,
+        private RestauranteRealtimePublisher $realtime,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -222,6 +224,13 @@ class PedidoRestauranteController extends Controller
 
         foreach ($comandasCreadas as $comanda) {
             $this->sideEffects->enqueueComandaTicket((int) $comanda->id, (int) $user->id_empresa);
+            $this->realtime->cocinaChanged(
+                (int) $user->id_empresa,
+                (int) $comanda->id,
+                $comanda->destino ?? null,
+                $comanda->estado ?? 'pendiente',
+                'pedido_enviar_comanda'
+            );
         }
 
         return response()->json([

@@ -7,6 +7,7 @@ use App\Http\Resources\Restaurante\MesaMapaDto;
 use App\Models\Restaurante\Mesa;
 use App\Models\Restaurante\ZonaRestaurante;
 use App\Services\Restaurante\MesaMapaCacheService;
+use App\Services\Restaurante\RestauranteRealtimePublisher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -15,6 +16,7 @@ class MesaController extends Controller
 {
     public function __construct(
         private MesaMapaCacheService $mapaCache,
+        private RestauranteRealtimePublisher $realtime,
     ) {}
 
     private function sincronizarZonaTexto(array &$data, int $idEmpresa): void
@@ -123,6 +125,8 @@ class MesaController extends Controller
         $mesa->load('zonaRestaurante');
         $this->mapaCache->invalidateEmpresa((int) $user->id_empresa);
 
+        $this->realtime->mapaChanged((int) $user->id_empresa, null, null, null, 'mesa_crud');
+
         return response()->json($mesa, 201);
     }
 
@@ -156,6 +160,8 @@ class MesaController extends Controller
         $mesa->update($validated);
         $mesa->load('zonaRestaurante');
         $this->mapaCache->invalidateEmpresa((int) $user->id_empresa);
+
+        $this->realtime->mapaChanged((int) $user->id_empresa, null, null, null, 'mesa_crud');
 
         return response()->json($mesa);
     }

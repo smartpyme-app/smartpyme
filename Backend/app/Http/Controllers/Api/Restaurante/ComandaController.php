@@ -10,6 +10,7 @@ use App\Models\Restaurante\OrdenDetalle;
 use App\Models\Restaurante\SesionMesa;
 use App\Services\Restaurante\RestauranteIdempotencyService;
 use App\Services\Restaurante\RestauranteSideEffectDispatcher;
+use App\Services\Restaurante\RestauranteRealtimePublisher;
 use App\Services\Restaurante\RestauranteTicketHtmlService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -20,6 +21,7 @@ class ComandaController extends Controller
     public function __construct(
         private RestauranteSideEffectDispatcher $sideEffects,
         private RestauranteTicketHtmlService $ticketHtml,
+        private RestauranteRealtimePublisher $realtime,
     ) {}
 
     private function normalizarDestino(?string $dest): string
@@ -221,7 +223,15 @@ class ComandaController extends Controller
 
                 foreach ($comandasCreadas as $comanda) {
                     $this->sideEffects->enqueueComandaTicket((int) $comanda->id, (int) $user->id_empresa);
+                    $this->realtime->cocinaChanged(
+                        (int) $user->id_empresa,
+                        (int) $comanda->id,
+                        $comanda->destino ?? null,
+                        $comanda->estado ?? 'pendiente',
+                        'enviar_comanda'
+                    );
                 }
+                $this->realtime->mapaChanged((int) $user->id_empresa, null, null, (int) $id, 'enviar_comanda');
 
                 return response()->json([
                     'comandas' => $comandasCreadas,
@@ -241,6 +251,13 @@ class ComandaController extends Controller
         ]);
 
         $comanda->update($validated);
+        $this->realtime->cocinaChanged(
+            (int) $user->id_empresa,
+            (int) $comanda->id,
+            $comanda->destino ?? null,
+            $validated['estado'],
+            'comanda_estado'
+        );
         return response()->json($comanda);
     }
 

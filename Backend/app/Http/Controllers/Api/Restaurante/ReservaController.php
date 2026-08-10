@@ -7,6 +7,7 @@ use App\Models\Restaurante\Mesa;
 use App\Models\Restaurante\Reserva;
 use App\Models\Restaurante\SesionMesa;
 use App\Services\Restaurante\MesaMapaCacheService;
+use App\Services\Restaurante\RestauranteRealtimePublisher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -15,6 +16,7 @@ class ReservaController extends Controller
 {
     public function __construct(
         private MesaMapaCacheService $mapaCache,
+        private RestauranteRealtimePublisher $realtime,
     ) {}
     public function index(Request $request): JsonResponse
     {
@@ -94,6 +96,8 @@ class ReservaController extends Controller
         $mesa->update(['estado' => 'reservada']);
         $this->mapaCache->invalidateEmpresa((int) $user->id_empresa);
 
+        $this->realtime->mapaChanged((int) $user->id_empresa, null, null, null, 'reserva');
+
         return response()->json($reserva->load(['mesa', 'usuario']), 201);
     }
 
@@ -134,6 +138,8 @@ class ReservaController extends Controller
         $reserva->mesa->update(['estado' => 'libre']);
         $this->mapaCache->invalidateEmpresa((int) $user->id_empresa);
 
+        $this->realtime->mapaChanged((int) $user->id_empresa, null, null, null, 'reserva');
+
         return response()->json($reserva);
     }
 
@@ -173,6 +179,8 @@ class ReservaController extends Controller
         $reserva->update(['estado' => 'cumplida']);
         $reserva->mesa->update(['estado' => 'ocupada']);
         $this->mapaCache->invalidateEmpresa((int) $user->id_empresa);
+
+        $this->realtime->mapaChanged((int) $user->id_empresa, null, null, null, 'reserva');
 
         return response()->json($sesion->load(['mesa.zonaRestaurante', 'mesero']), 201);
     }

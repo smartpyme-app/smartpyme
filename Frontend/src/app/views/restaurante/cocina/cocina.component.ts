@@ -9,6 +9,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RestauranteService } from '@services/restaurante.service';
 import { AlertService } from '@services/alert.service';
+import { RestauranteRealtimeService } from '@services/restaurante-realtime.service';
 
 @Component({
   standalone: false,
@@ -29,11 +30,14 @@ export class CocinaComponent implements OnInit {
 
   constructor(
     private restauranteService: RestauranteService,
-    private alertService: AlertService
+    private alertService: AlertService,
+    private realtime: RestauranteRealtimeService,
   ) {}
 
   ngOnInit(): void {
     this.cargarComandas();
+    this.realtime.watch('cocina', () => this.cargarComandas());
+    this.realtime.onRecover(() => this.cargarComandas());
   }
 
   private rebuildListas(): void {
