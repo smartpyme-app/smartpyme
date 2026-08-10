@@ -488,9 +488,16 @@ class GenerarDocumentosController extends Controller
                 $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
             else{
-                // return View('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos', 'documento'));
-                $viewImpresion = 'reportes.facturacion.formatos_empresas.factura';
-                $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos', 'documento');
+                // Honduras sin formato propio: plantilla base genérica (no hardcodeada)
+                if (strcasecmp((string) ($empresa->pais ?? ''), 'Honduras') === 0) {
+                    $venta->load('detalles.producto', 'sucursal');
+                    $viewImpresion = 'reportes.facturacion.formatos_empresas.Factura-Honduras';
+                    $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos', 'documento');
+                } else {
+                    // return View('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos', 'documento'));
+                    $viewImpresion = 'reportes.facturacion.formatos_empresas.factura';
+                    $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos', 'documento');
+                }
                 $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
 
