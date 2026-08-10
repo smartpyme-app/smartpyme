@@ -1453,6 +1453,10 @@ class VentasController extends Controller
                 $centavos = str_pad(isset($n[1]) ? $n[1] : '00', 2, '0', STR_PAD_LEFT);
                 $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Factura-Accesorios-Honduras', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos', 'documento'));
                 $pdf->setPaper('US Letter', 'portrait');
+            } elseif (Auth::user()->id_empresa == 830) { //830 Inversiones Padilla - Honduras
+                $venta->load('detalles.producto', 'vendedor', 'sucursal');
+                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Factura-Inversiones-Padilla', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos', 'documento'));
+                $pdf->setPaper('US Letter', 'portrait');
             } else {
                 // return View('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos', 'documento'));
                 $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos', 'documento'));
