@@ -3,7 +3,8 @@
 <head>
     <title>{{ $empresa->nombre }} {{ $venta->nombre_documento }} - {{ $venta->correlativo }}</title>
     <style>
-        /* DomPDF: no usar padding/width 100% en body (desborda el papel). Márgenes solo con @page. */
+        /* Mismo patrón que Accesorios-HN / Lilian / Inversiones-Andre:
+           @page + padding en #factura (DomPDF no confía solo en @page). */
         * { margin: 0; padding: 0; }
         html, body {
             font-family: DejaVu Sans, sans-serif;
@@ -12,10 +13,16 @@
             color: #222;
         }
         @page {
-            margin: 1.6cm 1.5cm 1.6cm 1.5cm;
+            margin: 2cm 2.5cm;
+            margin-top: 2cm;
+            margin-bottom: 2cm;
+            margin-left: 2.5cm;
+            margin-right: 2.5cm;
             size: letter;
         }
-        #factura { width: 100%; }
+        #factura {
+            padding: 0px 50px;
+        }
         p { margin: 0 0 2px 0; }
         table { width: 100%; border-collapse: collapse; table-layout: fixed; }
         td, th { vertical-align: top; word-wrap: break-word; }
