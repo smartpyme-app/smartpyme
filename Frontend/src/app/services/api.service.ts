@@ -81,8 +81,8 @@ export class ApiService {
     return this.httpService.get(url);
   }
 
-  store(url: string, model: any): Observable<any> {
-    return this.httpService.store(url, model);
+  store(url: string, model: any, extraHeaders?: Record<string, string>): Observable<any> {
+    return this.httpService.store(url, model, extraHeaders);
   }
 
   storeWithTimeout(url: string, model: any, timeoutMs: number = 300000): Observable<any> {
@@ -101,8 +101,8 @@ export class ApiService {
     return this.httpService.delete(url, id);
   }
 
-  putToUrl(url: string, model: any): Observable<any> {
-    return this.httpService.putToUrl(url, model);
+  putToUrl(url: string, model: any, extraHeaders?: Record<string, string>): Observable<any> {
+    return this.httpService.putToUrl(url, model, extraHeaders);
   }
 
   // login(user:any) {return this.http.post<any>(this.apiUrl + 'login', user).pipe(map((response: HttpResponse<any>) => {let data:any = response; if (data.token && data.user) {localStorage.setItem('SP_token', JSON.stringify(data.token)); localStorage.setItem('SP_auth_user', JSON.stringify(data.user)); this.funcionalidadesService.limpiarCache(); this.loadConstants(); } }) ); }

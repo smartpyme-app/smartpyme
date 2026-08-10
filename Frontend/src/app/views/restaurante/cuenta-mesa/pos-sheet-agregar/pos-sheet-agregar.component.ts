@@ -1,10 +1,11 @@
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 
 @Component({
   standalone: false,
   selector: 'app-pos-sheet-agregar',
   templateUrl: './pos-sheet-agregar.component.html',
-  styleUrls: ['./pos-sheet-agregar.component.css']
+  styleUrls: ['./pos-sheet-agregar.component.css'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PosSheetAgregarComponent implements OnChanges {
   @Input() producto: any = null;

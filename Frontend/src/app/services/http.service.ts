@@ -59,15 +59,17 @@ export class HttpService {
       .pipe(retry(0), catchError(this.handleError));
   }
 
-  putToUrl(url: string, model: any): Observable<any> {
+  putToUrl(url: string, model: any, extraHeaders?: Record<string, string>): Observable<any> {
+    const options = extraHeaders ? { headers: new HttpHeaders(extraHeaders) } : undefined;
     return this.http
-      .put<any>(this.apiUrl + url, model)
+      .put<any>(this.apiUrl + url, model, options)
       .pipe(retry(0), catchError(this.handleError));
   }
 
-  store(url: string, model: any): Observable<any> {
+  store(url: string, model: any, extraHeaders?: Record<string, string>): Observable<any> {
+    const options = extraHeaders ? { headers: new HttpHeaders(extraHeaders) } : undefined;
     return this.http
-      .post<any>(this.apiUrl + url, model)
+      .post<any>(this.apiUrl + url, model, options)
       .pipe(retry(0), catchError(this.handleError));
   }
 

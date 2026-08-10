@@ -60,7 +60,8 @@
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let item of sesion.orden_detalle">
+                @for (item of sesion.orden_detalle; track item.id) {
+                <tr>
                   <td>
                     <span *ngIf="item.producto?.genera_comanda && item.enviado_cocina" class="badge bg-success me-1">Cocina</span>
                     <span *ngIf="item.producto?.genera_comanda && item.enviado_barra" class="badge bg-info text-dark me-1">Barra</span>
@@ -97,6 +98,7 @@
                     </span>
                   </td>
                 </tr>
+                }
                 <tr *ngIf="!sesion.orden_detalle?.length">
                   <td colspan="5" class="text-center text-muted py-4">
                     No hay ítems en la orden. Agregue productos desde el catálogo.
@@ -152,7 +154,8 @@
           <div class="mt-3" *ngIf="preCuentas.length">
             <h6 class="mb-2">Pre-cuentas</h6>
             <div class="list-group list-group-flush mb-2">
-              <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-0" *ngFor="let pc of preCuentas">
+              @for (pc of preCuentas; track pc.id) {
+              <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-0">
                 <span>
                   {{ pc.numero_pre_cuenta }} — {{ pc.total | currency }}
                   <span class="badge bg-success ms-1" *ngIf="pc.estado === 'facturada'">Facturada</span>
@@ -167,6 +170,7 @@
                   </button>
                 </span>
               </div>
+              }
             </div>
           </div>
         </div>
@@ -231,14 +235,16 @@
           <label class="form-label">Mesa destino (con cuenta abierta)</label>
           <select class="form-select form-select-sm" [(ngModel)]="mesaTrasladoDestinoId" [disabled]="trasladando">
             <option [ngValue]="null">Seleccione…</option>
-            <option *ngFor="let m of mesasParaTraslado" [ngValue]="m.id">Mesa {{ m.numero }}</option>
+            @for (m of mesasParaTraslado; track m.id) {
+            <option [ngValue]="m.id">Mesa {{ m.numero }}</option>
+            }
           </select>
         </div>
         <label class="form-label">Ítems a trasladar</label>
         <div class="table-responsive" style="max-height: 220px; overflow-y: auto;">
           <table class="table table-sm mb-0">
             <tbody>
-              <ng-container *ngFor="let item of sesion?.orden_detalle">
+              @for (item of sesion?.orden_detalle; track item.id) {
                 <tr>
                   <td>
                     <label class="mb-0 small d-flex align-items-center gap-2">
@@ -251,7 +257,7 @@
                     </label>
                   </td>
                 </tr>
-              </ng-container>
+              }
             </tbody>
           </table>
         </div>

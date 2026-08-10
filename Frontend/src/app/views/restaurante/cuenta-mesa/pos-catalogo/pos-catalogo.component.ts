@@ -1,6 +1,16 @@
-import { Component, EventEmitter, OnDestroy, OnInit, Output } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  DestroyRef,
+  EventEmitter,
+  inject,
+  OnInit,
+  Output,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl } from '@angular/forms';
-import { Subscription, of } from 'rxjs';
+import { of } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 
 import { ApiService } from '@services/api.service';
@@ -20,9 +30,13 @@ type NivelCatalogo = 'raiz' | 'subcategorias' | 'productos';
   standalone: false,
   selector: 'app-pos-catalogo',
   templateUrl: './pos-catalogo.component.html',
-  styleUrls: ['./pos-catalogo.component.css']
+  styleUrls: ['./pos-catalogo.component.css'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class PosCatalogoComponent implements OnInit, OnDestroy {
+export class PosCatalogoComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly cdr = inject(ChangeDetectorRef);
+
   @Output() productoElegido = new EventEmitter<PosMenuProducto>();
 
   nivel: NivelCatalogo = 'raiz';
@@ -37,8 +51,6 @@ export class PosCatalogoComponent implements OnInit, OnDestroy {
   resultadosBusqueda: PosMenuProducto[] = [];
   searchControl = new FormControl('');
 
-  private searchSub?: Subscription;
-
   constructor(
     private restauranteService: RestauranteService,
     private alertService: AlertService,
@@ -47,7 +59,7 @@ export class PosCatalogoComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.cargarCategorias();
-    this.searchSub = this.searchControl.valueChanges
+    this.searchControl.valueChanges
       .pipe(
         debounceTime(300),
         distinctUntilChanged(),
@@ -56,28 +68,29 @@ export class PosCatalogoComponent implements OnInit, OnDestroy {
           if (!query) {
             this.resultadosBusqueda = [];
             this.buscando = false;
+            this.cdr.markForCheck();
             return of(null);
           }
           this.buscando = true;
+          this.cdr.markForCheck();
           return this.restauranteService.posMenuBuscar(query).pipe(
             catchError((err) => {
               this.buscando = false;
               this.alertService.error(err);
+              this.cdr.markForCheck();
               return of([] as PosMenuProducto[]);
             })
           );
-        })
+        }),
+        takeUntilDestroyed(this.destroyRef)
       )
       .subscribe((resultados) => {
         this.buscando = false;
         if (resultados) {
           this.resultadosBusqueda = resultados;
         }
+        this.cdr.markForCheck();
       });
-  }
-
-  ngOnDestroy(): void {
-    this.searchSub?.unsubscribe();
   }
 
   get enBusqueda(): boolean {
@@ -86,54 +99,72 @@ export class PosCatalogoComponent implements OnInit, OnDestroy {
 
   cargarCategorias(): void {
     this.loading = true;
-    this.restauranteService.posMenuCategorias().subscribe({
-      next: (categorias) => {
-        this.categorias = categorias || [];
-        this.loading = false;
-      },
-      error: (err) => {
-        this.loading = false;
-        this.alertService.error(err);
-      }
-    });
+    this.cdr.markForCheck();
+    this.restauranteService
+      .posMenuCategorias()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (categorias) => {
+          this.categorias = categorias || [];
+          this.loading = false;
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          this.loading = false;
+          this.alertService.error(err);
+          this.cdr.markForCheck();
+        }
+      });
   }
 
   tapCategoria(cat: PosMenuCategoria): void {
     this.categoriaActual = cat;
     this.subcategoriaActual = null;
     this.loading = true;
-    this.restauranteService.posMenuContenidoCategoria(cat.id).subscribe({
-      next: (res: PosMenuContenido) => {
-        this.loading = false;
-        if (resolveCategoriaTap(res?.modo, cat.subcategorias_count) === 'subcategorias') {
-          this.subcategorias = (res?.items as PosMenuSubcategoria[]) || [];
-          this.nivel = 'subcategorias';
-        } else {
-          this.productos = (res?.items as PosMenuProducto[]) || [];
-          this.nivel = 'productos';
+    this.cdr.markForCheck();
+    this.restauranteService
+      .posMenuContenidoCategoria(cat.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res: PosMenuContenido) => {
+          this.loading = false;
+          if (resolveCategoriaTap(res?.modo, cat.subcategorias_count) === 'subcategorias') {
+            this.subcategorias = (res?.items as PosMenuSubcategoria[]) || [];
+            this.nivel = 'subcategorias';
+          } else {
+            this.productos = (res?.items as PosMenuProducto[]) || [];
+            this.nivel = 'productos';
+          }
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          this.loading = false;
+          this.alertService.error(err);
+          this.cdr.markForCheck();
         }
-      },
-      error: (err) => {
-        this.loading = false;
-        this.alertService.error(err);
-      }
-    });
+      });
   }
 
   tapSubcategoria(sub: PosMenuSubcategoria): void {
     this.subcategoriaActual = sub;
     this.loading = true;
-    this.restauranteService.posMenuProductosSubcategoria(sub.id).subscribe({
-      next: (productos) => {
-        this.productos = productos || [];
-        this.nivel = 'productos';
-        this.loading = false;
-      },
-      error: (err) => {
-        this.loading = false;
-        this.alertService.error(err);
-      }
-    });
+    this.cdr.markForCheck();
+    this.restauranteService
+      .posMenuProductosSubcategoria(sub.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (productos) => {
+          this.productos = productos || [];
+          this.nivel = 'productos';
+          this.loading = false;
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          this.loading = false;
+          this.alertService.error(err);
+          this.cdr.markForCheck();
+        }
+      });
   }
 
   tapProducto(p: PosMenuProducto): void {
@@ -144,6 +175,7 @@ export class PosCatalogoComponent implements OnInit, OnDestroy {
     if (this.nivel === 'productos' && this.subcategoriaActual) {
       this.nivel = 'subcategorias';
       this.subcategoriaActual = null;
+      this.cdr.markForCheck();
       return;
     }
     this.irRaiz();
@@ -153,6 +185,7 @@ export class PosCatalogoComponent implements OnInit, OnDestroy {
     this.nivel = 'raiz';
     this.categoriaActual = null;
     this.subcategoriaActual = null;
+    this.cdr.markForCheck();
   }
 
   /** default.jpg / default.png del backend (o vacío) cuenta como sin foto real. */

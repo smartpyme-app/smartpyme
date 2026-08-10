@@ -38,7 +38,8 @@
             <span class="badge bg-primary">Cargando...</span>
           </td>
         </tr>
-        <tr class="animated fadeIn" *ngFor="let z of zonas">
+        @for (z of zonas; track z.id) {
+        <tr class="animated fadeIn">
           <td>{{ z.nombre }}</td>
           <td class="text-center">{{ z.orden }}</td>
           <td>
@@ -65,6 +66,7 @@
             </ng-template>
           </td>
         </tr>
+        }
       </tbody>
     </table>
   </div>
