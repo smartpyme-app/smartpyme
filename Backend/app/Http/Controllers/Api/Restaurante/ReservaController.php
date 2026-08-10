@@ -6,12 +6,16 @@ use App\Http\Controllers\Controller;
 use App\Models\Restaurante\Mesa;
 use App\Models\Restaurante\Reserva;
 use App\Models\Restaurante\SesionMesa;
+use App\Services\Restaurante\MesaMapaCacheService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class ReservaController extends Controller
 {
+    public function __construct(
+        private MesaMapaCacheService $mapaCache,
+    ) {}
     public function index(Request $request): JsonResponse
     {
         $user = auth()->user();
@@ -88,6 +92,7 @@ class ReservaController extends Controller
         ]);
 
         $mesa->update(['estado' => 'reservada']);
+        $this->mapaCache->invalidateEmpresa((int) $user->id_empresa);
 
         return response()->json($reserva->load(['mesa', 'usuario']), 201);
     }
@@ -127,6 +132,7 @@ class ReservaController extends Controller
 
         $reserva->update(['estado' => 'cancelada']);
         $reserva->mesa->update(['estado' => 'libre']);
+        $this->mapaCache->invalidateEmpresa((int) $user->id_empresa);
 
         return response()->json($reserva);
     }
@@ -166,6 +172,7 @@ class ReservaController extends Controller
 
         $reserva->update(['estado' => 'cumplida']);
         $reserva->mesa->update(['estado' => 'ocupada']);
+        $this->mapaCache->invalidateEmpresa((int) $user->id_empresa);
 
         return response()->json($sesion->load(['mesa.zonaRestaurante', 'mesero']), 201);
     }

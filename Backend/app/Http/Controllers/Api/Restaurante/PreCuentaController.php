@@ -9,6 +9,7 @@ use App\Models\Restaurante\OrdenDetalle;
 use App\Models\Restaurante\PreCuenta;
 use App\Models\Restaurante\PreCuentaOrdenDetalle;
 use App\Models\Restaurante\SesionMesa;
+use App\Services\Restaurante\MesaMapaCacheService;
 use App\Services\Restaurante\RestauranteIdempotencyService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -20,6 +21,9 @@ use Illuminate\Validation\ValidationException;
 
 class PreCuentaController extends Controller
 {
+    public function __construct(
+        private MesaMapaCacheService $mapaCache,
+    ) {}
     /**
      * Propina según porcentaje de empresa (sin override por mesa). Base: subtotal de consumo (sin IVA).
      * IVA se calcula por línea según porcentaje del producto o de la empresa.
@@ -628,6 +632,10 @@ class PreCuentaController extends Controller
                         'idempotent' => false,
                     ];
                 });
+
+                if (! empty($payload['sesion_cerrada']) || empty($payload['idempotent'])) {
+                    $this->mapaCache->invalidateEmpresa((int) $user->id_empresa);
+                }
 
                 return response()->json([
                     'pre_cuenta' => $payload['pre_cuenta'],

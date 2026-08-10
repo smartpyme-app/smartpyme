@@ -155,12 +155,24 @@ class PedidoRestauranteController extends Controller
                     'destino' => 'cocina',
                     'enviado_at' => now(),
                 ]);
+                $now = now();
+                $rows = [];
+                $ids = [];
                 foreach ($itemsCocina as $item) {
-                    ComandaDetalle::create([
+                    $rows[] = [
                         'comanda_id' => $comanda->id,
+                        'orden_detalle_id' => null,
                         'pedido_detalle_id' => $item->id,
-                    ]);
-                    $item->update(['enviado_cocina' => true]);
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
+                    $ids[] = $item->id;
+                }
+                if ($rows !== []) {
+                    ComandaDetalle::insert($rows);
+                }
+                if ($ids !== []) {
+                    PedidoRestauranteDetalle::whereIn('id', $ids)->update(['enviado_cocina' => true]);
                 }
                 $comandasCreadas[] = $comanda->load(['detalles.pedidoDetalle.producto']);
             }
@@ -174,12 +186,24 @@ class PedidoRestauranteController extends Controller
                     'destino' => 'barra',
                     'enviado_at' => now(),
                 ]);
+                $now = now();
+                $rows = [];
+                $ids = [];
                 foreach ($itemsBarra as $item) {
-                    ComandaDetalle::create([
+                    $rows[] = [
                         'comanda_id' => $comanda->id,
+                        'orden_detalle_id' => null,
                         'pedido_detalle_id' => $item->id,
-                    ]);
-                    $item->update(['enviado_barra' => true]);
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
+                    $ids[] = $item->id;
+                }
+                if ($rows !== []) {
+                    ComandaDetalle::insert($rows);
+                }
+                if ($ids !== []) {
+                    PedidoRestauranteDetalle::whereIn('id', $ids)->update(['enviado_barra' => true]);
                 }
                 $comandasCreadas[] = $comanda->load(['detalles.pedidoDetalle.producto']);
             }

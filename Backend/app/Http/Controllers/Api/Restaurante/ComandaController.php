@@ -74,11 +74,20 @@ class ComandaController extends Controller
             'enviado_at' => now(),
         ]);
 
+        // Bulk insert: ComandaDetalle no es AuditableModel.
+        $now = now();
+        $rows = [];
         foreach ($items as $item) {
-            ComandaDetalle::create([
+            $rows[] = [
                 'comanda_id' => $comanda->id,
                 'orden_detalle_id' => $item->id,
-            ]);
+                'pedido_detalle_id' => null,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+        if ($rows !== []) {
+            ComandaDetalle::insert($rows);
         }
 
         $comanda->load(['detalles.ordenDetalle.producto']);

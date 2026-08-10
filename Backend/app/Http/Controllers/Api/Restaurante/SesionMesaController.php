@@ -8,6 +8,7 @@ use App\Models\Restaurante\Mesa;
 use App\Models\Restaurante\OrdenDetalle;
 use App\Models\Restaurante\PreCuenta;
 use App\Models\Restaurante\SesionMesa;
+use App\Services\Restaurante\MesaMapaCacheService;
 use App\Services\Restaurante\RestauranteAutorizacionService;
 use App\Services\Restaurante\RestauranteIdempotencyService;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -18,6 +19,10 @@ use Illuminate\Validation\Rule;
 
 class SesionMesaController extends Controller
 {
+    public function __construct(
+        private MesaMapaCacheService $mapaCache,
+    ) {}
+
     public function store(Request $request): JsonResponse
     {
         return app(RestauranteIdempotencyService::class)->run(
@@ -79,6 +84,7 @@ class SesionMesaController extends Controller
                 }
 
                 $sesion->load(['mesa.zonaRestaurante', 'mesero']);
+                $this->mapaCache->invalidateEmpresa((int) $user->id_empresa);
 
                 return response()->json($sesion, 201);
             }
@@ -175,6 +181,7 @@ class SesionMesaController extends Controller
         ]);
 
         $sesion->mesa->update(['estado' => 'libre']);
+        $this->mapaCache->invalidateEmpresa((int) $user->id_empresa);
 
         return response()->json($sesion);
     }
@@ -194,6 +201,7 @@ class SesionMesaController extends Controller
 
         $sesion->update(['estado' => 'abierta']);
         $sesion->mesa?->update(['estado' => 'ocupada']);
+        $this->mapaCache->invalidateEmpresa((int) $user->id_empresa);
 
         $sesion->load([
             'mesa.zonaRestaurante',
@@ -254,6 +262,8 @@ class SesionMesaController extends Controller
             DB::rollBack();
             throw $e;
         }
+
+        $this->mapaCache->invalidateEmpresa((int) $user->id_empresa);
 
         return response()->json(['ok' => true]);
     }
