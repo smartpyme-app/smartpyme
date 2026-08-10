@@ -49,4 +49,64 @@ class ConfiguracionPlanillaControllerTest extends TestCase
         $this->assertSame(200, $response->getStatusCode());
         $this->assertSame('CR', $response->getData(true)['data']['pais']);
     }
+
+    public function test_update_usa_el_pais_de_la_empresa_e_ignora_cod_pais_del_request(): void
+    {
+        $conceptos = [
+            'ccss_empleado' => [
+                'nombre' => 'CCSS Empleado',
+                'tipo' => 'porcentaje',
+                'es_deduccion' => true,
+            ],
+        ];
+        $configuracion = ['conceptos' => $conceptos];
+
+        $saved = new EmpresaConfiguracion([
+            'empresa_id' => 553,
+            'pais' => 'CR',
+            'modulo' => EmpresaConfiguracion::MODULO_PLANILLAS,
+            'configuracion' => $configuracion,
+        ]);
+        $saved->id = 10;
+        $saved->updated_at = now();
+
+        $empresaConfigService = Mockery::mock(EmpresaConfiguracionService::class);
+        $empresaConfigService
+            ->shouldReceive('paisEmpresa')
+            ->once()
+            ->with(553)
+            ->andReturn('CR');
+        $empresaConfigService
+            ->shouldReceive('set')
+            ->once()
+            ->with(553, EmpresaConfiguracion::MODULO_PLANILLAS, $configuracion, 'CR')
+            ->andReturn($saved);
+
+        $configuracionService = Mockery::mock(ConfiguracionPlanillaService::class);
+        $configuracionService
+            ->shouldReceive('validarConfiguracion')
+            ->once()
+            ->with(553)
+            ->andReturn(['valida' => true, 'mensaje' => '']);
+
+        $request = \App\Http\Requests\Planilla\UpdateConfiguracionPlanillaRequest::create(
+            '/planillas/configuracion-planilla',
+            'POST',
+            [
+                'cod_pais' => 'SV',
+                'configuracion' => $configuracion,
+            ]
+        );
+        $request->setUserResolver(fn () => (object) ['id_empresa' => 553]);
+
+        $controller = new ConfiguracionPlanillaController(
+            $configuracionService,
+            $empresaConfigService
+        );
+
+        $response = $controller->update($request);
+
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame('CR', $response->getData(true)['data']['pais']);
+    }
 }

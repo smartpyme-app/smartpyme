@@ -20,6 +20,7 @@ Route::group(['prefix' => 'planillas', 'middleware' => ['jwt.auth']], function (
 
     Route::controller(PlanillaDetalleController::class)->group(function () {
         Route::post('detalles/editar/{id}', 'update')->middleware('permission:planilla.registros.editar');
+        Route::post('detalles/previsualizar/{id}', 'previsualizar')->middleware('permission:planilla.registros.editar');
         Route::post('detalles/retirar/{id}', 'retirar')->middleware('permission:planilla.registros.editar');
         Route::post('detalles/incluir/{id}', 'incluir')->middleware('permission:planilla.registros.editar');
     });

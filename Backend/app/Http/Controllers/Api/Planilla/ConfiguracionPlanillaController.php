@@ -153,8 +153,7 @@ class   ConfiguracionPlanillaController extends Controller
 
             $empresaId = $request->user()->id_empresa;
             $nuevaConfiguracion = $request->input('configuracion');
-            $pais = strtoupper($request->input('cod_pais')
-                ?: $this->empresaConfigService->paisEmpresa($empresaId));
+            $pais = $this->empresaConfigService->paisEmpresa($empresaId);
 
             $this->validarEstructuraConceptos($nuevaConfiguracion['conceptos'] ?? []);
 
@@ -470,7 +469,7 @@ class   ConfiguracionPlanillaController extends Controller
                 ], 404);
             }
 
-            $codigoPais = $empresa->cod_pais ?? 'SV';
+            $codigoPais = $this->empresaConfigService->paisEmpresa($empresaId);
             $usaPersonalizada = $codigoPais !== 'SV';
 
             $tieneConfiguracion = (bool) $this->empresaConfigService->getPlanilla($empresaId);
@@ -499,7 +498,7 @@ class   ConfiguracionPlanillaController extends Controller
             $empresaId = auth()->user()->id_empresa;
             $empresa = Empresa::find($empresaId);
 
-            $codigoPais = $empresa->cod_pais ?? 'SV';
+            $codigoPais = $this->empresaConfigService->paisEmpresa($empresaId);
             $nombrePais = $this->getNombrePais($codigoPais);
             $moneda = $this->getMonedaPais($codigoPais);
 
@@ -530,7 +529,7 @@ class   ConfiguracionPlanillaController extends Controller
         try {
             $empresaId = auth()->user()->id_empresa;
             $empresa = Empresa::find($empresaId);
-            $codigoPais = $empresa->cod_pais ?? 'SV';
+            $codigoPais = $this->empresaConfigService->paisEmpresa($empresaId);
 
             if ($codigoPais === 'SV') {
                 // Retornar conceptos de El Salvador

@@ -34,4 +34,15 @@ class EmpresaConfiguracionServiceCheck extends TestCase
         $this->assertSame('CR', \App\Models\EmpresaConfiguracionPlanilla::resolverCodigoPaisEmpresa($empresa));
         $this->assertSame('SV', \App\Models\EmpresaConfiguracionPlanilla::resolverCodigoPaisEmpresa(null));
     }
+
+    public function test_configuracion_planilla_service_resuelve_clase_empresa_configuracion_planilla(): void
+    {
+        $this->assertTrue(class_exists(\App\Models\EmpresaConfiguracionPlanilla::class));
+
+        $uses = file_get_contents((new \ReflectionClass(\App\Services\Planilla\ConfiguracionPlanillaService::class))->getFileName());
+        $this->assertStringContainsString(
+            'use App\\Models\\EmpresaConfiguracionPlanilla;',
+            $uses
+        );
+    }
 }

@@ -675,13 +675,30 @@ class AguinaldosController extends Controller
             $aniosLaborar = AguinaldoHelper::calcularAniosLaborar($fechaIngreso, $request->anio, $fechaCalculo);
             $mesesTrabajados = AguinaldoHelper::calcularMesesTrabajados($fechaIngreso, $request->anio, $fechaCalculo);
 
+            $codigoPais = app(\App\Services\Admin\EmpresaConfiguracionService::class)
+                ->paisEmpresa(auth()->user()->id_empresa);
+
             // Calcular sugerencia basada en años de laborar
             $sugerencia = AguinaldoHelper::calcularSugerenciaAguinaldo(
                 $empleado->salario_base,
                 $fechaIngreso,
                 $request->anio,
-                $fechaCalculo
+                $fechaCalculo,
+                $codigoPais
             );
+
+            // Costa Rica no usa días por antigüedad; el aguinaldo es proporcional a los meses
+            if (AguinaldoHelper::aguinaldoTotalmenteExento($codigoPais)) {
+                return response()->json([
+                    'sugerencia' => $sugerencia,
+                    'anios_laborar' => round($aniosLaborar, 2),
+                    'meses_trabajados' => $mesesTrabajados,
+                    'dias_aguinaldo' => null,
+                    'salario_base' => $empleado->salario_base,
+                    'fecha_ingreso' => $empleado->fecha_ingreso,
+                    'tipo_contrato' => $empleado->tipo_contrato
+                ]);
+            }
 
             // Determinar días de aguinaldo según años de laborar
             $diasAguinaldo = 0;
@@ -743,10 +760,14 @@ class AguinaldosController extends Controller
         ]);
 
         try {
+            $codigoPais = app(\App\Services\Admin\EmpresaConfiguracionService::class)
+                ->paisEmpresa(auth()->user()->id_empresa);
+
             $calculos = AguinaldoHelper::calcularDeduccionesAguinaldo(
                 $request->monto_bruto,
                 $request->anio,
-                $request->tipo_contrato
+                $request->tipo_contrato,
+                $codigoPais
             );
 
             return response()->json([

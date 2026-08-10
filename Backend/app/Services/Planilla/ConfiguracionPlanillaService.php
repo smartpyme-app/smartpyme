@@ -8,6 +8,7 @@ use App\Helpers\RentaHelper;
 use App\Helpers\CostaRicaCargasSocialesHelper;
 use App\Helpers\CostaRicaRentaHelper;
 use App\Models\Admin\Empresa;
+use App\Models\EmpresaConfiguracionPlanilla;
 use App\Services\Admin\EmpresaConfiguracionService;
 use Illuminate\Support\Facades\Log;
 
@@ -53,6 +54,17 @@ class ConfiguracionPlanillaService
     }
     
 
+    /**
+     * Factor de pago de la hora extra simple según el recargo configurado del país (SV 25%, CR 50%, ...).
+     */
+    public function factorHoraExtra($empresaId): float
+    {
+        $config = app(EmpresaConfiguracionService::class)->getPlanilla($empresaId);
+        $recargo = $config ? ($config->getConfiguracionesGenerales()['recargo_horas_extra'] ?? 25) : 25;
+
+        return 1 + ((float) $recargo / 100);
+    }
+
     private function calcularConceptosElSalvador(array $datosEmpleado, string $tipoPlanilla)
     {
         $salarioDevengado = $datosEmpleado['salario_devengado'];
@@ -93,12 +105,18 @@ class ConfiguracionPlanillaService
                 'renta' => round($renta, 2)
             ];
         } else {
+            // configuracion_descuentos del empleado puede excluirlo de ISSS y/o AFP
+            $aplicarIsss = $datosEmpleado['aplicar_isss'] ?? true;
+            $aplicarAfp = $datosEmpleado['aplicar_afp'] ?? true;
+
             // ISSS proporcional al ingreso del período (salario devengado + ingresos gravables)
-            $isss = IsssHelper::calcularIsss($totalIngresos, $tipoPlanilla);
+            $isss = $aplicarIsss
+                ? IsssHelper::calcularIsss($totalIngresos, $tipoPlanilla)
+                : ['isss_empleado' => 0, 'isss_patronal' => 0];
             $isssEmpleado = $isss['isss_empleado'];
             $isssPatronal = $isss['isss_patronal'];
-            $afpEmpleado = $totalIngresos * PlanillaConstants::DESCUENTO_AFP_EMPLEADO;
-            $afpPatronal = $totalIngresos * PlanillaConstants::DESCUENTO_AFP_PATRONO;
+            $afpEmpleado = $aplicarAfp ? $totalIngresos * PlanillaConstants::DESCUENTO_AFP_EMPLEADO : 0;
+            $afpPatronal = $aplicarAfp ? $totalIngresos * PlanillaConstants::DESCUENTO_AFP_PATRONO : 0;
             
             // Calcular renta usando RentaHelper
             $salarioGravado = RentaHelper::calcularSalarioGravado(
@@ -303,7 +321,7 @@ class ConfiguracionPlanillaService
         
         return [
             'conceptos_personalizados' => $conceptosPersonalizados,
-            'pais_configuracion' => $configEmpresa->cod_pais,
+            'pais_configuracion' => $configEmpresa->pais,
             'totales' => [
                 'total_ingresos' => round($totalIngresos, 2),
                 'total_deducciones' => round($totalDeducciones, 2),

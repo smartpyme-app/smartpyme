@@ -13,6 +13,13 @@ import { PlanillaConstants } from '../../../constants/planilla.constants';
 import { ConceptoPlanilla, ConfiguracionPlanillaService } from '@services/configuracion-planilla.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
+import { of, Subject } from 'rxjs';
+import { catchError, debounceTime, switchMap } from 'rxjs/operators';
+import {
+  FE_PAIS_CR,
+  FE_PAIS_SV,
+  resolveCodigoPaisFe,
+} from '@services/facturacion-electronica/fe-pais.util';
 
 import Swal from 'sweetalert2';
 
@@ -97,6 +104,9 @@ export class PlanillaDetalleComponent implements OnInit {
   prestamosDescuentoCollapsed = true;
   private destroyRef = inject(DestroyRef);
   private untilDestroyed = subscriptionHelper(this.destroyRef);
+  /** Cada edición pide al backend el cálculo del país; el frontend no replica fórmulas. */
+  private recalculoDetalle$ = new Subject<void>();
+  public calculandoDetalle = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -127,8 +137,81 @@ export class PlanillaDetalleComponent implements OnInit {
       ([, concepto]) => concepto.es_deduccion && !concepto.es_patronal
     );
 
+    this.recalculoDetalle$
+      .pipe(
+        debounceTime(350),
+        switchMap(() =>
+          this.detalleSeleccionado?.id
+            ? this.apiService
+                .store(`planillas/detalles/previsualizar/${this.detalleSeleccionado.id}`, this.construirDatosDetalle())
+                .pipe(catchError(() => of(null)))
+            : of(null)
+        ),
+        this.untilDestroyed()
+      )
+      .subscribe((response: any) => {
+        this.calculandoDetalle = false;
+        if (response?.detalle && this.detalleSeleccionado?.id === response.detalle.id) {
+          this.aplicarCalculoDetalle(response.detalle);
+        }
+        this.cdr.markForCheck();
+      });
+
     this.cargarCatalogos();
     this.verificarAccesoContabilidad();
+  }
+
+  /** Entradas editables del detalle; los importes los calcula el backend según el país. */
+  private construirDatosDetalle(): any {
+    const detalle = this.detalleSeleccionado;
+    const sinHorasExtra = (detalle.empleado?.tipo_contrato || 1) === 4;
+
+    const datos: any = {
+      dias_laborados: detalle.dias_laborados || this.getDiasReferenciaPlanilla(),
+      horas_extra: sinHorasExtra ? 0 : (detalle.horas_extra || 0),
+      comisiones: detalle.comisiones || 0,
+      bonificaciones: detalle.bonificaciones || 0,
+      otros_ingresos: detalle.otros_ingresos || 0,
+      viaticos: detalle.viaticos || 0,
+      abonos: detalle.abonos || 0,
+      abonos_sin_retencion: detalle.abonos_sin_retencion !== false,
+      prestamos: detalle.prestamos || 0,
+      anticipos: detalle.anticipos || 0,
+      otros_descuentos: detalle.otros_descuentos || 0,
+      descuentos_judiciales: detalle.descuentos_judiciales || 0,
+      detalle_otras_deducciones: detalle.detalle_otras_deducciones || '',
+      salario_base: detalle.salario_base || 0,
+    };
+
+    if (this.esElSalvador && !sinHorasExtra) {
+      datos.detalle_horas_extra = this.getDetalleHorasExtraDesdeLista();
+    }
+
+    return datos;
+  }
+
+  /** Copia los importes calculados por el backend sin tocar lo que el usuario está escribiendo. */
+  private aplicarCalculoDetalle(calculado: any): void {
+    const campos = [
+      'salario_devengado',
+      'monto_horas_extra',
+      'isss_empleado',
+      'isss_patronal',
+      'afp_empleado',
+      'afp_patronal',
+      'renta',
+      'conceptos_personalizados',
+      'pais_configuracion',
+      'total_ingresos',
+      'total_descuentos',
+      'sueldo_neto',
+    ];
+    campos.forEach((campo) => (this.detalleSeleccionado[campo] = calculado[campo]));
+
+    if (this.esElSalvador) {
+      this.detalleSeleccionado.horas_extra = calculado.horas_extra;
+      this.detalleSeleccionado.detalle_horas_extra = calculado.detalle_horas_extra;
+    }
   }
 
   verificarAccesoContabilidad() {
@@ -246,21 +329,39 @@ export class PlanillaDetalleComponent implements OnInit {
   //   return 0;
   // }
 
-  calcularConcepto(detalle: any, concepto: any): number {
-    const codigo = concepto.codigo?.toLowerCase() || '';
+  calcularConcepto(detalle: any, concepto: any, codigoKey?: string): number {
+    const codigo = (concepto?.codigo || codigoKey || '').toString().toLowerCase();
 
     // 🎯 Si es El Salvador, usar campos fijos
     if (this.esElSalvador) {
-      // Mapeo específico solo para ES
-
       const campo = this.mapeoCamposES[codigo];
       if (campo && detalle.hasOwnProperty(campo)) {
         return Number(detalle[campo]) || 0;
       }
     }
 
-    // 🎯 Si no es El Salvador, usar lógica general por configuración
-    if (detalle.hasOwnProperty(codigo)) {
+    // Snapshot CR/otros: valores ya calculados en conceptos_personalizados
+    const personalizados = detalle?.conceptos_personalizados;
+    if (personalizados && typeof personalizados === 'object') {
+      const porKey = codigoKey && personalizados[codigoKey];
+      if (porKey && porKey.valor != null) {
+        return Number(porKey.valor) || 0;
+      }
+      for (const item of Object.values(personalizados) as any[]) {
+        if (item?.codigo?.toString().toLowerCase() === codigo && item.valor != null) {
+          return Number(item.valor) || 0;
+        }
+      }
+      if (codigo && personalizados[codigo]?.valor != null) {
+        return Number(personalizados[codigo].valor) || 0;
+      }
+    }
+
+    // Campo directo en el detalle (p. ej. ccss_empleado si existiera)
+    if (codigoKey && detalle.hasOwnProperty(codigoKey)) {
+      return Number(detalle[codigoKey]) || 0;
+    }
+    if (codigo && detalle.hasOwnProperty(codigo)) {
       return Number(detalle[codigo]) || 0;
     }
 
@@ -276,7 +377,7 @@ export class PlanillaDetalleComponent implements OnInit {
       return (monto * concepto.valor) / 100;
     }
 
-    if (concepto.tipo === 'fijo') {
+    if (concepto.tipo === 'fijo' || concepto.tipo === 'monto_fijo') {
       return Number(concepto.valor) || 0;
     }
 
@@ -286,24 +387,49 @@ export class PlanillaDetalleComponent implements OnInit {
 
 
 
+  /** País efectivo de la planilla (detalle > config > empresa.pais/cod_pais). */
+  get codPaisPlanilla(): string {
+    const desdeDetalle = this.detalles?.[0]?.pais_configuracion;
+    if (typeof desdeDetalle === 'string' && desdeDetalle.trim()) {
+      const cod = desdeDetalle.trim().toUpperCase();
+      if (cod.length <= 3) {
+        return cod;
+      }
+      if (cod.includes('COSTA RICA')) {
+        return FE_PAIS_CR;
+      }
+      if (cod.includes('SALVADOR')) {
+        return FE_PAIS_SV;
+      }
+    }
+
+    const desdeConfig = this.configPlanilla?.cod_pais;
+    if (typeof desdeConfig === 'string' && desdeConfig.trim()) {
+      return desdeConfig.trim().toUpperCase();
+    }
+
+    return resolveCodigoPaisFe(
+      this.planilla?.empresa ?? this.apiService.auth_user()?.empresa
+    );
+  }
+
   get esElSalvador(): boolean {
-    // 1. Verificar código de país de la empresa
-    if (this.planilla?.empresa?.cod_pais === 'SV') {
-      return true;
-    }
+    return this.codPaisPlanilla === FE_PAIS_SV;
+  }
 
-    // 2. Verificar pais_configuracion de la configuración de planilla
-    if (this.configPlanilla?.pais_configuracion === 'EL SALVADOR' ||
-        this.configPlanilla?.cod_pais === 'SV') {
-      return true;
-    }
+  get esCostaRica(): boolean {
+    return this.codPaisPlanilla === FE_PAIS_CR;
+  }
 
-    // 3. Verificar pais_configuracion del primer detalle (fallback)
-    if (this.detalles && this.detalles.length > 0) {
-      return this.detalles[0]?.pais_configuracion === 'SV';
+  /** Texto de ayuda para deducciones que no afectan retenciones. */
+  get textoRetencionesLaborales(): string {
+    if (this.esCostaRica) {
+      return 'CCSS ni Impuesto sobre la Renta';
     }
-
-    return false;
+    if (this.esElSalvador) {
+      return 'ISSS, AFP ni ISR';
+    }
+    return 'retenciones laborales';
   }
 
   get conceptosEmpleado() {
@@ -328,7 +454,7 @@ export class PlanillaDetalleComponent implements OnInit {
     if (!concepto) return 0;
 
     for (const detalle of this.detalles) {
-      const valor = this.calcularConcepto(detalle, concepto);
+      const valor = this.calcularConcepto(detalle, concepto, codigo);
       total += Number(valor) || 0;
     }
 
@@ -371,7 +497,7 @@ export class PlanillaDetalleComponent implements OnInit {
     }
 
     return this.conceptosPatronales
-      .map(([_, c]) => this.calcularConcepto(detalle, c))
+      .map(([codigo, c]) => this.calcularConcepto(detalle, c, codigo))
       .reduce((a, b) => a + b, 0);
   }
 
@@ -390,95 +516,6 @@ export class PlanillaDetalleComponent implements OnInit {
         this.cdr.markForCheck();
       }
     });
-  }
-
-  calcularDeduccionConcepto(detalle: any, concepto: any): number {
-
-    const codigo = concepto.codigo?.toLowerCase();
-
-    // Si el campo existe directamente en el detalle
-    if (detalle.hasOwnProperty(codigo)) {
-      return Number(detalle[codigo]) || 0;
-    }
-
-    // Obtener base de cálculo
-    const base = this.obtenerBaseCalculo(detalle, concepto.base_calculo);
-
-    // Si es un cálculo porcentual
-    if (concepto.tipo === 'porcentaje') {
-      const resultado = (Number(base) * Number(concepto.valor)) / 100;
-      return resultado;
-    }
-
-    if (concepto.tipo === 'tabla_progresiva') {
-      return 0; // Por ahora
-    }
-
-    return 0;
-  }
-
-  obtenerBaseCalculo(detalle: any, baseCalculo: string): number {
-    switch (baseCalculo) {
-      case 'salario_base':
-        return Number(detalle.salario_base) || 0;
-      case 'salario_devengado':
-        // Si es para cálculo de deducciones, usar total_ingresos actualizado
-        if (this.detalleSeleccionado && detalle === this.detalleSeleccionado) {
-          return Number(detalle.total_ingresos) || 0;
-        }
-        return Number(detalle.salario_devengado) || 0;
-      case 'salario_gravable': {
-        const totalIngresos = Number(detalle.total_ingresos) || 0;
-        const igss = Number(detalle.isss_empleado) || 0;
-        const afp = Number(detalle.afp_empleado) || 0;
-        // Si abonos sin retención, la base gravable excluye abonos
-        const base = (this.detalleSeleccionado && detalle === this.detalleSeleccionado && detalle.abonos_sin_retencion !== false)
-          ? totalIngresos - (Number(detalle.abonos) || 0)
-          : totalIngresos;
-        return base - igss - afp;
-      }
-      case 'valor_por_hora':
-        return this.calcularValorHora();
-      case 'total_ingresos':
-      default: {
-        const total = Number(detalle.total_ingresos) || 0;
-        if (this.detalleSeleccionado && detalle === this.detalleSeleccionado && detalle.abonos_sin_retencion !== false) {
-          return total - (Number(detalle.abonos) || 0);
-        }
-        return total;
-      }
-    }
-  }
-
-  actualizarDeduccionesCalculadas() {
-    if (!this.esElSalvador && this.detalleSeleccionado && this.conceptosDeduccion) {
-      let totalDeducciones = 0;
-
-      // Calcular cada concepto de deducción
-      this.conceptosDeduccion.forEach(([codigo, concepto]) => {
-        const valor = this.calcularDeduccionConcepto(this.detalleSeleccionado, concepto);
-
-        // Guardar el valor calculado en el detalle
-        if (!this.detalleSeleccionado.conceptos) {
-          this.detalleSeleccionado.conceptos = {};
-        }
-        this.detalleSeleccionado.conceptos[codigo] = valor;
-
-        totalDeducciones += valor;
-      });
-
-      // Agregar otros descuentos manuales
-      const prestamos = Number(this.detalleSeleccionado.prestamos) || 0;
-      const anticipos = Number(this.detalleSeleccionado.anticipos) || 0;
-
-      const totalFinal = totalDeducciones + prestamos + anticipos;
-
-      this.detalleSeleccionado.total_descuentos = Number(totalFinal.toFixed(2));
-      this.detalleSeleccionado.sueldo_neto = Number(
-        (this.detalleSeleccionado.total_ingresos - totalFinal).toFixed(2)
-      );
-      this.cdr.markForCheck();
-    }
   }
 
   public filtrarPlanillas() {
@@ -616,7 +653,7 @@ export class PlanillaDetalleComponent implements OnInit {
       this.detalleSeleccionado.horas_extra = 0;
       this.detalleSeleccionado.monto_horas_extra = 0;
     }
-    this.calcularTotales();
+    this.calcularTotalesUnificado();
     this.cdr.markForCheck();
 
     const idEmpleado = detalle.id_empleado ?? detalle.empleado?.id;
@@ -656,6 +693,7 @@ export class PlanillaDetalleComponent implements OnInit {
 
   public cancelarEdicion() {
     this.detalleSeleccionado = null;
+    this.calculandoDetalle = false;
     this.listaHorasExtraES = [];
     this.cdr.markForCheck();
     this.prestamosActivosEmpleado = [];
@@ -678,7 +716,7 @@ export class PlanillaDetalleComponent implements OnInit {
 
   /** Al cambiar el monto a descontar: si queda en 0 o es menor que la suma actual, vaciar la lista y resetear el selector para que el desplegable vuelva a mostrar todos los préstamos. */
   onPrestamosMontoChange(): void {
-    this.recalcularSueldoNeto();
+    this.calcularTotalesUnificado();
     const monto = Number(this.detalleSeleccionado?.prestamos) || 0;
     const suma = this.sumaAbonosPrestamos();
     const debeLimpiar = this.abonosPrestamosAsignados.length > 0 && (monto <= 0 || monto < suma);
@@ -707,7 +745,7 @@ export class PlanillaDetalleComponent implements OnInit {
     this.abonosPrestamosAsignados = this.abonosPrestamosAsignados.filter((a) => a.id_prestamo !== idPrestamo);
     if (this.detalleSeleccionado) {
       this.detalleSeleccionado.prestamos = this.sumaAbonosPrestamos();
-      this.recalcularSueldoNeto();
+      this.calcularTotalesUnificado();
     }
   }
 
@@ -793,50 +831,10 @@ export class PlanillaDetalleComponent implements OnInit {
 
     this.saving = true;
 
-    const tipoContratoGuardar = this.detalleSeleccionado.empleado?.tipo_contrato || 1;
-    const sinHorasExtraGuardar = tipoContratoGuardar === 4;
+    const datosActualizados: any = this.construirDatosDetalle();
 
-    const datosActualizados: any = {
-      // Datos de entrada
-      horas_extra: sinHorasExtraGuardar ? 0 : (this.detalleSeleccionado.horas_extra || 0),
-      monto_horas_extra: sinHorasExtraGuardar ? 0 : (this.detalleSeleccionado.monto_horas_extra || 0),
-      comisiones: this.detalleSeleccionado.comisiones || 0,
-      bonificaciones: this.detalleSeleccionado.bonificaciones || 0,
-      otros_ingresos: this.detalleSeleccionado.otros_ingresos || 0,
-      dias_laborados: this.detalleSeleccionado.dias_laborados || 30,
-      prestamos: this.detalleSeleccionado.prestamos || 0,
-      anticipos: this.detalleSeleccionado.anticipos || 0,
-      abonos: this.detalleSeleccionado.abonos || 0,
-      abonos_sin_retencion: this.detalleSeleccionado.abonos_sin_retencion !== false,
-      otros_descuentos: this.detalleSeleccionado.otros_descuentos || 0,
-      descuentos_judiciales:
-        this.detalleSeleccionado.descuentos_judiciales || 0,
-
-      // Totales calculados
-      salario_base: this.detalleSeleccionado.salario_base || 0,
-      total_ingresos: this.detalleSeleccionado.total_ingresos || 0,
-
-      // ISSS
-      isss_empleado: this.detalleSeleccionado.isss_empleado || 0,
-      isss_patronal: this.detalleSeleccionado.isss_patronal || 0,
-
-      // AFP
-      afp_empleado: this.detalleSeleccionado.afp_empleado || 0,
-      afp_patronal: this.detalleSeleccionado.afp_patronal || 0,
-
-      // Renta
-      renta: this.detalleSeleccionado.renta || 0,
-
-      // Totales finales
-      total_descuentos: this.detalleSeleccionado.total_descuentos || 0,
-      sueldo_neto: this.detalleSeleccionado.sueldo_neto || 0,
-
-      // Comentarios o detalles adicionales
-      detalle_otras_deducciones:
-        this.detalleSeleccionado.detalle_otras_deducciones || '',
-      viaticos: this.detalleSeleccionado.viaticos || 0,
-    };
     const abonosConMonto = this.abonosPrestamosAsignados.filter((a) => (Number(a.monto) || 0) > 0);
+
     if (abonosConMonto.length > 0) {
       const sumaAbonos = this.sumaAbonosPrestamos();
       const montoPrestamos = Number(this.detalleSeleccionado.prestamos) || 0;
@@ -851,30 +849,6 @@ export class PlanillaDetalleComponent implements OnInit {
         id_prestamo: a.id_prestamo,
         monto: Number(a.monto),
       }));
-    }
-    if (this.esElSalvador) {
-      if (sinHorasExtraGuardar) {
-        datosActualizados.detalle_horas_extra = {
-          diurna: 0,
-          nocturna: 0,
-          dia_descanso: 0,
-          dia_asueto: 0,
-          dia_descanso_dias: 0,
-        };
-      } else {
-        const dhe = this.listaHorasExtraES?.length
-          ? this.getDetalleHorasExtraDesdeLista()
-          : (this.detalleSeleccionado.detalle_horas_extra as Record<string, number> | null);
-        if (dhe) {
-          datosActualizados.detalle_horas_extra = {
-            diurna: Number(dhe['diurna']) || 0,
-            nocturna: Number(dhe['nocturna']) || 0,
-            dia_descanso: Number(dhe['dia_descanso']) || 0,
-            dia_asueto: Number(dhe['dia_asueto']) || 0,
-            dia_descanso_dias: Number(dhe['dia_descanso_dias']) || 0,
-          };
-        }
-      }
     }
 
     this.apiService
@@ -1212,9 +1186,16 @@ export class PlanillaDetalleComponent implements OnInit {
   }
 
   public getTotalDescuentosPatronales(): number {
-    return (
-      (this.descuentosPatronales?.resumen?.total_isss_patronal || 0) +
-      (this.descuentosPatronales?.resumen?.total_afp_patronal || 0)
+    if (this.esElSalvador) {
+      return (
+        (this.descuentosPatronales?.resumen?.total_isss_patronal || 0) +
+        (this.descuentosPatronales?.resumen?.total_afp_patronal || 0)
+      );
+    }
+
+    return (this.detalles || []).reduce(
+      (sum, detalle) => sum + this.getTotalAportesPatronales(detalle),
+      0
     );
   }
 
@@ -1225,357 +1206,14 @@ export class PlanillaDetalleComponent implements OnInit {
   //   }, 0) || 0;
   // }
 
-  private readonly RENTA_2025 = {
-    MENSUAL: {
-      TRAMOS: [
-        { desde: 0.01, hasta: 550.00, porcentaje: 0.00, sobreExceso: 0.00, cuotaFija: 0.00 },
-        { desde: 550.01, hasta: 895.24, porcentaje: 0.10, sobreExceso: 550.00, cuotaFija: 17.67 },
-        { desde: 895.25, hasta: 2038.10, porcentaje: 0.20, sobreExceso: 895.24, cuotaFija: 60.00 },
-        { desde: 2038.11, hasta: 999999.99, porcentaje: 0.30, sobreExceso: 2038.10, cuotaFija: 288.57 }
-      ]
-    },
-    QUINCENAL: {
-      TRAMOS: [
-        { desde: 0.01, hasta: 275.00, porcentaje: 0.00, sobreExceso: 0.00, cuotaFija: 0.00 },
-        { desde: 275.01, hasta: 447.62, porcentaje: 0.10, sobreExceso: 275.00, cuotaFija: 8.83 },
-        { desde: 447.63, hasta: 1019.05, porcentaje: 0.20, sobreExceso: 447.62, cuotaFija: 30.00 },
-        { desde: 1019.06, hasta: 999999.99, porcentaje: 0.30, sobreExceso: 1019.05, cuotaFija: 144.28 }
-      ]
-    },
-    SEMANAL: {
-      TRAMOS: [
-        { desde: 0.01, hasta: 137.50, porcentaje: 0.00, sobreExceso: 0.00, cuotaFija: 0.00 },
-        { desde: 137.51, hasta: 223.81, porcentaje: 0.10, sobreExceso: 137.50, cuotaFija: 4.42 },
-        { desde: 223.82, hasta: 509.52, porcentaje: 0.20, sobreExceso: 223.81, cuotaFija: 15.00 },
-        { desde: 509.53, hasta: 999999.99, porcentaje: 0.30, sobreExceso: 509.52, cuotaFija: 72.14 }
-      ]
-    },
-    DEDUCCION_EMPLEADOS_ASALARIADOS: 1600.00
-  };
 
-  /**
-   * Calcular renta según las nuevas tablas 2025
-   */
-  private calcularRenta2025(salarioDevengado: number, isssEmpleado: number, afpEmpleado: number, tipoPlanilla: string = 'mensual'): number {
-    try {
-      // Calcular salario gravado
-      const salarioGravado = this.calcularSalarioGravado2025(salarioDevengado, isssEmpleado, afpEmpleado, tipoPlanilla);
-
-      // Obtener tramos según tipo de planilla
-      const tramos = this.obtenerTramos2025(tipoPlanilla);
-
-      // Buscar tramo correspondiente
-      for (const tramo of tramos) {
-        if (salarioGravado >= tramo.desde && salarioGravado <= tramo.hasta) {
-          const exceso = salarioGravado - tramo.sobreExceso;
-          const retencion = tramo.cuotaFija + (exceso * tramo.porcentaje);
-          return Math.round(retencion * 100) / 100;
-        }
-      }
-
-      // Si no se encuentra tramo, usar el último
-      const ultimoTramo = tramos[tramos.length - 1];
-      const exceso = salarioGravado - ultimoTramo.sobreExceso;
-      const retencion = ultimoTramo.cuotaFija + (exceso * ultimoTramo.porcentaje);
-      return Math.round(retencion * 100) / 100;
-
-    } catch (error) {
-      console.error('Error calculando renta 2025:', error);
-      return 0;
-    }
-  }
-
-  /**
-   * Calcular salario gravado para efectos de renta
-   */
-  private calcularSalarioGravado2025(salarioDevengado: number, isssEmpleado: number, afpEmpleado: number, tipoPlanilla: string): number {
-    // Salario gravado = salario devengado - deducciones de seguridad social
-    let salarioGravado = salarioDevengado - isssEmpleado - afpEmpleado;
-
-    // Aplicar deducción de empleados asalariados si corresponde
-    // const salarioAnualEstimado = this.extrapolarSalarioAnual(salarioGravado, tipoPlanilla);
-
-    // if (salarioAnualEstimado <= 9100.00) {
-    //   const deduccionProporcional = this.calcularDeduccionProporcional(tipoPlanilla);
-    //   salarioGravado = Math.max(0, salarioGravado - deduccionProporcional);
-    // }
-
-    return Math.round(salarioGravado * 100) / 100;
-  }
-
-  /**
-   * Extrapolar salario a anual según tipo de planilla
-   */
-  private extrapolarSalarioAnual(salario: number, tipoPlanilla: string): number {
-    switch (tipoPlanilla?.toLowerCase()) {
-      case 'quincenal':
-        return salario * 24; // 24 quincenas al año
-      case 'semanal':
-        return salario * 52; // 52 semanas al año
-      default: // mensual
-        return salario * 12; // 12 meses al año
-    }
-  }
-
-  /**
-   * Calcular deducción proporcional según tipo de planilla
-   */
-  private calcularDeduccionProporcional(tipoPlanilla: string): number {
-    const deduccionAnual = 1600.00; // Usar constante del backend si está disponible
-
-    switch (tipoPlanilla?.toLowerCase()) {
-      case 'quincenal':
-        return Math.round((deduccionAnual / 24) * 100) / 100;
-      case 'semanal':
-        return Math.round((deduccionAnual / 52) * 100) / 100;
-      default: // mensual
-        return Math.round((deduccionAnual / 12) * 100) / 100;
-    }
-  }
-
-  /**
-   * Obtener tramos según tipo de planilla
-   */
-  private obtenerTramos2025(tipoPlanilla: string): any[] {
-    switch (tipoPlanilla) {
-      case 'quincenal':
-        return this.RENTA_2025.QUINCENAL.TRAMOS;
-      case 'semanal':
-        return this.RENTA_2025.SEMANAL.TRAMOS;
-      default: // mensual
-        return this.RENTA_2025.MENSUAL.TRAMOS;
-    }
-  }
-
-  /**
-   * Obtener información detallada del tramo aplicado
-   */
-  private obtenerInformacionTramo2025(salarioGravado: number, tipoPlanilla: string): any {
-    const tramos = this.obtenerTramos2025(tipoPlanilla);
-
-    for (let i = 0; i < tramos.length; i++) {
-      const tramo = tramos[i];
-      if (salarioGravado >= tramo.desde && salarioGravado <= tramo.hasta) {
-        return {
-          tramoNumero: i + 1,
-          desde: tramo.desde,
-          hasta: tramo.hasta,
-          porcentaje: tramo.porcentaje * 100, // Convertir a porcentaje
-          sobreExceso: tramo.sobreExceso,
-          cuotaFija: tramo.cuotaFija,
-          exceso: salarioGravado - tramo.sobreExceso,
-          retencionCalculada: this.calcularRenta2025(salarioGravado + (salarioGravado * 0.1025), salarioGravado * 0.03, salarioGravado * 0.0725, tipoPlanilla)
-        };
-      }
-    }
-
-    return null;
-  }
-
+  /** Cualquier edición dispara el cálculo del país en el backend (SV, CR y los que se agreguen). */
   public calcularTotalesUnificado() {
-    if (!this.detalleSeleccionado) {
+    if (!this.detalleSeleccionado?.id) {
       return;
     }
-    // Primero ejecutar el cálculo base (El Salvador)
-    this.calcularTotales();
-
-    // Si no es El Salvador, ejecutar cálculo adicional para conceptos dinámicos
-    if (!this.esElSalvador) {
-      this.actualizarDeduccionesCalculadas();
-    }
-  }
-
-  public calcularTotales() {
-    if (!this.detalleSeleccionado) {
-      return;
-    }
-
-    // Obtener valores base
-    const salarioBase = Number(this.detalleSeleccionado.salario_base) || 0;
-    const diasReferencia = this.getDiasReferenciaPlanilla();
-    const diasLaborados = Number(this.detalleSeleccionado.dias_laborados) || diasReferencia;
-    let horasExtra = Number(this.detalleSeleccionado.horas_extra) || 0;
-    const comisiones = Number(this.detalleSeleccionado.comisiones) || 0;
-    const bonificaciones = Number(this.detalleSeleccionado.bonificaciones) || 0;
-    const otrosIngresos = Number(this.detalleSeleccionado.otros_ingresos) || 0;
-    const abonos = Number(this.detalleSeleccionado.abonos) || 0;
-    const abonosSinRetencion = this.detalleSeleccionado.abonos_sin_retencion !== false;
-
-    // Obtener tipo de contrato
-    const tipoContrato = this.detalleSeleccionado.empleado?.tipo_contrato || 1;
-    const esPorObra = tipoContrato === 3;
-    const esServiciosProfesionales = tipoContrato === 4;
-
-    // Calcular salario devengado
-    let salarioDevengado = 0;
-    if (esPorObra) {
-      // Para Por obra, el salario_base ES el monto total ganado en este período
-      // NO se divide proporcionalmente
-      salarioDevengado = salarioBase;
-    } else if (esServiciosProfesionales) {
-      // Para Servicios Profesionales, el salario_base es MENSUAL
-      // Se divide según el tipo de planilla, pero NO usa días laborados
-      if (this.planilla.tipo_planilla === 'quincenal') {
-        salarioDevengado = salarioBase / 2;
-      } else if (this.planilla.tipo_planilla === 'semanal') {
-        salarioDevengado = salarioBase / 4.33;
-      } else {
-        salarioDevengado = salarioBase; // mensual
-      }
-    } else {
-      // Para empleados regulares, calcular proporcionalmente según días laborados del período
-      let salarioBaseAjustado = salarioBase;
-      if (this.planilla.tipo_planilla === 'quincenal') {
-        salarioBaseAjustado = salarioBase / 2;
-      } else if (this.planilla.tipo_planilla === 'semanal') {
-        salarioBaseAjustado = salarioBase / 4.33;
-      }
-      salarioDevengado = (salarioBaseAjustado / diasReferencia) * diasLaborados;
-    }
-    this.detalleSeleccionado.salario_devengado = Number(salarioDevengado.toFixed(2));
-
-    // Horas extra: servicios profesionales (tipo 4) no liquidan HE aquí; por obra (tipo 3) sí — relación laboral (C.T. art. 26, 169)
-    let montoHorasExtra = 0;
-    if (esServiciosProfesionales) {
-      horasExtra = 0;
-      this.detalleSeleccionado.horas_extra = 0;
-      this.detalleSeleccionado.monto_horas_extra = 0;
-      if (this.esElSalvador) {
-        this.detalleSeleccionado.detalle_horas_extra = this.getDetalleHorasExtraDefault();
-      }
-    } else if (this.esElSalvador) {
-      const dhe = this.getDetalleHorasExtraDesdeLista();
-      this.detalleSeleccionado.detalle_horas_extra = { diurna: dhe.diurna, nocturna: dhe.nocturna, dia_descanso: dhe.dia_descanso, dia_asueto: dhe.dia_asueto };
-      const lista = this.listaHorasExtraES || [];
-      const V = this.getValorHoraNormalES();
-      const diaDescansoDias = dhe.dia_descanso_dias ?? 0;
-      horasExtra = dhe.diurna + dhe.nocturna + dhe.dia_descanso + dhe.dia_asueto;
-      lista.forEach((fila) => { montoHorasExtra += this.getMontoFilaHoraExtra(fila); });
-      montoHorasExtra += diaDescansoDias * (8 * V); // día compensatorio remunerado (una vez por día de descanso trabajado)
-      this.detalleSeleccionado.horas_extra = Number(horasExtra.toFixed(2));
-    } else if (horasExtra > 0) {
-      const valorHoraNormal = this.getValorHoraNormalES();
-      montoHorasExtra = horasExtra * (valorHoraNormal * 1.25);
-    }
-    this.detalleSeleccionado.monto_horas_extra = Number(montoHorasExtra.toFixed(2));
-
-    // Calcular total de ingresos (incluye abonos)
-    const totalIngresos = salarioDevengado + montoHorasExtra + comisiones + bonificaciones + otrosIngresos + abonos;
-    this.detalleSeleccionado.total_ingresos = Number(totalIngresos.toFixed(2));
-
-    // Base para retenciones: si abonos son "sin retención", no entran en ISSS/AFP/Renta
-    const baseParaRetenciones = abonosSinRetencion ? totalIngresos - abonos : totalIngresos;
-
-    // Calcular deducciones (ISSS, AFP, Renta)
-    // Ambos tipos de contrato sin prestaciones (Por obra y Servicios Profesionales) no tienen ISSS/AFP
-    const esContratoSinPrestaciones = esPorObra || esServiciosProfesionales;
-
-    // Obtener configuración de descuentos del empleado
-    const configDescuentos = this.detalleSeleccionado.empleado?.configuracion_descuentos || {};
-    const aplicarAfp = configDescuentos.aplicar_afp !== false; // Por defecto true si no existe
-    const aplicarIsss = configDescuentos.aplicar_isss !== false; // Por defecto true si no existe
-
-    let isssEmpleado = 0;
-    let afpEmpleado = 0;
-    let isssPatronal = 0;
-    let afpPatronal = 0;
-
-    if (esContratoSinPrestaciones) {
-      // Sin deducciones de seguridad social para contratos sin prestaciones
-      isssEmpleado = 0;
-      afpEmpleado = 0;
-      isssPatronal = 0;
-      afpPatronal = 0;
-    } else {
-      // Para empleados regulares - verificar configuración del empleado (base = base para retenciones)
-      if (aplicarIsss) {
-        const topeIsss = PlanillaConstants.getTopeIsssPorPeriodo(this.planilla.tipo_planilla);
-        const baseISSSEmpleado = Math.min(baseParaRetenciones, topeIsss);
-        isssEmpleado = baseISSSEmpleado * 0.03;
-        isssPatronal = baseISSSEmpleado * 0.075;
-      } else {
-        // No aplicar ISSS si está desactivado en la configuración
-        isssEmpleado = 0;
-        isssPatronal = 0;
-      }
-
-      if (aplicarAfp) {
-        afpEmpleado = baseParaRetenciones * 0.0725;
-        afpPatronal = baseParaRetenciones * 0.0875;
-      } else {
-        // No aplicar AFP si está desactivado en la configuración
-        afpEmpleado = 0;
-        afpPatronal = 0;
-      }
-    }
-
-    this.detalleSeleccionado.isss_empleado = Number(isssEmpleado.toFixed(2));
-    this.detalleSeleccionado.afp_empleado = Number(afpEmpleado.toFixed(2));
-    this.detalleSeleccionado.isss_patronal = Number(isssPatronal.toFixed(2));
-    this.detalleSeleccionado.afp_patronal = Number(afpPatronal.toFixed(2));
-
-    // Calcular renta
-    let renta = 0;
-    if (esContratoSinPrestaciones) {
-      // 10% fijo para contratos sin prestaciones; se calcula sobre la base para retenciones
-      renta = baseParaRetenciones * 0.10;
-      this.detalleSeleccionado.renta = Number(renta.toFixed(2));
-    } else {
-      // Usar tablas de renta para empleados regulares (actualizarRenta usa total_ingresos; ajustamos antes)
-      this.actualizarRenta();
-      renta = Number(this.detalleSeleccionado.renta) || 0;
-    }
-
-    // Calcular otros descuentos
-    const prestamos = Number(this.detalleSeleccionado.prestamos) || 0;
-    const anticipos = Number(this.detalleSeleccionado.anticipos) || 0;
-    const otrosDescuentos = Number(this.detalleSeleccionado.otros_descuentos) || 0;
-    const descuentosJudiciales = Number(this.detalleSeleccionado.descuentos_judiciales) || 0;
-
-    const totalDescuentos = isssEmpleado + afpEmpleado + renta + prestamos + anticipos + otrosDescuentos + descuentosJudiciales;
-    this.detalleSeleccionado.total_descuentos = Number(totalDescuentos.toFixed(2));
-
-    const sueldoNeto = totalIngresos - totalDescuentos;
-    this.detalleSeleccionado.sueldo_neto = Number(sueldoNeto.toFixed(2));
-
-    // ❌ Ya no vuelvas a llamar actualizarRenta aquí
-
-    // Si no es El Salvador, actualizar deducciones dinámicas
-    if (!this.esElSalvador) {
-      this.actualizarDeduccionesCalculadas();
-    }
-    this.cdr.markForCheck();
-  }
-
-  /**
-   * Recalcula SOLO el sueldo neto sin recalcular deducciones de ley
-   * Usar cuando solo cambian préstamos, anticipos u otros descuentos manuales
-   */
-  public recalcularSueldoNeto() {
-    if (!this.detalleSeleccionado) {
-      return;
-    }
-
-    // Obtener valores actuales de deducciones de ley (YA calculadas, no recalcular)
-    const isssEmpleado = Number(this.detalleSeleccionado.isss_empleado) || 0;
-    const afpEmpleado = Number(this.detalleSeleccionado.afp_empleado) || 0;
-    const renta = Number(this.detalleSeleccionado.renta) || 0;
-
-    // Obtener descuentos manuales (estos SÍ pueden haber cambiado)
-    const prestamos = Number(this.detalleSeleccionado.prestamos) || 0;
-    const anticipos = Number(this.detalleSeleccionado.anticipos) || 0;
-    const otrosDescuentos = Number(this.detalleSeleccionado.otros_descuentos) || 0;
-    const descuentosJudiciales = Number(this.detalleSeleccionado.descuentos_judiciales) || 0;
-
-    // Recalcular total de descuentos
-    const totalDescuentos = isssEmpleado + afpEmpleado + renta + prestamos + anticipos + otrosDescuentos + descuentosJudiciales;
-    this.detalleSeleccionado.total_descuentos = Number(totalDescuentos.toFixed(2));
-
-    // Recalcular sueldo neto
-    const totalIngresos = Number(this.detalleSeleccionado.total_ingresos) || 0;
-    const sueldoNeto = totalIngresos - totalDescuentos;
-    this.detalleSeleccionado.sueldo_neto = Number(sueldoNeto.toFixed(2));
-    this.cdr.markForCheck();
+    this.calculandoDetalle = true;
+    this.recalculoDetalle$.next();
   }
 
 
@@ -1596,169 +1234,6 @@ export class PlanillaDetalleComponent implements OnInit {
   public esContratoSinPrestaciones(): boolean {
     const tipoContrato = this.detalleSeleccionado?.empleado?.tipo_contrato;
     return tipoContrato === 3 || tipoContrato === 4;
-  }
-
-  // Agregar después de calcularTotales()
-  private actualizarRenta() {
-    if (!this.detalleSeleccionado) return;
-
-    const totalIngresos = Number(this.detalleSeleccionado.total_ingresos) || 0;
-    const abonos = Number(this.detalleSeleccionado.abonos) || 0;
-    const abonosSinRetencion = this.detalleSeleccionado.abonos_sin_retencion !== false;
-    const baseParaRenta = abonosSinRetencion ? totalIngresos - abonos : totalIngresos;
-
-    const isssEmpleado = Number(this.detalleSeleccionado.isss_empleado) || 0;
-    const afpEmpleado = Number(this.detalleSeleccionado.afp_empleado) || 0;
-
-    const renta = this.calcularRenta2025(baseParaRenta, isssEmpleado, afpEmpleado, this.planilla.tipo_planilla);
-    this.detalleSeleccionado.renta = renta;
-  }
-
-  private calcularRentaConConstantesBackend(totalIngresos: number, isssEmpleado: number, afpEmpleado: number, tipoPlanilla: string): number {
-    try {
-
-      // console.log(tipoPlanilla);
-      // Calcular salario gravado
-      const salarioGravado = this.calcularSalarioGravadoCorregido(totalIngresos, isssEmpleado, afpEmpleado, tipoPlanilla);
-
-      // Usar las constantes que ya tienes del backend
-      const constants = PlanillaConstants.constants;
-      if (!constants) {
-        console.error('No se encontraron constantes del backend');
-        return 0;
-      }
-
-      // Obtener tramos según tipo de planilla desde las constantes del backend
-      let tramos = [];
-      switch (tipoPlanilla?.toLowerCase()) {
-        case 'quincenal':
-          tramos = [
-            {
-              desde: constants.RENTA_QUINCENAL_TRAMO_1_DESDE,
-              hasta: constants.RENTA_QUINCENAL_TRAMO_1_HASTA,
-              porcentaje: constants.RENTA_QUINCENAL_TRAMO_1_PORCENTAJE,
-              sobreExceso: constants.RENTA_QUINCENAL_TRAMO_1_SOBRE_EXCESO,
-              cuotaFija: constants.RENTA_QUINCENAL_TRAMO_1_CUOTA_FIJA
-            },
-            {
-              desde: constants.RENTA_QUINCENAL_TRAMO_2_DESDE,
-              hasta: constants.RENTA_QUINCENAL_TRAMO_2_HASTA,
-              porcentaje: constants.RENTA_QUINCENAL_TRAMO_2_PORCENTAJE,
-              sobreExceso: constants.RENTA_QUINCENAL_TRAMO_2_SOBRE_EXCESO,
-              cuotaFija: constants.RENTA_QUINCENAL_TRAMO_2_CUOTA_FIJA
-            },
-            {
-              desde: constants.RENTA_QUINCENAL_TRAMO_3_DESDE,
-              hasta: constants.RENTA_QUINCENAL_TRAMO_3_HASTA,
-              porcentaje: constants.RENTA_QUINCENAL_TRAMO_3_PORCENTAJE,
-              sobreExceso: constants.RENTA_QUINCENAL_TRAMO_3_SOBRE_EXCESO,
-              cuotaFija: constants.RENTA_QUINCENAL_TRAMO_3_CUOTA_FIJA
-            },
-            {
-              desde: constants.RENTA_QUINCENAL_TRAMO_4_DESDE,
-              hasta: constants.RENTA_QUINCENAL_TRAMO_4_HASTA,
-              porcentaje: constants.RENTA_QUINCENAL_TRAMO_4_PORCENTAJE,
-              sobreExceso: constants.RENTA_QUINCENAL_TRAMO_4_SOBRE_EXCESO,
-              cuotaFija: constants.RENTA_QUINCENAL_TRAMO_4_CUOTA_FIJA
-            }
-          ];
-          break;
-        case 'semanal':
-          tramos = [
-            {
-              desde: constants.RENTA_SEMANAL_TRAMO_1_DESDE,
-              hasta: constants.RENTA_SEMANAL_TRAMO_1_HASTA,
-              porcentaje: constants.RENTA_SEMANAL_TRAMO_1_PORCENTAJE,
-              sobreExceso: constants.RENTA_SEMANAL_TRAMO_1_SOBRE_EXCESO,
-              cuotaFija: constants.RENTA_SEMANAL_TRAMO_1_CUOTA_FIJA
-            },
-            {
-              desde: constants.RENTA_SEMANAL_TRAMO_2_DESDE,
-              hasta: constants.RENTA_SEMANAL_TRAMO_2_HASTA,
-              porcentaje: constants.RENTA_SEMANAL_TRAMO_2_PORCENTAJE,
-              sobreExceso: constants.RENTA_SEMANAL_TRAMO_2_SOBRE_EXCESO,
-              cuotaFija: constants.RENTA_SEMANAL_TRAMO_2_CUOTA_FIJA
-            },
-            {
-              desde: constants.RENTA_SEMANAL_TRAMO_3_DESDE,
-              hasta: constants.RENTA_SEMANAL_TRAMO_3_HASTA,
-              porcentaje: constants.RENTA_SEMANAL_TRAMO_3_PORCENTAJE,
-              sobreExceso: constants.RENTA_SEMANAL_TRAMO_3_SOBRE_EXCESO,
-              cuotaFija: constants.RENTA_SEMANAL_TRAMO_3_CUOTA_FIJA
-            },
-            {
-              desde: constants.RENTA_SEMANAL_TRAMO_4_DESDE,
-              hasta: constants.RENTA_SEMANAL_TRAMO_4_HASTA,
-              porcentaje: constants.RENTA_SEMANAL_TRAMO_4_PORCENTAJE,
-              sobreExceso: constants.RENTA_SEMANAL_TRAMO_4_SOBRE_EXCESO,
-              cuotaFija: constants.RENTA_SEMANAL_TRAMO_4_CUOTA_FIJA
-            }
-          ];
-          break;
-        default: // mensual
-          tramos = [
-            {
-              desde: constants.RENTA_MENSUAL_TRAMO_1_DESDE,
-              hasta: constants.RENTA_MENSUAL_TRAMO_1_HASTA,
-              porcentaje: constants.RENTA_MENSUAL_TRAMO_1_PORCENTAJE,
-              sobreExceso: constants.RENTA_MENSUAL_TRAMO_1_SOBRE_EXCESO,
-              cuotaFija: constants.RENTA_MENSUAL_TRAMO_1_CUOTA_FIJA
-            },
-            {
-              desde: constants.RENTA_MENSUAL_TRAMO_2_DESDE,
-              hasta: constants.RENTA_MENSUAL_TRAMO_2_HASTA,
-              porcentaje: constants.RENTA_MENSUAL_TRAMO_2_PORCENTAJE,
-              sobreExceso: constants.RENTA_MENSUAL_TRAMO_2_SOBRE_EXCESO,
-              cuotaFija: constants.RENTA_MENSUAL_TRAMO_2_CUOTA_FIJA
-            },
-            {
-              desde: constants.RENTA_MENSUAL_TRAMO_3_DESDE,
-              hasta: constants.RENTA_MENSUAL_TRAMO_3_HASTA,
-              porcentaje: constants.RENTA_MENSUAL_TRAMO_3_PORCENTAJE,
-              sobreExceso: constants.RENTA_MENSUAL_TRAMO_3_SOBRE_EXCESO,
-              cuotaFija: constants.RENTA_MENSUAL_TRAMO_3_CUOTA_FIJA
-            },
-            {
-              desde: constants.RENTA_MENSUAL_TRAMO_4_DESDE,
-              hasta: constants.RENTA_MENSUAL_TRAMO_4_HASTA,
-              porcentaje: constants.RENTA_MENSUAL_TRAMO_4_PORCENTAJE,
-              sobreExceso: constants.RENTA_MENSUAL_TRAMO_4_SOBRE_EXCESO,
-              cuotaFija: constants.RENTA_MENSUAL_TRAMO_4_CUOTA_FIJA
-            }
-          ];
-          break;
-      }
-
-      // Buscar tramo correspondiente y calcular retención
-      for (const tramo of tramos) {
-        if (salarioGravado >= tramo.desde && salarioGravado <= tramo.hasta) {
-          const exceso = Math.max(0, salarioGravado - tramo.sobreExceso);
-          const retencion = tramo.cuotaFija + (exceso * tramo.porcentaje);
-          return Math.round(retencion * 100) / 100;
-        }
-      }
-
-      return 0;
-
-    } catch (error) {
-      console.error('Error calculando renta con constantes del backend:', error);
-      return 0;
-    }
-  }
-
-  private calcularSalarioGravadoCorregido(totalIngresos: number, isssEmpleado: number, afpEmpleado: number, tipoPlanilla: string): number {
-    // Salario gravado = total ingresos - deducciones de seguridad social
-    let salarioGravado = totalIngresos - isssEmpleado - afpEmpleado;
-
-    // Aplicar deducción de empleados asalariados si corresponde
-    // const salarioAnualEstimado = this.extrapolarSalarioAnual(salarioGravado, tipoPlanilla);
-
-    // if (salarioAnualEstimado <= 9100.00) {
-    //   const deduccionProporcional = this.calcularDeduccionProporcional(tipoPlanilla);
-    //   salarioGravado = Math.max(0, salarioGravado - deduccionProporcional);
-    // }
-
-    return Math.round(salarioGravado * 100) / 100;
   }
 
 
