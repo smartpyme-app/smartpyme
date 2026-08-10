@@ -68,7 +68,7 @@ class ClientesPersonas implements ToModel, WithHeadingRow, WithValidation, WithC
     public function prepareForValidation(array $row, $index): array
     {
         $stringKeys = [
-            'nombre', 'apellido', 'codigo_de_cliente', 'codigo_cliente', 'dui', 'nit', 'direccion',
+            'nombre', 'apellido', 'codigo_de_cliente', 'codigo_cliente', 'dui', 'nit', 'rtn', 'direccion',
             'departamento', 'cod_departamento', 'distrito', 'cod_distrito', 'municipio', 'cod_municipio',
             'telefono', 'tipo_contribuyente', 'pais', 'documento_identidad',
             'provincia', 'estado', 'ciudad', 'n_de_documento',
@@ -117,7 +117,7 @@ class ClientesPersonas implements ToModel, WithHeadingRow, WithValidation, WithC
             }
             $documentoIdentidad = ($duiValor !== null && $duiValor !== '') ? (string) $duiValor : null;
         } else {
-            $documentoIdentidad = $row['dui'] ?? $row['documento_identidad'] ?? $row['n. de documento'] ?? $row['n_de_documento'] ?? null;
+            $documentoIdentidad = $row['dui'] ?? $row['rtn'] ?? $row['documento_identidad'] ?? $row['n. de documento'] ?? $row['n_de_documento'] ?? null;
         }
 
         ++$this->numRows;
@@ -134,7 +134,7 @@ class ClientesPersonas implements ToModel, WithHeadingRow, WithValidation, WithC
         $cliente->tipo = 'Persona';
         $cliente->tipo_contribuyente = $row['tipo_contribuyente'] ?? 'Pequeño';
         $cliente->dui = $documentoIdentidad;
-        $cliente->nit = $row['nit'] ?? null;
+        $cliente->nit = $row['rtn'] ?? $row['nit'] ?? null;
         $cliente->direccion = $row['direccion'] ?? null;
 
         if ($this->esElSalvador) {
