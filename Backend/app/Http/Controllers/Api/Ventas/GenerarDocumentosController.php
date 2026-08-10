@@ -214,7 +214,7 @@ class GenerarDocumentosController extends Controller
         }
 
 //        factura
-        if ($documento->nombre == 'Factura') {
+        if ($documento->nombre == 'Factura' || $documento->nombre == 'Factura Electronica') {
             $cliente = Cliente::withoutGlobalScope('empresa')->find($venta->id_cliente);
 
             $empresa = Empresa::findOrfail(Auth::user()->id_empresa);
