@@ -181,8 +181,9 @@ final class MonedaPaisService
             return $manual;
         }
 
+        $paisCode = FacturacionElectronicaCountryResolver::resolveCodigoPaisFe($empresa);
         throw new RuntimeException(
-            'No hay tipo de cambio configurado para '.$FacturacionElectronicaCountryResolver::resolveCodigoPaisFe($empresa)
+            'No hay tipo de cambio configurado para '.$paisCode
             .' (fuente='.$fuente.'). Configure rate_manual o la API del país.'
         );
     }
