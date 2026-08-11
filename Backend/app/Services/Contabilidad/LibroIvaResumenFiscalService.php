@@ -208,17 +208,17 @@ final class LibroIvaResumenFiscalService
     }
 
     /**
-     * Monto en colones de un documento CR (ventas/compras/gastos/devoluciones_venta): usa
-     * `crc_equivalent_total`/`crc_equivalent_iva` (Task 2) cuando existen; si no (p. ej.
+     * Monto en moneda funcional de un documento CR (ventas/compras/gastos/devoluciones_venta): usa
+     * `equivalent_total`/`equivalent_iva` cuando existen; si no (p. ej.
      * `devoluciones_compra`, que aún no tiene columnas de moneda), cae al monto nativo × TC
-     * del documento (§11 spec — CRC o moneda sin columna ⇒ TC 1).
+     * del documento (§11 spec — moneda funcional o moneda sin columna ⇒ TC 1).
      */
     private function crcMontoLibroCr(object $model, string $campoNativo): float
     {
-        $campoCrc = $campoNativo === 'total' ? 'crc_equivalent_total' : 'crc_equivalent_iva';
-        $crc = method_exists($model, 'getAttribute') ? $model->getAttribute($campoCrc) : null;
-        if ($crc !== null) {
-            return (float) $crc;
+        $campoEq = $campoNativo === 'total' ? 'equivalent_total' : 'equivalent_iva';
+        $eq = method_exists($model, 'getAttribute') ? $model->getAttribute($campoEq) : null;
+        if ($eq !== null) {
+            return (float) $eq;
         }
 
         return (float) ($model->{$campoNativo} ?? 0) * $this->tasaCambioLibroCr($model);

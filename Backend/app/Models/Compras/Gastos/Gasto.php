@@ -64,16 +64,16 @@ class Gasto extends AuditableModel {
         'currency_code',
         'exchange_rate',
         'exchange_rate_date',
-        'crc_equivalent_total',
-        'crc_equivalent_iva',
+        'equivalent_total',
+        'equivalent_iva',
     ];
 
     protected $casts = [
         'otros_impuestos' => 'json',
         'exchange_rate' => 'decimal:5',
         'exchange_rate_date' => 'date',
-        'crc_equivalent_total' => 'decimal:5',
-        'crc_equivalent_iva' => 'decimal:5',
+        'equivalent_total' => 'decimal:5',
+        'equivalent_iva' => 'decimal:5',
     ];
 
     protected $appends = ['nombre_usuario', 'nombre_proveedor', 'nombre_categoria', 'nombre_sucursal', 'nombre_proyecto', 'id_departamento','nombre_departamento', 'total_otros_impuestos', 'saldo'];

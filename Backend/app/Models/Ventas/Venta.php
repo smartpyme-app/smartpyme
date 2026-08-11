@@ -110,8 +110,8 @@ class Venta extends AuditableModel {
         'currency_code',
         'exchange_rate',
         'exchange_rate_date',
-        'crc_equivalent_total',
-        'crc_equivalent_iva',
+        'equivalent_total',
+        'equivalent_iva',
     );
 
     protected $hidden = [
@@ -141,8 +141,8 @@ class Venta extends AuditableModel {
         'fe_cr_exoneracion' => 'array',
         'exchange_rate' => 'decimal:5',
         'exchange_rate_date' => 'date',
-        'crc_equivalent_total' => 'decimal:5',
-        'crc_equivalent_iva' => 'decimal:5',
+        'equivalent_total' => 'decimal:5',
+        'equivalent_iva' => 'decimal:5',
     ];
 
     protected static function boot()

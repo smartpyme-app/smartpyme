@@ -8,7 +8,7 @@ use Carbon\Carbon;
 use RuntimeException;
 
 /**
- * Resuelve moneda, tipo de cambio y equivalentes CRC de un documento (venta/compra/gasto) CR
+ * Resuelve moneda, tipo de cambio y equivalentes en moneda funcional del documento CR
  * antes de persistirlo. Fuente de TC: BCCR vía CostaRicaTipoCambioService; sin fallback inventado.
  *
  * Spec: Docs/superpowers/specs/2026-08-03-cr-multimoneda-design.md §7.4
@@ -24,8 +24,8 @@ final class DocumentoMoneda
         'currency_code',
         'exchange_rate',
         'exchange_rate_date',
-        'crc_equivalent_total',
-        'crc_equivalent_iva',
+        'equivalent_total',
+        'equivalent_iva',
     ];
 
     private const MONEDAS_SOPORTADAS = [self::MONEDA_CRC, self::MONEDA_USD];
@@ -38,7 +38,7 @@ final class DocumentoMoneda
      * @param  Empresa  $empresa  Reservado para validaciones futuras (ej. inmutabilidad post-emisión, Task 4/5).
      *                            El flag `facturacion_fe.permitir_editar_tipo_cambio` (Task 3, SP-2097) ya se
      *                            resuelve en el caller (solo ventas, pre-emisión) y se pasa como $allowManualRate.
-     * @return array{currency_code: string, exchange_rate: float, exchange_rate_date: string, crc_equivalent_total: float, crc_equivalent_iva: float}
+     * @return array{currency_code: string, exchange_rate: float, exchange_rate_date: string, equivalent_total: float, equivalent_iva: float}
      */
     public function resolve(array $input, Empresa $empresa, \DateTimeInterface $fechaDoc, bool $allowManualRate = false): array
     {
@@ -56,8 +56,8 @@ final class DocumentoMoneda
                 'currency_code' => self::MONEDA_CRC,
                 'exchange_rate' => 1.0,
                 'exchange_rate_date' => $fecha->toDateString(),
-                'crc_equivalent_total' => round($total, 5),
-                'crc_equivalent_iva' => round($iva, 5),
+                'equivalent_total' => round($total, 5),
+                'equivalent_iva' => round($iva, 5),
             ];
         }
 
@@ -85,8 +85,8 @@ final class DocumentoMoneda
             'currency_code' => self::MONEDA_USD,
             'exchange_rate' => $rate,
             'exchange_rate_date' => $fecha->toDateString(),
-            'crc_equivalent_total' => round($montosYaEnCrc ? $total : $total * $rate, 5),
-            'crc_equivalent_iva' => round($montosYaEnCrc ? $iva : $iva * $rate, 5),
+            'equivalent_total' => round($montosYaEnCrc ? $total : $total * $rate, 5),
+            'equivalent_iva' => round($montosYaEnCrc ? $iva : $iva * $rate, 5),
         ];
     }
 }

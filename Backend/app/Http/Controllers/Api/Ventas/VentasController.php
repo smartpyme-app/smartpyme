@@ -715,8 +715,8 @@ class VentasController extends Controller
                 $consigna->exchange_rate = $venta->exchange_rate ?? 1;
                 $consigna->exchange_rate_date = $venta->exchange_rate_date;
                 $rate = (float) ($consigna->exchange_rate ?: 1);
-                $consigna->crc_equivalent_total = round((float) $consigna->total * $rate, 5);
-                $consigna->crc_equivalent_iva = round((float) $consigna->iva * $rate, 5);
+                $consigna->equivalent_total = round((float) $consigna->total * $rate, 5);
+                $consigna->equivalent_iva = round((float) $consigna->iva * $rate, 5);
                 $consigna->save();
 
                 foreach ($request->detalles as $detalle) {

@@ -586,8 +586,8 @@ class DevolucionVentasController extends Controller
         $devolucion->exchange_rate = $rate;
         $devolucion->exchange_rate_date = $ventaOrigen->exchange_rate_date
             ?? ($ventaOrigen->fecha ? Carbon::parse($ventaOrigen->fecha)->toDateString() : null);
-        $devolucion->crc_equivalent_total = round((float) $devolucion->total * $rate, 5);
-        $devolucion->crc_equivalent_iva = round((float) $devolucion->iva * $rate, 5);
+        $devolucion->equivalent_total = round((float) $devolucion->total * $rate, 5);
+        $devolucion->equivalent_iva = round((float) $devolucion->iva * $rate, 5);
     }
 
 }

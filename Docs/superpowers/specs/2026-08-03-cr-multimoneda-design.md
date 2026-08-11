@@ -98,11 +98,11 @@ Resolver TC:
 Persistir documento:
   total/iva/líneas = nativos
   currency_code, exchange_rate, exchange_rate_date
-  crc_equivalent_* = nativo × rate (o = nativo si CRC)
+  equivalent_* = nativo × rate (o = nativo si moneda funcional)
         │
         ├── Emisión FE → mapper lee documento → XML CodigoMoneda/TipoCambio
         │                 (TC congelado; post-emisión no editable)
-        └── Reportes/dash/asientos CR → suman crc_equivalent_*
+        └── Reportes/dash/asientos CR → suman equivalent_*
 ```
 
 ### 6.2 Componentes nuevos / tocados
@@ -141,8 +141,8 @@ Agregar a **ventas**, **compras**, **gastos** (y tabla de devoluciones usada en 
 | `currency_code` | char(3) / enum | `CRC` \| `USD`; default `CRC`; obligatorio |
 | `exchange_rate` | decimal(18,5) | CRC: `1`; USD: BCCR o editado (venta + flag) |
 | `exchange_rate_date` | date | Fecha del hecho generador / TC aplicado |
-| `crc_equivalent_total` | decimal(18,5) | `total × rate` (CRC: = `total`) |
-| `crc_equivalent_iva` | decimal(18,5) | `iva × rate` (CRC: = `iva`) |
+| `equivalent_total` | decimal(18,5) | `total × rate` (moneda funcional: = `total`); antes `crc_equivalent_total` |
+| `equivalent_iva` | decimal(18,5) | `iva × rate` (moneda funcional: = `iva`); antes `crc_equivalent_iva` |
 
 Opcional útil (auditoría): `exchange_rate_source` = `bccr` \| `manual` \| `xml` — no bloqueante en Fase 1; si se omite, se infiere (manual solo si flag on y rate ≠ BCCR del día).
 
@@ -153,7 +153,7 @@ Opcional útil (auditoría): `exchange_rate_source` = `bccr` \| `manual` \| `xml
 - `currency_code = CRC`
 - `exchange_rate = 1`
 - `exchange_rate_date = fecha del documento` (o `created_at` date)
-- `crc_equivalent_total = total`, `crc_equivalent_iva = iva`
+- `equivalent_total = total`, `equivalent_iva = iva`
 
 ### 7.3 Config empresa
 
@@ -167,7 +167,7 @@ Opcional útil (auditoría): `exchange_rate_source` = `bccr` \| `manual` \| `xml
 - Si `CRC`: forzar `exchange_rate = 1`, equivalents = nativos.
 - Si `USD` en **venta**:
   - Default: `exchange_rate` = BCCR de `exchange_rate_date`; **ignorar** rate del body si flag off.
-  - Si flag on: aceptar rate del body si `> 0` y `≠ 1`; recalcular `crc_equivalent_*`.
+  - Si flag on: aceptar rate del body si `> 0` y `≠ 1`; recalcular `equivalent_*`.
   - Sin BCCR y flag off → 422. Sin rate válido y flag on → 422.
 - Si `USD` en **compra/gasto**:
   - Manual: rate = BCCR (cliente no puede override en Fase 1).
@@ -253,7 +253,7 @@ Factura de prueba USD aceptada en sandbox Hacienda sin rechazo por moneda/TC (ca
 
 ### 10.3 Listados / dashboards
 
-Montos agregados en CRC (`crc_equivalent_*`); el detalle puede mostrar nativo.
+Montos agregados en moneda funcional (`equivalent_*`); el detalle puede mostrar nativo.
 
 WhatsApp/móvil futuros: misma regla de API (servidor resuelve TC; honra flag en ventas).
 
@@ -261,7 +261,7 @@ WhatsApp/móvil futuros: misma regla de API (servidor resuelve TC; honra flag en
 
 ## 11. Contabilidad y reportería CR
 
-- `ReporteDetalleIvaCrService` y resúmenes que hoy suman `venta.total` / `iva` deben usar `crc_equivalent_total` / `crc_equivalent_iva` (o fallback: si null y CRC, usar nativo).
+- `ReporteDetalleIvaCrService` y resúmenes que hoy suman `venta.total` / `iva` deben usar `equivalent_total` / `equivalent_iva` (o fallback: si null y moneda funcional, usar nativo).
 - Dashboards financieros CR: mismos campos.
 - Asientos que se generen desde ventas/compras/gastos en CR deben asentar el **equivalente CRC** (Fase 1 no introduce P&L cambiario).
 - Export detalle IVA: `cod_moneda` / `tipo_cambio` desde el documento real, no hardcode CRC/1.

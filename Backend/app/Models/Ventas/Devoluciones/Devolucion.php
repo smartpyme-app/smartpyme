@@ -38,8 +38,8 @@ class Devolucion extends Model {
         'currency_code',
         'exchange_rate',
         'exchange_rate_date',
-        'crc_equivalent_total',
-        'crc_equivalent_iva',
+        'equivalent_total',
+        'equivalent_iva',
     );
 
     protected $appends = ['nombre_cliente', 'nombre_usuario', 'nombre_documento'];
@@ -47,8 +47,8 @@ class Devolucion extends Model {
         'enable' => 'boolean',
         'exchange_rate' => 'decimal:5',
         'exchange_rate_date' => 'date',
-        'crc_equivalent_total' => 'decimal:5',
-        'crc_equivalent_iva' => 'decimal:5',
+        'equivalent_total' => 'decimal:5',
+        'equivalent_iva' => 'decimal:5',
     ];
 
     protected static function boot()
