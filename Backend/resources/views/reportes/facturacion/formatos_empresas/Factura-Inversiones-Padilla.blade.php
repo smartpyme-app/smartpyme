@@ -234,6 +234,12 @@
     $descReb = (float) ($venta->descuento ?? $descuentoLineas);
     $formaPagoLabel = trim((string) ($venta->forma_pago ?: $venta->condicion ?: 'Transferencia bancaria'));
     $cambio = (float) ($venta->cambio ?? 0);
+    // Multimoneda HN: total en HNL; si currency_code=USD, DLLS = total / exchange_rate.
+    $currencyCode = strtoupper(trim((string) ($venta->currency_code ?? 'HNL')));
+    $tasaCambio = (float) ($venta->exchange_rate ?? 0);
+    $mostrarUsd = $currencyCode === 'USD' && $tasaCambio > 0 && abs($tasaCambio - 1.0) > 0.00001;
+    $totalUsd = $mostrarUsd ? round((float) $venta->total / $tasaCambio, 2) : null;
+    $tasaCambioFmt = $mostrarUsd ? rtrim(rtrim(number_format($tasaCambio, 5, '.', ''), '0'), '.') : null;
     $totalLetras = strtoupper(trim((string) $dolares) . ' LEMPIRAS CON ' . trim((string) $centavos) . ' CENTAVOS');
     $observaciones = trim((string) ($venta->observaciones ?? ''));
 
@@ -371,6 +377,16 @@
                         <td class="lbl">TOTAL A PAGAR</td>
                         <td class="val">L{{ number_format($venta->total, 2) }}</td>
                     </tr>
+                    @if ($mostrarUsd)
+                        <tr>
+                            <td class="lbl">DLLS.</td>
+                            <td class="val">${{ number_format($totalUsd, 2) }}</td>
+                        </tr>
+                        <tr>
+                            <td class="lbl">Tasa de cambio</td>
+                            <td class="val">L{{ $tasaCambioFmt }}</td>
+                        </tr>
+                    @endif
                     <tr>
                         <td class="lbl">{{ $formaPagoLabel }}</td>
                         <td class="val">L{{ number_format($venta->total, 2) }}</td>
@@ -409,7 +425,9 @@
                     <li>FICOHSA: 200015533292 Dólares</li>
                 </ul>
             </li>
-            <li>Si el pago se realiza en lempiras, se debe realizar a tasa de cambio L. 26.9449</li>
+            @if ($mostrarUsd)
+                <li>Si el pago se realiza en lempiras, se debe realizar a tasa de cambio L. {{ $tasaCambioFmt }}</li>
+            @endif
             <li>Se debe enviar comprobante de pago al correo: <a href="mailto:sac@bigtechnologyhn.com">sac@bigtechnologyhn.com</a></li>
             <li>Si realiza retención debe compartirlo con su comprobante de pago</li>
             <li>Fecha de vencimiento se detalla en factura.</li>
