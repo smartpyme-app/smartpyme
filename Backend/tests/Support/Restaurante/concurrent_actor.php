@@ -10,6 +10,7 @@
 use App\Http\Controllers\Api\Restaurante\ComandaController;
 use App\Http\Controllers\Api\Restaurante\OrdenDetalleController;
 use App\Http\Controllers\Api\Restaurante\PedidoRestauranteController;
+use App\Http\Controllers\Api\Restaurante\PreCuentaController;
 use App\Http\Controllers\Api\Restaurante\SesionMesaController;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -128,6 +129,21 @@ try {
             );
             $req->setUserResolver(fn () => $user);
             $resp = app(PedidoRestauranteController::class)->confirmar($req, (int) $input['pedido_id']);
+            $result = [
+                'ok' => $resp->getStatusCode() < 400,
+                'status' => $resp->getStatusCode(),
+                'body' => json_decode($resp->getContent(), true),
+            ];
+            break;
+
+        case 'marcar_facturada':
+            $req = Request::create(
+                '/api/restaurante/pre-cuentas/' . (int) $input['pre_cuenta_id'] . '/marcar-facturada',
+                'PUT',
+                ['factura_id' => (int) $input['factura_id']]
+            );
+            $req->setUserResolver(fn () => $user);
+            $resp = app(PreCuentaController::class)->marcarFacturada($req, (int) $input['pre_cuenta_id']);
             $result = [
                 'ok' => $resp->getStatusCode() < 400,
                 'status' => $resp->getStatusCode(),
