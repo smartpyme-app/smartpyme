@@ -23,6 +23,13 @@ class User extends Authenticatable implements JWTSubject
     use HasFactory, Notifiable;
     use HasRoles;
 
+    /**
+     * Roles y permisos viven solo con guard 'web'. Sin esto, el middleware
+     * permission: falla en rutas API porque auth:api cambia auth.defaults.guard
+     * a 'api' y Spatie busca los permisos bajo ese guard.
+     */
+    protected $guard_name = 'web';
+
 
     public function sendPasswordResetNotification($token)
     {

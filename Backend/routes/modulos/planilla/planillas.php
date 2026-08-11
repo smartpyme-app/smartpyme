@@ -20,6 +20,7 @@ Route::group(['prefix' => 'planillas', 'middleware' => ['jwt.auth']], function (
 
     Route::controller(PlanillaDetalleController::class)->group(function () {
         Route::post('detalles/editar/{id}', 'update')->middleware('permission:planilla.registros.editar');
+        Route::post('detalles/previsualizar/{id}', 'previsualizar')->middleware('permission:planilla.registros.editar');
         Route::post('detalles/retirar/{id}', 'retirar')->middleware('permission:planilla.registros.editar');
         Route::post('detalles/incluir/{id}', 'incluir')->middleware('permission:planilla.registros.editar');
     });
@@ -44,6 +45,9 @@ Route::group(['prefix' => 'planillas', 'middleware' => ['jwt.auth']], function (
         Route::get('descuentos-patronales/{id}', 'obtenerDescuentosPatronales')->middleware('permission:planilla.registros.ver');
         Route::get('detalles/exportar', 'exportarDetallesPlanilla')->middleware('permission:planilla.registros.ver');
         Route::get('plantilla-importacion', 'descargarPlantilla')->middleware('permission:planilla.registros.ver');
+        Route::get('{id}/reporte-ccss', 'reporteCCSS')->middleware('permission:planilla.registros.ver');
+        Route::get('{id}/reporte-d138', 'reporteD138')->middleware('permission:planilla.registros.ver');
+        Route::get('{id}/costo-patronal', 'reporteCostoPatronal')->middleware('permission:planilla.registros.ver');
     });
 
     Route::controller(PlanillaImportController::class)->group(function () {

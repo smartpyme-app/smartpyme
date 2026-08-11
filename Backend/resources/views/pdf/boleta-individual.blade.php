@@ -58,45 +58,80 @@
             <th colspan="2">Ingresos</th>
             <th colspan="2">Deducciones</th>
         </tr>
-        <tr>
-            <td>Salario Base</td>
-            <td class="monto">{{ $simbolo }}{{ number_format($detalle->salario_base, 2) }}</td>
-            <td>ISSS</td>
-            <td class="monto">{{ $simbolo }}{{ number_format($detalle->isss_empleado, 2) }}</td>
-        </tr>
-        <tr>
-            <td>Horas Extra</td>
-            <td class="monto">{{ $simbolo }}{{ number_format($detalle->monto_horas_extra, 2) }}</td>
-            <td>AFP</td>
-            <td class="monto">{{ $simbolo }}{{ number_format($detalle->afp_empleado, 2) }}</td>
-        </tr>
-        <tr>
-            <td>Comisiones</td>
-            <td class="monto">{{ $simbolo }}{{ number_format($detalle->comisiones, 2) }}</td>
-            <td>Renta</td>
-            <td class="monto">{{ $simbolo }}{{ number_format($detalle->renta, 2) }}</td>
-        </tr>
-        <tr>
-            <td>Bonificaciones</td>
-            <td class="monto">{{ $simbolo }}{{ number_format($detalle->bonificaciones, 2) }}</td>
-            <td>Préstamos</td>
-            <td class="monto">{{ $simbolo }}{{ number_format($detalle->prestamos, 2) }}</td>
-           
-        </tr>
-        @if($detalle->anticipos > 0)
+        @if(($detalle->pais_configuracion ?? 'SV') === 'CR')
+            @php
+                $ccssVal = $detalle->conceptos_personalizados['ccss_empleado']['valor'] ?? 0;
+            @endphp
             <tr>
-                <td></td>
-                <td class="monto"></td>
+                <td>Salario Base</td>
+                <td class="monto">{{ $simbolo }}{{ number_format($detalle->salario_base, 2) }}</td>
+                <td>CCSS Empleado (10.83%)</td>
+                <td class="monto">{{ $simbolo }}{{ number_format($ccssVal, 2) }}</td>
+            </tr>
+            <tr>
+                <td>Horas Extra</td>
+                <td class="monto">{{ $simbolo }}{{ number_format($detalle->monto_horas_extra, 2) }}</td>
+                <td>Renta CR</td>
+                <td class="monto">{{ $simbolo }}{{ number_format($detalle->renta, 2) }}</td>
+            </tr>
+            <tr>
+                <td>Comisiones</td>
+                <td class="monto">{{ $simbolo }}{{ number_format($detalle->comisiones, 2) }}</td>
+                <td>Préstamos</td>
+                <td class="monto">{{ $simbolo }}{{ number_format($detalle->prestamos, 2) }}</td>
+            </tr>
+            <tr>
+                <td>Bonificaciones</td>
+                <td class="monto">{{ $simbolo }}{{ number_format($detalle->bonificaciones, 2) }}</td>
                 <td>Anticipos</td>
                 <td class="monto">{{ $simbolo }}{{ number_format($detalle->anticipos, 2) }}</td>
             </tr>
+            <tr>
+                <td>Otros Ingresos</td>
+                <td class="monto">{{ $simbolo }}{{ number_format($detalle->otros_ingresos, 2) }}</td>
+                <td>Otros Descuentos</td>
+                <td class="monto">{{ $simbolo }}{{ number_format($detalle->otros_descuentos + $detalle->descuentos_judiciales, 2) }}</td>
+            </tr>
+        @else
+            <tr>
+                <td>Salario Base</td>
+                <td class="monto">{{ $simbolo }}{{ number_format($detalle->salario_base, 2) }}</td>
+                <td>ISSS</td>
+                <td class="monto">{{ $simbolo }}{{ number_format($detalle->isss_empleado, 2) }}</td>
+            </tr>
+            <tr>
+                <td>Horas Extra</td>
+                <td class="monto">{{ $simbolo }}{{ number_format($detalle->monto_horas_extra, 2) }}</td>
+                <td>AFP</td>
+                <td class="monto">{{ $simbolo }}{{ number_format($detalle->afp_empleado, 2) }}</td>
+            </tr>
+            <tr>
+                <td>Comisiones</td>
+                <td class="monto">{{ $simbolo }}{{ number_format($detalle->comisiones, 2) }}</td>
+                <td>Renta</td>
+                <td class="monto">{{ $simbolo }}{{ number_format($detalle->renta, 2) }}</td>
+            </tr>
+            <tr>
+                <td>Bonificaciones</td>
+                <td class="monto">{{ $simbolo }}{{ number_format($detalle->bonificaciones, 2) }}</td>
+                <td>Préstamos</td>
+                <td class="monto">{{ $simbolo }}{{ number_format($detalle->prestamos, 2) }}</td>
+            </tr>
+            @if($detalle->anticipos > 0)
+                <tr>
+                    <td></td>
+                    <td class="monto"></td>
+                    <td>Anticipos</td>
+                    <td class="monto">{{ $simbolo }}{{ number_format($detalle->anticipos, 2) }}</td>
+                </tr>
+            @endif
+            <tr>
+                <td>Otros Ingresos</td>
+                <td class="monto">{{ $simbolo }}{{ number_format($detalle->otros_ingresos, 2) }}</td>
+                <td>Otros Descuentos</td>
+                <td class="monto">{{ $simbolo }}{{ number_format($detalle->otros_descuentos, 2) }}</td>
+            </tr>
         @endif
-        <tr>
-            <td>Otros Ingresos</td>
-            <td class="monto">{{ $simbolo }}{{ number_format($detalle->otros_ingresos, 2) }}</td>
-            <td>Otros Descuentos</td>
-            <td class="monto">{{ $simbolo }}{{ number_format($detalle->otros_descuentos, 2) }}</td>
-        </tr>
         @if(($detalle->viaticos ?? 0) > 0)
         <tr>
             <td>Viáticos</td>

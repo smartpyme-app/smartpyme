@@ -26,4 +26,23 @@ class EmpresaConfiguracionServiceCheck extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         PlanillaTemplatesService::plantilla('XX');
     }
+
+    public function test_empresa_sin_cod_pais_resuelve_desde_nombre(): void
+    {
+        $empresa = new \App\Models\Admin\Empresa(['pais' => 'Costa Rica']);
+
+        $this->assertSame('CR', \App\Models\EmpresaConfiguracionPlanilla::resolverCodigoPaisEmpresa($empresa));
+        $this->assertSame('SV', \App\Models\EmpresaConfiguracionPlanilla::resolverCodigoPaisEmpresa(null));
+    }
+
+    public function test_configuracion_planilla_service_resuelve_clase_empresa_configuracion_planilla(): void
+    {
+        $this->assertTrue(class_exists(\App\Models\EmpresaConfiguracionPlanilla::class));
+
+        $uses = file_get_contents((new \ReflectionClass(\App\Services\Planilla\ConfiguracionPlanillaService::class))->getFileName());
+        $this->assertStringContainsString(
+            'use App\\Models\\EmpresaConfiguracionPlanilla;',
+            $uses
+        );
+    }
 }

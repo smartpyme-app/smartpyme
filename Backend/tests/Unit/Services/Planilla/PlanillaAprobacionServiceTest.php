@@ -18,7 +18,9 @@ class PlanillaAprobacionServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->planillaAprobacionService = new PlanillaAprobacionService();
+        $this->planillaAprobacionService = new PlanillaAprobacionService(
+            Mockery::mock(\App\Services\Contabilidad\PartidaPlanillaService::class)
+        );
     }
 
     protected function tearDown(): void

@@ -2,7 +2,10 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use Spatie\Permission\Guard;
 use Tests\TestCase;
 
 /**
@@ -37,6 +40,14 @@ final class ModulosOperativosPermissionsTest extends TestCase
         $this->assertRouteHasPermission('api/restaurante/pedidos', 'POST', 'permission:pedidos.crear');
         $this->assertRouteHasPermission('api/restaurante/pedidos/{id}', 'DELETE', 'permission:pedidos.eliminar');
         $this->assertRouteHasMiddleware('api/restaurante/pedidos', 'GET', 'verificar.funcionalidad:modulo-restaurante');
+    }
+
+    public function test_los_permisos_se_resuelven_con_guard_web_aunque_la_ruta_use_auth_api(): void
+    {
+        // auth:api hace shouldUse('api'), que reescribe auth.defaults.guard.
+        Auth::shouldUse('api');
+
+        $this->assertSame('web', Guard::getDefaultName(User::class));
     }
 
     private function assertRouteHasPermission(string $uri, string $method, string $permissionMiddleware): void

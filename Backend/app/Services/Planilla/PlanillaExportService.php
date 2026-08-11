@@ -7,6 +7,9 @@ use App\Models\Planilla\PlanillaDetalle;
 use App\Exports\PlanillaExport;
 use App\Exports\Planillas\PlanillaDetallesExport;
 use App\Exports\Planillas\DescuentosPatronalesExport;
+use App\Exports\Planillas\CostaRica\ReporteCCSSExport;
+use App\Exports\Planillas\CostaRica\ReporteD138Export;
+use App\Exports\Planillas\CostaRica\ReporteCostoPatronalExport;
 use App\Exports\PlanillaExportTemplate;
 use App\Models\Planilla\Empleado;
 use App\Constants\PlanillaConstants;
@@ -372,6 +375,75 @@ class PlanillaExportService
     private function calcularAFPEmpleado($salario)
     {
         return round($salario * PlanillaConstants::DESCUENTO_AFP_EMPLEADO, 2);
+    }
+
+    /**
+     * Exportar Reporte CCSS Costa Rica
+     */
+    public function exportarReporteCCSS($id)
+    {
+        try {
+            $planilla = Planilla::with(['empresa', 'sucursal'])->findOrFail($id);
+
+            $detalles = PlanillaDetalle::where('id_planilla', $id)
+                ->where('estado', '!=', 0)
+                ->with(['empleado.cargo', 'empleado.departamento'])
+                ->get();
+
+            return Excel::download(
+                new ReporteCCSSExport($planilla, $detalles),
+                'reporte_ccss_' . $planilla->codigo . '.xlsx'
+            );
+        } catch (\Exception $e) {
+            Log::error('Error exportando reporte CCSS: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
+     * Exportar Reporte D138 Retenciones Renta CR
+     */
+    public function exportarReporteD138($id)
+    {
+        try {
+            $planilla = Planilla::with(['empresa', 'sucursal'])->findOrFail($id);
+
+            $detalles = PlanillaDetalle::where('id_planilla', $id)
+                ->where('estado', '!=', 0)
+                ->with(['empleado.cargo', 'empleado.departamento'])
+                ->get();
+
+            return Excel::download(
+                new ReporteD138Export($planilla, $detalles),
+                'reporte_d138_' . $planilla->codigo . '.xlsx'
+            );
+        } catch (\Exception $e) {
+            Log::error('Error exportando reporte D138: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
+     * Exportar Reporte Costo Patronal por Colaborador CR
+     */
+    public function exportarReporteCostoPatronal($id)
+    {
+        try {
+            $planilla = Planilla::with(['empresa', 'sucursal'])->findOrFail($id);
+
+            $detalles = PlanillaDetalle::where('id_planilla', $id)
+                ->where('estado', '!=', 0)
+                ->with(['empleado.cargo', 'empleado.departamento'])
+                ->get();
+
+            return Excel::download(
+                new ReporteCostoPatronalExport($planilla, $detalles),
+                'reporte_costo_patronal_' . $planilla->codigo . '.xlsx'
+            );
+        } catch (\Exception $e) {
+            Log::error('Error exportando reporte costo patronal: ' . $e->getMessage());
+            throw $e;
+        }
     }
 }
 

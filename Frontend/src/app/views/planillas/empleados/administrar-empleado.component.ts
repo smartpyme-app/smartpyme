@@ -13,7 +13,13 @@ import { TemplateRef, ChangeDetectorRef } from '@angular/core';
 import { PlanillaConstants } from '../../../constants/planilla.constants';
 import { createDuration } from '@fullcalendar/core/internal';
 import { CountryI18nService } from '@services/country-i18n.service';
-import { esElSalvadorFe as empresaEsElSalvador } from '@services/facturacion-electronica/fe-pais.util';
+import {
+  empleadoFormConfig,
+  labelIdentidadEmpleado,
+  mostrarCampoNit,
+  placeholderIdentidadEmpleado,
+  type EmpleadoFormConfig,
+} from './empleado-form-por-pais';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
@@ -68,6 +74,7 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
   public archivoSeleccionado: File | null = null;
 
   public tiposDocumento = PlanillaConstants.TIPO_DOCUMENTO;
+  public formConfig: EmpleadoFormConfig = empleadoFormConfig(null);
 
   public documentos: any = {
     data: [],
@@ -106,11 +113,35 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
 
   }
 
-  esElSalvadorFe(): boolean {
-    return empresaEsElSalvador(this.apiService.auth_user()?.empresa);
+  private refreshFormConfig(): void {
+    this.formConfig = empleadoFormConfig(this.apiService.auth_user()?.empresa);
+  }
+
+  labelIdentidad(): string {
+    return (
+      labelIdentidadEmpleado(this.formConfig, this.empleado?.id_type) ??
+      this.countryI18n.k('country.identity.nameColon')
+    );
+  }
+
+  placeholderIdentidad(): string | null {
+    return placeholderIdentidadEmpleado(this.formConfig, this.empleado?.id_type);
+  }
+
+  mostrarNit(): boolean {
+    return mostrarCampoNit(this.formConfig, this.empleado?.dui_homologado);
+  }
+
+  esJornadaParcial(): boolean {
+    return Number(this.empleado?.tipo_jornada) === 2;
+  }
+
+  mostrarHorasJornada(): boolean {
+    return this.formConfig.mostrarHorasSiParcial && this.esJornadaParcial();
   }
 
   ngOnInit() {
+    this.refreshFormConfig();
     this.loadAll();
     this.loadCatalogos();
 
@@ -119,7 +150,6 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
     this.departamentosSV = JSON.parse(localStorage.getItem('departamentos')!);
     this.distritos = JSON.parse(localStorage.getItem('distritos')!);
     this.municipios = JSON.parse(localStorage.getItem('municipios')!);
-    const esSV = this.esElSalvadorFe();
     this.empleado = {
       estado: PlanillaConstants.ESTADOS_EMPLEADO.ACTIVO,
       tipo_contrato: PlanillaConstants.TIPOS_CONTRATO.PERMANENTE,
@@ -131,10 +161,11 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
         direccion: '',
       },
       configuracion_descuentos: {
-        aplicar_afp: esSV,
-        aplicar_isss: esSV,
+        aplicar_afp: this.formConfig.aplicarDescuentosPorDefecto,
+        aplicar_isss: this.formConfig.aplicarDescuentosPorDefecto,
       },
       dui_homologado: false,
+      ...this.formConfig.defaultsNuevo,
     };
     this.id_empresa = JSON.parse(
       localStorage.getItem('SP_auth_user')!
@@ -425,7 +456,7 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
   }
 
   private inicializarEmpleado() {
-    const esSV = this.esElSalvadorFe();
+    this.refreshFormConfig();
     this.empleado = {
       estado: PlanillaConstants.ESTADOS_EMPLEADO.ACTIVO,
       tipo_contrato: PlanillaConstants.TIPOS_CONTRATO.PERMANENTE,
@@ -437,10 +468,11 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
         direccion: '',
       },
       configuracion_descuentos: {
-        aplicar_afp: esSV,
-        aplicar_isss: esSV,
+        aplicar_afp: this.formConfig.aplicarDescuentosPorDefecto,
+        aplicar_isss: this.formConfig.aplicarDescuentosPorDefecto,
       },
       dui_homologado: false,
+      ...this.formConfig.defaultsNuevo,
     };
   }
 
@@ -594,8 +626,8 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
                   direccion: '',
                 },
                 configuracion_descuentos: empleado.configuracion_descuentos || {
-                  aplicar_afp: this.esElSalvadorFe(),
-                  aplicar_isss: this.esElSalvadorFe(),
+                  aplicar_afp: this.formConfig.aplicarDescuentosPorDefecto,
+                  aplicar_isss: this.formConfig.aplicarDescuentosPorDefecto,
                 },
                 dui_homologado: !!empleado.dui_homologado,
               };
@@ -621,7 +653,6 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
           );
         } else {
           // Modo creación - inicializar con valores por defecto
-          const esSV = this.esElSalvadorFe();
           this.empleado = {
             estado: PlanillaConstants.ESTADOS_EMPLEADO.ACTIVO,
             tipo_contrato: PlanillaConstants.TIPOS_CONTRATO.PERMANENTE,
@@ -635,10 +666,11 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
               direccion: '',
             },
             configuracion_descuentos: {
-              aplicar_afp: esSV,
-              aplicar_isss: esSV,
+              aplicar_afp: this.formConfig.aplicarDescuentosPorDefecto,
+              aplicar_isss: this.formConfig.aplicarDescuentosPorDefecto,
             },
             dui_homologado: false,
+            ...this.formConfig.defaultsNuevo,
           };
         }
       });
@@ -771,12 +803,29 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
       this.empleado.nit = null;
     }
 
+    if (!this.empleado.email) {
+      this.alertService.error('El correo electrónico es requerido. Completa la pestaña Información Contacto.');
+      this.activeTab = 'contacto';
+      this.saving = false;
+      this.cdr.markForCheck();
+      return;
+    }
+
+    if (this.mostrarHorasJornada()) {
+      const horas = Number(this.empleado.horas_jornada);
+      if (!horas || horas <= 0) {
+        this.alertService.error('Indique las horas de jornada para tiempo parcial.');
+        this.saving = false;
+        this.cdr.markForCheck();
+        return;
+      }
+    }
+
     // Asegurar que configuracion_descuentos tenga valores por defecto si no existe
     if (!this.empleado.configuracion_descuentos) {
-      const esSV = this.esElSalvadorFe();
       this.empleado.configuracion_descuentos = {
-        aplicar_afp: esSV,
-        aplicar_isss: esSV,
+        aplicar_afp: this.formConfig.aplicarDescuentosPorDefecto,
+        aplicar_isss: this.formConfig.aplicarDescuentosPorDefecto,
       };
     }
 

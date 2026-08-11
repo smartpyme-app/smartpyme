@@ -57,11 +57,17 @@ class AguinaldoDetalle extends Model
         $tipoContrato = $this->empleado ? $this->empleado->tipo_contrato : null;
         $anio = $this->aguinaldo ? $this->aguinaldo->anio : date('Y');
 
+        // Resolver país de la empresa para aplicar la legislación correcta
+        $codigoPais = $this->aguinaldo
+            ? app(\App\Services\Admin\EmpresaConfiguracionService::class)->paisEmpresa($this->aguinaldo->id_empresa)
+            : 'SV';
+
         // Usar AguinaldoHelper para calcular
         $calculos = \App\Helpers\AguinaldoHelper::calcularDeduccionesAguinaldo(
             $this->monto_aguinaldo_bruto,
             $anio,
-            $tipoContrato
+            $tipoContrato,
+            $codigoPais
         );
 
         // Asignar valores calculados

@@ -22,16 +22,28 @@ class UpdatePlanillaDetalleRequest extends FormRequest
         return [
             'horas_extra' => 'nullable|numeric|min:0',
             'monto_horas_extra' => 'nullable|numeric|min:0',
+            'detalle_horas_extra' => 'nullable|array',
+            'detalle_horas_extra.diurna' => 'nullable|numeric|min:0',
+            'detalle_horas_extra.nocturna' => 'nullable|numeric|min:0',
+            'detalle_horas_extra.dia_descanso' => 'nullable|numeric|min:0',
+            'detalle_horas_extra.dia_descanso_dias' => 'nullable|integer|min:0',
+            'detalle_horas_extra.dia_asueto' => 'nullable|numeric|min:0',
             'comisiones' => 'nullable|numeric|min:0',
             'bonificaciones' => 'nullable|numeric|min:0',
             'otros_ingresos' => 'nullable|numeric|min:0',
+            'viaticos' => 'nullable|numeric|min:0',
+            'abonos' => 'nullable|numeric|min:0',
+            'abonos_sin_retencion' => 'nullable|boolean',
             'dias_laborados' => 'nullable|numeric|min:0|max:31',
             'prestamos' => 'nullable|numeric|min:0',
             'anticipos' => 'nullable|numeric|min:0',
             'otros_descuentos' => 'nullable|numeric|min:0',
             'descuentos_judiciales' => 'nullable|numeric|min:0',
             'detalle_otras_deducciones' => 'nullable|string',
-            'salario_base' => 'nullable|numeric|min:0'
+            'salario_base' => 'nullable|numeric|min:0',
+            'abonos_prestamos' => 'nullable|array',
+            'abonos_prestamos.*.id_prestamo' => 'required_with:abonos_prestamos|integer|exists:prestamos_empleados,id',
+            'abonos_prestamos.*.monto' => 'required_with:abonos_prestamos|numeric|min:0',
         ];
     }
 

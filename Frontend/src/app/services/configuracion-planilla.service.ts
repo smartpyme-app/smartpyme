@@ -55,6 +55,17 @@ export interface ConfiguracionPlanilla {
   fecha_vigencia_hasta?: string;
 }
 
+export interface EmpresaPaisInfo {
+  cod_pais: string;
+  nombre_pais: string;
+  pais?: string | null;
+}
+
+export interface ConfiguracionPlanillaResponse {
+  configuracion: ConfiguracionPlanilla | null;
+  empresa_pais?: EmpresaPaisInfo;
+}
+
 export interface PlantillaPais {
   nombre: string;
   configuracion: any;
@@ -90,19 +101,45 @@ private readonly API_URL =  'planillas/configuracion-planilla';
   // ==========================================
 
   /**
-   * Obtener configuración actual de la empresa
+   * Obtener configuración actual de la empresa (null si aún no existe)
    */
-  obtenerConfiguracion(): Observable<ConfiguracionPlanilla> {
+  obtenerConfiguracion(): Observable<ConfiguracionPlanillaResponse> {
     return this.apiService.getAll(this.API_URL).pipe(
       map(response => {
         if (response.success) {
-          return response.data;
+          return {
+            configuracion: response.data ?? null,
+            empresa_pais: response.empresa_pais
+          };
         } else {
           throw new Error(response.message || 'Error al obtener configuración');
         }
       }),
       catchError(error => {
         this.alertService.error('Error al cargar la configuración de planilla');
+        throw error;
+      })
+    );
+  }
+
+  /**
+   * Crear o recargar configuración desde la plantilla del país de la empresa
+   */
+  importarPlantillaPais(forzar: boolean = false): Observable<ConfiguracionPlanilla> {
+    return this.apiService.store(this.API_URL + '/importar-plantilla', { forzar }).pipe(
+      map(response => {
+        if (response.success) {
+          this.alertService.success('Éxito', response.message || 'Plantilla importada exitosamente');
+          return response.data;
+        } else {
+          const msg = response.message || 'Error al importar plantilla';
+          this.alertService.error(msg);
+          throw new Error(msg);
+        }
+      }),
+      catchError(error => {
+        const errorMsg = error.error?.message || error.message || 'Error al importar la plantilla del país';
+        this.alertService.error(errorMsg);
         throw error;
       })
     );

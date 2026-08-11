@@ -36,14 +36,25 @@ class   ConfiguracionPlanillaController extends Controller
     {
         try {
             $empresaId = $request->user()->id_empresa;
+            $empresa = Empresa::find($empresaId);
+            $codPaisEmpresa = $this->empresaConfigService->paisEmpresa($empresaId);
+            $empresaPais = [
+                'cod_pais' => $codPaisEmpresa,
+                'nombre_pais' => $this->getNombrePais($codPaisEmpresa),
+                'pais' => $empresa->pais ?? null,
+            ];
+
             $configuracion = $this->empresaConfigService->getPlanilla($empresaId);
 
             if (!$configuracion) {
+                // success+null: FE actual; needs_import: contrato bk-main
                 return response()->json([
-                    'success' => false,
+                    'success' => true,
+                    'data' => null,
                     'needs_import' => true,
                     'message' => 'No hay configuración de planilla. Use Importar Base.',
-                ], 404);
+                    'empresa_pais' => $empresaPais,
+                ]);
             }
 
             $paisNombre = optional($configuracion->paisRelacion)->nombre
@@ -61,7 +72,8 @@ class   ConfiguracionPlanillaController extends Controller
                     'configuraciones_generales' => $configuracion->getConfiguracionesGenerales(),
                     'deducciones' => $configuracion->getDeducciones(),
                     'ingresos' => $configuracion->getIngresos(),
-                ]
+                ],
+                'empresa_pais' => $empresaPais,
             ]);
         } catch (\Exception $e) {
             Log::error('Error obteniendo configuración de planilla', [
@@ -77,6 +89,60 @@ class   ConfiguracionPlanillaController extends Controller
     }
 
     /**
+     * Alias FE de importarBase (escribe en empresa_configuracion).
+     */
+    public function importarPlantilla(Request $request): JsonResponse
+    {
+        try {
+            $empresaId = $request->user()->id_empresa;
+            $forzar = $request->boolean('forzar', false)
+                || $request->input('forzar') === true
+                || $request->input('forzar') === 'true';
+
+            $actual = $this->empresaConfigService->getPlanilla($empresaId);
+            if ($actual && $actual->exists && !$forzar) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'La empresa ya tiene una configuración de planilla activa',
+                ], 409);
+            }
+
+            $config = $this->empresaConfigService->importarBasePlanilla($empresaId);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Plantilla importada exitosamente',
+                'data' => [
+                    'id' => $config->id,
+                    'empresa_id' => $config->empresa_id,
+                    'cod_pais' => $config->pais,
+                    'pais_configuracion' => $this->getNombrePais($config->pais),
+                    'configuracion' => $config->configuracion,
+                    'conceptos' => $config->getConceptos(),
+                    'configuraciones_generales' => $config->getConfiguracionesGenerales(),
+                    'deducciones' => $config->getDeducciones(),
+                    'ingresos' => $config->getIngresos(),
+                ],
+            ], 201);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error importando plantilla de planilla', [
+                'error' => $e->getMessage(),
+                'empresa_id' => $request->user()->id_empresa ?? null
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al importar la plantilla: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Actualizar configuración de la empresa
      */
     public function update(UpdateConfiguracionPlanillaRequest $request): JsonResponse
@@ -87,8 +153,7 @@ class   ConfiguracionPlanillaController extends Controller
 
             $empresaId = $request->user()->id_empresa;
             $nuevaConfiguracion = $request->input('configuracion');
-            $pais = strtoupper($request->input('cod_pais')
-                ?: $this->empresaConfigService->paisEmpresa($empresaId));
+            $pais = $this->empresaConfigService->paisEmpresa($empresaId);
 
             $this->validarEstructuraConceptos($nuevaConfiguracion['conceptos'] ?? []);
 
@@ -146,12 +211,7 @@ class   ConfiguracionPlanillaController extends Controller
     {
         try {
             $empresaId = $request->user()->id_empresa;
-            $codPais = $request->input('cod_pais');
-
-            $config = $this->empresaConfigService->importarBasePlanilla(
-                $empresaId,
-                $codPais ? strtoupper($codPais) : null
-            );
+            $config = $this->empresaConfigService->importarBasePlanilla($empresaId);
 
             return response()->json([
                 'success' => true,
@@ -409,7 +469,7 @@ class   ConfiguracionPlanillaController extends Controller
                 ], 404);
             }
 
-            $codigoPais = $empresa->cod_pais ?? 'SV';
+            $codigoPais = $this->empresaConfigService->paisEmpresa($empresaId);
             $usaPersonalizada = $codigoPais !== 'SV';
 
             $tieneConfiguracion = (bool) $this->empresaConfigService->getPlanilla($empresaId);
@@ -438,7 +498,7 @@ class   ConfiguracionPlanillaController extends Controller
             $empresaId = auth()->user()->id_empresa;
             $empresa = Empresa::find($empresaId);
 
-            $codigoPais = $empresa->cod_pais ?? 'SV';
+            $codigoPais = $this->empresaConfigService->paisEmpresa($empresaId);
             $nombrePais = $this->getNombrePais($codigoPais);
             $moneda = $this->getMonedaPais($codigoPais);
 
@@ -469,7 +529,7 @@ class   ConfiguracionPlanillaController extends Controller
         try {
             $empresaId = auth()->user()->id_empresa;
             $empresa = Empresa::find($empresaId);
-            $codigoPais = $empresa->cod_pais ?? 'SV';
+            $codigoPais = $this->empresaConfigService->paisEmpresa($empresaId);
 
             if ($codigoPais === 'SV') {
                 // Retornar conceptos de El Salvador

@@ -5,6 +5,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { PlanillaConstants } from '../../../constants/planilla.constants';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
 import { retry, catchError } from 'rxjs/operators';
@@ -15,7 +16,7 @@ import Swal from 'sweetalert2';
   selector: 'app-aguinaldo-detalle',
   templateUrl: './aguinaldo-detalle.component.html',
   standalone: true,
-  imports: [CommonModule]
+  imports: [CommonModule, CurrencyPipe]
 })
 export class AguinaldoDetalleComponent implements OnInit {
   public aguinaldo: any = {};

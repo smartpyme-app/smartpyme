@@ -49,6 +49,25 @@ class PlanillaDetalleController extends Controller
     }
 
     /**
+     * Calcular el detalle sin guardarlo (vista previa mientras se edita).
+     */
+    public function previsualizar(UpdatePlanillaDetalleRequest $request, $id)
+    {
+        try {
+            $detalle = $this->detalleService->previsualizar($id, $request->validated());
+
+            return response()->json([
+                'detalle' => new PlanillaDetalleResource($detalle->load('empleado')),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error previsualizando detalle de planilla: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Error al calcular el detalle: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Retirar detalle de planilla
      */
     public function retirar(Request $request, $id)
