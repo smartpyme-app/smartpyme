@@ -181,8 +181,8 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping(30)
             ->appendOutputTo(storage_path('logs/dte-sync.log'));
 
-        // FE Costa Rica: cachear tipo de cambio de venta BCCR (indicador 318) del día
-        $schedule->command('bccr:sync-tipo-cambio')
+        // Cache TC del día en pais_configuracion (paises con fuente=api, p.ej. BCCR CR)
+        $schedule->command('tipos-cambio:sync-dia')
             ->dailyAt('06:00')
             ->timezone('America/Costa_Rica')
             ->withoutOverlapping();

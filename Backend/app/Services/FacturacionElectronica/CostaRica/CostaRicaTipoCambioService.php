@@ -3,38 +3,53 @@
 namespace App\Services\FacturacionElectronica\CostaRica;
 
 use App\Models\Admin\Empresa;
-use App\Models\FacturacionElectronica\CostaRica\BccrTipoCambio;
+use App\Models\PaisConfiguracion;
+use App\Support\Admin\MonedaDefaultPorPais;
 use Carbon\Carbon;
 
 /**
  * Tipo de cambio USD → CRC para comprobantes en dólares (venta / Hacienda CR).
- * Fuente única: BCCR indicador 318 (tipo de cambio de venta), cacheado por día en `bccr_tipos_cambio`.
- * Sin fallback numérico: si el BCCR no responde, se lanza excepción (no se emite con un tipo de cambio inventado).
+ * Fuente: BCCR indicador 318; cache del día en pais_configuracion (modulo=moneda).
+ * Sin fallback numérico inventado: si no hay rate usable, se lanza excepción.
  */
 final class CostaRicaTipoCambioService
 {
+    public const PAIS = 'CR';
+
     public function __construct(private readonly BccrTipoCambioClient $client) {}
 
     public function rateForDate(\DateTimeInterface $date): float
     {
-        $day = Carbon::instance(\DateTimeImmutable::createFromInterface($date))->startOfDay();
+        $day = Carbon::instance(\DateTimeImmutable::createFromInterface($date))
+            ->timezone('America/Costa_Rica')
+            ->startOfDay();
+        $dayStr = $day->toDateString();
+        $todayStr = now('America/Costa_Rica')->toDateString();
 
-        $row = BccrTipoCambio::query()->whereDate('date', $day)->first();
-        if ($row) {
-            return (float) $row->venta_reference_rate;
+        $cfg = $this->monedaConfig();
+        $cached = $cfg['rate_del_dia'] ?? null;
+        if (is_array($cached)
+            && ($cached['date'] ?? null) === $dayStr
+            && (float) ($cached['rate'] ?? 0) > 0
+        ) {
+            return (float) $cached['rate'];
         }
 
         $rate = $this->client->fetchVentaRate($day);
-        if ($rate === null || $rate <= 0) {
-            throw new \RuntimeException('No hay tipo de cambio BCCR (318) para la fecha '.$day->toDateString());
+        if ($rate !== null && $rate > 0) {
+            if ($dayStr === $todayStr) {
+                $this->saveRateDelDia($dayStr, (float) $rate);
+            }
+
+            return (float) $rate;
         }
 
-        BccrTipoCambio::query()->updateOrCreate(
-            ['date' => $day->toDateString()],
-            ['venta_reference_rate' => $rate, 'fetched_at' => now()]
-        );
+        $manual = (float) ($cfg['rate_manual'] ?? 0);
+        if ($manual > 0) {
+            return $manual;
+        }
 
-        return (float) $rate;
+        throw new \RuntimeException('No hay tipo de cambio BCCR (318) para la fecha '.$dayStr);
     }
 
     /**
@@ -42,9 +57,47 @@ final class CostaRicaTipoCambioService
      */
     public function crcPorUsdVenta(Empresa $empresa, ?\DateTimeInterface $date = null): float
     {
-        // Ignora tipo_cambio_usd_crc manual y APIs genéricas / fallback 520: fuente única BCCR 318.
         $date ??= now('America/Costa_Rica');
 
         return $this->rateForDate($date);
+    }
+
+    /** @return array<string, mixed> */
+    private function monedaConfig(): array
+    {
+        $row = PaisConfiguracion::query()
+            ->pais(self::PAIS)
+            ->modulo(PaisConfiguracion::MODULO_MONEDA)
+            ->first();
+
+        if ($row && is_array($row->configuracion)) {
+            return $row->configuracion;
+        }
+
+        return MonedaDefaultPorPais::plantilla(self::PAIS);
+    }
+
+    private function saveRateDelDia(string $dayStr, float $rate): void
+    {
+        $row = PaisConfiguracion::query()->firstOrCreate(
+            [
+                'pais' => self::PAIS,
+                'modulo' => PaisConfiguracion::MODULO_MONEDA,
+            ],
+            [
+                'configuracion' => MonedaDefaultPorPais::plantilla(self::PAIS),
+            ]
+        );
+
+        $cfg = is_array($row->configuracion) ? $row->configuracion : MonedaDefaultPorPais::plantilla(self::PAIS);
+        $cfg['rate_del_dia'] = [
+            'date' => $dayStr,
+            'from' => 'USD',
+            'to' => 'CRC',
+            'rate' => $rate,
+            'fetched_at' => now('America/Costa_Rica')->toIso8601String(),
+        ];
+        $row->configuracion = $cfg;
+        $row->save();
     }
 }

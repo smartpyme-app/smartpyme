@@ -90,7 +90,7 @@ Usuario elige moneda (CRC|USD) en factura / compra / gasto
 Resolver TC:
   CRC → 1
   USD → BCCR 318 (fecha hecho generador)
-        │  └─ cache bccr_tipos_cambio
+        │  └─ cache pais_configuracion.rate_del_dia (módulo moneda; ver 2026-08-10-tipos-cambio-pais-configuracion-design.md)
         │  └─ si falta → SOAP BCCR
         │  └─ venta + flag permitir_editar → UI puede sobrescribir rate
         │  └─ sin rate usable → bloquear
@@ -109,8 +109,8 @@ Persistir documento:
 
 | Componente | Acción |
 |------------|--------|
-| Tabla `bccr_tipos_cambio` | Nueva |
-| Job/command sync BCCR | Nuevo (diario, timezone `America/Costa_Rica`) |
+| ~~Tabla `bccr_tipos_cambio`~~ | **Eliminada** (2026-08-10) — cache en `pais_configuracion` |
+| Job/command sync BCCR | `tipos-cambio:sync-dia` (multi-país, fuente=api) |
 | `BccrTipoCambioClient` (o ampliar servicio) | SOAP indicadores económicos |
 | `CostaRicaTipoCambioService` | Reescribir: solo BCCR; sin fallback inventado |
 | Config empresa `permitir_editar_tipo_cambio` | Nueva (bool, default false) |
@@ -127,15 +127,10 @@ Persistir documento:
 
 ## 7. Modelo de datos
 
-### 7.1 `bccr_tipos_cambio`
+### 7.1 Cache TC del día (superseded)
 
-| Campo | Tipo | Notas |
-|-------|------|--------|
-| `id` | bigint PK | |
-| `date` | date | **unique** — día del indicador |
-| `venta_reference_rate` | decimal(18,5) | Indicador 318 |
-| `fetched_at` | timestamp | |
-| `created_at` / `updated_at` | timestamps | |
+~~Tabla `bccr_tipos_cambio`~~ — reemplazada por `pais_configuracion` módulo `moneda` / `rate_del_dia`.  
+Ver `Docs/superpowers/specs/2026-08-10-tipos-cambio-pais-configuracion-design.md`.
 
 ### 7.2 Documentos transaccionales
 
@@ -193,10 +188,11 @@ Opcional útil (auditoría): `exchange_rate_source` = `bccr` \| `manual` \| `xml
 
 ### 8.2 Comportamiento
 
-1. Job diario temprano (CR): fetch del día → upsert `bccr_tipos_cambio`.
+1. Job diario temprano: `tipos-cambio:sync-dia` → upsert `rate_del_dia` en `pais_configuracion` (CR vía BCCR).
 2. Al resolver TC para una fecha:
-   - leer tabla;
-   - si falta, consultar BCCR por esa fecha (o rango corto) y cachear;
+   - si `rate_del_dia.date` coincide, usar cache;
+   - si falta, consultar BCCR por esa fecha; si es **hoy**, cachear en `rate_del_dia`;
+   - si falla y hay `rate_manual`, usarlo; si no, bloquear.
    - si aún falla → excepción de dominio / HTTP 422 (salvo venta con flag on y rate manual válido ya presente).
 3. Reintentos del job ante caída del WS; no usar tasa de otro día “por silencio”.
 
