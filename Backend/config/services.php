@@ -146,10 +146,11 @@ return [
 
     /*
     | BCH (Banco Central de Honduras) — tipo de cambio de referencia (indicador 97 / EC-TCR-01).
-    | Subscription key: https://bchapi-am.developer.azure-api.net/ (header Ocp-Apim-Subscription-Key).
+    | Portal (registro/key): https://bchapi-am.developer.azure-api.net/
+    | Gateway API: https://bchapi-am.azure-api.net  (header Ocp-Apim-Subscription-Key).
     */
     'bch' => [
-        'base_url' => env('BCH_API_BASE_URL', 'https://bchapi-am.developer.azure-api.net'),
+        'base_url' => env('BCH_API_BASE_URL', 'https://bchapi-am.azure-api.net'),
         'api_key' => env('BCH_API_KEY'),
         'indicador_referencia' => (int) env('BCH_INDICADOR_REFERENCIA', 97),
         'timeout_seconds' => (int) env('BCH_API_TIMEOUT', 25),
