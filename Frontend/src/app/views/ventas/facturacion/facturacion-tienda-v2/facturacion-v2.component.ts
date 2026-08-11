@@ -101,11 +101,17 @@ export class FacturacionV2Component implements OnInit {
   public api: boolean = false;
   public tieneAccesoPropina: boolean = false;
   public tieneMultimoneda: boolean = false;
+  public monedaConfig: {
+    moneda_funcional: string;
+    monedas_documento: string[];
+    fuente: string;
+    permitir_editar: boolean;
+  } | null = null;
   public tieneFidelizacionHabilitada: boolean = false;
   public mensajeValidacionFecha: string = '';
   public mensajeErrorBanco: string = '';
 
-  /** Preview de tipo de cambio BCCR para el selector de moneda (Task 5, SP-2102). */
+  /** Preview de tipo de cambio para el selector de moneda. */
   public tcPreview: { rate: number | null; date: string | null; loading: boolean; error: string | null } = {
     rate: null,
     date: null,
@@ -1124,36 +1130,83 @@ export class FacturacionV2Component implements OnInit {
     return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR;
   }
 
-  // ==================== MULTIMONEDA CR (Task 5, SP-2102) ====================
+  // ==================== MULTIMONEDA (por país) ====================
 
-  /** Spec §10.1: default = empresa.moneda si es CRC/USD; si no, CRC. Requiere funcionalidad `multimoneda`. */
+  get monedaFuncional(): string {
+    return (this.monedaConfig?.moneda_funcional
+      || this.apiService.auth_user()?.empresa?.moneda
+      || 'USD').toUpperCase();
+  }
+
+  get monedasDocumento(): string[] {
+    const list = this.monedaConfig?.monedas_documento;
+    if (Array.isArray(list) && list.length) {
+      return list.map((m) => String(m).toUpperCase());
+    }
+    return [this.monedaFuncional, 'USD'].filter((v, i, a) => a.indexOf(v) === i);
+  }
+
+  get simboloMonedaFuncional(): string {
+    const map: Record<string, string> = { CRC: '₡', HNL: 'L', USD: '$', GTQ: 'Q', NIO: 'C$' };
+    return map[this.monedaFuncional] || this.monedaFuncional;
+  }
+
   private inicializarMonedaVenta(): void {
     if (!this.tieneMultimoneda) {
       return;
     }
-    const monedaEmpresa = this.apiService.auth_user()?.empresa?.moneda;
-    this.venta.currency_code = monedaEmpresa === 'CRC' || monedaEmpresa === 'USD' ? monedaEmpresa : 'CRC';
-    if (this.venta.currency_code === 'USD') {
-      this.cargarTipoCambioPreview();
-    } else {
-      this.venta.exchange_rate = 1;
-      this.tcPreview = { rate: 1, date: this.venta.fecha, loading: false, error: null };
+    const cargar = () => {
+      const monedaEmpresa = (this.apiService.auth_user()?.empresa?.moneda || '').toUpperCase();
+      const funcional = this.monedaFuncional;
+      this.venta.currency_code = this.monedasDocumento.includes(monedaEmpresa)
+        ? monedaEmpresa
+        : funcional;
+      if (this.venta.currency_code === 'USD' && this.venta.currency_code !== funcional) {
+        this.cargarTipoCambioPreview();
+      } else {
+        this.venta.exchange_rate = 1;
+        this.tcPreview = { rate: 1, date: this.venta.fecha, loading: false, error: null };
+      }
+    };
+
+    if (this.monedaConfig) {
+      cargar();
+      return;
     }
+
+    this.apiService.getAll('moneda/config').subscribe({
+      next: (cfg: any) => {
+        this.monedaConfig = {
+          moneda_funcional: String(cfg?.moneda_funcional || 'USD').toUpperCase(),
+          monedas_documento: Array.isArray(cfg?.monedas_documento) ? cfg.monedas_documento : [],
+          fuente: cfg?.fuente || 'manual',
+          permitir_editar: !!cfg?.permitir_editar,
+        };
+        cargar();
+      },
+      error: () => {
+        this.monedaConfig = {
+          moneda_funcional: this.monedaFuncional,
+          monedas_documento: this.monedasDocumento,
+          fuente: 'manual',
+          permitir_editar: true,
+        };
+        cargar();
+      },
+    });
   }
 
-  /** Duplicar venta / facturar cotización: nuevo documento (fecha hoy, sin dte) → refrescar TC del día si USD. */
   private refrescarMonedaTrasResetFecha(): void {
     if (!this.tieneMultimoneda) {
       return;
     }
-    if (this.venta.currency_code === 'USD') {
+    if (this.venta.currency_code === 'USD' && this.venta.currency_code !== this.monedaFuncional) {
       this.cargarTipoCambioPreview();
     } else {
       this.sincronizarPreviewMonedaDesdeVenta();
     }
   }
 
-  /** Al cargar una venta existente (editar/duplicar/facturar cotización): reflejar moneda ya persistida. */
   private sincronizarPreviewMonedaDesdeVenta(): void {
     if (!this.tieneMultimoneda) {
       return;
@@ -1162,7 +1215,7 @@ export class FacturacionV2Component implements OnInit {
       this.inicializarMonedaVenta();
       return;
     }
-    if (this.venta.currency_code === 'CRC') {
+    if (this.venta.currency_code === this.monedaFuncional) {
       this.tcPreview = { rate: 1, date: this.venta.exchange_rate_date || this.venta.fecha, loading: false, error: null };
       return;
     }
@@ -1176,30 +1229,30 @@ export class FacturacionV2Component implements OnInit {
   }
 
   get monedaVenta(): string {
-    return this.venta?.currency_code || 'CRC';
+    return this.venta?.currency_code || this.monedaFuncional;
   }
 
   get etiquetaOpcionUsd(): string {
     const rate = parseFloat(this.venta?.exchange_rate);
-    // rate === 1 es el default de CRC; no es un TC USD válido.
     if (Number.isFinite(rate) && rate > 0 && rate !== 1) {
-      return `USD (₡${rate.toFixed(2)})`;
+      return `USD (${this.simboloMonedaFuncional}${rate.toFixed(2)})`;
     }
     return 'USD';
   }
 
-  /** Post-emisión: selector y TC quedan inmutables (spec §10.1.6). */
   get ventaYaEmitida(): boolean {
     return !!this.venta?.dte;
   }
 
   get permitirEditarTipoCambioVentas(): boolean {
-    return !!this.apiService.auth_user()?.empresa?.custom_empresa?.facturacion_fe?.permitir_editar_tipo_cambio;
+    return !!this.apiService.auth_user()?.empresa?.custom_empresa?.facturacion_fe?.permitir_editar_tipo_cambio
+      || !!this.monedaConfig?.permitir_editar;
   }
 
   get puedeEditarTipoCambio(): boolean {
     return this.tieneMultimoneda
       && this.monedaVenta === 'USD'
+      && this.monedaVenta !== this.monedaFuncional
       && this.permitirEditarTipoCambioVentas
       && !this.ventaYaEmitida;
   }
@@ -1235,34 +1288,39 @@ export class FacturacionV2Component implements OnInit {
   }
 
   public onCurrencyCodeChange(): void {
-    if (this.venta.currency_code === 'CRC') {
+    if (this.venta.currency_code === this.monedaFuncional) {
       this.venta.exchange_rate = 1;
       this.tcPreview = { rate: 1, date: this.venta.fecha, loading: false, error: null };
       return;
     }
-    // Forzar refetch de BCCR: un exchange_rate=1 heredado de CRC no es válido para USD.
     this.venta.exchange_rate = null;
     this.cargarTipoCambioPreview();
   }
 
   public onFechaVentaChange(): void {
-    if (this.tieneMultimoneda && this.monedaVenta === 'USD' && !this.ventaYaEmitida) {
+    if (this.tieneMultimoneda && this.monedaVenta === 'USD' && this.monedaVenta !== this.monedaFuncional && !this.ventaYaEmitida) {
       this.cargarTipoCambioPreview();
     }
   }
 
-  /** GET liviano a BCCR (indicador 318) solo para preview; la persistencia real la hace el backend al guardar. */
   public cargarTipoCambioPreview(): void {
     if (this.ventaYaEmitida) {
       return;
     }
     const fecha = this.venta.fecha || this.apiService.date();
     this.tcPreview = { rate: null, date: fecha, loading: true, error: null };
-    this.apiService.getAll('fe-cr/bccr-tipo-cambio', { fecha }).subscribe({
+    this.apiService.getAll('moneda/tipo-cambio', { fecha }).subscribe({
       next: (res: any) => {
+        if (res?.moneda_funcional && !this.monedaConfig) {
+          this.monedaConfig = {
+            moneda_funcional: String(res.moneda_funcional).toUpperCase(),
+            monedas_documento: Array.isArray(res.monedas_documento) ? res.monedas_documento : this.monedasDocumento,
+            fuente: res.fuente || 'manual',
+            permitir_editar: !!res.permitir_editar,
+          };
+        }
         const rate = res?.rate != null ? parseFloat(res.rate) : null;
         this.tcPreview = { rate, date: res?.date ?? fecha, loading: false, error: null };
-        // Sin flag de edición manual: el TC de la venta siempre refleja el de BCCR del día.
         if (!this.permitirEditarTipoCambioVentas) {
           this.venta.exchange_rate = rate;
         } else if (this.venta.exchange_rate == null || this.venta.exchange_rate === '' || parseFloat(this.venta.exchange_rate) === 1) {
@@ -1270,7 +1328,7 @@ export class FacturacionV2Component implements OnInit {
         }
       },
       error: (err: any) => {
-        const msg = err?.error?.error || err?.error?.message || 'No hay tipo de cambio BCCR disponible para esta fecha.';
+        const msg = err?.error?.error || err?.error?.message || 'No hay tipo de cambio disponible para esta fecha.';
         this.tcPreview = { rate: null, date: fecha, loading: false, error: msg };
         if (!this.permitirEditarTipoCambioVentas) {
           this.venta.exchange_rate = null;
@@ -1281,9 +1339,8 @@ export class FacturacionV2Component implements OnInit {
     });
   }
 
-  /** Total en moneda empresa ÷ TC → dólares a cobrar al cliente. */
   get usdEquivalentTotal(): number | null {
-    if (!this.tieneMultimoneda || this.monedaVenta !== 'USD') {
+    if (!this.tieneMultimoneda || this.monedaVenta !== 'USD' || this.monedaVenta === this.monedaFuncional) {
       return null;
     }
     const total = parseFloat(this.venta?.total);
@@ -1294,13 +1351,20 @@ export class FacturacionV2Component implements OnInit {
     return total / rate;
   }
 
-  /** Spec §10.1.4: sin TC usable, bloquear procesar/emitir con mensaje claro. */
   get bloquearPorMonedaSinTc(): boolean {
-    if (!this.tieneMultimoneda || this.ventaYaEmitida || this.monedaVenta !== 'USD') {
+    if (!this.tieneMultimoneda || this.ventaYaEmitida || this.monedaVenta !== 'USD' || this.monedaVenta === this.monedaFuncional) {
       return false;
     }
     const rate = parseFloat(this.venta?.exchange_rate);
     return !Number.isFinite(rate) || rate <= 0 || rate === 1;
+  }
+
+  get etiquetaReferenciaTc(): string {
+    const fuente = this.monedaConfig?.fuente || '';
+    if (fuente === 'api') {
+      return 'Referencia API';
+    }
+    return 'Referencia configurada';
   }
 
   /** Catálogo MH (incoterm, recinto, régimen) y DTE 11: solo El Salvador. */
@@ -1979,7 +2043,7 @@ export class FacturacionV2Component implements OnInit {
   public onFacturar() {
     if (this.bloquearPorMonedaSinTc) {
       this.alertService.error(
-        'No hay tipo de cambio BCCR disponible para USD en la fecha indicada. Verifique la fecha o intente más tarde.'
+        'No hay tipo de cambio disponible para USD en la fecha indicada. Configure el TC del país o intente más tarde.'
       );
       return;
     }

@@ -25,7 +25,7 @@ use App\Services\Inventario\ConversionInventarioService;
 use App\Services\Inventario\LoteAsignacionService;
 use App\Services\Inventario\StockDisponibleService;
 use App\Services\Restaurante\PedidoCanalInventarioService;
-use App\Support\FacturacionElectronica\CostaRica\DocumentoMoneda;
+use App\Services\Moneda\MonedaPaisService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -158,7 +158,7 @@ class FacturacionService
                 }
 
                 try {
-                    $this->resolverMonedaCr($venta, $empresa, $request);
+                    $this->resolverMonedaDocumento($venta, $empresa, $request);
                 } catch (\RuntimeException $e) {
                     throw new FacturacionException($e->getMessage(), 422);
                 }
@@ -548,23 +548,25 @@ class FacturacionService
     }
 
     /**
-     * Resuelve currency_code/exchange_rate/CRC equivalent (§7.4).
-     * Requiere funcionalidad `multimoneda`; sin ella fuerza CRC.
-     * `$allowManualRate` es true solo si la empresa habilitó `facturacion_fe.permitir_editar_tipo_cambio`
-     * Y la venta aún no fue aceptada por Hacienda; si el flag está apagado se ignora el
-     * `exchange_rate` del request.
+     * Resuelve currency_code / exchange_rate / equivalent_* según pais_configuracion (módulo moneda).
+     * Sin funcionalidad `multimoneda` fuerza moneda funcional del país.
+     * Override de TC: empresa `facturacion_fe.permitir_editar_tipo_cambio` o país `permitir_editar`.
      */
-    private function resolverMonedaCr(Venta $venta, Empresa $empresa, Request $request): void
+    private function resolverMonedaDocumento(Venta $venta, Empresa $empresa, Request $request): void
     {
-        // Sin funcionalidad `multimoneda` (Super Admin): forzar CRC; no aceptar USD del request.
+        /** @var MonedaPaisService $monedaService */
+        $monedaService = app(MonedaPaisService::class);
+        $cfg = $monedaService->configForEmpresa($empresa);
+        $funcional = strtoupper((string) ($cfg['moneda_funcional'] ?? 'USD'));
+
         if (! $empresa->tieneFuncionalidadMultimoneda()) {
-            $moneda = app(DocumentoMoneda::class)->resolve(
+            $moneda = $monedaService->resolveDocumento(
+                $empresa,
                 [
-                    'currency_code' => DocumentoMoneda::MONEDA_CRC,
+                    'currency_code' => $funcional,
                     'total' => (float) $venta->total,
                     'iva' => (float) $venta->iva,
                 ],
-                $empresa,
                 Carbon::parse($venta->fecha ?: now())
             );
             $venta->fill($moneda);
@@ -573,17 +575,19 @@ class FacturacionService
         }
 
         $documentoYaEmitido = ! empty($venta->dte);
-        $allowManualRate = ! $documentoYaEmitido
-            && (bool) $empresa->getCustomConfigValue('facturacion_fe', 'permitir_editar_tipo_cambio', false);
+        $allowManualRate = ! $documentoYaEmitido && (
+            (bool) $empresa->getCustomConfigValue('facturacion_fe', 'permitir_editar_tipo_cambio', false)
+            || (bool) ($cfg['permitir_editar'] ?? false)
+        );
 
-        $moneda = app(DocumentoMoneda::class)->resolve(
+        $moneda = $monedaService->resolveDocumento(
+            $empresa,
             [
-                'currency_code' => $request->input('currency_code', $venta->currency_code ?? DocumentoMoneda::MONEDA_CRC),
+                'currency_code' => $request->input('currency_code', $venta->currency_code ?? $funcional),
                 'exchange_rate' => $request->input('exchange_rate'),
                 'total' => (float) $venta->total,
                 'iva' => (float) $venta->iva,
             ],
-            $empresa,
             Carbon::parse($venta->fecha ?: now()),
             $allowManualRate
         );
