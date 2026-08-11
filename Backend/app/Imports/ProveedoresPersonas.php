@@ -31,11 +31,19 @@ class ProveedoresPersonas implements ToModel, WithHeadingRow, WithValidation, Sk
     public function prepareForValidation(array $row, $index): array
     {
         $stringKeys = [
-            'nombre', 'apellido', 'dui', 'nit', 'rtn', 'direccion', 'municipio',
-            'departamento', 'telefono', 'correo',
+            'nombre', 'apellido', 'dui', 'nit', 'rtn', 'n_de_identificacion',
+            'direccion', 'municipio', 'departamento', 'telefono', 'correo',
         ];
 
-        return $this->applyExcelRowNormalization($row, $stringKeys, false);
+        $row = $this->applyExcelRowNormalization($row, $stringKeys, false);
+
+        // Honduras: "N. de Identificación" → slug n_de_identificacion
+        if ((!isset($row['dui']) || trim((string) ($row['dui'] ?? '')) === '')
+            && !empty($row['n_de_identificacion'])) {
+            $row['dui'] = $row['n_de_identificacion'];
+        }
+
+        return $row;
     }
 
     public function isEmptyRow(array $row): bool
@@ -58,9 +66,8 @@ class ProveedoresPersonas implements ToModel, WithHeadingRow, WithValidation, Sk
         $proveedor->apellido = $row['apellido'];
         $proveedor->tipo = 'Persona';
         $proveedor->tipo_contribuyente = 'Pequeño';
-        $proveedor->dui = $row['dui'] ?? null;
-        // Honduras: columna rtn; El Salvador / general: nit
-        $proveedor->nit = $row['rtn'] ?? $row['nit'] ?? null;
+        $proveedor->dui = $row['dui'] ?? $row['n_de_identificacion'] ?? null;
+        $proveedor->nit = $row['nit'] ?? $row['rtn'] ?? null;
         $proveedor->direccion = $row['direccion'] ?? null;
         $proveedor->municipio = $row['municipio'] ?? null;
         $proveedor->departamento = $row['departamento'] ?? null;
@@ -82,6 +89,7 @@ class ProveedoresPersonas implements ToModel, WithHeadingRow, WithValidation, Sk
             'nombre' => 'required|string',
             'apellido' => 'required|string',
             'dui' => 'nullable|string',
+            'n_de_identificacion' => 'nullable|string',
             'nit' => 'nullable|string',
             'rtn' => 'nullable|string',
             'direccion' => 'nullable|string',
