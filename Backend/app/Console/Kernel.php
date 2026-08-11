@@ -35,10 +35,17 @@ class Kernel extends ConsoleKernel
         //      ->dailyAt('23:59');
         $schedule->command('reportes:enviar')
             ->everyFiveMinutes()
+            ->withoutOverlapping()
+            ->runInBackground()
             ->appendOutputTo(storage_path('logs/reportes-automaticos.log'));
 
         $schedule->command('auditoria:purge')
             ->monthlyOn(1, '04:00');
+
+        $schedule->command('reportes:limpiar-exportaciones')
+            ->dailyAt('03:30')
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/reportes-automaticos-limpieza.log'));
 
         $schedule->command('metricas:empresas')
             ->dailyAt('03:00')
@@ -111,6 +118,11 @@ class Kernel extends ConsoleKernel
             ->monthlyOn(1, '08:15')
             ->withoutOverlapping()
             ->appendOutputTo(storage_path('logs/suscripciones-reporte-flujo-caja-mensual.log'));
+
+        $schedule->command('suscripciones:reporte-bajas-mensual')
+            ->monthlyOn(1, '08:30')
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/suscripciones-reporte-bajas-mensual.log'));
 
         foreach ([7, 15, 22, 31] as $diaReporteCategoriaSucursal) {
             $schedule->command('reporte:ventas-por-categoria-sucursal')

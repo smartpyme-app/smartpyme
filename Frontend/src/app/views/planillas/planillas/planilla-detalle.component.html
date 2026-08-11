@@ -622,9 +622,8 @@
                     <div class="input-group">
                       <input type="number" class="form-control"
                         [(ngModel)]="detalleSeleccionado.dias_laborados"
-                        (input)="calcularTotalesUnificado()"
                         name="dias_laborados"
-                        (change)="calcularTotalesUnificado()"
+                        (ngModelChange)="calcularTotalesUnificado()"
                         [disabled]="planilla.estado !== 2 && planilla.estado !== 3"
                       />
                       <span class="input-group-text">días</span>

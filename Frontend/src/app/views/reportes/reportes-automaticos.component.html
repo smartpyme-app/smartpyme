@@ -686,10 +686,13 @@
         </div> -->
           </div>
         }
-      @if (configuracionActual?.tipo_reporte === 'ventas-por-categoria-vendedor') {
+      @if (
+        configuracionActual?.tipo_reporte === 'ventas-por-categoria-vendedor' ||
+        configuracionActual?.tipo_reporte === 'cobros-por-vendedor'
+      ) {
         <div
           class="mb-4"
-          id="config-categorias"
+          id="config-sucursales"
         >
           <div class="form-group mb-3">
             <label for="sucursales" class="form-label fw-bold">Sucursales</label>
@@ -1052,6 +1055,51 @@
         />
       </div>
     </div>
+
+    <div class="mb-4">
+      <label for="sucursales_descarga" class="form-label fw-bold"
+        >Sucursales</label
+      >
+      <div class="mb-2">
+        <button
+          type="button"
+          class="btn btn-sm btn-outline-secondary"
+          (click)="toggleSelectAllSucursalesDescarga()"
+        >
+          <i
+            [ngClass]="{
+              'fa-check-square-o': isAllSucursalesDescargaSelected(),
+              'fa-square-o': !isAllSucursalesDescargaSelected()
+            }"
+            class="fa me-1"
+          ></i>
+          {{
+            isAllSucursalesDescargaSelected()
+              ? "Deseleccionar todas"
+              : "Seleccionar todas"
+          }}
+        </button>
+      </div>
+      <ng-select
+        [items]="sucursales"
+        bindLabel="nombre"
+        bindValue="id"
+        [multiple]="true"
+        placeholder="Seleccione sucursales"
+        [(ngModel)]="sucursalesDescarga"
+        name="sucursales_descarga"
+        clearable="true"
+      >
+        <ng-template ng-option-tmp let-item="item">
+          {{ item.nombre }}
+        </ng-template>
+      </ng-select>
+      <small class="form-text text-muted">
+        Se heredan de la configuración. Puede ajustarlas solo para esta
+        descarga; si deja vacío se usarán todas.
+      </small>
+    </div>
+
     <div class="mb-4">
       <label class="form-label d-block fw-bold">Períodos predefinidos</label>
 

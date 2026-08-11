@@ -829,6 +829,9 @@ export class PlanillaDetalleComponent implements OnInit {
       return;
     }
 
+    // Recalcular salario + ISSS/AFP/renta/neto con los días actuales antes de persistir
+    this.calcularTotalesUnificado();
+
     this.saving = true;
 
     const datosActualizados: any = this.construirDatosDetalle();

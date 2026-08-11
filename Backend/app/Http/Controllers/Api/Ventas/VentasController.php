@@ -842,6 +842,21 @@ class VentasController extends Controller
         if ($documento->nombre == 'Ticket' || $documento->nombre == 'Recibo') {
             $documento = Documento::findOrfail($venta->id_documento);
 
+            // SANTRÉ S de RL (818) — Ticket/Recibo
+            if (Auth::user()->id_empresa == 818) {
+                $cliente = Cliente::withoutGlobalScope('empresa')->find($venta->id_cliente);
+                $venta->load('detalles.producto');
+                $formatter = new NumeroALetras();
+                $n = explode('.', number_format((float) $venta->total, 2, '.', ''));
+                $dolares = $formatter->toWords((float) $n[0]);
+                $centavosNum = str_pad(isset($n[1]) ? $n[1] : '00', 2, '0', STR_PAD_LEFT);
+                $venta->pdf = false;
+                return view(
+                    'reportes.facturacion.formatos_empresas.Ticket-Santre',
+                    compact('venta', 'empresa', 'documento', 'cliente', 'dolares', 'centavosNum')
+                );
+            }
+
             if (
                 (isset($empresa->custom_empresa['configuraciones']['factura_ticket_accesorios_hn']) &&
                     $empresa->custom_empresa['configuraciones']['factura_ticket_accesorios_hn'] == true)
@@ -865,6 +880,29 @@ class VentasController extends Controller
 
         if ($documento->nombre == 'Factura' || DocumentoImpresionHn::aplica($empresa, $documento)) {
             $cliente = Cliente::withoutGlobalScope('empresa')->find($venta->id_cliente);
+
+            // SANTRÉ S de RL (818) — Factura usa el mismo ticket
+            if (Auth::user()->id_empresa == 818) {
+                $venta->load('detalles.producto');
+                $formatter = new NumeroALetras();
+                $n = explode('.', number_format((float) $venta->total, 2, '.', ''));
+                $dolares = $formatter->toWords((float) $n[0]);
+                $centavosNum = str_pad(isset($n[1]) ? $n[1] : '00', 2, '0', STR_PAD_LEFT);
+                $venta->pdf = true;
+                $pdf = app('dompdf.wrapper')->loadView(
+                    'reportes.facturacion.formatos_empresas.Ticket-Santre',
+                    compact('venta', 'empresa', 'documento', 'cliente', 'dolares', 'centavosNum')
+                );
+                $alto_base = 320;
+                $alto_por_producto = 22;
+                $total_lineas = max(1, $venta->detalles->count());
+                $notaExtra = $documento->nota ? min(45, (substr_count((string) $documento->nota, "\n") + 1) * 5) : 0;
+                $alto_total_mm = $alto_base + ($total_lineas * $alto_por_producto) + $notaExtra;
+                $alto_total_pt = $alto_total_mm * 2.83465;
+                $ancho_pt = 80 * 2.83465;
+                $pdf->setPaper([0, 0, $ancho_pt, $alto_total_pt]);
+                return $pdf->stream($empresa->nombre . '-factura-' . $venta->correlativo . '.pdf');
+            }
 
             // Accesorios HN (716) o flag en custom_empresa
             if (DocumentoImpresionHn::usaTicketAccesorios($empresa, $documento->nombre)) {
@@ -979,9 +1017,19 @@ class VentasController extends Controller
                 $centavos = str_pad(isset($n[1]) ? $n[1] : '00', 2, '0', STR_PAD_LEFT);
                 $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Factura-Accesorios-Honduras', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos', 'documento'));
                 $pdf->setPaper('US Letter', 'portrait');
+            } elseif (Auth::user()->id_empresa == 830 || Auth::user()->id_empresa == 774) { //830/774 Inversiones Padilla - Honduras
+                $venta->load('detalles.producto', 'vendedor', 'sucursal');
+                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Factura-Inversiones-Padilla', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos', 'documento'));
+                $pdf->setPaper('US Letter', 'portrait');
             } else {
-                // return View('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos', 'documento'));
-                $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos', 'documento'));
+                // Honduras sin formato propio: plantilla base genérica (no hardcodeada)
+                if (strcasecmp((string) ($empresa->pais ?? ''), 'Honduras') === 0) {
+                    $venta->load('detalles.producto', 'sucursal');
+                    $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.Factura-Honduras', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos', 'documento'));
+                } else {
+                    // return View('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos', 'documento'));
+                    $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.factura', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos', 'documento'));
+                }
                 $pdf->setPaper('US Letter', 'portrait');
             }
 
@@ -1531,7 +1579,7 @@ class VentasController extends Controller
                     'id_empresa' => $empresa->id,
                     'inicio' => $fechaInicio,
                     'fin' => $fechaFin,
-                    'id_sucursal' => !empty($configuracion->sucursales) ? $configuracion->sucursales[0] : '',
+                    'sucursales' => $configuracion->sucursales ?? [],
                 ]);
                 $export = new CobrosPorVendedorExport();
                 $export->filter($request);
@@ -1707,7 +1755,7 @@ class VentasController extends Controller
                     'id_empresa' => $configuracion->id_empresa,
                     'inicio' => $fechaInicio,
                     'fin' => $fechaFin,
-                    'id_sucursal' => !empty($configuracion->sucursales) ? $configuracion->sucursales[0] : '',
+                    'sucursales' => $configuracion->sucursales ?? [],
                 ]);
                 $export = new CobrosPorVendedorExport();
                 $export->filter($request);
@@ -1895,7 +1943,7 @@ class VentasController extends Controller
                     'id_empresa' => $configuracion->id_empresa,
                     'inicio' => $fechaInicio,
                     'fin' => $fechaFin,
-                    'id_sucursal' => !empty($configuracion->sucursales) ? $configuracion->sucursales[0] : '',
+                    'sucursales' => $configuracion->sucursales ?? [],
                 ]);
                 $export = new CobrosPorVendedorExport();
                 $export->filter($request);

@@ -113,12 +113,16 @@ class WooCommerceProductosImport implements ToModel, WithHeadingRow, SkipsEmptyR
             ?? ($parentData['categorias'] ?? '');
         $id_categoria = $this->resolverCategoria($categoriasRaw);
 
-        // Resolver descripción
-        $descripcionCorta = $this->getValue($row, ['descripcion_corta', 'short_description'])
-            ?? ($parentData['descripcion_corta'] ?? '');
-        $descripcionLarga = $this->getValue($row, ['descripcion', 'description'])
-            ?? ($parentData['descripcion'] ?? '');
-        $descripcion = !empty($descripcionCorta) ? $descripcionCorta : $descripcionLarga;
+        // Resolver descripción (texto plano: sin HTML ni \n literales del CSV de WooCommerce)
+        $descripcionCorta = $this->limpiarTextoPlano(
+            $this->getValue($row, ['descripcion_corta', 'short_description'])
+                ?? ($parentData['descripcion_corta'] ?? '')
+        );
+        $descripcionLarga = $this->limpiarTextoPlano(
+            $this->getValue($row, ['descripcion', 'description'])
+                ?? ($parentData['descripcion'] ?? '')
+        );
+        $descripcion = $descripcionCorta !== '' ? $descripcionCorta : $descripcionLarga;
         $descripcionCompleta = $descripcionLarga;
 
         // Precio WooCommerce: viene con IVA incluido. Preferir Precio rebajado si existe, sino Precio normal.
@@ -287,6 +291,33 @@ class WooCommerceProductosImport implements ToModel, WithHeadingRow, SkipsEmptyR
             }
         }
         return null;
+    }
+
+    /**
+     * Convierte HTML / escapes del CSV de WooCommerce a texto plano legible en SP.
+     */
+    private function limpiarTextoPlano($value): string
+    {
+        if ($value === null || $value === '') {
+            return '';
+        }
+
+        $text = (string) $value;
+
+        // Saltos de línea HTML → espacio antes de quitar tags
+        $text = preg_replace('/<br\s*\/?>/i', ' ', $text);
+        $text = preg_replace('/<\/(p|div|li|h[1-6]|tr)>/i', ' ', $text);
+
+        $text = html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        // \n / \r literales que a veces vienen escapados en el CSV
+        $text = str_replace(['\\r\\n', '\\n', '\\r'], ' ', $text);
+        // Saltos reales
+        $text = str_replace(["\r\n", "\n", "\r"], ' ', $text);
+
+        $text = preg_replace('/\s+/u', ' ', $text);
+
+        return trim($text);
     }
 
     private function normalizeHeader($header)
