@@ -12,6 +12,9 @@ use Illuminate\Support\Facades\Log;
  */
 class BchTipoCambioClient
 {
+    /** Días hacia atrás si el día pedido aún no tiene cifra (finde / feriado / no publicada). */
+    private const LOOKBACK_DAYS = 14;
+
     public function fetchReferenciaRate(\DateTimeInterface $date): ?float
     {
         $key = trim((string) config('services.bch.api_key'));
@@ -25,8 +28,9 @@ class BchTipoCambioClient
 
         $fecha = $date instanceof \DateTimeImmutable ? $date : \DateTimeImmutable::createFromInterface($date);
         $dayStr = $fecha->format('Y-m-d');
+        $inicioStr = $fecha->modify('-'.self::LOOKBACK_DAYS.' days')->format('Y-m-d');
         $indicador = (int) config('services.bch.indicador_referencia', 97);
-        $base = rtrim((string) config('services.bch.base_url'), '/');
+        $base = $this->resolveBaseUrl((string) config('services.bch.base_url'));
         $url = "{$base}/api/v1/indicadores/{$indicador}/cifras";
         $timeout = (int) config('services.bch.timeout_seconds', 25);
 
@@ -38,19 +42,41 @@ class BchTipoCambioClient
                     'User-Agent' => (string) config('services.bch.user_agent', 'SmartPyme-BCH/1'),
                 ])
                 ->get($url, [
-                    'fechaInicio' => $dayStr,
+                    'fechaInicio' => $inicioStr,
                     'fechaFinal' => $dayStr,
+                    'fechaFin' => $dayStr,
                 ]);
 
             if (! $response->successful()) {
                 Log::warning('BCH: respuesta HTTP no exitosa al consultar cifras.', [
                     'status' => $response->status(),
+                    'url' => $url,
+                    'body' => mb_substr((string) $response->body(), 0, 300),
                 ]);
 
                 return null;
             }
 
-            return $this->parseCifrasResponse($response->json(), $dayStr);
+            $json = $response->json();
+            if (! is_array($json)) {
+                Log::warning('BCH: respuesta no-JSON al consultar cifras.', [
+                    'url' => $url,
+                    'body' => mb_substr((string) $response->body(), 0, 300),
+                ]);
+
+                return null;
+            }
+
+            $rate = $this->parseCifrasResponse($json, $dayStr);
+            if ($rate === null) {
+                Log::warning('BCH: sin cifra usable en el rango consultado.', [
+                    'fecha' => $dayStr,
+                    'desde' => $inicioStr,
+                    'rows' => is_countable($json) ? count($json) : null,
+                ]);
+            }
+
+            return $rate;
         } catch (\RuntimeException $e) {
             throw $e;
         } catch (\Throwable $e) {
@@ -58,6 +84,19 @@ class BchTipoCambioClient
 
             return null;
         }
+    }
+
+    /**
+     * Gateway real: bchapi-am.azure-api.net. El host *.developer.* es solo el portal.
+     */
+    public function resolveBaseUrl(string $configured): string
+    {
+        $base = rtrim(trim($configured), '/');
+        if ($base === '' || str_contains($base, 'developer.azure-api.net')) {
+            return 'https://bchapi-am.azure-api.net';
+        }
+
+        return $base;
     }
 
     /**

@@ -35,4 +35,17 @@ final class BchTipoCambioClientTest extends TestCase
         $this->assertNull($client->parseCifrasResponse([], '2026-08-11'));
         $this->assertNull($client->parseCifrasResponse(null, '2026-08-11'));
     }
+
+    public function test_resolve_base_url_corrige_portal_developer(): void
+    {
+        $client = new BchTipoCambioClient();
+        $this->assertSame(
+            'https://bchapi-am.azure-api.net',
+            $client->resolveBaseUrl('https://bchapi-am.developer.azure-api.net')
+        );
+        $this->assertSame(
+            'https://bchapi-am.azure-api.net',
+            $client->resolveBaseUrl('https://bchapi-am.azure-api.net/')
+        );
+    }
 }
