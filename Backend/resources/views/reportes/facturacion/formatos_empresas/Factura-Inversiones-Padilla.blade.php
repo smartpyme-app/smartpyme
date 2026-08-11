@@ -104,23 +104,32 @@
 <body>
 <section id="factura">
 @php
+    // El UI no captura `prefijo`: sucursal → documento.prefijo → rango (Serie o Autorización).
     $corr = str_pad((string) $venta->correlativo, 8, '0', STR_PAD_LEFT);
     $prefPorSucursalJson = data_get($empresa->custom_empresa, 'configuraciones.prefijo_factura_padilla_por_sucursal', []);
     $prefPorSucursal = is_array($prefPorSucursalJson) ? $prefPorSucursalJson : [];
     $idSucVenta = $venta->id_sucursal;
-    $prefFijoSucursal = null;
+    $pref = '';
     if ($idSucVenta !== null) {
         $prefFijoSucursal = $prefPorSucursal[(string) $idSucVenta] ?? $prefPorSucursal[$idSucVenta] ?? null;
+        if ($prefFijoSucursal !== null && trim((string) $prefFijoSucursal) !== '') {
+            $pref = trim((string) $prefFijoSucursal);
+        }
     }
-    if ($prefFijoSucursal !== null && trim((string) $prefFijoSucursal) !== '') {
-        $numFacturaDisplay = trim((string) $prefFijoSucursal) . $corr;
-    } else {
-        $prefDoc = trim((string) ($documento->prefijo ?? ''));
-        $numFacturaDisplay = $prefDoc !== '' ? $prefDoc . $corr : $corr;
+    if ($pref === '') {
+        $pref = trim((string) ($documento->prefijo ?? ''));
     }
+    $rangoAuth = data_get($empresa->custom_empresa, 'configuraciones.factura_rango_autorizado')
+        ?: (trim((string) ($documento->rangos ?? '')) !== '' ? $documento->rangos : null)
+        ?: (trim((string) ($documento->numero_autorizacion ?? '')) !== '' ? $documento->numero_autorizacion : null);
+    if ($pref === '' && $rangoAuth) {
+        if (preg_match('/(\d{3}-\d{3}-\d{2}-)/', (string) $rangoAuth, $mPref)) {
+            $pref = $mPref[1];
+        }
+    }
+    $numFacturaDisplay = $pref !== '' ? rtrim($pref, '-') . '-' . $corr : $corr;
 
     $cai = data_get($empresa->custom_empresa, 'configuraciones.factura_cai') ?: ($documento->resolucion ?? null);
-    $rangoAuth = data_get($empresa->custom_empresa, 'configuraciones.factura_rango_autorizado') ?: ($documento->rangos ?? null);
     $fechaLimiteCai = data_get($empresa->custom_empresa, 'configuraciones.factura_fecha_limite');
     if ($fechaLimiteCai) {
         try {
@@ -162,7 +171,10 @@
         $direccionClienteFactura = trim(implode(', ', $partesDir));
         $telefonoClienteFactura = trim((string) ($cliente->getTelefonoEfectivo() ?? $cliente->telefono ?? $cliente->empresa_telefono ?? ''));
         $correoClienteFactura = trim((string) ($cliente->correo ?? $cliente->email ?? ''));
-        $rtnCliente = trim((string) ($cliente->nit ?? ''));
+        $rtnCliente = trim((string) ($cliente->ncr ?? ''));
+        if ($rtnCliente === '') {
+            $rtnCliente = trim((string) ($cliente->nit ?? ''));
+        }
         if ($rtnCliente === '') {
             $rtnCliente = trim((string) ($cliente->dui ?? ''));
         }
@@ -397,7 +409,7 @@
                     <li>FICOHSA: 200015533292 Dólares</li>
                 </ul>
             </li>
-            <li>Si el pago se realiza en lempiras, se debe realizar a tasa de cambio L. 26.9455</li>
+            <li>Si el pago se realiza en lempiras, se debe realizar a tasa de cambio L. 26.9449</li>
             <li>Se debe enviar comprobante de pago al correo: <a href="mailto:sac@bigtechnologyhn.com">sac@bigtechnologyhn.com</a></li>
             <li>Si realiza retención debe compartirlo con su comprobante de pago</li>
             <li>Fecha de vencimiento se detalla en factura.</li>
