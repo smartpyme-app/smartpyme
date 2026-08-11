@@ -2048,7 +2048,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
   get etiquetaReferenciaTc(): string {
     const fuente = this.monedaConfig?.fuente || '';
     if (fuente === 'api') {
-      return 'Referencia API';
+      return this.esHondurasFacturacion ? 'Referencia BCH' : 'Referencia API';
     }
     return 'Referencia configurada';
   }

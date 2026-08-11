@@ -303,6 +303,14 @@ final class DocumentoImpresionHnTest extends TestCase
         $this->assertSame("Línea 1\nLínea 2", $completo['nota']);
         $this->assertSame('001-001-01-00000001 A 001-001-01-00003000', $completo['rango']);
         $this->assertSame('23/05/2027', $completo['fecha_limite']);
+
+        $desdeAutorizacion = DocumentoImpresionHn::footer(new Documento([
+            'rangos' => '',
+            'numero_autorizacion' => 'Desde 002-001-01-00011001 Hasta 002-001-01-00011500',
+            'resolucion' => 'CAI-XYZ',
+        ]));
+        $this->assertSame('Desde 002-001-01-00011001 Hasta 002-001-01-00011500', $desdeAutorizacion['rango']);
+        $this->assertSame('CAI-XYZ', $desdeAutorizacion['cai']);
     }
 
     public function test_correlativo_sin_numero_emision_conserva_el_valor_plano(): void

@@ -41,8 +41,9 @@ final class MonedaDefaultPorPais
             return [
                 'moneda_funcional' => 'HNL',
                 'monedas_documento' => ['HNL', 'USD'],
-                'fuente' => 'manual',
-                'api' => null,
+                // BCH sugiere TC de referencia; permitir_editar deja ajustar a BAC u otra banca.
+                'fuente' => 'api',
+                'api' => ['provider' => 'bch'],
                 'rate_del_dia' => null,
                 'rate_manual' => null,
                 'permitir_editar' => true,

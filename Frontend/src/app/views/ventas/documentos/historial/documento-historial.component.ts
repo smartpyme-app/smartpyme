@@ -49,6 +49,15 @@ export class DocumentoHistorialComponent extends BasePaginatedModalComponent imp
         return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_HN;
     }
 
+    /** Serie (rangos) es de SV; en HN el CAI va en resolución y el rango en autorización. */
+    get showSerie(): boolean {
+        return !this.esHonduras;
+    }
+
+    get labelResolucion(): string {
+        return this.esHonduras ? 'CAI' : 'Resolución';
+    }
+
     showNumeroEmision(documento: { nombre?: string } = this.documento): boolean {
         return this.esHonduras && esDocumentoFiscalHn(documento?.nombre);
     }

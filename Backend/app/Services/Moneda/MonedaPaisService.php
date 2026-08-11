@@ -12,26 +12,38 @@ use RuntimeException;
 
 /**
  * Config y resolución de TC por país (`pais_configuracion` módulo moneda).
- * CR (fuente=api/bccr) → BCCR; HN y demás (fuente=manual) → rate_manual / override.
+ * CR (api/bccr) → BCCR; HN (api/bch, editable) → BCH + override; resto → rate_manual.
  */
 final class MonedaPaisService
 {
-    public function __construct(private readonly CostaRicaTipoCambioService $bccr) {}
+    public function __construct(
+        private readonly CostaRicaTipoCambioService $bccr,
+        private readonly HondurasTipoCambioService $bch,
+    ) {}
 
     /** @return array<string, mixed> */
     public function configForEmpresa(Empresa $empresa): array
     {
         $pais = FacturacionElectronicaCountryResolver::resolveCodigoPaisFe($empresa);
+        $plantilla = MonedaDefaultPorPais::plantilla($pais);
         $row = PaisConfiguracion::query()
             ->pais($pais)
             ->modulo(PaisConfiguracion::MODULO_MONEDA)
             ->first();
 
-        if ($row && is_array($row->configuracion)) {
-            return array_merge(MonedaDefaultPorPais::plantilla($pais), $row->configuracion);
+        if (! $row || ! is_array($row->configuracion)) {
+            return $plantilla;
         }
 
-        return MonedaDefaultPorPais::plantilla($pais);
+        $merged = array_merge($plantilla, $row->configuracion);
+        // HN: plantilla manda fuente/api/editar (híbrido BCH); se conservan rate_manual / rate_del_dia del row.
+        if ($pais === 'HN') {
+            $merged['fuente'] = $plantilla['fuente'];
+            $merged['api'] = $plantilla['api'];
+            $merged['permitir_editar'] = $plantilla['permitir_editar'];
+        }
+
+        return $merged;
     }
 
     public function monedaFuncional(Empresa $empresa): string
@@ -166,6 +178,10 @@ final class MonedaPaisService
 
         if ($fuente === 'api' && $provider === 'bccr') {
             return $this->bccr->rateForDate($day);
+        }
+
+        if ($fuente === 'api' && $provider === 'bch') {
+            return $this->bch->rateForDate($day);
         }
 
         $cached = $cfg['rate_del_dia'] ?? null;
