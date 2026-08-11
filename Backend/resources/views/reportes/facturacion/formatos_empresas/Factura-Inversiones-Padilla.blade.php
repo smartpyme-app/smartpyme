@@ -27,7 +27,7 @@
         table { width: 100%; border-collapse: collapse; table-layout: fixed; }
         td, th { vertical-align: top; word-wrap: break-word; }
 
-        .logo { height: 60px; width: auto; }
+        .logo { height: 100px; width: auto; }
         .header-right { text-align: right; font-size: 9px; line-height: 1.35; }
         .header-right .num-linea {
             font-size: 10.5px;
