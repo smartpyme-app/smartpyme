@@ -35,10 +35,11 @@ class BchTipoCambioClient
         $timeout = (int) config('services.bch.timeout_seconds', 25);
 
         try {
+            // BCH renombró el header de suscripción APIM a "clave" (no Ocp-Apim-Subscription-Key).
             $response = Http::timeout($timeout)
                 ->acceptJson()
                 ->withHeaders([
-                    'Ocp-Apim-Subscription-Key' => $key,
+                    'clave' => $key,
                     'User-Agent' => (string) config('services.bch.user_agent', 'SmartPyme-BCH/1'),
                 ])
                 ->get($url, [

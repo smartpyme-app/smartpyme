@@ -13,7 +13,7 @@ Sugerir TC USD→HNL desde la API del Banco Central de Honduras (indicador EC-TC
 
 ## Config
 
-- `.env`: `BCH_API_BASE_URL`, `BCH_API_KEY` (header `Ocp-Apim-Subscription-Key`), timeout.
+- `.env`: `BCH_API_BASE_URL`, `BCH_API_KEY` (header HTTP `clave`), timeout.
 - `MonedaDefaultPorPais` HN: `fuente=api`, `api.provider=bch`, `permitir_editar=true`.
 
 ## Archivos
