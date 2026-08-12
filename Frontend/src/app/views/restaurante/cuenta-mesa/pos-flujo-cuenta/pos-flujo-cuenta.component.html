@@ -53,15 +53,18 @@
           <ng-container *ngIf="tipoDivision === 'por_items'">
             <label class="form-label">Persona activa</label>
             <div class="cuenta-tabs mb-3">
-              <button type="button" class="cuenta-tab" *ngFor="let p of personas" [class.activa]="p === personaActiva"
+              @for (p of personas; track p) {
+              <button type="button" class="cuenta-tab" [class.activa]="p === personaActiva"
                 (click)="setPersonaActiva(p)">
                 Persona {{ p }}
               </button>
+              }
             </div>
 
             <label class="form-label">Toque un ítem para asignarlo a la persona activa</label>
             <div class="cuenta-items-lista">
-              <button type="button" class="cuenta-item" *ngFor="let item of items" (click)="onTapItem(item)"
+              @for (item of items; track item.id) {
+              <button type="button" class="cuenta-item" (click)="onTapItem(item)"
                 [class.sin-asignar]="estadoLinea(item) === 'sin_asignar'"
                 [class.parcial]="estadoLinea(item) === 'parcial'"
                 [class.completo]="estadoLinea(item) === 'completo'">
@@ -76,6 +79,7 @@
                   </span>
                 </span>
               </button>
+              }
               <p *ngIf="!items.length" class="text-muted small py-3 mb-0">No hay ítems en la orden.</p>
             </div>
           </ng-container>

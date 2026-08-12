@@ -22,6 +22,7 @@
           class="form-control"
           placeholder="Buscar zona…"
           [(ngModel)]="filtroZona"
+          (ngModelChange)="onFiltroZonaChange()"
           name="filtroZona"
           autocomplete="off"
         >
@@ -77,35 +78,39 @@
           Ninguna zona coincide con «{{ filtroZona.trim() }}».
           <button type="button" class="btn btn-link btn-sm" (click)="limpiarFiltroZona()">Limpiar</button>
         </div>
-        <div *ngFor="let grupo of mesasPorZona" class="mb-4">
-          <h5 class="mb-3 text-muted">{{ grupo.nombre }}</h5>
-          <div class="mesa-grid">
-            <div *ngFor="let mesa of grupo.mesas" class="mesa-wrap">
-              <button
-                type="button"
-                class="btn btn-sm btn-light mesa-edit-btn"
-                (click)="openModalMesa(templateMesa, mesa); $event.stopPropagation()"
-                title="Editar mesa"
-              >
-                <i class="fa fa-cog"></i>
-              </button>
-              <div
-                class="mesa-item"
-                [style.background-color]="colorMesa(mesa)"
-                [class.mesa-inactiva]="!mesa.activo"
-                (click)="mesa.activo && onClickMesa(mesa)"
-                [class.cursor-pointer]="mesa.activo && (mesa.estado === 'libre' || mesa.estado === 'ocupada' || mesa.estado === 'pendiente_pago' || mesa.estado === 'reservada')"
-              >
-                <div class="mesa-numero">{{ mesa.numero }}</div>
-                <div class="mesa-info" *ngIf="mesa.capacidad">Cap. {{ mesa.capacidad }}</div>
-                <div class="mesa-tiempo" *ngIf="mesa.tiempo_abierta">{{ mesa.tiempo_abierta }}</div>
-                <div class="mesa-tiempo" *ngIf="mesa.estado === 'reservada' && mesa.reservas_activas?.[0]">
-                  {{ mesa.reservas_activas[0].hora_reserva }}
+        @for (grupo of mesasPorZona; track grupo.nombre) {
+          <div class="mb-4">
+            <h5 class="mb-3 text-muted">{{ grupo.nombre }}</h5>
+            <div class="mesa-grid">
+              @for (mesa of grupo.mesas; track mesa.id) {
+                <div class="mesa-wrap">
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-light mesa-edit-btn"
+                    (click)="openModalMesa(templateMesa, mesa); $event.stopPropagation()"
+                    title="Editar mesa"
+                  >
+                    <i class="fa fa-cog"></i>
+                  </button>
+                  <div
+                    class="mesa-item"
+                    [style.background-color]="colorMesa(mesa)"
+                    [class.mesa-inactiva]="!mesa.activo"
+                    (click)="mesa.activo && onClickMesa(mesa)"
+                    [class.cursor-pointer]="mesa.activo && (mesa.estado === 'libre' || mesa.estado === 'ocupada' || mesa.estado === 'pendiente_pago' || mesa.estado === 'reservada')"
+                  >
+                    <div class="mesa-numero">{{ mesa.numero }}</div>
+                    <div class="mesa-info" *ngIf="mesa.capacidad">Cap. {{ mesa.capacidad }}</div>
+                    <div class="mesa-tiempo" *ngIf="mesa.tiempo_abierta">{{ mesa.tiempo_abierta }}</div>
+                    <div class="mesa-tiempo" *ngIf="mesa.estado === 'reservada' && mesa.reservas_activas?.[0]">
+                      {{ mesa.reservas_activas[0].hora_reserva }}
+                    </div>
+                  </div>
                 </div>
-              </div>
+              }
             </div>
           </div>
-        </div>
+        }
       </div>
     </div>
   </div>
@@ -132,7 +137,9 @@
           <label for="zona_id">Zona</label>
           <select class="form-select" id="zona_id" [(ngModel)]="mesaForm.zona_id" name="zona_id">
             <option [ngValue]="null">Sin zona</option>
-            <option *ngFor="let z of zonas" [ngValue]="z.id">{{ z.nombre }}</option>
+            @for (z of zonas; track z.id) {
+              <option [ngValue]="z.id">{{ z.nombre }}</option>
+            }
           </select>
           <small class="text-muted">Administre zonas en <a routerLink="/restaurante/zonas">Zonas</a></small>
         </div>

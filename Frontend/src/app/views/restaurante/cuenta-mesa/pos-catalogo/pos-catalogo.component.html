@@ -24,42 +24,8 @@
 
     <ng-container *ngIf="!loading && !buscando">
       <div class="pos-tile-grid" *ngIf="enBusqueda">
-        <button type="button" class="pos-tile" *ngFor="let p of resultadosBusqueda" (click)="tapProducto(p)">
-          <span class="pos-tile-img" [class.placeholder]="esPlaceholder(p.img)">
-            <img *ngIf="!esPlaceholder(p.img)" [src]="imgUrl(p.img)" [alt]="p.nombre">
-            <i *ngIf="esPlaceholder(p.img)" class="fa fa-image"></i>
-          </span>
-          <span class="pos-tile-nombre">{{ p.nombre }}</span>
-          <span class="pos-tile-precio">{{ p.precio | currency }}</span>
-        </button>
-        <p *ngIf="!resultadosBusqueda.length" class="text-muted small py-3 mb-0">Sin resultados para la búsqueda.</p>
-      </div>
-
-      <ng-container *ngIf="!enBusqueda">
-        <div class="pos-tile-grid" *ngIf="nivel === 'raiz'">
-          <button type="button" class="pos-tile pos-tile-categoria" *ngFor="let cat of categorias" (click)="tapCategoria(cat)">
-            <span class="pos-tile-img" [class.placeholder]="esPlaceholder(cat.img)">
-              <img *ngIf="!esPlaceholder(cat.img)" [src]="imgUrl(cat.img)" [alt]="cat.nombre">
-              <i *ngIf="esPlaceholder(cat.img)" class="fa fa-th-large"></i>
-            </span>
-            <span class="pos-tile-nombre">{{ cat.nombre }}</span>
-          </button>
-          <p *ngIf="!categorias.length" class="text-muted small py-3 mb-0">No hay categorías activas.</p>
-        </div>
-
-        <div class="pos-tile-grid" *ngIf="nivel === 'subcategorias'">
-          <button type="button" class="pos-tile pos-tile-categoria" *ngFor="let sub of subcategorias" (click)="tapSubcategoria(sub)">
-            <span class="pos-tile-img" [class.placeholder]="esPlaceholder(sub.img)">
-              <img *ngIf="!esPlaceholder(sub.img)" [src]="imgUrl(sub.img)" [alt]="sub.nombre">
-              <i *ngIf="esPlaceholder(sub.img)" class="fa fa-th-large"></i>
-            </span>
-            <span class="pos-tile-nombre">{{ sub.nombre }}</span>
-          </button>
-          <p *ngIf="!subcategorias.length" class="text-muted small py-3 mb-0">Sin subcategorías.</p>
-        </div>
-
-        <div class="pos-tile-grid" *ngIf="nivel === 'productos'">
-          <button type="button" class="pos-tile" *ngFor="let p of productos" (click)="tapProducto(p)">
+        @for (p of resultadosBusqueda; track p.id) {
+          <button type="button" class="pos-tile" (click)="tapProducto(p)">
             <span class="pos-tile-img" [class.placeholder]="esPlaceholder(p.img)">
               <img *ngIf="!esPlaceholder(p.img)" [src]="imgUrl(p.img)" [alt]="p.nombre">
               <i *ngIf="esPlaceholder(p.img)" class="fa fa-image"></i>
@@ -67,6 +33,48 @@
             <span class="pos-tile-nombre">{{ p.nombre }}</span>
             <span class="pos-tile-precio">{{ p.precio | currency }}</span>
           </button>
+        }
+        <p *ngIf="!resultadosBusqueda.length" class="text-muted small py-3 mb-0">Sin resultados para la búsqueda.</p>
+      </div>
+
+      <ng-container *ngIf="!enBusqueda">
+        <div class="pos-tile-grid" *ngIf="nivel === 'raiz'">
+          @for (cat of categorias; track cat.id) {
+            <button type="button" class="pos-tile pos-tile-categoria" (click)="tapCategoria(cat)">
+              <span class="pos-tile-img" [class.placeholder]="esPlaceholder(cat.img)">
+                <img *ngIf="!esPlaceholder(cat.img)" [src]="imgUrl(cat.img)" [alt]="cat.nombre">
+                <i *ngIf="esPlaceholder(cat.img)" class="fa fa-th-large"></i>
+              </span>
+              <span class="pos-tile-nombre">{{ cat.nombre }}</span>
+            </button>
+          }
+          <p *ngIf="!categorias.length" class="text-muted small py-3 mb-0">No hay categorías activas.</p>
+        </div>
+
+        <div class="pos-tile-grid" *ngIf="nivel === 'subcategorias'">
+          @for (sub of subcategorias; track sub.id) {
+            <button type="button" class="pos-tile pos-tile-categoria" (click)="tapSubcategoria(sub)">
+              <span class="pos-tile-img" [class.placeholder]="esPlaceholder(sub.img)">
+                <img *ngIf="!esPlaceholder(sub.img)" [src]="imgUrl(sub.img)" [alt]="sub.nombre">
+                <i *ngIf="esPlaceholder(sub.img)" class="fa fa-th-large"></i>
+              </span>
+              <span class="pos-tile-nombre">{{ sub.nombre }}</span>
+            </button>
+          }
+          <p *ngIf="!subcategorias.length" class="text-muted small py-3 mb-0">Sin subcategorías.</p>
+        </div>
+
+        <div class="pos-tile-grid" *ngIf="nivel === 'productos'">
+          @for (p of productos; track p.id) {
+            <button type="button" class="pos-tile" (click)="tapProducto(p)">
+              <span class="pos-tile-img" [class.placeholder]="esPlaceholder(p.img)">
+                <img *ngIf="!esPlaceholder(p.img)" [src]="imgUrl(p.img)" [alt]="p.nombre">
+                <i *ngIf="esPlaceholder(p.img)" class="fa fa-image"></i>
+              </span>
+              <span class="pos-tile-nombre">{{ p.nombre }}</span>
+              <span class="pos-tile-precio">{{ p.precio | currency }}</span>
+            </button>
+          }
           <p *ngIf="!productos.length" class="text-muted small py-3 mb-0">Sin productos en esta categoría.</p>
         </div>
       </ng-container>

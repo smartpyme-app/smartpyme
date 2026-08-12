@@ -3,54 +3,101 @@
 namespace App\Http\Controllers\Api\Restaurante;
 
 use App\Http\Controllers\Controller;
+use App\Models\Restaurante\Comanda;
 use App\Models\Restaurante\Mesa;
 use App\Models\Restaurante\OrdenDetalle;
+use App\Models\Restaurante\PreCuenta;
 use App\Models\Restaurante\SesionMesa;
+use App\Services\Restaurante\MesaMapaCacheService;
 use App\Services\Restaurante\RestauranteAutorizacionService;
+use App\Services\Restaurante\RestauranteIdempotencyService;
+use App\Services\Restaurante\RestauranteRealtimePublisher;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class SesionMesaController extends Controller
 {
+    public function __construct(
+        private MesaMapaCacheService $mapaCache,
+        private RestauranteRealtimePublisher $realtime,
+    ) {}
+
     public function store(Request $request): JsonResponse
     {
-        $user = auth()->user();
-        if (!$user || !$user->id_empresa) {
-            return response()->json(['error' => 'Usuario sin empresa asociada'], 400);
-        }
+        return app(RestauranteIdempotencyService::class)->run(
+            'abrir_mesa',
+            $request,
+            function () use ($request) {
+                $user = auth()->user();
+                if (! $user || ! $user->id_empresa) {
+                    return response()->json(['error' => 'Usuario sin empresa asociada'], 400);
+                }
 
-        $validated = $request->validate([
-            'mesa_id' => 'required|exists:restaurante_mesas,id',
-            'num_comensales' => 'nullable|integer|min:1|max:99',
-            'observaciones' => 'nullable|string|max:500',
-        ]);
+                $validated = $request->validate([
+                    'mesa_id' => [
+                        'required',
+                        'integer',
+                        Rule::exists('restaurante_mesas', 'id')->where('id_empresa', $user->id_empresa),
+                    ],
+                    'num_comensales' => 'nullable|integer|min:1|max:99',
+                    'observaciones' => 'nullable|string|max:500',
+                ]);
 
-        $mesa = Mesa::where('id_empresa', $user->id_empresa)->findOrFail($validated['mesa_id']);
+                try {
+                    $sesion = DB::transaction(function () use ($user, $validated) {
+                        $mesa = Mesa::where('id_empresa', $user->id_empresa)
+                            ->whereKey($validated['mesa_id'])
+                            ->lockForUpdate()
+                            ->firstOrFail();
 
-        $sesionActiva = SesionMesa::where('mesa_id', $mesa->id)
-            ->whereIn('estado', ['abierta', 'pre_cuenta'])
-            ->first();
+                        $sesionActiva = SesionMesa::where('mesa_id', $mesa->id)
+                            ->whereIn('estado', ['abierta', 'pre_cuenta'])
+                            ->lockForUpdate()
+                            ->first();
 
-        if ($sesionActiva) {
-            return response()->json(['error' => 'La mesa ya tiene una sesión activa'], 422);
-        }
+                        if ($sesionActiva) {
+                            return null;
+                        }
 
-        $sesion = SesionMesa::create([
-            'mesa_id' => $mesa->id,
-            'usuario_id' => $user->id,
-            'id_empresa' => $user->id_empresa,
-            'id_sucursal' => $user->id_sucursal ?? $mesa->id_sucursal,
-            'num_comensales' => $validated['num_comensales'] ?? 1,
-            'observaciones' => $validated['observaciones'] ?? null,
-            'estado' => 'abierta',
-            'opened_at' => now(),
-        ]);
+                        $nueva = SesionMesa::create([
+                            'mesa_id' => $mesa->id,
+                            'usuario_id' => $user->id,
+                            'id_empresa' => $user->id_empresa,
+                            'id_sucursal' => $user->id_sucursal ?? $mesa->id_sucursal,
+                            'num_comensales' => $validated['num_comensales'] ?? 1,
+                            'observaciones' => $validated['observaciones'] ?? null,
+                            'estado' => 'abierta',
+                            'opened_at' => now(),
+                        ]);
 
-        $mesa->update(['estado' => 'ocupada']);
+                        $mesa->update(['estado' => 'ocupada']);
 
-        $sesion->load(['mesa.zonaRestaurante', 'mesero']);
-        return response()->json($sesion, 201);
+                        return $nueva;
+                    });
+                } catch (UniqueConstraintViolationException $e) {
+                    return response()->json(['error' => 'La mesa ya tiene una sesión activa'], 422);
+                }
+
+                if ($sesion === null) {
+                    return response()->json(['error' => 'La mesa ya tiene una sesión activa'], 422);
+                }
+
+                $sesion->load(['mesa.zonaRestaurante', 'mesero']);
+                $this->mapaCache->invalidateEmpresa((int) $user->id_empresa);
+                $this->realtime->mapaChanged(
+                    (int) $user->id_empresa,
+                    (int) $sesion->mesa_id,
+                    'ocupada',
+                    (int) $sesion->id,
+                    'abrir_mesa'
+                );
+
+                return response()->json($sesion, 201);
+            }
+        );
     }
 
     public function show(int $id): JsonResponse
@@ -79,13 +126,63 @@ class SesionMesaController extends Controller
         ]);
 
         $sesion->update($validated);
+
         return response()->json($sesion->fresh(['mesa.zonaRestaurante', 'mesero']));
     }
 
+    /**
+     * Cierra una sesión de mesa sin dejar inconsistencias.
+     *
+     * Permite cierre cuando:
+     * - estado es `abierta` o `pre_cuenta`
+     * - no hay PreCuenta en estado `pendiente`
+     * - no hay OrdenDetalle vivos (consumo abierto)
+     * - no hay Comanda cocina/barra en pendiente|preparando|listo
+     *
+     * Bloquea (422) si la sesión ya está `cerrada`, hay pre-cuentas pendientes,
+     * quedan ítems por liquidar, o hay comandas de servicio activas.
+     *
+     * No hay “cierre forzado” en esta fase: facturar/anular pre-cuentas y
+     * liquidar consumo primero. `marcarFacturada` ya cierra cuando corresponde.
+     */
     public function cerrar(int $id): JsonResponse
     {
         $user = auth()->user();
         $sesion = SesionMesa::where('id_empresa', $user->id_empresa)->findOrFail($id);
+
+        if ($sesion->estado === 'cerrada') {
+            return response()->json(['error' => 'La sesión ya está cerrada'], 422);
+        }
+
+        if (! in_array($sesion->estado, ['abierta', 'pre_cuenta'], true)) {
+            return response()->json(['error' => 'La sesión no se puede cerrar en su estado actual'], 422);
+        }
+
+        $preCuentasPendientes = PreCuenta::where('sesion_id', $sesion->id)
+            ->where('estado', 'pendiente')
+            ->exists();
+        if ($preCuentasPendientes) {
+            return response()->json([
+                'error' => 'No se puede cerrar: hay pre-cuentas pendientes de facturar o anular',
+            ], 422);
+        }
+
+        $itemsPendientes = OrdenDetalle::where('sesion_id', $sesion->id)->exists();
+        if ($itemsPendientes) {
+            return response()->json([
+                'error' => 'No se puede cerrar: la sesión aún tiene ítems de consumo',
+            ], 422);
+        }
+
+        $comandasActivas = Comanda::where('sesion_id', $sesion->id)
+            ->whereIn('destino', ['cocina', 'barra', 'ambos'])
+            ->whereIn('estado', ['pendiente', 'preparando', 'listo'])
+            ->exists();
+        if ($comandasActivas) {
+            return response()->json([
+                'error' => 'No se puede cerrar: hay comandas de cocina/barra sin servir',
+            ], 422);
+        }
 
         $sesion->update([
             'estado' => 'cerrada',
@@ -93,6 +190,15 @@ class SesionMesaController extends Controller
         ]);
 
         $sesion->mesa->update(['estado' => 'libre']);
+        $this->mapaCache->invalidateEmpresa((int) $user->id_empresa);
+        $this->realtime->mapaChanged(
+            (int) $user->id_empresa,
+            (int) $sesion->mesa_id,
+            'libre',
+            (int) $sesion->id,
+            'cerrar_mesa'
+        );
+
         return response()->json($sesion);
     }
 
@@ -111,6 +217,14 @@ class SesionMesaController extends Controller
 
         $sesion->update(['estado' => 'abierta']);
         $sesion->mesa?->update(['estado' => 'ocupada']);
+        $this->mapaCache->invalidateEmpresa((int) $user->id_empresa);
+        $this->realtime->mapaChanged(
+            (int) $user->id_empresa,
+            (int) $sesion->mesa_id,
+            'ocupada',
+            (int) $sesion->id,
+            'reactivar_consumo'
+        );
 
         $sesion->load([
             'mesa.zonaRestaurante',
@@ -131,7 +245,11 @@ class SesionMesaController extends Controller
         }
 
         $validated = $request->validate([
-            'mesa_destino_id' => 'required|exists:restaurante_mesas,id',
+            'mesa_destino_id' => [
+                'required',
+                'integer',
+                Rule::exists('restaurante_mesas', 'id')->where('id_empresa', $user->id_empresa),
+            ],
             'orden_detalle_ids' => 'required|array|min:1',
             'orden_detalle_ids.*' => 'integer',
         ]);
@@ -167,6 +285,22 @@ class SesionMesaController extends Controller
             DB::rollBack();
             throw $e;
         }
+
+        $this->mapaCache->invalidateEmpresa((int) $user->id_empresa);
+        $this->realtime->mapaChanged(
+            (int) $user->id_empresa,
+            (int) $sesionOrigen->mesa_id,
+            null,
+            (int) $sesionOrigen->id,
+            'trasladar_items'
+        );
+        $this->realtime->mapaChanged(
+            (int) $user->id_empresa,
+            (int) $sesionDest->mesa_id,
+            null,
+            (int) $sesionDest->id,
+            'trasladar_items'
+        );
 
         return response()->json(['ok' => true]);
     }

@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 
 import { AlertService } from '@services/alert.service';
 import {
@@ -16,7 +16,8 @@ export type EstadoLinea = 'sin_asignar' | 'parcial' | 'completo';
   standalone: false,
   selector: 'app-pos-flujo-cuenta',
   templateUrl: './pos-flujo-cuenta.component.html',
-  styleUrls: ['./pos-flujo-cuenta.component.css']
+  styleUrls: ['./pos-flujo-cuenta.component.css'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PosFlujoCuentaComponent implements OnChanges {
   @Input() sesion: any = null;

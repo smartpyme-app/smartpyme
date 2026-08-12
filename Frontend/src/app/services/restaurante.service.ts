@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { tap } from 'rxjs/operators';
 import { ApiService } from '@services/api.service';
 
 const BASE = 'restaurante/';
@@ -67,7 +68,30 @@ export interface PosMenuContenido {
 
 @Injectable({ providedIn: 'root' })
 export class RestauranteService {
+  /** Keys Idempotency-Key activas por scope (empresa+op+recurso implícito en scope). */
+  private idempotencyKeys = new Map<string, string>();
+
   constructor(private api: ApiService) {}
+
+  /**
+   * Genera o reutiliza key por scope mientras la op esté in-flight o falle
+   * (retry/timeout reusa la misma key). Se limpia solo en éxito.
+   */
+  private withIdempotency<T>(scope: string, requestFactory: (headers: Record<string, string>) => Observable<T>): Observable<T> {
+    let key = this.idempotencyKeys.get(scope);
+    if (!key) {
+      key = this.newIdempotencyKey();
+      this.idempotencyKeys.set(scope, key);
+    }
+    const headers = { 'Idempotency-Key': key };
+    return requestFactory(headers).pipe(tap(() => this.idempotencyKeys.delete(scope)));
+  }
+
+  private newIdempotencyKey(): string {
+    return typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : `ik-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+  }
 
   getMesas(params?: { id_sucursal?: number; activo?: boolean }): Observable<Mesa[]> {
     return this.api.getAll(BASE + 'mesas', params || {});
@@ -102,7 +126,9 @@ export class RestauranteService {
   }
 
   abrirSesion(mesaId: number, data: { num_comensales?: number; observaciones?: string }): Observable<SesionMesa> {
-    return this.api.store(BASE + 'sesiones-mesa', { mesa_id: mesaId, ...data });
+    return this.withIdempotency(`abrir_mesa:${mesaId}`, (headers) =>
+      this.api.store(BASE + 'sesiones-mesa', { mesa_id: mesaId, ...data }, headers)
+    );
   }
 
   getSesion(id: number): Observable<SesionMesa> {
@@ -114,7 +140,9 @@ export class RestauranteService {
   }
 
   agregarItem(sesionId: number, data: { producto_id: number; cantidad: number; notas?: string }): Observable<any> {
-    return this.api.store(BASE + `sesiones-mesa/${sesionId}/items`, data);
+    // Key única por clic: el UI evita doble-submit; no reutilizar scope entre altas intencionales.
+    const key = this.newIdempotencyKey();
+    return this.api.store(BASE + `sesiones-mesa/${sesionId}/items`, data, { 'Idempotency-Key': key });
   }
 
   actualizarItem(sesionId: number, itemId: number, data: { cantidad?: number; notas?: string }): Observable<any> {
@@ -122,7 +150,9 @@ export class RestauranteService {
   }
 
   enviarComanda(sesionId: number): Observable<{ comandas?: any[]; primera?: any }> {
-    return this.api.store(BASE + `sesiones-mesa/${sesionId}/comandas`, {});
+    return this.withIdempotency(`enviar_comanda:${sesionId}`, (headers) =>
+      this.api.store(BASE + `sesiones-mesa/${sesionId}/comandas`, {}, headers)
+    );
   }
 
   eliminarItemSesion(
@@ -141,7 +171,9 @@ export class RestauranteService {
   }
 
   solicitarCuenta(sesionId: number, body: Record<string, unknown> = {}): Observable<any> {
-    return this.api.store(BASE + `sesiones-mesa/${sesionId}/pre-cuenta`, body);
+    return this.withIdempotency(`solicitar_cuenta:${sesionId}`, (headers) =>
+      this.api.store(BASE + `sesiones-mesa/${sesionId}/pre-cuenta`, body, headers)
+    );
   }
 
   dividirCuenta(
@@ -164,7 +196,9 @@ export class RestauranteService {
   }
 
   marcarPreCuentaFacturada(preCuentaId: number, facturaId: number): Observable<{ sesion_cerrada: boolean }> {
-    return this.api.putToUrl(`restaurante/pre-cuentas/${preCuentaId}/marcar-facturada`, { factura_id: facturaId });
+    return this.withIdempotency(`marcar_facturada:${preCuentaId}:${facturaId}`, (headers) =>
+      this.api.putToUrl(`restaurante/pre-cuentas/${preCuentaId}/marcar-facturada`, { factura_id: facturaId }, headers)
+    );
   }
 
   getComandas(): Observable<any[]> {
@@ -182,8 +216,8 @@ export class RestauranteService {
     return this.api.getAsText(BASE + `comandas/${comandaId}/imprimir`);
   }
 
-  // Reservas
-  getReservas(params?: { fecha?: string; estado?: string }): Observable<Reserva[]> {
+  // Reservas — API default: fecha=hoy si no se envía fecha; use { todas: 1 } para histórico (poco usado por UI)
+  getReservas(params?: { fecha?: string; estado?: string; todas?: number | string }): Observable<Reserva[]> {
     return this.api.getAll(BASE + 'reservas', params || {});
   }
 
@@ -213,7 +247,9 @@ export class RestauranteService {
   }
 
   confirmarPedidoCanal(id: number, body: Record<string, unknown> = {}): Observable<PedidoCanal> {
-    return this.api.putToUrl(`restaurante/pedidos/${id}/confirmar`, body);
+    return this.withIdempotency(`confirmar_pedido:${id}`, (headers) =>
+      this.api.putToUrl(`restaurante/pedidos/${id}/confirmar`, body, headers)
+    );
   }
 
   anularPedidoCanal(id: number): Observable<PedidoCanal> {

@@ -6,4 +6,13 @@ export const environment = {
   goApiUrl:    'https://go-api.smartpyme.site',
   goApiSecret: 'f93a080d7ca3dc5842f6112f7053ef3ada44ce213f04a6cc62c3c31d15beee63',
   haciendaPublicApiUrl: 'https://api.hacienda.go.cr',
+  /** Fase 6: habilitar solo cuando Reverb esté desplegado. */
+  restauranteRealtime: {
+    enabled: false,
+    key: '',
+    wsHost: '',
+    wsPort: 443,
+    wssPort: 443,
+    forceTLS: true,
+  },
 };
