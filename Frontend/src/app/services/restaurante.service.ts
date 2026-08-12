@@ -216,8 +216,8 @@ export class RestauranteService {
     return this.api.getAsText(BASE + `comandas/${comandaId}/imprimir`);
   }
 
-  // Reservas
-  getReservas(params?: { fecha?: string; estado?: string }): Observable<Reserva[]> {
+  // Reservas — API default: fecha=hoy si no se envía fecha; use { todas: 1 } para histórico (poco usado por UI)
+  getReservas(params?: { fecha?: string; estado?: string; todas?: number | string }): Observable<Reserva[]> {
     return this.api.getAll(BASE + 'reservas', params || {});
   }
 

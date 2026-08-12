@@ -26,13 +26,23 @@ class ReservaController extends Controller
         }
 
         $query = Reserva::where('id_empresa', $user->id_empresa)
-            ->with(['mesa', 'usuario'])
-            ->when($request->fecha, fn ($q) => $q->where('fecha_reserva', $request->fecha))
+            ->with(['mesa', 'usuario']);
+
+        // Sin fecha: default hoy (evita listar histórico completo). Escape: ?todas=1
+        if ($request->boolean('todas')) {
+            // sin filtro de fecha
+        } elseif ($request->filled('fecha')) {
+            $query->where('fecha_reserva', $request->fecha);
+        } else {
+            $query->whereDate('fecha_reserva', now()->toDateString());
+        }
+
+        $reservas = $query
             ->when($request->estado, fn ($q) => $q->where('estado', $request->estado))
             ->orderBy('fecha_reserva')
-            ->orderBy('hora_reserva');
+            ->orderBy('hora_reserva')
+            ->get();
 
-        $reservas = $query->get();
         return response()->json($reservas);
     }
 
