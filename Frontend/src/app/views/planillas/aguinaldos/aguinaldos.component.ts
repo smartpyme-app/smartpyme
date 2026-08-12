@@ -114,7 +114,7 @@ export class AguinaldosComponent implements OnInit {
     const currentYear = new Date().getFullYear();
     this.aguinaldoNuevo = {
       anio: currentYear,
-      fecha_calculo: currentYear + '-12-12' // Por defecto 12 de diciembre
+      fecha_calculo: currentYear + '-10-20' // Por defecto 20 de octubre (reforma Art. 200 CT)
     };
     this.modalRef = this.modalService.show(template, {
       class: 'modal-md',

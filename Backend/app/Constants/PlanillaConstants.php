@@ -212,6 +212,10 @@ class PlanillaConstants
     // Decreto 900: Primeros $1,500 de aguinaldo están exentos de renta
     const AGUINALDO_EXENTO_DECRETO_2023 = 1500.00;
 
+    // Reforma Art. 200 CT (DO 15-oct-2025): fecha de referencia del derecho = 20 de octubre
+    const AGUINALDO_MES_CALCULO = 10;
+    const AGUINALDO_DIA_CALCULO = 20;
+
     // Estados de aguinaldo
     const AGUINALDO_BORRADOR = 1;
     const AGUINALDO_PAGADO = 2;
