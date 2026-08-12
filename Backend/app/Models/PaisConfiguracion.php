@@ -14,6 +14,8 @@ class PaisConfiguracion extends Model
 
     public const MODULO_IMPUESTOS = 'impuestos';
 
+    public const MODULO_MONEDA = 'moneda';
+
     protected $fillable = [
         'pais',
         'modulo',

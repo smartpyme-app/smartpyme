@@ -91,8 +91,7 @@ return [
     'boxful' => [
         'env' => env('BOXFUL_ENV', 'development'), // 'production' or 'development'
         'urls' => [
-            // 'production' => 'https://api.goboxful.com',
-            'production' => 'https://devapi.goboxful.com',
+            'production' => 'https://api.goboxful.com',
             'development' => 'https://devapi.goboxful.com',
             
         ],
@@ -127,6 +126,35 @@ return [
 
     'woocommerce' => [
         'enabled' => env('WOOCOMMERCE_ENABLED', true),
+    ],
+
+    /*
+    | BCCR (Banco Central de Costa Rica) — tipo de cambio venta (indicador 318).
+    | Token JWT desde https://sdd.bccr.fi.cr/es/IndicadoresEconomicos/Inicio/ (Mi perfil).
+    | Preferencia: API REST SDDE; fallback: WS SOAP legacy (a menudo 503).
+    */
+    'bccr' => [
+        'sdde_url' => env('BCCR_SDDE_URL', 'https://apim.bccr.fi.cr/SDDE/api/Bccr.Ge.SDDE.Publico.Indicadores.API'),
+        'url' => env('BCCR_WS_URL', 'https://gee.bccr.fi.cr/Indicadores/Suscripciones/WS/wsindicadoreseconomicos.asmx'),
+        'email' => env('BCCR_WS_EMAIL'),
+        'token' => env('BCCR_WS_TOKEN'),
+        'name' => env('BCCR_WS_NAME', 'SmartPyme'),
+        'indicador_venta' => 318,
+        'timeout_seconds' => (int) env('BCCR_WS_TIMEOUT', 25),
+        'user_agent' => env('BCCR_WS_USER_AGENT', 'Mozilla/5.0 (compatible; SmartPyme-BCCR/1)'),
+    ],
+
+    /*
+    | BCH (Banco Central de Honduras) — tipo de cambio de referencia (indicador 97 / EC-TCR-01).
+    | Portal (registro/key): https://bchapi-am.developer.azure-api.net/
+    | Gateway API: https://bchapi-am.azure-api.net  (header "clave", no Ocp-Apim-Subscription-Key).
+    */
+    'bch' => [
+        'base_url' => env('BCH_API_BASE_URL', 'https://bchapi-am.azure-api.net'),
+        'api_key' => env('BCH_API_KEY'),
+        'indicador_referencia' => (int) env('BCH_INDICADOR_REFERENCIA', 97),
+        'timeout_seconds' => (int) env('BCH_API_TIMEOUT', 25),
+        'user_agent' => env('BCH_API_USER_AGENT', 'Mozilla/5.0 (compatible; SmartPyme-BCH/1)'),
     ],
 
 ];

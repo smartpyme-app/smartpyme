@@ -123,16 +123,18 @@
                       <small class="text-muted">Vista previa correlativo: {{ previewCorrelativo() }}</small>
                   </div>
               }
+              @if (showSerie) {
+                  <div class="form-group col-md-6">
+                      <label for="documento.rangos">Serie</label>
+                      <input type="text" class="form-control" [(ngModel)]="documento.rangos" name="documento.rangos">
+                  </div>
+              }
               <div class="form-group col-md-6">
-                  <label for="documento.rangos">Serie</label>
-                  <input type="text" class="form-control" [(ngModel)]="documento.rangos" name="documento.rangos">
-              </div>
-              <div class="form-group col-md-6">
-                  <label for="documento.numero_autorizacion">Autorización</label>
+                  <label for="documento.numero_autorizacion">{{ esHonduras ? 'Rango autorizado' : 'Autorización' }}</label>
                   <input type="text" class="form-control" [(ngModel)]="documento.numero_autorizacion" name="documento.numero_autorizacion">
               </div>
               <div class="form-group col-md-6">
-                  <label for="documento.resolucion">Resolución</label>
+                  <label for="documento.resolucion">{{ labelResolucion }}</label>
                   <input type="text" class="form-control" [(ngModel)]="documento.resolucion" name="documento.resolucion">
               </div>
               <div class="form-group col-md-6">

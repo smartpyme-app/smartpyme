@@ -154,19 +154,22 @@ class LibroVentasExport implements FromCollection, WithMapping, WithHeadings, Wi
         $cliente = optional($devolucion->cliente);
         $ventaOriginal = $devolucion->venta;
         $documento = $devolucion->documento ?? $ventaOriginal?->documento;
+        $nombreDoc = trim((string) (optional($documento)->nombre ?? $devolucion->nombre_documento ?? ''));
+        $esNotaDebito = strcasecmp($nombreDoc, 'Nota de débito') === 0;
+        $signo = $esNotaDebito ? 1 : -1;
 
         return [
             'fecha' => $devolucion->fecha,
             'rtn' => $cliente->nit ?? $cliente->ncr ?? '',
-            'descripcion' => 'Nota de crédito',
+            'descripcion' => $esNotaDebito ? 'Nota de débito' : 'Nota de crédito',
             'no_factura' => FormatoCorrelativoHn::format(
                 $documento->numero_emision ?? null,
                 $devolucion->correlativo
             ),
-            'importe_exenta' => $devolucion->exenta > 0 ? -1 * (float) $devolucion->exenta : 0,
-            'importe_gravada' => $devolucion->sub_total > 0 ? -1 * (float) $devolucion->sub_total : 0,
+            'importe_exenta' => $devolucion->exenta > 0 ? $signo * (float) $devolucion->exenta : 0,
+            'importe_gravada' => $devolucion->sub_total > 0 ? $signo * (float) $devolucion->sub_total : 0,
             'importe_exonerada' => 0,
-            'impuesto_ventas' => $devolucion->iva > 0 ? -1 * (float) $devolucion->iva : 0,
+            'impuesto_ventas' => $devolucion->iva > 0 ? $signo * (float) $devolucion->iva : 0,
             'importe_exportacion' => 0,
             'fecha_factura_relacionada' => $ventaOriginal ? $ventaOriginal->fecha : '',
             'numero_factura_relacionada' => $ventaOriginal

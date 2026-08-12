@@ -395,6 +395,13 @@ final class CostaRicaXmlDocumentoParser implements DocumentoImportParserInterfac
         $resumenNode = $this->firstChildByLocalName($xp, 'ResumenFactura');
         $ctx = $resumenNode;
 
+        // v4.4: ResumenFactura > CodigoTipoMoneda > CodigoMoneda / TipoCambio. Ausente en documentos sin sección
+        // de moneda (fixtures antiguos); en ese caso currency_code queda null y el caller asume CRC.
+        $codigoMoneda = strtoupper(trim((string) (XmlLocalNameHelper::firstText($xp, 'CodigoMoneda', $ctx) ?? '')));
+        $tipoCambioXml = XmlLocalNameHelper::floatValue(
+            XmlLocalNameHelper::firstText($xp, 'TipoCambio', $ctx)
+        );
+
         $totalOtrosCargos = XmlLocalNameHelper::floatValue(
             XmlLocalNameHelper::firstText($xp, 'TotalOtrosCargos', $ctx)
         );
@@ -459,6 +466,8 @@ final class CostaRicaXmlDocumentoParser implements DocumentoImportParserInterfac
             'rentaRetenida' => 0.0,
             'condicionOperacion' => $condicion,
             'pagos' => $pagos,
+            'currency_code' => $codigoMoneda !== '' ? $codigoMoneda : null,
+            'exchange_rate_xml' => $tipoCambioXml > 0 ? $tipoCambioXml : null,
         ];
     }
 

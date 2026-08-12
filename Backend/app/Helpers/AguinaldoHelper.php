@@ -9,9 +9,20 @@ use Carbon\Carbon;
 class AguinaldoHelper
 {
     /**
+     * Países donde el aguinaldo es 100% exento de renta y cargas sociales.
+     * Agregar aquí el código de país para sumar otra legislación con aguinaldo exento.
+     */
+    private const PAISES_AGUINALDO_EXENTO = ['CR'];
+
+    public static function aguinaldoTotalmenteExento(?string $codigoPais): bool
+    {
+        return in_array(strtoupper((string) $codigoPais), self::PAISES_AGUINALDO_EXENTO, true);
+    }
+
+    /**
      * Calcula todas las deducciones de aguinaldo de un empleado
      */
-    public static function calcularDeduccionesAguinaldo($montoBruto, $anio, $tipoContrato = null)
+    public static function calcularDeduccionesAguinaldo($montoBruto, $anio, $tipoContrato = null, ?string $codigoPais = 'SV')
     {
         // Validar que el monto bruto sea válido
         if ($montoBruto <= 0) {
@@ -25,6 +36,16 @@ class AguinaldoHelper
 
         // Redondear monto bruto a 2 decimales
         $montoBruto = round($montoBruto, 2);
+
+        // Costa Rica (y similares): aguinaldo 100% exento de ISR y CCSS
+        if (self::aguinaldoTotalmenteExento($codigoPais)) {
+            return [
+                'monto_exento' => $montoBruto,
+                'monto_gravado' => 0.00,
+                'retencion_renta' => 0.00,
+                'aguinaldo_neto' => $montoBruto
+            ];
+        }
 
         // Calcular monto exento según Decreto 900 ($1,500 exentos)
         $montoExento = min($montoBruto, PlanillaConstants::AGUINALDO_EXENTO_DECRETO_2023);
@@ -104,7 +125,7 @@ class AguinaldoHelper
      * @param Carbon|null $fechaCalculo Fecha de cálculo (opcional, por defecto 12 de diciembre)
      * @return float Sugerencia de aguinaldo calculada
      */
-    public static function calcularSugerenciaAguinaldo($salarioBase, $fechaIngreso, $anio, $fechaCalculo = null)
+    public static function calcularSugerenciaAguinaldo($salarioBase, $fechaIngreso, $anio, $fechaCalculo = null, ?string $codigoPais = 'SV')
     {
         // Validar parámetros
         if ($salarioBase <= 0) {
@@ -116,6 +137,17 @@ class AguinaldoHelper
             $fechaCalculoAguinaldo = Carbon::create($anio, 12, 12);
         } else {
             $fechaCalculoAguinaldo = $fechaCalculo instanceof Carbon ? $fechaCalculo : Carbon::parse($fechaCalculo);
+        }
+
+        // Costa Rica: aguinaldo = salarios devengados dic-nov / 12. Como el bruto se
+        // ingresa manual, la sugerencia estima un mes de salario proporcional a los
+        // meses trabajados (equivale a 1 salario si trabajó el período completo).
+        // ponytail: estimación con salario constante; el monto exacto (suma real de
+        // planillas dic-nov / 12) lo captura el usuario a mano.
+        if (self::aguinaldoTotalmenteExento($codigoPais)) {
+            $meses = min(self::calcularMesesTrabajados($fechaIngreso, $anio, $fechaCalculoAguinaldo), 12);
+
+            return round($salarioBase * $meses / 12, 2);
         }
 
         // Calcular años de laborar

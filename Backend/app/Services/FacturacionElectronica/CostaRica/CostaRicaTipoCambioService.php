@@ -3,62 +3,101 @@
 namespace App\Services\FacturacionElectronica\CostaRica;
 
 use App\Models\Admin\Empresa;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
+use App\Models\PaisConfiguracion;
+use App\Support\Admin\MonedaDefaultPorPais;
+use Carbon\Carbon;
 
 /**
  * Tipo de cambio USD → CRC para comprobantes en dólares (venta / Hacienda CR).
- * Prioridad: custom_empresa.facturacion_fe.tipo_cambio_usd_crc, caché API, valor por defecto.
+ * Fuente: BCCR indicador 318; cache del día en pais_configuracion (modulo=moneda).
+ * Sin fallback numérico inventado: si no hay rate usable, se lanza excepción.
  */
 final class CostaRicaTipoCambioService
 {
-    private const CACHE_KEY = 'fe_cr_tipo_cambio_usd_crc';
+    public const PAIS = 'CR';
 
-    private const CACHE_TTL_SECONDS = 3600;
+    public function __construct(private readonly BccrTipoCambioClient $client) {}
 
-    private const FALLBACK_CRC_PER_USD = 520.0;
+    public function rateForDate(\DateTimeInterface $date): float
+    {
+        $day = Carbon::instance(\DateTimeImmutable::createFromInterface($date))
+            ->timezone('America/Costa_Rica')
+            ->startOfDay();
+        $dayStr = $day->toDateString();
+        $todayStr = now('America/Costa_Rica')->toDateString();
+
+        $cfg = $this->monedaConfig();
+        $cached = $cfg['rate_del_dia'] ?? null;
+        if (is_array($cached)
+            && ($cached['date'] ?? null) === $dayStr
+            && (float) ($cached['rate'] ?? 0) > 0
+        ) {
+            return (float) $cached['rate'];
+        }
+
+        $rate = $this->client->fetchVentaRate($day);
+        if ($rate !== null && $rate > 0) {
+            if ($dayStr === $todayStr) {
+                $this->saveRateDelDia($dayStr, (float) $rate);
+            }
+
+            return (float) $rate;
+        }
+
+        $manual = (float) ($cfg['rate_manual'] ?? 0);
+        if ($manual > 0) {
+            return $manual;
+        }
+
+        throw new \RuntimeException('No hay tipo de cambio BCCR (318) para la fecha '.$dayStr);
+    }
 
     /**
      * CRC por 1 USD (para campo exchange_rate cuando currency_code es USD).
      */
-    public function crcPorUsdVenta(Empresa $empresa): float
+    public function crcPorUsdVenta(Empresa $empresa, ?\DateTimeInterface $date = null): float
     {
-        $manual = $empresa->getCustomConfigValue('facturacion_fe', 'tipo_cambio_usd_crc', null);
-        if ($manual !== null && $manual !== '' && is_numeric($manual)) {
-            $v = (float) $manual;
+        $date ??= now('America/Costa_Rica');
 
-            return $v > 0 ? $v : self::FALLBACK_CRC_PER_USD;
-        }
-
-        return (float) Cache::remember(self::CACHE_KEY, self::CACHE_TTL_SECONDS, function () {
-            return $this->fetchCrcPerUsdFromApis() ?? self::FALLBACK_CRC_PER_USD;
-        });
+        return $this->rateForDate($date);
     }
 
-    private function fetchCrcPerUsdFromApis(): ?float
+    /** @return array<string, mixed> */
+    private function monedaConfig(): array
     {
-        $urls = [
-            'https://api.exchangerate.host/latest?base=USD&symbols=CRC',
-            'https://open.er-api.com/v6/latest/USD',
-        ];
+        $row = PaisConfiguracion::query()
+            ->pais(self::PAIS)
+            ->modulo(PaisConfiguracion::MODULO_MONEDA)
+            ->first();
 
-        foreach ($urls as $url) {
-            try {
-                $response = Http::timeout(12)->acceptJson()->get($url);
-                if (! $response->successful()) {
-                    continue;
-                }
-                $data = $response->json();
-                $rate = $data['rates']['CRC'] ?? null;
-                if (is_numeric($rate) && (float) $rate > 0) {
-                    return (float) $rate;
-                }
-            } catch (\Throwable $e) {
-                Log::debug('FE CR tipo cambio API falló', ['url' => $url, 'error' => $e->getMessage()]);
-            }
+        if ($row && is_array($row->configuracion)) {
+            return $row->configuracion;
         }
 
-        return null;
+        return MonedaDefaultPorPais::plantilla(self::PAIS);
+    }
+
+    private function saveRateDelDia(string $dayStr, float $rate): void
+    {
+        $row = PaisConfiguracion::query()->firstOrCreate(
+            [
+                'pais' => self::PAIS,
+                'modulo' => PaisConfiguracion::MODULO_MONEDA,
+            ],
+            [
+                'configuracion' => MonedaDefaultPorPais::plantilla(self::PAIS),
+            ]
+        );
+
+        $cfg = is_array($row->configuracion) ? $row->configuracion : MonedaDefaultPorPais::plantilla(self::PAIS);
+        $cfg['rate_del_dia'] = [
+            'date' => $dayStr,
+            'from' => 'USD',
+            'to' => 'CRC',
+            'rate' => $rate,
+            'fetched_at' => now('America/Costa_Rica')->toIso8601String(),
+        ];
+        $row->configuracion = $cfg;
+        $row->save();
     }
 }

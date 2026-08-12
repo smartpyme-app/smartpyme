@@ -137,6 +137,32 @@ export class ApiService {
     return this.httpService.exportAcumuladoReportes(url, filtros);
   }
 
+  /** Encola generación asíncrona de reporte (responde 202 + id). */
+  encolarReporteExportacion(
+    url: string,
+    body: any
+  ): Observable<{ id: number; estado: string; message?: string }> {
+    return this.httpService.store(url, body);
+  }
+
+  estadoReporteExportacion(
+    id: number
+  ): Observable<{
+    id: number;
+    estado: string;
+    formato?: string;
+    nombre_archivo?: string;
+    error?: string;
+  }> {
+    return this.httpService.get('reportes-configuracion/exportaciones/' + id);
+  }
+
+  descargarReporteExportacion(id: number): Observable<Blob> {
+    return this.httpService.download(
+      'reportes-configuracion/exportaciones/' + id + '/archivo'
+    );
+  }
+
   download(url: string): Observable<Blob> {
     return this.httpService.download(url);
   }

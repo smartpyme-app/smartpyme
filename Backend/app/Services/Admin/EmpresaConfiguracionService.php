@@ -83,13 +83,7 @@ class EmpresaConfiguracionService
 
     public function paisEmpresa(int $empresaId): string
     {
-        $empresa = Empresa::find($empresaId);
-        $cod = $empresa->cod_pais ?? null;
-
-        if ($cod) {
-            return strtoupper($cod);
-        }
-
-        return 'SV';
+        // cod_pais suele venir NULL; el resolver mapea desde el nombre (mismo criterio que el resto de planilla)
+        return EmpresaConfiguracionPlanilla::resolverCodigoPaisEmpresa(Empresa::find($empresaId));
     }
 }

@@ -81,6 +81,12 @@ class FuncionalidadesSeeder extends Seeder
                 'descripcion' => 'Permite integrar con el servicio de envíos BoxFul',
                 'orden' => 9
             ],
+            [
+                'nombre' => 'Multimoneda',
+                'slug' => 'multimoneda',
+                'descripcion' => 'Permite registrar documentos en distintas monedas, guardando el tipo de cambio y el valor de conversión en cada transacción',
+                'orden' => 11,
+            ],
             //Se pueden agregar mas funcionalidades con el mismo formato
         ];
 

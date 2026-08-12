@@ -31,11 +31,23 @@ class ProveedoresEmpresas implements ToModel, WithHeadingRow, WithValidation, Sk
     public function prepareForValidation(array $row, $index): array
     {
         $stringKeys = [
-            'nombre_empresa', 'ncr', 'giro', 'tipo_contribuyente', 'dui', 'nit',
-            'direccion', 'municipio', 'departamento', 'telefono', 'correo',
+            'nombre_empresa', 'ncr', 'giro', 'tipo_contribuyente', 'dui', 'nit', 'rtn',
+            'n_de_identificacion', 'direccion', 'municipio', 'departamento', 'telefono', 'correo',
         ];
 
-        return $this->applyExcelRowNormalization($row, $stringKeys, false);
+        $row = $this->applyExcelRowNormalization($row, $stringKeys, false);
+
+        // Honduras: RTN (slug rtn) reemplaza NCR; N. de Identificación → dui
+        if ((!isset($row['ncr']) || trim((string) ($row['ncr'] ?? '')) === '')
+            && !empty($row['rtn'])) {
+            $row['ncr'] = $row['rtn'];
+        }
+        if ((!isset($row['dui']) || trim((string) ($row['dui'] ?? '')) === '')
+            && !empty($row['n_de_identificacion'])) {
+            $row['dui'] = $row['n_de_identificacion'];
+        }
+
+        return $row;
     }
 
     public function isEmptyRow(array $row): bool
@@ -52,14 +64,20 @@ class ProveedoresEmpresas implements ToModel, WithHeadingRow, WithValidation, Sk
             return null;
         }
 
+        $rtn = isset($row['rtn']) ? trim((string) $row['rtn']) : '';
+        $ncr = isset($row['ncr']) ? trim((string) $row['ncr']) : '';
+        $nit = isset($row['nit']) ? trim((string) $row['nit']) : '';
+        $dui = $row['dui'] ?? $row['n_de_identificacion'] ?? null;
+
         $proveedor = new Proveedor();
         $proveedor->nombre_empresa = $row['nombre_empresa'];
-        $proveedor->ncr = $row['ncr'];
-        $proveedor->giro = $row['giro'];
+        // Honduras: RTN; El Salvador: NCR
+        $proveedor->ncr = $ncr !== '' ? $ncr : ($rtn !== '' ? $rtn : null);
+        $proveedor->giro = $row['giro'] ?? null;
         $proveedor->tipo = 'Empresa';
         $proveedor->tipo_contribuyente = $row['tipo_contribuyente'] ?? null;
-        $proveedor->dui = $row['dui'] ?? null;
-        $proveedor->nit = $row['nit'] ?? null;
+        $proveedor->dui = $dui;
+        $proveedor->nit = $nit !== '' ? $nit : ($rtn !== '' ? $rtn : null);
         $proveedor->direccion = $row['direccion'] ?? null;
         $proveedor->municipio = $row['municipio'] ?? null;
         $proveedor->departamento = $row['departamento'] ?? null;
@@ -79,10 +97,13 @@ class ProveedoresEmpresas implements ToModel, WithHeadingRow, WithValidation, Sk
     {
         return [
             'nombre_empresa' => 'required|string',
-            'ncr' => 'required|string',
-            'giro' => 'required|string',
+            // SV: ncr; HN: rtn (equivalente)
+            'ncr' => 'nullable|string',
+            'rtn' => 'nullable|string',
+            'giro' => 'nullable|string',
             'tipo_contribuyente' => 'nullable|string',
             'dui' => 'nullable|string',
+            'n_de_identificacion' => 'nullable|string',
             'nit' => 'nullable|string',
             'direccion' => 'nullable|string',
             'municipio' => 'nullable|string',

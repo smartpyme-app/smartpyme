@@ -131,6 +131,19 @@
                 <label class="fw-medium">Documento</label>
                 <p>{{ venta.nombre_documento }} # {{ venta.correlativo }}</p>
             </div>
+            @if (muestraMonedaDocumentoCr) {
+                <div class="form-group col-lg-4">
+                    <label class="fw-medium">Moneda de cobro</label>
+                    <p>USD (Dólares)</p>
+                </div>
+                <div class="form-group col-lg-4">
+                    <label class="fw-medium">Tipo de cambio</label>
+                    <p>
+                        ₡{{ tipoCambioVentaFmt || '-' }} por $1
+                        <span class="text-muted" *ngIf="venta.exchange_rate_date">({{ venta.exchange_rate_date | date:'dd/MM/yyyy' }})</span>
+                    </p>
+                </div>
+            }
             <div class="form-group col-lg-4">
                 <label class="fw-medium">Sucursal</label>
                 <p>{{ venta.nombre_sucursal }}</p>
@@ -351,6 +364,12 @@
                         <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end"><b>Total:</b></td>
                         <td class="text-end"><b>{{ venta?.total | currency }}</b></td>
                     </tr>
+                    @if (muestraMonedaDocumentoCr && equivalenteUsd != null) {
+                        <tr class="text-muted">
+                            <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end">Total en dólares:</td>
+                            <td class="text-end">${{ equivalenteUsd | number:'1.2-2' }}</td>
+                        </tr>
+                    }
                     @if (venta.propina > 0) {
                       <tr>
                         <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end"><b>Total + Propina:</b></td>

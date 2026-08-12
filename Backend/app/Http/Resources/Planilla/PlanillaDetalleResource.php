@@ -23,9 +23,13 @@ class PlanillaDetalleResource extends JsonResource
             'dias_laborados' => $this->dias_laborados,
             'horas_extra' => $this->horas_extra,
             'monto_horas_extra' => $this->monto_horas_extra,
+            'detalle_horas_extra' => $this->detalle_horas_extra,
             'comisiones' => $this->comisiones,
             'bonificaciones' => $this->bonificaciones,
             'otros_ingresos' => $this->otros_ingresos,
+            'viaticos' => $this->viaticos,
+            'abonos' => $this->abonos,
+            'abonos_sin_retencion' => $this->abonos_sin_retencion,
             'isss_empleado' => $this->isss_empleado,
             'isss_patronal' => $this->isss_patronal,
             'afp_empleado' => $this->afp_empleado,
@@ -43,7 +47,8 @@ class PlanillaDetalleResource extends JsonResource
             'conceptos_personalizados' => $this->conceptos_personalizados,
             'pais_configuracion' => $this->pais_configuracion,
             'empleado' => $this->whenLoaded('empleado'),
-            'planilla' => $this->whenLoaded('planilla')
+            'planilla' => $this->whenLoaded('planilla'),
+            'abonos_prestamo' => $this->whenLoaded('abonosPrestamo')
         ];
     }
 }

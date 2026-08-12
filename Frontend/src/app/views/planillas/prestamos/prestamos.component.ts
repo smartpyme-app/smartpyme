@@ -8,12 +8,13 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 
 @Component({
   selector: 'app-prestamos',
   standalone: true,
   templateUrl: './prestamos.component.html',
-  imports: [CommonModule, FormsModule, ModalModule, TooltipModule, NgSelectModule, PaginationComponent],
+  imports: [CommonModule, FormsModule, ModalModule, TooltipModule, NgSelectModule, PaginationComponent, CurrencyPipe],
 })
 export class PrestamosComponent implements OnInit {
   tabActivo: 'listado' | 'estado-cuenta' | 'crear' | 'abono' = 'listado';

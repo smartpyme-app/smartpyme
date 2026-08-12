@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Constants\PlanillaConstants;
 use App\Models\Admin\Empresa;
 use App\Models\MH\Pais;
+use App\Services\Planilla\PlanillaTemplatesService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
@@ -74,24 +75,75 @@ class EmpresaConfiguracionPlanilla extends Model
             ->first();
     }
 
+    private const CODIGOS_PAIS_VALIDOS = ['SV', 'GT', 'HN', 'NI', 'CR', 'PA', 'BZ'];
+
     /**
-     * Obtener o crear configuración por defecto de El Salvador
+     * Preferir cod_pais válido; si falta, mapear desde nombre de país.
+     */
+    public static function resolverCodigoPaisEmpresa(?Empresa $empresa): string
+    {
+        if (!$empresa) {
+            return 'SV';
+        }
+
+        $desdeCodigo = $empresa->cod_pais
+            ? strtoupper(trim($empresa->cod_pais))
+            : null;
+        $desdeNombre = self::mapearCodigoPaisDesdeNombre($empresa->pais);
+
+        $codigoValido = $desdeCodigo && in_array($desdeCodigo, self::CODIGOS_PAIS_VALIDOS, true)
+            ? $desdeCodigo
+            : null;
+
+        if ($codigoValido && $desdeNombre && $codigoValido !== $desdeNombre) {
+            Log::warning('Discrepancia país empresa', [
+                'empresa_id' => $empresa->id,
+                'cod_pais' => $codigoValido,
+                'pais' => $empresa->pais,
+                'desde_nombre' => $desdeNombre,
+            ]);
+            return $codigoValido;
+        }
+
+        return $codigoValido ?? $desdeNombre ?? 'SV';
+    }
+
+    public static function mapearCodigoPaisDesdeNombre(?string $nombrePais): ?string
+    {
+        if ($nombrePais === null || trim($nombrePais) === '') {
+            return null;
+        }
+
+        $mapeo = [
+            'El Salvador' => 'SV',
+            'Guatemala' => 'GT',
+            'Honduras' => 'HN',
+            'Nicaragua' => 'NI',
+            'Costa Rica' => 'CR',
+            'Panama' => 'PA',
+            'Panamá' => 'PA',
+            'Belice' => 'BZ',
+            'Belize' => 'BZ',
+        ];
+
+        return $mapeo[trim($nombrePais)] ?? null;
+    }
+
+    /**
+     * Obtener o crear configuración con plantilla según país de la empresa
      */
     public static function obtenerOCrearConfiguracion($empresaId)
     {
         $configuracion = self::obtenerConfiguracion($empresaId);
 
-        Log::info('🔍 DEBUG HÍBRIDO', [
-            'empresa_id2' => $empresaId,
-            'configuracion2' => $configuracion
-        ]);
-
         if (!$configuracion) {
-            // Crear configuración por defecto
+            $empresa = Empresa::find($empresaId);
+            $codPais = self::resolverCodigoPaisEmpresa($empresa);
+
             $configuracion = self::create([
                 'empresa_id' => $empresaId,
-                'cod_pais' => 'SV', // Default El Salvador
-                'configuracion' => self::getConfiguracionDefectoSV(),
+                'cod_pais' => $codPais,
+                'configuracion' => PlanillaTemplatesService::getConfiguracionPorPais($codPais),
                 'activo' => true,
                 'fecha_vigencia_desde' => now(),
                 'fecha_vigencia_hasta' => null

@@ -112,10 +112,28 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
   };
   public customField: boolean = false;
   public tieneAccesoPropina: boolean = false;
+  public tieneMultimoneda: boolean = false;
+  /** Config pais_configuracion módulo moneda (cargada al activar multimoneda). */
+  public monedaConfig: {
+    moneda_funcional: string;
+    monedas_documento: string[];
+    fuente: string;
+    permitir_editar: boolean;
+  } | null = null;
   public tieneFidelizacionHabilitada: boolean = false;
   public mensajeValidacionFecha: string = '';
   public mensajeErrorBanco: string = '';
   public contabilidadHabilitada: boolean = false;
+
+  /** Preview de tipo de cambio para el selector de moneda. */
+  public tcPreview: { rate: number | null; date: string | null; loading: boolean; error: string | null } = {
+    rate: null,
+    date: null,
+    loading: false,
+    error: null,
+  };
+  public exchangeRateDraft: number | null = null;
+  private modalTipoCambioRef?: BsModalRef;
 
   /** Si está activo, se muestra el monto; el importe es siempre la suma de `cuenta_a_terceros` en las líneas (no se edita en cabecera). */
   public habilitarCuentaTerceros = false;
@@ -321,6 +339,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     this.verificarAccesoContabilidad();
     this.loadData();
     this.verificarAccesoPropina();
+    this.verificarAccesoMultimoneda();
     this.verificarFidelizacionHabilitada();
   }
 
@@ -743,6 +762,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     this.venta.id_vendedor = this.apiService.auth_user().id;
     this.venta.id_sucursal = this.apiService.auth_user().id_sucursal;
     this.venta.id_empresa = this.apiService.auth_user().id_empresa;
+    this.inicializarMonedaVenta();
     let corte = JSON.parse(sessionStorage.getItem('SP_corte')!);
     if (corte) {
       this.venta.fecha = JSON.parse(sessionStorage.getItem('SP_corte')!).fecha;
@@ -856,6 +876,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
             );
             this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
             this.syncVentaCreditoConsignaFlagsFromEstado();
+            this.sincronizarPreviewMonedaDesdeVenta();
             this.sumTotal();
 
             // Obtener todos los custom_field_ids únicos de los detalles
@@ -925,6 +946,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
             this.venta.detalles.forEach((detalle: any) => {
               detalle.id = null;
             });
+            this.refrescarMonedaTrasResetFecha();
             this.sumTotal();
             this.cdr.markForCheck();
           },
@@ -980,6 +1002,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
               this.venta.detalles.forEach((detalle: any) => {
                 detalle.id = null;
               });
+              this.refrescarMonedaTrasResetFecha();
               this.sumTotal();
 
               // Para proyectos
@@ -1786,6 +1809,250 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
         return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR;
     }
 
+  // ==================== MULTIMONEDA (por país) ====================
+
+  get monedaFuncional(): string {
+    return (this.monedaConfig?.moneda_funcional
+      || this.apiService.auth_user()?.empresa?.moneda
+      || 'USD').toUpperCase();
+  }
+
+  get monedasDocumento(): string[] {
+    const list = this.monedaConfig?.monedas_documento;
+    if (Array.isArray(list) && list.length) {
+      return list.map((m) => String(m).toUpperCase());
+    }
+    return [this.monedaFuncional, 'USD'].filter((v, i, a) => a.indexOf(v) === i);
+  }
+
+  get simboloMonedaFuncional(): string {
+    const map: Record<string, string> = { CRC: '₡', HNL: 'L', USD: '$', GTQ: 'Q', NIO: 'C$' };
+    return map[this.monedaFuncional] || this.monedaFuncional;
+  }
+
+  /** Spec: default = moneda funcional del país / empresa. Requiere funcionalidad `multimoneda`. */
+  private inicializarMonedaVenta(): void {
+    if (!this.tieneMultimoneda) {
+      return;
+    }
+    const cargar = () => {
+      const monedaEmpresa = (this.apiService.auth_user()?.empresa?.moneda || '').toUpperCase();
+      const funcional = this.monedaFuncional;
+      this.venta.currency_code = this.monedasDocumento.includes(monedaEmpresa)
+        ? monedaEmpresa
+        : funcional;
+      if (this.venta.currency_code === 'USD' && this.venta.currency_code !== funcional) {
+        this.cargarTipoCambioPreview();
+      } else {
+        this.venta.exchange_rate = 1;
+        this.tcPreview = { rate: 1, date: this.venta.fecha, loading: false, error: null };
+      }
+    };
+
+    if (this.monedaConfig) {
+      cargar();
+      return;
+    }
+
+    this.apiService.getAll('moneda/config').pipe(this.untilDestroyed()).subscribe({
+      next: (cfg: any) => {
+        this.monedaConfig = {
+          moneda_funcional: String(cfg?.moneda_funcional || 'USD').toUpperCase(),
+          monedas_documento: Array.isArray(cfg?.monedas_documento) ? cfg.monedas_documento : [],
+          fuente: cfg?.fuente || 'manual',
+          permitir_editar: !!cfg?.permitir_editar,
+        };
+        cargar();
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.monedaConfig = {
+          moneda_funcional: this.monedaFuncional,
+          monedas_documento: this.monedasDocumento,
+          fuente: 'manual',
+          permitir_editar: true,
+        };
+        cargar();
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  private refrescarMonedaTrasResetFecha(): void {
+    if (!this.tieneMultimoneda) {
+      return;
+    }
+    if (this.venta.currency_code === 'USD' && this.venta.currency_code !== this.monedaFuncional) {
+      this.cargarTipoCambioPreview();
+    } else {
+      this.sincronizarPreviewMonedaDesdeVenta();
+    }
+  }
+
+  private sincronizarPreviewMonedaDesdeVenta(): void {
+    if (!this.tieneMultimoneda) {
+      return;
+    }
+    if (!this.venta.currency_code) {
+      this.inicializarMonedaVenta();
+      return;
+    }
+    if (this.venta.currency_code === this.monedaFuncional) {
+      this.tcPreview = { rate: 1, date: this.venta.exchange_rate_date || this.venta.fecha, loading: false, error: null };
+      return;
+    }
+    const rate = parseFloat(this.venta.exchange_rate);
+    this.tcPreview = {
+      rate: Number.isFinite(rate) ? rate : null,
+      date: this.venta.exchange_rate_date || this.venta.fecha,
+      loading: false,
+      error: null,
+    };
+  }
+
+  get monedaVenta(): string {
+    return this.venta?.currency_code || this.monedaFuncional;
+  }
+
+  get etiquetaOpcionUsd(): string {
+    const rate = parseFloat(this.venta?.exchange_rate);
+    if (Number.isFinite(rate) && rate > 0 && rate !== 1) {
+      return `USD (${this.simboloMonedaFuncional}${rate.toFixed(2)})`;
+    }
+    return 'USD';
+  }
+
+  get ventaYaEmitida(): boolean {
+    return !!this.venta?.dte;
+  }
+
+  get permitirEditarTipoCambioVentas(): boolean {
+    return !!this.apiService.auth_user()?.empresa?.custom_empresa?.facturacion_fe?.permitir_editar_tipo_cambio
+      || !!this.monedaConfig?.permitir_editar;
+  }
+
+  get puedeEditarTipoCambio(): boolean {
+    return this.tieneMultimoneda
+      && this.monedaVenta === 'USD'
+      && this.monedaVenta !== this.monedaFuncional
+      && this.permitirEditarTipoCambioVentas
+      && !this.ventaYaEmitida;
+  }
+
+  public abrirModalTipoCambio(template: TemplateRef<any>): void {
+    if (!this.puedeEditarTipoCambio) {
+      return;
+    }
+    const actual = parseFloat(this.venta?.exchange_rate);
+    this.exchangeRateDraft = (Number.isFinite(actual) && actual > 0 && actual !== 1)
+      ? actual
+      : (this.tcPreview.rate ?? null);
+    this.modalTipoCambioRef = this.modalService.show(template, {
+      class: 'modal-sm',
+      backdrop: 'static',
+    });
+  }
+
+  public cerrarModalTipoCambio(): void {
+    this.modalTipoCambioRef?.hide();
+    this.modalTipoCambioRef = undefined;
+  }
+
+  public aplicarTipoCambioManual(): void {
+    const rate = parseFloat(String(this.exchangeRateDraft ?? ''));
+    if (!Number.isFinite(rate) || rate <= 0) {
+      this.alertService.error('Ingrese un tipo de cambio válido mayor a 0.');
+      return;
+    }
+    this.venta.exchange_rate = rate;
+    this.sumTotal();
+    this.cerrarModalTipoCambio();
+    this.cdr.markForCheck();
+  }
+
+  public onCurrencyCodeChange(): void {
+    if (this.venta.currency_code === this.monedaFuncional) {
+      this.venta.exchange_rate = 1;
+      this.tcPreview = { rate: 1, date: this.venta.fecha, loading: false, error: null };
+      return;
+    }
+    this.venta.exchange_rate = null;
+    this.cargarTipoCambioPreview();
+  }
+
+  public onFechaVentaChange(): void {
+    if (this.tieneMultimoneda && this.monedaVenta === 'USD' && this.monedaVenta !== this.monedaFuncional && !this.ventaYaEmitida) {
+      this.cargarTipoCambioPreview();
+    }
+  }
+
+  public cargarTipoCambioPreview(): void {
+    if (this.ventaYaEmitida) {
+      return;
+    }
+    const fecha = this.venta.fecha || this.apiService.date();
+    this.tcPreview = { rate: null, date: fecha, loading: true, error: null };
+    this.apiService.getAll('moneda/tipo-cambio', { fecha }).pipe(this.untilDestroyed()).subscribe({
+      next: (res: any) => {
+        if (res?.moneda_funcional && !this.monedaConfig) {
+          this.monedaConfig = {
+            moneda_funcional: String(res.moneda_funcional).toUpperCase(),
+            monedas_documento: Array.isArray(res.monedas_documento) ? res.monedas_documento : this.monedasDocumento,
+            fuente: res.fuente || 'manual',
+            permitir_editar: !!res.permitir_editar,
+          };
+        }
+        const rate = res?.rate != null ? parseFloat(res.rate) : null;
+        this.tcPreview = { rate, date: res?.date ?? fecha, loading: false, error: null };
+        if (!this.permitirEditarTipoCambioVentas) {
+          this.venta.exchange_rate = rate;
+        } else if (this.venta.exchange_rate == null || this.venta.exchange_rate === '' || parseFloat(this.venta.exchange_rate) === 1) {
+          this.venta.exchange_rate = rate;
+        }
+        this.cdr.markForCheck();
+      },
+      error: (err: any) => {
+        const msg = err?.error?.error || err?.error?.message || 'No hay tipo de cambio disponible para esta fecha.';
+        this.tcPreview = { rate: null, date: fecha, loading: false, error: msg };
+        if (!this.permitirEditarTipoCambioVentas) {
+          this.venta.exchange_rate = null;
+        } else if (parseFloat(this.venta.exchange_rate) === 1) {
+          this.venta.exchange_rate = null;
+        }
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  /** Total en moneda empresa ÷ TC → dólares a cobrar al cliente. */
+  get usdEquivalentTotal(): number | null {
+    if (!this.tieneMultimoneda || this.monedaVenta !== 'USD' || this.monedaVenta === this.monedaFuncional) {
+      return null;
+    }
+    const total = parseFloat(this.venta?.total);
+    const rate = parseFloat(this.venta?.exchange_rate);
+    if (!Number.isFinite(total) || !Number.isFinite(rate) || rate <= 0 || rate === 1) {
+      return null;
+    }
+    return total / rate;
+  }
+
+  get bloquearPorMonedaSinTc(): boolean {
+    if (!this.tieneMultimoneda || this.ventaYaEmitida || this.monedaVenta !== 'USD' || this.monedaVenta === this.monedaFuncional) {
+      return false;
+    }
+    const rate = parseFloat(this.venta?.exchange_rate);
+    return !Number.isFinite(rate) || rate <= 0 || rate === 1;
+  }
+
+  get etiquetaReferenciaTc(): string {
+    const fuente = this.monedaConfig?.fuente || '';
+    if (fuente === 'api') {
+      return this.esHondurasFacturacion ? 'Referencia BCH' : 'Referencia API';
+    }
+    return 'Referencia configurada';
+  }
+
     get esHondurasFacturacion(): boolean {
         return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_HN;
     }
@@ -2017,6 +2284,12 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
 
   public onFacturar() {
     if (this.saving || this.emiting) {
+      return;
+    }
+    if (this.bloquearPorMonedaSinTc) {
+      this.alertService.error(
+        'No hay tipo de cambio disponible para USD en la fecha indicada. Configure el TC del país o intente más tarde.'
+      );
       return;
     }
     if (
@@ -2515,6 +2788,22 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
         }
     );
 }
+
+  public verificarAccesoMultimoneda(): void {
+    this.funcionalidadesService.verificarAcceso('multimoneda').pipe(this.untilDestroyed()).subscribe({
+      next: (acceso) => {
+        this.tieneMultimoneda = acceso;
+        if (acceso) {
+          this.inicializarMonedaVenta();
+        }
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.tieneMultimoneda = false;
+        this.cdr.markForCheck();
+      },
+    });
+  }
 
   /** Normaliza detalles: infiere tipo_gravado y sub_total si faltan (ventas existentes). Asegura gravada/exenta/no_sujeta para que el IVA cuadre. */
   /** Adapta payload de cotizacion_ventas al shape que usa FacturacionComponent. */

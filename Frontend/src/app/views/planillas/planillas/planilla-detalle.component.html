@@ -217,7 +217,7 @@
             @if (!esElSalvador) {
               @for (concepto of conceptosEmpleado; track concepto[0]) {
                 <td class="text-end">
-                  {{ calcularConcepto(detalle, concepto[1]) | currency }}
+                  {{ calcularConcepto(detalle, concepto[1], concepto[0]) | currency }}
                 </td>
               }
             }
@@ -334,7 +334,7 @@
     </div>
 
     <!-- Cards de resumen de descuentos patronales -->
-    @if (descuentosPatronales) {
+    @if (esElSalvador && descuentosPatronales) {
       <div class="row mb-4">
       <div class="col-md-4">
         <div class="card bg-warning text-white">
@@ -369,6 +369,28 @@
           </div>
         </div>
       </div>
+      </div>
+    }
+    @if (!esElSalvador && conceptosPatronales?.length) {
+      <div class="row mb-4">
+        @for (concepto of conceptosPatronales; track concepto[0]) {
+          <div class="col-md-4 mb-3">
+            <div class="card bg-info text-white">
+              <div class="card-body">
+                <h6 class="card-title">{{ concepto[1].nombre }}</h6>
+                <h3 class="mb-0">{{ getTotalConcepto(concepto[0]) | currency }}</h3>
+              </div>
+            </div>
+          </div>
+        }
+        <div class="col-md-4 mb-3">
+          <div class="card bg-danger text-white">
+            <div class="card-body">
+              <h6 class="card-title">Total Aportes Patronales</h6>
+              <h3 class="mb-0">{{ getTotalDescuentosPatronales() | currency }}</h3>
+            </div>
+          </div>
+        </div>
       </div>
     }
 
@@ -427,7 +449,7 @@
             } @else {
               @for (concepto of conceptosPatronales; track concepto[0]) {
                 <td class="text-end">
-                  ${{ calcularConcepto(detalle, concepto[1]) | currency }}
+                  ${{ calcularConcepto(detalle, concepto[1], concepto[0]) | currency }}
                 </td>
               }
             }
@@ -486,8 +508,8 @@
             </span>
           </div>
 
-          <!-- ✅ Mostrar advertencia para servicios profesionales -->
-          @if (detalleSeleccionado?.empleado?.tipo_contrato === 4) {
+          <!-- ✅ Advertencias de contratos especiales (reglas SV) -->
+          @if (esElSalvador && detalleSeleccionado?.empleado?.tipo_contrato === 4) {
             <!-- Por Obra (tipo 3) -->
             <div class="alert alert-info" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato === 3">
               <i class="fa fa-info-circle"></i>
@@ -600,9 +622,8 @@
                     <div class="input-group">
                       <input type="number" class="form-control"
                         [(ngModel)]="detalleSeleccionado.dias_laborados"
-                        (input)="calcularTotalesUnificado()"
                         name="dias_laborados"
-                        (change)="calcularTotalesUnificado()"
+                        (ngModelChange)="calcularTotalesUnificado()"
                         [disabled]="planilla.estado !== 2 && planilla.estado !== 3"
                       />
                       <span class="input-group-text">días</span>
@@ -793,7 +814,7 @@
                       />
                     </div>
                     <small class="text-muted">
-                      No afectan ISSS, AFP ni ISR. Se suman al total a pagar.
+                      No afectan {{ textoRetencionesLaborales }}. Se suman al total a pagar.
                     </small>
                   </div>
 
@@ -804,7 +825,7 @@
                         name="abonos_sin_retencion"
                         (ngModelChange)="calcularTotalesUnificado()"
                         [disabled]="planilla.estado !== 2 && planilla.estado !== 3"
-                        title="Sin retención: no aplican ISSS, AFP, ISR. Con retención: sí aplican.">
+                        [title]="'Sin retención: no aplican ' + textoRetencionesLaborales + '. Con retención: sí aplican.'">
                         <option [ngValue]="true">Sin retención</option>
                         <option [ngValue]="false">Con retención</option>
                       </select>
@@ -822,7 +843,7 @@
                       />
                     </div>
                     <small class="text-muted">
-                      Los abonos marcados como &quot;Sin retención&quot; no afectan el cálculo de ISSS, AFP ni ISR.
+                      Los abonos marcados como &quot;Sin retención&quot; no afectan el cálculo de {{ textoRetencionesLaborales }}.
                     </small>
                   </div>
 
@@ -940,12 +961,12 @@
                         <input
                           type="number"
                           class="form-control"
-                          [value]="detalleSeleccionado?.conceptos?.[concepto[0]]"
+                          [value]="calcularConcepto(detalleSeleccionado, concepto[1], concepto[0])"
                           disabled
                         />
                       </div>
                       <small class="text-muted">
-                        {{ concepto[1].tipo === 'porcentaje' ? concepto[1].valor + '%' : 'Monto fijo' }}
+                        {{ concepto[1].tipo === 'porcentaje' ? concepto[1].valor + '%' : (concepto[1].tipo === 'tabla_progresiva' ? 'Tabla progresiva' : 'Monto fijo') }}
                       </small>
                       </div>
                     }
@@ -991,7 +1012,7 @@ class="accordion-collapse"
                                 [disabled]="planilla.estado !== 2 && planilla.estado !== 3"
                               />
                             </div>
-                            <small class="text-muted">No afecta el cálculo de ISSS, AFP o Renta</small>
+                            <small class="text-muted">No afecta el cálculo de {{ textoRetencionesLaborales }}</small>
                           </div>
 
                           <!-- Seleccionar qué préstamo(s) abonar: se muestra si hay préstamos activos O si ya hay abonos asignados (p. ej. liquidados) para poder quitarlos -->
@@ -1078,13 +1099,13 @@ class="accordion-collapse"
                       <input type="number" class="form-control"
                         [(ngModel)]="detalleSeleccionado.anticipos"
                         name="anticipos"
-                        (input)="recalcularSueldoNeto()"
-                        (change)="recalcularSueldoNeto()"
+                        (input)="calcularTotalesUnificado()"
+                        (change)="calcularTotalesUnificado()"
                         [disabled]="planilla.estado !== 2 && planilla.estado !== 3"
                       />
                     </div>
                     <small class="text-muted">
-                      No afecta el cálculo de ISSS, AFP o Renta
+                      No afecta el cálculo de {{ textoRetencionesLaborales }}
                     </small>
                   </div>
 
@@ -1119,11 +1140,16 @@ class="accordion-collapse"
               Cancelar
             </button>
             <button type="submit" class="btn btn-primary" [disabled]="
-                saving || (planilla.estado !== 2 && planilla.estado !== 3)
+                saving || calculandoDetalle || (planilla.estado !== 2 && planilla.estado !== 3)
               ">
-              @if (!saving) {
+              @if (!saving && !calculandoDetalle) {
                 <span>
                   <i class="fa fa-save"></i> Guardar Cambios
+                </span>
+              }
+              @if (calculandoDetalle && !saving) {
+                <span>
+                  <i class="fa fa-spinner fa-spin"></i> Calculando...
                 </span>
               }
               @if (saving) {

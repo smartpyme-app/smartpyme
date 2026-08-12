@@ -136,6 +136,7 @@ final class ReporteDetalleIvaCrService
         [$nombreReceptor, $idReceptor] = $this->datosTercero($venta->cliente, 'Consumidor final');
 
         $lineCount = (int) ($venta->detalles_count ?? 0);
+        $tasa = $this->tasaCambioCr($venta);
 
         return [
             'date' => $venta->fecha,
@@ -148,11 +149,11 @@ final class ReporteDetalleIvaCrService
                 'name' => $nombreReceptor,
                 'identification_number' => $idReceptor,
             ],
-            'summary' => $this->resumenDesdeVenta($venta),
+            'summary' => $this->resumenDesdeVenta($venta, $tasa),
             'line_items' => array_fill(0, max(0, $lineCount), []),
             'currency' => [
-                'currency_code' => 'CRC',
-                'exchange_rate' => 1,
+                'currency_code' => $this->codigoMonedaCr($venta),
+                'exchange_rate' => $tasa,
             ],
             'payments' => [],
         ];
@@ -170,6 +171,8 @@ final class ReporteDetalleIvaCrService
             $folio = trim((string) ($compra->num_serie ?? ''));
         }
 
+        $tasa = $this->tasaCambioCr($compra);
+
         return [
             'date' => $compra->fecha,
             'sequential' => $folio,
@@ -181,11 +184,11 @@ final class ReporteDetalleIvaCrService
                 'name' => (string) (optional($empresa)->nombre ?? ''),
                 'identification_number' => preg_replace('/\D/', '', (string) (optional($empresa)->nit ?? '')),
             ],
-            'summary' => $this->resumenDesdeCompra($compra),
+            'summary' => $this->resumenDesdeCompra($compra, $tasa),
             'line_items' => array_fill(0, max(0, (int) ($compra->detalles_count ?? 0)), []),
             'currency' => [
-                'currency_code' => 'CRC',
-                'exchange_rate' => 1,
+                'currency_code' => $this->codigoMonedaCr($compra),
+                'exchange_rate' => $tasa,
             ],
             'payments' => [],
         ];
@@ -204,6 +207,7 @@ final class ReporteDetalleIvaCrService
         }
 
         $lineCount = $gasto->relationLoaded('detalles') ? $gasto->detalles->count() : 0;
+        $tasa = $this->tasaCambioCr($gasto);
 
         return [
             'date' => $gasto->fecha,
@@ -216,14 +220,41 @@ final class ReporteDetalleIvaCrService
                 'name' => (string) (optional($empresa)->nombre ?? ''),
                 'identification_number' => preg_replace('/\D/', '', (string) (optional($empresa)->nit ?? '')),
             ],
-            'summary' => $this->resumenDesdeGasto($gasto),
+            'summary' => $this->resumenDesdeGasto($gasto, $tasa),
             'line_items' => array_fill(0, max(0, $lineCount), []),
             'currency' => [
-                'currency_code' => 'CRC',
-                'exchange_rate' => 1,
+                'currency_code' => $this->codigoMonedaCr($gasto),
+                'exchange_rate' => $tasa,
             ],
             'payments' => [],
         ];
+    }
+
+    /**
+     * Tipo de cambio a colones del documento. CRC (o moneda no seteada, p. ej. `devoluciones_compra`
+     * que aún no tiene columnas de moneda — Task 2 solo cubrió ventas/compras/egresos/devoluciones_venta)
+     * ⇒ 1. USD ⇒ `exchange_rate` persistido (§7.2 spec); si viniera inválido, cae a 1 en vez de corromper
+     * el reporte con una tasa basura.
+     *
+     * ponytail: no reconsulta BCCR aquí; el reporte lee el TC ya congelado en el documento.
+     */
+    private function tasaCambioCr(object $model): float
+    {
+        if ($this->codigoMonedaCr($model) !== 'USD') {
+            return 1.0;
+        }
+
+        $rate = method_exists($model, 'getAttribute') ? (float) ($model->getAttribute('exchange_rate') ?? 0) : 0.0;
+
+        return $rate > 0.0 ? $rate : 1.0;
+    }
+
+    private function codigoMonedaCr(object $model): string
+    {
+        $codigo = method_exists($model, 'getAttribute') ? $model->getAttribute('currency_code') : null;
+        $codigo = strtoupper(trim((string) ($codigo ?? 'CRC')));
+
+        return $codigo !== '' ? $codigo : 'CRC';
     }
 
     /** @return array{0: string, 1: string} */
@@ -244,7 +275,7 @@ final class ReporteDetalleIvaCrService
     }
 
     /** @return array<string, mixed> */
-    private function resumenDesdeVenta(Venta $venta): array
+    private function resumenDesdeVenta(Venta $venta, float $tasaCambio = 1.0): array
     {
         $impuestos = ($venta->relationLoaded('impuestos') && $venta->impuestos->isNotEmpty())
             ? $venta->impuestos
@@ -256,7 +287,8 @@ final class ReporteDetalleIvaCrService
             (float) $venta->sub_total,
             (float) ($venta->exenta ?? 0),
             (float) ($venta->no_sujeta ?? 0),
-            isset($venta->gravada) ? (float) $venta->gravada : null
+            isset($venta->gravada) ? (float) $venta->gravada : null,
+            $tasaCambio
         );
 
         if ($venta->relationLoaded('detalles') && $venta->detalles->isNotEmpty()) {
@@ -265,7 +297,7 @@ final class ReporteDetalleIvaCrService
                 if (! $this->detalleTieneExoneracionCr($detalle)) {
                     continue;
                 }
-                $exonerado += (float) ($detalle->sub_total ?? $detalle->gravada ?? 0);
+                $exonerado += (float) ($detalle->sub_total ?? $detalle->gravada ?? 0) * $tasaCambio;
             }
             if ($exonerado > 0.00001) {
                 $summary['total_exonerated'] = round($exonerado, 2);
@@ -324,7 +356,7 @@ final class ReporteDetalleIvaCrService
     }
 
     /** @return array<string, mixed> */
-    private function resumenDesdeCompra(Compra $compra): array
+    private function resumenDesdeCompra(Compra $compra, float $tasaCambio = 1.0): array
     {
         return $this->resumenDesdeMontos(
             [],
@@ -332,21 +364,22 @@ final class ReporteDetalleIvaCrService
             (float) $compra->sub_total,
             (float) ($compra->exenta ?? 0) + (float) ($compra->otros_cargos ?? 0),
             (float) ($compra->no_sujeta ?? 0),
-            null
+            null,
+            $tasaCambio
         );
     }
 
     /** @return array<string, mixed> */
-    private function resumenDesdeGasto(Gasto $gasto): array
+    private function resumenDesdeGasto(Gasto $gasto, float $tasaCambio = 1.0): array
     {
         $taxes = [];
         if ($gasto->relationLoaded('detalles') && $gasto->detalles->isNotEmpty()) {
             foreach ($gasto->detalles as $detalle) {
-                $ivaLine = (float) ($detalle->iva ?? 0);
+                $ivaLine = (float) ($detalle->iva ?? 0) * $tasaCambio;
                 if (abs($ivaLine) <= 0.00001) {
                     continue;
                 }
-                $base = (float) ($detalle->sub_total ?? 0);
+                $base = (float) ($detalle->sub_total ?? 0) * $tasaCambio;
                 $rate = $base > 0.00001
                     ? round(($ivaLine / $base) * 100, 2)
                     : 13.0;
@@ -359,7 +392,7 @@ final class ReporteDetalleIvaCrService
             $taxed = 0.0;
             if ($gasto->relationLoaded('detalles')) {
                 foreach ($gasto->detalles as $detalle) {
-                    $sub = (float) ($detalle->sub_total ?? 0);
+                    $sub = (float) ($detalle->sub_total ?? 0) * $tasaCambio;
                     $tipo = strtolower((string) ($detalle->tipo_gravado ?? 'gravada'));
                     if (in_array($tipo, ['exenta', 'no_sujeta', 'no sujeta'], true)) {
                         $exempt += $sub;
@@ -369,7 +402,7 @@ final class ReporteDetalleIvaCrService
                 }
             }
 
-            $otrosCargos = (float) ($gasto->otros_cargos ?? 0);
+            $otrosCargos = (float) ($gasto->otros_cargos ?? 0) * $tasaCambio;
 
             return [
                 'total_exempt' => $exempt + $otrosCargos,
@@ -384,12 +417,14 @@ final class ReporteDetalleIvaCrService
             (float) $gasto->sub_total,
             (float) ($gasto->otros_cargos ?? 0),
             0.0,
-            null
+            null,
+            $tasaCambio
         );
     }
 
     /**
-     * @param  iterable<int, object>  $lineasImpuesto  filas con ->impuesto y ->monto
+     * @param  iterable<int, object>  $lineasImpuesto  filas con ->impuesto y ->monto (montos nativos; se
+     *                                                  convierten a colones aquí vía $tasaCambio)
      * @return array<string, mixed>
      */
     private function resumenDesdeMontos(
@@ -398,12 +433,19 @@ final class ReporteDetalleIvaCrService
         float $subTotal,
         float $exenta,
         float $noSujeta,
-        ?float $gravada
+        ?float $gravada,
+        float $tasaCambio = 1.0
     ): array {
+        $iva *= $tasaCambio;
+        $subTotal *= $tasaCambio;
+        $exenta *= $tasaCambio;
+        $noSujeta *= $tasaCambio;
+        $gravada = $gravada !== null ? $gravada * $tasaCambio : null;
+
         $taxes = [];
         foreach ($lineasImpuesto as $linea) {
             $rate = (float) (optional($linea->impuesto)->porcentaje ?? 0);
-            $amount = (float) ($linea->monto ?? 0);
+            $amount = (float) ($linea->monto ?? 0) * $tasaCambio;
             if (abs($amount) > 0.00001 || $rate > 0.00001) {
                 $taxes[] = ['rate' => $rate, 'amount' => $amount];
             }
@@ -487,14 +529,16 @@ final class ReporteDetalleIvaCrService
             $exoPorc = isset($exonArr['tarifa_exonerada']) ? (float) $exonArr['tarifa_exonerada'] : '';
         }
 
+        $tasaCambio = (float) ($currency['exchange_rate'] ?? 1);
+
         $retenciones = 0.0;
         if (is_object($model) && property_exists($model, 'iva_retenido')) {
-            $retenciones = round((float) ($model->iva_retenido ?? 0) * $signe, 5);
+            $retenciones = round((float) ($model->iva_retenido ?? 0) * $tasaCambio * $signe, 5);
         }
 
         $ivaDev = 0.0;
         if (is_object($model) && property_exists($model, 'iva_devuelto')) {
-            $ivaDev = round((float) ($model->iva_devuelto ?? 0) * $signe, 5);
+            $ivaDev = round((float) ($model->iva_devuelto ?? 0) * $tasaCambio * $signe, 5);
         }
 
         $folio = isset($doc['sequential']) ? (string) $doc['sequential'] : '';
@@ -519,7 +563,7 @@ final class ReporteDetalleIvaCrService
         $row['retenciones'] = $retenciones;
         $row['folio'] = $folio;
         $row['clave'] = $clave;
-        $row['medio_pago'] = $this->textoMedioPago($payments, $model, $signe);
+        $row['medio_pago'] = $this->textoMedioPago($payments, $model, $signe, $tasaCambio);
         $row['cod_moneda'] = strtoupper((string) ($currency['currency_code'] ?? 'CRC'));
         $row['tipo_cambio'] = round((float) ($currency['exchange_rate'] ?? 1), 5);
         $row['subtotal_13'] = $dist['subtotal_13'];
@@ -547,18 +591,18 @@ final class ReporteDetalleIvaCrService
     /**
      * @param  Venta|Compra|Gasto  $model
      */
-    private function textoMedioPago(array $payments, $model, int $signe): string
+    private function textoMedioPago(array $payments, $model, int $signe, float $tasaCambio = 1.0): string
     {
         if ($payments !== []) {
             $p0 = $payments[0] ?? [];
             $code = (string) ($p0['payment_method'] ?? $p0['tipo'] ?? '01');
-            $monto = isset($p0['amount']) ? round((float) $p0['amount'] * abs($signe), 5) : 0.0;
+            $monto = isset($p0['amount']) ? round((float) $p0['amount'] * $tasaCambio * abs($signe), 5) : 0.0;
 
             return $code.':'.$monto.':'.($signe < 0 ? 'Devolución / ajuste' : 'Pago');
         }
         $total = 0.0;
         if (is_object($model) && property_exists($model, 'total')) {
-            $total = round((float) ($model->total ?? 0) * abs($signe), 5);
+            $total = round((float) ($model->total ?? 0) * $tasaCambio * abs($signe), 5);
         }
         $forma = '';
         if (is_object($model) && property_exists($model, 'forma_pago')) {

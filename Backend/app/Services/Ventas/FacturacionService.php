@@ -25,6 +25,8 @@ use App\Services\Inventario\ConversionInventarioService;
 use App\Services\Inventario\LoteAsignacionService;
 use App\Services\Inventario\StockDisponibleService;
 use App\Services\Restaurante\PedidoCanalInventarioService;
+use App\Services\Moneda\MonedaPaisService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -153,6 +155,12 @@ class FacturacionService
                 } else {
                     $venta->correlativo = $documento->correlativo;
                     $documento->increment('correlativo');
+                }
+
+                try {
+                    $this->resolverMonedaDocumento($venta, $empresa, $request);
+                } catch (\RuntimeException $e) {
+                    throw new FacturacionException($e->getMessage(), 422);
                 }
 
                 $venta->save();
@@ -537,6 +545,54 @@ class FacturacionService
             DB::rollBack();
             throw new FacturacionException($e->getMessage(), 400);
         }
+    }
+
+    /**
+     * Resuelve currency_code / exchange_rate / equivalent_* según pais_configuracion (módulo moneda).
+     * Sin funcionalidad `multimoneda` fuerza moneda funcional del país.
+     * Override de TC: empresa `facturacion_fe.permitir_editar_tipo_cambio` o país `permitir_editar`.
+     */
+    private function resolverMonedaDocumento(Venta $venta, Empresa $empresa, Request $request): void
+    {
+        /** @var MonedaPaisService $monedaService */
+        $monedaService = app(MonedaPaisService::class);
+        $cfg = $monedaService->configForEmpresa($empresa);
+        $funcional = strtoupper((string) ($cfg['moneda_funcional'] ?? 'USD'));
+
+        if (! $empresa->tieneFuncionalidadMultimoneda()) {
+            $moneda = $monedaService->resolveDocumento(
+                $empresa,
+                [
+                    'currency_code' => $funcional,
+                    'total' => (float) $venta->total,
+                    'iva' => (float) $venta->iva,
+                ],
+                Carbon::parse($venta->fecha ?: now())
+            );
+            $venta->fill($moneda);
+
+            return;
+        }
+
+        $documentoYaEmitido = ! empty($venta->dte);
+        $allowManualRate = ! $documentoYaEmitido && (
+            (bool) $empresa->getCustomConfigValue('facturacion_fe', 'permitir_editar_tipo_cambio', false)
+            || (bool) ($cfg['permitir_editar'] ?? false)
+        );
+
+        $moneda = $monedaService->resolveDocumento(
+            $empresa,
+            [
+                'currency_code' => $request->input('currency_code', $venta->currency_code ?? $funcional),
+                'exchange_rate' => $request->input('exchange_rate'),
+                'total' => (float) $venta->total,
+                'iva' => (float) $venta->iva,
+            ],
+            Carbon::parse($venta->fecha ?: now()),
+            $allowManualRate
+        );
+
+        $venta->fill($moneda);
     }
 
     private function aplicarReglasVentaRemisionConsigna(Venta $venta, Documento $documento, Request $request): void

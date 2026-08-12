@@ -7,6 +7,7 @@ Route::get('/fe-cr/cabys', [CostaRicaFeCatalogController::class, 'cabys']);
 Route::get('/fe-cr/contribuyente', [CostaRicaFeCatalogController::class, 'contribuyente']);
 Route::get('/fe-cr/exoneracion', [CostaRicaFeCatalogController::class, 'exoneracion']);
 Route::get('/fe-cr/tipo-cambio-dolar', [CostaRicaFeCatalogController::class, 'tipoCambioDolar']);
+Route::get('/fe-cr/bccr-tipo-cambio', [CostaRicaFeCatalogController::class, 'bccrTipoCambio']);
 Route::get('/fe-cr/departamentos', [CostaRicaFeCatalogController::class, 'departamentos']);
 Route::get('/fe-cr/municipios', [CostaRicaFeCatalogController::class, 'municipios']);
 Route::get('/fe-cr/distritos', [CostaRicaFeCatalogController::class, 'distritos']);

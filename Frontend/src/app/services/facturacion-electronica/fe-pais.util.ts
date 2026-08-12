@@ -57,6 +57,12 @@ export function esElSalvadorFe(
   return resolveCodigoPaisFe(empresa) === FE_PAIS_SV;
 }
 
+export function esCostaRicaFe(
+  empresa?: { cod_pais?: string | null; pais?: string | null } | null | undefined
+): boolean {
+  return resolveCodigoPaisFe(empresa) === FE_PAIS_CR;
+}
+
 /** Solo SV y CR tienen emisión FE implementada en el sistema. */
 export function paisTieneFeDisponible(
   empresa?: { cod_pais?: string | null; pais?: string | null; facturacion_electronica?: boolean | number | null } | null | undefined

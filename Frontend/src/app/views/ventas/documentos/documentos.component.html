@@ -107,7 +107,7 @@
                                             <a  routerLink="/documento/historial/{{documento.nombre}}" class="list-group-item list-group-item-action border-0 click" tooltip="Ver historial">
                                                 <i class="fa fa-right-left"></i> Ver historial
                                             </a>
-                                            <a class="list-group-item list-group-item-action border-0 click" (click)="openModal(mresolucion, documento,true)" tooltip="Agregar nueva resolución">
+                                            <a class="list-group-item list-group-item-action border-0 click" (click)="openModal(mresolucion, documento,true)" [tooltip]="esHonduras ? 'Agregar nuevo CAI' : 'Agregar nueva resolución'">
                                                 <i class="fa fa-plus"></i> Nueva resolución
                                             </a>
 
@@ -178,16 +178,18 @@
                     <small class="text-muted">Vista previa correlativo: {{ previewCorrelativo() }}</small>
                 </div>
             }
+            @if (showSerie) {
+                <div class="form-group col-md-6">
+                    <label for="documento.rangos">Serie</label>
+                    <input type="text" class="form-control" [(ngModel)]="documento.rangos" name="documento.rangos">
+                </div>
+            }
             <div class="form-group col-md-6">
-                <label for="documento.rangos">Serie</label>
-                <input type="text" class="form-control" [(ngModel)]="documento.rangos" name="documento.rangos">
-            </div>
-            <div class="form-group col-md-6">
-                <label for="documento.numero_autorizacion">Autorización</label>
+                <label for="documento.numero_autorizacion">{{ esHonduras ? 'Rango autorizado' : 'Autorización' }}</label>
                 <input type="text" class="form-control" [(ngModel)]="documento.numero_autorizacion" name="documento.numero_autorizacion">
             </div>
             <div class="form-group col-md-6">
-                <label for="documento.resolucion">Resolución</label>
+                <label for="documento.resolucion">{{ labelResolucion }}</label>
                 <input type="text" class="form-control" [(ngModel)]="documento.resolucion" name="documento.resolucion">
             </div>
             <div class="form-group col-md-6">
@@ -269,16 +271,18 @@
                       <small class="text-muted">Vista previa correlativo: {{ previewCorrelativo() }}</small>
                   </div>
               }
+              @if (showSerie) {
+                  <div class="form-group col-md-6">
+                      <label for="documento.rangos">Serie</label>
+                      <input type="text" class="form-control" [(ngModel)]="documento.rangos" name="documento.rangos">
+                  </div>
+              }
               <div class="form-group col-md-6">
-                  <label for="documento.rangos">Serie</label>
-                  <input type="text" class="form-control" [(ngModel)]="documento.rangos" name="documento.rangos">
-              </div>
-              <div class="form-group col-md-6">
-                  <label for="documento.numero_autorizacion">Autorización</label>
+                  <label for="documento.numero_autorizacion">{{ esHonduras ? 'Rango autorizado' : 'Autorización' }}</label>
                   <input type="text" class="form-control" [(ngModel)]="documento.numero_autorizacion" name="documento.numero_autorizacion">
               </div>
               <div class="form-group col-md-6">
-                  <label for="documento.resolucion">Resolución</label>
+                  <label for="documento.resolucion">{{ labelResolucion }}</label>
                   <input type="text" class="form-control" [(ngModel)]="documento.resolucion" name="documento.resolucion">
               </div>
               <div class="form-group col-md-6">

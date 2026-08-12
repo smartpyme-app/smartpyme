@@ -33,12 +33,15 @@ final class CostaRicaCreditNoteFromDevolucionMapper
         $fechaFactura = Carbon::parse($facturaOriginal->fecha)->timezone('America/Costa_Rica')->format('Y-m-d\TH:i:sP');
 
         $saleCond = '01';
+        // Moneda/TC de la NC = los de la factura original: Hacienda exige coherencia con el comprobante referenciado.
         $header = $this->invoiceMapper->encabezadoDocumento(
             $empresa,
             $this->invoiceMapper->fechaEmisionXmlCr(),
             $secuencialNc,
             $saleCond,
-            $devolucion->sucursal
+            $devolucion->sucursal,
+            (string) ($facturaOriginal->currency_code ?? $empresa->moneda ?? 'CRC'),
+            $facturaOriginal->exchange_rate
         );
 
         $facturaOriginal->loadMissing('cliente');
@@ -61,6 +64,13 @@ final class CostaRicaCreditNoteFromDevolucionMapper
             return $this->invoiceMapper->lineaDesdeDetalleDevolucion($d, $empresa, $pctIva);
         })->all());
 
+        [$factorMoneda, $lineItems] = $this->invoiceMapper->convertirLineasEmpresaADocumentoFe(
+            $empresa,
+            (string) ($facturaOriginal->currency_code ?? $empresa->moneda ?? 'CRC'),
+            $facturaOriginal->exchange_rate,
+            $lineItems
+        );
+
         $referenced = [[
             'document_type' => '01',
             'document_number' => $claveFactura,
@@ -74,7 +84,7 @@ final class CostaRicaCreditNoteFromDevolucionMapper
             'receiver' => $receiver,
             'line_items' => $lineItems,
             'payments' => $this->invoiceMapper->pagosDesdeLineas($lineItems),
-            'summary' => $this->invoiceMapper->resumenDevolucionAlineadoLineas($devolucion, $lineItems),
+            'summary' => $this->invoiceMapper->resumenDevolucionAlineadoLineas($devolucion, $lineItems, $factorMoneda),
             'referenced_documents' => $referenced,
         ]);
     }

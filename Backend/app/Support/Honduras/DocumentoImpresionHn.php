@@ -94,10 +94,12 @@ final class DocumentoImpresionHn
 
     public static function footer(Documento $documento): array
     {
+        $rango = trim((string) $documento->rangos) ?: trim((string) ($documento->numero_autorizacion ?? ''));
+
         return [
             'nota' => trim((string) $documento->nota) ?: null,
             'cai' => trim((string) $documento->resolucion) ?: null,
-            'rango' => trim((string) $documento->rangos) ?: null,
+            'rango' => $rango !== '' ? $rango : null,
             'fecha_limite' => $documento->fecha ? Carbon::parse($documento->fecha)->format('d/m/Y') : null,
         ];
     }
