@@ -187,13 +187,11 @@ class GastoImportService
             }
         }
 
-        // Condición de operación
+        // Condición de operación: `egresos` no tiene columna `condicion`, solo se refleja en el estado.
         if (isset($resumen['condicionOperacion'])) {
             if ($resumen['condicionOperacion'] == 1) {
-                $gasto->condicion = 'Contado';
                 $gasto->estado = 'Confirmado';
             } elseif ($resumen['condicionOperacion'] == 2) {
-                $gasto->condicion = 'Crédito';
                 $gasto->estado = 'Pendiente';
             }
         }

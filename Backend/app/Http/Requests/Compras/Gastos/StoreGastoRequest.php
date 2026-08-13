@@ -27,7 +27,9 @@ class StoreGastoRequest extends FormRequest
             'forma_pago' => 'required|string|max:255',
             'estado' => 'required|string|max:255',
             'total' => 'required|numeric|min:0',
-            'id_categoria' => 'required|integer|exists:gastos_categorias,id',
+            // La columna es nullable y la mayoría de gastos no usa categoría: exigirla rompía
+            // cualquier reenvío del gasto desde el listado (cancelar, pagar, marcar recurrente).
+            'id_categoria' => 'sometimes|nullable|integer|exists:gastos_categorias,id',
             'id_proveedor' => 'required|integer|exists:proveedores,id',
             'id_usuario' => 'required|integer|exists:users,id',
             'id_sucursal' => 'required|integer|exists:sucursales,id',
@@ -57,7 +59,6 @@ class StoreGastoRequest extends FormRequest
             'total.required' => 'El total es obligatorio.',
             'total.numeric' => 'El total debe ser un número.',
             'total.min' => 'El total no puede ser negativo.',
-            'id_categoria.required' => 'El campo categoria es obligatorio.',
             'id_categoria.exists' => 'La categoría seleccionada no existe.',
             'id_proveedor.required' => 'El campo proveedor es obligatorio.',
             'id_proveedor.exists' => 'El proveedor seleccionado no existe.',

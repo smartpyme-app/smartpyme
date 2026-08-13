@@ -8,12 +8,16 @@ import { PopoverModule } from 'ngx-bootstrap/popover';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { CrearAbonoGastoComponent } from '@shared/modals/crear-abono-gasto/crear-abono-gasto.component';
+import { CrearProveedorComponent } from '@shared/modals/crear-proveedor/crear-proveedor.component';
 import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
 import { PipesModule } from '@pipes/pipes.module';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
 import { CountryI18nService } from '@services/country-i18n.service';
+import { FuncionalidadesService } from '@services/functionalities.service';
+import { DocumentoImportService } from '@services/compras/documento-import.service';
+import { GastoJsonBulkService } from '@services/gasto-json-bulk.service';
 import {
   ExportPeriodoState,
   MESES_EXPORT_PERIODO,
@@ -29,6 +33,19 @@ import {
   validarPeriodoExport,
 } from '../../../helpers/export-period.helper';
 
+const SLUG_IMPORTACION_MASIVA_GASTOS_JSON = 'importacion-masiva-gastos-json';
+
+export interface BulkGastoItem {
+  uid: string;
+  fileName: string;
+  gasto: any;
+  detalles: any[];
+  varios_items: boolean;
+  jsonData?: any;
+  error?: string;
+  estado: 'error' | 'lista' | 'guardando' | 'guardada';
+}
+
 @Component({
     selector: 'app-gastos',
     templateUrl: './gastos.component.html',
@@ -43,6 +60,7 @@ import {
         PipesModule,
         PaginationComponent,
         CrearAbonoGastoComponent,
+        CrearProveedorComponent,
         NotificacionesContainerComponent,
     ]
 })
@@ -71,10 +89,35 @@ export class GastosComponent implements OnInit {
     public readonly aniosDisponiblesExport = aniosDisponiblesExportDesde();
     public readonly maxDiasExportPorTipo = maxDiasExportPorTipo;
 
+    /** Importación masiva JSON (listado de gastos) */
+    public bulkModalRef!: BsModalRef;
+    public bulkItems: BulkGastoItem[] = [];
+    public bulkTabIndex = 0;
+    public bulkProcesandoArchivos = false;
+    public bulkGuardandoTodas = false;
+    public readonly maxBulkJsonFiles = 20;
+    public permiteImportacionMasivaGastosJson = false;
+    public readonly tiposGastoBulk = [
+        'Alquiler', 'Combustible', 'Costo de venta', 'Gastos varios', 'Insumos',
+        'Impuestos', 'Activo Fijo', 'Gastos Administrativos', 'Mantenimiento',
+        'Marketing', 'Materia Prima', 'Servicios', 'Pago comisión', 'Planilla',
+        'Préstamos', 'Publicidad',
+    ];
+    public categoriasBulk: any[] = [];
+    public contabilidadHabilitada = false;
+
     modalRef!: BsModalRef;
 
-    constructor(public apiService: ApiService, public mhService: MHService, private alertService: AlertService,
-                private modalService: BsModalService, private router: Router, private route: ActivatedRoute
+    constructor(
+        public apiService: ApiService,
+        public mhService: MHService,
+        public documentoImportService: DocumentoImportService,
+        public alertService: AlertService,
+        private modalService: BsModalService,
+        private router: Router,
+        private route: ActivatedRoute,
+        private gastoJsonBulk: GastoJsonBulkService,
+        private funcionalidadesService: FuncionalidadesService,
     ){}
 
     ngOnInit() {
@@ -110,6 +153,25 @@ export class GastosComponent implements OnInit {
         this.apiService.getAll('area-empresa/list').subscribe(areas => { 
             this.areas = areas;
         }, error => {this.alertService.error(error); });
+
+        this.funcionalidadesService
+            .verificarAcceso(SLUG_IMPORTACION_MASIVA_GASTOS_JSON)
+            .subscribe((ok) => {
+                this.permiteImportacionMasivaGastosJson = !!ok;
+            });
+
+        this.funcionalidadesService.verificarAcceso('contabilidad').subscribe({
+            next: (acceso) => {
+                this.contabilidadHabilitada = !!acceso;
+            },
+            error: () => {
+                this.contabilidadHabilitada = false;
+            },
+        });
+    }
+
+    get mostrarCategoriaBulk(): boolean {
+        return this.apiService.mostrarMenuConfigGastos(this.contabilidadHabilitada);
     }
 
     public loadAll() {
@@ -416,5 +478,309 @@ export class GastosComponent implements OnInit {
         },error => {this.alertService.error(error);});
     }
 
+    openImportacionJsonMasivo(template: TemplateRef<any>) {
+        if (!this.permiteImportacionMasivaGastosJson) {
+            this.alertService.warning(
+                'Importación masiva',
+                'Su empresa no tiene habilitada la importación masiva de gastos desde documentos electrónicos. Solicite la activación al administrador.'
+            );
+            return;
+        }
+        this.bulkItems = [];
+        this.bulkTabIndex = 0;
+        this.alertService.modal = true;
+        this.cargarCategoriasBulk(() => {
+            this.bulkModalRef = this.modalService.show(template, {
+                class: 'modal-xl modal-dialog-scrollable',
+                backdrop: 'static',
+            });
+            this.bulkModalRef.onHidden?.subscribe(() => {
+                this.bulkItems = [];
+                this.bulkTabIndex = 0;
+                this.alertService.modal = false;
+            });
+        });
+    }
+
+    cerrarImportacionBulk() {
+        this.bulkModalRef?.hide();
+    }
+
+    private cargarCategoriasBulk(done?: () => void) {
+        if (!this.mostrarCategoriaBulk) {
+            this.categoriasBulk = [];
+            done?.();
+            return;
+        }
+        this.apiService.getAll('gastos/categorias/list').subscribe(
+            (categorias) => {
+                this.categoriasBulk = categorias || [];
+                done?.();
+            },
+            (error) => {
+                this.alertService.error(error);
+                this.categoriasBulk = [];
+                done?.();
+            }
+        );
+    }
+
+    /** Prefill id_categoria si el import ya lo trae o si coincide el nombre con `tipo`. */
+    private aplicarCategoriaImportada(item: BulkGastoItem) {
+        if (!this.mostrarCategoriaBulk || !this.categoriasBulk?.length) {
+            return;
+        }
+        const idActual = item.gasto?.id_categoria;
+        if (idActual != null && idActual !== '') {
+            item.gasto.id_categoria = Number(idActual);
+            this.sincronizarCategoriaDetalles(item);
+            return;
+        }
+        const tipo = String(item.gasto?.tipo || '').trim().toLowerCase();
+        if (!tipo) {
+            return;
+        }
+        const cat = this.categoriasBulk.find(
+            (c: any) => String(c?.nombre || '').trim().toLowerCase() === tipo
+        );
+        if (cat?.id != null) {
+            item.gasto.id_categoria = cat.id;
+            this.sincronizarCategoriaDetalles(item);
+        }
+    }
+
+    onBulkCategoriaChange(item: BulkGastoItem) {
+        const id = item.gasto?.id_categoria;
+        item.gasto.id_categoria = id != null && id !== '' ? Number(id) : null;
+        this.sincronizarCategoriaDetalles(item);
+        if (item.gasto.id_categoria != null) {
+            const cat = this.categoriasBulk.find((c: any) => c.id == item.gasto.id_categoria);
+            if (cat?.nombre && !item.gasto.tipo) {
+                item.gasto.tipo = cat.nombre;
+            }
+        }
+    }
+
+    onBulkTipoChange(item: BulkGastoItem) {
+        if (!this.mostrarCategoriaBulk) {
+            return;
+        }
+        // Rematch solo si aún no eligió categoría o la actual no cuadra con el tipo
+        const tipo = String(item.gasto?.tipo || '').trim().toLowerCase();
+        if (!tipo) {
+            return;
+        }
+        const catActual = this.categoriasBulk.find((c: any) => c.id == item.gasto.id_categoria);
+        if (catActual && String(catActual.nombre || '').trim().toLowerCase() === tipo) {
+            return;
+        }
+        const cat = this.categoriasBulk.find(
+            (c: any) => String(c?.nombre || '').trim().toLowerCase() === tipo
+        );
+        item.gasto.id_categoria = cat?.id ?? null;
+        this.sincronizarCategoriaDetalles(item);
+    }
+
+    private sincronizarCategoriaDetalles(item: BulkGastoItem) {
+        if (!item.varios_items || !item.detalles?.length) {
+            return;
+        }
+        const id = item.gasto?.id_categoria ?? null;
+        item.detalles.forEach((d: any) => {
+            d.id_categoria = id;
+        });
+    }
+
+    private readFileText(file: File): Promise<string> {
+        return new Promise((resolve, reject) => {
+            const r = new FileReader();
+            r.onload = () => resolve(String(r.result ?? ''));
+            r.onerror = () => reject(r.error);
+            r.readAsText(file);
+        });
+    }
+
+    async onBulkJsonFilesChange(event: Event) {
+        const input = event.target as HTMLInputElement;
+        const files = input.files;
+        if (!files?.length) {
+            return;
+        }
+        const list = Array.from(files).slice(0, this.maxBulkJsonFiles);
+        if (files.length > this.maxBulkJsonFiles) {
+            this.alertService.warning(
+                'Límite',
+                `Solo se procesan los primeros ${this.maxBulkJsonFiles} archivos.`
+            );
+        }
+        this.bulkProcesandoArchivos = true;
+        for (const f of list) {
+            const uid = 'b-' + Math.random().toString(36).slice(2, 11);
+            try {
+                const text = await this.readFileText(f);
+                const prep = await this.gastoJsonBulk.prepararGastoDesdeContenido(text);
+                if (prep.error) {
+                    this.bulkItems.push({
+                        uid,
+                        fileName: f.name,
+                        gasto: prep.gasto,
+                        detalles: [],
+                        varios_items: false,
+                        jsonData: prep.jsonData,
+                        error: prep.error,
+                        estado: 'error',
+                    });
+                } else {
+                    const item: BulkGastoItem = {
+                        uid,
+                        fileName: f.name,
+                        gasto: prep.gasto,
+                        detalles: prep.detalles,
+                        varios_items: prep.varios_items,
+                        jsonData: prep.jsonData,
+                        estado: 'lista',
+                    };
+                    this.aplicarCategoriaImportada(item);
+                    this.bulkItems.push(item);
+                }
+            } catch (e: any) {
+                this.bulkItems.push({
+                    uid,
+                    fileName: f.name,
+                    gasto: this.gastoJsonBulk.crearGastoBase(),
+                    detalles: [],
+                    varios_items: false,
+                    jsonData: {},
+                    error: e?.message || 'No se pudo leer el comprobante',
+                    estado: 'error',
+                });
+            }
+        }
+        this.bulkProcesandoArchivos = false;
+        input.value = '';
+        if (this.bulkItems.length && this.bulkTabIndex >= this.bulkItems.length) {
+            this.bulkTabIndex = 0;
+        }
+    }
+
+    get bulkItemActivo(): BulkGastoItem | null {
+        return this.bulkItems[this.bulkTabIndex] ?? null;
+    }
+
+    labelEstadoBulk(estado: string): string {
+        const m: Record<string, string> = {
+            lista: 'Listo para procesar',
+            guardada: 'Registrada',
+            guardando: 'Guardando…',
+            error: 'Error',
+        };
+        return m[estado] ?? estado;
+    }
+
+    setProveedorBulk(item: BulkGastoItem, proveedor: any) {
+        if (!item.gasto.id_proveedor) {
+            this.proveedores.push(proveedor);
+        }
+        item.gasto.id_proveedor = proveedor.id;
+    }
+
+    puedeGuardarBulkItem(item: BulkGastoItem): boolean {
+        if (item.estado === 'error' || item.estado === 'guardada' || item.estado === 'guardando') {
+            return false;
+        }
+        if (!item.gasto?.id_proveedor) {
+            return false;
+        }
+        if (item.varios_items) {
+            if (!item.detalles?.length) {
+                return false;
+            }
+            return item.detalles.every(
+                (d) => d.concepto && String(d.concepto).trim() && d.tipo && String(d.tipo).trim()
+            );
+        }
+        return !!(item.gasto.concepto && String(item.gasto.concepto).trim() && item.gasto.tipo);
+    }
+
+    puedeGuardarTodasBulk(): boolean {
+        if (!this.bulkItems.length || this.bulkProcesandoArchivos || this.bulkGuardandoTodas) {
+            return false;
+        }
+        const activos = this.bulkItems.filter(
+            (i) => i.estado !== 'guardada' && i.estado !== 'error'
+        );
+        if (!activos.length) {
+            return false;
+        }
+        return activos.every((i) => i.estado === 'lista' && this.puedeGuardarBulkItem(i));
+    }
+
+    guardarBulkItem(item: BulkGastoItem) {
+        if (!this.puedeGuardarBulkItem(item)) {
+            this.alertService.warning(
+                'Revisión',
+                'Complete proveedor, concepto y tipo de gasto antes de guardar.'
+            );
+            return;
+        }
+        if (!confirm(`¿Registrar el gasto del archivo "${item.fileName}"?`)) {
+            return;
+        }
+        item.estado = 'guardando';
+        this.apiService
+            .store('gasto', this.gastoJsonBulk.payloadStoreImportacionMasiva(item))
+            .subscribe(
+                () => {
+                    item.estado = 'guardada';
+                    this.alertService.success('Gasto registrado', item.fileName);
+                    this.filtrarGastos(false);
+                },
+                (err) => {
+                    item.estado = 'lista';
+                    this.alertService.error(err);
+                }
+            );
+    }
+
+    guardarTodasBulkListas() {
+        const listas = this.bulkItems.filter((i) => this.puedeGuardarBulkItem(i));
+        if (!listas.length) {
+            this.alertService.warning('Nada que guardar', 'No hay gastos listos para registrar.');
+            return;
+        }
+        if (!confirm(`Se registrarán ${listas.length} gasto(s). ¿Continuar?`)) {
+            return;
+        }
+        this.guardarBulkSecuencial(listas, 0);
+    }
+
+    private guardarBulkSecuencial(items: BulkGastoItem[], idx: number) {
+        if (idx >= items.length) {
+            this.bulkGuardandoTodas = false;
+            this.alertService.success(
+                'Importación',
+                `Se registraron ${items.length} gasto(s).`
+            );
+            this.filtrarGastos(false);
+            this.cerrarImportacionBulk();
+            return;
+        }
+        const item = items[idx];
+        this.bulkGuardandoTodas = true;
+        item.estado = 'guardando';
+        this.apiService
+            .store('gasto', this.gastoJsonBulk.payloadStoreImportacionMasiva(item))
+            .subscribe(
+                () => {
+                    item.estado = 'guardada';
+                    this.guardarBulkSecuencial(items, idx + 1);
+                },
+                (err) => {
+                    item.estado = 'lista';
+                    this.bulkGuardandoTodas = false;
+                    this.alertService.error(err);
+                }
+            );
+    }
 
 }

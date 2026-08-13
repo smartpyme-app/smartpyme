@@ -29,7 +29,6 @@ class Gasto extends AuditableModel {
         'estado',
         'forma_pago',
         'detalle_banco',
-        'condicion',
         'fecha_pago',
         'recurrente',
         'fecha_recurrente',
