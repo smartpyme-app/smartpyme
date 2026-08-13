@@ -55,18 +55,22 @@ class AguinaldoHelper
 
     /**
      * Calcula los años de laborar de un empleado hasta un año específico
-     * Por ley, el cálculo se hace hasta el 12 de diciembre (o fecha configurada)
+     * Por ley, el cálculo se hace hasta el 20 de octubre (o fecha configurada)
      * 
      * @param Carbon $fechaIngreso Fecha de ingreso del empleado
      * @param int $anio Año del aguinaldo
-     * @param Carbon|null $fechaCalculo Fecha de cálculo (opcional, por defecto 12 de diciembre)
+     * @param Carbon|null $fechaCalculo Fecha de cálculo (opcional, por defecto 20 de octubre)
      * @return float Años de laborar
      */
     public static function calcularAniosLaborar($fechaIngreso, $anio, $fechaCalculo = null)
     {
-        // Fecha límite para cálculo de aguinaldo: 12 de diciembre (por ley) o fecha configurada
+        // Fecha de referencia del aguinaldo: 20 de octubre (reforma Art. 200 CT) o fecha configurada
         if (!$fechaCalculo) {
-            $fechaCalculoAguinaldo = Carbon::create($anio, 12, 12);
+            $fechaCalculoAguinaldo = Carbon::create(
+                $anio,
+                PlanillaConstants::AGUINALDO_MES_CALCULO,
+                PlanillaConstants::AGUINALDO_DIA_CALCULO
+            );
         } else {
             $fechaCalculoAguinaldo = $fechaCalculo instanceof Carbon ? $fechaCalculo : Carbon::parse($fechaCalculo);
         }
@@ -101,7 +105,7 @@ class AguinaldoHelper
      * @param float $salarioBase Salario base mensual del empleado
      * @param Carbon $fechaIngreso Fecha de ingreso del empleado
      * @param int $anio Año del aguinaldo
-     * @param Carbon|null $fechaCalculo Fecha de cálculo (opcional, por defecto 12 de diciembre)
+     * @param Carbon|null $fechaCalculo Fecha de cálculo (opcional, por defecto 20 de octubre)
      * @return float Sugerencia de aguinaldo calculada
      */
     public static function calcularSugerenciaAguinaldo($salarioBase, $fechaIngreso, $anio, $fechaCalculo = null)
@@ -111,9 +115,13 @@ class AguinaldoHelper
             return 0.00;
         }
 
-        // Obtener fecha de cálculo (por defecto 12 de diciembre)
+        // Obtener fecha de cálculo (por defecto 20 de octubre)
         if (!$fechaCalculo) {
-            $fechaCalculoAguinaldo = Carbon::create($anio, 12, 12);
+            $fechaCalculoAguinaldo = Carbon::create(
+                $anio,
+                PlanillaConstants::AGUINALDO_MES_CALCULO,
+                PlanillaConstants::AGUINALDO_DIA_CALCULO
+            );
         } else {
             $fechaCalculoAguinaldo = $fechaCalculo instanceof Carbon ? $fechaCalculo : Carbon::parse($fechaCalculo);
         }
@@ -170,18 +178,22 @@ class AguinaldoHelper
 
     /**
      * Calcula los meses totales trabajados desde la fecha de ingreso hasta la fecha de cálculo
-     * Por ley, el cálculo se hace hasta el 12 de diciembre (o fecha configurada)
+     * Por ley, el cálculo se hace hasta el 20 de octubre (o fecha configurada)
      * 
      * @param Carbon $fechaIngreso Fecha de ingreso del empleado
      * @param int $anio Año del aguinaldo
-     * @param Carbon|null $fechaCalculo Fecha de cálculo (opcional, por defecto 12 de diciembre)
+     * @param Carbon|null $fechaCalculo Fecha de cálculo (opcional, por defecto 20 de octubre)
      * @return int Meses totales trabajados desde la fecha de ingreso
      */
     public static function calcularMesesTrabajados($fechaIngreso, $anio, $fechaCalculo = null)
     {
-        // Fecha límite para cálculo de aguinaldo: 12 de diciembre (por ley) o fecha configurada
+        // Fecha de referencia del aguinaldo: 20 de octubre (reforma Art. 200 CT) o fecha configurada
         if (!$fechaCalculo) {
-            $fechaCalculoAguinaldo = Carbon::create($anio, 12, 12);
+            $fechaCalculoAguinaldo = Carbon::create(
+                $anio,
+                PlanillaConstants::AGUINALDO_MES_CALCULO,
+                PlanillaConstants::AGUINALDO_DIA_CALCULO
+            );
         } else {
             $fechaCalculoAguinaldo = $fechaCalculo instanceof Carbon ? $fechaCalculo : Carbon::parse($fechaCalculo);
         }
