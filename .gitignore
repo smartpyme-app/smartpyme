@@ -7,3 +7,12 @@ Backend/composer.lock
 .idea/
 .worktrees/
 .superpowers/
+
+# graphify knowledge graph (regenerable locally; do not commit)
+graphify-out/
+**/graphify-out/
+# k6 load results / secrets
+load-tests/restaurante/results/*.json
+load-tests/restaurante/results/*.log
+.env.load
+**/.env.load
