@@ -1,79 +1,38 @@
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
-    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>Documento de entrega - Traslado</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            font-family: DejaVu Sans, sans-serif;
-            color: #222;
+        *{
+            margin: 0cm;
+            font-family: 'system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue","Noto Sans","Liberation Sans",Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji"';
         }
         body {
-            font-size: 11px;
-            margin: 28px 36px;
+            font-family: serif;
+            margin: 50px 50px;
         }
-        table {
+        h1,h2,h3,h4,h5,h6{
+            color: #000000 !important;
+        }
+        p{
+            font-size: 14px;
+        }
+        table{
             width: 100%;
             border-collapse: collapse;
         }
-        .text-right { text-align: right !important; }
-        .text-center { text-align: center !important; }
-        .muted { color: #555; font-size: 9px; line-height: 1.35; }
-        .empresa-nombre {
-            font-size: 13px;
-            font-weight: bold;
-            line-height: 1.25;
-            margin-bottom: 3px;
-        }
-        .doc-title {
-            font-size: 14px;
-            font-weight: bold;
-            margin: 14px 0 10px 0;
-            padding-bottom: 6px;
-            border-bottom: 1.5px solid #222;
-        }
-        .meta td {
-            vertical-align: top;
-            padding: 2px 8px 2px 0;
-            font-size: 11px;
-            line-height: 1.45;
-        }
-        .label { color: #555; }
-        .items th {
-            border-bottom: 1px solid #222;
-            padding: 6px 4px;
-            font-size: 10px;
+        .table th, .table td{
+            border: 0px;
+            border-collapse: collapse;
+            padding: 10px 5px;
             text-align: left;
-            background: #f4f4f4;
         }
-        .items td {
-            border-bottom: 0.5px solid #ccc;
-            padding: 6px 4px;
-            font-size: 11px;
+        .text-right{
+            text-align: right !important;
         }
-        .items tfoot td {
-            border-bottom: none;
-            padding-top: 8px;
-            font-weight: bold;
-            background: #f8f8f8;
-        }
-        .sku { font-size: 9px; color: #666; }
-        .firmas {
-            margin-top: 42px;
-        }
-        .firmas td {
-            width: 50%;
-            text-align: center;
-            vertical-align: top;
-            padding: 0 18px;
-        }
-        .firma-linea {
-            border-top: 1px solid #333;
-            margin-top: 48px;
-            padding-top: 6px;
-            font-size: 10px;
+        .border-bottom{
+            border-bottom: 1px solid #000000 !important;
         }
     </style>
 </head>
@@ -84,109 +43,111 @@
         $totalCosto = $traslados->sum(function ($t) {
             return ($t->costo ?? 0) * $t->cantidad;
         });
-        $ubicacion = trim(implode(' / ', array_filter([
-            trim(($empresa->municipio ?? '') . ' ' . ($empresa->departamento ?? '')),
-            $empresa->direccion ?? null,
-            $empresa->telefono ?? null,
-        ])));
         $origen = $primer->origen->nombre ?? $primer->nombre_origen ?? 'N/A';
         $destino = $primer->destino->nombre ?? $primer->nombre_destino ?? 'N/A';
     @endphp
 
-    <table>
-        <tr>
-            <td style="width: 72%; vertical-align: top; padding-right: 12px;">
-                <div class="empresa-nombre">{{ $empresa->nombre }}</div>
-                @if($ubicacion)
-                    <p class="muted">{{ $ubicacion }}</p>
-                @endif
-            </td>
-            <td class="text-right" style="width: 28%; vertical-align: top;">
-                @if ($empresa->logo)
-                    <img height="64" src="{{ asset('img/'.$empresa->logo) }}" alt="Logo">
-                @endif
-            </td>
-        </tr>
-    </table>
+        <table>
+            <tbody>
+                <tr>
+                    <td width="60%">
+                        <h3 style="font-size: 20px;">{{ $empresa->nombre }}</h3>
+                        <p>
+                            {{ $empresa->municipio }}
+                            {{ $empresa->departamento }}
+                        </p>
+                        <p>{{ $empresa->direccion }}</p>
+                        <p>{{ $empresa->telefono }}</p>
+                    </td>
+                    <td class="text-right">
+                        @if ($empresa->logo)
+                        <figure style="height: 150px; overflow: hidden;">
+                            <img style="margin-top: -50px;" width="250" height="250" src="{{ asset('img/'.$empresa->logo) }}" alt="Logo">
+                        </figure>
+                        @endif
+                    </td>
+                </tr>
+            </tbody>
+        </table>
 
-    <div class="doc-title">Documento de entrega — Traslado de inventario</div>
+        <table>
+            <tbody>
+                <tr>
+                    <td><h4>Documento de entrega — Traslado de inventario</h4></td>
+                </tr>
+                <tr>
+                    <td>
+                        <p><b>De:</b> {{ $origen }}</p>
+                        <p><b>Para:</b> {{ $destino }}</p>
+                    </td>
+                    <td>
+                        <p>Realizado por: {{ $primer->usuario->name ?? 'N/A' }}</p>
+                        <p>Estado: {{ $primer->estado }}</p>
+                        <p>Productos: {{ $traslados->count() }}</p>
+                    </td>
+                    <td>
+                        <p class="text-right">Fecha: {{ \Carbon\Carbon::parse($primer->created_at)->format('d/m/Y') }}</p>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
 
-    <table class="meta">
-        <tr>
-            <td style="width: 50%;">
-                <p><span class="label">De:</span> <b>{{ $origen }}</b></p>
-                <p><span class="label">Para:</span> <b>{{ $destino }}</b></p>
-            </td>
-            <td style="width: 50%;">
-                <p><span class="label">Fecha:</span> {{ \Carbon\Carbon::parse($primer->created_at)->format('d/m/Y') }}</p>
-                <p><span class="label">Estado:</span> {{ $primer->estado }}</p>
-                <p><span class="label">Realizado por:</span> {{ $primer->usuario->name ?? 'N/A' }}</p>
-                <p><span class="label">Productos:</span> {{ $traslados->count() }}</p>
-            </td>
-        </tr>
+        <br>
+
+        <table class="table">
+            <thead>
+                <tr>
+                    <th class="border-bottom">Descripción</th>
+                    <th class="border-bottom text-right">Cantidad</th>
+                    <th class="border-bottom text-right">Costo</th>
+                    <th class="border-bottom text-right">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($traslados as $traslado)
+                <tr>
+                    <td class="border-bottom">
+                        {{ $traslado->producto->nombre ?? $traslado->nombre_producto ?? 'N/A' }}
+                        @if($traslado->producto && !empty($traslado->producto->nombre_variante))
+                            - {{ $traslado->producto->nombre_variante }}
+                        @endif
+                    </td>
+                    <td class="border-bottom text-right">{{ number_format($traslado->cantidad, 0) }}</td>
+                    <td class="border-bottom text-right">{{ $simbolo }} {{ number_format($traslado->costo ?? 0, 2) }}</td>
+                    <td class="border-bottom text-right">{{ $simbolo }} {{ number_format(($traslado->costo ?? 0) * $traslado->cantidad, 2) }}</td>
+                </tr>
+                @endforeach
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="2"></td>
+                    <td class="text-right"><b>Total</b></td>
+                    <td class="text-right"><b>{{ $simbolo }} {{ number_format($totalCosto, 2) }}</b></td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <br>
         @if($primer->concepto)
-        <tr>
-            <td colspan="2">
-                <p><span class="label">Concepto:</span> {{ $primer->concepto }}</p>
-            </td>
-        </tr>
+        <h4>Concepto:</h4>
+        <p>{!! nl2br(e($primer->concepto)) !!}</p>
+        <br>
         @endif
-    </table>
 
-    <br>
-
-    <table class="items">
-        <thead>
+        <table style="width: 100%; margin-top: 30px;">
             <tr>
-                <th>Producto</th>
-                <th class="text-center" style="width: 80px;">Cantidad</th>
-                <th class="text-right" style="width: 110px;">Costo unitario</th>
-                <th class="text-right" style="width: 90px;">Total</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach($traslados as $traslado)
-            <tr>
-                <td>
-                    {{ $traslado->producto->nombre ?? $traslado->nombre_producto ?? 'N/A' }}
-                    @if($traslado->producto && !empty($traslado->producto->nombre_variante))
-                        - {{ $traslado->producto->nombre_variante }}
-                    @endif
-                    @if($traslado->producto && $traslado->producto->codigo)
-                        <br><span class="sku">SKU: {{ $traslado->producto->codigo }}</span>
-                    @endif
+                <td style="width: 50%; padding: 10px; text-align: center;">
+                    <p>____________________________</p>
+                    <h4 style="margin: 0; font-size: 16px; color: #333;">Entregado por</h4>
+                    <p>{{ $origen }}</p>
                 </td>
-                <td class="text-center">{{ number_format($traslado->cantidad, 0) }}</td>
-                <td class="text-right">{{ $simbolo }}{{ number_format($traslado->costo ?? 0, 2) }}</td>
-                <td class="text-right">{{ $simbolo }}{{ number_format(($traslado->costo ?? 0) * $traslado->cantidad, 2) }}</td>
+                <td style="width: 50%; padding: 10px; text-align: center;">
+                    <p>____________________________</p>
+                    <h4 style="margin: 0; font-size: 16px; color: #333;">Recibido por</h4>
+                    <p>{{ $destino }}</p>
+                </td>
             </tr>
-            @endforeach
-        </tbody>
-        <tfoot>
-            <tr>
-                <td colspan="3" class="text-right">Total</td>
-                <td class="text-right">{{ $simbolo }}{{ number_format($totalCosto, 2) }}</td>
-            </tr>
-        </tfoot>
-    </table>
+        </table>
 
-    <table class="firmas">
-        <tr>
-            <td>
-                <div class="firma-linea">
-                    <b>Entregado por</b><br>
-                    {{ $origen }}<br>
-                    Firma y sello
-                </div>
-            </td>
-            <td>
-                <div class="firma-linea">
-                    <b>Recibido por</b><br>
-                    {{ $destino }}<br>
-                    Firma y sello
-                </div>
-            </td>
-        </tr>
-    </table>
 </body>
 </html>
