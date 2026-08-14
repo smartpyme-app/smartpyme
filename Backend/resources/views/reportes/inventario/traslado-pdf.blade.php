@@ -54,11 +54,10 @@
                         <p>{{ $empresa->direccion }}</p>
                         <p>{{ $empresa->telefono }}</p>
                     </td>
-                    <td class="text-right">
+                    <td class="text-right" width="40%" style="vertical-align: top;">
                         @if ($empresa->logo)
-                        <figure style="height: 150px; overflow: hidden;">
-                            <img style="margin-top: -50px;" width="250" height="250" src="{{ asset('img/'.$empresa->logo) }}" alt="Logo">
-                        </figure>
+                            <img src="{{ asset('img/'.$empresa->logo) }}" alt="Logo"
+                                 style="width: 90px; height: 90px; object-fit: contain;">
                         @endif
                     </td>
                 </tr>
