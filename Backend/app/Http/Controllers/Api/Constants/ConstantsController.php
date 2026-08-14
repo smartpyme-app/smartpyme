@@ -231,6 +231,8 @@ class ConstantsController extends Controller
                 'DEDUCCION_EMPLEADOS_ASALARIADOS' => $constants['DEDUCCION_EMPLEADOS_ASALARIADOS'],
                 'AGUINALDO' => [
                     'EXENTO_DECRETO_2023' => $constants['AGUINALDO_EXENTO_DECRETO_2023'],
+                    'MES_CALCULO' => $constants['AGUINALDO_MES_CALCULO'],
+                    'DIA_CALCULO' => $constants['AGUINALDO_DIA_CALCULO'],
                     'ESTADOS' => [
                         'BORRADOR' => $constants['AGUINALDO_BORRADOR'],
                         'PAGADO' => $constants['AGUINALDO_PAGADO'],

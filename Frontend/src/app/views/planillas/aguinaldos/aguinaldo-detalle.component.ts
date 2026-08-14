@@ -162,7 +162,7 @@ export class AguinaldoDetalleComponent implements OnInit {
     this.apiService.store('aguinaldos/sugerencia', {
       id_empleado: this.empleadoSeleccionado,
       anio: this.aguinaldo.anio,
-      fecha_calculo: this.aguinaldo.fecha_calculo || (this.aguinaldo.anio + '-12-12')
+      fecha_calculo: this.aguinaldo.fecha_calculo || (this.aguinaldo.anio + '-10-20')
     }).subscribe({
       next: (response: any) => {
         this.sugerenciaAguinaldo = response.sugerencia || 0;
@@ -219,7 +219,7 @@ export class AguinaldoDetalleComponent implements OnInit {
       monto_bruto: this.montoBrutoNuevo,
       anio: this.aguinaldo.anio,
       tipo_contrato: tipoContrato,
-      fecha_calculo: this.aguinaldo.fecha_calculo || (this.aguinaldo.anio + '-12-12')
+      fecha_calculo: this.aguinaldo.fecha_calculo || (this.aguinaldo.anio + '-10-20')
     }).subscribe({
       next: (response: any) => {
         this.previewCalculo = response;
@@ -498,7 +498,7 @@ export class AguinaldoDetalleComponent implements OnInit {
           this.alertService.error(error);
           this.saving = false;
           // Restaurar fecha anterior
-          event.target.value = this.aguinaldo.fecha_calculo || (this.aguinaldo.anio + '-12-12');
+          event.target.value = this.aguinaldo.fecha_calculo || (this.aguinaldo.anio + '-10-20');
         },
       });
   }
