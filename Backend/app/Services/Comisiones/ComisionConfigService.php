@@ -7,6 +7,7 @@ use App\Models\Comisiones\ComisionRegla;
 use App\Models\Comisiones\ComisionSubcategoriaConfig;
 use App\Models\Inventario\Categorias\Categoria;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use stdClass;
 
@@ -109,23 +110,42 @@ class ComisionConfigService
 
     private function idReglaCategoriaDefault(int $idEmpresa): int
     {
-        $regla = ComisionRegla::query()->firstOrCreate(
-            [
-                'id_empresa' => $idEmpresa,
-                'tipo_calculo' => ComisionRegla::TIPO_POR_CATEGORIA,
-                'alcance' => ComisionRegla::ALCANCE_GLOBAL,
-            ],
-            [
-                'nombre' => 'Por categoría',
-                'id_vendedores' => null,
-                'momento_devengo' => ComisionRegla::MOMENTO_AL_PAGAR,
-                'reemplaza_global' => false,
-                'config' => new stdClass(),
-                'activo' => true,
-            ]
-        );
+        $regla = ComisionRegla::query()
+            ->where('id_empresa', $idEmpresa)
+            ->where('tipo_calculo', ComisionRegla::TIPO_POR_CATEGORIA)
+            ->where('alcance', ComisionRegla::ALCANCE_GLOBAL)
+            ->orderBy('id')
+            ->first();
 
-        return (int) $regla->id;
+        if ($regla !== null) {
+            return (int) $regla->id;
+        }
+
+        return DB::transaction(function () use ($idEmpresa) {
+            $regla = ComisionRegla::query()
+                ->where('id_empresa', $idEmpresa)
+                ->where('tipo_calculo', ComisionRegla::TIPO_POR_CATEGORIA)
+                ->where('alcance', ComisionRegla::ALCANCE_GLOBAL)
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->first();
+
+            if ($regla === null) {
+                $regla = ComisionRegla::query()->create([
+                    'id_empresa' => $idEmpresa,
+                    'nombre' => 'Por categoría',
+                    'tipo_calculo' => ComisionRegla::TIPO_POR_CATEGORIA,
+                    'alcance' => ComisionRegla::ALCANCE_GLOBAL,
+                    'id_vendedores' => null,
+                    'momento_devengo' => ComisionRegla::MOMENTO_AL_PAGAR,
+                    'reemplaza_global' => false,
+                    'config' => new stdClass(),
+                    'activo' => true,
+                ]);
+            }
+
+            return (int) $regla->id;
+        });
     }
 
     private function assertPorcentajeValido(float $porcentaje): void
