@@ -17,11 +17,19 @@ class ComisionLiquidacion extends Model
         'id_periodo',
         'id_vendedor',
         'total_comision',
+        'salario_base',
+        'ajuste_salario_minimo',
+        'salario_minimo_aplicado',
+        'total_a_pagar',
         'pagado_at',
     ];
 
     protected $casts = [
         'total_comision' => 'decimal:4',
+        'salario_base' => 'decimal:4',
+        'ajuste_salario_minimo' => 'decimal:4',
+        'salario_minimo_aplicado' => 'decimal:4',
+        'total_a_pagar' => 'decimal:4',
         'pagado_at' => 'datetime',
     ];
 

@@ -3,10 +3,12 @@
 namespace App\Services\Comisiones;
 
 use App\Models\Comisiones\ComisionCategoriaConfig;
+use App\Models\Comisiones\ComisionRegla;
 use App\Models\Comisiones\ComisionSubcategoriaConfig;
 use App\Models\Inventario\Categorias\Categoria;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
+use stdClass;
 
 class ComisionConfigService
 {
@@ -77,10 +79,12 @@ class ComisionConfigService
     {
         $this->assertCategoriaEmpresa($idEmpresa, $idCategoria);
         $this->assertPorcentajeValido($porcentaje);
+        $idRegla = $this->idReglaCategoriaDefault($idEmpresa);
 
         return ComisionCategoriaConfig::query()->updateOrCreate(
             [
                 'id_empresa' => $idEmpresa,
+                'id_regla' => $idRegla,
                 'id_categoria' => $idCategoria,
             ],
             ['porcentaje' => $porcentaje]
@@ -91,14 +95,37 @@ class ComisionConfigService
     {
         $this->assertSubcategoriaEmpresa($idEmpresa, $idSubcategoria);
         $this->assertPorcentajeValido($porcentaje);
+        $idRegla = $this->idReglaCategoriaDefault($idEmpresa);
 
         return ComisionSubcategoriaConfig::query()->updateOrCreate(
             [
                 'id_empresa' => $idEmpresa,
+                'id_regla' => $idRegla,
                 'id_subcategoria' => $idSubcategoria,
             ],
             ['porcentaje' => $porcentaje]
         );
+    }
+
+    private function idReglaCategoriaDefault(int $idEmpresa): int
+    {
+        $regla = ComisionRegla::query()->firstOrCreate(
+            [
+                'id_empresa' => $idEmpresa,
+                'tipo_calculo' => ComisionRegla::TIPO_POR_CATEGORIA,
+                'alcance' => ComisionRegla::ALCANCE_GLOBAL,
+            ],
+            [
+                'nombre' => 'Por categoría',
+                'id_vendedores' => null,
+                'momento_devengo' => ComisionRegla::MOMENTO_AL_PAGAR,
+                'reemplaza_global' => false,
+                'config' => new stdClass(),
+                'activo' => true,
+            ]
+        );
+
+        return (int) $regla->id;
     }
 
     private function assertPorcentajeValido(float $porcentaje): void

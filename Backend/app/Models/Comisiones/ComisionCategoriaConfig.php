@@ -14,6 +14,7 @@ class ComisionCategoriaConfig extends Model
 
     protected $fillable = [
         'id_empresa',
+        'id_regla',
         'id_categoria',
         'porcentaje',
     ];

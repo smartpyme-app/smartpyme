@@ -23,6 +23,7 @@ class ComisionMovimiento extends Model
         'id_empresa',
         'id_vendedor',
         'id_periodo',
+        'id_regla',
         'origen',
         'id_venta',
         'id_detalle_venta',
