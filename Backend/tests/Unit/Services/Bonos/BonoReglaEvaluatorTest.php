@@ -30,4 +30,23 @@ class BonoReglaEvaluatorTest extends TestCase
         $eval = new BonoReglaEvaluator();
         $this->assertSame(100.0, $eval->calcular('escalonado', $config, 45000));
     }
+
+    public function test_porcentaje_excedente_solo_sobre_el_exceso(): void
+    {
+        $eval = new BonoReglaEvaluator();
+        $monto = $eval->calcular('porcentaje_excedente', ['meta' => 40000, 'porcentaje' => 10], 50000);
+        $this->assertSame(1000.0, $monto);
+    }
+
+    public function test_porcentaje_excedente_sin_exceso_es_cero(): void
+    {
+        $eval = new BonoReglaEvaluator();
+        $this->assertSame(0.0, $eval->calcular('porcentaje_excedente', ['meta' => 40000, 'porcentaje' => 10], 40000));
+    }
+
+    public function test_cualitativo_manual_siempre_cero_en_job(): void
+    {
+        $eval = new BonoReglaEvaluator();
+        $this->assertSame(0.0, $eval->calcular('cualitativo_manual', [], 99999));
+    }
 }

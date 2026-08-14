@@ -13,10 +13,15 @@ class BonoRegla extends Model
 
     const TIPO_META_FIJA = 'meta_fija';
     const TIPO_ESCALONADO = 'escalonado';
+    const TIPO_PORCENTAJE_EXCEDENTE = 'porcentaje_excedente';
+    const TIPO_GRUPAL = 'grupal';
+    const TIPO_CUALITATIVO_MANUAL = 'cualitativo_manual';
 
     const VENTANA_MENSUAL = 'mensual';
 
     const ALCANCE_GLOBAL = 'global';
+    const ALCANCE_INDIVIDUAL = 'individual';
+    const ALCANCE_EQUIPO = 'equipo';
     const ALCANCE_VENDEDORES = 'vendedores';
 
     protected $fillable = [
