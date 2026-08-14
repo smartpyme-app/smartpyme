@@ -4,6 +4,7 @@ namespace App\Services\Bonos;
 
 use App\Models\Bonos\BonoGenerado;
 use App\Models\Bonos\BonoRegla;
+use App\Models\User;
 use Carbon\Carbon;
 use Closure;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -18,6 +19,7 @@ class BonoGeneradoService
      * @param  Closure(int, int): ?object|null  $obtenerRegla
      * @param  Closure(array<string, mixed>): bool|null  $existeGenerado
      * @param  Closure(array<string, mixed>): BonoGenerado|null  $crearGenerado
+     * @param  Closure(int): ?object|null  $obtenerVendedor
      */
     public function __construct(
         private ?Closure $findForUpdate = null,
@@ -25,6 +27,7 @@ class BonoGeneradoService
         private ?Closure $obtenerRegla = null,
         private ?Closure $existeGenerado = null,
         private ?Closure $crearGenerado = null,
+        private ?Closure $obtenerVendedor = null,
     ) {
     }
 
@@ -112,6 +115,13 @@ class BonoGeneradoService
         if ($regla === null || ($regla->tipo ?? '') !== BonoRegla::TIPO_CUALITATIVO_MANUAL) {
             throw ValidationException::withMessages([
                 'id_regla' => ['Solo se pueden asignar manualmente bonos cualitativos.'],
+            ]);
+        }
+
+        $vendedor = $this->resolverVendedor($idVendedor);
+        if ($vendedor === null || (int) ($vendedor->id_empresa ?? 0) !== $idEmpresa) {
+            throw ValidationException::withMessages([
+                'id_vendedor' => ['El vendedor no pertenece a la empresa.'],
             ]);
         }
 
@@ -220,5 +230,14 @@ class BonoGeneradoService
         }
 
         return BonoGenerado::withoutGlobalScope('empresa')->where($unique)->exists();
+    }
+
+    private function resolverVendedor(int $idVendedor): ?object
+    {
+        if ($this->obtenerVendedor !== null) {
+            return ($this->obtenerVendedor)($idVendedor);
+        }
+
+        return User::withoutGlobalScope('empresa')->find($idVendedor);
     }
 }

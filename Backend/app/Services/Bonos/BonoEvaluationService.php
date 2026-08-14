@@ -160,6 +160,10 @@ class BonoEvaluationService
 
             foreach ($candidatos as $idVendedor) {
                 if (! $this->reglaAplicaAVendedor($scope, $reglasScope, $regla, (int) $idVendedor)) {
+                    if (BonoRegla::alcanceEfectivo($regla) === BonoRegla::ALCANCE_GLOBAL) {
+                        $resultado = $this->persistirBono($idEmpresa, (int) $idVendedor, $regla, $desde, $hasta, 0.0, 0.0);
+                        ++$resumen[$resultado];
+                    }
                     continue;
                 }
                 ++$resumen['vendedores_procesados'];

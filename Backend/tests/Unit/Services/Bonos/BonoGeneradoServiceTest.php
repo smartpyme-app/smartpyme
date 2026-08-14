@@ -57,6 +57,7 @@ class BonoGeneradoServiceTest extends TestCase
             obtenerRegla: fn () => $regla,
             existeGenerado: fn () => false,
             crearGenerado: fn () => $this->fail('No debe crear'),
+            obtenerVendedor: fn () => (object) ['id' => 5, 'id_empresa' => 1],
         );
 
         $this->expectException(ValidationException::class);
@@ -87,6 +88,7 @@ class BonoGeneradoServiceTest extends TestCase
 
                 return new BonoGenerado($payload);
             },
+            obtenerVendedor: fn () => (object) ['id' => 5, 'id_empresa' => 1],
         );
 
         $service->crearManual(1, [
@@ -101,5 +103,31 @@ class BonoGeneradoServiceTest extends TestCase
         $this->assertSame(BonoGenerado::ESTADO_PENDIENTE, $creado['estado']);
         $this->assertSame(80.0, $creado['monto']);
         $this->assertSame(5, $creado['id_vendedor']);
+    }
+
+    public function test_crear_manual_rechaza_vendedor_de_otra_empresa(): void
+    {
+        $regla = (object) [
+            'id' => 10,
+            'tipo' => BonoRegla::TIPO_CUALITATIVO_MANUAL,
+            'alcance' => BonoRegla::ALCANCE_GLOBAL,
+            'id_vendedores' => null,
+        ];
+
+        $service = new BonoGeneradoService(
+            obtenerRegla: fn () => $regla,
+            existeGenerado: fn () => false,
+            crearGenerado: fn () => $this->fail('No debe crear bono de otra empresa'),
+            obtenerVendedor: fn () => (object) ['id' => 5, 'id_empresa' => 99],
+        );
+
+        $this->expectException(ValidationException::class);
+        $service->crearManual(1, [
+            'id_regla' => 10,
+            'id_vendedor' => 5,
+            'periodo_inicio' => '2026-07-01',
+            'periodo_fin' => '2026-07-31',
+            'monto' => 80,
+        ]);
     }
 }

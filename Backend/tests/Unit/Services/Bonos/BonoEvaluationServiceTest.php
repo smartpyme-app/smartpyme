@@ -307,6 +307,74 @@ class BonoEvaluationServiceTest extends TestCase
         ], $creados);
     }
 
+    public function test_reemplaza_global_elimina_pendiente_de_regla_global(): void
+    {
+        $global = (object) [
+            'id' => 1,
+            'tipo' => 'meta_fija',
+            'config' => ['meta' => 100, 'bono' => 200],
+            'alcance' => 'global',
+            'id_vendedores' => null,
+            'reemplaza_global' => false,
+        ];
+        $individual = (object) [
+            'id' => 2,
+            'tipo' => 'meta_fija',
+            'config' => ['meta' => 100, 'bono' => 50],
+            'alcance' => 'individual',
+            'id_vendedores' => [5],
+            'reemplaza_global' => true,
+        ];
+
+        $pendingGlobal = (object) [
+            'id' => 99,
+            'estado' => BonoGenerado::ESTADO_PENDIENTE,
+            'monto' => 200.0,
+        ];
+
+        $eliminados = [];
+        $creados = [];
+
+        $metaCalculator = Mockery::mock(BonoMetaCalculator::class);
+        $metaCalculator
+            ->shouldReceive('ventasVendedorPeriodo')
+            ->andReturn(200.0);
+
+        $service = new BonoEvaluationService(
+            $metaCalculator,
+            new BonoReglaEvaluator(),
+            obtenerEmpresasActivas: fn () => [1],
+            obtenerReglasActivas: fn () => collect([$global, $individual]),
+            obtenerVendedoresConVentas: fn () => [5],
+            obtenerVendedoresConPendiente: fn () => [5],
+            buscarBonoGenerado: function (array $unique) use ($pendingGlobal) {
+                if ((int) $unique['id_regla'] === 1 && (int) $unique['id_vendedor'] === 5) {
+                    return $pendingGlobal;
+                }
+
+                return null;
+            },
+            crearBonoGenerado: function (array $payload) use (&$creados) {
+                $creados[] = [$payload['id_vendedor'], $payload['id_regla'], $payload['monto']];
+
+                return (object) $payload;
+            },
+            actualizarBonoGenerado: fn () => $this->fail('No debe actualizar el global reemplazado'),
+            eliminarBonoGenerado: function (object $bono) use (&$eliminados): void {
+                $eliminados[] = $bono->id;
+            },
+            registrarEvaluacion: fn () => null,
+        );
+
+        $resumen = $service->evaluar(1, '2026-07-01', '2026-07-31');
+
+        $this->assertSame([99], $eliminados);
+        $this->assertSame(1, $resumen['eliminados']);
+        $this->assertEqualsCanonicalizing([
+            [5, 2, 50.0],
+        ], $creados);
+    }
+
     public function test_grupal_reparte_equitativo_si_el_equipo_cumple(): void
     {
         $regla = (object) [
