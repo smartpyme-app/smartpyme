@@ -462,7 +462,7 @@
             <i class="fa fa-info-circle"></i>
             <strong>Servicios Profesionales:</strong>
             <ul class="mb-0 mt-2">
-              <li>El salario base es MENSUAL - se dividirá automáticamente según tipo de planilla (quincenal /2, semanal /4.33).</li>
+              <li>El salario base es MENSUAL - se dividirá automáticamente según tipo de planilla (quincenal /2, semanal /4).</li>
               <li>Puede registrar <strong>días laborados</strong> del período para recibo o control; no cambian el cálculo del honorario devengado en este módulo.</li>
               <li>No se aplican descuentos de ISSS ni AFP.</li>
               <li>Solo se aplica retención de renta del 10% sobre el total de ingresos.</li>
@@ -532,7 +532,7 @@
                                                     detalleSeleccionado?.empleado?.tipo_contrato !== 3 &&
                                                     detalleSeleccionado?.empleado?.tipo_contrato !== 4">
                       Salario semanal: {{
-                      detalleSeleccionado.salario_base / 4.33
+                      detalleSeleccionado.salario_base / 4
                       | currency
                       }}
                     </small>
@@ -546,7 +546,7 @@
                     <small class="text-info" *ngIf="planilla.tipo_planilla === 'semanal' &&
                                                     detalleSeleccionado?.empleado?.tipo_contrato === 4">
                       Salario semanal: {{
-                      detalleSeleccionado.salario_base / 4.33
+                      detalleSeleccionado.salario_base / 4
                       | currency
                       }}
                     </small>
@@ -609,7 +609,7 @@
                     </small>
                     <!-- Mensaje para Servicios Profesionales (tipo 4) -->
                     <small class="text-info" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato === 4">
-                      Calculado según tipo de planilla (quincenal: /2, semanal: /4.33)
+                      Calculado según tipo de planilla (quincenal: /2, semanal: /4)
                     </small>
                   </div>
 

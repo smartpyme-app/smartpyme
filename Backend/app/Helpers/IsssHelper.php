@@ -29,6 +29,8 @@ class IsssHelper
             case 'quincenal':
                 return round(self::TOPE_MENSUAL / 2, 2);
             case 'semanal':
+                // Tope legal mensual prorrateado a semanas promedio del mes (52/12 ≈ 4.33).
+                // Independiente del factor de salario semanal (mensual / 4).
                 return round(self::TOPE_MENSUAL / 4.33, 2);
             default:
                 return self::TOPE_MENSUAL;

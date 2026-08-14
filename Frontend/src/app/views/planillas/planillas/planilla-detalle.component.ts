@@ -1360,21 +1360,13 @@ export class PlanillaDetalleComponent implements OnInit {
     } else if (esServiciosProfesionales) {
       // Para Servicios Profesionales, el salario_base es MENSUAL
       // Se divide según el tipo de planilla, pero NO usa días laborados
-      if (this.planilla.tipo_planilla === 'quincenal') {
-        salarioDevengado = salarioBase / 2;
-      } else if (this.planilla.tipo_planilla === 'semanal') {
-        salarioDevengado = salarioBase / 4.33;
-      } else {
-        salarioDevengado = salarioBase; // mensual
-      }
+      salarioDevengado = PlanillaConstants.ajustarSalarioBasePorPeriodo(salarioBase, this.planilla.tipo_planilla);
     } else {
       // Para empleados regulares, calcular proporcionalmente según días laborados del período
-      let salarioBaseAjustado = salarioBase;
-      if (this.planilla.tipo_planilla === 'quincenal') {
-        salarioBaseAjustado = salarioBase / 2;
-      } else if (this.planilla.tipo_planilla === 'semanal') {
-        salarioBaseAjustado = salarioBase / 4.33;
-      }
+      const salarioBaseAjustado = PlanillaConstants.ajustarSalarioBasePorPeriodo(
+        salarioBase,
+        this.planilla.tipo_planilla
+      );
       salarioDevengado = (salarioBaseAjustado / diasReferencia) * diasLaborados;
     }
     this.detalleSeleccionado.salario_devengado = Number(salarioDevengado.toFixed(2));
@@ -1990,10 +1982,10 @@ export class PlanillaDetalleComponent implements OnInit {
       }
     } else {
       if (this.planilla.tipo_planilla === 'quincenal') {
-        salarioBaseAjustado = salarioBase / 2;
+        salarioBaseAjustado = PlanillaConstants.ajustarSalarioBasePorPeriodo(salarioBase, 'quincenal');
         diasReferencia = 15;
       } else if (this.planilla.tipo_planilla === 'semanal') {
-        salarioBaseAjustado = salarioBase / 4.33;
+        salarioBaseAjustado = PlanillaConstants.ajustarSalarioBasePorPeriodo(salarioBase, 'semanal');
         diasReferencia = 7;
       }
     }

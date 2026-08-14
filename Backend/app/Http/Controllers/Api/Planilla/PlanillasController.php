@@ -378,13 +378,7 @@ class PlanillasController extends Controller
         } elseif ($tipoContrato === PlanillaConstants::TIPO_CONTRATO_SERVICIOS_PROFESIONALES) {
             // Para Servicios Profesionales, el salario base es MENSUAL
             // Se divide según tipo de planilla pero NO usa días laborados
-            if ($tipoPlanilla === 'quincenal') {
-                return $salarioBase / 2;
-            } elseif ($tipoPlanilla === 'semanal') {
-                return $salarioBase / 4.33;
-            } else {
-                return $salarioBase; // mensual
-            }
+            return PlanillaConstants::ajustarSalarioBasePorPeriodo($salarioBase, $tipoPlanilla);
         } else {
             // Para empleados asalariados regulares, calcular proporcionalmente según días laborados
             return ($salarioBase / 30) * $diasLaborados;
@@ -708,21 +702,10 @@ class PlanillasController extends Controller
             // Para Servicios Profesionales, el salario base es MENSUAL
             // Se divide según tipo de planilla pero NO usa días laborados
             $salarioBaseAjustado = $salarioBase;
-            if ($tipoPlanilla === 'quincenal') {
-                $salarioDevengado = $salarioBase / 2;
-            } elseif ($tipoPlanilla === 'semanal') {
-                $salarioDevengado = $salarioBase / 4.33;
-            } else {
-                $salarioDevengado = $salarioBase; // mensual
-            }
+            $salarioDevengado = PlanillaConstants::ajustarSalarioBasePorPeriodo($salarioBase, $tipoPlanilla);
         } else {
             // Para empleados asalariados regulares, ajustar según tipo de planilla y días laborados
-            $salarioBaseAjustado = $salarioBase;
-            if ($tipoPlanilla === 'quincenal') {
-                $salarioBaseAjustado = $salarioBase / 2;
-            } elseif ($tipoPlanilla === 'semanal') {
-                $salarioBaseAjustado = $salarioBase / 4.33;
-            }
+            $salarioBaseAjustado = PlanillaConstants::ajustarSalarioBasePorPeriodo($salarioBase, $tipoPlanilla);
             // Calcular proporcionalmente según días laborados
             $salarioDevengado = ($salarioBaseAjustado / $diasReferencia) * $diasLaborados;
         }
@@ -850,14 +833,6 @@ class PlanillasController extends Controller
                 ->where('estado', '!=', 0)
                 ->get();
 
-            // Determinar factor de ajuste según tipo de planilla
-            $factorAjuste = 1;
-            if ($planilla->tipo_planilla === 'quincenal') {
-                $factorAjuste = 2;
-            } elseif ($planilla->tipo_planilla === 'semanal') {
-                $factorAjuste = 4.33;
-            }
-
             // Inicializar totales
             $total_salarios = 0;
             $total_deducciones = 0;
@@ -962,14 +937,12 @@ class PlanillasController extends Controller
 
             // Determinar días de referencia y factor de ajuste según tipo de planilla
             $diasReferencia = 30;
-            $factorAjuste = 1;
+            $factorAjuste = PlanillaConstants::getFactorPeriodo($planilla->tipo_planilla);
 
             if ($planilla->tipo_planilla === 'quincenal') {
                 $diasReferencia = 15;
-                $factorAjuste = 2;
             } elseif ($planilla->tipo_planilla === 'semanal') {
                 $diasReferencia = 7;
-                $factorAjuste = 4.33;
             }
 
             // Verificar tipo de contrato primero
@@ -1007,16 +980,8 @@ class PlanillasController extends Controller
             } elseif ($tipoContrato === PlanillaConstants::TIPO_CONTRATO_SERVICIOS_PROFESIONALES) {
                 // Para Servicios Profesionales, el salario base es MENSUAL
                 // Se divide según tipo de planilla pero NO usa días laborados
-                if ($planilla->tipo_planilla === 'quincenal') {
-                    $salarioDevengado = $salarioBaseMensual / 2;
-                    $salarioBaseAjustado = $salarioBaseMensual / 2;
-                } elseif ($planilla->tipo_planilla === 'semanal') {
-                    $salarioDevengado = $salarioBaseMensual / 4.33;
-                    $salarioBaseAjustado = $salarioBaseMensual / 4.33;
-                } else {
-                    $salarioDevengado = $salarioBaseMensual; // mensual
-                    $salarioBaseAjustado = $salarioBaseMensual;
-                }
+                $salarioDevengado = PlanillaConstants::ajustarSalarioBasePorPeriodo($salarioBaseMensual, $planilla->tipo_planilla);
+                $salarioBaseAjustado = $salarioDevengado;
             } else {
                 // Para empleados asalariados regulares, calcular proporcionalmente según días laborados
                 $salarioBaseAjustado = $planilla->tipo_planilla !== 'mensual' ?
@@ -2256,28 +2221,10 @@ class PlanillasController extends Controller
                 // Para Servicios Profesionales, el salario base es MENSUAL
                 // Se divide según tipo de planilla pero NO usa días laborados
                 $salarioBase = $salarioBaseMensual;
-                switch ($planilla->tipo_planilla) {
-                    case 'quincenal':
-                        $salarioDevengado = $salarioBaseMensual / 2;
-                        break;
-                    case 'semanal':
-                        $salarioDevengado = $salarioBaseMensual / 4.33;
-                        break;
-                    default:
-                        $salarioDevengado = $salarioBaseMensual; // mensual
-                        break;
-                }
+                $salarioDevengado = PlanillaConstants::ajustarSalarioBasePorPeriodo($salarioBaseMensual, $planilla->tipo_planilla);
             } else {
                 // Para empleados asalariados regulares, ajustar según tipo de planilla y días laborados
-                $salarioBase = $salarioBaseMensual;
-                switch ($planilla->tipo_planilla) {
-                    case 'quincenal':
-                        $salarioBase = $salarioBaseMensual / 2;
-                        break;
-                    case 'semanal':
-                        $salarioBase = $salarioBaseMensual / 4.33;
-                        break;
-                }
+                $salarioBase = PlanillaConstants::ajustarSalarioBasePorPeriodo($salarioBaseMensual, $planilla->tipo_planilla);
                 // Calcular proporcionalmente según días laborados
                 $salarioDevengado = ($salarioBase / $diasReferencia) * $diasLaborados;
             }
@@ -2737,13 +2684,7 @@ class PlanillasController extends Controller
         }
 
         $salarioBase = $empleado->salario_base;
-        $salarioBaseAjustado = $salarioBase;
-
-        if ($tipoPlanilla === 'quincenal') {
-            $salarioBaseAjustado = $salarioBase / 2;
-        } elseif ($tipoPlanilla === 'semanal') {
-            $salarioBaseAjustado = $salarioBase / 4.33;
-        }
+        $salarioBaseAjustado = PlanillaConstants::ajustarSalarioBasePorPeriodo($salarioBase, $tipoPlanilla);
 
         $diasLaborados = $diasReferencia;
         $salarioDevengado = ($salarioBaseAjustado / $diasReferencia) * $diasLaborados;
