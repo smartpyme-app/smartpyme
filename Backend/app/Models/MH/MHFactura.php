@@ -221,8 +221,19 @@ class MHFactura extends Model
             '.',
             ''
         ));
-        $totalDescu = 0.0;
-        $subTotal = floatval(number_format($subTotalVentas - $totalDescu, 2, '.', ''));
+        $descuentoPuntos = floatval(number_format($this->venta->descuento_puntos ?? 0, 2, '.', ''));
+        $descuGravada = $descuentoPuntos > 0 && $totalGravada > 0 ? $descuentoPuntos : 0.0;
+        $descuExenta = $descuentoPuntos > 0 && $descuGravada == 0 && (float) $this->venta->exenta > 0
+            ? $descuentoPuntos
+            : 0.0;
+        $descuNoSuj = $descuentoPuntos > 0 && $descuGravada == 0 && $descuExenta == 0
+            ? $descuentoPuntos
+            : 0.0;
+        $totalDescu = $descuentoPuntos;
+        $subTotal = floatval(number_format($subTotalVentas - $descuNoSuj - $descuExenta - $descuGravada, 2, '.', ''));
+        $porcentajeDescuento = ($subTotalVentas > 0 && $totalDescu > 0)
+            ? floatval(number_format(($totalDescu / $subTotalVentas) * 100, 2, '.', ''))
+            : 0;
         $montoTotalOperacion = floatval(number_format($subTotal + $montoTributosNoIva, 2, '.', ''));
         $totalIva = floatval(number_format($montoIva, 2, '.', ''));
 
@@ -240,13 +251,11 @@ class MHFactura extends Model
                   "totalExenta" => floatval(number_format($this->venta->exenta, 2, '.', '')),
                   "totalGravada" => $totalGravada,
                   "subTotalVentas" => $subTotalVentas,
-                  "descuNoSuj" => 0,
-                  "descuExenta" => 0,
-                  // "descuGravada" => floatval(number_format($this->venta->descuento, 2, '.', '')),
-                  "descuGravada" => floatval(number_format(0 , 2, '.', '')),
-                  "porcentajeDescuento" => 0,
-                  // "totalDescu" => floatval(number_format($this->venta->descuento, 2, '.', '')),
-                  "totalDescu" => floatval(number_format(0 , 2, '.', '')),
+                  "descuNoSuj" => $descuNoSuj,
+                  "descuExenta" => $descuExenta,
+                  "descuGravada" => $descuGravada,
+                  "porcentajeDescuento" => $porcentajeDescuento,
+                  "totalDescu" => $totalDescu,
                   "tributos" => $tributosResumen,
                   "subTotal" => $subTotal,
                   "ivaRete1" => floatval(number_format($this->venta->iva_retenido, 2, '.', '')),
