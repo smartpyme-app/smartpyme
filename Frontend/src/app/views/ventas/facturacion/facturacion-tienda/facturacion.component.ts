@@ -15,6 +15,7 @@ import {
   acumularImpuestosVentaConCierreResidual,
   calcularMontosLineaDetalle,
   hidratarImpuestosProductosEnDetalles,
+  prepararDetallesParaFacturarDesdeCotizacion,
   sincronizarTipoGravadoPorCobroIva,
   sumarSubTotalEncabezadoVenta,
   sumarTotalEncabezadoVenta,
@@ -787,9 +788,12 @@ export class FacturacionComponent implements OnInit {
               this.venta.cotizacion = 0;
               this.venta.num_cotizacion = this.venta.id;
               this.venta.id = null;
-              this.venta.detalles.forEach((detalle: any) => {
-                detalle.id = null;
-              });
+              prepararDetallesParaFacturarDesdeCotizacion(
+                this.venta.detalles,
+                !!this.venta.cobrar_impuestos,
+                Number(this.apiService.auth_user()?.empresa?.iva ?? 0),
+                { paisEmpresa: this.apiService.auth_user()?.empresa?.pais }
+              );
               this.reiniciarDocumentoTrasCargarVentaBase();
               this.sumTotal();
 

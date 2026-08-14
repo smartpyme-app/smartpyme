@@ -17,6 +17,7 @@ import {
   esImpuestoIva,
   hidratarImpuestosProductosEnDetalles,
   normalizarPorcentajeImpuestoDetalle,
+  prepararDetallesParaFacturarDesdeCotizacion,
   redondearMoneda,
   resolverPorcentajeImpuestoVenta,
   sincronizarTipoGravadoPorCobroIva,
@@ -767,50 +768,15 @@ export class FacturacionV2Component implements OnInit {
               this.venta.num_cotizacion = this.venta.id;
               this.venta.id = null;
 
-              // Obtener porcentaje de IVA para conversión de precios
-              const porcentajeIvaTotal = this.venta.cobrar_impuestos
-                ? (this.apiService.auth_user()?.empresa?.iva || 0)
-                : 0;
-
-              // Ajustar precios de los detalles para v2 (precios incluyen IVA)
-              this.venta.detalles.forEach((detalle: any) => {
-                detalle.id = null;
-
-                // Si el detalle no tiene precio_iva, asumir que precio es sin IVA (versión anterior)
-                // y calcular precio_iva
-                if (!detalle.precio_iva || detalle.precio_iva === null || detalle.precio_iva === undefined) {
-                  if (porcentajeIvaTotal > 0) {
-                    // El precio actual es sin IVA, calcular precio con IVA
-                    detalle.precio_iva = redondearMoneda(parseFloat(detalle.precio || 0) * (1 + porcentajeIvaTotal / 100)).toFixed(2);
-                  } else {
-                    // Sin IVA, precio_iva es igual a precio
-                    detalle.precio_iva = redondearMoneda(parseFloat(detalle.precio || 0)).toFixed(2);
-                  }
-                } else {
-                  // Si ya tiene precio_iva, verificar que precio (sin IVA) esté correcto
-                  if (porcentajeIvaTotal > 0) {
-                    const precioSinIvaCalculado = this.calcularPrecioSinIva(parseFloat(detalle.precio_iva), porcentajeIvaTotal);
-                    detalle.precio = precioSinIvaCalculado.toFixed(4);
-                  } else {
-                    detalle.precio = parseFloat(detalle.precio_iva).toFixed(4);
-                  }
+              prepararDetallesParaFacturarDesdeCotizacion(
+                this.venta.detalles,
+                !!this.venta.cobrar_impuestos,
+                Number(this.apiService.auth_user()?.empresa?.iva ?? 0),
+                {
+                  preservePrecioIva: true,
+                  paisEmpresa: this.apiService.auth_user()?.empresa?.pais,
                 }
-
-                // Asegurar que precio_iva esté a 2 decimales
-                detalle.precio_iva = redondearMoneda(parseFloat(detalle.precio_iva)).toFixed(2);
-
-                const tipo = (detalle.tipo_gravado && String(detalle.tipo_gravado).toLowerCase()) || 'gravada';
-                detalle.tipo_gravado = ['gravada', 'exenta', 'no_sujeta'].includes(tipo) ? tipo : 'gravada';
-                calcularMontosLineaDetalle(
-                  detalle,
-                  !!this.venta.cobrar_impuestos,
-                  this.apiService.auth_user()?.empresa?.iva,
-                  {
-                    preservePrecioIva: true,
-                    paisEmpresa: this.apiService.auth_user()?.empresa?.pais,
-                  }
-                );
-              });
+              );
 
               this.reiniciarDocumentoTrasCargarVentaBase();
               this.sumTotal();

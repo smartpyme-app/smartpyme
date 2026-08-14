@@ -236,6 +236,10 @@ export function calcularMontosLineaDetalle(
         : descuento;
   const totalConIva = redondearMoneda(cantidad * precioConIva - descuentoConIva);
 
+  // Persistibles para cotización → factura (misma base que una venta).
+  detalle.precio_sin_iva = Number(precioSinIva).toFixed(6);
+  detalle.precio_con_iva = redondearMoneda(precioConIva).toFixed(4);
+
   detalle.gravada = 0;
   detalle.exenta = 0;
   detalle.no_sujeta = 0;
@@ -610,9 +614,65 @@ export function calcularIvaResidualEncabezadoVenta(detalles: any[]): number {
 }
 
 /**
+ * Prepara detalles de una cotización (u otra venta base) para facturar con la misma
+ * lógica que una venta nueva: prioriza precio_con_iva/total_iva guardados.
+ */
+export function prepararDetallesParaFacturarDesdeCotizacion(
+  detalles: any[],
+  cobrarImpuestos: boolean,
+  empresaIva: number,
+  options?: { preservePrecioIva?: boolean; paisEmpresa?: unknown }
+): void {
+  (detalles || []).forEach((detalle: any) => {
+    detalle.id = null;
+
+    const precioConIvaGuardado = parseFloat(
+      String(detalle?.precio_con_iva ?? detalle?.precio_iva ?? '')
+    );
+    const totalIvaGuardado = parseFloat(String(detalle?.total_iva ?? ''));
+    const cantidad = parseFloat(String(detalle?.cantidad ?? 0)) || 0;
+    const pct = porcentajeIvaDetalle(
+      detalle,
+      empresaIva,
+      cobrarImpuestos,
+      options?.paisEmpresa
+    );
+
+    if (Number.isFinite(precioConIvaGuardado) && String(detalle?.precio_con_iva ?? detalle?.precio_iva ?? '') !== '') {
+      detalle.precio_iva = redondearMoneda(precioConIvaGuardado).toFixed(2);
+      if (pct > 0) {
+        detalle.precio = (precioConIvaGuardado / (1 + pct / 100)).toFixed(6);
+      } else {
+        detalle.precio = redondearMoneda(precioConIvaGuardado).toFixed(6);
+      }
+    } else if (
+      Number.isFinite(totalIvaGuardado) &&
+      String(detalle?.total_iva ?? '') !== '' &&
+      cantidad > 0
+    ) {
+      const descuentoConIva = parseFloat(String(detalle?.descuento_con_iva ?? 0)) || 0;
+      const precioConIva = (totalIvaGuardado + descuentoConIva) / cantidad;
+      detalle.precio_iva = redondearMoneda(precioConIva).toFixed(2);
+      if (pct > 0) {
+        detalle.precio = (precioConIva / (1 + pct / 100)).toFixed(6);
+      } else {
+        detalle.precio = redondearMoneda(precioConIva).toFixed(6);
+      }
+    }
+
+    const tipo = (detalle.tipo_gravado && String(detalle.tipo_gravado).toLowerCase()) || 'gravada';
+    detalle.tipo_gravado = ['gravada', 'exenta', 'no_sujeta'].includes(tipo) ? tipo : 'gravada';
+
+    calcularMontosLineaDetalle(detalle, cobrarImpuestos, empresaIva, {
+      preservePrecioIva: options?.preservePrecioIva ?? !!detalle.precio_iva,
+      paisEmpresa: options?.paisEmpresa,
+    });
+  });
+}
+
+/**
  * IVA objetivo de cabecera = suma(total_iva) − sub_total.
- * Así venta.iva queda alineada con los montos cobrados (precio_iva/total_iva),
- * no con un recálculo independiente precio×tasa que puede diferir centavos.
+ * Así venta.iva queda alineada con los montos cobrados (precio_iva/total_iva).
  */
 export function resolverIvaObjetivoEncabezadoVenta(
   detalles: any[],
