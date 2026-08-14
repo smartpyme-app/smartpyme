@@ -24,6 +24,10 @@ class ComisionReporteService
             ComisionMovimiento::ORIGEN_VENTA => 'Venta',
             ComisionMovimiento::ORIGEN_REDENCION_GIFT_CARD => 'Redención Gift Card (redencion_gift_card)',
             ComisionMovimiento::ORIGEN_AJUSTE_DEVOLUCION => 'Ajuste devolución',
+            ComisionMovimiento::ORIGEN_ABONO => 'Abono',
+            ComisionMovimiento::ORIGEN_AJUSTE_PERIODO => 'Volumen (período)',
+            ComisionMovimiento::ORIGEN_SALARIO_BASE => 'Salario base',
+            ComisionMovimiento::ORIGEN_AJUSTE_SALARIO_MINIMO => 'Ajuste salario mínimo',
             default => $origen,
         };
     }

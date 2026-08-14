@@ -19,6 +19,9 @@ class ComisionMovimiento extends Model
     const ORIGEN_REDENCION_GIFT_CARD = 'redencion_gift_card';
     const ORIGEN_AJUSTE_DEVOLUCION = 'ajuste_devolucion';
     const ORIGEN_ABONO = 'abono';
+    const ORIGEN_AJUSTE_PERIODO = 'ajuste_periodo';
+    const ORIGEN_SALARIO_BASE = 'salario_base';
+    const ORIGEN_AJUSTE_SALARIO_MINIMO = 'ajuste_salario_minimo';
 
     protected $fillable = [
         'id_empresa',

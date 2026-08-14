@@ -5,6 +5,9 @@ namespace App\Services\Comisiones;
 use App\Models\Comisiones\ComisionLiquidacion;
 use App\Models\Comisiones\ComisionMovimiento;
 use App\Models\Comisiones\ComisionPeriodo;
+use App\Models\Comisiones\ComisionRegla;
+use App\Models\EmpresaConfiguracionPlanilla;
+use App\Services\Comisiones\Calculators\ComisionCalculatorFactory;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Facades\DB;
@@ -12,6 +15,27 @@ use Illuminate\Validation\ValidationException;
 
 class ComisionLiquidacionService
 {
+    private const ORIGENES_FUERA_TOTAL_COMISION = [
+        ComisionMovimiento::ORIGEN_SALARIO_BASE,
+        ComisionMovimiento::ORIGEN_AJUSTE_SALARIO_MINIMO,
+    ];
+
+    private ComisionCalculatorFactory $factory;
+
+    private ComisionReglaScope $reglaScope;
+
+    private ComisionVentasPeriodo $ventasPeriodo;
+
+    public function __construct(
+        ?ComisionCalculatorFactory $factory = null,
+        ?ComisionReglaScope $reglaScope = null,
+        ?ComisionVentasPeriodo $ventasPeriodo = null,
+    ) {
+        $this->factory = $factory ?? new ComisionCalculatorFactory(new ComisionPorcentajeResolver());
+        $this->reglaScope = $reglaScope ?? new ComisionReglaScope();
+        $this->ventasPeriodo = $ventasPeriodo ?? new ComisionVentasPeriodo();
+    }
+
     /** @return EloquentCollection<int, ComisionPeriodo> */
     public function listarPeriodos(int $idEmpresa, ?string $estado = null): EloquentCollection
     {
@@ -49,23 +73,25 @@ class ComisionLiquidacionService
                 ]);
             }
 
-            $totalesPorVendedor = ComisionMovimiento::query()
+            $reglas = ComisionRegla::withoutGlobalScope('empresa')
                 ->where('id_empresa', $idEmpresa)
-                ->where('id_periodo', $periodo->id)
-                ->selectRaw('id_vendedor, SUM(monto_comision) as total_comision')
-                ->groupBy('id_vendedor')
-                ->get();
+                ->where('activo', true)
+                ->get()
+                ->all();
 
-            foreach ($totalesPorVendedor as $fila) {
-                ComisionLiquidacion::query()->updateOrCreate(
-                    [
-                        'id_empresa' => $idEmpresa,
-                        'id_periodo' => $periodo->id,
-                        'id_vendedor' => (int) $fila->id_vendedor,
-                    ],
-                    [
-                        'total_comision' => round((float) $fila->total_comision, 4),
-                    ]
+            $minimo = $this->salarioMinimoEmpresa($idEmpresa);
+            $inicio = $periodo->fecha_inicio->toDateString();
+            $fin = $periodo->fecha_fin->toDateString();
+
+            foreach ($this->idsVendedoresCierre($idEmpresa, $periodo, $reglas, $inicio, $fin) as $idVendedor) {
+                $this->persistirCierreVendedor(
+                    $idEmpresa,
+                    $periodo,
+                    $idVendedor,
+                    $reglas,
+                    $inicio,
+                    $fin,
+                    $minimo
                 );
             }
 
@@ -85,11 +111,14 @@ class ComisionLiquidacionService
             return;
         }
 
-        $total = ComisionMovimiento::withoutGlobalScope('empresa')
+        $total = $this->sumarTotalComision($idEmpresa, $idPeriodo, $idVendedor);
+        $existente = ComisionLiquidacion::withoutGlobalScope('empresa')
             ->where('id_empresa', $idEmpresa)
             ->where('id_periodo', $idPeriodo)
             ->where('id_vendedor', $idVendedor)
-            ->sum('monto_comision');
+            ->first();
+        $salarioBase = (float) ($existente->salario_base ?? 0);
+        $ajuste = (float) ($existente->ajuste_salario_minimo ?? 0);
 
         ComisionLiquidacion::withoutGlobalScope('empresa')->updateOrCreate(
             [
@@ -98,7 +127,8 @@ class ComisionLiquidacionService
                 'id_vendedor' => $idVendedor,
             ],
             [
-                'total_comision' => round((float) $total, 4),
+                'total_comision' => $total,
+                'total_a_pagar' => round($total + $salarioBase + $ajuste, 4),
             ]
         );
     }
@@ -136,5 +166,203 @@ class ComisionLiquidacionService
 
             return $liquidacion->fresh(['vendedor', 'periodo']);
         });
+    }
+
+    /**
+     * @param  list<object>  $reglas
+     * @return list<int>
+     */
+    private function idsVendedoresCierre(
+        int $idEmpresa,
+        ComisionPeriodo $periodo,
+        array $reglas,
+        string $inicio,
+        string $fin,
+    ): array {
+        $ids = ComisionMovimiento::withoutGlobalScope('empresa')
+            ->where('id_empresa', $idEmpresa)
+            ->where('id_periodo', $periodo->id)
+            ->distinct()
+            ->pluck('id_vendedor')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        $hayGlobalPeriodo = false;
+        foreach ($reglas as $regla) {
+            if (! $this->esReglaPeriodoOBase($regla)) {
+                continue;
+            }
+            $alcance = (string) ($regla->alcance ?? ComisionRegla::ALCANCE_GLOBAL);
+            if ($alcance === ComisionRegla::ALCANCE_GLOBAL) {
+                $hayGlobalPeriodo = true;
+                continue;
+            }
+            $ids = array_merge($ids, array_map('intval', (array) ($regla->id_vendedores ?? [])));
+        }
+
+        if ($hayGlobalPeriodo) {
+            $ids = array_merge($ids, $this->ventasPeriodo->idsConVentas($idEmpresa, $inicio, $fin));
+        }
+
+        return array_values(array_unique(array_filter($ids, fn (int $id) => $id > 0)));
+    }
+
+    /**
+     * @param  list<object>  $reglas
+     */
+    private function persistirCierreVendedor(
+        int $idEmpresa,
+        ComisionPeriodo $periodo,
+        int $idVendedor,
+        array $reglas,
+        string $inicio,
+        string $fin,
+        ?float $minimo,
+    ): void {
+        $aplicables = $this->reglaScope->aplicables($reglas, $idVendedor);
+        $ventas = null;
+
+        foreach ($aplicables as $regla) {
+            if (($regla->tipo_calculo ?? '') === ComisionRegla::TIPO_POR_VOLUMEN) {
+                $ventas ??= $this->ventasPeriodo->total($idEmpresa, $idVendedor, $inicio, $fin);
+                foreach ($this->factory->for(ComisionRegla::TIPO_POR_VOLUMEN)->calcularEnCierre((object) [
+                    'id_empresa' => $idEmpresa,
+                    'id_vendedor' => $idVendedor,
+                    'ventas' => $ventas,
+                    'regla' => $regla,
+                ]) as $resultado) {
+                    if ($resultado->montoComision == 0.0) {
+                        continue;
+                    }
+                    $this->persistirMovimientoPeriodo(
+                        $idEmpresa,
+                        (int) $periodo->id,
+                        $idVendedor,
+                        ComisionMovimiento::ORIGEN_AJUSTE_PERIODO,
+                        isset($regla->id) ? (int) $regla->id : null,
+                        $resultado->montoBase,
+                        $resultado->porcentaje,
+                        $resultado->montoComision,
+                        $periodo->fecha_fin
+                    );
+                }
+            }
+
+            $salarioBaseRegla = (float) ($regla->config['salario_base'] ?? 0);
+            if ($salarioBaseRegla > 0) {
+                $this->persistirMovimientoPeriodo(
+                    $idEmpresa,
+                    (int) $periodo->id,
+                    $idVendedor,
+                    ComisionMovimiento::ORIGEN_SALARIO_BASE,
+                    isset($regla->id) ? (int) $regla->id : null,
+                    $salarioBaseRegla,
+                    0.0,
+                    $salarioBaseRegla,
+                    $periodo->fecha_fin
+                );
+            }
+        }
+
+        $totalComision = $this->sumarTotalComision($idEmpresa, (int) $periodo->id, $idVendedor);
+        $salarioBase = $this->sumarOrigen(
+            $idEmpresa,
+            (int) $periodo->id,
+            $idVendedor,
+            ComisionMovimiento::ORIGEN_SALARIO_BASE
+        );
+        $ajuste = ComisionSalarioMinimo::ajuste($totalComision + $salarioBase, $minimo);
+        if ($ajuste > 0) {
+            $this->persistirMovimientoPeriodo(
+                $idEmpresa,
+                (int) $periodo->id,
+                $idVendedor,
+                ComisionMovimiento::ORIGEN_AJUSTE_SALARIO_MINIMO,
+                null,
+                $minimo ?? 0.0,
+                0.0,
+                $ajuste,
+                $periodo->fecha_fin
+            );
+        }
+
+        ComisionLiquidacion::withoutGlobalScope('empresa')->updateOrCreate(
+            [
+                'id_empresa' => $idEmpresa,
+                'id_periodo' => $periodo->id,
+                'id_vendedor' => $idVendedor,
+            ],
+            [
+                'total_comision' => $totalComision,
+                'salario_base' => round($salarioBase, 4),
+                'ajuste_salario_minimo' => round($ajuste, 4),
+                'salario_minimo_aplicado' => $minimo,
+                'total_a_pagar' => round($totalComision + $salarioBase + $ajuste, 4),
+            ]
+        );
+    }
+
+    private function persistirMovimientoPeriodo(
+        int $idEmpresa,
+        int $idPeriodo,
+        int $idVendedor,
+        string $origen,
+        ?int $idRegla,
+        float $montoBase,
+        float $porcentaje,
+        float $monto,
+        mixed $fechaEvento,
+    ): void {
+        ComisionMovimiento::withoutGlobalScope('empresa')->updateOrCreate(
+            [
+                'id_empresa' => $idEmpresa,
+                'origen' => $origen,
+                'id_periodo' => $idPeriodo,
+                'id_vendedor' => $idVendedor,
+                'id_regla' => $idRegla,
+            ],
+            [
+                'monto_base' => round($montoBase, 4),
+                'porcentaje_aplicado' => round($porcentaje, 4),
+                'monto_comision' => round($monto, 4),
+                'fecha_evento' => $fechaEvento,
+            ]
+        );
+    }
+
+    private function sumarTotalComision(int $idEmpresa, int $idPeriodo, int $idVendedor): float
+    {
+        return round((float) ComisionMovimiento::withoutGlobalScope('empresa')
+            ->where('id_empresa', $idEmpresa)
+            ->where('id_periodo', $idPeriodo)
+            ->where('id_vendedor', $idVendedor)
+            ->whereNotIn('origen', self::ORIGENES_FUERA_TOTAL_COMISION)
+            ->sum('monto_comision'), 4);
+    }
+
+    private function sumarOrigen(int $idEmpresa, int $idPeriodo, int $idVendedor, string $origen): float
+    {
+        return (float) ComisionMovimiento::withoutGlobalScope('empresa')
+            ->where('id_empresa', $idEmpresa)
+            ->where('id_periodo', $idPeriodo)
+            ->where('id_vendedor', $idVendedor)
+            ->where('origen', $origen)
+            ->sum('monto_comision');
+    }
+
+    private function salarioMinimoEmpresa(int $idEmpresa): ?float
+    {
+        $minimo = EmpresaConfiguracionPlanilla::obtenerConfiguracion($idEmpresa)?->configuracion['salario_minimo'] ?? null;
+
+        return $minimo !== null ? (float) $minimo : null;
+    }
+
+    private function esReglaPeriodoOBase(object $regla): bool
+    {
+        if (($regla->tipo_calculo ?? '') === ComisionRegla::TIPO_POR_VOLUMEN) {
+            return true;
+        }
+
+        return (float) ($regla->config['salario_base'] ?? 0) > 0;
     }
 }
