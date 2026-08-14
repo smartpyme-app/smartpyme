@@ -31,6 +31,7 @@ use Illuminate\Support\Facades\Route;
     Route::get('/documentos/historial',   [DocumentosController::class, 'historial']);
     Route::get('/documentos/list',         [DocumentosController::class, 'list']);
     Route::get('/documentos/list-nombre',  [DocumentosController::class, 'listNombre']);
+    Route::get('/documentos/nombres-opciones', [DocumentosController::class, 'nombresOpciones']);
     Route::get('/documento/{id}',         [DocumentosController::class, 'read']);
     Route::post('/documento',             [DocumentosController::class, 'store']);
     Route::delete('/documento/{id}',       [DocumentosController::class, 'delete']);

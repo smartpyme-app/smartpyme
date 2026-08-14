@@ -13,17 +13,27 @@ use App\Models\Restaurante\ComandaDetalle;
 use App\Models\Restaurante\PedidoRestaurante;
 use App\Models\Restaurante\PedidoRestauranteDetalle;
 use App\Models\Ventas\Clientes\Cliente;
-use App\Models\Ventas\Venta as VentaModel;
 use App\Services\Inventario\LoteAsignacionService;
 use App\Services\Restaurante\PedidoCanalInventarioService;
+use App\Services\Restaurante\RestauranteIdempotencyService;
+use App\Services\Restaurante\RestauranteSideEffectDispatcher;
+use App\Services\Restaurante\RestauranteRealtimePublisher;
+use App\Services\Restaurante\RestauranteTicketHtmlService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use RuntimeException;
 use Symfony\Component\HttpFoundation\Response;
 
 class PedidoRestauranteController extends Controller
 {
+    public function __construct(
+        private RestauranteSideEffectDispatcher $sideEffects,
+        private RestauranteTicketHtmlService $ticketHtml,
+        private RestauranteRealtimePublisher $realtime,
+    ) {}
+
     public function index(Request $request): JsonResponse
     {
         $user = auth()->user();
@@ -147,36 +157,62 @@ class PedidoRestauranteController extends Controller
             if ($itemsCocina !== []) {
                 $n++;
                 $comanda = Comanda::create([
+                    'id_empresa' => (int) $pedido->id_empresa,
                     'pedido_id' => $pedido->id,
                     'numero_comanda' => "P-{$pedido->id}-{$n}-C",
                     'estado' => 'pendiente',
                     'destino' => 'cocina',
                     'enviado_at' => now(),
                 ]);
+                $now = now();
+                $rows = [];
+                $ids = [];
                 foreach ($itemsCocina as $item) {
-                    ComandaDetalle::create([
+                    $rows[] = [
                         'comanda_id' => $comanda->id,
+                        'orden_detalle_id' => null,
                         'pedido_detalle_id' => $item->id,
-                    ]);
-                    $item->update(['enviado_cocina' => true]);
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
+                    $ids[] = $item->id;
+                }
+                if ($rows !== []) {
+                    ComandaDetalle::insert($rows);
+                }
+                if ($ids !== []) {
+                    PedidoRestauranteDetalle::whereIn('id', $ids)->update(['enviado_cocina' => true]);
                 }
                 $comandasCreadas[] = $comanda->load(['detalles.pedidoDetalle.producto']);
             }
             if ($itemsBarra !== []) {
                 $n++;
                 $comanda = Comanda::create([
+                    'id_empresa' => (int) $pedido->id_empresa,
                     'pedido_id' => $pedido->id,
                     'numero_comanda' => "P-{$pedido->id}-{$n}-B",
                     'estado' => 'pendiente',
                     'destino' => 'barra',
                     'enviado_at' => now(),
                 ]);
+                $now = now();
+                $rows = [];
+                $ids = [];
                 foreach ($itemsBarra as $item) {
-                    ComandaDetalle::create([
+                    $rows[] = [
                         'comanda_id' => $comanda->id,
+                        'orden_detalle_id' => null,
                         'pedido_detalle_id' => $item->id,
-                    ]);
-                    $item->update(['enviado_barra' => true]);
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
+                    $ids[] = $item->id;
+                }
+                if ($rows !== []) {
+                    ComandaDetalle::insert($rows);
+                }
+                if ($ids !== []) {
+                    PedidoRestauranteDetalle::whereIn('id', $ids)->update(['enviado_barra' => true]);
                 }
                 $comandasCreadas[] = $comanda->load(['detalles.pedidoDetalle.producto']);
             }
@@ -184,6 +220,17 @@ class PedidoRestauranteController extends Controller
         } catch (\Throwable $e) {
             DB::rollBack();
             throw $e;
+        }
+
+        foreach ($comandasCreadas as $comanda) {
+            $this->sideEffects->enqueueComandaTicket((int) $comanda->id, (int) $user->id_empresa);
+            $this->realtime->cocinaChanged(
+                (int) $user->id_empresa,
+                (int) $comanda->id,
+                $comanda->destino ?? null,
+                $comanda->estado ?? 'pendiente',
+                'pedido_enviar_comanda'
+            );
         }
 
         return response()->json([
@@ -194,67 +241,86 @@ class PedidoRestauranteController extends Controller
 
     public function confirmar(Request $request, int $id): JsonResponse
     {
-        $user = auth()->user();
-        if (!$user || !$user->id_empresa) {
-            return response()->json(['error' => 'Usuario sin empresa asociada'], 400);
-        }
-
-        $request->validate([
-            'id_bodega' => 'nullable|integer',
-        ]);
-
-        $pedido = PedidoRestaurante::where('id_empresa', $user->id_empresa)->findOrFail($id);
-
-        if ($pedido->estado !== 'borrador') {
-            return response()->json(['error' => 'Solo se pueden confirmar pedidos en borrador'], 422);
-        }
-
-        if ($pedido->detalles()->count() === 0) {
-            return response()->json(['error' => 'El pedido no tiene líneas para confirmar'], 422);
-        }
-
-        if ($request->filled('id_bodega')) {
-            $err = $this->validarBodegaEmpresa((int) $request->id_bodega, (int) $user->id_empresa);
-            if ($err) {
-                return $err;
-            }
-        }
-
-        if ($pedido->id_bodega) {
-            $err = $this->validarBodegaEmpresa((int) $pedido->id_bodega, (int) $user->id_empresa);
-            if ($err) {
-                return $err;
-            }
-        }
-
-        try {
-            DB::transaction(function () use ($request, $pedido, $user) {
-                $idBodega = (int) ($request->input('id_bodega') ?: $pedido->id_bodega ?: $user->id_bodega);
-                if ($idBodega <= 0) {
-                    throw new RuntimeException('Indique una bodega en el pedido o al confirmar para descontar inventario.');
-                }
-                $errBodega = $this->validarBodegaEmpresa($idBodega, (int) $user->id_empresa);
-                if ($errBodega) {
-                    throw new RuntimeException('Bodega no válida para la empresa.');
+        return app(RestauranteIdempotencyService::class)->run(
+            'confirmar_pedido',
+            $request,
+            function () use ($request, $id) {
+                $user = auth()->user();
+                if (! $user || ! $user->id_empresa) {
+                    return response()->json(['error' => 'Usuario sin empresa asociada'], 400);
                 }
 
-                $pedido->id_bodega = $idBodega;
-                $pedido->save();
+                $request->validate([
+                    'id_bodega' => 'nullable|integer',
+                ]);
 
-                $svc = new PedidoCanalInventarioService();
-                $svc->aplicarSalidasAlConfirmar($pedido->fresh(['detalles']), $idBodega);
+                try {
+                    $pedido = DB::transaction(function () use ($request, $user, $id) {
+                        $pedido = PedidoRestaurante::where('id_empresa', $user->id_empresa)
+                            ->whereKey($id)
+                            ->lockForUpdate()
+                            ->firstOrFail();
 
-                $pedido->update(['estado' => 'pendiente_facturar']);
-            });
-        } catch (RuntimeException $e) {
-            return response()->json(['error' => $e->getMessage()], 400);
-        }
+                        // Retry real: ya confirmado con inventario descontado → no volver a descontar.
+                        if ($pedido->estado === 'pendiente_facturar' && $pedido->inventario_descontado_at) {
+                            return $pedido;
+                        }
 
-        $pedido->load(['detalles.producto', 'cliente', 'usuario', 'venta']);
+                        if ($pedido->estado !== 'borrador') {
+                            throw new RuntimeException('Solo se pueden confirmar pedidos en borrador');
+                        }
 
-        $response = $this->enrichDetallesWithPaquetes($pedido->toArray(), $user->id_empresa);
+                        if ($pedido->detalles()->count() === 0) {
+                            throw new RuntimeException('El pedido no tiene líneas para confirmar');
+                        }
 
-        return response()->json($response);
+                        if ($request->filled('id_bodega')) {
+                            $err = $this->validarBodegaEmpresa((int) $request->id_bodega, (int) $user->id_empresa);
+                            if ($err) {
+                                throw new RuntimeException('Bodega no válida para la empresa.');
+                            }
+                        }
+
+                        if ($pedido->id_bodega) {
+                            $err = $this->validarBodegaEmpresa((int) $pedido->id_bodega, (int) $user->id_empresa);
+                            if ($err) {
+                                throw new RuntimeException('Bodega no válida para la empresa.');
+                            }
+                        }
+
+                        $idBodega = (int) ($request->input('id_bodega') ?: $pedido->id_bodega ?: $user->id_bodega);
+                        if ($idBodega <= 0) {
+                            throw new RuntimeException('Indique una bodega en el pedido o al confirmar para descontar inventario.');
+                        }
+                        $errBodega = $this->validarBodegaEmpresa($idBodega, (int) $user->id_empresa);
+                        if ($errBodega) {
+                            throw new RuntimeException('Bodega no válida para la empresa.');
+                        }
+
+                        $pedido->id_bodega = $idBodega;
+                        $pedido->save();
+
+                        $svc = new PedidoCanalInventarioService();
+                        $svc->aplicarSalidasAlConfirmar($pedido->fresh(['detalles']), $idBodega);
+
+                        $pedido->update(['estado' => 'pendiente_facturar']);
+
+                        return $pedido->fresh();
+                    });
+                } catch (RuntimeException $e) {
+                    $msg = $e->getMessage();
+                    $code = str_contains($msg, 'borrador') || str_contains($msg, 'líneas') ? 422 : 400;
+
+                    return response()->json(['error' => $msg], $code);
+                }
+
+                $pedido->load(['detalles.producto', 'cliente', 'usuario', 'venta']);
+
+                $response = $this->enrichDetallesWithPaquetes($pedido->toArray(), $user->id_empresa);
+
+                return response()->json($response);
+            }
+        );
     }
 
     public function anular(int $id): JsonResponse
@@ -368,7 +434,11 @@ class PedidoRestauranteController extends Controller
         }
 
         $validated = $request->validate([
-            'venta_id' => 'required|integer|exists:ventas,id',
+            'venta_id' => [
+                'required',
+                'integer',
+                Rule::exists('ventas', 'id')->where('id_empresa', $user->id_empresa),
+            ],
         ]);
 
         $pedido = PedidoRestaurante::where('id_empresa', $user->id_empresa)->findOrFail($id);
@@ -379,14 +449,6 @@ class PedidoRestauranteController extends Controller
 
         if ($pedido->id_venta) {
             return response()->json(['error' => 'Este pedido ya fue vinculado a una venta'], 422);
-        }
-
-        $ventaOk = VentaModel::where('id', $validated['venta_id'])
-            ->where('id_empresa', $user->id_empresa)
-            ->exists();
-
-        if (! $ventaOk) {
-            return response()->json(['error' => 'La venta no pertenece a esta empresa'], 422);
         }
 
         $pedido->update([
@@ -437,9 +499,17 @@ class PedidoRestauranteController extends Controller
             'fecha' => 'required|date',
             'canal' => 'nullable|string|max:100',
             'referencia_externa' => 'nullable|string|max:150',
-            'cliente_id' => 'nullable|exists:clientes,id',
+            'cliente_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('clientes', 'id')->where('id_empresa', $user->id_empresa),
+            ],
             'observaciones' => 'nullable|string|max:5000',
-            'id_sucursal' => 'nullable|integer',
+            'id_sucursal' => [
+                'nullable',
+                'integer',
+                Rule::exists('sucursales', 'id')->where('id_empresa', $user->id_empresa),
+            ],
             'id_bodega' => 'nullable|integer',
             'detalles' => 'required|array|min:1',
             'detalles.*.producto_id' => 'required|integer',
@@ -523,9 +593,17 @@ class PedidoRestauranteController extends Controller
             'fecha' => 'sometimes|date',
             'canal' => 'nullable|string|max:100',
             'referencia_externa' => 'nullable|string|max:150',
-            'cliente_id' => 'nullable|exists:clientes,id',
+            'cliente_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('clientes', 'id')->where('id_empresa', $user->id_empresa),
+            ],
             'observaciones' => 'nullable|string|max:5000',
-            'id_sucursal' => 'nullable|integer',
+            'id_sucursal' => [
+                'nullable',
+                'integer',
+                Rule::exists('sucursales', 'id')->where('id_empresa', $user->id_empresa),
+            ],
             'id_bodega' => 'nullable|integer',
             'detalles' => 'sometimes|array|min:1',
             'detalles.*.producto_id' => 'required_with:detalles|integer',

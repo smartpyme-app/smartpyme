@@ -18,6 +18,15 @@ class PlanillaConstants
     const TIPO_JORNADA_TIEMPO_COMPLETO = 1;
     const TIPO_JORNADA_MEDIO_TIEMPO = 2;
 
+    // Identidad colaborador (CR). No confundir con TIPO_DOCUMENTO_* (adjuntos).
+    const ID_TYPE_CEDULA = 1;
+    const ID_TYPE_DIMEX = 2;
+
+    // Tipo de salario
+    const TIPO_SALARIO_FIJO = 1;
+    const TIPO_SALARIO_HORA = 2;
+    const TIPO_SALARIO_MIXTO = 3;
+
     // Estados de Empleado
     const ESTADO_EMPLEADO_INACTIVO = 0;
     const ESTADO_EMPLEADO_ACTIVO = 1;
@@ -212,6 +221,10 @@ class PlanillaConstants
     // Decreto 900: Primeros $1,500 de aguinaldo están exentos de renta
     const AGUINALDO_EXENTO_DECRETO_2023 = 1500.00;
 
+    // Reforma Art. 200 CT (DO 15-oct-2025): fecha de referencia del derecho = 20 de octubre
+    const AGUINALDO_MES_CALCULO = 10;
+    const AGUINALDO_DIA_CALCULO = 20;
+
     // Estados de aguinaldo
     const AGUINALDO_BORRADOR = 1;
     const AGUINALDO_PAGADO = 2;
@@ -236,6 +249,53 @@ class PlanillaConstants
             self::TIPO_JORNADA_TIEMPO_COMPLETO => 'Tiempo completo',
             self::TIPO_JORNADA_MEDIO_TIEMPO => 'Medio tiempo'
         ];
+    }
+
+    public static function getIdTypesCr(): array
+    {
+        return [
+            self::ID_TYPE_CEDULA => 'Cédula',
+            self::ID_TYPE_DIMEX => 'DIMEX',
+        ];
+    }
+
+    public static function idTypesCrValidos(): array
+    {
+        return array_keys(self::getIdTypesCr());
+    }
+
+    public static function getTiposSalario(): array
+    {
+        return [
+            self::TIPO_SALARIO_FIJO => 'Fijo mensual',
+            self::TIPO_SALARIO_HORA => 'Por hora',
+            self::TIPO_SALARIO_MIXTO => 'Mixto (base + comisión)',
+        ];
+    }
+
+    public static function tiposSalarioValidos(): array
+    {
+        return array_keys(self::getTiposSalario());
+    }
+
+    public static function getCategoriasOcupacionalesCr(): array
+    {
+        return [
+            'no_calificada' => 'Trabajadores en ocupación no calificada',
+            'semi_calificada' => 'Trabajadores semi-calificados',
+            'calificada' => 'Trabajadores calificados',
+            'especializada' => 'Trabajadores especializados',
+            'tecnico_medio' => 'Técnicos medios de educación diversificada o asimilables',
+            'tecnico_superior' => 'Técnicos de educación superior o asimilables',
+            'diplomado' => 'Diplomados de educación superior o asimilables',
+            'bachiller' => 'Bachilleres universitarios o asimilables',
+            'licenciado' => 'Licenciados universitarios o asimilables',
+        ];
+    }
+
+    public static function categoriasOcupacionalesCrKeys(): array
+    {
+        return array_keys(self::getCategoriasOcupacionalesCr());
     }
 
     public static function getEstadosEmpleado()

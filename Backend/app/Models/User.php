@@ -23,6 +23,13 @@ class User extends Authenticatable implements JWTSubject
     use HasFactory, Notifiable;
     use HasRoles;
 
+    /**
+     * Roles y permisos viven solo con guard 'web'. Sin esto, el middleware
+     * permission: falla en rutas API porque auth:api cambia auth.defaults.guard
+     * a 'api' y Spatie busca los permisos bajo ese guard.
+     */
+    protected $guard_name = 'web';
+
 
     public function sendPasswordResetNotification($token)
     {
@@ -65,6 +72,23 @@ class User extends Authenticatable implements JWTSubject
         'whatsapp_verified' => 'boolean',
     ];
 
+    public function syncTipoFromRole($roleId = null)
+    {
+        $role = $roleId ? \Spatie\Permission\Models\Role::find($roleId) : $this->roles()->first();
+        if ($role) {
+            if ($role->name === config('constants.ROL_SUPER_ADMIN', 'super_admin')) {
+                $this->tipo = 'Super Administrador';
+            } elseif ($role->name === config('constants.ROL_ADMIN', 'admin')) {
+                $this->tipo = config('constants.TIPO_USUARIO_ADMINISTRADOR', 'Administrador');
+            } elseif (in_array($role->name, [config('constants.ROL_USUARIO_VENDEDOR', 'usuario_vendedor'), 'usuario_ventas', 'vendedor'])) {
+                $this->tipo = config('constants.TIPO_USUARIO_VENDEDOR', 'Vendedor');
+            } else {
+                $this->tipo = ucfirst(str_replace('_', ' ', $role->name));
+            }
+            $this->save();
+        }
+    }
+
     protected static function boot()
     {
         parent::boot();
@@ -78,12 +102,17 @@ class User extends Authenticatable implements JWTSubject
 
     public function bienvenida()
     {
-        $usuario = User::where('id', $this->id)->with('empresa')->first();
-        Mail::send('mails.bienvenida-usuario', ['usuario' => $usuario], function ($m) use ($usuario) {
-            $m->from(env('MAIL_FROM_ADDRESS'), 'SmartPyme')
-                ->to($this->email)
-                ->subject('¡Bienvenido a SmartPyme!');
-        });
+        try {
+            $usuario = User::where('id', $this->id)->with('empresa')->first();
+            $fromAddress = config('mail.from.address') ?: (env('MAIL_FROM_ADDRESS') ?: 'no-reply@smartpyme.app');
+            Mail::send('mails.bienvenida-usuario', ['usuario' => $usuario], function ($m) use ($fromAddress) {
+                $m->from($fromAddress, 'SmartPyme')
+                    ->to($this->email)
+                    ->subject('¡Bienvenido a SmartPyme!');
+            });
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Error al enviar correo de bienvenida: ' . $e->getMessage());
+        }
     }
 
     public function getNombreSucursalAttribute()

@@ -1,4 +1,4 @@
-﻿<div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
+<div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
     <h3 *ngIf="venta.cotizacion == 1">Nueva Cotización</h3>
     <h3 *ngIf="venta.cotizacion != 1">Nueva venta</h3>
     <button *ngIf="venta.cotizacion == 1" class="btn btn-light text-danger" routerLink="/cotizaciones"><i class="fa fa-arrow-left"></i> Regresar</button>
@@ -6,12 +6,28 @@
 </div>
 
 <section class="card border-0 p-3 mb-3">
-    <div class="row">
-        <div class="form-group col-md-4 col-lg-2">
+    <div class="row flex-nowrap g-2 align-items-end overflow-auto">
+        <div class="form-group col" style="min-width: 7rem">
             <label for="fecha">Fecha</label><br>
-            <input type="date" class="form-control" [(ngModel)]="venta.fecha" name="fecha" id="fecha">
+            <input type="date" class="form-control" [(ngModel)]="venta.fecha" (ngModelChange)="onFechaVentaChange()" name="fecha" id="fecha">
         </div>
-        <div class="form-group col-md-4 col-lg-3">
+        <div class="form-group col" style="min-width: 9rem" *ngIf="tieneMultimoneda">
+            <label for="currency_code">Moneda</label>
+            <div class="input-group">
+                <select name="currency_code" id="currency_code" class="form-select" [(ngModel)]="venta.currency_code"
+                    (ngModelChange)="onCurrencyCodeChange()" [disabled]="ventaYaEmitida">
+                    <option *ngFor="let mon of monedasDocumento" [value]="mon">
+                      {{ mon === 'USD' ? etiquetaOpcionUsd : mon }}
+                    </option>
+                </select>
+                <button *ngIf="puedeEditarTipoCambio" type="button" class="btn btn-default"
+                    (click)="abrirModalTipoCambio(modalTipoCambio)" title="Editar tipo de cambio">
+                    <i class="fa fa-pencil"></i>
+                </button>
+            </div>
+            <small class="text-danger d-block mt-1" *ngIf="monedaVenta === 'USD' && tcPreview.error">{{ tcPreview.error }}</small>
+        </div>
+        <div class="form-group col" style="min-width: 8rem">
             <label for="id_usuario">Usuario</label>
             <select name="id_usuario" [(ngModel)]="venta.id_usuario" class="form-select">
                 <option value="">Seleccione aquí</option>
@@ -20,7 +36,7 @@
                 </option>
             </select>
         </div>
-        <div class="form-group col-md-4 col-lg-3">
+        <div class="form-group col" style="min-width: 8rem">
             <label for="id_bodega">Bodega</label>
             <select name="id_bodega" [(ngModel)]="venta.id_bodega" class="form-select" (change)="setBodega()">
                 <option [value]="bodega.id" *ngFor="let bodega of bodegas">
@@ -28,15 +44,16 @@
                 </option>
             </select>
         </div>
-        <div class="form-group col-md-4 col-lg-2">
+        <div class="form-group col" style="min-width: 8rem">
             <label for="id_documento">Documento</label>
             <select name="id_documento" [(ngModel)]="venta.id_documento" (ngModelChange)="setDocumento($event)" class="form-select">
                 <option *ngFor="let documento of documentos" [ngValue]="documento.id">{{ documento.nombre }}</option>
             </select>
         </div>
-        <div class="form-group col-md-4 col-lg-2">
+        <div class="form-group col" style="min-width: 7rem">
             <label for="correlativo">Correlativo</label>
-            <input type="number" class="form-control" [(ngModel)]="venta.correlativo" name="correlativo" id="correlativo">
+            <input *ngIf="mostrarCorrelativoHnFormato" type="text" class="form-control" [value]="correlativoDisplay" readonly id="correlativo">
+            <input *ngIf="!mostrarCorrelativoHnFormato" type="number" class="form-control" [(ngModel)]="venta.correlativo" name="correlativo" id="correlativo">
         </div>
     </div>
     <div class="row">
@@ -285,6 +302,13 @@
                     <tr>
                         <td class="text-right"> <b>Total</b> </td>
                         <td style="width: 150px;" class="text-right"><b> {{ venta.total | currency}}</b> </td>
+                        <td style="width: 50px;"></td>
+                    </tr>
+                    <tr *ngIf="tieneMultimoneda && monedaVenta === 'USD' && usdEquivalentTotal !== null">
+                        <td class="text-right text-muted">Equivalente en dólares</td>
+                        <td style="width: 150px;" class="text-right text-muted">
+                            ${{ usdEquivalentTotal | number:'1.2-2' }}
+                        </td>
                         <td style="width: 50px;"></td>
                     </tr>
                     <tr *ngIf="tieneAccesoPropina && venta.cobrar_propina">
@@ -537,7 +561,7 @@
   <div class="modal-header">
     <div class="modal-title text-center w-100">
         <p class="my-0">{{venta.tipo_documento}}</p>
-        <h3>{{venta.correlativo}}</h3>
+        <h3>{{ correlativoDisplay }}</h3>
     </div>
     <button type="button" class="close float-end btn-option" aria-label="Close" (click)="modalRef.hide()">
       <span aria-hidden="true">&times;</span>
@@ -592,6 +616,26 @@
             </div>
         </form>
     </div>
+  </div>
+</ng-template>
+
+<!-- Modal tipo de cambio (multimoneda) -->
+<ng-template #modalTipoCambio>
+  <div class="modal-header">
+    <h5 class="modal-title">Tipo de cambio</h5>
+    <button type="button" class="btn-close" aria-label="Close" (click)="cerrarModalTipoCambio()"></button>
+  </div>
+  <div class="modal-body">
+    <label for="exchange_rate_draft_v2" class="form-label">{{ simboloMonedaFuncional }} por 1 USD</label>
+    <input type="number" step="0.00001" min="0" class="form-control" id="exchange_rate_draft_v2"
+      name="exchange_rate_draft" [(ngModel)]="exchangeRateDraft">
+    <small class="text-muted d-block mt-2" *ngIf="tcPreview.rate != null">
+      {{ etiquetaReferenciaTc }}{{ tcPreview.date ? ' ' + tcPreview.date : '' }}: {{ tcPreview.rate | number:'1.2-5' }}
+    </small>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-light" (click)="cerrarModalTipoCambio()">Cancelar</button>
+    <button type="button" class="btn btn-primary" (click)="aplicarTipoCambioManual()">Aplicar</button>
   </div>
 </ng-template>
 

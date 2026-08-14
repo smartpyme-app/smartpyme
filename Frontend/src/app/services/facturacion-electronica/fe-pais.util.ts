@@ -1,6 +1,7 @@
 /** Alineado con Backend\app\Services\FacturacionElectronica\FacturacionElectronicaCountryResolver */
 export const FE_PAIS_SV = 'SV';
 export const FE_PAIS_CR = 'CR';
+export const FE_PAIS_HN = 'HN';
 
 const FE_LOCALE_CODIGOS = new Set(['SV', 'CR', 'GT', 'HN']);
 
@@ -54,6 +55,12 @@ export function esElSalvadorFe(
   empresa?: { cod_pais?: string | null; pais?: string | null } | null | undefined
 ): boolean {
   return resolveCodigoPaisFe(empresa) === FE_PAIS_SV;
+}
+
+export function esCostaRicaFe(
+  empresa?: { cod_pais?: string | null; pais?: string | null } | null | undefined
+): boolean {
+  return resolveCodigoPaisFe(empresa) === FE_PAIS_CR;
 }
 
 /** Solo SV y CR tienen emisión FE implementada en el sistema. */

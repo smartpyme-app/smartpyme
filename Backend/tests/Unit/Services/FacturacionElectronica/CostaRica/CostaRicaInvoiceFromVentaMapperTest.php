@@ -7,6 +7,7 @@ use App\Models\Admin\Impuesto;
 use App\Models\Inventario\Producto;
 use App\Models\Ventas\Devoluciones\Detalle as DetalleDevolucion;
 use App\Models\Ventas\Devoluciones\Devolucion;
+use App\Services\FacturacionElectronica\CostaRica\BccrTipoCambioClient;
 use App\Services\FacturacionElectronica\CostaRica\CostaRicaInvoiceFromVentaMapper;
 use App\Services\FacturacionElectronica\CostaRica\CostaRicaTipoCambioService;
 use Carbon\Carbon;
@@ -21,7 +22,9 @@ final class CostaRicaInvoiceFromVentaMapperTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->mapper = new CostaRicaInvoiceFromVentaMapper(new CostaRicaTipoCambioService());
+        $this->mapper = new CostaRicaInvoiceFromVentaMapper(
+            new CostaRicaTipoCambioService($this->createMock(BccrTipoCambioClient::class))
+        );
     }
 
     public function test_fecha_emision_xml_usa_hora_real_costa_rica(): void
@@ -33,6 +36,40 @@ final class CostaRicaInvoiceFromVentaMapperTest extends TestCase
         $now = Carbon::now('America/Costa_Rica');
         $this->assertLessThanOrEqual(3, abs($now->diffInSeconds($dt)));
         $this->assertNotSame('00:00:00', $dt->format('H:i:s'));
+    }
+
+    public function test_factor_crc_empresa_usd_documento_divide_por_tipo_cambio(): void
+    {
+        $empresa = $this->empresaStub();
+        $empresa->moneda = 'CRC';
+
+        $ref = new \ReflectionMethod(CostaRicaInvoiceFromVentaMapper::class, 'factorMontosEmpresaADocumentoFe');
+        $ref->setAccessible(true);
+
+        $factor = $ref->invoke($this->mapper, $empresa, 'USD', 454.06);
+        $this->assertEqualsWithDelta(1 / 454.06, $factor, 1e-12);
+        $this->assertSame(1.0, $ref->invoke($this->mapper, $empresa, 'CRC', 454.06));
+    }
+
+    public function test_convertir_montos_linea_fe_aplica_factor(): void
+    {
+        $ref = new \ReflectionMethod(CostaRicaInvoiceFromVentaMapper::class, 'convertirMontosLineaFe');
+        $ref->setAccessible(true);
+
+        $line = [
+            'unit_price' => 4424.78,
+            'sub_total' => 4424.78,
+            'total_amount' => 4424.78,
+            'taxable_base' => 4424.78,
+            'total_tax' => 575.22,
+            'total' => 5000.0,
+            'taxes' => [['amount' => 575.22]],
+        ];
+        $factor = 1 / 454.06;
+        $out = $ref->invoke($this->mapper, $line, $factor);
+
+        $this->assertEqualsWithDelta(5000.0 / 454.06, $out['total'], 0.0001);
+        $this->assertEqualsWithDelta(575.22 / 454.06, $out['taxes'][0]['amount'], 0.0001);
     }
 
     public function test_linea_devolucion_iva_es_base_imponible_por_tarifa(): void

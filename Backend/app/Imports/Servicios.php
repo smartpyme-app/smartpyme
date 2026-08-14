@@ -3,6 +3,8 @@
 namespace App\Imports;
 
 use App\Imports\Concerns\NormalizesClienteExcelRow;
+use App\Imports\Concerns\ParsesComandaExcelColumns;
+use App\Imports\Concerns\ParsesProductoExcelColumns;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Categorias\Categoria;
 use Maatwebsite\Excel\Concerns\ToModel;
@@ -21,6 +23,8 @@ use JWTAuth;
 class Servicios implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyRows, WithCalculatedFormulas, WithMultipleSheets
 {
     use NormalizesClienteExcelRow;
+    use ParsesComandaExcelColumns;
+    use ParsesProductoExcelColumns;
 
     private $numRows = 0;
 
@@ -31,7 +35,7 @@ class Servicios implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyRo
 
     public function prepareForValidation(array $row, $index): array
     {
-        $stringKeys = ['nombre', 'categoria', 'codigo', 'descripcion'];
+        $stringKeys = ['nombre', 'categoria', 'codigo', 'descripcion', 'marca', 'impuesto', 'genera_comanda', 'destino_comanda'];
         $row = $this->applyExcelRowNormalization($row, $stringKeys, false);
 
         if (empty($row['precio'] ?? null) && isset($row['precio_sin_iva']) && $row['precio_sin_iva'] !== '') {
@@ -137,10 +141,19 @@ class Servicios implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyRo
         $producto->id_categoria = $id_categoria;
         $producto->codigo = $codigo;
         $producto->descripcion = $row['descripcion'] ?? null;
+        $marca = $this->parseMarcaExcelValue($row['marca'] ?? null);
+        if ($marca !== null || ! $producto->exists) {
+            $producto->marca = $marca;
+        }
         $producto->tipo = 'Servicio';
         $producto->enable = true;
         $producto->id_empresa = $usuario->id_empresa;
+        $genera = $this->parseGeneraComanda($row['genera_comanda'] ?? null);
+        $producto->genera_comanda = $genera;
+        $producto->destino_comanda = $this->parseDestinoComanda($row['destino_comanda'] ?? null, $genera);
         $producto->save();
+
+        $this->applyImpuestoExcelToProducto($producto, $row['impuesto'] ?? null, (int) $usuario->id_empresa);
 
         ++$this->numRows;
 
@@ -156,6 +169,10 @@ class Servicios implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyRo
             'categoria' => 'required|string',
             'codigo' => 'nullable|string',
             'descripcion' => 'nullable|string',
+            'marca' => 'nullable|string',
+            'impuesto' => 'nullable',
+            'genera_comanda' => 'nullable',
+            'destino_comanda' => 'nullable|string',
         ];
     }
 

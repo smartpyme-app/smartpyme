@@ -13,6 +13,7 @@ use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 use App\Services\FacturacionElectronica\CostaRica\CostaRicaFeComprobantePdfService;
 use App\Services\FacturacionElectronica\FacturacionElectronicaCountryResolver;
 use App\Support\Admin\DocumentosDefaultPorPais;
+use App\Support\Honduras\DocumentoImpresionHn;
 
 class DocumentoService
 {
@@ -40,6 +41,19 @@ class DocumentoService
         $venta = Venta::where('id', $ventaId)->with('detalles', 'empresa', 'giftCardsEmitidas')->firstOrFail();
         $documento = Documento::findOrfail($venta->id_documento);
 
+        if (DocumentoImpresionHn::usaTicketAccesorios($empresa, $documento->nombre)) {
+            return $this->generarFacturaTicketAccesoriosHn($venta, $empresa, $documento);
+        }
+
+        // El Ticket HN conserva su impresión térmica; el resto de fiscales HN usa el resolver del país.
+        $vistaHn = $documento->nombre === 'Ticket'
+            ? null
+            : DocumentoImpresionHn::resolverVista($empresa, $documento);
+
+        if ($vistaHn !== null) {
+            return $this->generarDocumentoHonduras($venta, $empresa, $documento, $vistaHn);
+        }
+
         switch ($documento->nombre) {
             case 'Ticket':
             case 'Recibo':
@@ -62,6 +76,40 @@ class DocumentoService
             default:
                 throw new \Exception('No hay un formato para este tipo de documento de venta.');
         }
+    }
+
+    public function generarFacturaTicketAccesoriosHn(
+        Venta $venta,
+        Empresa $empresa,
+        Documento $documento
+    ) {
+        $cliente = Cliente::withoutGlobalScope('empresa')->find($venta->id_cliente);
+        $venta->loadMissing('detalles.producto');
+        $dolares = $this->convertirNumeroALetras($venta->total)['dolares'];
+        $centavosNum = DocumentoImpresionHn::centavos($venta->total);
+        $vista = 'reportes.facturacion.formatos_empresas.Factura-Accesorios-HN-Ticket';
+        $datos = compact('venta', 'empresa', 'documento', 'cliente', 'dolares', 'centavosNum');
+        $ticketEnPdf = (bool) ($empresa->custom_empresa['configuraciones']['ticket_en_pdf'] ?? false);
+
+        if (!$ticketEnPdf) {
+            $venta->pdf = false;
+
+            return view($vista, $datos);
+        }
+
+        $venta->pdf = true;
+        $pdf = PDF::loadView($vista, $datos);
+        $altoBase = 300;
+        $altoPorProducto = 24;
+        $notaExtra = $documento->nota
+            ? min(45, (substr_count((string) $documento->nota, "\n") + 1) * 5)
+            : 0;
+        $altoTotalPt = ($altoBase + max(1, $venta->detalles->count()) * $altoPorProducto + $notaExtra)
+            * 2.83465;
+        $anchoPt = 80 * 2.83465;
+        $pdf->setPaper([0, 0, $anchoPt, $altoTotalPt]);
+
+        return $pdf->stream('factura-accesorios-hn.pdf');
     }
 
     /**
@@ -156,6 +204,22 @@ class DocumentoService
         $pdf->setPaper($configuracionPapel['tipo'], $configuracionPapel['orientacion']);
 
         return $pdf->stream($empresa->nombre . '-factura-' . $venta->correlativo . '.pdf');
+    }
+
+    public function generarDocumentoHonduras(Venta $venta, Empresa $empresa, Documento $documento, string $vista)
+    {
+        $cliente = Cliente::withoutGlobalScope('empresa')->find($venta->id_cliente);
+        $venta->loadMissing('detalles.producto', 'sucursal');
+        $dolares = $this->convertirNumeroALetras($venta->total)['dolares'];
+        $centavos = DocumentoImpresionHn::centavos($venta->total);
+
+        $pdf = PDF::loadView(
+            $vista,
+            compact('venta', 'empresa', 'cliente', 'documento', 'dolares', 'centavos')
+        );
+        $pdf->setPaper('US Letter', 'portrait');
+
+        return $pdf->stream($empresa->nombre . '-documento-' . $venta->correlativo . '.pdf');
     }
 
     /**

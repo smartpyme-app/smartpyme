@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use App\Services\FacturacionElectronica\CostaRica\CostaRicaDgtUbicacionCatalogService;
 use App\Services\FacturacionElectronica\CostaRica\CostaRicaHaciendaPublicApiService;
+use App\Services\FacturacionElectronica\CostaRica\CostaRicaTipoCambioService;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -113,6 +115,35 @@ class CostaRicaFeCatalogController extends Controller
         $result = $api->tipoCambioDolar();
 
         return response()->json($result['data'], $result['status']);
+    }
+
+    /**
+     * Preview del tipo de cambio BCCR 318 para el selector de moneda en ventas CR (Task 5, SP-2102).
+     * Misma fuente que la persistencia (`CostaRicaTipoCambioService::rateForDate`); no inventa tasas.
+     */
+    public function bccrTipoCambio(Request $request, CostaRicaTipoCambioService $service): JsonResponse
+    {
+        $fechaRaw = $request->input('fecha');
+        try {
+            $fecha = $fechaRaw ? Carbon::parse($fechaRaw) : now('America/Costa_Rica');
+        } catch (\Throwable $e) {
+            return response()->json(['error' => 'Fecha inválida.'], 422);
+        }
+
+        try {
+            $rate = $service->rateForDate($fecha);
+
+            return response()->json([
+                'rate' => $rate,
+                'date' => $fecha->toDateString(),
+            ], 200);
+        } catch (\RuntimeException $e) {
+            return response()->json([
+                'rate' => null,
+                'date' => $fecha->toDateString(),
+                'error' => $e->getMessage(),
+            ], 422);
+        }
     }
 
     /**

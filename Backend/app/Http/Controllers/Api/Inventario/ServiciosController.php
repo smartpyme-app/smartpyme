@@ -229,9 +229,8 @@ class ServiciosController extends Controller
 
     public function downloadPlantilla()
     {
-        $export = new ServiciosPlantillaExport();
-        // Generar plantilla vacía con solo los encabezados
-        return Excel::download($export, 'plantilla_servicios.xlsx');
+        // Mismo patrón que el resto de exports del API (BinaryFileResponse).
+        return Excel::download(new ServiciosPlantillaExport(), 'plantilla_servicios.xlsx');
     }
 
 }

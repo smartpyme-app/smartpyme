@@ -26,6 +26,10 @@ import { forkJoin } from 'rxjs';
 import { map, distinctUntilChanged, finalize } from 'rxjs/operators';
 import { TranslatePipe } from '@ngx-translate/core';
 import { SharedModule } from '@shared/shared.module';
+import {
+    aplicarImpuestosDefaultsAEmpresa,
+    codigoPaisDesdeNombre,
+} from './impuestos-default-por-pais';
 
 @Component({
     selector: 'app-empresa',
@@ -89,6 +93,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
     public disconnectingBoxful: boolean = false;
     public canales: any = [];
     public tieneAccesoPropina: boolean = false;
+    public tieneMultimoneda: boolean = false;
     public tieneAccesoModuloRestaurantePedidos: boolean = false;
     public tieneAccesoTransformacionProductos: boolean = false;
     public tieneAccesoModuloPresentacionesProductos: boolean = false;
@@ -144,6 +149,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
 
         this.loadAll();
         this.verificarAccesoPropina();
+        this.verificarAccesoMultimoneda();
         this.verificarAccesoModuloRestaurantePedidos();
         this.verificarAccesoTransformacionProductos();
         this.verificarAccesoModuloPresentacionesProductos();
@@ -339,54 +345,8 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
     }
 
     setPais() {
-        // Mapeo de países a códigos ISO
-        const mapeoCodigosPais: { [key: string]: string } = {
-            'El Salvador': 'SV',
-            'Belice': 'BZ',
-            'Guatemala': 'GT',
-            'Honduras': 'HN',
-            'Nicaragua': 'NI',
-            'Costa Rica': 'CR',
-            'Panamá': 'PA',
-            'México': 'MX'
-        };
-
-        // Establecer el código de país
-        this.empresa.cod_pais = mapeoCodigosPais[this.empresa.pais] || null;
-
-        // Configurar moneda e IVA según el país
-        if (this.empresa.pais == 'El Salvador') {
-            this.empresa.moneda = 'USD';
-            this.empresa.iva = 13;
-        }
-        if (this.empresa.pais == 'Belice') {
-            this.empresa.moneda = 'BZD';
-            this.empresa.iva = 12.5;
-        }
-        if (this.empresa.pais == 'Guatemala') {
-            this.empresa.moneda = 'GTQ';
-            this.empresa.iva = 12;
-        }
-        if (this.empresa.pais == 'Honduras') {
-            this.empresa.moneda = 'HNL';
-            this.empresa.iva = 15;
-        }
-        if (this.empresa.pais == 'Nicaragua') {
-            this.empresa.moneda = 'NIO';
-            this.empresa.iva = 15;
-        }
-        if (this.empresa.pais == 'Costa Rica') {
-            this.empresa.moneda = 'CRC';
-            this.empresa.iva = 13;
-        }
-        if (this.empresa.pais == 'Panamá') {
-            this.empresa.moneda = 'PAB';
-            this.empresa.iva = 7;
-        }
-        if (this.empresa.pais == 'México') {
-            this.empresa.moneda = 'MXN';
-            this.empresa.iva = 16;
-        }
+        this.empresa.cod_pais = codigoPaisDesdeNombre(this.empresa.pais);
+        aplicarImpuestosDefaultsAEmpresa(this.empresa, { nombrePais: this.empresa.pais });
 
         // Limpiar códigos de ubicación cuando se cambia de país
         this.empresa.cod_departamento = " ";
@@ -1895,6 +1855,27 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         this.updateDteMostrarDescripcionProducto(!this.isDteMostrarDescripcionProductoEnabled());
     }
 
+    // Costa Rica FE (SP-2097): permite tipo de cambio manual en ventas USD antes de emitir.
+    public isPermitirEditarTipoCambioVentasEnabled(): boolean {
+        return this.getCustomConfig('facturacion_fe', 'permitir_editar_tipo_cambio', false);
+    }
+
+    public updatePermitirEditarTipoCambioVentas(enabled: boolean) {
+        this.addCustomConfig('facturacion_fe', 'permitir_editar_tipo_cambio', enabled);
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                enabled
+                    ? 'Ahora se puede editar el tipo de cambio en ventas en USD antes de emitir.'
+                    : 'El tipo de cambio en ventas en USD volverá a tomarse siempre del BCCR.'
+            );
+        });
+    }
+
+    public togglePermitirEditarTipoCambioVentas() {
+        this.updatePermitirEditarTipoCambioVentas(!this.isPermitirEditarTipoCambioVentasEnabled());
+    }
+
     public isFidelizacionActiva(): boolean {
         return this.getCustomConfig('configuraciones', 'fidelizacion_activa', false);
     }
@@ -2439,6 +2420,17 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
                 this.tieneAccesoPropina = false;
             }
         );
+    }
+
+    public verificarAccesoMultimoneda(): void {
+        this.funcionalidadesService.verificarAcceso('multimoneda').subscribe({
+            next: (acceso) => {
+                this.tieneMultimoneda = acceso;
+            },
+            error: () => {
+                this.tieneMultimoneda = false;
+            },
+        });
     }
 
     public verificarAccesoModuloRestaurantePedidos() {

@@ -3,6 +3,7 @@
 namespace App\Models\Admin;
 
 use App\Models\Currency;
+use App\Models\EmpresaConfiguracion;
 use App\Models\FidelizacionClientes\ConsumoPuntos;
 use App\Models\FidelizacionClientes\PuntosCliente;
 use App\Models\FidelizacionClientes\TipoClienteEmpresa;
@@ -12,6 +13,7 @@ use App\Models\Planilla\CargoEmpresa;
 use App\Models\Planilla\DepartamentoEmpresa;
 use App\Models\Suscripcion;
 use App\Models\User;
+use App\Services\Admin\EmpresaConfiguracionService;
 use Illuminate\Database\Eloquent\Model;
 // use Illuminate\Database\Eloquent\SoftDeletes;
 use Carbon\Carbon;
@@ -718,15 +720,70 @@ class Empresa extends Model
     }
 
 
+    public function configuracionesEmpresa()
+    {
+        return $this->hasMany(EmpresaConfiguracion::class, 'empresa_id');
+    }
+
     public function getCustomConfigAttribute()
     {
-        if (empty($this->custom_empresa)) {
-            return $this->initializeCustomConfig();
+        $sections = EmpresaConfiguracion::MODULOS_CUSTOM;
+        $pais = strtoupper($this->cod_pais ?: 'SV');
+        $config = [];
+
+        if ($this->id) {
+            $rows = EmpresaConfiguracion::query()
+                ->where('empresa_id', $this->id)
+                ->where('pais', $pais)
+                ->whereIn('modulo', $sections)
+                ->get();
+
+            foreach ($rows as $row) {
+                $config[$row->modulo] = $row->configuracion ?? [];
+            }
         }
 
-        $config = $this->custom_empresa;
-        // Asegurar que siempre sea array (evitar "Cannot use object of type stdClass as array")
-        return $this->ensureConfigArray($config);
+        // ponytail: fallback lectura a custom_empresa un release
+        if (count($config) < count($sections) && !empty($this->attributes['custom_empresa'] ?? null)) {
+            $legacy = $this->ensureConfigArray($this->custom_empresa);
+            if (is_array($legacy)) {
+                foreach ($sections as $mod) {
+                    if (!isset($config[$mod]) && isset($legacy[$mod])) {
+                        $config[$mod] = $this->ensureConfigArray($legacy[$mod]);
+                    }
+                }
+            }
+        }
+
+        if (empty($config)) {
+            return $this->defaultCustomConfigArray();
+        }
+
+        foreach ($sections as $mod) {
+            if (!isset($config[$mod])) {
+                $config[$mod] = $this->defaultCustomConfigArray()[$mod] ?? [];
+            }
+        }
+
+        return $config;
+    }
+
+    protected function defaultCustomConfigArray(): array
+    {
+        return [
+            'columnas' => [
+                'columna_proyecto' => false,
+            ],
+            'modulos' => [],
+            'configuraciones' => [
+                'ticket_en_pdf' => false,
+                'bloquear_cotizaciones_vendedores' => false,
+                'bloquear_edicion_correlativo' => false,
+                'dte_mostrar_descripcion_producto' => true,
+                'inventario_reporte_analisis_ventas_mensual' => false,
+            ],
+            'campos_personalizados' => [],
+        ];
     }
 
     /**
@@ -750,25 +807,15 @@ class Empresa extends Model
 
     public function initializeCustomConfig()
     {
-        $defaultConfig = [
-            'columnas' => [
-                'columna_proyecto' => false
-                // Para futuras columnas
-            ],
-            'modulos' => [],
-            'configuraciones' => [
-                'ticket_en_pdf' => false,
-                'bloquear_cotizaciones_vendedores' => false,
-                'bloquear_edicion_correlativo' => false,
-                'dte_mostrar_descripcion_producto' => true,
-                'inventario_reporte_analisis_ventas_mensual' => false,
-            ],
-            'campos_personalizados' => []
-            // Para futuros campos personalizados
-        ];
+        $defaultConfig = $this->defaultCustomConfigArray();
 
-        $this->custom_empresa = $defaultConfig;
-        $this->save();
+        if ($this->id) {
+            $service = app(EmpresaConfiguracionService::class);
+            $pais = strtoupper($this->cod_pais ?: 'SV');
+            foreach ($defaultConfig as $modulo => $data) {
+                $service->set((int) $this->id, $modulo, $data, $pais);
+            }
+        }
 
         return $defaultConfig;
     }
@@ -839,19 +886,23 @@ class Empresa extends Model
     }
 
     /**
-     * Actualizar una configuración específica
+     * Actualizar una configuración específica (escribe solo en empresa_configuracion)
      */
     public function updateCustomConfig($section, $key, $value)
     {
-        $config = $this->custom_config;
+        $service = app(EmpresaConfiguracionService::class);
+        $pais = strtoupper($this->cod_pais ?: 'SV');
+        $current = $service->get((int) $this->id, $section, $pais);
 
-        if (!isset($config[$section])) {
-            $config[$section] = [];
+        if ($current === null) {
+            $legacy = $this->ensureConfigArray($this->custom_empresa ?? []);
+            $current = is_array($legacy[$section] ?? null)
+                ? $legacy[$section]
+                : ($this->defaultCustomConfigArray()[$section] ?? []);
         }
 
-        $config[$section][$key] = $value;
-        $this->custom_empresa = $config;
-        $this->save();
+        $current[$key] = $value;
+        $service->set((int) $this->id, $section, $current, $pais);
 
         if ($section === 'configuraciones' && in_array($key, ['fidelizacion_activa', 'fidelizacion_completa', 'fidelizacion_enviar_correos'])) {
             cache()->forget("empresa_fidelizacion_{$this->id}");
@@ -920,6 +971,20 @@ class Empresa extends Model
         return $this->hasMany(\App\Models\Admin\EmpresaFuncionalidad::class, 'id_empresa')
             ->whereHas('funcionalidad', function ($query) {
                 $query->where('slug', 'modulo-presentaciones-productos');
+            })
+            ->where('activo', true)
+            ->exists();
+    }
+
+    /**
+     * Multimoneda: documentos en distintas monedas con tipo de cambio y conversión.
+     * Se habilita por empresa desde Super Admin → Funcionalidades (cualquier país).
+     */
+    public function tieneFuncionalidadMultimoneda(): bool
+    {
+        return $this->hasMany(\App\Models\Admin\EmpresaFuncionalidad::class, 'id_empresa')
+            ->whereHas('funcionalidad', function ($query) {
+                $query->where('slug', 'multimoneda');
             })
             ->where('activo', true)
             ->exists();

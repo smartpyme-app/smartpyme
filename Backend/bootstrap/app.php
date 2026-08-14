@@ -22,6 +22,30 @@ $app = new Illuminate\Foundation\Application(
 
 /*
 |--------------------------------------------------------------------------
+| Directorio Público
+|--------------------------------------------------------------------------
+|
+| El DocumentRoot del servidor web puede estar fuera del repositorio. Aquí
+| apuntamos public_path() a esa carpeta para que los archivos que sube la
+| aplicación queden en el directorio que realmente se sirve por HTTP.
+|
+*/
+
+$publicPath = App\Support\PublicPathResolver::resolve(
+    [
+        'APP_PUBLIC_PATH' => $_ENV['APP_PUBLIC_PATH']
+            ?? $_SERVER['APP_PUBLIC_PATH']
+            ?? (getenv('APP_PUBLIC_PATH') ?: null),
+    ],
+    $app->basePath()
+);
+
+if ($publicPath !== null) {
+    $app->usePublicPath($publicPath);
+}
+
+/*
+|--------------------------------------------------------------------------
 | Bind Important Interfaces
 |--------------------------------------------------------------------------
 |

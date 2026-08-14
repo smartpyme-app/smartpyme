@@ -6,13 +6,20 @@ use Illuminate\Support\Facades\Broadcast;
 |--------------------------------------------------------------------------
 | Broadcast Channels
 |--------------------------------------------------------------------------
-|
-| Here you may register all of the event broadcasting channels that your
-| application supports. The given channel authorization callbacks are
-| used to check if an authenticated user can listen to the channel.
-|
 */
 
 Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
     return (int) $user->id === (int) $id;
+});
+
+/**
+ * Canal privado por tenant. Solo usuarios de la misma empresa.
+ * Payload/eventos son hints de UI; la SoT sigue siendo MariaDB vía HTTP GET.
+ */
+Broadcast::channel('restaurante.empresa.{idEmpresa}', function ($user, int $idEmpresa) {
+    if (! $user || ! $user->id_empresa) {
+        return false;
+    }
+
+    return (int) $user->id_empresa === (int) $idEmpresa;
 });

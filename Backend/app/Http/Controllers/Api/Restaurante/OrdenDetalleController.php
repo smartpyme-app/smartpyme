@@ -11,16 +11,22 @@ use App\Models\Restaurante\ItemEliminacionLog;
 use App\Models\Restaurante\OrdenDetalle;
 use App\Models\Restaurante\SesionMesa;
 use App\Services\Restaurante\RestauranteAutorizacionService;
+use App\Services\Restaurante\RestauranteIdempotencyService;
+use App\Services\Restaurante\RestauranteSideEffectDispatcher;
+use App\Services\Restaurante\RestauranteRealtimePublisher;
 use App\Services\Restaurante\RestauranteStockService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class OrdenDetalleController extends Controller
 {
     public function __construct(
         private RestauranteStockService $stockService,
         private RestauranteAutorizacionService $autorizacionService,
+        private RestauranteSideEffectDispatcher $sideEffects,
+        private RestauranteRealtimePublisher $realtime,
     ) {}
 
     private function normalizarNotas(?string $notasRaw): ?string
@@ -67,6 +73,7 @@ class OrdenDetalleController extends Controller
         $correlativo = Comanda::where('sesion_id', $sesion->id)->count() + 1;
 
         $comanda = Comanda::create([
+            'id_empresa' => (int) $sesion->id_empresa,
             'sesion_id' => $sesion->id,
             'numero_comanda' => "DEL-{$numeroMesa}-{$correlativo}",
             'estado' => 'pendiente',
@@ -87,78 +94,100 @@ class OrdenDetalleController extends Controller
 
     public function store(Request $request, int $id): JsonResponse
     {
-        $user = auth()->user();
-        $sesion = SesionMesa::where('id_empresa', $user->id_empresa)
-            ->whereIn('estado', ['abierta', 'pre_cuenta'])
-            ->findOrFail($id);
+        return app(RestauranteIdempotencyService::class)->run(
+            'agregar_item',
+            $request,
+            function () use ($request, $id) {
+                $user = auth()->user();
 
-        $validated = $request->validate([
-            'producto_id' => 'required|exists:productos,id',
-            'cantidad' => 'required|numeric|min:0.01',
-            'notas' => 'nullable|string|max:255',
-        ]);
+                $validated = $request->validate([
+                    'producto_id' => [
+                        'required',
+                        'integer',
+                        Rule::exists('productos', 'id')->where('id_empresa', $user->id_empresa),
+                    ],
+                    'cantidad' => 'required|numeric|min:0.01',
+                    'notas' => 'nullable|string|max:255',
+                ]);
 
-        $producto = Producto::withoutGlobalScope('empresa')
-            ->where('id_empresa', $user->id_empresa)
-            ->findOrFail($validated['producto_id']);
+                $producto = Producto::withoutGlobalScope('empresa')
+                    ->where('id_empresa', $user->id_empresa)
+                    ->findOrFail($validated['producto_id']);
 
-        $precioLista = round((float) ($producto->precio ?? 0), 2);
-        $notas = $this->normalizarNotas($validated['notas'] ?? null);
-        $nuevaCantidadReq = (float) $validated['cantidad'];
+                $precioLista = round((float) ($producto->precio ?? 0), 2);
+                $notas = $this->normalizarNotas($validated['notas'] ?? null);
+                $nuevaCantidadReq = (float) $validated['cantidad'];
 
-        $lineasFusionables = OrdenDetalle::where('sesion_id', $sesion->id)
-            ->where('producto_id', $producto->id)
-            ->whereRaw('ROUND(precio_unitario, 2) = ?', [$precioLista])
-            ->where('enviado_cocina', false)
-            ->where('enviado_barra', false)
-            ->where(function ($q) use ($notas) {
-                if ($notas === null) {
-                    $q->whereNull('notas')->orWhere('notas', '');
-                } else {
-                    $q->where('notas', $notas);
+                $result = DB::transaction(function () use ($user, $id, $producto, $precioLista, $notas, $nuevaCantidadReq, $validated) {
+                    $sesion = SesionMesa::where('id_empresa', $user->id_empresa)
+                        ->whereIn('estado', ['abierta', 'pre_cuenta'])
+                        ->whereKey($id)
+                        ->lockForUpdate()
+                        ->firstOrFail();
+
+                    $lineasFusionables = OrdenDetalle::where('sesion_id', $sesion->id)
+                        ->where('producto_id', $producto->id)
+                        ->whereRaw('ROUND(precio_unitario, 2) = ?', [$precioLista])
+                        ->where('enviado_cocina', false)
+                        ->where('enviado_barra', false)
+                        ->where(function ($q) use ($notas) {
+                            if ($notas === null) {
+                                $q->whereNull('notas')->orWhere('notas', '');
+                            } else {
+                                $q->where('notas', $notas);
+                            }
+                        })
+                        ->orderBy('id')
+                        ->lockForUpdate()
+                        ->get();
+
+                    if ($lineasFusionables->isNotEmpty()) {
+                        $principal = $lineasFusionables->first();
+                        $cantidadTotal = (float) $lineasFusionables->sum(fn ($l) => (float) $l->cantidad) + $nuevaCantidadReq;
+
+                        $err = $this->errorStockSiAplica($producto, $sesion, $cantidadTotal);
+                        if ($err) {
+                            return ['error' => $err];
+                        }
+
+                        $principal->update([
+                            'cantidad' => $cantidadTotal,
+                            'precio_unitario' => $precioLista,
+                        ]);
+
+                        $idsExtra = $lineasFusionables->skip(1)->pluck('id')->all();
+                        if ($idsExtra !== []) {
+                            OrdenDetalle::whereIn('id', $idsExtra)->forceDelete();
+                        }
+
+                        return ['item' => $principal->fresh()->load('producto'), 'status' => 200];
+                    }
+
+                    $errNuevo = $this->errorStockSiAplica($producto, $sesion, $nuevaCantidadReq);
+                    if ($errNuevo) {
+                        return ['error' => $errNuevo];
+                    }
+
+                    $item = OrdenDetalle::create([
+                        'sesion_id' => $sesion->id,
+                        'producto_id' => $producto->id,
+                        'cantidad' => $validated['cantidad'],
+                        'precio_unitario' => $precioLista,
+                        'notas' => $notas,
+                        'enviado_cocina' => false,
+                        'enviado_barra' => false,
+                    ]);
+
+                    return ['item' => $item->load('producto'), 'status' => 201];
+                });
+
+                if (isset($result['error'])) {
+                    return $result['error'];
                 }
-            })
-            ->orderBy('id')
-            ->get();
 
-        if ($lineasFusionables->isNotEmpty()) {
-            $principal = $lineasFusionables->first();
-            $cantidadTotal = (float) $lineasFusionables->sum(fn ($l) => (float) $l->cantidad) + $nuevaCantidadReq;
-
-            $err = $this->errorStockSiAplica($producto, $sesion, $cantidadTotal);
-            if ($err) {
-                return $err;
+                return response()->json($result['item'], $result['status']);
             }
-
-            $principal->update([
-                'cantidad' => $cantidadTotal,
-                'precio_unitario' => $precioLista,
-            ]);
-
-            $idsExtra = $lineasFusionables->skip(1)->pluck('id')->all();
-            if ($idsExtra !== []) {
-                OrdenDetalle::whereIn('id', $idsExtra)->forceDelete();
-            }
-
-            return response()->json($principal->fresh()->load('producto'), 200);
-        }
-
-        $errNuevo = $this->errorStockSiAplica($producto, $sesion, $nuevaCantidadReq);
-        if ($errNuevo) {
-            return $errNuevo;
-        }
-
-        $item = OrdenDetalle::create([
-            'sesion_id' => $sesion->id,
-            'producto_id' => $producto->id,
-            'cantidad' => $validated['cantidad'],
-            'precio_unitario' => $precioLista,
-            'notas' => $notas,
-            'enviado_cocina' => false,
-            'enviado_barra' => false,
-        ]);
-
-        return response()->json($item->load('producto'), 201);
+        );
     }
 
     public function update(Request $request, int $sesionId, int $itemId): JsonResponse
@@ -166,6 +195,13 @@ class OrdenDetalleController extends Controller
         $user = auth()->user();
         $sesion = SesionMesa::where('id_empresa', $user->id_empresa)->findOrFail($sesionId);
         $item = OrdenDetalle::where('sesion_id', $sesion->id)->findOrFail($itemId);
+
+        // Backend autoridad: ítem ya enviado a cocina/barra no se modifica.
+        if ($item->enviado_cocina || $item->enviado_barra) {
+            return response()->json([
+                'error' => 'No se puede modificar un ítem ya enviado a cocina/barra',
+            ], 422);
+        }
 
         $validated = $request->validate([
             'cantidad' => 'sometimes|numeric|min:0.01',
@@ -239,6 +275,15 @@ class OrdenDetalleController extends Controller
             DB::rollBack();
             throw $e;
         }
+
+        $this->sideEffects->enqueueComandaTicket((int) $comandaElim->id, (int) $user->id_empresa);
+        $this->realtime->cocinaChanged(
+            (int) $user->id_empresa,
+            (int) $comandaElim->id,
+            'eliminacion',
+            'pendiente',
+            'eliminar_item'
+        );
 
         return response()->json([
             'ok' => true,

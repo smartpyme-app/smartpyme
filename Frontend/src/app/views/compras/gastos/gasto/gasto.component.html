@@ -14,12 +14,21 @@
 
 <form autocomplete="off" (ngSubmit)="onSubmit()">
     <div class="bg-white rounded p-3">
-        <div class="row">
-            <div class="form-group col-md-4 col-lg-3">
+        <div class="row flex-nowrap g-2 align-items-end overflow-auto">
+            <div class="form-group col" style="min-width: 7rem">
                 <label for="">Fecha:</label>
-                <input type='date' class="form-control" name="fecha" [(ngModel)]="gasto.fecha"/>
+                <input type='date' class="form-control" name="fecha" [(ngModel)]="gasto.fecha" (ngModelChange)="onFechaGastoChange()"/>
             </div>
-            <div class="form-group col-md-4 col-lg-3">
+            <div class="form-group col" style="min-width: 9rem" *ngIf="tieneMultimoneda">
+                <label for="currency_code">Moneda</label>
+                <select name="currency_code" id="currency_code" class="form-select" [(ngModel)]="gasto.currency_code"
+                    (ngModelChange)="onCurrencyCodeChange()" [disabled]="gastoYaTieneDte">
+                    <option value="CRC">CR</option>
+                    <option value="USD">{{ etiquetaOpcionUsdGasto }}</option>
+                </select>
+                <small class="text-danger d-block mt-1" *ngIf="monedaGasto === 'USD' && tcPreview.error">{{ tcPreview.error }}</small>
+            </div>
+            <div class="form-group col" style="min-width: 8rem">
                 <label for="id_usuario">Usuario:</label>
               <select name="id_usuario" [(ngModel)]="gasto.id_usuario" class="form-select">
                 @for (usuario of usuarios; track usuario.id) {
@@ -29,7 +38,7 @@
                 }
               </select>
             </div>
-            <div class="form-group col-md-4 col-lg-3">
+            <div class="form-group col" style="min-width: 8rem">
                 <label for="tipo_documento">Documento</label>
               <select name="tipo_documento" (change)="selectTipoDocumento()" [(ngModel)]="gasto.tipo_documento"
                       class="form-select">
@@ -38,11 +47,11 @@
                 }
               </select>
             </div>
-            <div class="form-group col-md-4 col-lg-3">
+            <div class="form-group col" style="min-width: 8rem">
                 <label for="referencia">Referencia:</label>
                 <input type="text" class="form-control" name="referencia" [(ngModel)]="gasto.referencia" placeholder="Escriba aquí" />
             </div>
-            <div class="form-group col-md-4 col-lg-3" *ngIf="gasto.percepcion">
+            <div class="form-group col" style="min-width: 8rem" *ngIf="gasto.percepcion">
                 <label for="sello_mh">Sello de Recepción</label>
                 <input type="text" class="form-control" name="sello_mh" [(ngModel)]="gasto.sello_mh" placeholder="Sello de recepción" />
             </div>
@@ -361,6 +370,9 @@
             <div class="form-group col-md-4 col-lg-2">
                 <label for="" class="fw-medium">Total:</label>
                 <input type='number' class="form-control" name="total" (change)="setSubTotal()" [(ngModel)]="gasto.total"/>
+                <small class="text-muted d-block mt-1" *ngIf="tieneMultimoneda && monedaGasto === 'USD' && usdEquivalentTotalGasto !== null">
+                    Equivalente en dólares: ${{ usdEquivalentTotalGasto | number:'1.2-2' }}
+                </small>
             </div>
         </div>
 

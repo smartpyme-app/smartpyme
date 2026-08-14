@@ -106,6 +106,9 @@ final class DocumentoImportDto
             'condicionOperacion' => $this->resumen['condicionOperacion'] ?? null,
             'pagos' => $this->resumen['pagos'] ?? [],
             'totalOtrosCargos' => $this->resumen['totalOtrosCargos'] ?? 0,
+            // Multimoneda CR (Task 6, SP-2099): null en documentos sin sección de moneda (SV / XML sin CodigoTipoMoneda).
+            'currency_code' => $this->resumen['currency_code'] ?? null,
+            'exchange_rate_xml' => $this->resumen['exchange_rate_xml'] ?? null,
         ];
 
         $receptor = null;

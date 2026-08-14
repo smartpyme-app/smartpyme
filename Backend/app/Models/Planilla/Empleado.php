@@ -29,6 +29,7 @@ class Empleado extends Model
         'apellidos',
         'dui',
         'dui_homologado',
+        'id_type',
         'nit',
         'isss',
         'afp',
@@ -43,8 +44,13 @@ class Empleado extends Model
         'titular_cuenta',
         'forma_pago',
         'salario_base',
+        'tipo_salario',
+        'tiene_conyuge_dependiente',
+        'cantidad_hijos_dependientes',
         'tipo_contrato',
         'tipo_jornada',
+        'horas_jornada',
+        'categoria_ocupacional',
         'fecha_ingreso',
         'fecha_fin',
         'fecha_baja',
@@ -58,6 +64,11 @@ class Empleado extends Model
     protected $casts = [
         'configuracion_descuentos' => 'array',
         'dui_homologado' => 'boolean',
+        'tiene_conyuge_dependiente' => 'boolean',
+        'horas_jornada' => 'decimal:2',
+        'id_type' => 'integer',
+        'tipo_salario' => 'integer',
+        'cantidad_hijos_dependientes' => 'integer',
     ];
 
     /**

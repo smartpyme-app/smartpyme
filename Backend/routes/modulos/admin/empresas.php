@@ -3,7 +3,10 @@
 use App\Http\Controllers\Api\Admin\EmpresasController;
 use App\Http\Controllers\Api\Admin\DashboardsController;
 use App\Http\Controllers\Api\Admin\ReportesController;
+use App\Http\Controllers\Api\Admin\ImpuestosDefaultsController;
 use Illuminate\Support\Facades\Route;
+
+    Route::get('/impuestos/defaults', [ImpuestosDefaultsController::class, 'defaults']);
 
     Route::get('/empresas',        	        [EmpresasController::class, 'index'])->middleware('role:super_admin');
     Route::get('/empresas/list',            [EmpresasController::class, 'list'])->middleware('role:super_admin');

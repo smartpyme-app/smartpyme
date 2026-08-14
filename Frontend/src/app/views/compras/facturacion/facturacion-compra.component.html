@@ -26,7 +26,16 @@
     <div class="row">
         <div class="form-group col-md-4 col-lg-2">
             <label for="fecha">Fecha</label><br>
-            <input type="date" class="form-control" [(ngModel)]="compra.fecha" name="fecha" id="fecha">
+            <input type="date" class="form-control" [(ngModel)]="compra.fecha" name="fecha" id="fecha" (ngModelChange)="onFechaCompraChange()">
+        </div>
+        <div class="form-group col-md-4 col-lg-3" *ngIf="tieneMultimoneda">
+            <label for="currency_code">Moneda</label>
+            <select name="currency_code" id="currency_code" class="form-select" [(ngModel)]="compra.currency_code"
+                (ngModelChange)="onCurrencyCodeChangeCompra()" [disabled]="compraYaTieneDte">
+                <option value="CRC">CR</option>
+                <option value="USD">{{ etiquetaOpcionUsdCompra }}</option>
+            </select>
+            <small class="text-danger d-block mt-1" *ngIf="monedaCompra === 'USD' && tcPreviewCompra.error">{{ tcPreviewCompra.error }}</small>
         </div>
         <div class="form-group col-md-4 col-lg-3">
             <label for="id_usuario">Usuario</label>
@@ -198,6 +207,13 @@
                     <tr>
                         <td class="text-right"> <b>Total</b> </td>
                         <td style="width: 150px;" class="text-right"><b> {{ compra.total | currency}}</b> </td>
+                        <td style="width: 50px;"></td>
+                    </tr>
+                    <tr *ngIf="tieneMultimoneda && monedaCompra === 'USD' && usdEquivalentTotalCompra !== null">
+                        <td class="text-right text-muted">Equivalente en dólares</td>
+                        <td style="width: 150px;" class="text-right text-muted">
+                            ${{ usdEquivalentTotalCompra | number:'1.2-2' }}
+                        </td>
                         <td style="width: 50px;"></td>
                     </tr>
                 </tbody>

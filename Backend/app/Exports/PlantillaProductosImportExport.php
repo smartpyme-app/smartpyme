@@ -23,6 +23,7 @@ class PlantillaProductosImportExport implements FromArray, WithHeadings, WithTit
     public function __construct()
     {
         $user = Auth::user();
+        $idEmpresa = $user?->id_empresa;
         $base = [
             'nombre',
             'precio_sin_iva',
@@ -31,18 +32,23 @@ class PlantillaProductosImportExport implements FromArray, WithHeadings, WithTit
             'codigo',
             'descripcion',
             'marca',
+            'impuesto',
             'unidad_medida',
             'codigo_de_barra',
             'proveedor_nombre',
             'proveedor_apellido',
+            'genera_comanda',
+            'destino_comanda',
         ];
 
-        $bodegas = Bodega::where('id_empresa', $user->id_empresa)
-            ->where('activo', true)
-            ->with('sucursal')
-            ->orderBy('id_sucursal')
-            ->orderBy('id')
-            ->get();
+        $bodegas = $idEmpresa
+            ? Bodega::where('id_empresa', $idEmpresa)
+                ->where('activo', true)
+                ->with('sucursal')
+                ->orderBy('id_sucursal')
+                ->orderBy('id')
+                ->get()
+            : collect();
 
         foreach ($bodegas as $bodega) {
             $nomBodega = $this->sanitizeForExcelHeader($bodega->nombre ?? '');

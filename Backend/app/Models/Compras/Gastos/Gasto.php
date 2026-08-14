@@ -29,7 +29,6 @@ class Gasto extends AuditableModel {
         'estado',
         'forma_pago',
         'detalle_banco',
-        'condicion',
         'fecha_pago',
         'recurrente',
         'fecha_recurrente',
@@ -61,10 +60,19 @@ class Gasto extends AuditableModel {
         'tipo_costo_gasto',
         'sector',
         'tipo_gasto',
+        'currency_code',
+        'exchange_rate',
+        'exchange_rate_date',
+        'equivalent_total',
+        'equivalent_iva',
     ];
 
     protected $casts = [
         'otros_impuestos' => 'json',
+        'exchange_rate' => 'decimal:5',
+        'exchange_rate_date' => 'date',
+        'equivalent_total' => 'decimal:5',
+        'equivalent_iva' => 'decimal:5',
     ];
 
     protected $appends = ['nombre_usuario', 'nombre_proveedor', 'nombre_categoria', 'nombre_sucursal', 'nombre_proyecto', 'id_departamento','nombre_departamento', 'total_otros_impuestos', 'saldo'];

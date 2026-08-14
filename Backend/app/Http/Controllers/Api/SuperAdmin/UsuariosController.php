@@ -13,6 +13,7 @@ use Intervention\Image\ImageManagerStatic as Image;
 use Illuminate\Validation\Rules\Password;
 use JWTAuth;
 use App\Http\Requests\SuperAdmin\StoreUsuarioRequest;
+use Spatie\Permission\PermissionRegistrar;
 
 class UsuariosController extends Controller
 {
@@ -149,7 +150,9 @@ class UsuariosController extends Controller
             $rolActual = optional($usuario->roles()->first())->id;
             if ((int) $rolActual !== (int) $request->rol_id) {
                 $usuario->roles()->sync([(int) $request->rol_id]);
+                app(PermissionRegistrar::class)->forgetCachedPermissions();
             }
+            $usuario->syncTipoFromRole($request->rol_id);
         }
 
         $usuario->load('roles');

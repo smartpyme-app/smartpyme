@@ -12,13 +12,14 @@ import { ModalManagerService } from '@services/modal-manager.service';
 import { HttpCacheService } from '@services/http-cache.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import Swal from 'sweetalert2';
 
 @Component({
     selector: 'app-planillas',
     templateUrl: './planillas.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, PopoverModule, TooltipModule, PaginationComponent],
+    imports: [CommonModule, RouterModule, FormsModule, PopoverModule, TooltipModule, PaginationComponent, CurrencyPipe],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PlanillasComponent extends BasePaginatedModalComponent implements OnInit {
@@ -135,6 +136,7 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
       },
       error: (error) => {
         this.alertService.error(error);
+        this.planillas = {} as PaginatedResponse;
         this.loading = false;
         this.cdr.markForCheck();
       },

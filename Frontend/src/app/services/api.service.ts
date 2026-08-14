@@ -81,8 +81,8 @@ export class ApiService {
     return this.httpService.get(url);
   }
 
-  store(url: string, model: any): Observable<any> {
-    return this.httpService.store(url, model);
+  store(url: string, model: any, extraHeaders?: Record<string, string>): Observable<any> {
+    return this.httpService.store(url, model, extraHeaders);
   }
 
   storeWithTimeout(url: string, model: any, timeoutMs: number = 300000): Observable<any> {
@@ -101,8 +101,8 @@ export class ApiService {
     return this.httpService.delete(url, id);
   }
 
-  putToUrl(url: string, model: any): Observable<any> {
-    return this.httpService.putToUrl(url, model);
+  putToUrl(url: string, model: any, extraHeaders?: Record<string, string>): Observable<any> {
+    return this.httpService.putToUrl(url, model, extraHeaders);
   }
 
   // login(user:any) {return this.http.post<any>(this.apiUrl + 'login', user).pipe(map((response: HttpResponse<any>) => {let data:any = response; if (data.token && data.user) {localStorage.setItem('SP_token', JSON.stringify(data.token)); localStorage.setItem('SP_auth_user', JSON.stringify(data.user)); this.funcionalidadesService.limpiarCache(); this.loadConstants(); } }) ); }
@@ -135,6 +135,32 @@ export class ApiService {
 
   exportAcumuladoReportes(url: string, filtros: any): Observable<Blob> {
     return this.httpService.exportAcumuladoReportes(url, filtros);
+  }
+
+  /** Encola generación asíncrona de reporte (responde 202 + id). */
+  encolarReporteExportacion(
+    url: string,
+    body: any
+  ): Observable<{ id: number; estado: string; message?: string }> {
+    return this.httpService.store(url, body);
+  }
+
+  estadoReporteExportacion(
+    id: number
+  ): Observable<{
+    id: number;
+    estado: string;
+    formato?: string;
+    nombre_archivo?: string;
+    error?: string;
+  }> {
+    return this.httpService.get('reportes-configuracion/exportaciones/' + id);
+  }
+
+  descargarReporteExportacion(id: number): Observable<Blob> {
+    return this.httpService.download(
+      'reportes-configuracion/exportaciones/' + id + '/archivo'
+    );
   }
 
   download(url: string): Observable<Blob> {

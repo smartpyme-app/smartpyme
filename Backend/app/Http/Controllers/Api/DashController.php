@@ -12,6 +12,7 @@ use App\Models\Admin\Sucursal;
 use App\Models\Admin\Corte;
 use App\Models\Ventas\Venta;
 use App\Services\Admin\CajaUsuarioResolver;
+use App\Services\Admin\CorteCriterio;
 
 use App\Models\Indicador;
 use App\Models\User;
@@ -101,7 +102,18 @@ class DashController extends Controller
     public function corte(CorteDashRequest $request){
         $usuario = JWTAuth::parseToken()->authenticate();
 
-        $indicadores = new Indicador(['inicio' => $request->fecha, 'fin' => $request->fecha, 'id_empresa' => $usuario->id_empresa, 'id_sucursal' => $request->id_sucursal, 'id_usuario' => $request->id_usuario, 'id_canal' => $request->id_canal]);
+        $idSucursal = $request->id_sucursal ?: null;
+        $idBodega = CorteCriterio::resolverIdBodega($usuario, $request->id_bodega);
+
+        $indicadores = new Indicador([
+            'inicio' => $request->fecha,
+            'fin' => $request->fecha,
+            'id_empresa' => $usuario->id_empresa,
+            'id_sucursal' => $idBodega ? null : $idSucursal,
+            'id_bodega' => $idBodega,
+            'id_usuario' => $request->id_usuario,
+            'id_canal' => $request->id_canal,
+        ]);
         
         $indicadores->totalVentas = $indicadores->getTotalVentas();
         $indicadores->totalVentasPagadas = $indicadores->getTotalVentasPagadas();
@@ -165,7 +177,7 @@ class DashController extends Controller
 
     }
 
-    public function cortePdf($id_usuario = null, $id_sucursal = null, $fechaDe = null)
+    public function cortePdf(Request $request, $id_usuario = null, $id_sucursal = null, $fechaDe = null)
     {
 
         if ($id_sucursal == 'null') {
@@ -181,7 +193,16 @@ class DashController extends Controller
         if (!$fechaDe)
             $fechaDe = date("Y-m-d");
 
-        $indicadores = new Indicador(['inicio' => $fechaDe, 'fin' => $fechaDe, 'id_empresa' => $usuario->id_empresa, 'id_sucursal' => $id_sucursal, 'id_usuario' => $id_usuario]);
+        $idBodega = CorteCriterio::resolverIdBodega($usuario, $request->query('id_bodega'));
+
+        $indicadores = new Indicador([
+            'inicio' => $fechaDe,
+            'fin' => $fechaDe,
+            'id_empresa' => $usuario->id_empresa,
+            'id_sucursal' => $idBodega ? null : $id_sucursal,
+            'id_bodega' => $idBodega,
+            'id_usuario' => $id_usuario,
+        ]);
 
         $pdf = app('dompdf.wrapper')->loadView('reportes.corte', compact('indicadores'));
         return $pdf->stream();

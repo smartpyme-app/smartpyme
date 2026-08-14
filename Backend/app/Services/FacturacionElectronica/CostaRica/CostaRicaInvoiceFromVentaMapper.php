@@ -53,12 +53,19 @@ final class CostaRicaInvoiceFromVentaMapper
         [$est, $ter] = $this->establecimientoYTerminalCr($empresa, $venta->sucursal);
         $seq = str_pad((string) $secuencialFactura, 10, '0', STR_PAD_LEFT);
 
-        $moneda = strtoupper((string) ($empresa->moneda ?? 'CRC')) === 'USD' ? 'USD' : 'CRC';
-        $tipoCambio = $moneda === 'USD' ? $this->tipoCambio->crcPorUsdVenta($empresa) : 1.0;
+        [$moneda, $tipoCambio] = $this->monedaYTipoCambioDocumento(
+            (string) ($venta->currency_code ?? $empresa->moneda ?? 'CRC'),
+            $venta->exchange_rate,
+            $empresa
+        );
+        // BD = moneda empresa; XML = moneda documento (CRC→USD: ÷ TC). No altera la venta persistida.
+        $factorMoneda = $this->factorMontosEmpresaADocumentoFe($empresa, $moneda, $tipoCambio);
 
         // Índices 0..n-1: el resumen y Hacienda (-111) emparejan líneas con el XML; sin array_values el map puede conservar
         // keys no secuenciales y desalinear servicios gravados vs mercancías gravadas.
-        $lineItems = array_values($venta->detalles->map(fn (Detalle $d) => $this->linea($d, $empresa, $venta))->all());
+        $lineItems = array_values($venta->detalles->map(
+            fn (Detalle $d) => $this->convertirMontosLineaFe($this->linea($d, $empresa, $venta), $factorMoneda)
+        )->all());
 
         $payload = [
             'date' => $dateIso,
@@ -76,7 +83,7 @@ final class CostaRicaInvoiceFromVentaMapper
             'receiver' => $this->receptor($venta, $empresa),
             'line_items' => $lineItems,
             'payments' => $this->pagosDesdeLineas($lineItems),
-            'summary' => $this->resumenAlineadoALineas($venta, $lineItems),
+            'summary' => $this->resumenAlineadoALineas($venta, $lineItems, $factorMoneda),
         ];
 
         $metaEx = $this->metadataExoneracionCr($venta);
@@ -138,15 +145,23 @@ final class CostaRicaInvoiceFromVentaMapper
      *
      * @param  string  $fechaIsoAmericaCr  Para FechaEmision use {@see fechaEmisionXmlCr()} (hora real de emisión).
      * @param  Sucursal|null  $sucursal  Sucursal de la operación (NC, ND, etc.); determina establecimiento y punto de venta como en FE SV.
+     * @param  string  $currencyCode  Moneda del documento origen (NC/ND deben coincidir con la factura referenciada).
+     * @param  mixed  $exchangeRate  Tipo de cambio del documento origen ya persistido (null si CRC o no disponible).
      */
-    public function encabezadoDocumento(Empresa $empresa, string $fechaIsoAmericaCr, int $secuencial, string $saleCondition = '01', ?Sucursal $sucursal = null): array
-    {
+    public function encabezadoDocumento(
+        Empresa $empresa,
+        string $fechaIsoAmericaCr,
+        int $secuencial,
+        string $saleCondition = '01',
+        ?Sucursal $sucursal = null,
+        string $currencyCode = 'CRC',
+        mixed $exchangeRate = null
+    ): array {
         $fecha = Carbon::parse($fechaIsoAmericaCr)->timezone('America/Costa_Rica');
         $dateIso = $fecha->format('Y-m-d\TH:i:sP');
         [$est, $ter] = $this->establecimientoYTerminalCr($empresa, $sucursal);
         $seq = str_pad((string) $secuencial, 10, '0', STR_PAD_LEFT);
-        $moneda = strtoupper((string) ($empresa->moneda ?? 'CRC')) === 'USD' ? 'USD' : 'CRC';
-        $tipoCambio = $moneda === 'USD' ? $this->tipoCambio->crcPorUsdVenta($empresa) : 1.0;
+        [$moneda, $tipoCambio] = $this->monedaYTipoCambioDocumento($currencyCode, $exchangeRate, $empresa);
 
         return [
             'date' => $dateIso,
@@ -225,7 +240,7 @@ final class CostaRicaInvoiceFromVentaMapper
         return $line;
     }
 
-    public function resumenDevolucionAlineadoLineas(Devolucion $devolucion, array $lineItems): array
+    public function resumenDevolucionAlineadoLineas(Devolucion $devolucion, array $lineItems, float $factorMoneda = 1.0): array
     {
         $lineItems = array_values($lineItems);
 
@@ -258,7 +273,7 @@ final class CostaRicaInvoiceFromVentaMapper
             if (in_array($clas, ['gravada', 'exonerada'], true)) {
                 $monto = round((float) ($line['taxable_base'] ?? $line['sub_total'] ?? 0), 5);
             } elseif ($detalle instanceof DetalleDevolucion) {
-                $monto = $this->montoDetalleDevolucionPorClasificacionCr($detalle, $clas);
+                $monto = round($this->montoDetalleDevolucionPorClasificacionCr($detalle, $clas) * $factorMoneda, 5);
             } else {
                 $monto = round((float) ($line['sub_total'] ?? 0), 5);
             }
@@ -305,7 +320,7 @@ final class CostaRicaInvoiceFromVentaMapper
 
         $desc = $this->sumDescuentosDesdeLineas($lineItems);
         $totalesLineas = $this->totalesMonetariosDesdeLineas($lineItems);
-        $sub = round((float) ($devolucion->sub_total ?? 0), 2);
+        $sub = round((float) ($devolucion->sub_total ?? 0) * $factorMoneda, 2);
 
         $totalTaxed = round($taxedGoods + $taxedServices, 2);
         $totalExempt = round($exemptGoods + $exemptServices, 2);
@@ -446,6 +461,136 @@ final class CostaRicaInvoiceFromVentaMapper
     private function claveSeguridad8(): string
     {
         return str_pad((string) random_int(0, 99999999), 8, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Moneda y tipo de cambio del comprobante FE: lee del documento (ventas/compras/gastos ya lo persisten,
+     * Task 2/3), nunca de un fallback numérico inventado (ej. 520). Si el documento es USD pero no trae
+     * exchange_rate válido (dato viejo o sin re-guardar tras habilitar multimoneda), se intenta resolver
+     * BCCR una vez; si tampoco hay tipo de cambio disponible, falla con mensaje claro pidiendo re-guardar.
+     *
+     * @return array{0: string, 1: float}
+     */
+    private function monedaYTipoCambioDocumento(string $currencyCode, mixed $exchangeRateRaw, Empresa $empresa): array
+    {
+        $moneda = strtoupper(trim($currencyCode)) === 'USD' ? 'USD' : 'CRC';
+
+        if ($moneda === 'CRC') {
+            return ['CRC', 1.0];
+        }
+
+        $rate = $exchangeRateRaw !== null && $exchangeRateRaw !== '' ? (float) $exchangeRateRaw : 0.0;
+        if ($rate <= 0.0 || abs($rate - 1.0) < 0.00001) {
+            try {
+                $rate = $this->tipoCambio->crcPorUsdVenta($empresa);
+            } catch (\Throwable $e) {
+                throw new InvalidArgumentException(
+                    'El documento está en USD pero no tiene un tipo de cambio válido guardado (BCCR). '
+                    .'Vuelva a guardar la venta/compra/gasto para registrar el tipo de cambio antes de emitir. Detalle: '.$e->getMessage()
+                );
+            }
+        }
+
+        return ['USD', $rate];
+    }
+
+    /**
+     * Factor para llevar montos de moneda empresa (BD) a moneda del documento FE.
+     * CRC empresa + USD documento → ÷ tipo de cambio; misma moneda → 1; USD empresa + CRC doc → × TC.
+     */
+    private function factorMontosEmpresaADocumentoFe(Empresa $empresa, string $monedaDocumento, float $tipoCambio): float
+    {
+        $empresaMoneda = strtoupper(trim((string) ($empresa->moneda ?? 'CRC')));
+        if ($empresaMoneda !== 'USD') {
+            $empresaMoneda = 'CRC';
+        }
+        $doc = strtoupper(trim($monedaDocumento)) === 'USD' ? 'USD' : 'CRC';
+
+        if ($empresaMoneda === $doc) {
+            return 1.0;
+        }
+        if ($tipoCambio <= 0.0) {
+            throw new InvalidArgumentException(
+                'Tipo de cambio inválido para convertir montos de la moneda de la empresa a la del documento FE.'
+            );
+        }
+        if ($empresaMoneda === 'CRC' && $doc === 'USD') {
+            return 1.0 / $tipoCambio;
+        }
+
+        return $tipoCambio;
+    }
+
+    /**
+     * Aplica el factor de conversión a montos de una línea del payload FE (no toca la BD).
+     *
+     * @param  array<string, mixed>  $line
+     * @return array<string, mixed>
+     */
+    private function convertirMontosLineaFe(array $line, float $factor): array
+    {
+        if (abs($factor - 1.0) < 1e-12) {
+            return $line;
+        }
+
+        foreach (['unit_price', 'sub_total', 'total_amount', 'taxable_base', 'total_tax', 'total'] as $key) {
+            if (isset($line[$key]) && is_numeric($line[$key])) {
+                $line[$key] = round((float) $line[$key] * $factor, 5);
+            }
+        }
+
+        if (isset($line['discounts']) && is_array($line['discounts'])) {
+            foreach ($line['discounts'] as $i => $disc) {
+                if (is_array($disc) && isset($disc['amount']) && is_numeric($disc['amount'])) {
+                    $line['discounts'][$i]['amount'] = round((float) $disc['amount'] * $factor, 5);
+                }
+            }
+        }
+
+        if (isset($line['taxes']) && is_array($line['taxes'])) {
+            foreach ($line['taxes'] as $i => $tax) {
+                if (! is_array($tax)) {
+                    continue;
+                }
+                if (isset($tax['amount']) && is_numeric($tax['amount'])) {
+                    $line['taxes'][$i]['amount'] = round((float) $tax['amount'] * $factor, 5);
+                }
+                if (
+                    isset($tax['exoneration']) && is_array($tax['exoneration'])
+                    && isset($tax['exoneration']['monto_exoneracion'])
+                    && is_numeric($tax['exoneration']['monto_exoneracion'])
+                ) {
+                    $line['taxes'][$i]['exoneration']['monto_exoneracion'] = round(
+                        (float) $tax['exoneration']['monto_exoneracion'] * $factor,
+                        5
+                    );
+                }
+            }
+        }
+
+        return $line;
+    }
+
+    /**
+     * Convierte líneas armadas en moneda empresa a moneda del documento FE.
+     *
+     * @param  array<int, array<string, mixed>>  $lineItems
+     * @return array{0: float, 1: array<int, array<string, mixed>>}  [factor, líneas]
+     */
+    public function convertirLineasEmpresaADocumentoFe(
+        Empresa $empresa,
+        string $currencyCode,
+        mixed $exchangeRate,
+        array $lineItems
+    ): array {
+        [$moneda, $tipoCambio] = $this->monedaYTipoCambioDocumento($currencyCode, $exchangeRate, $empresa);
+        $factor = $this->factorMontosEmpresaADocumentoFe($empresa, $moneda, $tipoCambio);
+        $converted = array_values(array_map(
+            fn (array $line) => $this->convertirMontosLineaFe($line, $factor),
+            $lineItems
+        ));
+
+        return [$factor, $converted];
     }
 
     private function condicionVenta(Venta $venta): string
@@ -1137,8 +1282,9 @@ final class CostaRicaInvoiceFromVentaMapper
      * Evita -111 cuando columna gravada del detalle ≠ sub_total usado en línea, o cuando servicio/mercancía no coincidía con el detalle.
      *
      * @param  array<int, array<string, mixed>>  $lineItems
+     * @param  float  $factorMoneda  Factor BD→documento FE (1 si misma moneda); líneas ya convertidas.
      */
-    private function resumenAlineadoALineas(Venta $venta, array $lineItems): array
+    private function resumenAlineadoALineas(Venta $venta, array $lineItems, float $factorMoneda = 1.0): array
     {
         $venta->loadMissing(['detalles.producto.impuestos', 'empresa']);
         $empresa = $venta->empresa;
@@ -1172,7 +1318,7 @@ final class CostaRicaInvoiceFromVentaMapper
             if (in_array($clas, ['gravada', 'exonerada'], true)) {
                 $monto = round((float) ($line['taxable_base'] ?? $line['sub_total'] ?? 0), 5);
             } else {
-                $monto = $this->montoDetallePorClasificacionCr($detalle, $clas);
+                $monto = round($this->montoDetallePorClasificacionCr($detalle, $clas) * $factorMoneda, 5);
             }
 
             if ($monto <= 0.00001) {
@@ -1216,7 +1362,7 @@ final class CostaRicaInvoiceFromVentaMapper
         $nsServices = round($nsServices, 2);
 
         $desc = $this->sumDescuentosDesdeLineas($lineItems);
-        $sub = round((float) ($venta->sub_total ?? 0), 2);
+        $sub = round((float) ($venta->sub_total ?? 0) * $factorMoneda, 2);
         $totalesLineas = $this->totalesMonetariosDesdeLineas($lineItems);
         $iva = $totalesLineas['total_tax'];
         $total = $totalesLineas['total'];
@@ -1475,11 +1621,17 @@ final class CostaRicaInvoiceFromVentaMapper
         $dateIso = $fecha->format('Y-m-d\TH:i:sP');
         [$est, $ter] = $this->establecimientoYTerminalCr($empresa, $compra->sucursal);
         $seq = str_pad((string) $secuencial, 10, '0', STR_PAD_LEFT);
-        $moneda = strtoupper((string) ($empresa->moneda ?? 'CRC')) === 'USD' ? 'USD' : 'CRC';
-        $tipoCambio = $moneda === 'USD' ? $this->tipoCambio->crcPorUsdVenta($empresa) : 1.0;
+        [$moneda, $tipoCambio] = $this->monedaYTipoCambioDocumento(
+            (string) ($compra->currency_code ?? $empresa->moneda ?? 'CRC'),
+            $compra->exchange_rate,
+            $empresa
+        );
+        $factorMoneda = $this->factorMontosEmpresaADocumentoFe($empresa, $moneda, $tipoCambio);
 
         // Índices 0..n-1: el resumen empareja por índice con detalles; sin values() el map puede conservar keys del modelo y desalinear servicios vs mercancías (-111 Hacienda).
-        $lineItems = array_values($compra->detalles->map(fn (DetalleCompra $d) => $this->lineaCompra($d, $empresa, $compra))->all());
+        $lineItems = array_values($compra->detalles->map(
+            fn (DetalleCompra $d) => $this->convertirMontosLineaFe($this->lineaCompra($d, $empresa, $compra), $factorMoneda)
+        )->all());
 
         return [
             'date' => $dateIso,
@@ -1497,7 +1649,7 @@ final class CostaRicaInvoiceFromVentaMapper
             'receiver' => $this->receptorProveedor($proveedor, $empresa),
             'line_items' => $lineItems,
             'payments' => $this->pagosDesdeLineas($lineItems),
-            'summary' => $this->resumenCompraAlineadoLineas($compra, $lineItems),
+            'summary' => $this->resumenCompraAlineadoLineas($compra, $lineItems, $factorMoneda),
             'referenced_documents' => $this->referencedDocumentsFacturaElectronicaCompra(
                 $dateIso,
                 $compra->fecha ?? null,
@@ -1528,10 +1680,16 @@ final class CostaRicaInvoiceFromVentaMapper
         $dateIso = $fecha->format('Y-m-d\TH:i:sP');
         [$est, $ter] = $this->establecimientoYTerminalCr($empresa, $gasto->sucursal);
         $seq = str_pad((string) $secuencial, 10, '0', STR_PAD_LEFT);
-        $moneda = strtoupper((string) ($empresa->moneda ?? 'CRC')) === 'USD' ? 'USD' : 'CRC';
-        $tipoCambio = $moneda === 'USD' ? $this->tipoCambio->crcPorUsdVenta($empresa) : 1.0;
+        [$moneda, $tipoCambio] = $this->monedaYTipoCambioDocumento(
+            (string) ($gasto->currency_code ?? $empresa->moneda ?? 'CRC'),
+            $gasto->exchange_rate,
+            $empresa
+        );
+        $factorMoneda = $this->factorMontosEmpresaADocumentoFe($empresa, $moneda, $tipoCambio);
 
-        $lineItems = array_values($gasto->detalles->map(fn (DetalleEgreso $d) => $this->lineaGastoFec($d, $empresa, $gasto))->all());
+        $lineItems = array_values($gasto->detalles->map(
+            fn (DetalleEgreso $d) => $this->convertirMontosLineaFe($this->lineaGastoFec($d, $empresa, $gasto), $factorMoneda)
+        )->all());
 
         return [
             'date' => $dateIso,
@@ -1989,9 +2147,10 @@ final class CostaRicaInvoiceFromVentaMapper
 
     /**
      * @param  array<int, array<string, mixed>>  $lineItems
+     * @param  float  $factorMoneda  Factor BD→documento FE; líneas ya convertidas.
      * @return array<string, mixed>
      */
-    private function resumenCompraAlineadoLineas(Compra $compra, array $lineItems): array
+    private function resumenCompraAlineadoLineas(Compra $compra, array $lineItems, float $factorMoneda = 1.0): array
     {
         $compra->loadMissing(['detalles.producto']);
         $lineItems = array_values($lineItems);
@@ -2014,7 +2173,7 @@ final class CostaRicaInvoiceFromVentaMapper
             if ($clas === 'gravada') {
                 $monto = round((float) ($line['taxable_base'] ?? $line['sub_total'] ?? 0), 2);
             } else {
-                $monto = $this->montoDetalleCompraPorClasificacion($detalle, $clas);
+                $monto = round($this->montoDetalleCompraPorClasificacion($detalle, $clas) * $factorMoneda, 2);
             }
             if ($monto <= 0.00001) {
                 continue;
@@ -2040,7 +2199,7 @@ final class CostaRicaInvoiceFromVentaMapper
             }
         }
 
-        $desc = round((float) ($compra->descuento ?? 0), 2);
+        $desc = round((float) ($compra->descuento ?? 0) * $factorMoneda, 2);
         $totalesLineas = $this->totalesMonetariosDesdeLineas($lineItems);
         $iva = $totalesLineas['total_tax'];
         $total = $totalesLineas['total'];

@@ -13,6 +13,7 @@ class Documento extends Model {
         'nombre',
         'prefijo',
         'correlativo',
+        'numero_emision',
         'inicial',
         'final',
         'rangos',

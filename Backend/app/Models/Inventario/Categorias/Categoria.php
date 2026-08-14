@@ -44,4 +44,9 @@ class Categoria extends Model
         return $this->hasMany(Producto::class, 'id_categoria');
     }
 
+    /** Las subcategorías viven en esta misma tabla: subcategoria = 1 + id_cate_padre. */
+    public function subcategorias(){
+        return $this->hasMany(self::class, 'id_cate_padre')->where('subcategoria', 1);
+    }
+
 }

@@ -1,0 +1,125 @@
+<section class="bg-white p-4 rounded mb-3">
+  <h2 class="mb-0">Libro de Ventas a Consumidor Final</h2>
+</section>
+
+<div class="bg-white p-4 rounded mb-3">
+  <div class="d-flex flex-wrap gap-2 mb-3">
+    <app-libro-iva-hd-nav />
+    <div class="ms-auto d-flex gap-2 align-items-center">
+      <app-libro-iva-periodo-filtros
+        [filtros]="filtros"
+        [years]="years"
+        [sucursales]="sucursales"
+        (periodoChange)="loadData()"
+      />
+      <div class="dropdown">
+        <button class="btn btn-default dropdown-toggle" type="button" data-bs-toggle="dropdown" [disabled]="downloading">
+          Descargas
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li><button class="dropdown-item" (click)="descargarExcel()">{{ 'country.tax.libroIva.fiscalSalesExcel' | translate }}</button></li>
+          <li><button class="dropdown-item" (click)="descargarPdf()">{{ 'country.tax.libroIva.fiscalSalesPdf' | translate }}</button></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  @if (loading) {
+    <div class="card border-0 shadow-sm">
+      <div class="card-body py-5 text-center"><span class="badge bg-primary">Cargando...</span></div>
+    </div>
+  } @else if (filas.length === 0) {
+    <div class="card border-0 shadow-sm bg-light bg-opacity-25">
+      <div class="card-body py-5 text-center">
+        <p class="text-muted mb-0">No hay registros para el periodo seleccionado.</p>
+      </div>
+    </div>
+  } @else {
+    <div class="table-responsive bg-white">
+      <table class="table table-bordered table-hover mr-top">
+        <thead>
+          <tr>
+            <th rowspan="2">N°</th>
+            <th rowspan="2">Fecha</th>
+            <th rowspan="2">Factura N°</th>
+            <th rowspan="2">CAI N°</th>
+            <th rowspan="2">N° de Maquina<br>registradora</th>
+            <th rowspan="2">Ventas<br>Exentas</th>
+            <th rowspan="2">Ventas<br>Exoneradas</th>
+            <th colspan="2">Ventas Gravadas</th>
+            <th rowspan="2">Total Ventas</th>
+            <th rowspan="2">Ventas a Cuenta de<br>Terceros</th>
+          </tr>
+          <tr>
+            <th>15%</th>
+            <th>18%</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of filas; track row.no) {
+            <tr>
+              <td>{{ row.no }}</td>
+              <td>{{ row.fecha | date:'dd/MM/yyyy' }}</td>
+              <td>{{ row.factura_no }}</td>
+              <td>{{ row.cai_no }}</td>
+              <td>{{ row.maquina_registradora }}</td>
+              <td class="text-end">{{ row.exentas | currency }}</td>
+              <td class="text-end">{{ row.exoneradas | currency }}</td>
+              <td class="text-end">{{ row.gravadas_15 | currency }}</td>
+              <td class="text-end">{{ row.gravadas_18 | currency }}</td>
+              <td class="text-end">{{ row.total_ventas | currency }}</td>
+              <td class="text-end">{{ row.cuenta_terceros | currency }}</td>
+            </tr>
+          }
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="5" class="text-center"><b>TOTAL</b></td>
+            <td class="text-end"><b>{{ totalExentas | currency }}</b></td>
+            <td class="text-end"><b>{{ totalExoneradas | currency }}</b></td>
+            <td class="text-end"><b>{{ totalGravadas15 | currency }}</b></td>
+            <td class="text-end"><b>{{ totalGravadas18 | currency }}</b></td>
+            <td class="text-end"><b>{{ totalVentas | currency }}</b></td>
+            <td class="text-end"><b>{{ totalCuentaTerceros | currency }}</b></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <div class="table-responsive bg-white mt-3" style="max-width: 28rem;">
+      <table class="table table-bordered mb-0">
+        <thead>
+          <tr>
+            <th colspan="2">Resumen</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Exentas</td>
+            <td class="text-end">{{ resumen.total_exentas | currency }}</td>
+          </tr>
+          <tr>
+            <td>Exoneradas</td>
+            <td class="text-end">{{ resumen.total_exoneradas | currency }}</td>
+          </tr>
+          <tr>
+            <td>Netas Gravadas 15%</td>
+            <td class="text-end">{{ resumen.netas_15 | currency }}</td>
+          </tr>
+          <tr>
+            <td>Netas Gravadas 18%</td>
+            <td class="text-end">{{ resumen.netas_18 | currency }}</td>
+          </tr>
+          <tr>
+            <td>Debito Fiscal</td>
+            <td class="text-end">{{ resumen.debito_fiscal | currency }}</td>
+          </tr>
+          <tr>
+            <td>Credito Fiscal</td>
+            <td class="text-end">{{ resumen.credito_fiscal | currency }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

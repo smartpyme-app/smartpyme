@@ -25,7 +25,7 @@ class LibrosIvaLegacyController extends Controller
     {
         return match ($this->libroIvaPaisResolver->tipo()) {
             LibroIvaPaisResolver::TIPO_SV => $this->librosIvaSv->consumidores($request),
-            LibroIvaPaisResolver::TIPO_HD => $this->librosIvaHd->ventas($request),
+            LibroIvaPaisResolver::TIPO_HD => $this->librosIvaHd->consumidores($request),
             default => $this->librosIvaGeneral->ventas($request),
         };
     }
@@ -34,7 +34,7 @@ class LibrosIvaLegacyController extends Controller
     {
         return match ($this->libroIvaPaisResolver->tipo()) {
             LibroIvaPaisResolver::TIPO_SV => $this->librosIvaSv->consumidoresLibroExport($request),
-            LibroIvaPaisResolver::TIPO_HD => $this->librosIvaHd->ventasLibroExport($request),
+            LibroIvaPaisResolver::TIPO_HD => $this->librosIvaHd->consumidoresLibroExport($request),
             default => $this->librosIvaGeneral->ventasLibroExport($request),
         };
     }

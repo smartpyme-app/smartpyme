@@ -3,16 +3,44 @@
 namespace App\Services\Planilla;
 
 use App\Constants\PlanillaConstants;
-
-use function Symfony\Component\VarDumper\Dumper\esc;
+use App\Models\PaisConfiguracion;
+use Illuminate\Support\Facades\Schema;
 
 class PlanillaTemplatesService
 {
     /**
-     * Obtener configuración por código de país
+     * Plantilla por país: pais_configuracion (modulo=planillas), fallback a código.
      */
     public static function getConfiguracionPorPais($codPais)
     {
+        $codPais = strtoupper((string) $codPais);
+
+        try {
+            if (Schema::hasTable('pais_configuracion')) {
+                $row = PaisConfiguracion::query()
+                    ->pais($codPais)
+                    ->modulo(PaisConfiguracion::MODULO_PLANILLAS)
+                    ->first();
+
+                $cfg = $row?->configuracion;
+                if (is_array($cfg) && ! empty($cfg['conceptos'])) {
+                    return $cfg;
+                }
+            }
+        } catch (\Throwable $e) {
+            // ponytail: tests / sin DB → plantilla en código
+        }
+
+        return self::plantilla($codPais);
+    }
+
+    /**
+     * Plantillas embebidas (también las usa el seeder).
+     */
+    public static function plantilla($codPais): array
+    {
+        $codPais = strtoupper((string) $codPais);
+
         switch ($codPais) {
             case 'SV':
                 return self::getConfiguracionSalvador();
@@ -27,7 +55,9 @@ class PlanillaTemplatesService
             case 'PA':
                 return self::getConfiguracionPanama();
             default:
-                return self::getConfiguracionSalvador();
+                throw new \InvalidArgumentException(
+                    "No hay plantilla de planilla para el país '{$codPais}'"
+                );
         }
     }
 
@@ -366,39 +396,73 @@ class PlanillaTemplatesService
         return [
             "conceptos" => [
                 "ccss_empleado" => [
-                    "nombre" => "CCSS Empleado",
+                    "nombre" => "CCSS Empleado (10.83%)",
                     "codigo" => "CCSS_EMP",
                     "tipo" => "porcentaje",
-                    "valor" => 10.5,
-                    "base_calculo" => "salario_devengado",
+                    "valor" => 10.83,
+                    "piso_minimo_sem" => 333328.0,
+                    "piso_minimo_ivm" => 311990.0,
+                    "base_calculo" => "salario_bruto",
+                    "desglose" => [
+                        "sem" => 5.50,
+                        "ivm" => 4.33,
+                        "banco_popular" => 1.00
+                    ],
                     "es_deduccion" => true,
                     "es_patronal" => false,
-                    "aplica_renta" => true,
+                    "aplica_renta" => false,
                     "obligatorio" => true,
                     "orden" => 1
                 ],
                 "ccss_patronal" => [
-                    "nombre" => "CCSS Patronal",
+                    "nombre" => "CCSS Patronal (26.83%)",
                     "codigo" => "CCSS_PAT",
                     "tipo" => "porcentaje",
-                    "valor" => 26.0,
-                    "base_calculo" => "salario_devengado",
+                    "valor" => 26.83,
+                    "piso_minimo_sem" => 333328.0,
+                    "piso_minimo_ivm" => 311990.0,
+                    "base_calculo" => "salario_bruto",
+                    "desglose" => [
+                        "sem" => 9.25,
+                        "ivm" => 5.58,
+                        "fodesaf" => 5.00,
+                        "rop" => 3.25,
+                        "ina" => 1.50,
+                        "fcl" => 1.50,
+                        "imas" => 0.50,
+                        "banco_popular" => 0.25
+                    ],
                     "es_deduccion" => false,
                     "es_patronal" => true,
                     "aplica_renta" => false,
                     "obligatorio" => true,
                     "orden" => 2
                 ],
+                "ins_patronal" => [
+                    "nombre" => "INS Riesgos del Trabajo",
+                    "codigo" => "INS_PAT",
+                    "tipo" => "porcentaje",
+                    "valor" => 1.5,
+                    "base_calculo" => "salario_bruto",
+                    "es_deduccion" => false,
+                    "es_patronal" => true,
+                    "aplica_renta" => false,
+                    "obligatorio" => true,
+                    "orden" => 3
+                ],
                 "renta_costarica" => [
-                    "nombre" => "Renta Costa Rica",
+                    "nombre" => "Impuesto sobre la Renta CR",
                     "codigo" => "RENTA_CR",
                     "tipo" => "tabla_progresiva",
-                    "base_calculo" => "salario_gravable",
+                    "base_calculo" => "salario_bruto",
+                    "credito_hijo_mensual" => 1710.0,
+                    "credito_conyuge_mensual" => 2590.0,
+                    "decreto" => "Decreto 45333-H 2026",
                     "es_deduccion" => true,
                     "es_patronal" => false,
                     "aplica_renta" => false,
                     "obligatorio" => true,
-                    "orden" => 3
+                    "orden" => 4
                 ]
             ],
             "configuraciones_generales" => [
@@ -407,7 +471,7 @@ class PlanillaTemplatesService
                 "horas_dia" => 8,
                 "recargo_horas_extra" => 50,
                 "frecuencia_pago_predeterminada" => "quincenal",
-                "salario_minimo" => 317916.21
+                "salario_minimo" => 350000.00
             ]
         ];
     }

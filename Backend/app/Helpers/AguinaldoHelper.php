@@ -9,9 +9,20 @@ use Carbon\Carbon;
 class AguinaldoHelper
 {
     /**
+     * Países donde el aguinaldo es 100% exento de renta y cargas sociales.
+     * Agregar aquí el código de país para sumar otra legislación con aguinaldo exento.
+     */
+    private const PAISES_AGUINALDO_EXENTO = ['CR'];
+
+    public static function aguinaldoTotalmenteExento(?string $codigoPais): bool
+    {
+        return in_array(strtoupper((string) $codigoPais), self::PAISES_AGUINALDO_EXENTO, true);
+    }
+
+    /**
      * Calcula todas las deducciones de aguinaldo de un empleado
      */
-    public static function calcularDeduccionesAguinaldo($montoBruto, $anio, $tipoContrato = null)
+    public static function calcularDeduccionesAguinaldo($montoBruto, $anio, $tipoContrato = null, ?string $codigoPais = 'SV')
     {
         // Validar que el monto bruto sea válido
         if ($montoBruto <= 0) {
@@ -25,6 +36,16 @@ class AguinaldoHelper
 
         // Redondear monto bruto a 2 decimales
         $montoBruto = round($montoBruto, 2);
+
+        // Costa Rica (y similares): aguinaldo 100% exento de ISR y CCSS
+        if (self::aguinaldoTotalmenteExento($codigoPais)) {
+            return [
+                'monto_exento' => $montoBruto,
+                'monto_gravado' => 0.00,
+                'retencion_renta' => 0.00,
+                'aguinaldo_neto' => $montoBruto
+            ];
+        }
 
         // Calcular monto exento según Decreto 900 ($1,500 exentos)
         $montoExento = min($montoBruto, PlanillaConstants::AGUINALDO_EXENTO_DECRETO_2023);
@@ -55,18 +76,22 @@ class AguinaldoHelper
 
     /**
      * Calcula los años de laborar de un empleado hasta un año específico
-     * Por ley, el cálculo se hace hasta el 12 de diciembre (o fecha configurada)
+     * Por ley, el cálculo se hace hasta el 20 de octubre (o fecha configurada)
      * 
      * @param Carbon $fechaIngreso Fecha de ingreso del empleado
      * @param int $anio Año del aguinaldo
-     * @param Carbon|null $fechaCalculo Fecha de cálculo (opcional, por defecto 12 de diciembre)
+     * @param Carbon|null $fechaCalculo Fecha de cálculo (opcional, por defecto 20 de octubre)
      * @return float Años de laborar
      */
     public static function calcularAniosLaborar($fechaIngreso, $anio, $fechaCalculo = null)
     {
-        // Fecha límite para cálculo de aguinaldo: 12 de diciembre (por ley) o fecha configurada
+        // Fecha de referencia del aguinaldo: 20 de octubre (reforma Art. 200 CT) o fecha configurada
         if (!$fechaCalculo) {
-            $fechaCalculoAguinaldo = Carbon::create($anio, 12, 12);
+            $fechaCalculoAguinaldo = Carbon::create(
+                $anio,
+                PlanillaConstants::AGUINALDO_MES_CALCULO,
+                PlanillaConstants::AGUINALDO_DIA_CALCULO
+            );
         } else {
             $fechaCalculoAguinaldo = $fechaCalculo instanceof Carbon ? $fechaCalculo : Carbon::parse($fechaCalculo);
         }
@@ -101,21 +126,36 @@ class AguinaldoHelper
      * @param float $salarioBase Salario base mensual del empleado
      * @param Carbon $fechaIngreso Fecha de ingreso del empleado
      * @param int $anio Año del aguinaldo
-     * @param Carbon|null $fechaCalculo Fecha de cálculo (opcional, por defecto 12 de diciembre)
+     * @param Carbon|null $fechaCalculo Fecha de cálculo (opcional, por defecto 20 de octubre)
      * @return float Sugerencia de aguinaldo calculada
      */
-    public static function calcularSugerenciaAguinaldo($salarioBase, $fechaIngreso, $anio, $fechaCalculo = null)
+    public static function calcularSugerenciaAguinaldo($salarioBase, $fechaIngreso, $anio, $fechaCalculo = null, ?string $codigoPais = 'SV')
     {
         // Validar parámetros
         if ($salarioBase <= 0) {
             return 0.00;
         }
 
-        // Obtener fecha de cálculo (por defecto 12 de diciembre)
+        // Obtener fecha de cálculo (por defecto 20 de octubre)
         if (!$fechaCalculo) {
-            $fechaCalculoAguinaldo = Carbon::create($anio, 12, 12);
+            $fechaCalculoAguinaldo = Carbon::create(
+                $anio,
+                PlanillaConstants::AGUINALDO_MES_CALCULO,
+                PlanillaConstants::AGUINALDO_DIA_CALCULO
+            );
         } else {
             $fechaCalculoAguinaldo = $fechaCalculo instanceof Carbon ? $fechaCalculo : Carbon::parse($fechaCalculo);
+        }
+
+        // Costa Rica: aguinaldo = salarios devengados dic-nov / 12. Como el bruto se
+        // ingresa manual, la sugerencia estima un mes de salario proporcional a los
+        // meses trabajados (equivale a 1 salario si trabajó el período completo).
+        // ponytail: estimación con salario constante; el monto exacto (suma real de
+        // planillas dic-nov / 12) lo captura el usuario a mano.
+        if (self::aguinaldoTotalmenteExento($codigoPais)) {
+            $meses = min(self::calcularMesesTrabajados($fechaIngreso, $anio, $fechaCalculoAguinaldo), 12);
+
+            return round($salarioBase * $meses / 12, 2);
         }
 
         // Calcular años de laborar
@@ -170,18 +210,22 @@ class AguinaldoHelper
 
     /**
      * Calcula los meses totales trabajados desde la fecha de ingreso hasta la fecha de cálculo
-     * Por ley, el cálculo se hace hasta el 12 de diciembre (o fecha configurada)
+     * Por ley, el cálculo se hace hasta el 20 de octubre (o fecha configurada)
      * 
      * @param Carbon $fechaIngreso Fecha de ingreso del empleado
      * @param int $anio Año del aguinaldo
-     * @param Carbon|null $fechaCalculo Fecha de cálculo (opcional, por defecto 12 de diciembre)
+     * @param Carbon|null $fechaCalculo Fecha de cálculo (opcional, por defecto 20 de octubre)
      * @return int Meses totales trabajados desde la fecha de ingreso
      */
     public static function calcularMesesTrabajados($fechaIngreso, $anio, $fechaCalculo = null)
     {
-        // Fecha límite para cálculo de aguinaldo: 12 de diciembre (por ley) o fecha configurada
+        // Fecha de referencia del aguinaldo: 20 de octubre (reforma Art. 200 CT) o fecha configurada
         if (!$fechaCalculo) {
-            $fechaCalculoAguinaldo = Carbon::create($anio, 12, 12);
+            $fechaCalculoAguinaldo = Carbon::create(
+                $anio,
+                PlanillaConstants::AGUINALDO_MES_CALCULO,
+                PlanillaConstants::AGUINALDO_DIA_CALCULO
+            );
         } else {
             $fechaCalculoAguinaldo = $fechaCalculo instanceof Carbon ? $fechaCalculo : Carbon::parse($fechaCalculo);
         }

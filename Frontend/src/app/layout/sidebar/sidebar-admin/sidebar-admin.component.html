@@ -188,6 +188,11 @@
                                     <img src="/assets/icons/pie-chart.png" class="icon me-2">Dashboards
                                 </a>
                             </li>
+                            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+                                <a [routerLink]="['/admin/pais-configuracion']" tooltip="Configuración por país" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                                    <img src="/assets/icons/settings.png" class="icon me-2">Config. por país
+                                </a>
+                            </li>
                         </ul>
                     </div>
                 </li>
@@ -234,7 +239,7 @@
                     </ul>
                 </div>
             </li>
-            <li *ngIf="mostrarMenuRestaurante" class="mb-1">
+            <li *ngIf="mostrarMenuRestaurante && apiService.hasPermission('restaurante.ver')" class="mb-1">
                 <button (click)="toggleRestaurante()" tooltip="Restaurante" [adaptivePosition]="false" placement="right"
                     class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1"
                     [attr.aria-expanded]="!restauranteIsCollapsed" aria-controls="collapseRestauranteAdmin">
@@ -256,7 +261,7 @@
                     </ul>
                 </div>
             </li>
-            <li *ngIf="mostrarMenuPedidos" class="mb-1">
+            <li *ngIf="mostrarMenuPedidos && apiService.hasPermission('pedidos.ver')" class="mb-1">
                 <button (click)="togglePedidos()" tooltip="Pedidos" [adaptivePosition]="false" placement="right"
                     class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1"
                     [attr.aria-expanded]="!pedidosIsCollapsed" aria-controls="collapsePedidosAdmin">

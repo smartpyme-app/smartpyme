@@ -75,8 +75,12 @@ class AguinaldosController extends Controller
                 ], 422);
             }
 
-            // Por defecto, la fecha de cálculo es el 12 de diciembre del año (por ley)
-            $fechaCalculo = $request->fecha_calculo ?? Carbon::create($request->anio, 12, 12)->format('Y-m-d');
+            // Por defecto, la fecha de cálculo es el 20 de octubre del año (reforma Art. 200 CT)
+            $fechaCalculo = $request->fecha_calculo ?? Carbon::create(
+                $request->anio,
+                PlanillaConstants::AGUINALDO_MES_CALCULO,
+                PlanillaConstants::AGUINALDO_DIA_CALCULO
+            )->format('Y-m-d');
 
             $aguinaldo = Aguinaldo::create([
                 'id_empresa' => auth()->user()->id_empresa,
@@ -651,7 +655,7 @@ class AguinaldosController extends Controller
         $request->validate([
             'id_empleado' => 'required|exists:empleados,id',
             'anio' => 'required|integer',
-            'fecha_calculo' => 'nullable|date' // Fecha de cálculo (opcional, por defecto 12 de diciembre)
+            'fecha_calculo' => 'nullable|date' // Fecha de cálculo (opcional, por defecto 20 de octubre)
         ]);
 
         try {
@@ -665,23 +669,44 @@ class AguinaldosController extends Controller
                 ], 403);
             }
 
-            // Obtener fecha de cálculo (por defecto 12 de diciembre del año)
+            // Obtener fecha de cálculo (por defecto 20 de octubre del año)
             $fechaCalculo = $request->fecha_calculo 
                 ? Carbon::parse($request->fecha_calculo)
-                : Carbon::create($request->anio, 12, 12);
+                : Carbon::create(
+                    $request->anio,
+                    PlanillaConstants::AGUINALDO_MES_CALCULO,
+                    PlanillaConstants::AGUINALDO_DIA_CALCULO
+                );
 
             // Calcular años de laborar y meses trabajados
             $fechaIngreso = \Carbon\Carbon::parse($empleado->fecha_ingreso);
             $aniosLaborar = AguinaldoHelper::calcularAniosLaborar($fechaIngreso, $request->anio, $fechaCalculo);
             $mesesTrabajados = AguinaldoHelper::calcularMesesTrabajados($fechaIngreso, $request->anio, $fechaCalculo);
 
+            $codigoPais = app(\App\Services\Admin\EmpresaConfiguracionService::class)
+                ->paisEmpresa(auth()->user()->id_empresa);
+
             // Calcular sugerencia basada en años de laborar
             $sugerencia = AguinaldoHelper::calcularSugerenciaAguinaldo(
                 $empleado->salario_base,
                 $fechaIngreso,
                 $request->anio,
-                $fechaCalculo
+                $fechaCalculo,
+                $codigoPais
             );
+
+            // Costa Rica no usa días por antigüedad; el aguinaldo es proporcional a los meses
+            if (AguinaldoHelper::aguinaldoTotalmenteExento($codigoPais)) {
+                return response()->json([
+                    'sugerencia' => $sugerencia,
+                    'anios_laborar' => round($aniosLaborar, 2),
+                    'meses_trabajados' => $mesesTrabajados,
+                    'dias_aguinaldo' => null,
+                    'salario_base' => $empleado->salario_base,
+                    'fecha_ingreso' => $empleado->fecha_ingreso,
+                    'tipo_contrato' => $empleado->tipo_contrato
+                ]);
+            }
 
             // Determinar días de aguinaldo según años de laborar
             $diasAguinaldo = 0;
@@ -743,10 +768,14 @@ class AguinaldosController extends Controller
         ]);
 
         try {
+            $codigoPais = app(\App\Services\Admin\EmpresaConfiguracionService::class)
+                ->paisEmpresa(auth()->user()->id_empresa);
+
             $calculos = AguinaldoHelper::calcularDeduccionesAguinaldo(
                 $request->monto_bruto,
                 $request->anio,
-                $request->tipo_contrato
+                $request->tipo_contrato,
+                $codigoPais
             );
 
             return response()->json([

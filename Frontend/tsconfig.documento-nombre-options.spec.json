@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./out-tsc/spec",
+    "types": ["jasmine"]
+  },
+  "include": [
+    "src/app/views/ventas/documentos/documento-nombre-options.spec.ts",
+    "src/app/views/ventas/documentos/documento-nombre-options.ts",
+    "src/app/services/facturacion-electronica/fe-pais.util.ts",
+    "src/**/*.d.ts"
+  ]
+}

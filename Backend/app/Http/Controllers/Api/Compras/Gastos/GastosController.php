@@ -6,7 +6,10 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use JWTAuth;
 use App\Models\Admin\Documento;
+use App\Models\Admin\Empresa;
 use App\Models\Compras\Gastos\Gasto;
+use App\Support\FacturacionElectronica\CostaRica\DocumentoMoneda;
+use Carbon\Carbon;
 use App\Services\Bancos\TransaccionesService;
 use App\Services\Bancos\ChequesService;
 use App\Services\Compras\Gastos\GastoService;
@@ -24,6 +27,8 @@ use Illuminate\Support\Facades\Log;
 use App\Models\User;
 use App\Http\Requests\Compras\Gastos\StoreGastoRequest;
 use App\Http\Requests\Compras\Gastos\ImportarJsonGastoRequest;
+use App\Models\Admin\Funcionalidad;
+use App\Models\Admin\EmpresaFuncionalidad;
 
 class GastosController extends Controller
 {
@@ -184,6 +189,16 @@ class GastosController extends Controller
             return $bloqueado;
         }
 
+        if ($request->boolean('from_importacion_masiva')) {
+            $idEmpresaAuth = auth()->user()->id_empresa ?? null;
+            if (!$this->empresaTieneImportacionMasivaGastosJson($idEmpresaAuth)) {
+                return Response()->json([
+                    'error' => 'Su empresa no tiene habilitada la importación masiva de gastos desde JSON.',
+                    'code' => 403,
+                ], 403);
+            }
+        }
+
         if ($request->input('id_categoria') === '' || $request->input('id_categoria') === null) {
             $request->merge(['id_categoria' => null]);
         } else {
@@ -265,7 +280,7 @@ class GastosController extends Controller
             }
 
             if ($tieneMultiplesItems) {
-                $this->guardarConDetalles($gasto, $request->detalles, $request->input('tipo'));
+                $this->guardarConDetalles($gasto, $request->detalles, $request->input('tipo'), $request);
             } else {
                 $gasto->sub_total = $request->sub_total ?? 0;
                 $gasto->iva = $request->iva ?? 0;
@@ -275,6 +290,7 @@ class GastosController extends Controller
                 $gasto->total = $request->total ?? 0;
                 $gasto->concepto = $request->concepto;
                 $gasto->tipo = $request->input('tipo') ?? '';
+                $this->resolverMonedaCr($gasto, $request);
                 $gasto->save();
                 $this->sincronizarDetalleUnico($gasto, $request);
             }
@@ -290,7 +306,7 @@ class GastosController extends Controller
         });
     }
 
-    private function guardarConDetalles(Gasto $gasto, array $detalles, ?string $tipoCabecera = null): void
+    private function guardarConDetalles(Gasto $gasto, array $detalles, ?string $tipoCabecera = null, ?Request $request = null): void
     {
         $gasto->concepto = collect($detalles)->pluck('concepto')->take(1)->implode(', ');
         $tipoCabecera = is_string($tipoCabecera) ? trim($tipoCabecera) : '';
@@ -326,6 +342,9 @@ class GastosController extends Controller
         $gasto->iva_retenido = round($ivaRetenido, 2);
         $gasto->iva_percibido = round($ivaPercibido, 2);
         $gasto->total = round($total, 2);
+        if ($request) {
+            $this->resolverMonedaCr($gasto, $request);
+        }
         $gasto->save();
 
         $gasto->detalles()->delete();
@@ -616,6 +635,34 @@ class GastosController extends Controller
     /**
      * Asigna el correlativo activo de Sujeto excluido y lo incrementa (fuente de verdad en backend).
      */
+    /**
+     * Resuelve currency_code/exchange_rate/CRC equivalent (§7.4).
+     * Requiere funcionalidad `multimoneda`; sin ella fuerza CRC. Gastos no editan TC (siempre BCCR).
+     */
+    private function resolverMonedaCr(Gasto $gasto, Request $request): void
+    {
+        $empresa = Empresa::find($gasto->id_empresa);
+        if (! $empresa) {
+            return;
+        }
+
+        $currencyCode = $empresa->tieneFuncionalidadMultimoneda()
+            ? $request->input('currency_code', $gasto->currency_code ?? DocumentoMoneda::MONEDA_CRC)
+            : DocumentoMoneda::MONEDA_CRC;
+
+        $moneda = app(DocumentoMoneda::class)->resolve(
+            [
+                'currency_code' => $currencyCode,
+                'total' => (float) $gasto->total,
+                'iva' => (float) $gasto->iva,
+            ],
+            $empresa,
+            Carbon::parse($gasto->fecha ?: now())
+        );
+
+        $gasto->fill($moneda);
+    }
+
     private function asignarCorrelativoSujetoExcluido(Gasto $gasto): void
     {
         if ($gasto->tipo_documento !== 'Sujeto excluido' || !$gasto->id_sucursal) {
@@ -678,4 +725,23 @@ class GastosController extends Controller
 
         return Response()->json($numsIds, 200);
      }
+
+    /**
+     * Slug en `funcionalidades` / super admin → empresas (FuncionalidadesSeeder).
+     */
+    private function empresaTieneImportacionMasivaGastosJson(?int $idEmpresa): bool
+    {
+        if (!$idEmpresa) {
+            return false;
+        }
+        $funcionalidad = Funcionalidad::where('slug', 'importacion-masiva-gastos-json')->first();
+        if (!$funcionalidad) {
+            return false;
+        }
+
+        return EmpresaFuncionalidad::where('id_empresa', $idEmpresa)
+            ->where('id_funcionalidad', $funcionalidad->id)
+            ->where('activo', 1)
+            ->exists();
+    }
 }

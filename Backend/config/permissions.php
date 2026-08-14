@@ -392,6 +392,42 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Permisos de Consignas
+    |--------------------------------------------------------------------------
+    */
+    'PERMISSION_CONSIGNAS' => [
+        'ver' => 'consignas.ver',
+        'crear' => 'consignas.crear',
+        'editar' => 'consignas.editar',
+        'eliminar' => 'consignas.eliminar',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Permisos de Restaurante
+    |--------------------------------------------------------------------------
+    */
+    'PERMISSION_RESTAURANTE' => [
+        'ver' => 'restaurante.ver',
+        'crear' => 'restaurante.crear',
+        'editar' => 'restaurante.editar',
+        'eliminar' => 'restaurante.eliminar',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Permisos de Pedidos
+    |--------------------------------------------------------------------------
+    */
+    'PERMISSION_PEDIDOS' => [
+        'ver' => 'pedidos.ver',
+        'crear' => 'pedidos.crear',
+        'editar' => 'pedidos.editar',
+        'eliminar' => 'pedidos.eliminar',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Permisos de Citas
     |--------------------------------------------------------------------------
     */

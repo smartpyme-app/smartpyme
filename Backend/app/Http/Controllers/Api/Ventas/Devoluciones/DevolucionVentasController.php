@@ -28,6 +28,7 @@ use Auth;
 use Illuminate\Support\Str;
 use App\Http\Requests\Ventas\Devoluciones\StoreDevolucionRequest;
 use App\Http\Requests\Ventas\Devoluciones\UpdateDevolucionRequest;
+use App\Support\FacturacionElectronica\CostaRica\DocumentoMoneda;
 use App\Http\Requests\Ventas\Devoluciones\FacturacionDevolucionRequest;
 use App\Services\Ventas\DevolucionVentaService;
 use Illuminate\Support\Facades\Log;
@@ -237,7 +238,8 @@ class DevolucionVentasController extends Controller
             }
         }
 
-        $venta->fill($request->all());
+        $venta->fill($request->except(DocumentoMoneda::CAMPOS_PERSISTIDOS));
+        $this->aplicarMonedaDesdeVentaOrigen($venta);
         $venta->save();
 
         $venta->refresh();
@@ -341,7 +343,8 @@ class DevolucionVentasController extends Controller
                 $devolucion = new Devolucion;
             }
 
-            $devolucion->fill($request->all());
+            $devolucion->fill($request->except(DocumentoMoneda::CAMPOS_PERSISTIDOS));
+            $this->aplicarMonedaDesdeVentaOrigen($devolucion);
             $devolucion->save();
 
             // $venta = Venta::findOrFail($request['id_venta']);
@@ -499,10 +502,11 @@ class DevolucionVentasController extends Controller
     public function generarDoc($id){
         $venta = Devolucion::where('id', $id)
             ->with([
-                'detalles',
+                'detalles.producto',
                 'cliente',
                 'empresa.currency',
                 'venta.vendedor',
+                'documento',
             ])
             ->firstOrFail();
 
@@ -553,6 +557,30 @@ class DevolucionVentasController extends Controller
 
             $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.NC-Kiero', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
             $pdf->setPaper('Legal', 'portrait');
+        }
+        else if(Auth::user()->id_empresa == 420 && $venta->nombre_documento == "Nota de crédito"){//420 Inversiones Andre - Honduras
+            $cliente = Cliente::withoutGlobalScope('empresa')->find($venta->id_cliente);
+            $empresa = Empresa::findOrfail(Auth::user()->id_empresa);
+
+            $formatter = new NumeroALetras();
+            $n = explode(".", number_format($venta->total, 2));
+            $dolares = $formatter->toWords(floatval(str_replace(',', '', $n[0])));
+            $centavos = $formatter->toWords($n[1] ?? '00');
+
+            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.NC-Inversiones-Andre', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+            $pdf->setPaper('US Letter', 'portrait');
+        }
+        else if(Auth::user()->id_empresa == 420 && $venta->nombre_documento == "Nota de débito"){//420 Inversiones Andre - Honduras
+            $cliente = Cliente::withoutGlobalScope('empresa')->find($venta->id_cliente);
+            $empresa = Empresa::findOrfail(Auth::user()->id_empresa);
+
+            $formatter = new NumeroALetras();
+            $n = explode(".", number_format($venta->total, 2));
+            $dolares = $formatter->toWords(floatval(str_replace(',', '', $n[0])));
+            $centavos = $formatter->toWords($n[1] ?? '00');
+
+            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.formatos_empresas.ND-Inversiones-Andre', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
+            $pdf->setPaper('US Letter', 'portrait');
         }else{
             $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.nota-credito', compact('venta'));
             $pdf->setPaper('US Letter', 'portrait');
@@ -569,5 +597,40 @@ class DevolucionVentasController extends Controller
         return Excel::download($ventas, 'ventas.xlsx');
     }
 
+    /**
+     * NC/ND heredan moneda/TC de la factura de venta (congelados; equivalentes según total/iva de la devolución).
+     */
+    private function aplicarMonedaDesdeVentaOrigen(Devolucion $devolucion): void
+    {
+        if (! $devolucion->id_venta) {
+            return;
+        }
+
+        $ventaOrigen = Venta::find($devolucion->id_venta);
+        if (! $ventaOrigen) {
+            return;
+        }
+
+        $currencyCode = strtoupper((string) ($ventaOrigen->currency_code ?? DocumentoMoneda::MONEDA_CRC));
+        if ($currencyCode !== DocumentoMoneda::MONEDA_USD) {
+            $currencyCode = DocumentoMoneda::MONEDA_CRC;
+        }
+
+        $rate = $currencyCode === DocumentoMoneda::MONEDA_USD
+            ? (float) ($ventaOrigen->exchange_rate ?? 0)
+            : 1.0;
+
+        if ($currencyCode === DocumentoMoneda::MONEDA_USD && ($rate <= 0 || $rate === 1.0)) {
+            $rate = 1.0;
+            $currencyCode = DocumentoMoneda::MONEDA_CRC;
+        }
+
+        $devolucion->currency_code = $currencyCode;
+        $devolucion->exchange_rate = $rate;
+        $devolucion->exchange_rate_date = $ventaOrigen->exchange_rate_date
+            ?? ($ventaOrigen->fecha ? Carbon::parse($ventaOrigen->fecha)->toDateString() : null);
+        $devolucion->equivalent_total = round((float) $devolucion->total * $rate, 5);
+        $devolucion->equivalent_iva = round((float) $devolucion->iva * $rate, 5);
+    }
 
 }

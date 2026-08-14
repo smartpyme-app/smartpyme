@@ -18,6 +18,7 @@ Sistema ERP integral diseñado para la gestión completa de pequeñas y medianas
 - [Ejecución del Proyecto](#-ejecución-del-proyecto)
 - [Estructura de Directorios](#-estructura-de-directorios)
 - [Documentación Adicional](#-documentación-adicional)
+- [Graphify (Cursor / agentes)](#-graphify-cursor--agentes)
 
 ## 🎯 Descripción
 
@@ -431,6 +432,27 @@ chmod -R 775 Backend/storage Backend/bootstrap/cache
 composer clear-cache
 composer install --no-cache
 ```
+
+## 🕸 Graphify (Cursor / agentes)
+
+El grafo de código (`graphify-out/`) **no se versiona**: cada quien lo genera en local. La regla `.cursor/rules/graphify.mdc` sí puede ir en el repo para alinear Cursor.
+
+```bash
+# Una vez: CLI global
+uv tool install graphifyy   # o: pip install graphifyy
+
+# Regenerar Backend + Frontend (AST, sin API key)
+graphify extract ./Backend/ --code-only
+graphify extract ./Frontend/ --code-only
+graphify merge-graphs \
+  ./Backend/graphify-out/graph.json \
+  ./Frontend/graphify-out/graph.json \
+  --out graphify-out/graph.json
+graphify cluster-only . --no-label
+graphify export html
+```
+
+Opcional: `graphify hook install` para rebuild al hacer commit. Con `GEMINI_API_KEY` / `GOOGLE_API_KEY` puedes omitir `--code-only` e incluir docs/imágenes.
 
 ## 📝 Notas de Desarrollo
 

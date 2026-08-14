@@ -56,6 +56,15 @@ class CancelacionSuscripcionService
             $empresa->fecha_cancelacion = now();
             $empresa->save();
 
+            $suscripcion->setRelation('empresa', $empresa);
+            $suscripcion->loadMissing(['plan']);
+            app(RegistrarSuscripcionBaja::class)->registrar(
+                $suscripcion,
+                \App\Models\SuscripcionBaja::MOTIVO_CANCELACION_VOLUNTARIA,
+                now(),
+                $motivoCancelacion
+            );
+
             Log::info('Suscripción cancelada', [
                 'usuario_id' => $usuario->id,
                 'empresa_id' => $empresa->id,

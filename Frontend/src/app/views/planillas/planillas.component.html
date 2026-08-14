@@ -93,7 +93,7 @@
           </tr>
         </thead>
         <tbody>
-          @if (planillas?.total < 1 && !loading) {
+          @if (!loading && !(planillas?.data?.length)) {
             <tr>
               <td
                 colspan="8"

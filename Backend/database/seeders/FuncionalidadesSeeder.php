@@ -57,6 +57,12 @@ class FuncionalidadesSeeder extends Seeder
                 'orden' => 7
             ],
             [
+                'nombre' => 'Importación masiva de gastos (JSON DTE)',
+                'slug' => 'importacion-masiva-gastos-json',
+                'descripcion' => 'Permite importar varios gastos desde archivos JSON de DTE en el listado de gastos',
+                'orden' => 8
+            ],
+            [
 
                 'nombre' => 'Transformación de productos',
                 'slug' => 'transformacion-productos',
@@ -67,19 +73,25 @@ class FuncionalidadesSeeder extends Seeder
                 'nombre' => 'Descarga automatizada de DTEs',
                 'slug' => 'descarga-automatizada-dtes',
                 'descripcion' => 'Conectar cuentas de correo (Gmail/IMAP) y descargar, validar y procesar DTEs recibidos',
-                'orden' => 8
+                'orden' => 10
             ],
             [
                 'nombre' => 'Módulo de Presentaciones',
                 'slug' => 'modulo-presentaciones-productos',
                 'descripcion' => 'Permite gestionar presentaciones de productos',
-                'orden' => 8
+                'orden' => 11
             ],
             [
                 'nombre' => 'Integración BoxFul',
                 'slug' => 'integracion-boxful',
                 'descripcion' => 'Permite integrar con el servicio de envíos BoxFul',
-                'orden' => 9
+                'orden' => 12
+            ],
+            [
+                'nombre' => 'Multimoneda',
+                'slug' => 'multimoneda',
+                'descripcion' => 'Permite registrar documentos en distintas monedas, guardando el tipo de cambio y el valor de conversión en cada transacción',
+                'orden' => 13,
             ],
             [
                 'nombre' => 'Comisiones de Vendedores',

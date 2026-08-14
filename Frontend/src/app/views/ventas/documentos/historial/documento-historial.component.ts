@@ -8,7 +8,14 @@ import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
-import { documentoNombreOpciones, DocumentoNombreOption } from '../documento-nombre-options';
+import { FE_PAIS_HN, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
+import {
+    documentoNombreOpciones,
+    DocumentoNombreOption,
+    esDocumentoFiscalHn,
+    formatoCorrelativoHn,
+    NUMERO_EMISION_OPCIONES_HN,
+} from '../documento-nombre-options';
 
 @Component({
     selector: 'app-documento-historial',
@@ -28,8 +35,35 @@ export class DocumentoHistorialComponent extends BasePaginatedModalComponent imp
     };
     public sucursales: any = [];
 
+    readonly numeroEmisionOpciones = NUMERO_EMISION_OPCIONES_HN;
+
+    private opcionesNombre: DocumentoNombreOption[] = [];
+
     opcionesNombreDocumento(): DocumentoNombreOption[] {
-        return documentoNombreOpciones(this.apiService.auth_user()?.empresa);
+        return this.opcionesNombre.length
+            ? this.opcionesNombre
+            : documentoNombreOpciones(this.apiService.auth_user()?.empresa);
+    }
+
+    get esHonduras(): boolean {
+        return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_HN;
+    }
+
+    /** Serie (rangos) es de SV; en HN el CAI va en resolución y el rango en autorización. */
+    get showSerie(): boolean {
+        return !this.esHonduras;
+    }
+
+    get labelResolucion(): string {
+        return this.esHonduras ? 'CAI' : 'Resolución';
+    }
+
+    showNumeroEmision(documento: { nombre?: string } = this.documento): boolean {
+        return this.esHonduras && esDocumentoFiscalHn(documento?.nombre);
+    }
+
+    previewCorrelativo(documento: { numero_emision?: string; correlativo?: string | number } = this.documento): string {
+        return formatoCorrelativoHn(documento?.numero_emision, documento?.correlativo);
     }
 
     constructor(
@@ -52,6 +86,7 @@ export class DocumentoHistorialComponent extends BasePaginatedModalComponent imp
     }
 
     ngOnInit() {
+        this.cargarOpcionesNombre();
 
         console.log('nombre', this.route.snapshot.paramMap.get('nombre'));
         if (this.route.snapshot.paramMap.get('nombre')) {
@@ -61,6 +96,19 @@ export class DocumentoHistorialComponent extends BasePaginatedModalComponent imp
             this.router.navigate(['/documentos']);
         }
         
+    }
+
+    private cargarOpcionesNombre(): void {
+        this.opcionesNombre = documentoNombreOpciones(this.apiService.auth_user()?.empresa);
+        this.apiService.getAll('documentos/nombres-opciones').pipe(this.untilDestroyed()).subscribe({
+            next: (res: { opciones?: DocumentoNombreOption[] }) => {
+                if (Array.isArray(res?.opciones) && res.opciones.length) {
+                    this.opcionesNombre = res.opciones;
+                    this.cdr.markForCheck();
+                }
+            },
+            error: () => {},
+        });
     }
 
     public cargarDocumentos() {

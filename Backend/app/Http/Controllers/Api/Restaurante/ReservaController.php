@@ -6,11 +6,18 @@ use App\Http\Controllers\Controller;
 use App\Models\Restaurante\Mesa;
 use App\Models\Restaurante\Reserva;
 use App\Models\Restaurante\SesionMesa;
-use Illuminate\Http\Request;
+use App\Services\Restaurante\MesaMapaCacheService;
+use App\Services\Restaurante\RestauranteRealtimePublisher;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class ReservaController extends Controller
 {
+    public function __construct(
+        private MesaMapaCacheService $mapaCache,
+        private RestauranteRealtimePublisher $realtime,
+    ) {}
     public function index(Request $request): JsonResponse
     {
         $user = auth()->user();
@@ -19,13 +26,23 @@ class ReservaController extends Controller
         }
 
         $query = Reserva::where('id_empresa', $user->id_empresa)
-            ->with(['mesa', 'usuario'])
-            ->when($request->fecha, fn ($q) => $q->where('fecha_reserva', $request->fecha))
+            ->with(['mesa', 'usuario']);
+
+        // Sin fecha: default hoy (evita listar histórico completo). Escape: ?todas=1
+        if ($request->boolean('todas')) {
+            // sin filtro de fecha
+        } elseif ($request->filled('fecha')) {
+            $query->where('fecha_reserva', $request->fecha);
+        } else {
+            $query->whereDate('fecha_reserva', now()->toDateString());
+        }
+
+        $reservas = $query
             ->when($request->estado, fn ($q) => $q->where('estado', $request->estado))
             ->orderBy('fecha_reserva')
-            ->orderBy('hora_reserva');
+            ->orderBy('hora_reserva')
+            ->get();
 
-        $reservas = $query->get();
         return response()->json($reservas);
     }
 
@@ -37,13 +54,21 @@ class ReservaController extends Controller
         }
 
         $validated = $request->validate([
-            'mesa_id' => 'required|exists:restaurante_mesas,id',
+            'mesa_id' => [
+                'required',
+                'integer',
+                Rule::exists('restaurante_mesas', 'id')->where('id_empresa', $user->id_empresa),
+            ],
             'fecha_reserva' => 'required|date',
             'hora_reserva' => 'required|date_format:H:i',
             'cliente_nombre' => 'nullable|string|max:150',
             'cliente_telefono' => 'nullable|string|max:30',
             'observaciones' => 'nullable|string|max:500',
-            'cliente_id' => 'nullable|exists:clientes,id',
+            'cliente_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('clientes', 'id')->where('id_empresa', $user->id_empresa),
+            ],
         ]);
 
         $mesa = Mesa::where('id_empresa', $user->id_empresa)->findOrFail($validated['mesa_id']);
@@ -79,6 +104,9 @@ class ReservaController extends Controller
         ]);
 
         $mesa->update(['estado' => 'reservada']);
+        $this->mapaCache->invalidateEmpresa((int) $user->id_empresa);
+
+        $this->realtime->mapaChanged((int) $user->id_empresa, null, null, null, 'reserva');
 
         return response()->json($reserva->load(['mesa', 'usuario']), 201);
     }
@@ -118,6 +146,9 @@ class ReservaController extends Controller
 
         $reserva->update(['estado' => 'cancelada']);
         $reserva->mesa->update(['estado' => 'libre']);
+        $this->mapaCache->invalidateEmpresa((int) $user->id_empresa);
+
+        $this->realtime->mapaChanged((int) $user->id_empresa, null, null, null, 'reserva');
 
         return response()->json($reserva);
     }
@@ -140,7 +171,7 @@ class ReservaController extends Controller
         if ($sesionActiva) {
             return response()->json([
                 'message' => 'Mesa ya tiene sesión activa',
-                'sesion' => $sesionActiva->load(['mesa', 'mesero']),
+                'sesion' => $sesionActiva->load(['mesa.zonaRestaurante', 'mesero']),
             ]);
         }
 
@@ -157,7 +188,10 @@ class ReservaController extends Controller
 
         $reserva->update(['estado' => 'cumplida']);
         $reserva->mesa->update(['estado' => 'ocupada']);
+        $this->mapaCache->invalidateEmpresa((int) $user->id_empresa);
 
-        return response()->json($sesion->load(['mesa', 'mesero']), 201);
+        $this->realtime->mapaChanged((int) $user->id_empresa, null, null, null, 'reserva');
+
+        return response()->json($sesion->load(['mesa.zonaRestaurante', 'mesero']), 201);
     }
 }

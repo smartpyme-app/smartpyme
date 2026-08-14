@@ -19,6 +19,9 @@ class Planilla extends AuditableModel
         'fecha_inicio',
         'fecha_fin',
         'tipo_planilla', // quincenal, mensual
+        'version_tabla',
+        'version_decreto',
+        'fecha_vigencia_tabla',
         'estado', // 1: borrador, 2: aprobada, 3: pagada
         'total_salarios',
         'total_deducciones',

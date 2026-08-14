@@ -106,11 +106,29 @@ class Suscripcion extends Model
 
     public function cancelar(?string $motivo = null): bool
     {
-        return $this->update([
+        $ok = $this->update([
             'estado' => 'cancelado',
             'fecha_cancelacion' => now(),
             'motivo_cancelacion' => $motivo
         ]);
+
+        if ($ok) {
+            try {
+                app(\App\Services\Suscripcion\RegistrarSuscripcionBaja::class)->registrar(
+                    $this->fresh(['empresa', 'plan']) ?? $this,
+                    \App\Models\SuscripcionBaja::MOTIVO_CANCELACION_VOLUNTARIA,
+                    now(),
+                    $motivo
+                );
+            } catch (\Throwable $e) {
+                Log::channel('suscripciones')->error('Error registrando baja en Suscripcion::cancelar', [
+                    'suscripcion_id' => $this->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return $ok;
     }
 
     public function activar(): bool

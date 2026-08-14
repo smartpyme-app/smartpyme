@@ -5,15 +5,19 @@ namespace App\Exports\Contabilidad\Honduras;
 use App\Models\Compras\Compra;
 use App\Models\Compras\Gastos\Gasto;
 use App\Models\Compras\Devoluciones\Devolucion as DevolucionCompra;
+use App\Services\Contabilidad\LibroIvaMontosHelper;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithEvents;
+use Maatwebsite\Excel\Events\AfterSheet;
 use Maatwebsite\Excel\Events\BeforeSheet;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use App\Constants\DocumentoConstants;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
 
 /**
  * Libro de compras - Formato Honduras (SAR).
@@ -22,6 +26,50 @@ use App\Constants\DocumentoConstants;
 class LibroComprasExport implements FromCollection, WithMapping, WithHeadings, WithEvents
 {
     public $request;
+
+    private int $index = 1;
+
+    /** @var list<string> */
+    private const CLAVES_FILA = [
+        'no',
+        'fecha_emision',
+        'numero_documento',
+        'nrc',
+        'nit_o_dui',
+        'nombre_proveedor',
+        'exentas_internas',
+        'exentas_internaciones',
+        'exentas_importaciones',
+        'gravadas_internas',
+        'gravadas_internaciones',
+        'gravadas_importaciones',
+        'credito_fiscal',
+        'fovial',
+        'cotrans',
+        'cesc',
+        'anticipo_iva_percibido',
+        'total',
+        'retencion_terceros',
+        'compras_sujetos_excluidos',
+    ];
+
+    /** @var list<string> */
+    private const CLAVES_MONETARIAS = [
+        'exentas_internas',
+        'exentas_internaciones',
+        'exentas_importaciones',
+        'gravadas_internas',
+        'gravadas_internaciones',
+        'gravadas_importaciones',
+        'credito_fiscal',
+        'fovial',
+        'cotrans',
+        'cesc',
+        'anticipo_iva_percibido',
+        'total',
+        'retencion_terceros',
+        'compras_sujetos_excluidos',
+    ];
 
     public function filter(Request $request)
     {
@@ -32,10 +80,58 @@ class LibroComprasExport implements FromCollection, WithMapping, WithHeadings, W
     {
         return [
             BeforeSheet::class => function (BeforeSheet $event) {
+                $empresa = Auth::user()?->empresa()->first();
                 $event->sheet->insertNewRowBefore(1, 4);
                 $event->sheet->setCellValue('A1', 'LIBRO DE COMPRAS');
-                $event->sheet->setCellValue('A2', Auth::user()->empresa()->pluck('nombre')->first());
-                $event->sheet->setCellValue('A4', 'Mes: ' . ucfirst(Carbon::parse($this->request->inicio)->translatedFormat('F')) . ' - Año: ' . Carbon::parse($this->request->inicio)->format('Y'));
+                $event->sheet->setCellValue('A2', $empresa->nombre ?? '');
+                $event->sheet->setCellValue('A3', 'NIT: ' . ($empresa->nit ?? '') . '  NRC: ' . ($empresa->ncr ?? ''));
+                $event->sheet->setCellValue(
+                    'A4',
+                    'Mes: ' . ucfirst(Carbon::parse($this->request->inicio)->translatedFormat('F'))
+                        . ' - Año: ' . Carbon::parse($this->request->inicio)->format('Y')
+                );
+            },
+            AfterSheet::class => function (AfterSheet $event) {
+                $sheet = $event->sheet->getDelegate();
+                $lastCol = 'T';
+                $headerRow = 5;
+                $lastDataRow = max($headerRow, $sheet->getHighestRow());
+                $totalRow = $lastDataRow + 1;
+
+                $sheet->getStyle("A1:{$lastCol}4")->getFont()->setBold(true);
+                $sheet->getStyle("A{$headerRow}:{$lastCol}{$headerRow}")->getFont()->setBold(true);
+                $sheet->getStyle("A{$headerRow}:{$lastCol}{$headerRow}")->getAlignment()
+                    ->setWrapText(true)
+                    ->setHorizontal(Alignment::HORIZONTAL_CENTER)
+                    ->setVertical(Alignment::VERTICAL_CENTER);
+
+                if ($lastDataRow >= $headerRow) {
+                    $sheet->getStyle("A{$headerRow}:{$lastCol}{$lastDataRow}")
+                        ->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+                }
+
+                if ($lastDataRow > $headerRow) {
+                    $sheet->getStyle("G" . ($headerRow + 1) . ":{$lastCol}{$lastDataRow}")
+                        ->getNumberFormat()->setFormatCode('#,##0.00');
+                }
+
+                // ponytail: totales vía rowsForApi (2ª consulta) para no reimplementar sumas (techo: cachear filas en map).
+                $totales = $this->rowsForApi()['totales'];
+                $sheet->setCellValue("A{$totalRow}", 'TOTAL');
+                $cols = ['G','H','I','J','K','L','M','N','O','P','Q','R','S','T'];
+                $keys = self::CLAVES_MONETARIAS;
+                foreach ($cols as $i => $col) {
+                    $sheet->setCellValue("{$col}{$totalRow}", round((float) ($totales[$keys[$i]] ?? 0), 2));
+                }
+                $sheet->getStyle("A{$totalRow}:{$lastCol}{$totalRow}")->getFont()->setBold(true);
+                $sheet->getStyle("G{$totalRow}:{$lastCol}{$totalRow}")
+                    ->getNumberFormat()->setFormatCode('#,##0.00');
+                $sheet->getStyle("A{$totalRow}:{$lastCol}{$totalRow}")
+                    ->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+
+                $firmaRow = $totalRow + 2;
+                $sheet->setCellValue("A{$firmaRow}", '__________________________');
+                $sheet->setCellValue('A' . ($firmaRow + 1), 'Nombre y Firma de Contador');
             },
         ];
     }
@@ -43,18 +139,26 @@ class LibroComprasExport implements FromCollection, WithMapping, WithHeadings, W
     public function headings(): array
     {
         return [
-            'Fecha de Documento',
-            'Fecha de Contabilización',
-            'Documento / DUA Importación',
-            'Documento de adquisiciones FYDUCA',
-            'Proveedor',
-            'Registro Tributario Nacional del proveedor',
-            'Descripción de la compra',
-            'No. de Factura de la compra',
-            'Importe Compra Exenta',
-            'Importe Compra Gravada',
-            'Impuesto Sobre Ventas',
-            'Importe Importación',
+            'N°',
+            'Fecha de emisión',
+            'Número de documento',
+            'NRC',
+            'NIT o DUI',
+            'Nombre del proveedor',
+            'Compras exentas internas',
+            'Compras exentas internaciones',
+            'Compras exentas importaciones',
+            'Compras gravadas internas',
+            'Compras gravadas internaciones',
+            'Compras gravadas importaciones',
+            'Crédito fiscal',
+            'FOVIAL',
+            'COTRANS',
+            'CESC',
+            'Anticipo a cuenta IVA percibido',
+            'Total',
+            'Retención a terceros',
+            'Compras a sujetos excluidos',
         ];
     }
 
@@ -92,68 +196,71 @@ class LibroComprasExport implements FromCollection, WithMapping, WithHeadings, W
     }
 
     /**
-     * Filas para API libro-iva/general (mismas claves que espera el frontend).
+     * @return array{filas: array<int, array<string, mixed>>, totales: array<string, float>}
      */
     public function rowsForApi(): array
     {
-        return $this->collection()->map(function ($item) {
-            return $this->mapItemToAssoc($item);
-        })->values()->all();
-    }
+        $filas = $this->collection()->values()->map(function ($item, $index) {
+            return $this->mapItemToAssoc($item, $index + 1);
+        })->all();
 
-    private function mapItemToAssoc($item): array
-    {
-        $r = $item->registro;
-        $m = $item->mult;
-        $proveedor = $r->proveedor ?? $r->proveedor()->first();
-        $rtn = $proveedor ? ($proveedor->nit ?? $proveedor->ncr ?? '') : '';
-
-        $tipo = $r->tipo_documento ?? '';
-        $esImportacion = stripos($tipo, 'Importación') !== false;
-        $esSujetoExcluido = $tipo === 'Sujeto excluido';
-        $esSinIvaFiscal = DocumentoConstants::esCompraSinIvaFiscal($tipo);
-
-        $fechaDoc = $r->fecha;
-        $fechaContab = isset($r->created_at) ? $r->created_at : $r->fecha;
-
-        $importeExenta = ($esSujetoExcluido || $esSinIvaFiscal) ? (float) $r->total * $m : ($r->iva == 0 ? (float) $r->sub_total * $m : 0);
-        $importeGravada = (!$esSujetoExcluido && !$esSinIvaFiscal) ? (float) $r->sub_total * $m : 0;
-        $impuestoVentas = (!$esSujetoExcluido && !$esSinIvaFiscal) ? (float) $r->iva * $m : 0;
-        $importeImportacion = $esImportacion ? (float) $r->total * $m : 0;
+        $totales = array_fill_keys(self::CLAVES_MONETARIAS, 0.0);
+        foreach ($filas as $fila) {
+            foreach (self::CLAVES_MONETARIAS as $clave) {
+                $totales[$clave] += (float) ($fila[$clave] ?? 0);
+            }
+        }
 
         return [
-            'fecha_documento' => $fechaDoc,
-            'fecha_contabilizacion' => $fechaContab,
-            'documento_dua_importacion' => $esImportacion ? ($r->referencia ?? '') : '',
-            'documento_fyduca' => '',
-            'proveedor' => $r->nombre_proveedor ?? '',
-            'rtn_proveedor' => $rtn,
-            'descripcion_compra' => $tipo,
-            'no_factura_compra' => $r->referencia ?? '',
-            'importe_exenta' => round($importeExenta, 2),
-            'importe_gravada' => round($importeGravada, 2),
-            'impuesto_ventas' => round($impuestoVentas, 2),
-            'importe_importacion' => round($importeImportacion, 2),
+            'filas' => $filas,
+            'totales' => $totales,
+        ];
+    }
+
+    private function mapItemToAssoc(object $item, int $no): array
+    {
+        $r = $item->registro;
+        $m = (int) $item->mult;
+        $proveedor = $r->proveedor ?? (method_exists($r, 'proveedor') ? $r->proveedor()->first() : null);
+        $esSujetoExcluido = (string) ($r->tipo_documento ?? '') === 'Sujeto excluido';
+        $columnas = LibroIvaMontosHelper::columnasCompra($r, $m);
+        if ($esSujetoExcluido) {
+            $columnas = array_fill_keys(array_keys($columnas), 0.0);
+        }
+
+        return [
+            'no' => $no,
+            'fecha_emision' => (string) $r->fecha,
+            'numero_documento' => (string) ($r->referencia ?? ''),
+            'nrc' => (string) ($proveedor?->ncr ?? ''),
+            'nit_o_dui' => (string) ($proveedor?->nit ?? $proveedor?->dui ?? ''),
+            'nombre_proveedor' => (string) ($r->nombre_proveedor ?? ''),
+            'exentas_internas' => (float) $columnas['compras_exentas'],
+            'exentas_internaciones' => 0.0,
+            'exentas_importaciones' => (float) $columnas['importaciones_exentas'],
+            'gravadas_internas' => (float) $columnas['compras_gravadas'],
+            'gravadas_internaciones' => 0.0,
+            'gravadas_importaciones' => (float) $columnas['importaciones_gravadas'],
+            'credito_fiscal' => (float) $columnas['credito_fiscal'],
+            'fovial' => 0.0,
+            'cotrans' => 0.0,
+            'cesc' => 0.0,
+            // Compra usa `percepcion`; Gasto/Devolución usan `iva_percibido`.
+            'anticipo_iva_percibido' => (float) ($r->percepcion ?? $r->iva_percibido ?? 0) * $m,
+            'total' => (float) ($r->total ?? 0) * $m,
+            'retencion_terceros' => (float) ($r->iva_retenido ?? 0) * $m,
+            'compras_sujetos_excluidos' => $esSujetoExcluido ? (float) $r->total * $m : 0.0,
         ];
     }
 
     public function map($item): array
     {
-        $row = $this->mapItemToAssoc($item);
+        $row = $this->mapItemToAssoc($item, $this->index++);
+        $valores = [];
+        foreach (self::CLAVES_FILA as $clave) {
+            $valores[] = $row[$clave];
+        }
 
-        return [
-            Carbon::parse($row['fecha_documento'])->format('d/m/Y'),
-            Carbon::parse($row['fecha_contabilizacion'])->format('d/m/Y'),
-            $row['documento_dua_importacion'],
-            $row['documento_fyduca'],
-            $row['proveedor'],
-            $row['rtn_proveedor'],
-            $row['descripcion_compra'],
-            $row['no_factura_compra'],
-            $row['importe_exenta'],
-            $row['importe_gravada'],
-            $row['impuesto_ventas'],
-            $row['importe_importacion'],
-        ];
+        return $valores;
     }
 }

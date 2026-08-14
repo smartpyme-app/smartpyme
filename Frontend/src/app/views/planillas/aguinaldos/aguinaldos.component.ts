@@ -5,6 +5,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { PlanillaConstants } from '../../../constants/planilla.constants';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { Router } from '@angular/router';
 import Swal from 'sweetalert2';
 
@@ -12,7 +13,7 @@ import Swal from 'sweetalert2';
   selector: 'app-aguinaldos',
   templateUrl: './aguinaldos.component.html',
   standalone: true,
-  imports: [CommonModule, FormsModule]
+  imports: [CommonModule, FormsModule, CurrencyPipe]
 })
 export class AguinaldosComponent implements OnInit {
   public aguinaldos: any = [];
@@ -118,7 +119,7 @@ export class AguinaldosComponent implements OnInit {
     const currentYear = new Date().getFullYear();
     this.aguinaldoNuevo = {
       anio: currentYear,
-      fecha_calculo: currentYear + '-12-12' // Por defecto 12 de diciembre
+      fecha_calculo: currentYear + '-10-20' // Por defecto 20 de octubre (reforma Art. 200 CT)
     };
     this.modalRef = this.modalService.show(template, {
       class: 'modal-md',

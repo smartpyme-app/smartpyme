@@ -1,4 +1,4 @@
-import { Component, OnInit, DestroyRef, inject, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject, ChangeDetectorRef, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { AlertService } from '@services/alert.service';
@@ -14,6 +14,9 @@ import { skip, filter } from 'rxjs/operators';
     imports: [CommonModule, RouterModule]
 })
 export class NotificacionesContainerComponent implements OnInit {
+
+    /** Si true, muestra todos los alertas aunque `alertService.modal` esté activo (p. ej. dentro de un modal). */
+    @Input() forzarMostrar = false;
 
     public alertMessage: any = null;
     public showAlert: boolean = false;
@@ -47,8 +50,8 @@ export class NotificacionesContainerComponent implements OnInit {
                     // Para errores de validación (422), siempre mostrar incluso si hay modal
                     const isError = message.tipo === 'alert-warning' || message.tipo === 'alert-danger';
                     
-                    // Mostrar si no hay modal O si es un error
-                    if (!this.alertService.modal || isError) {
+                    // Mostrar si no hay modal, si es error, o si este contenedor está forzado (dentro de modal)
+                    if (this.forzarMostrar || !this.alertService.modal || isError) {
                         this.alertMessage = message;
                         this.showAlert = true;
                         // Forzar detección de cambios

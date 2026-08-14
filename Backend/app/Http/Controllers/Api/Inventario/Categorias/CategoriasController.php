@@ -13,6 +13,7 @@ use App\Models\Admin\EmpresaFuncionalidad;
 use App\Exports\CategoriasExport;
 use App\Imports\Categorias;
 use Illuminate\Support\Facades\Log;
+use Intervention\Image\ImageManagerStatic as Image;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Http\Requests\Inventario\Categorias\StoreCategoriaRequest;
 use App\Http\Requests\Inventario\Categorias\ImportCategoriasRequest;
@@ -116,19 +117,81 @@ class CategoriasController extends Controller
 
     public function store(StoreCategoriaRequest $request)
     {
-
-        if($request->id)
+        if ($request->id) {
             $categoria = Categoria::findOrFail($request->id);
-        else
+        } else {
             $categoria = new Categoria;
+        }
 
-//        dd($request);
+        $categoria->fill($request->except(['file', 'quitar_img']));
 
-        $categoria->fill($request->all());
+        if ($request->boolean('quitar_img')) {
+            $this->deleteCategoriaImgFile($categoria->img);
+            $categoria->img = null;
+        } elseif ($request->hasFile('file')) {
+            $categoria->img = $this->handleCategoriaImgUpload($request, $categoria);
+        }
+
         $categoria->save();
 
         return Response()->json($categoria, 200);
+    }
 
+    private function handleCategoriaImgUpload(Request $request, Categoria $categoria): string
+    {
+        $this->deleteCategoriaImgFile($categoria->img);
+
+        $file = $request->file('file');
+        if (! $file) {
+            throw new \RuntimeException('No se recibió el archivo de imagen.');
+        }
+
+        // Mismo patrón que ImagenesController / logos: encode + write bajo public/img.
+        // Prefijo en productos/: esa carpeta ya es servible en producción (default.jpg de categorias
+        // existe, pero uploads nuevos a categorias/ no aparecen detrás de nginx — multi-nodo o path).
+        $resize = Image::make($file)->resize(750, 750, function ($constraint) {
+            $constraint->aspectRatio();
+            $constraint->upsize();
+        })->encode('jpg', 75);
+        $hash = md5($resize->__toString());
+        $relative = 'productos/categoria_'.$hash.'.jpg';
+        $fullPath = public_path('img/'.$relative);
+        $dir = dirname($fullPath);
+
+        if (! is_dir($dir) && ! mkdir($dir, 0755, true) && ! is_dir($dir)) {
+            throw new \RuntimeException('No se pudo crear el directorio de imágenes.');
+        }
+
+        // Intervention save a veces no falla con excepción si el path no es el docroot real;
+        // escribir bytes y verificar evita guardar la ruta en BD sin archivo servible.
+        $bytes = $resize->__toString();
+        if (@file_put_contents($fullPath, $bytes) === false) {
+            throw new \RuntimeException('No se pudo guardar la imagen de la categoría en disco.');
+        }
+        @chmod($fullPath, 0644);
+
+        if (! is_file($fullPath) || filesize($fullPath) < 1) {
+            throw new \RuntimeException('La imagen no quedó disponible en: '.$fullPath);
+        }
+
+        // Sin slash inicial: el FE arma `{api}/img/{img}` (igual que productos).
+        return $relative;
+    }
+
+    private function deleteCategoriaImgFile(?string $img): void
+    {
+        $path = ltrim((string) $img, '/');
+        if ($path === '' || str_ends_with($path, 'default.jpg') || str_ends_with($path, 'default.png')) {
+            return;
+        }
+        // Solo borrar fotos de categoría que hayamos creado nosotros.
+        if (! str_starts_with($path, 'categorias/') && ! str_starts_with($path, 'productos/categoria_')) {
+            return;
+        }
+        $full = public_path('img/'.$path);
+        if (is_file($full)) {
+            @unlink($full);
+        }
     }
 
     public function delete($id)

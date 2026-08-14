@@ -9,12 +9,20 @@ use App\Models\Compras\Gastos\Categoria;
 use App\Models\Compras\Gastos\Gasto;
 use App\Models\Compras\Proveedores\Proveedor;
 use App\Mail\BoletaPagoMailable;
+use App\Services\Contabilidad\PartidaPlanillaService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 class PlanillaAprobacionService
 {
+    protected $partidaPlanillaService;
+
+    public function __construct(PartidaPlanillaService $partidaPlanillaService)
+    {
+        $this->partidaPlanillaService = $partidaPlanillaService;
+    }
+
     /**
      * Aprobar una planilla
      */
@@ -41,6 +49,13 @@ class PlanillaAprobacionService
                     $detalle->save();
                     $detallesActualizados++;
                 }
+            }
+
+            // 🧾 Generar la partida contable automática de planilla (Estado: 'Pendiente')
+            try {
+                $this->partidaPlanillaService->generarPartidaPlanilla($planilla);
+            } catch (\Exception $ePartida) {
+                Log::warning('No se pudo generar automáticamente la partida contable de la planilla: ' . $ePartida->getMessage());
             }
 
             DB::commit();

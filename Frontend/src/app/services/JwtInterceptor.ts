@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpInterceptor, HttpRequest, HttpHandler, HttpHeaders } from '@angular/common/http';
+import { HttpInterceptor, HttpRequest, HttpHandler } from '@angular/common/http';
 import { ApiService } from '@services/api.service';
 
 @Injectable()
@@ -20,11 +20,12 @@ export class JwtInterceptor  implements HttpInterceptor {
     let token = this.apiService.auth_token();
 
     if(token) {
+      // setHeaders fusiona; no reemplazar headers (p.ej. Idempotency-Key).
       const httpRequest = req.clone({
-        headers: new HttpHeaders({
-          'Accept':  'application/json',
+        setHeaders: {
+          'Accept': 'application/json',
           'Authorization': 'Bearer ' + token
-        })
+        }
       });
       return next.handle(httpRequest);
     }else{

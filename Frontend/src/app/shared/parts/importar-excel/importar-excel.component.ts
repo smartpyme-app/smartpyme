@@ -63,10 +63,13 @@ export class ImportarExcelComponent implements OnInit, OnDestroy {
     }
 
     /**
-     * Resuelve qué variante de plantilla usar para clientes según país de la empresa.
-     * sv: El Salvador (-format.xlsx), cr: Costa Rica (-format-cr.xlsx), general: resto.
+     * Resuelve variante de plantilla según país de la empresa.
+     * sv: El Salvador (-format.xlsx)
+     * cr: Costa Rica (-format-cr.xlsx)
+     * hn: Honduras (-format-hn.xlsx)
+     * general: resto (-format-general.xlsx para clientes; -format.xlsx para proveedores)
      */
-    private plantillaClientesPorPais(empresa: { cod_pais?: string | null; pais?: string | null }): 'sv' | 'cr' | 'general' {
+    private plantillaPorPais(empresa: { cod_pais?: string | null; pais?: string | null }): 'sv' | 'cr' | 'hn' | 'general' {
         const codPais = empresa?.cod_pais;
         const pais = (empresa?.pais ?? '').trim();
         const paisLower = pais.toLowerCase();
@@ -77,7 +80,16 @@ export class ImportarExcelComponent implements OnInit, OnDestroy {
         if (codPais === 'CR') {
             return 'cr';
         }
+        if (codPais === 'HN') {
+            return 'hn';
+        }
         if (codPais && codPais !== 'SV') {
+            if (paisLower === 'honduras') {
+                return 'hn';
+            }
+            if (paisLower === 'costa rica') {
+                return 'cr';
+            }
             return 'general';
         }
         if (paisLower === 'el salvador') {
@@ -86,16 +98,32 @@ export class ImportarExcelComponent implements OnInit, OnDestroy {
         if (paisLower === 'costa rica') {
             return 'cr';
         }
+        if (paisLower === 'honduras') {
+            return 'hn';
+        }
         if (!pais) {
             return 'sv';
         }
         return 'general';
     }
 
+    private sufijoPlantilla(variante: 'sv' | 'cr' | 'hn' | 'general', tipo: 'clientes' | 'proveedores'): string {
+        if (variante === 'sv') {
+            return '-format.xlsx';
+        }
+        if (variante === 'cr') {
+            return '-format-cr.xlsx';
+        }
+        if (variante === 'hn') {
+            return '-format-hn.xlsx';
+        }
+        return tipo === 'clientes' ? '-format-general.xlsx' : '-format.xlsx';
+    }
+
     /**
-     * Calcula la URL de la plantilla según el tipo y el país de la empresa
-     * Para clientes-personas y clientes-empresas: SV (-format), CR (-format-cr), resto (-format-general)
-     * Retrocompatibilidad: Si no se puede determinar el país, usa plantilla de El Salvador
+     * Calcula la URL de la plantilla según el tipo y el país de la empresa.
+     * Clientes/proveedores: SV / CR / HN / general.
+     * Retrocompatibilidad: sin país → El Salvador.
      */
     calcularPlantillaUrl(): void {
         const nombreArchivo = this.nombre.toLowerCase();
@@ -112,24 +140,30 @@ export class ImportarExcelComponent implements OnInit, OnDestroy {
             return;
         }
 
-        // Para clientes-personas y clientes-empresas, verificar país
-        if (nombreArchivo === 'clientes-personas' || nombreArchivo === 'clientes-empresas') {
+        const esClientes = nombreArchivo === 'clientes-personas' || nombreArchivo === 'clientes-empresas';
+        const esProveedores = nombreArchivo === 'proveedores-personas' || nombreArchivo === 'proveedores-empresas';
+
+        if (esClientes || esProveedores) {
             try {
                 const user = this.apiService.auth_user();
                 const empresa = user?.empresa;
 
-                // Si no hay empresa, usar plantilla de El Salvador (retrocompatibilidad)
                 if (!empresa) {
                     this.plantillaUrl = `${this.apiService.baseUrl}/docs/${nombreArchivo}-format.xlsx`;
                     return;
                 }
 
-                const variante = this.plantillaClientesPorPais(empresa);
-                const sufijo =
-                    variante === 'sv' ? '-format.xlsx' : variante === 'cr' ? '-format-cr.xlsx' : '-format-general.xlsx';
+                const variante = this.plantillaPorPais(empresa);
+                // Proveedores: solo HN tiene plantilla dedicada por ahora (CR xlsx existe pero el import aún es SV).
+                if (esProveedores) {
+                    const sufijoProv = variante === 'hn' ? '-format-hn.xlsx' : '-format.xlsx';
+                    this.plantillaUrl = `${this.apiService.baseUrl}/docs/${nombreArchivo}${sufijoProv}`;
+                    return;
+                }
+
+                const sufijo = this.sufijoPlantilla(variante, 'clientes');
                 this.plantillaUrl = `${this.apiService.baseUrl}/docs/${nombreArchivo}${sufijo}`;
             } catch (error) {
-                // En caso de error, usar plantilla de El Salvador (retrocompatibilidad)
                 this.plantillaUrl = `${this.apiService.baseUrl}/docs/${nombreArchivo}-format.xlsx`;
             }
         } else {
@@ -289,34 +323,35 @@ export class ImportarExcelComponent implements OnInit, OnDestroy {
             .pipe(takeUntil(this.destroy$))
             .subscribe({
                 next: (blob) => {
-                    this.apiService.downloadFile(blob, 'plantilla_importacion_productos.xlsx');
+                    this.apiService.downloadFile(
+                        blob,
+                        'plantilla_importacion_productos.xlsx'
+                    );
                 },
-                error: () => {
-                    this.alertService.error('Error al descargar la plantilla de productos');
+                error: (err) => {
+                    this.alertService.error(
+                        err?.error?.message || 'Error al descargar la plantilla de productos'
+                    );
                 },
             });
     }
 
-    public downloadTemplate() {
+    public downloadTemplate(event?: Event) {
+        event?.preventDefault();
         const url = `${this.nombre.toLowerCase()}/plantilla`;
         this.apiService.download(url)
           .pipe(takeUntil(this.destroy$))
           .subscribe({
-            next: (response) => {
-                const blob = new Blob([response], {
-                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                });
-                const urlDownload = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = urlDownload;
-                link.download = `plantilla_${this.nombre.toLowerCase()}.xlsx`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                window.URL.revokeObjectURL(urlDownload);
+            next: (blob) => {
+                this.apiService.downloadFile(
+                    blob,
+                    `plantilla_${this.nombre.toLowerCase()}.xlsx`
+                );
             },
-            error: () => {
-                this.alertService.error('Error al descargar la plantilla');
+            error: (err) => {
+                this.alertService.error(
+                    err?.error?.message || 'Error al descargar la plantilla'
+                );
             }
           });
     }
