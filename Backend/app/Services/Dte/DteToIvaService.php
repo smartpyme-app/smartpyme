@@ -13,6 +13,7 @@ use App\Models\DteManagement\DteTipoMapeo;
 use App\Models\DteManagement\UserEmailAccount;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Producto;
+use App\Services\Inventario\ConversionInventarioService;
 use App\Services\Inventario\ProductoImportacionDteService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -334,15 +335,20 @@ class DteToIvaService
         $stockAnterior = $producto->inventarios->sum('stock') ?? 0;
         $stockActual = (float) $detalle->cantidad;
         $stockTotal = $stockAnterior + $stockActual;
+        $costoUnitarioNeto = ConversionInventarioService::calcularCostoUnitarioNetoBase(
+            $detalle->cantidad,
+            $detalle->costo,
+            $detalle->descuento ?? 0
+        );
 
         if ($stockTotal > 0) {
-            $costoPromedio = (($stockAnterior * $producto->costo) + ($stockActual * $detalle->costo)) / $stockTotal;
+            $costoPromedio = (($stockAnterior * $producto->costo) + ($stockActual * $costoUnitarioNeto)) / $stockTotal;
         } else {
-            $costoPromedio = $detalle->costo;
+            $costoPromedio = $costoUnitarioNeto;
         }
 
         $producto->costo_anterior = $producto->costo;
-        $producto->costo = $detalle->costo;
+        $producto->costo = $costoUnitarioNeto;
         $producto->costo_promedio = $costoPromedio;
         $producto->save();
 

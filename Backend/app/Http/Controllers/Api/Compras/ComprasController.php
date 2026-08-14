@@ -384,11 +384,12 @@ class ComprasController extends Controller
                             $factorDet
                         );
 
-                        // Costo real por unidad base (subtotal fila / unidades base)
-                        $subtotalFila = $det['cantidad'] * $det['costo'];
-                        $costoUnitarioBase = ConversionInventarioService::calcularCostoUnitarioBase(
-                            $subtotalFila,
-                            $cantidadBaseIngresada
+                        // Costo real por unidad base: neto pagado (cantidad × costo − descuento) / unidades base
+                        $costoUnitarioBase = ConversionInventarioService::calcularCostoUnitarioNetoBase(
+                            $det['cantidad'],
+                            $det['costo'],
+                            $det['descuento'] ?? 0,
+                            $factorDet
                         );
 
                         $stock_anterior = ($producto->inventarios->sum('stock') ?? 0);
