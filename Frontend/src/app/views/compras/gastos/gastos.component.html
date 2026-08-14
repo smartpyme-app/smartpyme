@@ -20,6 +20,14 @@
 
         <div class="col-md-6 mb-3">
             <div class="d-flex gap-2">
+                <button
+                    *ngIf="apiService.canEditTest('gastos.crear') && permiteImportacionMasivaGastosJson"
+                    type="button"
+                    tooltip="Importar varios gastos desde documentos electrónicos"
+                    (click)="openImportacionJsonMasivo(mbulkJson)"
+                    class="btn btn-default">
+                    <img src="/assets/icons/upload.png" class="icon">
+                </button>
                 <button [disabled]="downloading" tooltip="Descargar gastos" (click)="openDescargar(mdescargar)" class="btn btn-default tcla-F6">
                     <img src="/assets/icons/download.png" class="icon">
                 </button>
@@ -374,4 +382,220 @@
             </button>
         </div>
     </div>
+</ng-template>
+
+<ng-template #mbulkJson>
+  <div class="modal-header">
+    <h4 class="modal-title">
+      Importar gastos desde documentos electrónicos (masivo)
+    </h4>
+    <button type="button" class="btn-close" (click)="cerrarImportacionBulk()" aria-label="Cerrar"></button>
+  </div>
+  <div class="modal-body" style="max-height: 75vh; overflow-y: auto;">
+    <app-notificaciones-container [forzarMostrar]="true"></app-notificaciones-container>
+    <p class="text-muted small">
+      Agregue hasta {{ maxBulkJsonFiles }} comprobantes del proveedor. Revise proveedor, tipo, categoría, concepto y totales; guarde cada gasto o use <strong>Guardar todas las listas</strong> cuando las pestañas estén listas.
+    </p>
+    <div class="mb-3 d-flex flex-wrap align-items-center gap-2">
+      <input
+        #bulkFileIn
+        type="file"
+        multiple
+        [accept]="documentoImportService.extensionesAceptadas()"
+        class="d-none"
+        (change)="onBulkJsonFilesChange($event)">
+      <button
+        type="button"
+        class="btn btn-outline-primary btn-sm"
+        [disabled]="bulkProcesandoArchivos"
+        (click)="bulkFileIn.click()">
+        <i class="fa fa-plus"></i>
+        Agregar archivos
+      </button>
+      <span *ngIf="bulkProcesandoArchivos" class="text-muted small">Procesando archivos…</span>
+    </div>
+
+    <div *ngIf="!bulkItems.length && !bulkProcesandoArchivos" class="alert alert-light border mb-0">
+      No hay archivos cargados todavía.
+    </div>
+
+    <div *ngIf="bulkItems.length">
+      <ul class="nav nav-tabs flex-nowrap mb-3 border-bottom" style="overflow-x: auto; overflow-y: hidden;">
+        <li class="nav-item flex-shrink-0" *ngFor="let it of bulkItems; let i = index">
+          <button
+            type="button"
+            class="nav-link py-2"
+            [class.active]="bulkTabIndex === i"
+            (click)="bulkTabIndex = i">
+            <span class="text-truncate d-inline-block align-middle" style="max-width: 11rem" [title]="it.fileName">{{ it.fileName }}</span>
+            <span
+              class="badge ms-1 align-middle"
+              [ngClass]="{
+                'bg-success': it.estado === 'guardada',
+                'bg-primary': it.estado === 'lista',
+                'bg-danger': it.estado === 'error',
+                'bg-secondary': it.estado === 'guardando'
+              }">{{ labelEstadoBulk(it.estado) }}</span>
+          </button>
+        </li>
+      </ul>
+
+      <ng-container *ngIf="bulkItemActivo as item">
+        <div *ngIf="item.error" class="alert alert-danger">{{ item.error }}</div>
+
+        <div *ngIf="item.estado !== 'error' && item.estado !== 'guardada'">
+          <div class="row g-2 mb-3">
+            <div class="col-md-3">
+              <label class="form-label small">Fecha</label>
+              <input type="date" class="form-control form-control-sm" [(ngModel)]="item.gasto.fecha" [name]="'bg-' + item.uid + '-fecha'">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small">Referencia</label>
+              <input type="text" class="form-control form-control-sm" [(ngModel)]="item.gasto.referencia" [name]="'bg-' + item.uid + '-ref'">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small">Documento</label>
+              <input type="text" class="form-control form-control-sm" [(ngModel)]="item.gasto.tipo_documento" [name]="'bg-' + item.uid + '-tdoc'">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small">Forma de pago</label>
+              <select class="form-select form-select-sm" [(ngModel)]="item.gasto.forma_pago" [name]="'bg-' + item.uid + '-fp'">
+                <option value="Efectivo">Efectivo</option>
+                <option value="Transferencia">Transferencia</option>
+                <option value="Cheque">Cheque</option>
+                <option value="Tarjeta de Crédito">Tarjeta de Crédito</option>
+                <option value="Tarjeta de Débito">Tarjeta de Débito</option>
+                <option value="Crédito">Crédito</option>
+                <option value="Otros">Otros</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small">Proveedor *</label>
+              <div class="input-group flex-nowrap">
+                <ng-select
+                  class="form-select form-select-sm p-0"
+                  appendTo="body"
+                  [(ngModel)]="item.gasto.id_proveedor"
+                  [name]="'bg-' + item.uid + '-prov'"
+                  placeholder="Seleccione proveedor">
+                  <ng-option [value]="p.id" *ngFor="let p of proveedores">
+                    {{ p.tipo == 'Empresa' ? p.nombre_empresa : p.nombre_completo }}
+                  </ng-option>
+                </ng-select>
+                <app-crear-proveedor
+                  [id_proveedor]="item.gasto.id_proveedor"
+                  (update)="setProveedorBulk(item, $event)">
+                </app-crear-proveedor>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small">Tipo de gasto *</label>
+              <select
+                class="form-select form-select-sm"
+                [(ngModel)]="item.gasto.tipo"
+                (ngModelChange)="onBulkTipoChange(item)"
+                [name]="'bg-' + item.uid + '-tipo'">
+                <option value="">Seleccione</option>
+                <option *ngFor="let t of tiposGastoBulk" [value]="t">{{ t }}</option>
+              </select>
+            </div>
+            <div class="col-md-3" *ngIf="mostrarCategoriaBulk">
+              <label class="form-label small">Categoría</label>
+              <ng-select
+                class="form-select form-select-sm p-0"
+                appendTo="body"
+                [items]="categoriasBulk"
+                bindLabel="nombre"
+                bindValue="id"
+                [clearable]="true"
+                placeholder="Seleccione aquí"
+                [(ngModel)]="item.gasto.id_categoria"
+                (ngModelChange)="onBulkCategoriaChange(item)"
+                [name]="'bg-' + item.uid + '-cat'">
+              </ng-select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small">Estado</label>
+              <select class="form-select form-select-sm" [(ngModel)]="item.gasto.estado" [name]="'bg-' + item.uid + '-est'">
+                <option value="Confirmado">Confirmado</option>
+                <option value="Pendiente">Pendiente</option>
+                <option value="Pagado">Pagado</option>
+              </select>
+            </div>
+            <div class="col-md-12" *ngIf="!item.varios_items">
+              <label class="form-label small">Concepto *</label>
+              <input type="text" class="form-control form-control-sm" [(ngModel)]="item.gasto.concepto" [name]="'bg-' + item.uid + '-concepto'">
+            </div>
+          </div>
+
+          <div *ngIf="item.varios_items && item.detalles?.length" class="mb-3">
+            <h6 class="small text-muted mb-2">Detalle ({{ item.detalles.length }} ítems)</h6>
+            <div class="table-responsive">
+              <table class="table table-sm mb-0">
+                <thead>
+                  <tr>
+                    <th>Concepto</th>
+                    <th>Tipo</th>
+                    <th class="text-end">Cant.</th>
+                    <th class="text-end">Subtotal</th>
+                    <th class="text-end">IVA</th>
+                    <th class="text-end">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let d of item.detalles; let di = index">
+                    <td>
+                      <input type="text" class="form-control form-control-sm" [(ngModel)]="d.concepto" [name]="'bg-' + item.uid + '-dconc-' + di">
+                    </td>
+                    <td>
+                      <select class="form-select form-select-sm" [(ngModel)]="d.tipo" [name]="'bg-' + item.uid + '-dtipo-' + di">
+                        <option *ngFor="let t of tiposGastoBulk" [value]="t">{{ t }}</option>
+                      </select>
+                    </td>
+                    <td class="text-end">{{ d.cantidad }}</td>
+                    <td class="text-end">{{ d.sub_total | number:'1.2-2' }}</td>
+                    <td class="text-end">{{ d.iva | number:'1.2-2' }}</td>
+                    <td class="text-end">{{ d.total | number:'1.2-2' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 border-top pt-3">
+            <div>
+              <strong>Total:</strong> {{ item.gasto.total | number:'1.2-2' }}
+              <span class="text-muted small ms-2">
+                Sub: {{ item.gasto.sub_total | number:'1.2-2' }} · IVA {{ item.gasto.iva | number:'1.2-2' }}
+              </span>
+            </div>
+            <button
+              type="button"
+              class="btn btn-success btn-sm"
+              [disabled]="!puedeGuardarBulkItem(item) || item.estado === 'guardando'"
+              (click)="guardarBulkItem(item)">
+              <span *ngIf="item.estado !== 'guardando'"><i class="fa fa-check"></i> Guardar este gasto</span>
+              <span *ngIf="item.estado === 'guardando'">Guardando…</span>
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="item.estado === 'guardada'" class="alert alert-success mb-0">
+          <i class="fa fa-check"></i> Este gasto ya fue registrado.
+        </div>
+      </ng-container>
+    </div>
+  </div>
+  <div class="modal-footer flex-wrap gap-2">
+    <button type="button" class="btn btn-secondary" (click)="cerrarImportacionBulk()">Cerrar</button>
+    <button
+      type="button"
+      class="btn btn-primary"
+      [disabled]="!puedeGuardarTodasBulk() || bulkGuardandoTodas || bulkProcesandoArchivos"
+      tooltip="Solo disponible cuando todas las pestañas están listas para procesar."
+      (click)="guardarTodasBulkListas()">
+      <span *ngIf="!bulkGuardandoTodas">Guardar todas las listas</span>
+      <span *ngIf="bulkGuardandoTodas">Guardando…</span>
+    </button>
+  </div>
 </ng-template>
