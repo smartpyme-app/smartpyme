@@ -5,9 +5,12 @@ namespace App\Services\Comisiones;
 use App\Models\Admin\EmpresaFuncionalidad;
 use App\Models\Comisiones\ComisionMovimiento;
 use App\Models\Comisiones\ComisionPeriodo;
+use App\Models\Comisiones\ComisionRegla;
 use App\Models\Indicador;
 use App\Models\Ventas\Devoluciones\Devolucion;
 use App\Models\Ventas\Venta;
+use App\Services\Comisiones\Calculators\ComisionCalculoResultado;
+use App\Services\Comisiones\Calculators\ComisionCalculatorFactory;
 use App\Services\Funcionalidades\FuncionalidadAccess;
 use Carbon\Carbon;
 use Closure;
@@ -46,6 +49,13 @@ class ComisionService
     /** @var Closure(int, int): void */
     private Closure $eliminarAjusteDevolucion;
 
+    private ComisionCalculatorFactory $calculatorFactory;
+
+    private ComisionReglaScope $reglaScope;
+
+    /** @var Closure(int): \Illuminate\Support\Collection<int, object> */
+    private Closure $obtenerReglasActivas;
+
     /**
      * @param  Closure(int, string): bool|null  $tieneFuncionalidad
      * @param  Closure(int): array<string, mixed>|null  $obtenerConfigComisiones
@@ -57,6 +67,7 @@ class ComisionService
      * @param  Closure(int): \Illuminate\Support\Collection<int, Devolucion>|null  $obtenerDevolucionesActivas
      * @param  Closure(int, int): void|null  $eliminarAjusteDevolucion
      * @param  ComisionLiquidacionService|null  $liquidacionService
+     * @param  Closure(int): \Illuminate\Support\Collection<int, object>|null  $obtenerReglasActivas
      */
     public function __construct(
         private ComisionPeriodoService $periodoService,
@@ -71,7 +82,10 @@ class ComisionService
         ?Closure $obtenerVentaConDetalles = null,
         ?Closure $obtenerDevolucionesActivas = null,
         ?Closure $eliminarAjusteDevolucion = null,
-        private ?ComisionLiquidacionService $liquidacionService = null
+        private ?ComisionLiquidacionService $liquidacionService = null,
+        ?ComisionCalculatorFactory $calculatorFactory = null,
+        ?ComisionReglaScope $reglaScope = null,
+        ?Closure $obtenerReglasActivas = null
     ) {
         $this->liquidacionService ??= new ComisionLiquidacionService();
         $this->tieneFuncionalidad = $tieneFuncionalidad
@@ -108,6 +122,13 @@ class ComisionService
                     ->where('id_movimiento_origen', $idMovimientoOrigen)
                     ->delete();
             };
+        $this->calculatorFactory = $calculatorFactory ?? new ComisionCalculatorFactory($this->resolver);
+        $this->reglaScope = $reglaScope ?? new ComisionReglaScope();
+        $this->obtenerReglasActivas = $obtenerReglasActivas
+            ?? fn (int $idEmpresa) => ComisionRegla::withoutGlobalScope('empresa')
+                ->where('id_empresa', $idEmpresa)
+                ->where('activo', true)
+                ->get();
     }
 
     public function registrarVentaPagada(object $venta): void
@@ -320,37 +341,51 @@ class ComisionService
             return null;
         }
 
-        $pct = $this->resolver->resolver($idEmpresa, $idCategoria, $idSubcategoria);
-        if ($pct == 0.0) {
-            return null;
-        }
-
         $config = ($this->obtenerConfigComisiones)($idEmpresa);
         $baseCalculo = $config['base_calculo'] ?? 'subtotal_sin_iva';
         $base = $this->calculator->calcular($detalleLinea, $baseCalculo);
-        $montoComision = round($base * ($pct / 100), 4);
+
+        $resultados = $this->resultadosEnEvento(
+            $idEmpresa,
+            $idVendedor,
+            $idCategoria,
+            $idSubcategoria,
+            $base,
+            $detalleLinea
+        );
+        if ($resultados === []) {
+            return null;
+        }
+
         $periodo = $this->periodoService->periodoParaFecha($idEmpresa, Carbon::parse($fechaEvento));
+        $ultimo = null;
+        foreach ($resultados as [$regla, $resultado]) {
+            $where = [
+                'id_empresa' => $idEmpresa,
+                'id_gift_card_redencion' => $idGiftCardRedencion,
+            ];
+            if ($regla !== null) {
+                $where['id_regla'] = $regla->id;
+            }
 
-        $where = [
-            'id_empresa' => $idEmpresa,
-            'id_gift_card_redencion' => $idGiftCardRedencion,
-        ];
+            $values = [
+                'id_vendedor' => $idVendedor,
+                'id_periodo' => $periodo->id,
+                'origen' => ComisionMovimiento::ORIGEN_REDENCION_GIFT_CARD,
+                'id_venta' => $idVenta,
+                'id_detalle_venta' => $idDetalleVenta,
+                'id_categoria' => $resultado->idCategoria,
+                'id_subcategoria' => $resultado->idSubcategoria,
+                'monto_base' => $resultado->montoBase,
+                'porcentaje_aplicado' => $resultado->porcentaje,
+                'monto_comision' => $resultado->montoComision,
+                'fecha_evento' => $fechaEvento,
+            ];
 
-        $values = [
-            'id_vendedor' => $idVendedor,
-            'id_periodo' => $periodo->id,
-            'origen' => ComisionMovimiento::ORIGEN_REDENCION_GIFT_CARD,
-            'id_venta' => $idVenta,
-            'id_detalle_venta' => $idDetalleVenta,
-            'id_categoria' => $idCategoria,
-            'id_subcategoria' => $idSubcategoria,
-            'monto_base' => $base,
-            'porcentaje_aplicado' => $pct,
-            'monto_comision' => $montoComision,
-            'fecha_evento' => $fechaEvento,
-        ];
+            $ultimo = ComisionMovimiento::withoutGlobalScope('empresa')->firstOrCreate($where, $values);
+        }
 
-        return ComisionMovimiento::withoutGlobalScope('empresa')->firstOrCreate($where, $values);
+        return $ultimo;
     }
 
     /**
@@ -381,11 +416,6 @@ class ComisionService
             return null;
         }
 
-        $pct = $this->resolver->resolver($idEmpresa, $idCategoria, $idSubcategoria);
-        if ($pct == 0.0) {
-            return null;
-        }
-
         $idVendedor = $this->vendedorEfectivo(
             isset($detalle->id_vendedor) ? (int) $detalle->id_vendedor : null,
             $idVendedorVenta
@@ -407,28 +437,99 @@ class ComisionService
         if ($base <= 0) {
             return null;
         }
-        $montoComision = round($base * ($pct / 100), 4);
 
-        $where = [
-            'id_empresa' => $idEmpresa,
-            'origen' => $origen,
-            'id_detalle_venta' => (int) $detalle->id,
-        ];
+        $ultimo = null;
+        foreach ($this->resultadosEnEvento(
+            $idEmpresa,
+            $idVendedor,
+            $idCategoria,
+            $idSubcategoria,
+            $base,
+            $detalle
+        ) as [$regla, $resultado]) {
+            $where = [
+                'id_empresa' => $idEmpresa,
+                'origen' => $origen,
+                'id_detalle_venta' => (int) $detalle->id,
+            ];
+            if ($regla !== null) {
+                $where['id_regla'] = $regla->id;
+            }
 
-        $values = [
-            'id_vendedor' => $idVendedor,
-            'id_periodo' => $periodo->id,
-            'id_venta' => $idVenta,
-            'id_gift_card_redencion' => $idGiftCardRedencion,
-            'id_categoria' => $idCategoria,
-            'id_subcategoria' => $idSubcategoria,
-            'monto_base' => $base,
-            'porcentaje_aplicado' => $pct,
-            'monto_comision' => $montoComision,
-            'fecha_evento' => $fechaEvento,
-        ];
+            $values = [
+                'id_vendedor' => $idVendedor,
+                'id_periodo' => $periodo->id,
+                'id_venta' => $idVenta,
+                'id_gift_card_redencion' => $idGiftCardRedencion,
+                'id_categoria' => $resultado->idCategoria,
+                'id_subcategoria' => $resultado->idSubcategoria,
+                'monto_base' => $resultado->montoBase,
+                'porcentaje_aplicado' => $resultado->porcentaje,
+                'monto_comision' => $resultado->montoComision,
+                'fecha_evento' => $fechaEvento,
+            ];
 
-        return ($this->persistirMovimiento)($where, $values);
+            $ultimo = ($this->persistirMovimiento)($where, $values);
+        }
+
+        return $ultimo;
+    }
+
+    /**
+     * @return list<array{0: ?object, 1: ComisionCalculoResultado}>
+     */
+    private function resultadosEnEvento(
+        int $idEmpresa,
+        int $idVendedor,
+        ?int $idCategoria,
+        ?int $idSubcategoria,
+        float $base,
+        object $detalle
+    ): array {
+        $reglas = ($this->obtenerReglasActivas)($idEmpresa);
+
+        if ($reglas->isEmpty()) {
+            $pct = $this->resolver->resolver($idEmpresa, $idCategoria, $idSubcategoria);
+            if ($pct == 0.0) {
+                return [];
+            }
+
+            return [[
+                null,
+                new ComisionCalculoResultado(
+                    $base,
+                    $pct,
+                    round($base * ($pct / 100), 4),
+                    $idCategoria,
+                    $idSubcategoria,
+                ),
+            ]];
+        }
+
+        $aplicables = array_values(array_filter(
+            $this->reglaScope->aplicables($reglas->all(), $idVendedor),
+            fn (object $regla): bool => ($regla->momento_devengo ?? null) === ComisionRegla::MOMENTO_AL_PAGAR
+        ));
+
+        $out = [];
+        foreach ($aplicables as $regla) {
+            $resultado = $this->calculatorFactory
+                ->for((string) $regla->tipo_calculo)
+                ->calcularEnEvento((object) [
+                    'id_empresa' => $idEmpresa,
+                    'regla' => $regla,
+                    'id_categoria' => $idCategoria,
+                    'id_subcategoria' => $idSubcategoria,
+                    'base' => $base,
+                    'detalle' => $detalle,
+                ]);
+            if ($resultado === null) {
+                continue;
+            }
+            $out[] = [$regla, $resultado];
+        }
+
+        return $out;
     }
 
     private function esCategoriaGiftCard(int $idEmpresa, ?int $idCategoria): bool

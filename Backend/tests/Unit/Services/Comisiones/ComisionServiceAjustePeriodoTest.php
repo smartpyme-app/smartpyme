@@ -38,7 +38,8 @@ class ComisionServiceAjustePeriodoTest extends TestCase
                 return new stdClass();
             },
             null,
-            fn () => []
+            fn () => [],
+            obtenerReglasActivas: fn () => collect()
         );
 
         $producto = (object) [
