@@ -7,6 +7,7 @@ use App\Models\Comisiones\ComisionMovimiento;
 use App\Models\Comisiones\ComisionPeriodo;
 use App\Models\Comisiones\ComisionRegla;
 use App\Models\EmpresaConfiguracionPlanilla;
+use App\Models\User;
 use App\Services\Comisiones\Calculators\ComisionCalculatorFactory;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -83,7 +84,7 @@ class ComisionLiquidacionService
             $inicio = $periodo->fecha_inicio->toDateString();
             $fin = $periodo->fecha_fin->toDateString();
 
-            foreach ($this->idsVendedoresCierre($idEmpresa, $periodo, $reglas, $inicio, $fin) as $idVendedor) {
+            foreach ($this->idsVendedoresCierre($idEmpresa, $periodo, $reglas) as $idVendedor) {
                 $this->persistirCierreVendedor(
                     $idEmpresa,
                     $periodo,
@@ -172,14 +173,9 @@ class ComisionLiquidacionService
      * @param  list<object>  $reglas
      * @return list<int>
      */
-    private function idsVendedoresCierre(
-        int $idEmpresa,
-        ComisionPeriodo $periodo,
-        array $reglas,
-        string $inicio,
-        string $fin,
-    ): array {
-        $ids = ComisionMovimiento::withoutGlobalScope('empresa')
+    private function idsVendedoresCierre(int $idEmpresa, ComisionPeriodo $periodo, array $reglas): array
+    {
+        $idsMovimientos = ComisionMovimiento::withoutGlobalScope('empresa')
             ->where('id_empresa', $idEmpresa)
             ->where('id_periodo', $periodo->id)
             ->distinct()
@@ -187,24 +183,29 @@ class ComisionLiquidacionService
             ->map(fn ($id) => (int) $id)
             ->all();
 
-        $hayGlobalPeriodo = false;
+        $idsVendedoresEmpresa = [];
         foreach ($reglas as $regla) {
-            if (! $this->esReglaPeriodoOBase($regla)) {
-                continue;
+            if (
+                ComisionVendedoresCierre::esReglaPeriodoOBase($regla)
+                && ($regla->alcance ?? ComisionRegla::ALCANCE_GLOBAL) === ComisionRegla::ALCANCE_GLOBAL
+            ) {
+                $idsVendedoresEmpresa = $this->idsVendedoresEmpresa($idEmpresa);
+                break;
             }
-            $alcance = (string) ($regla->alcance ?? ComisionRegla::ALCANCE_GLOBAL);
-            if ($alcance === ComisionRegla::ALCANCE_GLOBAL) {
-                $hayGlobalPeriodo = true;
-                continue;
-            }
-            $ids = array_merge($ids, array_map('intval', (array) ($regla->id_vendedores ?? [])));
         }
 
-        if ($hayGlobalPeriodo) {
-            $ids = array_merge($ids, $this->ventasPeriodo->idsConVentas($idEmpresa, $inicio, $fin));
-        }
+        return ComisionVendedoresCierre::unir($idsMovimientos, $reglas, $idsVendedoresEmpresa);
+    }
 
-        return array_values(array_unique(array_filter($ids, fn (int $id) => $id > 0)));
+    /** @return list<int> */
+    private function idsVendedoresEmpresa(int $idEmpresa): array
+    {
+        return User::withoutGlobalScope('empresa')
+            ->where('id_empresa', $idEmpresa)
+            ->whereIn('tipo', ['Ventas', 'Ventas Limitado'])
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
     }
 
     /**
@@ -352,17 +353,8 @@ class ComisionLiquidacionService
 
     private function salarioMinimoEmpresa(int $idEmpresa): ?float
     {
-        $minimo = EmpresaConfiguracionPlanilla::obtenerConfiguracion($idEmpresa)?->configuracion['salario_minimo'] ?? null;
-
-        return $minimo !== null ? (float) $minimo : null;
-    }
-
-    private function esReglaPeriodoOBase(object $regla): bool
-    {
-        if (($regla->tipo_calculo ?? '') === ComisionRegla::TIPO_POR_VOLUMEN) {
-            return true;
-        }
-
-        return (float) ($regla->config['salario_base'] ?? 0) > 0;
+        return ComisionSalarioMinimo::minimoDePlanilla(
+            EmpresaConfiguracionPlanilla::obtenerConfiguracion($idEmpresa)
+        );
     }
 }

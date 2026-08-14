@@ -12,4 +12,22 @@ class ComisionSalarioMinimo
 
         return max(0.0, $minimo - $comisionMasBase);
     }
+
+    public static function minimoDePlanilla(?object $config): ?float
+    {
+        if ($config === null) {
+            return null;
+        }
+
+        $generales = method_exists($config, 'getConfiguracionesGenerales')
+            ? (array) $config->getConfiguracionesGenerales()
+            : [];
+        $minimo = $generales['salario_minimo'] ?? null;
+        if ($minimo === null) {
+            $top = is_array($config->configuracion ?? null) ? $config->configuracion : [];
+            $minimo = $top['salario_minimo'] ?? null;
+        }
+
+        return $minimo !== null ? (float) $minimo : null;
+    }
 }

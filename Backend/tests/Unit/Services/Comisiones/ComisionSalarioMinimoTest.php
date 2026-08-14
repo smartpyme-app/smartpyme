@@ -25,6 +25,50 @@ class ComisionSalarioMinimoTest extends TestCase
         $this->assertSame(0.0, ComisionSalarioMinimo::ajuste(365.0, 365.0));
     }
 
+    public function test_minimo_prioriza_configuraciones_generales(): void
+    {
+        $config = $this->stubPlanilla(
+            ['salario_minimo' => 365],
+            ['salario_minimo' => 100]
+        );
+        $this->assertSame(365.0, ComisionSalarioMinimo::minimoDePlanilla($config));
+    }
+
+    public function test_minimo_cae_a_top_level_si_generales_no_lo_tienen(): void
+    {
+        $config = $this->stubPlanilla(['moneda' => 'USD'], ['salario_minimo' => 2992.38]);
+        $this->assertSame(2992.38, ComisionSalarioMinimo::minimoDePlanilla($config));
+    }
+
+    public function test_minimo_null_si_no_hay_config_ni_clave(): void
+    {
+        $this->assertNull(ComisionSalarioMinimo::minimoDePlanilla(null));
+        $this->assertNull(ComisionSalarioMinimo::minimoDePlanilla($this->stubPlanilla(['moneda' => 'USD'], [])));
+    }
+
+    /**
+     * @param  array<string, mixed>  $generales
+     * @param  array<string, mixed>|null  $topLevel
+     */
+    private function stubPlanilla(array $generales, ?array $topLevel): object
+    {
+        return new class($generales, $topLevel) {
+            public ?array $configuracion;
+
+            /** @param array<string, mixed> $generales */
+            public function __construct(private array $generales, ?array $topLevel)
+            {
+                $this->configuracion = $topLevel;
+            }
+
+            /** @return array<string, mixed> */
+            public function getConfiguracionesGenerales(): array
+            {
+                return $this->generales;
+            }
+        };
+    }
+
     public function test_etiquetas_origen_periodo(): void
     {
         $this->assertSame('ajuste_periodo', ComisionMovimiento::ORIGEN_AJUSTE_PERIODO);
