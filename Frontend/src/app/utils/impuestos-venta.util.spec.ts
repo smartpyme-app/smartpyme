@@ -723,6 +723,37 @@ describe('impuestos-venta.util — IVA vs especiales', () => {
     expect(sumarTotalEncabezadoVenta(caso2, impuestos2, { empresaIva: 13 })).toBe(58);
   });
 
+  it('el IVA de cabecera se reduce con descuento_puntos', () => {
+    const detalle: any = {
+      cantidad: 1,
+      precio: 12.75 / 1.13,
+      precio_iva: '12.75',
+      descuento: 0,
+      tipo_gravado: 'gravada',
+      impuestos: [{ id: 1, porcentaje: 13, codigo_mh: '20' }],
+    };
+    calcularMontosLineaDetalle(detalle, true, 13, { preservePrecioIva: true });
+
+    const ivaSinPuntos = acumularImpuestosVentaConCierreResidual(
+      [{ id: 1, porcentaje: 13, codigo_mh: '20', nombre: 'IVA', monto: 0 }],
+      [detalle],
+      true,
+      13
+    );
+    const ivaConPuntos = acumularImpuestosVentaConCierreResidual(
+      [{ id: 1, porcentaje: 13, codigo_mh: '20', nombre: 'IVA', monto: 0 }],
+      [detalle],
+      true,
+      13,
+      undefined,
+      4.4
+    );
+
+    expect(Number(detalle.total_iva)).toBe(12.75);
+    expect(ivaSinPuntos).toBe(1.47);
+    expect(ivaConPuntos).toBe(0.96);
+  });
+
   it('desglosa IVA por tasa en venta.impuestos', () => {
     const ventaImpuestos = [
       { id: 1, porcentaje: 13, codigo_mh: '20', nombre: 'IVA', monto: 0 },

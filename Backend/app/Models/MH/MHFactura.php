@@ -209,7 +209,7 @@ class MHFactura extends Model
         $montoTributosNoIva = $this->montoTributosNoIvaDocumento();
         $totalGravada = floatval(number_format(
             $this->documentoTieneIva()
-                ? $this->venta->sub_total + $montoIva
+                ? (float) collect($cuerpoDocumento)->sum('ventaGravada')
                 : (float) $this->venta->gravada,
             2,
             '.',

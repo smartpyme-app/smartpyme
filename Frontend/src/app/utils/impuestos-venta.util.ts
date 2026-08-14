@@ -607,10 +607,20 @@ export function sumarTotalEncabezadoVenta(
  * IVA de cabecera = suma(total_iva) − sub_total (neto).
  * Es la definición cuando el monto cobrado vive en precio_iva/total_iva.
  */
-export function calcularIvaResidualEncabezadoVenta(detalles: any[]): number {
-  return redondearMoneda(
-    sumarTotalConIvaEncabezadoVenta(detalles) - sumarSubTotalEncabezadoVenta(detalles)
+export function calcularIvaResidualEncabezadoVenta(
+  detalles: any[],
+  descuentoPuntos = 0
+): number {
+  const totalConIva = sumarTotalConIvaEncabezadoVenta(detalles);
+  const ivaLineas = redondearMoneda(
+    totalConIva - sumarSubTotalEncabezadoVenta(detalles)
   );
+  const pts = redondearMoneda(parseFloat(String(descuentoPuntos ?? 0)) || 0);
+  if (pts <= 0 || totalConIva <= 0) {
+    return ivaLineas;
+  }
+  const totalTrasPuntos = Math.max(0, redondearMoneda(totalConIva - pts));
+  return redondearMoneda(ivaLineas * (totalTrasPuntos / totalConIva));
 }
 
 /**
@@ -678,9 +688,10 @@ export function resolverIvaObjetivoEncabezadoVenta(
   detalles: any[],
   _cobrarImpuestos: boolean,
   _empresaIva: number,
-  _paisEmpresa?: unknown
+  _paisEmpresa?: unknown,
+  descuentoPuntos = 0
 ): number {
-  return calcularIvaResidualEncabezadoVenta(detalles);
+  return calcularIvaResidualEncabezadoVenta(detalles, descuentoPuntos);
 }
 
 export function montoIvaDeVentaImpuestos(
@@ -752,10 +763,13 @@ export function acumularImpuestosVentaConCierreResidual(
   detalles: any[],
   cobrarImpuestos: boolean,
   empresaIva: number,
-  paisEmpresa?: unknown
+  paisEmpresa?: unknown,
+  descuentoPuntos = 0
 ): number {
   if (!ventaImpuestos?.length) {
-    return cobrarImpuestos ? calcularIvaResidualEncabezadoVenta(detalles) : 0;
+    return cobrarImpuestos
+      ? calcularIvaResidualEncabezadoVenta(detalles, descuentoPuntos)
+      : 0;
   }
 
   acumularMontosImpuestosVenta(
@@ -773,7 +787,8 @@ export function acumularImpuestosVentaConCierreResidual(
     detalles,
     cobrarImpuestos,
     empresaIva,
-    paisEmpresa
+    paisEmpresa,
+    descuentoPuntos
   );
   const ivaAcumulado = montoIvaDeVentaImpuestos(ventaImpuestos, empresaIva);
   const delta = redondearMoneda(ivaObjetivo - ivaAcumulado);

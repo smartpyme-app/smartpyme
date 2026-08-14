@@ -1270,12 +1270,14 @@ export class FacturacionV2Component implements OnInit {
       ? Math.round(subTotalNum * (propinaPorcentaje / 100) * 100) / 100
       : 0;
 
+    const descuentoPuntos = parseFloat(this.venta.descuento_puntos || 0) || 0;
     const ivaEncabezado = acumularImpuestosVentaConCierreResidual(
       this.venta.impuestos,
       this.venta.detalles,
       !!this.venta.cobrar_impuestos,
       empresaIva,
-      paisEmpresa
+      paisEmpresa,
+      descuentoPuntos
     );
     this.venta.iva = ivaEncabezado.toFixed(4);
 
@@ -1292,7 +1294,8 @@ export class FacturacionV2Component implements OnInit {
         this.venta.detalles,
         true,
         empresaIva,
-        paisEmpresa
+        paisEmpresa,
+        descuentoPuntos
       );
       this.venta.iva = ivaRecalc.toFixed(4);
     }
@@ -1309,7 +1312,6 @@ export class FacturacionV2Component implements OnInit {
     const rawTotalCosto = parseFloat(this.sumPipe.transform(this.venta.detalles, 'total_costo'));
     this.venta.total_costo = Number(rawTotalCosto).toFixed(4);
 
-    const descuentoPuntos = parseFloat(this.venta.descuento_puntos || 0) || 0;
     const totalNum = sumarTotalEncabezadoVenta(
       this.venta.detalles,
       this.venta.impuestos,
