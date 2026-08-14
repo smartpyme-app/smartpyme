@@ -491,4 +491,74 @@ class ComisionServiceOrchestrationTest extends TestCase
         $this->assertSame(200, $guardados[0]['where']['id_gift_card_redencion']);
         $this->assertSame(1, $guardados[0]['where']['id_empresa']);
     }
+
+    public function test_cifras_v1_iguales_a_una_regla_por_categoria(): void
+    {
+        $resolver = new ComisionPorcentajeResolver(
+            fn (int $e, int $c, ?int $idRegla = null) => 2.0,
+            fn (int $e, int $s, ?int $idRegla = null) => null
+        );
+        $producto = (object) ['id_categoria' => 10, 'subcategoria_id' => null];
+        $detalle = (object) [
+            'id' => 100,
+            'gravada' => 100.0,
+            'exenta' => 0.0,
+            'no_sujeta' => 0.0,
+            'id_vendedor' => 5,
+            'producto' => $producto,
+        ];
+        $venta = (object) [
+            'id' => 50,
+            'id_empresa' => 1,
+            'id_vendedor' => 5,
+            'fecha_pago' => '2026-07-15',
+            'detalles' => [$detalle],
+        ];
+        $regla = (object) [
+            'id' => 7,
+            'alcance' => ComisionRegla::ALCANCE_GLOBAL,
+            'id_vendedores' => null,
+            'reemplaza_global' => false,
+            'activo' => true,
+            'tipo_calculo' => ComisionRegla::TIPO_POR_CATEGORIA,
+            'momento_devengo' => ComisionRegla::MOMENTO_AL_PAGAR,
+        ];
+
+        $persistir = function (array &$guardados): callable {
+            return function (array $where, array $values) use (&$guardados) {
+                $guardados[] = compact('where', 'values');
+
+                return (object) array_merge($where, $values);
+            };
+        };
+
+        $v1 = [];
+        $svcV1 = $this->makeService([
+            'resolver' => $resolver,
+            'obtenerReglasActivas' => fn () => collect(),
+            'persistirMovimiento' => $persistir($v1),
+        ]);
+        $svcV1->registrarVentaPagada($venta);
+        $svcV1->registrarDesdeRedencion(1, 5, 50, 100, 200, 10, null, $detalle, Carbon::parse('2026-07-15'));
+
+        $conRegla = [];
+        $svcRegla = $this->makeService([
+            'resolver' => $resolver,
+            'obtenerReglasActivas' => fn () => collect([$regla]),
+            'persistirMovimiento' => $persistir($conRegla),
+        ]);
+        $svcRegla->registrarVentaPagada($venta);
+        $svcRegla->registrarDesdeRedencion(1, 5, 50, 100, 200, 10, null, $detalle, Carbon::parse('2026-07-15'));
+
+        $this->assertCount(2, $v1);
+        $this->assertCount(2, $conRegla);
+        foreach ([0, 1] as $i) {
+            $this->assertSame($v1[$i]['values']['monto_base'], $conRegla[$i]['values']['monto_base']);
+            $this->assertSame($v1[$i]['values']['porcentaje_aplicado'], $conRegla[$i]['values']['porcentaje_aplicado']);
+            $this->assertSame($v1[$i]['values']['monto_comision'], $conRegla[$i]['values']['monto_comision']);
+        }
+        $this->assertSame(100.0, (float) $v1[0]['values']['monto_base']);
+        $this->assertSame(2.0, (float) $v1[0]['values']['porcentaje_aplicado']);
+        $this->assertSame(2.0, (float) $v1[0]['values']['monto_comision']);
+    }
 }
