@@ -772,6 +772,31 @@ class ComisionServiceOrchestrationTest extends TestCase
         ]);
     }
 
+    public function test_por_abono_cerrado_sin_regla_aplicable_no_recalcula_ni_crea_liquidacion(): void
+    {
+        $liquidacion = $this->createMock(ComisionLiquidacionService::class);
+        $liquidacion->expects($this->never())->method('recalcularParaVendedorPeriodo');
+        $svc = $this->makeService([
+            'periodo' => (object) [
+                'id' => 3,
+                'estado' => ComisionPeriodo::ESTADO_CERRADO,
+                'fecha_fin' => '2026-07-31',
+            ],
+            'liquidacionService' => $liquidacion,
+            'persistirAjuste' => fn () => $this->fail('No debe persistir movimiento ni liquidación'),
+            'obtenerReglasActivas' => fn () => collect([
+                $this->reglaMomento(ComisionRegla::MOMENTO_AL_PAGAR),
+            ]),
+        ]);
+
+        $svc->registrarAbono($this->ventaConLinea(), (object) [
+            'id' => 33,
+            'monto' => 50.0,
+            'estado' => 'Confirmado',
+            'fecha' => '2026-07-18',
+        ]);
+    }
+
     public function test_por_abono_no_dispara_en_venta_pagada(): void
     {
         $guardados = [];
@@ -889,6 +914,18 @@ class ComisionServiceOrchestrationTest extends TestCase
         $svc->eliminarPorAbono(33);
 
         $this->assertSame([33], $eliminados);
+    }
+
+    public function test_eliminar_por_abono_sin_movimientos_no_recalcula(): void
+    {
+        $liquidacion = $this->createMock(ComisionLiquidacionService::class);
+        $liquidacion->expects($this->never())->method('recalcularParaVendedorPeriodo');
+        $svc = $this->makeService([
+            'liquidacionService' => $liquidacion,
+            'obtenerMovimientosAbono' => fn () => [],
+        ]);
+
+        $svc->eliminarPorAbono(33);
     }
 
     public function test_eliminar_por_abono_en_periodo_cerrado_recalcula_liquidacion(): void

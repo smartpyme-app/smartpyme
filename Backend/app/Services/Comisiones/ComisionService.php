@@ -277,13 +277,6 @@ class ComisionService
 
         $idVendedores = [];
         foreach ($venta->detalles as $detalle) {
-            $idVendedor = $this->vendedorEfectivo(
-                isset($detalle->id_vendedor) ? (int) $detalle->id_vendedor : null,
-                (int) ($venta->id_vendedor ?? 0)
-            );
-            if ($idVendedor !== null) {
-                $idVendedores[] = $idVendedor;
-            }
             $movimiento = $this->registrarLineaVenta(
                 (int) $venta->id_empresa,
                 (int) $venta->id,
