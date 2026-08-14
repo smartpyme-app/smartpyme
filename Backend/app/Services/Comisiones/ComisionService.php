@@ -332,7 +332,7 @@ class ComisionService
         ?int $idSubcategoria,
         object $detalleLinea,
         DateTimeInterface $fechaEvento
-    ): ?ComisionMovimiento {
+    ): ?object {
         if (! ($this->tieneFuncionalidad)($idEmpresa, self::SLUG_COMISIONES)) {
             return null;
         }
@@ -382,7 +382,7 @@ class ComisionService
                 'fecha_evento' => $fechaEvento,
             ];
 
-            $ultimo = ComisionMovimiento::withoutGlobalScope('empresa')->firstOrCreate($where, $values);
+            $ultimo = ($this->persistirMovimiento)($where, $values);
         }
 
         return $ultimo;
@@ -402,7 +402,7 @@ class ComisionService
         string $origen,
         ?int $idGiftCardRedencion,
         float $fraccionGift = 0.0
-    ): ?ComisionMovimiento {
+    ): ?object {
         $producto = $detalle->producto ?? null;
         $idCategoria = $producto ? (int) ($producto->id_categoria ?? 0) : null;
         $rawSub = $producto->id_subcategoria ?? $producto->subcategoria_id ?? null;

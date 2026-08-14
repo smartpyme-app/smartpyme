@@ -8,15 +8,15 @@ use Closure;
 
 class ComisionPorcentajeResolver
 {
-    /** @var Closure(int, int): float|int|string|null */
+    /** @var Closure(int, int, ?int): float|int|string|null */
     private Closure $findCat;
 
-    /** @var Closure(int, int): float|int|string|null */
+    /** @var Closure(int, int, ?int): float|int|string|null */
     private Closure $findSub;
 
     /**
-     * @param  Closure(int, int): float|int|string|null|null  $findCat
-     * @param  Closure(int, int): float|int|string|null|null  $findSub
+     * @param  Closure(int, int, ?int): float|int|string|null|null  $findCat
+     * @param  Closure(int, int, ?int): float|int|string|null|null  $findSub
      */
     public function __construct(?Closure $findCat = null, ?Closure $findSub = null)
     {
@@ -30,42 +30,46 @@ class ComisionPorcentajeResolver
         return new self();
     }
 
-    /** @return Closure(int, int): float|int|string|null */
+    /** @return Closure(int, int, ?int): float|int|string|null */
     private static function defaultFindCat(): Closure
     {
-        return function (int $idEmpresa, int $idCategoria) {
-            $config = ComisionCategoriaConfig::withoutGlobalScope('empresa')
+        return function (int $idEmpresa, int $idCategoria, ?int $idRegla = null) {
+            $query = ComisionCategoriaConfig::withoutGlobalScope('empresa')
                 ->where('id_empresa', $idEmpresa)
-                ->where('id_categoria', $idCategoria)
-                ->first();
+                ->where('id_categoria', $idCategoria);
+            if ($idRegla !== null) {
+                $query->where('id_regla', $idRegla);
+            }
 
-            return $config?->porcentaje;
+            return $query->first()?->porcentaje;
         };
     }
 
-    /** @return Closure(int, int): float|int|string|null */
+    /** @return Closure(int, int, ?int): float|int|string|null */
     private static function defaultFindSub(): Closure
     {
-        return function (int $idEmpresa, int $idSubcategoria) {
-            $config = ComisionSubcategoriaConfig::withoutGlobalScope('empresa')
+        return function (int $idEmpresa, int $idSubcategoria, ?int $idRegla = null) {
+            $query = ComisionSubcategoriaConfig::withoutGlobalScope('empresa')
                 ->where('id_empresa', $idEmpresa)
-                ->where('id_subcategoria', $idSubcategoria)
-                ->first();
+                ->where('id_subcategoria', $idSubcategoria);
+            if ($idRegla !== null) {
+                $query->where('id_regla', $idRegla);
+            }
 
-            return $config?->porcentaje;
+            return $query->first()?->porcentaje;
         };
     }
 
-    public function resolver(int $idEmpresa, ?int $idCategoria, ?int $idSubcategoria): float
+    public function resolver(int $idEmpresa, ?int $idCategoria, ?int $idSubcategoria, ?int $idRegla = null): float
     {
         if ($idSubcategoria) {
-            $override = ($this->findSub)($idEmpresa, $idSubcategoria);
+            $override = ($this->findSub)($idEmpresa, $idSubcategoria, $idRegla);
             if ($override !== null) {
                 return (float) $override;
             }
         }
         if ($idCategoria) {
-            $pct = ($this->findCat)($idEmpresa, $idCategoria);
+            $pct = ($this->findCat)($idEmpresa, $idCategoria, $idRegla);
             if ($pct !== null) {
                 return (float) $pct;
             }

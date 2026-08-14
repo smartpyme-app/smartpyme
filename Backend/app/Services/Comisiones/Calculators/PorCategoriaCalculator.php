@@ -12,10 +12,12 @@ class PorCategoriaCalculator implements ComisionCalculator
 
     public function calcularEnEvento(object $ctx): ?ComisionCalculoResultado
     {
+        $idRegla = isset($ctx->regla->id) ? (int) $ctx->regla->id : null;
         $pct = $this->resolver->resolver(
             (int) $ctx->id_empresa,
             isset($ctx->id_categoria) ? (int) $ctx->id_categoria : null,
-            isset($ctx->id_subcategoria) ? (int) $ctx->id_subcategoria : null
+            isset($ctx->id_subcategoria) ? (int) $ctx->id_subcategoria : null,
+            $idRegla
         );
         if ($pct == 0.0) {
             return null;

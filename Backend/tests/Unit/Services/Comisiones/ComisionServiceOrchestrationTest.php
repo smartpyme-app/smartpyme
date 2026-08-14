@@ -4,6 +4,7 @@ namespace Tests\Unit\Services\Comisiones;
 
 use App\Models\Comisiones\ComisionMovimiento;
 use App\Models\Comisiones\ComisionPeriodo;
+use App\Models\Comisiones\ComisionRegla;
 use App\Services\Comisiones\ComisionBaseCalculator;
 use App\Services\Comisiones\ComisionPeriodoService;
 use App\Services\Comisiones\ComisionPorcentajeResolver;
@@ -38,13 +39,18 @@ class ComisionServiceOrchestrationTest extends TestCase
             'obtenerVentaConDetalles' => fn () => null,
             'obtenerDevolucionesActivas' => fn () => collect(),
             'eliminarAjusteDevolucion' => fn () => null,
+            'obtenerReglasActivas' => null,
+            'resolver' => new ComisionPorcentajeResolver(
+                fn (int $e, int $c, ?int $idRegla = null) => null,
+                fn (int $e, int $s, ?int $idRegla = null) => null
+            ),
         ];
 
         $config = array_merge($defaults, $overrides);
 
         return new ComisionService(
             $periodoService,
-            new ComisionPorcentajeResolver(fn () => null, fn () => null),
+            $config['resolver'],
             $config['calculator'] ?? new ComisionBaseCalculator(),
             $config['tieneFuncionalidad'],
             $config['obtenerConfigComisiones'],
@@ -54,7 +60,11 @@ class ComisionServiceOrchestrationTest extends TestCase
             $config['obtenerMovimientosVenta'],
             $config['obtenerVentaConDetalles'],
             $config['obtenerDevolucionesActivas'],
-            $config['eliminarAjusteDevolucion']
+            $config['eliminarAjusteDevolucion'],
+            null,
+            null,
+            null,
+            $config['obtenerReglasActivas']
         );
     }
 
@@ -411,5 +421,74 @@ class ComisionServiceOrchestrationTest extends TestCase
         $this->assertSame(40.0, $baseRedencion);
         $this->assertSame(100.0, round($baseVenta + $baseRedencion, 4));
         $this->assertLessThan($baseCompleta * 2, $baseVenta + $baseRedencion);
+    }
+
+    public function test_persist_where_incluye_id_regla_con_reglas_inyectadas(): void
+    {
+        $guardados = [];
+        $regla = (object) [
+            'id' => 7,
+            'alcance' => ComisionRegla::ALCANCE_GLOBAL,
+            'id_vendedores' => null,
+            'reemplaza_global' => false,
+            'activo' => true,
+            'tipo_calculo' => ComisionRegla::TIPO_POR_CATEGORIA,
+            'momento_devengo' => ComisionRegla::MOMENTO_AL_PAGAR,
+        ];
+
+        $svc = $this->makeService([
+            'resolver' => new ComisionPorcentajeResolver(
+                fn (int $e, int $c, ?int $idRegla = null) => 2.0,
+                fn (int $e, int $s, ?int $idRegla = null) => null
+            ),
+            'persistirMovimiento' => function (array $where, array $values) use (&$guardados) {
+                $guardados[] = compact('where', 'values');
+
+                return (object) array_merge($where, $values);
+            },
+            'obtenerReglasActivas' => fn () => collect([$regla]),
+        ]);
+
+        $producto = (object) ['id_categoria' => 10, 'subcategoria_id' => null];
+        $detalle = (object) [
+            'id' => 100,
+            'gravada' => 100.0,
+            'exenta' => 0.0,
+            'no_sujeta' => 0.0,
+            'id_vendedor' => 5,
+            'producto' => $producto,
+        ];
+        $venta = (object) [
+            'id' => 50,
+            'id_empresa' => 1,
+            'id_vendedor' => 5,
+            'fecha_pago' => '2026-07-15',
+            'detalles' => [$detalle],
+        ];
+
+        $svc->registrarVentaPagada($venta);
+
+        $this->assertCount(1, $guardados);
+        $this->assertSame(7, $guardados[0]['where']['id_regla']);
+        $this->assertSame(ComisionMovimiento::ORIGEN_VENTA, $guardados[0]['where']['origen']);
+        $this->assertSame(100, $guardados[0]['where']['id_detalle_venta']);
+
+        $guardados = [];
+        $svc->registrarDesdeRedencion(
+            1,
+            5,
+            50,
+            100,
+            200,
+            10,
+            null,
+            $detalle,
+            Carbon::parse('2026-07-15')
+        );
+
+        $this->assertCount(1, $guardados);
+        $this->assertSame(7, $guardados[0]['where']['id_regla']);
+        $this->assertSame(200, $guardados[0]['where']['id_gift_card_redencion']);
+        $this->assertSame(1, $guardados[0]['where']['id_empresa']);
     }
 }

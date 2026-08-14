@@ -28,7 +28,10 @@ class ComisionServiceAjustePeriodoTest extends TestCase
 
         $svc = new ComisionService(
             $periodoService,
-            new ComisionPorcentajeResolver(fn () => null, fn () => null),
+            new ComisionPorcentajeResolver(
+                fn (int $e, int $c, ?int $idRegla = null) => null,
+                fn (int $e, int $s, ?int $idRegla = null) => null
+            ),
             new ComisionBaseCalculator(),
             fn () => true,
             fn () => ['base_calculo' => 'subtotal_sin_iva'],
@@ -86,7 +89,10 @@ class ComisionServiceAjustePeriodoTest extends TestCase
 
         $svc = new ComisionService(
             $periodoService,
-            new ComisionPorcentajeResolver(fn () => null, fn () => null),
+            new ComisionPorcentajeResolver(
+                fn (int $e, int $c, ?int $idRegla = null) => null,
+                fn (int $e, int $s, ?int $idRegla = null) => null
+            ),
             new ComisionBaseCalculator(),
             fn () => true,
             fn () => ['base_calculo' => 'subtotal_sin_iva'],
@@ -147,7 +153,10 @@ class ComisionServiceAjustePeriodoTest extends TestCase
 
         $svc = new ComisionService(
             $periodoService,
-            new ComisionPorcentajeResolver(fn () => null, fn () => null),
+            new ComisionPorcentajeResolver(
+                fn (int $e, int $c, ?int $idRegla = null) => null,
+                fn (int $e, int $s, ?int $idRegla = null) => null
+            ),
             new ComisionBaseCalculator(),
             fn () => true,
             fn () => ['base_calculo' => 'subtotal_sin_iva'],
@@ -208,7 +217,10 @@ class ComisionServiceAjustePeriodoTest extends TestCase
 
         $svc = new ComisionService(
             $periodoService,
-            new ComisionPorcentajeResolver(fn () => null, fn () => null),
+            new ComisionPorcentajeResolver(
+                fn (int $e, int $c, ?int $idRegla = null) => null,
+                fn (int $e, int $s, ?int $idRegla = null) => null
+            ),
             new ComisionBaseCalculator(),
             fn () => true,
             fn () => ['base_calculo' => 'subtotal_sin_iva'],
@@ -264,7 +276,10 @@ class ComisionServiceAjustePeriodoTest extends TestCase
 
         $svc = new ComisionService(
             $periodoService,
-            new ComisionPorcentajeResolver(fn () => null, fn () => null),
+            new ComisionPorcentajeResolver(
+                fn (int $e, int $c, ?int $idRegla = null) => null,
+                fn (int $e, int $s, ?int $idRegla = null) => null
+            ),
             new ComisionBaseCalculator(),
             fn () => true,
             fn () => ['base_calculo' => 'subtotal_sin_iva'],
