@@ -295,6 +295,15 @@ class AbonoVentaService
     public function eliminarAbono(int $id): Abono
     {
         $abono = Abono::findOrFail($id);
+        try {
+            app(\App\Services\Comisiones\ComisionService::class)->eliminarPorAbono((int) $abono->id);
+        } catch (\Throwable $e) {
+            Log::error('comisiones: fallo al eliminar abono', [
+                'venta' => $abono->id_venta,
+                'abono' => $abono->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
         $abono->delete();
         return $abono;
     }

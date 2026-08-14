@@ -39,6 +39,7 @@ class ComisionServiceOrchestrationTest extends TestCase
             'obtenerVentaConDetalles' => fn () => null,
             'obtenerDevolucionesActivas' => fn () => collect(),
             'eliminarAjusteDevolucion' => fn () => null,
+            'eliminarMovimientosAbono' => fn () => null,
             'obtenerReglasActivas' => null,
             'resolver' => new ComisionPorcentajeResolver(
                 fn (int $e, int $c, ?int $idRegla = null) => null,
@@ -64,7 +65,8 @@ class ComisionServiceOrchestrationTest extends TestCase
             null,
             null,
             null,
-            $config['obtenerReglasActivas']
+            $config['obtenerReglasActivas'],
+            $config['eliminarMovimientosAbono']
         );
     }
 
@@ -678,7 +680,7 @@ class ComisionServiceOrchestrationTest extends TestCase
                 fn (int $e, int $c, ?int $idRegla = null) => 2.0,
                 fn (int $e, int $s, ?int $idRegla = null) => null
             ),
-            'persistirMovimiento' => function (array $where, array $values) use (&$guardados) {
+            'persistirAjuste' => function (array $where, array $values) use (&$guardados) {
                 $guardados[] = compact('where', 'values');
 
                 return (object) array_merge($where, $values);
@@ -688,7 +690,12 @@ class ComisionServiceOrchestrationTest extends TestCase
             ]),
         ]);
 
-        $abono = (object) ['id' => 33, 'monto' => 50.0, 'fecha' => '2026-07-18'];
+        $abono = (object) [
+            'id' => 33,
+            'monto' => 50.0,
+            'estado' => 'Confirmado',
+            'fecha' => '2026-07-18',
+        ];
         $svc->registrarAbono($this->ventaConLinea(), $abono);
 
         $this->assertCount(1, $guardados);
@@ -720,5 +727,130 @@ class ComisionServiceOrchestrationTest extends TestCase
         $svc->registrarVentaPagada($this->ventaConLinea());
 
         $this->assertSame([], $guardados);
+    }
+
+    public function test_por_abono_usa_update_y_recalcula_monto(): void
+    {
+        $viaMovimiento = [];
+        $viaAjuste = [];
+        $svc = $this->makeService([
+            'resolver' => new ComisionPorcentajeResolver(
+                fn (int $e, int $c, ?int $idRegla = null) => 2.0,
+                fn (int $e, int $s, ?int $idRegla = null) => null
+            ),
+            'persistirMovimiento' => function (array $where, array $values) use (&$viaMovimiento) {
+                $viaMovimiento[] = compact('where', 'values');
+
+                return (object) array_merge($where, $values);
+            },
+            'persistirAjuste' => function (array $where, array $values) use (&$viaAjuste) {
+                $viaAjuste[] = compact('where', 'values');
+
+                return (object) array_merge($where, $values);
+            },
+            'obtenerReglasActivas' => fn () => collect([
+                $this->reglaMomento(ComisionRegla::MOMENTO_POR_ABONO),
+            ]),
+        ]);
+
+        $venta = $this->ventaConLinea();
+        $svc->registrarAbono($venta, (object) [
+            'id' => 33,
+            'monto' => 50.0,
+            'estado' => 'Confirmado',
+            'fecha' => '2026-07-18',
+        ]);
+        $svc->registrarAbono($venta, (object) [
+            'id' => 33,
+            'monto' => 100.0,
+            'estado' => 'Confirmado',
+            'fecha' => '2026-07-19',
+        ]);
+
+        $this->assertSame([], $viaMovimiento);
+        $this->assertCount(2, $viaAjuste);
+        $this->assertSame(0.5, (float) $viaAjuste[0]['values']['monto_comision']);
+        $this->assertSame(1.0, (float) $viaAjuste[1]['values']['monto_comision']);
+    }
+
+    public function test_por_abono_no_persiste_si_no_confirmado(): void
+    {
+        $guardados = [];
+        $eliminados = [];
+        $svc = $this->makeService([
+            'resolver' => new ComisionPorcentajeResolver(
+                fn (int $e, int $c, ?int $idRegla = null) => 2.0,
+                fn (int $e, int $s, ?int $idRegla = null) => null
+            ),
+            'persistirMovimiento' => function (array $where, array $values) use (&$guardados) {
+                $guardados[] = compact('where', 'values');
+
+                return (object) array_merge($where, $values);
+            },
+            'persistirAjuste' => function (array $where, array $values) use (&$guardados) {
+                $guardados[] = compact('where', 'values');
+
+                return (object) array_merge($where, $values);
+            },
+            'eliminarMovimientosAbono' => function (int $idAbono) use (&$eliminados) {
+                $eliminados[] = $idAbono;
+            },
+            'obtenerReglasActivas' => fn () => collect([
+                $this->reglaMomento(ComisionRegla::MOMENTO_POR_ABONO),
+            ]),
+        ]);
+
+        $svc->registrarAbono($this->ventaConLinea(), (object) [
+            'id' => 33,
+            'monto' => 50.0,
+            'estado' => 'Pendiente',
+            'fecha' => '2026-07-18',
+        ]);
+
+        $this->assertSame([], $guardados);
+        $this->assertSame([33], $eliminados);
+    }
+
+    public function test_eliminar_por_abono_borra_movimientos(): void
+    {
+        $eliminados = [];
+        $svc = $this->makeService([
+            'eliminarMovimientosAbono' => function (int $idAbono) use (&$eliminados) {
+                $eliminados[] = $idAbono;
+            },
+        ]);
+
+        $svc->eliminarPorAbono(33);
+
+        $this->assertSame([33], $eliminados);
+    }
+
+    public function test_ajustar_por_anulacion_incluye_origen_abono(): void
+    {
+        $guardados = [];
+        $movVenta = $this->movimientoVenta(['id' => 500]);
+        $movAbono = $this->movimientoVenta([
+            'id' => 501,
+            'origen' => ComisionMovimiento::ORIGEN_ABONO,
+            'monto_base' => 40.0,
+            'monto_comision' => 0.8,
+        ]);
+
+        $svc = $this->makeService([
+            'obtenerMovimientosVenta' => fn () => collect([$movVenta, $movAbono]),
+            'persistirAjuste' => function (array $where, array $values) use (&$guardados) {
+                $guardados[] = compact('where', 'values');
+
+                return (object) array_merge($where, $values);
+            },
+        ]);
+
+        $svc->ajustarPorAnulacionVenta(50, Carbon::parse('2026-07-20'));
+
+        $this->assertCount(2, $guardados);
+        $this->assertSame(500, $guardados[0]['where']['id_movimiento_origen']);
+        $this->assertSame(501, $guardados[1]['where']['id_movimiento_origen']);
+        $this->assertSame(-40.0, (float) $guardados[1]['values']['monto_base']);
+        $this->assertSame(-0.8, (float) $guardados[1]['values']['monto_comision']);
     }
 }

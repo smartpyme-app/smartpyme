@@ -49,6 +49,9 @@ class ComisionService
     /** @var Closure(int, int): void */
     private Closure $eliminarAjusteDevolucion;
 
+    /** @var Closure(int): void */
+    private Closure $eliminarMovimientosAbono;
+
     private ComisionCalculatorFactory $calculatorFactory;
 
     private ComisionReglaScope $reglaScope;
@@ -68,6 +71,7 @@ class ComisionService
      * @param  Closure(int, int): void|null  $eliminarAjusteDevolucion
      * @param  ComisionLiquidacionService|null  $liquidacionService
      * @param  Closure(int): \Illuminate\Support\Collection<int, object>|null  $obtenerReglasActivas
+     * @param  Closure(int): void|null  $eliminarMovimientosAbono
      */
     public function __construct(
         private ComisionPeriodoService $periodoService,
@@ -85,7 +89,8 @@ class ComisionService
         private ?ComisionLiquidacionService $liquidacionService = null,
         ?ComisionCalculatorFactory $calculatorFactory = null,
         ?ComisionReglaScope $reglaScope = null,
-        ?Closure $obtenerReglasActivas = null
+        ?Closure $obtenerReglasActivas = null,
+        ?Closure $eliminarMovimientosAbono = null
     ) {
         $this->liquidacionService ??= new ComisionLiquidacionService();
         $this->tieneFuncionalidad = $tieneFuncionalidad
@@ -103,7 +108,10 @@ class ComisionService
         $this->obtenerMovimientosVenta = $obtenerMovimientosVenta
             ?? fn (int $idVenta) => ComisionMovimiento::withoutGlobalScope('empresa')
                 ->where('id_venta', $idVenta)
-                ->where('origen', ComisionMovimiento::ORIGEN_VENTA)
+                ->whereIn('origen', [
+                    ComisionMovimiento::ORIGEN_VENTA,
+                    ComisionMovimiento::ORIGEN_ABONO,
+                ])
                 ->get();
         $this->obtenerVentaConDetalles = $obtenerVentaConDetalles
             ?? fn (int $idVenta) => Venta::with('detalles')->find($idVenta);
@@ -129,6 +137,16 @@ class ComisionService
                 ->where('id_empresa', $idEmpresa)
                 ->where('activo', true)
                 ->get();
+        $this->eliminarMovimientosAbono = $eliminarMovimientosAbono
+            ?? function (int $idAbono): void {
+                if ($idAbono <= 0) {
+                    return;
+                }
+                ComisionMovimiento::withoutGlobalScope('empresa')
+                    ->where('origen', ComisionMovimiento::ORIGEN_ABONO)
+                    ->where('id_abono', $idAbono)
+                    ->delete();
+            };
     }
 
     public function registrarVentaPagada(object $venta): void
@@ -151,12 +169,27 @@ class ComisionService
 
     public function registrarAbono(object $venta, object $abono): void
     {
+        if (($abono->estado ?? null) !== 'Confirmado') {
+            $this->eliminarPorAbono((int) ($abono->id ?? 0));
+
+            return;
+        }
+
         $this->registrarVentaPorMomento(
             $venta,
             ComisionRegla::MOMENTO_POR_ABONO,
             ComisionMovimiento::ORIGEN_ABONO,
             $abono
         );
+    }
+
+    public function eliminarPorAbono(int $idAbono): void
+    {
+        if ($idAbono <= 0) {
+            return;
+        }
+
+        ($this->eliminarMovimientosAbono)($idAbono);
     }
 
     private function registrarVentaPorMomento(
@@ -539,7 +572,10 @@ class ComisionService
                 'fecha_evento' => $fechaEvento,
             ];
 
-            $ultimo = ($this->persistirMovimiento)($where, $values);
+            $persistir = $origen === ComisionMovimiento::ORIGEN_ABONO
+                ? $this->persistirAjuste
+                : $this->persistirMovimiento;
+            $ultimo = ($persistir)($where, $values);
         }
 
         return $ultimo;
