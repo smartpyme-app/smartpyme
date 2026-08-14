@@ -352,6 +352,7 @@ class ComisionLiquidacionService
 
         foreach ($aplicables as $regla) {
             if (($regla->tipo_calculo ?? '') === ComisionRegla::TIPO_POR_VOLUMEN) {
+                // ponytail: cierre consulta ventas por vendedor; ceiling = N+1; upgrade = agregado agrupado por vendedor
                 $ventas ??= $this->ventasPeriodo->total($idEmpresa, $idVendedor, $inicio, $fin);
                 foreach ($this->factory->for(ComisionRegla::TIPO_POR_VOLUMEN)->calcularEnCierre((object) [
                     'id_empresa' => $idEmpresa,
