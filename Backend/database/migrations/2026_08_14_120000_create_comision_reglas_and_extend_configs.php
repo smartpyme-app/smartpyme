@@ -94,46 +94,8 @@ return new class extends Migration
 
     public function down(): void
     {
-        $categoriaIdsConservar = DB::table('comision_categoria_config')
-            ->selectRaw('MIN(id) as id')
-            ->groupBy('id_empresa', 'id_categoria')
-            ->pluck('id')
-            ->all();
-
-        if ($categoriaIdsConservar !== []) {
-            DB::table('comision_categoria_config')
-                ->whereNotIn('id', $categoriaIdsConservar)
-                ->delete();
-        }
-
-        $subcategoriaIdsConservar = DB::table('comision_subcategoria_config')
-            ->selectRaw('MIN(id) as id')
-            ->groupBy('id_empresa', 'id_subcategoria')
-            ->pluck('id')
-            ->all();
-
-        if ($subcategoriaIdsConservar !== []) {
-            DB::table('comision_subcategoria_config')
-                ->whereNotIn('id', $subcategoriaIdsConservar)
-                ->delete();
-        }
-
-        Schema::table('comision_categoria_config', function (Blueprint $table) {
-            $table->dropUnique(['id_regla', 'id_categoria']);
-            $table->unique(['id_empresa', 'id_categoria']);
-            $table->dropColumn('id_regla');
-        });
-        Schema::table('comision_subcategoria_config', function (Blueprint $table) {
-            $table->dropUnique(['id_regla', 'id_subcategoria']);
-            $table->unique(['id_empresa', 'id_subcategoria']);
-            $table->dropColumn('id_regla');
-        });
-        Schema::table('comision_movimientos', function (Blueprint $table) {
-            $table->dropColumn('id_regla');
-        });
-        Schema::table('comision_liquidaciones', function (Blueprint $table) {
-            $table->dropColumn(['salario_base', 'ajuste_salario_minimo', 'salario_minimo_aplicado', 'total_a_pagar']);
-        });
-        Schema::dropIfExists('comision_reglas');
+        throw new RuntimeException(
+            'Esta migración es irreversible: revertirla eliminaría configuración de comisiones por regla.'
+        );
     }
 };

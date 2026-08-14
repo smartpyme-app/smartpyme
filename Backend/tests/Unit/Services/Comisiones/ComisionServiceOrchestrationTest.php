@@ -6,6 +6,7 @@ use App\Models\Comisiones\ComisionMovimiento;
 use App\Models\Comisiones\ComisionPeriodo;
 use App\Models\Comisiones\ComisionRegla;
 use App\Services\Comisiones\ComisionBaseCalculator;
+use App\Services\Comisiones\ComisionLiquidacionService;
 use App\Services\Comisiones\ComisionPeriodoService;
 use App\Services\Comisiones\ComisionPorcentajeResolver;
 use App\Services\Comisiones\ComisionService;
@@ -17,7 +18,7 @@ class ComisionServiceOrchestrationTest extends TestCase
 {
     private function makeService(array $overrides = []): ComisionService
     {
-        $periodo = (object) [
+        $periodo = $overrides['periodo'] ?? (object) [
             'id' => 1,
             'estado' => ComisionPeriodo::ESTADO_ABIERTO,
             'fecha_fin' => '2026-07-31',
@@ -40,7 +41,10 @@ class ComisionServiceOrchestrationTest extends TestCase
             'obtenerDevolucionesActivas' => fn () => collect(),
             'eliminarAjusteDevolucion' => fn () => null,
             'eliminarMovimientosAbono' => fn () => null,
+            'obtenerMovimientosAbono' => fn () => [],
+            'esFormaPagoGiftCard' => fn (?string $nombre) => $nombre === 'Gift Card',
             'obtenerReglasActivas' => null,
+            'liquidacionService' => null,
             'resolver' => new ComisionPorcentajeResolver(
                 fn (int $e, int $c, ?int $idRegla = null) => null,
                 fn (int $e, int $s, ?int $idRegla = null) => null
@@ -62,11 +66,13 @@ class ComisionServiceOrchestrationTest extends TestCase
             $config['obtenerVentaConDetalles'],
             $config['obtenerDevolucionesActivas'],
             $config['eliminarAjusteDevolucion'],
-            null,
+            $config['liquidacionService'],
             null,
             null,
             $config['obtenerReglasActivas'],
-            $config['eliminarMovimientosAbono']
+            $config['eliminarMovimientosAbono'],
+            $config['obtenerMovimientosAbono'],
+            $config['esFormaPagoGiftCard']
         );
     }
 
@@ -706,6 +712,66 @@ class ComisionServiceOrchestrationTest extends TestCase
         $this->assertSame(0.5, (float) $guardados[0]['values']['monto_comision']);
     }
 
+    public function test_por_abono_excluye_fraccion_pagada_con_gift_card(): void
+    {
+        $guardados = [];
+        $svc = $this->makeService([
+            'resolver' => new ComisionPorcentajeResolver(
+                fn (int $e, int $c, ?int $idRegla = null) => 2.0,
+                fn (int $e, int $s, ?int $idRegla = null) => null
+            ),
+            'persistirAjuste' => function (array $where, array $values) use (&$guardados) {
+                $guardados[] = compact('where', 'values');
+
+                return (object) array_merge($where, $values);
+            },
+            'obtenerReglasActivas' => fn () => collect([
+                $this->reglaMomento(ComisionRegla::MOMENTO_POR_ABONO),
+            ]),
+        ]);
+        $venta = $this->ventaConLinea();
+        $venta->forma_pago = 'Gift Card';
+
+        $svc->registrarAbono($venta, (object) [
+            'id' => 33,
+            'monto' => 50.0,
+            'estado' => 'Confirmado',
+            'fecha' => '2026-07-18',
+        ]);
+
+        $this->assertSame([], $guardados);
+    }
+
+    public function test_por_abono_en_periodo_cerrado_recalcula_liquidacion(): void
+    {
+        $liquidacion = $this->createMock(ComisionLiquidacionService::class);
+        $liquidacion->expects($this->once())
+            ->method('recalcularParaVendedorPeriodo')
+            ->with(1, 3, 5);
+        $svc = $this->makeService([
+            'periodo' => (object) [
+                'id' => 3,
+                'estado' => ComisionPeriodo::ESTADO_CERRADO,
+                'fecha_fin' => '2026-07-31',
+            ],
+            'liquidacionService' => $liquidacion,
+            'resolver' => new ComisionPorcentajeResolver(
+                fn (int $e, int $c, ?int $idRegla = null) => 2.0,
+                fn (int $e, int $s, ?int $idRegla = null) => null
+            ),
+            'obtenerReglasActivas' => fn () => collect([
+                $this->reglaMomento(ComisionRegla::MOMENTO_POR_ABONO),
+            ]),
+        ]);
+
+        $svc->registrarAbono($this->ventaConLinea(), (object) [
+            'id' => 33,
+            'monto' => 50.0,
+            'estado' => 'Confirmado',
+            'fecha' => '2026-07-18',
+        ]);
+    }
+
     public function test_por_abono_no_dispara_en_venta_pagada(): void
     {
         $guardados = [];
@@ -823,6 +889,25 @@ class ComisionServiceOrchestrationTest extends TestCase
         $svc->eliminarPorAbono(33);
 
         $this->assertSame([33], $eliminados);
+    }
+
+    public function test_eliminar_por_abono_en_periodo_cerrado_recalcula_liquidacion(): void
+    {
+        $liquidacion = $this->createMock(ComisionLiquidacionService::class);
+        $liquidacion->expects($this->once())
+            ->method('recalcularParaVendedorPeriodo')
+            ->with(1, 3, 5);
+        $svc = $this->makeService([
+            'liquidacionService' => $liquidacion,
+            'obtenerMovimientosAbono' => fn () => [(object) [
+                'id_empresa' => 1,
+                'id_periodo' => 3,
+                'id_vendedor' => 5,
+                'periodo' => (object) ['estado' => ComisionPeriodo::ESTADO_CERRADO],
+            ]],
+        ]);
+
+        $svc->eliminarPorAbono(33);
     }
 
     public function test_ajustar_por_anulacion_incluye_origen_abono(): void

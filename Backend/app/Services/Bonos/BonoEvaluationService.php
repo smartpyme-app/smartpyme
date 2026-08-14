@@ -8,7 +8,7 @@ use App\Models\Bonos\BonoGenerado;
 use App\Models\Bonos\BonoRegla;
 use App\Services\Bonos\Calculators\BonoCalculatorFactory;
 use App\Services\Bonos\Calculators\GrupalCalculator;
-use App\Services\Comisiones\ComisionReglaScope;
+use App\Services\Incentivos\ReglaAlcance;
 use App\Services\Ventas\VentaMontosPorVendedorService;
 use Carbon\Carbon;
 use Closure;
@@ -135,7 +135,7 @@ class BonoEvaluationService
         $resumen = $this->resumenVacio();
         $vendedoresConVentas = ($this->obtenerVendedoresConVentas)($idEmpresa, $desde, $hasta);
         $reglas = ($this->obtenerReglasActivas)($idEmpresa);
-        $scope = new ComisionReglaScope();
+        $scope = new ReglaAlcance();
         $reglasScope = [];
         foreach ($reglas as $regla) {
             if (($regla->tipo ?? '') === BonoRegla::TIPO_CUALITATIVO_MANUAL) {
@@ -186,7 +186,7 @@ class BonoEvaluationService
         object $regla,
         string $desde,
         string $hasta,
-        ComisionReglaScope $scope,
+        ReglaAlcance $scope,
         array $reglasScope,
         array &$resumen,
     ): void {
@@ -233,7 +233,7 @@ class BonoEvaluationService
     }
 
     /** @param  array<int, object>  $reglasScope */
-    private function reglaAplicaAVendedor(ComisionReglaScope $scope, array $reglasScope, object $regla, int $idVendedor): bool
+    private function reglaAplicaAVendedor(ReglaAlcance $scope, array $reglasScope, object $regla, int $idVendedor): bool
     {
         $ids = array_map(fn ($r) => $r->id, $scope->aplicables($reglasScope, $idVendedor));
 

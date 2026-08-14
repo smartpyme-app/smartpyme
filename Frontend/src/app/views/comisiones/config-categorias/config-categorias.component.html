@@ -84,6 +84,7 @@
           <label class="form-label mb-0">Tramos de volumen</label>
           <button type="button" class="btn btn-sm btn-outline-primary" (click)="agregarTramo()">Agregar tramo</button>
         </div>
+        <label class="form-label">Umbral de ventas pagadas (misma base que metas de bonos, incluye IVA)</label>
         <div class="row g-2 mb-2" *ngFor="let tramo of form.tramos; let i = index">
           <div class="col-md-5">
             <input type="number" class="form-control" placeholder="Umbral de ventas" [(ngModel)]="tramo.umbral" min="0" step="0.01">

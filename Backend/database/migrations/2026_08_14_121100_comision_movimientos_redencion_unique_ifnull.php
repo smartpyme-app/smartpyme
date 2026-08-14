@@ -19,11 +19,19 @@ return new class extends Migration
 
     public function up(): void
     {
+        $version = $this->databaseVersion();
+        $mariaDb = $this->isMariaDb($version);
+        if (! $mariaDb && version_compare($this->mysqlVersion($version), '8.0.13', '<')) {
+            throw new RuntimeException(
+                "La migración requiere MySQL 8.0.13+ para índices funcionales; versión detectada: {$version}."
+            );
+        }
+
         Schema::table('comision_movimientos', function (Blueprint $table) {
             $table->dropUnique('comision_mov_unique_redencion_regla');
         });
 
-        if ($this->isMariaDb()) {
+        if ($mariaDb) {
             $this->upMariaDbGenerated();
 
             return;
@@ -71,11 +79,21 @@ return new class extends Migration
         ');
     }
 
-    private function isMariaDb(): bool
+    private function databaseVersion(): string
     {
-        $v = (string) (DB::selectOne('SELECT VERSION() AS v')->v ?? '');
+        return (string) (DB::selectOne('SELECT VERSION() AS v')->v ?? '');
+    }
 
-        return stripos($v, 'mariadb') !== false;
+    private function isMariaDb(string $version): bool
+    {
+        return stripos($version, 'mariadb') !== false;
+    }
+
+    private function mysqlVersion(string $version): string
+    {
+        preg_match('/\d+\.\d+\.\d+/', $version, $matches);
+
+        return $matches[0] ?? '0.0.0';
     }
 
     private function hasIndex(string $name): bool

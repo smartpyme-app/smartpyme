@@ -131,6 +131,12 @@ export class EmpresasFuncionalidadesComponent implements OnInit {
           // Agregar propiedad de seguimiento para cada funcionalidad
           this.funcionalidades = data.funcionalidades.map(f => ({
             ...f,
+            configuracion: f.slug === 'comisiones-vendedores'
+              ? {
+                  ...(f.configuracion ?? {}),
+                  aplicar_salario_minimo: !!f.configuracion?.aplicar_salario_minimo
+                }
+              : f.configuracion,
             estado: f.asignada ? 'activado' : 'desactivado'
           }));
           this.isLoading = false;

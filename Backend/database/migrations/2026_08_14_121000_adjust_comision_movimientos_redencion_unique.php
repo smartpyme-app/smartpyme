@@ -22,15 +22,8 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::table('comision_movimientos', function (Blueprint $table) {
-            $table->dropUnique('comision_mov_unique_redencion_regla');
-        });
-
-        Schema::table('comision_movimientos', function (Blueprint $table) {
-            $table->unique(
-                ['id_empresa', 'id_gift_card_redencion'],
-                'comision_mov_unique_redencion'
-            );
-        });
+        throw new RuntimeException(
+            'Esta migración es irreversible: una redención puede tener movimientos para múltiples reglas.'
+        );
     }
 };

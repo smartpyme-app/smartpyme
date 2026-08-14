@@ -28,6 +28,6 @@ class ComisionSalarioMinimo
             $minimo = $top['salario_minimo'] ?? null;
         }
 
-        return $minimo !== null ? (float) $minimo : null;
+        return is_numeric($minimo) ? (float) $minimo : null;
     }
 }

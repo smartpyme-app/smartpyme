@@ -52,6 +52,12 @@ class ComisionService
     /** @var Closure(int): void */
     private Closure $eliminarMovimientosAbono;
 
+    /** @var Closure(int): iterable<object> */
+    private Closure $obtenerMovimientosAbono;
+
+    /** @var Closure(?string): bool */
+    private Closure $esFormaPagoGiftCard;
+
     private ComisionCalculatorFactory $calculatorFactory;
 
     private ComisionReglaScope $reglaScope;
@@ -72,6 +78,8 @@ class ComisionService
      * @param  ComisionLiquidacionService|null  $liquidacionService
      * @param  Closure(int): \Illuminate\Support\Collection<int, object>|null  $obtenerReglasActivas
      * @param  Closure(int): void|null  $eliminarMovimientosAbono
+     * @param  Closure(int): iterable<object>|null  $obtenerMovimientosAbono
+     * @param  Closure(?string): bool|null  $esFormaPagoGiftCard
      */
     public function __construct(
         private ComisionPeriodoService $periodoService,
@@ -90,7 +98,9 @@ class ComisionService
         ?ComisionCalculatorFactory $calculatorFactory = null,
         ?ComisionReglaScope $reglaScope = null,
         ?Closure $obtenerReglasActivas = null,
-        ?Closure $eliminarMovimientosAbono = null
+        ?Closure $eliminarMovimientosAbono = null,
+        ?Closure $obtenerMovimientosAbono = null,
+        ?Closure $esFormaPagoGiftCard = null
     ) {
         $this->liquidacionService ??= new ComisionLiquidacionService();
         $this->tieneFuncionalidad = $tieneFuncionalidad
@@ -147,6 +157,14 @@ class ComisionService
                     ->where('id_abono', $idAbono)
                     ->delete();
             };
+        $this->obtenerMovimientosAbono = $obtenerMovimientosAbono
+            ?? fn (int $idAbono) => ComisionMovimiento::withoutGlobalScope('empresa')
+                ->where('origen', ComisionMovimiento::ORIGEN_ABONO)
+                ->where('id_abono', $idAbono)
+                ->with('periodo')
+                ->get();
+        $this->esFormaPagoGiftCard = $esFormaPagoGiftCard
+            ?? fn (?string $nombre) => Indicador::esFormaPagoGiftCard($nombre);
     }
 
     public function registrarVentaPagada(object $venta): void
@@ -175,12 +193,21 @@ class ComisionService
             return;
         }
 
-        $this->registrarVentaPorMomento(
+        $resultado = $this->registrarVentaPorMomento(
             $venta,
             ComisionRegla::MOMENTO_POR_ABONO,
             ComisionMovimiento::ORIGEN_ABONO,
             $abono
         );
+        if ($resultado !== null && $resultado['periodo']->estado === ComisionPeriodo::ESTADO_CERRADO) {
+            foreach ($resultado['id_vendedores'] as $idVendedor) {
+                $this->liquidacionService->recalcularParaVendedorPeriodo(
+                    (int) $venta->id_empresa,
+                    (int) $resultado['periodo']->id,
+                    $idVendedor
+                );
+            }
+        }
     }
 
     public function eliminarPorAbono(int $idAbono): void
@@ -189,17 +216,38 @@ class ComisionService
             return;
         }
 
+        $afectados = ($this->obtenerMovimientosAbono)($idAbono);
         ($this->eliminarMovimientosAbono)($idAbono);
+
+        $recalculados = [];
+        foreach ($afectados as $movimiento) {
+            if (($movimiento->periodo->estado ?? null) !== ComisionPeriodo::ESTADO_CERRADO) {
+                continue;
+            }
+            $key = "{$movimiento->id_empresa}:{$movimiento->id_periodo}:{$movimiento->id_vendedor}";
+            if (isset($recalculados[$key])) {
+                continue;
+            }
+            $recalculados[$key] = true;
+            $this->liquidacionService->recalcularParaVendedorPeriodo(
+                (int) $movimiento->id_empresa,
+                (int) $movimiento->id_periodo,
+                (int) $movimiento->id_vendedor
+            );
+        }
     }
 
+    /**
+     * @return array{periodo: object, id_vendedores: list<int>}|null
+     */
     private function registrarVentaPorMomento(
         object $venta,
         string $momento,
         string $origen,
         ?object $abono = null
-    ): void {
+    ): ?array {
         if (! ($this->tieneFuncionalidad)((int) $venta->id_empresa, self::SLUG_COMISIONES)) {
-            return;
+            return null;
         }
 
         $config = ($this->obtenerConfigComisiones)((int) $venta->id_empresa);
@@ -210,8 +258,9 @@ class ComisionService
             default => $venta->fecha_pago ?? $venta->fecha ?? now(),
         };
         $periodo = $this->periodoService->periodoParaFecha((int) $venta->id_empresa, Carbon::parse($fechaEvento));
+        // ponytail: al_facturar no conoce el medio de pago; ceiling = gift card comisionada; upgrade = reconciliar al pasar la venta a Pagada
         // ponytail: prorrateo proporcional por total de venta; ceiling = no line-level payment allocation; upgrade = per-line gift application
-        $fraccionGift = $momento === ComisionRegla::MOMENTO_AL_PAGAR
+        $fraccionGift = in_array($momento, [ComisionRegla::MOMENTO_AL_PAGAR, ComisionRegla::MOMENTO_POR_ABONO], true)
             ? $this->fraccionGiftCardEnVenta($venta)
             : 0.0;
         $fraccionAbono = 1.0;
@@ -222,12 +271,20 @@ class ComisionService
             $montoAbono = (float) ($abono->monto ?? $abono->total ?? 0);
             $fraccionAbono = $totalVenta > 0 ? $montoAbono / $totalVenta : 0.0;
             if ($fraccionAbono <= 0) {
-                return;
+                return null;
             }
         }
 
+        $idVendedores = [];
         foreach ($venta->detalles as $detalle) {
-            $this->registrarLineaVenta(
+            $idVendedor = $this->vendedorEfectivo(
+                isset($detalle->id_vendedor) ? (int) $detalle->id_vendedor : null,
+                (int) ($venta->id_vendedor ?? 0)
+            );
+            if ($idVendedor !== null) {
+                $idVendedores[] = $idVendedor;
+            }
+            $movimiento = $this->registrarLineaVenta(
                 (int) $venta->id_empresa,
                 (int) $venta->id,
                 $detalle,
@@ -242,7 +299,15 @@ class ComisionService
                 $idAbono,
                 $fraccionAbono
             );
+            if (isset($movimiento->id_vendedor)) {
+                $idVendedores[] = (int) $movimiento->id_vendedor;
+            }
         }
+
+        return [
+            'periodo' => $periodo,
+            'id_vendedores' => array_values(array_unique($idVendedores)),
+        ];
     }
 
     public function registrarAjustePorDevolucion(
@@ -520,7 +585,7 @@ class ComisionService
         }
 
         $base = $this->calculator->calcular($detalle, $baseCalculo);
-        if ($origen === ComisionMovimiento::ORIGEN_VENTA && $fraccionGift > 0) {
+        if ($fraccionGift > 0) {
             $base = round($base * (1 - min(1.0, $fraccionGift)), 4);
         }
         if ($base <= 0) {
@@ -676,11 +741,11 @@ class ComisionService
         $metodos = $venta->metodos_de_pago ?? null;
         if ($metodos !== null && count($metodos) > 0) {
             foreach ($metodos as $metodo) {
-                if (Indicador::esFormaPagoGiftCard($metodo->nombre ?? null)) {
+                if (($this->esFormaPagoGiftCard)($metodo->nombre ?? null)) {
                     $montoGift += (float) ($metodo->total ?? 0);
                 }
             }
-        } elseif (Indicador::esFormaPagoGiftCard($venta->forma_pago ?? null)) {
+        } elseif (($this->esFormaPagoGiftCard)($venta->forma_pago ?? null)) {
             $montoGift = $totalVenta;
         }
 

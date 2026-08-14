@@ -46,6 +46,13 @@ class ComisionSalarioMinimoTest extends TestCase
         $this->assertNull(ComisionSalarioMinimo::minimoDePlanilla($this->stubPlanilla(['moneda' => 'USD'], [])));
     }
 
+    public function test_minimo_null_si_valor_no_es_numerico(): void
+    {
+        $this->assertNull(ComisionSalarioMinimo::minimoDePlanilla(
+            $this->stubPlanilla(['salario_minimo' => 'no-configurado'], [])
+        ));
+    }
+
     /**
      * @param  array<string, mixed>  $generales
      * @param  array<string, mixed>|null  $topLevel

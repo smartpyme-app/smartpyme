@@ -169,8 +169,8 @@ export class ComisionesService {
     return this.apiService.getAll('comisiones/periodos', params);
   }
 
-  getPeriodo(id: number): Observable<ComisionApiResponse<ComisionPeriodo>> {
-    return this.apiService.read('comisiones/periodos/', id);
+  getPeriodo(id: number, estimado = false): Observable<ComisionApiResponse<ComisionPeriodo>> {
+    return this.apiService.getAll(`comisiones/periodos/${id}`, estimado ? { estimado: 1 } : {});
   }
 
   cerrarPeriodo(id: number): Observable<ComisionApiResponse<ComisionPeriodo>> {

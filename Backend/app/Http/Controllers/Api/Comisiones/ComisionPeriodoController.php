@@ -33,8 +33,8 @@ class ComisionPeriodoController extends Controller
         $idEmpresa = (int) $request->user()->id_empresa;
         $periodo = $this->liquidacionService->obtenerPeriodo($idEmpresa, $id);
 
-        if ($periodo->estado === ComisionPeriodo::ESTADO_ABIERTO) {
-            $periodo->setAttribute('estimado', $this->liquidacionService->previewVolumen($idEmpresa, $id));
+        if ($request->boolean('estimado') && $periodo->estado === ComisionPeriodo::ESTADO_ABIERTO) {
+            $periodo->setAttribute('estimado', $this->liquidacionService->previewVolumen($idEmpresa, $id, $periodo));
         }
 
         return response()->json([

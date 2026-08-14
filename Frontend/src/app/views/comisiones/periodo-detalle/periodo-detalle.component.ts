@@ -34,7 +34,7 @@ export class PeriodoDetalleComponent implements OnInit {
 
   loadPeriodo(): void {
     this.loading = true;
-    this.comisionesService.getPeriodo(this.periodoId).subscribe({
+    this.comisionesService.getPeriodo(this.periodoId, true).subscribe({
       next: (response) => {
         this.periodo = response?.data ?? response ?? null;
         this.loading = false;
