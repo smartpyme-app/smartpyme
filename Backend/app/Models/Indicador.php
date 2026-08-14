@@ -35,6 +35,7 @@ class Indicador extends Model
         'inicio',
         'fin',
         'id_sucursal',
+        'id_bodega',
         'id_usuario',
         'id_canal',
     ];
@@ -54,6 +55,9 @@ class Indicador extends Model
                             ->when($this->id_sucursal, function($q){
                                 $q->where('id_sucursal', $this->id_sucursal);
                             })
+                            ->when($this->id_bodega, function($q){
+                                $q->where('id_bodega', $this->id_bodega);
+                            })
                             ->when($this->id_usuario, function($q){
                                 $q->where('id_usuario', $this->id_usuario);
                             })
@@ -69,6 +73,9 @@ class Indicador extends Model
                         ->when($this->id_sucursal, function($q){
                             $q->where('id_sucursal', $this->id_sucursal);
                         })
+                        ->when($this->id_bodega, function($q){
+                            $q->where('id_bodega', $this->id_bodega);
+                        })
                         ->when($this->id_usuario, function($q){
                             $q->where('id_usuario', $this->id_usuario);
                         })
@@ -82,6 +89,9 @@ class Indicador extends Model
         $this->ventas_pagadas = Venta::where('id_empresa', $this->id_empresa)
                         ->when($this->id_sucursal, function($q){
                             $q->where('id_sucursal', $this->id_sucursal);
+                        })
+                        ->when($this->id_bodega, function($q){
+                            $q->where('id_bodega', $this->id_bodega);
                         })
                         ->when($this->id_usuario, function($q){
                             $q->where('id_usuario', $this->id_usuario);
@@ -97,6 +107,9 @@ class Indicador extends Model
         $this->ventas_anuladas = Venta::where('id_empresa', $this->id_empresa)
                         ->when($this->id_sucursal, function($q){
                             $q->where('id_sucursal', $this->id_sucursal);
+                        })
+                        ->when($this->id_bodega, function($q){
+                            $q->where('id_bodega', $this->id_bodega);
                         })
                         ->when($this->id_usuario, function($q){
                             $q->where('id_usuario', $this->id_usuario);
@@ -115,6 +128,9 @@ class Indicador extends Model
                             ->when($this->id_sucursal, function($q){
                                 $q->where('id_sucursal', $this->id_sucursal);
                             })
+                            ->when($this->id_bodega, function($q){
+                                $q->where('id_bodega', $this->id_bodega);
+                            })
                             ->when($this->id_usuario, function($q){
                                 $q->where('id_usuario', $this->id_usuario);
                             })
@@ -129,6 +145,9 @@ class Indicador extends Model
         $this->cxc = Venta::where('id_empresa', $this->id_empresa)
                         ->when($this->id_sucursal, function($q){
                             $q->where('id_sucursal', $this->id_sucursal);
+                        })
+                        ->when($this->id_bodega, function($q){
+                            $q->where('id_bodega', $this->id_bodega);
                         })
                         ->when($this->id_usuario, function($q){
                             $q->where('id_usuario', $this->id_usuario);
@@ -148,6 +167,9 @@ class Indicador extends Model
                             ->when($this->id_sucursal, function($q){
                                 $q->where('id_sucursal', $this->id_sucursal);
                             })
+                            ->when($this->id_bodega, function($q){
+                                $q->where('id_bodega', $this->id_bodega);
+                            })
                             ->when($this->id_usuario, function($q){
                                 $q->where('id_usuario', $this->id_usuario);
                             })
@@ -156,52 +178,59 @@ class Indicador extends Model
                             });
                         })->get();
 
-        $this->compras = Compra::where('id_empresa', $this->id_empresa)
-                        ->when($this->id_sucursal, function($q){
-                            $q->where('id_sucursal', $this->id_sucursal);
-                        })
-                        ->when($this->id_usuario, function($q){
-                            $q->where('id_usuario', $this->id_usuario);
-                        })
-                        ->where('estado', 'Pagada')
-                        ->where('cotizacion', 0)
-                        ->whereBetween('fecha', [$this->inicio, $this->fin])
-                        ->get();
-
-        $this->devoluciones_compras = DevolucionCompra::where('enable', '=', true)
-                        ->whereHas('compra', function($q){
-                            $q->where('id_empresa', $this->id_empresa)
+        if ($this->id_bodega) {
+            $this->compras = collect();
+            $this->devoluciones_compras = collect();
+            $this->cxp = collect();
+            $this->gastos = collect();
+        } else {
+            $this->compras = Compra::where('id_empresa', $this->id_empresa)
                             ->when($this->id_sucursal, function($q){
                                 $q->where('id_sucursal', $this->id_sucursal);
                             })
                             ->when($this->id_usuario, function($q){
                                 $q->where('id_usuario', $this->id_usuario);
-                            });
-                        })
-                        ->whereBetween('fecha', [$this->inicio, $this->fin])
-                        ->get();
+                            })
+                            ->where('estado', 'Pagada')
+                            ->where('cotizacion', 0)
+                            ->whereBetween('fecha', [$this->inicio, $this->fin])
+                            ->get();
 
-        $this->cxp = Compra::where('id_empresa', $this->id_empresa)
-                        ->when($this->id_sucursal, function($q){
-                            $q->where('id_sucursal', $this->id_sucursal);
-                        })
-                        ->when($this->id_usuario, function($q){
-                            $q->where('id_usuario', $this->id_usuario);
-                        })
-                        ->where('estado', 'Pendiente')
-                        ->whereBetween('fecha', [$this->inicio, $this->fin])
-                        ->get();
+            $this->devoluciones_compras = DevolucionCompra::where('enable', '=', true)
+                            ->whereHas('compra', function($q){
+                                $q->where('id_empresa', $this->id_empresa)
+                                ->when($this->id_sucursal, function($q){
+                                    $q->where('id_sucursal', $this->id_sucursal);
+                                })
+                                ->when($this->id_usuario, function($q){
+                                    $q->where('id_usuario', $this->id_usuario);
+                                });
+                            })
+                            ->whereBetween('fecha', [$this->inicio, $this->fin])
+                            ->get();
 
-        $this->gastos = Gasto::where('id_empresa', $this->id_empresa)
-                        ->when($this->id_sucursal, function($q){
-                            $q->where('id_sucursal', $this->id_sucursal);
-                        })
-                        ->when($this->id_usuario, function($q){
-                            $q->where('id_usuario', $this->id_usuario);
-                        })
-                        ->where('estado', '!=', 'Cancelado')
-                        ->whereBetween('fecha', [$this->inicio, $this->fin])
-                        ->get();
+            $this->cxp = Compra::where('id_empresa', $this->id_empresa)
+                            ->when($this->id_sucursal, function($q){
+                                $q->where('id_sucursal', $this->id_sucursal);
+                            })
+                            ->when($this->id_usuario, function($q){
+                                $q->where('id_usuario', $this->id_usuario);
+                            })
+                            ->where('estado', 'Pendiente')
+                            ->whereBetween('fecha', [$this->inicio, $this->fin])
+                            ->get();
+
+            $this->gastos = Gasto::where('id_empresa', $this->id_empresa)
+                            ->when($this->id_sucursal, function($q){
+                                $q->where('id_sucursal', $this->id_sucursal);
+                            })
+                            ->when($this->id_usuario, function($q){
+                                $q->where('id_usuario', $this->id_usuario);
+                            })
+                            ->where('estado', '!=', 'Cancelado')
+                            ->whereBetween('fecha', [$this->inicio, $this->fin])
+                            ->get();
+        }
     }
 
     /**

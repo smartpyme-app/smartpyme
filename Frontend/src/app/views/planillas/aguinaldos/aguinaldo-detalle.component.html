@@ -18,10 +18,10 @@
         type="date"
         class="form-control form-control-sm"
         style="width: auto;"
-        [value]="aguinaldo.fecha_calculo || (aguinaldo.anio + '-12-12')"
+        [value]="aguinaldo.fecha_calculo || (aguinaldo.anio + '-10-20')"
         (change)="actualizarFechaCalculo($event)"
         [disabled]="saving"
-        tooltip="Fecha límite para el cálculo del aguinaldo (por ley es 12 de diciembre)"
+        tooltip="Fecha de referencia para el cálculo del aguinaldo (por ley es 20 de octubre)"
       />
     </div>
   </div>

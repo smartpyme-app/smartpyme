@@ -27,6 +27,8 @@ use Illuminate\Support\Facades\Log;
 use App\Models\User;
 use App\Http\Requests\Compras\Gastos\StoreGastoRequest;
 use App\Http\Requests\Compras\Gastos\ImportarJsonGastoRequest;
+use App\Models\Admin\Funcionalidad;
+use App\Models\Admin\EmpresaFuncionalidad;
 
 class GastosController extends Controller
 {
@@ -185,6 +187,16 @@ class GastosController extends Controller
     {
         if ($bloqueado = $this->respuestaGastosRestringidosSupervisorLimitado(auth()->user())) {
             return $bloqueado;
+        }
+
+        if ($request->boolean('from_importacion_masiva')) {
+            $idEmpresaAuth = auth()->user()->id_empresa ?? null;
+            if (!$this->empresaTieneImportacionMasivaGastosJson($idEmpresaAuth)) {
+                return Response()->json([
+                    'error' => 'Su empresa no tiene habilitada la importación masiva de gastos desde JSON.',
+                    'code' => 403,
+                ], 403);
+            }
         }
 
         if ($request->input('id_categoria') === '' || $request->input('id_categoria') === null) {
@@ -713,4 +725,23 @@ class GastosController extends Controller
 
         return Response()->json($numsIds, 200);
      }
+
+    /**
+     * Slug en `funcionalidades` / super admin → empresas (FuncionalidadesSeeder).
+     */
+    private function empresaTieneImportacionMasivaGastosJson(?int $idEmpresa): bool
+    {
+        if (!$idEmpresa) {
+            return false;
+        }
+        $funcionalidad = Funcionalidad::where('slug', 'importacion-masiva-gastos-json')->first();
+        if (!$funcionalidad) {
+            return false;
+        }
+
+        return EmpresaFuncionalidad::where('id_empresa', $idEmpresa)
+            ->where('id_funcionalidad', $funcionalidad->id)
+            ->where('activo', 1)
+            ->exists();
+    }
 }
