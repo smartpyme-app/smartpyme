@@ -24,7 +24,7 @@
   </div>
 
   <ng-container *ngIf="!loading && periodo">
-    <p class="text-muted mb-3" *ngIf="!periodo.liquidaciones?.length">
+    <p class="text-muted mb-3" *ngIf="!periodo.liquidaciones?.length && !estimados.length">
       Sin liquidaciones en este período.
     </p>
 
@@ -34,6 +34,9 @@
           <tr>
             <th>Vendedor</th>
             <th>Total comisión</th>
+            <th>Salario base</th>
+            <th>Ajuste mínimo</th>
+            <th>Total a pagar</th>
             <th>Estado pago</th>
             <th class="text-end">Acciones</th>
           </tr>
@@ -42,6 +45,9 @@
           <tr *ngFor="let liq of periodo.liquidaciones">
             <td>{{ liq.vendedor?.name || ('Vendedor #' + liq.id_vendedor) }}</td>
             <td>{{ liq.total_comision | number:'1.2-2' }}</td>
+            <td>{{ (liq.salario_base || 0) | number:'1.2-2' }}</td>
+            <td>{{ (liq.ajuste_salario_minimo || 0) | number:'1.2-2' }}</td>
+            <td>{{ (liq.total_a_pagar ?? liq.total_comision) | number:'1.2-2' }}</td>
             <td>
               <span class="badge" [ngClass]="liq.pagado_at ? 'bg-success' : 'bg-secondary'">
                 {{ liq.pagado_at ? 'Pagado' : 'Pendiente' }}
@@ -68,6 +74,31 @@
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <div class="mt-4" *ngIf="estimados.length">
+      <h5 class="mb-2">Volumen</h5>
+      <p class="text-muted mb-3">Estimado (se confirma al cerrar)</p>
+      <div class="table-responsive">
+        <table class="table table-borderless table-hover mb-0">
+          <thead>
+            <tr>
+              <th>Vendedor</th>
+              <th>Ventas</th>
+              <th>Porcentaje</th>
+              <th>Estimado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of estimados">
+              <td>{{ nombreVendedorEstimado(item) }}</td>
+              <td>{{ item.monto_base | number:'1.2-2' }}</td>
+              <td>{{ item.porcentaje | number:'1.2-2' }}%</td>
+              <td>{{ item.monto | number:'1.2-2' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </ng-container>
 </section>

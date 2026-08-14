@@ -28,8 +28,52 @@ export interface ComisionLiquidacion {
   id_vendedor: number;
   id_periodo: number;
   total_comision: number;
+  salario_base?: number;
+  ajuste_salario_minimo?: number;
+  total_a_pagar?: number;
   pagado_at: string | null;
   vendedor?: ComisionVendedor;
+}
+
+export type ComisionTipoCalculo = 'por_categoria' | 'por_volumen' | 'por_margen';
+export type ComisionAlcance = 'global' | 'individual' | 'equipo';
+export type ComisionMomento = 'al_pagar' | 'al_facturar' | 'por_abono';
+
+export interface ComisionTramoVolumen {
+  umbral: number;
+  porcentaje: number;
+}
+
+export interface ComisionRegla {
+  id: number;
+  nombre: string;
+  tipo_calculo: ComisionTipoCalculo;
+  alcance: ComisionAlcance;
+  id_vendedores: number[] | null;
+  momento_devengo: ComisionMomento;
+  reemplaza_global: boolean;
+  config: { porcentaje?: number; salario_base?: number; tramos?: ComisionTramoVolumen[] };
+  activo: boolean;
+}
+
+export interface ComisionReglaPayload {
+  nombre: string;
+  tipo_calculo: ComisionTipoCalculo;
+  alcance: ComisionAlcance;
+  id_vendedores?: number[] | null;
+  momento_devengo: ComisionMomento;
+  reemplaza_global?: boolean;
+  config: ComisionRegla['config'];
+  salario_base?: number;
+  activo?: boolean;
+}
+
+export interface ComisionEstimadoVolumen {
+  id_vendedor: number;
+  id_regla: number | null;
+  monto_base: number;
+  porcentaje: number;
+  monto: number;
 }
 
 export interface ComisionPeriodo {
@@ -38,6 +82,7 @@ export interface ComisionPeriodo {
   fecha_fin: string;
   estado: 'abierto' | 'cerrado' | 'pagado';
   liquidaciones?: ComisionLiquidacion[];
+  estimado?: ComisionEstimadoVolumen[];
 }
 
 export interface ComisionMovimiento {
@@ -86,16 +131,37 @@ export class ComisionesService {
 
   constructor(private apiService: ApiService) {}
 
+  getReglas(activo?: boolean): Observable<ComisionApiResponse<ComisionRegla[]>> {
+    const params = activo !== undefined ? { activo } : {};
+    return this.apiService.getAll('comisiones/config/reglas', params);
+  }
+
+  crearRegla(payload: ComisionReglaPayload): Observable<ComisionApiResponse<ComisionRegla>> {
+    return this.apiService.store('comisiones/config/reglas', payload);
+  }
+
+  actualizarRegla(id: number, payload: Partial<ComisionReglaPayload>): Observable<ComisionApiResponse<ComisionRegla>> {
+    return this.apiService.update('comisiones/config/reglas', id, payload);
+  }
+
   getCategorias(filtros: Record<string, unknown> = {}): Observable<ComisionApiResponse<ComisionCategoriaConfig[]>> {
     return this.apiService.getAll('comisiones/config/categorias', filtros);
   }
 
-  actualizarCategoria(idCategoria: number, porcentaje: number): Observable<ComisionApiResponse<unknown>> {
-    return this.apiService.update('comisiones/config/categorias', idCategoria, { porcentaje });
+  actualizarCategoria(idCategoria: number, porcentaje: number, idRegla?: number): Observable<ComisionApiResponse<unknown>> {
+    const body: Record<string, number> = { porcentaje };
+    if (idRegla) {
+      body['id_regla'] = idRegla;
+    }
+    return this.apiService.update('comisiones/config/categorias', idCategoria, body);
   }
 
-  actualizarSubcategoria(idSubcategoria: number, porcentaje: number): Observable<ComisionApiResponse<unknown>> {
-    return this.apiService.update('comisiones/config/subcategorias', idSubcategoria, { porcentaje });
+  actualizarSubcategoria(idSubcategoria: number, porcentaje: number, idRegla?: number): Observable<ComisionApiResponse<unknown>> {
+    const body: Record<string, number> = { porcentaje };
+    if (idRegla) {
+      body['id_regla'] = idRegla;
+    }
+    return this.apiService.update('comisiones/config/subcategorias', idSubcategoria, body);
   }
 
   getPeriodos(estado?: string): Observable<ComisionApiResponse<ComisionPeriodo[]>> {

@@ -18,7 +18,8 @@ class ComisionConfigController extends Controller
     public function listarCategorias(Request $request): JsonResponse
     {
         $idEmpresa = (int) $request->user()->id_empresa;
-        $categorias = $this->configService->listarCategorias($idEmpresa)->values();
+        $idRegla = $request->filled('id_regla') ? (int) $request->input('id_regla') : null;
+        $categorias = $this->configService->listarCategorias($idEmpresa, $idRegla)->values();
 
         $page = max(1, (int) $request->input('page', 1));
         $perPage = min(100, max(1, (int) $request->input('paginate', 25)));
@@ -46,12 +47,14 @@ class ComisionConfigController extends Controller
     {
         $validated = $request->validate([
             'porcentaje' => 'required|numeric|min:0|max:100',
+            'id_regla' => 'nullable|integer|min:1',
         ]);
 
         $config = $this->configService->actualizarCategoria(
             (int) $request->user()->id_empresa,
             $id_categoria,
-            (float) $validated['porcentaje']
+            (float) $validated['porcentaje'],
+            isset($validated['id_regla']) ? (int) $validated['id_regla'] : null
         );
 
         return response()->json([
@@ -64,12 +67,14 @@ class ComisionConfigController extends Controller
     {
         $validated = $request->validate([
             'porcentaje' => 'required|numeric|min:0|max:100',
+            'id_regla' => 'nullable|integer|min:1',
         ]);
 
         $config = $this->configService->actualizarSubcategoria(
             (int) $request->user()->id_empresa,
             $id_subcategoria,
-            (float) $validated['porcentaje']
+            (float) $validated['porcentaje'],
+            isset($validated['id_regla']) ? (int) $validated['id_regla'] : null
         );
 
         return response()->json([

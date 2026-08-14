@@ -10,6 +10,7 @@ use App\Models\EmpresaConfiguracionPlanilla;
 use App\Models\User;
 use App\Services\Comisiones\Calculators\ComisionCalculatorFactory;
 use Carbon\Carbon;
+use Closure;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -27,14 +28,29 @@ class ComisionLiquidacionService
 
     private ComisionVentasPeriodo $ventasPeriodo;
 
+    /** @var Closure(int, int): object|null */
+    private ?Closure $obtenerPeriodoOverride;
+
+    /** @var Closure(int): list<object>|null */
+    private ?Closure $obtenerReglasActivas;
+
+    /** @var Closure(int, object, list<object>): list<int>|null */
+    private ?Closure $idsVendedoresPreview;
+
     public function __construct(
         ?ComisionCalculatorFactory $factory = null,
         ?ComisionReglaScope $reglaScope = null,
         ?ComisionVentasPeriodo $ventasPeriodo = null,
+        ?Closure $obtenerPeriodo = null,
+        ?Closure $obtenerReglasActivas = null,
+        ?Closure $idsVendedoresPreview = null,
     ) {
         $this->factory = $factory ?? new ComisionCalculatorFactory(new ComisionPorcentajeResolver());
         $this->reglaScope = $reglaScope ?? new ComisionReglaScope();
         $this->ventasPeriodo = $ventasPeriodo ?? new ComisionVentasPeriodo();
+        $this->obtenerPeriodoOverride = $obtenerPeriodo;
+        $this->obtenerReglasActivas = $obtenerReglasActivas;
+        $this->idsVendedoresPreview = $idsVendedoresPreview;
     }
 
     /** @return EloquentCollection<int, ComisionPeriodo> */
@@ -58,6 +74,51 @@ class ComisionLiquidacionService
             ->where('id_empresa', $idEmpresa)
             ->with(['liquidaciones.vendedor'])
             ->findOrFail($idPeriodo);
+    }
+
+    /**
+     * @return list<array{id_vendedor: int, id_regla: int|null, monto_base: float, porcentaje: float, monto: float}>
+     */
+    public function previewVolumen(int $idEmpresa, int $idPeriodo): array
+    {
+        $periodo = $this->periodoParaPreview($idEmpresa, $idPeriodo);
+        if (($periodo->estado ?? '') !== ComisionPeriodo::ESTADO_ABIERTO) {
+            return [];
+        }
+
+        $reglas = $this->reglasActivasParaPreview($idEmpresa);
+        $inicio = $this->fechaPeriodo($periodo->fecha_inicio ?? null);
+        $fin = $this->fechaPeriodo($periodo->fecha_fin ?? null);
+        $estimados = [];
+
+        foreach ($this->idsVendedoresParaPreview($idEmpresa, $periodo, $reglas) as $idVendedor) {
+            $ventas = null;
+            foreach ($this->reglaScope->aplicables($reglas, $idVendedor) as $regla) {
+                if (($regla->tipo_calculo ?? '') !== ComisionRegla::TIPO_POR_VOLUMEN) {
+                    continue;
+                }
+                $ventas ??= $this->ventasPeriodo->total($idEmpresa, $idVendedor, $inicio, $fin);
+                foreach ($this->factory->for(ComisionRegla::TIPO_POR_VOLUMEN)->calcularEnCierre((object) [
+                    'id_empresa' => $idEmpresa,
+                    'id_vendedor' => $idVendedor,
+                    'ventas' => $ventas,
+                    'regla' => $regla,
+                ]) as $resultado) {
+                    if ($resultado->montoComision == 0.0) {
+                        continue;
+                    }
+                    $estimados[] = [
+                        'id_vendedor' => $idVendedor,
+                        'id_regla' => isset($regla->id) ? (int) $regla->id : null,
+                        'monto_base' => $resultado->montoBase,
+                        'porcentaje' => $resultado->porcentaje,
+                        'monto' => $resultado->montoComision,
+                    ];
+                }
+            }
+        }
+
+        return $estimados;
     }
 
     public function cerrarPeriodo(int $idEmpresa, int $idPeriodo): ComisionPeriodo
@@ -356,5 +417,54 @@ class ComisionLiquidacionService
         return ComisionSalarioMinimo::minimoDePlanilla(
             EmpresaConfiguracionPlanilla::obtenerConfiguracion($idEmpresa)
         );
+    }
+
+    private function periodoParaPreview(int $idEmpresa, int $idPeriodo): object
+    {
+        if ($this->obtenerPeriodoOverride !== null) {
+            return ($this->obtenerPeriodoOverride)($idEmpresa, $idPeriodo);
+        }
+
+        return $this->obtenerPeriodo($idEmpresa, $idPeriodo);
+    }
+
+    /** @return list<object> */
+    private function reglasActivasParaPreview(int $idEmpresa): array
+    {
+        if ($this->obtenerReglasActivas !== null) {
+            return ($this->obtenerReglasActivas)($idEmpresa);
+        }
+
+        return ComisionRegla::withoutGlobalScope('empresa')
+            ->where('id_empresa', $idEmpresa)
+            ->where('activo', true)
+            ->get()
+            ->all();
+    }
+
+    /**
+     * @param  list<object>  $reglas
+     * @return list<int>
+     */
+    private function idsVendedoresParaPreview(int $idEmpresa, object $periodo, array $reglas): array
+    {
+        if ($this->idsVendedoresPreview !== null) {
+            return ($this->idsVendedoresPreview)($idEmpresa, $periodo, $reglas);
+        }
+
+        if (! $periodo instanceof ComisionPeriodo) {
+            return [];
+        }
+
+        return $this->idsVendedoresCierre($idEmpresa, $periodo, $reglas);
+    }
+
+    private function fechaPeriodo(mixed $fecha): string
+    {
+        if ($fecha instanceof Carbon) {
+            return $fecha->toDateString();
+        }
+
+        return Carbon::parse((string) $fecha)->toDateString();
     }
 }

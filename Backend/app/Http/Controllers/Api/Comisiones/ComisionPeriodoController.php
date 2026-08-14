@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Comisiones;
 
 use App\Http\Controllers\Controller;
+use App\Models\Comisiones\ComisionPeriodo;
 use App\Services\Comisiones\ComisionLiquidacionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -29,10 +30,12 @@ class ComisionPeriodoController extends Controller
 
     public function show(Request $request, int $id): JsonResponse
     {
-        $periodo = $this->liquidacionService->obtenerPeriodo(
-            (int) $request->user()->id_empresa,
-            $id
-        );
+        $idEmpresa = (int) $request->user()->id_empresa;
+        $periodo = $this->liquidacionService->obtenerPeriodo($idEmpresa, $id);
+
+        if ($periodo->estado === ComisionPeriodo::ESTADO_ABIERTO) {
+            $periodo->setAttribute('estimado', $this->liquidacionService->previewVolumen($idEmpresa, $id));
+        }
 
         return response()->json([
             'success' => true,

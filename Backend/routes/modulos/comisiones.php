@@ -3,10 +3,15 @@
 use App\Http\Controllers\Api\Comisiones\ComisionConfigController;
 use App\Http\Controllers\Api\Comisiones\ComisionLiquidacionController;
 use App\Http\Controllers\Api\Comisiones\ComisionPeriodoController;
+use App\Http\Controllers\Api\Comisiones\ComisionReglaController;
 use App\Http\Controllers\Api\Comisiones\ComisionReporteController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['verificar.funcionalidad:comisiones-vendedores'])->group(function () {
+    Route::get('comisiones/config/reglas', [ComisionReglaController::class, 'index']);
+    Route::post('comisiones/config/reglas', [ComisionReglaController::class, 'store']);
+    Route::put('comisiones/config/reglas/{id}', [ComisionReglaController::class, 'update']);
+
     Route::get('comisiones/config/categorias', [ComisionConfigController::class, 'listarCategorias']);
     Route::put('comisiones/config/categorias/{id_categoria}', [ComisionConfigController::class, 'actualizarCategoria']);
     Route::put('comisiones/config/subcategorias/{id_subcategoria}', [ComisionConfigController::class, 'actualizarSubcategoria']);

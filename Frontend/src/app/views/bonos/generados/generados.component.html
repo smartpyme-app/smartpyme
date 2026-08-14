@@ -1,8 +1,52 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
   <h2 class="page-heading">Bonos generados</h2>
-  <button class="btn btn-default" (click)="loadBonos()" [disabled]="loading">
-    <i class="fa fa-refresh me-2"></i> Recargar
-  </button>
+  <div>
+    <button *ngIf="puedeAsignarManual" class="btn btn-primary me-2" (click)="abrirManual()">
+      <i class="fa fa-plus me-2"></i> Asignar bono manual
+    </button>
+    <button class="btn btn-default" (click)="loadBonos()" [disabled]="loading">
+      <i class="fa fa-refresh me-2"></i> Recargar
+    </button>
+  </div>
+</section>
+
+<section *ngIf="mostrandoManual" class="bg-white p-4 rounded mb-3">
+  <h5 class="mb-3">Asignar bono manual</h5>
+  <div class="row g-3">
+    <div class="col-md-4">
+      <label class="form-label">Regla</label>
+      <select class="form-select" [(ngModel)]="formManual.id_regla">
+        <option [ngValue]="0">Seleccione</option>
+        <option *ngFor="let regla of reglasManuales" [ngValue]="regla.id">{{ regla.nombre }}</option>
+      </select>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Vendedor</label>
+      <select class="form-select" [(ngModel)]="formManual.id_vendedor">
+        <option [ngValue]="0">Seleccione</option>
+        <option *ngFor="let v of vendedores" [ngValue]="v.id">{{ v.name }}</option>
+      </select>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Monto</label>
+      <input type="number" class="form-control" [(ngModel)]="formManual.monto" min="0.01" step="0.01">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Período desde</label>
+      <input type="date" class="form-control" [(ngModel)]="formManual.periodo_inicio">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Período hasta</label>
+      <input type="date" class="form-control" [(ngModel)]="formManual.periodo_fin">
+    </div>
+  </div>
+  <div class="mt-3">
+    <button class="btn btn-primary me-2" (click)="guardarManual()" [disabled]="guardandoManual">
+      <span *ngIf="guardandoManual" class="spinner-border spinner-border-sm me-1"></span>
+      Guardar
+    </button>
+    <button class="btn btn-default" (click)="cancelarManual()" [disabled]="guardandoManual">Cancelar</button>
+  </div>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">

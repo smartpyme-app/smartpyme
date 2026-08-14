@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { ComisionPeriodo, ComisionesService } from '@services/comisiones.service';
+import { ComisionEstimadoVolumen, ComisionPeriodo, ComisionesService } from '@services/comisiones.service';
 
 @Component({
   selector: 'app-periodo-detalle-comisiones',
@@ -107,5 +107,14 @@ export class PeriodoDetalleComponent implements OnInit {
       return '';
     }
     return fecha.substring(0, 10);
+  }
+
+  get estimados(): ComisionEstimadoVolumen[] {
+    return this.periodo?.estimado ?? [];
+  }
+
+  nombreVendedorEstimado(item: ComisionEstimadoVolumen): string {
+    const liq = this.periodo?.liquidaciones?.find((l) => l.id_vendedor === item.id_vendedor);
+    return liq?.vendedor?.name || `Vendedor #${item.id_vendedor}`;
   }
 }

@@ -6,6 +6,7 @@ use App\Models\Comisiones\ComisionCategoriaConfig;
 use App\Models\Comisiones\ComisionRegla;
 use App\Models\Comisiones\ComisionSubcategoriaConfig;
 use App\Models\Inventario\Categorias\Categoria;
+use Closure;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -13,16 +14,55 @@ use stdClass;
 
 class ComisionConfigService
 {
-    /** @return Collection<int, array<string, mixed>> */
-    public function listarCategorias(int $idEmpresa): Collection
+    /** @param  Closure(int, int): ?object|null  $encontrarReglaCategoria */
+    public function __construct(
+        private ?Closure $encontrarReglaCategoria = null,
+    ) {
+    }
+
+    public function resolverIdRegla(int $idEmpresa, ?int $idRegla): int
     {
+        if ($idRegla === null || $idRegla <= 0) {
+            return $this->idReglaCategoriaDefault($idEmpresa);
+        }
+
+        $regla = $this->encontrarReglaCategoria($idEmpresa, $idRegla);
+        if ($regla === null) {
+            throw ValidationException::withMessages([
+                'id_regla' => ['La regla no pertenece a la empresa o no es por categoría.'],
+            ]);
+        }
+
+        return (int) $regla->id;
+    }
+
+    private function encontrarReglaCategoria(int $idEmpresa, int $idRegla): ?object
+    {
+        if ($this->encontrarReglaCategoria !== null) {
+            return ($this->encontrarReglaCategoria)($idEmpresa, $idRegla);
+        }
+
+        return ComisionRegla::query()
+            ->where('id_empresa', $idEmpresa)
+            ->where('id', $idRegla)
+            ->where('tipo_calculo', ComisionRegla::TIPO_POR_CATEGORIA)
+            ->first();
+    }
+
+    /** @return Collection<int, array<string, mixed>> */
+    public function listarCategorias(int $idEmpresa, ?int $idRegla = null): Collection
+    {
+        $idRegla = $this->resolverIdRegla($idEmpresa, $idRegla);
+
         $configs = ComisionCategoriaConfig::query()
             ->where('id_empresa', $idEmpresa)
+            ->where('id_regla', $idRegla)
             ->get()
             ->keyBy('id_categoria');
 
         $subConfigs = ComisionSubcategoriaConfig::query()
             ->where('id_empresa', $idEmpresa)
+            ->where('id_regla', $idRegla)
             ->get()
             ->keyBy('id_subcategoria');
 
@@ -76,11 +116,11 @@ class ComisionConfigService
             });
     }
 
-    public function actualizarCategoria(int $idEmpresa, int $idCategoria, float $porcentaje): ComisionCategoriaConfig
+    public function actualizarCategoria(int $idEmpresa, int $idCategoria, float $porcentaje, ?int $idRegla = null): ComisionCategoriaConfig
     {
         $this->assertCategoriaEmpresa($idEmpresa, $idCategoria);
         $this->assertPorcentajeValido($porcentaje);
-        $idRegla = $this->idReglaCategoriaDefault($idEmpresa);
+        $idRegla = $this->resolverIdRegla($idEmpresa, $idRegla);
 
         return ComisionCategoriaConfig::query()->updateOrCreate(
             [
@@ -92,11 +132,11 @@ class ComisionConfigService
         );
     }
 
-    public function actualizarSubcategoria(int $idEmpresa, int $idSubcategoria, float $porcentaje): ComisionSubcategoriaConfig
+    public function actualizarSubcategoria(int $idEmpresa, int $idSubcategoria, float $porcentaje, ?int $idRegla = null): ComisionSubcategoriaConfig
     {
         $this->assertSubcategoriaEmpresa($idEmpresa, $idSubcategoria);
         $this->assertPorcentajeValido($porcentaje);
-        $idRegla = $this->idReglaCategoriaDefault($idEmpresa);
+        $idRegla = $this->resolverIdRegla($idEmpresa, $idRegla);
 
         return ComisionSubcategoriaConfig::query()->updateOrCreate(
             [

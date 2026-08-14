@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { BonoGenerado, BonosService } from '@services/bonos.service';
+import { BonoGenerado, BonoManualPayload, BonoRegla, BonosService } from '@services/bonos.service';
 
 @Component({
   selector: 'app-bonos-generados',
@@ -10,9 +10,14 @@ import { BonoGenerado, BonosService } from '@services/bonos.service';
 })
 export class GeneradosComponent implements OnInit {
   bonos: BonoGenerado[] = [];
+  reglasManuales: BonoRegla[] = [];
+  vendedores: { id: number; name: string }[] = [];
   loading = false;
   evaluando = false;
   procesandoId: number | null = null;
+  mostrandoManual = false;
+  guardandoManual = false;
+  formManual: BonoManualPayload = this.formularioManualVacio();
 
   filtroEstado = '';
   filtroPeriodoInicio = '';
@@ -27,7 +32,31 @@ export class GeneradosComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.loadVendedores();
+    this.loadReglasManuales();
     this.loadBonos();
+  }
+
+  loadVendedores(): void {
+    this.apiService.getAll('usuarios/list').subscribe({
+      next: (usuarios: any) => {
+        this.vendedores = Array.isArray(usuarios) ? usuarios : (usuarios?.data ?? []);
+      },
+      error: () => {
+        this.vendedores = [];
+      }
+    });
+  }
+
+  loadReglasManuales(): void {
+    this.bonosService.getReglas(true).subscribe({
+      next: (response) => {
+        this.reglasManuales = (response.data ?? []).filter((r) => r.tipo === 'cualitativo_manual');
+      },
+      error: () => {
+        this.reglasManuales = [];
+      }
+    });
   }
 
   loadBonos(): void {
@@ -156,5 +185,61 @@ export class GeneradosComponent implements OnInit {
 
   formatFecha(fecha: string): string {
     return fecha ? fecha.substring(0, 10) : '';
+  }
+
+  get puedeAsignarManual(): boolean {
+    return this.reglasManuales.length > 0;
+  }
+
+  abrirManual(): void {
+    this.formManual = this.formularioManualVacio();
+    if (this.reglasManuales.length === 1) {
+      this.formManual.id_regla = this.reglasManuales[0].id;
+    }
+    this.mostrandoManual = true;
+  }
+
+  cancelarManual(): void {
+    this.mostrandoManual = false;
+    this.formManual = this.formularioManualVacio();
+  }
+
+  guardarManual(): void {
+    if (!this.formManual.id_regla || !this.formManual.id_vendedor) {
+      this.alertService.warning('Atención', 'Seleccione regla y vendedor.');
+      return;
+    }
+    if (!this.formManual.periodo_inicio || !this.formManual.periodo_fin) {
+      this.alertService.warning('Atención', 'Indique el período.');
+      return;
+    }
+    if (!this.formManual.monto || this.formManual.monto <= 0) {
+      this.alertService.warning('Atención', 'Ingrese un monto mayor a 0.');
+      return;
+    }
+
+    this.guardandoManual = true;
+    this.bonosService.crearManual(this.formManual).subscribe({
+      next: (response) => {
+        this.alertService.success('Éxito', response.message || 'Bono manual creado.');
+        this.guardandoManual = false;
+        this.cancelarManual();
+        this.loadBonos();
+      },
+      error: (error) => {
+        this.alertService.error(error);
+        this.guardandoManual = false;
+      }
+    });
+  }
+
+  private formularioManualVacio(): BonoManualPayload {
+    return {
+      id_regla: 0,
+      id_vendedor: 0,
+      periodo_inicio: '',
+      periodo_fin: '',
+      monto: 0
+    };
   }
 }
