@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <title>Traslado #{{ $traslado->id }} - {{ $traslado->nombre_producto }}</title>
+    <meta charset="UTF-8">
+    <title>Documento de entrega - Traslado</title>
     <style>
         * {
             margin: 0;
@@ -46,21 +46,20 @@
             padding: 6px 4px;
             font-size: 10px;
             text-align: left;
+            background: #f4f4f4;
         }
         .items td {
             border-bottom: 0.5px solid #ccc;
-            padding: 7px 4px;
+            padding: 6px 4px;
             font-size: 11px;
         }
         .items tfoot td {
             border-bottom: none;
             padding-top: 8px;
             font-weight: bold;
+            background: #f8f8f8;
         }
-        .concepto {
-            margin-top: 12px;
-            font-size: 11px;
-        }
+        .sku { font-size: 9px; color: #666; }
         .firmas {
             margin-top: 42px;
         }
@@ -80,13 +79,18 @@
 </head>
 <body>
     @php
+        $primer = $traslados->first();
         $simbolo = optional($empresa->currency)->currency_symbol ?? '$';
-        $total = ($traslado->costo ?? 0) * $traslado->cantidad;
+        $totalCosto = $traslados->sum(function ($t) {
+            return ($t->costo ?? 0) * $t->cantidad;
+        });
         $ubicacion = trim(implode(' / ', array_filter([
             trim(($empresa->municipio ?? '') . ' ' . ($empresa->departamento ?? '')),
             $empresa->direccion ?? null,
             $empresa->telefono ?? null,
         ])));
+        $origen = $primer->origen->nombre ?? $primer->nombre_origen ?? 'N/A';
+        $destino = $primer->destino->nombre ?? $primer->nombre_destino ?? 'N/A';
     @endphp
 
     <table>
@@ -105,26 +109,25 @@
         </tr>
     </table>
 
-    <div class="doc-title">Traslado de inventario #{{ $traslado->id }}</div>
+    <div class="doc-title">Documento de entrega — Traslado de inventario</div>
 
     <table class="meta">
         <tr>
             <td style="width: 50%;">
-                <p><span class="label">De:</span> <b>{{ $traslado->nombre_origen }}</b></p>
-                <p><span class="label">Para:</span> <b>{{ $traslado->nombre_destino }}</b></p>
+                <p><span class="label">De:</span> <b>{{ $origen }}</b></p>
+                <p><span class="label">Para:</span> <b>{{ $destino }}</b></p>
             </td>
             <td style="width: 50%;">
-                <p><span class="label">Fecha:</span> {{ \Carbon\Carbon::parse($traslado->created_at)->format('d/m/Y') }}</p>
-                <p><span class="label">Estado:</span> {{ $traslado->estado }}</p>
-                @if(!empty($traslado->usuario->name))
-                    <p><span class="label">Realizado por:</span> {{ $traslado->usuario->name }}</p>
-                @endif
+                <p><span class="label">Fecha:</span> {{ \Carbon\Carbon::parse($primer->created_at)->format('d/m/Y') }}</p>
+                <p><span class="label">Estado:</span> {{ $primer->estado }}</p>
+                <p><span class="label">Realizado por:</span> {{ $primer->usuario->name ?? 'N/A' }}</p>
+                <p><span class="label">Productos:</span> {{ $traslados->count() }}</p>
             </td>
         </tr>
-        @if($traslado->concepto)
+        @if($primer->concepto)
         <tr>
             <td colspan="2">
-                <p><span class="label">Concepto:</span> {{ $traslado->concepto }}</p>
+                <p><span class="label">Concepto:</span> {{ $primer->concepto }}</p>
             </td>
         </tr>
         @endif
@@ -135,24 +138,34 @@
     <table class="items">
         <thead>
             <tr>
-                <th>Descripción</th>
+                <th>Producto</th>
                 <th class="text-center" style="width: 80px;">Cantidad</th>
                 <th class="text-right" style="width: 110px;">Costo unitario</th>
                 <th class="text-right" style="width: 90px;">Total</th>
             </tr>
         </thead>
         <tbody>
+            @foreach($traslados as $traslado)
             <tr>
-                <td>{{ $traslado->nombre_producto }}</td>
+                <td>
+                    {{ $traslado->producto->nombre ?? $traslado->nombre_producto ?? 'N/A' }}
+                    @if($traslado->producto && !empty($traslado->producto->nombre_variante))
+                        - {{ $traslado->producto->nombre_variante }}
+                    @endif
+                    @if($traslado->producto && $traslado->producto->codigo)
+                        <br><span class="sku">SKU: {{ $traslado->producto->codigo }}</span>
+                    @endif
+                </td>
                 <td class="text-center">{{ number_format($traslado->cantidad, 0) }}</td>
                 <td class="text-right">{{ $simbolo }}{{ number_format($traslado->costo ?? 0, 2) }}</td>
-                <td class="text-right">{{ $simbolo }}{{ number_format($total, 2) }}</td>
+                <td class="text-right">{{ $simbolo }}{{ number_format(($traslado->costo ?? 0) * $traslado->cantidad, 2) }}</td>
             </tr>
+            @endforeach
         </tbody>
         <tfoot>
             <tr>
                 <td colspan="3" class="text-right">Total</td>
-                <td class="text-right">{{ $simbolo }}{{ number_format($total, 2) }}</td>
+                <td class="text-right">{{ $simbolo }}{{ number_format($totalCosto, 2) }}</td>
             </tr>
         </tfoot>
     </table>
@@ -162,14 +175,14 @@
             <td>
                 <div class="firma-linea">
                     <b>Entregado por</b><br>
-                    {{ $traslado->nombre_origen }}<br>
+                    {{ $origen }}<br>
                     Firma y sello
                 </div>
             </td>
             <td>
                 <div class="firma-linea">
                     <b>Recibido por</b><br>
-                    {{ $traslado->nombre_destino }}<br>
+                    {{ $destino }}<br>
                     Firma y sello
                 </div>
             </td>

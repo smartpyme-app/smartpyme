@@ -531,6 +531,10 @@ export class TrasladosComponent implements OnInit {
     }
 
     public imprimir(traslado:any){
+        if (traslado.id_grupo) {
+            window.open(this.apiService.baseUrl + '/api/traslados/grupo/' + traslado.id_grupo + '/pdf?token=' + this.apiService.auth_token());
+            return;
+        }
         window.open(this.apiService.baseUrl + '/api/traslado/' + traslado.id + '/pdf?token=' + this.apiService.auth_token());
     }
 

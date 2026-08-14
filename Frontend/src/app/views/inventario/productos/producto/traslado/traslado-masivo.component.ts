@@ -601,7 +601,10 @@ export class TrasladoMasivoComponent implements OnInit {
         this.apiService.store('productos/traslado-masivo', datos).subscribe(
             respuesta => {
                 this.alertService.success('Traslado realizado exitosamente', 'Se han trasladado ' + respuesta.trasladados + ' productos.');
-                this.modalRef.hide();
+                this.abrirDocumentoEntrega(respuesta.id_grupo);
+                if (this.modalRef) {
+                    this.modalRef.hide();
+                }
                 this.saving = false;
                 this.seleccionados = [];
                 this.productosParaTraslado = [];
@@ -803,6 +806,7 @@ export class TrasladoMasivoComponent implements OnInit {
                 this.savingImportDirecto = false;
                 const n = respuesta.trasladados ?? 0;
                 this.alertService.success('Importación completada', respuesta.message || `Se trasladaron ${n} producto(s).`);
+                this.abrirDocumentoEntrega(respuesta.id_grupo);
                 this.modalRef.hide();
                 this.seleccionados = [];
                 this.productosParaTraslado = [];
@@ -855,5 +859,15 @@ export class TrasladoMasivoComponent implements OnInit {
                 `Hay ${pendientesLote.length} producto(s) con control por lotes. Use el botón de lotes en cada fila para distribuir antes de realizar el traslado.`
             );
         }
+    }
+
+    private abrirDocumentoEntrega(idGrupo?: string) {
+        if (!idGrupo) {
+            return;
+        }
+        window.open(
+            this.apiService.baseUrl + '/api/traslados/grupo/' + idGrupo + '/pdf?token=' + this.apiService.auth_token(),
+            '_blank'
+        );
     }
 }
