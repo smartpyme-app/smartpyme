@@ -19,6 +19,14 @@ class ComisionVendedoresCierreTest extends TestCase
         ], $over);
     }
 
+    public function test_tipos_vendedor_incluyen_vendedor_ventas_y_limitado(): void
+    {
+        $this->assertEqualsCanonicalizing(
+            ['Vendedor', 'Ventas', 'Ventas Limitado'],
+            ComisionVendedoresCierre::TIPOS
+        );
+    }
+
     public function test_solo_movimientos_si_no_hay_regla_periodo_o_base(): void
     {
         $ids = ComisionVendedoresCierre::unir(

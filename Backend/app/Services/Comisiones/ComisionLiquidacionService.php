@@ -202,7 +202,7 @@ class ComisionLiquidacionService
     {
         return User::withoutGlobalScope('empresa')
             ->where('id_empresa', $idEmpresa)
-            ->whereIn('tipo', ['Ventas', 'Ventas Limitado'])
+            ->whereIn('tipo', ComisionVendedoresCierre::TIPOS)
             ->pluck('id')
             ->map(fn ($id) => (int) $id)
             ->all();

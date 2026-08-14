@@ -6,6 +6,8 @@ use App\Models\Comisiones\ComisionRegla;
 
 class ComisionVendedoresCierre
 {
+    public const TIPOS = ['Vendedor', 'Ventas', 'Ventas Limitado'];
+
     /**
      * @param  list<int>  $idsMovimientos
      * @param  list<object>  $reglas
