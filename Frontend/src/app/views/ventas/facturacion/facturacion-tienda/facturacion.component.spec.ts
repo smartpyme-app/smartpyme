@@ -286,4 +286,27 @@ describe('FacturacionComponent', () => {
 
     expect(component.saving).toBeTrue();
   });
+
+  it('no pide código de supervisor al pulsar Delete con foco en efectivo recibido', () => {
+    const component: any = Object.create(FacturacionComponent.prototype);
+    component.modalService = { show: jasmine.createSpy('show') };
+    const input = document.createElement('input');
+    input.id = 'monto_pago';
+    spyOnProperty(document, 'activeElement', 'get').and.returnValue(input);
+
+    component.limpiar();
+
+    expect(component.modalService.show).not.toHaveBeenCalled();
+  });
+
+  it('sí pide código de supervisor al limpiar si el foco no está en un campo', () => {
+    const component: any = Object.create(FacturacionComponent.prototype);
+    component.modalService = { show: jasmine.createSpy('show') };
+    const boton = document.createElement('button');
+    spyOnProperty(document, 'activeElement', 'get').and.returnValue(boton);
+
+    component.limpiar();
+
+    expect(component.modalService.show).toHaveBeenCalled();
+  });
 });

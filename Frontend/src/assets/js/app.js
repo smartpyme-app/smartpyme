@@ -38,16 +38,24 @@ $(document).ready(function() {
 
 
 $(document).keydown(function(tecla){
-   let letra;
-   letra = '.tcla-' + tecla.key;
-   $(letra).each(function () {
-      // No disparar atajos sobre botones deshabilitados (p. ej. F8 durante facturación)
-      if (this.disabled || $(this).prop('disabled')) {
-         return;
-      }
-      $(this).trigger('click');
-   });
- // console.log(letra);
+   var target = tecla.target;
+   var tag = target && target.tagName;
+   var esCampoEditable = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (target && target.isContentEditable);
+   var esTeclaFuncion = tecla.key && /^F\d{1,2}$/.test(tecla.key);
+
+   // No disparar atajos de edición (Delete = limpiar venta) al escribir en inputs
+   // como "Efectivo recibido". F1–F12 sí se mantienen en facturación.
+   if (!(esCampoEditable && !esTeclaFuncion) && tecla.key && /^[A-Za-z0-9]+$/.test(tecla.key)) {
+      var letra = '.tcla-' + tecla.key;
+      $(letra).each(function () {
+         // No disparar atajos sobre botones deshabilitados (p. ej. F8 durante facturación)
+         if (this.disabled || $(this).prop('disabled')) {
+            return;
+         }
+         $(this).trigger('click');
+      });
+   }
+
     if (tecla.key == 'F5') {
         $('#lector').focus();
     }
@@ -57,8 +65,7 @@ $(document).keydown(function(tecla){
       tecla.preventDefault();
    }
 
-   // Prevenir eventos de tecla F1 - F12
-   if (tecla.key >= 0 && tecla.key <= 9) {
+   if (!esCampoEditable && tecla.key >= 0 && tecla.key <= 9) {
         $('#cantidad').value = tecla.key;
    }
 

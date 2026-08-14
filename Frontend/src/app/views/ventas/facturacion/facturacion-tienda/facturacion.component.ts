@@ -21,6 +21,7 @@ import {
   sumarTotalEncabezadoVenta,
 } from '@utils/impuestos-venta.util';
 import { esVentaPorConsigna, sincronizarFlagConsignaVenta, aplicarEstadoConsignaEnVenta } from '@utils/venta-consigna.util';
+import { debeDispararAtajoTcla } from '@utils/atajos-teclado.util';
 import { FACTURA_REMISION, esVentaConsignaRemision } from '../../../../constants/documento.constants';
 import { VentaDetallesComponent } from './detalles/venta-detalles.component';
 
@@ -1906,6 +1907,9 @@ export class FacturacionComponent implements OnInit {
   //Limpiar
 
   public limpiar() {
+    if (!debeDispararAtajoTcla('Delete', document.activeElement)) {
+      return;
+    }
     this.modalRef = this.modalService.show(this.supervisorTemplate, {
       class: 'modal-xs',
     });

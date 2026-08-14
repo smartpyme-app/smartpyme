@@ -10,6 +10,7 @@ import { of } from 'rxjs';
 
 import * as moment from 'moment';
 import { esDocumentoCompraSinIvaFiscal } from '../../../constants/documento.constants';
+import { debeDispararAtajoTcla } from '@utils/atajos-teclado.util';
 
 @Component({
   selector: 'app-facturacion-compra',
@@ -593,6 +594,9 @@ export class FacturacionCompraComponent implements OnInit {
     //Limpiar
 
     public limpiar(){
+        if (!debeDispararAtajoTcla('Delete', document.activeElement)) {
+            return;
+        }
         this.modalRef = this.modalService.show(this.supervisorTemplate, {class: 'modal-xs'});
     }
 
