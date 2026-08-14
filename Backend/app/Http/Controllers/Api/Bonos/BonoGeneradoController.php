@@ -37,6 +37,29 @@ class BonoGeneradoController extends Controller
         ]);
     }
 
+    public function storeManual(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'id_regla' => 'required|integer|min:1',
+            'id_vendedor' => 'required|integer|min:1',
+            'periodo_inicio' => 'required|date',
+            'periodo_fin' => 'required|date',
+            'monto' => 'required|numeric|min:0.01',
+            'monto_ventas_base' => 'nullable|numeric|min:0',
+        ]);
+
+        $bono = $this->generadoService->crearManual(
+            (int) $request->user()->id_empresa,
+            $validated
+        );
+
+        return response()->json([
+            'success' => true,
+            'data' => $bono,
+            'message' => 'Bono manual creado correctamente.',
+        ], 201);
+    }
+
     public function aprobar(Request $request, int $id): JsonResponse
     {
         $bono = $this->generadoService->aprobar(

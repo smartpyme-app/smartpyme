@@ -22,6 +22,9 @@
       <select class="form-select" [(ngModel)]="form.tipo">
         <option value="meta_fija">Meta fija</option>
         <option value="escalonado">Escalonado</option>
+        <option value="porcentaje_excedente">% sobre excedente</option>
+        <option value="grupal">Grupal</option>
+        <option value="cualitativo_manual">Cualitativo (manual)</option>
       </select>
     </div>
     <div class="col-md-3">
@@ -35,10 +38,12 @@
       <label class="form-label">Alcance</label>
       <select class="form-select" [(ngModel)]="form.alcance">
         <option value="global">Global (todos los vendedores)</option>
-        <option value="vendedores">Por vendedor</option>
+        <option value="individual">Individual</option>
+        <option value="equipo">Equipo</option>
+        <option *ngIf="form.alcance === 'vendedores'" value="vendedores">Por vendedor (legado)</option>
       </select>
     </div>
-    <div class="col-md-8" *ngIf="form.alcance === 'vendedores'">
+    <div class="col-md-8" *ngIf="muestraVendedores()">
       <label class="form-label">Vendedores</label>
       <div class="border rounded p-2" style="max-height: 180px; overflow-y: auto;">
         <div class="form-check" *ngFor="let v of vendedores">
@@ -59,9 +64,13 @@
         <input class="form-check-input" type="checkbox" id="reglaActiva" [(ngModel)]="form.activo">
         <label class="form-check-label" for="reglaActiva">Activa</label>
       </div>
+      <div class="form-check" *ngIf="form.alcance !== 'global'">
+        <input class="form-check-input" type="checkbox" id="reemplazaGlobal" [(ngModel)]="form.reemplaza_global">
+        <label class="form-check-label" for="reemplazaGlobal">Reemplaza reglas globales</label>
+      </div>
     </div>
 
-    <ng-container *ngIf="form.tipo === 'meta_fija'">
+    <ng-container *ngIf="form.tipo === 'meta_fija' || form.tipo === 'grupal'">
       <div class="col-md-6">
         <label class="form-label">Meta de ventas</label>
         <input type="number" class="form-control" [(ngModel)]="form.meta" min="0" step="0.01">
@@ -69,6 +78,25 @@
       <div class="col-md-6">
         <label class="form-label">Monto bono</label>
         <input type="number" class="form-control" [(ngModel)]="form.bono" min="0" step="0.01">
+      </div>
+    </ng-container>
+
+    <div class="col-md-4" *ngIf="form.tipo === 'grupal'">
+      <label class="form-label">Reparto</label>
+      <select class="form-select" [(ngModel)]="form.reparto">
+        <option value="equitativo">Equitativo</option>
+        <option value="proporcional">Proporcional a ventas</option>
+      </select>
+    </div>
+
+    <ng-container *ngIf="form.tipo === 'porcentaje_excedente'">
+      <div class="col-md-6">
+        <label class="form-label">Meta de ventas</label>
+        <input type="number" class="form-control" [(ngModel)]="form.meta" min="0" step="0.01">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Porcentaje sobre excedente</label>
+        <input type="number" class="form-control" [(ngModel)]="form.porcentaje" min="0" step="0.01">
       </div>
     </ng-container>
 

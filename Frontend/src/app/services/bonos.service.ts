@@ -7,15 +7,19 @@ export interface BonoTramo {
   bono: number;
 }
 
+export type BonoTipo = 'meta_fija' | 'escalonado' | 'porcentaje_excedente' | 'grupal' | 'cualitativo_manual';
+export type BonoAlcance = 'global' | 'vendedores' | 'individual' | 'equipo';
+
 export interface BonoRegla {
   id: number;
   nombre: string;
-  tipo: 'meta_fija' | 'escalonado';
+  tipo: BonoTipo;
   ventana: string;
-  config: { meta?: number; bono?: number; tramos?: BonoTramo[] };
+  config: { meta?: number; bono?: number; porcentaje?: number; reparto?: 'equitativo' | 'proporcional'; tramos?: BonoTramo[] };
   activo: boolean;
-  alcance: 'global' | 'vendedores';
+  alcance: BonoAlcance;
   id_vendedores: number[] | null;
+  reemplaza_global?: boolean;
 }
 
 export interface BonoGenerado {
@@ -54,12 +58,22 @@ export interface BonoApiResponse<T> {
 
 export interface BonoReglaPayload {
   nombre: string;
-  tipo: 'meta_fija' | 'escalonado';
+  tipo: BonoTipo;
   ventana?: string;
   config: BonoRegla['config'];
   activo?: boolean;
-  alcance: 'global' | 'vendedores';
+  alcance: BonoAlcance;
   id_vendedores?: number[] | null;
+  reemplaza_global?: boolean;
+}
+
+export interface BonoManualPayload {
+  id_regla: number;
+  id_vendedor: number;
+  periodo_inicio: string;
+  periodo_fin: string;
+  monto: number;
+  monto_ventas_base?: number;
 }
 
 @Injectable({
@@ -87,6 +101,10 @@ export class BonosService {
 
   eliminarRegla(id: number): Observable<BonoApiResponse<BonoRegla>> {
     return this.apiService.delete('bonos/reglas', id);
+  }
+
+  crearManual(payload: BonoManualPayload): Observable<BonoApiResponse<BonoGenerado>> {
+    return this.apiService.store('bonos/generados/manual', payload);
   }
 
   getGenerados(filtros: Record<string, unknown> = {}): Observable<BonoApiResponse<BonoGenerado[]>> {

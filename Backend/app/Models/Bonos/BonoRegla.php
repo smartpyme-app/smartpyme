@@ -33,13 +33,26 @@ class BonoRegla extends Model
         'activo',
         'alcance',
         'id_vendedores',
+        'reemplaza_global',
     ];
 
     protected $casts = [
         'config' => 'array',
         'activo' => 'boolean',
         'id_vendedores' => 'array',
+        'reemplaza_global' => 'boolean',
     ];
+
+    public static function alcanceEfectivo(object $regla): string
+    {
+        $alcance = (string) ($regla->alcance ?? self::ALCANCE_GLOBAL);
+        if ($alcance !== self::ALCANCE_VENDEDORES) {
+            return $alcance;
+        }
+        $ids = array_map('intval', (array) ($regla->id_vendedores ?? []));
+
+        return count($ids) <= 1 ? self::ALCANCE_INDIVIDUAL : self::ALCANCE_EQUIPO;
+    }
 
     protected static function boot()
     {

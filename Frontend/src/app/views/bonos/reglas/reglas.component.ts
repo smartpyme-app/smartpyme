@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { BonoRegla, BonoReglaPayload, BonoTramo, BonosService } from '@services/bonos.service';
+import { BonoAlcance, BonoRegla, BonoReglaPayload, BonoTipo, BonoTramo, BonosService } from '@services/bonos.service';
 
 @Component({
   selector: 'app-bonos-reglas',
@@ -19,13 +19,16 @@ export class ReglasComponent implements OnInit {
 
   form: {
     nombre: string;
-    tipo: 'meta_fija' | 'escalonado';
+    tipo: BonoTipo;
     ventana: string;
     activo: boolean;
-    alcance: 'global' | 'vendedores';
+    alcance: BonoAlcance;
     id_vendedores: number[];
+    reemplaza_global: boolean;
     meta: number | null;
     bono: number | null;
+    porcentaje: number | null;
+    reparto: 'equitativo' | 'proporcional';
     tramos: BonoTramo[];
   } = this.formularioVacio();
 
@@ -81,8 +84,11 @@ export class ReglasComponent implements OnInit {
       activo: regla.activo,
       alcance: regla.alcance || 'global',
       id_vendedores: regla.id_vendedores?.length ? [...regla.id_vendedores] : [],
+      reemplaza_global: !!regla.reemplaza_global,
       meta: regla.config?.meta ?? null,
       bono: regla.config?.bono ?? null,
+      porcentaje: regla.config?.porcentaje ?? null,
+      reparto: regla.config?.reparto === 'proporcional' ? 'proporcional' : 'equitativo',
       tramos: regla.config?.tramos?.length
         ? regla.config.tramos.map((t) => ({ meta: t.meta, bono: t.bono }))
         : [{ meta: 0, bono: 0 }]
@@ -167,48 +173,100 @@ export class ReglasComponent implements OnInit {
   }
 
   tipoLabel(tipo: string): string {
-    return tipo === 'meta_fija' ? 'Meta fija' : 'Escalonado';
+    const labels: Record<string, string> = {
+      meta_fija: 'Meta fija',
+      escalonado: 'Escalonado',
+      porcentaje_excedente: '% sobre excedente',
+      grupal: 'Grupal',
+      cualitativo_manual: 'Cualitativo (manual)'
+    };
+    return labels[tipo] ?? tipo;
   }
 
   alcanceLabel(regla: BonoRegla): string {
+    const n = regla.id_vendedores?.length ?? 0;
     if (regla.alcance === 'vendedores') {
-      const n = regla.id_vendedores?.length ?? 0;
-      return `Por vendedor (${n})`;
+      return n <= 1 ? 'Individual' : `Equipo (${n})`;
+    }
+    if (regla.alcance === 'individual') {
+      return 'Individual';
+    }
+    if (regla.alcance === 'equipo') {
+      return `Equipo (${n})`;
     }
     return 'Global';
   }
 
   configResumen(regla: BonoRegla): string {
-    if (regla.tipo === 'meta_fija') {
-      return `Meta ${regla.config?.meta ?? 0} → Bono ${regla.config?.bono ?? 0}`;
+    if (regla.tipo === 'meta_fija' || regla.tipo === 'grupal') {
+      const extra = regla.tipo === 'grupal' ? ` · ${regla.config?.reparto ?? 'equitativo'}` : '';
+      return `Meta ${regla.config?.meta ?? 0} → Bono ${regla.config?.bono ?? 0}${extra}`;
+    }
+    if (regla.tipo === 'porcentaje_excedente') {
+      return `Meta ${regla.config?.meta ?? 0} · ${regla.config?.porcentaje ?? 0}% excedente`;
+    }
+    if (regla.tipo === 'cualitativo_manual') {
+      return 'Asignación manual';
     }
     const tramos = regla.config?.tramos?.length ?? 0;
     return `${tramos} tramo(s)`;
   }
 
+  muestraVendedores(): boolean {
+    return this.form.alcance !== 'global';
+  }
+
   private buildPayload(): BonoReglaPayload | null {
-    if (this.form.alcance === 'vendedores' && !this.form.id_vendedores.length) {
+    if (this.form.tipo === 'grupal' && this.form.alcance !== 'equipo') {
+      this.alertService.warning('Atención', 'El tipo grupal requiere alcance equipo.');
+      return null;
+    }
+
+    if (this.form.alcance === 'individual' && this.form.id_vendedores.length !== 1) {
+      this.alertService.warning('Atención', 'Seleccione exactamente un vendedor.');
+      return null;
+    }
+
+    if ((this.form.alcance === 'equipo' || this.form.alcance === 'vendedores') && !this.form.id_vendedores.length) {
       this.alertService.warning('Atención', 'Seleccione al menos un vendedor.');
       return null;
     }
 
-    const base: Pick<BonoReglaPayload, 'nombre' | 'tipo' | 'ventana' | 'activo' | 'alcance' | 'id_vendedores'> = {
+    const base: Pick<BonoReglaPayload, 'nombre' | 'tipo' | 'ventana' | 'activo' | 'alcance' | 'id_vendedores' | 'reemplaza_global'> = {
       nombre: this.form.nombre.trim(),
       tipo: this.form.tipo,
       ventana: this.form.ventana || 'mensual',
       activo: this.form.activo,
       alcance: this.form.alcance,
-      id_vendedores: this.form.alcance === 'vendedores' ? this.form.id_vendedores : null
+      id_vendedores: this.form.alcance === 'global' ? null : this.form.id_vendedores,
+      reemplaza_global: this.form.reemplaza_global
     };
 
-    if (this.form.tipo === 'meta_fija') {
+    if (this.form.tipo === 'cualitativo_manual') {
+      return { ...base, config: {} };
+    }
+
+    if (this.form.tipo === 'meta_fija' || this.form.tipo === 'grupal') {
       if (this.form.meta === null || this.form.bono === null) {
-        this.alertService.warning('Atención', 'Meta y bono son requeridos para meta fija.');
+        this.alertService.warning('Atención', 'Meta y bono son requeridos.');
         return null;
       }
       return {
         ...base,
-        config: { meta: this.form.meta, bono: this.form.bono }
+        config: this.form.tipo === 'grupal'
+          ? { meta: this.form.meta, bono: this.form.bono, reparto: this.form.reparto }
+          : { meta: this.form.meta, bono: this.form.bono }
+      };
+    }
+
+    if (this.form.tipo === 'porcentaje_excedente') {
+      if (this.form.meta === null || this.form.porcentaje === null) {
+        this.alertService.warning('Atención', 'Meta y porcentaje son requeridos.');
+        return null;
+      }
+      return {
+        ...base,
+        config: { meta: this.form.meta, porcentaje: this.form.porcentaje }
       };
     }
 
@@ -232,8 +290,11 @@ export class ReglasComponent implements OnInit {
       activo: true,
       alcance: 'global' as const,
       id_vendedores: [] as number[],
+      reemplaza_global: false,
       meta: null as number | null,
       bono: null as number | null,
+      porcentaje: null as number | null,
+      reparto: 'equitativo' as const,
       tramos: [{ meta: 0, bono: 0 }] as BonoTramo[]
     };
   }

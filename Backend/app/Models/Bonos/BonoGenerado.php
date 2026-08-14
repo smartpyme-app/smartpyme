@@ -16,6 +16,9 @@ class BonoGenerado extends Model
     const ESTADO_APROBADO = 'aprobado';
     const ESTADO_PAGADO = 'pagado';
 
+    const ORIGEN_EVALUACION = 'evaluacion';
+    const ORIGEN_MANUAL = 'manual';
+
     protected $fillable = [
         'id_empresa',
         'id_vendedor',
@@ -25,6 +28,7 @@ class BonoGenerado extends Model
         'monto_ventas_base',
         'monto',
         'estado',
+        'origen',
         'aprobado_por',
         'aprobado_at',
         'pagado_at',

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Services\Bonos\BonoReglaService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class BonoReglaController extends Controller
 {
@@ -45,14 +46,17 @@ class BonoReglaController extends Controller
     {
         $validated = $request->validate([
             'nombre' => 'required|string|max:255',
-            'tipo' => 'required|string|in:meta_fija,escalonado',
+            'tipo' => 'required|string|in:meta_fija,escalonado,porcentaje_excedente,grupal,cualitativo_manual',
             'ventana' => 'nullable|string|max:32',
             'config' => 'required|array',
             'activo' => 'nullable|boolean',
-            'alcance' => 'nullable|string|in:global,vendedores',
+            'alcance' => 'nullable|string|in:global,vendedores,individual,equipo',
             'id_vendedores' => 'nullable|array',
             'id_vendedores.*' => 'integer|min:1',
+            'reemplaza_global' => 'nullable|boolean',
         ]);
+
+        $this->validarGrupal($validated);
 
         $regla = $this->reglaService->crear(
             (int) $request->user()->id_empresa,
@@ -70,14 +74,17 @@ class BonoReglaController extends Controller
     {
         $validated = $request->validate([
             'nombre' => 'sometimes|required|string|max:255',
-            'tipo' => 'sometimes|required|string|in:meta_fija,escalonado',
+            'tipo' => 'sometimes|required|string|in:meta_fija,escalonado,porcentaje_excedente,grupal,cualitativo_manual',
             'ventana' => 'nullable|string|max:32',
             'config' => 'sometimes|required|array',
             'activo' => 'nullable|boolean',
-            'alcance' => 'nullable|string|in:global,vendedores',
+            'alcance' => 'nullable|string|in:global,vendedores,individual,equipo',
             'id_vendedores' => 'nullable|array',
             'id_vendedores.*' => 'integer|min:1',
+            'reemplaza_global' => 'nullable|boolean',
         ]);
+
+        $this->validarGrupal($validated);
 
         $regla = $this->reglaService->actualizar(
             (int) $request->user()->id_empresa,
@@ -101,5 +108,19 @@ class BonoReglaController extends Controller
             'data' => $regla,
             'message' => 'Regla de bono desactivada correctamente.',
         ]);
+    }
+
+    /** @param  array<string, mixed>  $validated */
+    private function validarGrupal(array $validated): void
+    {
+        if (($validated['tipo'] ?? null) !== 'grupal') {
+            return;
+        }
+
+        if (($validated['alcance'] ?? null) !== 'equipo' || empty($validated['id_vendedores'])) {
+            throw ValidationException::withMessages([
+                'alcance' => ['El tipo grupal requiere alcance equipo y al menos un vendedor.'],
+            ]);
+        }
     }
 }

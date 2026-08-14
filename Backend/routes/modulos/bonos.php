@@ -15,6 +15,7 @@ Route::middleware(['verificar.funcionalidad:bonos-vendedores'])->group(function 
     Route::post('bonos/evaluar', [BonoEvaluacionController::class, 'evaluar']);
 
     Route::get('bonos/generados', [BonoGeneradoController::class, 'index']);
+    Route::post('bonos/generados/manual', [BonoGeneradoController::class, 'storeManual']);
     Route::get('bonos/generados/{id}/comprobante', [BonoGeneradoController::class, 'comprobantePdf']);
     Route::post('bonos/generados/{id}/aprobar', [BonoGeneradoController::class, 'aprobar']);
     Route::post('bonos/generados/{id}/pagar', [BonoGeneradoController::class, 'pagar']);
