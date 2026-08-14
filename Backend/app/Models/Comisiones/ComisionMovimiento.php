@@ -18,6 +18,7 @@ class ComisionMovimiento extends Model
     const ORIGEN_VENTA = 'venta';
     const ORIGEN_REDENCION_GIFT_CARD = 'redencion_gift_card';
     const ORIGEN_AJUSTE_DEVOLUCION = 'ajuste_devolucion';
+    const ORIGEN_ABONO = 'abono';
 
     protected $fillable = [
         'id_empresa',
@@ -27,6 +28,7 @@ class ComisionMovimiento extends Model
         'origen',
         'id_venta',
         'id_detalle_venta',
+        'id_abono',
         'id_gift_card_redencion',
         'id_categoria',
         'id_subcategoria',

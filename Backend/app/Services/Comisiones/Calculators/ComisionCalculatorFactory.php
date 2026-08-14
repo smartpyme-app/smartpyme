@@ -16,6 +16,7 @@ class ComisionCalculatorFactory
     {
         return match ($tipo) {
             ComisionRegla::TIPO_POR_CATEGORIA => new PorCategoriaCalculator($this->resolver),
+            ComisionRegla::TIPO_POR_MARGEN => new PorMargenCalculator(),
             default => throw new InvalidArgumentException("tipo_calculo desconocido: {$tipo}"),
         };
     }

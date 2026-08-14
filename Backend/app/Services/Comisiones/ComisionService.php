@@ -133,16 +133,65 @@ class ComisionService
 
     public function registrarVentaPagada(object $venta): void
     {
+        $this->registrarVentaPorMomento(
+            $venta,
+            ComisionRegla::MOMENTO_AL_PAGAR,
+            ComisionMovimiento::ORIGEN_VENTA
+        );
+    }
+
+    public function registrarVentaFacturada(object $venta): void
+    {
+        $this->registrarVentaPorMomento(
+            $venta,
+            ComisionRegla::MOMENTO_AL_FACTURAR,
+            ComisionMovimiento::ORIGEN_VENTA
+        );
+    }
+
+    public function registrarAbono(object $venta, object $abono): void
+    {
+        $this->registrarVentaPorMomento(
+            $venta,
+            ComisionRegla::MOMENTO_POR_ABONO,
+            ComisionMovimiento::ORIGEN_ABONO,
+            $abono
+        );
+    }
+
+    private function registrarVentaPorMomento(
+        object $venta,
+        string $momento,
+        string $origen,
+        ?object $abono = null
+    ): void {
         if (! ($this->tieneFuncionalidad)((int) $venta->id_empresa, self::SLUG_COMISIONES)) {
             return;
         }
 
         $config = ($this->obtenerConfigComisiones)((int) $venta->id_empresa);
         $baseCalculo = $config['base_calculo'] ?? 'subtotal_sin_iva';
-        $fechaEvento = $venta->fecha_pago ?? $venta->fecha ?? now();
+        $fechaEvento = match ($momento) {
+            ComisionRegla::MOMENTO_POR_ABONO => $abono->fecha ?? now(),
+            ComisionRegla::MOMENTO_AL_FACTURAR => $venta->fecha ?? now(),
+            default => $venta->fecha_pago ?? $venta->fecha ?? now(),
+        };
         $periodo = $this->periodoService->periodoParaFecha((int) $venta->id_empresa, Carbon::parse($fechaEvento));
         // ponytail: prorrateo proporcional por total de venta; ceiling = no line-level payment allocation; upgrade = per-line gift application
-        $fraccionGift = $this->fraccionGiftCardEnVenta($venta);
+        $fraccionGift = $momento === ComisionRegla::MOMENTO_AL_PAGAR
+            ? $this->fraccionGiftCardEnVenta($venta)
+            : 0.0;
+        $fraccionAbono = 1.0;
+        $idAbono = null;
+        if ($abono !== null) {
+            $idAbono = isset($abono->id) ? (int) $abono->id : null;
+            $totalVenta = (float) ($venta->total ?? 0);
+            $montoAbono = (float) ($abono->monto ?? $abono->total ?? 0);
+            $fraccionAbono = $totalVenta > 0 ? $montoAbono / $totalVenta : 0.0;
+            if ($fraccionAbono <= 0) {
+                return;
+            }
+        }
 
         foreach ($venta->detalles as $detalle) {
             $this->registrarLineaVenta(
@@ -153,9 +202,12 @@ class ComisionService
                 $baseCalculo,
                 $periodo,
                 $fechaEvento,
-                ComisionMovimiento::ORIGEN_VENTA,
+                $origen,
                 null,
-                $fraccionGift
+                $fraccionGift,
+                $momento,
+                $idAbono,
+                $fraccionAbono
             );
         }
     }
@@ -351,7 +403,8 @@ class ComisionService
             $idCategoria,
             $idSubcategoria,
             $base,
-            $detalleLinea
+            $detalleLinea,
+            ComisionRegla::MOMENTO_AL_PAGAR
         );
         if ($resultados === []) {
             return null;
@@ -401,7 +454,10 @@ class ComisionService
         $fechaEvento,
         string $origen,
         ?int $idGiftCardRedencion,
-        float $fraccionGift = 0.0
+        float $fraccionGift = 0.0,
+        string $momento = ComisionRegla::MOMENTO_AL_PAGAR,
+        ?int $idAbono = null,
+        float $fraccionAbono = 1.0
     ): ?object {
         $producto = $detalle->producto ?? null;
         $idCategoria = $producto ? (int) ($producto->id_categoria ?? 0) : null;
@@ -445,8 +501,19 @@ class ComisionService
             $idCategoria,
             $idSubcategoria,
             $base,
-            $detalle
+            $detalle,
+            $momento
         ) as [$regla, $resultado]) {
+            $montoBase = $resultado->montoBase;
+            $montoComision = $resultado->montoComision;
+            if ($fraccionAbono !== 1.0) {
+                $montoBase = round($montoBase * $fraccionAbono, 4);
+                $montoComision = round($montoComision * $fraccionAbono, 4);
+            }
+            if ($montoComision == 0.0 && $montoBase == 0.0) {
+                continue;
+            }
+
             $where = [
                 'id_empresa' => $idEmpresa,
                 'origen' => $origen,
@@ -454,6 +521,9 @@ class ComisionService
             ];
             if ($regla !== null) {
                 $where['id_regla'] = $regla->id;
+            }
+            if ($idAbono !== null) {
+                $where['id_abono'] = $idAbono;
             }
 
             $values = [
@@ -463,9 +533,9 @@ class ComisionService
                 'id_gift_card_redencion' => $idGiftCardRedencion,
                 'id_categoria' => $resultado->idCategoria,
                 'id_subcategoria' => $resultado->idSubcategoria,
-                'monto_base' => $resultado->montoBase,
+                'monto_base' => $montoBase,
                 'porcentaje_aplicado' => $resultado->porcentaje,
-                'monto_comision' => $resultado->montoComision,
+                'monto_comision' => $montoComision,
                 'fecha_evento' => $fechaEvento,
             ];
 
@@ -484,11 +554,15 @@ class ComisionService
         ?int $idCategoria,
         ?int $idSubcategoria,
         float $base,
-        object $detalle
+        object $detalle,
+        string $momento = ComisionRegla::MOMENTO_AL_PAGAR
     ): array {
         $reglas = ($this->obtenerReglasActivas)($idEmpresa);
 
         if ($reglas->isEmpty()) {
+            if ($momento !== ComisionRegla::MOMENTO_AL_PAGAR) {
+                return [];
+            }
             $pct = $this->resolver->resolver($idEmpresa, $idCategoria, $idSubcategoria);
             if ($pct == 0.0) {
                 return [];
@@ -508,7 +582,7 @@ class ComisionService
 
         $aplicables = array_values(array_filter(
             $this->reglaScope->aplicables($reglas->all(), $idVendedor),
-            fn (object $regla): bool => ($regla->momento_devengo ?? null) === ComisionRegla::MOMENTO_AL_PAGAR
+            fn (object $regla): bool => ($regla->momento_devengo ?? ComisionRegla::MOMENTO_AL_PAGAR) === $momento
         ));
 
         $out = [];

@@ -560,6 +560,16 @@ class FacturacionService
                             'error' => $e->getMessage(),
                         ]);
                     }
+                } else {
+                    try {
+                        $venta->loadMissing(['detalles.producto']);
+                        app(\App\Services\Comisiones\ComisionService::class)->registrarVentaFacturada($venta);
+                    } catch (\Throwable $e) {
+                        Log::error('comisiones: fallo al registrar venta facturada', [
+                            'venta' => $venta->id,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
                 }
     
                 DB::commit();

@@ -561,4 +561,164 @@ class ComisionServiceOrchestrationTest extends TestCase
         $this->assertSame(2.0, (float) $v1[0]['values']['porcentaje_aplicado']);
         $this->assertSame(2.0, (float) $v1[0]['values']['monto_comision']);
     }
+
+    private function ventaConLinea(): object
+    {
+        $producto = (object) ['id_categoria' => 10, 'subcategoria_id' => null];
+        $detalle = (object) [
+            'id' => 100,
+            'gravada' => 100.0,
+            'exenta' => 0.0,
+            'no_sujeta' => 0.0,
+            'id_vendedor' => 5,
+            'producto' => $producto,
+        ];
+
+        return (object) [
+            'id' => 50,
+            'id_empresa' => 1,
+            'id_vendedor' => 5,
+            'fecha' => '2026-07-15',
+            'fecha_pago' => '2026-07-20',
+            'total' => 200.0,
+            'detalles' => [$detalle],
+        ];
+    }
+
+    private function reglaMomento(string $momento, int $id = 7): object
+    {
+        return (object) [
+            'id' => $id,
+            'alcance' => ComisionRegla::ALCANCE_GLOBAL,
+            'id_vendedores' => null,
+            'reemplaza_global' => false,
+            'activo' => true,
+            'tipo_calculo' => ComisionRegla::TIPO_POR_CATEGORIA,
+            'momento_devengo' => $momento,
+        ];
+    }
+
+    public function test_al_facturar_no_dispara_en_venta_pagada(): void
+    {
+        $guardados = [];
+        $svc = $this->makeService([
+            'resolver' => new ComisionPorcentajeResolver(
+                fn (int $e, int $c, ?int $idRegla = null) => 2.0,
+                fn (int $e, int $s, ?int $idRegla = null) => null
+            ),
+            'persistirMovimiento' => function (array $where, array $values) use (&$guardados) {
+                $guardados[] = compact('where', 'values');
+
+                return (object) array_merge($where, $values);
+            },
+            'obtenerReglasActivas' => fn () => collect([
+                $this->reglaMomento(ComisionRegla::MOMENTO_AL_FACTURAR),
+            ]),
+        ]);
+
+        $svc->registrarVentaPagada($this->ventaConLinea());
+
+        $this->assertSame([], $guardados);
+    }
+
+    public function test_al_pagar_no_dispara_en_venta_facturada(): void
+    {
+        $guardados = [];
+        $svc = $this->makeService([
+            'resolver' => new ComisionPorcentajeResolver(
+                fn (int $e, int $c, ?int $idRegla = null) => 2.0,
+                fn (int $e, int $s, ?int $idRegla = null) => null
+            ),
+            'persistirMovimiento' => function (array $where, array $values) use (&$guardados) {
+                $guardados[] = compact('where', 'values');
+
+                return (object) array_merge($where, $values);
+            },
+            'obtenerReglasActivas' => fn () => collect([
+                $this->reglaMomento(ComisionRegla::MOMENTO_AL_PAGAR),
+            ]),
+        ]);
+
+        $svc->registrarVentaFacturada($this->ventaConLinea());
+
+        $this->assertSame([], $guardados);
+    }
+
+    public function test_al_facturar_dispara_en_venta_facturada(): void
+    {
+        $guardados = [];
+        $svc = $this->makeService([
+            'resolver' => new ComisionPorcentajeResolver(
+                fn (int $e, int $c, ?int $idRegla = null) => 2.0,
+                fn (int $e, int $s, ?int $idRegla = null) => null
+            ),
+            'persistirMovimiento' => function (array $where, array $values) use (&$guardados) {
+                $guardados[] = compact('where', 'values');
+
+                return (object) array_merge($where, $values);
+            },
+            'obtenerReglasActivas' => fn () => collect([
+                $this->reglaMomento(ComisionRegla::MOMENTO_AL_FACTURAR),
+            ]),
+        ]);
+
+        $svc->registrarVentaFacturada($this->ventaConLinea());
+
+        $this->assertCount(1, $guardados);
+        $this->assertSame(7, $guardados[0]['where']['id_regla']);
+        $this->assertSame(ComisionMovimiento::ORIGEN_VENTA, $guardados[0]['where']['origen']);
+        $this->assertSame(2.0, (float) $guardados[0]['values']['monto_comision']);
+    }
+
+    public function test_por_abono_prorratea_y_incluye_id_abono(): void
+    {
+        $guardados = [];
+        $svc = $this->makeService([
+            'resolver' => new ComisionPorcentajeResolver(
+                fn (int $e, int $c, ?int $idRegla = null) => 2.0,
+                fn (int $e, int $s, ?int $idRegla = null) => null
+            ),
+            'persistirMovimiento' => function (array $where, array $values) use (&$guardados) {
+                $guardados[] = compact('where', 'values');
+
+                return (object) array_merge($where, $values);
+            },
+            'obtenerReglasActivas' => fn () => collect([
+                $this->reglaMomento(ComisionRegla::MOMENTO_POR_ABONO),
+            ]),
+        ]);
+
+        $abono = (object) ['id' => 33, 'monto' => 50.0, 'fecha' => '2026-07-18'];
+        $svc->registrarAbono($this->ventaConLinea(), $abono);
+
+        $this->assertCount(1, $guardados);
+        $this->assertSame(ComisionMovimiento::ORIGEN_ABONO, $guardados[0]['where']['origen']);
+        $this->assertSame(33, $guardados[0]['where']['id_abono']);
+        $this->assertSame(7, $guardados[0]['where']['id_regla']);
+        $this->assertSame(100, $guardados[0]['where']['id_detalle_venta']);
+        $this->assertSame(0.5, (float) $guardados[0]['values']['monto_comision']);
+    }
+
+    public function test_por_abono_no_dispara_en_venta_pagada(): void
+    {
+        $guardados = [];
+        $svc = $this->makeService([
+            'resolver' => new ComisionPorcentajeResolver(
+                fn (int $e, int $c, ?int $idRegla = null) => 2.0,
+                fn (int $e, int $s, ?int $idRegla = null) => null
+            ),
+            'persistirMovimiento' => function (array $where, array $values) use (&$guardados) {
+                $guardados[] = compact('where', 'values');
+
+                return (object) array_merge($where, $values);
+            },
+            'obtenerReglasActivas' => fn () => collect([
+                $this->reglaMomento(ComisionRegla::MOMENTO_POR_ABONO),
+            ]),
+        ]);
+
+        $svc->registrarVentaPagada($this->ventaConLinea());
+
+        $this->assertSame([], $guardados);
+    }
 }

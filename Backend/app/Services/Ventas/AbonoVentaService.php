@@ -206,6 +206,17 @@ class AbonoVentaService
      */
     protected function actualizarEstadoVenta(Venta $venta, Abono $abono): void
     {
+        try {
+            $venta->loadMissing('detalles.producto');
+            app(\App\Services\Comisiones\ComisionService::class)->registrarAbono($venta, $abono);
+        } catch (\Throwable $e) {
+            Log::error('comisiones: fallo al registrar abono', [
+                'venta' => $venta->id,
+                'abono' => $abono->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         if ($venta->saldo <= 0) {
             $venta->estado = 'Pagada';
             $venta->save();
