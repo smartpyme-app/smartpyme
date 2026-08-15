@@ -559,6 +559,25 @@ class TrasladosController extends Controller
         return $pdf->stream('traslado-' . $traslado->id . '.pdf');
     }
 
+    public function generarPdfGrupo($idGrupo)
+    {
+        $traslados = Traslado::where('id_grupo', $idGrupo)
+            ->with(['producto', 'origen', 'destino', 'empresa', 'usuario'])
+            ->orderBy('id')
+            ->get();
+
+        if ($traslados->isEmpty()) {
+            return response()->json(['error' => 'No hay traslados para este documento'], 404);
+        }
+
+        $empresa = Empresa::with('currency')->findOrFail($traslados->first()->id_empresa);
+
+        $pdf = app('dompdf.wrapper')->loadView('reportes.inventario.traslado-grupo-pdf', compact('traslados', 'empresa'));
+        $pdf->setPaper('letter', 'portrait');
+
+        return $pdf->stream('traslado-entrega-' . $idGrupo . '.pdf');
+    }
+
     public function exportarPdf(Request $request) {
         $traslados = Traslado::when($request->inicio, function($query) use ($request){
                                 return $query->where('created_at', '>=', $request->inicio . ' 00:00:00');

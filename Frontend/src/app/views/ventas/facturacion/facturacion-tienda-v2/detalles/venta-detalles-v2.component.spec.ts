@@ -75,6 +75,62 @@ describe('VentaDetallesV2Component', () => {
     expect(detalle.precio_iva).toBe('12.50');
   });
 
+  it('al confirmar 25.00 lo deja en dólares, no en 0.25', () => {
+    const component = createComponent();
+    const detalle = detalleBase('25.00');
+
+    component.updateTotal(detalle, true);
+
+    expect(detalle.precio_iva).toBe('25.00');
+    expect(parseFloat(detalle.precio_iva)).toBe(25);
+    expect(parseFloat(detalle.precio)).toBeCloseTo(25 / 1.13, 5);
+  });
+
+  it('al confirmar 25,50 con coma lo toma como 25.50 dólares', () => {
+    const component = createComponent();
+    const detalle = detalleBase('25,50');
+
+    component.updateTotal(detalle, true);
+
+    expect(detalle.precio_iva).toBe('25.50');
+    expect(parseFloat(detalle.precio)).toBeCloseTo(25.5 / 1.13, 5);
+  });
+
+  it('no reescribe 25. mientras se escribe', () => {
+    const component = createComponent();
+    const detalle = detalleBase('25.');
+
+    component.updateTotal(detalle);
+
+    expect(detalle.precio_iva).toBe('25.');
+  });
+
+  it('confirma 1, 10, 100 y 25.50 en dólares', () => {
+    const component = createComponent();
+    const casos: Array<[string, string]> = [
+      ['1', '1.00'],
+      ['10', '10.00'],
+      ['100', '100.00'],
+      ['25.50', '25.50'],
+    ];
+
+    for (const [raw, expected] of casos) {
+      const detalle = detalleBase(raw);
+      component.updateTotal(detalle, true);
+      expect(detalle.precio_iva).toBe(expected);
+    }
+  });
+
+  it('campo vacío no restaura precio_iva desde el neto', () => {
+    const component = createComponent();
+    const detalle = detalleBase('');
+    detalle.precio = '22.123894';
+
+    component.updateTotal(detalle);
+
+    expect(detalle.precio_iva).toBe('');
+  });
+
   it('al cambiar el precio no elimina la asignación de lotes', () => {
     const component = createComponent();
     const detalle = detalleConLotes('11.30');

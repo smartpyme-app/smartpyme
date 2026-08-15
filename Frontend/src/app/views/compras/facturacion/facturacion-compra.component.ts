@@ -43,6 +43,7 @@ import {
   totalLineaDesdeDte,
 } from '@services/compras/compra-detalle-desde-dte.util';
 import { esDocumentoCompraSinIvaFiscal } from '../../../constants/documento.constants';
+import { debeDispararAtajoTcla } from '@utils/atajos-teclado.util';
 
 @Component({
     selector: 'app-facturacion-compra',
@@ -934,6 +935,9 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
     //Limpiar
 
     public limpiar(){
+        if (!debeDispararAtajoTcla('Delete', document.activeElement)) {
+            return;
+        }
         super.openModal(this.supervisorTemplate, {class: 'modal-xs'});
     }
 

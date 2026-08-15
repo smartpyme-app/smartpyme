@@ -24,7 +24,8 @@ class Traslado extends Model
         'concepto',
         'estado',
         'lote_id',
-        'lote_id_destino'
+        'lote_id_destino',
+        'id_grupo'
     ];
 
     protected $appends = ['nombre_producto', 'nombre_origen', 'nombre_destino'];

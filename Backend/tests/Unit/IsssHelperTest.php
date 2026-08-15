@@ -51,4 +51,9 @@ class IsssHelperTest extends TestCase
         $this->assertSame(0.00, IsssHelper::calcularRetencionEmpleado(0, 'quincenal'));
         $this->assertSame(0.00, IsssHelper::calcularRetencionEmpleado(-100, 'quincenal'));
     }
+
+    public function test_tope_semanal_usa_semanas_promedio_del_mes(): void
+    {
+        $this->assertSame(230.95, IsssHelper::obtenerTopePorPeriodo('semanal'));
+    }
 }

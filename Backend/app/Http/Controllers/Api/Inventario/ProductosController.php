@@ -32,6 +32,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use App\Exports\PlantillaInventarioMasivoExport;
 use App\Models\Inventario\Composiciones\Composicion;
 use App\Exports\PlantillaProductosImportExport;
@@ -1590,6 +1591,7 @@ class ProductosController extends Controller
             $metodologia = $empresa ? $empresa->getLotesMetodologia() : 'FIFO';
             $idBodegaOrigen = (int) $request->id_bodega_origen;
             $idBodegaDestino = (int) $request->id_bodega_destino;
+            $idGrupo = (string) Str::uuid();
 
             foreach ($request->productos as $productoData) {
                 $idProducto = $productoData['id_producto'];
@@ -1696,6 +1698,7 @@ class ProductosController extends Controller
                     $traslado->id_usuario = $user->id;
                     $traslado->id_empresa = $user->id_empresa;
                     $traslado->estado = 'Confirmado';
+                    $traslado->id_grupo = $idGrupo;
                     $traslado->save();
 
                     if ($producto->inventario_por_lotes && $lotesActivo) {
@@ -1782,7 +1785,8 @@ class ProductosController extends Controller
             return response()->json([
                 'message' => 'Traslado masivo realizado exitosamente',
                 'trasladados' => $trasladosExitosos,
-                'errores' => $errores
+                'errores' => $errores,
+                'id_grupo' => $idGrupo,
             ], 200);
         } catch (\Exception $e) {
             DB::rollback();
@@ -1833,11 +1837,13 @@ class ProductosController extends Controller
     public function importarTrasladosMasivos(ImportarTrasladosMasivosRequest $request)
     {
 
+        $idGrupo = (string) Str::uuid();
         $importador = new TrasladosImport(
             $request->concepto,
             false,
             $request->id_bodega_origen,
-            $request->id_bodega_destino
+            $request->id_bodega_destino,
+            $idGrupo
         );
         Excel::import($importador, $request->file('archivo'));
 
@@ -1849,7 +1855,8 @@ class ProductosController extends Controller
             return Response()->json([
                 'message' => "Traslado de inventario realizado exitosamente. Se trasladaron {$trasladados} productos.",
                 'trasladados' => $trasladados,
-                'errores' => $errores
+                'errores' => $errores,
+                'id_grupo' => $idGrupo,
             ], 200);
         } else {
             return Response()->json([

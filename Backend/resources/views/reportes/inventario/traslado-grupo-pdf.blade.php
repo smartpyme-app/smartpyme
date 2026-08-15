@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <title>Traslado #{{ $traslado->id }} - {{ $traslado->nombre_producto }}</title>
+    <title>Documento de entrega - Traslado</title>
     <style>
         *{
             margin: 0cm;
@@ -38,8 +38,13 @@
 </head>
 <body>
     @php
+        $primer = $traslados->first();
         $simbolo = optional($empresa->currency)->currency_symbol ?? '$';
-        $total = ($traslado->costo ?? 0) * $traslado->cantidad;
+        $totalCosto = $traslados->sum(function ($t) {
+            return ($t->costo ?? 0) * $t->cantidad;
+        });
+        $origen = $primer->origen->nombre ?? $primer->nombre_origen ?? 'N/A';
+        $destino = $primer->destino->nombre ?? $primer->nombre_destino ?? 'N/A';
     @endphp
 
         <table>
@@ -67,22 +72,20 @@
         <table>
             <tbody>
                 <tr>
-                    <td><h4>Traslado de inventario</h4></td>
+                    <td><h4>Documento de entrega — Traslado de inventario</h4></td>
                 </tr>
                 <tr>
                     <td>
-                        <p><b>De:</b> {{ $traslado->nombre_origen }}</p>
-                        <p><b>Para:</b> {{ $traslado->nombre_destino }}</p>
+                        <p><b>De:</b> {{ $origen }}</p>
+                        <p><b>Para:</b> {{ $destino }}</p>
                     </td>
                     <td>
-                        @if(!empty($traslado->usuario->name))
-                            <p>Realizado por: {{ $traslado->usuario->name }}</p>
-                        @endif
-                        <p>Estado: {{ $traslado->estado }}</p>
+                        <p>Realizado por: {{ $primer->usuario->name ?? 'N/A' }}</p>
+                        <p>Estado: {{ $primer->estado }}</p>
+                        <p>Productos: {{ $traslados->count() }}</p>
                     </td>
                     <td>
-                        <p class="text-right">Traslado #{{ $traslado->id }}</p>
-                        <p class="text-right">Fecha: {{ \Carbon\Carbon::parse($traslado->created_at)->format('d/m/Y') }}</p>
+                        <p class="text-right">Fecha: {{ \Carbon\Carbon::parse($primer->created_at)->format('d/m/Y') }}</p>
                     </td>
                 </tr>
             </tbody>
@@ -100,26 +103,33 @@
                 </tr>
             </thead>
             <tbody>
+                @foreach($traslados as $traslado)
                 <tr>
-                    <td class="border-bottom">{{ $traslado->nombre_producto }}</td>
+                    <td class="border-bottom">
+                        {{ $traslado->producto->nombre ?? $traslado->nombre_producto ?? 'N/A' }}
+                        @if($traslado->producto && !empty($traslado->producto->nombre_variante))
+                            - {{ $traslado->producto->nombre_variante }}
+                        @endif
+                    </td>
                     <td class="border-bottom text-right">{{ number_format($traslado->cantidad, 0) }}</td>
                     <td class="border-bottom text-right">{{ $simbolo }} {{ number_format($traslado->costo ?? 0, 2) }}</td>
-                    <td class="border-bottom text-right">{{ $simbolo }} {{ number_format($total, 2) }}</td>
+                    <td class="border-bottom text-right">{{ $simbolo }} {{ number_format(($traslado->costo ?? 0) * $traslado->cantidad, 2) }}</td>
                 </tr>
+                @endforeach
             </tbody>
             <tfoot>
                 <tr>
                     <td colspan="2"></td>
                     <td class="text-right"><b>Total</b></td>
-                    <td class="text-right"><b>{{ $simbolo }} {{ number_format($total, 2) }}</b></td>
+                    <td class="text-right"><b>{{ $simbolo }} {{ number_format($totalCosto, 2) }}</b></td>
                 </tr>
             </tfoot>
         </table>
 
         <br>
-        @if($traslado->concepto)
+        @if($primer->concepto)
         <h4>Concepto:</h4>
-        <p>{!! nl2br(e($traslado->concepto)) !!}</p>
+        <p>{!! nl2br(e($primer->concepto)) !!}</p>
         <br>
         @endif
 
@@ -128,12 +138,12 @@
                 <td style="width: 50%; padding: 10px; text-align: center;">
                     <p>____________________________</p>
                     <h4 style="margin: 0; font-size: 16px; color: #333;">Entregado por</h4>
-                    <p>{{ $traslado->nombre_origen }}</p>
+                    <p>{{ $origen }}</p>
                 </td>
                 <td style="width: 50%; padding: 10px; text-align: center;">
                     <p>____________________________</p>
                     <h4 style="margin: 0; font-size: 16px; color: #333;">Recibido por</h4>
-                    <p>{{ $traslado->nombre_destino }}</p>
+                    <p>{{ $destino }}</p>
                 </td>
             </tr>
         </table>

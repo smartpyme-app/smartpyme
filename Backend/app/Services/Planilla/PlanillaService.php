@@ -361,20 +361,9 @@ class PlanillaService
                 $salarioDevengado = $salarioBase;
             } elseif ($tipoContrato === PlanillaConstants::TIPO_CONTRATO_SERVICIOS_PROFESIONALES) {
                 $salarioBaseAjustado = $salarioBase;
-                if ($tipoPlanilla === 'quincenal') {
-                    $salarioDevengado = $salarioBase / 2;
-                } elseif ($tipoPlanilla === 'semanal') {
-                    $salarioDevengado = $salarioBase / 4.33;
-                } else {
-                    $salarioDevengado = $salarioBase;
-                }
+                $salarioDevengado = PlanillaConstants::ajustarSalarioBasePorPeriodo($salarioBase, $tipoPlanilla);
             } else {
-                $salarioBaseAjustado = $salarioBase;
-                if ($tipoPlanilla === 'quincenal') {
-                    $salarioBaseAjustado = $salarioBase / 2;
-                } elseif ($tipoPlanilla === 'semanal') {
-                    $salarioBaseAjustado = $salarioBase / 4.33;
-                }
+                $salarioBaseAjustado = PlanillaConstants::ajustarSalarioBasePorPeriodo($salarioBase, $tipoPlanilla);
                 $salarioDevengado = ($salarioBaseAjustado / $diasReferencia) * $diasLaborados;
             }
 

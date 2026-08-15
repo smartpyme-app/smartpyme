@@ -546,6 +546,31 @@ export class PlanillaConstants {
 
     // ==================== MÉTODOS LEGACY (mantener compatibilidad) ====================
 
+    /** Quincenas por mes: salario quincenal = mensual / 2 */
+    static readonly FACTOR_QUINCENAL = 2;
+
+    /**
+     * Semanas por mes para convertir salario mensual a semanal.
+     * Se usa 4 (no 4.33) para que 4 semanas equivalgan a 1 mes, igual que 2 quincenas.
+     */
+    static readonly FACTOR_SEMANAL = 4;
+
+    static getFactorPeriodo(tipoPlanilla: string = 'mensual'): number {
+        switch (tipoPlanilla) {
+            case 'quincenal':
+                return this.FACTOR_QUINCENAL;
+            case 'semanal':
+                return this.FACTOR_SEMANAL;
+            default:
+                return 1;
+        }
+    }
+
+    static ajustarSalarioBasePorPeriodo(salarioMensual: number, tipoPlanilla: string = 'mensual'): number {
+        const factor = this.getFactorPeriodo(tipoPlanilla);
+        return factor > 0 ? salarioMensual / factor : salarioMensual;
+    }
+
     static calcularDescuentoISSSEmpleado(salario: number, tipoPlanilla: string = 'mensual'): number {
         const tope = this.getTopeIsssPorPeriodo(tipoPlanilla);
         const tasa = this.DESCUENTOS?.ISSS_EMPLEADO ?? 0.03;
@@ -568,6 +593,8 @@ export class PlanillaConstants {
             case 'quincenal':
                 return topeMensual / 2;
             case 'semanal':
+                // Tope legal mensual prorrateado a semanas promedio (52/12 ≈ 4.33).
+                // Independiente del factor de salario semanal (mensual / 4).
                 return Math.round((topeMensual / 4.33) * 100) / 100;
             default:
                 return topeMensual;

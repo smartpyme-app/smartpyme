@@ -30,6 +30,49 @@ class ConversionInventarioService
     }
 
     /**
+     * Costo total pagado de la fila de compra (cantidad × costo unitario − descuento).
+     *
+     * El descuento de línea debe restarse porque es lo que realmente se pagó
+     * al proveedor; de lo contrario el costo de inventario queda inflado.
+     *
+     * @param  float|int  $cantidadTransaccion  Cantidad del empaque o unidades.
+     * @param  float|int  $costoUnitario        Costo unitario de lista (antes de descuento).
+     * @param  float|int  $descuento            Descuento de la fila (monto, no porcentaje).
+     */
+    public static function calcularCostoTotalFila(
+        $cantidadTransaccion,
+        $costoUnitario,
+        $descuento = 0
+    ): float {
+        $bruto = (float) $cantidadTransaccion * (float) $costoUnitario;
+        $neto = $bruto - (float) $descuento;
+
+        return round(max(0.0, $neto), self::PRECISION);
+    }
+
+    /**
+     * Costo por unidad base usando el neto pagado (incluye descuento de línea).
+     *
+     * Ejemplo: 10 unidades a $10 con $20 de descuento → $8.000000 por unidad base.
+     *
+     * @param  float|int       $cantidadTransaccion  Cantidad del empaque o unidades.
+     * @param  float|int       $costoUnitario        Costo unitario de lista (antes de descuento).
+     * @param  float|int       $descuento            Descuento de la fila (monto).
+     * @param  float|int|null  $factorConversion     Factor del empaque; 1 si es unidad base.
+     */
+    public static function calcularCostoUnitarioNetoBase(
+        $cantidadTransaccion,
+        $costoUnitario,
+        $descuento = 0,
+        $factorConversion = 1
+    ): float {
+        $cantidadBase = self::calcularCantidadBase($cantidadTransaccion, $factorConversion);
+        $costoTotal = self::calcularCostoTotalFila($cantidadTransaccion, $costoUnitario, $descuento);
+
+        return self::calcularCostoUnitarioBase($costoTotal, $cantidadBase);
+    }
+
+    /**
      * Calcula el costo unitario de cada unidad base a partir del costo
      * total pagado por un conjunto de unidades base en una transacción.
      *
@@ -38,7 +81,7 @@ class ConversionInventarioService
      *
      * Ejemplo: Se pagaron $120 por 60 unidades base → costo unitario = $2.000000.
      *
-     * @param  float|int  $costoTotalFila      Costo total de la fila de compra (precio × cantidad empaque).
+     * @param  float|int  $costoTotalFila      Costo total de la fila de compra (neto pagado).
      * @param  float|int  $cantidadBaseTotal   Total de unidades base resultantes de la conversión.
      * @return float  Costo por unidad base redondeado a 6 decimales.
      *                Retorna 0.0 si cantidadBaseTotal es 0 para evitar división por cero.

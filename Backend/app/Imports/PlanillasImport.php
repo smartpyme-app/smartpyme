@@ -198,7 +198,7 @@ class PlanillasImport implements ToCollection, WithHeadingRow, WithEvents
             case 'semanal':
                 $dias_referencia = 7;
                 if ($salario_base > 0 && $dias_laborados <= 7) {
-                    $salario_base_ajustado = $salario_base / 4.33;
+                    $salario_base_ajustado = PlanillaConstants::ajustarSalarioBasePorPeriodo($salario_base, 'semanal');
                 }
                 break;
             default: // mensual

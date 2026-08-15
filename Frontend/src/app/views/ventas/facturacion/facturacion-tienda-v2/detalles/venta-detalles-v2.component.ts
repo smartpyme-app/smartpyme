@@ -31,6 +31,7 @@ import {
     copiarImpuestosProductoAlDetalle,
     sincronizarTipoGravadoPorCobroIva,
 } from '@utils/impuestos-venta.util';
+import { parseMontoInput } from '@utils/parse-monto.util';
 import {
     ORIGEN_STOCK_NORMAL,
     normalizarOrigenStock,
@@ -341,19 +342,23 @@ export class VentaDetallesV2Component implements OnInit {
 
     /**
      * Recalcula totales de la línea.
-     * @param formatearPrecio Si true (change/blur), redondea precio_iva a 2 decimales.
-     *                        En keyup debe ser false: reformatear mientras se escribe
-     *                        pisa el input y deja el campo casi ineditable.
+     * @param formatearPrecio Si true (blur), redondea precio_iva a 2 decimales.
+     *                        En input/keyup debe ser false: reformatear mientras se escribe
+     *                        pisa el input (agrega .00) y el valor cae en centavos (0.25).
      */
     public updateTotal(detalle:any, formatearPrecio: boolean = false){
         const aplicar = () => {
             const cantidad = parseFloat(detalle.cantidad ?? 0) || 0;
             const pctDetalle = this.obtenerPorcentajeIvaDetalle(detalle);
-            const parsedPrecioIva = parseFloat(detalle.precio_iva ?? '');
-            const precioIva = Number.isFinite(parsedPrecioIva)
-                ? redondearMoneda(parsedPrecioIva)
-                : 0;
-            // Solo formatear al confirmar (change/blur). En keyup no tocar el valor del input.
+            const parsedPrecioIva = parseMontoInput(detalle.precio_iva);
+            if (parsedPrecioIva == null && !formatearPrecio) {
+                // Vacío o incompleto a mitad de edición: no restaurar ceros desde el neto.
+                this.update.emit(this.venta);
+                return;
+            }
+            const precioIva = parsedPrecioIva == null
+                ? 0
+                : redondearMoneda(parsedPrecioIva);
             if (formatearPrecio) {
                 detalle.precio_iva = precioIva.toFixed(2);
             }

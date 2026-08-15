@@ -30,13 +30,15 @@ class TrasladosImport implements ToModel, WithHeadingRow, WithStartRow
     /** Bodegas del formulario cuando el Excel no trae #ID_BODEGA_* (plantilla solo con columnas visibles). */
     protected $defaultIdBodegaOrigen;
     protected $defaultIdBodegaDestino;
+    protected $idGrupo;
 
-    public function __construct($concepto, bool $dryRun = false, $defaultIdBodegaOrigen = null, $defaultIdBodegaDestino = null)
+    public function __construct($concepto, bool $dryRun = false, $defaultIdBodegaOrigen = null, $defaultIdBodegaDestino = null, $idGrupo = null)
     {
         $this->concepto = $concepto;
         $this->dryRun = $dryRun;
         $this->defaultIdBodegaOrigen = ($defaultIdBodegaOrigen !== null && $defaultIdBodegaOrigen !== '') ? (string) $defaultIdBodegaOrigen : null;
         $this->defaultIdBodegaDestino = ($defaultIdBodegaDestino !== null && $defaultIdBodegaDestino !== '') ? (string) $defaultIdBodegaDestino : null;
+        $this->idGrupo = $idGrupo;
     }
 
     /**
@@ -376,6 +378,7 @@ class TrasladosImport implements ToModel, WithHeadingRow, WithStartRow
                 $traslado->id_usuario = Auth::id();
                 $traslado->id_empresa = Auth::user()->id_empresa;
                 $traslado->estado = 'Confirmado';
+                $traslado->id_grupo = $this->idGrupo;
                 $traslado->save();
 
                 $inventarioDestino = Inventario::firstOrCreate(

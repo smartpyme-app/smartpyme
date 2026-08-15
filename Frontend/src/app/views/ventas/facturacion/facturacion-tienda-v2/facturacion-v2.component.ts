@@ -37,6 +37,7 @@ import {
   esImpuestoIva,
   hidratarImpuestosProductosEnDetalles,
   normalizarPorcentajeImpuestoDetalle,
+  prepararDetallesParaFacturarDesdeCotizacion,
   redondearMoneda,
   resolverPorcentajeImpuestoVenta,
   sincronizarTipoGravadoPorCobroIva,
@@ -45,6 +46,7 @@ import {
   sumarTotalEncabezadoVenta,
 } from '@utils/impuestos-venta.util';
 import { esVentaPorConsigna, sincronizarFlagConsignaVenta, aplicarEstadoConsignaEnVenta } from '@utils/venta-consigna.util';
+import { debeDispararAtajoTcla } from '@utils/atajos-teclado.util';
 import { FACTURA_REMISION, esVentaConsignaRemision } from '../../../../constants/documento.constants';
 import { SharedModule } from '@shared/shared.module';
 import * as moment from 'moment';
@@ -530,6 +532,12 @@ export class FacturacionV2Component implements OnInit {
     this.sumTotal();
   }
 
+  private reiniciarDocumentoTrasCargarVentaBase(): void {
+    this.venta.id_documento = null;
+    this.venta.correlativo = null;
+    this.cargarDocumentos();
+  }
+
   public cargarDatosIniciales() {
     this.venta = {};
     this.habilitarCuentaTerceros = false;
@@ -775,61 +783,33 @@ export class FacturacionV2Component implements OnInit {
               this.syncVentaCreditoConsignaFlagsFromEstado();
               this.refrescarMonedaTrasResetFecha();
 
-              const porcentajeIvaTotal = this.venta.cobrar_impuestos
-                ? this.apiService.auth_user()?.empresa?.iva || 0
-                : 0;
-
-              // Ajustar precios de los detalles para v2 (precios incluyen IVA)
-              this.venta.detalles.forEach((detalle: any) => {
-                detalle.id = null;
-
-                // Si el detalle no tiene precio_iva, asumir que precio es sin IVA (versión anterior)
-                // y calcular precio_iva
-                if (!detalle.precio_iva || detalle.precio_iva === null || detalle.precio_iva === undefined) {
-                  if (porcentajeIvaTotal > 0) {
-                    // El precio actual es sin IVA, calcular precio con IVA
-                    detalle.precio_iva = redondearMoneda(parseFloat(detalle.precio || 0) * (1 + porcentajeIvaTotal / 100)).toFixed(2);
-                  } else {
-                    // Sin IVA, precio_iva es igual a precio
-                    detalle.precio_iva = redondearMoneda(parseFloat(detalle.precio || 0)).toFixed(2);
-                  }
-                } else {
-                  // Si ya tiene precio_iva, verificar que precio (sin IVA) esté correcto
-                  if (porcentajeIvaTotal > 0) {
-                    const precioSinIvaCalculado = this.calcularPrecioSinIva(
-                      parseFloat(detalle.precio_iva),
-                      porcentajeIvaTotal,
-                    );
-                    detalle.precio = precioSinIvaCalculado.toFixed(4);
-                  } else {
-                    detalle.precio = parseFloat(detalle.precio_iva).toFixed(4);
-                  }
+              const indicesExonerada = (this.venta.detalles || [])
+                .map((d: any, i: number) => String(d?.tipo_gravado || '').toLowerCase() === 'exonerada' ? i : -1)
+                .filter((i: number) => i >= 0);
+              prepararDetallesParaFacturarDesdeCotizacion(
+                this.venta.detalles,
+                !!this.venta.cobrar_impuestos,
+                Number(this.apiService.auth_user()?.empresa?.iva ?? 0),
+                {
+                  preservePrecioIva: true,
+                  paisEmpresa: this.apiService.auth_user()?.empresa?.pais,
                 }
-
-                // Asegurar que precio_iva esté a 2 decimales
-                detalle.precio_iva = redondearMoneda(parseFloat(detalle.precio_iva)).toFixed(2);
-
-                const tiposValidos = ['gravada', 'exenta', 'no_sujeta', 'exonerada'];
-                const tipo = (detalle.tipo_gravado && String(detalle.tipo_gravado).toLowerCase()) || 'gravada';
-                detalle.tipo_gravado = tiposValidos.includes(tipo) ? tipo : 'gravada';
-                if (detalle.tipo_gravado === 'exonerada') {
-                  // FE CR: exonerada se trata como gravada sin IVA (util no modela este tipo).
-                  const precioSinIva = parseFloat(detalle.precio || 0);
-                  detalle.sub_total = Number((parseFloat(detalle.cantidad || 0) * precioSinIva).toFixed(4));
-                  detalle.total = (parseFloat(detalle.sub_total) - parseFloat(detalle.descuento || 0)).toFixed(4);
-                  detalle.gravada = detalle.total;
-                  detalle.exenta = 0;
-                  detalle.no_sujeta = 0;
-                  detalle.total_iva = detalle.total;
-                } else {
-                  calcularMontosLineaDetalle(
-                    detalle,
-                    !!this.venta.cobrar_impuestos,
-                    this.apiService.auth_user()?.empresa?.iva,
-                    { preservePrecioIva: true }
-                  );
+              );
+              indicesExonerada.forEach((i: number) => {
+                const detalle = this.venta.detalles[i];
+                if (!detalle) {
+                  return;
                 }
+                detalle.tipo_gravado = 'exonerada';
+                const precioSinIva = parseFloat(detalle.precio || 0);
+                detalle.sub_total = Number((parseFloat(detalle.cantidad || 0) * precioSinIva).toFixed(4));
+                detalle.total = (parseFloat(detalle.sub_total) - parseFloat(detalle.descuento || 0)).toFixed(4);
+                detalle.gravada = detalle.total;
+                detalle.exenta = 0;
+                detalle.no_sujeta = 0;
+                detalle.total_iva = detalle.total;
               });
+              this.reiniciarDocumentoTrasCargarVentaBase();
 
               this.sumTotal();
 
@@ -1582,11 +1562,15 @@ export class FacturacionV2Component implements OnInit {
 
     // IVA por tasa: acumula por impuesto (multi-impuesto) y cierra la diferencia residual
     // de IVA sin apagar tributos especiales (turismo, etc.) cuando cobrar_impuestos es false.
+    const paisEmpresa = this.apiService.auth_user()?.empresa?.pais;
+    const descuentoPuntos = parseFloat(this.venta.descuento_puntos || 0) || 0;
     const ivaEncabezado = acumularImpuestosVentaConCierreResidual(
       this.venta.impuestos,
       this.venta.detalles,
       !!this.venta.cobrar_impuestos,
-      empresaIva
+      empresaIva,
+      paisEmpresa,
+      descuentoPuntos
     );
     this.venta.iva = ivaEncabezado.toFixed(4);
 
@@ -1602,7 +1586,9 @@ export class FacturacionV2Component implements OnInit {
         this.venta.impuestos,
         this.venta.detalles,
         true,
-        empresaIva
+        empresaIva,
+        paisEmpresa,
+        descuentoPuntos
       );
       this.venta.iva = ivaRecalc.toFixed(4);
     }
@@ -1620,7 +1606,6 @@ export class FacturacionV2Component implements OnInit {
 
     // Total: suma de líneas con IVA (redondeo por línea) + tributos especiales (turismo, etc.),
     // estos últimos se mantienen aunque el IVA esté apagado.
-    const descuentoPuntos = parseFloat(this.venta.descuento_puntos || 0) || 0;
     const totalNum = sumarTotalEncabezadoVenta(
       this.venta.detalles,
       this.venta.impuestos,
@@ -2379,6 +2364,9 @@ export class FacturacionV2Component implements OnInit {
   //Limpiar
 
   public limpiar() {
+    if (!debeDispararAtajoTcla('Delete', document.activeElement)) {
+      return;
+    }
     this.modalRef = this.modalService.show(this.supervisorTemplate, {
       class: 'modal-xs',
     });

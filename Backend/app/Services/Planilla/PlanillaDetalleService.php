@@ -233,11 +233,7 @@ class PlanillaDetalleService
             return $salarioBase;
         }
 
-        return match ($tipoPlanilla) {
-            'quincenal' => $salarioBase / 2,
-            'semanal' => $salarioBase / 4.33,
-            default => $salarioBase,
-        };
+        return PlanillaConstants::ajustarSalarioBasePorPeriodo($salarioBase, $tipoPlanilla);
     }
 
     /**

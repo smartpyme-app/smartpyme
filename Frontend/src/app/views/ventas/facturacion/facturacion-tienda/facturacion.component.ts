@@ -40,12 +40,14 @@ import {
   acumularImpuestosVentaConCierreResidual,
   calcularMontosLineaDetalle,
   hidratarImpuestosProductosEnDetalles,
+  prepararDetallesParaFacturarDesdeCotizacion,
   sincronizarTipoGravadoPorCobroIva,
   sumarSubTotalEncabezadoVenta,
   sumarTotalEncabezadoVenta,
   copiarImpuestosProductoAlDetalle,
 } from '@utils/impuestos-venta.util';
 import { esVentaPorConsigna, sincronizarFlagConsignaVenta, aplicarEstadoConsignaEnVenta } from '@utils/venta-consigna.util';
+import { debeDispararAtajoTcla } from '@utils/atajos-teclado.util';
 import { FACTURA_REMISION, esVentaConsignaRemision } from '../../../../constants/documento.constants';
 import { SharedModule } from '@shared/shared.module';
 
@@ -713,6 +715,12 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     this.sumTotal();
   }
 
+  private reiniciarDocumentoTrasCargarVentaBase(): void {
+    this.venta.id_documento = null;
+    this.venta.correlativo = null;
+    this.cargarDocumentos();
+  }
+
   public cargarDatosIniciales() {
     this.venta = {};
     this.habilitarCuentaTerceros = false;
@@ -999,9 +1007,13 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
               this.venta.num_cotizacion = venta.id;
               this.venta.id = null;
               this.syncVentaCreditoConsignaFlagsFromEstado();
-              this.venta.detalles.forEach((detalle: any) => {
-                detalle.id = null;
-              });
+              prepararDetallesParaFacturarDesdeCotizacion(
+                this.venta.detalles,
+                !!this.venta.cobrar_impuestos,
+                Number(this.apiService.auth_user()?.empresa?.iva ?? 0),
+                { paisEmpresa: this.apiService.auth_user()?.empresa?.pais }
+              );
+              this.reiniciarDocumentoTrasCargarVentaBase();
               this.refrescarMonedaTrasResetFecha();
               this.sumTotal();
 
@@ -1421,12 +1433,14 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
 
     // IVA por tasa: acumula por impuesto (multi-impuesto) y cierra la diferencia residual
     // de IVA sin apagar tributos especiales (turismo, etc.) cuando cobrar_impuestos es false.
+    const descuentoPuntos = parseFloat(this.venta.descuento_puntos || 0) || 0;
     const ivaEncabezado = acumularImpuestosVentaConCierreResidual(
       this.venta.impuestos,
       this.venta.detalles,
       !!this.venta.cobrar_impuestos,
       empresaIva,
-      paisEmpresa
+      paisEmpresa,
+      descuentoPuntos
     );
     this.venta.iva = ivaEncabezado.toFixed(4);
 
@@ -1435,7 +1449,6 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     const rawTotalCosto = parseFloat(this.sumPipe.transform(this.venta.detalles, 'total_costo'));
     this.venta.total_costo = Number(rawTotalCosto).toFixed(4);
 
-    const descuentoPuntos = parseFloat(this.venta.descuento_puntos || 0) || 0;
     const totalNum = sumarTotalEncabezadoVenta(
       this.venta.detalles,
       this.venta.impuestos,
@@ -2625,6 +2638,9 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
   //Limpiar
 
   public limpiar() {
+    if (!debeDispararAtajoTcla('Delete', document.activeElement)) {
+      return;
+    }
     this.openModal(this.supervisorTemplate, {
       class: 'modal-xs',
     });

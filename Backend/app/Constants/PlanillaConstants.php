@@ -80,6 +80,15 @@ class PlanillaConstants
     const HORAS_DIA = 8;
     const DIAS_LABORADOS = 30;
 
+    /** Quincenas por mes: salario quincenal = mensual / 2 */
+    const FACTOR_QUINCENAL = 2;
+
+    /**
+     * Semanas por mes para convertir salario mensual a semanal.
+     * Se usa 4 (no 4.33) para que 4 semanas equivalgan a 1 mes, igual que 2 quincenas.
+     */
+    const FACTOR_SEMANAL = 4;
+
 
     const RENTA_MINIMA = 550.00;
     const RENTA_MAXIMA_PRIMER_TRAMO = 895.24;
@@ -442,6 +451,32 @@ class PlanillaConstants
                     ]
                 ];
         }
+    }
+
+    /**
+     * Factor para convertir salario mensual al período de planilla.
+     * Quincenal: /2. Semanal: /4. Mensual: sin ajuste.
+     */
+    public static function getFactorPeriodo(?string $tipoPlanilla): float
+    {
+        switch ($tipoPlanilla) {
+            case 'quincenal':
+                return (float) self::FACTOR_QUINCENAL;
+            case 'semanal':
+                return (float) self::FACTOR_SEMANAL;
+            default:
+                return 1.0;
+        }
+    }
+
+    /**
+     * Convierte un salario base mensual al salario del período (quincenal o semanal).
+     */
+    public static function ajustarSalarioBasePorPeriodo($salarioMensual, ?string $tipoPlanilla): float
+    {
+        $factor = self::getFactorPeriodo($tipoPlanilla);
+
+        return $factor > 0 ? $salarioMensual / $factor : (float) $salarioMensual;
     }
 
     public static function esContratoServiciosProfesionales($tipoContrato)

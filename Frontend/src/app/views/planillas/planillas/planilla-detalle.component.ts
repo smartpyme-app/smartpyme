@@ -1525,10 +1525,10 @@ export class PlanillaDetalleComponent implements OnInit {
       }
     } else {
       if (this.planilla.tipo_planilla === 'quincenal') {
-        salarioBaseAjustado = salarioBase / 2;
+        salarioBaseAjustado = PlanillaConstants.ajustarSalarioBasePorPeriodo(salarioBase, 'quincenal');
         diasReferencia = 15;
       } else if (this.planilla.tipo_planilla === 'semanal') {
-        salarioBaseAjustado = salarioBase / 4.33;
+        salarioBaseAjustado = PlanillaConstants.ajustarSalarioBasePorPeriodo(salarioBase, 'semanal');
         diasReferencia = 7;
       }
     }
