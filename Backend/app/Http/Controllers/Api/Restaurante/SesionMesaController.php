@@ -120,6 +120,10 @@ class SesionMesaController extends Controller
         $user = auth()->user();
         $sesion = SesionMesa::where('id_empresa', $user->id_empresa)->findOrFail($id);
 
+        if (! in_array($sesion->estado, ['abierta', 'pre_cuenta'], true)) {
+            return response()->json(['error' => 'La sesión no se puede editar en su estado actual'], 422);
+        }
+
         $validated = $request->validate([
             'num_comensales' => 'nullable|integer|min:1|max:99',
             'observaciones' => 'nullable|string|max:500',
