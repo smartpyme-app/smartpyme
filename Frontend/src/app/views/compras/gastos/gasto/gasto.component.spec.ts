@@ -1,35 +1,100 @@
-import { TestBed, async } from '@angular/core/testing';
-import { RouterTestingModule } from '@angular/router/testing';
 import { GastoComponent } from './gasto.component';
 
-describe('GastoComponent', () => {
-  beforeEach(async(() => {
-    TestBed.configureTestingModule({
-      imports: [
-        RouterTestingModule
-      ],
-      declarations: [
-        GastoComponent
-      ],
-    }).compileComponents();
-  }));
+// ponytail: se invocan los métodos sobre un objeto plano con `call` en vez de montar el
+// componente con TestBed. Techo: solo sirve para lógica que no toca la vista ni inyecta
+// servicios en el constructor; si hiciera falta probar el template, montar TestBed.
+function invocar(metodo: keyof GastoComponent, ctx: any): void {
+  (GastoComponent.prototype[metodo] as any).call(ctx);
+}
 
-  it('should create the app', () => {
-    const fixture = TestBed.createComponent(GastoComponent);
-    const app = fixture.debugElement.componentInstance;
-    expect(app).toBeTruthy();
+function leerGetter(nombre: string, ctx: any): any {
+  const descriptor = Object.getOwnPropertyDescriptor(GastoComponent.prototype, nombre)!;
+  return descriptor.get!.call(ctx);
+}
+
+describe('GastoComponent - campos condicionales', () => {
+  describe('setCredito', () => {
+    it('deja el gasto pendiente y conserva la fecha de pago al activar crédito', () => {
+      const ctx = { gasto: { credito: true, estado: 'Confirmado', fecha_pago: '2026-09-01' } };
+
+      invocar('setCredito', ctx);
+
+      expect(ctx.gasto.estado).toBe('Pendiente');
+      expect(ctx.gasto.fecha_pago).toBe('2026-09-01');
+    });
+
+    it('limpia la fecha de pago al desactivar crédito', () => {
+      const ctx = { gasto: { credito: false, estado: 'Pendiente', fecha_pago: '2026-09-01' } };
+
+      invocar('setCredito', ctx);
+
+      expect(ctx.gasto.estado).toBe('Confirmado');
+      expect(ctx.gasto.fecha_pago).toBeNull();
+    });
   });
 
-  it(`should have as title 'wproject'`, () => {
-    const fixture = TestBed.createComponent(GastoComponent);
-    const app = fixture.debugElement.componentInstance;
-    expect(app.title).toEqual('wproject');
+  describe('requiereBanco', () => {
+    it('no pide banco en Efectivo ni Wompi', () => {
+      expect(leerGetter('requiereBanco', { gasto: { forma_pago: 'Efectivo' } })).toBe(false);
+      expect(leerGetter('requiereBanco', { gasto: { forma_pago: 'Wompi' } })).toBe(false);
+    });
+
+    it('pide banco en transferencia, tarjeta y cheque', () => {
+      expect(leerGetter('requiereBanco', { gasto: { forma_pago: 'Transferencia' } })).toBe(true);
+      expect(leerGetter('requiereBanco', { gasto: { forma_pago: 'Tarjeta de Crédito' } })).toBe(true);
+      expect(leerGetter('requiereBanco', { gasto: { forma_pago: 'Cheque' } })).toBe(true);
+    });
   });
 
-  it('should render title in a h1 tag', () => {
-    const fixture = TestBed.createComponent(GastoComponent);
-    fixture.detectChanges();
-    const compiled = fixture.debugElement.nativeElement;
-    expect(compiled.querySelector('h1').textContent).toContain('Welcome to wproject!');
+  describe('cambioMetodoDePago', () => {
+    it('limpia el banco al volver a Efectivo', () => {
+      const ctx = {
+        gasto: { forma_pago: 'Efectivo', detalle_banco: 'Banco Agrícola' },
+        formaspago: [],
+        apiService: { isModuloBancos: () => true },
+      };
+
+      invocar('cambioMetodoDePago', ctx);
+
+      expect(ctx.gasto.detalle_banco).toBe('');
+    });
+
+    it('precarga el banco asociado a la forma de pago seleccionada', () => {
+      const ctx = {
+        gasto: { forma_pago: 'Transferencia', detalle_banco: '' },
+        formaspago: [{ nombre: 'Transferencia', banco: { nombre_banco: 'Banco Agrícola' } }],
+        apiService: { isModuloBancos: () => true },
+      };
+
+      invocar('cambioMetodoDePago', ctx);
+
+      expect(ctx.gasto.detalle_banco).toBe('Banco Agrícola');
+    });
+  });
+
+  describe('abrirAvanzadasSiHayDatos', () => {
+    it('mantiene el acordeón cerrado en un gasto sin campos avanzados', () => {
+      const ctx: any = { gasto: { concepto: 'Compra', total: 100 }, mostrar_otros_impuestos: false, opAvanzadas: false };
+
+      invocar('abrirAvanzadasSiHayDatos', ctx);
+
+      expect(ctx.opAvanzadas).toBe(false);
+    });
+
+    it('abre el acordeón si el gasto ya usa un campo avanzado', () => {
+      const ctx: any = { gasto: { nota: 'Pago parcial' }, mostrar_otros_impuestos: false, opAvanzadas: false };
+
+      invocar('abrirAvanzadasSiHayDatos', ctx);
+
+      expect(ctx.opAvanzadas).toBe(true);
+    });
+
+    it('ignora el IVA por defecto para no abrir el acordeón en todos los gastos', () => {
+      const ctx: any = { gasto: { impuesto: true }, mostrar_otros_impuestos: false, opAvanzadas: false };
+
+      invocar('abrirAvanzadasSiHayDatos', ctx);
+
+      expect(ctx.opAvanzadas).toBe(false);
+    });
   });
 });
