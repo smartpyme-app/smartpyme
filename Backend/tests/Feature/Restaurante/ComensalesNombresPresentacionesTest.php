@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Restaurante;
 
+use App\Http\Controllers\Api\Restaurante\OrdenDetalleController;
+use App\Http\Controllers\Api\Restaurante\PreCuentaController;
 use App\Http\Controllers\Api\Restaurante\SesionMesaController;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\ProductoPresentacion;
@@ -72,6 +74,38 @@ final class ComensalesNombresPresentacionesTest extends TestCase
         $resp = app(SesionMesaController::class)->update($req, $sesion->id);
         $this->assertSame(422, $resp->getStatusCode());
         $this->assertSame(2, (int) $sesion->fresh()->num_comensales);
+    }
+
+    public function test_dividir_equitativa_persiste_nombres(): void
+    {
+        $producto = $this->productoEmpresa($this->empresaA);
+        $mesa = $this->crearMesaLibre('HT17-DIV');
+        $sesion = $this->abrirSesion($mesa, $this->userA);
+
+        Auth::login($this->userA);
+        $add = Request::create('/x', 'POST', [
+            'producto_id' => $producto->id,
+            'cantidad' => 1,
+            'notas' => 'ht17-div',
+        ]);
+        $add->setUserResolver(fn () => $this->userA);
+        $addResp = app(OrdenDetalleController::class)->store($add, $sesion->id);
+        $this->assertSame(201, $addResp->getStatusCode(), $addResp->getContent());
+
+        $req = Request::create('/api/restaurante/sesiones-mesa/'.$sesion->id.'/pre-cuenta', 'POST', [
+            'dividir' => [
+                'tipo' => 'equitativa',
+                'num_pagadores' => 2,
+                'nombres' => ['Ana', ''],
+            ],
+        ]);
+        $req->headers->set('Idempotency-Key', 'ht17-div-'.bin2hex(random_bytes(8)));
+        $req->setUserResolver(fn () => $this->userA);
+        $resp = app(PreCuentaController::class)->generar($req, $sesion->id);
+        $this->assertSame(201, $resp->getStatusCode(), $resp->getContent());
+        $pcs = PreCuenta::where('sesion_id', $sesion->id)->orderBy('id')->get();
+        $this->assertSame('Ana', $pcs[0]->nombre_pagador);
+        $this->assertSame('Persona 2', $pcs[1]->nombre_pagador);
     }
 
     private function crearMesaLibre(string $prefix): Mesa

@@ -14,6 +14,7 @@ use App\Services\Restaurante\RestauranteIdempotencyService;
 use App\Services\Restaurante\RestauranteSideEffectDispatcher;
 use App\Services\Restaurante\RestauranteRealtimePublisher;
 use App\Services\Restaurante\RestauranteTicketHtmlService;
+use App\Support\Restaurante\NombresPagadores;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Collection;
@@ -181,6 +182,8 @@ class PreCuentaController extends Controller
             'asignaciones.*.orden_detalle_id' => 'required_with:asignaciones|integer',
             'asignaciones.*.pagador_index' => 'required_with:asignaciones|integer|min:1',
             'asignaciones.*.cantidad' => 'nullable|numeric|min:0.0001',
+            'nombres' => 'nullable|array',
+            'nombres.*' => 'nullable|string|max:80',
         ])->validate();
     }
 
@@ -195,6 +198,7 @@ class PreCuentaController extends Controller
         $sesion->loadMissing('mesa');
         $total = $items->sum(fn ($i) => $i->cantidad * $i->precio_unitario);
         $n = $validated['num_pagadores'];
+        $nombres = NombresPagadores::normalizar($validated['nombres'] ?? null, $n);
 
         $division = DivisionCuenta::create([
             'sesion_id' => $sesion->id,
@@ -227,6 +231,7 @@ class PreCuentaController extends Controller
                     'total' => $t['total'],
                     'estado' => 'pendiente',
                     'numero_pre_cuenta' => "PC-{$sesion->mesa->numero}-".($i + 1),
+                    'nombre_pagador' => $nombres[$i],
                 ]);
             }
         } else {
@@ -296,6 +301,7 @@ class PreCuentaController extends Controller
                     'total' => 0,
                     'estado' => 'pendiente',
                     'numero_pre_cuenta' => "PC-{$sesion->mesa->numero}-".($i + 1),
+                    'nombre_pagador' => $nombres[$i],
                 ]);
                 $preCuentasCreadas[$i] = $pc;
             }
