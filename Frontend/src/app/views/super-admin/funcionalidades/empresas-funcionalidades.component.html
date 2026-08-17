@@ -193,18 +193,6 @@
                             @if (funcionalidad.descripcion) {
                               <small class="text-muted">{{ funcionalidad.descripcion }}</small>
                             }
-                            @if (funcionalidad.slug === 'comisiones-vendedores') {
-                              <div class="form-check mt-2">
-                                <input
-                                  class="form-check-input"
-                                  type="checkbox"
-                                  [id]="'salario-minimo-' + funcionalidad.id"
-                                  [(ngModel)]="funcionalidad.configuracion.aplicar_salario_minimo">
-                                <label class="form-check-label" [for]="'salario-minimo-' + funcionalidad.id">
-                                  Aplicar ajuste a salario mínimo
-                                </label>
-                              </div>
-                            }
                           </div>
                         </td>
                         <td>

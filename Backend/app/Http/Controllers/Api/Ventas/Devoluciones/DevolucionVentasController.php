@@ -35,7 +35,6 @@ use Illuminate\Support\Facades\Log;
 use App\Services\FidelizacionCliente\DevolucionPuntosService;
 use App\Services\Comisiones\ComisionService;
 use App\Services\GiftCards\GiftCardReverseService;
-use Illuminate\Support\Facades\Log;
 
 class DevolucionVentasController extends Controller
 {
