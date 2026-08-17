@@ -812,6 +812,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
           const sub = (d.cantidad || 0) * (parseFloat(d.precio) || 0);
           return {
             id_producto: d.id_producto,
+            id_presentacion: d.id_presentacion ?? null,
             cantidad: d.cantidad,
             precio: parseFloat(d.precio).toFixed(4),
             descripcion: d.descripcion || '',

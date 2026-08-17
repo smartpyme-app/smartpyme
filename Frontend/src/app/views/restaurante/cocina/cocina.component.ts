@@ -10,6 +10,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RestauranteService } from '@services/restaurante.service';
 import { AlertService } from '@services/alert.service';
 import { RestauranteRealtimeService } from '@services/restaurante-realtime.service';
+import { nombreLineaOrden as nombreLineaOrdenFn } from '../cuenta-mesa/pos/pos-menu-nav';
 
 @Component({
   standalone: false,
@@ -89,6 +90,10 @@ export class CocinaComponent implements OnInit {
 
   marcarServida(comanda: any): void {
     this.cambiarEstado(comanda, 'servido');
+  }
+
+  nombreLineaOrden(item: { producto?: { nombre?: string } | null; presentacion?: { nombre_comercial?: string } | null } | null | undefined): string {
+    return nombreLineaOrdenFn(item ?? {});
   }
 
   imprimir(comanda: any): void {

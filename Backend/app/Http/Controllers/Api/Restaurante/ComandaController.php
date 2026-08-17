@@ -140,7 +140,7 @@ class ComandaController extends Controller
             ->with([
                 'sesion.mesa',
                 'pedido',
-                'detalles.ordenDetalle' => fn ($q) => $q->withTrashed()->with('producto'),
+                'detalles.ordenDetalle' => fn ($q) => $q->withTrashed()->with(['producto', 'presentacion']),
                 'detalles.pedidoDetalle.producto',
             ])
             ->orderBy('created_at', 'desc')

@@ -45,7 +45,7 @@
                 <ul class="list-unstyled mb-0 small">
                   @for (det of comanda.detalles; track det.id) {
                     <li>
-                      {{ (det.orden_detalle || det.pedido_detalle)?.cantidad }}x {{ (det.orden_detalle || det.pedido_detalle)?.producto?.nombre }}
+                      {{ (det.orden_detalle || det.pedido_detalle)?.cantidad }}x {{ nombreLineaOrden(det.orden_detalle || det.pedido_detalle) }}
                       <small class="text-muted" *ngIf="(det.orden_detalle || det.pedido_detalle)?.notas"> — {{ (det.orden_detalle || det.pedido_detalle).notas }}</small>
                     </li>
                   }

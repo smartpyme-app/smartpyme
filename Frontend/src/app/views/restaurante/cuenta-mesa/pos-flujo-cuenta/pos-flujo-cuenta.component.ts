@@ -11,6 +11,7 @@ import {
   matrizValida,
   sumaPersonaLinea
 } from '../pos/pos-division';
+import { nombreLineaOrden as nombreLineaOrdenFn } from '../pos/pos-menu-nav';
 
 export type EstadoLinea = 'sin_asignar' | 'parcial' | 'completo';
 
@@ -66,6 +67,10 @@ export class PosFlujoCuentaComponent implements OnChanges {
 
   etiquetaPersona(p: number): string {
     return etiquetaPagador(this.nombresPagadores, p);
+  }
+
+  nombreLineaOrden(item: { producto?: { nombre?: string } | null; presentacion?: { nombre_comercial?: string } | null }): string {
+    return nombreLineaOrdenFn(item);
   }
 
   get matrizCompleta(): boolean {

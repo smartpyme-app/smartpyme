@@ -190,6 +190,61 @@ final class ComensalesNombresPresentacionesTest extends TestCase
         $this->assertSame($pres->id, (int) $lineas[1]->id_presentacion);
     }
 
+    public function test_traslado_no_fusiona_mismas_notas_con_presentacion_distinta(): void
+    {
+        $producto = $this->productoEmpresa($this->empresaA);
+        $precio = round((float) ($producto->precio ?? 0), 2);
+        $pack = $this->crearPresentacion($producto, $precio, 2, 'HT17-PackFus');
+        $unit = $this->crearPresentacion($producto, $precio, 1, 'HT17-UnitFus');
+        $mesaOrigen = $this->crearMesaLibre('HT17-FOR');
+        $mesaDest = $this->crearMesaLibre('HT17-FDE');
+        $origen = $this->abrirSesion($mesaOrigen, $this->userA);
+        $dest = $this->abrirSesion($mesaDest, $this->userA);
+
+        $r1 = $this->postItem($origen->id, [
+            'producto_id' => $producto->id,
+            'id_presentacion' => $pack->id,
+            'cantidad' => 1,
+            'notas' => 'ht17-fus',
+        ]);
+        $r2 = $this->postItem($origen->id, [
+            'producto_id' => $producto->id,
+            'id_presentacion' => $unit->id,
+            'cantidad' => 1,
+            'notas' => 'ht17-fus',
+        ]);
+        $this->assertSame(201, $r1->getStatusCode(), $r1->getContent());
+        $this->assertSame(201, $r2->getStatusCode(), $r2->getContent());
+        $ids = [
+            (int) json_decode($r1->getContent(), true)['id'],
+            (int) json_decode($r2->getContent(), true)['id'],
+        ];
+
+        $prevTipo = $this->userA->tipo;
+        $this->userA->tipo = 'administrador';
+        $this->userA->save();
+        try {
+            $req = Request::create('/api/restaurante/sesiones-mesa/'.$origen->id.'/trasladar-items', 'POST', [
+                'mesa_destino_id' => $mesaDest->id,
+                'orden_detalle_ids' => $ids,
+            ]);
+            $req->setUserResolver(fn () => $this->userA);
+            $resp = app(SesionMesaController::class)->trasladarItems($req, $origen->id);
+            $this->assertSame(200, $resp->getStatusCode(), $resp->getContent());
+        } finally {
+            $this->userA->tipo = $prevTipo;
+            $this->userA->save();
+        }
+
+        $lineasDest = OrdenDetalle::where('sesion_id', $dest->id)->orderBy('id')->get();
+        $this->assertCount(2, $lineasDest);
+        $this->assertSame(
+            [$pack->id, $unit->id],
+            $lineasDest->pluck('id_presentacion')->map(fn ($v) => (int) $v)->all()
+        );
+        $this->assertSame(0, OrdenDetalle::where('sesion_id', $origen->id)->count());
+    }
+
     public function test_update_cantidad_con_presentacion_valida_stock_base(): void
     {
         $producto = $this->productoEmpresa($this->empresaA);
