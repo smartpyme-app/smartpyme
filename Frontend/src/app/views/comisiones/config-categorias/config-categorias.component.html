@@ -1,0 +1,305 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+  <h2 class="page-heading">Configuración de comisiones</h2>
+  <div>
+    <button class="btn btn-primary me-2" (click)="nuevaRegla()">
+      <i class="fa fa-plus me-2"></i> Nueva regla
+    </button>
+    <button class="btn btn-default" (click)="loadReglas()" [disabled]="loadingReglas" tooltip="Recargar">
+      <i class="fa fa-refresh me-2"></i> Recargar
+    </button>
+  </div>
+</section>
+
+<section *ngIf="mostrarFormulario" class="bg-white p-4 rounded mb-3">
+  <h5 class="mb-3">{{ editandoId ? 'Editar regla' : 'Nueva regla' }}</h5>
+  <div class="row g-3">
+    <div class="col-md-6">
+      <label class="form-label">Nombre</label>
+      <input type="text" class="form-control" [(ngModel)]="form.nombre">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Tipo</label>
+      <select class="form-select" [(ngModel)]="form.tipo_calculo">
+        <option value="por_categoria">Por categoría</option>
+        <option value="por_volumen">Por volumen</option>
+        <option value="por_margen">Por margen</option>
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Momento</label>
+      <select class="form-select" [(ngModel)]="form.momento_devengo">
+        <option value="al_pagar">Al pagar</option>
+        <option value="al_facturar">Al facturar</option>
+        <option value="por_abono">Por abono</option>
+      </select>
+    </div>
+
+    <div class="col-md-4">
+      <label class="form-label">Alcance</label>
+      <select class="form-select" [(ngModel)]="form.alcance">
+        <option value="global">Global (todos los vendedores)</option>
+        <option value="individual">Individual</option>
+        <option value="equipo">Equipo</option>
+      </select>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Salario base</label>
+      <input type="number" class="form-control" [(ngModel)]="form.salario_base" min="0" step="0.01" placeholder="Opcional">
+    </div>
+    <div class="col-md-4" *ngIf="form.tipo_calculo === 'por_margen'">
+      <label class="form-label">Porcentaje sobre margen</label>
+      <input type="number" class="form-control" [(ngModel)]="form.porcentaje" min="0" max="100" step="0.01">
+    </div>
+
+    <div class="col-md-8" *ngIf="muestraVendedores">
+      <label class="form-label">Vendedores</label>
+      <div class="border rounded p-2" style="max-height: 180px; overflow-y: auto;">
+        <div class="form-check" *ngFor="let v of vendedores">
+          <input
+            class="form-check-input"
+            type="checkbox"
+            [id]="'com-vend-' + v.id"
+            [checked]="vendedorSeleccionado(v.id)"
+            (change)="toggleVendedor(v.id, $any($event.target).checked)">
+          <label class="form-check-label" [for]="'com-vend-' + v.id">{{ v.name }}</label>
+        </div>
+        <p *ngIf="!vendedores.length" class="text-muted mb-0 small">No hay usuarios disponibles.</p>
+      </div>
+    </div>
+
+    <div class="col-12">
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" id="comisionReglaActiva" [(ngModel)]="form.activo">
+        <label class="form-check-label" for="comisionReglaActiva">Activa</label>
+      </div>
+      <div class="form-check" *ngIf="form.alcance !== 'global'">
+        <input class="form-check-input" type="checkbox" id="comisionReemplazaGlobal" [(ngModel)]="form.reemplaza_global">
+        <label class="form-check-label" for="comisionReemplazaGlobal">Reemplaza reglas globales</label>
+      </div>
+    </div>
+
+    <ng-container *ngIf="form.tipo_calculo === 'por_volumen'">
+      <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <label class="form-label mb-0">Tramos de volumen</label>
+          <button type="button" class="btn btn-sm btn-outline-primary" (click)="agregarTramo()">Agregar tramo</button>
+        </div>
+        <label class="form-label">Umbral de ventas pagadas (misma base que metas de bonos, incluye IVA)</label>
+        <div class="row g-2 mb-2" *ngFor="let tramo of form.tramos; let i = index">
+          <div class="col-md-5">
+            <input type="number" class="form-control" placeholder="Umbral de ventas" [(ngModel)]="tramo.umbral" min="0" step="0.01">
+          </div>
+          <div class="col-md-5">
+            <input type="number" class="form-control" placeholder="Porcentaje" [(ngModel)]="tramo.porcentaje" min="0" max="100" step="0.01">
+          </div>
+          <div class="col-md-2">
+            <button type="button" class="btn btn-outline-danger w-100" (click)="quitarTramo(i)" [disabled]="form.tramos.length === 1">
+              <i class="fa fa-trash"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+  </div>
+  <div class="mt-3">
+    <button class="btn btn-primary me-2" (click)="guardarRegla()" [disabled]="saving">
+      <span *ngIf="saving" class="spinner-border spinner-border-sm me-1"></span>
+      Guardar
+    </button>
+    <button class="btn btn-default" (click)="cancelarFormulario()" [disabled]="saving">Cancelar</button>
+  </div>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+  <h5 class="mb-3">Reglas</h5>
+  <div class="table-responsive">
+    <table class="table table-borderless table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Tipo</th>
+          <th>Alcance</th>
+          <th>Estado</th>
+          <th class="text-end">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngIf="loadingReglas">
+          <td colspan="5" class="text-center"><span class="badge bg-primary">Cargando...</span></td>
+        </tr>
+        <tr *ngIf="!loadingReglas && reglas.length === 0">
+          <td colspan="5" class="text-center"><span class="badge bg-secondary">No hay reglas</span></td>
+        </tr>
+        <tr
+          *ngFor="let regla of reglas"
+          (click)="seleccionarRegla(regla)"
+          [class.table-active]="reglaSeleccionada?.id === regla.id"
+          style="cursor: pointer;">
+          <td><strong>{{ regla.nombre }}</strong></td>
+          <td>{{ tipoLabel(regla.tipo_calculo) }}</td>
+          <td>{{ alcanceLabel(regla) }}</td>
+          <td>
+            <span class="badge py-2" [ngClass]="regla.activo ? 'bg-success' : 'bg-secondary'">
+              {{ regla.activo ? 'Activa' : 'Inactiva' }}
+            </span>
+          </td>
+          <td class="text-end" (click)="$event.stopPropagation()">
+            <span class="btn" [popover]="accionesRegla" [outsideClick]="true" tooltip="Acciones">
+              <i class="fa fa-ellipsis-vertical fa-fw"></i>
+            </span>
+            <ng-template #accionesRegla>
+              <div class="d-flex flex-column align-items-start">
+                <a class="btn" (click)="editarRegla(regla)">
+                  <i class="fa fa-fw fa-pencil"></i> Editar
+                </a>
+                <a *ngIf="regla.activo" class="btn" (click)="desactivarRegla(regla)">
+                  <i class="fa fa-fw fa-ban"></i> Desactivar
+                </a>
+              </div>
+            </ng-template>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="bg-white p-4 rounded mb-3" *ngIf="muestraCategorias">
+  <div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+      <h5 class="mb-1">Porcentajes por categoría</h5>
+      <p class="text-muted mb-0">
+        Defina el porcentaje de comisión por categoría (debe ser &gt; 0 para que se genere comisión al vender).
+        Puede configurar un override por subcategoría.
+      </p>
+    </div>
+    <button class="btn btn-default" (click)="loadCategorias()" [disabled]="loading" tooltip="Recargar">
+      <i class="fa fa-refresh me-2"></i> Recargar
+    </button>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-borderless table-hover mb-0">
+      <thead>
+        <tr>
+          <th style="width: 40px;"></th>
+          <th>Categoría</th>
+          <th style="width: 160px;">Porcentaje (%)</th>
+          <th style="width: 80px;" class="text-center">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngIf="loading">
+          <td colspan="4" class="text-center">
+            <span class="badge bg-primary">Cargando...</span>
+          </td>
+        </tr>
+        <tr *ngIf="!loading && (!categorias?.data || categorias.data.length === 0)">
+          <td colspan="4" class="text-center">
+            <span class="badge bg-secondary">No hay categorías activas</span>
+          </td>
+        </tr>
+        <ng-container *ngFor="let categoria of categorias?.data">
+          <tr>
+            <td>
+              <button
+                *ngIf="categoria.subcategorias?.length"
+                type="button"
+                class="btn btn-sm btn-link p-0"
+                (click)="toggleExpand(categoria.id_categoria)">
+                <i class="fa" [ngClass]="expandedCategoriaId === categoria.id_categoria ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+              </button>
+            </td>
+            <td><strong>{{ categoria.nombre }}</strong></td>
+            <td>{{ formatoPorcentaje(categoria.porcentaje) }}</td>
+            <td class="text-center">
+              <span class="btn" [popover]="accionesCategoria" [outsideClick]="true" tooltip="Acciones">
+                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+              </span>
+              <ng-template #accionesCategoria>
+                <div class="d-flex flex-column align-items-start">
+                  <a class="btn" (click)="abrirEditarCategoria(modalEditar, categoria)">
+                    <i class="fa fa-fw fa-edit"></i> Editar
+                  </a>
+                </div>
+              </ng-template>
+            </td>
+          </tr>
+          <tr *ngIf="expandedCategoriaId === categoria.id_categoria && categoria.subcategorias?.length">
+            <td colspan="4" class="p-0">
+              <table class="table table-sm mb-0 ms-4">
+                <thead>
+                  <tr class="text-muted">
+                    <th>Subcategoría</th>
+                    <th style="width: 160px;">Override (%)</th>
+                    <th style="width: 80px;" class="text-center">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let sub of categoria.subcategorias">
+                    <td>{{ sub.nombre }}</td>
+                    <td>{{ formatoPorcentaje(sub.porcentaje) }}</td>
+                    <td class="text-center">
+                      <span class="btn" [popover]="accionesSub" [outsideClick]="true" tooltip="Acciones">
+                        <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                      </span>
+                      <ng-template #accionesSub>
+                        <div class="d-flex flex-column align-items-start">
+                          <a class="btn" (click)="abrirEditarSubcategoria(modalEditar, sub, categoria.nombre)">
+                            <i class="fa fa-fw fa-edit"></i> Editar
+                          </a>
+                        </div>
+                      </ng-template>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </td>
+          </tr>
+        </ng-container>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="col-12" *ngIf="categorias && categorias.last_page && categorias.last_page > 1">
+    <app-pagination [items]="categorias" (setPagination)="setPagination($event)"></app-pagination>
+  </div>
+</section>
+
+<ng-template #modalEditar>
+  <div class="modal-header">
+    <div class="modal-title">
+      <h2>{{ editEsSubcategoria ? 'Editar comisión de subcategoría' : 'Editar comisión de categoría' }}</h2>
+    </div>
+    <button type="button" class="btn-close" (click)="cerrarModal()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <div class="mb-3">
+      <label class="form-label">{{ editEsSubcategoria ? 'Subcategoría' : 'Categoría' }}</label>
+      <input type="text" class="form-control" [value]="editNombre" readonly>
+    </div>
+    <div class="mb-3" *ngIf="editEsSubcategoria">
+      <label class="form-label">Categoría padre</label>
+      <input type="text" class="form-control" [value]="editPadreNombre" readonly>
+    </div>
+    <div class="mb-3">
+      <label class="form-label" for="edit-porcentaje">Porcentaje (%)</label>
+      <input
+        id="edit-porcentaje"
+        type="number"
+        class="form-control"
+        [(ngModel)]="editPorcentaje"
+        min="0"
+        max="100"
+        step="0.01"
+        [placeholder]="editEsSubcategoria ? 'Hereda categoría' : '0'">
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-default" (click)="cerrarModal()" [disabled]="saving">Cancelar</button>
+    <button type="button" class="btn btn-primary" (click)="guardarDesdeModal()" [disabled]="saving">
+      <span *ngIf="saving" class="spinner-border spinner-border-sm me-1"></span>
+      Guardar
+    </button>
+  </div>
+</ng-template>

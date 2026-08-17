@@ -1,4 +1,9 @@
 ﻿<div class="ml-5 mb-4">
+    @if (tieneComisionesVendedores) {
+        <div class="alert alert-info py-2 px-3 mb-3">
+            La comisión por subcategoría aquí es legacy. Use <strong>Comisiones → Configuración</strong> para porcentajes por categoría.
+        </div>
+    }
     @for (subcategoria of subcategorias; track subcategoria.id) {
         <div>
             <div class="p-1 pb-2 border">

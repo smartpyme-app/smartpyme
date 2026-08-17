@@ -1,0 +1,104 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+  <div>
+    <h2 class="page-heading mb-1">Detalle del período</h2>
+    <p class="text-muted mb-0" *ngIf="periodo">
+      {{ formatFecha(periodo.fecha_inicio) }} — {{ formatFecha(periodo.fecha_fin) }}
+      <span class="badge ms-2 py-2" [ngClass]="estadoBadgeClass(periodo.estado)">
+        {{ periodo.estado | titlecase }}
+      </span>
+    </p>
+  </div>
+  <div class="d-flex gap-2">
+    <button class="btn btn-default" (click)="volver()">
+      <i class="fa fa-arrow-left me-2"></i> Volver
+    </button>
+    <button class="btn btn-default" (click)="loadPeriodo()" [disabled]="loading">
+      <i class="fa fa-refresh me-2"></i> Recargar
+    </button>
+  </div>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+  <div *ngIf="loading" class="text-center py-4">
+    <span class="badge bg-primary">Cargando...</span>
+  </div>
+
+  <ng-container *ngIf="!loading && periodo">
+    <p class="text-muted mb-3" *ngIf="!periodo.liquidaciones?.length && !estimados.length">
+      Sin liquidaciones en este período.
+    </p>
+
+    <div class="table-responsive" *ngIf="periodo.liquidaciones?.length">
+      <table class="table table-borderless table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Vendedor</th>
+            <th>Total comisión</th>
+            <th>Salario base</th>
+            <th>Ajuste mínimo</th>
+            <th>Total a pagar</th>
+            <th>Estado pago</th>
+            <th class="text-end">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let liq of periodo.liquidaciones">
+            <td>{{ liq.vendedor?.name || ('Vendedor #' + liq.id_vendedor) }}</td>
+            <td>{{ liq.total_comision | number:'1.2-2' }}</td>
+            <td>{{ (liq.salario_base || 0) | number:'1.2-2' }}</td>
+            <td>{{ (liq.ajuste_salario_minimo || 0) | number:'1.2-2' }}</td>
+            <td>{{ (liq.total_a_pagar ?? liq.total_comision) | number:'1.2-2' }}</td>
+            <td>
+              <span class="badge" [ngClass]="liq.pagado_at ? 'bg-success' : 'bg-secondary'">
+                {{ liq.pagado_at ? 'Pagado' : 'Pendiente' }}
+              </span>
+            </td>
+            <td class="text-end">
+              <span class="btn" [popover]="accionesLiq" [outsideClick]="true" tooltip="Acciones">
+                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+              </span>
+              <ng-template #accionesLiq>
+                <div class="d-flex flex-column align-items-start">
+                  <a class="btn" (click)="descargarComprobante(liq.id_vendedor, liq.vendedor?.name || 'vendedor')">
+                    <i class="fa fa-fw fa-file-pdf-o"></i> Imprimir PDF
+                  </a>
+                  <a
+                    *ngIf="!liq.pagado_at && periodo.estado !== 'abierto'"
+                    class="btn"
+                    (click)="pagarLiquidacion(liq.id)">
+                    <i class="fa fa-fw fa-money"></i> Pagar
+                  </a>
+                </div>
+              </ng-template>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="mt-4" *ngIf="estimados.length">
+      <h5 class="mb-2">Volumen</h5>
+      <p class="text-muted mb-3">Estimado (se confirma al cerrar)</p>
+      <div class="table-responsive">
+        <table class="table table-borderless table-hover mb-0">
+          <thead>
+            <tr>
+              <th>Vendedor</th>
+              <th>Ventas</th>
+              <th>Porcentaje</th>
+              <th>Estimado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of estimados">
+              <td>{{ nombreVendedorEstimado(item) }}</td>
+              <td>{{ item.monto_base | number:'1.2-2' }}</td>
+              <td>{{ item.porcentaje | number:'1.2-2' }}%</td>
+              <td>{{ item.monto | number:'1.2-2' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </ng-container>
+</section>

@@ -206,9 +206,30 @@ class AbonoVentaService
      */
     protected function actualizarEstadoVenta(Venta $venta, Abono $abono): void
     {
+        try {
+            $venta->loadMissing('detalles.producto');
+            app(\App\Services\Comisiones\ComisionService::class)->registrarAbono($venta, $abono);
+        } catch (\Throwable $e) {
+            Log::error('comisiones: fallo al registrar abono', [
+                'venta' => $venta->id,
+                'abono' => $abono->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         if ($venta->saldo <= 0) {
             $venta->estado = 'Pagada';
             $venta->save();
+
+            try {
+                $venta->loadMissing('detalles.producto');
+                app(\App\Services\Comisiones\ComisionService::class)->registrarVentaPagada($venta);
+            } catch (\Throwable $e) {
+                Log::error('comisiones: fallo al registrar venta', [
+                    'venta' => $venta->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
 
             // Actualizar paquetes relacionados
             $paquetes = Paquete::where('id_venta', $venta->id)->get();
@@ -274,6 +295,15 @@ class AbonoVentaService
     public function eliminarAbono(int $id): Abono
     {
         $abono = Abono::findOrFail($id);
+        try {
+            app(\App\Services\Comisiones\ComisionService::class)->eliminarPorAbono((int) $abono->id);
+        } catch (\Throwable $e) {
+            Log::error('comisiones: fallo al eliminar abono', [
+                'venta' => $abono->id_venta,
+                'abono' => $abono->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
         $abono->delete();
         return $abono;
     }

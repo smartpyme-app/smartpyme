@@ -1,0 +1,191 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+  <h2 class="page-heading">Reglas de bonos</h2>
+  <div>
+    <button class="btn btn-primary me-2" (click)="nuevaRegla()">
+      <i class="fa fa-plus me-2"></i> Nueva regla
+    </button>
+    <button class="btn btn-default" (click)="loadReglas()" [disabled]="loading">
+      <i class="fa fa-refresh me-2"></i> Recargar
+    </button>
+  </div>
+</section>
+
+<section *ngIf="mostrarFormulario" class="bg-white p-4 rounded mb-3">
+  <h5 class="mb-3">{{ editandoId ? 'Editar regla' : 'Nueva regla' }}</h5>
+  <div class="row g-3">
+    <div class="col-md-6">
+      <label class="form-label">Nombre</label>
+      <input type="text" class="form-control" [(ngModel)]="form.nombre">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Tipo</label>
+      <select class="form-select" [(ngModel)]="form.tipo">
+        <option value="meta_fija">Meta fija</option>
+        <option value="escalonado">Escalonado</option>
+        <option value="porcentaje_excedente">% sobre excedente</option>
+        <option value="grupal">Grupal</option>
+        <option value="cualitativo_manual">Cualitativo (manual)</option>
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Ventana</label>
+      <select class="form-select" [(ngModel)]="form.ventana">
+        <option value="mensual">Mensual</option>
+      </select>
+    </div>
+
+    <div class="col-md-4">
+      <label class="form-label">Alcance</label>
+      <select class="form-select" [(ngModel)]="form.alcance">
+        <option value="global">Global (todos los vendedores)</option>
+        <option value="individual">Individual</option>
+        <option value="equipo">Equipo</option>
+        <option *ngIf="form.alcance === 'vendedores'" value="vendedores">Por vendedor (legado)</option>
+      </select>
+    </div>
+    <div class="col-md-8" *ngIf="muestraVendedores()">
+      <label class="form-label">Vendedores</label>
+      <div class="border rounded p-2" style="max-height: 180px; overflow-y: auto;">
+        <div class="form-check" *ngFor="let v of vendedores">
+          <input
+            class="form-check-input"
+            type="checkbox"
+            [id]="'vend-' + v.id"
+            [checked]="vendedorSeleccionado(v.id)"
+            (change)="toggleVendedor(v.id, $any($event.target).checked)">
+          <label class="form-check-label" [for]="'vend-' + v.id">{{ v.name }}</label>
+        </div>
+        <p *ngIf="!vendedores.length" class="text-muted mb-0 small">No hay usuarios disponibles.</p>
+      </div>
+    </div>
+
+    <div class="col-12">
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" id="reglaActiva" [(ngModel)]="form.activo">
+        <label class="form-check-label" for="reglaActiva">Activa</label>
+      </div>
+      <div class="form-check" *ngIf="form.alcance !== 'global'">
+        <input class="form-check-input" type="checkbox" id="reemplazaGlobal" [(ngModel)]="form.reemplaza_global">
+        <label class="form-check-label" for="reemplazaGlobal">Reemplaza reglas globales</label>
+      </div>
+    </div>
+
+    <ng-container *ngIf="form.tipo === 'meta_fija' || form.tipo === 'grupal'">
+      <div class="col-md-6">
+        <label class="form-label">Meta de ventas</label>
+        <input type="number" class="form-control" [(ngModel)]="form.meta" min="0" step="0.01">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Monto bono</label>
+        <input type="number" class="form-control" [(ngModel)]="form.bono" min="0" step="0.01">
+      </div>
+    </ng-container>
+
+    <div class="col-md-4" *ngIf="form.tipo === 'grupal'">
+      <label class="form-label">Reparto</label>
+      <select class="form-select" [(ngModel)]="form.reparto">
+        <option value="equitativo">Equitativo</option>
+        <option value="proporcional">Proporcional a ventas</option>
+      </select>
+    </div>
+
+    <ng-container *ngIf="form.tipo === 'porcentaje_excedente'">
+      <div class="col-md-6">
+        <label class="form-label">Meta de ventas</label>
+        <input type="number" class="form-control" [(ngModel)]="form.meta" min="0" step="0.01">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Porcentaje sobre excedente</label>
+        <input type="number" class="form-control" [(ngModel)]="form.porcentaje" min="0" step="0.01">
+      </div>
+    </ng-container>
+
+    <ng-container *ngIf="form.tipo === 'escalonado'">
+      <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <label class="form-label mb-0">Tramos</label>
+          <button type="button" class="btn btn-sm btn-outline-primary" (click)="agregarTramo()">Agregar tramo</button>
+        </div>
+        <div class="row g-2 mb-2" *ngFor="let tramo of form.tramos; let i = index">
+          <div class="col-md-5">
+            <input type="number" class="form-control" placeholder="Meta" [(ngModel)]="tramo.meta" min="0" step="0.01">
+          </div>
+          <div class="col-md-5">
+            <input type="number" class="form-control" placeholder="Bono" [(ngModel)]="tramo.bono" min="0" step="0.01">
+          </div>
+          <div class="col-md-2">
+            <button type="button" class="btn btn-outline-danger w-100" (click)="quitarTramo(i)" [disabled]="form.tramos.length === 1">
+              <i class="fa fa-trash"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+  </div>
+  <div class="mt-3">
+    <button class="btn btn-primary me-2" (click)="guardarRegla()" [disabled]="saving">
+      <span *ngIf="saving" class="spinner-border spinner-border-sm me-1"></span>
+      Guardar
+    </button>
+    <button class="btn btn-default" (click)="cancelarFormulario()" [disabled]="saving">Cancelar</button>
+  </div>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+  <div class="d-flex justify-content-end mb-3">
+    <select class="form-select w-auto" [(ngModel)]="filtroActivo" (change)="loadReglas()">
+      <option value="">Todas</option>
+      <option value="true">Activas</option>
+      <option value="false">Inactivas</option>
+    </select>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-borderless table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Tipo</th>
+          <th>Alcance</th>
+          <th>Configuración</th>
+          <th>Estado</th>
+          <th class="text-end">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngIf="loading">
+          <td colspan="6" class="text-center"><span class="badge bg-primary">Cargando...</span></td>
+        </tr>
+        <tr *ngIf="!loading && reglas.length === 0">
+          <td colspan="6" class="text-center"><span class="badge bg-secondary">No hay reglas</span></td>
+        </tr>
+        <tr *ngFor="let regla of reglas">
+          <td><strong>{{ regla.nombre }}</strong></td>
+          <td>{{ tipoLabel(regla.tipo) }}</td>
+          <td>{{ alcanceLabel(regla) }}</td>
+          <td>{{ configResumen(regla) }}</td>
+          <td>
+            <span class="badge py-2" [ngClass]="regla.activo ? 'bg-success' : 'bg-secondary'">
+              {{ regla.activo ? 'Activa' : 'Inactiva' }}
+            </span>
+          </td>
+          <td class="text-end">
+            <span class="btn" [popover]="accionesRegla" [outsideClick]="true" tooltip="Acciones">
+              <i class="fa fa-ellipsis-vertical fa-fw"></i>
+            </span>
+            <ng-template #accionesRegla>
+              <div class="d-flex flex-column align-items-start">
+                <a class="btn" (click)="editarRegla(regla)">
+                  <i class="fa fa-fw fa-pencil"></i> Editar
+                </a>
+                <a *ngIf="regla.activo" class="btn" (click)="desactivarRegla(regla)">
+                  <i class="fa fa-fw fa-ban"></i> Desactivar
+                </a>
+              </div>
+            </ng-template>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>

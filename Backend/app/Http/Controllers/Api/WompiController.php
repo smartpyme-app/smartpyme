@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Admin\Empresa;
 use App\Models\Ventas\Venta;
+use App\Services\Comisiones\ComisionService;
+use Illuminate\Support\Facades\Log;
 use App\Models\Wompi;
 use App\Http\Requests\Wompi\PagoWompiRequest;
 
@@ -65,7 +67,17 @@ class WompiController extends Controller
         $venta->id_wompi_transaccion = $request->idTransaccion;
         $venta->estado = 'Pagada';
         $venta->save();
-    
+
+        try {
+            $venta->loadMissing('detalles.producto');
+            app(ComisionService::class)->registrarVentaPagada($venta);
+        } catch (\Throwable $e) {
+            Log::error('comisiones: fallo al registrar venta', [
+                'venta' => $venta->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         return view('wompi.pago-wompi', compact('venta'));
     }
 

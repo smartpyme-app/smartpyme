@@ -1,0 +1,236 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+  <h2 class="page-heading">Dashboard de incentivos por vendedor</h2>
+  <button class="btn btn-default" (click)="loadVendedores()" [disabled]="loading">
+    <i class="fa fa-refresh me-2"></i> Recargar
+  </button>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+  <div class="row g-3 align-items-end mb-4">
+    <div class="col-md-3">
+      <label class="form-label">Desde</label>
+      <input type="date" class="form-control" [(ngModel)]="desde">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Hasta</label>
+      <input type="date" class="form-control" [(ngModel)]="hasta">
+    </div>
+    <div class="col-md-3">
+      <button class="btn btn-primary" (click)="loadVendedores()" [disabled]="loading">
+        <span *ngIf="loading" class="spinner-border spinner-border-sm me-1"></span>
+        Filtrar
+      </button>
+    </div>
+  </div>
+
+  <p class="text-muted mb-3">Vista consolidada de comisiones, bonos y gift cards. Total a pagar siempre desglosado.</p>
+
+  <div class="table-responsive">
+    <table class="table table-borderless table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Vendedor</th>
+          <th class="text-end">Comisiones</th>
+          <th class="text-end">Bonos (aprob./pag.)</th>
+          <th class="text-end">Total</th>
+          <th class="text-end">Detalle</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngIf="loading">
+          <td colspan="5" class="text-center"><span class="badge bg-primary">Cargando...</span></td>
+        </tr>
+        <tr *ngIf="!loading && vendedores.length === 0">
+          <td colspan="5" class="text-center"><span class="badge bg-secondary">Sin vendedores en el período</span></td>
+        </tr>
+        <tr *ngFor="let v of vendedores">
+          <td>{{ v.nombre }}</td>
+          <td class="text-end">{{ v.total_a_pagar.comisiones | number:'1.2-2' }}</td>
+          <td class="text-end">{{ v.total_a_pagar.bonos_aprobados_o_pagados | number:'1.2-2' }}</td>
+          <td class="text-end"><strong>{{ totalGeneral(v.total_a_pagar) | number:'1.2-2' }}</strong></td>
+          <td class="text-end">
+            <button type="button" class="btn btn-outline-primary btn-sm" (click)="verDetalle(modalDetalle, v)">
+              Ver
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<ng-template #modalDetalle>
+  <div class="modal-header">
+    <div class="modal-title">
+      <h2 class="mb-0">Detalle de incentivos</h2>
+      <p class="text-muted mb-0 mt-1" *ngIf="vendedorSeleccionado">
+        {{ vendedorSeleccionado.nombre }}
+        <span *ngIf="desde && hasta"> · {{ desde }} — {{ hasta }}</span>
+      </p>
+    </div>
+    <button type="button" class="btn-close" (click)="cerrarModal()" aria-label="Close"></button>
+  </div>
+
+  <div class="modal-body">
+    <div *ngIf="loadingDetalle" class="text-center py-4">
+      <span class="badge bg-primary">Cargando detalle...</span>
+    </div>
+
+    <ng-container *ngIf="!loadingDetalle && detalle">
+      <div class="row g-3 mb-4">
+        <div class="col-md-4">
+          <div class="border rounded p-3 h-100">
+            <div class="text-muted small">Comisiones</div>
+            <div class="fs-5 fw-semibold">{{ detalle.total_a_pagar.comisiones | number:'1.2-2' }}</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="border rounded p-3 h-100">
+            <div class="text-muted small">Bonos (aprob./pag.)</div>
+            <div class="fs-5 fw-semibold">{{ detalle.total_a_pagar.bonos_aprobados_o_pagados | number:'1.2-2' }}</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="border rounded p-3 h-100 bg-light">
+            <div class="text-muted small">Total a pagar</div>
+            <div class="fs-5 fw-semibold">{{ totalGeneral(detalle.total_a_pagar) | number:'1.2-2' }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mb-4" *ngIf="detalle.ventas_por_categoria?.length">
+        <h4 class="h6 mb-2">Ventas por categoría</h4>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover mb-0">
+            <thead>
+              <tr>
+                <th>Categoría</th>
+                <th class="text-end">Monto</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let v of detalle.ventas_por_categoria">
+                <td>{{ v.nombre }}</td>
+                <td class="text-end">{{ v.monto | number:'1.2-2' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="mb-4" *ngIf="detalle.comisiones">
+        <h4 class="h6 mb-2">Comisiones</h4>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover mb-0">
+            <thead>
+              <tr>
+                <th>Concepto</th>
+                <th class="text-end">Monto</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let c of detalle.comisiones.por_categoria">
+                <td>{{ c.nombre }}</td>
+                <td class="text-end">{{ c.monto | number:'1.2-2' }}</td>
+              </tr>
+              <tr *ngIf="detalle.comisiones.por_redencion_gift">
+                <td>Redención gift card</td>
+                <td class="text-end">{{ detalle.comisiones.por_redencion_gift | number:'1.2-2' }}</td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <th>Total</th>
+                <th class="text-end">{{ detalle.comisiones.total | number:'1.2-2' }}</th>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <div class="mb-4" *ngIf="detalle.bonos?.length">
+        <h4 class="h6 mb-2">Bonos</h4>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover mb-0">
+            <thead>
+              <tr>
+                <th>Regla</th>
+                <th>Estado</th>
+                <th class="text-end">Monto</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let b of detalle.bonos">
+                <td>{{ b.nombre }}</td>
+                <td>
+                  <span class="badge py-1" [ngClass]="estadoBonoClass(b.estado)">
+                    {{ b.estado | titlecase }}
+                  </span>
+                </td>
+                <td class="text-end">{{ b.monto | number:'1.2-2' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="mb-4" *ngIf="detalle.redenciones_gift?.length">
+        <h4 class="h6 mb-2">Redenciones gift card</h4>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover mb-0">
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th class="text-end">Monto</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let r of detalle.redenciones_gift">
+                <td><code>{{ r.codigo }}</code></td>
+                <td class="text-end">{{ r.monto | number:'1.2-2' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="mb-2" *ngIf="detalle.progreso_bono?.length">
+        <h4 class="h6 mb-2">Progreso hacia meta de bono</h4>
+        <div class="mb-3" *ngFor="let p of detalle.progreso_bono">
+          <div class="d-flex justify-content-between small mb-1">
+            <span>{{ p.regla }}</span>
+            <span>{{ p.actual | number:'1.2-2' }} / {{ p.meta | number:'1.2-2' }}</span>
+          </div>
+          <div class="progress" style="height: 8px;">
+            <div
+              class="progress-bar"
+              role="progressbar"
+              [style.width.%]="progresoPct(p.actual, p.meta)"
+              [attr.aria-valuenow]="progresoPct(p.actual, p.meta)"
+              aria-valuemin="0"
+              aria-valuemax="100">
+            </div>
+          </div>
+          <div class="text-muted small mt-1" *ngIf="p.faltante > 0">
+            Faltan {{ p.faltante | number:'1.2-2' }}
+          </div>
+          <div class="text-success small mt-1" *ngIf="p.faltante <= 0">
+            Meta alcanzada
+          </div>
+        </div>
+      </div>
+
+      <p class="text-muted mb-0" *ngIf="!detalle.ventas_por_categoria?.length
+        && !detalle.comisiones?.por_categoria?.length
+        && !detalle.bonos?.length
+        && !detalle.redenciones_gift?.length
+        && !detalle.progreso_bono?.length">
+        Sin detalle adicional en el período.
+      </p>
+    </ng-container>
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="btn btn-default" (click)="cerrarModal()">Cerrar</button>
+  </div>
+</ng-template>

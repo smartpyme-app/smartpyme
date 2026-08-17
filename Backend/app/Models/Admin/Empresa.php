@@ -1125,6 +1125,11 @@ class Empresa extends Model
         return (bool) $this->getCustomConfigValue('configuraciones', 'fidelizacion_completa', false);
     }
 
+    public function tieneFuncionalidad(string $slug): bool
+    {
+        return \App\Services\Funcionalidades\FuncionalidadAccess::empresaTieneSlug((int) $this->id, $slug);
+    }
+
     /**
      * Habilitar/deshabilitar una columna
      */

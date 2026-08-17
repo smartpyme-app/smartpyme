@@ -1,0 +1,84 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+  <h2 class="page-heading">Períodos y liquidaciones</h2>
+  <button class="btn btn-default" (click)="loadPeriodos()" [disabled]="loading">
+    <i class="fa fa-refresh me-2"></i> Recargar
+  </button>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+  <p class="text-muted mb-3">
+    Los períodos se crean solos (un mes calendario) cuando se registra la primera comisión.
+    No se agregan ni editan a mano. Flujo: ventas generan movimientos → al final del mes
+    <strong>Cerrar período</strong> crea liquidaciones por vendedor → en detalle <strong>Pagar</strong> cada una.
+  </p>
+
+  <div class="d-flex justify-content-end mb-3">
+    <select class="form-select w-auto" [(ngModel)]="filtroEstado" (change)="loadPeriodos()">
+      <option value="">Todos los estados</option>
+      <option value="abierto">Abierto</option>
+      <option value="cerrado">Cerrado</option>
+      <option value="pagado">Pagado</option>
+    </select>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-borderless table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Período</th>
+          <th>Estado</th>
+          <th>Liquidaciones</th>
+          <th class="text-center" style="width: 120px;">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngIf="loading">
+          <td colspan="4" class="text-center">
+            <span class="badge bg-primary">Cargando...</span>
+          </td>
+        </tr>
+        <tr *ngIf="!loading && periodos.length === 0">
+          <td colspan="4" class="text-center text-muted">
+            Aún no hay períodos. Aparecerán cuando se facture una venta <strong>Pagada</strong>
+            con categoría al &gt; 0% y vendedor en la línea o en la venta.
+          </td>
+        </tr>
+        <tr *ngFor="let periodo of periodos">
+          <td>
+            {{ formatFecha(periodo.fecha_inicio) }} — {{ formatFecha(periodo.fecha_fin) }}
+          </td>
+          <td>
+            <span class="badge py-2" [ngClass]="estadoBadgeClass(periodo.estado)">
+              {{ periodo.estado | titlecase }}
+            </span>
+          </td>
+          <td>{{ periodo.liquidaciones?.length || 0 }}</td>
+          <td class="text-center">
+            <button
+              *ngIf="periodo.estado === 'abierto'"
+              type="button"
+              class="btn btn-warning btn-sm"
+              (click)="cerrarPeriodo(periodo)"
+              [disabled]="procesandoPeriodoId === periodo.id">
+              <span *ngIf="procesandoPeriodoId === periodo.id" class="spinner-border spinner-border-sm me-1"></span>
+              Cerrar período
+            </button>
+
+            <ng-container *ngIf="periodo.estado !== 'abierto'">
+              <span class="btn" [popover]="accionesPeriodo" [outsideClick]="true" tooltip="Acciones">
+                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+              </span>
+              <ng-template #accionesPeriodo>
+                <div class="d-flex flex-column align-items-start">
+                  <a class="btn" (click)="verDetalles(periodo)">
+                    <i class="fa fa-fw fa-eye"></i> Ver detalles
+                  </a>
+                </div>
+              </ng-template>
+            </ng-container>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>

@@ -1,0 +1,81 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+  <h2 class="page-heading">Reportes de comisiones</h2>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+  <h5 class="mb-3">Exportar Excel</h5>
+  <div class="row g-3 align-items-end">
+    <div class="col-md-3">
+      <label class="form-label">Desde</label>
+      <input type="date" class="form-control" [(ngModel)]="desde">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Hasta</label>
+      <input type="date" class="form-control" [(ngModel)]="hasta">
+    </div>
+    <div class="col-md-3">
+      <button class="btn btn-primary" (click)="descargarExcel()" [disabled]="downloading">
+        <span *ngIf="downloading" class="spinner-border spinner-border-sm me-2"></span>
+        <img *ngIf="!downloading" src="/assets/icons/download.png" class="icon me-2">
+        Descargar Excel
+      </button>
+    </div>
+  </div>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h5 class="mb-1">Movimientos</h5>
+      <p class="text-muted small mb-0">
+        Aquí se listan las comisiones generadas. Requiere: % &gt; 0 en la categoría del producto,
+        venta en estado Pagada, y vendedor (el del detalle si existe; si no, el de la venta).
+      </p>
+    </div>
+    <button class="btn btn-default btn-sm" (click)="filtrarMovimientos()" [disabled]="loadingMovimientos">
+      <i class="fa fa-filter me-1"></i> Filtrar por fechas
+    </button>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-borderless table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Vendedor</th>
+          <th>Categoría</th>
+          <th>Origen</th>
+          <th>Base</th>
+          <th>%</th>
+          <th>Comisión</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngIf="loadingMovimientos">
+          <td colspan="7" class="text-center">
+            <span class="badge bg-primary">Cargando...</span>
+          </td>
+        </tr>
+        <tr *ngIf="!loadingMovimientos && (!movimientos?.data || movimientos.data.length === 0)">
+          <td colspan="7" class="text-center text-muted">
+            Sin movimientos. Si ya vendió, revise que la categoría (ej. Vestidos) tenga % &gt; 0
+            en Configuración y que la venta esté Pagada.
+          </td>
+        </tr>
+        <tr *ngFor="let mov of movimientos?.data">
+          <td>{{ mov.fecha_evento | date:'yyyy-MM-dd' }}</td>
+          <td>{{ mov.vendedor?.name || ('#' + mov.id_vendedor) }}</td>
+          <td>{{ mov.categoria?.nombre || '—' }}</td>
+          <td>{{ mov.origen }}</td>
+          <td>{{ mov.monto_base | number:'1.2-2' }}</td>
+          <td>{{ (mov.porcentaje_aplicado ?? mov.porcentaje) | number:'1.2-2' }}%</td>
+          <td>{{ mov.monto_comision | number:'1.2-2' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="col-12" *ngIf="movimientos && movimientos.last_page && movimientos.last_page > 1">
+    <app-pagination [items]="movimientos" (setPagination)="setPagination($event)"></app-pagination>
+  </div>
+</section>
