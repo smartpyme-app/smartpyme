@@ -180,6 +180,28 @@ export class VentaDetallesV2Component implements OnInit {
         this.sumTotal.emit();
     }
 
+    /**
+     * Precios del selector por línea.
+     * El pipe `filter:clasificacion` ocultaba tarifas sin clase (precio base) al elegir cliente A/B/C
+     * y dejaba el <select> en blanco. Las sin clasificación siguen visibles; si nada coincide, se muestran todas.
+     */
+    public preciosParaSelector(detalle: any): any[] {
+        const lista = Array.isArray(detalle?.precios) ? detalle.precios : [];
+        const raw = this.venta?.cliente?.clasificacion;
+        const clasificacion = raw == null || raw === '' ? '' : String(raw).trim().toLowerCase();
+        if (!clasificacion) {
+            return lista;
+        }
+        const filtrada = lista.filter((p: any) => {
+            const c = p?.clasificacion;
+            if (c == null || String(c).trim() === '') {
+                return true;
+            }
+            return String(c).trim().toLowerCase() === clasificacion;
+        });
+        return filtrada.length ? filtrada : lista;
+    }
+
     /** Asegura lista de tarifas (v1/v2) para mostrar selector cuando hay más de un precio. */
     private normalizarListaPreciosDetalle(detalle: any): void {
         const pctDet = this.obtenerPorcentajeIvaDetalle(detalle);

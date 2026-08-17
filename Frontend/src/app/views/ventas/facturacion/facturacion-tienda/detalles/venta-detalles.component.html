@@ -220,7 +220,7 @@
                             (keyup)="updateTotal(detalle)" class="form-select" name="precio"
                             *ngIf="detalle?.precios?.length > 1">
                             <option [value]="precio.precio"
-                                *ngFor="let precio of detalle.precios | filter: 'clasificacion':venta.cliente?.clasificacion || null">
+                                *ngFor="let precio of preciosParaSelector(detalle)">
                                 {{ precio.precio | currency:'USD':'symbol':'1.0-6'}}
                             </option>
                         </select>

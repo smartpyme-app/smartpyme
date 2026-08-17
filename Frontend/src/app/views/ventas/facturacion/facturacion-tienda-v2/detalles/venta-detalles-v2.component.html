@@ -224,7 +224,7 @@
                         <select [(ngModel)]="detalle.precio" (change)="onPrecioSelectChange(detalle)" 
                         class="form-select" [name]="'precio_tarifa_'+i" *ngIf="detalle?.precios?.length > 1">
                             <option [value]="precio.precio" 
-                            *ngFor="let precio of detalle.precios | filter: 'clasificacion':venta.cliente?.clasificacion || null">
+                            *ngFor="let precio of preciosParaSelector(detalle)">
                                 {{ (precio.precio_con_iva ?? precio.precio) | currency:'USD':'symbol':'1.2' }}
                             </option>
                         </select>
