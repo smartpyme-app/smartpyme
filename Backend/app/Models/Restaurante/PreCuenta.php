@@ -21,6 +21,7 @@ class PreCuenta extends Model
         'estado',
         'factura_id',
         'numero_pre_cuenta',
+        'nombre_pagador',
     ];
 
     protected $casts = [

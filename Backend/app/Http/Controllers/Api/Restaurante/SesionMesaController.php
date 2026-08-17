@@ -108,6 +108,7 @@ class SesionMesaController extends Controller
                 'mesa.zonaRestaurante',
                 'mesero',
                 'ordenDetalle.producto',
+                'ordenDetalle.presentacion',
                 'preCuentas.ordenDetalles.producto',
             ])
             ->findOrFail($id);
@@ -119,6 +120,10 @@ class SesionMesaController extends Controller
     {
         $user = auth()->user();
         $sesion = SesionMesa::where('id_empresa', $user->id_empresa)->findOrFail($id);
+
+        if (! in_array($sesion->estado, ['abierta', 'pre_cuenta'], true)) {
+            return response()->json(['error' => 'La sesión no se puede editar en su estado actual'], 422);
+        }
 
         $validated = $request->validate([
             'num_comensales' => 'nullable|integer|min:1|max:99',
@@ -230,6 +235,7 @@ class SesionMesaController extends Controller
             'mesa.zonaRestaurante',
             'mesero',
             'ordenDetalle.producto',
+            'ordenDetalle.presentacion',
             'preCuentas.ordenDetalles.producto',
         ]);
 
@@ -308,11 +314,19 @@ class SesionMesaController extends Controller
     private function fusionarItemEnSesionDestino(OrdenDetalle $item, SesionMesa $dest): void
     {
         $notas = $item->notas;
+        $idPres = $item->id_presentacion;
         $q = OrdenDetalle::where('sesion_id', $dest->id)
             ->where('producto_id', $item->producto_id)
             ->whereRaw('ROUND(precio_unitario, 2) = ?', [round((float) $item->precio_unitario, 2)])
             ->where('enviado_cocina', (bool) $item->enviado_cocina)
-            ->where('enviado_barra', (bool) $item->enviado_barra);
+            ->where('enviado_barra', (bool) $item->enviado_barra)
+            ->where(function ($qq) use ($idPres) {
+                if ($idPres) {
+                    $qq->where('id_presentacion', $idPres);
+                } else {
+                    $qq->whereNull('id_presentacion');
+                }
+            });
         if ($notas === null || $notas === '') {
             $q->where(function ($qq) {
                 $qq->whereNull('notas')->orWhere('notas', '');

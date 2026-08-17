@@ -140,7 +140,7 @@ class ComandaController extends Controller
             ->with([
                 'sesion.mesa',
                 'pedido',
-                'detalles.ordenDetalle' => fn ($q) => $q->withTrashed()->with('producto'),
+                'detalles.ordenDetalle' => fn ($q) => $q->withTrashed()->with(['producto', 'presentacion']),
                 'detalles.pedidoDetalle.producto',
             ])
             ->orderBy('created_at', 'desc')
@@ -167,7 +167,7 @@ class ComandaController extends Controller
                             ->firstOrFail();
 
                         $pendientes = OrdenDetalle::where('sesion_id', $sesion->id)
-                            ->with('producto')
+                            ->with(['producto', 'presentacion'])
                             ->lockForUpdate()
                             ->get();
 

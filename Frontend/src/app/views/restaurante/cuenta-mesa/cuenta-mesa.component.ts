@@ -6,6 +6,7 @@ import * as moment from 'moment';
 import { Mesa, RestauranteService } from '@services/restaurante.service';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { nombreLineaOrden as nombreLineaOrdenFn } from './pos/pos-menu-nav';
 
 @Component({
   standalone: false,
@@ -19,6 +20,7 @@ export class CuentaMesaComponent implements OnInit {
   private readonly cdr = inject(ChangeDetectorRef);
   sesion: any = null;
   loading = true;
+  guardandoComensales = false;
   enviandoComanda = false;
   solicitandoCuenta = false;
   reactivandoConsumo = false;
@@ -148,6 +150,36 @@ export class CuentaMesaComponent implements OnInit {
     return !!this.sesion && ['abierta', 'pre_cuenta'].includes(this.sesion.estado);
   }
 
+  cambiarComensales(delta: number): void {
+    if (!this.sesion || this.guardandoComensales || !this.puedeOperarOrden) {
+      return;
+    }
+    const actual = Math.max(1, Number(this.sesion.num_comensales) || 1);
+    const siguiente = Math.min(99, Math.max(1, actual + delta));
+    if (siguiente === actual) {
+      return;
+    }
+    this.guardandoComensales = true;
+    this.sesion = { ...this.sesion, num_comensales: siguiente };
+    this.cdr.markForCheck();
+    this.restauranteService
+      .actualizarSesion(this.sesionId, { num_comensales: siguiente })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (sesion) => {
+          this.sesion = { ...this.sesion, ...sesion };
+          this.guardandoComensales = false;
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          this.sesion = { ...this.sesion, num_comensales: actual };
+          this.guardandoComensales = false;
+          this.alertService.error(err);
+          this.cdr.markForCheck();
+        }
+      });
+  }
+
   reactivarConsumo(): void {
     if (!this.sesionId || this.sesion?.estado !== 'pre_cuenta') {
       return;
@@ -187,7 +219,11 @@ export class CuentaMesaComponent implements OnInit {
     this.cdr.markForCheck();
   }
 
-  onConfirmarAgregar(payload: { producto_id: number; cantidad: number; notas: string }): void {
+  nombreLineaOrden(item: { producto?: { nombre?: string } | null; presentacion?: { nombre_comercial?: string } | null }): string {
+    return nombreLineaOrdenFn(item);
+  }
+
+  onConfirmarAgregar(payload: { producto_id: number; id_presentacion?: number | null; cantidad: number; notas: string }): void {
     if (this.enviandoAgregar) {
       return;
     }

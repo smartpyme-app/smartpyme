@@ -4,7 +4,9 @@ import {
   lineaCompleta,
   matrizValida,
   buildAsignaciones,
-  sumaPersonaLinea
+  sumaPersonaLinea,
+  etiquetaPagador,
+  ajustarNombresPagadores
 } from './pos-division';
 
 describe('pos-division', () => {
@@ -43,5 +45,17 @@ describe('pos-division', () => {
     m = asignarExclusivo(m, 10, 1, 1, 1);
     m = asignarExclusivo(m, 10, 2, 1, 1);
     expect(m[11][1]).toBe(2);
+  });
+});
+
+describe('nombres pagador', () => {
+  it('usa Persona N si el input está vacío', () => {
+    expect(etiquetaPagador(['', 'Ana'], 1)).toBe('Persona 1');
+    expect(etiquetaPagador(['', 'Ana'], 2)).toBe('Ana');
+  });
+
+  it('ajusta el array al cambiar N', () => {
+    expect(ajustarNombresPagadores(['Ana', 'Luis'], 1)).toEqual(['Ana']);
+    expect(ajustarNombresPagadores(['Ana'], 3)).toEqual(['Ana', '', '']);
   });
 });

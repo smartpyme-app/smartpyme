@@ -14,6 +14,8 @@ use App\Services\Restaurante\RestauranteIdempotencyService;
 use App\Services\Restaurante\RestauranteSideEffectDispatcher;
 use App\Services\Restaurante\RestauranteRealtimePublisher;
 use App\Services\Restaurante\RestauranteTicketHtmlService;
+use App\Support\Restaurante\NombresPagadores;
+use App\Support\Restaurante\PresentacionPos;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Collection;
@@ -181,6 +183,8 @@ class PreCuentaController extends Controller
             'asignaciones.*.orden_detalle_id' => 'required_with:asignaciones|integer',
             'asignaciones.*.pagador_index' => 'required_with:asignaciones|integer|min:1',
             'asignaciones.*.cantidad' => 'nullable|numeric|min:0.0001',
+            'nombres' => 'nullable|array',
+            'nombres.*' => 'nullable|string|max:80',
         ])->validate();
     }
 
@@ -195,6 +199,7 @@ class PreCuentaController extends Controller
         $sesion->loadMissing('mesa');
         $total = $items->sum(fn ($i) => $i->cantidad * $i->precio_unitario);
         $n = $validated['num_pagadores'];
+        $nombres = NombresPagadores::normalizar($validated['nombres'] ?? null, $n);
 
         $division = DivisionCuenta::create([
             'sesion_id' => $sesion->id,
@@ -227,6 +232,7 @@ class PreCuentaController extends Controller
                     'total' => $t['total'],
                     'estado' => 'pendiente',
                     'numero_pre_cuenta' => "PC-{$sesion->mesa->numero}-".($i + 1),
+                    'nombre_pagador' => $nombres[$i],
                 ]);
             }
         } else {
@@ -296,6 +302,7 @@ class PreCuentaController extends Controller
                     'total' => 0,
                     'estado' => 'pendiente',
                     'numero_pre_cuenta' => "PC-{$sesion->mesa->numero}-".($i + 1),
+                    'nombre_pagador' => $nombres[$i],
                 ]);
                 $preCuentasCreadas[$i] = $pc;
             }
@@ -344,7 +351,7 @@ class PreCuentaController extends Controller
             }
 
             foreach ($preCuentasCreadas as $i => $pc) {
-                $pc->load('ordenDetalles.producto');
+                $pc->load(['ordenDetalles.producto', 'ordenDetalles.presentacion']);
                 $imp = $this->calcularImpuestoItems($pc->ordenDetalles, $empresa);
                 $t = $this->totalesPreCuentaConPropina((float) $totales[$i], (float) $imp, $empresa);
                 $pc->update([
@@ -358,7 +365,7 @@ class PreCuentaController extends Controller
         }
 
         return PreCuenta::where('division_cuenta_id', $division->id)
-            ->with(['sesion.ordenDetalle.producto', 'sesion.mesa'])
+            ->with(['sesion.ordenDetalle.producto', 'sesion.ordenDetalle.presentacion', 'sesion.mesa'])
             ->get();
     }
 
@@ -381,7 +388,7 @@ class PreCuentaController extends Controller
                 try {
                     $this->anularPreCuentasPendientesDeSesion($sesion->id);
 
-                    $items = OrdenDetalle::where('sesion_id', $sesion->id)->with('producto')->get();
+                    $items = OrdenDetalle::where('sesion_id', $sesion->id)->with(['producto', 'presentacion'])->get();
                     if ($items->isEmpty()) {
                         DB::rollBack();
 
@@ -449,7 +456,7 @@ class PreCuentaController extends Controller
                     'solicitar_cuenta'
                 );
 
-                $preCuenta->load(['sesion.ordenDetalle.producto', 'sesion.mesa', 'sesion.mesero']);
+                $preCuenta->load(['sesion.ordenDetalle.producto', 'sesion.ordenDetalle.presentacion', 'sesion.mesa', 'sesion.mesero']);
 
                 return response()->json($preCuenta, 201);
             }
@@ -470,7 +477,7 @@ class PreCuentaController extends Controller
         $validated = $this->validarPayloadDividir($request->all());
 
         $sesion = $preCuenta->sesion;
-        $items = OrdenDetalle::where('sesion_id', $sesion->id)->with('producto')->get();
+        $items = OrdenDetalle::where('sesion_id', $sesion->id)->with(['producto', 'presentacion'])->get();
         $empresa = Empresa::find($user->id_empresa);
 
         DB::beginTransaction();
@@ -502,7 +509,7 @@ class PreCuentaController extends Controller
     {
         $user = auth()->user();
         $preCuenta = PreCuenta::whereHas('sesion', fn ($q) => $q->where('id_empresa', $user->id_empresa))
-            ->with(['sesion.ordenDetalle.producto', 'sesion.mesa', 'sesion.mesero', 'ordenDetalles.producto'])
+            ->with(['sesion.ordenDetalle.producto', 'sesion.ordenDetalle.presentacion', 'sesion.mesa', 'sesion.mesero', 'ordenDetalles.producto', 'ordenDetalles.presentacion'])
             ->findOrFail($id);
 
         if ($preCuenta->estado === 'facturada') {
@@ -528,7 +535,11 @@ class PreCuentaController extends Controller
                 'precio' => $precioSinIva,
                 'precio_con_iva' => $precioConIva,
                 'porcentaje_impuesto' => $pct,
-                'descripcion' => $i->producto->nombre ?? '',
+                'id_presentacion' => $i->id_presentacion ?? null,
+                'descripcion' => PresentacionPos::nombreMostrar(
+                    $i->presentacion?->nombre_comercial,
+                    $i->producto?->nombre ?? ''
+                ),
             ];
         })->values()->toArray();
 
@@ -550,7 +561,7 @@ class PreCuentaController extends Controller
     {
         $user = auth()->user();
         $preCuenta = PreCuenta::whereHas('sesion', fn ($q) => $q->where('id_empresa', $user->id_empresa))
-            ->with(['sesion.ordenDetalle.producto', 'sesion.mesa', 'sesion.mesero', 'ordenDetalles.producto'])
+            ->with(['sesion.ordenDetalle.producto', 'sesion.ordenDetalle.presentacion', 'sesion.mesa', 'sesion.mesero', 'ordenDetalles.producto', 'ordenDetalles.presentacion'])
             ->findOrFail($id);
 
         return response()->json($preCuenta);

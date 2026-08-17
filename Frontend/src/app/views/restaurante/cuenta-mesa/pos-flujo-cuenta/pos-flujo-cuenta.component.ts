@@ -2,13 +2,16 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, OnChanges, Out
 
 import { AlertService } from '@services/alert.service';
 import {
+  ajustarNombresPagadores,
   asignarExclusivo,
   asignarUnidades,
   buildAsignaciones,
+  etiquetaPagador,
   lineaCompleta,
   matrizValida,
   sumaPersonaLinea
 } from '../pos/pos-division';
+import { nombreLineaOrden as nombreLineaOrdenFn } from '../pos/pos-menu-nav';
 
 export type EstadoLinea = 'sin_asignar' | 'parcial' | 'completo';
 
@@ -34,6 +37,7 @@ export class PosFlujoCuentaComponent implements OnChanges {
   modoCuenta: 'completo' | 'dividir' = 'completo';
   tipoDivision: 'equitativa' | 'por_items' = 'equitativa';
   numPagadores = 2;
+  nombresPagadores: string[] = ['', ''];
   personaActiva = 1;
   matriz: Record<number, Record<number, number>> = {};
 
@@ -48,6 +52,7 @@ export class PosFlujoCuentaComponent implements OnChanges {
       this.modoCuenta = 'completo';
       this.tipoDivision = 'equitativa';
       this.numPagadores = this.clampPagadores(Number(this.sesion?.num_comensales) || 2);
+      this.nombresPagadores = ajustarNombresPagadores([], this.numPagadores);
       this.resetMatrizPorItems();
     }
   }
@@ -58,6 +63,14 @@ export class PosFlujoCuentaComponent implements OnChanges {
 
   get personas(): number[] {
     return Array.from({ length: this.numPagadores }, (_, i) => i + 1);
+  }
+
+  etiquetaPersona(p: number): string {
+    return etiquetaPagador(this.nombresPagadores, p);
+  }
+
+  nombreLineaOrden(item: { producto?: { nombre?: string } | null; presentacion?: { nombre_comercial?: string } | null }): string {
+    return nombreLineaOrdenFn(item);
   }
 
   get matrizCompleta(): boolean {
@@ -86,6 +99,7 @@ export class PosFlujoCuentaComponent implements OnChanges {
     const actual = Number(this.numPagadores);
     const siguiente = this.clampPagadores(actual + delta);
     this.numPagadores = siguiente;
+    this.nombresPagadores = ajustarNombresPagadores(this.nombresPagadores, this.numPagadores);
     // El blur del input no debe borrar el reparto si el valor no cambió.
     if (siguiente !== actual) {
       this.resetMatrizPorItems();
@@ -168,6 +182,7 @@ export class PosFlujoCuentaComponent implements OnChanges {
         return;
       }
       const dividir: Record<string, unknown> = { tipo: this.tipoDivision, num_pagadores: nPag };
+      dividir['nombres'] = this.nombresPagadores.map((s) => String(s || '').trim());
       if (this.tipoDivision === 'por_items') {
         dividir['asignaciones'] = buildAsignaciones(
           this.items.map((i: any) => ({ id: Number(i.id), cantidad: Number(i.cantidad) })),

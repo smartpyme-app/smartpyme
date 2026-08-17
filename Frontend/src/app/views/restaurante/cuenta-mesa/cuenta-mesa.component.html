@@ -23,7 +23,17 @@
               </span>
             </h5>
             <div class="small text-muted mt-1">
-              <span>{{ sesion.num_comensales }} comensales</span>
+              <span class="pos-comensales">
+                <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="guardandoComensales || sesion.num_comensales <= 1 || !puedeOperarOrden"
+                  (click)="cambiarComensales(-1)" title="Quitar comensal">
+                  <i class="fa fa-minus"></i>
+                </button>
+                <span>{{ sesion.num_comensales }} comensales</span>
+                <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="guardandoComensales || sesion.num_comensales >= 99 || !puedeOperarOrden"
+                  (click)="cambiarComensales(1)" title="Agregar comensal">
+                  <i class="fa fa-plus"></i>
+                </button>
+              </span>
               <span class="ms-2">•</span>
               <span>{{ tiempoTranscurrido() }}</span>
               <span *ngIf="sesion.mesero" class="ms-2">• Mesero: {{ sesion.mesero?.name || sesion.mesero?.email || '-' }}</span>
@@ -65,8 +75,8 @@
                   <td>
                     <span *ngIf="item.producto?.genera_comanda && item.enviado_cocina" class="badge bg-success me-1">Cocina</span>
                     <span *ngIf="item.producto?.genera_comanda && item.enviado_barra" class="badge bg-info text-dark me-1">Barra</span>
-                    <span *ngIf="editandoItemId !== item.id">{{ item.producto?.nombre }}</span>
-                    <span *ngIf="editandoItemId === item.id">{{ item.producto?.nombre }}</span>
+                    <span *ngIf="editandoItemId !== item.id">{{ nombreLineaOrden(item) }}</span>
+                    <span *ngIf="editandoItemId === item.id">{{ nombreLineaOrden(item) }}</span>
                     <small class="text-muted d-block" *ngIf="editandoItemId !== item.id && item.notas">{{ item.notas }}</small>
                     <input *ngIf="editandoItemId === item.id" type="text" class="form-control form-control-sm mt-1" placeholder="Nota (opcional)"
                       [(ngModel)]="editNotas" (keydown.enter)="guardarEdicion()">
@@ -157,7 +167,8 @@
               @for (pc of preCuentas; track pc.id) {
               <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-0">
                 <span>
-                  {{ pc.numero_pre_cuenta }} — {{ pc.total | currency }}
+                  {{ pc.numero_pre_cuenta }}<ng-container *ngIf="pc.nombre_pagador"> · {{ pc.nombre_pagador }}</ng-container>
+                  — {{ pc.total | currency }}
                   <span class="badge bg-success ms-1" *ngIf="pc.estado === 'facturada'">Facturada</span>
                 </span>
                 <span class="d-flex gap-1">
@@ -252,7 +263,7 @@
                       <span>
                         <span *ngIf="item.producto?.genera_comanda && item.enviado_cocina" class="badge bg-success me-1">Cocina</span>
                         <span *ngIf="item.producto?.genera_comanda && item.enviado_barra" class="badge bg-info text-dark me-1">Barra</span>
-                        {{ item.producto?.nombre }} ({{ item.cantidad }}x)
+                        {{ nombreLineaOrden(item) }} ({{ item.cantidad }}x)
                       </span>
                     </label>
                   </td>

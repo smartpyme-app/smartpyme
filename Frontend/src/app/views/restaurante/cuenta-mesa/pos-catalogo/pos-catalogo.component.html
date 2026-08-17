@@ -24,13 +24,14 @@
 
     <ng-container *ngIf="!loading && !buscando">
       <div class="pos-tile-grid" *ngIf="enBusqueda">
-        @for (p of resultadosBusqueda; track p.id) {
+        @for (p of resultadosBusqueda; track trackFichaPos(p)) {
           <button type="button" class="pos-tile" (click)="tapProducto(p)">
             <span class="pos-tile-img" [class.placeholder]="esPlaceholder(p.img)">
               <img *ngIf="!esPlaceholder(p.img)" [src]="imgUrl(p.img)" [alt]="p.nombre">
               <i *ngIf="esPlaceholder(p.img)" class="fa fa-image"></i>
             </span>
             <span class="pos-tile-nombre">{{ p.nombre }}</span>
+            <span class="badge bg-success text-dark" *ngIf="p.id_presentacion" style="font-size:0.65rem">Presentación</span>
             <span class="pos-tile-precio">{{ p.precio | currency }}</span>
           </button>
         }
@@ -65,13 +66,14 @@
         </div>
 
         <div class="pos-tile-grid" *ngIf="nivel === 'productos'">
-          @for (p of productos; track p.id) {
+          @for (p of productos; track trackFichaPos(p)) {
             <button type="button" class="pos-tile" (click)="tapProducto(p)">
               <span class="pos-tile-img" [class.placeholder]="esPlaceholder(p.img)">
                 <img *ngIf="!esPlaceholder(p.img)" [src]="imgUrl(p.img)" [alt]="p.nombre">
                 <i *ngIf="esPlaceholder(p.img)" class="fa fa-image"></i>
               </span>
               <span class="pos-tile-nombre">{{ p.nombre }}</span>
+              <span class="badge bg-success text-dark" *ngIf="p.id_presentacion" style="font-size:0.65rem">Presentación</span>
               <span class="pos-tile-precio">{{ p.precio | currency }}</span>
             </button>
           }

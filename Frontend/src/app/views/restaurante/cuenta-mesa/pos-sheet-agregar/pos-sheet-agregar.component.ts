@@ -12,7 +12,7 @@ export class PosSheetAgregarComponent implements OnChanges {
   @Input() visible = false;
   @Input() enviando = false;
 
-  @Output() confirmar = new EventEmitter<{ producto_id: number; cantidad: number; notas: string }>();
+  @Output() confirmar = new EventEmitter<{ producto_id: number; id_presentacion: number | null; cantidad: number; notas: string }>();
   @Output() cancelar = new EventEmitter<void>();
 
   cantidad = 1;
@@ -47,6 +47,7 @@ export class PosSheetAgregarComponent implements OnChanges {
     }
     this.confirmar.emit({
       producto_id: this.producto.id,
+      id_presentacion: this.producto.id_presentacion ?? null,
       cantidad: this.cantidad,
       notas: this.notas.trim()
     });

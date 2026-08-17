@@ -50,13 +50,23 @@
             </div>
           </div>
 
+          <div class="mb-3">
+            <label class="form-label">Nombres (opcional)</label>
+            @for (p of personas; track p) {
+              <input type="text" class="form-control mb-2" maxlength="80"
+                [placeholder]="'Persona ' + p"
+                [(ngModel)]="nombresPagadores[p - 1]"
+                [name]="'nombrePagador' + p">
+            }
+          </div>
+
           <ng-container *ngIf="tipoDivision === 'por_items'">
             <label class="form-label">Persona activa</label>
             <div class="cuenta-tabs mb-3">
               @for (p of personas; track p) {
               <button type="button" class="cuenta-tab" [class.activa]="p === personaActiva"
                 (click)="setPersonaActiva(p)">
-                Persona {{ p }}
+                {{ etiquetaPersona(p) }}
               </button>
               }
             </div>
@@ -68,7 +78,7 @@
                 [class.sin-asignar]="estadoLinea(item) === 'sin_asignar'"
                 [class.parcial]="estadoLinea(item) === 'parcial'"
                 [class.completo]="estadoLinea(item) === 'completo'">
-                <span class="cuenta-item-nombre">{{ item.producto?.nombre }}</span>
+                <span class="cuenta-item-nombre">{{ nombreLineaOrden(item) }}</span>
                 <span class="cuenta-item-detalle">
                   <span class="badge" [class.bg-secondary]="estadoLinea(item) === 'sin_asignar'"
                     [class.bg-warning]="estadoLinea(item) === 'parcial'" [class.bg-success]="estadoLinea(item) === 'completo'">
@@ -102,11 +112,11 @@
   <div class="modal-dialog modal-dialog-centered modal-sm" (click)="$event.stopPropagation()">
     <div class="modal-content shadow">
       <div class="modal-header">
-        <h6 class="modal-title mb-0">{{ itemPartir.producto?.nombre }}</h6>
+        <h6 class="modal-title mb-0">{{ nombreLineaOrden(itemPartir) }}</h6>
         <button type="button" class="btn-close" (click)="cancelarPartir()" aria-label="Cerrar"></button>
       </div>
       <div class="modal-body">
-        <p class="small text-muted mb-2">Unidades para Persona {{ personaActiva }} (total de la línea: {{ itemPartir.cantidad }})</p>
+        <p class="small text-muted mb-2">Unidades para {{ etiquetaPersona(personaActiva) }} (total de la línea: {{ itemPartir.cantidad }})</p>
         <div class="cuenta-stepper">
           <button type="button" class="btn btn-outline-secondary" (click)="stepPartir(-0.5)">
             <i class="fa fa-minus"></i>

@@ -27,6 +27,9 @@
   <hr>
 
   <p><strong>PRE-CUENTA: {{ $preCuenta->numero_pre_cuenta }}</strong></p>
+  @if($preCuenta->nombre_pagador)
+  <p><strong>Para:</strong> {{ $preCuenta->nombre_pagador }}</p>
+  @endif
   <p><strong>MESA: {{ $preCuenta->sesion->mesa->numero ?? '-' }}</strong></p>
   <p>Fecha: {{ now()->format('d/m/Y H:i') }}</p>
   @if($preCuenta->sesion->mesero)

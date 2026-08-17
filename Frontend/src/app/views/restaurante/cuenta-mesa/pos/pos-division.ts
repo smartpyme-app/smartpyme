@@ -81,3 +81,16 @@ export function buildAsignaciones(
   }
   return out;
 }
+
+export function etiquetaPagador(nombres: string[], index1: number): string {
+  const raw = String(nombres[index1 - 1] ?? '').trim();
+  return raw || `Persona ${index1}`;
+}
+
+export function ajustarNombresPagadores(nombres: string[], n: number): string[] {
+  const next = nombres.slice(0, n);
+  while (next.length < n) {
+    next.push('');
+  }
+  return next;
+}

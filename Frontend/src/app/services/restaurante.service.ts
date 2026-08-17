@@ -59,6 +59,7 @@ export interface PosMenuProducto {
   img?: string | null;
   tipo: string;
   genera_comanda: boolean;
+  id_presentacion?: number | null;
 }
 
 export interface PosMenuContenido {
@@ -135,11 +136,15 @@ export class RestauranteService {
     return this.api.read(BASE + 'sesiones-mesa/', id);
   }
 
+  actualizarSesion(id: number, data: { num_comensales?: number; observaciones?: string }): Observable<SesionMesa> {
+    return this.api.update(BASE + 'sesiones-mesa', id, data);
+  }
+
   reactivarConsumoSesion(sesionId: number): Observable<SesionMesa> {
     return this.api.putToUrl(`restaurante/sesiones-mesa/${sesionId}/reactivar-consumo`, {});
   }
 
-  agregarItem(sesionId: number, data: { producto_id: number; cantidad: number; notas?: string }): Observable<any> {
+  agregarItem(sesionId: number, data: { producto_id: number; id_presentacion?: number | null; cantidad: number; notas?: string }): Observable<any> {
     // Key única por clic: el UI evita doble-submit; no reutilizar scope entre altas intencionales.
     const key = this.newIdempotencyKey();
     return this.api.store(BASE + `sesiones-mesa/${sesionId}/items`, data, { 'Idempotency-Key': key });
