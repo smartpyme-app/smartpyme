@@ -167,7 +167,8 @@
               @for (pc of preCuentas; track pc.id) {
               <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-0">
                 <span>
-                  {{ pc.numero_pre_cuenta }} — {{ pc.total | currency }}
+                  {{ pc.numero_pre_cuenta }}<ng-container *ngIf="pc.nombre_pagador"> · {{ pc.nombre_pagador }}</ng-container>
+                  — {{ pc.total | currency }}
                   <span class="badge bg-success ms-1" *ngIf="pc.estado === 'facturada'">Facturada</span>
                 </span>
                 <span class="d-flex gap-1">
