@@ -11,6 +11,7 @@ final class PresentacionPosTest extends TestCase
     {
         $this->assertSame('Cerveza', PresentacionPos::nombreMostrar(null, 'Cerveza'));
         $this->assertSame('330ml (Cerveza)', PresentacionPos::nombreMostrar('330ml', 'Cerveza'));
+        $this->assertSame('330ml (Producto)', PresentacionPos::nombreMostrar('330ml', ''));
         $this->assertSame('Producto', PresentacionPos::nombreMostrar('', ''));
     }
 

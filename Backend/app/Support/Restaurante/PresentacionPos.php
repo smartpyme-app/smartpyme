@@ -12,7 +12,7 @@ final class PresentacionPos
             return $prod === '' ? 'Producto' : $prod;
         }
 
-        return $prod === '' ? $com : $com.' ('.$prod.')';
+        return $com.' ('.($prod !== '' ? $prod : 'Producto').')';
     }
 
     public static function cantidadBase(float $cantidad, ?float $factor): float
