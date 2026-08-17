@@ -6,6 +6,7 @@ import * as moment from 'moment';
 import { Mesa, RestauranteService } from '@services/restaurante.service';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { nombreLineaOrden as nombreLineaOrdenFn } from './pos/pos-menu-nav';
 
 @Component({
   standalone: false,
@@ -218,7 +219,11 @@ export class CuentaMesaComponent implements OnInit {
     this.cdr.markForCheck();
   }
 
-  onConfirmarAgregar(payload: { producto_id: number; cantidad: number; notas: string }): void {
+  nombreLineaOrden(item: { producto?: { nombre?: string } | null; presentacion?: { nombre_comercial?: string } | null }): string {
+    return nombreLineaOrdenFn(item);
+  }
+
+  onConfirmarAgregar(payload: { producto_id: number; id_presentacion?: number | null; cantidad: number; notas: string }): void {
     if (this.enviandoAgregar) {
       return;
     }

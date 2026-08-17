@@ -11,3 +11,19 @@ export function resolveCategoriaTap(modoApi?: string | null, subcategoriasCount 
   }
   return Number(subcategoriasCount) > 0 ? 'subcategorias' : 'productos';
 }
+
+export function trackFichaPos(p: { id: number; id_presentacion?: number | null }): string {
+  return `${p.id}:${p.id_presentacion || 0}`;
+}
+
+export function nombreLineaOrden(item: {
+  producto?: { nombre?: string } | null;
+  presentacion?: { nombre_comercial?: string } | null;
+}): string {
+  const prod = String(item?.producto?.nombre || '').trim();
+  const com = String(item?.presentacion?.nombre_comercial || '').trim();
+  if (!com) {
+    return prod;
+  }
+  return prod ? `${com} (${prod})` : com;
+}

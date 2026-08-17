@@ -22,7 +22,7 @@ import {
   PosMenuSubcategoria,
   RestauranteService
 } from '@services/restaurante.service';
-import { resolveCategoriaTap } from '../pos/pos-menu-nav';
+import { resolveCategoriaTap, trackFichaPos } from '../pos/pos-menu-nav';
 
 type NivelCatalogo = 'raiz' | 'subcategorias' | 'productos';
 
@@ -170,6 +170,8 @@ export class PosCatalogoComponent implements OnInit {
   tapProducto(p: PosMenuProducto): void {
     this.productoElegido.emit(p);
   }
+
+  readonly trackFichaPos = trackFichaPos;
 
   volver(): void {
     if (this.nivel === 'productos' && this.subcategoriaActual) {
