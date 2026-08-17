@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Restaurante;
 use App\Http\Controllers\Controller;
 use App\Models\Admin\Empresa;
 use App\Models\Inventario\Producto;
+use App\Models\Inventario\ProductoPresentacion;
 use App\Models\Restaurante\Comanda;
 use App\Models\Restaurante\ComandaDetalle;
 use App\Models\Restaurante\ItemEliminacionLog;
@@ -15,6 +16,7 @@ use App\Services\Restaurante\RestauranteIdempotencyService;
 use App\Services\Restaurante\RestauranteSideEffectDispatcher;
 use App\Services\Restaurante\RestauranteRealtimePublisher;
 use App\Services\Restaurante\RestauranteStockService;
+use App\Support\Restaurante\PresentacionPos;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -108,17 +110,29 @@ class OrdenDetalleController extends Controller
                     ],
                     'cantidad' => 'required|numeric|min:0.01',
                     'notas' => 'nullable|string|max:255',
+                    'id_presentacion' => 'nullable|integer|exists:producto_presentaciones,id',
                 ]);
 
                 $producto = Producto::withoutGlobalScope('empresa')
                     ->where('id_empresa', $user->id_empresa)
                     ->findOrFail($validated['producto_id']);
 
-                $precioLista = round((float) ($producto->precio ?? 0), 2);
+                $idPres = $validated['id_presentacion'] ?? null;
+                $presentacion = null;
+                if ($idPres) {
+                    $presentacion = ProductoPresentacion::where('id', $idPres)
+                        ->where('id_producto', $producto->id)
+                        ->first();
+                    if (! $presentacion) {
+                        return response()->json(['error' => 'La presentación no pertenece a este producto'], 422);
+                    }
+                }
+                $precioLista = round((float) ($presentacion?->precio_venta ?? $producto->precio ?? 0), 2);
+                $factor = $presentacion ? (float) $presentacion->factor_conversion : 1.0;
                 $notas = $this->normalizarNotas($validated['notas'] ?? null);
                 $nuevaCantidadReq = (float) $validated['cantidad'];
 
-                $result = DB::transaction(function () use ($user, $id, $producto, $precioLista, $notas, $nuevaCantidadReq, $validated) {
+                $result = DB::transaction(function () use ($user, $id, $producto, $precioLista, $notas, $nuevaCantidadReq, $idPres, $factor) {
                     $sesion = SesionMesa::where('id_empresa', $user->id_empresa)
                         ->whereIn('estado', ['abierta', 'pre_cuenta'])
                         ->whereKey($id)
@@ -137,6 +151,13 @@ class OrdenDetalleController extends Controller
                                 $q->where('notas', $notas);
                             }
                         })
+                        ->where(function ($q) use ($idPres) {
+                            if ($idPres) {
+                                $q->where('id_presentacion', $idPres);
+                            } else {
+                                $q->whereNull('id_presentacion');
+                            }
+                        })
                         ->orderBy('id')
                         ->lockForUpdate()
                         ->get();
@@ -145,7 +166,7 @@ class OrdenDetalleController extends Controller
                         $principal = $lineasFusionables->first();
                         $cantidadTotal = (float) $lineasFusionables->sum(fn ($l) => (float) $l->cantidad) + $nuevaCantidadReq;
 
-                        $err = $this->errorStockSiAplica($producto, $sesion, $cantidadTotal);
+                        $err = $this->errorStockSiAplica($producto, $sesion, PresentacionPos::cantidadBase($cantidadTotal, $factor));
                         if ($err) {
                             return ['error' => $err];
                         }
@@ -160,10 +181,10 @@ class OrdenDetalleController extends Controller
                             OrdenDetalle::whereIn('id', $idsExtra)->forceDelete();
                         }
 
-                        return ['item' => $principal->fresh()->load('producto'), 'status' => 200];
+                        return ['item' => $principal->fresh()->load(['producto', 'presentacion']), 'status' => 200];
                     }
 
-                    $errNuevo = $this->errorStockSiAplica($producto, $sesion, $nuevaCantidadReq);
+                    $errNuevo = $this->errorStockSiAplica($producto, $sesion, PresentacionPos::cantidadBase($nuevaCantidadReq, $factor));
                     if ($errNuevo) {
                         return ['error' => $errNuevo];
                     }
@@ -171,14 +192,15 @@ class OrdenDetalleController extends Controller
                     $item = OrdenDetalle::create([
                         'sesion_id' => $sesion->id,
                         'producto_id' => $producto->id,
-                        'cantidad' => $validated['cantidad'],
+                        'id_presentacion' => $idPres,
+                        'cantidad' => $nuevaCantidadReq,
                         'precio_unitario' => $precioLista,
                         'notas' => $notas,
                         'enviado_cocina' => false,
                         'enviado_barra' => false,
                     ]);
 
-                    return ['item' => $item->load('producto'), 'status' => 201];
+                    return ['item' => $item->load(['producto', 'presentacion']), 'status' => 201];
                 });
 
                 if (isset($result['error'])) {
@@ -212,7 +234,11 @@ class OrdenDetalleController extends Controller
             $producto = Producto::withoutGlobalScope('empresa')
                 ->where('id_empresa', $user->id_empresa)
                 ->findOrFail($item->producto_id);
-            $err = $this->errorStockSiAplica($producto, $sesion, (float) $validated['cantidad']);
+            $err = $this->errorStockSiAplica(
+                $producto,
+                $sesion,
+                PresentacionPos::cantidadBase((float) $validated['cantidad'], $item->presentacion?->factor_conversion)
+            );
             if ($err) {
                 return $err;
             }
@@ -220,7 +246,7 @@ class OrdenDetalleController extends Controller
 
         $item->update($validated);
 
-        return response()->json($item->fresh('producto'));
+        return response()->json($item->fresh()->load(['producto', 'presentacion']));
     }
 
     public function eliminar(Request $request, int $sesionId, int $itemId): JsonResponse
