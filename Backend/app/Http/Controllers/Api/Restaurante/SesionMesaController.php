@@ -108,6 +108,7 @@ class SesionMesaController extends Controller
                 'mesa.zonaRestaurante',
                 'mesero',
                 'ordenDetalle.producto',
+                'ordenDetalle.presentacion',
                 'preCuentas.ordenDetalles.producto',
             ])
             ->findOrFail($id);

@@ -163,13 +163,38 @@ final class PosMenuTest extends TestCase
 
         $this->assertCount(2, $mapeados, 'Los servicios no se filtran');
         $this->assertSame(
-            ['id', 'nombre', 'precio', 'img', 'tipo', 'genera_comanda'],
+            ['id', 'id_presentacion', 'nombre', 'precio', 'img', 'tipo', 'genera_comanda'],
             array_keys($mapeados[0])
         );
+        $this->assertNull($mapeados[0]['id_presentacion']);
         $this->assertSame('productos/casado.jpg', $mapeados[0]['img']);
         $this->assertTrue($mapeados[0]['genera_comanda']);
         $this->assertSame('productos/default.jpg', $mapeados[1]['img'], 'Sin imagen cae al placeholder');
         $this->assertFalse($mapeados[1]['genera_comanda']);
+    }
+
+    public function test_map_productos_aplana_presentaciones_cuando_se_pide(): void
+    {
+        $plato = $this->producto(1, 'Cerveza', 1.5, true, 'Producto', 'productos/c.jpg');
+        $pres = new \App\Models\Inventario\ProductoPresentacion([
+            'nombre_comercial' => '330ml',
+            'precio_venta' => 2.25,
+            'factor_conversion' => 1,
+        ]);
+        $pres->id = 9;
+        $plato->setRelation('presentaciones', new Collection([$pres]));
+
+        $sin = PosMenuController::mapProductos(new Collection([$plato]), false);
+        $this->assertCount(1, $sin);
+
+        $con = PosMenuController::mapProductos(new Collection([$plato]), true);
+        $this->assertCount(2, $con);
+        $this->assertNull($con[0]['id_presentacion']);
+        $this->assertSame('Cerveza', $con[0]['nombre']);
+        $this->assertSame(9, $con[1]['id_presentacion']);
+        $this->assertSame('330ml (Cerveza)', $con[1]['nombre']);
+        $this->assertEquals(2.25, $con[1]['precio']);
+        $this->assertTrue($con[1]['genera_comanda']);
     }
 
     private function producto(int $id, string $nombre, float $precio, bool $comanda, string $tipo, ?string $img): Producto

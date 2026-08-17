@@ -3,6 +3,7 @@
 namespace App\Models\Restaurante;
 
 use App\Models\Inventario\Producto;
+use App\Models\Inventario\ProductoPresentacion;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -15,6 +16,7 @@ class OrdenDetalle extends Model
     protected $fillable = [
         'sesion_id',
         'producto_id',
+        'id_presentacion',
         'cantidad',
         'precio_unitario',
         'notas',
@@ -35,6 +37,11 @@ class OrdenDetalle extends Model
     public function producto()
     {
         return $this->belongsTo(Producto::class);
+    }
+
+    public function presentacion()
+    {
+        return $this->belongsTo(ProductoPresentacion::class, 'id_presentacion');
     }
 
     public function comandaDetalles()

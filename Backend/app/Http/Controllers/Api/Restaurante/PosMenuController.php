@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Api\Restaurante;
 
 use App\Http\Controllers\Controller;
+use App\Models\Admin\Empresa;
 use App\Models\Inventario\Categorias\Categoria;
 use App\Models\Inventario\Producto;
+use App\Support\Restaurante\PresentacionPos;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
@@ -65,9 +67,14 @@ class PosMenuController extends Controller
             ]);
         }
 
-        $productos = self::queryProductosDeCategoria($idEmpresa, $categoria->id)->get();
+        $incluir = $this->incluirPresentaciones();
+        $query = self::queryProductosDeCategoria($idEmpresa, $categoria->id);
+        if ($incluir) {
+            $query->with('presentaciones');
+        }
+        $productos = $query->get();
 
-        return response()->json(['modo' => 'productos', 'items' => self::mapProductos($productos)]);
+        return response()->json(['modo' => 'productos', 'items' => self::mapProductos($productos, $incluir)]);
     }
 
     public function productosSubcategoria(Request $request, int $id): JsonResponse
@@ -81,9 +88,14 @@ class PosMenuController extends Controller
             ->where('subcategoria', 1)
             ->findOrFail($id);
 
-        $productos = self::queryProductosDeSubcategoria($idEmpresa, $subcategoria->id)->get();
+        $incluir = $this->incluirPresentaciones();
+        $query = self::queryProductosDeSubcategoria($idEmpresa, $subcategoria->id);
+        if ($incluir) {
+            $query->with('presentaciones');
+        }
+        $productos = $query->get();
 
-        return response()->json(self::mapProductos($productos));
+        return response()->json(self::mapProductos($productos, $incluir));
     }
 
     public function buscar(Request $request): JsonResponse
@@ -98,15 +110,18 @@ class PosMenuController extends Controller
             return response()->json([]);
         }
 
-        $productos = self::queryProductos($idEmpresa)
+        $incluir = $this->incluirPresentaciones();
+        $query = self::queryProductos($idEmpresa)
             ->where(function ($query) use ($q) {
                 $query->where('nombre', 'like', "%{$q}%")
                     ->orWhere('codigo', 'like', "%{$q}%");
-            })
-            ->limit(self::BUSCAR_LIMIT)
-            ->get();
+            });
+        if ($incluir) {
+            $query->with('presentaciones');
+        }
+        $productos = $query->limit(self::BUSCAR_LIMIT)->get();
 
-        return response()->json(self::mapProductos($productos));
+        return response()->json(self::mapProductos($productos, $incluir));
     }
 
     /** Categorías raíz de la empresa con cuántas subcategorías activas tienen. */
@@ -168,16 +183,49 @@ class PosMenuController extends Controller
     /**
      * @param Collection<int, Producto> $productos
      */
-    public static function mapProductos(Collection $productos): array
+    public static function mapProductos(Collection $productos, bool $incluirPresentaciones = false): array
     {
-        return $productos->map(fn (Producto $p) => [
+        $out = [];
+        foreach ($productos as $p) {
+            $out[] = self::mapFichaProducto($p, null, null, null);
+            if (! $incluirPresentaciones) {
+                continue;
+            }
+            foreach ($p->presentaciones ?? [] as $pres) {
+                $out[] = self::mapFichaProducto(
+                    $p,
+                    (int) $pres->id,
+                    PresentacionPos::nombreMostrar($pres->nombre_comercial ?? null, $p->nombre),
+                    $pres->precio_venta
+                );
+            }
+        }
+
+        return $out;
+    }
+
+    private static function mapFichaProducto(Producto $p, ?int $idPresentacion, ?string $nombre, $precio): array
+    {
+        return [
             'id' => $p->id,
-            'nombre' => $p->nombre,
-            'precio' => $p->precio,
+            'id_presentacion' => $idPresentacion,
+            'nombre' => $nombre ?? $p->nombre,
+            'precio' => $precio ?? $p->precio,
             'img' => $p->img,
             'tipo' => $p->tipo,
             'genera_comanda' => (bool) $p->genera_comanda,
-        ])->all();
+        ];
+    }
+
+    private function incluirPresentaciones(): bool
+    {
+        $idEmpresa = $this->idEmpresa();
+        if (! $idEmpresa) {
+            return false;
+        }
+        $empresa = Empresa::find($idEmpresa);
+
+        return $empresa ? $empresa->isModuloPresentaciones() : false;
     }
 
     private function idEmpresa(): ?int
