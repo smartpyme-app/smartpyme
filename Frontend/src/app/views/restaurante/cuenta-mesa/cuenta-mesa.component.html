@@ -23,7 +23,17 @@
               </span>
             </h5>
             <div class="small text-muted mt-1">
-              <span>{{ sesion.num_comensales }} comensales</span>
+              <span class="pos-comensales">
+                <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="guardandoComensales || sesion.num_comensales <= 1 || !puedeOperarOrden"
+                  (click)="cambiarComensales(-1)" title="Quitar comensal">
+                  <i class="fa fa-minus"></i>
+                </button>
+                <span>{{ sesion.num_comensales }} comensales</span>
+                <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="guardandoComensales || sesion.num_comensales >= 99 || !puedeOperarOrden"
+                  (click)="cambiarComensales(1)" title="Agregar comensal">
+                  <i class="fa fa-plus"></i>
+                </button>
+              </span>
               <span class="ms-2">•</span>
               <span>{{ tiempoTranscurrido() }}</span>
               <span *ngIf="sesion.mesero" class="ms-2">• Mesero: {{ sesion.mesero?.name || sesion.mesero?.email || '-' }}</span>

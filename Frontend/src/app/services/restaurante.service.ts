@@ -135,6 +135,10 @@ export class RestauranteService {
     return this.api.read(BASE + 'sesiones-mesa/', id);
   }
 
+  actualizarSesion(id: number, data: { num_comensales?: number; observaciones?: string }): Observable<SesionMesa> {
+    return this.api.update(BASE + 'sesiones-mesa', id, data);
+  }
+
   reactivarConsumoSesion(sesionId: number): Observable<SesionMesa> {
     return this.api.putToUrl(`restaurante/sesiones-mesa/${sesionId}/reactivar-consumo`, {});
   }
