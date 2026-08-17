@@ -1974,8 +1974,7 @@ export class FacturacionComponent implements OnInit {
         } else if (this.debePreguntarEnvioBoxful()) {
           this.preguntarGenerarEnvioBoxful(this.venta);
         } else {
-          this.cargarDatosIniciales();
-          this.router.navigate(['/venta/crear']);
+          this.router.navigate(['/ventas']);
         }
       })
       .catch((error) => {
@@ -1985,8 +1984,7 @@ export class FacturacionComponent implements OnInit {
         if (this.debePreguntarEnvioBoxful()) {
           this.preguntarGenerarEnvioBoxful(this.venta);
         } else {
-          this.cargarDatosIniciales();
-          this.router.navigate(['/venta/crear']);
+          this.router.navigate(['/ventas']);
         }
       });
   }
