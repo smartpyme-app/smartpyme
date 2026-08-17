@@ -235,6 +235,36 @@ final class ComensalesNombresPresentacionesTest extends TestCase
         }
     }
 
+    public function test_presentacion_no_genera_comanda_si_el_producto_no_lo_hace(): void
+    {
+        $producto = $this->productoEmpresa($this->empresaA);
+        $prev = $producto->genera_comanda;
+        $producto->genera_comanda = false;
+        $producto->save();
+        try {
+            $pres = $this->crearPresentacion($producto, 1, 1, 'HT17-NoCmd');
+            $mesa = $this->crearMesaLibre('HT17-CMD');
+            $sesion = $this->abrirSesion($mesa, $this->userA);
+            $add = Request::create('/x', 'POST', [
+                'producto_id' => $producto->id,
+                'id_presentacion' => $pres->id,
+                'cantidad' => 1,
+            ]);
+            $add->headers->set('Idempotency-Key', 'ht17-cmd-'.bin2hex(random_bytes(8)));
+            $add->setUserResolver(fn () => $this->userA);
+            $this->assertSame(201, app(OrdenDetalleController::class)->store($add, $sesion->id)->getStatusCode());
+            $cmd = Request::create('/api/restaurante/sesiones-mesa/'.$sesion->id.'/comandas', 'POST', []);
+            $cmd->headers->set('Idempotency-Key', 'ht17-send-'.bin2hex(random_bytes(8)));
+            $cmd->setUserResolver(fn () => $this->userA);
+            $resp = app(\App\Http\Controllers\Api\Restaurante\ComandaController::class)->store($cmd, $sesion->id);
+            $body = json_decode($resp->getContent(), true);
+            $this->assertSame(0, Comanda::where('sesion_id', $sesion->id)->whereIn('destino', ['cocina', 'barra', 'ambos'])->count(), json_encode($body));
+        } finally {
+            $producto->genera_comanda = $prev;
+            $producto->save();
+        }
+    }
+
     private function crearPresentacion(Producto $producto, float $precio, float $factor, string $nombre): ProductoPresentacion
     {
         $pres = ProductoPresentacion::create([

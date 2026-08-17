@@ -86,7 +86,10 @@
         <tr>
           <td>{{ number_format($linea->cantidad ?? 1, 0) }}x</td>
           <td>
-            {{ $prod->nombre ?? 'Producto' }}
+            {{ \App\Support\Restaurante\PresentacionPos::nombreMostrar(
+                $linea->presentacion?->nombre_comercial,
+                $prod->nombre ?? null
+            ) }}
             @if(!empty($linea->notas))
               <br><small><em>{{ $linea->notas }}</em></small>
             @endif

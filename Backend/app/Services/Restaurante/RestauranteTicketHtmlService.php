@@ -46,7 +46,7 @@ class RestauranteTicketHtmlService
                 'sesion.mesa',
                 'sesion.mesero',
                 'pedido',
-                'detalles.ordenDetalle' => fn ($q) => $q->withTrashed()->with('producto'),
+                'detalles.ordenDetalle' => fn ($q) => $q->withTrashed()->with(['producto', 'presentacion']),
                 'detalles.pedidoDetalle.producto',
             ])
             ->findOrFail($comandaId);
@@ -59,7 +59,14 @@ class RestauranteTicketHtmlService
     public function renderPreCuentaHtml(int $preCuentaId, int $empresaId): string
     {
         $preCuenta = PreCuenta::whereHas('sesion', fn ($q) => $q->where('id_empresa', $empresaId))
-            ->with(['sesion.mesa', 'sesion.mesero', 'sesion.ordenDetalle.producto', 'ordenDetalles.producto'])
+            ->with([
+                'sesion.mesa',
+                'sesion.mesero',
+                'sesion.ordenDetalle.producto',
+                'sesion.ordenDetalle.presentacion',
+                'ordenDetalles.producto',
+                'ordenDetalles.presentacion',
+            ])
             ->findOrFail($preCuentaId);
 
         $items = $preCuenta->ordenDetalles->isNotEmpty()
@@ -89,7 +96,7 @@ class RestauranteTicketHtmlService
                 $n = $i->notas ?? '';
                 $nk = trim((string) $n) === '' ? '' : trim((string) $n);
 
-                return $i->producto_id.'|'.round((float) $i->precio_unitario, 2).'|'.$nk;
+                return $i->producto_id.'|'.(int) ($i->id_presentacion ?? 0).'|'.round((float) $i->precio_unitario, 2).'|'.$nk;
             })
             ->map(function ($grupo) {
                 $first = $grupo->sortBy('id')->first();
@@ -101,6 +108,8 @@ class RestauranteTicketHtmlService
                     'notas' => $first->notas,
                     'producto' => $first->producto ?? null,
                     'producto_id' => $first->producto_id,
+                    'id_presentacion' => $first->id_presentacion ?? null,
+                    'presentacion' => $first->presentacion ?? null,
                 ];
             })
             ->values()

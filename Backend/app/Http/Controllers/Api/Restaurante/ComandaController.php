@@ -167,7 +167,7 @@ class ComandaController extends Controller
                             ->firstOrFail();
 
                         $pendientes = OrdenDetalle::where('sesion_id', $sesion->id)
-                            ->with('producto')
+                            ->with(['producto', 'presentacion'])
                             ->lockForUpdate()
                             ->get();
 
