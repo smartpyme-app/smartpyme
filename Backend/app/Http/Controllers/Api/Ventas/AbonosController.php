@@ -72,7 +72,10 @@ class AbonosController extends Controller
         $pdf->setPaper('US Letter', 'portrait');
 
         $nombreArchivo = ($recibo->nombre_documento ?? 'recibo') . '-' . ($recibo->correlativo ?? $recibo->id) . '.pdf';
-        return $pdf->stream($nombreArchivo);
+        return response($pdf->output(), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="' . $nombreArchivo . '"',
+        ]);
     }
 
     public function export(Request $request)
