@@ -29,7 +29,8 @@
               "pdfjs-dist/es5/build/pdf",
               "pdfjs-dist/es5/web/pdf_viewer",
               "pdfjs-dist",
-              "@webdatarocks/webdatarocks"
+              "@webdatarocks/webdatarocks",
+              "pusher-js"
             ],
             "assets": [
               "src/favicon.ico",
