@@ -78,6 +78,37 @@ describe('VentaDetallesComponent', () => {
     expect(detalle.lote).toBeNull();
   });
 
+  it('con cliente clasificado sigue mostrando precios sin clasificación', () => {
+    const component = createComponent();
+    component.venta.cliente = { clasificacion: 'A' };
+    const detalle = {
+      precios: [
+        { precio: '10.0000' },
+        { precio: '8.0000', clasificacion: 'B' },
+        { precio: '7.0000', clasificacion: 'A' },
+      ],
+    };
+
+    const visibles = component.preciosParaSelector(detalle);
+
+    expect(visibles.map((p: any) => p.precio)).toEqual(['10.0000', '7.0000']);
+  });
+
+  it('si ningún precio coincide con la clasificación, no deja el selector vacío', () => {
+    const component = createComponent();
+    component.venta.cliente = { clasificacion: 'A' };
+    const detalle = {
+      precios: [
+        { precio: '10.0000', clasificacion: 'B' },
+        { precio: '8.0000', clasificacion: 'C' },
+      ],
+    };
+
+    const visibles = component.preciosParaSelector(detalle);
+
+    expect(visibles.length).toBe(2);
+  });
+
   it('al confirmar lotes no elimina la asignación aunque cambie la cantidad', () => {
     const component = createComponent();
     const detalle = detalleConLotes();
