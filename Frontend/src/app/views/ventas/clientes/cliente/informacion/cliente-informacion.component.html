@@ -332,10 +332,12 @@
                     <label for="nit">{{ 'country.tax.nit' | translate }}</label>
                     <input type="text" class="form-control" placeholder="Escribe aquí" name="nit" [(ngModel)]="cliente.nit" [dropSpecialCharacters]="false" mask={{apiService.auth_user().empresa.validador_nit}}>
                 </div>
+                @if (mostrarRegistroSecundarioCliente()) {
                 <div class="form-group col-6 col-lg-2">
                     <label for="ncr">{{ 'country.tax.ncr' | translate }}</label>
                     <input type="text" class="form-control" placeholder="Escribe aquí" name="ncr" [(ngModel)]="cliente.ncr">
                 </div>
+                }
                 <div class="form-group col-md-6 col-lg-3">
                     <label for="tipo_contribuyente">Tipo de contribuyente:</label>
                     <select class="form-select" [(ngModel)]="cliente.tipo_contribuyente" name="tipo_contribuyente">

@@ -30,6 +30,7 @@ import {
 } from '@services/facturacion-electronica/contribuyente-hacienda.mapper';
 import { HaciendaContribuyenteClientService } from '@services/facturacion-electronica/hacienda-contribuyente-client.service';
 import { finalize } from 'rxjs/operators';
+import { configIdentificadorFiscalCliente } from '@utils/identificador-fiscal-cliente.util';
 
 @Component({
     selector: 'app-cliente-informacion',
@@ -116,6 +117,11 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
 
     esCostaRicaFe(): boolean {
         return this.feCrUbic.esCostaRicaFe();
+    }
+
+    mostrarRegistroSecundarioCliente(): boolean {
+        return configIdentificadorFiscalCliente(this.apiService.auth_user()?.empresa)
+            .mostrarRegistroSecundario;
     }
 
     /** Debounce: al completar NIT (empresa) o cédula (persona) consulta Hacienda. */
