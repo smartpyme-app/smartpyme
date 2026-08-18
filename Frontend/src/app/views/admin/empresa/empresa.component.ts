@@ -23,13 +23,17 @@ import {
 } from '@services/facturacion-electronica/contribuyente-hacienda.mapper';
 import { HaciendaContribuyenteClientService } from '@services/facturacion-electronica/hacienda-contribuyente-client.service';
 import { forkJoin } from 'rxjs';
-import { map, distinctUntilChanged, finalize } from 'rxjs/operators';
+import { finalize } from 'rxjs/operators';
 import { TranslatePipe } from '@ngx-translate/core';
 import { SharedModule } from '@shared/shared.module';
 import {
     aplicarImpuestosDefaultsAEmpresa,
     codigoPaisDesdeNombre,
 } from './impuestos-default-por-pais';
+import {
+    PreferenciasGrupo,
+    resolverGrupoPreferencias,
+} from './preferencias-grupo';
 
 @Component({
     selector: 'app-empresa',
@@ -133,9 +137,19 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
     ) { }
 
     public activeTabSlug = 'datos';
+    public preferenciasGrupo: PreferenciasGrupo = 'modulos';
+    public readonly preferenciasNav: { slug: PreferenciasGrupo; label: string }[] = [
+        { slug: 'modulos', label: 'Módulos' },
+        { slug: 'documentos', label: 'Documentos e impresión' },
+        { slug: 'facturacion', label: 'Facturación' },
+        { slug: 'inventario', label: 'Inventario y productos' },
+        { slug: 'permisos', label: 'Permisos' },
+        { slug: 'cuenta', label: 'Cuenta' },
+    ];
 
     ngOnInit() {
         const tabFromUrl = this.route.snapshot.queryParamMap.get('tab');
+        this.syncPreferenciasGrupoFromUrl(this.route.snapshot.queryParamMap.get('grupo'));
         if (tabFromUrl) {
             this.activeTabSlug = tabFromUrl.toLowerCase();
         }
@@ -175,14 +189,13 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
 
     ngAfterViewInit() {
         this.route.queryParamMap.pipe(
-            map((m) => (m.get('tab') ?? 'datos').toLowerCase()),
-            distinctUntilChanged(),
             this.untilDestroyed()
-        ).subscribe((slug) => {
-            if (slug === this.activeTabSlug) {
-                return;
+        ).subscribe((m) => {
+            const slug = (m.get('tab') ?? 'datos').toLowerCase();
+            if (slug !== this.activeTabSlug) {
+                this.activeTabSlug = slug;
             }
-            this.activeTabSlug = slug;
+            this.syncPreferenciasGrupoFromUrl(m.get('grupo'));
             this.cdr.markForCheck();
         });
     }
@@ -2392,6 +2405,46 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
             queryParamsHandling: 'merge',
             replaceUrl: true
         });
+    }
+
+    public puedeVerPermisosPreferencias(): boolean {
+        const tipo = this.apiService.auth_user()?.tipo;
+        return tipo === 'Administrador' || tipo === 'Super Admin';
+    }
+
+    public preferenciasNavLabel(): string {
+        return this.preferenciasNav.find((i) => i.slug === this.preferenciasGrupo)?.label ?? 'Módulos';
+    }
+
+    public setPreferenciasGrupo(slug: string): void {
+        const next = resolverGrupoPreferencias(slug, this.puedeVerPermisosPreferencias());
+        const current = this.route.snapshot.queryParamMap.get('grupo');
+        this.preferenciasGrupo = next;
+        if (current === next) {
+            this.cdr.markForCheck();
+            return;
+        }
+        this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: { grupo: next },
+            queryParamsHandling: 'merge',
+            replaceUrl: true,
+        });
+        this.cdr.markForCheck();
+    }
+
+    private syncPreferenciasGrupoFromUrl(grupoRaw: string | null): void {
+        const next = resolverGrupoPreferencias(grupoRaw, this.puedeVerPermisosPreferencias());
+        this.preferenciasGrupo = next;
+        const raw = grupoRaw ?? 'modulos';
+        if (raw !== next) {
+            this.router.navigate([], {
+                relativeTo: this.route,
+                queryParams: { grupo: next },
+                queryParamsHandling: 'merge',
+                replaceUrl: true,
+            });
+        }
     }
 
     /**

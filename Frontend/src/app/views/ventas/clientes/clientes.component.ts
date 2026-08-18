@@ -15,6 +15,10 @@ import { TruncatePipe } from '@pipes/truncate.pipe';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
 import { FuncionalidadesService } from '@services/functionalities.service';
+import {
+    configIdentificadorFiscalCliente,
+    valorIdentificadorFiscalCliente,
+} from '@utils/identificador-fiscal-cliente.util';
 
 @Component({
     selector: 'app-clientes',
@@ -68,6 +72,14 @@ export class ClientesComponent extends BaseCrudComponent<any> implements OnInit 
     ngOnInit() {
         this.verificarFidelizacionHabilitada();
         this.loadAll();
+    }
+
+    get identificadorFiscalCliente() {
+        return configIdentificadorFiscalCliente(this.apiService.auth_user()?.empresa);
+    }
+
+    valorIdentificadorFiscal(cliente: any): unknown {
+        return valorIdentificadorFiscalCliente(cliente, this.apiService.auth_user()?.empresa);
     }
 
     public override loadAll() {

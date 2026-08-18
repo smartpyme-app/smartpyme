@@ -18,3 +18,16 @@ load-tests/restaurante/results/*.json
 load-tests/restaurante/results/*.log
 .env.load
 **/.env.load
+.graphify-output/
+**/.graphify-output/
+**/.graphify-out-backend/*
+.graphify-out-backend/*
+.graphify-out-frontend/*
+graphify-out-frontend/manifest.json
+graphify-out-frontend/GRAPH_REPORT.md
+graphify-out-frontend/graph.json
+graphify-out-frontend/graph.html
+graphify-out-backend/manifest.json
+graphify-out-backend/GRAPH_REPORT.md
+graphify-out-backend/graph.json
+graphify-out-backend/graph.html
