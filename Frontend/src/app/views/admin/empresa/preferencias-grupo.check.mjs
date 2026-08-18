@@ -43,4 +43,17 @@ assert.equal(resolverGrupoPreferencias('foo', true), 'modulos');
 assert.equal(resolverGrupoPreferencias('permisos', true), 'permisos');
 assert.equal(resolverGrupoPreferencias(undefined, false), 'modulos');
 
+const html = fs.readFileSync(path.join(dir, 'empresa.component.html'), 'utf8');
+assert.match(html, /empresa-pref-nav/);
+assert.match(html, /setPreferenciasGrupo/);
+assert.match(html, /preferenciasGrupo === 'modulos'/);
+assert.match(html, /preferenciasGrupo === 'documentos'/);
+assert.match(html, /preferenciasGrupo === 'facturacion'/);
+assert.match(html, /preferenciasGrupo === 'inventario'/);
+assert.match(html, /preferenciasGrupo === 'permisos'/);
+assert.match(html, /preferenciasGrupo === 'cuenta'/);
+assert.match(html, /empresa-pref-save/);
+assert.doesNotMatch(html, /empresa-pref-tile/);
+assert.doesNotMatch(html, /empresa-pref-facturacion/);
+
 console.log('preferencias-grupo.check: ok');
