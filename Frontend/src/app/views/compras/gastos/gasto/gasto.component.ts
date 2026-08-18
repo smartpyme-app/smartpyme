@@ -427,6 +427,7 @@ export class GastoComponent implements OnInit {
           }
 
           this.sincronizarPreviewMonedaGasto();
+          this.abrirAvanzadasSiHayDatos();
           this.loading = false;
           this.cdr.markForCheck();
         },
@@ -520,6 +521,7 @@ export class GastoComponent implements OnInit {
               this.cargarImpuestosSeleccionados();
             }
             this.sincronizarPreviewMonedaGasto();
+            this.abrirAvanzadasSiHayDatos();
             this.cdr.markForCheck();
           },
           (error) => {
@@ -594,6 +596,27 @@ export class GastoComponent implements OnInit {
     }
 
   toggleDiv(): void { this.opAvanzadas = !this.opAvanzadas;}
+
+  /**
+   * Abre "Opciones Avanzadas" si el gasto ya trae algo dentro, para que no quede oculto al editar.
+   * Se omiten los campos con valor por defecto (IVA, clasificación, sector) porque estarían siempre activos.
+   */
+  public abrirAvanzadasSiHayDatos(): void {
+    const g = this.gasto || {};
+    this.opAvanzadas = !!(
+      g.nota ||
+      g.id_proyecto ||
+      g.id_area_empresa ||
+      g.area_empresa ||
+      g.num_identificacion ||
+      g.recurrente ||
+      g.es_retaceo ||
+      g.renta ||
+      g.percepcion ||
+      g.retencion ||
+      this.mostrar_otros_impuestos
+    );
+  }
 
   public cargarDocumentos() {
     this.apiService.getAll('documentos/list')
@@ -674,11 +697,17 @@ export class GastoComponent implements OnInit {
     }
   }
 
+  /** Efectivo y Wompi no pasan por banco; el resto (transferencia, tarjeta, cheque) sí. */
+  get requiereBanco(): boolean {
+    return this.gasto?.forma_pago !== 'Efectivo' && this.gasto?.forma_pago !== 'Wompi';
+  }
+
   public setCredito() {
     if (this.gasto.credito) {
       this.gasto.estado = 'Pendiente';
     } else {
       this.gasto.estado = 'Confirmado';
+      this.gasto.fecha_pago = null;
     }
   }
 
@@ -1519,6 +1548,7 @@ export class GastoComponent implements OnInit {
         this.gasto.currency_code = codigoMonedaXml === 'USD' ? 'USD' : 'CRC';
         this.sincronizarPreviewMonedaGasto();
       }
+      this.abrirAvanzadasSiHayDatos();
       // ponytail: OnPush requiere markForCheck tras mutar this.gasto / this.detalles
       this.cdr.markForCheck();
     } catch (error) {
