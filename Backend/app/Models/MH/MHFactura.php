@@ -207,7 +207,14 @@ class MHFactura extends Model
         $tributosResumen = $this->buildTributosResumenFacturaConsumidor();
         $montoIva = $this->montoIvaDocumento();
         $montoTributosNoIva = $this->montoTributosNoIvaDocumento();
-        $totalGravada = floatval(number_format((float) ($this->venta->gravada + $montoIva),2,'.',''));
+        $totalGravada = floatval(number_format(
+            $this->documentoTieneIva()
+                ? (float) collect($cuerpoDocumento)->sum('ventaGravada')
+                : (float) $this->venta->gravada,
+            2,
+            '.',
+            ''
+        ));
         $subTotalVentas = floatval(number_format(
             $totalGravada + (float) $this->venta->exenta + (float) $this->venta->no_sujeta,
             2,
