@@ -267,10 +267,12 @@ describe('FacturacionV2Component', () => {
     component.venta = ventaObj;
     component.preCuentaId = null;
     component.pedidoCanalId = null;
-    component.mhService = {
+    component.facturacionElectronica = {
       emitirDTE: jasmine.createSpy('emitirDTE').and.returnValue(Promise.reject('tipo no permitido')),
+      requiereFlujoEnviarDteSeparado: () => false,
     };
-    component.alertService = { warning: jasmine.createSpy('warning') };
+    component.apiService = { auth_user: () => ({ empresa: {} }) };
+    component.alertService = { warning: jasmine.createSpy('warning'), info: jasmine.createSpy('info') };
     component.debePreguntarEnvioBoxful = () => false;
     component.cargarDatosIniciales = jasmine.createSpy('cargarDatosIniciales');
     component.router = { navigate: jasmine.createSpy('navigate') };
@@ -279,11 +281,39 @@ describe('FacturacionV2Component', () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    const arg = component.mhService.emitirDTE.calls.mostRecent().args[0];
+    const arg = component.facturacionElectronica.emitirDTE.calls.mostRecent().args[0];
     expect(arg).not.toBe(ventaObj);
     expect(arg.id).toBe(5);
     expect(arg.id_documento).toBe(1);
-    expect(component.cargarDatosIniciales).toHaveBeenCalled();
+    expect(component.cargarDatosIniciales).not.toHaveBeenCalled();
+    expect(component.router.navigate).toHaveBeenCalledWith(['/ventas']);
+  });
+
+  it('emitirDTE navega al listado y no resetea el formulario', async () => {
+    const component: any = Object.create(FacturacionV2Component.prototype);
+    component.venta = { id: 5, id_cliente: 9, detalles: [{ id: 1 }] };
+    component.preCuentaId = null;
+    component.pedidoCanalId = null;
+    component.facturacionElectronica = {
+      emitirDTE: jasmine.createSpy('emitirDTE').and.returnValue(
+        Promise.resolve({ id: 5, sello_mh: 'ABC' })
+      ),
+      requiereFlujoEnviarDteSeparado: () => false,
+    };
+    component.countryI18n = { fe: (k: string) => k };
+    component.alertService = { success: jasmine.createSpy('success') };
+    component.debePreguntarEnvioBoxful = () => false;
+    component.cargarDatosIniciales = jasmine.createSpy('cargarDatosIniciales');
+    component.enviarDTE = jasmine.createSpy('enviarDTE');
+    component.imprimir = jasmine.createSpy('imprimir');
+    component.router = { navigate: jasmine.createSpy('navigate') };
+
+    component.emitirDTE();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(component.cargarDatosIniciales).not.toHaveBeenCalled();
+    expect(component.router.navigate).toHaveBeenCalledWith(['/ventas']);
   });
 
   it('no vuelve a facturar si saving o emiting ya estan activos', () => {

@@ -2793,7 +2793,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     this.emiting = true;
     const ventaPreDte = { ...this.venta };
     this.facturacionElectronica
-      .emitirDTE(this.venta)
+      .emitirDTE({ ...ventaPreDte })
       .then((venta) => {
         this.venta = { ...ventaPreDte, ...venta };
         if (ventaPreDte.paquetes && !this.venta.paquetes) {
@@ -2823,8 +2823,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
         } else if (this.debePreguntarEnvioBoxful()) {
           this.preguntarGenerarEnvioBoxful(this.venta);
         } else {
-          this.cargarDatosIniciales();
-          this.router.navigate(['/venta/crear']);
+          this.router.navigate(['/ventas']);
         }
       })
       .catch((error: any) => {
@@ -2845,8 +2844,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
         if (this.debePreguntarEnvioBoxful()) {
           this.preguntarGenerarEnvioBoxful(this.venta);
         } else {
-          this.cargarDatosIniciales();
-          this.router.navigate(['/venta/crear']);
+          this.router.navigate(['/ventas']);
         }
         this.cdr.markForCheck();
       });

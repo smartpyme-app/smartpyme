@@ -20,7 +20,7 @@ export class FilterPipe implements PipeTransform {
 
   transform(items: any[], column:any, searchText: any): any[] {
 
-    if(!items)
+    if(!items || !Array.isArray(items))
       return [];
 
     if (!Array.isArray(items)) {

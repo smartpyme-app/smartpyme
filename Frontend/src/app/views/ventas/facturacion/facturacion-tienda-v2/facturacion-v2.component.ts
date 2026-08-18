@@ -2530,10 +2530,20 @@ export class FacturacionV2Component implements OnInit {
 
   emitirDTE() {
     this.emiting = true;
+    const ventaPreDte = { ...this.venta };
     this.facturacionElectronica
-      .emitirDTE(this.venta)
+      .emitirDTE({ ...ventaPreDte })
       .then((venta) => {
-        this.venta = venta;
+        this.venta = { ...ventaPreDte, ...venta };
+        if (ventaPreDte.paquetes && !this.venta.paquetes) {
+          this.venta.paquetes = ventaPreDte.paquetes;
+        }
+        if (ventaPreDte.boxful_paquete_stub_id && !this.venta.boxful_paquete_stub_id) {
+          this.venta.boxful_paquete_stub_id = ventaPreDte.boxful_paquete_stub_id;
+        }
+        if (ventaPreDte.id_canal && !this.venta.id_canal) {
+          this.venta.id_canal = ventaPreDte.id_canal;
+        }
         this.syncVentaCreditoConsignaFlagsFromEstado();
         this.alertService.success(
           this.countryI18n.fe('emitSuccessTitle'),
@@ -2549,15 +2559,13 @@ export class FacturacionV2Component implements OnInit {
           this.navegarPostFacturaPreCuenta(this.venta.id);
         } else if (this.pedidoCanalId && this.venta.id) {
           this.navegarPostFacturaPedidoCanal(this.venta.id);
+        } else if (this.debePreguntarEnvioBoxful()) {
+          this.preguntarGenerarEnvioBoxful(this.venta);
         } else {
-          this.cargarDatosIniciales();
-          this.router.navigate(['/ventas-v2/crear']);
+          this.router.navigate(['/ventas']);
         }
       })
       .catch((error: any) => {
-        this.cargarDatosIniciales();
-        this.router.navigate(['/ventas-v2/crear']);
-
         this.emiting = false;
         if (error?.venta) {
           this.venta = error.venta;
@@ -2572,6 +2580,11 @@ export class FacturacionV2Component implements OnInit {
         }
         const msg = typeof error === 'string' ? error : error?.message ?? error;
         this.alertService.warning('El documento no fue emitido.', msg);
+        if (this.debePreguntarEnvioBoxful()) {
+          this.preguntarGenerarEnvioBoxful(this.venta);
+        } else {
+          this.router.navigate(['/ventas']);
+        }
       });
   }
 

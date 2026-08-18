@@ -212,6 +212,28 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
         }
     }
 
+    /**
+     * Precios del selector por línea.
+     * El pipe `filter:clasificacion` ocultaba tarifas sin clase al elegir cliente A/B/C
+     * y dejaba el <select> en blanco. Las sin clasificación siguen visibles; si nada coincide, se muestran todas.
+     */
+    public preciosParaSelector(detalle: any): any[] {
+        const lista = Array.isArray(detalle?.precios) ? detalle.precios : [];
+        const raw = this.venta?.cliente?.clasificacion;
+        const clasificacion = raw == null || raw === '' ? '' : String(raw).trim().toLowerCase();
+        if (!clasificacion) {
+            return lista;
+        }
+        const filtrada = lista.filter((p: any) => {
+            const c = p?.clasificacion;
+            if (c == null || String(c).trim() === '') {
+                return true;
+            }
+            return String(c).trim().toLowerCase() === clasificacion;
+        });
+        return filtrada.length ? filtrada : lista;
+    }
+
     public updateTotal(detalle:any){
         const aplicar = () => {
             const cantidad = parseFloat(detalle.cantidad ?? 0) || 0;
