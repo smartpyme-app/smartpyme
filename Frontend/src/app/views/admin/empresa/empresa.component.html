@@ -682,7 +682,7 @@
                                     <p class="empresa-pref-row-help text-muted small mb-0">{{ 'country.tax.defaultTaxCalcDesc' | translate }}</p>
                                 </div>
                                 <div class="form-switch m-0">
-                                    <input class="form-check-input" type="checkbox" id="cobrar_iva" (change)="setCobrarIVA()"
+                                    <input class="form-check-input" type="checkbox" id="cobrar_iva" (change)="setCobrarIVA(); onSubmit()"
                                         role="switch" [checked]="empresa.cobra_iva == 'Si'">
                                 </div>
                             </div>
