@@ -331,7 +331,7 @@ final class CostaRicaFeEmitService
         ];
 
         $data = array_merge($header, [
-            'issuer' => $this->mapper->emisorDatos($empresa),
+            'issuer' => $this->mapper->emisorDatos($empresa, $venta->sucursal),
             'receiver' => $this->mapper->receptorDatosVenta($venta, $empresa),
             'line_items' => [$line],
             'payments' => $this->mapper->pagosDesdeMonto(round($montoLinea, 2)),

@@ -83,8 +83,11 @@
         @if($empresa->nit)
             <p><b>Cédula/NITE:</b> {{ $empresa->nit }}</p>
         @endif
-        @if($empresa->giro)
-            <p><b>Actividad económica:</b> {{ $empresa->giro }}</p>
+        @php
+            $giroTicket = \App\Support\ActividadEconomicaEmisor::resolver($empresa, $sucursal ?? null)['giro'] ?? null;
+        @endphp
+        @if($giroTicket)
+            <p><b>Actividad económica:</b> {{ $giroTicket }}</p>
         @endif
 
         @if ($sucursal && $sucursal->telefono)

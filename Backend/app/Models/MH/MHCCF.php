@@ -3,6 +3,7 @@
 namespace App\Models\MH;
 
 use App\Models\MH\Concerns\BuildsTributosVenta;
+use App\Support\ActividadEconomicaEmisor;
 use Illuminate\Database\Eloquent\Model;
 use Ramsey\Uuid\Uuid;
 use Illuminate\Support\Facades\Http;
@@ -118,8 +119,8 @@ class MHCCF extends Model
             "nit" => str_replace('-', '', $this->empresa->nit),
             "nrc" => str_replace('-', '', $this->empresa->ncr),
             "nombre" => $this->empresa->nombre,
-            "codActividad" => $this->empresa->cod_actividad_economica,
-            "descActividad" => $this->empresa->giro,
+            "codActividad" => ActividadEconomicaEmisor::resolver($this->empresa, $this->sucursal ?? null)['cod'],
+            "descActividad" => ActividadEconomicaEmisor::resolver($this->empresa, $this->sucursal ?? null)['giro'],
             "nombreComercial" => $this->empresa->nombre_comercial,
             "tipoEstablecimiento" => $this->sucursal->tipo_establecimiento,
             "direccion" => [

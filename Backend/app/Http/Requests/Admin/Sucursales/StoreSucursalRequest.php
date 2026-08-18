@@ -32,6 +32,8 @@ class StoreSucursalRequest extends FormRequest
             'tipo_establecimiento' => 'sometimes|nullable|string|max:255',
             'cod_estable_mh' => 'sometimes|nullable|string|max:255',
             'codigo_punto_venta' => 'sometimes|nullable|string|max:255',
+            'cod_actividad_economica' => 'sometimes|nullable|string|max:15',
+            'giro' => 'sometimes|nullable|string',
             'activo' => 'sometimes|nullable|boolean',
         ];
     }
@@ -112,6 +114,16 @@ class StoreSucursalRequest extends FormRequest
             $this->merge([
                 'activo' => filter_var($this->activo, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? $this->activo,
             ]);
+        }
+
+        if ($this->has('cod_actividad_economica')) {
+            $cod = trim((string) $this->input('cod_actividad_economica'));
+            $this->merge(['cod_actividad_economica' => $cod === '' ? null : $cod]);
+        }
+
+        if ($this->has('giro')) {
+            $giro = trim((string) $this->input('giro'));
+            $this->merge(['giro' => $giro === '' ? null : $giro]);
         }
     }
 }

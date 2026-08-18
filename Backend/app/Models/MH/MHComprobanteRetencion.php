@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Ramsey\Uuid\Uuid;
 use Illuminate\Support\Facades\Http;
 use App\Models\MH\Unidad;
+use App\Support\ActividadEconomicaEmisor;
 use Luecano\NumeroALetras\NumeroALetras;
 
 class MHComprobanteRetencion extends Model
@@ -114,8 +115,8 @@ class MHComprobanteRetencion extends Model
             "nit" => str_replace('-', '', $this->empresa->nit),
             "nrc" => str_replace('-', '', $this->empresa->ncr),
             "nombre" => $this->empresa->nombre,
-            "codActividad" => $this->empresa->cod_actividad_economica,
-            "descActividad" => $this->empresa->giro,
+            "codActividad" => ActividadEconomicaEmisor::resolver($this->empresa, $this->sucursal ?? null)['cod'],
+            "descActividad" => ActividadEconomicaEmisor::resolver($this->empresa, $this->sucursal ?? null)['giro'],
             "nombreComercial" => $this->empresa->nombre_comercial,
             "tipoEstablecimiento" => $this->empresa->tipo_establecimiento,
             "direccion" => [

@@ -80,7 +80,7 @@ final class CostaRicaCreditNoteFromDevolucionMapper
         ]];
 
         return array_merge($header, [
-            'issuer' => $this->invoiceMapper->emisorDatos($empresa),
+            'issuer' => $this->invoiceMapper->emisorDatos($empresa, $devolucion->sucursal),
             'receiver' => $receiver,
             'line_items' => $lineItems,
             'payments' => $this->invoiceMapper->pagosDesdeLineas($lineItems),
