@@ -27,6 +27,7 @@ import {
 } from '@services/facturacion-electronica/contribuyente-hacienda.mapper';
 import { HaciendaContribuyenteClientService } from '@services/facturacion-electronica/hacienda-contribuyente-client.service';
 import { finalize } from 'rxjs/operators';
+import { configIdentificadorFiscalCliente } from '@utils/identificador-fiscal-cliente.util';
 
 @Component({
     selector: 'app-crear-cliente',
@@ -88,6 +89,11 @@ export class CrearClienteComponent extends BaseModalComponent implements OnInit 
 
     esCostaRicaFe(): boolean {
         return this.feCrUbic.esCostaRicaFe();
+    }
+
+    mostrarRegistroSecundarioCliente(): boolean {
+        return configIdentificadorFiscalCliente(this.apiService.auth_user()?.empresa)
+            .mostrarRegistroSecundario;
     }
 
     onIdentificacionClienteCrDebounced(): void {

@@ -59,7 +59,7 @@
                         <th (click)="setOrden('nombre')" [ngClass]="{'sorted-asc': filtros.orden == 'nombre' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'nombre' && filtros.direccion == 'desc'}" class="click">Nombre</th>
                         <th>Teléfono</th>
                         <th class="d-none d-md-table-cell">{{ 'country.identity.name' | translate }}</th>
-                        <th class="d-none d-md-table-cell">{{ 'country.tax.ncr' | translate }}</th>
+                        <th class="d-none d-md-table-cell">{{ identificadorFiscalCliente.etiqueta | translate }}</th>
                         <th class="d-none d-lg-table-cell">Tipo</th>
                         <th class="d-none d-lg-table-cell">Estado</th>
                         <th class="d-none d-md-table-cell">Crédito</th>
@@ -86,7 +86,7 @@
                         <td>{{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo | truncate:30 }}</td>
                         <td>{{ cliente.telefono }}</td>
                         <td class="d-none d-md-table-cell">{{ cliente.dui}}</td>
-                        <td class="d-none d-md-table-cell">{{ cliente.ncr }}</td>
+                        <td class="d-none d-md-table-cell">{{ valorIdentificadorFiscal(cliente) }}</td>
                         <td class="d-none d-lg-table-cell">
                             <span class="badge py-2 position-relative" style="font-size: 0.8rem;" [ngClass]="{'bg-success' : cliente?.tipo == 'Empresa', 'bg-info' : cliente?.tipo == 'Persona', 'bg-dark' : cliente?.tipo == 'Extranjero'}">
                                     {{ cliente.tipo}}
@@ -405,4 +405,3 @@
       </div>
     </div>
   </ng-template>
-
