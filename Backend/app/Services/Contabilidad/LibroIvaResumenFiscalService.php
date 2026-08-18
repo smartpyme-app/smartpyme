@@ -11,6 +11,7 @@ use App\Models\Compras\Gastos\Gasto;
 use App\Models\Ventas\Venta;
 use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
 use App\Services\FacturacionElectronica\FacturacionElectronicaCountryResolver;
+use App\Support\TotalesPorMonedaLibroIva;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
@@ -47,7 +48,51 @@ final class LibroIvaResumenFiscalService
 
         $resumen['ventas_resumen_contable'] = $this->ventasResumenContable->build($request);
 
+        if ($empresa && $empresa->tieneFuncionalidadMultimoneda()) {
+            $resumen['totales_por_moneda'] = $this->totalesPorMoneda($request);
+        }
+
         return $resumen;
+    }
+
+    /**
+     * @return array{ventas: list<array<string, mixed>>, compras: list<array<string, mixed>>, gastos: list<array<string, mixed>>}
+     */
+    private function totalesPorMoneda(BaseLibroIVARequest $request): array
+    {
+        $ventas = Venta::query()
+            ->where('estado', '!=', 'Anulada')
+            ->where('cotizacion', 0)
+            ->when($request->id_sucursal, fn ($q) => $q->where('id_sucursal', $request->id_sucursal))
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->get(['id', 'currency_code', 'total', 'equivalent_total', 'exchange_rate']);
+
+        $devoluciones = DevolucionVenta::query()
+            ->where('enable', true)
+            ->whereHas('venta', fn ($q) => $q->where('estado', '!=', 'Anulada'))
+            ->when($request->id_sucursal, fn ($q) => $q->where('id_sucursal', $request->id_sucursal))
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->get(['id', 'currency_code', 'total', 'equivalent_total', 'exchange_rate']);
+
+        $compras = Compra::query()
+            ->where('estado', '!=', 'Anulada')
+            ->where('cotizacion', 0)
+            ->when($request->id_sucursal, fn ($q) => $q->where('id_sucursal', $request->id_sucursal))
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->get(['id', 'currency_code', 'total', 'equivalent_total', 'exchange_rate']);
+
+        $gastos = Gasto::query()
+            ->where('estado', '!=', 'Cancelado')
+            ->where('estado', '!=', 'Anulada')
+            ->when($request->id_sucursal, fn ($q) => $q->where('id_sucursal', $request->id_sucursal))
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->get(['id', 'currency_code', 'total', 'equivalent_total', 'exchange_rate']);
+
+        return [
+            'ventas' => TotalesPorMonedaLibroIva::agrupar($ventas, $devoluciones),
+            'compras' => TotalesPorMonedaLibroIva::agrupar($compras),
+            'gastos' => TotalesPorMonedaLibroIva::agrupar($gastos),
+        ];
     }
 
     private function buildCostaRica(BaseLibroIVARequest $request, string $paisNombre): array
