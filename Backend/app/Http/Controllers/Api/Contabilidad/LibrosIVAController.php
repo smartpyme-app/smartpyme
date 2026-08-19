@@ -573,6 +573,8 @@ class LibrosIVAController extends Controller
             ->orderByDesc('fecha')
             ->get();
 
+        $ventas = $this->filtrarVentasPorFacturacionElectronica($ventas);
+
         $ivas = $ventas->map(function ($venta) {
             $documento = $venta->documento;
             $cliente = optional($venta->cliente);

@@ -9,6 +9,8 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithCustomCsvSettings;
 use Illuminate\Http\Request;
 
+use Illuminate\Support\Facades\Log;
+
 class AnexoAnuladosExport implements FromCollection, WithMapping, WithCustomCsvSettings
 {
 
@@ -17,6 +19,33 @@ class AnexoAnuladosExport implements FromCollection, WithMapping, WithCustomCsvS
     public function filter(Request $request)
     {
         $this->request = $request;
+    }
+
+    private function tieneFacturacionElectronica(): bool
+    {
+        $empresa = Auth::user()->empresa()->first();
+        return $empresa && $empresa->facturacion_electronica === true;
+    }
+
+    private function filtrarVentasPorFacturacionElectronica($ventas)
+    {
+        if ($this->tieneFacturacionElectronica()) {
+            $ventasSinSello = $ventas->filter(function ($venta) {
+                return empty($venta->sello_mh);
+            });
+
+            if ($ventasSinSello->isNotEmpty()) {
+                Log::warning('Se excluyeron ventas sin sello al exportar anexo anulados', [
+                    'ventas' => $ventasSinSello->pluck('id'),
+                ]);
+            }
+
+            return $ventas->reject(function ($venta) {
+                return empty($venta->sello_mh);
+            });
+        } else {
+            return $ventas;
+        }
     }
 
     public function collection()
@@ -32,7 +61,7 @@ class AnexoAnuladosExport implements FromCollection, WithMapping, WithCustomCsvS
             ->where('cotizacion', 0)
             ->orderByDesc('fecha')
             ->get();
-        return $ventas;
+        return $this->filtrarVentasPorFacturacionElectronica($ventas);
         
     }
 
