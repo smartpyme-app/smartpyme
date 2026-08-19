@@ -6,6 +6,7 @@
     <div class="col-md-8 mb-3">
         <div class="d-flex gap-2">
             <button tooltip="Descargar" (click)="descargar()" class="btn btn-default tcla-F6"><img src="/assets/icons/download.png" class="icon"></button>
+            <app-consolidado-estilos-salon></app-consolidado-estilos-salon>
             <input type="date" name="fecha" (change)="filtrar()" [(ngModel)]="filtros.fecha" class="form-control">
             <ng-select [(ngModel)]="filtros.id_usuario" (change)="filtrar()" (clear)="onUsuarioClear()" [clearable]="filtros.id_usuario !== ''" class="form-select  p-0" name="filtros.id_usuario">
                 <ng-option value="">Todos los usuarios</ng-option>
