@@ -13,12 +13,13 @@ import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
 import { TranslatePipe } from '@ngx-translate/core';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
+import { RecalcularPreciosTcComponent } from '@views/inventario/recalcular-precios-tc/recalcular-precios-tc.component';
 
 @Component({
     selector: 'app-servicios',
     templateUrl: './servicios.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, ImportarExcelComponent, PaginationComponent, LazyImageDirective, TranslatePipe, CurrencyPipe],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, ImportarExcelComponent, PaginationComponent, LazyImageDirective, TranslatePipe, CurrencyPipe, RecalcularPreciosTcComponent],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ServiciosComponent extends BaseCrudComponent<any> implements OnInit {

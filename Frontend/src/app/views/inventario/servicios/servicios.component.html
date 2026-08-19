@@ -1,9 +1,11 @@
 ﻿<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Servicios</h2>
-    <!-- <button *ngIf="apiService.canCreateTest('servicios.crear') ||  apiService.auth_user().tipo == 'Citas'" routerLink="/servicio/crear" [queryParams]="{ tipo:'Servicio' }" tooltip="Crear servicio (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir servicio</button> -->
-    @if (apiService.canCreateTest('servicios.crear') || apiService.validateRole('usuario_citas', true)) {
-        <button routerLink="/servicio/crear" [queryParams]="{ tipo:'Servicio' }" tooltip="Crear servicio (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir servicio</button>
-    }
+    <div class="d-flex align-items-center">
+        <app-recalcular-precios-tc contexto="servicios" (recalculado)="filtrarServicios()"></app-recalcular-precios-tc>
+        @if (apiService.canCreateTest('servicios.crear') || apiService.validateRole('usuario_citas', true)) {
+            <button routerLink="/servicio/crear" [queryParams]="{ tipo:'Servicio' }" tooltip="Crear servicio (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir servicio</button>
+        }
+    </div>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
