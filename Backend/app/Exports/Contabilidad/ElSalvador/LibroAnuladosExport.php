@@ -101,6 +101,32 @@ class LibroAnuladosExport implements FromCollection, WithMapping, WithHeadings, 
         
     }
 
+    private function obtenerNombreDocumento($venta): string
+    {
+        if ($venta->sello_mh) {
+            $tipoDte = $venta->dte['identificacion']['tipoDte'] ?? $venta->tipo_dte ?? null;
+            if ($tipoDte) {
+                $map = [
+                    '01' => 'Factura',
+                    '02' => 'Factura de venta simplificada',
+                    '03' => 'Crédito fiscal',
+                    '04' => 'Nota de remisión',
+                    '05' => 'Nota de crédito',
+                    '06' => 'Nota de débito',
+                    '07' => 'Comprobante de retención',
+                    '08' => 'Comprobante de liquidación',
+                    '09' => 'Documento contable de liquidación',
+                    '11' => 'Factura de exportación',
+                    '14' => 'Sujeto excluido',
+                ];
+                if (isset($map[$tipoDte])) {
+                    return $map[$tipoDte];
+                }
+            }
+        }
+        return $venta->nombre_documento ?? '';
+    }
+
     public function map($venta): array{
 
         $documento = $venta->documento;
@@ -112,7 +138,7 @@ class LibroAnuladosExport implements FromCollection, WithMapping, WithHeadings, 
             $venta->sello_mh ? 4 : 1, // DTE o impreso
             $venta->sello_mh ? '0' : trim($venta->correlativo),
             $venta->sello_mh ? '0' : trim($venta->correlativo),
-            $venta->nombre_documento,
+            $this->obtenerNombreDocumento($venta),
             'Documento Anulado',
             $venta->sello_mh ? $venta->dte['sello'] : '',
             $venta->sello_mh ? '0' : trim($venta->correlativo),

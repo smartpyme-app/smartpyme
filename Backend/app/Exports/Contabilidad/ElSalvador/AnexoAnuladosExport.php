@@ -66,28 +66,23 @@ class AnexoAnuladosExport implements FromCollection, WithMapping, WithCustomCsvS
     }
 
     public function map($venta): array{
-            setlocale(LC_NUMERIC, 'C');
-            $documento = $venta->documento;
-            $cliente = optional($venta->cliente);
+        setlocale(LC_NUMERIC, 'C');
 
-            $tipo = '01'; //CF
+        $tipoDteMh = $venta->sello_mh ? ($venta->dte['identificacion']['tipoDte'] ?? $venta->tipo_dte) : null;
+        $tipoDocumento = $tipoDteMh ?: $this->tipoDocumento($venta->nombre_documento);
 
-            if ($documento && $documento->nombre == 'Factura de exportación') {
-                $tipo = '11';
-            }
-
-           $fields = [
-                $venta->sello_mh ? $venta->dte['identificacion']['numeroControl'] : '', // A Resolucion
-                $venta->sello_mh ? 4 : 1, // B Clase de documento
-                $venta->sello_mh ? '0' : trim($venta->correlativo), // C desde pre
-                $venta->sello_mh ? '0' : trim($venta->correlativo), // D hasta pre
-                $this->tipoDocumento($venta->nombre_documento), // E tipo de documento
-                $venta->sello_mh ? 'D' : 'A', //F Detalle
-                $venta->sello_mh ? $venta->dte['sello'] : '', // G serie
-                $venta->sello_mh ? '0' : trim($venta->correlativo), // H desde
-                $venta->sello_mh ? '0' : trim($venta->correlativo), // I hasta
-                $venta->sello_mh ? str_replace('-', '', $venta->dte['identificacion']['codigoGeneracion']) : '', // J codigo de generacion
-         ];
+        $fields = [
+            $venta->sello_mh ? $venta->dte['identificacion']['numeroControl'] : '', // A Resolucion
+            $venta->sello_mh ? 4 : 1, // B Clase de documento
+            $venta->sello_mh ? '0' : trim($venta->correlativo), // C desde pre
+            $venta->sello_mh ? '0' : trim($venta->correlativo), // D hasta pre
+            $tipoDocumento, // E tipo de documento
+            $venta->sello_mh ? 'D' : 'A', //F Detalle
+            $venta->sello_mh ? $venta->dte['sello'] : '', // G serie
+            $venta->sello_mh ? '0' : trim($venta->correlativo), // H desde
+            $venta->sello_mh ? '0' : trim($venta->correlativo), // I hasta
+            $venta->sello_mh ? str_replace('-', '', $venta->dte['identificacion']['codigoGeneracion']) : '', // J codigo de generacion
+        ];
         return $fields;
     }
 
