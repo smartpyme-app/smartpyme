@@ -7,6 +7,8 @@
             Convertir Producto
         </button>
 
+        <app-recalcular-precios-tc contexto="productos" (recalculado)="cargarProductos()"></app-recalcular-precios-tc>
+
         <button *ngIf="apiService.canCreate()" routerLink="/producto/crear" tooltip="Crear producto (F4)"
             class="btn btn-default tcla-F4 font-weight-bold">
             <img src="/assets/icons/plus.png" class="icon me-2"> Añadir producto

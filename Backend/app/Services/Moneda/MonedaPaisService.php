@@ -7,6 +7,7 @@ use App\Models\PaisConfiguracion;
 use App\Services\FacturacionElectronica\CostaRica\CostaRicaTipoCambioService;
 use App\Services\FacturacionElectronica\FacturacionElectronicaCountryResolver;
 use App\Support\Admin\MonedaDefaultPorPais;
+use App\Support\Inventario\RecalcularPreciosTipoCambio;
 use Carbon\Carbon;
 use RuntimeException;
 
@@ -56,7 +57,7 @@ final class MonedaPaisService
     /**
      * Preview TC para UI (fecha del documento).
      *
-     * @return array{rate: float|null, date: string, fuente: string, moneda_funcional: string, monedas_documento: list<string>, permitir_editar: bool, error: string|null}
+     * @return array{rate: float|null, rate_api: float|null, date: string, fuente: string, moneda_funcional: string, monedas_documento: list<string>, permitir_editar: bool, error: string|null}
      */
     public function preview(Empresa $empresa, ?\DateTimeInterface $date = null): array
     {
@@ -69,29 +70,39 @@ final class MonedaPaisService
             \DateTimeImmutable::createFromInterface($date ?? now())
         )->startOfDay();
 
+        $rateApi = null;
+        $error = null;
         try {
-            $rate = $this->rateForDate($empresa, $cfg, $day, null, false);
-
-            return [
-                'rate' => $rate,
-                'date' => $day->toDateString(),
-                'fuente' => $fuente,
-                'moneda_funcional' => $funcional,
-                'monedas_documento' => $monedas,
-                'permitir_editar' => $permitirEditar,
-                'error' => null,
-            ];
+            $rateApi = $this->rateForDate($empresa, $cfg, $day, null, false);
         } catch (RuntimeException $e) {
-            return [
-                'rate' => null,
-                'date' => $day->toDateString(),
-                'fuente' => $fuente,
-                'moneda_funcional' => $funcional,
-                'monedas_documento' => $monedas,
-                'permitir_editar' => $permitirEditar,
-                'error' => $e->getMessage(),
-            ];
+            $error = $e->getMessage();
         }
+
+        $rate = $rateApi;
+        $pais = FacturacionElectronicaCountryResolver::resolveCodigoPaisFe($empresa);
+        if ($pais === FacturacionElectronicaCountryResolver::CODIGO_HONDURAS) {
+            $venta = (float) $empresa->getCustomConfigValue(
+                'configuraciones',
+                RecalcularPreciosTipoCambio::KEY_VENTA,
+                0
+            );
+            $sugerido = RecalcularPreciosTipoCambio::sugeridoVenta($venta > 0 ? $venta : null, $rateApi);
+            if ($sugerido !== null) {
+                $rate = $sugerido;
+                $error = null;
+            }
+        }
+
+        return [
+            'rate' => $rate,
+            'rate_api' => $rateApi,
+            'date' => $day->toDateString(),
+            'fuente' => $fuente,
+            'moneda_funcional' => $funcional,
+            'monedas_documento' => $monedas,
+            'permitir_editar' => $permitirEditar,
+            'error' => $error,
+        ];
     }
 
     /**

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\Inventario\ProductosController;
+use App\Http\Controllers\Api\Inventario\RecalcularPreciosTipoCambioController;
 use App\Http\Controllers\Api\Inventario\ConsignasController;
 use App\Http\Controllers\Api\Inventario\Composiciones\ComposicionesController;
 use App\Http\Controllers\Api\Inventario\Composiciones\OpcionesController;
@@ -16,6 +17,10 @@ use App\Http\Controllers\Api\Inventario\PresentacionesController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\Webhook\WooCommerceController;
 
+
+    Route::get('/productos/tipo-cambio-precios', [RecalcularPreciosTipoCambioController::class, 'show']);
+    Route::put('/productos/tipo-cambio-precios', [RecalcularPreciosTipoCambioController::class, 'guardar']);
+    Route::post('/productos/tipo-cambio-precios/recalcular', [RecalcularPreciosTipoCambioController::class, 'recalcular']);
 
     Route::get('/productos',         		    [ProductosController::class, 'index']);
     Route::get('/producto/{id}',     		    [ProductosController::class, 'read']);
