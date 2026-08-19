@@ -1,20 +1,20 @@
 <?php
 
-namespace App\Http\Controllers\Api\Restaurante;
+namespace App\Http\Controllers\Api\Inventario;
 
 use App\Http\Controllers\Controller;
 use App\Models\Admin\Empresa;
 use App\Models\Inventario\Categorias\Categoria;
+use App\Models\Inventario\Producto;
 use App\Support\Inventario\PosMenuCatalog;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 /**
- * Catálogo táctil de restaurante: categorías -> (subcategorías | productos).
+ * Catálogo táctil para facturación POS (ventas).
+ * Precios en tiles con IVA incluido (motor v2).
  */
-class PosMenuController extends Controller
+class PosMenuVentasController extends Controller
 {
     private const BUSCAR_LIMIT = 30;
 
@@ -25,7 +25,7 @@ class PosMenuController extends Controller
             return $this->sinEmpresa();
         }
 
-        $categorias = self::queryCategoriasRaiz($idEmpresa)
+        $categorias = PosMenuCatalog::queryCategoriasRaiz($idEmpresa)
             ->get()
             ->map(fn (Categoria $c) => [
                 'id' => $c->id,
@@ -45,10 +45,9 @@ class PosMenuController extends Controller
         }
 
         $categoria = Categoria::where('id_empresa', $idEmpresa)->findOrFail($id);
+        $subcategorias = PosMenuCatalog::querySubcategorias($idEmpresa, $categoria->id)->get();
 
-        $subcategorias = self::querySubcategorias($idEmpresa, $categoria->id)->get();
-
-        if (self::modoContenido($subcategorias->count()) === 'subcategorias') {
+        if (PosMenuCatalog::modoContenido($subcategorias->count()) === 'subcategorias') {
             return response()->json([
                 'modo' => 'subcategorias',
                 'items' => $subcategorias->map(fn (Categoria $s) => [
@@ -60,13 +59,15 @@ class PosMenuController extends Controller
         }
 
         $incluir = $this->incluirPresentaciones();
-        $query = self::queryProductosDeCategoria($idEmpresa, $categoria->id);
+        $query = PosMenuCatalog::queryProductosDeCategoria($idEmpresa, $categoria->id);
         if ($incluir) {
             $query->with('presentaciones');
         }
-        $productos = $query->get();
 
-        return response()->json(['modo' => 'productos', 'items' => self::mapProductos($productos, $incluir)]);
+        return response()->json([
+            'modo' => 'productos',
+            'items' => $this->mapProductosTiles($query->get(), $incluir),
+        ]);
     }
 
     public function productosSubcategoria(Request $request, int $id): JsonResponse
@@ -81,13 +82,12 @@ class PosMenuController extends Controller
             ->findOrFail($id);
 
         $incluir = $this->incluirPresentaciones();
-        $query = self::queryProductosDeSubcategoria($idEmpresa, $subcategoria->id);
+        $query = PosMenuCatalog::queryProductosDeSubcategoria($idEmpresa, $subcategoria->id);
         if ($incluir) {
             $query->with('presentaciones');
         }
-        $productos = $query->get();
 
-        return response()->json(self::mapProductos($productos, $incluir));
+        return response()->json($this->mapProductosTiles($query->get(), $incluir));
     }
 
     public function buscar(Request $request): JsonResponse
@@ -103,55 +103,63 @@ class PosMenuController extends Controller
         }
 
         $incluir = $this->incluirPresentaciones();
-        $query = self::queryProductos($idEmpresa)
+        $query = PosMenuCatalog::queryProductos($idEmpresa)
             ->where(function ($query) use ($q) {
                 $query->where('nombre', 'like', "%{$q}%")
-                    ->orWhere('codigo', 'like', "%{$q}%");
+                    ->orWhere('codigo', 'like', "%{$q}%")
+                    ->orWhere('barcode', 'like', "%{$q}%");
             });
         if ($incluir) {
             $query->with('presentaciones');
         }
-        $productos = $query->limit(self::BUSCAR_LIMIT)->get();
 
-        return response()->json(self::mapProductos($productos, $incluir));
+        return response()->json(
+            $this->mapProductosTiles($query->limit(self::BUSCAR_LIMIT)->get(), $incluir)
+        );
     }
 
-    public static function queryCategoriasRaiz(int $idEmpresa): Builder
+    /** Producto completo para armar detalle v2 (impuestos, inventarios, lotes). */
+    public function productoParaVenta(int $id, ProductosController $productosController): JsonResponse
     {
-        return PosMenuCatalog::queryCategoriasRaiz($idEmpresa);
+        return $productosController->read($id);
     }
 
-    public static function querySubcategorias(int $idEmpresa, int $idCategoria): Builder
+    private function mapProductosTiles($productos, bool $incluirPresentaciones): array
     {
-        return PosMenuCatalog::querySubcategorias($idEmpresa, $idCategoria);
+        $ivaEmpresa = $this->ivaEmpresa();
+
+        return PosMenuCatalog::mapProductos(
+            $productos,
+            $incluirPresentaciones,
+            fn (Producto $p, $precioSinIva) => $this->precioConIva($p, (float) $precioSinIva, $ivaEmpresa)
+        );
     }
 
-    public static function queryProductosDeCategoria(int $idEmpresa, int $idCategoria): Builder
+    private function precioConIva(Producto $p, float $precioSinIva, float $ivaEmpresa): float
     {
-        return PosMenuCatalog::queryProductosDeCategoria($idEmpresa, $idCategoria);
+        $pct = self::resolverPorcentajeImpuesto($p->porcentaje_impuesto, $ivaEmpresa);
+
+        return $pct > 0 ? round($precioSinIva * (1 + $pct / 100), 2) : round($precioSinIva, 2);
     }
 
-    public static function queryProductosDeSubcategoria(int $idEmpresa, int $idSubcategoria): Builder
+    public static function resolverPorcentajeImpuesto($porcentajeProducto, float $ivaEmpresa): float
     {
-        return PosMenuCatalog::queryProductosDeSubcategoria($idEmpresa, $idSubcategoria);
+        if ($porcentajeProducto !== null && $porcentajeProducto !== '') {
+            return (float) $porcentajeProducto;
+        }
+
+        return $ivaEmpresa;
     }
 
-    public static function queryProductos(int $idEmpresa): Builder
+    private function ivaEmpresa(): float
     {
-        return PosMenuCatalog::queryProductos($idEmpresa);
-    }
+        $idEmpresa = $this->idEmpresa();
+        if (! $idEmpresa) {
+            return 0.0;
+        }
+        $empresa = Empresa::find($idEmpresa);
 
-    public static function modoContenido(int $subcategoriasCount): string
-    {
-        return PosMenuCatalog::modoContenido($subcategoriasCount);
-    }
-
-    /**
-     * @param Collection<int, \App\Models\Inventario\Producto> $productos
-     */
-    public static function mapProductos(Collection $productos, bool $incluirPresentaciones = false): array
-    {
-        return PosMenuCatalog::mapProductos($productos, $incluirPresentaciones);
+        return $empresa ? (float) ($empresa->iva ?? 0) : 0.0;
     }
 
     private function incluirPresentaciones(): bool
