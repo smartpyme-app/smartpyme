@@ -69,6 +69,7 @@ export class FacturacionComponent implements OnInit {
   public tieneFidelizacionHabilitada: boolean = false;
   public mensajeValidacionFecha: string = '';
   public mensajeErrorBanco: string = '';
+  public debeImprimir: boolean = true;
 
   /** Si está activo, se muestra el monto; el importe es siempre la suma de `cuenta_a_terceros` en las líneas (no se edita en cabecera). */
   public habilitarCuentaTerceros = false;
@@ -544,6 +545,7 @@ export class FacturacionComponent implements OnInit {
     this.venta = {};
     this.habilitarCuentaTerceros = false;
     this.retencionIvaGcUsuarioDecidio = false;
+    this.debeImprimir = !!this.apiService.auth_user()?.empresa?.impresion_en_facturacion;
     this.venta.fecha = this.apiService.date();
     this.venta.fecha_pago = this.apiService.date();
     this.venta.forma_pago = 'Efectivo';
@@ -1824,45 +1826,31 @@ export class FacturacionComponent implements OnInit {
         // para que en un siguiente guardado se envíe el mismo correlativo.
         Object.assign(this.venta, venta);
 
-        if (
-          this.venta.cotizacion != 1 &&
-          this.apiService.auth_user().empresa.impresion_en_facturacion
-        ) {
-          if (this.apiService.auth_user().empresa.facturacion_electronica) {
-            this.emitirDTE();
-          } else {
-            this.imprimir(venta);
-            if (this.preCuentaId && this.venta.id) {
-              this.navegarPostFacturaPreCuenta(this.venta.id);
-            } else if (this.pedidoCanalId && this.venta.id) {
-              this.navegarPostFacturaPedidoCanal(this.venta.id);
-            } else if (this.debePreguntarEnvioBoxful()) {
-              this.preguntarGenerarEnvioBoxful(venta);
-            } else {
-              this.cargarDatosIniciales();
-              this.loadData();
-              this.router.navigate(['/venta/crear']);
-            }
-          }
+        if (this.venta.cotizacion == 1) {
+          this.router.navigate(['/cotizaciones']);
+          this.alertService.success(
+            'Cotización creada',
+            'La cotizacion fue añadida exitosamente.'
+          );
+        } else if (this.apiService.auth_user().empresa.facturacion_electronica) {
+          this.emitirDTE();
         } else {
-          if (this.venta.cotizacion == 1) {
-            this.router.navigate(['/cotizaciones']);
-            this.alertService.success(
-              'Cotización creada',
-              'La cotizacion fue añadida exitosamente.'
-            );
-          } else if (this.preCuentaId && this.venta.id) {
+          if (
+            this.apiService.auth_user().empresa.impresion_en_facturacion &&
+            this.debeImprimir
+          ) {
+            this.imprimir(venta);
+          }
+          if (this.preCuentaId && this.venta.id) {
             this.navegarPostFacturaPreCuenta(this.venta.id);
           } else if (this.pedidoCanalId && this.venta.id) {
             this.navegarPostFacturaPedidoCanal(this.venta.id);
           } else if (this.debePreguntarEnvioBoxful()) {
             this.preguntarGenerarEnvioBoxful(venta);
           } else {
-            this.router.navigate(['/ventas']);
-            this.alertService.success(
-              'Venta creado',
-              'La venta fue añadida exitosamente.'
-            );
+            this.cargarDatosIniciales();
+            this.loadData();
+            this.router.navigate(['/venta/crear']);
           }
         }
 
@@ -1966,7 +1954,12 @@ export class FacturacionComponent implements OnInit {
         }
         this.emiting = false;
 
-        this.imprimir(venta);
+        if (
+          this.apiService.auth_user()?.empresa?.impresion_en_facturacion &&
+          this.debeImprimir
+        ) {
+          this.imprimir(venta);
+        }
         if (this.preCuentaId && this.venta.id) {
           this.navegarPostFacturaPreCuenta(this.venta.id);
         } else if (this.pedidoCanalId && this.venta.id) {
