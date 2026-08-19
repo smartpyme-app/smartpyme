@@ -363,10 +363,10 @@ class MHFactura extends Model
 
             if ($this->documentoTieneIva()) {
                 $factor = $this->factorIvaIncluidoDetalle($detalle);
-                $precioConIva = (float) ($detalle->precio_con_iva ?? 0);
-                $detalle->precio = $precioConIva > 0
-                    ? round($precioConIva, 4)
-                    : round((float) $detalle->precio * $factor, 4);
+                // $precioConIva = (float) ($detalle->precio_con_iva ?? 0); <- esto ya no lo necesitamos
+                
+                //Siempre se calcula el precio para evitar inconsistencias en el precio con IVA incluido
+                $detalle->precio = round((float) $detalle->precio * $factor, 4);
                 $detalle->descuento = round((float) $detalle->descuento * $factor, 2);
                 $detalle->gravada = ($detalle->cantidad * $detalle->precio) - $detalle->descuento;
                 $tributos = $this->buildTributosLineaCodesFacturaConsumidor($detalle);
