@@ -1705,7 +1705,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
             modulos: {},
             configuraciones: {
                 ticket_en_pdf: false,
-                version_facturacion: 'original', // 'original' o 'v2'
+                version_facturacion: 'original', // 'original' | 'v2' | 'pos'
                 mostrar_campos_contables: true, // Mostrar tipo de operación y tipo de ingreso
                 lotes_activo: false, // Activar/desactivar módulo de lotes
                 lotes_metodologia: 'FIFO', // Manual, FIFO, LIFO, FEFO
@@ -1922,7 +1922,13 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         this.onSubmit().then(() => {
             this.alertService.success(
                 'Configuración actualizada',
-                `Versión de facturación cambiada a ${version === 'v2' ? this.countryI18n.tax('billingVersionV2Short') : 'Original'}`
+                `Versión de facturación cambiada a ${
+                    version === 'v2'
+                        ? this.countryI18n.tax('billingVersionV2Short')
+                        : version === 'pos'
+                          ? 'POS táctil'
+                          : 'Original'
+                }`
             );
         });
     }

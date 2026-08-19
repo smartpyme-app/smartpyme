@@ -23,6 +23,7 @@ import { DevolucionVentaNuevaComponent } from '@views/ventas/devoluciones/devolu
 import { FacturacionComponent } from '@views/ventas/facturacion/facturacion-tienda/facturacion.component';
 import { FacturacionConsignaComponent } from '@views/ventas/facturacion/facturacion-consigna/facturacion-consigna.component';
 import { FacturacionV2Component } from '@views/ventas/facturacion/facturacion-tienda-v2/facturacion-v2.component';
+import { FacturacionPosComponent } from '@views/ventas/facturacion/facturacion-pos/facturacion-pos.component';
 
 import { ClientesComponent } from '@views/ventas/clientes/clientes.component';
 import { CuentasCobrarComponent } from '@views/ventas/clientes/cuentas-cobrar/cuentas-cobrar.component';
@@ -49,6 +50,7 @@ const routes: Routes = [
         { path: 'ventas', canActivate: [AdminGuard], component: VentasComponent, title: 'Ventas'},
         { path: 'venta/crear', canActivate: [FacturacionVersionGuard], component: FacturacionComponent, title: 'Facturación'},
         { path: 'ventas-v2/crear', component: FacturacionV2Component, title: 'Facturación V2'},
+        { path: 'ventas-pos/crear', component: FacturacionPosComponent, title: 'Facturación POS' },
         { path: 'venta/consigna/revisar/:id', component: FacturacionConsignaComponent, title: 'Facturación consigna'},
         { path: 'venta/:id', component: VentaComponent, title: 'Venta'},
 
