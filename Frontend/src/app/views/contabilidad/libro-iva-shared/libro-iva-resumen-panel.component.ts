@@ -16,7 +16,10 @@ import {
   ventasPorImpuestoResumenLibroIva,
   ventasResumenContableLibroIva,
   mostrarVentasResumenContableLibroIva,
+  totalesPorMonedaLibroIva,
+  TotalesPorMonedaFila,
 } from './libro-iva-resumen.util';
+import { formatEmpresaCurrency } from '@helpers/currency-format.helper';
 
 @Component({
   selector: 'app-libro-iva-resumen-panel',
@@ -85,5 +88,21 @@ export class LibroIvaResumenPanelComponent {
 
   get mostrarVentasResumenContable(): boolean {
     return mostrarVentasResumenContableLibroIva(this.fiscalResumen);
+  }
+
+  get totalesPorMoneda() {
+    return totalesPorMonedaLibroIva(this.fiscalResumen);
+  }
+
+  get mostrarTotalesPorMoneda(): boolean {
+    const t = this.totalesPorMoneda;
+    if (!t) {
+      return false;
+    }
+    return t.ventas.length > 0 || t.compras.length > 0 || t.gastos.length > 0;
+  }
+
+  formatNativo(row: TotalesPorMonedaFila): string {
+    return formatEmpresaCurrency(row.total_nativo, { moneda: row.moneda });
   }
 }

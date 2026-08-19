@@ -116,3 +116,29 @@ export function ventasResumenContableLibroIva(fiscalResumen: unknown): VentasRes
 export function mostrarVentasResumenContableLibroIva(fiscalResumen: unknown): boolean {
   return Boolean(fiscalResumen);
 }
+
+export type TotalesPorMonedaFila = {
+  moneda: string;
+  documentos: number;
+  total_nativo: number;
+  total_equivalente: number;
+};
+
+export function totalesPorMonedaLibroIva(
+  fiscalResumen: unknown
+): { ventas: TotalesPorMonedaFila[]; compras: TotalesPorMonedaFila[]; gastos: TotalesPorMonedaFila[] } | null {
+  const block = (fiscalResumen as { totales_por_moneda?: unknown })?.totales_por_moneda;
+  if (!block || typeof block !== 'object') {
+    return null;
+  }
+  const b = block as {
+    ventas?: unknown;
+    compras?: unknown;
+    gastos?: unknown;
+  };
+  return {
+    ventas: Array.isArray(b.ventas) ? (b.ventas as TotalesPorMonedaFila[]) : [],
+    compras: Array.isArray(b.compras) ? (b.compras as TotalesPorMonedaFila[]) : [],
+    gastos: Array.isArray(b.gastos) ? (b.gastos as TotalesPorMonedaFila[]) : [],
+  };
+}
