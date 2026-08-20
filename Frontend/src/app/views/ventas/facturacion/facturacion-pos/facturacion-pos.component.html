@@ -1,0 +1,271 @@
+<div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
+  <h3 class="mb-0">Facturación POS</h3>
+  <button class="btn btn-light text-danger" routerLink="/ventas"><i class="fa fa-arrow-left"></i> Regresar</button>
+</div>
+
+<section class="card border-0 p-2 mb-2">
+  <div class="row flex-nowrap g-2 align-items-end overflow-auto">
+    <div class="form-group col" style="min-width: 7rem">
+      <label for="pos_fecha">Fecha</label>
+      <input type="date" class="form-control" id="pos_fecha" [(ngModel)]="venta.fecha" (ngModelChange)="onFechaVentaChange()" name="pos_fecha">
+    </div>
+    <div class="form-group col" style="min-width: 9rem" *ngIf="tieneMultimoneda">
+      <label for="pos_currency">Moneda</label>
+      <div class="input-group">
+        <select id="pos_currency" class="form-select" [(ngModel)]="venta.currency_code" (ngModelChange)="onCurrencyCodeChange()" [disabled]="ventaYaEmitida">
+          <option *ngFor="let mon of monedasDocumento" [value]="mon">{{ mon === 'USD' ? etiquetaOpcionUsd : mon }}</option>
+        </select>
+        <button *ngIf="puedeEditarTipoCambio" type="button" class="btn btn-default" (click)="abrirModalTipoCambio(modalTipoCambio)" title="Tipo de cambio">
+          <i class="fa fa-pencil"></i>
+        </button>
+      </div>
+    </div>
+    <div class="form-group col" style="min-width: 8rem">
+      <label for="pos_usuario">Usuario</label>
+      <select id="pos_usuario" class="form-select" [(ngModel)]="venta.id_usuario" name="pos_usuario">
+        <option value="">Seleccione</option>
+        <option [value]="usuario.id" *ngFor="let usuario of usuarios | filter:'id_sucursal':venta.id_sucursal">{{ usuario.name }}</option>
+      </select>
+    </div>
+    <div class="form-group col" style="min-width: 8rem">
+      <label for="pos_bodega">Bodega</label>
+      <select id="pos_bodega" class="form-select" [(ngModel)]="venta.id_bodega" (change)="setBodega()" name="pos_bodega">
+        <option [value]="bodega.id" *ngFor="let bodega of bodegas">{{ bodega.nombre }}</option>
+      </select>
+    </div>
+    <div class="form-group col" style="min-width: 8rem">
+      <label for="pos_documento">Documento</label>
+      <select id="pos_documento" class="form-select" [(ngModel)]="venta.id_documento" (ngModelChange)="setDocumento($event)" name="pos_documento">
+        <option *ngFor="let documento of documentos" [ngValue]="documento.id">{{ documento.nombre }}</option>
+      </select>
+    </div>
+    <div class="form-group col" style="min-width: 7rem">
+      <label for="pos_correlativo">Correlativo</label>
+      <input *ngIf="mostrarCorrelativoHnFormato" type="text" class="form-control" id="pos_correlativo" [value]="correlativoDisplay" readonly>
+      <input *ngIf="!mostrarCorrelativoHnFormato" type="number" class="form-control" id="pos_correlativo" [(ngModel)]="venta.correlativo" name="pos_correlativo">
+    </div>
+  </div>
+</section>
+
+<div class="pos-shell" *ngIf="!loading">
+  <div class="pos-catalog">
+    <div class="card pos-catalogo-card border-0 shadow-sm">
+      <div class="card-body p-2">
+        <app-pos-catalogo-ventas
+          [idBodega]="venta.id_bodega"
+          (productoElegido)="onProductoCatalogo($event)">
+        </app-pos-catalogo-ventas>
+      </div>
+    </div>
+  </div>
+
+  <aside class="pos-orden card border-0 shadow-sm p-3">
+    <h6 class="mb-2">Ticket</h6>
+    <app-pos-ticket-ventas
+      [venta]="venta"
+      [descuentoPuntos]="descuentoPuntos"
+      [puntosCanjeados]="puntosCanjeados"
+      [tieneAccesoPropina]="tieneAccesoPropina"
+      [tieneMultimoneda]="tieneMultimoneda"
+      [monedaVenta]="monedaVenta"
+      [usdEquivalentTotal]="usdEquivalentTotal"
+      [totalConPropina]="getTotalConPropina()"
+      [formatNumber]="formatNumberFn"
+      [esLineaConLote]="esLineaConLoteFn"
+      (cantidadDelta)="onCantidadDelta($event)"
+      (eliminarLinea)="onEliminarLinea($event)"
+      (editarLinea)="abrirLineaSheet($event, modalLineaVenta)"
+      (editarLote)="abrirLoteLinea($event)">
+    </app-pos-ticket-ventas>
+
+    <div class="pos-checkout mt-3">
+      <label class="form-label mb-1">Cliente</label>
+      <div class="input-group w-100 mb-2">
+        <div class="flex-grow-1">
+          <app-buscador-clientes [cliente]="venta?.cliente" (selectCliente)="setCliente($event)"></app-buscador-clientes>
+        </div>
+        <app-crear-cliente [id_cliente]="venta.id_cliente" (update)="setCliente($event)"></app-crear-cliente>
+        <button *ngIf="tieneFidelizacionHabilitada && venta?.cliente?.id" type="button" class="btn ms-2"
+          [class.btn-success]="puntosCliente > 0" [class.btn-outline-secondary]="puntosCliente === 0"
+          [disabled]="loadingPuntos" (click)="abrirModalPuntos()" title="Puntos">
+          <i class="fas fa-coins me-1" *ngIf="!loadingPuntos"></i>
+          {{ formatNumber(puntosCliente) }} pts
+        </button>
+      </div>
+
+      <div class="alert alert-info py-2 mb-2 small" *ngIf="((apiService.isEstadoCuentaEnFacturacionHabilitado() && venta.cliente?.id) || (!apiService.isEstadoCuentaEnFacturacionHabilitado() && venta.cliente?.limite_credito)) && venta.cotizacion != 1">
+        Saldo: {{ (venta.cliente?.saldo_pendiente ?? 0) | currency }}
+        <span *ngIf="venta.cliente?.limite_credito"> · Disponible: {{ ((venta.cliente.limite_credito ?? 0) - (venta.cliente.saldo_pendiente ?? 0)) | currency }}</span>
+      </div>
+
+      <div class="form-switch border rounded p-2 mb-2" *ngIf="venta.cotizacion != 1 && apiService.auth_user().tipo != 'Ventas Limitado'">
+        <label for="pos_credito">Venta al crédito</label>
+        <input id="pos_credito" class="form-check-input float-end" type="checkbox" (change)="setCredito()" [(ngModel)]="venta.credito" name="pos_credito">
+      </div>
+
+      <div class="mb-2">
+        <label for="pos_obs" class="form-label">Observaciones</label>
+        <input id="pos_obs" type="text" class="form-control" maxlength="150" [(ngModel)]="venta.observaciones" name="pos_obs">
+      </div>
+
+      <div class="mb-2" *ngIf="venta.cotizacion != 1">
+        <label for="pos_forma_pago" class="form-label">Método de pago</label>
+        <div class="input-group flex-nowrap">
+          <select id="pos_forma_pago" class="form-select" (change)="cambioMetodoDePago()" [(ngModel)]="venta.forma_pago" name="pos_forma_pago">
+            <option [value]="forma.nombre" *ngFor="let forma of formaPagos">{{ forma.nombre }}</option>
+          </select>
+          <app-metodos-de-pago [venta]="venta" [formaPagos]="formaPagos" (update)="totalPorMetodoDePago()"></app-metodos-de-pago>
+        </div>
+      </div>
+
+      <div class="mb-2" *ngIf="giftCardsActivo && requiereCodigoGiftCard()">
+        <label for="pos_gc" class="form-label">Código gift card</label>
+        <div class="input-group">
+          <input id="pos_gc" class="form-control" [(ngModel)]="venta.codigo_gift_card" name="pos_gc" (blur)="consultarGiftCard()">
+          <button type="button" class="btn btn-outline-secondary" (click)="consultarGiftCard()" [disabled]="giftCardLookupLoading"><i class="fa fa-search"></i></button>
+        </div>
+        <small class="text-danger" *ngIf="giftCardLookupError">{{ giftCardLookupError }}</small>
+      </div>
+
+      <div class="mb-2" *ngIf="requiereBanco()">
+        <label class="form-label">Banco <span class="text-danger">*</span></label>
+        <select class="form-select" [(ngModel)]="venta.detalle_banco" (change)="mensajeErrorBanco = ''" [class.is-invalid]="mensajeErrorBanco">
+          <option value="">Seleccione</option>
+          <ng-container *ngIf="apiService.isModuloBancos()">
+            <option [value]="banco.nombre_banco" *ngFor="let banco of bancos">{{ banco.nombre_banco }}</option>
+          </ng-container>
+          <ng-container *ngIf="!apiService.isModuloBancos()">
+            <option [value]="banco.nombre" *ngFor="let banco of bancos">{{ banco.nombre }}</option>
+          </ng-container>
+        </select>
+        <small class="text-danger" *ngIf="mensajeErrorBanco">{{ mensajeErrorBanco }}</small>
+      </div>
+
+      <div class="d-grid gap-2 pos-orden-acciones">
+        <button type="button" class="btn btn-outline-secondary" (click)="abrirOpcionesAvanzadas(modalOpcionesAvanzadas)">
+          Opciones avanzadas
+          <span class="badge bg-primary ms-1" *ngIf="contarOpcionesAvanzadasActivas()">{{ contarOpcionesAvanzadasActivas() }}</span>
+        </button>
+        <button type="button" class="btn btn-primary btn-lg tcla-F8" (click)="onFacturar()" [disabled]="saving || emiting">
+          <span *ngIf="!saving && !emiting">Facturar (F8)</span>
+          <span *ngIf="saving || emiting">Procesando…</span>
+        </button>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<div class="visually-hidden" aria-hidden="true">
+  <app-venta-detalles-v2 #ventaDetallesPos
+    [venta]="venta"
+    [usuarios]="usuarios"
+    [habilitarCuentaTerceros]="habilitarCuentaTerceros"
+    [esFeCostaRica]="esFeCostaRicaFacturacion()"
+    [ocultarEntradaProductos]="true"
+    (update)="updateVenta($event)"
+    (sumTotal)="sumTotal()"
+    (alMenosUnPaqueteConCuentaTerceros)="onAlMenosUnPaqueteCuentaTerceros()"
+    (selectCliente)="setCliente($event)">
+  </app-venta-detalles-v2>
+</div>
+
+<ng-template #modalOpcionesAvanzadas>
+  <app-pos-opciones-avanzadas [host]="posHost" (aplicar)="cerrarOpcionesAvanzadas()"></app-pos-opciones-avanzadas>
+</ng-template>
+
+<ng-template #modalLineaVenta>
+  <app-pos-linea-venta-sheet
+    [detalle]="detalleEditando"
+    [apiService]="apiService"
+    [mostrarTipoGravado]="mostrarTipoGravadoLinea()"
+    [mostrarLote]="detalleEditando && esLineaConLote(detalleEditando)"
+    (guardar)="guardarLineaSheet()"
+    (elegirLote)="abrirLoteLinea(detalleEditando); cerrarLineaSheet()"
+    (cerrar)="cerrarLineaSheet()">
+  </app-pos-linea-venta-sheet>
+</ng-template>
+
+<ng-template #presentacionPickerTpl>
+  <div class="modal-header">
+    <h5 class="modal-title">Presentación</h5>
+    <button type="button" class="btn-close" (click)="modalPresentacionRef?.hide()"></button>
+  </div>
+  <div class="modal-body">
+    <button type="button" class="btn btn-outline-primary w-100 mb-2" *ngFor="let pres of presentacionesPendientes"
+      (click)="elegirPresentacion(pres)">
+      {{ pres.nombre }} — {{ pres.precio_venta | currency }}
+    </button>
+  </div>
+</ng-template>
+
+<ng-template #msupervisor>
+  <div class="modal-header"><h4 class="modal-title text-center">Autorización</h4></div>
+  <div class="modal-body">
+    <form (ngSubmit)="supervisorCheck()" autocomplete="off">
+      <label for="pos_sup_cod">Código supervisor</label>
+      <input id="pos_sup_cod" type="password" class="form-control text-center" [(ngModel)]="supervisor.codigo" name="pos_sup_cod">
+      <button class="btn btn-primary w-100 mt-3" [disabled]="loading || !supervisor.codigo">Guardar</button>
+    </form>
+  </div>
+</ng-template>
+
+<ng-template #modalTipoCambio>
+  <div class="modal-header">
+    <h5 class="modal-title">Tipo de cambio</h5>
+    <button type="button" class="btn-close" (click)="cerrarModalTipoCambio()"></button>
+  </div>
+  <div class="modal-body">
+    <label class="form-label">{{ simboloMonedaFuncional }} por 1 USD</label>
+    <input type="number" step="0.00001" min="0" class="form-control" [(ngModel)]="exchangeRateDraft" name="pos_tc">
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-light" (click)="cerrarModalTipoCambio()">Cancelar</button>
+    <button type="button" class="btn btn-primary" (click)="aplicarTipoCambioManual()">Aplicar</button>
+  </div>
+</ng-template>
+
+<ng-template #modalPuntos>
+  <div class="modal-header">
+    <h4 class="modal-title"><i class="fas fa-coins text-success me-2"></i>Puntos</h4>
+    <button type="button" class="btn-close" (click)="cerrarModalPuntos()"></button>
+  </div>
+  <div class="modal-body">
+    <div *ngIf="loadingModalPuntos" class="text-center py-4"><div class="spinner-border text-success"></div></div>
+    <div *ngIf="!loadingModalPuntos && puntosInfoModal">
+      <p class="mb-2"><strong>{{ formatNumber(puntosInfoModal.puntos_disponibles) }}</strong> pts disponibles</p>
+      <div *ngIf="puntosInfoModal.puntos_disponibles > 0">
+        <label class="form-check">
+          <input class="form-check-input" type="checkbox" [(ngModel)]="usarPuntosModal" (change)="onToggleUsarPuntosModal()" name="pos_usar_pts">
+          Usar puntos
+        </label>
+        <input *ngIf="usarPuntosModal" type="number" class="form-control mt-2" [(ngModel)]="puntosACanjearModal" (ngModelChange)="onCambiarPuntosModal()" name="pos_pts_canje">
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer" *ngIf="!loadingModalPuntos && puntosInfoModal">
+    <button type="button" class="btn btn-secondary" (click)="cerrarModalPuntos()">Cerrar</button>
+    <button type="button" class="btn btn-success" *ngIf="puntosInfoModal.puntos_disponibles > 0" [disabled]="!isCanjeValido()" (click)="aplicarCanjeModal()">Aplicar</button>
+  </div>
+</ng-template>
+
+<ng-template #mgiftCardsEmitidas>
+  <div class="modal-header"><h5 class="mb-0">Gift cards emitidas</h5></div>
+  <div class="modal-body">
+    <div class="border rounded p-2 mb-2" *ngFor="let card of giftCardsEmitidas">
+      <strong>{{ card.codigo }}</strong> — {{ card.saldo | currency }}
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-primary" (click)="continuarTrasGiftCardsEmitidas()">Continuar</button>
+  </div>
+</ng-template>
+
+<app-boxful-shipping-selector *ngIf="mostrarModalBoxful && boxfulClienteId"
+  [clienteId]="boxfulClienteId"
+  [ventaId]="boxfulVentaId"
+  [paqueteData]="boxfulPaqueteData"
+  [sugerirCod]="boxfulSugerirCod"
+  [montoCodSugerido]="boxfulMontoCod"
+  (guiaGenerada)="onBoxfulGuiaGenerada($event)"
+  (cerrar)="cerrarModalBoxful()">
+</app-boxful-shipping-selector>
