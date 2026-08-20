@@ -190,7 +190,12 @@ export function calcularMontosLineaDetalle(
   options?: { preservePrecioIva?: boolean; paisEmpresa?: unknown }
 ): void {
   const cantidad = parseFloat(String(detalle?.cantidad ?? 0)) || 0;
-  const precioSinIva = parseFloat(String(detalle?.precio ?? 0)) || 0;
+  const preservePrecioIva = options?.preservePrecioIva ?? false;
+  const precioIvaRaw = detalle?.precio_iva;
+  const usuarioBorroPrecioIva = preservePrecioIva && (precioIvaRaw === '' || precioIvaRaw === null);
+  const precioSinIva = usuarioBorroPrecioIva
+    ? 0
+    : parseFloat(String(detalle?.precio ?? 0)) || 0;
   const descuento = parseFloat(String(detalle?.descuento ?? 0)) || 0;
   const pct = porcentajeIvaDetalle(
     detalle,
@@ -208,13 +213,16 @@ export function calcularMontosLineaDetalle(
   detalle.total = totalSinIva.toFixed(6);
 
   const factorIva = pct > 0 ? 1 + pct / 100 : 1;
-  const preservePrecioIva = options?.preservePrecioIva ?? false;
-  const precioIvaExistente = parseFloat(String(detalle?.precio_iva ?? ''));
+  const precioIvaExistente = parseFloat(String(precioIvaRaw ?? ''));
   let precioConIva: number;
-  if (
+  if (usuarioBorroPrecioIva) {
+    // Sin valor en el input: el precio es 0 (no el neto anterior ni 1).
+    detalle.precio = (0).toFixed(6);
+    precioConIva = 0;
+  } else if (
     preservePrecioIva &&
     Number.isFinite(precioIvaExistente) &&
-    String(detalle?.precio_iva ?? '') !== ''
+    String(precioIvaRaw ?? '') !== ''
   ) {
     // Fuente de verdad del monto cobrado: precio_iva (no reconstruir desde precio neto).
     precioConIva = precioIvaExistente;
