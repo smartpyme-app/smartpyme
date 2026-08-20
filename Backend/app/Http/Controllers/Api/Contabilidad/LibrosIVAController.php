@@ -128,6 +128,35 @@ class LibrosIVAController extends Controller
     }
 
     /**
+     * Obtiene el nombre del documento según DTE o fallback local
+     */
+    private function obtenerNombreDocumento($venta): string
+    {
+        if ($this->tieneFacturacionElectronica() && $venta->sello_mh) {
+            $tipoDte = $venta->dte['identificacion']['tipoDte'] ?? $venta->tipo_dte ?? null;
+            if ($tipoDte) {
+                $map = [
+                    '01' => 'Factura',
+                    '02' => 'Factura de venta simplificada',
+                    '03' => 'Crédito fiscal',
+                    '04' => 'Nota de remisión',
+                    '05' => 'Nota de crédito',
+                    '06' => 'Nota de débito',
+                    '07' => 'Comprobante de retención',
+                    '08' => 'Comprobante de liquidación',
+                    '09' => 'Documento contable de liquidación',
+                    '11' => 'Factura de exportación',
+                    '14' => 'Sujeto excluido',
+                ];
+                if (isset($map[$tipoDte])) {
+                    return $map[$tipoDte];
+                }
+            }
+        }
+        return $venta->nombre_documento ?? '';
+    }
+
+    /**
      * Obtiene el código de generación para devoluciones
      */
     private function obtenerCodigoGeneracionDevolucion($devolucion): string
@@ -573,6 +602,8 @@ class LibrosIVAController extends Controller
             ->orderByDesc('fecha')
             ->get();
 
+        $ventas = $this->filtrarVentasPorFacturacionElectronica($ventas);
+
         $ivas = $ventas->map(function ($venta) {
             $documento = $venta->documento;
             $cliente = optional($venta->cliente);
@@ -582,7 +613,7 @@ class LibrosIVAController extends Controller
                 'clase'                 => $venta->sello_mh ? 4 : 1, // DTE o impreso
                 'desde_pre'             => $venta->sello_mh ? 0 : trim($venta->correlativo),
                 'hasta_pre'             => $venta->sello_mh ? 0 : trim($venta->correlativo),
-                'tipo_documento'        => $venta->nombre_documento,
+                'tipo_documento'        => $this->obtenerNombreDocumento($venta),
                 'tipo_detalle'          => 'Documento Anulado',
                 'serie'                 => $venta->sello_mh ? $venta->dte['sello'] : '',
                 'desde'                 => $venta->sello_mh ? 0 : trim($venta->correlativo),
