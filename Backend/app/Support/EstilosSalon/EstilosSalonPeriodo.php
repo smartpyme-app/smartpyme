@@ -9,9 +9,16 @@ final class EstilosSalonPeriodo
 {
     public const EMPRESAS_IDS = [397, 396, 398, 428, 427, 429, 432, 543, 657, 690, 488];
 
+    public const EMPRESA_BOTON_ID = 396;
+
     public static function empresaPermitida(int $idEmpresa): bool
     {
         return in_array($idEmpresa, self::EMPRESAS_IDS, true);
+    }
+
+    public static function botonDisponible(int $idEmpresa, ?string $tipo): bool
+    {
+        return $idEmpresa === self::EMPRESA_BOTON_ID && $tipo === 'Administrador';
     }
 
     public static function esDiaEnvio(DateTimeInterface $fecha): bool

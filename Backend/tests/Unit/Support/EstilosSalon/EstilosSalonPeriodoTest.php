@@ -87,4 +87,13 @@ final class EstilosSalonPeriodoTest extends TestCase
         $this->assertTrue(EstilosSalonPeriodo::empresaPermitida(396));
         $this->assertFalse(EstilosSalonPeriodo::empresaPermitida(1));
     }
+
+    public function test_boton_solo_para_empresa_396_administrador(): void
+    {
+        $this->assertTrue(EstilosSalonPeriodo::botonDisponible(396, 'Administrador'));
+        $this->assertFalse(EstilosSalonPeriodo::botonDisponible(396, 'Supervisor'));
+        $this->assertFalse(EstilosSalonPeriodo::botonDisponible(396, 'Ventas'));
+        $this->assertFalse(EstilosSalonPeriodo::botonDisponible(397, 'Administrador'));
+        $this->assertFalse(EstilosSalonPeriodo::botonDisponible(1, 'Administrador'));
+    }
 }

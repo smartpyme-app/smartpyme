@@ -19,8 +19,11 @@ class ConsolidadoEstilosSalonController extends Controller
 
     public function show(Request $request): JsonResponse
     {
-        $idEmpresa = (int) $request->user()->id_empresa;
-        $disponible = EstilosSalonPeriodo::empresaPermitida($idEmpresa);
+        $user = $request->user();
+        $disponible = EstilosSalonPeriodo::botonDisponible(
+            (int) $user->id_empresa,
+            $user->tipo ?? null
+        );
         [$fechaInicio, $fechaFin] = EstilosSalonPeriodo::rangoSugerido(Carbon::today());
 
         return response()->json([
