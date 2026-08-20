@@ -29,6 +29,7 @@ import { FacturacionV2Component } from './facturacion-tienda-v2/facturacion-v2.c
 import { VentaDetallesV2Component } from './facturacion-tienda-v2/detalles/venta-detalles-v2.component';
 import { TiendaVentaBuscadorV2Component } from './facturacion-tienda-v2/buscador/tienda-venta-buscador-v2.component';
 import { TiendaVentaPaquetesV2Component } from './facturacion-tienda-v2/paquetes/tienda-venta-paquetes-v2.component';
+import { FacturacionPosComponent } from './facturacion-pos/facturacion-pos.component';
 
 @NgModule({
   imports: [
@@ -60,6 +61,7 @@ import { TiendaVentaPaquetesV2Component } from './facturacion-tienda-v2/paquetes
     TiendaVentaBuscadorV2Component,
     TiendaVentaPaquetesV2Component,
     PuntosClienteVentaComponent,
+    FacturacionPosComponent,
   ],
   exports: [
     FacturacionComponent,
@@ -78,6 +80,7 @@ import { TiendaVentaPaquetesV2Component } from './facturacion-tienda-v2/paquetes
     VentaDetallesV2Component,
     TiendaVentaBuscadorV2Component,
     TiendaVentaPaquetesV2Component,
+    FacturacionPosComponent,
   ]
 })
 export class FacturacionModule { }
