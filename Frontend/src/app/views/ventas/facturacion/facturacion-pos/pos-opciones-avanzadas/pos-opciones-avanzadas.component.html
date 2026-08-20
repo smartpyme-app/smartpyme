@@ -1,0 +1,135 @@
+<div class="modal-header">
+  <h5 class="modal-title">Opciones avanzadas</h5>
+  <button type="button" class="btn-close" aria-label="Cerrar" (click)="aplicar.emit()"></button>
+</div>
+<div class="modal-body pos-opciones-body">
+  <section *ngIf="host.venta.cotizacion != 1 && host.venta.nombre_documento == 'Factura de exportación' && host.esFacturacionElSalvador()">
+    <h6 class="text-muted">Exportación</h6>
+    <div class="row g-2">
+      <div class="col-md-6">
+        <label class="form-label">Tipo de ítem</label>
+        <ng-select name="tipo_item_export" [(ngModel)]="host.venta.tipo_item_export" placeholder="Seleccione" class="form-select p-0">
+          <ng-option value="1">Bienes</ng-option>
+          <ng-option value="2">Servicios</ng-option>
+          <ng-option value="3">Ambos</ng-option>
+          <ng-option value="4">Otros</ng-option>
+        </ng-select>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Incoterm</label>
+        <ng-select name="cod_incoterm" [(ngModel)]="host.venta.cod_incoterm" (change)="host.setIncoterm()" class="form-select p-0">
+          <ng-option [value]="item.cod" *ngFor="let item of host.incoterms">{{ item.nombre }}</ng-option>
+        </ng-select>
+      </div>
+    </div>
+  </section>
+
+  <div class="row g-2 mt-1">
+    <div class="col-md-6 col-lg-4" *ngIf="host.apiService.auth_user().empresa.modulo_proyectos">
+      <label class="form-label">Proyecto</label>
+      <div class="input-group flex-nowrap">
+        <ng-select name="id_proyecto" placeholder="Seleccione" [(ngModel)]="host.venta.id_proyecto" class="form-select p-0">
+          <ng-option *ngFor="let proyecto of host.proyectos" [value]="proyecto.id">{{ proyecto.nombre }}</ng-option>
+        </ng-select>
+        <app-crear-proyecto [id_proyecto]="host.venta.id_proyecto" (update)="host.setProyecto($event)"></app-crear-proyecto>
+      </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4 without-label" *ngIf="host.apiService.auth_user().empresa.venta_consigna && host.venta.cotizacion != 1">
+      <div class="form-switch border rounded p-2">
+        <label for="pos_consigna">Consigna</label>
+        <input id="pos_consigna" [disabled]="!host.venta.credito" class="form-check-input float-end" type="checkbox"
+          (change)="host.setConsigna()" [(ngModel)]="host.venta.consigna" name="pos_consigna">
+      </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4 without-label" *ngIf="host.venta.cotizacion != 1">
+      <div class="form-switch bg-light-info rounded p-2">
+        <label for="pos_recurrente">Recurrente</label>
+        <input id="pos_recurrente" class="form-check-input float-end" type="checkbox" [(ngModel)]="host.venta.recurrente" name="pos_recurrente">
+      </div>
+    </div>
+
+    @if (!host.esFeCostaRicaFacturacion()) {
+    <div class="col-md-6 col-lg-4 without-label">
+      <div class="form-switch bg-light-info rounded p-2">
+        <label for="pos_cobrar_imp">{{ 'country.tax.taxWithRate' | translate:{ rate: (host.apiService.auth_user().empresa.iva | number:'1.0') } }}</label>
+        <input id="pos_cobrar_imp" class="form-check-input float-end" type="checkbox"
+          (change)="host.onCobrarImpuestosChange()" [(ngModel)]="host.venta.cobrar_impuestos" name="pos_cobrar_imp">
+      </div>
+    </div>
+    }
+
+    @if (host.esFacturacionElSalvador()) {
+    <div class="col-md-6 col-lg-4 without-label">
+      <div class="form-switch bg-light-info rounded p-2">
+        <label for="pos_retencion">Retención (1%)</label>
+        <input id="pos_retencion" class="form-check-input float-end" type="checkbox"
+          (change)="host.onRetencionIvaManualChange()" [(ngModel)]="host.venta.retencion" name="pos_retencion">
+      </div>
+    </div>
+    <div class="col-md-6 col-lg-4 without-label">
+      <div class="form-switch bg-light-info rounded p-2">
+        <label for="pos_renta">Renta (10%)</label>
+        <input id="pos_renta" class="form-check-input float-end" type="checkbox"
+          (change)="host.sumTotal()" [(ngModel)]="host.venta.renta" name="pos_renta">
+      </div>
+    </div>
+    }
+
+    <div class="col-md-6 col-lg-4 without-label" *ngIf="host.venta.cotizacion != 1 && host.apiService.auth_user().tipo != 'Ventas Limitado'">
+      <div class="form-switch bg-light-info rounded p-2">
+        <label for="pos_cta_terceros">Cuenta a terceros</label>
+        <input id="pos_cta_terceros" class="form-check-input float-end" type="checkbox"
+          [(ngModel)]="host.habilitarCuentaTerceros" (ngModelChange)="host.onCuentaTercerosSwitchChange()" name="pos_cta_terceros">
+      </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4 without-label" *ngIf="host.tieneAccesoPropina">
+      <div class="form-switch bg-light-info rounded p-2">
+        <label for="pos_propina">Propina ({{ host.apiService.auth_user().empresa.propina_porcentaje | number:'1.0-2' }}%)</label>
+        <input id="pos_propina" class="form-check-input float-end" type="checkbox"
+          (change)="host.sumTotal()" [(ngModel)]="host.venta.cobrar_propina" name="pos_propina">
+      </div>
+    </div>
+
+    <div class="col-md-6 col-lg-4" *ngIf="host.venta.cotizacion != 1">
+      <label class="form-label">Canal</label>
+      <select name="id_canal" [(ngModel)]="host.venta.id_canal" class="form-select">
+        <option value="">Seleccione</option>
+        <option [value]="canal.id" *ngFor="let canal of host.canales">{{ canal.nombre }}</option>
+      </select>
+    </div>
+
+    <div class="col-md-6 col-lg-4" *ngIf="host.venta.cotizacion != 1 && host.apiService.auth_user().tipo != 'Ventas Limitado'">
+      <label class="form-label">Fecha de pago</label>
+      <input type="date" class="form-control" [(ngModel)]="host.venta.fecha_pago" (change)="host.validarFechaPago()" name="pos_fecha_pago">
+    </div>
+
+    <div class="col-md-6 col-lg-4" *ngIf="host.venta.cotizacion != 1">
+      <label class="form-label">Vendedor</label>
+      <select name="id_vendedor" [(ngModel)]="host.venta.id_vendedor" class="form-select">
+        <option value="">Seleccione</option>
+        <option [value]="usuario.id" *ngFor="let usuario of host.usuarios">{{ usuario.codigo ? usuario.codigo + ' - ' : '' }}{{ usuario.name }}</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="row g-2 mt-2" *ngIf="host.apiService.auth_user().empresa.editar_descripcion_venta">
+    <div class="col-12 without-label">
+      <div class="form-switch bg-light-info rounded p-2">
+        <label for="pos_desc_pers">Agrupar detalles y personalizar descripción</label>
+        <input id="pos_desc_pers" class="form-check-input float-end" type="checkbox"
+          [(ngModel)]="host.venta.descripcion_personalizada" name="pos_desc_pers">
+      </div>
+    </div>
+    <div class="col-12" *ngIf="host.venta.descripcion_personalizada">
+      <label class="form-label">Descripción impresión</label>
+      <textarea class="form-control" rows="2" [(ngModel)]="host.venta.descripcion_impresion" name="pos_desc_imp"></textarea>
+    </div>
+  </div>
+</div>
+<div class="modal-footer d-flex justify-content-between align-items-center">
+  <strong>Total: {{ host.venta.total | currency }}</strong>
+  <button type="button" class="btn btn-primary" (click)="aplicar.emit()">Aplicar</button>
+</div>
