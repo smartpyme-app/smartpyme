@@ -52,12 +52,34 @@ final class EstilosSalonPeriodoTest extends TestCase
         );
     }
 
-    public function test_rango_sugerido_es_del_1_a_hoy(): void
+    public function test_rango_acumulado_es_del_1_a_la_fecha(): void
     {
         $this->assertSame(
             ['2026-08-01', '2026-08-19'],
             EstilosSalonPeriodo::rangoAcumulado(Carbon::parse('2026-08-19'))
         );
+    }
+
+    /**
+     * @dataProvider rangosSugeridos
+     */
+    public function test_rango_sugerido_usa_el_ultimo_corte_cerrado(string $fecha, array $esperado): void
+    {
+        $this->assertSame($esperado, EstilosSalonPeriodo::rangoSugerido(Carbon::parse($fecha)));
+    }
+
+    public static function rangosSugeridos(): array
+    {
+        return [
+            'agosto 20 (31 días) → 1 al 15' => ['2026-08-20', ['2026-08-01', '2026-08-15']],
+            'agosto 15 día de corte' => ['2026-08-15', ['2026-08-01', '2026-08-15']],
+            'agosto 23 día de corte' => ['2026-08-23', ['2026-08-01', '2026-08-23']],
+            'agosto 3 antes del primer corte → 1 al 8' => ['2026-08-03', ['2026-08-01', '2026-08-08']],
+            'abril 20 (30 días) → 1 al 15' => ['2026-04-20', ['2026-04-01', '2026-04-15']],
+            'abril 7 día de corte' => ['2026-04-07', ['2026-04-01', '2026-04-07']],
+            'febrero 20 → 1 al 15' => ['2026-02-20', ['2026-02-01', '2026-02-15']],
+            'febrero 5 antes del primer corte → 1 al 6' => ['2026-02-05', ['2026-02-01', '2026-02-06']],
+        ];
     }
 
     public function test_empresa_permitida_usa_la_lista_fija(): void

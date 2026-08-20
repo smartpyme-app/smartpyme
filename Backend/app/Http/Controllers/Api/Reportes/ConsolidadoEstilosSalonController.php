@@ -21,7 +21,7 @@ class ConsolidadoEstilosSalonController extends Controller
     {
         $idEmpresa = (int) $request->user()->id_empresa;
         $disponible = EstilosSalonPeriodo::empresaPermitida($idEmpresa);
-        [$fechaInicio, $fechaFin] = EstilosSalonPeriodo::rangoAcumulado(Carbon::today());
+        [$fechaInicio, $fechaFin] = EstilosSalonPeriodo::rangoSugerido(Carbon::today());
 
         return response()->json([
             'disponible' => $disponible,

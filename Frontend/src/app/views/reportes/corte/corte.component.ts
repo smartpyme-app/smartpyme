@@ -7,13 +7,12 @@ import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
-import { ConsolidadoEstilosSalonComponent } from '@shared/parts/consolidado-estilos-salon/consolidado-estilos-salon.component';
 
 @Component({
     selector: 'app-corte',
     templateUrl: './corte.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, CurrencyPipe, ConsolidadoEstilosSalonComponent],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, CurrencyPipe],
     changeDetection: ChangeDetectionStrategy.OnPush,
     
 })

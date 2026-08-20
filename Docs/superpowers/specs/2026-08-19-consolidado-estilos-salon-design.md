@@ -18,9 +18,9 @@ El comando `reporte:ventas-por-categoria-sucursal` corre diario a las 08:00 y no
 
 ## Descarga manual
 
-Componente standalone (`app-consolidado-estilos-salon`) enchufado hoy en Cierre de caja. Visible solo si `id_empresa` está en la lista de las 11 razones sociales.
+Componente standalone (`app-consolidado-estilos-salon`) enchufado hoy en Reportes automáticos (`/reportes-automaticos`). Visible solo si `id_empresa` está en la lista de las 11 razones sociales.
 
-Al abrir: Del = 1 del mes, Al = hoy. Ambas fechas son editables. Descarga el mismo Excel del cron (una hoja por empresa). No envía correo.
+Al abrir: Del = 1 del mes, Al = último corte ya cerrado (si aún no hay, el primer corte del mes). Ambas fechas son editables. Descarga el mismo Excel del cron (una hoja por empresa). No envía correo.
 
 ## Límites
 

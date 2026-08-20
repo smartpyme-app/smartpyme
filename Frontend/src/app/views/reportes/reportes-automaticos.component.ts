@@ -23,6 +23,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
 import { TranslatePipe } from '@ngx-translate/core';
+import { ConsolidadoEstilosSalonComponent } from '@shared/parts/consolidado-estilos-salon/consolidado-estilos-salon.component';
 
 @Pipe({
     name: 'replace',
@@ -48,6 +49,7 @@ export class ReplacePipe implements PipeTransform {
         PaginationComponent,
         NotificacionesContainerComponent,
         TranslatePipe,
+        ConsolidadoEstilosSalonComponent,
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
     

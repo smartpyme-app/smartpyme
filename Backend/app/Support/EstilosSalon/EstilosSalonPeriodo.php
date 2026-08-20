@@ -16,19 +16,9 @@ final class EstilosSalonPeriodo
 
     public static function esDiaEnvio(DateTimeInterface $fecha): bool
     {
-        $dia = Carbon::instance($fecha)->day;
-        $mes = Carbon::instance($fecha)->month;
-        $diasDelMes = Carbon::instance($fecha)->daysInMonth;
+        $carbon = Carbon::instance($fecha);
 
-        if ($mes === 2) {
-            return in_array($dia, [6, 15, 21, 28], true);
-        }
-
-        if ($diasDelMes === 30) {
-            return in_array($dia, [7, 15, 22, 30], true);
-        }
-
-        return in_array($dia, [8, 15, 23, 31], true);
+        return in_array($carbon->day, self::cortesDelMes($carbon), true);
     }
 
     /**
@@ -45,6 +35,28 @@ final class EstilosSalonPeriodo
     }
 
     /**
+     * Del 1 al último corte ya cerrado. Si aún no hay corte, sugiere el primero del mes.
+     *
+     * @return array{0: string, 1: string}
+     */
+    public static function rangoSugerido(DateTimeInterface $fecha): array
+    {
+        $carbon = Carbon::instance($fecha);
+        $corte = self::cortesDelMes($carbon)[0];
+
+        foreach (self::cortesDelMes($carbon) as $diaCorte) {
+            if ($diaCorte <= $carbon->day) {
+                $corte = $diaCorte;
+            }
+        }
+
+        return [
+            $carbon->copy()->startOfMonth()->format('Y-m-d'),
+            $carbon->copy()->day($corte)->format('Y-m-d'),
+        ];
+    }
+
+    /**
      * @return array{0: string, 1: string}|null
      */
     public static function periodoCron(DateTimeInterface $fecha): ?array
@@ -54,5 +66,21 @@ final class EstilosSalonPeriodo
         }
 
         return self::rangoAcumulado($fecha);
+    }
+
+    /**
+     * @return list<int>
+     */
+    private static function cortesDelMes(Carbon $fecha): array
+    {
+        if ($fecha->month === 2) {
+            return [6, 15, 21, 28];
+        }
+
+        if ($fecha->daysInMonth === 30) {
+            return [7, 15, 22, 30];
+        }
+
+        return [8, 15, 23, 31];
     }
 }
