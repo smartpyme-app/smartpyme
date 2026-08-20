@@ -24,7 +24,7 @@ describe('VentaDetallesV2Component', () => {
     return component;
   }
 
-  function detalleBase(precioIva: string | number): any {
+  function detalleBase(precioIva: string | number | null): any {
     return {
       cantidad: 1,
       precio_iva: precioIva,
@@ -129,6 +129,30 @@ describe('VentaDetallesV2Component', () => {
     component.updateTotal(detalle);
 
     expect(detalle.precio_iva).toBe('');
+    expect(parseFloat(detalle.precio)).toBe(0);
+  });
+
+  it('al borrar el precio entero el valor queda en 0, no en 1 ni en el neto anterior', () => {
+    const component = createComponent();
+    const detalle = detalleBase('');
+    detalle.precio = '22.123894';
+
+    component.updateTotal(detalle);
+
+    expect(detalle.precio_iva).toBe('');
+    expect(parseFloat(detalle.precio)).toBe(0);
+    expect(component.sumTotal.emit).toHaveBeenCalled();
+  });
+
+  it('al borrar el precio en input number (null) el valor queda en 0', () => {
+    const component = createComponent();
+    const detalle = detalleBase(null);
+    detalle.precio = '22.123894';
+
+    component.updateTotal(detalle);
+
+    expect(detalle.precio_iva).toBeNull();
+    expect(parseFloat(detalle.precio)).toBe(0);
   });
 
   it('al cambiar el precio no elimina la asignación de lotes', () => {

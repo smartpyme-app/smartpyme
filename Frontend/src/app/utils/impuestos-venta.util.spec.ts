@@ -592,6 +592,42 @@ describe('impuestos-venta.util — IVA vs especiales', () => {
     expect(resolverIvaObjetivoEncabezadoVenta([detalle], true, 13)).toBe(4.03);
   });
 
+  it('preservePrecioIva no rellena precio_iva si el usuario lo dejó vacío', () => {
+    const precioSinIva = 11.3 / 1.13;
+    const detalle: any = {
+      cantidad: 1,
+      precio: precioSinIva,
+      precio_iva: '',
+      descuento: 0,
+      tipo_gravado: 'gravada',
+      porcentaje_impuesto: 13,
+    };
+
+    calcularMontosLineaDetalle(detalle, true, 13, { preservePrecioIva: true });
+
+    expect(detalle.precio_iva).toBe('');
+    expect(parseFloat(detalle.precio)).toBe(0);
+    expect(Number(detalle.total_iva)).toBe(0);
+  });
+
+  it('preservePrecioIva no rellena precio_iva si el input number quedó en null', () => {
+    const precioSinIva = 11.3 / 1.13;
+    const detalle: any = {
+      cantidad: 1,
+      precio: precioSinIva,
+      precio_iva: null,
+      descuento: 0,
+      tipo_gravado: 'gravada',
+      porcentaje_impuesto: 13,
+    };
+
+    calcularMontosLineaDetalle(detalle, true, 13, { preservePrecioIva: true });
+
+    expect(detalle.precio_iva).toBeNull();
+    expect(parseFloat(detalle.precio)).toBe(0);
+    expect(Number(detalle.total_iva)).toBe(0);
+  });
+
   it('v2: total incluye IVA residual aunque venta.impuestos esté vacío (pedido/race)', () => {
     const precioSinIva = 42.5 / 1.13;
     const detalle: any = {

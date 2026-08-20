@@ -308,8 +308,11 @@ export class VentaDetallesV2Component implements OnInit {
             const pctDetalle = this.obtenerPorcentajeIvaDetalle(detalle);
             const parsedPrecioIva = parseMontoInput(detalle.precio_iva);
             if (parsedPrecioIva == null && !formatearPrecio) {
-                // Vacío o incompleto a mitad de edición: no restaurar ceros desde el neto.
+                // Vacío: el monto es 0. No escribir 0.00 en el input para poder teclear el nuevo precio.
+                detalle.precio = (0).toFixed(6);
+                this.aplicarTipoGravado(detalle);
                 this.update.emit(this.venta);
+                this.sumTotal.emit();
                 return;
             }
             const precioIva = parsedPrecioIva == null
