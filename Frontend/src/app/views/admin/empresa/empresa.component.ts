@@ -34,6 +34,7 @@ import {
     PreferenciasGrupo,
     resolverGrupoPreferencias,
 } from './preferencias-grupo';
+import { configIdentificadorFiscalCliente } from '@utils/identificador-fiscal-cliente.util';
 
 @Component({
     selector: 'app-empresa',
@@ -161,6 +162,12 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
             this.cdr.markForCheck();
         }, error => { this.alertService.error(error); });
 
+        const authEmpresa = this.apiService.auth_user()?.empresa;
+        if (authEmpresa) {
+            this.empresa = { ...authEmpresa };
+            this.normalizarRtnHonduras();
+        }
+
         this.loadAll();
         this.verificarAccesoPropina();
         this.verificarAccesoMultimoneda();
@@ -212,6 +219,8 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
                 this.empresa.woocommerce_sync_mode = 'bidirectional';
             }
 
+            this.normalizarRtnHonduras();
+
             this.initializeCustomConfig();
             this.loading = false;
 
@@ -261,12 +270,14 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         this.saving = true;
         this.cdr.markForCheck();
         try {
+            this.normalizarRtnHonduras();
             this.empresa.custom_empresa = this.customConfig;
             const empresaGuardada = await this.apiService.store('empresa', this.empresa)
                 .pipe(this.untilDestroyed())
                 .toPromise();
 
             this.empresa = empresaGuardada;
+            this.normalizarRtnHonduras();
 
             this.initializeCustomConfig();
             if (resolveCodigoPaisFe(this.empresa) === FE_PAIS_CR) {
@@ -360,6 +371,13 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
     setPais() {
         this.empresa.cod_pais = codigoPaisDesdeNombre(this.empresa.pais);
         aplicarImpuestosDefaultsAEmpresa(this.empresa, { nombrePais: this.empresa.pais });
+
+        const codPais = this.empresa.cod_pais || resolveCodigoPaisFe(this.empresa);
+        if (codPais === 'HN' || this.empresa.pais === 'Honduras') {
+            if (this.empresa.nit) {
+                this.empresa.nit = String(this.empresa.nit).replace(/\D/g, '');
+            }
+        }
 
         // Limpiar códigos de ubicación cuando se cambia de país
         this.empresa.cod_departamento = " ";
@@ -515,6 +533,33 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
 
     public esElSalvadorFe(): boolean {
         return resolveCodigoPaisFe(this.empresa) === FE_PAIS_SV;
+    }
+
+    public mostrarRegistroSecundarioEmpresa(): boolean {
+        return configIdentificadorFiscalCliente(this.empresa || this.apiService.auth_user()?.empresa).mostrarRegistroSecundario;
+    }
+
+    public mascaraNit(): string {
+        const codPais = resolveCodigoPaisFe(this.empresa || this.apiService.auth_user()?.empresa);
+        if (codPais === 'HN' || this.empresa?.pais === 'Honduras') {
+            return '00000000000000';
+        }
+        return this.apiService.auth_user()?.empresa?.validador_nit ?? '';
+    }
+
+    private normalizarRtnHonduras(): void {
+        if (!this.empresa) {
+            return;
+        }
+        const codPais = resolveCodigoPaisFe(this.empresa || this.apiService.auth_user()?.empresa);
+        if (codPais === 'HN' || this.empresa.pais === 'Honduras') {
+            if (!this.empresa.nit && this.empresa.ncr) {
+                this.empresa.nit = this.empresa.ncr;
+            }
+            if (this.empresa.nit) {
+                this.empresa.nit = String(this.empresa.nit).replace(/\D/g, '');
+            }
+        }
     }
 
     /** NIT de la empresa solo dígitos (mismo criterio que el backend para el nombre de archivo). */
