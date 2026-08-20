@@ -1,12 +1,12 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, DecimalPipe } from '@angular/common';
+import { TranslatePipe } from '@ngx-translate/core';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
-import { DecimalPipe } from '@angular/common';
 
 @Component({
   selector: 'app-pos-ticket-ventas',
   standalone: true,
-  imports: [CommonModule, CurrencyPipe, DecimalPipe],
+  imports: [CommonModule, CurrencyPipe, DecimalPipe, TranslatePipe],
   templateUrl: './pos-ticket-ventas.component.html',
   styleUrls: ['./pos-ticket-ventas.component.css'],
 })
@@ -26,4 +26,25 @@ export class PosTicketVentasComponent {
   @Output() eliminarLinea = new EventEmitter<any>();
   @Output() editarLinea = new EventEmitter<any>();
   @Output() editarLote = new EventEmitter<any>();
+
+  unitPrecioConIva(detalle: any): number {
+    return parseFloat(detalle?.precio_iva) || 0;
+  }
+
+  unitPrecioSinIva(detalle: any): number {
+    return parseFloat(detalle?.precio) || 0;
+  }
+
+  lineTotalConIva(detalle: any): number {
+    const v = detalle?.total_iva != null ? detalle.total_iva : detalle?.total;
+    return parseFloat(v) || 0;
+  }
+
+  mostrarSinIva(detalle: any): boolean {
+    return !!this.venta?.cobrar_impuestos && this.unitPrecioSinIva(detalle) > 0;
+  }
+
+  cantidadLinea(detalle: any): number {
+    return parseFloat(detalle?.cantidad) || 0;
+  }
 }

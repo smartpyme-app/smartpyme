@@ -4,25 +4,39 @@
     <div class="pos-ticket-linea" *ngFor="let detalle of venta?.detalles">
       <div class="pos-ticket-linea-info">
         <div class="fw-semibold text-truncate">{{ detalle.descripcion }}</div>
-        <small class="text-muted">{{ (detalle.total_iva != null ? detalle.total_iva : detalle.total) | currency }}</small>
+        <div class="pos-ticket-linea-precios">
+          <span class="pos-ticket-unit">
+            {{ unitPrecioConIva(detalle) | currency }} c/IVA
+            <span *ngIf="cantidadLinea(detalle) > 1" class="text-muted">× {{ detalle.cantidad }}</span>
+          </span>
+          <span class="pos-ticket-line-total">{{ lineTotalConIva(detalle) | currency }}</span>
+        </div>
+        <small class="text-muted pos-ticket-sin-iva" *ngIf="mostrarSinIva(detalle)">
+          {{ 'country.tax.taxWithoutShort' | translate }}:
+          {{ unitPrecioSinIva(detalle) | currency }}/u
+        </small>
       </div>
-      <div class="pos-ticket-linea-qty">
-        <button type="button" class="btn btn-sm btn-light" (click)="cantidadDelta.emit({ detalle, delta: -1 })">−</button>
-        <span class="mx-1">{{ detalle.cantidad }}</span>
-        <button type="button" class="btn btn-sm btn-light" (click)="cantidadDelta.emit({ detalle, delta: 1 })">+</button>
+
+      <div class="pos-ticket-linea-qty" role="group" aria-label="Cantidad">
+        <button type="button" class="btn btn-light pos-ticket-qty-btn" (click)="cantidadDelta.emit({ detalle, delta: -1 })">−</button>
+        <span class="pos-ticket-qty-val">{{ detalle.cantidad }}</span>
+        <button type="button" class="btn btn-light pos-ticket-qty-btn" (click)="cantidadDelta.emit({ detalle, delta: 1 })">+</button>
       </div>
-      <div class="pos-ticket-linea-acciones btn-group">
-        <button type="button" class="btn btn-sm btn-light" title="Opciones" (click)="editarLinea.emit(detalle)">
+
+      <div class="pos-ticket-linea-menu">
+        <button type="button" class="btn btn-light pos-ticket-action-btn" title="Opciones" (click)="editarLinea.emit(detalle)">
           <i class="fa fa-ellipsis-v"></i>
         </button>
-        <button type="button" class="btn btn-sm btn-outline-info" *ngIf="esLineaConLote(detalle)" title="Lotes"
+        <button type="button" class="btn btn-outline-info pos-ticket-action-btn" *ngIf="esLineaConLote(detalle)" title="Lotes"
           (click)="editarLote.emit(detalle)">
           <i class="fa fa-boxes"></i>
         </button>
-        <button type="button" class="btn btn-sm btn-light text-danger" (click)="eliminarLinea.emit(detalle)">
-          <i class="fa fa-trash"></i>
-        </button>
       </div>
+
+      <button type="button" class="btn btn-light pos-ticket-delete-btn text-danger" title="Eliminar"
+        (click)="eliminarLinea.emit(detalle)">
+        <i class="fa fa-trash"></i>
+      </button>
     </div>
   </div>
 
