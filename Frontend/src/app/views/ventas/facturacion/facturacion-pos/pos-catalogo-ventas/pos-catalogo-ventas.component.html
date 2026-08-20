@@ -1,0 +1,85 @@
+<div class="pos-catalogo d-flex flex-column h-100">
+  <div class="d-flex align-items-center gap-2 mb-2">
+    <button type="button" class="btn btn-sm btn-outline-secondary" *ngIf="nivel !== 'raiz' && !enBusqueda" (click)="volver()" title="Atrás">
+      <i class="fa fa-arrow-left"></i>
+    </button>
+    <nav class="small text-muted flex-grow-1" *ngIf="!enBusqueda">
+      <a href="javascript:void(0)" (click)="irRaiz()">Categorías</a>
+      <ng-container *ngIf="categoriaActual"> › <span [class.text-dark]="nivel !== 'subcategorias'">{{ categoriaActual.nombre }}</span></ng-container>
+      <ng-container *ngIf="subcategoriaActual"> › <span class="text-dark">{{ subcategoriaActual.nombre }}</span></ng-container>
+    </nav>
+  </div>
+
+  <div class="mb-2">
+    <div class="input-group input-group-sm">
+      <span class="input-group-text bg-white"><i class="fa fa-search"></i></span>
+      <input type="search" class="form-control" placeholder="Buscar producto o servicio..." [formControl]="searchControl">
+    </div>
+  </div>
+
+  <div class="pos-catalogo-body flex-grow-1">
+    <div *ngIf="loading || buscando" class="text-center text-muted py-4">
+      <span class="spinner-border spinner-border-sm me-2"></span>Cargando...
+    </div>
+
+    <ng-container *ngIf="!loading && !buscando">
+      <div class="pos-tile-grid" *ngIf="enBusqueda">
+        @for (p of resultadosBusqueda; track trackFichaPos(p)) {
+          <button type="button" class="pos-tile" (click)="tapProducto(p)">
+            <span class="pos-tile-img" [class.placeholder]="esPlaceholder(p.img)">
+              <img *ngIf="!esPlaceholder(p.img)" [src]="imgUrl(p.img)" [alt]="p.nombre">
+              <i *ngIf="esPlaceholder(p.img)" class="fa fa-image"></i>
+            </span>
+            <span class="pos-tile-nombre">{{ p.nombre }}</span>
+            <span class="badge bg-success text-dark" *ngIf="p.id_presentacion" style="font-size:0.65rem">Presentación</span>
+            <span class="pos-tile-precio">{{ p.precio | currency }}</span>
+          </button>
+        }
+        <p *ngIf="!resultadosBusqueda.length" class="text-muted small py-3 mb-0">Sin resultados para la búsqueda.</p>
+      </div>
+
+      <ng-container *ngIf="!enBusqueda">
+        <div class="pos-tile-grid" *ngIf="nivel === 'raiz'">
+          @for (cat of categorias; track cat.id) {
+            <button type="button" class="pos-tile pos-tile-categoria" (click)="tapCategoria(cat)">
+              <span class="pos-tile-img" [class.placeholder]="esPlaceholder(cat.img)">
+                <img *ngIf="!esPlaceholder(cat.img)" [src]="imgUrl(cat.img)" [alt]="cat.nombre">
+                <i *ngIf="esPlaceholder(cat.img)" class="fa fa-th-large"></i>
+              </span>
+              <span class="pos-tile-nombre">{{ cat.nombre }}</span>
+            </button>
+          }
+          <p *ngIf="!categorias.length" class="text-muted small py-3 mb-0">No hay categorías activas.</p>
+        </div>
+
+        <div class="pos-tile-grid" *ngIf="nivel === 'subcategorias'">
+          @for (sub of subcategorias; track sub.id) {
+            <button type="button" class="pos-tile pos-tile-categoria" (click)="tapSubcategoria(sub)">
+              <span class="pos-tile-img" [class.placeholder]="esPlaceholder(sub.img)">
+                <img *ngIf="!esPlaceholder(sub.img)" [src]="imgUrl(sub.img)" [alt]="sub.nombre">
+                <i *ngIf="esPlaceholder(sub.img)" class="fa fa-th-large"></i>
+              </span>
+              <span class="pos-tile-nombre">{{ sub.nombre }}</span>
+            </button>
+          }
+          <p *ngIf="!subcategorias.length" class="text-muted small py-3 mb-0">Sin subcategorías.</p>
+        </div>
+
+        <div class="pos-tile-grid" *ngIf="nivel === 'productos'">
+          @for (p of productos; track trackFichaPos(p)) {
+            <button type="button" class="pos-tile" (click)="tapProducto(p)">
+              <span class="pos-tile-img" [class.placeholder]="esPlaceholder(p.img)">
+                <img *ngIf="!esPlaceholder(p.img)" [src]="imgUrl(p.img)" [alt]="p.nombre">
+                <i *ngIf="esPlaceholder(p.img)" class="fa fa-image"></i>
+              </span>
+              <span class="pos-tile-nombre">{{ p.nombre }}</span>
+              <span class="badge bg-success text-dark" *ngIf="p.id_presentacion" style="font-size:0.65rem">Presentación</span>
+              <span class="pos-tile-precio">{{ p.precio | currency }}</span>
+            </button>
+          }
+          <p *ngIf="!productos.length" class="text-muted small py-3 mb-0">Sin productos en esta categoría.</p>
+        </div>
+      </ng-container>
+    </ng-container>
+  </div>
+</div>

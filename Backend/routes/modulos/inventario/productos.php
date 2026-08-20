@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\Inventario\ProductosController;
+use App\Http\Controllers\Api\Inventario\PosMenuVentasController;
 use App\Http\Controllers\Api\Inventario\RecalcularPreciosTipoCambioController;
 use App\Http\Controllers\Api\Inventario\ConsignasController;
 use App\Http\Controllers\Api\Inventario\Composiciones\ComposicionesController;
@@ -38,6 +39,13 @@ use App\Http\Controllers\Api\Webhook\WooCommerceController;
     Route::get('/productos/buscar/{txt}',       [ProductosController::class, 'search']);
     Route::get('/productos/buscar-by-query',    [ProductosController::class, 'searchByQuery']);
     Route::get('/productos/buscar-by-query-bodega', [ProductosController::class, 'searchByQueryWithBodega']);
+
+    Route::get('/inventario/pos-menu/categorias', [PosMenuVentasController::class, 'categorias']);
+    Route::get('/inventario/pos-menu/categorias/{id}/contenido', [PosMenuVentasController::class, 'contenidoCategoria']);
+    Route::get('/inventario/pos-menu/subcategorias/{id}/productos', [PosMenuVentasController::class, 'productosSubcategoria']);
+    Route::get('/inventario/pos-menu/buscar', [PosMenuVentasController::class, 'buscar']);
+    Route::get('/inventario/pos-menu/productos/{id}', [PosMenuVentasController::class, 'productoParaVenta']);
+
     Route::get('/productos-all/buscar/{text}',  [ProductosController::class, 'searchAll']);
     Route::post('/producto',                    [ProductosController::class, 'store']);
     Route::delete('/producto/{id}',  		    [ProductosController::class, 'delete']);
