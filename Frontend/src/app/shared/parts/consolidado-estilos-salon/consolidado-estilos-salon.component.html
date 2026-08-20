@@ -1,0 +1,59 @@
+@if (disponible) {
+  <button
+    type="button"
+    class="btn btn-default tcla-F6 text-nowrap"
+    tooltip="Consolidado Estilo's Salón"
+    (click)="abrir(mConsolidado)"
+  >
+    Consolidado Estilo's
+  </button>
+}
+
+<ng-template #mConsolidado>
+  <div class="modal-header justify-content-between">
+    <h4 class="modal-title">Consolidado Estilo's Salón</h4>
+    <button type="button" class="btn btn-light text-danger" (click)="closeModal()" aria-label="Close">
+      Cancelar <i class="fa fa-close"></i>
+    </button>
+  </div>
+  <div class="modal-body">
+    <app-notificaciones-container [forzarMostrar]="true"></app-notificaciones-container>
+    <p class="alert alert-info small mb-3">
+      Ventas comisionables de todas las razones sociales: Productos 100% y Servicios 90%.
+      El rango se propone según el último corte del mes (7/8/6, 15, 22/23/21 o fin de mes). Puedes ajustarlo antes de descargar.
+    </p>
+    <form autocomplete="off" (ngSubmit)="descargar()">
+      <div class="row g-3">
+        <div class="col-sm-6">
+          <label class="form-label" for="estilos-fecha-inicio">Del</label>
+          <input
+            id="estilos-fecha-inicio"
+            type="date"
+            class="form-control"
+            name="fechaInicio"
+            [(ngModel)]="fechaInicio"
+          />
+        </div>
+        <div class="col-sm-6">
+          <label class="form-label" for="estilos-fecha-fin">Al</label>
+          <input
+            id="estilos-fecha-fin"
+            type="date"
+            class="form-control"
+            name="fechaFin"
+            [(ngModel)]="fechaFin"
+          />
+        </div>
+      </div>
+      <div class="d-grid mt-3">
+        <button type="submit" class="btn btn-primary" [disabled]="downloading || !fechaInicio || !fechaFin || fechaInicio > fechaFin">
+          @if (downloading) {
+            Descargando...
+          } @else {
+            Descargar Excel
+          }
+        </button>
+      </div>
+    </form>
+  </div>
+</ng-template>

@@ -66,8 +66,11 @@
         @if($venta->empresa->nit)
             <p><b>NIT:</b> {{ $venta->empresa->nit }}</p>
         @endif
-        @if($venta->empresa->giro)
-            <p><b>GIRO:</b> {{ $venta->empresa->giro }}</p>
+        @php
+            $giroTicket = \App\Support\ActividadEconomicaEmisor::resolver($venta->empresa, $venta->sucursal)['giro'] ?? null;
+        @endphp
+        @if($giroTicket)
+            <p><b>GIRO:</b> {{ $giroTicket }}</p>
         @endif
 
         @if ($venta->sucursal()->first()->telefono)

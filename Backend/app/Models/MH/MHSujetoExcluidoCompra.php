@@ -4,6 +4,7 @@ namespace App\Models\MH;
 
 use Illuminate\Database\Eloquent\Model;
 use Ramsey\Uuid\Uuid;
+use App\Support\ActividadEconomicaEmisor;
 use Luecano\NumeroALetras\NumeroALetras;
 
 class MHSujetoExcluidoCompra extends Model
@@ -110,8 +111,8 @@ class MHSujetoExcluidoCompra extends Model
             "nit" => str_replace('-', '', $this->empresa->nit),
             "nrc" => str_replace('-', '', $this->empresa->ncr),
             "nombre" => $this->empresa->nombre,
-            "codActividad" => $this->empresa->cod_actividad_economica,
-            "descActividad" => $this->empresa->giro,
+            "codActividad" => ActividadEconomicaEmisor::resolver($this->empresa, $this->sucursal ?? null)['cod'],
+            "descActividad" => ActividadEconomicaEmisor::resolver($this->empresa, $this->sucursal ?? null)['giro'],
             "direccion" => [
                 "departamento" => $this->empresa->cod_departamento,
                 "municipio" => $this->empresa->cod_municipio,

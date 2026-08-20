@@ -174,6 +174,48 @@
                 <label for="codigo_punto_venta">Código Punto Venta:</label>
                 <input type="text" class="form-control" [(ngModel)]="sucursal.codigo_punto_venta" name="codigo_punto_venta" placeholder="opcional">
             </div>
+            @if (esElSalvadorFe()) {
+            <div class="form-group col-12">
+                <label for="sucursal_cod_actividad_sv">Giro / actividad económica</label>
+                <ng-select
+                    [(ngModel)]="sucursal.cod_actividad_economica"
+                    (change)="setGiro()"
+                    class="form-select p-0"
+                    name="sucursal.cod_actividad_economica"
+                    id="sucursal_cod_actividad_sv"
+                    [items]="actividad_economicas"
+                    bindLabel="nombre"
+                    bindValue="cod"
+                    [clearable]="true"
+                    placeholder="Usar giro de la empresa">
+                </ng-select>
+            </div>
+            }
+            @if (esCostaRicaFe()) {
+            <div class="form-group col-12">
+                <label for="sucursal_actividad_cr">Giro / actividad económica</label>
+                <ng-select
+                    class="form-select p-0"
+                    name="sucursal_actividad_cr"
+                    id="sucursal_actividad_cr"
+                    [items]="actividadesContribuyenteCr"
+                    bindLabel="label"
+                    [loading]="contribuyenteCargandoCr"
+                    [compareWith]="compareActividadContribuyenteCr"
+                    [(ngModel)]="actividadContribuyenteSeleccionada"
+                    (change)="onActividadContribuyenteCrChange($event)"
+                    [clearable]="true"
+                    notFoundText="Sin resultados"
+                    placeholder="Usar giro de la empresa">
+                </ng-select>
+            </div>
+            }
+            @if (!esElSalvadorFe() && !esCostaRicaFe()) {
+            <div class="form-group col-12">
+                <label for="sucursal_giro_otros">Giro</label>
+                <input type="text" class="form-control" id="sucursal_giro_otros" [(ngModel)]="sucursal.giro" name="sucursal_giro_otros" placeholder="Usar giro de la empresa">
+            </div>
+            }
             <div class="form-group col-md-12">
                 <div class="form-switch bg-light-info rounded">
                   <label for="enable">Activa</label>

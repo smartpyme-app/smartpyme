@@ -182,6 +182,55 @@
     </div>
   }
 
+  @if (mostrarTotalesPorMoneda) {
+    <div class="row">
+      @if (totalesPorMoneda; as porMoneda) {
+        @if (porMoneda.ventas.length > 0) {
+          <div class="col-lg-4 mb-4">
+            <div class="card border-0 shadow-sm mb-0 h-100">
+              <div class="card-body p-0">
+                <div class="px-3 pt-3 pb-2 border-bottom bg-light bg-opacity-50">
+                  <h6 class="text-dark mb-0 fw-semibold">Ventas por moneda</h6>
+                </div>
+                <div class="table-responsive px-2 pb-2">
+                  <ng-container *ngTemplateOutlet="tablaMoneda; context: { $implicit: porMoneda.ventas }"></ng-container>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+        @if (porMoneda.compras.length > 0) {
+          <div class="col-lg-4 mb-4">
+            <div class="card border-0 shadow-sm mb-0 h-100">
+              <div class="card-body p-0">
+                <div class="px-3 pt-3 pb-2 border-bottom bg-light bg-opacity-50">
+                  <h6 class="text-dark mb-0 fw-semibold">Compras por moneda</h6>
+                </div>
+                <div class="table-responsive px-2 pb-2">
+                  <ng-container *ngTemplateOutlet="tablaMoneda; context: { $implicit: porMoneda.compras }"></ng-container>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+        @if (porMoneda.gastos.length > 0) {
+          <div class="col-lg-4 mb-4">
+            <div class="card border-0 shadow-sm mb-0 h-100">
+              <div class="card-body p-0">
+                <div class="px-3 pt-3 pb-2 border-bottom bg-light bg-opacity-50">
+                  <h6 class="text-dark mb-0 fw-semibold">Gastos por moneda</h6>
+                </div>
+                <div class="table-responsive px-2 pb-2">
+                  <ng-container *ngTemplateOutlet="tablaMoneda; context: { $implicit: porMoneda.gastos }"></ng-container>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+      }
+    </div>
+  }
+
   @if (mostrarVentasResumenContable) {
     <div class="card border-0 shadow-sm mb-0 mt-4">
       <div class="card-body p-0">
@@ -236,3 +285,27 @@
     </div>
   </div>
 }
+
+<ng-template #tablaMoneda let-filas>
+  <table class="table table-borderless table-hover align-middle mb-0">
+    <thead class="border-bottom">
+      <tr>
+        <th class="text-muted small fw-semibold">Moneda</th>
+        <th class="text-end text-muted small fw-semibold">Documentos</th>
+        <th class="text-end text-muted small fw-semibold">Total</th>
+        <th class="text-end text-muted small fw-semibold">Equivalente</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (row of filas; track row.moneda) {
+        <tr>
+          <td class="text-dark">{{ row.moneda }}</td>
+          <td class="text-end">{{ row.documentos }}</td>
+          <td class="text-end text-nowrap">{{ formatNativo(row) }}</td>
+          <td class="text-end text-nowrap">{{ row.total_equivalente | currency }}</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</ng-template>
+

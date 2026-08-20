@@ -23,7 +23,7 @@ assert.match(sidebar, /organizacion\.usuarios\.ver/);
 assert.match(sidebar, /administracion\.sucursales\.ver/);
 assert.match(sidebar, /validateRole\('admin', true\)/);
 assert.doesNotMatch(sidebar, /<li \*ngIf="apiService\.auth_user\(\)\.tipo != 'Contador'"/);
-assert.doesNotMatch(sidebar, /\[routerLink\]="\['\/reportes-automaticos'\]"/);
+assert.match(sidebar, /\[routerLink\]="\['\/reportes-automaticos'\]"/);
 
 assert.match(planillasRouting, /PermissionGuard/);
 assert.match(planillasRouting, /permission: 'planilla\.ver'/);

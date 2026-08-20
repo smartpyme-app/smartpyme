@@ -25,6 +25,8 @@ class Sucursal extends AuditableModel {
         'tipo_establecimiento',
         'cod_estable_mh',
         'codigo_punto_venta',
+        'cod_actividad_economica',
+        'giro',
         'activo',
         'id_empresa',
     ];

@@ -15,6 +15,7 @@ use App\Models\Ventas\Detalle;
 use App\Models\Ventas\Devoluciones\Detalle as DetalleDevolucion;
 use App\Models\Ventas\Devoluciones\Devolucion;
 use App\Models\Ventas\Venta;
+use App\Support\ActividadEconomicaEmisor;
 use Carbon\Carbon;
 use InvalidArgumentException;
 
@@ -79,7 +80,7 @@ final class CostaRicaInvoiceFromVentaMapper
                 'currency_code' => $moneda,
                 'exchange_rate' => round($tipoCambio, 5),
             ],
-            'issuer' => $this->emisor($empresa),
+            'issuer' => $this->emisor($empresa, $venta->sucursal),
             'receiver' => $this->receptor($venta, $empresa),
             'line_items' => $lineItems,
             'payments' => $this->pagosDesdeLineas($lineItems),
@@ -116,9 +117,9 @@ final class CostaRicaInvoiceFromVentaMapper
         return $data;
     }
 
-    public function emisorDatos(Empresa $empresa): array
+    public function emisorDatos(Empresa $empresa, ?Sucursal $sucursal = null): array
     {
-        return $this->emisor($empresa);
+        return $this->emisor($empresa, $sucursal);
     }
 
     public function receptorDatosVenta(Venta $venta, Empresa $empresa): array
@@ -766,9 +767,10 @@ final class CostaRicaInvoiceFromVentaMapper
         return substr($digits, 0, 4).'.'.substr($digits, 5, 1);
     }
 
-    private function emisor(Empresa $empresa): array
+    private function emisor(Empresa $empresa, ?Sucursal $sucursal = null): array
     {
-        $actividadCampo = trim((string) ($empresa->cod_actividad_economica ?? ''));
+        $act = ActividadEconomicaEmisor::resolver($empresa, $sucursal);
+        $actividadCampo = trim((string) ($act['cod'] ?? ''));
         if ($actividadCampo === '') {
             throw new InvalidArgumentException(
                 'Configure actividad económica del contribuyente (Datos de empresa): cargue actividades desde Hacienda y seleccione la registrada para su NIT.'
@@ -1645,7 +1647,7 @@ final class CostaRicaInvoiceFromVentaMapper
                 'currency_code' => $moneda,
                 'exchange_rate' => round($tipoCambio, 5),
             ],
-            'issuer' => $this->emisor($empresa),
+            'issuer' => $this->emisor($empresa, $compra->sucursal),
             'receiver' => $this->receptorProveedor($proveedor, $empresa),
             'line_items' => $lineItems,
             'payments' => $this->pagosDesdeLineas($lineItems),
@@ -1703,7 +1705,7 @@ final class CostaRicaInvoiceFromVentaMapper
                 'currency_code' => $moneda,
                 'exchange_rate' => round($tipoCambio, 5),
             ],
-            'issuer' => $this->emisor($empresa),
+            'issuer' => $this->emisor($empresa, $gasto->sucursal),
             'receiver' => $this->receptorProveedor($proveedor, $empresa),
             'line_items' => $lineItems,
             'payments' => $this->pagosDesdeLineas($lineItems),

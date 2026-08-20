@@ -28,6 +28,7 @@ import {
   validarPeriodoExport,
 } from '../../../helpers/export-period.helper';
 import { TranslatePipe } from '@ngx-translate/core';
+import { RecalcularPreciosTcComponent } from '@views/inventario/recalcular-precios-tc/recalcular-precios-tc.component';
 
 @Component({
     selector: 'app-productos',
@@ -42,7 +43,7 @@ import { TranslatePipe } from '@ngx-translate/core';
         ImportarExcelComponent,
         PaginationComponent,
         NotificacionesContainerComponent,
-        TranslatePipe, CurrencyPipe],
+        TranslatePipe, CurrencyPipe, RecalcularPreciosTcComponent],
 })
 export class ProductosComponent implements OnInit {
 

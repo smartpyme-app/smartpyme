@@ -2,12 +2,11 @@
 
 namespace App\Console\Commands;
 
-use App\Exports\ReportesAutomaticos\VentasPorCategoriaPorSucursal\VentasPorCategoriaSucursalMultiExport;
 use App\Mail\ReporteVentasPorVendedor;
-use App\Models\Admin\Empresa;
+use App\Services\EstilosSalon\ConsolidadoEstilosSalonService;
+use App\Support\EstilosSalon\EstilosSalonPeriodo;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
@@ -15,16 +14,9 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class EnviarReporteVentasPorCategoriaSucursal extends Command
 {
-    private const EMPRESAS_IDS = [397, 396, 398, 428, 427, 429, 432, 543, 657, 690, 488];
-
     private const DESTINATARIOS = [
         'david.c@smartpyme.sv',
-        'joseabrego201291@gmail.com'
-    ];
-
-    private const CATEGORIAS = [
-        ['nombre' => 'Productos', 'porcentaje' => 100],
-        ['nombre' => 'Servicios', 'porcentaje' => 90],
+        'joseabrego201291@gmail.com',
     ];
 
     protected $signature = 'reporte:ventas-por-categoria-sucursal
@@ -34,45 +26,34 @@ class EnviarReporteVentasPorCategoriaSucursal extends Command
 
     protected $description = 'Reporte de ventas por categoría (Productos 100%, Servicios 90%) agrupado por sucursal para empresas seleccionadas.';
 
+    public function __construct(private ConsolidadoEstilosSalonService $service)
+    {
+        parent::__construct();
+    }
+
     public function handle(): int
     {
-        [$fechaInicio, $fechaFin] = $this->resolvePeriodo();
+        $periodo = $this->resolvePeriodo();
+
+        if ($periodo === null) {
+            $this->info('Hoy no es día de envío del consolidado Estilo\'s. No se envió correo.');
+
+            return 0;
+        }
+
+        [$fechaInicio, $fechaFin] = $periodo;
 
         $this->info("Generando reporte del {$fechaInicio} al {$fechaFin}...");
 
-        $empresasParaExport = [];
+        $empresasParaExport = $this->service->empresasParaExport();
 
-        foreach (self::EMPRESAS_IDS as $idEmpresa) {
-            $empresa = Empresa::find($idEmpresa);
-
-            if (! $empresa) {
-                $this->warn("Empresa {$idEmpresa} no encontrada, se omite.");
-
-                continue;
-            }
-
-            $configuracion = $this->buildConfiguracion($idEmpresa);
-
-            if ($configuracion === null) {
-                $this->warn("Empresa {$idEmpresa} ({$empresa->nombre}): sin categorías Productos/Servicios, se omite.");
-
-                continue;
-            }
-
-            $empresasParaExport[] = [
-                'id' => $idEmpresa,
-                'nombre' => $empresa->nombre,
-                'configuracion' => $configuracion,
-            ];
-        }
-
-        if (empty($empresasParaExport)) {
+        if ($empresasParaExport === []) {
             $this->error('No hay empresas válidas para generar el reporte.');
 
             return 1;
         }
 
-        $export = new VentasPorCategoriaSucursalMultiExport($fechaInicio, $fechaFin, $empresasParaExport);
+        $export = $this->service->makeExport($fechaInicio, $fechaFin, $empresasParaExport);
         $filename = "ventas-por-categoria-sucursal-{$fechaInicio}-{$fechaFin}.xlsx";
         $relativePath = "reportes-prueba/{$filename}";
 
@@ -99,7 +80,7 @@ class EnviarReporteVentasPorCategoriaSucursal extends Command
         }
 
         $this->info('Excel generado: '.$filePath);
-        $this->info('Empresas incluidas: '.count($empresasParaExport).' de '.count(self::EMPRESAS_IDS));
+        $this->info('Empresas incluidas: '.count($empresasParaExport).' de '.count(EstilosSalonPeriodo::EMPRESAS_IDS));
 
         if ($this->option('dry-run')) {
             $this->warn('DRY-RUN: archivo guardado, no se envió correo.');
@@ -149,9 +130,9 @@ class EnviarReporteVentasPorCategoriaSucursal extends Command
     }
 
     /**
-     * @return array{0: string, 1: string}
+     * @return array{0: string, 1: string}|null
      */
-    private function resolvePeriodo(): array
+    private function resolvePeriodo(): ?array
     {
         $inicio = $this->option('inicio');
         $fin = $this->option('fin');
@@ -160,72 +141,6 @@ class EnviarReporteVentasPorCategoriaSucursal extends Command
             return [$inicio, $fin];
         }
 
-        $today = Carbon::today();
-        $year = $today->year;
-        $month = $today->month;
-        $day = $today->day;
-
-        if ($day <= 7) {
-            return [
-                Carbon::create($year, $month, 1)->format('Y-m-d'),
-                Carbon::create($year, $month, min($day, 7))->format('Y-m-d'),
-            ];
-        }
-
-        if ($day <= 15) {
-            return [
-                Carbon::create($year, $month, 8)->format('Y-m-d'),
-                Carbon::create($year, $month, min($day, 15))->format('Y-m-d'),
-            ];
-        }
-
-        if ($day <= 22) {
-            return [
-                Carbon::create($year, $month, 16)->format('Y-m-d'),
-                Carbon::create($year, $month, min($day, 22))->format('Y-m-d'),
-            ];
-        }
-
-        return [
-            Carbon::create($year, $month, 23)->format('Y-m-d'),
-            $today->copy()->endOfMonth()->format('Y-m-d'),
-        ];
-    }
-
-    private function buildConfiguracion(int $idEmpresa): ?object
-    {
-        $configuracion = [];
-
-        foreach (self::CATEGORIAS as $cat) {
-            $categoria = DB::table('categorias')
-                ->where('id_empresa', $idEmpresa)
-                ->whereRaw('LOWER(TRIM(nombre)) = ?', [mb_strtolower(trim($cat['nombre']))])
-                ->first();
-
-            if (! $categoria) {
-                continue;
-            }
-
-            $configuracion[] = [
-                'id' => $categoria->id,
-                'nombre' => $categoria->nombre,
-                'porcentaje' => $cat['porcentaje'],
-            ];
-        }
-
-        if (count($configuracion) !== count(self::CATEGORIAS)) {
-            return null;
-        }
-
-        $sucursales = DB::table('sucursales')
-            ->where('id_empresa', $idEmpresa)
-            ->orderBy('nombre')
-            ->pluck('id')
-            ->toArray();
-
-        return (object) [
-            'configuracion' => $configuracion,
-            'sucursales' => $sucursales,
-        ];
+        return EstilosSalonPeriodo::periodoCron(Carbon::today());
     }
 }

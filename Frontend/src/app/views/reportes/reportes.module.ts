@@ -28,6 +28,7 @@ import { CorteComponent } from './corte/corte.component';
 import { ReportesComponent } from './reportes.component';
 import { ReportesAutomaticosComponent } from './reportes-automaticos.component';
 import { ReplacePipe } from './reportes-automaticos.component';
+import { ConsolidadoEstilosSalonComponent } from '@shared/parts/consolidado-estilos-salon/consolidado-estilos-salon.component';
 import { FlujoEfectivoComponent } from './flujo-efectivo/flujo-efectivo.component';
 import { DashboardModule } from '@views/dashboard/dashboard.module';
 import { WebdatarocksPivotModule } from '@webdatarocks/ngx-webdatarocks';
@@ -59,6 +60,7 @@ import { WebdatarocksPivotModule } from '@webdatarocks/ngx-webdatarocks';
     ReportesComponent,
     ReportesAutomaticosComponent,
     ReplacePipe,
+    ConsolidadoEstilosSalonComponent,
     FlujoEfectivoComponent,
   ],
   declarations: [],

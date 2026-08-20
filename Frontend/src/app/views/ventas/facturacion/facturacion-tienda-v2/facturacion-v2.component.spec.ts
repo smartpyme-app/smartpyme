@@ -150,6 +150,49 @@ describe('FacturacionV2Component', () => {
     expect(Number(component.venta.impuestos[0].monto)).toBeCloseTo(4.89, 2);
   });
 
+  it('sumTotal no restaura precio_iva si el usuario borró todo el campo', () => {
+    const component: any = Object.create(FacturacionV2Component.prototype);
+    component.apiService = {
+      auth_user: () => ({
+        empresa: {
+          iva: 13,
+          propina_porcentaje: 0,
+          tipo_renta_productos: null,
+          tipo_renta_servicios: null,
+        },
+      }),
+    };
+    component.sumPipe = new SumPipe();
+    component.sincronizarRetencionGranContribuyente = () => undefined;
+    component.actualizarCambioEfectivo = () => undefined;
+    const precioSinIva = 11.3 / 1.13;
+    const detalle: any = {
+      cantidad: 1,
+      precio: precioSinIva,
+      precio_iva: '',
+      descuento: 0,
+      tipo_gravado: 'gravada',
+      porcentaje_impuesto: 13,
+      cuenta_a_terceros: 0,
+      tipo: 'Producto',
+    };
+    component.venta = {
+      cobrar_impuestos: true,
+      percepcion: false,
+      retencion: false,
+      renta: false,
+      cobrar_propina: false,
+      detalles: [detalle],
+      impuestos: [{ id: 1, porcentaje: 13, codigo_mh: '20', nombre: 'IVA', monto: 0 }],
+    };
+
+    component.sumTotal();
+
+    expect(detalle.precio_iva).toBe('');
+    expect(parseFloat(detalle.precio)).toBe(0);
+    expect(component.venta.total).toBe('0.00');
+  });
+
   it('al cambiar bodega de la misma sucursal recarga documentos sin vaciarlos', () => {
     const component: any = Object.create(FacturacionV2Component.prototype);
     component.bodegas = [

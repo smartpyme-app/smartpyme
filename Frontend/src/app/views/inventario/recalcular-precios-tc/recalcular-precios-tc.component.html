@@ -1,0 +1,61 @@
+<button *ngIf="visible" type="button" class="btn btn-default font-weight-bold me-2"
+    tooltip="Ajustar precios con tipo de cambio" (click)="openModal()" [disabled]="loading">
+    Ajustar precios
+</button>
+
+<ng-template #modalTc>
+    <div class="modal-header">
+        <h5 class="modal-title">{{ tieneCatalogo ? 'Actualizar precios' : 'Paso 1: tipo de cambio inicial' }}</h5>
+        <button type="button" class="btn-close" aria-label="Close" (click)="modalRef?.hide()"></button>
+    </div>
+    <div class="modal-body">
+        <div class="alert alert-info py-2 mb-3" *ngIf="!tieneCatalogo">
+            Indique con qué tipo de cambio están <strong>hoy</strong> los precios.
+            Esto <strong>no cambia</strong> productos ni servicios; solo deja la base para un recálculo después.
+        </div>
+        <div class="alert alert-light border py-2 mb-3" *ngIf="tieneCatalogo">
+            Catálogo actual: <strong>{{ rateCatalogo | number:'1.2-5' }}</strong> L / USD.
+            Si cambia el TC y pulsa Recalcular, los precios se ajustan. Si solo guarda el TC, las ventas lo usan y los precios siguen igual.
+        </div>
+
+        <label for="tc_catalogo_exchange_rate" class="form-label">
+            {{ tieneCatalogo ? 'Nuevo tipo de cambio' : 'Tipo de cambio inicial' }} (Lempiras por 1 USD)
+        </label>
+        <input type="number" step="0.00001" min="0" class="form-control" id="tc_catalogo_exchange_rate"
+            name="exchange_rate" [(ngModel)]="exchangeRate">
+        <small class="text-muted d-block mt-2" *ngIf="rateApi != null">
+            Sugerido BCH{{ date ? ' ' + date : '' }}: {{ rateApi | number:'1.2-5' }}
+            <button type="button" class="btn btn-link btn-sm p-0 align-baseline" (click)="usarSugerido()">Usar este</button>
+        </small>
+
+        <ng-container *ngIf="tieneCatalogo">
+            <p class="fw-semibold mb-2 mt-3">Aplicar recálculo a</p>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="tc_aplicar_productos"
+                    [(ngModel)]="aplicarProductos" name="aplicar_productos">
+                <label class="form-check-label" for="tc_aplicar_productos">Productos</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="tc_aplicar_servicios"
+                    [(ngModel)]="aplicarServicios" name="aplicar_servicios">
+                <label class="form-check-label" for="tc_aplicar_servicios">Servicios</label>
+            </div>
+        </ng-container>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-light" (click)="modalRef?.hide()">Cancelar</button>
+        <ng-container *ngIf="!tieneCatalogo">
+            <button type="button" class="btn btn-primary" [disabled]="loading" (click)="guardarTc()">
+                Guardar tipo de cambio inicial
+            </button>
+        </ng-container>
+        <ng-container *ngIf="tieneCatalogo">
+            <button type="button" class="btn btn-default" [disabled]="loading" (click)="guardarTc()">
+                Solo guardar TC de venta
+            </button>
+            <button type="button" class="btn btn-primary" [disabled]="loading" (click)="recalcular()">
+                Recalcular precios
+            </button>
+        </ng-container>
+    </div>
+</ng-template>

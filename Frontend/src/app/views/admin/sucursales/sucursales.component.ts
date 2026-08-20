@@ -3,35 +3,52 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
+import { NgSelectModule } from '@ng-select/ng-select';
+import { finalize } from 'rxjs/operators';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { TranslatePipe } from '@ngx-translate/core';
+import { FE_PAIS_CR, FE_PAIS_SV, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
+import {
+    ContribuyenteActividadOption,
+    mapContribuyenteAeResponseToActividades,
+} from '@services/facturacion-electronica/contribuyente-hacienda.mapper';
+import { HaciendaContribuyenteClientService } from '@services/facturacion-electronica/hacienda-contribuyente-client.service';
 
 @Component({
     selector: 'app-sucursales',
     templateUrl: './sucursales.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, TranslatePipe],
+    imports: [CommonModule, RouterModule, FormsModule, TranslatePipe, NgSelectModule],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    
 })
 export class SucursalesComponent extends BaseCrudComponent<any> implements OnInit {
 
-    public sucursales:any = [];
-    public sucursal:any = {};
-    public sucursales_activas:any = 0;
+    public sucursales: any = [];
+    public sucursal: any = {};
+    public sucursales_activas: any = 0;
+    public actividad_economicas: any[] = [];
+    public actividadesContribuyenteCr: ContribuyenteActividadOption[] = [];
+    public actividadContribuyenteSeleccionada: ContribuyenteActividadOption | null = null;
+    public contribuyenteCargandoCr = false;
 
-  	constructor( 
-  	    apiService: ApiService,
+    readonly compareActividadContribuyenteCr = (
+        a: ContribuyenteActividadOption,
+        b: ContribuyenteActividadOption,
+    ): boolean => String(a?.codigo ?? '').replace(/\D/g, '') === String(b?.codigo ?? '').replace(/\D/g, '');
+
+    constructor(
+        apiService: ApiService,
         alertService: AlertService,
         modalManager: ModalManagerService,
-  	    private route: ActivatedRoute, 
+        private route: ActivatedRoute,
         private router: Router,
-        private cdr: ChangeDetectorRef
-  	) {
+        private cdr: ChangeDetectorRef,
+        private haciendaContribuyenteClient: HaciendaContribuyenteClientService,
+    ) {
         super(apiService, alertService, modalManager, {
             endpoint: 'sucursal',
             itemsProperty: 'sucursales',
@@ -56,15 +73,15 @@ export class SucursalesComponent extends BaseCrudComponent<any> implements OnIni
         });
     }
 
-  	ngOnInit() {
+    ngOnInit() {
         this.filtros.estado = '';
         this.filtros.buscador = '';
         this.filtros.orden = 'nombre';
         this.filtros.direccion = 'desc';
         this.filtros.paginate = 10;
-  	    
+
         this.loadAll();
-  	}
+    }
 
     public override loadAll() {
         this.loading = true;
@@ -86,6 +103,87 @@ export class SucursalesComponent extends BaseCrudComponent<any> implements OnIni
 
     override openModal(template: TemplateRef<any>, sucursal?: any) {
         super.openModal(template, sucursal, {class: 'modal-lg'});
+        this.prepararGiroModal();
+    }
+
+    public esCostaRicaFe(): boolean {
+        return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR;
+    }
+
+    public esElSalvadorFe(): boolean {
+        return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_SV;
+    }
+
+    public setGiro(): void {
+        const hit = this.actividad_economicas.find((item: any) => item.cod == this.sucursal.cod_actividad_economica);
+        this.sucursal.giro = hit ? hit.nombre : null;
+        if (this.sucursal.cod_actividad_economica == null || this.sucursal.cod_actividad_economica === '') {
+            this.sucursal.cod_actividad_economica = null;
+            this.sucursal.giro = null;
+        }
+        this.cdr.markForCheck();
+    }
+
+    public onActividadContribuyenteCrChange(item: ContribuyenteActividadOption | null): void {
+        if (item) {
+            this.sucursal.cod_actividad_economica = item.codigo;
+            this.sucursal.giro = item.descripcion;
+        } else {
+            this.sucursal.cod_actividad_economica = null;
+            this.sucursal.giro = null;
+        }
+        this.cdr.markForCheck();
+    }
+
+    private prepararGiroModal(): void {
+        try {
+            this.actividad_economicas = JSON.parse(localStorage.getItem('actividad_economicas') || '[]');
+        } catch {
+            this.actividad_economicas = [];
+        }
+        this.actividadContribuyenteSeleccionada = null;
+        this.actividadesContribuyenteCr = [];
+        if (this.esCostaRicaFe()) {
+            const cod = String(this.sucursal?.cod_actividad_economica ?? '').trim();
+            if (cod) {
+                const desc = String(this.sucursal?.giro ?? '');
+                this.actividadContribuyenteSeleccionada = {
+                    codigo: cod,
+                    descripcion: desc,
+                    label: desc ? `${cod} — ${desc}` : cod,
+                };
+            }
+            this.cargarActividadesCr();
+        }
+        this.cdr.markForCheck();
+    }
+
+    private cargarActividadesCr(): void {
+        const nit = String(this.apiService.auth_user()?.empresa?.nit ?? '').replace(/\D/g, '');
+        if (nit.length < 9 || nit.length > 12) {
+            return;
+        }
+        this.contribuyenteCargandoCr = true;
+        this.haciendaContribuyenteClient.getContribuyente(nit)
+            .pipe(
+                this.untilDestroyed(),
+                finalize(() => {
+                    this.contribuyenteCargandoCr = false;
+                    this.cdr.markForCheck();
+                }),
+            )
+            .subscribe({
+                next: (body) => {
+                    const list = mapContribuyenteAeResponseToActividades(body);
+                    const sel = this.actividadContribuyenteSeleccionada;
+                    this.actividadesContribuyenteCr =
+                        sel?.codigo && !list.some((a) => this.compareActividadContribuyenteCr(a, sel))
+                            ? [sel, ...list]
+                            : list;
+                    this.cdr.markForCheck();
+                },
+                error: (e) => this.alertService.error(e),
+            });
     }
 
     public contarActivos(){
@@ -96,7 +194,7 @@ export class SucursalesComponent extends BaseCrudComponent<any> implements OnIni
     public setEstado(sucursal:any){
         this.apiService.store('sucursal', sucursal)
             .pipe(this.untilDestroyed())
-            .subscribe(sucursal => { 
+            .subscribe(sucursal => {
             if(sucursal.activo == '1'){
                 this.alertService.success('Sucursal activada', 'La sucursal fue activada exitosamente.');
             }else{

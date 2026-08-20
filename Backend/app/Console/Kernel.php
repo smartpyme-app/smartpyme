@@ -5,7 +5,6 @@ namespace App\Console;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 use Illuminate\Support\Facades\Log;
-use Carbon\Carbon;
 
 class Kernel extends ConsoleKernel
 {
@@ -124,20 +123,8 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->appendOutputTo(storage_path('logs/suscripciones-reporte-bajas-mensual.log'));
 
-        foreach ([7, 15, 22, 31] as $diaReporteCategoriaSucursal) {
-            $schedule->command('reporte:ventas-por-categoria-sucursal')
-                ->monthlyOn($diaReporteCategoriaSucursal, '08:00')
-                ->withoutOverlapping()
-                ->appendOutputTo(storage_path('logs/reporte-ventas-categoria-sucursal.log'));
-        }
-
         $schedule->command('reporte:ventas-por-categoria-sucursal')
-            ->lastDayOfMonth('08:00')
-            ->when(function () {
-                $today = Carbon::today();
-
-                return $today->isLastOfMonth() && $today->day !== 31;
-            })
+            ->dailyAt('08:00')
             ->withoutOverlapping()
             ->appendOutputTo(storage_path('logs/reporte-ventas-categoria-sucursal.log'));
 
