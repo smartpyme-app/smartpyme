@@ -12,6 +12,8 @@ use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Auth;
 
+use Illuminate\Support\Facades\Log;
+
 class LibroAnuladosExport implements FromCollection, WithMapping, WithHeadings, WithEvents
 {
     public $request;
@@ -20,6 +22,33 @@ class LibroAnuladosExport implements FromCollection, WithMapping, WithHeadings, 
     public function filter(Request $request)
     {
         $this->request = $request;
+    }
+
+    private function tieneFacturacionElectronica(): bool
+    {
+        $empresa = Auth::user()->empresa()->first();
+        return $empresa && $empresa->facturacion_electronica === true;
+    }
+
+    private function filtrarVentasPorFacturacionElectronica($ventas)
+    {
+        if ($this->tieneFacturacionElectronica()) {
+            $ventasSinSello = $ventas->filter(function ($venta) {
+                return empty($venta->sello_mh);
+            });
+
+            if ($ventasSinSello->isNotEmpty()) {
+                Log::warning('Se excluyeron ventas sin sello al exportar libro anulados', [
+                    'ventas' => $ventasSinSello->pluck('id'),
+                ]);
+            }
+
+            return $ventas->reject(function ($venta) {
+                return empty($venta->sello_mh);
+            });
+        } else {
+            return $ventas;
+        }
     }
 
     public function registerEvents(): array
@@ -68,8 +97,34 @@ class LibroAnuladosExport implements FromCollection, WithMapping, WithHeadings, 
             ->orderByDesc('fecha')
             ->get();
 
-        return $ventas;
+        return $this->filtrarVentasPorFacturacionElectronica($ventas);
         
+    }
+
+    private function obtenerNombreDocumento($venta): string
+    {
+        if ($venta->sello_mh) {
+            $tipoDte = $venta->dte['identificacion']['tipoDte'] ?? $venta->tipo_dte ?? null;
+            if ($tipoDte) {
+                $map = [
+                    '01' => 'Factura',
+                    '02' => 'Factura de venta simplificada',
+                    '03' => 'Crédito fiscal',
+                    '04' => 'Nota de remisión',
+                    '05' => 'Nota de crédito',
+                    '06' => 'Nota de débito',
+                    '07' => 'Comprobante de retención',
+                    '08' => 'Comprobante de liquidación',
+                    '09' => 'Documento contable de liquidación',
+                    '11' => 'Factura de exportación',
+                    '14' => 'Sujeto excluido',
+                ];
+                if (isset($map[$tipoDte])) {
+                    return $map[$tipoDte];
+                }
+            }
+        }
+        return $venta->nombre_documento ?? '';
     }
 
     public function map($venta): array{
@@ -83,7 +138,7 @@ class LibroAnuladosExport implements FromCollection, WithMapping, WithHeadings, 
             $venta->sello_mh ? 4 : 1, // DTE o impreso
             $venta->sello_mh ? '0' : trim($venta->correlativo),
             $venta->sello_mh ? '0' : trim($venta->correlativo),
-            $venta->nombre_documento,
+            $this->obtenerNombreDocumento($venta),
             'Documento Anulado',
             $venta->sello_mh ? $venta->dte['sello'] : '',
             $venta->sello_mh ? '0' : trim($venta->correlativo),
