@@ -1,0 +1,21 @@
+.pos-ticket-lineas {
+  max-height: 40vh;
+  overflow: auto;
+  margin-bottom: 0.75rem;
+}
+.pos-ticket-linea {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 0.35rem;
+  align-items: center;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+.pos-ticket-linea-qty {
+  display: inline-flex;
+  align-items: center;
+}
+.pos-ticket-total td {
+  font-size: 1.1rem;
+  padding-top: 0.5rem;
+}

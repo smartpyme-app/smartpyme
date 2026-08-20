@@ -1,0 +1,87 @@
+<div class="pos-ticket">
+  <div class="pos-ticket-lineas">
+    <p class="text-muted text-center my-3" *ngIf="!venta?.detalles?.length">Sin productos</p>
+    <div class="pos-ticket-linea" *ngFor="let detalle of venta?.detalles">
+      <div class="pos-ticket-linea-info">
+        <div class="fw-semibold text-truncate">{{ detalle.descripcion }}</div>
+        <small class="text-muted">{{ (detalle.total_iva != null ? detalle.total_iva : detalle.total) | currency }}</small>
+      </div>
+      <div class="pos-ticket-linea-qty">
+        <button type="button" class="btn btn-sm btn-light" (click)="cantidadDelta.emit({ detalle, delta: -1 })">−</button>
+        <span class="mx-1">{{ detalle.cantidad }}</span>
+        <button type="button" class="btn btn-sm btn-light" (click)="cantidadDelta.emit({ detalle, delta: 1 })">+</button>
+      </div>
+      <div class="pos-ticket-linea-acciones btn-group">
+        <button type="button" class="btn btn-sm btn-light" title="Opciones" (click)="editarLinea.emit(detalle)">
+          <i class="fa fa-ellipsis-v"></i>
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-info" *ngIf="esLineaConLote(detalle)" title="Lotes"
+          (click)="editarLote.emit(detalle)">
+          <i class="fa fa-boxes"></i>
+        </button>
+        <button type="button" class="btn btn-sm btn-light text-danger" (click)="eliminarLinea.emit(detalle)">
+          <i class="fa fa-trash"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <table class="table table-sm table-borderless table-condensed mb-0 pos-ticket-totales">
+    <tbody>
+      <tr>
+        <td class="text-end"><b>Sub Total</b></td>
+        <td class="text-end" style="width: 7rem">{{ venta.sub_total | currency }}</td>
+      </tr>
+      <tr *ngIf="descuentoPuntos > 0" class="text-success">
+        <td class="text-end">
+          <b>Descuento por puntos</b>
+          <small class="d-block text-muted">{{ formatNumber(puntosCanjeados) }} pts</small>
+        </td>
+        <td class="text-end">−{{ descuentoPuntos | currency }}</td>
+      </tr>
+      <tr *ngFor="let impuesto of venta?.impuestos">
+        <td class="text-end">
+          {{ impuesto.nombre }}
+          <small class="text-muted">({{ impuesto.porcentaje | number:'1.0-2' }}%)</small>
+        </td>
+        <td class="text-end">{{ (impuesto.monto ?? 0) | currency }}</td>
+      </tr>
+      <tr *ngIf="venta.retencion">
+        <td class="text-end"><b>Retención (1%)</b></td>
+        <td class="text-end">{{ venta.iva_retenido | currency }}</td>
+      </tr>
+      <tr *ngIf="venta.renta">
+        <td class="text-end"><b>Renta (10%)</b></td>
+        <td class="text-end">{{ venta.renta_retenida | currency }}</td>
+      </tr>
+      <tr *ngIf="venta.exenta > 0">
+        <td class="text-end"><b>Ventas Exentas</b></td>
+        <td class="text-end"><b>{{ venta.exenta | currency }}</b></td>
+      </tr>
+      <tr *ngIf="venta.no_sujeta > 0">
+        <td class="text-end"><b>Ventas No Sujetas</b></td>
+        <td class="text-end"><b>{{ venta.no_sujeta | currency }}</b></td>
+      </tr>
+      <tr *ngIf="venta.cuenta_a_terceros > 0">
+        <td class="text-end"><b>Cuenta a terceros</b></td>
+        <td class="text-end"><b>{{ venta.cuenta_a_terceros | currency }}</b></td>
+      </tr>
+      <tr *ngIf="tieneAccesoPropina && venta.cobrar_propina">
+        <td class="text-end"><b>Propina</b></td>
+        <td class="text-end"><b>{{ venta.propina | currency }}</b></td>
+      </tr>
+      <tr class="pos-ticket-total">
+        <td class="text-end"><b>Total</b></td>
+        <td class="text-end"><b>{{ venta.total | currency }}</b></td>
+      </tr>
+      <tr *ngIf="tieneMultimoneda && monedaVenta === 'USD' && usdEquivalentTotal !== null">
+        <td class="text-end text-muted">Equivalente USD</td>
+        <td class="text-end text-muted">${{ usdEquivalentTotal | number:'1.2-2' }}</td>
+      </tr>
+      <tr *ngIf="tieneAccesoPropina && venta.cobrar_propina">
+        <td class="text-end"><b>Total + Propina</b></td>
+        <td class="text-end"><b>{{ totalConPropina | currency }}</b></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
