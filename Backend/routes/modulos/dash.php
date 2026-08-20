@@ -14,6 +14,9 @@ use App\Http\Controllers\Api\Ventas\Cotizaciones\CotizacionesController;
     Route::get('/corte',         [DashController::class, 'corte']);
     Route::get('/corte/documento/{id_usuario?}/{id_sucursal?}/{fecha?}', [DashController::class, 'cortePdf'])->name('corte');
 
+    Route::get('/reporte/estilos-salon/consolidado', [\App\Http\Controllers\Api\Reportes\ConsolidadoEstilosSalonController::class, 'show']);
+    Route::get('/reporte/estilos-salon/consolidado/excel', [\App\Http\Controllers\Api\Reportes\ConsolidadoEstilosSalonController::class, 'excel']);
+
     Route::get('/dash/vendedor',                [DashController::class, 'vendedor']);
     Route::get('/dash/vendedor/productos',                [ProductosController::class, 'vendedor']);
     Route::get('/dash/vendedor/productos/buscar/{txt}',   [ProductosController::class, 'vendedorBuscador']);

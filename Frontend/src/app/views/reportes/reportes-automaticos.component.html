@@ -1,13 +1,16 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
   <h2 class="page-heading">Reportes Automáticos</h2>
-  <button
-    *ngIf="apiService.isAdminCreate()"
-    (click)="openModalConfigurar(mconfigurarReporte)"
-    tooltip="Configurar nuevo reporte"
-    class="btn btn-default"
-  >
-    <i class="fa fa-plus"></i> Añadir configuración
-  </button>
+  <div class="d-flex gap-2 align-items-center">
+    <app-consolidado-estilos-salon></app-consolidado-estilos-salon>
+    <button
+      *ngIf="apiService.isAdminCreate()"
+      (click)="openModalConfigurar(mconfigurarReporte)"
+      tooltip="Configurar nuevo reporte"
+      class="btn btn-default"
+    >
+      <i class="fa fa-plus"></i> Añadir configuración
+    </button>
+  </div>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
