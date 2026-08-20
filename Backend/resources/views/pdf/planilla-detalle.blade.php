@@ -64,44 +64,58 @@
                 <th>Código</th>
                 <th>Empleado</th>
                 <th>Salario Base</th>
-                <th>Días Lab.</th>
+                <th>Días</th>
+                <th>Salario Dev.</th>
                 <th>H. Extra</th>
                 <th>Comisiones</th>
                 <th>Bonos</th>
-                <th>Prestamos</th>
-                <th>Anticipos</th>
+                <th>Otros Ing.</th>
+                <th>Abonos</th>
                 <th>Total Ingresos</th>
                 <th>ISSS</th>
                 <th>AFP</th>
                 <th>Renta</th>
+                <th>Préstamos</th>
+                <th>Anticipos</th>
                 <th>Otros Desc.</th>
                 <th>Total Desc.</th>
-                <th>Neto</th>
+                <th>Sueldo Neto</th>
                 <th>Viáticos</th>
                 <th>Total a Pagar</th>
             </tr>
         </thead>
         <tbody>
             @foreach($detalles as $detalle)
+            @php
+                $salDev = (float)($detalle->salario_devengado ?? $detalle->salario_base ?? 0);
+                $totIng = (float)($detalle->total_ingresos ?? 0);
+                $totDesc = (float)($detalle->total_descuentos ?? 0);
+                $neto = (float)($detalle->sueldo_neto ?? ($totIng - $totDesc));
+                $viaticos = (float)($detalle->viaticos ?? 0);
+                $aPagar = $neto + $viaticos;
+            @endphp
             <tr>
-                <td>{{ $detalle->empleado->codigo }}</td>
-                <td>{{ $detalle->empleado->nombres }} {{ $detalle->empleado->apellidos }}</td>
+                <td>{{ $detalle->empleado->codigo ?? '' }}</td>
+                <td>{{ $detalle->empleado->nombres ?? '' }} {{ $detalle->empleado->apellidos ?? '' }}</td>
                 <td class="moneda">{{ $simbolo }}{{ number_format($detalle->salario_base, 2) }}</td>
-                <td class="text-right">{{ $detalle->dias_laborados }}</td>
-                <td class="moneda">{{ $simbolo }}{{ number_format($detalle->monto_horas_extra, 2) }}</td>
-                <td class="moneda">{{ $simbolo }}{{ number_format($detalle->comisiones, 2) }}</td>
-                <td class="moneda">{{ $simbolo }}{{ number_format($detalle->bonificaciones, 2) }}</td>
-                <td class="moneda">{{ $simbolo }}{{ number_format($detalle->prestamos, 2) }}</td>
-                <td class="moneda">{{ $simbolo }}{{ number_format($detalle->anticipos, 2) }}</td>
-                <td class="moneda">{{ $simbolo }}{{ number_format($detalle->total_ingresos, 2) }}</td>
-                <td class="moneda">{{ $simbolo }}{{ number_format($detalle->isss_empleado, 2) }}</td>
-                <td class="moneda">{{ $simbolo }}{{ number_format($detalle->afp_empleado, 2) }}</td>
-                <td class="moneda">{{ $simbolo }}{{ number_format($detalle->renta, 2) }}</td>
-                <td class="moneda">{{ $simbolo }}{{ number_format($detalle->otros_descuentos, 2) }}</td>
-                <td class="moneda">{{ $simbolo }}{{ number_format($detalle->total_descuentos, 2) }}</td>
-                <td class="moneda">{{ $simbolo }}{{ number_format($detalle->sueldo_neto, 2) }}</td>
-                <td class="moneda">{{ $simbolo }}{{ number_format($detalle->viaticos ?? 0, 2) }}</td>
-                <td class="moneda">{{ $simbolo }}{{ number_format(($detalle->sueldo_neto ?? 0) + ($detalle->viaticos ?? 0), 2) }}</td>
+                <td class="text-right">{{ $detalle->dias_laborados ?? 30 }}</td>
+                <td class="moneda">{{ $simbolo }}{{ number_format($salDev, 2) }}</td>
+                <td class="moneda">{{ $simbolo }}{{ number_format($detalle->monto_horas_extra ?? 0, 2) }}</td>
+                <td class="moneda">{{ $simbolo }}{{ number_format($detalle->comisiones ?? 0, 2) }}</td>
+                <td class="moneda">{{ $simbolo }}{{ number_format($detalle->bonificaciones ?? 0, 2) }}</td>
+                <td class="moneda">{{ $simbolo }}{{ number_format($detalle->otros_ingresos ?? 0, 2) }}</td>
+                <td class="moneda">{{ $simbolo }}{{ number_format($detalle->abonos ?? 0, 2) }}</td>
+                <td class="moneda"><strong>{{ $simbolo }}{{ number_format($totIng, 2) }}</strong></td>
+                <td class="moneda">{{ $simbolo }}{{ number_format($detalle->isss_empleado ?? $detalle->isss ?? 0, 2) }}</td>
+                <td class="moneda">{{ $simbolo }}{{ number_format($detalle->afp_empleado ?? $detalle->afp ?? 0, 2) }}</td>
+                <td class="moneda">{{ $simbolo }}{{ number_format($detalle->renta ?? 0, 2) }}</td>
+                <td class="moneda">{{ $simbolo }}{{ number_format($detalle->prestamos ?? 0, 2) }}</td>
+                <td class="moneda">{{ $simbolo }}{{ number_format($detalle->anticipos ?? 0, 2) }}</td>
+                <td class="moneda">{{ $simbolo }}{{ number_format(($detalle->otros_descuentos ?? 0) + ($detalle->descuentos_judiciales ?? 0), 2) }}</td>
+                <td class="moneda"><strong>{{ $simbolo }}{{ number_format($totDesc, 2) }}</strong></td>
+                <td class="moneda">{{ $simbolo }}{{ number_format($neto, 2) }}</td>
+                <td class="moneda">{{ $simbolo }}{{ number_format($viaticos, 2) }}</td>
+                <td class="moneda"><strong>{{ $simbolo }}{{ number_format($aPagar, 2) }}</strong></td>
             </tr>
             @endforeach
         </tbody>
@@ -110,16 +124,19 @@
                 <td colspan="2"><strong>TOTALES</strong></td>
                 <td class="moneda"><strong>{{ $simbolo }}{{ number_format($detalles->sum('salario_base'), 2) }}</strong></td>
                 <td></td>
+                <td class="moneda"><strong>{{ $simbolo }}{{ number_format($detalles->sum(fn($d) => $d->salario_devengado ?? $d->salario_base ?? 0), 2) }}</strong></td>
                 <td class="moneda"><strong>{{ $simbolo }}{{ number_format($detalles->sum('monto_horas_extra'), 2) }}</strong></td>
                 <td class="moneda"><strong>{{ $simbolo }}{{ number_format($detalles->sum('comisiones'), 2) }}</strong></td>
                 <td class="moneda"><strong>{{ $simbolo }}{{ number_format($detalles->sum('bonificaciones'), 2) }}</strong></td>
+                <td class="moneda"><strong>{{ $simbolo }}{{ number_format($detalles->sum('otros_ingresos'), 2) }}</strong></td>
+                <td class="moneda"><strong>{{ $simbolo }}{{ number_format($detalles->sum('abonos'), 2) }}</strong></td>
+                <td class="moneda"><strong>{{ $simbolo }}{{ number_format($detalles->sum('total_ingresos'), 2) }}</strong></td>
+                <td class="moneda"><strong>{{ $simbolo }}{{ number_format($detalles->sum(fn($d) => $d->isss_empleado ?? $d->isss ?? 0), 2) }}</strong></td>
+                <td class="moneda"><strong>{{ $simbolo }}{{ number_format($detalles->sum(fn($d) => $d->afp_empleado ?? $d->afp ?? 0), 2) }}</strong></td>
+                <td class="moneda"><strong>{{ $simbolo }}{{ number_format($detalles->sum('renta'), 2) }}</strong></td>
                 <td class="moneda"><strong>{{ $simbolo }}{{ number_format($detalles->sum('prestamos'), 2) }}</strong></td>
                 <td class="moneda"><strong>{{ $simbolo }}{{ number_format($detalles->sum('anticipos'), 2) }}</strong></td>
-                <td class="moneda"><strong>{{ $simbolo }}{{ number_format($detalles->sum('total_ingresos'), 2) }}</strong></td>
-                <td class="moneda"><strong>{{ $simbolo }}{{ number_format($detalles->sum('isss_empleado'), 2) }}</strong></td>
-                <td class="moneda"><strong>{{ $simbolo }}{{ number_format($detalles->sum('afp_empleado'), 2) }}</strong></td>
-                <td class="moneda"><strong>{{ $simbolo }}{{ number_format($detalles->sum('renta'), 2) }}</strong></td>
-                <td class="moneda"><strong>{{ $simbolo }}{{ number_format($detalles->sum('otros_descuentos'), 2) }}</strong></td>
+                <td class="moneda"><strong>{{ $simbolo }}{{ number_format($detalles->sum(fn($d) => ($d->otros_descuentos ?? 0) + ($d->descuentos_judiciales ?? 0)), 2) }}</strong></td>
                 <td class="moneda"><strong>{{ $simbolo }}{{ number_format($detalles->sum('total_descuentos'), 2) }}</strong></td>
                 <td class="moneda"><strong>{{ $simbolo }}{{ number_format($detalles->sum('sueldo_neto'), 2) }}</strong></td>
                 <td class="moneda"><strong>{{ $simbolo }}{{ number_format($detalles->sum(fn($d) => $d->viaticos ?? 0), 2) }}</strong></td>

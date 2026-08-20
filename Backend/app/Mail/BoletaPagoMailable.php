@@ -26,19 +26,20 @@ class BoletaPagoMailable extends Mailable
     public function build()
     {
         // Calcular totales
-        $totalIngresos = $this->detalle->salario_devengado +
-            $this->detalle->monto_horas_extra +
-            $this->detalle->comisiones +
-            $this->detalle->bonificaciones +
-            $this->detalle->otros_ingresos;
+        $totalIngresos = (float)($this->detalle->salario_devengado ?? $this->detalle->salario_base) +
+            (float)($this->detalle->monto_horas_extra ?? 0) +
+            (float)($this->detalle->comisiones ?? 0) +
+            (float)($this->detalle->bonificaciones ?? 0) +
+            (float)($this->detalle->otros_ingresos ?? 0) +
+            (float)($this->detalle->abonos ?? 0);
 
-        $totalDeducciones = $this->detalle->isss_empleado +
-            $this->detalle->afp_empleado +
-            $this->detalle->renta +
-            $this->detalle->prestamos +
-            $this->detalle->anticipos +
-            $this->detalle->descuentos_judiciales +
-            $this->detalle->otros_descuentos;
+        $totalDeducciones = (float)($this->detalle->isss_empleado ?? 0) +
+            (float)($this->detalle->afp_empleado ?? 0) +
+            (float)($this->detalle->renta ?? 0) +
+            (float)($this->detalle->prestamos ?? 0) +
+            (float)($this->detalle->anticipos ?? 0) +
+            (float)($this->detalle->descuentos_judiciales ?? 0) +
+            (float)($this->detalle->otros_descuentos ?? 0);
 
         // Generar PDF
         $pdf = app('dompdf.wrapper')->loadView('pdf.boleta-individual', [
