@@ -51,6 +51,7 @@ class PlanillaDetallesExport implements FromCollection, WithHeadings, WithMappin
             'Comisiones',
             'Bonificaciones',
             'Otros Ingresos',
+            'Abonos',
             'Total Ingresos',
             'Salario Devengado',
             'Préstamos',
@@ -75,21 +76,22 @@ class PlanillaDetallesExport implements FromCollection, WithHeadings, WithMappin
     public function map($detalle): array
     {
         // Calcular totales
-        $totalIngresos = ($detalle->salario_base ?? 0) + 
-                        ($detalle->monto_horas_extra ?? 0) + 
-                        ($detalle->comisiones ?? 0) + 
-                        ($detalle->bonificaciones ?? 0) + 
-                        ($detalle->otros_ingresos ?? 0);
+        $totalIngresos = (float)($detalle->salario_devengado ?? $detalle->salario_base ?? 0) + 
+                        (float)($detalle->monto_horas_extra ?? 0) + 
+                        (float)($detalle->comisiones ?? 0) + 
+                        (float)($detalle->bonificaciones ?? 0) + 
+                        (float)($detalle->otros_ingresos ?? 0) +
+                        (float)($detalle->abonos ?? 0);
 
-        $totalDescuentos = ($detalle->prestamos ?? 0) + 
-                          ($detalle->anticipos ?? 0) + 
-                          ($detalle->descuentos_judiciales ?? 0) + 
-                          ($detalle->otros_descuentos ?? 0) + 
-                          ($detalle->isss ?? 0) + 
-                          ($detalle->afp ?? 0) + 
-                          ($detalle->renta ?? 0);
+        $totalDescuentos = (float)($detalle->prestamos ?? 0) + 
+                          (float)($detalle->anticipos ?? 0) + 
+                          (float)($detalle->descuentos_judiciales ?? 0) + 
+                          (float)($detalle->otros_descuentos ?? 0) + 
+                          (float)($detalle->isss_empleado ?? $detalle->isss ?? 0) + 
+                          (float)($detalle->afp_empleado ?? $detalle->afp ?? 0) + 
+                          (float)($detalle->renta ?? 0);
 
-        $totalPatronal = ($detalle->isss_patronal ?? 0) + ($detalle->afp_patronal ?? 0);
+        $totalPatronal = (float)($detalle->isss_patronal ?? 0) + (float)($detalle->afp_patronal ?? 0);
 
         // Determinar estado
         switch ($detalle->estado) {
@@ -127,19 +129,20 @@ class PlanillaDetallesExport implements FromCollection, WithHeadings, WithMappin
             round($detalle->comisiones ?? 0, 2),
             round($detalle->bonificaciones ?? 0, 2),
             round($detalle->otros_ingresos ?? 0, 2),
+            round($detalle->abonos ?? 0, 2),
             round($totalIngresos, 2),
             round($detalle->salario_devengado ?? 0, 2),
             round($detalle->prestamos ?? 0, 2),
             round($detalle->anticipos ?? 0, 2),
             round($detalle->descuentos_judiciales ?? 0, 2),
             round($detalle->otros_descuentos ?? 0, 2),
-            round($detalle->isss ?? 0, 2),
-            round($detalle->afp ?? 0, 2),
+            round($detalle->isss_empleado ?? $detalle->isss ?? 0, 2),
+            round($detalle->afp_empleado ?? $detalle->afp ?? 0, 2),
             round($detalle->renta ?? 0, 2),
             round($totalDescuentos, 2),
-            round($detalle->sueldo_neto ?? 0, 2),
+            round($detalle->sueldo_neto ?? ($totalIngresos - $totalDescuentos), 2),
             round($detalle->viaticos ?? 0, 2),
-            round(($detalle->sueldo_neto ?? 0) + ($detalle->viaticos ?? 0), 2),
+            round(($detalle->sueldo_neto ?? ($totalIngresos - $totalDescuentos)) + ($detalle->viaticos ?? 0), 2),
             round($detalle->isss_patronal ?? 0, 2),
             round($detalle->afp_patronal ?? 0, 2),
             round($totalPatronal, 2),
@@ -156,7 +159,7 @@ class PlanillaDetallesExport implements FromCollection, WithHeadings, WithMappin
     public function styles(Worksheet $sheet)
     {
         // Estilo para encabezados
-        $sheet->getStyle('A1:AF1')->applyFromArray([
+        $sheet->getStyle('A1:AI1')->applyFromArray([
             'font' => [
                 'bold' => true,
                 'color' => ['rgb' => 'FFFFFF']
@@ -178,7 +181,7 @@ class PlanillaDetallesExport implements FromCollection, WithHeadings, WithMappin
 
         // Aplicar bordes a todos los datos
         $lastRow = $sheet->getHighestRow();
-        $sheet->getStyle('A1:AF' . $lastRow)->applyFromArray([
+        $sheet->getStyle('A1:AI' . $lastRow)->applyFromArray([
             'borders' => [
                 'allBorders' => [
                     'borderStyle' => Border::BORDER_THIN,
@@ -188,7 +191,7 @@ class PlanillaDetallesExport implements FromCollection, WithHeadings, WithMappin
         ]);
 
         // Formato numérico para columnas de dinero
-        $moneyColumns = ['K', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'AA', 'AB', 'AC', 'AD'];
+        $moneyColumns = ['K', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'AA', 'AB', 'AC', 'AD', 'AE', 'AF', 'AG'];
         foreach ($moneyColumns as $col) {
             $sheet->getStyle($col . '2:' . $col . $lastRow)->getNumberFormat()->setFormatCode($this->moneyFormat);
         }
