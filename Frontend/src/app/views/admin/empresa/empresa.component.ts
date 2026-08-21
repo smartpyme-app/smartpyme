@@ -6,6 +6,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
+import { isImpresionEnFacturacionActiva } from '@helpers/empresa.helper';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -117,6 +118,9 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         this.loading = true;
         this.apiService.read('empresa/', this.apiService.auth_user().id_empresa).subscribe(empresa => {
             this.empresa = empresa;
+            if (this.empresa) {
+                this.empresa.impresion_en_facturacion = isImpresionEnFacturacionActiva(this.empresa);
+            }
             if (!this.empresa.woocommerce_sync_mode) {
                 this.empresa.woocommerce_sync_mode = 'bidirectional';
             }
@@ -162,14 +166,20 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
 
         return new Promise((resolve, reject) => {
             this.saving = true;
+            if (this.empresa) {
+                this.empresa.impresion_en_facturacion = isImpresionEnFacturacionActiva(this.empresa);
+            }
             this.apiService.store('empresa', this.empresa).subscribe(empresa => {
                 this.empresa = empresa;
+                if (this.empresa) {
+                    this.empresa.impresion_en_facturacion = isImpresionEnFacturacionActiva(this.empresa);
+                }
 
                 this.initializeCustomConfig();
 
                 let user: any = {};
                 user = JSON.parse(localStorage.getItem('SP_auth_user')!);
-                user.empresa = empresa;
+                user.empresa = this.empresa;
                 localStorage.setItem('SP_auth_user', JSON.stringify(user));
 
                 this.alertService.success('Empresa actualiza', 'Tus datos fueron guardados exitosamente.');

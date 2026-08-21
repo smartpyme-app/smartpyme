@@ -5,6 +5,7 @@ import { SumPipe }     from '@pipes/sum.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
+import { isImpresionEnFacturacionActiva } from '@helpers/empresa.helper';
 
 @Component({
   selector: 'app-devolucion-nueva',
@@ -195,7 +196,7 @@ export class DevolucionVentaNuevaComponent implements OnInit {
                     devolucion.nombre_documento === 'Nota de débito';
 
                 if (
-                    empresa?.impresion_en_facturacion &&
+                    isImpresionEnFacturacionActiva(empresa) &&
                     empresa?.facturacion_electronica &&
                     esNotaCreditoODebito
                 ) {

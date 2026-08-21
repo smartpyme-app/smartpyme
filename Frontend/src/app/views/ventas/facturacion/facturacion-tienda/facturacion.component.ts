@@ -23,6 +23,7 @@ import {
 import { esVentaPorConsigna, sincronizarFlagConsignaVenta, aplicarEstadoConsignaEnVenta } from '@utils/venta-consigna.util';
 import { debeDispararAtajoTcla } from '@utils/atajos-teclado.util';
 import { FACTURA_REMISION, esVentaConsignaRemision } from '../../../../constants/documento.constants';
+import { isImpresionEnFacturacionActiva } from '@helpers/empresa.helper';
 import { VentaDetallesComponent } from './detalles/venta-detalles.component';
 
 @Component({
@@ -69,7 +70,7 @@ export class FacturacionComponent implements OnInit {
   public tieneFidelizacionHabilitada: boolean = false;
   public mensajeValidacionFecha: string = '';
   public mensajeErrorBanco: string = '';
-  public debeImprimir: boolean = true;
+  public debeImprimir: boolean = false;
 
   /** Si está activo, se muestra el monto; el importe es siempre la suma de `cuenta_a_terceros` en las líneas (no se edita en cabecera). */
   public habilitarCuentaTerceros = false;
@@ -545,7 +546,7 @@ export class FacturacionComponent implements OnInit {
     this.venta = {};
     this.habilitarCuentaTerceros = false;
     this.retencionIvaGcUsuarioDecidio = false;
-    this.debeImprimir = !!this.apiService.auth_user()?.empresa?.impresion_en_facturacion;
+    this.debeImprimir = isImpresionEnFacturacionActiva(this.apiService.auth_user()?.empresa);
     this.venta.fecha = this.apiService.date();
     this.venta.fecha_pago = this.apiService.date();
     this.venta.forma_pago = 'Efectivo';
@@ -1836,7 +1837,7 @@ export class FacturacionComponent implements OnInit {
           this.emitirDTE();
         } else {
           if (
-            this.apiService.auth_user().empresa.impresion_en_facturacion &&
+            isImpresionEnFacturacionActiva(this.apiService.auth_user()?.empresa) &&
             this.debeImprimir
           ) {
             this.imprimir(venta);
@@ -1955,7 +1956,7 @@ export class FacturacionComponent implements OnInit {
         this.emiting = false;
 
         if (
-          this.apiService.auth_user()?.empresa?.impresion_en_facturacion &&
+          isImpresionEnFacturacionActiva(this.apiService.auth_user()?.empresa) &&
           this.debeImprimir
         ) {
           this.imprimir(venta);
