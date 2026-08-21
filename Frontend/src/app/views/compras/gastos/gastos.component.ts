@@ -102,7 +102,6 @@ export class GastosComponent implements OnInit {
 
         this.loading = true;
         this.filtrarGastos(false);
-        this.getNumsIds();
     }
 
     /**
@@ -288,6 +287,10 @@ export class GastosComponent implements OnInit {
                  this.proyectos = proyectos;
              }, error => {this.alertService.error(error); });
          }
+
+        if(!this.numeros_ids.length && this.isColumnEnabled('columna_proyecto')){
+            this.getNumsIds();
+        }
 
         this.modalRef = this.modalService.show(template);
     }

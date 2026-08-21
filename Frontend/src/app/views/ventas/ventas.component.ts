@@ -242,8 +242,6 @@ export class VentasComponent implements OnInit, OnDestroy {
         this.cargarVentas();
       });
 
-    this.getNumsIds();
-
     // Cargar datos compartidos
     this.apiService.getAll('sucursales/list')
       .pipe(this.untilDestroyed())
@@ -693,6 +691,11 @@ export class VentasComponent implements OnInit, OnDestroy {
           }
         });
     }
+
+    if (!this.numeros_ids.length && this.isColumnEnabled('columna_proyecto')) {
+      this.getNumsIds();
+    }
+
     this.openModal(template);
   }
 
