@@ -1,5 +1,7 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy, EventEmitter, Input, Output, TemplateRef, ViewChild } from '@angular/core';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -41,7 +43,8 @@ import {
   selector: 'app-venta-detalles-v2',
   templateUrl: './venta-detalles-v2.component.html'
 })
-export class VentaDetallesV2Component implements OnInit {
+export class VentaDetallesV2Component implements OnInit, OnDestroy {
+    private destroy$ = new Subject<void>();
 
     @Input() venta: any = {};
     @Input() usuarios: any = {};
@@ -71,6 +74,18 @@ export class VentaDetallesV2Component implements OnInit {
         public apiService: ApiService, private alertService: AlertService,
         private modalService: BsModalService
     ) { }
+
+    ngOnDestroy(): void {
+        this.destroy$.next();
+        this.destroy$.complete();
+        if (this.modalRef) {
+            this.modalRef.hide();
+        }
+    }
+
+    protected untilDestroyed<T = any>() {
+        return takeUntil<T>(this.destroy$);
+    }
 
     ngOnInit() {
         this.usuario = this.apiService.auth_user();
@@ -346,6 +361,7 @@ export class VentaDetallesV2Component implements OnInit {
 
         if (esOrigenConsignaCompra(detalle.origen_stock)) {
             validarCantidadOrigenConsignaCompra(this.apiService, this.alertService, this.venta, detalle)
+                .pipe(this.untilDestroyed())
                 .subscribe((ok) => {
                     if (ok) {
                         aplicar();
@@ -379,32 +395,37 @@ export class VentaDetallesV2Component implements OnInit {
 
     public supervisorCheck(){
         this.loading = true;
-        this.apiService.store('usuario-validar', this.supervisor).subscribe(supervisor => {
-            this.modalRef.hide();
-            this.delete(this.detalle);
-            this.loading = false;
-            this.supervisor = {};
-        },error => {this.alertService.error(error); this.loading = false; });
+        this.apiService.store('usuario-validar', this.supervisor)
+            .pipe(this.untilDestroyed())
+            .subscribe(supervisor => {
+                this.modalRef.hide();
+                this.delete(this.detalle);
+                this.loading = false;
+                this.supervisor = {};
+            },error => {this.alertService.error(error); this.loading = false; });
     }
 
     // Agregar detalle
         productoSelect(producto:any):void{
-            preguntarOrigenStockSiAplica(this.apiService, this.venta, producto).subscribe((origen) => {
-                if (origen === null) {
-                    return;
-                }
-                const productoConOrigen = { ...producto, origen_stock: origen };
-                if (esOrigenConsignaCompra(origen)) {
-                    validarCantidadOrigenConsignaCompra(this.apiService, this.alertService, this.venta, productoConOrigen)
-                        .subscribe((ok) => {
-                            if (ok) {
-                                this.procesarProductoSelect(productoConOrigen);
-                            }
-                        });
-                    return;
-                }
-                this.procesarProductoSelect(productoConOrigen);
-            });
+            preguntarOrigenStockSiAplica(this.apiService, this.venta, producto)
+                .pipe(this.untilDestroyed())
+                .subscribe((origen) => {
+                    if (origen === null) {
+                        return;
+                    }
+                    const productoConOrigen = { ...producto, origen_stock: origen };
+                    if (esOrigenConsignaCompra(origen)) {
+                        validarCantidadOrigenConsignaCompra(this.apiService, this.alertService, this.venta, productoConOrigen)
+                            .pipe(this.untilDestroyed())
+                            .subscribe((ok) => {
+                                if (ok) {
+                                    this.procesarProductoSelect(productoConOrigen);
+                                }
+                            });
+                        return;
+                    }
+                    this.procesarProductoSelect(productoConOrigen);
+                });
         }
 
         private procesarProductoSelect(producto:any):void{
@@ -639,7 +660,9 @@ export class VentaDetallesV2Component implements OnInit {
         this.apiService.getAll('lotes/disponibles', {
             id_producto: this.detalleConLote.id_producto,
             id_bodega: this.venta.id_bodega,
-        }).subscribe(lotes => {
+        })
+        .pipe(this.untilDestroyed())
+        .subscribe(lotes => {
             const previos = this.detalleConLote.lotes_asignados || [];
             const factor = factorConversionDetalle(this.detalleConLote);
             this.lotes = (lotes || []).map((lote: any) => {
@@ -753,10 +776,12 @@ export class VentaDetallesV2Component implements OnInit {
                     }
                     if (indexAEliminar !== -1) {
                         if(detalle.id) {
-                            this.apiService.delete('venta/detalle/', detalle.id).subscribe(detalle => {
-                                this.venta.detalles.splice(indexAEliminar, 1);
-                                this.update.emit(this.venta);
-                            },error => {this.alertService.error(error); this.loading = false; });
+                            this.apiService.delete('venta/detalle/', detalle.id)
+                                .pipe(this.untilDestroyed())
+                                .subscribe(detalle => {
+                                    this.venta.detalles.splice(indexAEliminar, 1);
+                                    this.update.emit(this.venta);
+                                },error => {this.alertService.error(error); this.loading = false; });
                         }else{
                             this.venta.detalles.splice(indexAEliminar, 1);
                             this.update.emit(this.venta);
