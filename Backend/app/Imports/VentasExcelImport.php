@@ -5,6 +5,7 @@ namespace App\Imports;
 use App\Models\Admin\Canal;
 use App\Models\Admin\Documento;
 use App\Models\Inventario\Producto;
+use App\Models\MH\ActividadEconomica;
 use App\Models\MH\Departamento;
 use App\Models\MH\Distrito;
 use App\Models\MH\Municipio;
@@ -107,6 +108,8 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
                     continue;
                 }
 
+                $this->tipo_documento = $this->determinarTipoDocumento($row);
+
                 if (!$this->validarFilaRequeridos($row)) {
                     Log::info("Fila {$index} ignorada por faltar datos requeridos");
                     continue;
@@ -115,7 +118,6 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
                 $validRows++;
                 Log::info("Fila {$index} válida");
 
-                $this->tipo_documento = $this->determinarTipoDocumento($row);
                 $clienteKey = $this->generarClienteKey($row);
                 Log::info("Cliente key: " . $clienteKey);
 
@@ -125,6 +127,14 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
                         ?: $this->buscarDocumentoPorTipoImportacion();
 
                     if (!$id_cliente || !$id_documento) {
+                        $detalleError = "Fila ignorada: ";
+                        if (!$id_cliente) {
+                            $detalleError .= "No se pudo obtener o crear el cliente ('" . ($row['nombre'] ?? 'sin nombre') . "'). ";
+                        }
+                        if (!$id_documento) {
+                            $detalleError .= "No se encontró tipo de documento de venta válido en el sistema. ";
+                        }
+                        $this->errores[] = $detalleError;
                         Log::error("Error: ID de cliente o documento no válido. Cliente: {$id_cliente}, Documento: {$id_documento}");
                         continue;
                     }
@@ -193,6 +203,21 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
         }
     }
 
+    protected function normalizarTextoNumero($valor)
+    {
+        if ($valor === null || $valor === '') {
+            return '';
+        }
+        if (is_numeric($valor)) {
+            return sprintf('%.0f', (float) $valor);
+        }
+        $str = trim((string) $valor);
+        if (preg_match('/^[0-9]+(\.[0-9]+)?[eE][+-]?[0-9]+$/', $str)) {
+            return sprintf('%.0f', (float) $str);
+        }
+        return $str;
+    }
+
     protected function esFilaVacia($row)
     {
         Log::info('Verificando fila: ' . json_encode($row));
@@ -245,10 +270,11 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
             return false;
         }
 
+        $tipoDoc = $this->determinarTipoDocumento($fila);
         $requeridos = ['nombre', 'fecha', 'descripcion', 'total'];
-        $requeridos = array_merge($requeridos, $this->tipo_documento == 'credito_fiscal' ? ['nit'] : []);
+        $requeridos = array_merge($requeridos, $tipoDoc == 'credito_fiscal' ? ['nit'] : []);
 
-        if (!empty($fila['num_documento']) && $this->tipo_documento != 'credito_fiscal') {
+        if (!empty($fila['num_documento']) && $tipoDoc != 'credito_fiscal') {
             $requeridos[] = 'tipo_documento';
         }
 
@@ -257,12 +283,44 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
         });
 
         if (!empty($faltantes)) {
-            $this->errores[] = "Error: Faltan los campos obligatorios '" . implode("', '", $faltantes) . "' en una de las filas.";
+            $this->errores[] = "Error: Faltan los campos obligatorios '" . implode("', '", $faltantes) . "' en la fila de '" . ($fila['nombre'] ?? 'registro sin nombre') . "'.";
             Log::warning("Fila inválida - Faltan campos: " . implode(", ", $faltantes) . " - Datos: " . json_encode($fila));
             return false;
         }
 
         return true;
+    }
+
+    protected function resolverGiroYCodGiro($fila)
+    {
+        $raw = trim((string) ($fila['giro'] ?? $fila['cod_giro'] ?? ''));
+        if ($raw === '') {
+            return ['giro' => null, 'cod_giro' => null];
+        }
+
+        $actividad = ActividadEconomica::where('cod', $raw)
+            ->orWhere('nombre', $raw)
+            ->orWhereRaw('LOWER(TRIM(nombre)) = ?', [strtolower($raw)])
+            ->first();
+
+        if ($actividad) {
+            return [
+                'giro' => $actividad->nombre,
+                'cod_giro' => $actividad->cod,
+            ];
+        }
+
+        if (preg_match('/^\d{4,6}$/', $raw)) {
+            return [
+                'giro' => $raw,
+                'cod_giro' => $raw,
+            ];
+        }
+
+        return [
+            'giro' => mb_substr($raw, 0, 255),
+            'cod_giro' => null,
+        ];
     }
 
     protected function buscarOCrearCliente($fila)
@@ -274,37 +332,60 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
                 $cliente = $this->crearCliente($fila);
             }
 
-            return $cliente->id;
+            return $cliente ? $cliente->id : null;
         } catch (\Exception $e) {
+            Log::error("Error al buscar/crear cliente: " . $e->getMessage() . "\n" . $e->getTraceAsString());
             $clienteDefault = Cliente::where('nombre', 'Consumidor Final')
                 ->where('id_empresa', Auth::user()->id_empresa)
                 ->first();
-            return $clienteDefault ? $clienteDefault->id : null;
+            if ($clienteDefault) {
+                return $clienteDefault->id;
+            }
+            $this->errores[] = "Error al crear cliente (" . ($fila['nombre'] ?? '') . "): " . $e->getMessage();
+            return null;
         }
     }
 
     protected function buscarCliente($fila)
     {
         if ($this->tipo_documento == 'credito_fiscal') {
-            $cliente = Cliente::where('nit', $fila['nit'])->first();
-            //actualizar cliente
+            $nit = $this->normalizarTextoNumero($fila['nit'] ?? '');
+            $ncr = $this->normalizarTextoNumero($fila['nrc'] ?? $fila['ncr'] ?? '');
+
+            $cliente = Cliente::where(function ($q) use ($nit, $ncr, $fila) {
+                $hasCond = false;
+                if ($nit !== '') {
+                    $q->where('nit', $nit)->orWhere('nit', (string) ($fila['nit'] ?? ''));
+                    $hasCond = true;
+                }
+                if ($ncr !== '') {
+                    if ($hasCond) {
+                        $q->orWhere('ncr', $ncr)->orWhere('ncr', (string) ($fila['nrc'] ?? $fila['ncr'] ?? ''));
+                    } else {
+                        $q->where('ncr', $ncr)->orWhere('ncr', (string) ($fila['nrc'] ?? $fila['ncr'] ?? ''));
+                        $hasCond = true;
+                    }
+                }
+            })->first();
+
             if ($cliente) {
                 $this->actualizarCliente($cliente, $fila);
             }
             return $cliente;
         }
 
-        $query = Cliente::query();
-        if (!empty($fila['num_documento'])) {
-            $query->where('dui', $fila['num_documento']);
-            //actualizar cliente
-            $cliente = $query->first();
+        $numDoc = $this->normalizarTextoNumero($fila['num_documento'] ?? '');
+        if ($numDoc !== '') {
+            $cliente = Cliente::where('dui', $numDoc)
+                ->orWhere('dui', (string) ($fila['num_documento'] ?? ''))
+                ->first();
             if ($cliente) {
                 $this->actualizarCliente($cliente, $fila);
             }
             return $cliente;
         }
-        return $query->first();
+
+        return null;
     }
 
     protected function actualizarCliente($cliente, $fila)
@@ -313,33 +394,37 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
         $dep = $ubicacion['departamento'];
         $mun = $ubicacion['municipio'];
         $dis = $ubicacion['distrito'];
+        $giroInfo = $this->resolverGiroYCodGiro($fila);
+
         $datosCliente = [
             'nombre' => $fila['nombre'] ?? 'Consumidor Final',
             'apellido' => $fila['apellido'] ?? '',
-            'telefono' => $fila['telefono'] ?? '',
+            'telefono' => $this->normalizarTextoNumero($fila['telefono'] ?? ''),
             'correo' => $fila['correo'] ?? '',
             'direccion' => $fila['direccion'] ?? '',
             'cod_departamento' => $dep ? $dep->cod : null,
             'cod_municipio' => $mun ? $mun->cod : null,
             'cod_distrito' => $dis ? $dis->cod : null,
             'tipo_contribuyente' => $fila['tipo_contribuyente'] ?? 'Otro',
-            'dui' => $fila['num_documento'] ?? ''
+            'dui' => $this->normalizarTextoNumero($fila['num_documento'] ?? '')
         ];
+
         if ($this->tipo_documento == 'credito_fiscal') {
             $datosCliente = array_merge($datosCliente, [
                 'nombre_empresa' => $fila['nombre_comercial'] ?? $fila['nombre'],
-                'nit' => $fila['nit'] ?? '',
-                'ncr' => $fila['nrc'] ?? '',
-                'cod_giro' => $fila['giro'] ?? '',
+                'nit' => $this->normalizarTextoNumero($fila['nit'] ?? ''),
+                'ncr' => $this->normalizarTextoNumero($fila['nrc'] ?? $fila['ncr'] ?? ''),
+                'giro' => $giroInfo['giro'],
+                'cod_giro' => $giroInfo['cod_giro'],
                 'tipo_contribuyente' => 'Otro',
-                'dui' => $fila['num_documento'] ?? ''
+                'dui' => $this->normalizarTextoNumero($fila['num_documento'] ?? '')
             ]);
         } else {
             // Consumidor final: solo tipo_documento y num_documento (no hay NIT, NRC, cod_giro, nombre_comercial)
             $datosCliente = array_merge($datosCliente, [
                 'nombre_empresa' => $fila['nombre'] ?? '',
                 'tipo_documento' => $fila['tipo_documento'] ?? 'DUI',
-                'dui' => $fila['num_documento'] ?? ''
+                'dui' => $this->normalizarTextoNumero($fila['num_documento'] ?? '')
             ]);
         }
         $cliente->fill($datosCliente);
@@ -354,11 +439,12 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
         $departamento = $ubicacion['departamento'];
         $municipio = $ubicacion['municipio'];
         $distrito = $ubicacion['distrito'];
+        $giroInfo = $this->resolverGiroYCodGiro($fila);
 
         $datosCliente = [
             'nombre' => $fila['nombre'] ?? 'Consumidor Final',
             'apellido' => $fila['apellido'] ?? '',
-            'telefono' => $fila['telefono'] ?? '',
+            'telefono' => $this->normalizarTextoNumero($fila['telefono'] ?? ''),
             'correo' => $fila['correo'] ?? '',
             'direccion' => $fila['direccion'] ?? '',
             'cod_departamento' => $departamento ? $departamento->cod : null,
@@ -375,16 +461,17 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
         if ($this->tipo_documento == 'credito_fiscal') {
             $datosCliente = array_merge($datosCliente, [
                 'nombre_empresa' => $fila['nombre_comercial'] ?? $fila['nombre'],
-                'nit' => $fila['nit'],
-                'ncr' => $fila['nrc'] ?? '',
-                'cod_giro' => $fila['giro'] ?? '',
+                'nit' => $this->normalizarTextoNumero($fila['nit'] ?? ''),
+                'ncr' => $this->normalizarTextoNumero($fila['nrc'] ?? $fila['ncr'] ?? ''),
+                'giro' => $giroInfo['giro'],
+                'cod_giro' => $giroInfo['cod_giro'],
                 'tipo_contribuyente' => 'Otro',
-                'dui' => $fila['num_documento'] ?? ''
+                'dui' => $this->normalizarTextoNumero($fila['num_documento'] ?? '')
             ]);
         } else {
             $datosCliente = array_merge($datosCliente, [
                 'tipo_documento' => $fila['tipo_documento'] ?? 'DUI',
-                'dui' => $fila['num_documento'] ?? ''
+                'dui' => $this->normalizarTextoNumero($fila['num_documento'] ?? '')
             ]);
         }
 
@@ -502,9 +589,18 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
         if ($nombre === '') {
             return null;
         }
-        $documento = Documento::where('id_sucursal', Auth::user()->id_sucursal)
-            ->whereRaw('LOWER(TRIM(nombre)) = ?', [strtolower($nombre)])
-            ->first();
+
+        $sucursalId = Auth::user()->id_sucursal ?? null;
+        if ($sucursalId) {
+            $documento = Documento::where('id_sucursal', $sucursalId)
+                ->whereRaw('LOWER(TRIM(nombre)) = ?', [strtolower($nombre)])
+                ->first();
+            if ($documento) {
+                return $documento->id;
+            }
+        }
+
+        $documento = Documento::whereRaw('LOWER(TRIM(nombre)) = ?', [strtolower($nombre)])->first();
         return $documento ? $documento->id : null;
     }
 
@@ -514,29 +610,58 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
      */
     protected function buscarDocumentoPorTipoImportacion()
     {
-        $id_sucursal = Auth::user()->id_sucursal;
+        $id_sucursal = Auth::user()->id_sucursal ?? null;
+
         if ($this->tipo_documento === 'credito_fiscal') {
-            $id = $this->buscarDocumentoPorNombre(config('constants.TIPO_DOCUMENTO_CREDITO_FISCAL', 'Crédito fiscal'));
-            if ($id) {
-                return $id;
+            $posiblesNombres = [
+                config('constants.TIPO_DOCUMENTO_CREDITO_FISCAL', 'Crédito fiscal'),
+                'Crédito fiscal',
+                'Credito fiscal',
+                'Comprobante de Crédito Fiscal',
+                'Comprobante de Credito Fiscal',
+                'CCF'
+            ];
+            foreach ($posiblesNombres as $nom) {
+                $id = $this->buscarDocumentoPorNombre($nom);
+                if ($id) {
+                    return $id;
+                }
+            }
+        } else {
+            $posiblesNombres = [
+                config('constants.TIPO_DOCUMENTO_TICKET', 'Ticket'),
+                'Ticket',
+                config('constants.TIPO_DOCUMENTO_FACTURA', 'Factura'),
+                'Factura',
+                'Factura de Consumidor Final',
+                'Factura de consumidor final',
+                'FCF'
+            ];
+            foreach ($posiblesNombres as $nom) {
+                $id = $this->buscarDocumentoPorNombre($nom);
+                if ($id) {
+                    return $id;
+                }
             }
         }
-        $id = $this->buscarDocumentoPorNombre(config('constants.TIPO_DOCUMENTO_TICKET', 'Ticket'));
-        if ($id) {
-            return $id;
+
+        if ($id_sucursal) {
+            $doc = Documento::where('id_sucursal', $id_sucursal)->where('activo', 1)->first()
+                ?: Documento::where('id_sucursal', $id_sucursal)->first();
+            if ($doc) {
+                return $doc->id;
+            }
         }
-        $id = $this->buscarDocumentoPorNombre(config('constants.TIPO_DOCUMENTO_FACTURA', 'Factura'));
-        if ($id) {
-            return $id;
-        }
-        $cualquiera = Documento::where('id_sucursal', $id_sucursal)->first();
+
+        $cualquiera = Documento::where('activo', 1)->first() ?: Documento::first();
         return $cualquiera ? $cualquiera->id : null;
     }
 
     protected function generarClienteKey($row)
     {
+        $nitNorm = $this->normalizarTextoNumero($row['nit'] ?? '');
         $base = $this->tipo_documento == 'credito_fiscal'
-            ? ($row['nit'] ?? '') . '-' . ($row['fecha'] ?? '')
+            ? ($nitNorm ?: ($row['nombre'] ?? '')) . '-' . ($row['fecha'] ?? '')
             : ($row['nombre'] ?? '') . '-' . ($row['fecha'] ?? '');
         $correlativo = isset($row['correlativo']) && $row['correlativo'] !== '' && $row['correlativo'] !== null
             ? $row['correlativo']
@@ -546,13 +671,17 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
 
     protected function obtenerDatosCabecera($fila, $id_cliente, $id_documento)
     {
-        $canal = Canal::where('id_empresa', Auth::user()->id_empresa)->first();
+        $canal = Canal::where('id_empresa', Auth::user()->id_empresa)->first()
+            ?: Canal::firstOrCreate(['id_empresa' => Auth::user()->id_empresa], ['nombre' => 'Directo', 'enable' => '1']);
         $fecha = $this->convertirFechaExcel($fila['fecha']);
 
         $gravada = $this->extraerValorOCalcular($fila, 'gravada', 0);
-        $subtotal = $this->extraerValorOCalcular($fila, 'subtotal', $gravada);
+        $exenta = $this->extraerValorOCalcular($fila, 'exenta', 0);
+        $noSujeta = $this->extraerValorOCalcular($fila, 'no_sujeta', 0);
+        $subtotal = $this->extraerValorOCalcular($fila, 'subtotal', $gravada + $exenta + $noSujeta);
         $iva = $this->extraerValorOCalcular($fila, 'iva', $gravada * 0.13);
-        $total = $this->extraerValorOCalcular($fila, 'total', $subtotal + $iva);
+        $ivaRetenido = $this->extraerValorOCalcular($fila, 'iva_retenido', 0);
+        $total = $this->extraerValorOCalcular($fila, 'total', $subtotal + $iva - $ivaRetenido);
 
         $estado = $this->obtenerEstadoFactura($fila);
 
@@ -564,20 +693,20 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
             'credito' => (strtolower($fila['condicion'] ?? 'Contado') == 'crédito' || strtolower($fila['condicion'] ?? 'Contado') == 'credito') ? 1 : 0,
             'id_cliente' => $id_cliente,
             'id_documento' => $id_documento,
-            'id_canal' => $canal->id,
-            'id_sucursal' => Auth::user()->id_sucursal,
-            'id_bodega' => Auth::user()->id_bodega,
+            'id_canal' => $canal ? $canal->id : 1,
+            'id_sucursal' => Auth::user()->id_sucursal ?? 1,
+            'id_bodega' => Auth::user()->id_bodega ?? 1,
             'id_vendedor' => Auth::id(),
             'id_usuario' => Auth::id(),
             'id_empresa' => Auth::user()->id_empresa,
             'observaciones' => '',
             'cotizacion' => 0,
-            'exenta' => $this->extraerValorOCalcular($fila, 'exenta', 0),
-            'no_sujeta' => $this->extraerValorOCalcular($fila, 'no_sujeta', 0),
+            'exenta' => $exenta,
+            'no_sujeta' => $noSujeta,
             'gravada' => $gravada,
             'cuenta_a_terceros' => 0,
             'iva' => $iva,
-            'iva_retenido' => $this->extraerValorOCalcular($fila, 'iva_retenido', 0),
+            'iva_retenido' => $ivaRetenido,
             'iva_percibido' => 0,
             'sub_total' => $subtotal,
             'total' => $total,
@@ -671,20 +800,27 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
         // No se busca ni crea producto: se agrega el detalle con la descripción del Excel (id_producto = 0).
         $idProducto = 0;
 
-        $gravada = $this->extraerValorOCalcular($fila, 'gravada');
-        $subtotal = $this->extraerValorOCalcular($fila, 'subtotal', $gravada);
-        $iva = $this->extraerValorOCalcular($fila, 'iva', $subtotal * 0.13);
+        $gravada = $this->extraerValorOCalcular($fila, 'gravada', 0);
+        $exenta = $this->extraerValorOCalcular($fila, 'exenta', 0);
+        $noSujeta = $this->extraerValorOCalcular($fila, 'no_sujeta', 0);
+        $subtotal = $this->extraerValorOCalcular($fila, 'subtotal', $gravada + $exenta + $noSujeta);
+        $iva = $this->extraerValorOCalcular($fila, 'iva', $gravada * 0.13);
         $total = $this->extraerValorOCalcular($fila, 'total', $subtotal + $iva);
 
         $cantidad = 1;
-        $precio = $gravada;
+        $precio = $gravada > 0 ? $gravada : ($subtotal > 0 ? $subtotal : $total);
 
-        if (isset($fila['precio']) && is_numeric($fila['precio']) && $fila['precio'] > 0) {
-            $precio = $fila['precio'];
-            if (isset($fila['cantidad']) && is_numeric($fila['cantidad']) && $fila['cantidad'] > 0) {
-                $cantidad = $fila['cantidad'];
-            } else if ($precio > 0) {
+        if (isset($fila['precio']) && is_numeric($fila['precio']) && (float) $fila['precio'] > 0) {
+            $precio = (float) $fila['precio'];
+            if (isset($fila['cantidad']) && is_numeric($fila['cantidad']) && (float) $fila['cantidad'] > 0) {
+                $cantidad = (float) $fila['cantidad'];
+            } else if ($precio > 0 && $gravada > 0) {
                 $cantidad = $gravada / $precio;
+            }
+        } elseif (isset($fila['cantidad']) && is_numeric($fila['cantidad']) && (float) $fila['cantidad'] > 0) {
+            $cantidad = (float) $fila['cantidad'];
+            if ($cantidad > 0 && $precio > 0) {
+                $precio = $precio / $cantidad;
             }
         }
 
@@ -698,28 +834,30 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
             'precio' => $precio,
             'costo' => $costo,
             'descuento' => 0,
+            'sub_total' => $subtotal,
             'total' => $total,
             'total_costo' => $total_costo,
-            'exenta' => $fila['exenta'] ?? 0,
-            'no_sujeta' => $fila['no_sujeta'] ?? 0,
+            'exenta' => $exenta,
+            'no_sujeta' => $noSujeta,
             'gravada' => $gravada,
             'cuenta_a_terceros' => 0,
             'iva' => $iva,
             'id_vendedor' => Auth::id(),
-            'tipo_item' => $fila['tipo_item'] ?? 'Producto',
+            'tipo_item' => $fila['tipo_item'] ?? 'Servicio',
+            'tipo_gravado' => $gravada > 0 ? 'gravada' : ($exenta > 0 ? 'exenta' : ($noSujeta > 0 ? 'no_sujeta' : 'gravada')),
         ];
     }
 
     protected function extraerValorOCalcular($fila, $campo, $valorPredeterminado = 0)
     {
-        if (!isset($fila[$campo]) || empty($fila[$campo])) {
-            return $valorPredeterminado;
+        if (!isset($fila[$campo]) || $fila[$campo] === '' || $fila[$campo] === null) {
+            return (float) $valorPredeterminado;
         }
 
         $valor = $fila[$campo];
 
         if (is_numeric($valor)) {
-            return (float)$valor;
+            return (float) $valor;
         }
 
         if (is_string($valor) && substr($valor, 0, 1) === '=') {
@@ -732,12 +870,12 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
 
             foreach ($formulas as $patron => $resultado) {
                 if (preg_match($patron, $valor)) {
-                    return $resultado;
+                    return (float) $resultado;
                 }
             }
         }
 
-        return is_numeric($valor) ? (float)$valor : $valorPredeterminado;
+        return is_numeric($valor) ? (float) $valor : (float) $valorPredeterminado;
     }
 
     protected function procesarVenta($cabecera, $detalles)
@@ -801,7 +939,7 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
 
     protected function procesarImpuestos($venta, $cabecera)
     {
-        if (isset($cabecera['iva']) && is_numeric($cabecera['iva']) && $cabecera['iva'] > 0) {
+        if (isset($cabecera['iva']) && is_numeric($cabecera['iva']) && (float) $cabecera['iva'] > 0) {
             try {
                 $iva = Impuesto::where('nombre', 'IVA')
                     ->where('id_empresa', Auth::user()->id_empresa)
