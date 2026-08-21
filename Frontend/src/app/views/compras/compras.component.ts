@@ -170,7 +170,6 @@ export class ComprasComponent implements OnInit, OnDestroy {
             this.filtrarCompras(false);
         });
 
-        this.getNumsIds();
         this.apiService.getAll('proveedores/list').subscribe(proveedores => { 
             this.proveedores = proveedores;
         }, error => {this.alertService.error(error); });
@@ -556,6 +555,10 @@ export class ComprasComponent implements OnInit, OnDestroy {
             this.apiService.getAll('proyectos/list').subscribe(proyectos => { 
                 this.proyectos = proyectos;
             }, error => {this.alertService.error(error); });
+        }
+
+        if(!this.numeros_ids.length && this.isColumnEnabled('columna_proyecto')){
+            this.getNumsIds();
         }
 
         this.modalRef = this.modalService.show(template);
