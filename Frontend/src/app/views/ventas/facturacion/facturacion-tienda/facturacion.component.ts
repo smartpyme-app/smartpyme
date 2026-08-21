@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy, TemplateRef, ViewChild } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { SumPipe } from '@pipes/sum.pipe';
@@ -9,6 +9,8 @@ import { FidelizacionService, PuntosDisponiblesInfo, ConfiguracionCliente } from
 import { FuncionalidadesService } from '@services/functionalities.service';
 import { RestauranteService } from '@services/restaurante.service';
 import Swal from 'sweetalert2';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 import * as moment from 'moment';
 import {
@@ -30,7 +32,9 @@ import { VentaDetallesComponent } from './detalles/venta-detalles.component';
   templateUrl: './facturacion.component.html',
   providers: [SumPipe],
 })
-export class FacturacionComponent implements OnInit {
+export class FacturacionComponent implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
+  private timerBodegaPedido: any = null;
   public venta: any = {};
   public evento: any = {};
   public detalle: any = {};
@@ -260,6 +264,27 @@ export class FacturacionComponent implements OnInit {
     this.router.navigate(['/ventas']);
   }
 
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+    if (this.timerBodegaPedido) {
+      clearTimeout(this.timerBodegaPedido);
+    }
+    if (this.modalRef) {
+      this.modalRef.hide();
+    }
+    if (this.modalCredito) {
+      this.modalCredito.hide();
+    }
+    if (this.modalPuntosRef) {
+      this.modalPuntosRef.hide();
+    }
+  }
+
+  protected untilDestroyed<T = any>() {
+    return takeUntil<T>(this.destroy$);
+  }
+
   ngOnInit() {
     this.cargarDatosIniciales();
     this.loadData();
@@ -268,118 +293,136 @@ export class FacturacionComponent implements OnInit {
   }
 
   public loadData() {
-    this.apiService.getAll('sucursales/list').subscribe(
-      (sucursales) => {
-        this.sucursales = sucursales;
-        if (this.apiService.auth_user().tipo != 'Administrador') {
-          this.sucursales = this.sucursales.filter(
-            (item: any) => item.id == this.apiService.auth_user().id_sucursal
-          );
+    this.apiService.getAll('sucursales/list')
+      .pipe(this.untilDestroyed())
+      .subscribe(
+        (sucursales) => {
+          this.sucursales = sucursales;
+          if (this.apiService.auth_user().tipo != 'Administrador') {
+            this.sucursales = this.sucursales.filter(
+              (item: any) => item.id == this.apiService.auth_user().id_sucursal
+            );
+          }
+        },
+        (error) => {
+          this.alertService.error(error);
         }
-      },
-      (error) => {
-        this.alertService.error(error);
-      }
-    );
+      );
 
-    this.apiService.getAll('bodegas/list').subscribe(
-      (bodegas) => {
-        this.bodegas = bodegas;
-        if (this.apiService.auth_user().tipo != 'Administrador') {
-          this.bodegas = this.bodegas.filter(
-            (item: any) =>
-              item.id_sucursal == this.apiService.auth_user().id_sucursal
-          );
+    this.apiService.getAll('bodegas/list')
+      .pipe(this.untilDestroyed())
+      .subscribe(
+        (bodegas) => {
+          this.bodegas = bodegas;
+          if (this.apiService.auth_user().tipo != 'Administrador') {
+            this.bodegas = this.bodegas.filter(
+              (item: any) =>
+                item.id_sucursal == this.apiService.auth_user().id_sucursal
+            );
+          }
+          // Alinear sucursal con la bodega y recargar documentos (el filtro es por sucursal).
+          this.sincronizarSucursalDesdeBodega();
+          this.cargarDocumentos();
+        },
+        (error) => {
+          this.alertService.error(error);
         }
-        // Alinear sucursal con la bodega y recargar documentos (el filtro es por sucursal).
-        this.sincronizarSucursalDesdeBodega();
-        this.cargarDocumentos();
-      },
-      (error) => {
-        this.alertService.error(error);
-      }
-    );
+      );
 
-    this.apiService.getAll('usuarios/list').subscribe(
-      (usuarios) => {
-        this.usuarios = usuarios;
-        const auth = this.apiService.auth_user();
-        const listaCompletaVendedores =
-          auth.tipo === 'Administrador' ||
-          auth.tipo === 'Supervisor' ||
-          auth.tipo === 'Supervisor Limitado' ||
-          ((auth.tipo === 'Ventas' || auth.tipo === 'Ventas Limitado') &&
-            this.apiService.isVentasPuedeCambiarVendedorFacturacion());
-        if (!listaCompletaVendedores) {
-          this.usuarios = this.usuarios.filter(
-            (item: any) => item.id == auth.id
-          );
+    this.apiService.getAll('usuarios/list')
+      .pipe(this.untilDestroyed())
+      .subscribe(
+        (usuarios) => {
+          this.usuarios = usuarios;
+          const auth = this.apiService.auth_user();
+          const listaCompletaVendedores =
+            auth.tipo === 'Administrador' ||
+            auth.tipo === 'Supervisor' ||
+            auth.tipo === 'Supervisor Limitado' ||
+            ((auth.tipo === 'Ventas' || auth.tipo === 'Ventas Limitado') &&
+              this.apiService.isVentasPuedeCambiarVendedorFacturacion());
+          if (!listaCompletaVendedores) {
+            this.usuarios = this.usuarios.filter(
+              (item: any) => item.id == auth.id
+            );
+          }
+        },
+        (error) => {
+          this.alertService.error(error);
         }
-      },
-      (error) => {
-        this.alertService.error(error);
-      }
-    );
+      );
 
     if (this.apiService.isModuloBancos()) {
-      this.apiService.getAll('banco/cuentas/list').subscribe(
-        (bancos) => { this.bancos = bancos; },
-        (error) => { this.alertService.error(error); }
-      );
+      this.apiService.getAll('banco/cuentas/list')
+        .pipe(this.untilDestroyed())
+        .subscribe(
+          (bancos) => { this.bancos = bancos; },
+          (error) => { this.alertService.error(error); }
+        );
     } else {
-      this.apiService.getAll('bancos/list').subscribe(
-        (bancos) => { this.bancos = bancos; },
-        (error) => { this.alertService.error(error); }
-      );
+      this.apiService.getAll('bancos/list')
+        .pipe(this.untilDestroyed())
+        .subscribe(
+          (bancos) => { this.bancos = bancos; },
+          (error) => { this.alertService.error(error); }
+        );
     }
 
-    this.apiService.getAll('formas-de-pago/list').subscribe(
-      (formaPagos) => {
-        this.formaPagos = formaPagos;
-        if (this.apiService.isModuloBancos() && this.venta.forma_pago && this.venta.forma_pago !== 'Efectivo' && this.venta.forma_pago !== 'Wompi' && this.venta.forma_pago !== 'Multiple') {
-          const formaPagoSeleccionada = formaPagos.find((fp: any) => fp.nombre === this.venta.forma_pago);
-          if (formaPagoSeleccionada?.banco?.nombre_banco && !this.venta.detalle_banco) {
-            this.venta.detalle_banco = formaPagoSeleccionada.banco.nombre_banco;
+    this.apiService.getAll('formas-de-pago/list')
+      .pipe(this.untilDestroyed())
+      .subscribe(
+        (formaPagos) => {
+          this.formaPagos = formaPagos;
+          if (this.apiService.isModuloBancos() && this.venta.forma_pago && this.venta.forma_pago !== 'Efectivo' && this.venta.forma_pago !== 'Wompi' && this.venta.forma_pago !== 'Multiple') {
+            const formaPagoSeleccionada = formaPagos.find((fp: any) => fp.nombre === this.venta.forma_pago);
+            if (formaPagoSeleccionada?.banco?.nombre_banco && !this.venta.detalle_banco) {
+              this.venta.detalle_banco = formaPagoSeleccionada.banco.nombre_banco;
+            }
           }
+        },
+        (error) => { this.alertService.error(error); }
+      );
+
+    this.apiService.getAll('canales/list')
+      .pipe(this.untilDestroyed())
+      .subscribe(
+        (canales) => {
+          this.canales = canales;
+          this.venta.id_canal = this.canales[0].id;
+        },
+        (error) => {
+          this.alertService.error(error);
         }
-      },
-      (error) => { this.alertService.error(error); }
-    );
+      );
 
-    this.apiService.getAll('canales/list').subscribe(
-      (canales) => {
-        this.canales = canales;
-        this.venta.id_canal = this.canales[0].id;
-      },
-      (error) => {
-        this.alertService.error(error);
-      }
-    );
-
-    this.apiService.getAll('boxful/status').subscribe({
-      next: (res: any) => {
-        this.tieneBoxful = !!(res && res.connected);
-      },
-      error: () => {
-        this.tieneBoxful = false;
-      }
-    });
-
-    this.apiService.getAll('impuestos').subscribe(
-      (impuestos) => {
-        // Filtrar solo los impuestos que aplican a ventas
-        this.impuestos = impuestos.filter((impuesto: any) => impuesto.aplica_ventas !== false && impuesto.aplica_ventas !== 0);
-        // Al editar cotización/venta no sobrescribir impuestos para no volver a agregarlos
-        const esEdicion = !!this.route.snapshot.paramMap.get('id');
-        if (!esEdicion && (!this.venta.impuestos || this.venta.iva == 0)) {
-          this.venta.impuestos = this.impuestos;
-          this.sumTotal();
+    this.apiService.getAll('boxful/status')
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (res: any) => {
+          this.tieneBoxful = !!(res && res.connected);
+        },
+        error: () => {
+          this.tieneBoxful = false;
         }
-      },
-      (error) => {
-        this.alertService.error(error);
-      }
-    );
+      });
+
+    this.apiService.getAll('impuestos')
+      .pipe(this.untilDestroyed())
+      .subscribe(
+        (impuestos) => {
+          // Filtrar solo los impuestos que aplican a ventas
+          this.impuestos = impuestos.filter((impuesto: any) => impuesto.aplica_ventas !== false && impuesto.aplica_ventas !== 0);
+          // Al editar cotización/venta no sobrescribir impuestos para no volver a agregarlos
+          const esEdicion = !!this.route.snapshot.paramMap.get('id');
+          if (!esEdicion && (!this.venta.impuestos || this.venta.iva == 0)) {
+            this.venta.impuestos = this.impuestos;
+            this.sumTotal();
+          }
+        },
+        (error) => {
+          this.alertService.error(error);
+        }
+      );
 
     // this.apiService.getAll('clientes/list').subscribe(
     //   (clientes) => {
@@ -392,39 +435,43 @@ export class FacturacionComponent implements OnInit {
     //   }
     // );
 
-    this.apiService.getAll('proyectos/list').subscribe(
-      (proyectos) => {
-        this.proyectos = proyectos;
-        this.loading = false;
-      },
-      (error) => {
-        this.alertService.error(error);
-        this.loading = false;
-      }
-    );
+    this.apiService.getAll('proyectos/list')
+      .pipe(this.untilDestroyed())
+      .subscribe(
+        (proyectos) => {
+          this.proyectos = proyectos;
+          this.loading = false;
+        },
+        (error) => {
+          this.alertService.error(error);
+          this.loading = false;
+        }
+      );
   }
 
   public cargarDocumentos() {
     const seq = ++this.documentosLoadSeq;
-    this.apiService.getAll('documentos/list').subscribe(
-      (documentos) => {
-        if (seq !== this.documentosLoadSeq) {
-          return;
+    this.apiService.getAll('documentos/list')
+      .pipe(this.untilDestroyed())
+      .subscribe(
+        (documentos) => {
+          if (seq !== this.documentosLoadSeq) {
+            return;
+          }
+          const idSucursal = this.obtenerIdSucursalDocumentos();
+          this.documentosSucursal = (documentos || []).filter(
+            (doc: any) =>
+              idSucursal != null && Number(doc.id_sucursal) === Number(idSucursal)
+          );
+          this.aplicarFiltroDocumentosVenta();
+        },
+        (error) => {
+          if (seq !== this.documentosLoadSeq) {
+            return;
+          }
+          this.alertService.error(error);
         }
-        const idSucursal = this.obtenerIdSucursalDocumentos();
-        this.documentosSucursal = (documentos || []).filter(
-          (doc: any) =>
-            idSucursal != null && Number(doc.id_sucursal) === Number(idSucursal)
-        );
-        this.aplicarFiltroDocumentosVenta();
-      },
-      (error) => {
-        if (seq !== this.documentosLoadSeq) {
-          return;
-        }
-        this.alertService.error(error);
-      }
-    );
+      );
   }
 
   /** Prioriza la sucursal de la bodega seleccionada; si no hay, usa la de la venta. */
@@ -676,10 +723,12 @@ export class FacturacionComponent implements OnInit {
             detalles: pdata.detalles
           });
         } else {
-          this.restauranteService.prepararFacturaPedidoCanal(pedidoCanalIdVal).subscribe({
-            next: (data) => this.aplicarPedidoCanalAFactura(data),
-            error: (e) => this.alertService.error(e)
-          });
+          this.restauranteService.prepararFacturaPedidoCanal(pedidoCanalIdVal)
+            .pipe(this.untilDestroyed())
+            .subscribe({
+              next: (data) => this.aplicarPedidoCanalAFactura(data),
+              error: (e) => this.alertService.error(e)
+            });
         }
       }
     }
@@ -688,6 +737,7 @@ export class FacturacionComponent implements OnInit {
     if (this.route.snapshot.paramMap.get('id')!) {
       this.apiService
         .read('venta/', +this.route.snapshot.paramMap.get('id')!)
+        .pipe(this.untilDestroyed())
         .subscribe(
           (venta) => {
             this.venta = venta;
@@ -718,6 +768,7 @@ export class FacturacionComponent implements OnInit {
       this.duplicarventa = true;
       this.apiService
         .read('venta/', +this.route.snapshot.queryParamMap.get('id_venta')!)
+        .pipe(this.untilDestroyed())
         .subscribe(
           (venta) => {
             this.venta = venta;
@@ -767,6 +818,7 @@ export class FacturacionComponent implements OnInit {
       } else {
         this.apiService
           .read('venta/', +this.route.snapshot.queryParamMap.get('id_venta')!)
+          .pipe(this.untilDestroyed())
           .subscribe(
             (venta) => {
               this.venta = venta;
@@ -815,42 +867,46 @@ export class FacturacionComponent implements OnInit {
 
     // Facturar orden de compra
     if (this.route.snapshot.queryParamMap.get('facturar_orden_compra')!) {
-      this.apiService.read('orden-de-compra/solicitud/', +this.route.snapshot.queryParamMap.get('id_orden_compra')!).subscribe((ordenCompra) => {
-        this.venta.num_orden = ordenCompra.id;
+      this.apiService.read('orden-de-compra/solicitud/', +this.route.snapshot.queryParamMap.get('id_orden_compra')!)
+        .pipe(this.untilDestroyed())
+        .subscribe((ordenCompra) => {
+          this.venta.num_orden = ordenCompra.id;
 
-        this.apiService.getAll('clientes/buscar/' + (ordenCompra.empresa.dui ?? ordenCompra.empresa.nit)).subscribe((empresa) => {
-          if (empresa.length > 0) {
-            this.setCliente(empresa[0]);
-            console.log(empresa);
+          this.apiService.getAll('clientes/buscar/' + (ordenCompra.empresa.dui ?? ordenCompra.empresa.nit))
+            .pipe(this.untilDestroyed())
+            .subscribe((empresa) => {
+              if (empresa.length > 0) {
+                this.setCliente(empresa[0]);
+                console.log(empresa);
 
-            // Solo procesar productos si el cliente existe
-            this.procesarProductosOrdenCompra(ordenCompra.detalles);
-          } else {
-            const labelDoc = this.apiService.auth_user()?.empresa?.pais === 'El Salvador' ? 'DUI o NIT' : 'Número de identificación o Identificación fiscal';
-            Swal.fire({
-              title: 'Cliente no encontrado',
-              html: `
-                <div class="text-left">
-                  <p><strong>No se encontró el cliente para poder facturar.</strong></p>
-                  <p>Debe crear el cliente con los siguientes datos:</p>
-                  <ul class="list-unstyled mt-3">
-                    <li><strong>Nombre:</strong> ${ordenCompra.empresa.nombre || 'No disponible'}</li>
-                    <li><strong>${labelDoc}:</strong> ${ordenCompra.empresa.dui || ordenCompra.empresa.nit || 'No disponible'}</li>
-                  </ul>
-                </div>
-              `,
-              icon: 'warning',
-              confirmButtonText: 'Entendido',
-              confirmButtonColor: '#3085d6'
-            }).then(() => {
-              window.history.back();
+                // Solo procesar productos si el cliente existe
+                this.procesarProductosOrdenCompra(ordenCompra.detalles);
+              } else {
+                const labelDoc = this.apiService.auth_user()?.empresa?.pais === 'El Salvador' ? 'DUI o NIT' : 'Número de identificación o Identificación fiscal';
+                Swal.fire({
+                  title: 'Cliente no encontrado',
+                  html: `
+                    <div class="text-left">
+                      <p><strong>No se encontró el cliente para poder facturar.</strong></p>
+                      <p>Debe crear el cliente con los siguientes datos:</p>
+                      <ul class="list-unstyled mt-3">
+                        <li><strong>Nombre:</strong> ${ordenCompra.empresa.nombre || 'No disponible'}</li>
+                        <li><strong>${labelDoc}:</strong> ${ordenCompra.empresa.dui || ordenCompra.empresa.nit || 'No disponible'}</li>
+                      </ul>
+                    </div>
+                  `,
+                  icon: 'warning',
+                  confirmButtonText: 'Entendido',
+                  confirmButtonColor: '#3085d6'
+                }).then(() => {
+                  window.history.back();
+                });
+                // No procesar productos si el cliente no existe
+                return;
+              }
             });
-            // No procesar productos si el cliente no existe
-            return;
-          }
-        });
-      }, (error) => { this.alertService.error(error); this.loading = false; }
-      );
+        }, (error) => { this.alertService.error(error); this.loading = false; }
+        );
       console.log(this.venta);
     }
     // Solo si ya hay bodegas (p. ej. tras emitir y quedarse); en el 1er ingreso las carga loadData.
@@ -862,7 +918,9 @@ export class FacturacionComponent implements OnInit {
   // Método para procesar productos de orden de compra
   public procesarProductosOrdenCompra(detalles: any[]) {
     detalles.forEach((detalleCompra: any) => {
-      this.apiService.getAll('producto/buscar-by-code/' + detalleCompra.codigo).subscribe((producto) => {
+      this.apiService.getAll('producto/buscar-by-code/' + detalleCompra.codigo)
+        .pipe(this.untilDestroyed())
+        .subscribe((producto) => {
         if (producto) {
           let detalle: any = {};
           detalle.cantidad = detalleCompra.cantidad;
@@ -938,6 +996,7 @@ export class FacturacionComponent implements OnInit {
       this.loading = true;
       this.apiService
         .read('evento/', +this.route.snapshot.queryParamMap.get('id_cita')!)
+        .pipe(this.untilDestroyed())
         .subscribe(
           (evento) => {
             this.evento = evento;
@@ -947,6 +1006,7 @@ export class FacturacionComponent implements OnInit {
             this.evento.productos.forEach((detalleProducto: any) => {
               this.apiService
                 .read('producto/', detalleProducto.id_producto)
+                .pipe(this.untilDestroyed())
                 .subscribe(
                   (producto) => {
                     let detalle: any = {};
@@ -1308,12 +1368,14 @@ export class FacturacionComponent implements OnInit {
       const cargarSaldo = this.apiService.isEstadoCuentaEnFacturacionHabilitado() || cliente.limite_credito;
       if (cargarSaldo) {
         this.venta.cliente = { ...this.venta.cliente, saldo_pendiente: 0 };
-        this.apiService.getAll('cliente/' + cliente.id + '/saldo-pendiente').subscribe(
-          (res: any) => {
-            this.venta.cliente = { ...this.venta.cliente, saldo_pendiente: res.saldo_pendiente ?? 0 };
-          },
-          () => { this.venta.cliente = { ...this.venta.cliente, saldo_pendiente: 0 }; }
-        );
+        this.apiService.getAll('cliente/' + cliente.id + '/saldo-pendiente')
+          .pipe(this.untilDestroyed())
+          .subscribe(
+            (res: any) => {
+              this.venta.cliente = { ...this.venta.cliente, saldo_pendiente: res.saldo_pendiente ?? 0 };
+            },
+            () => { this.venta.cliente = { ...this.venta.cliente, saldo_pendiente: 0 }; }
+          );
       } else {
         this.venta.cliente = { ...this.venta.cliente, saldo_pendiente: null };
       }
@@ -1520,30 +1582,36 @@ export class FacturacionComponent implements OnInit {
     this.venta.correlativo = documento.correlativo;
 
     if (this.venta.nombre_documento == 'Factura de exportación') {
-      this.apiService.getAll('recintos').subscribe(
-        (recintos) => {
-          this.recintos = recintos;
-        },
-        (error) => {
-          this.alertService.error(error);
-        }
-      );
-      this.apiService.getAll('regimenes').subscribe(
-        (regimenes) => {
-          this.regimenes = regimenes;
-        },
-        (error) => {
-          this.alertService.error(error);
-        }
-      );
-      this.apiService.getAll('incoterms').subscribe(
-        (incoterms) => {
-          this.incoterms = incoterms;
-        },
-        (error) => {
-          this.alertService.error(error);
-        }
-      );
+      this.apiService.getAll('recintos')
+        .pipe(this.untilDestroyed())
+        .subscribe(
+          (recintos) => {
+            this.recintos = recintos;
+          },
+          (error) => {
+            this.alertService.error(error);
+          }
+        );
+      this.apiService.getAll('regimenes')
+        .pipe(this.untilDestroyed())
+        .subscribe(
+          (regimenes) => {
+            this.regimenes = regimenes;
+          },
+          (error) => {
+            this.alertService.error(error);
+          }
+        );
+      this.apiService.getAll('incoterms')
+        .pipe(this.untilDestroyed())
+        .subscribe(
+          (incoterms) => {
+            this.incoterms = incoterms;
+          },
+          (error) => {
+            this.alertService.error(error);
+          }
+        );
     }
     if (this.venta.nombre_documento == 'Factura comercial') {
       this.venta.cobrar_impuestos = false;
@@ -1574,18 +1642,20 @@ export class FacturacionComponent implements OnInit {
       this.router.navigate(['/restaurante']);
       return;
     }
-    this.restauranteService.marcarPreCuentaFacturada(this.preCuentaId, ventaId).subscribe({
-      next: (res: any) => {
-        const dest = res?.sesion_cerrada ? ['/restaurante'] : (this.sesionId ? ['/restaurante/cuenta', this.sesionId] : ['/restaurante']);
-        this.router.navigate(dest);
-        this.alertService.success('Factura creada', res?.sesion_cerrada ? 'Pre-cuenta facturada. Mesa liberada.' : 'Pre-cuenta marcada como facturada.');
-      },
-      error: (err) => {
-        const msg = err?.error?.error || err?.error?.message || err?.message || err;
-        this.alertService.error(msg ?? 'Error al marcar pre-cuenta como facturada');
-        this.router.navigate(['/restaurante']);
-      }
-    });
+    this.restauranteService.marcarPreCuentaFacturada(this.preCuentaId, ventaId)
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (res: any) => {
+          const dest = res?.sesion_cerrada ? ['/restaurante'] : (this.sesionId ? ['/restaurante/cuenta', this.sesionId] : ['/restaurante']);
+          this.router.navigate(dest);
+          this.alertService.success('Factura creada', res?.sesion_cerrada ? 'Pre-cuenta facturada. Mesa liberada.' : 'Pre-cuenta marcada como facturada.');
+        },
+        error: (err) => {
+          const msg = err?.error?.error || err?.error?.message || err?.message || err;
+          this.alertService.error(msg ?? 'Error al marcar pre-cuenta como facturada');
+          this.router.navigate(['/restaurante']);
+        }
+      });
   }
 
   private aplicarPedidoCanalAFactura(data: {
@@ -1654,10 +1724,12 @@ export class FacturacionComponent implements OnInit {
     }
 
     if (data.cliente_id) {
-      this.apiService.read('cliente/', data.cliente_id as number).subscribe({
-        next: (c) => this.setCliente(c),
-        error: () => { },
-      });
+      this.apiService.read('cliente/', data.cliente_id as number)
+        .pipe(this.untilDestroyed())
+        .subscribe({
+          next: (c) => this.setCliente(c),
+          error: () => { },
+        });
     }
 
     const syncBodegaPedido = (attempt = 0) => {
@@ -1667,7 +1739,7 @@ export class FacturacionComponent implements OnInit {
       if (this.bodegas?.length && this.venta.id_bodega) {
         this.setBodega();
       } else if (attempt < 40) {
-        setTimeout(() => syncBodegaPedido(attempt + 1), 100);
+        this.timerBodegaPedido = setTimeout(() => syncBodegaPedido(attempt + 1), 100);
       }
     };
     syncBodegaPedido();
@@ -1679,17 +1751,19 @@ export class FacturacionComponent implements OnInit {
       this.router.navigate(['/pedidos']);
       return;
     }
-    this.restauranteService.marcarPedidoCanalFacturado(this.pedidoCanalId, ventaId).subscribe({
-      next: () => {
-        this.router.navigate(['/pedidos']);
-        this.alertService.success('Factura creada', 'El pedido quedó marcado como facturado.');
-      },
-      error: (err) => {
-        const msg = err?.error?.error || err?.error?.message || err?.message || err;
-        this.alertService.error(msg ?? 'Error al vincular la venta con el pedido');
-        this.router.navigate(['/pedidos']);
-      },
-    });
+    this.restauranteService.marcarPedidoCanalFacturado(this.pedidoCanalId, ventaId)
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: () => {
+          this.router.navigate(['/pedidos']);
+          this.alertService.success('Factura creada', 'El pedido quedó marcado como facturado.');
+        },
+        error: (err) => {
+          const msg = err?.error?.error || err?.error?.message || err?.message || err;
+          this.alertService.error(msg ?? 'Error al vincular la venta con el pedido');
+          this.router.navigate(['/pedidos']);
+        },
+      });
   }
 
   public onFacturar() {
@@ -1820,8 +1894,10 @@ export class FacturacionComponent implements OnInit {
       this.venta.consigna = false;
     }
 
-    this.apiService.store('facturacion', this.venta).subscribe(
-      (venta) => {
+    this.apiService.store('facturacion', this.venta)
+      .pipe(this.untilDestroyed())
+      .subscribe(
+        (venta) => {
         // Actualizar siempre la venta local con la respuesta del backend (id, correlativo, etc.)
         // para que en un siguiente guardado se envíe el mismo correlativo.
         Object.assign(this.venta, venta);
@@ -1865,7 +1941,7 @@ export class FacturacionComponent implements OnInit {
           const habilitar = confirm(
             'No se confirmó la respuesta del servidor. La venta pudo haberse guardado.\n\n' +
               'Revise el listado de ventas antes de reintentar.\n\n' +
-              '¿Desea habilitar de nuevo el botón de facturar?'
+            '¿Desea habilitar de nuevo el botón de facturar?'
           );
           if (habilitar) {
             this.saving = false;
@@ -1906,18 +1982,20 @@ export class FacturacionComponent implements OnInit {
 
   public supervisorCheck() {
     this.loading = true;
-    this.apiService.store('usuario-validar', this.supervisor).subscribe(
-      (supervisor) => {
-        this.modalRef.hide();
-        this.cargarDatosIniciales();
-        this.loading = false;
-        this.supervisor = {};
-      },
-      (error) => {
-        this.alertService.error(error);
-        this.loading = false;
-      }
-    );
+    this.apiService.store('usuario-validar', this.supervisor)
+      .pipe(this.untilDestroyed())
+      .subscribe(
+        (supervisor) => {
+          this.modalRef.hide();
+          this.cargarDatosIniciales();
+          this.loading = false;
+          this.supervisor = {};
+        },
+        (error) => {
+          this.alertService.error(error);
+          this.loading = false;
+        }
+      );
   }
 
   // DTE
@@ -1984,16 +2062,18 @@ export class FacturacionComponent implements OnInit {
 
   enviarDTE() {
     this.sending = true;
-    this.apiService.store('enviarDTE', this.venta).subscribe(
-      (dte) => {
-        this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
-        this.sending = false;
-      },
-      (error) => {
-        this.alertService.error('DTE no pudo ser enviado por correo.');
-        this.sending = false;
-      }
-    );
+    this.apiService.store('enviarDTE', this.venta)
+      .pipe(this.untilDestroyed())
+      .subscribe(
+        (dte) => {
+          this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
+          this.sending = false;
+        },
+        (error) => {
+          this.alertService.error('DTE no pudo ser enviado por correo.');
+          this.sending = false;
+        }
+      );
   }
 
   public setBodega() {
@@ -2095,6 +2175,7 @@ export class FacturacionComponent implements OnInit {
 
     this.loadingPuntos = true;
     this.fidelizacionService.getPuntosDisponiblesInfo(this.venta.cliente.id, this.getEmpresaId())
+      .pipe(this.untilDestroyed())
       .subscribe({
         next: (response) => {
           if (response.success && response.data) {
@@ -2142,6 +2223,7 @@ export class FacturacionComponent implements OnInit {
   private cargarDatosModal(): void {
     this.loadingModalPuntos = true;
     this.fidelizacionService.getPuntosDisponiblesInfo(this.venta.cliente.id, this.getEmpresaId())
+      .pipe(this.untilDestroyed())
       .subscribe({
         next: (response) => {
           if (response.success && response.data) {
@@ -2399,27 +2481,31 @@ export class FacturacionComponent implements OnInit {
 
 
   public verificarAccesoPropina() {
-    this.funcionalidadesService.verificarAcceso('cobro-propina').subscribe(
-      (acceso) => {
-        this.tieneAccesoPropina = acceso;
-      },
-      (error) => {
-        console.error('Error al verificar acceso a propina:', error);
-        this.tieneAccesoPropina = false;
-      }
-    );
+    this.funcionalidadesService.verificarAcceso('cobro-propina')
+      .pipe(this.untilDestroyed())
+      .subscribe(
+        (acceso) => {
+          this.tieneAccesoPropina = acceso;
+        },
+        (error) => {
+          console.error('Error al verificar acceso a propina:', error);
+          this.tieneAccesoPropina = false;
+        }
+      );
   }
 
   private verificarFidelizacionHabilitada() {
-    this.funcionalidadesService.verificarAcceso('fidelizacion-clientes').subscribe({
-      next: (tieneAcceso: boolean) => {
-        this.tieneFidelizacionHabilitada = tieneAcceso && this.apiService.isFidelizacionCompleta();
-      },
-      error: (error) => {
-        console.error('Error al verificar acceso a fidelización:', error);
-        this.tieneFidelizacionHabilitada = false;
-      }
-    });
+    this.funcionalidadesService.verificarAcceso('fidelizacion-clientes')
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (tieneAcceso: boolean) => {
+          this.tieneFidelizacionHabilitada = tieneAcceso && this.apiService.isFidelizacionCompleta();
+        },
+        error: (error) => {
+          console.error('Error al verificar acceso a fidelización:', error);
+          this.tieneFidelizacionHabilitada = false;
+        }
+      });
   }
 
   public getTotalConPropina(): number {
