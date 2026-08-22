@@ -1,0 +1,246 @@
+/* Página: fondo general lavanda muy suave */
+.register-sivar-page {
+  background-color: #f3f1fb;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ——— Panel izquierdo (marca, estilo referencia imagen) ——— */
+.register-sivar-hero {
+  overflow: hidden;
+  align-self: stretch;
+  min-height: 100%;
+  container-type: inline-size;
+}
+
+.register-sivar-hero--static {
+  background-color: #141414;
+  background-image:
+    linear-gradient(rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.35)),
+    url('/assets/img/login.jpg');
+  background-repeat: no-repeat, no-repeat;
+  background-position: center, center;
+  background-size: cover, cover;
+}
+
+.register-sivar-hero__glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(48px);
+  pointer-events: none;
+}
+
+.register-sivar-hero__glow--1 {
+  width: min(55vw, 420px);
+  height: min(55vw, 420px);
+  right: -8%;
+  bottom: 8%;
+  background: rgba(180, 170, 255, 0.45);
+}
+
+.register-sivar-hero__glow--2 {
+  width: min(40vw, 280px);
+  height: min(40vw, 280px);
+  right: 18%;
+  bottom: 22%;
+  background: rgba(220, 215, 255, 0.6);
+}
+
+.register-sivar-hero__content {
+  position: relative;
+  z-index: 1;
+}
+
+/* Logo hero (mismo criterio que login-sivar `.login-sivar-hero-logo`) */
+.register-sivar-hero-logo {
+  display: block;
+  height: clamp(56px, 7vw + 24px, 96px);
+  width: auto;
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  object-fit: contain;
+  object-position: center center;
+}
+
+@supports (font-size: 1cqi) {
+  .register-sivar-hero-logo {
+    height: clamp(56px, 12cqi + 24px, 96px);
+  }
+}
+
+@media (min-width: 768px) and (max-width: 991.98px) {
+  .register-sivar-hero-logo {
+    height: clamp(48px, 7vw + 16px, 72px);
+  }
+}
+
+@supports (font-size: 1cqi) {
+  @media (min-width: 768px) and (max-width: 991.98px) {
+    .register-sivar-hero-logo {
+      height: clamp(48px, 10cqi + 12px, 72px);
+    }
+  }
+}
+
+/* ——— Columna formulario ——— */
+.register-sivar-form-col {
+  container-type: inline-size;
+  min-width: 0;
+  align-self: stretch;
+  min-height: 100%;
+  background-color: #ffffff;
+  flex: 1 1 auto;
+}
+
+.register-sivar-card {
+  width: 100%;
+  max-width: min(520px, 100%);
+  flex-shrink: 0;
+  flex-grow: 0;
+}
+
+.register-sivar-form-heading {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  color: #2d2d5f;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  text-align: center;
+  font-size: clamp(1.375rem, 2.2vw + 0.75rem, 2.25rem);
+}
+
+.register-sivar-form-brand-icon {
+  display: block;
+  height: clamp(72px, 7vw + 34px, 112px);
+  width: auto;
+  max-width: 100%;
+  margin-inline: auto;
+  object-fit: contain;
+}
+
+.register-sivar-notice {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  padding: 14px 16px;
+  background-color: #f0f2ff;
+  border-radius: 12px;
+  box-sizing: border-box;
+}
+
+.register-sivar-notice__title {
+  color: #2d2d5f;
+  font-weight: 700;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  margin: 0;
+}
+
+.register-sivar-notice__text {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  color: #5e5ce6;
+  margin: 0;
+}
+
+.register-sivar-field-label {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  font-size: 15px;
+  line-height: 1.2;
+  display: inline-block;
+}
+
+.register-sivar-control {
+  border-radius: 8px;
+  border-color: #e0e0e8;
+  font-size: 15px;
+}
+
+.register-sivar-control:focus {
+  border-color: #5e5ce6;
+  box-shadow: 0 0 0 0.2rem rgba(94, 92, 230, 0.15);
+}
+
+.register-sivar-phone-prefix {
+  max-width: 88px;
+  flex-shrink: 0;
+}
+
+.register-sivar-eye-btn {
+  border-radius: 0 8px 8px 0 !important;
+}
+
+.register-sivar-form .input-group .register-sivar-control:first-child {
+  border-radius: 8px 0 0 8px;
+}
+
+.register-sivar-password-hint {
+  font-size: 12px;
+  color: #6c757d;
+  line-height: 1.4;
+}
+
+.register-sivar-submit-btn {
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  background-color: #5e5ce6;
+  border-color: #5e5ce6;
+  border-radius: 8px;
+}
+
+.register-sivar-submit-btn:hover:not(:disabled),
+.register-sivar-submit-btn:focus-visible:not(:disabled) {
+  background-color: #4b49d4;
+  border-color: #4b49d4;
+  color: #fff;
+}
+
+.register-sivar-login-hint {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  font-size: 15px;
+  color: #2d2d5f;
+}
+
+.register-sivar-login-hint__link {
+  color: #5e5ce6;
+  font-weight: 600;
+}
+
+.register-sivar-footer-attribution__label {
+  font-size: clamp(0.625rem, 1.1vw + 0.5rem, 0.75rem);
+}
+
+.register-sivar-footer-attribution__logo {
+  width: auto;
+  max-width: min(275px, 100%);
+  height: auto;
+  vertical-align: middle;
+}
+
+.register-sivar-footer-attribution {
+  margin-top: auto;
+  flex-shrink: 0;
+  padding-top: 1rem;
+  padding-bottom: 3rem;
+}
+
+@media (max-height: 760px) {
+  .register-sivar-form-col {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .register-sivar-card {
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+}

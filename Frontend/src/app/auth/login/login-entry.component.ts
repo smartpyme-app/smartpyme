@@ -1,6 +1,7 @@
 import { Component, OnInit, Type } from '@angular/core';
 
 import { LoginAbacoComponent } from './login-abaco.component';
+import { LoginSivarEconomicsComponent } from './login-sivar-economics.component';
 import { LoginComponent } from './login.component';
 
 @Component({
@@ -9,7 +10,7 @@ import { LoginComponent } from './login.component';
     '<ng-container *ngComponentOutlet="activeLoginComponent"></ng-container>',
 })
 export class LoginEntryComponent implements OnInit {
-  activeLoginComponent: Type<LoginComponent | LoginAbacoComponent> = LoginComponent;
+  activeLoginComponent: Type<LoginComponent | LoginAbacoComponent | LoginSivarEconomicsComponent> = LoginComponent;
 
   ngOnInit(): void {
     if (typeof window !== 'undefined') {
@@ -19,6 +20,9 @@ export class LoginEntryComponent implements OnInit {
       if (host.includes('abaco')) {
         this.activeLoginComponent = LoginAbacoComponent;
         console.log('[LoginEntry] Cargando LoginAbacoComponent');
+      } else if (host.includes('sivar')) {
+        this.activeLoginComponent = LoginSivarEconomicsComponent;
+        console.log('[LoginEntry] Cargando LoginSivarEconomicsComponent');
       } else {
         this.activeLoginComponent = LoginComponent;
         console.log('[LoginEntry] Cargando LoginComponent estándar');
