@@ -118,28 +118,69 @@ export class GastoComponent implements OnInit {
     return empresaEsElSalvador(this.apiService.auth_user()?.empresa);
   }
 
-  // ==================== MULTIMONEDA CR (Task 6, SP-2099) ====================
-  // TC no editable en compras/gastos (spec §10.2): siempre refleja el BCCR del día de `fecha`;
-  // la persistencia real (BCCR + equivalente CRC) la resuelve el backend al guardar.
-
-  /** Preview de tipo de cambio BCCR para el selector de moneda del gasto. */
+  // ==================== MULTIMONEDA GASTOS ====================
   public tcPreview: { rate: number | null; date: string | null; loading: boolean; error: string | null } = {
     rate: null, date: null, loading: false, error: null,
   };
   public tieneMultimoneda: boolean = false;
+  public monedaConfig: {
+    moneda_funcional: string;
+    monedas_documento: string[];
+    fuente: string;
+    permitir_editar: boolean;
+  } | null = null;
 
   esFeCostaRicaGasto(): boolean {
     return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_CR;
   }
 
+  get monedaFuncional(): string {
+    if (this.monedaConfig?.moneda_funcional) {
+      return this.monedaConfig.moneda_funcional;
+    }
+    const pais = resolveCodigoPaisFe(this.apiService.auth_user()?.empresa);
+    if (pais === FE_PAIS_CR) return 'CRC';
+    if (pais === FE_PAIS_HN) return 'HNL';
+    return (this.apiService.auth_user()?.empresa?.moneda || 'USD').toUpperCase();
+  }
+
+  get monedasDocumento(): string[] {
+    const list = this.monedaConfig?.monedas_documento;
+    if (Array.isArray(list) && list.length > 0) {
+      return list.map((m) => String(m).toUpperCase());
+    }
+    const funcional = this.monedaFuncional;
+    return funcional === 'USD' ? ['USD'] : [funcional, 'USD'];
+  }
+
+  get simboloMonedaFuncional(): string {
+    const f = this.monedaFuncional;
+    if (f === 'CRC') return '₡';
+    if (f === 'HNL') return 'L ';
+    return '$';
+  }
+
   get monedaGasto(): string {
-    return this.gasto?.currency_code || 'CRC';
+    return this.gasto?.currency_code || this.monedaFuncional;
+  }
+
+  public etiquetaMoneda(mon: string): string {
+    if (mon === 'USD') {
+      return this.etiquetaOpcionUsdGasto;
+    }
+    if (mon === 'CRC') {
+      return 'Colones (CRC)';
+    }
+    if (mon === 'HNL') {
+      return 'Lempiras (HNL)';
+    }
+    return mon;
   }
 
   get etiquetaOpcionUsdGasto(): string {
     const rate = parseFloat(this.gasto?.exchange_rate ?? this.tcPreview.rate);
     if (Number.isFinite(rate) && rate > 0 && rate !== 1) {
-      return `USD (₡${rate.toFixed(2)})`;
+      return `USD (${this.simboloMonedaFuncional}${rate.toFixed(2)})`;
     }
     return 'USD';
   }
@@ -148,8 +189,54 @@ export class GastoComponent implements OnInit {
     return !!this.gasto?.dte;
   }
 
+  public inicializarMonedaGasto(): void {
+    if (!this.tieneMultimoneda) {
+      return;
+    }
+    const cargar = () => {
+      const monedaEmpresa = (this.apiService.auth_user()?.empresa?.moneda || '').toUpperCase();
+      const funcional = this.monedaFuncional;
+      this.gasto.currency_code = this.monedasDocumento.includes(monedaEmpresa)
+        ? monedaEmpresa
+        : funcional;
+      if (this.gasto.currency_code === 'USD' && this.gasto.currency_code !== funcional) {
+        this.cargarTipoCambioPreview();
+      } else {
+        this.gasto.exchange_rate = 1;
+        this.tcPreview = { rate: 1, date: this.gasto.fecha, loading: false, error: null };
+      }
+      this.cdr.markForCheck();
+    };
+
+    if (this.monedaConfig) {
+      cargar();
+      return;
+    }
+
+    this.apiService.getAll('moneda/config').subscribe({
+      next: (cfg: any) => {
+        this.monedaConfig = {
+          moneda_funcional: String(cfg?.moneda_funcional || 'USD').toUpperCase(),
+          monedas_documento: Array.isArray(cfg?.monedas_documento) ? cfg.monedas_documento : [],
+          fuente: cfg?.fuente || 'manual',
+          permitir_editar: !!cfg?.permitir_editar,
+        };
+        cargar();
+      },
+      error: () => {
+        this.monedaConfig = {
+          moneda_funcional: this.monedaFuncional,
+          monedas_documento: this.monedasDocumento,
+          fuente: 'manual',
+          permitir_editar: true,
+        };
+        cargar();
+      },
+    });
+  }
+
   public onCurrencyCodeChange(): void {
-    if (this.gasto.currency_code === 'CRC') {
+    if (this.gasto.currency_code === this.monedaFuncional) {
       this.gasto.exchange_rate = 1;
       this.tcPreview = { rate: 1, date: this.gasto.fecha, loading: false, error: null };
       return;
@@ -159,7 +246,7 @@ export class GastoComponent implements OnInit {
   }
 
   public onFechaGastoChange(): void {
-    if (this.tieneMultimoneda && this.monedaGasto === 'USD' && !this.gastoYaTieneDte) {
+    if (this.tieneMultimoneda && this.monedaGasto === 'USD' && this.monedaGasto !== this.monedaFuncional && !this.gastoYaTieneDte) {
       this.cargarTipoCambioPreview();
     }
   }
@@ -170,15 +257,23 @@ export class GastoComponent implements OnInit {
     }
     const fecha = this.gasto.fecha || this.apiService.date();
     this.tcPreview = { rate: null, date: fecha, loading: true, error: null };
-    this.apiService.getAll('fe-cr/bccr-tipo-cambio', { fecha }).subscribe({
+    this.apiService.getAll('moneda/tipo-cambio', { fecha }).subscribe({
       next: (res: any) => {
+        if (res?.moneda_funcional && !this.monedaConfig) {
+          this.monedaConfig = {
+            moneda_funcional: String(res.moneda_funcional).toUpperCase(),
+            monedas_documento: Array.isArray(res.monedas_documento) ? res.monedas_documento : this.monedasDocumento,
+            fuente: res.fuente || 'manual',
+            permitir_editar: !!res.permitir_editar,
+          };
+        }
         const rate = res?.rate != null ? parseFloat(res.rate) : null;
         this.tcPreview = { rate, date: res?.date ?? fecha, loading: false, error: null };
         this.gasto.exchange_rate = rate;
         this.cdr.markForCheck();
       },
       error: (err: any) => {
-        const msg = err?.error?.error || err?.error?.message || 'No hay tipo de cambio BCCR disponible para esta fecha.';
+        const msg = err?.error?.error || err?.error?.message || 'No hay tipo de cambio disponible para esta fecha.';
         this.tcPreview = { rate: null, date: fecha, loading: false, error: msg };
         this.gasto.exchange_rate = null;
         this.cdr.markForCheck();
@@ -192,9 +287,10 @@ export class GastoComponent implements OnInit {
       return;
     }
     if (!this.gasto.currency_code) {
-      this.gasto.currency_code = 'CRC';
+      this.inicializarMonedaGasto();
+      return;
     }
-    if (this.gasto.currency_code === 'CRC') {
+    if (this.gasto.currency_code === this.monedaFuncional) {
       this.gasto.exchange_rate = 1;
       this.tcPreview = { rate: 1, date: this.gasto.exchange_rate_date || this.gasto.fecha, loading: false, error: null };
       return;
@@ -208,7 +304,7 @@ export class GastoComponent implements OnInit {
   }
 
   get usdEquivalentTotalGasto(): number | null {
-    if (!this.tieneMultimoneda || this.monedaGasto !== 'USD') {
+    if (!this.tieneMultimoneda || this.monedaGasto !== 'USD' || this.monedaGasto === this.monedaFuncional) {
       return null;
     }
     const total = parseFloat(this.gasto?.total);
@@ -221,7 +317,7 @@ export class GastoComponent implements OnInit {
 
   /** Sin TC usable en USD, bloquear guardar con mensaje claro (spec §10.2/§14). */
   get bloquearGastoPorMonedaSinTc(): boolean {
-    if (!this.tieneMultimoneda || this.gastoYaTieneDte || this.monedaGasto !== 'USD') {
+    if (!this.tieneMultimoneda || this.gastoYaTieneDte || this.monedaGasto !== 'USD' || this.monedaGasto === this.monedaFuncional) {
       return false;
     }
     const rate = parseFloat(this.gasto?.exchange_rate);
@@ -472,9 +568,7 @@ export class GastoComponent implements OnInit {
       this.detalles = [];
 
       if (this.tieneMultimoneda) {
-        this.gasto.currency_code = 'CRC';
-        this.gasto.exchange_rate = 1;
-        this.tcPreview = { rate: 1, date: this.gasto.fecha, loading: false, error: null };
+        this.inicializarMonedaGasto();
       }
 
       if (this.route.snapshot.queryParamMap.get('id_proyecto')!) {
@@ -954,7 +1048,7 @@ export class GastoComponent implements OnInit {
   public async onSubmit() {
     if (this.bloquearGastoPorMonedaSinTc) {
       this.alertService.error(
-        this.tcPreview.error || 'No hay tipo de cambio BCCR disponible para guardar este gasto en USD.'
+        this.tcPreview.error || 'No hay tipo de cambio disponible para guardar este gasto en USD.'
       );
       return;
     }
@@ -1541,11 +1635,14 @@ export class GastoComponent implements OnInit {
         }
       }
 
-      // Moneda del XML (Task 6, SP-2099): el backend ya validó CRC/USD; el TC final lo resuelve
-      // el servidor vía BCCR al guardar (no se usa el TipoCambio del XML como valor persistido).
-      if (this.esFeCostaRicaGasto()) {
+      // Moneda del XML: el TC final lo resuelve el backend al guardar.
+      if (this.tieneMultimoneda) {
         const codigoMonedaXml = String(jsonData.resumen?.currency_code || '').toUpperCase();
-        this.gasto.currency_code = codigoMonedaXml === 'USD' ? 'USD' : 'CRC';
+        if (codigoMonedaXml && this.monedasDocumento.includes(codigoMonedaXml)) {
+          this.gasto.currency_code = codigoMonedaXml;
+        } else {
+          this.gasto.currency_code = this.monedaFuncional;
+        }
         this.sincronizarPreviewMonedaGasto();
       }
       this.abrirAvanzadasSiHayDatos();
@@ -1926,7 +2023,11 @@ export class GastoComponent implements OnInit {
         next: (acceso) => {
           this.tieneMultimoneda = acceso;
           if (acceso) {
-            this.sincronizarPreviewMonedaGasto();
+            if (this.gasto.id) {
+              this.sincronizarPreviewMonedaGasto();
+            } else {
+              this.inicializarMonedaGasto();
+            }
           }
           this.cdr.markForCheck();
         },

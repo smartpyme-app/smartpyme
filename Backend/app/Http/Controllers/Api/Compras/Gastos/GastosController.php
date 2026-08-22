@@ -8,7 +8,7 @@ use JWTAuth;
 use App\Models\Admin\Documento;
 use App\Models\Admin\Empresa;
 use App\Models\Compras\Gastos\Gasto;
-use App\Support\FacturacionElectronica\CostaRica\DocumentoMoneda;
+use App\Services\Moneda\MonedaPaisService;
 use Carbon\Carbon;
 use App\Services\Bancos\TransaccionesService;
 use App\Services\Bancos\ChequesService;
@@ -290,7 +290,7 @@ class GastosController extends Controller
                 $gasto->total = $request->total ?? 0;
                 $gasto->concepto = $request->concepto;
                 $gasto->tipo = $request->input('tipo') ?? '';
-                $this->resolverMonedaCr($gasto, $request);
+                $this->resolverMonedaDocumento($gasto, $request);
                 $gasto->save();
                 $this->sincronizarDetalleUnico($gasto, $request);
             }
@@ -343,7 +343,7 @@ class GastosController extends Controller
         $gasto->iva_percibido = round($ivaPercibido, 2);
         $gasto->total = round($total, 2);
         if ($request) {
-            $this->resolverMonedaCr($gasto, $request);
+            $this->resolverMonedaDocumento($gasto, $request);
         }
         $gasto->save();
 
@@ -636,28 +636,53 @@ class GastosController extends Controller
      * Asigna el correlativo activo de Sujeto excluido y lo incrementa (fuente de verdad en backend).
      */
     /**
-     * Resuelve currency_code/exchange_rate/CRC equivalent (§7.4).
-     * Requiere funcionalidad `multimoneda`; sin ella fuerza CRC. Gastos no editan TC (siempre BCCR).
+     * Resuelve currency_code / exchange_rate / equivalent_* según pais_configuracion (módulo moneda).
+     * Sin funcionalidad `multimoneda` fuerza moneda funcional del país.
+     * Override de TC: empresa `facturacion_fe.permitir_editar_tipo_cambio` o país `permitir_editar`.
      */
-    private function resolverMonedaCr(Gasto $gasto, Request $request): void
+    private function resolverMonedaDocumento(Gasto $gasto, Request $request): void
     {
         $empresa = Empresa::find($gasto->id_empresa);
         if (! $empresa) {
             return;
         }
 
-        $currencyCode = $empresa->tieneFuncionalidadMultimoneda()
-            ? $request->input('currency_code', $gasto->currency_code ?? DocumentoMoneda::MONEDA_CRC)
-            : DocumentoMoneda::MONEDA_CRC;
+        /** @var MonedaPaisService $monedaService */
+        $monedaService = app(MonedaPaisService::class);
+        $cfg = $monedaService->configForEmpresa($empresa);
+        $funcional = strtoupper((string) ($cfg['moneda_funcional'] ?? 'USD'));
 
-        $moneda = app(DocumentoMoneda::class)->resolve(
+        if (! $empresa->tieneFuncionalidadMultimoneda()) {
+            $moneda = $monedaService->resolveDocumento(
+                $empresa,
+                [
+                    'currency_code' => $funcional,
+                    'total' => (float) $gasto->total,
+                    'iva' => (float) $gasto->iva,
+                ],
+                Carbon::parse($gasto->fecha ?: now())
+            );
+            $gasto->fill($moneda);
+
+            return;
+        }
+
+        $documentoYaEmitido = ! empty($gasto->dte);
+        $allowManualRate = ! $documentoYaEmitido && (
+            (bool) $empresa->getCustomConfigValue('facturacion_fe', 'permitir_editar_tipo_cambio', false)
+            || (bool) ($cfg['permitir_editar'] ?? false)
+        );
+
+        $moneda = $monedaService->resolveDocumento(
+            $empresa,
             [
-                'currency_code' => $currencyCode,
+                'currency_code' => $request->input('currency_code', $gasto->currency_code ?? $funcional),
+                'exchange_rate' => $request->input('exchange_rate'),
                 'total' => (float) $gasto->total,
                 'iva' => (float) $gasto->iva,
             ],
-            $empresa,
-            Carbon::parse($gasto->fecha ?: now())
+            Carbon::parse($gasto->fecha ?: now()),
+            $allowManualRate
         );
 
         $gasto->fill($moneda);

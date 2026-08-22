@@ -23,10 +23,11 @@
                 <label for="currency_code">Moneda</label>
                 <select name="currency_code" id="currency_code" class="form-select" [(ngModel)]="gasto.currency_code"
                     (ngModelChange)="onCurrencyCodeChange()" [disabled]="gastoYaTieneDte">
-                    <option value="CRC">CR</option>
-                    <option value="USD">{{ etiquetaOpcionUsdGasto }}</option>
+                    <option *ngFor="let mon of monedasDocumento" [value]="mon">
+                        {{ etiquetaMoneda(mon) }}
+                    </option>
                 </select>
-                <small class="text-danger d-block mt-1" *ngIf="monedaGasto === 'USD' && tcPreview.error">{{ tcPreview.error }}</small>
+                <small class="text-danger d-block mt-1" *ngIf="monedaGasto === 'USD' && monedaGasto !== monedaFuncional && tcPreview.error">{{ tcPreview.error }}</small>
             </div>
             <div class="form-group col-md-3">
                 <label for="id_usuario">Usuario:</label>
