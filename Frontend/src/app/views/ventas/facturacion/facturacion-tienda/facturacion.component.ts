@@ -556,6 +556,9 @@ export class FacturacionComponent implements OnInit, OnDestroy {
         this.venta.correlativo = documento.correlativo;
         this.venta.nombre_documento = documento.nombre;
       }
+    } else if (!this.venta.id) {
+      this.venta.correlativo = documentoActual.correlativo;
+      this.venta.nombre_documento = documentoActual.nombre;
     }
   }
 
@@ -1926,7 +1929,6 @@ export class FacturacionComponent implements OnInit, OnDestroy {
             this.preguntarGenerarEnvioBoxful(venta);
           } else {
             this.cargarDatosIniciales();
-            this.loadData();
             this.router.navigate(['/venta/crear']);
           }
         }
