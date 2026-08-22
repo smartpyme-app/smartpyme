@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, OnChanges, SimpleChanges, TemplateRef, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -17,7 +17,7 @@ import { BaseComponent } from '@shared/base/base.component';
     imports: [CommonModule, RouterModule, FormsModule, NotificacionesContainerComponent],
 
 })
-export class CrearAbonoCompraComponent extends BaseComponent implements OnInit {
+export class CrearAbonoCompraComponent extends BaseComponent implements OnInit, OnChanges {
 
 	@Input() compra: any = {};
 	@Output() update = new EventEmitter();
@@ -40,16 +40,7 @@ export class CrearAbonoCompraComponent extends BaseComponent implements OnInit {
     }
 
 	ngOnInit() {
-        this.abono.total = this.compra.saldo;
-        this.abono.fecha = this.apiService.date();
-        this.abono.id_compra = this.compra.id;
-        this.abono.nombre_de = this.compra.nombre_proveedor;
-        this.abono.estado = 'Confirmado';
-        this.abono.forma_pago = 'Efectivo';
-        this.abono.detalle_banco = '';
-        this.abono.id_sucursal = this.apiService.auth_user().id_sucursal;
-        this.abono.id_empresa = this.apiService.auth_user().id_empresa;
-        this.abono.id_usuario = this.apiService.auth_user().id;
+        this.setDatosCompra();
 
         this.apiService.getAll('formas-de-pago/list')
             .pipe(this.untilDestroyed())
@@ -73,6 +64,25 @@ export class CrearAbonoCompraComponent extends BaseComponent implements OnInit {
             }, error => {this.alertService.error(error);});
         }
 	}
+
+    ngOnChanges(changes: SimpleChanges) {
+        if (changes['compra'] && this.compra) {
+            this.setDatosCompra();
+        }
+    }
+
+    private setDatosCompra() {
+        this.abono.total = this.compra?.saldo ?? this.compra?.total ?? 0;
+        this.abono.fecha = this.abono.fecha || this.apiService.date();
+        this.abono.id_compra = this.compra?.id;
+        this.abono.nombre_de = this.compra?.nombre_proveedor || (this.compra?.proveedor?.tipo === 'Empresa' ? this.compra?.proveedor?.nombre_empresa : this.compra?.proveedor?.nombre_completo) || '';
+        this.abono.estado = this.abono.estado || 'Confirmado';
+        this.abono.forma_pago = this.abono.forma_pago || 'Efectivo';
+        this.abono.detalle_banco = this.abono.detalle_banco || '';
+        this.abono.id_sucursal = this.apiService.auth_user()?.id_sucursal;
+        this.abono.id_empresa = this.apiService.auth_user()?.id_empresa;
+        this.abono.id_usuario = this.apiService.auth_user()?.id;
+    }
 
     public cambioMetodoDePago() {
         if (this.apiService.isModuloBancos() && this.abono.forma_pago && this.abono.forma_pago !== 'Efectivo') {
@@ -104,6 +114,7 @@ export class CrearAbonoCompraComponent extends BaseComponent implements OnInit {
         this.apiService.store('compra/abono', this.abono)
             .pipe(this.untilDestroyed())
             .subscribe(abono => {
+            this.modalService.hide();
             this.alertService.modal = false;
             this.update.emit();
             this.router.navigate(['/compras/abonos']);

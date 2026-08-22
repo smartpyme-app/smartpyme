@@ -1,4 +1,4 @@
-﻿import { Component, OnInit, OnDestroy, TemplateRef, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, TemplateRef, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PipesModule } from '@pipes/pipes.module';
 import { FormsModule } from '@angular/forms';
@@ -27,6 +27,9 @@ import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/n
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { LazyImageDirective } from '../../directives/lazy-image.directive';
+import { CrearAbonoCompraComponent } from '@shared/modals/crear-abono-compra/crear-abono-compra.component';
+import { CrearProveedorComponent } from '@shared/modals/crear-proveedor/crear-proveedor.component';
+import { CompraDetallesComponent } from './facturacion/detalles/compra-detalles.component';
 import { Subject } from 'rxjs';
 
 /** Debe coincidir con el slug en Backend (FuncionalidadesSeeder / verificar-acceso). */
@@ -59,7 +62,23 @@ declare var $:any;
     selector: 'app-compras',
     templateUrl: './compras.component.html',
     standalone: true,
-    imports: [CommonModule, PipesModule, RouterModule, FormsModule, NgSelectModule, TruncatePipe, PopoverModule, TooltipModule, PaginationComponent, LazyImageDirective, AlertsHaciendaComponent, NotificacionesContainerComponent],
+    imports: [
+        CommonModule,
+        PipesModule,
+        RouterModule,
+        FormsModule,
+        NgSelectModule,
+        TruncatePipe,
+        PopoverModule,
+        TooltipModule,
+        PaginationComponent,
+        LazyImageDirective,
+        AlertsHaciendaComponent,
+        NotificacionesContainerComponent,
+        CrearAbonoCompraComponent,
+        CrearProveedorComponent,
+        CompraDetallesComponent,
+    ],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 
@@ -501,7 +520,8 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
     public openDescargar(template: TemplateRef<any>) {
         this.reporteSeleccionado = '';
         this.exportPeriodo = crearEstadoExportPeriodoDefault();
-        this.openModal(template);
+        this.modalRef = this.modalService.show(template);
+        this.cdr.markForCheck();
     }
 
     public cerrarModalDescargar(): void {
@@ -668,7 +688,9 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
     public openAbono(template: TemplateRef<any>, compra: any){
       this.compra = { ...compra, saldo: this.getSaldo(compra) };
       this.alertService.modal = true;
-      this.openModal(template);    }
+      this.modalRef = this.modalService.show(template);
+      this.cdr.markForCheck();
+    }
 
     public openFilter(template: TemplateRef<any>) {
 
@@ -740,7 +762,8 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
                 });
         }
 
-        this.openModal(template);
+        this.modalRef = this.modalService.show(template);
+        this.cdr.markForCheck();
     }
 
     openDTE(template: TemplateRef<any>, compra:any){
