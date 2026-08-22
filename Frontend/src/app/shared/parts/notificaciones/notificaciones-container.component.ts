@@ -57,6 +57,10 @@ export class NotificacionesContainerComponent implements OnInit {
                         // Forzar detección de cambios
                         this.cdr.detectChanges();
                         
+                        try {
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                        } catch (_) {}
+
                         if (this.alertMessage && (this.alertMessage.tipo == 'alert-success')) {
                             setTimeout(() => {
                                 this.closeAlert();
