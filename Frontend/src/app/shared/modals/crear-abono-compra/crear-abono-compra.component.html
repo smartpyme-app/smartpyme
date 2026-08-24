@@ -9,7 +9,7 @@
 
         <div class="form-group col-md-6">
             <label for="forma_pago">Forma de pago</label>
-            <select name="forma_pago" [(ngModel)]="abono.forma_pago" class="form-select">
+            <select name="forma_pago" [(ngModel)]="abono.forma_pago" (change)="cambioMetodoDePago()" class="form-select">
                 @for (forma of formaPagos; track forma.id) {
                     <option [value]="forma.nombre">{{ forma.nombre }}</option>
                 }

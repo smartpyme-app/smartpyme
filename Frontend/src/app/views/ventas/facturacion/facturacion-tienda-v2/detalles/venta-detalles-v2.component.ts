@@ -72,6 +72,8 @@ export class VentaDetallesV2Component implements OnInit {
     @Input() usuarios: any = {};
     @Input() habilitarCuentaTerceros = false;
     @Input() esFeCostaRica = false;
+    /** POS: oculta buscador/tabla; mantiene modales (lote, supervisor). */
+    @Input() ocultarEntradaProductos = false;
     public usuario:any = {};
     public detalle:any = {};
     public composicion:any = {};

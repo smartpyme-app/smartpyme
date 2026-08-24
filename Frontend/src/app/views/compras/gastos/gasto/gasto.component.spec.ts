@@ -97,4 +97,44 @@ describe('GastoComponent - campos condicionales', () => {
       expect(ctx.opAvanzadas).toBe(false);
     });
   });
+
+  describe('Multimoneda por país', () => {
+    it('resuelve moneda funcional y símbolos para Honduras (HNL)', () => {
+      const ctx: any = {
+        monedaConfig: { moneda_funcional: 'HNL', monedas_documento: ['HNL', 'USD'], fuente: 'api', permitir_editar: true },
+        apiService: { auth_user: () => ({ empresa: { pais: 'Honduras', cod_pais: 'HN', moneda: 'HNL' } }) },
+      };
+
+      expect(leerGetter('monedaFuncional', ctx)).toBe('HNL');
+      expect(leerGetter('monedasDocumento', ctx)).toEqual(['HNL', 'USD']);
+      expect(leerGetter('simboloMonedaFuncional', ctx)).toBe('L ');
+    });
+
+    it('formatea las etiquetas de moneda correctamente para HNL, CRC y USD', () => {
+      const ctx: any = {
+        monedaConfig: { moneda_funcional: 'HNL', monedas_documento: ['HNL', 'USD'], fuente: 'api', permitir_editar: true },
+        apiService: { auth_user: () => ({ empresa: { pais: 'Honduras', cod_pais: 'HN', moneda: 'HNL' } }) },
+        gasto: { exchange_rate: 26.9455 },
+        tcPreview: { rate: 26.9455 },
+      };
+
+      expect((GastoComponent.prototype.etiquetaMoneda as any).call(ctx, 'HNL')).toBe('Lempiras (HNL)');
+      expect((GastoComponent.prototype.etiquetaMoneda as any).call(ctx, 'CRC')).toBe('Colones (CRC)');
+      expect((GastoComponent.prototype.etiquetaMoneda as any).call(ctx, 'USD')).toBe('USD (L 26.95)');
+    });
+
+    it('al seleccionar la moneda funcional fija exchange_rate en 1', () => {
+      const ctx: any = {
+        monedaConfig: { moneda_funcional: 'HNL', monedas_documento: ['HNL', 'USD'], fuente: 'api', permitir_editar: true },
+        gasto: { currency_code: 'HNL', fecha: '2026-08-22', exchange_rate: null },
+        tcPreview: { rate: null, date: null, loading: false, error: null },
+      };
+
+      invocar('onCurrencyCodeChange', ctx);
+
+      expect(ctx.gasto.exchange_rate).toBe(1);
+      expect(ctx.tcPreview.rate).toBe(1);
+      expect(ctx.tcPreview.error).toBeNull();
+    });
+  });
 });

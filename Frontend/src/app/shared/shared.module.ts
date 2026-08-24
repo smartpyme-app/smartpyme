@@ -167,6 +167,5 @@ import { VerHistorialButtonComponent } from '../views/planillas/empleados/shared
     BoxfulShippingSelectorComponent,
     BoxfulShipmentDetailsComponent,
   ],
-  providers: [AlertService],
 })
 export class SharedModule {}
