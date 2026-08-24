@@ -45,7 +45,12 @@ class Proveedor extends AuditableModel {
         'id_empresa',
         'id_cuenta_contable',
         'tipo_documento',
-        'tipo_persona'
+        'tipo_persona',
+        'banco',
+        'tipo_cuenta',
+        'numero_cuenta',
+        'titular_cuenta',
+        'forma_pago',
     );
 
     protected $appends = ['nombre_completo'];

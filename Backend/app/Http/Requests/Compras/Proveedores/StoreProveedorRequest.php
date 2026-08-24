@@ -46,6 +46,21 @@ class StoreProveedorRequest extends FormRequest
                 'max:255',
             ],
             'id_cuenta_contable' => 'sometimes|nullable|integer|exists:catalogo_cuentas,id',
+            ...self::reglasDatosBancarios(),
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function reglasDatosBancarios(): array
+    {
+        return [
+            'banco' => 'nullable|string|max:255|required_with:tipo_cuenta,numero_cuenta,titular_cuenta,forma_pago',
+            'tipo_cuenta' => 'nullable|in:Ahorro,Corriente|required_with:banco,numero_cuenta,titular_cuenta,forma_pago',
+            'numero_cuenta' => 'nullable|string|max:50|required_with:banco,tipo_cuenta,titular_cuenta,forma_pago',
+            'titular_cuenta' => 'nullable|string|max:255|required_with:banco,tipo_cuenta,numero_cuenta,forma_pago',
+            'forma_pago' => 'nullable|in:Transferencia,Cheque,Efectivo',
         ];
     }
 
@@ -73,6 +88,12 @@ class StoreProveedorRequest extends FormRequest
             'dui.max' => 'El DUI no puede exceder 255 caracteres.',
             'nit.unique' => 'El NIT ya está registrado.',
             'nit.max' => 'El NIT no puede exceder 255 caracteres.',
+            'banco.required_with' => 'El banco es obligatorio cuando se registra una cuenta.',
+            'tipo_cuenta.required_with' => 'El tipo de cuenta es obligatorio cuando se registra una cuenta.',
+            'tipo_cuenta.in' => 'El tipo de cuenta debe ser Ahorro o Corriente.',
+            'numero_cuenta.required_with' => 'El número de cuenta es obligatorio cuando se registra una cuenta.',
+            'titular_cuenta.required_with' => 'El titular de la cuenta es obligatorio cuando se registra una cuenta.',
+            'forma_pago.in' => 'La forma de pago debe ser Transferencia, Cheque o Efectivo.',
         ];
     }
 
@@ -90,6 +111,11 @@ class StoreProveedorRequest extends FormRequest
             'ncr' => 'NCR',
             'dui' => 'DUI',
             'nit' => 'NIT',
+            'banco' => 'banco',
+            'tipo_cuenta' => 'tipo de cuenta',
+            'numero_cuenta' => 'número de cuenta',
+            'titular_cuenta' => 'titular de la cuenta',
+            'forma_pago' => 'forma de pago',
         ];
     }
 
@@ -115,6 +141,12 @@ class StoreProveedorRequest extends FormRequest
             $this->merge([
                 'nombre_empresa' => trim($this->nombre_empresa),
             ]);
+        }
+
+        foreach (['banco', 'tipo_cuenta', 'numero_cuenta', 'titular_cuenta', 'forma_pago'] as $campo) {
+            if ($this->has($campo) && is_string($this->input($campo))) {
+                $this->merge([$campo => trim($this->input($campo))]);
+            }
         }
     }
 
