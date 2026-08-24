@@ -148,10 +148,10 @@
                     }
                     <div class="form-group col-12 col-md-6 col-lg-4">
                         <label for="nit">{{ 'country.tax.nit' | translate }}</label>
-                        <input type="text" class="form-control" [(ngModel)]="empresa.nit" name="nit" placeholder="Escriba aquí" [dropSpecialCharacters]="false" mask='{{apiService.auth_user().empresa.validador_nit}}'
+                        <input type="text" class="form-control" [(ngModel)]="empresa.nit" name="nit" placeholder="Escriba aquí" [dropSpecialCharacters]="false" [mask]="mascaraNit()"
                             (ngModelChange)="onNitEmpresaChange()">
                     </div>
-                    @if (!esCostaRicaFe()) {
+                    @if (mostrarRegistroSecundarioEmpresa()) {
                     <div class="form-group col-12 col-md-6 col-lg-4">
                         <label for="ncr">{{ 'country.tax.ncr' | translate }}</label>
                         <input type="text" class="form-control" [(ngModel)]="empresa.ncr" name="ncr" placeholder="Escriba aquí">

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>{{ $empresa->nombre }} {{ $venta->nombre_documento }} - {{ $venta->correlativo }}</title>
+    <title>{{ $empresa->nombre }} {{ $documento->nombre ?? $venta->nombre_documento }} - {{ $venta->correlativo }}</title>
     <style>
         /* Mismo patrón que Accesorios-HN / Lilian / Inversiones-Andre:
            @page + padding en #factura (DomPDF no confía solo en @page). */
@@ -180,12 +180,14 @@
         }
     }
 
-    $vendedorNombre = trim((string) ($venta->nombre_vendedor ?? ''));
-    if ($vendedorNombre === '' && $venta->id_vendedor) {
-        $vendedorNombre = trim((string) (optional($venta->vendedor)->name ?? ''));
+    $vendedorNombre = '';
+    if ($venta->relationLoaded('vendedor') && $venta->vendedor) {
+        $vendedorNombre = trim((string) $venta->vendedor->name);
+    } elseif (!empty($venta->id_vendedor)) {
+        $vendedorNombre = trim((string) ($venta->nombre_vendedor ?? ''));
     }
 
-    $ivaEmpresa = (float) ($venta->empresa()->pluck('iva')->first() ?? 15);
+    $ivaEmpresa = (float) ($empresa->iva ?? ($venta->relationLoaded('empresa') ? optional($venta->empresa)->iva : null) ?? 15);
     $iva_15 = 0.0;
     $gravada_15 = 0.0;
     $importe_exento = 0.0;
@@ -243,10 +245,15 @@
     $totalLetras = strtoupper(trim((string) $dolares) . ' LEMPIRAS CON ' . trim((string) $centavos) . ' CENTAVOS');
     $observaciones = trim((string) ($venta->observaciones ?? ''));
 
+    $rtnEmpresa = trim((string) ($empresa->nit ?? ''));
+    if ($rtnEmpresa === '') {
+        $rtnEmpresa = trim((string) ($empresa->ncr ?? ''));
+    }
+
     $qrPayload = trim(implode('|', array_filter([
         (string) $numFacturaDisplay,
         (string) ($cai ?? ''),
-        (string) ($empresa->nit ?? ''),
+        (string) $rtnEmpresa,
         number_format((float) $venta->total, 2, '.', ''),
     ])));
 @endphp
@@ -254,14 +261,17 @@
     <table>
         <tr>
             <td style="width: 38%;">
-                @if ($venta->empresa()->pluck('logo')->first())
-                    <img class="logo" src="{{ asset('img/'.$venta->empresa()->pluck('logo')->first()) }}" alt="Logo">
+                @php
+                    $logoPath = $empresa->logo ?? ($venta->relationLoaded('empresa') ? optional($venta->empresa)->logo : null);
+                @endphp
+                @if ($logoPath)
+                    <img class="logo" src="{{ asset('img/'.$logoPath) }}" alt="Logo">
                 @endif
             </td>
             <td class="header-right" style="width: 62%;">
                 <p class="num-linea">Número de factura {{ $numFacturaDisplay }}</p>
                 @if ($direccionFactura)<p>{{ $direccionFactura }}</p>@endif
-                @if ($empresa->nit)<p>RTN# {{ $empresa->nit }}</p>@endif
+                @if ($rtnEmpresa !== '')<p>RTN# {{ $rtnEmpresa }}</p>@endif
                 @if ($telefonoFactura)<p>{{ $telefonoFactura }}</p>@endif
                 @if ($correoFactura)<p>{{ $correoFactura }}</p>@endif
             </td>

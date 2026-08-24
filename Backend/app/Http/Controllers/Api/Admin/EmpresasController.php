@@ -180,6 +180,10 @@ class EmpresasController extends Controller
 
         $empresa->fill($request->all());
 
+        if (($empresa->pais === 'Honduras' || $empresa->cod_pais === 'HN') && !empty($empresa->nit)) {
+            $empresa->nit = preg_replace('/\D/', '', (string) $empresa->nit);
+        }
+
         if ($request->hasFile('file')) {
             $empresa->logo = $this->handleLogoUpload($request, $empresa);
         }
@@ -218,6 +222,10 @@ class EmpresasController extends Controller
 
         $empresa = new Empresa;
         $empresa->fill($request->all());
+
+        if (($empresa->pais === 'Honduras' || $empresa->cod_pais === 'HN') && !empty($empresa->nit)) {
+            $empresa->nit = preg_replace('/\D/', '', (string) $empresa->nit);
+        }
 
         if ($request->hasFile('file')) {
             $empresa->logo = $this->handleLogoUpload($request, $empresa);

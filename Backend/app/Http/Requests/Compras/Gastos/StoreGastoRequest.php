@@ -37,6 +37,8 @@ class StoreGastoRequest extends FormRequest
             'otros_impuestos' => 'sometimes|nullable',
             'area_empresa' => 'sometimes|nullable|string|max:255',
             'id_area_empresa' => 'sometimes|nullable|integer',
+            'currency_code' => 'sometimes|nullable|string|max:10',
+            'exchange_rate' => 'sometimes|nullable|numeric',
         ];
     }
 
