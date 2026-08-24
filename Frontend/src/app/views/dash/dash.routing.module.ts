@@ -29,6 +29,11 @@ const routes: Routes = [
           loadComponent: () => import('@views/reportes/corte/corte.component').then(m => m.CorteComponent), 
           title: 'Cierre de caja'
         },
+        {
+          path: 'finanzas/antiguedad-saldos',
+          loadComponent: () => import('@views/finanzas/antiguedad-saldos/antiguedad-saldos.component').then(m => m.AntiguedadSaldosComponent),
+          title: 'Antigüedad de saldos'
+        },
     ]
   }
 ];
