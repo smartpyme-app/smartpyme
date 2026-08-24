@@ -209,6 +209,11 @@
                             @if (apiService.hasPermission('finanzas.cierre_caja.ver')) {
                                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/cierre-de-caja']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/inbox.png" class="icon me-2">Cierre de caja</a></li>
                             }
+                            @if (apiService.hasPermission('finanzas.reporteria.ver')) {
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/finanzas/antiguedad-saldos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/filters-lines.png" class="icon me-2">Antigüedad de saldos</a></li>
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/clientes/cuentas-cobrar']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/coin-stack.png" class="icon me-2">Cuentas por cobrar</a></li>
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/proveedores/cuentas-pagar']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/coins.png" class="icon me-2">Cuentas por pagar</a></li>
+                            }
                             @if (tieneDescargaDtesHabilitada) {
                                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: false}"><a [routerLink]="['/dte-management/cuentas']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/inbox.png" class="icon me-2">{{ 'country.tax.fe.downloadSidebarLabel' | translate }}</a></li>
                             }
