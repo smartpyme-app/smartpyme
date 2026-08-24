@@ -351,7 +351,7 @@ class ProductosController extends Controller
                 foreach ($producto->presentaciones as $pres) {
                     $factor = (float) $pres->factor_conversion ?: 1;
 
-                    $nombreMostrar = $pres->nombre_comercial . ' (' . $producto->nombre . ')';
+                    $nombreMostrar = $pres->nombre_comercial;
 
                     $stockEmpaque = $stockBase === null
                         ? null
@@ -466,7 +466,7 @@ class ProductosController extends Controller
                 foreach ($producto->presentaciones as $pres) {
                     $factor = (float) $pres->factor_conversion ?: 1;
 
-                    $nombreMostrar = $pres->nombre_comercial . ' (' . $producto->nombre . ')';
+                    $nombreMostrar = $pres->nombre_comercial;
 
                     $stockEmpaque = $stockBase === null
                         ? null

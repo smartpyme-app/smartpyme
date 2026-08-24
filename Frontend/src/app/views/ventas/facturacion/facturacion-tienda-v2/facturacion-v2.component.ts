@@ -29,6 +29,7 @@ import {
 } from '@utils/impuestos-venta.util';
 import { esVentaPorConsigna, sincronizarFlagConsignaVenta, aplicarEstadoConsignaEnVenta } from '@utils/venta-consigna.util';
 import { debeDispararAtajoTcla } from '@utils/atajos-teclado.util';
+import { calcularCambioEfectivo } from '@utils/cambio-efectivo.util';
 import { FACTURA_REMISION, esVentaConsignaRemision } from '../../../../constants/documento.constants';
 import { isImpresionEnFacturacionActiva } from '@helpers/empresa.helper';
 
@@ -1413,19 +1414,15 @@ export class FacturacionV2Component implements OnInit, OnDestroy {
     this.actualizarCambioEfectivo();
   }
 
-  /** Vuelto: efectivo recibido (monto_pago) menos lo debido en efectivo (total, o parte en pago mixto). */
+  /** Vuelto: efectivo recibido menos lo debido en efectivo (total + propina, o parte en pago mixto). */
   public actualizarCambioEfectivo(): void {
-    const raw = this.venta.monto_pago;
-    if (raw === null || raw === undefined || raw === '') {
-      this.venta.cambio = '';
-      return;
-    }
-    const recibido = parseFloat(String(raw)) || 0;
-    const totalVenta = parseFloat(String(this.venta.total ?? 0)) || 0;
-    const enMultiple = this.venta.forma_pago === 'Multiple';
-    const parteEfectivo = parseFloat(String(this.venta.efectivo ?? 0)) || 0;
-    const aCobrarEfectivo = enMultiple && parteEfectivo > 0 ? parteEfectivo : totalVenta;
-    this.venta.cambio = (recibido - aCobrarEfectivo).toFixed(2);
+    this.venta.cambio = calcularCambioEfectivo({
+      montoPago: this.venta.monto_pago,
+      total: this.venta.total,
+      propina: this.venta.propina,
+      formaPago: this.venta.forma_pago,
+      efectivo: this.venta.efectivo,
+    });
   }
 
   /** Tras cargar una venta: mostrar el bloque de cuenta a terceros si hay monto en líneas o en cabecera. */
