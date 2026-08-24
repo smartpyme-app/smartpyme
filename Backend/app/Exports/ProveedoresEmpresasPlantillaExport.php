@@ -24,6 +24,11 @@ class ProveedoresEmpresasPlantillaExport implements FromCollection, WithHeadings
             'Correo',
             'Nota',
             'Estado',
+            'Banco',
+            'Tipo_cuenta',
+            'Numero_cuenta',
+            'Titular_cuenta',
+            'Forma_pago',
         ];
     }
 

@@ -35,6 +35,11 @@ class ProveedoresEmpresasExport implements FromCollection, WithHeadings, WithMap
             'Correo',
             'Nota',
             'Estado',
+            'Banco',
+            'Tipo_cuenta',
+            'Numero_cuenta',
+            'Titular_cuenta',
+            'Forma_pago',
         ];
     }
 
@@ -76,6 +81,11 @@ class ProveedoresEmpresasExport implements FromCollection, WithHeadings, WithMap
                 $row->correo,
                 $row->nota,
                 $row->enable ? 'Activo' : 'Inactivo',
+                $row->banco,
+                $row->tipo_cuenta,
+                $row->numero_cuenta,
+                $row->titular_cuenta,
+                $row->forma_pago,
          ];
         return $fields;
     }

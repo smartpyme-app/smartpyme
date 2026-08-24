@@ -45,6 +45,11 @@ class ComprasExport implements FromCollection, WithHeadings, WithMapping
             'Percepción', 
             'Descuento', 
             'Total',
+            'Forma de pago',
+            'Banco',
+            'Tipo de cuenta',
+            'Número de cuenta',
+            'Titular',
         ];
 
     }
@@ -90,6 +95,7 @@ class ComprasExport implements FromCollection, WithHeadings, WithMapping
                             return $query->where('metodo_pago', $request->metodo_pago);
                         })
                         ->where('cotizacion', 0)
+                        ->with(['proveedor', 'proyecto'])
                         ->orderBy($request->orden, $request->direccion)
                         ->orderBy('id', 'desc')
                         ->get();
@@ -99,14 +105,17 @@ class ComprasExport implements FromCollection, WithHeadings, WithMapping
     }
 
     public function map($row): array{
+           $proveedor = $row->relationLoaded('proveedor') ? $row->proveedor : null;
+           $proyecto = $row->relationLoaded('proyecto') ? $row->proyecto : null;
+
            $fields = [
               $row->fecha,
               $row->nombre_proveedor,
-              $row->proveedor()->pluck('dui')->first(),
-              $row->proveedor()->pluck('nit')->first(),
+              $proveedor?->dui,
+              $proveedor?->nit,
               $row->tipo_documento,
               $row->referencia,
-              $row->proyecto()->pluck('nombre')->first(),
+              $proyecto?->nombre,
               $row->num_identificacion,
               $row->estado,
               $row->fecha_pago,
@@ -115,6 +124,11 @@ class ComprasExport implements FromCollection, WithHeadings, WithMapping
               $row->percepcion,
               $row->descuento,
               $row->total,
+              $row->forma_pago,
+              $proveedor?->banco,
+              $proveedor?->tipo_cuenta,
+              $proveedor?->numero_cuenta,
+              $proveedor?->titular_cuenta,
          ];
         return $fields;
     }

@@ -3,6 +3,8 @@
 namespace Tests\Unit\Exports;
 
 use App\Exports\PlantillaProductosImportExport;
+use App\Exports\ProveedoresEmpresasPlantillaExport;
+use App\Exports\ProveedoresPersonasPlantillaExport;
 use App\Exports\ServiciosPlantillaExport;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
@@ -31,5 +33,13 @@ class PlantillasImportacionExcelTest extends TestCase
 
         $this->assertNotSame('', $raw);
         $this->assertSame('PK', substr($raw, 0, 2), 'La plantilla de productos debe ser un ZIP/XLSX');
+    }
+
+    public function test_plantillas_proveedores_incluyen_columnas_bancarias(): void
+    {
+        foreach (['Banco', 'Tipo_cuenta', 'Numero_cuenta', 'Titular_cuenta', 'Forma_pago'] as $columna) {
+            $this->assertContains($columna, (new ProveedoresPersonasPlantillaExport())->headings());
+            $this->assertContains($columna, (new ProveedoresEmpresasPlantillaExport())->headings());
+        }
     }
 }

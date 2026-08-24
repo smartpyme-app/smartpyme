@@ -33,6 +33,7 @@ class ProveedoresEmpresas implements ToModel, WithHeadingRow, WithValidation, Sk
         $stringKeys = [
             'nombre_empresa', 'ncr', 'giro', 'tipo_contribuyente', 'dui', 'nit', 'rtn',
             'n_de_identificacion', 'direccion', 'municipio', 'departamento', 'telefono', 'correo',
+            'banco', 'tipo_cuenta', 'numero_cuenta', 'titular_cuenta', 'forma_pago',
         ];
 
         $row = $this->applyExcelRowNormalization($row, $stringKeys, false);
@@ -83,6 +84,11 @@ class ProveedoresEmpresas implements ToModel, WithHeadingRow, WithValidation, Sk
         $proveedor->departamento = $row['departamento'] ?? null;
         $proveedor->telefono = $row['telefono'] ?? null;
         $proveedor->correo = $row['correo'] ?? null;
+        $proveedor->banco = $row['banco'] ?? null;
+        $proveedor->tipo_cuenta = $row['tipo_cuenta'] ?? null;
+        $proveedor->numero_cuenta = $row['numero_cuenta'] ?? null;
+        $proveedor->titular_cuenta = $row['titular_cuenta'] ?? null;
+        $proveedor->forma_pago = $row['forma_pago'] ?? null;
 
         $proveedor->id_usuario = $user->id;
         $proveedor->id_empresa = $user->id_empresa;
@@ -110,6 +116,7 @@ class ProveedoresEmpresas implements ToModel, WithHeadingRow, WithValidation, Sk
             'departamento' => 'nullable|string',
             'telefono' => 'nullable|string',
             'correo' => 'nullable|string',
+            ...\App\Http\Requests\Compras\Proveedores\StoreProveedorRequest::reglasDatosBancarios(),
         ];
     }
 

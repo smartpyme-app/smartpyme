@@ -565,6 +565,39 @@
                     <input type="text" class="form-control" id="nota_modal_pv" placeholder="Escribe aquí" name="nota" [(ngModel)]="proveedor.nota">
                 </div>
             </div>
+            <hr class="my-4">
+            <div class="row">
+                <h6 class="col-12 pb-2 mb-2">Información Bancaria</h6>
+                <div class="form-group col-6 col-lg-3">
+                    <label for="banco_modal_pv">Banco:</label>
+                    <input type="text" class="form-control" id="banco_modal_pv" placeholder="Escribe aquí" name="banco" [(ngModel)]="proveedor.banco">
+                </div>
+                <div class="form-group col-6 col-lg-3">
+                    <label for="tipo_cuenta_modal_pv">Tipo de cuenta:</label>
+                    <select class="form-select" id="tipo_cuenta_modal_pv" name="tipo_cuenta" [(ngModel)]="proveedor.tipo_cuenta">
+                        <option value="">Seleccione...</option>
+                        <option value="Ahorro">Ahorro</option>
+                        <option value="Corriente">Corriente</option>
+                    </select>
+                </div>
+                <div class="form-group col-6 col-lg-3">
+                    <label for="numero_cuenta_modal_pv">Número de cuenta:</label>
+                    <input type="text" class="form-control" id="numero_cuenta_modal_pv" placeholder="Escribe aquí" name="numero_cuenta" [(ngModel)]="proveedor.numero_cuenta">
+                </div>
+                <div class="form-group col-6 col-lg-3">
+                    <label for="titular_cuenta_modal_pv">Titular de la cuenta:</label>
+                    <input type="text" class="form-control" id="titular_cuenta_modal_pv" placeholder="Escribe aquí" name="titular_cuenta" [(ngModel)]="proveedor.titular_cuenta">
+                </div>
+                <div class="form-group col-6 col-lg-3">
+                    <label for="forma_pago_modal_pv">Forma de pago:</label>
+                    <select class="form-select" id="forma_pago_modal_pv" name="forma_pago" [(ngModel)]="proveedor.forma_pago">
+                        <option value="">Seleccione...</option>
+                        <option value="Transferencia">Transferencia bancaria</option>
+                        <option value="Cheque">Cheque</option>
+                        <option value="Efectivo">Efectivo</option>
+                    </select>
+                </div>
+            </div>
             <div class="row">
                 <div class="form-group col-md-12 mt-3">
                     <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
