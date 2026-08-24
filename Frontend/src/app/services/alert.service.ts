@@ -43,12 +43,15 @@ export class AlertService {
     error(message: any) {
         console.log(message);
 
-        if(message.status == 0) {
+        const status = message?.status ?? message?.code ?? message?.error?.status ?? message?.error?.code;
+        const errBody = message?.error ?? message;
+
+        if(status == 0) {
             const mensaje = 'No hay conexión con el servidor. Posibles causas: timeout (la operación tardó demasiado), CORS, o el servidor no está disponible. Intente nuevamente.';
             this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': 'Lo sentimos', 'mensaje' : mensaje});
         }
-        else if(message.status == 404) {
-            const body = message.error ?? {};
+        else if(status == 404) {
+            const body = (typeof errBody === 'object' && errBody !== null) ? errBody : {};
             const mensaje = typeof body.error === 'string'
                 ? body.error
                 : 'El registro no ha sido encontrado';
@@ -56,15 +59,17 @@ export class AlertService {
             const tipo = body.code === 'hacienda_contribuyente_not_found' ? 'alert-warning' : 'alert-danger';
             this.alertSubject.next({ tipo, titulo, mensaje });
         }
-        else if(message.status == 403) {
-            this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': 'Lo sentimos', 'mensaje' : message.error.error});
+        else if(status == 403) {
+            const mensaje = typeof errBody?.error === 'string' ? errBody.error : this.normalizeUnknownError(message);
+            this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': 'Lo sentimos', 'mensaje' : mensaje});
         }
-        else if(message.status == 401) {
-            this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': 'Lo sentimos', 'mensaje' : message.error.message});
+        else if(status == 401) {
+            const mensaje = typeof errBody?.message === 'string' ? errBody.message : 'Sesión expirada';
+            this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': 'Lo sentimos', 'mensaje' : mensaje});
             this.router.navigate(['/login']);
         }
-        else if(message.status == 400) {
-            const body = message.error ?? {};
+        else if(status == 400) {
+            const body = (typeof errBody === 'object' && errBody !== null) ? errBody : {};
             const mensaje = body.message ?? body.error ?? (typeof body === 'string' ? body : undefined);
             const titulo = body.titulo || 'Lo sentimos';
             const tipo = body.titulo ? 'alert-info' : 'alert-danger';
@@ -74,9 +79,7 @@ export class AlertService {
                 mensaje: mensaje ?? 'No se pudo completar la operación.',
             });
         }
-        else if(message.status == 422) {
-            const errBody = message.error;
-
+        else if(status == 422) {
             if (errBody && Array.isArray(errBody.failures) && errBody.failures.length > 0) {
                 const byRow: { [row: number]: string[] } = {};
                 for (const f of errBody.failures) {
@@ -115,17 +118,17 @@ export class AlertService {
                 mensaje: errorMessage,
             });
         }
-        else if(message.status == 502 || message.status == 503) {
-            const body = message.error ?? {};
+        else if(status == 502 || status == 503) {
+            const body = (typeof errBody === 'object' && errBody !== null) ? errBody : {};
             const mensaje = typeof body.error === 'string'
                 ? body.error
                 : this.normalizeUnknownError(message);
             const titulo = body.code === 'hacienda_html_response' ? 'Hacienda' : 'Lo sentimos';
             this.alertSubject.next({ tipo: 'alert-warning', titulo, mensaje });
         }
-        else if(message.status == 500) {
-            const mensaje = message.error?.message
-                ? message.error.message
+        else if(status == 500) {
+            const mensaje = errBody?.message
+                ? errBody.message
                 : this.normalizeUnknownError(message);
             this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': 'Lo sentimos', 'mensaje' : mensaje});
         }
@@ -152,12 +155,15 @@ export class AlertService {
             return message.map((e) => this.normalizeUnknownError(e)).join('<br>');
         }
         // HttpErrorResponse u objeto con status + error
-        if (message.error != null && typeof message === 'object') {
+        if (message.error != null) {
             const body = message.error;
             if (typeof body === 'string') {
                 return body;
             }
-            if (body && typeof body === 'object') {
+            if (Array.isArray(body)) {
+                return body.map((e: any) => this.normalizeUnknownError(e)).join('<br>');
+            }
+            if (typeof body === 'object') {
                 if (body.errors && typeof body.errors === 'object') {
                     const parts: string[] = [];
                     Object.keys(body.errors).forEach((key) => {

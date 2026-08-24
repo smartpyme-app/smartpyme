@@ -2061,6 +2061,11 @@ export class FacturacionV2Component implements OnInit {
       return;
     }
 
+    if ((this.venta.credito || this.venta.estado === 'Pendiente' || this.venta.forma_pago === 'Crédito') && !this.venta.id_cliente) {
+      this.alertService.error('El cliente es requerido para los créditos y la facturación.');
+      return;
+    }
+
     if (!this.validarGiftCardAntesFacturar()) {
       return;
     }
@@ -2366,7 +2371,8 @@ export class FacturacionV2Component implements OnInit {
       this.venta.consigna = false;
     }
 
-    this.apiService.store('facturacion', this.venta).subscribe(
+    const endpointSave = this.venta.cotizacion == 1 ? 'cotizacionVentas' : 'facturacion';
+    this.apiService.store(endpointSave, this.venta).subscribe(
       (venta) => {
         // Actualizar siempre la venta local con la respuesta del backend (id, correlativo, etc.)
         // para que en un siguiente guardado se envíe el mismo correlativo.
