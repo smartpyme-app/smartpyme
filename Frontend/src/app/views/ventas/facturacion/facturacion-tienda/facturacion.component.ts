@@ -26,7 +26,11 @@ import { esVentaPorConsigna, sincronizarFlagConsignaVenta, aplicarEstadoConsigna
 import { debeDispararAtajoTcla } from '@utils/atajos-teclado.util';
 import { calcularCambioEfectivo } from '@utils/cambio-efectivo.util';
 import { FACTURA_REMISION, esVentaConsignaRemision } from '../../../../constants/documento.constants';
-import { isImpresionEnFacturacionActiva } from '@helpers/empresa.helper';
+import {
+  debeEmitirDteAlFacturar,
+  debeImprimirTrasFacturar,
+  isImpresionEnFacturacionActiva,
+} from '@helpers/empresa.helper';
 import { VentaDetallesComponent } from './detalles/venta-detalles.component';
 
 @Component({
@@ -1909,13 +1913,10 @@ export class FacturacionComponent implements OnInit, OnDestroy {
             'Cotización creada',
             'La cotizacion fue añadida exitosamente.'
           );
-        } else if (this.apiService.auth_user().empresa.facturacion_electronica) {
+        } else if (debeEmitirDteAlFacturar(this.apiService.auth_user()?.empresa)) {
           this.emitirDTE();
         } else {
-          if (
-            isImpresionEnFacturacionActiva(this.apiService.auth_user()?.empresa) &&
-            this.debeImprimir
-          ) {
+          if (debeImprimirTrasFacturar(this.apiService.auth_user()?.empresa, this.debeImprimir)) {
             this.imprimir(venta);
           }
           if (this.preCuentaId && this.venta.id) {
@@ -2032,10 +2033,7 @@ export class FacturacionComponent implements OnInit, OnDestroy {
         }
         this.emiting = false;
 
-        if (
-          isImpresionEnFacturacionActiva(this.apiService.auth_user()?.empresa) &&
-          this.debeImprimir
-        ) {
+        if (debeImprimirTrasFacturar(this.apiService.auth_user()?.empresa, this.debeImprimir)) {
           this.imprimir(venta);
         }
         if (this.preCuentaId && this.venta.id) {

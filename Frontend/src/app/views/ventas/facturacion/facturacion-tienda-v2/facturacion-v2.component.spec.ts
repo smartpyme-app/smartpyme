@@ -396,6 +396,12 @@ describe('FacturacionV2Component', () => {
       ),
     };
     component.alertService = { success: jasmine.createSpy('success') };
+    component.apiService = {
+      auth_user: () => ({
+        empresa: { impresion_en_facturacion: true, facturacion_electronica: true },
+      }),
+    };
+    component.debeImprimir = true;
     component.debePreguntarEnvioBoxful = () => false;
     component.cargarDatosIniciales = jasmine.createSpy('cargarDatosIniciales');
     component.enviarDTE = jasmine.createSpy('enviarDTE');
@@ -407,6 +413,7 @@ describe('FacturacionV2Component', () => {
     await Promise.resolve();
 
     expect(component.cargarDatosIniciales).not.toHaveBeenCalled();
+    expect(component.imprimir).toHaveBeenCalled();
     expect(component.router.navigate).toHaveBeenCalledWith(['/ventas']);
   });
 
@@ -478,5 +485,83 @@ describe('FacturacionV2Component', () => {
     component.limpiar();
 
     expect(component.modalService.show).toHaveBeenCalled();
+  });
+
+  function componenteTrasFacturar(empresa: any): any {
+    const component: any = Object.create(FacturacionV2Component.prototype);
+    component.saving = false;
+    component.emiting = false;
+    component.duplicarventa = false;
+    component.pedidoCanalId = null;
+    component.preCuentaId = null;
+    component.debeImprimir = true;
+    component.modalRef = null;
+    component.venta = { monto_pago: 10, efectivo: 10, total: 10, detalles: [] };
+    component.untilDestroyed = () => (source: any) => source;
+    component.apiService = {
+      auth_user: () => ({ tipo: 'Admin', empresa }),
+      store: jasmine.createSpy('store').and.returnValue({
+        pipe: () => ({
+          subscribe: (ok: any) => ok({ id: 10 }),
+        }),
+      }),
+    };
+    component.emitirDTE = jasmine.createSpy('emitirDTE');
+    component.imprimir = jasmine.createSpy('imprimir');
+    component.debePreguntarEnvioBoxful = () => false;
+    component.cargarDatosIniciales = jasmine.createSpy('cargarDatosIniciales');
+    component.router = { navigate: jasmine.createSpy('navigate') };
+    component.alertService = { success: jasmine.createSpy('success') };
+    return component;
+  }
+
+  it('con impresion y FE emite DTE al facturar', () => {
+    const component = componenteTrasFacturar({
+      impresion_en_facturacion: true,
+      facturacion_electronica: true,
+    });
+
+    component.onSubmit();
+
+    expect(component.emitirDTE).toHaveBeenCalled();
+    expect(component.imprimir).not.toHaveBeenCalled();
+  });
+
+  it('con impresion y sin FE solo imprime', () => {
+    const component = componenteTrasFacturar({
+      impresion_en_facturacion: true,
+      facturacion_electronica: false,
+    });
+
+    component.onSubmit();
+
+    expect(component.emitirDTE).not.toHaveBeenCalled();
+    expect(component.imprimir).toHaveBeenCalled();
+  });
+
+  it('sin impresion y con FE no emite DTE ni imprime', () => {
+    const component = componenteTrasFacturar({
+      impresion_en_facturacion: false,
+      facturacion_electronica: true,
+    });
+
+    component.onSubmit();
+
+    expect(component.emitirDTE).not.toHaveBeenCalled();
+    expect(component.imprimir).not.toHaveBeenCalled();
+    expect(component.router.navigate).toHaveBeenCalledWith(['/ventas-v2/crear']);
+  });
+
+  it('sin impresion y sin FE no imprime ni emite DTE', () => {
+    const component = componenteTrasFacturar({
+      impresion_en_facturacion: false,
+      facturacion_electronica: false,
+    });
+
+    component.onSubmit();
+
+    expect(component.emitirDTE).not.toHaveBeenCalled();
+    expect(component.imprimir).not.toHaveBeenCalled();
+    expect(component.router.navigate).toHaveBeenCalledWith(['/ventas-v2/crear']);
   });
 });
