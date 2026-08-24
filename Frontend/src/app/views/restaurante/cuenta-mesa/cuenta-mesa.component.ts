@@ -152,7 +152,7 @@ export class CuentaMesaComponent implements OnInit {
     }).subscribe({
       next: () => {
         this.cargarSesion();
-        this.alertService.success('Producto agregado', `${producto.nombre} añadido a la orden.`);
+        this.alertService.success('Producto agregado', `${producto.nombre_mostrar || producto.nombre} añadido a la orden.`);
       },
       error: (err) => this.alertService.error(err)
     });
