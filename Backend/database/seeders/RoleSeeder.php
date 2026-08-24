@@ -139,7 +139,6 @@ class RoleSeeder extends Seeder
             config('permissions.PERMISSION_CONTABILIDAD.partidas.ver'),
             config('permissions.PERMISSION_CONTABILIDAD.catalogo_cuentas.ver'),
             config('permissions.PERMISSION_FINANZAS.ver'),
-            config('permissions.PERMISSION_FINANZAS.reporteria.ver')
         ]);
 
         // Gerente Ventas --ROL_GERENTE_VENTAS
@@ -173,8 +172,6 @@ class RoleSeeder extends Seeder
             config('permissions.PERMISSION_VENTAS.formas_pago.crear'),
             config('permissions.PERMISSION_VENTAS.formas_pago.editar'),
             config('permissions.PERMISSION_VENTAS.formas_pago.eliminar'),
-            // Finanzas - Reportes
-            config('permissions.PERMISSION_FINANZAS.reporteria.ver')
         ]);
 
         // Usuario Supervisor --ROL_USUARIO_SUPERVISOR
@@ -238,8 +235,6 @@ class RoleSeeder extends Seeder
             config('permissions.PERMISSION_PEDIDOS.crear'),
             config('permissions.PERMISSION_PEDIDOS.editar'),
             config('permissions.PERMISSION_PEDIDOS.eliminar'),
-            // Finanzas - Reportes
-            config('permissions.PERMISSION_FINANZAS.reporteria.ver')
         ]);
 
         // Gerente Operaciones --ROL_GERENTE_OPERACIONES
@@ -265,8 +260,6 @@ class RoleSeeder extends Seeder
             config('permissions.PERMISSION_COMPRAS.editar'),
             config('permissions.PERMISSION_GASTOS.ver'),
             config('permissions.PERMISSION_GASTOS.editar'),
-            // Reportes
-            config('permissions.PERMISSION_FINANZAS.reporteria.ver')
         ]);
 
         // Gerente Compras --ROL_GERENTE_COMPRAS
@@ -293,8 +286,6 @@ class RoleSeeder extends Seeder
             config('permissions.PERMISSION_COMPRAS.retaceo.crear'),
             config('permissions.PERMISSION_COMPRAS.retaceo.editar'),
             config('permissions.PERMISSION_COMPRAS.retaceo.eliminar'),
-            // Reportes
-            config('permissions.PERMISSION_FINANZAS.reporteria.ver')
         ]);
 
         // Usuario Regular --ROL_USUARIO
@@ -467,7 +458,6 @@ class RoleSeeder extends Seeder
             config('permissions.PERMISSION_CITAS.ver'),
             // Finanzas
             config('permissions.PERMISSION_FINANZAS.ver'),
-            config('permissions.PERMISSION_FINANZAS.reporteria.ver'),
             config('permissions.PERMISSION_FINANZAS.cierre_caja.ver'),
             config('permissions.PERMISSION_FINANZAS.documentos.ver'),
             // Ayuda
@@ -484,7 +474,23 @@ class RoleSeeder extends Seeder
             config('permissions.PERMISSION_CONTABILIDAD.partidas.ver'),
             config('permissions.PERMISSION_CONTABILIDAD.catalogo_cuentas.ver'),
             config('permissions.PERMISSION_FINANZAS.ver'),
-            config('permissions.PERMISSION_FINANZAS.reporteria.ver')
         ]);
+
+        // Antigüedad de saldos / reportería Finanzas: solo Admin y Contador Superior
+        // (Admin/Super Admin ya lo tienen vía Permission::all()).
+        $reporteria = config('permissions.PERMISSION_FINANZAS.reporteria.ver');
+        foreach ([
+            $contadorAuxiliar,
+            $gerenteVentas,
+            $usuarioSupervisor,
+            $gerenteOperaciones,
+            $gerenteCompras,
+            $usuarioConsultas,
+            $supervisorLimitado,
+        ] as $role) {
+            if ($role->hasPermissionTo($reporteria)) {
+                $role->revokePermissionTo($reporteria);
+            }
+        }
     }
 }
