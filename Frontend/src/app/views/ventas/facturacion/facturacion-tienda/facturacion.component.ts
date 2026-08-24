@@ -1926,8 +1926,7 @@ export class FacturacionComponent implements OnInit, OnDestroy {
           } else if (this.debePreguntarEnvioBoxful()) {
             this.preguntarGenerarEnvioBoxful(venta);
           } else {
-            this.cargarDatosIniciales();
-            this.router.navigate(['/venta/crear']);
+            this.router.navigate(['/ventas']);
           }
         }
 

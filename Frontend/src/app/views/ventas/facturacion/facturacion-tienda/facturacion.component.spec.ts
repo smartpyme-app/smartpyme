@@ -444,6 +444,7 @@ describe('FacturacionComponent', () => {
 
     expect(component.emitirDTE).not.toHaveBeenCalled();
     expect(component.imprimir).toHaveBeenCalled();
+    expect(component.router.navigate).toHaveBeenCalledWith(['/ventas']);
   });
 
   it('sin impresion y con FE no emite DTE ni imprime', () => {
@@ -456,7 +457,7 @@ describe('FacturacionComponent', () => {
 
     expect(component.emitirDTE).not.toHaveBeenCalled();
     expect(component.imprimir).not.toHaveBeenCalled();
-    expect(component.router.navigate).toHaveBeenCalledWith(['/venta/crear']);
+    expect(component.router.navigate).toHaveBeenCalledWith(['/ventas']);
   });
 
   it('sin impresion y sin FE no imprime ni emite DTE', () => {
@@ -469,6 +470,6 @@ describe('FacturacionComponent', () => {
 
     expect(component.emitirDTE).not.toHaveBeenCalled();
     expect(component.imprimir).not.toHaveBeenCalled();
-    expect(component.router.navigate).toHaveBeenCalledWith(['/venta/crear']);
+    expect(component.router.navigate).toHaveBeenCalledWith(['/ventas']);
   });
 });

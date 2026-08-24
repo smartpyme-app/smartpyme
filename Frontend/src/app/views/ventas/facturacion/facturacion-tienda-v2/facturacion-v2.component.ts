@@ -2059,8 +2059,7 @@ export class FacturacionV2Component implements OnInit, OnDestroy {
           } else if (this.debePreguntarEnvioBoxful()) {
             this.preguntarGenerarEnvioBoxful(venta);
           } else {
-            this.cargarDatosIniciales();
-            this.router.navigate(['/ventas-v2/crear']);
+            this.router.navigate(['/ventas']);
           }
         }
 
