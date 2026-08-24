@@ -174,7 +174,7 @@ export class FacturacionV2Component implements OnInit {
   public giftCardsEmitidasTemplate!: TemplateRef<any>;
 
   @ViewChild(VentaDetallesV2Component)
-  private ventaDetallesV2?: VentaDetallesV2Component;
+  protected ventaDetallesV2?: VentaDetallesV2Component;
 
   constructor(
     public apiService: ApiService,

@@ -1,0 +1,9 @@
+@media (max-width: 767.98px) {
+  :host {
+    display: block;
+  }
+  .pos-opciones-body {
+    max-height: 60vh;
+    overflow: auto;
+  }
+}

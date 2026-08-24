@@ -24,12 +24,16 @@ export class FacturacionVersionGuard implements CanActivate {
                 versionFacturacion = empresa.custom_empresa.configuraciones.version_facturacion;
             }
             
-            // Si está configurada la versión v2, redirigir preservando queryParams y state (pre-cuenta restaurante)
+            const queryParams = next.queryParams;
+            const nav = this.router.getCurrentNavigation();
+            const navState = nav?.extras?.state;
+
+            if (versionFacturacion === 'pos') {
+                this.router.navigate(['/ventas-pos/crear'], { queryParams, state: navState });
+                return false;
+            }
             if (versionFacturacion === 'v2') {
-                const queryParams = next.queryParams;
-                const nav = this.router.getCurrentNavigation();
-                const state = nav?.extras?.state;
-                this.router.navigate(['/ventas-v2/crear'], { queryParams: queryParams, state });
+                this.router.navigate(['/ventas-v2/crear'], { queryParams, state: navState });
                 return false;
             }
         }

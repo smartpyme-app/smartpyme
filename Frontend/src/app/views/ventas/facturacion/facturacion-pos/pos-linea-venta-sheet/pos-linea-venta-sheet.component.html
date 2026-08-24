@@ -1,0 +1,29 @@
+<div class="modal-header">
+  <h5 class="modal-title text-truncate">{{ detalle?.descripcion }}</h5>
+  <button type="button" class="btn-close" aria-label="Cerrar" (click)="cerrar.emit()"></button>
+</div>
+<div class="modal-body" *ngIf="detalle">
+  <div class="mb-3">
+    <label class="form-label">Cantidad</label>
+    <input type="number" class="form-control" [(ngModel)]="detalle.cantidad" name="cantidad_linea" min="0.01" step="any">
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Descuento %</label>
+    <input type="number" class="form-control" [(ngModel)]="detalle.descuento_porcentaje" name="desc_linea" min="0" max="100">
+  </div>
+  <div class="mb-3" *ngIf="mostrarTipoGravado">
+    <label class="form-label">Tipo gravado</label>
+    <select class="form-select" [(ngModel)]="detalle.tipo_gravado" name="tipo_gravado_linea">
+      <option value="gravada">Gravada</option>
+      <option value="exenta">Exenta</option>
+      <option value="no_sujeta">No sujeta</option>
+    </select>
+  </div>
+  <button type="button" class="btn btn-outline-info w-100 mb-2" *ngIf="mostrarLote" (click)="elegirLote.emit()">
+    <i class="fa fa-boxes me-1"></i> Elegir lote
+  </button>
+</div>
+<div class="modal-footer">
+  <button type="button" class="btn btn-light" (click)="cerrar.emit()">Cancelar</button>
+  <button type="button" class="btn btn-primary" (click)="guardar.emit()">Guardar</button>
+</div>
