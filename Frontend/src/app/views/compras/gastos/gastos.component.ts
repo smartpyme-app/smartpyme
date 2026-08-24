@@ -381,6 +381,10 @@ export class GastosComponent implements OnInit {
             }, error => {this.alertService.error(error); });
         }
 
+        if(!this.numeros_ids.length && this.isColumnEnabled('columna_proyecto')){
+            this.getNumsIds();
+        }
+
         this.modalRef = this.modalService.show(template);
     }
 

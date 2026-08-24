@@ -171,6 +171,7 @@ class Empresa extends Model
         'importacion_productos_shopify' => 'boolean',
         'shopify_sync_bidirectional' => 'boolean',
         'restringir_compras_supervisor_limitado' => 'boolean',
+        'impresion_en_facturacion' => 'boolean',
     ];
 
     protected $hidden = [

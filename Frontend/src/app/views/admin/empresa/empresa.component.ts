@@ -15,6 +15,7 @@ import { CountryI18nService } from '@services/country-i18n.service';
 import { MHService } from '@services/MH.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { FuncionalidadesService } from '@services/functionalities.service';
+import { isImpresionEnFacturacionActiva } from '@helpers/empresa.helper';
 import Swal from 'sweetalert2';
 import { FE_PAIS_CR, FE_PAIS_SV, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
 import {
@@ -215,6 +216,9 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
             .pipe(this.untilDestroyed())
             .subscribe(empresa => {
             this.empresa = empresa;
+            if (this.empresa) {
+                this.empresa.impresion_en_facturacion = isImpresionEnFacturacionActiva(this.empresa);
+            }
             if (!this.empresa.woocommerce_sync_mode) {
                 this.empresa.woocommerce_sync_mode = 'bidirectional';
             }
@@ -271,6 +275,9 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         this.cdr.markForCheck();
         try {
             this.normalizarRtnHonduras();
+            if (this.empresa) {
+                this.empresa.impresion_en_facturacion = isImpresionEnFacturacionActiva(this.empresa);
+            }
             this.empresa.custom_empresa = this.customConfig;
             const empresaGuardada = await this.apiService.store('empresa', this.empresa)
                 .pipe(this.untilDestroyed())
@@ -278,6 +285,9 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
 
             this.empresa = empresaGuardada;
             this.normalizarRtnHonduras();
+            if (this.empresa) {
+                this.empresa.impresion_en_facturacion = isImpresionEnFacturacionActiva(this.empresa);
+            }
 
             this.initializeCustomConfig();
             if (resolveCodigoPaisFe(this.empresa) === FE_PAIS_CR) {
@@ -286,9 +296,9 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
 
             let user: any = {};
             user = JSON.parse(localStorage.getItem('SP_auth_user')!);
-            user.empresa = empresaGuardada;
+            user.empresa = this.empresa;
             localStorage.setItem('SP_auth_user', JSON.stringify(user));
-            this.countryI18n.applyForEmpresa(empresaGuardada).subscribe();
+            this.countryI18n.applyForEmpresa(this.empresa).subscribe();
 
             if (resolveCodigoPaisFe(this.empresa) !== FE_PAIS_CR) {
                 if (this.empresa.fe_ambiente == '01') {

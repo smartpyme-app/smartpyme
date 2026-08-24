@@ -185,6 +185,57 @@ describe('FacturacionComponent', () => {
     ]);
     expect(component.venta.id_documento).toBe(1);
     expect(component.venta.nombre_documento).toBe('Factura');
+    expect(component.venta.correlativo).toBe(1);
+  });
+
+  it('actualiza correlativo automáticamente si el documento ya estaba seleccionado en venta nueva', () => {
+    const component: any = Object.create(FacturacionComponent.prototype);
+    component.documentosLoadSeq = 0;
+    component.nombresDocumentosVentaNormales = ['Factura', 'Crédito fiscal'];
+    component.bodegas = [{ id: 5, id_sucursal: 10, nombre: 'Principal' }];
+    component.venta = { id_bodega: 5, id_sucursal: 10, id_documento: 2, correlativo: 50 };
+    component.documentosSucursal = [];
+    component.documentos = [];
+    const docsApi = [
+      { id: 1, nombre: 'Factura', id_sucursal: 10, predeterminado: 1, correlativo: 101 },
+      { id: 2, nombre: 'Crédito fiscal', id_sucursal: 10, predeterminado: 0, correlativo: 51 },
+    ];
+    component.apiService = {
+      getAll: jasmine.createSpy('getAll').and.callFake(() => ({
+        subscribe: (ok: any) => ok(docsApi),
+      })),
+    };
+    component.alertService = { error: jasmine.createSpy('error') };
+
+    component.cargarDocumentos();
+
+    expect(component.venta.id_documento).toBe(2);
+    expect(component.venta.nombre_documento).toBe('Crédito fiscal');
+    expect(component.venta.correlativo).toBe(51);
+  });
+
+  it('conserva correlativo al recargar documentos si se está editando una venta existente con id', () => {
+    const component: any = Object.create(FacturacionComponent.prototype);
+    component.documentosLoadSeq = 0;
+    component.nombresDocumentosVentaNormales = ['Factura', 'Crédito fiscal'];
+    component.bodegas = [{ id: 5, id_sucursal: 10, nombre: 'Principal' }];
+    component.venta = { id: 999, id_bodega: 5, id_sucursal: 10, id_documento: 1, correlativo: 100 };
+    component.documentosSucursal = [];
+    component.documentos = [];
+    const docsApi = [
+      { id: 1, nombre: 'Factura', id_sucursal: 10, predeterminado: 1, correlativo: 105 },
+    ];
+    component.apiService = {
+      getAll: jasmine.createSpy('getAll').and.callFake(() => ({
+        subscribe: (ok: any) => ok(docsApi),
+      })),
+    };
+    component.alertService = { error: jasmine.createSpy('error') };
+
+    component.cargarDocumentos();
+
+    expect(component.venta.id_documento).toBe(1);
+    expect(component.venta.correlativo).toBe(100);
   });
 
   it('bloquea facturar si id_documento está vacío', () => {

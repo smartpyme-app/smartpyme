@@ -23,7 +23,10 @@
           <div class="col-md-6 text-end">
             <h6>Período de Pago</h6>
             <p class="mb-1">Del: {{planillaDetalle?.planilla?.fecha_inicio | date:'dd/MM/yyyy'}}</p>
-            <p>Al: {{planillaDetalle?.planilla?.fecha_fin | date:'dd/MM/yyyy'}}</p>
+            <p class="mb-1">Al: {{planillaDetalle?.planilla?.fecha_fin | date:'dd/MM/yyyy'}}</p>
+            <p class="text-muted" *ngIf="planillaDetalle?.planilla?.tipo_planilla">
+              ({{planillaDetalle?.planilla?.tipo_planilla | titlecase}})
+            </p>
           </div>
         </div>
 
@@ -32,41 +35,49 @@
           <div class="col-md-6">
             <h6>Información del Empleado</h6>
             <p class="mb-1">Nombre: {{planillaDetalle?.empleado?.nombres}} {{planillaDetalle?.empleado?.apellidos}}</p>
-            <p class="mb-1">Cargo: {{planillaDetalle?.empleado?.cargo?.nombre}}</p>
-            <p class="mb-1">Departamento: {{planillaDetalle?.empleado?.departamento?.nombre}}</p>
+            <p class="mb-1">Cargo: {{planillaDetalle?.empleado?.cargo?.nombre || 'N/A'}}</p>
+            <p class="mb-1">Departamento: {{planillaDetalle?.empleado?.departamento?.nombre || 'N/A'}}</p>
           </div>
           <div class="col-md-6">
-            <p class="mb-1">{{ 'country.identity.nameColon' | translate }} {{planillaDetalle?.empleado?.dui}}</p>
-            <p class="mb-1">{{ 'country.tax.nitColon' | translate }} {{planillaDetalle?.empleado?.nit}}</p>
+            <p class="mb-1">{{ 'country.identity.nameColon' | translate }} {{planillaDetalle?.empleado?.dui || 'N/A'}}</p>
+            <p class="mb-1">{{ 'country.tax.nitColon' | translate }} {{planillaDetalle?.empleado?.nit || 'N/A'}}</p>
             <p class="mb-1">Código: {{planillaDetalle?.empleado?.codigo}}</p>
+            <p class="mb-1">Salario Base Mensual: {{planillaDetalle?.salario_base | currency}}</p>
           </div>
         </div>
 
-        <!-- Desglose de ingresos -->
+        <!-- Desglose de ingresos y deducciones -->
         <div class="row mb-4">
           <div class="col-md-6">
             <h6>Ingresos</h6>
             <table class="table table-sm">
               <tbody>
                 <tr>
-                  <td>Salario Base</td>
-                  <td class="text-end">{{planillaDetalle?.salario_base | currency}}</td>
+                  <td>Salario Devengado ({{planillaDetalle?.dias_laborados || 30}} días)</td>
+                  <td class="text-end">{{(planillaDetalle?.salario_devengado || planillaDetalle?.salario_base) | currency}}</td>
                 </tr>
-                <tr>
-                  <td>Horas Extra</td>
+                <tr *ngIf="(planillaDetalle?.monto_horas_extra || 0) > 0">
+                  <td>Horas Extra ({{planillaDetalle?.horas_extra}} hrs)</td>
                   <td class="text-end">{{planillaDetalle?.monto_horas_extra | currency}}</td>
                 </tr>
-                <tr>
+                <tr *ngIf="(planillaDetalle?.comisiones || 0) > 0">
                   <td>Comisiones</td>
                   <td class="text-end">{{planillaDetalle?.comisiones | currency}}</td>
                 </tr>
-                <tr>
-                  <td>Bonificaciones</td>
+                <tr *ngIf="(planillaDetalle?.bonificaciones || 0) > 0">
+                  <td>Bonos / Bonificaciones</td>
                   <td class="text-end">{{planillaDetalle?.bonificaciones | currency}}</td>
                 </tr>
-                <tr>
+                <tr *ngIf="(planillaDetalle?.otros_ingresos || 0) > 0">
                   <td>Otros Ingresos</td>
                   <td class="text-end">{{planillaDetalle?.otros_ingresos | currency}}</td>
+                </tr>
+                <tr *ngIf="(planillaDetalle?.abonos || 0) > 0">
+                  <td>
+                    Otros Abonos 
+                    <small class="text-muted" *ngIf="planillaDetalle?.abonos_sin_retencion">(Sin retención)</small>
+                  </td>
+                  <td class="text-end">{{planillaDetalle?.abonos | currency}}</td>
                 </tr>
                 <tr class="table-primary">
                   <th>Total Ingresos</th>
@@ -81,23 +92,31 @@
             <h6>Deducciones</h6>
             <table class="table table-sm">
               <tbody>
-                <tr>
+                <tr *ngIf="(planillaDetalle?.isss_empleado || 0) > 0">
                   <td>ISSS (3%)</td>
                   <td class="text-end">{{planillaDetalle?.isss_empleado | currency}}</td>
                 </tr>
-                <tr>
+                <tr *ngIf="(planillaDetalle?.afp_empleado || 0) > 0">
                   <td>AFP (7.25%)</td>
                   <td class="text-end">{{planillaDetalle?.afp_empleado | currency}}</td>
                 </tr>
-                <tr>
-                  <td>ISR</td>
+                <tr *ngIf="(planillaDetalle?.renta || 0) > 0">
+                  <td>Renta (ISR)</td>
                   <td class="text-end">{{planillaDetalle?.renta | currency}}</td>
                 </tr>
-                <tr>
+                <tr *ngIf="(planillaDetalle?.prestamos || 0) > 0">
                   <td>Préstamos</td>
                   <td class="text-end">{{planillaDetalle?.prestamos | currency}}</td>
                 </tr>
-                <tr>
+                <tr *ngIf="(planillaDetalle?.anticipos || 0) > 0">
+                  <td>Anticipos</td>
+                  <td class="text-end">{{planillaDetalle?.anticipos | currency}}</td>
+                </tr>
+                <tr *ngIf="(planillaDetalle?.descuentos_judiciales || 0) > 0">
+                  <td>Descuentos Judiciales</td>
+                  <td class="text-end">{{planillaDetalle?.descuentos_judiciales | currency}}</td>
+                </tr>
+                <tr *ngIf="(planillaDetalle?.otros_descuentos || 0) > 0">
                   <td>Otros Descuentos</td>
                   <td class="text-end">{{planillaDetalle?.otros_descuentos | currency}}</td>
                 </tr>
@@ -110,11 +129,32 @@
           </div>
         </div>
 
-        <!-- Sueldo neto -->
+        <!-- Totales / Sueldo neto y a pagar -->
         <div class="row">
-          <div class="col-12">
-            <div class="alert alert-success">
-              <h5 class="mb-0">Sueldo Neto a Recibir: {{planillaDetalle?.sueldo_neto | currency}}</h5>
+          <div class="col-md-6" *ngIf="(planillaDetalle?.viaticos || 0) > 0">
+            <div class="alert alert-info mb-3">
+              <i class="fa fa-info-circle me-1"></i>
+              <strong>Viáticos (No gravables):</strong> {{planillaDetalle?.viaticos | currency}}
+              <small class="d-block text-muted">Conforme al Art. 3 LISR, no constituyen salario ni renta gravable.</small>
+            </div>
+          </div>
+          <div class="col-md-6 ms-auto">
+            <div class="card bg-light">
+              <div class="card-body py-2">
+                <div class="d-flex justify-content-between mb-1">
+                  <span>Sueldo Neto:</span>
+                  <strong>{{planillaDetalle?.sueldo_neto | currency}}</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-1" *ngIf="(planillaDetalle?.viaticos || 0) > 0">
+                  <span>(+) Viáticos:</span>
+                  <strong>{{planillaDetalle?.viaticos | currency}}</strong>
+                </div>
+                <hr class="my-1">
+                <div class="d-flex justify-content-between text-primary fs-5">
+                  <strong>Total Líquido a Pagar:</strong>
+                  <strong>{{((planillaDetalle?.sueldo_neto || 0) + (planillaDetalle?.viaticos || 0)) | currency}}</strong>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -128,7 +168,7 @@
           </div>
           <div class="col-md-6 text-center">
             <div class="border-top border-dark" style="width: 200px; margin: 0 auto;">
-              <p class="mt-2 mb-0">Firma de RRHH</p>
+              <p class="mt-2 mb-0">Firma de RRHH / Autorizado</p>
             </div>
           </div>
         </div>

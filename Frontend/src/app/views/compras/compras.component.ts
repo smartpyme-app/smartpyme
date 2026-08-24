@@ -270,7 +270,6 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
             this.cdr.markForCheck();
         });
 
-        this.getNumsIds();
         this.apiService.getAll('proveedores/list').subscribe(proveedores => {
             this.proveedores = proveedores;
         }, error => {this.alertService.error(error); });
@@ -760,6 +759,10 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
                         this.alertService.error(error);
                     }
                 });
+        }
+
+        if(!this.numeros_ids.length && this.isColumnEnabled('columna_proyecto')){
+            this.getNumsIds();
         }
 
         this.modalRef = this.modalService.show(template);

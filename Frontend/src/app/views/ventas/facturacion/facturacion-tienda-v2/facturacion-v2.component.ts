@@ -51,6 +51,7 @@ import { esVentaPorConsigna, sincronizarFlagConsignaVenta, aplicarEstadoConsigna
 import { debeDispararAtajoTcla } from '@utils/atajos-teclado.util';
 import { FACTURA_REMISION, esVentaConsignaRemision } from '../../../../constants/documento.constants';
 import { SharedModule } from '@shared/shared.module';
+import { isImpresionEnFacturacionActiva } from '@helpers/empresa.helper';
 import * as moment from 'moment';
 
 @Component({
@@ -114,6 +115,7 @@ export class FacturacionV2Component implements OnInit {
   public tieneFidelizacionHabilitada: boolean = false;
   public mensajeValidacionFecha: string = '';
   public mensajeErrorBanco: string = '';
+  public debeImprimir: boolean = false;
   public giftCardsActivo = false;
   public giftCardInfo: GiftCardLookup | null = null;
   public giftCardLookupError = '';
@@ -525,7 +527,7 @@ export class FacturacionV2Component implements OnInit {
       }
     } else {
       this.venta.nombre_documento = docActual.nombre;
-      if (this.venta.correlativo == null || this.venta.correlativo === '') {
+      if (!this.venta.id || this.venta.correlativo == null || this.venta.correlativo === '') {
         this.venta.correlativo = docActual.correlativo;
       }
     }
@@ -556,6 +558,7 @@ export class FacturacionV2Component implements OnInit {
     this.venta = {};
     this.habilitarCuentaTerceros = false;
     this.retencionIvaGcUsuarioDecidio = false;
+    this.debeImprimir = isImpresionEnFacturacionActiva(this.apiService.auth_user()?.empresa);
     this.venta.fecha = this.apiService.date();
     this.venta.fecha_pago = this.apiService.date();
     this.venta.forma_pago = 'Efectivo';
@@ -2455,36 +2458,22 @@ export class FacturacionV2Component implements OnInit {
   }
 
   private continuarTrasFacturar(venta: any): void {
-        if (
-          this.venta.cotizacion != 1 &&
-          this.apiService.auth_user().empresa.impresion_en_facturacion
-        ) {
-          if (this.facturacionElectronica.debeEmitirDteEnImpresion()) {
-            this.emitirDTE();
-          } else {
-            this.imprimir(venta);
-            if (this.preCuentaId && this.venta.id) {
-              this.navegarPostFacturaPreCuenta(this.venta.id);
-            } else if (this.pedidoCanalId && this.venta.id) {
-              this.navegarPostFacturaPedidoCanal(this.venta.id);
-            } else if (this.debePreguntarEnvioBoxful()) {
-              this.preguntarGenerarEnvioBoxful(venta);
-            } else {
-              this.router.navigate(['/ventas']);
-              this.alertService.success(
-                'Venta creada',
-                'La venta fue añadida exitosamente.'
-              );
-            }
-          }
+        if (this.venta.cotizacion == 1) {
+          this.router.navigate(['/cotizaciones']);
+          this.alertService.success(
+            'Cotización creada',
+            'La cotizacion fue añadida exitosamente.'
+          );
+        } else if (this.facturacionElectronica.debeEmitirDteEnImpresion()) {
+          this.emitirDTE();
         } else {
-          if (this.venta.cotizacion == 1) {
-            this.router.navigate(['/cotizaciones']);
-            this.alertService.success(
-              'Cotización creada',
-              'La cotizacion fue añadida exitosamente.'
-            );
-          } else if (this.preCuentaId && this.venta.id) {
+          if (
+            isImpresionEnFacturacionActiva(this.apiService.auth_user()?.empresa) &&
+            this.debeImprimir
+          ) {
+            this.imprimir(venta);
+          }
+          if (this.preCuentaId && this.venta.id) {
             this.navegarPostFacturaPreCuenta(this.venta.id);
           } else if (this.pedidoCanalId && this.venta.id) {
             this.navegarPostFacturaPedidoCanal(this.venta.id);
@@ -2559,7 +2548,12 @@ export class FacturacionV2Component implements OnInit {
         }
         this.emiting = false;
 
-        this.imprimir(venta);
+        if (
+          isImpresionEnFacturacionActiva(this.apiService.auth_user()?.empresa) &&
+          this.debeImprimir
+        ) {
+          this.imprimir(venta);
+        }
         if (this.preCuentaId && this.venta.id) {
           this.navegarPostFacturaPreCuenta(this.venta.id);
         } else if (this.pedidoCanalId && this.venta.id) {

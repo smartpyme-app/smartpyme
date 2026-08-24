@@ -44,6 +44,10 @@ class Indicador extends Model
         return $this->belongsTo('App\Models\Admin\Sucursal','id_sucursal');
     }
 
+    public function bodega(){
+        return $this->belongsTo('App\Models\Inventario\Bodega','id_bodega');
+    }
+
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);

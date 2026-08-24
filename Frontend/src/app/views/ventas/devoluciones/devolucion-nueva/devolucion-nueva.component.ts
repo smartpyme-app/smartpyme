@@ -25,6 +25,7 @@ import {
     esNombreNotaCreditoODebito,
     esNombreNotaDebito,
 } from '@views/ventas/documentos/documento-nombre-options';
+import { isImpresionEnFacturacionActiva } from '@helpers/empresa.helper';
 
 @Component({
     selector: 'app-devolucion-nueva',
@@ -264,7 +265,7 @@ export class DevolucionVentaNuevaComponent extends BaseModalComponent implements
                 const esNotaCreditoODebito = esNombreNotaCreditoODebito(devolucion.nombre_documento);
 
                 if (
-                    empresa?.impresion_en_facturacion &&
+                    isImpresionEnFacturacionActiva(empresa) &&
                     debeEmitirDteEnImpresion(empresa) &&
                     esNotaCreditoODebito
                 ) {

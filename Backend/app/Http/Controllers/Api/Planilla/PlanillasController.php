@@ -1188,10 +1188,15 @@ class PlanillasController extends Controller
     public function generarBoletas($id)
     {
         try {
-            $planilla = Planilla::with(['detalles' => function($query) {
+            $planilla = Planilla::with([
+                'detalles' => function($query) {
                     $query->where('estado', '!=', 0);
-                }, 'detalles.empleado', 'empresa.currency', 'sucursal'])
-                ->findOrFail($id);
+                }, 
+                'detalles.empleado.cargo',
+                'detalles.empleado.departamento',
+                'empresa.currency', 
+                'sucursal'
+            ])->findOrFail($id);
 
             $pdf = app('dompdf.wrapper')->loadView('pdf.boletas-pago', [
                 'planilla' => $planilla,
@@ -1402,22 +1407,28 @@ class PlanillasController extends Controller
     public function generarBoletaIndividual($id_detalle)
     {
         try {
-            $detalle = PlanillaDetalle::with(['empleado', 'planilla.empresa.currency'])->findOrFail($id_detalle);
+            $detalle = PlanillaDetalle::with([
+                'empleado.cargo',
+                'empleado.departamento',
+                'planilla.empresa.currency',
+                'planilla.sucursal'
+            ])->findOrFail($id_detalle);
 
             // Calcular totales
-            $totalIngresos = $detalle->salario_devengado +
-                $detalle->monto_horas_extra +
-                $detalle->comisiones +
-                $detalle->bonificaciones +
-                $detalle->otros_ingresos;
+            $totalIngresos = (float)($detalle->salario_devengado ?? $detalle->salario_base) +
+                (float)($detalle->monto_horas_extra ?? 0) +
+                (float)($detalle->comisiones ?? 0) +
+                (float)($detalle->bonificaciones ?? 0) +
+                (float)($detalle->otros_ingresos ?? 0) +
+                (float)($detalle->abonos ?? 0);
 
-            $totalDeducciones = $detalle->isss_empleado +
-                $detalle->afp_empleado +
-                $detalle->renta +
-                $detalle->prestamos +
-                $detalle->anticipos +
-                $detalle->descuentos_judiciales +
-                $detalle->otros_descuentos;
+            $totalDeducciones = (float)($detalle->isss_empleado ?? 0) +
+                (float)($detalle->afp_empleado ?? 0) +
+                (float)($detalle->renta ?? 0) +
+                (float)($detalle->prestamos ?? 0) +
+                (float)($detalle->anticipos ?? 0) +
+                (float)($detalle->descuentos_judiciales ?? 0) +
+                (float)($detalle->otros_descuentos ?? 0);
 
             // Generar el PDF
             $pdf = app('dompdf.wrapper')->loadView('pdf.boleta-individual', [

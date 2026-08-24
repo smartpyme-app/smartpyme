@@ -112,13 +112,24 @@
             <p class="text-center" id="empresa">{{ $indicadores->empresa->nombre }}</p>
         </div>
         <h2 style="margin:0px;" class="text-center">Corte del día</h2>
+        @php
+            $nombre_sucursal = 'Todas';
+            $nombre_bodega = 'Todas';
+
+            if ($indicadores->id_sucursal && $indicadores->sucursal) {
+                $nombre_sucursal = $indicadores->sucursal->nombre;
+            } elseif ($indicadores->id_bodega && $indicadores->bodega) {
+                $nombre_sucursal = $indicadores->bodega->nombre_sucursal ?? ($indicadores->bodega->sucursal->nombre ?? 'Todas');
+            }
+
+            if ($indicadores->id_bodega && $indicadores->bodega) {
+                $nombre_bodega = $indicadores->bodega->nombre;
+            }
+        @endphp
         <p style="margin-bottom:10px; font-size: 14px;" class="text-center">
-            @if ($indicadores->id_sucursal)
-                <b>Sucursal: </b>{{ $indicadores->sucursal()->pluck('nombre')->first() }}
-            @else
-                <b>Sucursal: </b>Todas
-            @endif
-            <b style="margin-left: 100px;">Fecha: </b>{{\Carbon\Carbon::parse($indicadores->inicio)->format('d/m/Y')}}
+            <b>Sucursal: </b>{{ $nombre_sucursal }}
+            <b style="margin-left: 40px;">Bodega: </b>{{ $nombre_bodega }}
+            <b style="margin-left: 40px;">Fecha: </b>{{\Carbon\Carbon::parse($indicadores->inicio)->format('d/m/Y')}}
         </p>
         @php
             $simbolo_moneda = optional($indicadores->empresa->currency)->currency_symbol ?? '$';

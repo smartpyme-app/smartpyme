@@ -3,7 +3,7 @@
 namespace Tests\Unit;
 
 use App\Models\Indicador;
-use PHPUnit\Framework\TestCase;
+use Tests\TestCase;
 
 class IndicadorBodegaFillableTest extends TestCase
 {
@@ -11,5 +11,14 @@ class IndicadorBodegaFillableTest extends TestCase
     {
         $defaults = (new \ReflectionClass(Indicador::class))->getDefaultProperties();
         $this->assertContains('id_bodega', $defaults['fillable']);
+    }
+
+    public function test_indicador_define_relacion_bodega(): void
+    {
+        $indicador = (new \ReflectionClass(Indicador::class))->newInstanceWithoutConstructor();
+        $relation = $indicador->bodega();
+        $this->assertInstanceOf(\Illuminate\Database\Eloquent\Relations\BelongsTo::class, $relation);
+        $this->assertInstanceOf(\App\Models\Inventario\Bodega::class, $relation->getRelated());
+        $this->assertSame('id_bodega', $relation->getForeignKeyName());
     }
 }

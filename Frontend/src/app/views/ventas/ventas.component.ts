@@ -244,7 +244,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     this.destroy$.complete();
   }
 
-  // No sobrescribir untilDestroyed, usar la propiedad de la clase base
+  // No sobrescribir untilDestroyed, usar la de la clase base
 
   public override openModal(template: TemplateRef<any>, item?: any, config?: { class?: string }) {
     if (item) {
@@ -287,37 +287,37 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
       takeUntil(this.destroy$)
     ).subscribe(() => this.filtrarVentas());
 
-    this.route.queryParams.subscribe(params => {
-      this.filtros = {
-        buscador: params['buscador'] || '',
-        id_proyecto: +params['id_proyecto'] || '',
-        id_documento: +params['id_documento'] || '',
-        id_cliente: +params['id_cliente'] || '',
-        id_sucursal: +params['id_sucursal'] || '',
-        id_usuario: +params['id_usuario'] || '',
-        id_vendedor: +params['id_vendedor'] || '',
-        id_canal: +params['id_canal'] || '',
-        forma_pago: params['forma_pago'] || '',
-        dte: params['dte'] || '',
-        estado: params['estado'] || '',
-        num_identificacion: params['num_identificacion'] || '',
-        inicio: params['inicio'] || '',
-        fin: params['fin'] || '',
-        orden: params['orden'] || 'fecha',
-        direccion: params['direccion'] || 'desc',
-        paginate: +params['paginate'] || 10,
-        page: +params['page'] || 1,
-      };
+    this.route.queryParams
+      .pipe(this.untilDestroyed())
+      .subscribe(params => {
+        this.filtros = {
+          buscador: params['buscador'] || '',
+          id_proyecto: +params['id_proyecto'] || '',
+          id_documento: +params['id_documento'] || '',
+          id_cliente: +params['id_cliente'] || '',
+          id_sucursal: +params['id_sucursal'] || '',
+          id_usuario: +params['id_usuario'] || '',
+          id_vendedor: +params['id_vendedor'] || '',
+          id_canal: +params['id_canal'] || '',
+          forma_pago: params['forma_pago'] || '',
+          dte: params['dte'] || '',
+          estado: params['estado'] || '',
+          num_identificacion: params['num_identificacion'] || '',
+          inicio: params['inicio'] || '',
+          fin: params['fin'] || '',
+          orden: params['orden'] || 'fecha',
+          direccion: params['direccion'] || 'desc',
+          paginate: +params['paginate'] || 10,
+          page: +params['page'] || 1,
+        };
 
-      // Aplicar filtro de sucursal para usuarios no administradores si no hay filtro en URL
-      if (this.apiService.auth_user().tipo != 'Administrador' && !params['id_sucursal']) {
-        this.filtros.id_sucursal = this.apiService.auth_user().id_sucursal;
-      }
+        // Aplicar filtro de sucursal para usuarios no administradores si no hay filtro en URL
+        if (this.apiService.auth_user().tipo != 'Administrador' && !params['id_sucursal']) {
+          this.filtros.id_sucursal = this.apiService.auth_user().id_sucursal;
+        }
 
-      this.filtrarVentas(false);
-    });
-
-    this.getNumsIds();
+        this.cargarVentas();
+      });
 
     // Cargar datos compartidos usando SharedDataService
     this.sharedDataService.getSucursales()
@@ -483,6 +483,44 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
   }
 
   /**
+   * Carga los registros de ventas desde el backend según this.filtros.
+   */
+  public cargarVentas(): void {
+    this.loading = true;
+    this.cdr.markForCheck();
+
+    if (!this.filtros.id_cliente) {
+      this.filtros.id_cliente = '';
+    }
+
+    if (!this.filtros.id_usuario) {
+      this.filtros.id_usuario = '';
+    }
+
+    if (!this.filtros.id_vendedor) {
+      this.filtros.id_vendedor = '';
+    }
+
+    this.apiService.getAll('ventas', this.filtros)
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (ventas) => {
+          this.ventas = ventas;
+          this.loading = false;
+          if (this.modalRef) {
+            this.closeModal();
+          }
+          this.cdr.markForCheck();
+        },
+        error: (error) => {
+          this.alertService.error(error);
+          this.loading = false;
+          this.cdr.markForCheck();
+        }
+      });
+  }
+
+  /**
    * @param resetPage Si es true (por defecto), vuelve a la página 1 (búsqueda, filtros, orden, paginate).
    *                  false al paginar o al sincronizar desde la URL.
    */
@@ -503,38 +541,12 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     this.router.navigate([], {
       relativeTo: this.route,
       queryParams: queryParams,
-    });
-
-    this.loading = true;
-    this.cdr.markForCheck();
-
-    if (!this.filtros.id_cliente) {
-      this.filtros.id_cliente = '';
-    }
-
-    if (!this.filtros.id_usuario) {
-      this.filtros.id_usuario = '';
-    }
-
-    if (!this.filtros.id_vendedor) {
-      this.filtros.id_vendedor = '';
-    }
-
-    this.apiService.getAll('ventas', this.filtros).subscribe(
-      (ventas) => {
-        this.ventas = ventas;
-        this.loading = false;
-        if (this.modalRef) {
-          this.closeModal();
-        }
-        this.cdr.markForCheck();
-      },
-      (error) => {
-        this.alertService.error(error);
-        this.loading = false;
-        this.cdr.markForCheck();
+    }).then(navigated => {
+      // Si la ruta no cambió (mismos params o navegación no disparada), forzar recarga
+      if (!navigated) {
+        this.cargarVentas();
       }
-    );
+    });
   }
 
   public async setEstado(venta: any, estado: any) {
@@ -796,6 +808,11 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
           }
         });
     }
+
+    if (!this.numeros_ids.length && this.isColumnEnabled('columna_proyecto')) {
+      this.getNumsIds();
+    }
+
     this.openModal(template);
   }
 
@@ -1056,26 +1073,28 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     this.downloadingVentas = true;
     this.saving = true;
     const sufijoArchivo = `${fechas.inicio}_a_${fechas.fin}`.replace(/[^0-9a-z_-]+/gi, '_');
-    this.apiService.export('ventas/exportar', filtrosExport).subscribe(
-      (data: Blob) => {
-        const blob = new Blob([data], {
-          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `ventas-${sufijoArchivo}.xlsx`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-        this.finalizarDescargaExport();
-      },
-      (error) => {
-        this.handleErrorExportVentas(error, MAX_DIAS_EXPORT_VENTAS);
-        this.finalizarDescargaExport();
-      }
-    );
+    this.apiService.export('ventas/exportar', filtrosExport)
+      .pipe(this.untilDestroyed())
+      .subscribe(
+        (data: Blob) => {
+          const blob = new Blob([data], {
+            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `ventas-${sufijoArchivo}.xlsx`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+          this.finalizarDescargaExport();
+        },
+        (error) => {
+          this.handleErrorExportVentas(error, MAX_DIAS_EXPORT_VENTAS);
+          this.finalizarDescargaExport();
+        }
+      );
   }
 
 
@@ -1094,48 +1113,50 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     this.downloadingVentas = true;
     this.saving = true;
 
-    this.apiService.exportAcumulado('ventas-acumulado/exportar', this.filtrosAcumulado).subscribe(
-      (data: Blob) => {
-        const blob = new Blob([data], {
-          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'ventas-acumulado.xlsx';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
+    this.apiService.exportAcumulado('ventas-acumulado/exportar', this.filtrosAcumulado)
+      .pipe(this.untilDestroyed())
+      .subscribe(
+        (data: Blob) => {
+          const blob = new Blob([data], {
+            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'ventas-acumulado.xlsx';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
 
-        // Cerrar ambos modales
-        if (this.modalRefAcumulado) {
-          this.modalManager.closeModal(this.modalRefAcumulado);
-          this.modalRefAcumulado = undefined;
+          // Cerrar ambos modales
+          if (this.modalRefAcumulado) {
+            this.modalManager.closeModal(this.modalRefAcumulado);
+            this.modalRefAcumulado = undefined;
+          }
+          if (this.modalRefDescargar) {
+            this.modalManager.closeModal(this.modalRefDescargar);
+            this.modalRefDescargar = undefined;
+          }
+
+          this.downloadingVentas = false;
+          this.saving = false;
+
+
+          this.filtrosAcumulado = {
+            inicio: '',
+            fin: '',
+            sucursales: [],
+            categorias: [],
+            marcas: [],
+            detallePorSucursal: false,
+          };
+        },
+        (error) => {
+          this.handleErrorExportVentas(error, MAX_DIAS_EXPORT_GENERAL);
+          this.finalizarDescargaExport();
         }
-        if (this.modalRefDescargar) {
-          this.modalManager.closeModal(this.modalRefDescargar);
-          this.modalRefDescargar = undefined;
-        }
-
-        this.downloadingVentas = false;
-        this.saving = false;
-
-
-        this.filtrosAcumulado = {
-          inicio: '',
-          fin: '',
-          sucursales: [],
-          categorias: [],
-          marcas: [],
-          detallePorSucursal: false,
-        };
-      },
-      (error) => {
-        this.handleErrorExportVentas(error, MAX_DIAS_EXPORT_GENERAL);
-        this.finalizarDescargaExport();
-      }
-    );
+      );
   }
 
 
@@ -1148,27 +1169,31 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     const filtrosExport = { ...this.filtros, inicio: fechas.inicio, fin: fechas.fin };
     this.downloadingDetalles = true;
     this.saving = true;
-    this.apiService.export('ventas-detalles/exportar', filtrosExport).subscribe((data: Blob) => {
-      const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'ventas-detalles.xlsx';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-      this.finalizarDescargaExport();
-    }, (error) => {
-      this.handleErrorExportVentas(error, MAX_DIAS_EXPORT_DETALLES);
-      this.finalizarDescargaExport();
-    }
-    );
+    this.apiService.export('ventas-detalles/exportar', filtrosExport)
+      .pipe(this.untilDestroyed())
+      .subscribe((data: Blob) => {
+        const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'ventas-detalles.xlsx';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        this.finalizarDescargaExport();
+      }, (error) => {
+        this.handleErrorExportVentas(error, MAX_DIAS_EXPORT_DETALLES);
+        this.finalizarDescargaExport();
+      }
+      );
   }
 
   public descargarDetallesDiario() {
     this.downloadingDetalles = true; this.saving = true;
-    this.apiService.export('ventas-detalles/exportar/diario', null).subscribe((data: Blob) => {
+    this.apiService.export('ventas-detalles/exportar/diario', null)
+      .pipe(this.untilDestroyed())
+      .subscribe((data: Blob) => {
       const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -1272,7 +1297,9 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
         this.venta = venta;
         this.venta.recurrente = true;
 
-        this.apiService.store('venta', this.venta).subscribe(venta => {
+        this.apiService.store('venta', this.venta)
+            .pipe(this.untilDestroyed())
+            .subscribe(venta => {
             this.venta = {};
             this.alertService.success('Venta guardada', 'La venta se marco como recurrente exitosamente.');
         },error => {this.alertService.error(error); this.saving = false; });
@@ -1423,7 +1450,9 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
   enviarDTE(venta: any, anulado = false) {
     this.sending = true;
     const payload = anulado ? { ...venta, documento: 'anulado' } : venta;
-    this.apiService.store('enviarDTE', payload).subscribe(dte => {
+    this.apiService.store('enviarDTE', payload)
+      .pipe(this.untilDestroyed())
+      .subscribe(dte => {
       this.alertService.success(this.countryI18n.fe('sendSuccessTitle'), this.countryI18n.fe('sendSuccessBody'));
       this.sending = false;
       setTimeout(() => {
@@ -1540,10 +1569,13 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
 
     this.saving = true;
 
-    this.apiService.store('generarDTEAnulado', this.venta).subscribe(dte => {
-      // this.alertService.success('DTE generado.');
+    this.apiService.store('generarDTEAnulado', this.venta)
+      .pipe(this.untilDestroyed())
+      .subscribe(dte => {
       this.venta.dte_invalidacion = dte;
-      this.facturacionElectronica.firmarDTE(dte).subscribe(dteFirmado => {
+      this.facturacionElectronica.firmarDTE(dte)
+        .pipe(this.untilDestroyed())
+        .subscribe(dteFirmado => {
         this.venta.dte_invalidacion.firmaElectronica = dteFirmado.body;
 
         if (dteFirmado.status == 'ERROR') {
@@ -1552,25 +1584,23 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
           return;
         }
 
-        this.facturacionElectronica.anularDTE(this.venta, dteFirmado.body).subscribe(dte => {
+        this.facturacionElectronica.anularDTE(this.venta, dteFirmado.body)
+          .pipe(this.untilDestroyed())
+          .subscribe(dte => {
           if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
             this.venta.dte_invalidacion.sello = dte.selloRecibido;
             this.venta.sello_mh = dte.selloRecibido;
             this.venta.estado = 'Anulada';
 
-            // Cerrar el modal primero
             if (this.modalRef) {
               this.modalRef.hide();
             }
 
-            // Limpiar el estado del modal
             this.saving = false;
             this.venta.errores = null;
 
-            // Guardar la venta
             this.onSubmit();
 
-            // Actualizar la venta en el listado
             const index = this.ventas.data.findIndex((v: any) => v.id === this.venta.id);
             if (index !== -1) {
               this.ventas.data[index] = { ...this.venta, tiene_dte_invalidacion: 1 };
@@ -1634,13 +1664,16 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     };
 
     setTimeout(() => {
-
-      this.apiService.store('consultarDTE', data).subscribe(dte => {
+      this.apiService.store('consultarDTE', data)
+        .pipe(this.untilDestroyed())
+        .subscribe(dte => {
         if (dte && dte.selloVal) {
           this.venta.dte.sello = dte.selloVal;
           this.venta.dte.selloRecibido = dte.selloVal;
           this.venta.sello_mh = dte.selloVal;
-          this.apiService.store('venta', this.venta).subscribe(data => {
+          this.apiService.store('venta', this.venta)
+            .pipe(this.untilDestroyed())
+            .subscribe(data => {
             this.alertService.success(this.countryI18n.fe('stampSuccessTitle'), this.countryI18n.fe('stampSuccessBody'));
             if (this.venta.cliente_id) {
               this.enviarDTE(this.venta);
@@ -1650,8 +1683,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
             }, 500);
             this.consulting = false;
           }, error => { this.alertService.error(error); });
-        }
-        else if (dte) {
+        } else if (dte) {
           this.consulting = false;
           this.alertService.info(this.countryI18n.fe('noStampTitle'), this.countryI18n.fe('noStampBody'));
         } else {
@@ -1795,15 +1827,19 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
 
 
   getNumsIds() {
-    this.apiService.getAll('ventas/nums-ids').subscribe(numsIds => {
-      this.numeros_ids = numsIds;
-    }, error => { this.alertService.error(error); });
+    this.apiService.getAll('ventas/nums-ids')
+      .pipe(this.untilDestroyed())
+      .subscribe(numsIds => {
+        this.numeros_ids = numsIds;
+      }, error => { this.alertService.error(error); });
   }
 
   generarPartidaContable(venta:any){
-    this.apiService.store('contabilidad/partida/venta', venta).subscribe(venta => {
-      this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
-    },error => {this.alertService.error(error);});
+    this.apiService.store('contabilidad/partida/venta', venta)
+      .pipe(this.untilDestroyed())
+      .subscribe(venta => {
+        this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
+      },error => {this.alertService.error(error);});
   }
 
   verificarAccesoContabilidad() {
@@ -1836,27 +1872,29 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     this.saving = true;
     this.filtrosPorMarca.inicio = this.filtrosPorMarca.inicio;
     this.filtrosPorMarca.fin = this.filtrosPorMarca.fin;
-    this.apiService.export('ventas-por-marcas/exportar', this.filtrosPorMarca).subscribe(
-      (data: Blob) => {
-        const blob = new Blob([data], {
-          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'ventas-por-marcas_' + this.filtrosPorMarca.inicio + '_' + this.filtrosPorMarca.fin + '.xlsx';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-        this.downloadingPorMarca = false;
-        this.saving = false;
-      },
-      (error) => {
-        this.handleErrorExportVentas(error, MAX_DIAS_EXPORT_GENERAL);
-        this.finalizarDescargaExport();
-      }
-    );
+    this.apiService.export('ventas-por-marcas/exportar', this.filtrosPorMarca)
+      .pipe(this.untilDestroyed())
+      .subscribe(
+        (data: Blob) => {
+          const blob = new Blob([data], {
+            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'ventas-por-marcas_' + this.filtrosPorMarca.inicio + '_' + this.filtrosPorMarca.fin + '.xlsx';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+          this.downloadingPorMarca = false;
+          this.saving = false;
+        },
+        (error) => {
+          this.handleErrorExportVentas(error, MAX_DIAS_EXPORT_GENERAL);
+          this.finalizarDescargaExport();
+        }
+      );
   }
 
   public descargarPorUtilidades() {
@@ -1873,27 +1911,29 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     this.saving = true;
     this.filtrosPorMarca.inicio = this.filtrosPorMarca.inicio;
     this.filtrosPorMarca.fin = this.filtrosPorMarca.fin;
-    this.apiService.export('ventas-por-utilidades/exportar', this.filtrosPorMarca).subscribe(
-      (data: Blob) => {
-        const blob = new Blob([data], {
-          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'ventas-por-utilidades_' + this.filtrosPorMarca.inicio + '_' + this.filtrosPorMarca.fin + '.xlsx';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-        this.downloadingPorMarca = false;
-        this.saving = false;
-      },
-      (error) => {
-        this.handleErrorExportVentas(error, MAX_DIAS_EXPORT_GENERAL);
-        this.finalizarDescargaExport();
-      }
-    );
+    this.apiService.export('ventas-por-utilidades/exportar', this.filtrosPorMarca)
+      .pipe(this.untilDestroyed())
+      .subscribe(
+        (data: Blob) => {
+          const blob = new Blob([data], {
+            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'ventas-por-utilidades_' + this.filtrosPorMarca.inicio + '_' + this.filtrosPorMarca.fin + '.xlsx';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+          this.downloadingPorMarca = false;
+          this.saving = false;
+        },
+        (error) => {
+          this.handleErrorExportVentas(error, MAX_DIAS_EXPORT_GENERAL);
+          this.finalizarDescargaExport();
+        }
+      );
   }
 
   public descargarCobrosPorVendedor() {
@@ -1908,40 +1948,42 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     }
     this.downloadingCobrosVendedor = true;
     this.saving = true;
-    this.apiService.export('cobros-por-vendedor/exportar', this.filtrosCobrosVendedor).subscribe(
-      (data: Blob) => {
-        const blob = new Blob([data], {
-          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        const fechaInicio = this.filtrosCobrosVendedor.inicio || 'sin-fecha';
-        const fechaFin = this.filtrosCobrosVendedor.fin || 'sin-fecha';
-        a.download = 'cobros-por-vendedor_' + fechaInicio + '_' + fechaFin + '.xlsx';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
+    this.apiService.export('cobros-por-vendedor/exportar', this.filtrosCobrosVendedor)
+      .pipe(this.untilDestroyed())
+      .subscribe(
+        (data: Blob) => {
+          const blob = new Blob([data], {
+            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          const fechaInicio = this.filtrosCobrosVendedor.inicio || 'sin-fecha';
+          const fechaFin = this.filtrosCobrosVendedor.fin || 'sin-fecha';
+          a.download = 'cobros-por-vendedor_' + fechaInicio + '_' + fechaFin + '.xlsx';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
 
-        // Cerrar ambos modales
-        if (this.modalRefCobrosVendedor) {
-          this.modalRefCobrosVendedor.hide();
-          this.modalRefCobrosVendedor = undefined;
-        }
-        if (this.modalRefDescargar) {
-          this.modalRefDescargar.hide();
-          this.modalRefDescargar = undefined;
-        }
+          // Cerrar ambos modales
+          if (this.modalRefCobrosVendedor) {
+            this.modalRefCobrosVendedor.hide();
+            this.modalRefCobrosVendedor = undefined;
+          }
+          if (this.modalRefDescargar) {
+            this.modalRefDescargar.hide();
+            this.modalRefDescargar = undefined;
+          }
 
-        this.downloadingCobrosVendedor = false;
-        this.saving = false;
-      },
-      (error) => {
-        this.handleErrorExportVentas(error, MAX_DIAS_EXPORT_GENERAL);
-        this.finalizarDescargaExport();
-      }
-    );
+          this.downloadingCobrosVendedor = false;
+          this.saving = false;
+        },
+        (error) => {
+          this.handleErrorExportVentas(error, MAX_DIAS_EXPORT_GENERAL);
+          this.finalizarDescargaExport();
+        }
+      );
   }
 
   public descargarReportePorMarcaOUtilidades() {
@@ -1964,9 +2006,11 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
       cancelButtonColor: '#d33'
     }).then((result) => {
       if (result.isConfirmed) {
-        this.apiService.store('compra/generar-compra-desde-orden', venta).subscribe(venta => {
-          this.alertService.success('Traslado generado.', 'El traslado fue generado exitosamente.');
-        }, error => { this.alertService.error(error); });
+        this.apiService.store('compra/generar-compra-desde-orden', venta)
+          .pipe(this.untilDestroyed())
+          .subscribe(venta => {
+            this.alertService.success('Traslado generado.', 'El traslado fue generado exitosamente.');
+          }, error => { this.alertService.error(error); });
       }
     });
   }
@@ -2159,17 +2203,19 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     this.cargandoTrackingBoxful = true;
     this.modalRef = this.modalService.show(template, { class: 'modal-md' });
 
-    this.boxfulApiService.getTracking(shipmentNumber).subscribe({
-      next: (res) => {
-        this.trackingInfo = res;
-        this.cargandoTrackingBoxful = false;
-      },
-      error: (err) => {
-        this.alertService.error(err);
-        this.cargandoTrackingBoxful = false;
-        this.modalRef?.hide();
-      }
-    });
+    this.boxfulApiService.getTracking(shipmentNumber)
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (res) => {
+          this.trackingInfo = res;
+          this.cargandoTrackingBoxful = false;
+        },
+        error: (err) => {
+          this.alertService.error(err);
+          this.cargandoTrackingBoxful = false;
+          this.modalRef?.hide();
+        }
+      });
   }
 
   getTrackingShipment(): any {
