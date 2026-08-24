@@ -1,0 +1,184 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading">Antigüedad de saldos</h2>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+    <div class="row mb-3">
+        <div class="col-md-6 mb-2">
+            <div class="d-flex gap-2 flex-wrap">
+                <button type="button" class="btn" [class.btn-primary]="filtros.tipo === 'cxc'" (click)="setTipo('cxc')">Cuentas por cobrar</button>
+                <button type="button" class="btn" [class.btn-primary]="filtros.tipo === 'cxp'" (click)="setTipo('cxp')">Cuentas por pagar</button>
+                <button *ngIf="esIndividual()" type="button" class="btn btn-default" (click)="volverGlobal()">
+                    <i class="fa fa-arrow-left"></i> Vista global
+                </button>
+            </div>
+        </div>
+        <div class="col-md-6 mb-2">
+            <div class="d-flex gap-2 justify-content-md-end flex-wrap">
+                <input type="date" class="form-control w-auto" [(ngModel)]="filtros.fecha_corte" (change)="cargar()" name="fecha_corte">
+                <button tooltip="Descargar Excel" (click)="descargarExcel()" [disabled]="downloading" class="btn btn-default">
+                    <img src="/assets/icons/download.png" class="icon" alt="">
+                </button>
+                <button tooltip="PDF" (click)="abrirPdf()" class="btn btn-default">
+                    <i class="fa fa-file-pdf"></i>
+                </button>
+                <button tooltip="Filtrar" (click)="openModal(mfilter)" class="btn btn-default">
+                    <img src="/assets/icons/filter.png" class="icon" alt="">
+                </button>
+                <button tooltip="Limpiar filtros" (click)="limpiarFiltros()" class="btn btn-default">
+                    <i class="fa fa-refresh"></i>
+                </button>
+                <button tooltip="Actualizar" (click)="cargar()" class="btn btn-default">
+                    <i class="fa fa-sync"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-3 text-muted" *ngIf="reporte">
+        Fecha de corte: {{ reporte.fecha_corte | date:'dd/MM/yyyy' }}
+        <span *ngIf="esIndividual() && reporte.entidad"> — {{ reporte.entidad.nombre }}</span>
+    </div>
+
+    <div class="table-responsive" *ngIf="!esIndividual()">
+        <table class="table table-borderless table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>{{ filtros.tipo === 'cxp' ? 'Proveedor' : 'Cliente' }}</th>
+                    <th>Identificación</th>
+                    <th class="text-end" *ngFor="let b of bucketsVisibles()">{{ bucketLabels[b] }}</th>
+                    <th class="text-end">Total</th>
+                    <th class="text-center"><i class="fa fa-cog"></i></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngIf="loading">
+                    <td [attr.colspan]="4 + bucketsVisibles().length" class="text-center">
+                        <span class="badge bg-primary">Cargando...</span>
+                    </td>
+                </tr>
+                <tr *ngIf="!loading && (!reporte?.filas || reporte.filas.length < 1)">
+                    <td [attr.colspan]="4 + bucketsVisibles().length" class="text-center">
+                        <span class="badge bg-primary">Sin saldos pendientes</span>
+                    </td>
+                </tr>
+                <tr *ngFor="let fila of reporte?.filas">
+                    <td>{{ fila.nombre }}</td>
+                    <td>{{ fila.identificacion || '-' }}</td>
+                    <td class="text-end" *ngFor="let b of bucketsVisibles()">{{ (fila[b] || 0) | currency }}</td>
+                    <td class="text-end"><strong>{{ (fila.total || 0) | currency }}</strong></td>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-link text-dark p-0" (click)="verIndividual(fila.id_entidad)" tooltip="Detalle">
+                            <i class="fa fa-eye"></i>
+                        </button>
+                        <button *ngIf="filtros.tipo === 'cxc' && fila.id_entidad" type="button" class="btn btn-link text-dark p-0 ms-2"
+                            (click)="estadoCuentaCliente(fila.id_entidad)" tooltip="Estado de cuenta (PDF)">
+                            <i class="fa fa-file-pdf"></i>
+                        </button>
+                    </td>
+                </tr>
+                <tr *ngIf="!loading && reporte?.filas?.length" class="fw-bold">
+                    <td colspan="2">TOTALES</td>
+                    <td class="text-end" *ngFor="let b of bucketsVisibles()">{{ (reporte.totales[b] || 0) | currency }}</td>
+                    <td class="text-end">{{ (reporte.totales.total || 0) | currency }}</td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="table-responsive" *ngIf="esIndividual()">
+        <table class="table table-borderless table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Documento</th>
+                    <th>Vencimiento</th>
+                    <th class="text-end">Días</th>
+                    <th>Bucket</th>
+                    <th class="text-end">Saldo</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngIf="loading">
+                    <td colspan="6" class="text-center"><span class="badge bg-primary">Cargando...</span></td>
+                </tr>
+                <tr *ngIf="!loading && (!reporte?.filas || reporte.filas.length < 1)">
+                    <td colspan="6" class="text-center"><span class="badge bg-primary">Sin documentos</span></td>
+                </tr>
+                <tr *ngFor="let fila of reporte?.filas">
+                    <td>{{ fila.fecha | date:'dd/MM/yyyy' }}</td>
+                    <td>{{ fila.documento }}</td>
+                    <td>{{ fila.fecha_pago ? (fila.fecha_pago | date:'dd/MM/yyyy') : '-' }}</td>
+                    <td class="text-end">{{ fila.dias }}</td>
+                    <td>{{ fila.bucket_label }}</td>
+                    <td class="text-end">{{ (fila.saldo || 0) | currency }}</td>
+                </tr>
+                <tr *ngIf="!loading && reporte?.filas?.length" class="fw-bold">
+                    <td colspan="5" class="text-end">Total</td>
+                    <td class="text-end">{{ (reporte.totales.total || 0) | currency }}</td>
+                </tr>
+            </tbody>
+        </table>
+        <div class="mt-3" *ngIf="filtros.tipo === 'cxc' && filtros.id_cliente">
+            <button type="button" class="btn btn-default" (click)="estadoCuentaCliente(filtros.id_cliente)">
+                Abrir estado de cuenta (PDF ventas)
+            </button>
+        </div>
+    </div>
+</section>
+
+<ng-template #mfilter>
+    <div class="modal-header">
+        <h5 class="modal-title">Filtros</h5>
+        <button type="button" class="btn-close" (click)="modalRef.hide()"></button>
+    </div>
+    <div class="modal-body">
+        <div class="mb-3" *ngIf="empresas?.length">
+            <label class="form-label">Empresa</label>
+            <select class="form-select" [(ngModel)]="filtros.id_empresa" name="id_empresa">
+                <option value="">Todas / actual</option>
+                <option *ngFor="let e of empresas" [value]="e.id">{{ e.nombre || e.name }}</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Sucursal</label>
+            <select class="form-select" [(ngModel)]="filtros.id_sucursal" name="id_sucursal">
+                <option value="">Todas</option>
+                <option *ngFor="let s of sucursales" [value]="s.id">{{ s.nombre }}</option>
+            </select>
+        </div>
+        <div class="mb-3" *ngIf="filtros.tipo === 'cxc'">
+            <label class="form-label">Cliente</label>
+            <select class="form-select" [(ngModel)]="filtros.id_cliente" name="id_cliente">
+                <option value="">Todos</option>
+                <option *ngFor="let c of clientes" [value]="c.id">{{ c.nombre_empresa || c.nombre || c.nombre_completo }}</option>
+            </select>
+        </div>
+        <div class="mb-3" *ngIf="filtros.tipo === 'cxc'">
+            <label class="form-label">Vendedor</label>
+            <select class="form-select" [(ngModel)]="filtros.id_vendedor" name="id_vendedor">
+                <option value="">Todos</option>
+                <option *ngFor="let v of vendedores" [value]="v.id">{{ v.name || v.nombre }}</option>
+            </select>
+        </div>
+        <div class="mb-3" *ngIf="filtros.tipo === 'cxp'">
+            <label class="form-label">Proveedor</label>
+            <select class="form-select" [(ngModel)]="filtros.id_proveedor" name="id_proveedor">
+                <option value="">Todos</option>
+                <option *ngFor="let p of proveedores" [value]="p.id">{{ p.nombre_empresa || p.nombre }}</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label class="form-label d-block">Rangos de antigüedad</label>
+            <div class="form-check form-check-inline" *ngFor="let b of bucketKeys">
+                <input class="form-check-input" type="checkbox" [(ngModel)]="bucketFlags[b]" [name]="'bucket_' + b" [id]="'bucket_' + b">
+                <label class="form-check-label" [for]="'bucket_' + b">{{ bucketLabels[b] }}</label>
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-default" (click)="limpiarFiltros()">Limpiar</button>
+        <button type="button" class="btn btn-primary" (click)="aplicarFiltros()">Aplicar</button>
+    </div>
+</ng-template>

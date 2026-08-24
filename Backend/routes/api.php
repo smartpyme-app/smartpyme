@@ -155,6 +155,7 @@ Route::group(['middleware' => ['jwt.auth']], function () {
     require base_path('routes/modulos/admin/pais-configuracion.php');
     require base_path('routes/modulos/admin/moneda.php');
     require base_path('routes/modulos/reportes.php');
+    require base_path('routes/modulos/finanzas/antiguedad-saldos.php');
 
     require base_path('routes/modulos/planilla/departamentos-empresa.php');
     require base_path('routes/modulos/planilla/areas-empresa.php');
