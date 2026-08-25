@@ -270,7 +270,7 @@ class MHFacturaExportacion extends Model
                 "descripcion" => $detalle->nombre_producto,
                 "cantidad" => floatval($detalle->cantidad),
                 "uniMedida" => $detalle->cod_medida,
-                "precioUni" => floatval(number_format($detalle->precio,2, '.', '')),
+                "precioUni" => floatval(number_format($detalle->precio,4, '.', '')),
                 "montoDescu" => floatval(number_format($detalle->descuento,2, '.', '')),
                 "ventaGravada" => floatval(number_format($detalle->gravada,2, '.', '')),
                 "tributos" => $tributos,
