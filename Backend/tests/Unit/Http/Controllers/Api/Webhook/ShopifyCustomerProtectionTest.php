@@ -75,6 +75,12 @@ class ShopifyCustomerProtectionTest extends TestCase
 
         $resultado = $this->methodActualizarCliente->invoke($this->controller, $cliente, $shopifyData);
 
+        // Los datos de contacto / perfil de la persona SÍ se renuevan
+        $this->assertSame('Juan Carlos', $resultado->nombre);
+        $this->assertSame('Perez Gomez', $resultado->apellido);
+        $this->assertSame('7777-8888', $resultado->telefono);
+        $this->assertSame('Colonia Nueva #456', $resultado->direccion);
+
         // Los datos fiscales y de empresa deben permanecer INTACTOS
         $this->assertSame('Mi Empresa S.A. de C.V.', $resultado->nombre_empresa);
         $this->assertSame('Empresa', $resultado->tipo);
@@ -85,8 +91,7 @@ class ShopifyCustomerProtectionTest extends TestCase
         $this->assertSame('45300', $resultado->cod_giro);
         $this->assertSame('Mediano', $resultado->tipo_contribuyente);
 
-        // La dirección y ubicación homologada no deben sobreescribirse
-        $this->assertSame('Calle Los Próceres #10', $resultado->direccion);
+        // Ubicaciones de catálogo fiscal homologado previas se preservan
         $this->assertSame('San Salvador', $resultado->departamento);
         $this->assertSame('06', $resultado->cod_departamento);
         $this->assertSame('San Salvador Centro', $resultado->municipio);

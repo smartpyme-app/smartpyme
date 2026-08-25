@@ -1495,25 +1495,24 @@ class ShopifyController extends Controller
             $camposActualizar['shopify_customer_id'] = $clienteData['shopify_customer_id'];
         }
 
-        // 2. Rellenar datos de contacto básicos SOLO si están vacíos en el registro existente
-        if (empty($cliente->nombre) && !empty($clienteData['nombre'])) {
+        // 2. Actualizar datos de contacto y perfil de la persona si vienen con valor no vacío
+        if (!empty($clienteData['nombre'])) {
             $camposActualizar['nombre'] = $clienteData['nombre'];
         }
-        if (empty($cliente->apellido) && !empty($clienteData['apellido'])) {
+        if (isset($clienteData['apellido']) && $clienteData['apellido'] !== '') {
             $camposActualizar['apellido'] = $clienteData['apellido'];
         }
-        if (empty($cliente->correo) && !empty($clienteData['correo'])) {
+        if (!empty($clienteData['correo'])) {
             $camposActualizar['correo'] = $clienteData['correo'];
         }
-        if (empty($cliente->telefono) && !empty($clienteData['telefono'])) {
+        if (!empty($clienteData['telefono'])) {
             $camposActualizar['telefono'] = $clienteData['telefono'];
         }
-        if (empty($cliente->nombre_empresa) && !empty($clienteData['nombre_empresa'])) {
-            $camposActualizar['nombre_empresa'] = $clienteData['nombre_empresa'];
-        }
-        if (empty($cliente->direccion) && !empty($clienteData['direccion'])) {
+        if (!empty($clienteData['direccion'])) {
             $camposActualizar['direccion'] = $clienteData['direccion'];
         }
+
+        // 3. Ubicación geográfica: actualizar solo si no estaban definidos para evitar romper catálogos DTE
         if (empty($cliente->pais) && !empty($clienteData['pais'])) {
             $camposActualizar['pais'] = $clienteData['pais'];
             $camposActualizar['cod_pais'] = $clienteData['cod_pais'] ?? null;
@@ -1527,7 +1526,12 @@ class ShopifyController extends Controller
             $camposActualizar['cod_municipio'] = $clienteData['cod_municipio'] ?? null;
         }
 
-        // 3. Tipo: si no tenía tipo asignado, asignar según Shopify; si ya tiene (Empresa o Persona), conservarlo.
+        // 4. Nombre de empresa: solo asignar si el cliente no tenía razón social registrada
+        if (empty($cliente->nombre_empresa) && !empty($clienteData['nombre_empresa'])) {
+            $camposActualizar['nombre_empresa'] = $clienteData['nombre_empresa'];
+        }
+
+        // 5. Tipo: si el cliente ya es 'Empresa' o tiene datos fiscales, conservarlo; si no tenía tipo, asignar
         if (empty($cliente->tipo) && !empty($clienteData['tipo'])) {
             $camposActualizar['tipo'] = $clienteData['tipo'];
         }
