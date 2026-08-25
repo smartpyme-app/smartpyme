@@ -23,7 +23,10 @@ class CrearCreditoContratoService
 
         $cliente = Cliente::findOrFail($data['id_cliente']);
         $monto = round((float) $data['monto'], 2);
-        $saldoUsado = $this->saldoUsado((int) $cliente->id);
+        $saldoUsado = $this->saldoUsado(
+            (int) $cliente->id,
+            isset($data['excluir_id_venta']) ? (int) $data['excluir_id_venta'] : null
+        );
         $limite = $cliente->limite_credito !== null ? (float) $cliente->limite_credito : null;
 
         if (!CupoCredito::cabe($limite, $saldoUsado, $monto)) {
@@ -68,13 +71,61 @@ class CrearCreditoContratoService
         });
     }
 
-    public function saldoUsado(int $idCliente): float
+    public function crearDesdeVenta(User $user, array $data, Venta $venta): CreditoContrato
+    {
+        $data['id_cliente'] = $data['id_cliente'] ?? $venta->id_cliente;
+        $data['excluir_id_venta'] = $venta->id;
+
+        if ((int) $venta->id_cliente !== (int) $data['id_cliente']) {
+            throw new \App\Exceptions\FacturacionException(
+                'El cliente de la venta no coincide con el crédito.',
+                422
+            );
+        }
+
+        $monto = round((float) $data['monto'], 2);
+        $nCuotas = (int) $data['n_cuotas'];
+        if (!CuotaInicialFactura::coincide((float) $venta->total, $monto, $nCuotas)) {
+            throw new \App\Exceptions\FacturacionException(
+                'El total de la venta debe ser la primera cuota del crédito.',
+                422
+            );
+        }
+
+        try {
+            $contrato = $this->crear($user, $data);
+        } catch (ValidationException $e) {
+            throw new \App\Exceptions\FacturacionException(
+                (string) $e->validator->errors()->first(),
+                422
+            );
+        } catch (AccessDeniedHttpException $e) {
+            throw new \App\Exceptions\FacturacionException($e->getMessage(), 403);
+        }
+
+        $cuota1 = $contrato->cuotas->firstWhere('numero', 1);
+        if (!$cuota1) {
+            throw new \App\Exceptions\FacturacionException('No se generó la primera cuota.', 422);
+        }
+
+        app(VincularCuotaVentaService::class)->vincular((int) $cuota1->id, $venta);
+
+        $venta->estado = 'Pagada';
+        $venta->save();
+
+        app(ClonarVentasCuotasCredito::class)->clonarRestantes($venta, $contrato->fresh(['cuotas']));
+
+        return $contrato->fresh(['cuotas', 'cliente']);
+    }
+
+    public function saldoUsado(int $idCliente, ?int $excluirVentaId = null): float
     {
         $ventasPendientes = Venta::where('id_cliente', $idCliente)
             ->where('estado', 'Pendiente')
             ->where(function ($q) {
                 $q->where('cotizacion', 0)->orWhereNull('cotizacion');
             })
+            ->when($excluirVentaId, fn ($q) => $q->where('id', '!=', $excluirVentaId))
             ->withSum(['abonos' => fn ($q) => $q->where('estado', 'Confirmado')], 'total')
             ->withSum(['devoluciones' => fn ($q) => $q->where('enable', 1)], 'total')
             ->get();
@@ -88,6 +139,7 @@ class CrearCreditoContratoService
 
         $cuotasProgramadas = CreditoCuota::query()
             ->where('estado', CreditoCuota::ESTADO_PROGRAMADA)
+            ->whereNull('id_venta')
             ->whereHas('contrato', fn ($q) => $q->where('id_cliente', $idCliente))
             ->sum('monto');
 

@@ -18,4 +18,13 @@ class CrearCreditoContratoServiceTest extends TestCase
         $this->assertStringNotContainsString('Dte', $src);
         $this->assertStringNotContainsString('transmite', $src);
     }
+
+    public function test_marca_la_primera_venta_como_pagada(): void
+    {
+        $src = file_get_contents(
+            (new \ReflectionClass(CrearCreditoContratoService::class))->getFileName()
+        );
+
+        $this->assertStringContainsString("estado = 'Pagada'", $src);
+    }
 }

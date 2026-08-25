@@ -1,26 +1,54 @@
-<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+<section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
   <h2 class="page-heading">Crédito</h2>
   <a class="btn btn-default" routerLink="/ventas/creditos"><i class="fa fa-arrow-left"></i> Regresar</a>
 </section>
 
 @if (credito) {
   <section class="bg-white p-4 rounded mb-3">
-    <p class="mb-1"><strong>Cliente:</strong> {{ credito.cliente?.nombre_completo || credito.cliente?.nombre }}</p>
-    <p class="mb-1"><strong>Tipo:</strong> {{ credito.tipo }}</p>
-    <p class="mb-1"><strong>Monto:</strong> {{ credito.monto }}</p>
-    <p class="mb-1"><strong>Inicio:</strong> {{ credito.fecha_inicio }}</p>
-    <p class="mb-0"><strong>Estado:</strong> {{ credito.estado }}</p>
+    <h6 class="mb-3">Información</h6>
+    <div class="row">
+      <div class="form-group col-lg-4 mb-3">
+        <label class="fw-medium">Cliente</label>
+        <p class="mb-0">{{ credito.cliente?.nombre_completo || credito.cliente?.nombre || '-' }}</p>
+      </div>
+      <div class="form-group col-lg-4 mb-3">
+        <label class="fw-medium">Tipo</label>
+        <p class="mb-0">{{ etiquetaTipo(credito.tipo) }}</p>
+      </div>
+      <div class="form-group col-lg-4 mb-3">
+        <label class="fw-medium">Monto</label>
+        <p class="mb-0">{{ credito.monto | currency }}</p>
+      </div>
+      <div class="form-group col-lg-4 mb-3">
+        <label class="fw-medium">Inicio</label>
+        <p class="mb-0">{{ credito.fecha_inicio | date:'dd/MM/yyyy':'UTC' }}</p>
+      </div>
+      <div class="form-group col-lg-4 mb-3">
+        <label class="fw-medium">Estado</label>
+        <p class="mb-0">
+          <span class="badge py-2" [class.bg-success]="credito.estado === 'activo'" [class.bg-secondary]="credito.estado !== 'activo'">
+            {{ etiquetaEstadoContrato(credito.estado) }}
+          </span>
+        </p>
+      </div>
+      @if (credito.concepto) {
+        <div class="form-group col-lg-4 mb-3">
+          <label class="fw-medium">Concepto</label>
+          <p class="mb-0">{{ credito.concepto }}</p>
+        </div>
+      }
+    </div>
   </section>
 
   <section class="bg-white p-4 rounded">
-    <h3 class="h5">Cuotas</h3>
+    <h6 class="mb-3">Cuotas</h6>
     <div class="table-responsive">
       <table class="table">
         <thead>
           <tr>
             <th>#</th>
             <th>Vencimiento</th>
-            <th>Monto</th>
+            <th class="text-end">Monto</th>
             <th>Estado</th>
             <th></th>
           </tr>
@@ -29,14 +57,27 @@
           @for (cuota of credito.cuotas; track cuota.id) {
             <tr>
               <td>{{ cuota.numero }}</td>
-              <td>{{ cuota.fecha_vencimiento }}</td>
-              <td>{{ cuota.monto }}</td>
-              <td>{{ etiquetaEstadoCola(cuota.estado_visible || cuota.estado) }}</td>
+              <td>{{ cuota.fecha_vencimiento | date:'dd/MM/yyyy':'UTC' }}</td>
+              <td class="text-end">{{ cuota.monto | currency }}</td>
               <td>
+                <span class="badge py-2" [ngClass]="claseEstadoCuota(cuota)">
+                  {{ etiquetaEstadoCuota(cuota) }}
+                </span>
+              </td>
+              <td class="text-end text-nowrap">
                 @if (cuota.id_venta) {
-                  <a [routerLink]="['/venta', cuota.id_venta]">Ver factura</a>
+                  <a class="btn btn-default btn-sm" [routerLink]="['/venta', cuota.id_venta]">
+                    <i class="fa fa-fw fa-magnifying-glass"></i> Ver
+                  </a>
+                  @if (puedeFacturarVentaCuota(cuota.venta, true)) {
+                    <a class="btn btn-primary btn-sm ms-1" [routerLink]="['/venta/crear']" [queryParams]="queryFacturarVenta(cuota.id_venta)">
+                      <i class="fa fa-fw fa-file-invoice"></i> Facturar
+                    </a>
+                  }
                 } @else {
-                  <a [routerLink]="['/venta/crear']" [queryParams]="queryFacturarCuota(cuota.id)">Facturar</a>
+                  <a class="btn btn-primary btn-sm" [routerLink]="['/venta/crear']" [queryParams]="queryFacturarCuota(cuota.id)">
+                    <i class="fa fa-fw fa-file-invoice"></i> Facturar
+                  </a>
                 }
               </td>
             </tr>

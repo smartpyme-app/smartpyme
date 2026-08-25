@@ -25,6 +25,8 @@ use App\Services\Inventario\ConversionInventarioService;
 use App\Services\Inventario\LoteAsignacionService;
 use App\Services\Inventario\StockDisponibleService;
 use App\Services\Restaurante\PedidoCanalInventarioService;
+use App\Services\CreditosClientes\CorrelativoVenta;
+use App\Services\CreditosClientes\KardexCredito;
 use App\Services\Moneda\MonedaPaisService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -135,9 +137,26 @@ class FacturacionService
                 if ($request->filled('id_credito_cuota')) {
                     $cuotaCredito = \App\Models\CreditosClientes\CreditoCuota::with('contrato')
                         ->find($request->id_credito_cuota);
-                    if ($cuotaCredito && !\App\Services\CreditosClientes\KardexCredito::debeMoverInventario(
+                    if ($cuotaCredito && !KardexCredito::debeMoverInventario(
                         $cuotaCredito->contrato?->tipo,
                         $cuotaCredito->numero
+                    )) {
+                        $saltarActualizarInventario = true;
+                    }
+                } elseif ($request->filled('credito_contrato.tipo')) {
+                    if (!KardexCredito::debeMoverInventario(
+                        $request->input('credito_contrato.tipo'),
+                        1
+                    )) {
+                        $saltarActualizarInventario = true;
+                    }
+                } elseif ($request->id) {
+                    $cuotaPorVenta = \App\Models\CreditosClientes\CreditoCuota::with('contrato')
+                        ->where('id_venta', $request->id)
+                        ->first();
+                    if ($cuotaPorVenta && !KardexCredito::debeMoverInventario(
+                        $cuotaPorVenta->contrato?->tipo,
+                        $cuotaPorVenta->numero
                     )) {
                         $saltarActualizarInventario = true;
                     }
@@ -162,7 +181,12 @@ class FacturacionService
                 $this->aplicarReglasVentaRemisionConsigna($venta, $documento, $request);
 
                 if ($request->id) {
-                    $venta->correlativo = $correlativoExistente;
+                    if (CorrelativoVenta::debeAsignar($correlativoExistente)) {
+                        $venta->correlativo = $documento->correlativo;
+                        $documento->increment('correlativo');
+                    } else {
+                        $venta->correlativo = $correlativoExistente;
+                    }
                 } else {
                     $venta->correlativo = $documento->correlativo;
                     $documento->increment('correlativo');
@@ -175,6 +199,12 @@ class FacturacionService
                 }
 
                 $venta->save();
+
+                if ($request->id && CorrelativoVenta::debeAsignar($correlativoExistente) && $venta->correlativo) {
+                    \App\Models\CreditosClientes\CreditoCuota::where('id_venta', $venta->id)
+                        ->where('estado', \App\Models\CreditosClientes\CreditoCuota::ESTADO_PROGRAMADA)
+                        ->update(['estado' => \App\Models\CreditosClientes\CreditoCuota::ESTADO_FACTURADA]);
+                }
     
                 // Guardamos los detalles
     
@@ -583,7 +613,14 @@ class FacturacionService
                     }
                 }
     
-                if ($request->filled('id_credito_cuota')) {
+                if ($request->filled('id_credito_cuota') && $request->filled('credito_contrato')) {
+                    throw new FacturacionException('La venta no puede crear un crédito y vincular una cuota a la vez.', 422);
+                }
+
+                if ($request->filled('credito_contrato') && (int) $request->cotizacion !== 1) {
+                    app(\App\Services\CreditosClientes\CrearCreditoContratoService::class)
+                        ->crearDesdeVenta($user, (array) $request->input('credito_contrato'), $venta);
+                } elseif ($request->filled('id_credito_cuota')) {
                     app(\App\Services\CreditosClientes\VincularCuotaVentaService::class)
                         ->vincular((int) $request->id_credito_cuota, $venta);
                 }

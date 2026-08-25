@@ -5,8 +5,9 @@ describe('puedeVerMenuCreditos', () => {
     expect(SLUG_CREDITOS_CLIENTES).toBe('creditos-clientes');
   });
 
-  it('muestra el menú si hay funcionalidad y permiso de ver ventas', () => {
-    expect(puedeVerMenuCreditos(true, true)).toBe(true);
+  it('oculta el menú: la cola son las ventas de cuotas', () => {
+    expect(puedeVerMenuCreditos(true, true)).toBe(false);
+    expect(puedeVerMenuCreditos(false, true)).toBe(false);
   });
 
   it('oculta el menú sin funcionalidad', () => {

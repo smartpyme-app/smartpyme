@@ -128,7 +128,7 @@
                         <td>{{venta.nombre_cliente | truncate:30 }}@if (venta.id_cliente && venta.id_cliente != 1) {<a class="float-end d-none"  tooltip="Ver información del cliente" [routerLink]="['/cliente/editar', venta.id_cliente]"><i class="fa fa-edit"></i></a>}</td>
                         <td>
                             <a class="text-decoration-none text-dark"  tooltip="Ver información de la venta" [routerLink]="['/venta', venta.id]">
-                                {{venta.nombre_documento}} #{{venta.correlativo}}
+                                {{venta.nombre_documento}} {{venta.correlativo ? ' #' + venta.correlativo : ''}}
                             </a>
                         </td>
                         <td><span title="{{ venta.detalle_banco }}">{{venta.forma_pago}}</span></td>
@@ -144,10 +144,13 @@
                                 @if (venta.estado != 'Pendiente') {
                                     <span>{{ venta.estado }}</span>
                                 }
-                                @if (venta.estado == 'Pendiente' && canEditVentas()) {
+                                @if (venta.estado == 'Pendiente' && canEditVentas() && !puedeFacturarVentaCuota(venta)) {
                                     <a tooltip="Pagar venta" (click)="openAbono(mabono, venta)" class="text-decoration-none text-dark click">
                                         {{ venta.estado }}
                                     </a>
+                                }
+                                @if (venta.estado == 'Pendiente' && puedeFacturarVentaCuota(venta)) {
+                                    <span>{{ venta.estado }}</span>
                                 }
                                 @if (apiService.auth_user().empresa.facturacion_electronica && venta.sello_mh) {
                                     <span title="Emitido a hacienda" style="position: absolute; top: -3px; right: -3px; font-size: 10px; color: blue;">
@@ -250,12 +253,12 @@
                             <ng-template #accionesTemplate>
                                 <div class="list-group border-0">
 
-                                    @if (apiService.auth_user().empresa.facturacion_electronica && venta.estado != 'Anulada' && !venta.sello_mh) {
+                                    @if (apiService.auth_user().empresa.facturacion_electronica && venta.estado != 'Anulada' && !venta.sello_mh && !puedeFacturarVentaCuota(venta)) {
                                         <a class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, venta)" [tooltip]="'country.tax.fe.emit' | translate">
                                             <i class="fa fa-fw fa-file-invoice"></i> {{ 'country.tax.fe.emit' | translate }}
                                         </a>
                                     }
-                                    @if (!esFeCostaRica() && apiService.auth_user().empresa.fe_ambiente == '00' && apiService.auth_user().empresa.facturacion_electronica && venta.estado != 'Anulada' && !venta.sello_mh) {
+                                    @if (!esFeCostaRica() && apiService.auth_user().empresa.fe_ambiente == '00' && apiService.auth_user().empresa.facturacion_electronica && venta.estado != 'Anulada' && !venta.sello_mh && !puedeFacturarVentaCuota(venta)) {
                                         <a class="list-group-item list-group-item-action border-0 click" (click)="emitirEnContingencia(venta)" [tooltip]="'country.tax.fe.emitContingency' | translate">
                                             <i class="fa fa-fw fa-file-invoice"></i> {{ 'country.tax.fe.emitContingency' | translate }}
                                         </a>
@@ -269,7 +272,12 @@
                                     <a [routerLink]="['/venta', venta.id]" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
                                     </a>
-                                    @if (venta.estado == 'Pendiente' && canEditVentas()) {
+                                    @if (puedeFacturarVentaCuota(venta) && canEditVentas()) {
+                                        <a [routerLink]="['/venta/crear']" [queryParams]="queryFacturarVenta(venta.id)" class="list-group-item list-group-item-action border-0 click">
+                                            <i class="fa fa-fw fa-file-invoice"></i> Facturar
+                                        </a>
+                                    }
+                                    @if (venta.estado == 'Pendiente' && canEditVentas() && !puedeFacturarVentaCuota(venta)) {
                                         <a (click)="openAbono(mabono, venta)" class="list-group-item list-group-item-action border-0 click">
                                             <i class="fas fa-fw fa-hand-holding-usd"></i> Pagar venta
                                         </a>

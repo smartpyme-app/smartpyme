@@ -78,7 +78,7 @@ class CreditosClientesController extends Controller
 
     public function show(int $id): JsonResponse
     {
-        $contrato = CreditoContrato::with(['cliente', 'cuotas'])->findOrFail($id);
+        $contrato = CreditoContrato::with(['cliente', 'cuotas.venta'])->findOrFail($id);
         $hoy = now()->toDateString();
         $contrato->cuotas->each(function (CreditoCuota $cuota) use ($hoy) {
             $fecha = $cuota->fecha_vencimiento

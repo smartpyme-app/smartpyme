@@ -86,7 +86,12 @@
         }
     </h2>
     <div>
-        @if (venta.saldo > 0 && venta.estado == 'Pendiente') {
+        @if (puedeFacturarVentaCuota(venta)) {
+            <a [routerLink]="['/venta/crear']" [queryParams]="queryFacturarVenta(venta.id)" class="btn btn-default me-2">
+                <i class="fa fa-fw fa-file-invoice"></i> Facturar
+            </a>
+        }
+        @if (venta.saldo > 0 && venta.estado == 'Pendiente' && !puedeFacturarVentaCuota(venta)) {
             <a (click)="openAbono(mabono, venta)" class="btn btn-default me-2">
                 <i class="fas fa-fw fa-hand-holding-usd"></i> Pagar
             </a>

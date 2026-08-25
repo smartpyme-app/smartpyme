@@ -13,6 +13,29 @@ export function queryFacturarCuota(idCuota: number): { credito_cuota: number } {
   return { credito_cuota: idCuota };
 }
 
+export function queryFacturarVenta(idVenta: number): { id_venta: number; facturar: '1' } {
+  return { id_venta: idVenta, facturar: '1' };
+}
+
+export function sinCorrelativo(correlativo: unknown): boolean {
+  return correlativo == null || correlativo === '' || Number(correlativo) === 0;
+}
+
+export function puedeFacturarVentaCuota(
+  venta: { estado?: string; correlativo?: unknown } | null | undefined,
+  creditosActivo = false,
+): boolean {
+  return !!creditosActivo && venta?.estado === 'Pendiente' && sinCorrelativo(venta?.correlativo);
+}
+
+export function prepararVentaParaFacturarCuota(venta: any): void {
+  delete venta.credito_contrato;
+  venta.credito = false;
+  venta.consigna = false;
+  venta.estado = 'Pagada';
+  venta.condicion = 'Contado';
+}
+
 export function aplicarPrefillCredito(venta: any, prefill: PrefillCreditoCuota): any {
   const monto = Number(prefill.monto) || 0;
   venta.id_cliente = prefill.id_cliente;

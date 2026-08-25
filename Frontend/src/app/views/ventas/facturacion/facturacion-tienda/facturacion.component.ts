@@ -53,7 +53,8 @@ import { debeDispararAtajoTcla } from '@utils/atajos-teclado.util';
 import { FACTURA_REMISION, esVentaConsignaRemision } from '../../../../constants/documento.constants';
 import { SharedModule } from '@shared/shared.module';
 import { isImpresionEnFacturacionActiva } from '@helpers/empresa.helper';
-import { aplicarPrefillCredito } from '@views/ventas/creditos/creditos-facturar';
+import { aplicarPrefillCredito, prepararVentaParaFacturarCuota } from '@views/ventas/creditos/creditos-facturar';
+import { aplicarPlanAVenta, generarPreviewCuotas, restoreSnapshotVenta, snapshotVentaMontos, SnapshotMontosVenta } from '@views/ventas/creditos/creditos-cuotas';
 
 @Component({
     selector: 'app-facturacion',
@@ -106,6 +107,9 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
   public emiting = false;
   public duplicarventa = false;
   public documentoCreditoBloqueado = false;
+  public creditosClientesActivo = false;
+  public creditoSnapshot: SnapshotMontosVenta | null = null;
+  public planCuotasForm: any = { tipo: 'bien', n_cuotas: 2, fecha_inicio: '', concepto: '' };
   public facturarCotizacion = false;
   public documentoFiscalListo = true;
   public api: boolean = false;
@@ -361,6 +365,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     this.verificarAccesoMultimoneda();
     this.verificarFidelizacionHabilitada();
     this.verificarGiftCardsActivo();
+    this.verificarAccesoCreditosClientes();
   }
 
   verificarAccesoContabilidad() {
@@ -807,6 +812,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     }
 
     this.cargarPrefillCreditoCuota();
+    this.cargarVentaParaFacturar();
 
     // Para cotizaciones Pre-venta
     if (this.route.snapshot.queryParamMap.get('cotizacion')) {
@@ -1369,7 +1375,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     }
   }
 
-  public sumTotal() {
+  public sumTotal(opts?: { preservePrecioIva?: boolean }) {
     this.syncPaqueteData();
     if (this.venta.cobrar_impuestos) {
       const sinImpuestosEnVenta =
@@ -1417,6 +1423,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
       }
       calcularMontosLineaDetalle(d, !!this.venta.cobrar_impuestos, empresaIva, {
         paisEmpresa,
+        preservePrecioIva: !!opts?.preservePrecioIva,
       });
     });
 
@@ -1611,6 +1618,46 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
             });
     }
 
+    private cargarVentaParaFacturar(): void {
+        if (
+            !this.route.snapshot.queryParamMap.get('facturar') ||
+            !this.route.snapshot.queryParamMap.get('id_venta')
+        ) {
+            return;
+        }
+        const idVenta = +this.route.snapshot.queryParamMap.get('id_venta')!;
+        this.apiService.read('venta/', idVenta)
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (venta) => {
+                    this.venta = venta;
+                    this.retencionIvaGcUsuarioDecidio = true;
+                    this.normalizarDetallesTipoGravado(this.venta);
+                    hidratarImpuestosProductosEnDetalles(
+                        this.venta.detalles,
+                        this.apiService.auth_user()?.empresa?.iva
+                    );
+                    if (!this.venta.cliente) {
+                        this.venta.cliente = {};
+                    } else {
+                        this.venta.cliente.nombre = this.venta.cliente.tipo == 'Empresa'
+                            ? this.venta.cliente.nombre_empresa
+                            : this.venta.cliente.nombre_completo;
+                    }
+                    this.venta.cobrar_impuestos = this.venta.iva > 0;
+                    prepararVentaParaFacturarCuota(this.venta);
+                    this.documentoCreditoBloqueado = !!this.venta.id_documento;
+                    this.sumTotal();
+                    this.cdr.markForCheck();
+                },
+                error: (err) => {
+                    this.alertService.error(err);
+                    this.loading = false;
+                    this.cdr.markForCheck();
+                },
+            });
+    }
+
     public setCliente(cliente: any) {
         if (cliente.id) {
             this.retencionIvaGcUsuarioDecidio = false;
@@ -1693,12 +1740,70 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
                 this.venta.fecha_pago = moment().add(1, 'month').format('YYYY-MM-DD');
             }
         } else {
+            if (this.creditoSnapshot) {
+                restoreSnapshotVenta(this.venta, this.creditoSnapshot);
+                this.creditoSnapshot = null;
+                this.sumTotal();
+            }
             this.venta.estado = 'Pagada';
             this.venta.condicion = 'Contado';
             this.venta.fecha_pago = moment().format('YYYY-MM-DD');
             // Limpiar mensaje de validación al cambiar a contado
             this.mensajeValidacionFecha = '';
         }
+    }
+
+    private verificarAccesoCreditosClientes(): void {
+        this.funcionalidadesService.verificarAcceso('creditos-clientes')
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (acceso) => {
+                    this.creditosClientesActivo = acceso;
+                    this.cdr.markForCheck();
+                },
+                error: () => {
+                    this.creditosClientesActivo = false;
+                    this.cdr.markForCheck();
+                },
+            });
+    }
+
+    get planCuotasPreview() {
+        const monto = this.creditoSnapshot?.total || Number(this.venta.total) || 0;
+        return generarPreviewCuotas(monto, Number(this.planCuotasForm.n_cuotas) || 0, this.planCuotasForm.fecha_inicio);
+    }
+
+    public abrirPlanCuotas(template: TemplateRef<any>): void {
+        if (!this.venta.id_cliente) {
+            this.alertService.error('Seleccione un cliente antes de armar el plan de cuotas.');
+            return;
+        }
+        if (!this.venta.detalles?.length || (!(Number(this.venta.total) > 0) && !this.creditoSnapshot)) {
+            this.alertService.error('Agregue productos y un total mayor a 0.');
+            return;
+        }
+        if (!this.creditoSnapshot) {
+            this.creditoSnapshot = snapshotVentaMontos(this.venta);
+        }
+        const fecha = (this.venta.fecha || moment().format('YYYY-MM-DD')).toString().slice(0, 10);
+        this.planCuotasForm = {
+            tipo: this.venta.credito_contrato?.tipo || 'bien',
+            n_cuotas: this.venta.credito_contrato?.n_cuotas || 2,
+            fecha_inicio: this.venta.credito_contrato?.fecha_inicio || fecha,
+            concepto: this.venta.credito_contrato?.concepto || '',
+        };
+        this.openModal(template, { class: 'modal-lg', backdrop: 'static' });
+    }
+
+    public confirmarPlanCuotas(): void {
+        if (!this.creditoSnapshot || this.planCuotasPreview.length === 0) {
+            this.alertService.error('Indique al menos 2 cuotas y una fecha de inicio.');
+            return;
+        }
+        aplicarPlanAVenta(this.venta, this.planCuotasForm, this.creditoSnapshot);
+        this.sumTotal({ preservePrecioIva: true });
+        this.closeModal();
+        this.cdr.markForCheck();
     }
 
     /**

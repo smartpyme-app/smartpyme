@@ -1,10 +1,10 @@
 export const SLUG_CREDITOS_CLIENTES = 'creditos-clientes';
 
 export function puedeVerMenuCreditos(
-  tieneFuncionalidad: boolean,
-  puedeVerVentas: boolean,
+  _tieneFuncionalidad: boolean,
+  _puedeVerVentas: boolean,
 ): boolean {
-  return tieneFuncionalidad && puedeVerVentas;
+  return false;
 }
 
 export function puedeCrearCredito(esVentasLimitado: boolean): boolean {

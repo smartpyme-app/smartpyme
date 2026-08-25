@@ -28,7 +28,8 @@ import { MetodosDePagoComponent } from '../facturacion-tienda/metodos-de-pago/me
 import { FidelizacionService, PuntosDisponiblesInfo, ConfiguracionCliente } from '@services/fidelizacion.service';
 import { GiftCardsService, GiftCardLookup } from '@services/gift-cards.service';
 import { esFormaPagoGiftCard, montoPagoGiftCardVenta, ventaUsaGiftCard } from '@utils/gift-card.util';
-import { aplicarPrefillCredito } from '@views/ventas/creditos/creditos-facturar';
+import { aplicarPrefillCredito, prepararVentaParaFacturarCuota } from '@views/ventas/creditos/creditos-facturar';
+import { aplicarPlanAVenta, generarPreviewCuotas, restoreSnapshotVenta, snapshotVentaMontos, SnapshotMontosVenta } from '@views/ventas/creditos/creditos-cuotas';
 import { MHService } from '@services/MH.service';
 import { RestauranteService } from '@services/restaurante.service';
 import Swal from 'sweetalert2';
@@ -104,6 +105,9 @@ export class FacturacionV2Component implements OnInit {
   public emiting = false;
   public duplicarventa = false;
   public documentoCreditoBloqueado = false;
+  public creditosClientesActivo = false;
+  public creditoSnapshot: SnapshotMontosVenta | null = null;
+  public planCuotasForm: any = { tipo: 'bien', n_cuotas: 2, fecha_inicio: '', concepto: '' };
   public facturarCotizacion = false;
   public api: boolean = false;
   public tieneAccesoPropina: boolean = false;
@@ -303,6 +307,7 @@ export class FacturacionV2Component implements OnInit {
     this.verificarAccesoMultimoneda();
     this.verificarFidelizacionHabilitada();
     this.verificarGiftCardsActivo();
+    this.verificarAccesoCreditosClientes();
   }
 
   public loadData() {
@@ -624,6 +629,7 @@ export class FacturacionV2Component implements OnInit {
     }
 
     this.cargarPrefillCreditoCuota();
+    this.cargarVentaParaFacturar();
 
     // Para cotizaciones Pre-venta
     if (this.route.snapshot.queryParamMap.get('cotizacion')) {
@@ -1756,6 +1762,43 @@ export class FacturacionV2Component implements OnInit {
         });
     }
 
+    private cargarVentaParaFacturar(): void {
+        if (
+            !this.route.snapshot.queryParamMap.get('facturar') ||
+            !this.route.snapshot.queryParamMap.get('id_venta')
+        ) {
+            return;
+        }
+        const idVenta = +this.route.snapshot.queryParamMap.get('id_venta')!;
+        this.apiService.read('venta/', idVenta).subscribe({
+            next: (venta) => {
+                this.venta = venta;
+                this.retencionIvaGcUsuarioDecidio = true;
+                this.normalizarDetallesTipoGravado(this.venta);
+                hidratarImpuestosProductosEnDetalles(
+                    this.venta.detalles,
+                    this.apiService.auth_user()?.empresa?.iva
+                );
+                if (!this.venta.cliente) {
+                    this.venta.cliente = {};
+                } else {
+                    this.venta.cliente.nombre = this.venta.cliente.tipo == 'Empresa'
+                        ? this.venta.cliente.nombre_empresa
+                        : this.venta.cliente.nombre_completo;
+                }
+                this.venta.cobrar_impuestos = this.venta.iva > 0;
+                prepararVentaParaFacturarCuota(this.venta);
+                this.documentoCreditoBloqueado = !!this.venta.id_documento;
+                this.migrarExoneracionCrLegacyADetalles();
+                this.sumTotal();
+            },
+            error: (err) => {
+                this.alertService.error(err);
+                this.loading = false;
+            },
+        });
+    }
+
     public setCliente(cliente: any) {
         if (cliente.id) {
             this.retencionIvaGcUsuarioDecidio = false;
@@ -1842,12 +1885,61 @@ export class FacturacionV2Component implements OnInit {
             this.venta.condicion = 'Crédito';
             this.venta.fecha_pago = moment().add(1, 'month').format('YYYY-MM-DD');
         } else {
+            if (this.creditoSnapshot) {
+                restoreSnapshotVenta(this.venta, this.creditoSnapshot);
+                this.creditoSnapshot = null;
+                this.sumTotal();
+            }
             this.venta.estado = 'Pagada';
             this.venta.condicion = 'Contado';
             this.venta.fecha_pago = moment().format('YYYY-MM-DD');
             // Limpiar mensaje de validación al cambiar a contado
             this.mensajeValidacionFecha = '';
         }
+    }
+
+    private verificarAccesoCreditosClientes(): void {
+        this.funcionalidadesService.verificarAcceso('creditos-clientes').subscribe({
+            next: (acceso) => { this.creditosClientesActivo = acceso; },
+            error: () => { this.creditosClientesActivo = false; },
+        });
+    }
+
+    get planCuotasPreview() {
+        const monto = this.creditoSnapshot?.total || Number(this.venta.total) || 0;
+        return generarPreviewCuotas(monto, Number(this.planCuotasForm.n_cuotas) || 0, this.planCuotasForm.fecha_inicio);
+    }
+
+    public abrirPlanCuotas(template: TemplateRef<any>): void {
+        if (!this.venta.id_cliente) {
+            this.alertService.error('Seleccione un cliente antes de armar el plan de cuotas.');
+            return;
+        }
+        if (!this.venta.detalles?.length || (!(Number(this.venta.total) > 0) && !this.creditoSnapshot)) {
+            this.alertService.error('Agregue productos y un total mayor a 0.');
+            return;
+        }
+        if (!this.creditoSnapshot) {
+            this.creditoSnapshot = snapshotVentaMontos(this.venta);
+        }
+        const fecha = (this.venta.fecha || moment().format('YYYY-MM-DD')).toString().slice(0, 10);
+        this.planCuotasForm = {
+            tipo: this.venta.credito_contrato?.tipo || 'bien',
+            n_cuotas: this.venta.credito_contrato?.n_cuotas || 2,
+            fecha_inicio: this.venta.credito_contrato?.fecha_inicio || fecha,
+            concepto: this.venta.credito_contrato?.concepto || '',
+        };
+        this.modalRef = this.modalService.show(template, { class: 'modal-lg', backdrop: 'static' });
+    }
+
+    public confirmarPlanCuotas(): void {
+        if (!this.creditoSnapshot || this.planCuotasPreview.length === 0) {
+            this.alertService.error('Indique al menos 2 cuotas y una fecha de inicio.');
+            return;
+        }
+        aplicarPlanAVenta(this.venta, this.planCuotasForm, this.creditoSnapshot);
+        this.sumTotal();
+        this.modalRef?.hide();
     }
 
     /**

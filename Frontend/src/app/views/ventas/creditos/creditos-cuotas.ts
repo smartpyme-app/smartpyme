@@ -42,6 +42,120 @@ export function generarPreviewCuotas(
     return cuotas;
 }
 
+export type SnapshotMontosVenta = {
+  total: number;
+  sub_total: number;
+  iva: number;
+  fecha_pago: string;
+  detalles: any[];
+};
+
+export type PlanCuotasFactura = {
+  tipo: string;
+  n_cuotas: number;
+  fecha_inicio: string;
+  concepto?: string;
+};
+
+export function snapshotVentaMontos(venta: any): SnapshotMontosVenta {
+  return {
+    total: Number(venta.total) || 0,
+    sub_total: Number(venta.sub_total) || 0,
+    iva: Number(venta.iva) || 0,
+    fecha_pago: venta.fecha_pago || '',
+    detalles: JSON.parse(JSON.stringify(venta.detalles || [])),
+  };
+}
+
+export function restoreSnapshotVenta(venta: any, snap: SnapshotMontosVenta): void {
+  venta.total = snap.total;
+  venta.sub_total = snap.sub_total;
+  venta.iva = snap.iva;
+  venta.fecha_pago = snap.fecha_pago;
+  venta.detalles = JSON.parse(JSON.stringify(snap.detalles));
+  delete venta.credito_contrato;
+}
+
+export function aplicarMontoADetalles(venta: any, nuevoTotal: number): void {
+  const actual = Number(venta.total) || 0;
+  if (actual <= 0 || nuevoTotal <= 0) {
+    return;
+  }
+  const factor = nuevoTotal / actual;
+  const scale = (v: unknown) => round2((parseFloat(String(v ?? 0)) || 0) * factor);
+  const detalles = (venta.detalles || []).map((d: any) => {
+    const scaled: any = {
+      ...d,
+      precio: scale(d.precio),
+      precio_sin_iva: d.precio_sin_iva != null && d.precio_sin_iva !== '' ? scale(d.precio_sin_iva) : d.precio_sin_iva,
+      precio_iva: d.precio_iva != null && d.precio_iva !== '' ? scale(d.precio_iva) : d.precio_iva,
+      precio_con_iva: d.precio_con_iva != null && d.precio_con_iva !== '' ? scale(d.precio_con_iva) : d.precio_con_iva,
+      descuento: scale(d.descuento),
+      descuento_con_iva: d.descuento_con_iva != null && d.descuento_con_iva !== ''
+        ? scale(d.descuento_con_iva)
+        : d.descuento_con_iva,
+      sub_total: scale(d.sub_total),
+      total: scale(d.total),
+      total_iva: d.total_iva != null && d.total_iva !== '' ? scale(d.total_iva) : d.total_iva,
+      iva: scale(d.iva),
+      gravada: d.gravada != null ? scale(d.gravada) : d.gravada,
+    };
+    return scaled;
+  });
+  const gross = (d: any) => {
+    const qty = Number(d.cantidad) || 0;
+    const pIva = parseFloat(String(d.precio_iva ?? ''));
+    if (Number.isFinite(pIva) && String(d.precio_iva ?? '') !== '') {
+      const desc = parseFloat(String(d.descuento_con_iva ?? 0)) || 0;
+      return round2(qty * pIva - desc);
+    }
+    const tIva = parseFloat(String(d.total_iva ?? ''));
+    if (Number.isFinite(tIva) && String(d.total_iva ?? '') !== '') {
+      return round2(tIva);
+    }
+    return round2(Number(d.total) || 0);
+  };
+  const suma = round2(detalles.reduce((s: number, d: any) => s + gross(d), 0));
+  const diff = round2(nuevoTotal - suma);
+  if (detalles.length && diff !== 0) {
+    const last = detalles[detalles.length - 1];
+    if (last.precio_iva != null && last.precio_iva !== '') {
+      last.precio_iva = round2((parseFloat(String(last.precio_iva)) || 0) + diff);
+    }
+    last.total_iva = last.total_iva != null && last.total_iva !== ''
+      ? round2((parseFloat(String(last.total_iva)) || 0) + diff)
+      : last.total_iva;
+    last.total = round2((Number(last.total) || 0) + diff);
+    last.sub_total = round2((Number(last.sub_total) || 0) + diff);
+  }
+  venta.detalles = detalles;
+  venta.sub_total = scale(venta.sub_total);
+  venta.iva = scale(venta.iva);
+  venta.total = nuevoTotal;
+}
+
+export function aplicarPlanAVenta(venta: any, form: PlanCuotasFactura, snap: SnapshotMontosVenta): void {
+  restoreSnapshotVenta(venta, snap);
+  const preview = generarPreviewCuotas(snap.total, Number(form.n_cuotas) || 0, form.fecha_inicio);
+  if (!preview.length) {
+    return;
+  }
+  aplicarMontoADetalles(venta, preview[0].monto);
+  venta.fecha_pago = preview[0].fechaVencimiento;
+  venta.credito = true;
+  venta.condicion = 'Crédito';
+  venta.estado = 'Pagada';
+  venta.credito_contrato = {
+    tipo: form.tipo,
+    monto: snap.total,
+    n_cuotas: Number(form.n_cuotas),
+    fecha_inicio: form.fecha_inicio,
+    concepto: form.concepto || null,
+    tasa_interes: 0,
+    tasa_mora: 0,
+  };
+}
+
 export function addDaysIso(isoDate: string, days: number): string {
   const [year, month, day] = isoDate.split('-').map(Number);
   return new Date(Date.UTC(year, month - 1, day + days)).toISOString().slice(0, 10);
