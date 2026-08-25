@@ -227,29 +227,15 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
             return true;
         }
 
-        $camposRequeridos = ['nombre', 'descripcion', 'fecha'];
-        foreach ($camposRequeridos as $campo) {
-            if (!isset($row[$campo]) || (is_string($row[$campo]) && trim($row[$campo]) === '') || $row[$campo] === null) {
-                Log::info("Fila vacía: sin $campo");
-                return true;
+        foreach ($row as $valor) {
+            if ($valor !== null && $valor !== '' && !(is_string($valor) && trim($valor) === '')) {
+                Log::info('Fila válida');
+                return false;
             }
         }
 
-        $todoVacio = true;
-        foreach ($row as $campo => $valor) {
-            if (!empty($valor) && $valor !== null && $valor !== '') {
-                $todoVacio = false;
-                break;
-            }
-        }
-
-        if ($todoVacio) {
-            Log::info('Fila vacía: todos los campos son vacíos');
-            return true;
-        }
-
-        Log::info('Fila válida');
-        return false;
+        Log::info('Fila vacía: todos los campos son vacíos');
+        return true;
     }
 
     /**
@@ -829,7 +815,7 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
 
         return [
             'id_producto' => $idProducto,
-            'descripcion' => $fila['descripcion'] ?? 'Sin descripción',
+            'descripcion' => $this->descripcionDetalle($fila),
             'cantidad' => $cantidad,
             'precio' => $precio,
             'costo' => $costo,
@@ -846,6 +832,16 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
             'tipo_item' => $fila['tipo_item'] ?? 'Servicio',
             'tipo_gravado' => $gravada > 0 ? 'gravada' : ($exenta > 0 ? 'exenta' : ($noSujeta > 0 ? 'no_sujeta' : 'gravada')),
         ];
+    }
+
+    protected function descripcionDetalle($fila)
+    {
+        $descripcion = $fila['descripcion'] ?? '';
+        if (is_string($descripcion)) {
+            $descripcion = trim($descripcion);
+        }
+
+        return $descripcion !== '' && $descripcion !== null ? $descripcion : 'Sin descripción';
     }
 
     protected function extraerValorOCalcular($fila, $campo, $valorPredeterminado = 0)
