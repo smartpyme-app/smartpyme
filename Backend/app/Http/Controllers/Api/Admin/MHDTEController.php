@@ -3,6 +3,10 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Admin\Empresa;
+use App\Services\MH\ConsultaDteMh;
+use App\Services\MhGovSvGatewayService;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Request;
 
 use App\Models\MH\ActividadEconomica;
@@ -10,7 +14,6 @@ use App\Models\MH\Departamento;
 use App\Models\MH\Municipio;
 use App\Models\MH\Unidad;
 
-use Illuminate\Support\Facades\Http;
 use App\Models\MH\MHCCF;
 use App\Models\MH\MHFactura;
 use App\Models\MH\MHFacturaExportacion;
@@ -31,7 +34,12 @@ use App\Models\Compras\Gastos\Gasto;
 
 class MHDTEController extends Controller
 {
-    
+    protected $gateway;
+
+    public function __construct(MhGovSvGatewayService $gateway)
+    {
+        $this->gateway = $gateway;
+    }
 
     public function generarDTE(Request $request){
         $venta = Venta::where('id', $request->id)
@@ -574,13 +582,25 @@ class MHDTEController extends Controller
 
     public function consultarDTE(Request $request)
     {
-        $response = Http::get('https://admin.factura.gob.sv/prod/consultas/publica/simple/1', [
-            'codigoGeneracion' => $request->codigoGeneracion,
-            'fechaEmi' => $request->fechaEmi,
-            'ambiente' => $request->ambiente,
-        ]);
+        $tdte = $request->tdte ?? $request->tipoDte;
+        $codigoGeneracion = $request->codigoGeneracion;
 
-        return $response->json();
+        if (! $tdte || ! $codigoGeneracion) {
+            return response()->json(['error' => 'Faltan tipo DTE y código de generación.'], 422);
+        }
+
+        $empresa = Empresa::findOrFail(auth()->user()->id_empresa);
+        $payload = ConsultaDteMh::payload((string) $empresa->nit, (string) $tdte, (string) $codigoGeneracion);
+
+        try {
+            $result = $this->gateway->postJson($empresa, '/fesv/recepcion/consultadte', $payload);
+        } catch (ConnectionException $e) {
+            return response()->json([
+                'descripcionMsg' => 'No se pudo conectar con el Ministerio de Hacienda.',
+            ], 503);
+        }
+
+        return response()->json(ConsultaDteMh::adaptarRespuesta($result['body']), $result['status']);
     }
 
 

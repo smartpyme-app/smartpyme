@@ -1450,9 +1450,10 @@ export class VentasComponent implements OnInit, OnDestroy {
   consultarDTE() {
     this.consulting = true;
     let data = {
-      codigoGeneracion: this.venta.dte.identificacion.codigoGeneracion,
-      fechaEmi: this.venta.dte.identificacion.fecEmi,
-      ambiente: this.venta.dte.identificacion.ambiente
+      codigoGeneracion: this.venta.dte?.identificacion?.codigoGeneracion
+        ?? this.venta.codigo_generacion
+        ?? this.venta.dte?.codigoGeneracion,
+      tdte: this.venta.dte?.identificacion?.tipoDte ?? this.venta.tipo_dte,
     };
 
     setTimeout(() => {
@@ -1460,10 +1461,11 @@ export class VentasComponent implements OnInit, OnDestroy {
       this.apiService.store('consultarDTE', data)
         .pipe(this.untilDestroyed())
         .subscribe(dte => {
-          if (dte && dte.selloVal) {
-            this.venta.dte.sello = dte.selloVal;
-            this.venta.dte.selloRecibido = dte.selloVal;
-            this.venta.sello_mh = dte.selloVal;
+          const sello = dte?.selloRecibido || dte?.selloVal;
+          if (dte && sello) {
+            this.venta.dte.sello = sello;
+            this.venta.dte.selloRecibido = sello;
+            this.venta.sello_mh = sello;
             this.apiService.store('venta', this.venta)
               .pipe(this.untilDestroyed())
               .subscribe(data => {
