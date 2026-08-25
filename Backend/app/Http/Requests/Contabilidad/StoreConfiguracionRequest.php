@@ -34,7 +34,7 @@ class StoreConfiguracionRequest extends FormRequest
             'id_cuenta_iva_compras' => ['required', 'integer', 'exists:catalogo_cuentas,id'],
             'id_cuenta_iva_retenido_compras' => ['required', 'integer', 'exists:catalogo_cuentas,id'],
             'id_cuenta_renta_retenida_compras' => ['required', 'integer', 'exists:catalogo_cuentas,id'],
-            'generar_partidas' => ['required', 'boolean'],
+            'generar_partidas' => ['required', 'string', 'in:Manual,Auto'],
             'id_empresa' => ['required', 'integer', 'exists:empresas,id'],
         ];
     }
@@ -72,7 +72,7 @@ class StoreConfiguracionRequest extends FormRequest
             'id_cuenta_renta_retenida_compras.required' => 'La cuenta para Renta retenida de compras es requerida',
             'id_cuenta_renta_retenida_compras.exists' => 'La cuenta para Renta retenida de compras no existe.',
             'generar_partidas.required' => 'El campo generar partidas es requerido.',
-            'generar_partidas.boolean' => 'El campo generar partidas debe ser un booleano.',
+            'generar_partidas.in' => 'El campo generar partidas debe ser Manual o Auto.',
             'id_empresa.required' => 'La empresa es requerida.',
             'id_empresa.exists' => 'La empresa seleccionada no existe.',
         ];
