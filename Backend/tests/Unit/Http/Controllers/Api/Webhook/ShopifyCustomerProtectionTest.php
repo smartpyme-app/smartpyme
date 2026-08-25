@@ -142,4 +142,49 @@ class ShopifyCustomerProtectionTest extends TestCase
         $this->assertSame('San Salvador', $resultado->departamento);
         $this->assertSame('06', $resultado->cod_departamento);
     }
+
+    public function test_actualiza_ubicacion_cuando_codigos_estan_vacios_aunque_labels_tengan_texto(): void
+    {
+        $cliente = new Cliente([
+            'nombre' => 'José',
+            'apellido' => 'España',
+            'correo' => 'jose@gmail.com',
+            'telefono' => '+50377310932',
+            'direccion' => 'Calle Vieja',
+            'departamento' => 'Santa Ana',
+            'cod_departamento' => '02',
+            'municipio' => 'SAN SALVAD', // código inválido no numérico antiguo
+            'cod_municipio' => 'SAN SALVAD',
+            'distrito' => null,
+            'cod_distrito' => null, // vacío
+            'shopify_customer_id' => 27540943208818,
+        ]);
+
+        $shopifyData = [
+            'nombre' => 'José',
+            'apellido' => 'España',
+            'correo' => 'jose@gmail.com',
+            'telefono' => '+50377310932',
+            'direccion' => '2a Calle Poniente',
+            'departamento' => 'Santa Ana',
+            'cod_departamento' => '02',
+            'municipio' => 'SANTA ANA OESTE',
+            'cod_municipio' => '17',
+            'distrito' => 'CHALCHUAPA',
+            'cod_distrito' => '03',
+            'pais' => 'El Salvador',
+            'cod_pais' => 'SV',
+            'shopify_customer_id' => 27540943208818,
+        ];
+
+        $resultado = $this->methodActualizarCliente->invoke($this->controller, $cliente, $shopifyData);
+
+        // Como cod_municipio era no-numérico y cod_distrito era null, se actualizan con los códigos oficiales
+        $this->assertSame('CHALCHUAPA', $resultado->distrito);
+        $this->assertSame('03', $resultado->cod_distrito);
+        $this->assertSame('SANTA ANA OESTE', $resultado->municipio);
+        $this->assertSame('17', $resultado->cod_municipio);
+        $this->assertSame('Santa Ana', $resultado->departamento);
+        $this->assertSame('02', $resultado->cod_departamento);
+    }
 }

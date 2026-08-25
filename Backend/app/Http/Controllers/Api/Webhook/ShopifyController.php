@@ -1512,18 +1512,22 @@ class ShopifyController extends Controller
             $camposActualizar['direccion'] = $clienteData['direccion'];
         }
 
-        // 3. Ubicación geográfica: actualizar solo si no estaban definidos para evitar romper catálogos DTE
-        if (empty($cliente->pais) && !empty($clienteData['pais'])) {
+        // 3. Ubicación geográfica: estandarizar y asignar si los códigos o labels MH no están definidos o no están homologados
+        if ((empty($cliente->cod_pais) || empty($cliente->pais)) && !empty($clienteData['pais'])) {
             $camposActualizar['pais'] = $clienteData['pais'];
             $camposActualizar['cod_pais'] = $clienteData['cod_pais'] ?? null;
         }
-        if (empty($cliente->departamento) && !empty($clienteData['departamento'])) {
+        if ((empty($cliente->cod_departamento) || !is_numeric($cliente->cod_departamento) || empty($cliente->departamento)) && !empty($clienteData['departamento'])) {
             $camposActualizar['departamento'] = $clienteData['departamento'];
             $camposActualizar['cod_departamento'] = $clienteData['cod_departamento'] ?? null;
         }
-        if (empty($cliente->municipio) && !empty($clienteData['municipio'])) {
+        if ((empty($cliente->cod_municipio) || !is_numeric($cliente->cod_municipio) || empty($cliente->municipio)) && !empty($clienteData['municipio'])) {
             $camposActualizar['municipio'] = $clienteData['municipio'];
             $camposActualizar['cod_municipio'] = $clienteData['cod_municipio'] ?? null;
+        }
+        if ((empty($cliente->cod_distrito) || !is_numeric($cliente->cod_distrito) || empty($cliente->distrito)) && !empty($clienteData['distrito'])) {
+            $camposActualizar['distrito'] = $clienteData['distrito'];
+            $camposActualizar['cod_distrito'] = $clienteData['cod_distrito'] ?? null;
         }
 
         // 4. Nombre de empresa: solo asignar si el cliente no tenía razón social registrada

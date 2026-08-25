@@ -255,6 +255,7 @@ class Cliente extends Model {
 
     public function distritoRelation()
     {
-        return $this->belongsTo(\App\Models\MH\Distrito::class, 'cod_distrito', 'cod');
+        return $this->belongsTo(\App\Models\MH\Distrito::class, 'cod_distrito', 'cod')
+                    ->where('cod_departamento', $this->cod_departamento);
     }
 }

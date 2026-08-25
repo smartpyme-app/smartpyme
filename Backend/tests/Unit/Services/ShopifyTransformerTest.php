@@ -35,6 +35,7 @@ class ShopifyTransformerTest extends TestCase
                 'address2' => 'Edificio Central',
                 'city' => 'San Salvador',
                 'province' => 'San Salvador',
+                'province_code' => 'SV-SS',
                 'country' => 'El Salvador',
                 'country_code' => 'SV',
                 'phone' => '+50370000000',
@@ -49,6 +50,7 @@ class ShopifyTransformerTest extends TestCase
         $this->assertSame('Empresa', $cliente['tipo']);
         $this->assertSame(123456789, $cliente['shopify_customer_id']);
         $this->assertSame('juan@empresa.com', $cliente['correo']);
+        $this->assertSame('06', $cliente['cod_departamento']);
     }
 
     public function test_transformar_cliente_persona_natural_sin_empresa(): void
@@ -69,6 +71,7 @@ class ShopifyTransformerTest extends TestCase
                 'address2' => '',
                 'city' => 'San Salvador',
                 'province' => 'San Salvador',
+                'province_code' => 'SV-SS',
                 'country' => 'El Salvador',
                 'country_code' => 'SV',
                 'phone' => '+50371111111',
@@ -82,5 +85,45 @@ class ShopifyTransformerTest extends TestCase
         $this->assertNull($cliente['nombre_empresa']);
         $this->assertSame('Persona', $cliente['tipo']);
         $this->assertSame(987654321, $cliente['shopify_customer_id']);
+        $this->assertSame('06', $cliente['cod_departamento']);
+        $this->assertSame('El Salvador', $cliente['pais']);
+    }
+
+    public function test_transformar_cliente_desde_shopify_webhook_santa_ana(): void
+    {
+        $payload = [
+            'id' => 27540943208818,
+            'id_empresa' => 553,
+            'id_usuario' => 1542,
+            'first_name' => 'José',
+            'last_name' => 'España',
+            'email' => 'joseespana94@gmail.com',
+            'phone' => '+50377310933',
+            'default_address' => [
+                'first_name' => 'JOSE WILFREDO ESPAÑA',
+                'last_name' => 'España',
+                'company' => null,
+                'address1' => 'Colonia el ivu casona xd',
+                'address2' => 'suite presidencial xd',
+                'city' => 'Santa ana',
+                'province' => 'Santa Ana',
+                'province_code' => 'SV-SA',
+                'country' => 'El Salvador',
+                'country_code' => 'SV',
+                'phone' => '+50377310932',
+            ],
+        ];
+
+        $cliente = $this->transformer->transformarClienteDesdeShopify($payload);
+
+        $this->assertSame('José', $cliente['nombre']);
+        $this->assertSame('España', $cliente['apellido']);
+        $this->assertSame('joseespana94@gmail.com', $cliente['correo']);
+        $this->assertSame('+50377310932', $cliente['telefono']);
+        $this->assertSame('Colonia el ivu casona xd suite presidencial xd', $cliente['direccion']);
+        $this->assertSame('Santa Ana', $cliente['departamento']);
+        $this->assertSame('02', $cliente['cod_departamento']);
+        $this->assertSame(27540943208818, $cliente['shopify_customer_id']);
+        $this->assertSame('Persona', $cliente['tipo']);
     }
 }
