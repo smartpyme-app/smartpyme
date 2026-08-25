@@ -410,6 +410,27 @@ trait BuildsTributosVenta
         ));
     }
 
+    /**
+     * Hacienda valida resumen.totalGravada = suma de cuerpoDocumento.ventaGravada (2 decimales).
+     *
+     * @param  \Illuminate\Support\Collection|array<int, array<string, mixed>>  $cuerpoDocumento
+     * @return array{totalGravada: float, totalExenta: float, totalNoSuj: float, subTotalVentas: float}
+     */
+    protected function resumenVentasDesdeCuerpoDocumento($cuerpoDocumento): array
+    {
+        $items = collect($cuerpoDocumento);
+        $totalGravada = floatval(number_format((float) $items->sum('ventaGravada'), 2, '.', ''));
+        $totalExenta = floatval(number_format((float) $items->sum('ventaExenta'), 2, '.', ''));
+        $totalNoSuj = floatval(number_format((float) $items->sum('ventaNoSuj'), 2, '.', ''));
+
+        return [
+            'totalGravada' => $totalGravada,
+            'totalExenta' => $totalExenta,
+            'totalNoSuj' => $totalNoSuj,
+            'subTotalVentas' => floatval(number_format($totalGravada + $totalExenta + $totalNoSuj, 2, '.', '')),
+        ];
+    }
+
     protected function resolverCodigoMhImpuesto($impuesto): ?string
     {
         if (!$impuesto) {

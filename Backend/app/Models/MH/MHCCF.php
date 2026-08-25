@@ -179,8 +179,9 @@ class MHCCF extends Model
 
         $pagoCond = $this->condicionOperacionYPagoPlazo();
         $cuerpoDocumento = $this->detalles();
+        $bases = $this->resumenVentasDesdeCuerpoDocumento($cuerpoDocumento);
         $tributos = $this->buildTributosResumen();
-        $subTotal = floatval(number_format($this->venta->sub_total, 2, '.', ''));
+        $subTotal = $bases['subTotalVentas'];
         $totalDescu = 0.0;
         $montoTotalOperacion = $this->montoTotalOperacionConTributos($subTotal, $tributos, $totalDescu);
 
@@ -194,9 +195,9 @@ class MHCCF extends Model
                 "ventaTercero" => NULL,
                 "cuerpoDocumento" => $cuerpoDocumento,
                "resumen" => [
-                  "totalNoSuj" => floatval(number_format($this->venta->no_sujeta, 2, '.', '')),
-                  "totalExenta" => floatval(number_format($this->venta->exenta, 2, '.', '')),
-                  "totalGravada" => floatval(number_format($this->venta->gravada, 2, '.', '')),
+                  "totalNoSuj" => $bases['totalNoSuj'],
+                  "totalExenta" => $bases['totalExenta'],
+                  "totalGravada" => $bases['totalGravada'],
                   "subTotalVentas" => $subTotal,
                   "descuNoSuj" => 0,
                   "descuExenta" => 0,

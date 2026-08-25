@@ -181,7 +181,9 @@ class MHNotaCredito extends Model
         }
 
         $tributos = $this->buildTributosResumen();
-        $subTotal = floatval(number_format($this->devolucion->sub_total, 2, '.', ''));
+        $cuerpoDocumento = $this->detalles();
+        $bases = $this->resumenVentasDesdeCuerpoDocumento($cuerpoDocumento);
+        $subTotal = $bases['subTotalVentas'];
         $totalDescu = floatval(number_format($this->devolucion->descuento, 2, '.', ''));
         $ivaPerci1 = floatval(number_format($this->devolucion->iva_percibido, 2, '.', ''));
         $ivaRete1 = floatval(number_format($this->devolucion->iva_retenido, 2, '.', ''));
@@ -205,11 +207,11 @@ class MHNotaCredito extends Model
                 "emisor" => $this->emisor(),
                 "receptor" => $this->receptor(),
                 "ventaTercero" => NULL,
-                "cuerpoDocumento" => $this->detalles(),
+                "cuerpoDocumento" => $cuerpoDocumento,
                 "resumen" => [
-                  "totalNoSuj" => floatval(number_format($this->devolucion->no_sujeta, 2, '.', '')),
-                  "totalExenta" => floatval(number_format($this->devolucion->exenta, 2, '.', '')),
-                  "totalGravada" => floatval(number_format($this->devolucion->gravada, 2, '.', '')),
+                  "totalNoSuj" => $bases['totalNoSuj'],
+                  "totalExenta" => $bases['totalExenta'],
+                  "totalGravada" => $bases['totalGravada'],
                   "subTotalVentas" => $subTotal,
                   "descuNoSuj" => 0,
                   "descuExenta" => 0,
