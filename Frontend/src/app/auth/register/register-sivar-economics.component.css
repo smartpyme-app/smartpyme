@@ -56,23 +56,26 @@
 .register-sivar-hero-logo {
   display: block;
   height: clamp(56px, 7vw + 24px, 96px);
-  width: auto;
+  width: clamp(56px, 7vw + 24px, 96px);
   max-width: 100%;
   margin-left: auto;
   margin-right: auto;
-  object-fit: contain;
+  object-fit: cover;
   object-position: center center;
+  border-radius: 50%;
 }
 
 @supports (font-size: 1cqi) {
   .register-sivar-hero-logo {
     height: clamp(56px, 12cqi + 24px, 96px);
+    width: clamp(56px, 12cqi + 24px, 96px);
   }
 }
 
 @media (min-width: 768px) and (max-width: 991.98px) {
   .register-sivar-hero-logo {
     height: clamp(48px, 7vw + 16px, 72px);
+    width: clamp(48px, 7vw + 16px, 72px);
   }
 }
 
@@ -80,6 +83,7 @@
   @media (min-width: 768px) and (max-width: 991.98px) {
     .register-sivar-hero-logo {
       height: clamp(48px, 10cqi + 12px, 72px);
+      width: clamp(48px, 10cqi + 12px, 72px);
     }
   }
 }
@@ -114,10 +118,11 @@
 .register-sivar-form-brand-icon {
   display: block;
   height: clamp(72px, 7vw + 34px, 112px);
-  width: auto;
+  width: clamp(72px, 7vw + 34px, 112px);
   max-width: 100%;
   margin-inline: auto;
-  object-fit: contain;
+  object-fit: cover;
+  border-radius: 50%;
 }
 
 .register-sivar-notice {

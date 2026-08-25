@@ -8,7 +8,7 @@ import { RegisterComponent } from './register.component';
 const ABACO_HOSTS = ['abaco.smartpyme.site'];
 
 /** Hostnames exactos que deben mostrar el formulario de registro Sivar Economics. */
-const SIVAR_HOSTS = ['sivareconomics.smartpyme.site'];
+const SIVAR_HOSTS = ['sivareconomics.sp.site'];
 
 @Component({
   selector: 'app-register-entry',
