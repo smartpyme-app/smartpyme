@@ -61,6 +61,7 @@ class FacturacionRequest extends FormRequest
             'tipo_operacion'          => 'nullable|string|max:255',
             'referencia'              => 'nullable|string|max:255',
             'cotizacion'              => 'nullable|boolean',
+            'id_credito_cuota'        => 'nullable|integer',
         ];
 
         if ($cotizacion !== 1) {

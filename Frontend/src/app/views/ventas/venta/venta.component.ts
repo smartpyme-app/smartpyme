@@ -33,6 +33,7 @@ export class VentaComponent implements OnInit {
 
     public venta:any = {};
     public proyecto:any ={};
+    public creditoCuota: any = null;
     public usuario:any = {};
     public loading = false;
     public saving = false;
@@ -186,6 +187,7 @@ export class VentaComponent implements OnInit {
                 venta => {
                     this.venta = venta;
                     this.venta.cotizacion = this.type === 'cotizacion' ? 1 : 0;
+                    this.cargarCreditoDeVenta();
 
                     if (this.venta.id_proyecto) {
                         this.loadProyecto();
@@ -200,6 +202,24 @@ export class VentaComponent implements OnInit {
                     this.cdr.markForCheck();
                 }
             );
+    }
+
+    private cargarCreditoDeVenta(): void {
+        if (this.type === 'cotizacion' || !this.venta?.id) {
+            return;
+        }
+        this.apiService.get('creditos-clientes/por-venta/' + this.venta.id)
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (cuota) => {
+                    this.creditoCuota = cuota;
+                    this.cdr.markForCheck();
+                },
+                error: () => {
+                    this.creditoCuota = null;
+                    this.cdr.markForCheck();
+                },
+            });
     }
 
     private loadProyecto() {

@@ -1,0 +1,90 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+  <h2 class="page-heading">
+    Créditos
+    @if (cola.length) {
+      <span class="badge bg-danger ms-2">{{ cola.length }}</span>
+    }
+  </h2>
+  @if (puedeCrear) {
+    <a class="btn btn-default" routerLink="/ventas/creditos/nuevo">
+      <i class="fa fa-plus"></i> Añadir crédito
+    </a>
+  }
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="h5 mb-0">Por facturar</h3>
+    <select class="form-select w-auto" name="filtroEstado" [(ngModel)]="filtroEstado" (change)="cargarCola()">
+      <option value="">Todas</option>
+      <option value="vencida">Vencidas</option>
+      <option value="por_facturar">Próximas (7 días)</option>
+    </select>
+  </div>
+  @if (!cola.length) {
+    <p class="text-muted mb-0">Sin cuotas por facturar</p>
+  } @else {
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th>Cuota</th>
+            <th>Vencimiento</th>
+            <th>Monto</th>
+            <th>Estado</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of cola; track item.id) {
+            <tr>
+              <td>{{ item.cliente?.nombre_completo || item.cliente?.nombre }}</td>
+              <td>{{ item.numero }}</td>
+              <td>{{ item.fecha_vencimiento }}</td>
+              <td>{{ item.monto }}</td>
+              <td>{{ etiquetaEstadoCola(item.estado_cola) }}</td>
+              <td>
+                <a class="btn btn-sm btn-default" [routerLink]="['/venta/crear']" [queryParams]="{credito_cuota: item.id}">
+                  Facturar
+                </a>
+                <a class="btn btn-sm btn-link" [routerLink]="['/ventas/creditos', item.id_contrato]">Ver contrato</a>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>
+
+<section class="bg-white p-4 rounded">
+  @if (!creditos.length) {
+    <p class="text-muted mb-0">Sin créditos</p>
+  } @else {
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th>Tipo</th>
+            <th>Monto</th>
+            <th>Cuotas</th>
+            <th>Inicio</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (credito of creditos; track credito.id) {
+            <tr class="click" [routerLink]="['/ventas/creditos', credito.id]">
+              <td>{{ credito.cliente?.nombre_completo || credito.cliente?.nombre }}</td>
+              <td>{{ credito.tipo }}</td>
+              <td>{{ credito.monto }}</td>
+              <td>{{ credito.n_cuotas }}</td>
+              <td>{{ credito.fecha_inicio }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>

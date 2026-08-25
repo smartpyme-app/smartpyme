@@ -28,6 +28,7 @@ import { MetodosDePagoComponent } from '../facturacion-tienda/metodos-de-pago/me
 import { FidelizacionService, PuntosDisponiblesInfo, ConfiguracionCliente } from '@services/fidelizacion.service';
 import { GiftCardsService, GiftCardLookup } from '@services/gift-cards.service';
 import { esFormaPagoGiftCard, montoPagoGiftCardVenta, ventaUsaGiftCard } from '@utils/gift-card.util';
+import { aplicarPrefillCredito } from '@views/ventas/creditos/creditos-facturar';
 import { MHService } from '@services/MH.service';
 import { RestauranteService } from '@services/restaurante.service';
 import Swal from 'sweetalert2';
@@ -102,6 +103,7 @@ export class FacturacionV2Component implements OnInit {
   public sending = false;
   public emiting = false;
   public duplicarventa = false;
+  public documentoCreditoBloqueado = false;
   public facturarCotizacion = false;
   public api: boolean = false;
   public tieneAccesoPropina: boolean = false;
@@ -620,6 +622,8 @@ export class FacturacionV2Component implements OnInit {
       this.venta.id_proyecto =
         +this.route.snapshot.queryParamMap.get('id_proyecto')!;
     }
+
+    this.cargarPrefillCreditoCuota();
 
     // Para cotizaciones Pre-venta
     if (this.route.snapshot.queryParamMap.get('cotizacion')) {
@@ -1720,6 +1724,38 @@ export class FacturacionV2Component implements OnInit {
     }
 
     // Cliente
+    private cargarPrefillCreditoCuota(): void {
+        const idCuota = this.route.snapshot.queryParamMap.get('credito_cuota');
+        if (!idCuota) {
+            return;
+        }
+        this.apiService.get('creditos-clientes/cuotas/' + idCuota + '/prefill').subscribe({
+            next: (prefill) => {
+                const fecha = prefill.fecha;
+                aplicarPrefillCredito(this.venta, prefill);
+                if (prefill.cliente?.id) {
+                    this.setCliente(prefill.cliente);
+                }
+                this.venta.fecha = fecha;
+                this.venta.fecha_pago = fecha;
+                this.documentoCreditoBloqueado = !!prefill.documento_bloqueado;
+                this.syncVentaCreditoConsignaFlagsFromEstado();
+                this.sumTotal();
+                const applyDoc = (attempt = 0) => {
+                    if (prefill.id_documento && this.documentos?.length) {
+                        this.setDocumento(prefill.id_documento);
+                        return;
+                    }
+                    if (attempt < 40) {
+                        setTimeout(() => applyDoc(attempt + 1), 100);
+                    }
+                };
+                applyDoc();
+            },
+            error: (err) => this.alertService.error(err),
+        });
+    }
+
     public setCliente(cliente: any) {
         if (cliente.id) {
             this.retencionIvaGcUsuarioDecidio = false;

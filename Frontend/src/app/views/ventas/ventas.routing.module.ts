@@ -10,6 +10,11 @@ import { VentasComponent } from '@views/ventas/ventas.component';
 import { VentaComponent } from '@views/ventas/venta/venta.component';
 
 import { RecurrentesComponent } from '@views/ventas/recurrentes/recurrentes.component';
+import { CreditosComponent } from '@views/ventas/creditos/creditos.component';
+import { CreditoFormComponent } from '@views/ventas/creditos/credito-form.component';
+import { CreditoDetalleComponent } from '@views/ventas/creditos/credito-detalle.component';
+import { FuncionalidadGuard } from '@guards/funcionalidad.guard';
+import { SLUG_CREDITOS_CLIENTES } from '@views/ventas/creditos/creditos-acceso';
 import { AbonosVentasComponent } from '@views/ventas/abonos/abonos-ventas.component';
 
 import { CanalesComponent } from '@views/ventas/canales/canales.component';
@@ -55,6 +60,27 @@ const routes: Routes = [
         { path: 'venta/:id', component: VentaComponent, title: 'Venta'},
 
         { path: 'ventas/recurrentes', canActivate: [AdminGuard], component: RecurrentesComponent, title: 'Abonos de ventas'},
+        {
+            path: 'ventas/creditos',
+            canActivate: [AdminGuard, FuncionalidadGuard],
+            component: CreditosComponent,
+            title: 'Créditos',
+            data: { funcionalidadSlug: SLUG_CREDITOS_CLIENTES },
+        },
+        {
+            path: 'ventas/creditos/nuevo',
+            canActivate: [AdminGuard, FuncionalidadGuard],
+            component: CreditoFormComponent,
+            title: 'Nuevo crédito',
+            data: { funcionalidadSlug: SLUG_CREDITOS_CLIENTES },
+        },
+        {
+            path: 'ventas/creditos/:id',
+            canActivate: [AdminGuard, FuncionalidadGuard],
+            component: CreditoDetalleComponent,
+            title: 'Crédito',
+            data: { funcionalidadSlug: SLUG_CREDITOS_CLIENTES },
+        },
         { path: 'ventas/abonos', canActivate: [AdminGuard], component: AbonosVentasComponent, title: 'Abonos de ventas'},
 
         { path: 'cotizaciones', component: CotizacionesComponent, title: 'Cotizaciones' },

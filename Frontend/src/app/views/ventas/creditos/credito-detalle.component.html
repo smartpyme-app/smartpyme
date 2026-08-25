@@ -1,0 +1,48 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+  <h2 class="page-heading">Crédito</h2>
+  <a class="btn btn-default" routerLink="/ventas/creditos"><i class="fa fa-arrow-left"></i> Regresar</a>
+</section>
+
+@if (credito) {
+  <section class="bg-white p-4 rounded mb-3">
+    <p class="mb-1"><strong>Cliente:</strong> {{ credito.cliente?.nombre_completo || credito.cliente?.nombre }}</p>
+    <p class="mb-1"><strong>Tipo:</strong> {{ credito.tipo }}</p>
+    <p class="mb-1"><strong>Monto:</strong> {{ credito.monto }}</p>
+    <p class="mb-1"><strong>Inicio:</strong> {{ credito.fecha_inicio }}</p>
+    <p class="mb-0"><strong>Estado:</strong> {{ credito.estado }}</p>
+  </section>
+
+  <section class="bg-white p-4 rounded">
+    <h3 class="h5">Cuotas</h3>
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Vencimiento</th>
+            <th>Monto</th>
+            <th>Estado</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (cuota of credito.cuotas; track cuota.id) {
+            <tr>
+              <td>{{ cuota.numero }}</td>
+              <td>{{ cuota.fecha_vencimiento }}</td>
+              <td>{{ cuota.monto }}</td>
+              <td>{{ etiquetaEstadoCola(cuota.estado_visible || cuota.estado) }}</td>
+              <td>
+                @if (cuota.id_venta) {
+                  <a [routerLink]="['/venta', cuota.id_venta]">Ver factura</a>
+                } @else {
+                  <a [routerLink]="['/venta/crear']" [queryParams]="queryFacturarCuota(cuota.id)">Facturar</a>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+}

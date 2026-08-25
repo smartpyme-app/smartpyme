@@ -54,7 +54,7 @@
         <div class="form-group col" style="min-width: 8rem">
             <label for="id_documento">Documento</label>
             <select name="id_documento" [(ngModel)]="venta.id_documento" (ngModelChange)="setDocumento($event)"
-                class="form-select">
+                class="form-select" [disabled]="documentoCreditoBloqueado">
                 @for (documento of documentos; track documento.id || $index) {
                     <option [ngValue]="documento.id">{{ documento.nombre }}</option>
                 }

@@ -131,6 +131,17 @@ class FacturacionService
                     }
                     $saltarActualizarInventario = true;
                 }
+
+                if ($request->filled('id_credito_cuota')) {
+                    $cuotaCredito = \App\Models\CreditosClientes\CreditoCuota::with('contrato')
+                        ->find($request->id_credito_cuota);
+                    if ($cuotaCredito && !\App\Services\CreditosClientes\KardexCredito::debeMoverInventario(
+                        $cuotaCredito->contrato?->tipo,
+                        $cuotaCredito->numero
+                    )) {
+                        $saltarActualizarInventario = true;
+                    }
+                }
     
                 if ($request->id) {
                     $venta = Venta::findOrFail($request->id);
@@ -572,6 +583,11 @@ class FacturacionService
                     }
                 }
     
+                if ($request->filled('id_credito_cuota')) {
+                    app(\App\Services\CreditosClientes\VincularCuotaVentaService::class)
+                        ->vincular((int) $request->id_credito_cuota, $venta);
+                }
+
                 DB::commit();
                 $venta->refresh();
                 $venta->load(['detalles', 'cliente', 'impuestos', 'giftCardsEmitidas']);

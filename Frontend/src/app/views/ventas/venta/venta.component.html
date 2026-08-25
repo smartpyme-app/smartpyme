@@ -107,6 +107,16 @@
                 <label class="fw-medium">Estado</label>
                 <p>{{ venta.estado }}</p>
             </div>
+            @if (creditoCuota?.id_contrato) {
+                <div class="form-group col-lg-4">
+                    <label class="fw-medium">Crédito</label>
+                    <p>
+                        <a [routerLink]="['/ventas/creditos', creditoCuota.id_contrato]">
+                            Cuota {{ creditoCuota.numero }}
+                        </a>
+                    </p>
+                </div>
+            }
             <div class="form-group col-lg-4">
                 <label class="fw-medium">Cliente</label>
                 <p>{{ venta.nombre_cliente }}</p>

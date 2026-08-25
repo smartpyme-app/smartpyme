@@ -1,0 +1,81 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+  <h2 class="page-heading">Nuevo crédito</h2>
+  <a class="btn btn-default" routerLink="/ventas/creditos"><i class="fa fa-arrow-left"></i> Regresar</a>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+  <form (ngSubmit)="guardar()">
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <label class="form-label">Cliente</label>
+        <ng-select
+          name="id_cliente"
+          [items]="clientes"
+          bindValue="id"
+          bindLabel="nombre_completo"
+          [(ngModel)]="form.id_cliente"
+          placeholder="Seleccionar cliente">
+        </ng-select>
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label">Tipo</label>
+        <select class="form-select" name="tipo" [(ngModel)]="form.tipo">
+          <option value="bien">Bien</option>
+          <option value="servicio">Servicio</option>
+          <option value="prestamo">Préstamo</option>
+        </select>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label">Monto</label>
+        <input class="form-control" type="number" min="0.01" step="0.01" name="monto" [(ngModel)]="form.monto">
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label">Número de cuotas</label>
+        <input class="form-control" type="number" min="2" step="1" name="n_cuotas" [(ngModel)]="form.n_cuotas">
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label">Fecha de inicio</label>
+        <input class="form-control" type="date" name="fecha_inicio" [(ngModel)]="form.fecha_inicio">
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label">Tasa de interés (%)</label>
+        <input class="form-control" type="number" min="0" step="0.01" name="tasa_interes" [(ngModel)]="form.tasa_interes">
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label">Tasa de mora (%)</label>
+        <input class="form-control" type="number" min="0" step="0.01" name="tasa_mora" [(ngModel)]="form.tasa_mora">
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label">Concepto</label>
+        <input class="form-control" type="text" name="concepto" [(ngModel)]="form.concepto">
+      </div>
+    </div>
+
+    @if (previewValido) {
+      <h3 class="h5 mt-2">Vista previa</h3>
+      <p class="text-muted">Las tasas no modifican las cuotas en esta versión.</p>
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Vencimiento</th>
+              <th>Monto</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (cuota of preview; track cuota.numero) {
+              <tr>
+                <td>{{ cuota.numero }}</td>
+                <td>{{ cuota.fechaVencimiento }}</td>
+                <td>{{ cuota.monto | number:'1.2-2' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <button class="btn btn-primary" type="submit" [disabled]="saving || !previewValido">Confirmar crédito</button>
+  </form>
+</section>
