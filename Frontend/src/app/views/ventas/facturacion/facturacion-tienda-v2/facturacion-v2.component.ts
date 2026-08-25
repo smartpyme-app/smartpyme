@@ -1316,11 +1316,11 @@ export class FacturacionV2Component implements OnInit, OnDestroy {
     this.sincronizarRetencionGranContribuyente();
 
     const rawExenta = parseFloat(this.sumPipe.transform(this.venta.detalles, 'exenta'));
-    this.venta.exenta = Number(rawExenta).toFixed(4);
+    this.venta.exenta = redondearMoneda(rawExenta).toFixed(4);
     const rawNoSujeta = parseFloat(this.sumPipe.transform(this.venta.detalles, 'no_sujeta'));
-    this.venta.no_sujeta = Number(rawNoSujeta).toFixed(4);
+    this.venta.no_sujeta = redondearMoneda(rawNoSujeta).toFixed(4);
     const rawGravada = parseFloat(this.sumPipe.transform(this.venta.detalles, 'gravada'));
-    this.venta.gravada = Number(rawGravada).toFixed(4);
+    this.venta.gravada = redondearMoneda(rawGravada).toFixed(4);
     const rawCuentaTerceros = parseFloat(this.sumPipe.transform(this.venta.detalles, 'cuenta_a_terceros'));
     this.venta.cuenta_a_terceros = Number(rawCuentaTerceros).toFixed(4);
 
