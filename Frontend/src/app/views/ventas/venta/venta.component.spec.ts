@@ -1,35 +1,46 @@
-import { TestBed, async } from '@angular/core/testing';
-import { RouterTestingModule } from '@angular/router/testing';
 import { VentaComponent } from './venta.component';
 
 describe('VentaComponent', () => {
-  beforeEach(async(() => {
-    TestBed.configureTestingModule({
-      imports: [
-        RouterTestingModule
-      ],
-      declarations: [
-        VentaComponent
-      ],
-    }).compileComponents();
-  }));
+  function createComponent(): any {
+    const component: any = Object.create(VentaComponent.prototype);
+    component.apiService = {
+      auth_user: () => ({
+        empresa: { iva: 13, pais: 'El Salvador' },
+      }),
+    };
+    component.venta = {
+      iva: 2.19,
+      cobrar_impuestos: true,
+    };
+    return component;
+  }
 
-  it('should create the app', () => {
-    const fixture = TestBed.createComponent(VentaComponent);
-    const app = fixture.debugElement.componentInstance;
-    expect(app).toBeTruthy();
+  it('muestra el total de línea con IVA a partir del precio con IVA, no del neto redondeado', () => {
+    const component = createComponent();
+    const detalle = {
+      cantidad: 1,
+      precio: 4.424778761,
+      descuento: 0,
+      total: 4.42,
+      tipo_gravado: 'gravada',
+    };
+
+    expect(component.precioDetalleConIva(detalle)).toBe(5);
+    expect(component.totalDetalleConIva(detalle)).toBe(5);
   });
 
-  it(`should have as title 'wproject'`, () => {
-    const fixture = TestBed.createComponent(VentaComponent);
-    const app = fixture.debugElement.componentInstance;
-    expect(app.title).toEqual('wproject');
-  });
+  it('calcula el total con IVA como precio con IVA por cantidad menos descuento con IVA', () => {
+    const component = createComponent();
+    const detalle = {
+      cantidad: 2,
+      precio: 4.424778761,
+      descuento: 0.884955752,
+      total: 7.96,
+      tipo_gravado: 'gravada',
+    };
 
-  it('should render title in a h1 tag', () => {
-    const fixture = TestBed.createComponent(VentaComponent);
-    fixture.detectChanges();
-    const compiled = fixture.debugElement.nativeElement;
-    expect(compiled.querySelector('h1').textContent).toContain('Welcome to wproject!');
+    expect(component.precioDetalleConIva(detalle)).toBe(5);
+    expect(component.descuentoDetalleConIva(detalle)).toBe(1);
+    expect(component.totalDetalleConIva(detalle)).toBe(9);
   });
 });
