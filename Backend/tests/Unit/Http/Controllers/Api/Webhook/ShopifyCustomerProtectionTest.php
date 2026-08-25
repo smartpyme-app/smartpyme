@@ -187,4 +187,59 @@ class ShopifyCustomerProtectionTest extends TestCase
         $this->assertSame('Santa Ana', $resultado->departamento);
         $this->assertSame('02', $resultado->cod_departamento);
     }
+
+    public function test_consumidor_final_no_es_modificado_por_actualizacion_shopify(): void
+    {
+        $consumidorFinal = new Cliente([
+            'nombre' => 'Consumidor Final',
+            'apellido' => '',
+            'correo' => null,
+            'telefono' => null,
+            'direccion' => null,
+            'tipo' => 'Persona',
+            'id_empresa' => 553,
+        ]);
+
+        $shopifyData = [
+            'nombre' => 'Consumidor Final',
+            'apellido' => 'Modificado',
+            'correo' => 'test@random.com',
+            'telefono' => '',
+            'direccion' => 'Calle 123',
+            'shopify_customer_id' => 999111222,
+        ];
+
+        $resultado = $this->methodActualizarCliente->invoke($this->controller, $consumidorFinal, $shopifyData);
+
+        // Debe mantenerse completamente intacto sin modificar teléfono ni nombre
+        $this->assertSame('Consumidor Final', $resultado->nombre);
+        $this->assertSame('', $resultado->apellido);
+        $this->assertNull($resultado->telefono);
+        $this->assertNull($resultado->correo);
+        $this->assertNull($resultado->direccion);
+        $this->assertNull($resultado->shopify_customer_id);
+    }
+
+    public function test_telefono_vacio_no_sobreescribe_telefono_existente(): void
+    {
+        $cliente = new Cliente([
+            'nombre' => 'Carlos',
+            'apellido' => 'Perez',
+            'correo' => 'carlos@perez.com',
+            'telefono' => '+50378889999',
+            'id_empresa' => 553,
+        ]);
+
+        $shopifyData = [
+            'nombre' => 'Carlos',
+            'apellido' => 'Perez',
+            'correo' => 'carlos@perez.com',
+            'telefono' => null, // Shopify envió teléfono vacío o null
+        ];
+
+        $resultado = $this->methodActualizarCliente->invoke($this->controller, $cliente, $shopifyData);
+
+        // El teléfono previo se mantiene intacto y no se borra
+        $this->assertSame('+50378889999', $resultado->telefono);
+    }
 }

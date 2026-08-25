@@ -45,14 +45,19 @@ class ShopifyTransformer
             $primaryAddress['country_code'] ?? 'SV'
         );
 
+        $rawPhone = $primaryAddress['phone'] ?? $customer['phone'] ?? null;
+        $telefono = !empty(trim((string)$rawPhone)) ? trim((string)$rawPhone) : null;
+        $rawEmail = $customer['email'] ?? null;
+        $correo = !empty(trim((string)$rawEmail)) ? trim((string)$rawEmail) : null;
+
         $clienteData = [
             'nombre' => $customer['first_name'] ?? '',
             'apellido' => $customer['last_name'] ?? '',
             'nombre_empresa' => $company ?: null,
-            'telefono' => $primaryAddress['phone'] ?? $customer['phone'] ?? '',
-            'correo' => $customer['email'] ?? '',
+            'telefono' => $telefono,
+            'correo' => $correo,
             'shopify_customer_id' => $customer['id'] ?? null,
-            'direccion' => $direccionCompleta,
+            'direccion' => $direccionCompleta ?: null,
             'pais' => $primaryAddress['country'] ?? 'El Salvador',
             'cod_pais' => substr($primaryAddress['country_code'] ?? 'SV', 0, 255),
             'departamento' => $ubicacion['departamento'],
@@ -62,8 +67,8 @@ class ShopifyTransformer
             'distrito' => $ubicacion['distrito'],
             'cod_distrito' => $ubicacion['cod_distrito'],
             'tipo' => !empty($company) ? 'Empresa' : 'Persona',
-            'empresa_telefono' => $primaryAddress['phone'] ?? $customer['phone'] ?? '',
-            'empresa_direccion' => $direccionCompleta,
+            'empresa_telefono' => $telefono,
+            'empresa_direccion' => $direccionCompleta ?: null,
             'enable' => 1,
             'id_empresa' => $shopifyData['id_empresa'],
             'id_usuario' => $shopifyData['id_usuario'],
@@ -103,14 +108,19 @@ class ShopifyTransformer
             $defaultAddress['country_code'] ?? 'SV'
         );
 
+        $rawPhone = $defaultAddress['phone'] ?? $customer['phone'] ?? null;
+        $telefono = !empty(trim((string)$rawPhone)) ? trim((string)$rawPhone) : null;
+        $rawEmail = $customer['email'] ?? null;
+        $correo = !empty(trim((string)$rawEmail)) ? trim((string)$rawEmail) : null;
+
         $clienteData = [
             'nombre' => $customer['first_name'] ?? '',
             'apellido' => $customer['last_name'] ?? '',
             'nombre_empresa' => $company ?: null,
-            'telefono' => $defaultAddress['phone'] ?? $customer['phone'] ?? '',
-            'correo' => $customer['email'] ?? '',
+            'telefono' => $telefono,
+            'correo' => $correo,
             'shopify_customer_id' => $customer['id'] ?? null,
-            'direccion' => $direccionCompleta,
+            'direccion' => $direccionCompleta ?: null,
             'pais' => $defaultAddress['country'] ?? 'El Salvador',
             'cod_pais' => substr($defaultAddress['country_code'] ?? 'SV', 0, 255),
             'departamento' => $ubicacion['departamento'],
@@ -120,8 +130,8 @@ class ShopifyTransformer
             'distrito' => $ubicacion['distrito'],
             'cod_distrito' => $ubicacion['cod_distrito'],
             'tipo' => !empty($company) ? 'Empresa' : 'Persona',
-            'empresa_telefono' => $defaultAddress['phone'] ?? $customer['phone'] ?? '',
-            'empresa_direccion' => $direccionCompleta,
+            'empresa_telefono' => $telefono,
+            'empresa_direccion' => $direccionCompleta ?: null,
             'enable' => 1,
             'id_empresa' => $shopifyData['id_empresa'],
             'id_usuario' => $shopifyData['id_usuario'],

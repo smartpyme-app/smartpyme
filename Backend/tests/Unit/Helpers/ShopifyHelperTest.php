@@ -27,4 +27,9 @@ class ShopifyHelperTest extends TestCase
         $this->assertNull($ubicacion['distrito']);
         $this->assertNull($ubicacion['cod_distrito']);
     }
+
+    public function test_obtener_cliente_consumidor_final_metodo_estatico_helper(): void
+    {
+        $this->assertTrue(method_exists(ShopifyHelper::class, 'obtenerClienteConsumidorFinal'));
+    }
 }

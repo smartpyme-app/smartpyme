@@ -6,6 +6,7 @@ use App\Constants\ShopifyConstant;
 use App\Models\MH\Departamento;
 use App\Models\MH\Distrito;
 use App\Models\MH\Municipio;
+use App\Models\Ventas\Clientes\Cliente;
 
 class ShopifyHelper
 {
@@ -56,23 +57,7 @@ class ShopifyHelper
             }
         }
         if (!$nombreDepartamento && $codDepartamento) {
-            $departamentosNombres = [
-                '01' => 'Ahuachapán',
-                '02' => 'Santa Ana',
-                '03' => 'Sonsonate',
-                '04' => 'Chalatenango',
-                '05' => 'La Libertad',
-                '06' => 'San Salvador',
-                '07' => 'Cuscatlán',
-                '08' => 'La Paz',
-                '09' => 'Cabañas',
-                '10' => 'San Vicente',
-                '11' => 'Usulután',
-                '12' => 'San Miguel',
-                '13' => 'Morazán',
-                '14' => 'La Unión',
-            ];
-            $nombreDepartamento = $departamentosNombres[$codDepartamento] ?? $provinceName;
+            $nombreDepartamento = ShopifyConstant::MAPEO_DEPARTAMENTOS_NOMBRES[$codDepartamento] ?? $provinceName;
         }
         if (!$nombreDepartamento) {
             $nombreDepartamento = $provinceName ?: null;
@@ -174,5 +159,48 @@ class ShopifyHelper
             'distrito' => $distrito,
             'cod_distrito' => $codDistrito,
         ];
+    }
+
+    /**
+     * Obtiene o crea el cliente "Consumidor Final" por defecto para la empresa.
+     *
+     * @param int $empresaId
+     * @return Cliente
+     */
+    public static function obtenerClienteConsumidorFinal(int $empresaId): Cliente
+    {
+        // Buscar cliente "Consumidor Final" existente en la empresa
+        $cliente = Cliente::where('id_empresa', $empresaId)
+            ->where(function ($query) {
+                $query->where('nombre', 'Consumidor Final')
+                      ->orWhere('nombre', 'LIKE', '%Consumidor Final%')
+                      ->orWhere('nombre_empresa', 'Consumidor Final');
+            })
+            ->first();
+
+        if (!$cliente) {
+            // Crear cliente "Consumidor Final" si no existe
+            $cliente = Cliente::create([
+                'nombre' => 'Consumidor Final',
+                'apellido' => '',
+                'correo' => null,
+                'telefono' => null,
+                'direccion' => null,
+                'pais' => 'El Salvador',
+                'cod_pais' => 'SV',
+                'municipio' => null,
+                'cod_municipio' => null,
+                'distrito' => null,
+                'cod_distrito' => null,
+                'departamento' => null,
+                'cod_departamento' => null,
+                'tipo' => 'Persona',
+                'enable' => 1,
+                'id_empresa' => $empresaId,
+                'id_usuario' => null,
+            ]);
+        }
+
+        return $cliente;
     }
 }

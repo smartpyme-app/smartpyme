@@ -126,4 +126,34 @@ class ShopifyTransformerTest extends TestCase
         $this->assertSame(27540943208818, $cliente['shopify_customer_id']);
         $this->assertSame('Persona', $cliente['tipo']);
     }
+
+    public function test_transformar_cliente_con_telefono_vacio_castea_a_null(): void
+    {
+        $payload = [
+            'id_empresa' => 1,
+            'id_usuario' => 1,
+            'customer' => [
+                'id' => 11223344,
+                'first_name' => 'Ana',
+                'last_name' => 'Gomez',
+                'email' => 'ana@gmail.com',
+                'phone' => '', // string vacío
+            ],
+            'billing_address' => [
+                'company' => null,
+                'address1' => 'Colonia San Benito',
+                'city' => 'San Salvador',
+                'province' => 'San Salvador',
+                'province_code' => 'SV-SS',
+                'country' => 'El Salvador',
+                'country_code' => 'SV',
+                'phone' => '   ', // whitespace
+            ],
+        ];
+
+        $cliente = $this->transformer->transformarCliente($payload);
+
+        $this->assertNull($cliente['telefono']);
+        $this->assertNull($cliente['empresa_telefono']);
+    }
 }

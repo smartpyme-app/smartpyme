@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Webhook;
 
+use App\Helpers\ShopifyHelper;
 use App\Http\Controllers\Controller;
 use App\Jobs\ExportProductsToShopify;
 use App\Models\Admin\Documento;
@@ -739,7 +740,7 @@ class ShopifyController extends Controller
                 $cliente = $this->buscarOActualizarCliente($clienteData, $usuario->id_empresa);
             } else {
                 // Usar cliente "Consumidor Final" por defecto
-                $cliente = $this->obtenerClienteConsumidorFinal($usuario->id_empresa);
+                $cliente = ShopifyHelper::obtenerClienteConsumidorFinal($usuario->id_empresa);
                 
                 // Log::info('=== USANDO CLIENTE CONSUMIDOR FINAL EN VENTA ===', [
                 //     'shopify_order_id' => $request->id ?? 'N/A',
@@ -1397,6 +1398,16 @@ class ShopifyController extends Controller
         $correo = $clienteData['correo'] ?? null;
         $telefono = $clienteData['telefono'] ?? null;
         
+        // Si es "Consumidor Final" o no vienen datos identificativos, usar cliente Consumidor Final por defecto
+        $nombreCompleto = trim(($clienteData['nombre'] ?? '') . ' ' . ($clienteData['apellido'] ?? ''));
+        if (
+            strcasecmp($nombreCompleto, 'Consumidor Final') === 0 ||
+            strcasecmp($clienteData['nombre'] ?? '', 'Consumidor Final') === 0 ||
+            (empty($clienteData['nombre']) && empty($clienteData['apellido']) && empty($correo) && empty($telefono) && empty($shopifyCustomerId))
+        ) {
+            return ShopifyHelper::obtenerClienteConsumidorFinal($empresaId);
+        }
+
         // Validaciones de seguridad para evitar asignaciones incorrectas
         if (!$this->validarDatosCliente($clienteData)) {
             // Log::warning('Datos de cliente inválidos, creando cliente con datos mínimos', [
@@ -1488,6 +1499,14 @@ class ShopifyController extends Controller
      */
     private function actualizarClienteExistenteDesdeShopify(Cliente $cliente, array $clienteData)
     {
+        // Si el cliente es "Consumidor Final", NO modificar sus datos para preservar el cliente genérico
+        if (
+            strcasecmp($cliente->nombre ?? '', 'Consumidor Final') === 0 ||
+            strcasecmp($cliente->nombre_empresa ?? '', 'Consumidor Final') === 0
+        ) {
+            return $cliente;
+        }
+
         $camposActualizar = [];
 
         // 1. Vincular shopify_customer_id si no lo tenía
@@ -1692,25 +1711,31 @@ class ShopifyController extends Controller
      */
     private function crearClienteMinimo($clienteData, $empresaId)
     {
+        $rawPhone = $clienteData['telefono'] ?? null;
+        $telefono = !empty(trim((string)$rawPhone)) ? trim((string)$rawPhone) : null;
+        $rawEmail = $clienteData['correo'] ?? null;
+        $correo = !empty(trim((string)$rawEmail)) ? trim((string)$rawEmail) : 'cliente@shopify.com';
+
         $clienteMinimo = [
-            'nombre' => $clienteData['nombre'] ?? 'Cliente',
+            'nombre' => !empty($clienteData['nombre']) ? $clienteData['nombre'] : 'Cliente',
             'apellido' => $clienteData['apellido'] ?? 'Shopify',
-            'correo' => $clienteData['correo'] ?? 'cliente@shopify.com',
-            'telefono' => $clienteData['telefono'] ?? '',
-            'direccion' => $clienteData['direccion'] ?? '',
-            'pais' => $clienteData['pais'] ?? '',
-            'municipio' => $clienteData['municipio'] ?? '',
-            'departamento' => $clienteData['departamento'] ?? '',
+            'correo' => $correo,
+            'telefono' => $telefono,
+            'direccion' => $clienteData['direccion'] ?? null,
+            'pais' => $clienteData['pais'] ?? 'El Salvador',
+            'cod_pais' => $clienteData['cod_pais'] ?? 'SV',
+            'municipio' => $clienteData['municipio'] ?? null,
+            'cod_municipio' => $clienteData['cod_municipio'] ?? null,
+            'distrito' => $clienteData['distrito'] ?? null,
+            'cod_distrito' => $clienteData['cod_distrito'] ?? null,
+            'departamento' => $clienteData['departamento'] ?? null,
+            'cod_departamento' => $clienteData['cod_departamento'] ?? null,
             'tipo' => 'Persona',
             'enable' => 1,
             'id_empresa' => $empresaId,
             'id_usuario' => $clienteData['id_usuario'] ?? null,
             'shopify_customer_id' => $clienteData['shopify_customer_id'] ?? null,
         ];
-        
-        // Log::info('Creando cliente mínimo', [
-        //     'cliente_minimo' => $clienteMinimo
-        // ]);
         
         return Cliente::create($clienteMinimo);
     }
@@ -2589,7 +2614,7 @@ class ShopifyController extends Controller
                 $cliente = $this->buscarOActualizarCliente($clienteData, $usuario->id_empresa);
             } else {
                 // Usar cliente "Consumidor Final" por defecto
-                $cliente = $this->obtenerClienteConsumidorFinal($usuario->id_empresa);
+                $cliente = ShopifyHelper::obtenerClienteConsumidorFinal($usuario->id_empresa);
                 
                 // Log::info('=== USANDO CLIENTE CONSUMIDOR FINAL ===', [
                 //     'shopify_draft_order_id' => $request->id ?? 'N/A',
@@ -2767,46 +2792,6 @@ class ShopifyController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
-    }
-
-    /**
-     * Obtiene o crea el cliente "Consumidor Final" por defecto
-     * 
-     * @param int $empresaId
-     * @return Cliente
-     */
-    private function obtenerClienteConsumidorFinal($empresaId)
-    {
-        // Buscar cliente "Consumidor Final" existente
-        $cliente = Cliente::where('nombre', 'Consumidor Final')
-            ->where('apellido', '')
-            ->where('id_empresa', $empresaId)
-            ->first();
-            
-        if (!$cliente) {
-            // Crear cliente "Consumidor Final" si no existe
-            $cliente = Cliente::create([
-                'nombre' => 'Consumidor Final',
-                'apellido' => '',
-                'correo' => '',
-                'telefono' => '',
-                'direccion' => '',
-                'pais' => '',
-                'municipio' => '',
-                'departamento' => '',
-                'tipo' => 'Persona',
-                'enable' => 1,
-                'id_empresa' => $empresaId,
-                'id_usuario' => null, // No asociado a usuario específico
-            ]);
-            
-            // Log::info('Cliente Consumidor Final creado', [
-            //     'cliente_id' => $cliente->id,
-            //     'empresa_id' => $empresaId
-            // ]);
-        }
-        
-        return $cliente;
     }
 
     /**
