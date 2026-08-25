@@ -35,11 +35,12 @@ class ShopifyTransformer
 
         // Construir dirección completa
         $direccionCompleta = trim(($primaryAddress['address1'] ?? '') . ' ' . ($primaryAddress['address2'] ?? ''));
+        $company = trim($primaryAddress['company'] ?? '');
 
         $clienteData = [
             'nombre' => $customer['first_name'] ?? '',
             'apellido' => $customer['last_name'] ?? '',
-            'nombre_empresa' => $primaryAddress['company'] ?? '',
+            'nombre_empresa' => $company ?: null,
             'telefono' => $primaryAddress['phone'] ?? $customer['phone'] ?? '',
             'correo' => $customer['email'] ?? '',
             'shopify_customer_id' => $customer['id'] ?? null,
@@ -50,7 +51,7 @@ class ShopifyTransformer
             'departamento' => $primaryAddress['province'] ?? '',
             'cod_municipio' => substr($primaryAddress['city'] ?? '', 0, 10),
             'cod_departamento' => $this->obtenerCodigoDepartamento($primaryAddress['province_code'] ?? '', $shopifyData['id_empresa'] ?? null),
-            'tipo' => 'Persona',
+            'tipo' => !empty($company) ? 'Empresa' : 'Persona',
             'empresa_telefono' => $primaryAddress['phone'] ?? $customer['phone'] ?? '',
             'empresa_direccion' => $direccionCompleta,
             'enable' => 1,
@@ -83,11 +84,12 @@ class ShopifyTransformer
 
         // Construir dirección completa
         $direccionCompleta = trim(($defaultAddress['address1'] ?? '') . ' ' . ($defaultAddress['address2'] ?? ''));
+        $company = trim($defaultAddress['company'] ?? '');
 
         $clienteData = [
             'nombre' => $customer['first_name'] ?? '',
             'apellido' => $customer['last_name'] ?? '',
-            'nombre_empresa' => $defaultAddress['company'] ?? '',
+            'nombre_empresa' => $company ?: null,
             'telefono' => $defaultAddress['phone'] ?? $customer['phone'] ?? '',
             'correo' => $customer['email'] ?? '',
             'shopify_customer_id' => $customer['id'] ?? null,
@@ -98,7 +100,7 @@ class ShopifyTransformer
             'departamento' => $defaultAddress['province'] ?? '',
             'cod_municipio' => substr($defaultAddress['city'] ?? '', 0, 10),
             'cod_departamento' => $this->obtenerCodigoDepartamento($defaultAddress['province_code'] ?? '', $shopifyData['id_empresa'] ?? null),
-            'tipo' => 'Persona',
+            'tipo' => !empty($company) ? 'Empresa' : 'Persona',
             'empresa_telefono' => $defaultAddress['phone'] ?? $customer['phone'] ?? '',
             'empresa_direccion' => $direccionCompleta,
             'enable' => 1,

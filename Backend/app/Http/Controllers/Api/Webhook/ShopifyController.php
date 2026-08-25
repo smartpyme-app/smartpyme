@@ -433,14 +433,14 @@ class ShopifyController extends Controller
 
     private function procesarClienteCreado(Request $request, $empresa, $usuario)
     {
-        // Log::info('=== PROCESANDO CLIENTE CREADO DESDE SHOPIFY ===', [
-        //     'shopify_customer_id' => $request->id,
-        //     'customer_email' => $request->email ?? 'N/A',
-        //     'customer_name' => ($request->first_name ?? '') . ' ' . ($request->last_name ?? ''),
-        //     'empresa_id' => $empresa->id,
-        //     'usuario_id' => $usuario->id,
-        //     'webhook_type' => 'customers/create'
-        // ]);
+        Log::info('=== PROCESANDO CLIENTE CREADO DESDE SHOPIFY ===', [
+            'shopify_customer_id' => $request->id,
+            'customer_email' => $request->email ?? 'N/A',
+            'customer_name' => ($request->first_name ?? '') . ' ' . ($request->last_name ?? ''),
+            'empresa_id' => $empresa->id,
+            'usuario_id' => $usuario->id,
+            'webhook_type' => 'customers/create'
+        ]);
 
         try {
             DB::beginTransaction();
@@ -452,21 +452,21 @@ class ShopifyController extends Controller
 
             $clienteData = $this->transformer->transformarClienteDesdeShopify($request->all());
             
-            // Log::info('=== CLIENTE CREADO - DATOS TRANSFORMADOS ===', [
-            //     'cliente_data' => $clienteData,
-            //     'shopify_customer_id' => $request->id
-            // ]);
+            Log::info('=== CLIENTE CREADO - DATOS TRANSFORMADOS ===', [
+                'cliente_data' => $clienteData,
+                'shopify_customer_id' => $request->id
+            ]);
             
             $cliente = $this->buscarOActualizarCliente($clienteData, $usuario->id_empresa);
             
-            // Log::info('=== CLIENTE CREADO/ACTUALIZADO ===', [
-            //     'cliente_id' => $cliente->id,
-            //     'cliente_correo' => $cliente->correo,
-            //     'cliente_nombre' => $cliente->nombre . ' ' . $cliente->apellido,
-            //     'cliente_creado' => $cliente->wasRecentlyCreated,
-            //     'shopify_customer_id' => $request->id,
-            //     'webhook_type' => 'customers/create'
-            // ]);
+            Log::info('=== CLIENTE CREADO/ACTUALIZADO ===', [
+                'cliente_id' => $cliente->id,
+                'cliente_correo' => $cliente->correo,
+                'cliente_nombre' => $cliente->nombre . ' ' . $cliente->apellido,
+                'cliente_creado' => $cliente->wasRecentlyCreated,
+                'shopify_customer_id' => $request->id,
+                'webhook_type' => 'customers/create'
+            ]);
 
             DB::commit();
 
@@ -489,14 +489,14 @@ class ShopifyController extends Controller
 
     private function procesarClienteActualizado(Request $request, $empresa, $usuario)
     {
-        // Log::info('=== PROCESANDO CLIENTE ACTUALIZADO DESDE SHOPIFY ===', [
-        //     'shopify_customer_id' => $request->id,
-        //     'customer_email' => $request->email ?? 'N/A',
-        //     'customer_name' => ($request->first_name ?? '') . ' ' . ($request->last_name ?? ''),
-        //     'empresa_id' => $empresa->id,
-        //     'usuario_id' => $usuario->id,
-        //     'webhook_type' => 'customers/update'
-        // ]);
+        Log::info('=== PROCESANDO CLIENTE ACTUALIZADO DESDE SHOPIFY ===', [
+            'shopify_customer_id' => $request->id,
+            'customer_email' => $request->email ?? 'N/A',
+            'customer_name' => ($request->first_name ?? '') . ' ' . ($request->last_name ?? ''),
+            'empresa_id' => $empresa->id,
+            'usuario_id' => $usuario->id,
+            'webhook_type' => 'customers/update'
+        ]);
 
         try {
             DB::beginTransaction();
@@ -508,21 +508,21 @@ class ShopifyController extends Controller
 
             $clienteData = $this->transformer->transformarClienteDesdeShopify($request->all());
             
-            // Log::info('=== CLIENTE ACTUALIZADO - DATOS TRANSFORMADOS ===', [
-            //     'cliente_data' => $clienteData,
-            //     'shopify_customer_id' => $request->id
-            // ]);
+            Log::info('=== CLIENTE ACTUALIZADO - DATOS TRANSFORMADOS ===', [
+                'cliente_data' => $clienteData,
+                'shopify_customer_id' => $request->id
+            ]);
             
             $cliente = $this->buscarOActualizarCliente($clienteData, $usuario->id_empresa);
             
-            // Log::info('=== CLIENTE ACTUALIZADO ===', [
-            //     'cliente_id' => $cliente->id,
-            //     'cliente_correo' => $cliente->correo,
-            //     'cliente_nombre' => $cliente->nombre . ' ' . $cliente->apellido,
-            //     'cliente_creado' => $cliente->wasRecentlyCreated,
-            //     'shopify_customer_id' => $request->id,
-            //     'webhook_type' => 'customers/update'
-            // ]);
+            Log::info('=== CLIENTE ACTUALIZADO ===', [
+                'cliente_id' => $cliente->id,
+                'cliente_correo' => $cliente->correo,
+                'cliente_nombre' => $cliente->nombre . ' ' . $cliente->apellido,
+                'cliente_creado' => $cliente->wasRecentlyCreated,
+                'shopify_customer_id' => $request->id,
+                'webhook_type' => 'customers/update'
+            ]);
 
             DB::commit();
 
@@ -1416,17 +1416,7 @@ class ShopifyController extends Controller
                 ->first();
                 
             if ($cliente) {
-                // Log::info('Cliente encontrado por shopify_customer_id', [
-                //     'cliente_id' => $cliente->id,
-                //     'shopify_customer_id' => $shopifyCustomerId,
-                //     'correo' => $cliente->correo,
-                //     'telefono' => $cliente->telefono
-                // ]);
-                
-                // Actualizar datos del cliente excluyendo campos protegidos
-                $clienteDataProtegido = $this->excluirCamposProtegidos($clienteData, $empresaId);
-                $cliente->update($clienteDataProtegido);
-                return $cliente;
+                return $this->actualizarClienteExistenteDesdeShopify($cliente, $clienteData);
             }
         }
         
@@ -1439,29 +1429,11 @@ class ShopifyController extends Controller
             if ($cliente) {
                 // Validar que no haya conflicto con shopify_customer_id existente
                 if ($cliente->shopify_customer_id && $cliente->shopify_customer_id !== $shopifyCustomerId) {
-                    // Log::warning('Conflicto de shopify_customer_id detectado', [
-                    //     'cliente_id' => $cliente->id,
-                    //     'correo' => $correo,
-                    //     'shopify_customer_id_existente' => $cliente->shopify_customer_id,
-                    //     'shopify_customer_id_nuevo' => $shopifyCustomerId
-                    // ]);
-                    
                     // Crear nuevo cliente para evitar conflicto
                     return $this->crearClienteMinimo($clienteData, $empresaId);
                 }
                 
-                // Log::info('Cliente encontrado por correo, actualizando shopify_customer_id', [
-                //     'cliente_id' => $cliente->id,
-                //     'correo' => $correo,
-                //     'shopify_customer_id' => $shopifyCustomerId,
-                //     'telefono_actual' => $cliente->telefono,
-                //     'telefono_nuevo' => $telefono
-                // ]);
-                
-                // Actualizar datos incluyendo el shopify_customer_id, excluyendo campos protegidos
-                $clienteDataProtegido = $this->excluirCamposProtegidos($clienteData, $empresaId);
-                $cliente->update($clienteDataProtegido);
-                return $cliente;
+                return $this->actualizarClienteExistenteDesdeShopify($cliente, $clienteData);
             }
         }
         
@@ -1498,72 +1470,120 @@ class ShopifyController extends Controller
                     return $this->crearClienteMinimo($clienteData, $empresaId);
                 }
                 
-                // Log::info('Cliente encontrado por teléfono, actualizando shopify_customer_id', [
-                //     'cliente_id' => $cliente->id,
-                //     'telefono' => $telefono,
-                //     'shopify_customer_id' => $shopifyCustomerId,
-                //     'correo_actual' => $cliente->correo,
-                //     'correo_nuevo' => $correo
-                // ]);
-                
-                // Actualizar datos incluyendo el shopify_customer_id, excluyendo campos protegidos
-                $clienteDataProtegido = $this->excluirCamposProtegidos($clienteData, $empresaId);
-                $cliente->update($clienteDataProtegido);
-                return $cliente;
+                return $this->actualizarClienteExistenteDesdeShopify($cliente, $clienteData);
             }
         }
         
         // 4. Si no existe, crear nuevo cliente
-        // Log::info('Creando nuevo cliente', [
-        //     'correo' => $correo,
-        //     'telefono' => $telefono,
-        //     'shopify_customer_id' => $shopifyCustomerId
-        // ]);
-        
         return Cliente::create($clienteData);
     }
 
     /**
-     * Excluye campos protegidos del array de datos del cliente
-     * Estos campos no deben ser actualizados desde Shopify cuando el cliente ya existe
-     * Solo aplica si la empresa tiene facturación electrónica activa
+     * Actualiza de forma segura un cliente existente desde Shopify sin sobreescribir datos fiscales.
+     * Rellena únicamente campos de contacto/dirección si están vacíos en el cliente actual.
+     *
+     * @param Cliente $cliente
+     * @param array $clienteData
+     * @return Cliente
+     */
+    private function actualizarClienteExistenteDesdeShopify(Cliente $cliente, array $clienteData)
+    {
+        $camposActualizar = [];
+
+        // 1. Vincular shopify_customer_id si no lo tenía
+        if (!empty($clienteData['shopify_customer_id']) && empty($cliente->shopify_customer_id)) {
+            $camposActualizar['shopify_customer_id'] = $clienteData['shopify_customer_id'];
+        }
+
+        // 2. Rellenar datos de contacto básicos SOLO si están vacíos en el registro existente
+        if (empty($cliente->nombre) && !empty($clienteData['nombre'])) {
+            $camposActualizar['nombre'] = $clienteData['nombre'];
+        }
+        if (empty($cliente->apellido) && !empty($clienteData['apellido'])) {
+            $camposActualizar['apellido'] = $clienteData['apellido'];
+        }
+        if (empty($cliente->correo) && !empty($clienteData['correo'])) {
+            $camposActualizar['correo'] = $clienteData['correo'];
+        }
+        if (empty($cliente->telefono) && !empty($clienteData['telefono'])) {
+            $camposActualizar['telefono'] = $clienteData['telefono'];
+        }
+        if (empty($cliente->nombre_empresa) && !empty($clienteData['nombre_empresa'])) {
+            $camposActualizar['nombre_empresa'] = $clienteData['nombre_empresa'];
+        }
+        if (empty($cliente->direccion) && !empty($clienteData['direccion'])) {
+            $camposActualizar['direccion'] = $clienteData['direccion'];
+        }
+        if (empty($cliente->pais) && !empty($clienteData['pais'])) {
+            $camposActualizar['pais'] = $clienteData['pais'];
+            $camposActualizar['cod_pais'] = $clienteData['cod_pais'] ?? null;
+        }
+        if (empty($cliente->departamento) && !empty($clienteData['departamento'])) {
+            $camposActualizar['departamento'] = $clienteData['departamento'];
+            $camposActualizar['cod_departamento'] = $clienteData['cod_departamento'] ?? null;
+        }
+        if (empty($cliente->municipio) && !empty($clienteData['municipio'])) {
+            $camposActualizar['municipio'] = $clienteData['municipio'];
+            $camposActualizar['cod_municipio'] = $clienteData['cod_municipio'] ?? null;
+        }
+
+        // 3. Tipo: si no tenía tipo asignado, asignar según Shopify; si ya tiene (Empresa o Persona), conservarlo.
+        if (empty($cliente->tipo) && !empty($clienteData['tipo'])) {
+            $camposActualizar['tipo'] = $clienteData['tipo'];
+        }
+
+        // Ejecutar actualización únicamente si hay campos para actualizar
+        if (!empty($camposActualizar)) {
+            $cliente->fill($camposActualizar);
+            if ($cliente->exists) {
+                $cliente->save();
+            }
+        }
+
+        return $cliente;
+    }
+
+    /**
+     * Excluye campos protegidos del array de datos del cliente (mantenido como resguardo adicional)
      */
     private function excluirCamposProtegidos($clienteData, $empresaId)
     {
-        // Verificar si la empresa tiene facturación electrónica activa
-        $empresa = Empresa::find($empresaId);
-        
-        if (!$empresa || !$empresa->facturacion_electronica) {
-            // Si no tiene facturación electrónica, retornar todos los datos sin excluir nada
-            // Log::info('Empresa sin facturación electrónica - no se excluyen campos protegidos', [
-            //     'empresa_id' => $empresaId,
-            //     'facturacion_electronica' => $empresa ? $empresa->facturacion_electronica : false
-            // ]);
-            return $clienteData;
-        }
-        
-        // Campos que no deben ser actualizados desde Shopify cuando el cliente ya existe
-        // Estos campos son importantes para facturación de crédito fiscal
         $camposProtegidos = [
+            'tipo',
+            'nombre_empresa',
+            'ncr',
+            'nit',
+            'dui',
+            'giro',
+            'cod_giro',
+            'tipo_contribuyente',
+            'tipo_fiscal',
+            'tipo_persona',
+            'tipo_documento',
+            'clasificacion',
             'cod_departamento',
             'departamento',
             'municipio',
             'cod_municipio',
-            'pais'
+            'cod_distrito',
+            'distrito',
+            'cod_pais',
+            'pais',
+            'empresa_telefono',
+            'empresa_direccion',
+            'codigo_cliente',
+            'habilita_credito',
+            'dias_credito',
+            'limite_credito',
+            'id_vendedor',
+            'id_tipo_cliente',
+            'nivel'
         ];
         
-        // Crear una copia del array sin los campos protegidos
         $clienteDataProtegido = $clienteData;
         foreach ($camposProtegidos as $campo) {
             unset($clienteDataProtegido[$campo]);
         }
-        
-        // Log::info('Campos protegidos excluidos de actualización desde Shopify', [
-        //     'empresa_id' => $empresaId,
-        //     'facturacion_electronica' => true,
-        //     'campos_excluidos' => $camposProtegidos,
-        //     'campos_que_se_actualizaran' => array_keys($clienteDataProtegido)
-        // ]);
         
         return $clienteDataProtegido;
     }
