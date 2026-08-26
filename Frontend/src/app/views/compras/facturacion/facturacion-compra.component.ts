@@ -11,6 +11,7 @@ import { of } from 'rxjs';
 import * as moment from 'moment';
 import { esDocumentoCompraSinIvaFiscal } from '../../../constants/documento.constants';
 import { debeDispararAtajoTcla } from '@utils/atajos-teclado.util';
+import { aplicarIvaCompra, snapshotPorcentajeImpuestoProducto } from '@utils/impuestos-compra.util';
 
 @Component({
   selector: 'app-facturacion-compra',
@@ -367,57 +368,8 @@ export class FacturacionCompraComponent implements OnInit {
         this.compra.iva_retenido = this.compra.retencion ? this.compra.sub_total * 0.01 : 0;
         this.compra.renta_retenida = this.compra.renta ? this.compra.sub_total * 0.10 : 0;
 
-        // IVA por tasa: cada impuesto recibe solo el IVA de los detalles con ese porcentaje (igual que en ventas)
-        const empresaIva = Number(this.apiService.auth_user()?.empresa?.iva ?? 0);
-        const pctIgual = (a: number, b: number) => Math.abs(Number(a) - Number(b)) < 0.01;
-        const porcentajesImpuestos = (this.compra.impuestos || []).map((i: any) => Number(i.porcentaje));
-        const pctDetalleDe = (d: any) => (d.porcentaje_impuesto != null && d.porcentaje_impuesto !== '')
-            ? Number(d.porcentaje_impuesto) : empresaIva;
-
-        this.compra.impuestos.forEach((impuesto: any) => {
-            if (this.compra.cobrar_impuestos) {
-                const pctImp = Number(impuesto.porcentaje);
-                const monto = this.compra.detalles
-                    .filter((d: any) => pctIgual(pctImp, pctDetalleDe(d)))
-                    .reduce((sum: number, d: any) => {
-                        const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) >= 0)
-                            ? parseFloat(d.iva) : parseFloat(d.total || 0) * (pctImp / 100);
-                        return sum + ivaLinea;
-                    }, 0);
-                impuesto.monto = parseFloat(Number(monto).toFixed(4));
-            } else {
-                impuesto.monto = 0;
-            }
-        });
-
-        // Detalles cuyo % no coincide con ningún impuesto: asignar su IVA al impuesto de la empresa o al primero
-        if (this.compra.cobrar_impuestos && this.compra.detalles.length && this.compra.impuestos.length) {
-            const ivaSinAsignar = this.compra.detalles
-                .filter((d: any) => !porcentajesImpuestos.some((p: number) => pctIgual(p, pctDetalleDe(d))))
-                .reduce((sum: number, d: any) => {
-                    const ivaLinea = (d.iva != null && d.iva !== '' && parseFloat(d.iva) >= 0)
-                        ? parseFloat(d.iva) : parseFloat(d.total || 0) * (pctDetalleDe(d) / 100);
-                    return sum + ivaLinea;
-                }, 0);
-            if (ivaSinAsignar > 0) {
-                const impuestoDestino = this.compra.impuestos.find((i: any) => pctIgual(Number(i.porcentaje), empresaIva))
-                    || this.compra.impuestos[0];
-                impuestoDestino.monto = parseFloat((parseFloat(impuestoDestino.monto) + ivaSinAsignar).toFixed(4));
-            }
-        }
-
-        this.compra.iva = parseFloat(
-            this.sumPipe.transform(this.compra.impuestos, 'monto')
-        ).toFixed(2);
-
-        // Asegurar que cada detalle tenga iva calculado (para persistir y coincidir con impuestos por tasa)
-        if (this.compra.cobrar_impuestos && this.compra.detalles.length) {
-            this.compra.detalles.forEach((d: any) => {
-                const totalLinea = parseFloat(d.total || 0);
-                const pct = (d.porcentaje_impuesto != null && d.porcentaje_impuesto !== '') ? Number(d.porcentaje_impuesto) : empresaIva;
-                d.iva = parseFloat((totalLinea * (pct / 100)).toFixed(4));
-            });
-        }
+        const empresa = this.apiService.auth_user()?.empresa;
+        aplicarIvaCompra(this.compra, empresa?.iva, empresa?.pais);
 
         this.compra.descuento = (parseFloat(this.sumPipe.transform(this.compra.detalles, 'descuento'))).toFixed(2);
         this.compra.total_costo = (parseFloat(this.sumPipe.transform(this.compra.detalles, 'total_costo'))).toFixed(2);
@@ -1115,7 +1067,11 @@ export class FacturacionCompraComponent implements OnInit {
             inventario_por_lotes: !!producto.inventario_por_lotes,
             lote_id: null,
             lote: null,
-            porcentaje_impuesto: producto.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva ?? null,
+            porcentaje_impuesto: snapshotPorcentajeImpuestoProducto(
+                producto.porcentaje_impuesto,
+                this.apiService.auth_user()?.empresa?.iva,
+                this.apiService.auth_user()?.empresa?.pais
+            ),
         };
     }
 

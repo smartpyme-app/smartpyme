@@ -674,7 +674,36 @@ class ProductosController extends Controller
 
         if (count($ids) === 0) {
             $producto->impuestos()->detach();
-            $producto->porcentaje_impuesto = 0;
+
+            $empresa = Empresa::withoutGlobalScopes()->find($producto->id_empresa);
+            if (!$empresa) {
+                $producto->porcentaje_impuesto = 0;
+                $producto->save();
+                return;
+            }
+
+            $ivaEmpresa = (float) ($empresa->iva ?? 0);
+            $pais = strtolower(trim((string) ($empresa->pais ?? '')));
+            $pctActual = (float) ($producto->porcentaje_impuesto ?? 0);
+
+            if ($pais === 'honduras' && $pctActual == 0.0) {
+                $producto->porcentaje_impuesto = 0;
+                $producto->save();
+                return;
+            }
+
+            if ($pctActual <= 0 && $ivaEmpresa > 0) {
+                $producto->porcentaje_impuesto = round($ivaEmpresa, 2);
+                $impuesto = ImpuestoCatalogo::withoutGlobalScopes()
+                    ->where('id_empresa', $producto->id_empresa)
+                    ->where('aplica_ventas', true)
+                    ->where('porcentaje', $ivaEmpresa)
+                    ->first();
+                if ($impuesto) {
+                    $producto->impuestos()->sync([$impuesto->id]);
+                }
+            }
+
             $producto->save();
             return;
         }
