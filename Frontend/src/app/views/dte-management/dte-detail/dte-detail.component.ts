@@ -1,12 +1,16 @@
-import { Component, OnInit, TemplateRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, inject, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { BsModalRef, BsModalService } from 'ngx-bootstrap/modal';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { NgSelectModule } from '@ng-select/ng-select';
+import { Subject, of } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { SharedDataService } from '@services/shared-data.service';
 import { DteDocumentService, DteDocument, DteLineItem, DteProcesarPayload } from '@services/dte-management/dte-document.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
@@ -24,6 +28,8 @@ import { CrearProyectoComponent } from '@shared/modals/crear-proyecto/crear-proy
 export class DteDetailComponent implements OnInit {
   private readonly countryI18n = inject(CountryI18nService);
   private readonly currencyFormat = inject(CurrencyFormatService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly sharedDataService = inject(SharedDataService);
   readonly apiService = inject(ApiService);
 
   document: DteDocument | null = null;
@@ -37,6 +43,17 @@ export class DteDetailComponent implements OnInit {
   idCategoria: number | null = null;
   tipoGasto = '';
   tipoCostoGasto = '';
+  formaPago = 'Efectivo';
+  credito = false;
+  fechaPago: string | null = null;
+  detalleBanco: string | null = null;
+  esRetaceo = false;
+  formasPago: any[] = [];
+  bancos: any[] = [];
+  searchProductos$ = new Subject<string>();
+  searchResults: any[] = [];
+  searchLoading = false;
+  resolviendoProductos = false;
   contabilidadHabilitada = false;
   proyectos: any[] = [];
   categorias: any[] = [];
@@ -61,6 +78,8 @@ export class DteDetailComponent implements OnInit {
   ngOnInit(): void {
     this.verificarAccesoContabilidad();
     this.cargarProyectos();
+    this.cargarFormasPagoYBancos();
+    this.configurarBusquedaProductos();
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
       this.loadDocument(+id);
@@ -73,6 +92,20 @@ export class DteDetailComponent implements OnInit {
 
   get esGasto(): boolean {
     return this.destinoSeleccionado === 'gasto';
+  }
+
+  get requiereBanco(): boolean {
+    return this.formaPago !== 'Efectivo' && this.formaPago !== 'Wompi';
+  }
+
+  get compraListaParaProcesar(): boolean {
+    if (this.destinoSeleccionado !== 'compra') {
+      return true;
+    }
+    if (!this.lineItems.length) {
+      return true;
+    }
+    return this.lineItems.every(item => !!item.id_producto && Number(item.cantidad) > 0);
   }
 
   get puedeEditarClasificacion(): boolean {
@@ -128,8 +161,12 @@ export class DteDetailComponent implements OnInit {
         this.idCategoria = doc.id_categoria ?? null;
         this.tipoGasto = doc.tipo_gasto || this.inferirTipoGasto(this.lineItems) || '';
         this.tipoCostoGasto = doc.tipo_costo_gasto || '';
+        this.aplicarPagoSugerido(doc.pago_sugerido);
         this.loading = false;
         setTimeout(() => { this.metadataReady = true; });
+        if (this.esCompra) {
+          this.resolverProductosCompra();
+        }
       },
       error: (err) => {
         this.alertService.error(err);
@@ -308,6 +345,104 @@ export class DteDetailComponent implements OnInit {
 
   cambiarDestino(): void {
     this.guardarMetadatos(true);
+    if (this.esCompra) {
+      this.resolverProductosCompra();
+    }
+  }
+
+  setCredito(): void {
+    if (this.credito) {
+      this.fechaPago = this.fechaPago || this.apiService.date();
+    } else {
+      this.fechaPago = null;
+    }
+  }
+
+  cambioMetodoDePago(): void {
+    if (!this.requiereBanco) {
+      this.detalleBanco = null;
+      return;
+    }
+    const forma = this.formasPago.find((fp: any) => fp.nombre === this.formaPago);
+    if (forma?.banco?.nombre_banco && !this.detalleBanco) {
+      this.detalleBanco = forma.banco.nombre_banco;
+    }
+  }
+
+  asignarProducto(item: DteLineItem, producto: { id: number; nombre: string } | null): void {
+    item.producto = producto;
+    item.id_producto = producto?.id ?? null;
+  }
+
+  private aplicarPagoSugerido(sugerido?: { forma_pago?: string; credito?: boolean }): void {
+    this.formaPago = sugerido?.forma_pago || 'Efectivo';
+    this.credito = !!sugerido?.credito;
+    this.setCredito();
+  }
+
+  private cargarFormasPagoYBancos(): void {
+    this.sharedDataService.getFormasDePago().subscribe({
+      next: (data) => { this.formasPago = data || []; },
+      error: (err) => this.alertService.error(err)
+    });
+    this.apiService.getAll('banco/cuentas/list').subscribe({
+      next: (data) => { this.bancos = data || []; },
+      error: (err) => this.alertService.error(err)
+    });
+  }
+
+  private configurarBusquedaProductos(): void {
+    this.searchProductos$.pipe(
+      debounceTime(300),
+      distinctUntilChanged(),
+      switchMap(term => {
+        if (!term || String(term).length < 2) {
+          return of([]);
+        }
+        this.searchLoading = true;
+        return this.apiService.store('productos/buscar-modal', {
+          termino: term,
+          id_empresa: this.apiService.auth_user().id_empresa,
+          limite: 15
+        }).pipe(catchError(() => of([])));
+      }),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe(results => {
+      this.searchResults = results || [];
+      this.searchLoading = false;
+    });
+  }
+
+  resolverProductosCompra(): void {
+    if (!this.esCompra || !this.lineItems.length) {
+      return;
+    }
+    this.resolviendoProductos = true;
+    const items = this.lineItems.map(item => ({
+      numItem: item.numero,
+      codigo: item.codigo,
+      descripcion: item.descripcion,
+    }));
+    this.apiService.store('productos/resolver-importacion-dte', {
+      id_empresa: this.apiService.auth_user().id_empresa,
+      items,
+    }).subscribe({
+      next: (res: any) => {
+        const resultados = Array.isArray(res?.resultados) ? res.resultados : [];
+        this.lineItems = this.lineItems.map((item, i) => {
+          const producto = resultados[i]?.producto ?? null;
+          return {
+            ...item,
+            producto,
+            id_producto: producto?.id ?? null,
+          };
+        });
+        this.resolviendoProductos = false;
+      },
+      error: () => {
+        this.resolviendoProductos = false;
+      }
+    });
   }
 
   guardarMetadatos(silent = false): void {
@@ -346,14 +481,44 @@ export class DteDetailComponent implements OnInit {
     };
   }
 
+  private buildProcesarPayload(): DteProcesarPayload {
+    return {
+      ...this.buildMetadataPayload(),
+      forma_pago: this.formaPago || 'Efectivo',
+      credito: this.credito,
+      fecha_pago: this.credito ? this.fechaPago : null,
+      detalle_banco: this.requiereBanco ? this.detalleBanco : null,
+      es_retaceo: this.esRetaceo,
+      line_mappings: this.esCompra
+        ? this.lineItems.map((item, index) => ({
+            index,
+            id_producto: item.id_producto ?? null,
+            cantidad: Number(item.cantidad) || 0,
+          }))
+        : [],
+    };
+  }
+
   procesar(): void {
     if (!this.document) return;
+    if (this.requiereBanco && !this.detalleBanco) {
+      this.alertService.warning('Banco requerido', 'Seleccione el banco para esta forma de pago.');
+      return;
+    }
+    if (this.credito && !this.fechaPago) {
+      this.alertService.warning('Fecha de pago', 'Indique la fecha de pago para crédito.');
+      return;
+    }
+    if (!this.compraListaParaProcesar) {
+      this.alertService.warning('Productos', 'Vincule un producto y una cantidad mayor a 0 en todas las líneas.');
+      return;
+    }
     this.procesando = true;
     if (this.metadataSaveTimer) {
       clearTimeout(this.metadataSaveTimer);
       this.metadataSaveTimer = null;
     }
-    this.dteService.procesar(this.document.id, this.buildMetadataPayload()).subscribe({
+    this.dteService.procesar(this.document.id, this.buildProcesarPayload()).subscribe({
       next: (procRes) => {
         this.document = procRes.document || this.document!;
         this.alertService.success('Éxito', procRes.message || this.countryI18n.fe('processedDefault'));

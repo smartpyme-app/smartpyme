@@ -65,8 +65,9 @@ class DteToIvaService
      *
      * @return array{success: bool, compra_id?: int, gasto_id?: int, skipped?: string}
      */
-    public function insertFromDteDocument(DteDocument $document): array
+    public function insertFromDteDocument(DteDocument $document, ?DteProcesoOpciones $opciones = null): array
     {
+        $opciones = $opciones ?? new DteProcesoOpciones();
         $account = $document->userEmailAccount;
         if (!$account) {
             Log::warning('DteToIvaService: DteDocument has no user_email_account');
@@ -77,7 +78,7 @@ class DteToIvaService
         $destino = $document->destino ?? $mapeo?->destino ?? 'compra';
         $tipoDocumento = $mapeo?->tipo_documento ?? (self::$tipoDteMap[$document->dte_type] ?? 'Factura');
 
-        if ($destino === 'compra' && $document->processing_status === 'pendiente_clasificacion') {
+        if ($destino === 'compra' && $opciones->omitirCompraPendienteClasificacion($document->processing_status)) {
             return [
                 'success' => true, 
                 'skipped' => 'pendiente_clasificacion'
@@ -127,7 +128,8 @@ class DteToIvaService
                 $idSucursal,
                 $idBodega,
                 $idUsuario,
-                $actualizarInventario
+                $actualizarInventario,
+                $opciones
             );
         }
 
@@ -137,7 +139,8 @@ class DteToIvaService
             $proveedor,
             $tipoDocumento,
             $idSucursal,
-            $idUsuario
+            $idUsuario,
+            $opciones
         );
     }
 
@@ -149,17 +152,25 @@ class DteToIvaService
         ?int $idSucursal,
         ?int $idBodega,
         int $idUsuario,
-        bool $actualizarInventario
+        bool $actualizarInventario,
+        DteProcesoOpciones $opciones
     ): array {
         $identificacion = $jsonData['identificacion'] ?? [];
         $resumen = $jsonData['resumen'] ?? [];
         $cuerpoDocumento = $jsonData['cuerpoDocumento'] ?? [];
+        $mappings = $opciones->mappingPorIndex();
+        $usarMappings = $mappings !== [];
 
-        $matchResult = $this->productSearch->resolveItems($cuerpoDocumento, $document->id_empresa);
-        if (!$matchResult['all_matched'] && count($cuerpoDocumento) > 0) {
-            $document->update(['processing_status' => 'pendiente_clasificacion']);
+        $matchResult = ['all_matched' => true, 'resolved' => []];
+        if (!$usarMappings) {
+            $matchResult = $this->productSearch->resolveItems($cuerpoDocumento, $document->id_empresa);
+            if (!$matchResult['all_matched'] && count($cuerpoDocumento) > 0) {
+                $document->update(['processing_status' => 'pendiente_clasificacion']);
 
-            return ['success' => true, 'skipped' => 'pendiente_clasificacion'];
+                return ['success' => true, 'skipped' => 'pendiente_clasificacion'];
+            }
+        } else {
+            $opciones->validarLineasCompra(count($cuerpoDocumento));
         }
 
         $fecha = $identificacion['fecEmi'] ?? $document->emission_date?->format('Y-m-d') ?? now()->format('Y-m-d');
@@ -191,8 +202,16 @@ class DteToIvaService
         if (!empty($resumen['pagos'][0]['codigo'])) {
             $formaPago = self::$formaPagoMap[$resumen['pagos'][0]['codigo']] ?? 'Efectivo';
         }
+        if ($opciones->formaPago) {
+            $formaPago = $opciones->formaPago;
+        }
 
-        $estado = ($formaPago === 'Crédito') ? 'Pendiente' : 'Pagada';
+        $estado = $opciones->formaPago !== null || $opciones->credito
+            ? $opciones->estadoCompra()
+            : (($formaPago === 'Crédito') ? 'Pendiente' : 'Pagada');
+        $fechaPago = $opciones->fechaPago ?: $fecha;
+        $detalleBanco = $opciones->detalleBanco;
+        $esRetaceo = $opciones->esRetaceo;
 
         if (Compra::withoutGlobalScopes()
             ->where('id_empresa', $document->id_empresa)
@@ -212,6 +231,9 @@ class DteToIvaService
             $actualizarInventario,
             $referencia,
             $fecha,
+            $fechaPago,
+            $detalleBanco,
+            $esRetaceo,
             $total,
             $subTotal,
             $iva,
@@ -221,6 +243,8 @@ class DteToIvaService
             $estado,
             $cuerpoDocumento,
             $matchResult,
+            $mappings,
+            $usarMappings,
             $codigoGeneracion,
             $numeroControl,
             $tipoDte,
@@ -229,9 +253,11 @@ class DteToIvaService
         ) {
             $compra = Compra::withoutGlobalScopes()->create([
                 'fecha' => $fecha,
-                'fecha_pago' => $fecha,
+                'fecha_pago' => $fechaPago,
                 'estado' => $estado,
                 'forma_pago' => $formaPago,
+                'detalle_banco' => $detalleBanco,
+                'es_retaceo' => $esRetaceo,
                 'tipo_documento' => $tipoDocumento,
                 'tipo_dte' => $tipoDte,
                 'referencia' => $referencia,
@@ -255,12 +281,17 @@ class DteToIvaService
             ]);
 
             foreach ($cuerpoDocumento as $index => $item) {
-                $producto = $matchResult['resolved'][$index] ?? null;
+                $producto = $usarMappings
+                    ? $this->productoDesdeMapping($document->id_empresa, $mappings[$index] ?? null)
+                    : ($matchResult['resolved'][$index] ?? null);
                 if (!$producto) {
                     continue;
                 }
 
                 $detalleData = $this->buildDetalleCompraFromItem($item, $producto);
+                if ($usarMappings && isset($mappings[$index]['cantidad'])) {
+                    $detalleData['cantidad'] = $mappings[$index]['cantidad'];
+                }
 
                 $detalle = DetalleCompra::withoutGlobalScopes()->create([
                     'id_compra' => $compra->id,
@@ -288,6 +319,27 @@ class DteToIvaService
 
             return ['success' => true, 'compra_id' => $compra->id];
         });
+    }
+
+    /**
+     * @param array{id_producto?: int, cantidad?: float}|null $mapping
+     */
+    protected function productoDesdeMapping(int $idEmpresa, ?array $mapping): ?Producto
+    {
+        $idProducto = (int) ($mapping['id_producto'] ?? 0);
+        if ($idProducto <= 0) {
+            throw new \InvalidArgumentException('Debe vincular un producto en todas las líneas de la compra.');
+        }
+
+        $producto = Producto::withoutGlobalScopes()
+            ->where('id_empresa', $idEmpresa)
+            ->find($idProducto);
+
+        if (!$producto) {
+            throw new \InvalidArgumentException('Producto no válido en una línea de la compra.');
+        }
+
+        return $producto;
     }
 
     /**
@@ -372,7 +424,8 @@ class DteToIvaService
         Proveedor $proveedor,
         string $tipoDocumento,
         ?int $idSucursal,
-        int $idUsuario
+        int $idUsuario,
+        DteProcesoOpciones $opciones
     ): array {
         $identificacion = $jsonData['identificacion'] ?? [];
         $resumen = $jsonData['resumen'] ?? [];
@@ -389,8 +442,16 @@ class DteToIvaService
         if (!empty($resumen['pagos'][0]['codigo'])) {
             $formaPago = self::$formaPagoMap[$resumen['pagos'][0]['codigo']] ?? 'Efectivo';
         }
+        if ($opciones->formaPago) {
+            $formaPago = $opciones->formaPago;
+        }
 
-        $estado = ($formaPago === 'Crédito') ? 'Pendiente' : 'Confirmado';
+        $estado = $opciones->formaPago !== null || $opciones->credito
+            ? $opciones->estadoGasto()
+            : (($formaPago === 'Crédito') ? 'Pendiente' : 'Confirmado');
+        $fechaPago = $opciones->fechaPago;
+        $detalleBanco = $opciones->detalleBanco;
+        $esRetaceo = $opciones->esRetaceo;
         $concepto = !empty($cuerpoDocumento)
             ? ($cuerpoDocumento[0]['descripcion'] ?? $document->issuer_name ?? 'DTE importado')
             : ($document->issuer_name ?? 'DTE importado');
@@ -427,10 +488,14 @@ class DteToIvaService
             $identificacion,
             $selloMh,
             $idCategoria,
-            $idProyecto
+            $idProyecto,
+            $fechaPago,
+            $detalleBanco,
+            $esRetaceo
         ) {
             $gasto = Gasto::withoutGlobalScopes()->create([
                 'fecha' => $fecha,
+                'fecha_pago' => $fechaPago,
                 'referencia' => $referencia,
                 'tipo_documento' => $tipoDocumento,
                 'concepto' => $concepto,
@@ -438,6 +503,8 @@ class DteToIvaService
                 'id_categoria' => $idCategoria,
                 'estado' => $estado,
                 'forma_pago' => $formaPago,
+                'detalle_banco' => $detalleBanco,
+                'es_retaceo' => $esRetaceo,
                 'id_proveedor' => $proveedor->id,
                 'sub_total' => $subTotal,
                 'iva' => $iva,
