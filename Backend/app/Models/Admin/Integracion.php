@@ -5,6 +5,7 @@ namespace App\Models\Admin;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
+use App\Services\BoxFul\BoxFulService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
@@ -59,8 +60,14 @@ class Integracion extends Model
         });
 
         static::saved(function ($model) {
-            if ($model->proveedor === 'boxful' && in_array($model->estado, ['disconnected', 'error'])) {
-                \Illuminate\Support\Facades\Cache::forget('boxful_access_token_empresa_' . $model->id_empresa);
+            if ($model->proveedor !== 'boxful') {
+                return;
+            }
+
+            // Desconectar / error: siempre. Conectar: solo al pasar a connected (cuenta nueva o reconexión).
+            if (in_array($model->estado, ['disconnected', 'error'], true)
+                || ($model->estado === 'connected' && $model->wasChanged('estado'))) {
+                BoxFulService::forgetEmpresaCache($model->id_empresa);
             }
         });
     }

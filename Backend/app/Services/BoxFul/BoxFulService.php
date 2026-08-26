@@ -88,7 +88,28 @@ class BoxFulService
     protected function updateCacheKey(): void
     {
         $id = $this->empresa ? $this->empresa->id : 'default';
-        $this->cacheKey = 'boxful_access_token_empresa_' . $id;
+        $this->cacheKey = self::tokenCacheKey($id);
+    }
+
+    public static function tokenCacheKey($idEmpresa): string
+    {
+        return 'boxful_access_token_empresa_' . $idEmpresa;
+    }
+
+    public static function statesCacheKey($idEmpresa): string
+    {
+        return 'boxful_states_empresa_' . $idEmpresa;
+    }
+
+    /** Limpia token y catálogo de estados de esa empresa (conectar / desconectar). */
+    public static function forgetEmpresaCache($idEmpresa): void
+    {
+        if ($idEmpresa === null || $idEmpresa === '') {
+            return;
+        }
+
+        Cache::forget(self::tokenCacheKey($idEmpresa));
+        Cache::forget(self::statesCacheKey($idEmpresa));
     }
 
     /**
@@ -237,7 +258,7 @@ class BoxFulService
             }
         }
 
-        // 4. Fallback: El token no está en BD/expiró y la renovación falló o no estaba disponible, realizar petición de autenticación completa
+        // 4. Fallback: autenticación completa con credenciales ya guardadas
         $email = $integracion->getCredential('email');
         $password = $integracion->getCredential('password');
 
@@ -246,8 +267,32 @@ class BoxFulService
             throw new \Exception('Las credenciales de API Boxful no están configuradas para la empresa: ' . $empresa->nombre);
         }
 
+        try {
+            $auth = $this->authenticateWithCredentials($email, $password);
+            return $this->persistSuccessfulAuth($auth, $integracion, $empresa);
+        } catch (\Exception $e) {
+            Log::error('Excepción al autenticar con Boxful', ['error' => $e->getMessage()]);
+            $integracion->markAsError($e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
+     * Autentica contra Boxful sin tocar la BD. Si falla, lanza y no persiste nada.
+     */
+    public function authenticateWithCredentials(string $email, string $password): array
+    {
         $url = rtrim($this->baseUrl, '/') . '/auth/v2/client';
-        $payload = [
+
+        Log::info('Autenticando con la API de Boxful (v2)', [
+            'url' => $url,
+            'company_id' => $this->empresa->id ?? null,
+        ]);
+
+        $response = Http::withHeaders([
+            'Content-Type' => 'application/json',
+            'Accept' => 'application/json',
+        ])->post($url, [
             'email' => $email,
             'password' => $password,
             '_params' => [
@@ -260,79 +305,106 @@ class BoxFulService
                     'required' => true,
                 ],
             ],
-        ];
+        ]);
 
-        Log::info('Autenticando con la API de Boxful (v2)', ['url' => $url, 'company_id' => $empresa->id]);
-
-        try {
-            $response = Http::withHeaders([
-                'Content-Type' => 'application/json',
-                'Accept' => 'application/json',
-            ])->post($url, $payload);
-
-            if ($response->failed()) {
-                Log::error('Inicio de sesión fallido en API Boxful (v2)', [
-                    'company_id' => $empresa->id,
-                    'status' => $response->status(),
-                    'response' => $response->json(),
-                ]);
-
-                // Actualizar estado en la base de datos a error
-                $integracion->markAsError('Error de autenticación con Boxful: ' . ($response->json('message') ?? 'Error desconocido'));
-                throw new \Exception('Error de autenticación con Boxful: ' . ($response->json('message') ?? 'Error desconocido'));
-            }
-
-            $accessToken = $response->json('accessToken');
-            $refreshToken = $response->json('refreshToken');
-            $accessTokenExpiresAt = $response->json('accessTokenExpiresAt');
-            $refreshTokenExpiresAt = $response->json('refreshTokenExpiresAt');
-
-            if (empty($accessToken)) {
-                Log::error('La respuesta de API Boxful (v2) no contiene un accessToken', ['response' => $response->json()]);
-
-                // Actualizar estado en la base de datos a error
-                $integracion->markAsError('Respuesta de autenticación inválida desde Boxful.');
-                throw new \Exception('Respuesta de autenticación inválida desde Boxful.');
-            }
-
-            // Guardar token, refresh token y expiración
-            $integracion->access_token = $accessToken;
-            $integracion->refresh_token = $refreshToken;
-            
-            // Establecer expiración del token de acceso
-            $expiresAt = $accessTokenExpiresAt ? \Carbon\Carbon::createFromTimestamp($accessTokenExpiresAt) : now()->addHours(23);
-            $integracion->token_expires_at = $expiresAt;
-            $integracion->estado = 'connected';
-
-            // Guardar expiración del refresh token en la configuración
-            if ($refreshTokenExpiresAt) {
-                $integracion->setConfig(['refresh_token_expires_at' => $refreshTokenExpiresAt]);
-            }
-
-            // Obtener y guardar el clientId
-            $this->fetchAndSaveClientId($accessToken, $integracion);
-
-            $integracion->save();
-            $this->integracion = $integracion;
-
-            // Crear o actualizar el canal de ventas para Boxful
-            $this->updateOrCreateChannel($empresa);
-
-            // Guardar en caché por el tiempo restante para reducir el tráfico a la base de datos
-            $secondsRemaining = max(0, $expiresAt->diffInSeconds(now()));
-            if ($secondsRemaining > 0) {
-                Cache::put($this->cacheKey, $accessToken, $secondsRemaining);
-            }
-
-            return $accessToken;
-
-        } catch (\Exception $e) {
-            Log::error('Excepción al autenticar con Boxful', ['error' => $e->getMessage()]);
-            
-            // Actualizar estado en la base de datos a error
-            $integracion->markAsError($e->getMessage());
-            throw $e;
+        if ($response->failed()) {
+            Log::error('Inicio de sesión fallido en API Boxful (v2)', [
+                'company_id' => $this->empresa->id ?? null,
+                'status' => $response->status(),
+                'response' => $response->json(),
+            ]);
+            throw new \Exception('Error de autenticación con Boxful: ' . ($response->json('message') ?? 'Error desconocido'));
         }
+
+        $accessToken = $response->json('accessToken');
+        if (empty($accessToken)) {
+            Log::error('La respuesta de API Boxful (v2) no contiene un accessToken', ['response' => $response->json()]);
+            throw new \Exception('Respuesta de autenticación inválida desde Boxful.');
+        }
+
+        return [
+            'accessToken' => $accessToken,
+            'refreshToken' => $response->json('refreshToken'),
+            'accessTokenExpiresAt' => $response->json('accessTokenExpiresAt'),
+            'refreshTokenExpiresAt' => $response->json('refreshTokenExpiresAt'),
+        ];
+    }
+
+    /**
+     * Prueba las credenciales contra Boxful y solo si responden bien corta la sesión anterior y las guarda.
+     */
+    public function connectWithCredentials(string $email, ?string $password): array
+    {
+        $this->resolveEmpresaIfNeeded();
+        $empresa = $this->empresa;
+        if (!$empresa) {
+            throw new \Exception('No se ha definido una empresa para la integración con Boxful.');
+        }
+
+        $integracion = $empresa->obtenerOcrearIntegracion();
+        $passwordToUse = ($password !== null && $password !== '')
+            ? $password
+            : (string) ($integracion->getCredential('password') ?? '');
+
+        if ($email === '' || $passwordToUse === '') {
+            throw new \Exception('El correo y la contraseña de Boxful son requeridos.');
+        }
+
+        $auth = $this->authenticateWithCredentials($email, $passwordToUse);
+        $this->persistSuccessfulAuth($auth, $integracion, $empresa, $email, $passwordToUse);
+
+        $userInfo = $this->get('auth/user-info');
+        $sync = $this->syncOriginAddresses();
+
+        return [
+            'user_info' => $userInfo->successful() ? $userInfo->json() : null,
+            'sync_origin_addresses' => $sync,
+            'boxful_email' => $email,
+            'boxful_status' => 'connected',
+            'has_boxful_password' => true,
+        ];
+    }
+
+    protected function persistSuccessfulAuth(array $auth, Integracion $integracion, $empresa, ?string $email = null, ?string $password = null): string
+    {
+        self::forgetEmpresaCache($empresa->id);
+
+        if ($email !== null) {
+            $creds = [
+                'email' => $email,
+                'client_id' => null,
+            ];
+            if ($password !== null && $password !== '') {
+                $creds['password'] = $password;
+            }
+            $integracion->setCredentials($creds);
+        }
+
+        $accessToken = $auth['accessToken'];
+        $integracion->access_token = $accessToken;
+        $integracion->refresh_token = $auth['refreshToken'] ?? null;
+        $expiresAt = !empty($auth['accessTokenExpiresAt'])
+            ? \Carbon\Carbon::createFromTimestamp($auth['accessTokenExpiresAt'])
+            : now()->addHours(23);
+        $integracion->token_expires_at = $expiresAt;
+        $integracion->estado = 'connected';
+        $integracion->last_error = null;
+
+        if (!empty($auth['refreshTokenExpiresAt'])) {
+            $integracion->setConfig(['refresh_token_expires_at' => $auth['refreshTokenExpiresAt']]);
+        }
+
+        $this->fetchAndSaveClientId($accessToken, $integracion);
+        $integracion->save();
+        $this->integracion = $integracion;
+        $this->updateOrCreateChannel($empresa);
+
+        $secondsRemaining = max(0, $expiresAt->diffInSeconds(now()));
+        if ($secondsRemaining > 0) {
+            Cache::put($this->cacheKey, $accessToken, $secondsRemaining);
+        }
+
+        return $accessToken;
     }
 
     protected function updateOrCreateChannel($empresa)

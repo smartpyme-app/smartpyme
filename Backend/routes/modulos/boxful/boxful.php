@@ -12,6 +12,7 @@ Route::middleware(['verificar.funcionalidad:integracion-boxful'])->group(functio
     Route::prefix('boxful')->group(function () {
         Route::get('status', [BoxFulController::class, 'getStatus']);
         Route::get('test-connection', [BoxFulController::class, 'testConnection']);
+        Route::post('connect', [BoxFulController::class, 'connect']);
         Route::post('disconnect', [BoxFulController::class, 'disconnect']);
         Route::post('sincronizar-direcciones', [BoxFulController::class, 'sincronizarDirecciones']);
         Route::post('configurar-origen', [BoxFulController::class, 'configurarOrigen']);

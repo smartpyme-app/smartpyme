@@ -32,7 +32,7 @@ class BoxFulAddressController extends Controller
         try {
             $integracion = $this->boxfulService->getIntegracion();
             $idEmpresa = $integracion ? $integracion->id_empresa : (auth()->check() ? auth()->user()->id_empresa : 'default');
-            $cacheKey = "boxful_states_empresa_{$idEmpresa}";
+            $cacheKey = BoxFulService::statesCacheKey($idEmpresa);
 
             $states = Cache::remember($cacheKey, now()->addHours(24), function () {
                 $response = $this->boxfulService->get('states');
