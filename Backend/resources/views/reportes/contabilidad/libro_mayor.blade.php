@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+    {{-- revisar--}}
+    <title>Libro Mayor </title>
+    <style>
+
+        *{ font-size: 13px; margin: 0; padding: 0;}
+        html, body{
+            width: 19.5cm; height: 20cm;
+            font-family: serif;
+            /*            border: 1px solid red;*/
+        }
+
+        #factura{
+            margin-left: 0cm;
+            margin-top: 0cm;
+            position: relative;
+        }
+
+        .header > *, #totales > *{
+            position: absolute;
+            margin: 10px;
+        }
+
+        .header{
+            border: 1px solid black;
+        }
+
+
+        #empresa_nombre  { top: 0.5cm; left: 9.5cm;}
+        #titulo_doc      {top: 1cm; left: 9.9cm; font-weight: bold;}
+        #fechas_filtro  {top: 1.5cm; left: 8.5cm;}
+        #val_dolares  {top: 2cm; left: 8cm;}
+
+        table   {position: relative; top: 4cm; left: 0.5cm; text-align: left; border-collapse: collapse; margin-bottom: 10px; }
+        table td{height: 0.5cm; text-align: left;}
+
+        .fecha_partida{ width: 3.5cm; text-align: center;}
+        .concepto{ width: 11cm; text-align: left;}
+        .cargo{ width: 2cm; text-align: center;}
+        .abono{ width: 2cm; text-align: center;}
+        .saldo{ width: 2cm; text-align: center;}
+
+
+        .no-print{position: absolute;}
+
+        /*para el brake page */
+
+        .page-break {
+            page-break-before: always;
+        }
+
+        .invoice-articles-table {
+            padding-bottom: 50px; //height of your footer
+        }
+
+        th {
+            border: 1px solid black;
+            padding: 5px;
+        }
+
+    </style>
+
+    <style media="print"> .no-print{display: none; } </style>
+
+</head>
+<body>
+
+<section id="factura">
+    <div class="header">
+        {{--        a la derecha del documento --}}
+        {{--        <p id="logo">{{$empresa->logo}}</p>--}}
+
+        {{--        al centro del documento --}}
+        <p id="empresa_nombre">{{$empresa->nombre}}</p>
+        <p id="titulo_doc">Libro Mayor</p>
+        <p id="fechas_filtro">Desde: {{$desde}} Hasta: {{$hasta}}</p>
+        <p id="val_dolares">VALORES ESPRESADOS EN US DOLARES</p>
+
+        {{--a la izquierda del documento--}}
+        {{--        <p id="fecha_actual">4/05/2024</p>--}}
+        {{--        <p id="hora_reporte">06:15:18 a.m.</p>--}}
+
+    </div>
+
+    <div style="page-break-after:auto;">
+
+        {{--            titulo de la cuenta--}}
+        {{--            <tr>Cuenta: {{ $num_cuenta }} - {{$nom_cuenta}}</tr>--}}
+
+        @foreach($cuentas as $cuenta)
+
+            {{--                @if($cuenta->detalles != null)--}}
+            <table>
+                <tr>
+                    <th style="border: none; ">Cuenta: </th>
+                    <th style="border: none; ">{{$cuenta->cuenta}}--{{$cuenta->nombre}}</th>
+                    <th style="border: none; "></th>
+                    <th style="border: none; "></th>
+                    <th style="border: none; "></th>
+                </tr>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Concepto</th>
+                    <th>Cargo</th>
+                    <th>Abono</th>
+                    <th>Saldo</th>
+                </tr>
+
+                <tr>
+                    <td style="border: none;"></td>
+                    <td style="border: none;">Saldo inicial:</td>
+                    <td style="border: none; text-align: center;">0.00</td>
+                    <td style="border: none; text-align: center;">0.00</td>
+                    <td style="border: none; text-align: center;">{{$cuenta->saldo_anterior}}</td>
+                </tr>
+
+
+
+                @foreach($cuenta->detalles as $detalle)
+                    <tr>
+                        <td class="fecha_partida">  {{$detalle->created_at}}    </td>
+                        <td class="concepto">       {{$concepto}}    </td>
+                        <td class="cargo">          {{$detalle->debe}}   </td>
+                        <td class="abono">          {{$detalle->haber}}    </td>
+                        {{--                        <td class="saldo">          {{$detalle->saldo}}   </td>--}}
+                        @if($cuenta->naturaleza=="Deudor")
+                            <td class="saldo">    {{$cuenta->saldo_actual = number_format((float)$cuenta->saldo_actual + (float)$detalle->debe - (float)$detalle->haber, 2) }}</td>
+                        @else
+                            <td class="saldo">     {{$cuenta->saldo_actual=number_format((float)$cuenta->saldo_actual-(float)$detalle->debe+(float)$detalle->haber, 2)}}</td>
+                        @endif
+                    </tr>
+                    @if($loop->last == false)
+
+                    @endif
+
+                @endforeach
+                {{--                @endif--}}
+                <tr>
+                    <th></th>
+                    <th>Total por cuenta:</th>
+                    <th>{{$cuenta->cargo}}</th>
+                    <th> {{$cuenta->abono}}</th>
+                    <th>{{$cuenta->saldo_actual}}</th>
+                </tr>
+            </table>
+    @endforeach
+
+
+</section>
+
+</body>
+</html>
