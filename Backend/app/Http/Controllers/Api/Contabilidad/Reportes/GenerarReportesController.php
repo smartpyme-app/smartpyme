@@ -83,29 +83,32 @@ class GenerarReportesController extends Controller
 
     public function generarRepLibroDiarioPDF($fecha_inicio, $fecha_fin, $cuenta = null)
     {
+        // ponytail: DomPDF ~1 Style/celda; un mes de diario supera el 128M de producción. 512M cubre el techo típico; si un cliente pasa de ~10k líneas, paginar el PDF.
+        ini_set('memory_limit', '512M');
+        set_time_limit(120);
 
         $empresa_id = auth()->user()->id_empresa;
         $empresa = Empresa::findOrfail($empresa_id);
         $startDate = Carbon::createFromFormat('Y-m-d', $fecha_inicio)->startOfDay();
         $endDate = Carbon::createFromFormat('Y-m-d', $fecha_fin)->endOfDay();
-        
-        // Calcular mes y año para mostrar en las vistas
+
         $month = $startDate->month;
         $year = $startDate->year;
         $month_name = $startDate->translatedFormat('F');
 
-        $query = Partida::with(['detalles' => function ($query) use ($cuenta) {
-            $query->select('id', 'id_partida', 'id_cuenta', 'codigo', 'nombre_cuenta', 'concepto', 'debe', 'haber');
+        $query = Partida::query()
+            ->select(['id', 'correlativo', 'fecha', 'concepto'])
+            ->with(['detalles' => function ($query) use ($cuenta) {
+                $query->select('id', 'id_partida', 'id_cuenta', 'codigo', 'nombre_cuenta', 'concepto', 'debe', 'haber');
 
-            if ($cuenta && $cuenta !== 'all') {
-                $query->where('id_cuenta', $cuenta);
-            }
-        }])
+                if ($cuenta && $cuenta !== 'all') {
+                    $query->where('id_cuenta', $cuenta);
+                }
+            }])
             ->where('id_empresa', $empresa_id)
             ->whereIn('estado', ['Aplicada', 'Cerrada'])
             ->whereBetween('fecha', [$startDate, $endDate])
             ->orderBy('fecha', 'desc');
-
 
         if ($cuenta && $cuenta !== 'all') {
             $query->whereHas('detalles', function ($query) use ($cuenta) {
@@ -113,30 +116,18 @@ class GenerarReportesController extends Controller
             });
         }
 
-        $partidas = $query->get();
-
-        $reporteLibroDiario = $partidas->map(function ($partida) {
-            return [
-                'partida_num' => '#' . $partida->id,
-                'correlativo' => $partida->correlativo,
-                'fecha' => $partida->fecha,
-                'concepto' => $partida->concepto,
-                'detalles' => $partida->detalles->map(function ($detalle) {
-                    return [
-                        'codigo' => $detalle->codigo,
-                        'nombre_cuenta' => $detalle->nombre_cuenta,
-                        'concepto' => $detalle->concepto,
-                        'debe' => $detalle->debe,
-                        'haber' => $detalle->haber,
-                    ];
-                }),
-            ];
-        });
+        $reporteLibroDiario = $query->get();
+        $reporteLibroDiario->each(fn ($partida) => $partida->setAppends([]));
 
         $pdf = PDF::loadView('reportes.contabilidad.libro_diario', compact('reporteLibroDiario', 'empresa', 'month_name', 'month', 'year'));
         $pdf->setPaper('US Letter', 'landscape');
+        $pdf->setOptions([
+            'dpi' => 72,
+            'isHtml5ParserEnabled' => true,
+            'isRemoteEnabled' => false,
+        ]);
 
-        return  $pdf->stream();
+        return $pdf->stream();
     }
 
     public function generarRepLibroDiarioExcel($fecha_inicio, $fecha_fin, $cuenta = null)
@@ -215,6 +206,9 @@ class GenerarReportesController extends Controller
 
     public function generarRepLibroDiarioMayorPDF($fecha_inicio, $fecha_fin, $cuenta = null)
     {
+        // ponytail: mismo techo que el diario; CSS absolute + una tabla por cuenta reventaba 128M en Style.php.
+        ini_set('memory_limit', '512M');
+        set_time_limit(120);
 
         $cuentas = [];
 
@@ -233,11 +227,12 @@ class GenerarReportesController extends Controller
         //cuentas que no aceptan datos segun nivel
         $cuentas_padre = Cuenta::where('nivel', $nivel_datos)->where('id_empresa', auth()->user()->id_empresa)->get();
 
-        $partidas = Detalle::with(['partida:id,correlativo,fecha,concepto'])
+        $partidas = Detalle::query()
+            ->select(['id', 'id_partida', 'codigo', 'concepto', 'debe', 'haber'])
+            ->with(['partida:id,correlativo,fecha,concepto'])
             ->whereHas('partida', function ($query) use ($empresa_id, $startDate, $endDate, $cuenta) {
                 $query->where('id_empresa', $empresa_id)
                     ->whereIn('estado', ['Aplicada', 'Cerrada'])
-                    //->where('id_cuenta', $cuenta)
                     ->whereBetween('fecha', [$startDate, $endDate]);
 
                 if ($cuenta && $cuenta !== 'all') {
@@ -316,6 +311,11 @@ class GenerarReportesController extends Controller
         //}
 
         $pdf->setPaper('US Letter', 'portrait');
+        $pdf->setOptions([
+            'dpi' => 72,
+            'isHtml5ParserEnabled' => true,
+            'isRemoteEnabled' => false,
+        ]);
 
         return $pdf->stream();
     }
