@@ -8,6 +8,7 @@ import { debounceTime, switchMap, filter,catchError  } from 'rxjs/operators';
 import { SumPipe }     from '@pipes/sum.pipe';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
+import { snapshotPorcentajeImpuestoProducto } from '@utils/impuestos-compra.util';
 
 @Component({
   selector: 'app-compra-producto',
@@ -34,6 +35,15 @@ export class CompraProductoComponent implements OnInit {
 
     public isComponenteQuimicoHabilitado(): boolean {
         return this.apiService.isComponenteQuimicoHabilitado();
+    }
+
+    private tasaImpuestoProducto(producto: any): number {
+        const empresa = this.apiService.auth_user()?.empresa;
+        return snapshotPorcentajeImpuestoProducto(
+            producto?.porcentaje_impuesto,
+            empresa?.iva,
+            empresa?.pais
+        );
     }
 
     /** Oculta el costo en el buscador para Supervisor limitado. */
@@ -201,10 +211,8 @@ export class CompraProductoComponent implements OnInit {
         producto.descuento      = 0;
         producto.inventario_por_lotes = producto.inventario_por_lotes || false;
         producto.lote_id = null;
-        producto.porcentaje_impuesto = producto.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
-        
-        console.log('Producto creado:', producto);
-        
+        producto.porcentaje_impuesto = this.tasaImpuestoProducto(producto);
+
         this.productoSelect.emit(producto);
     }
 
@@ -230,7 +238,7 @@ export class CompraProductoComponent implements OnInit {
             this.detalle.descuento        = 0;
             this.detalle.inventario_por_lotes = producto.inventario_por_lotes || false;
             this.detalle.lote_id          = null;
-            this.detalle.porcentaje_impuesto = producto.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
+            this.detalle.porcentaje_impuesto = this.tasaImpuestoProducto(producto);
         } else {
             this.detalle.id_producto      = producto.id;
             this.detalle.id_presentacion  = null;
@@ -247,7 +255,7 @@ export class CompraProductoComponent implements OnInit {
             this.detalle.descuento        = 0;
             this.detalle.inventario_por_lotes = producto.inventario_por_lotes || false;
             this.detalle.lote_id          = null;
-            this.detalle.porcentaje_impuesto = producto.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
+            this.detalle.porcentaje_impuesto = this.tasaImpuestoProducto(producto);
         }
         
         this.onSubmit();
@@ -268,8 +276,8 @@ export class CompraProductoComponent implements OnInit {
         this.detalle.descuento      = 0;
         this.detalle.inventario_por_lotes = producto.inventario_por_lotes || false;
         this.detalle.lote_id = null;
+        this.detalle.porcentaje_impuesto = this.tasaImpuestoProducto(producto);
 
-        console.log(this.detalle);
         let radio = document.getElementById('producto' + this.detalle.id_producto) as HTMLInputElement;
         if(radio){
             radio.checked = true
@@ -277,7 +285,6 @@ export class CompraProductoComponent implements OnInit {
     }
 
     onSubmit(){
-        console.log(this.detalle);
         this.productos = [];
         this.searchControl.setValue('');
         this.productoSelect.emit(this.detalle);

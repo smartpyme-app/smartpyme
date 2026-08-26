@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./out-tsc/spec",
+    "types": [
+      "jasmine"
+    ]
+  },
+  "include": [
+    "src/app/utils/impuestos-compra.util.spec.ts",
+    "src/app/utils/impuestos-compra.util.ts",
+    "src/app/utils/impuestos-venta.util.ts",
+    "src/**/*.d.ts"
+  ]
+}

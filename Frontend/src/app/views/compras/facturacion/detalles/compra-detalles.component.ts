@@ -4,6 +4,7 @@ import { BsModalRef } from 'ngx-bootstrap/modal/bs-modal-ref.service';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { resolverPorcentajeImpuestoCompra } from '@utils/impuestos-compra.util';
 
 import Swal from 'sweetalert2';
 
@@ -50,10 +51,15 @@ export class CompraDetallesComponent implements OnInit {
         const descuento = parseFloat(detalle.descuento ?? 0);
         detalle.total = (cantidad * costo - descuento).toFixed(2);
         const totalLinea = parseFloat(detalle.total) || 0;
-        const empresaIva = Number(this.apiService.auth_user()?.empresa?.iva ?? 0);
-        const pctDetalle = (detalle.porcentaje_impuesto != null && detalle.porcentaje_impuesto !== '')
-            ? Number(detalle.porcentaje_impuesto) : empresaIva;
+        const empresa = this.apiService.auth_user()?.empresa;
+        const pctDetalle = resolverPorcentajeImpuestoCompra(
+            detalle.porcentaje_impuesto,
+            empresa?.iva,
+            !!this.compra.cobrar_impuestos,
+            empresa?.pais
+        );
         if (this.compra.cobrar_impuestos && totalLinea > 0) {
+            detalle.porcentaje_impuesto = pctDetalle;
             detalle.iva = parseFloat((totalLinea * (pctDetalle / 100)).toFixed(4));
         } else {
             detalle.iva = 0;

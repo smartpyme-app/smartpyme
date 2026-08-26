@@ -6,6 +6,7 @@ import { BsModalRef } from 'ngx-bootstrap/modal/bs-modal-ref.service';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
+import { resolverPorcentajeImpuestoCompra } from '@utils/impuestos-compra.util';
 
 @Component({
   selector: 'app-producto',
@@ -40,7 +41,13 @@ export class ProductoComponent implements OnInit {
 		        this.loading = true;
 		        this.apiService.read('producto/', params.id).subscribe(producto => {
 		            this.producto = producto;
-                const pct = (producto.porcentaje_impuesto != null && producto.porcentaje_impuesto !== '') ? Number(producto.porcentaje_impuesto) : (this.apiService.auth_user()?.empresa?.iva ?? 0);
+                const empresa = this.apiService.auth_user()?.empresa;
+                const pct = resolverPorcentajeImpuestoCompra(
+                    producto.porcentaje_impuesto,
+                    empresa?.iva,
+                    true,
+                    empresa?.pais
+                );
                 this.producto.impuesto = Number(pct) / 100;
                 this.producto.precio_final = ((this.producto.precio * 1) + (this.producto.precio * this.producto.impuesto)).toFixed(2);
 

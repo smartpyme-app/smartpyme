@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { ApiService } from '@services/api.service';
+import { aplicarIvaCompra, snapshotPorcentajeImpuestoProducto } from '@utils/impuestos-compra.util';
 
 /**
  * Prepara compras desde JSON DTE para importación masiva (listado de compras).
@@ -327,8 +328,11 @@ export class CompraJsonBulkService {
             stock: producto.tipo === 'Servicio' ? null : producto.stock || 0,
             inventario_por_lotes: !!producto.inventario_por_lotes,
             lote_id: null,
-            porcentaje_impuesto:
-                producto.porcentaje_impuesto ?? auth?.empresa?.iva ?? null,
+            porcentaje_impuesto: snapshotPorcentajeImpuestoProducto(
+                producto.porcentaje_impuesto,
+                auth?.empresa?.iva,
+                auth?.empresa?.pais
+            ),
         };
     }
 
@@ -397,9 +401,7 @@ export class CompraJsonBulkService {
             compra.impuestos = [];
         }
 
-        const empresaIva = Number(this.apiService.auth_user()?.empresa?.iva ?? 0);
-        const pctIgual = (a: number, b: number) => Math.abs(Number(a) - Number(b)) < 0.01;
-        const porcentajesImpuestos = (compra.impuestos || []).map((i: any) => Number(i.porcentaje));
+        const empresa = this.apiService.auth_user()?.empresa;
 
         compra.sub_total = parseFloat(String(this.sumAttr(compra.detalles, 'total'))).toFixed(2);
 
@@ -414,72 +416,7 @@ export class CompraJsonBulkService {
         compra.iva_retenido = compra.retencion ? compra.sub_total * 0.01 : 0;
         compra.renta_retenida = compra.renta ? compra.sub_total * 0.1 : 0;
 
-        compra.impuestos.forEach((impuesto: any) => {
-            if (compra.cobrar_impuestos) {
-                const pctImp = Number(impuesto.porcentaje);
-                const monto = compra.detalles
-                    .filter((d: any) => {
-                        const pctDetalle =
-                            d.porcentaje_impuesto != null && d.porcentaje_impuesto !== ''
-                                ? Number(d.porcentaje_impuesto)
-                                : empresaIva;
-                        return pctIgual(pctImp, pctDetalle);
-                    })
-                    .reduce((sum: number, d: any) => {
-                        const ivaLinea =
-                            d.iva != null && d.iva !== '' && parseFloat(d.iva) >= 0
-                                ? parseFloat(d.iva)
-                                : parseFloat(d.total || 0) * (pctImp / 100);
-                        return sum + ivaLinea;
-                    }, 0);
-                impuesto.monto = parseFloat(Number(monto).toFixed(4));
-            } else {
-                impuesto.monto = 0;
-            }
-        });
-
-        if (compra.cobrar_impuestos && compra.detalles.length && compra.impuestos.length) {
-            const ivaSinAsignar = compra.detalles
-                .filter((d: any) => {
-                    const pctDetalle =
-                        d.porcentaje_impuesto != null && d.porcentaje_impuesto !== ''
-                            ? Number(d.porcentaje_impuesto)
-                            : empresaIva;
-                    return !porcentajesImpuestos.some((p: number) => pctIgual(p, pctDetalle));
-                })
-                .reduce((sum: number, d: any) => {
-                    const ivaLinea =
-                        d.iva != null && d.iva !== '' && parseFloat(d.iva) >= 0
-                            ? parseFloat(d.iva)
-                            : parseFloat(d.total || 0) *
-                              (((d.porcentaje_impuesto != null && d.porcentaje_impuesto !== '')
-                                  ? Number(d.porcentaje_impuesto)
-                                  : empresaIva) /
-                                  100);
-                    return sum + ivaLinea;
-                }, 0);
-            if (ivaSinAsignar > 0) {
-                const impuestoDestino =
-                    compra.impuestos.find((i: any) => pctIgual(Number(i.porcentaje), empresaIva)) ||
-                    compra.impuestos[0];
-                impuestoDestino.monto = parseFloat(
-                    (parseFloat(impuestoDestino.monto) + ivaSinAsignar).toFixed(4)
-                );
-            }
-        }
-
-        compra.iva = parseFloat(String(this.sumAttr(compra.impuestos, 'monto'))).toFixed(2);
-
-        if (compra.cobrar_impuestos && compra.detalles.length) {
-            compra.detalles.forEach((d: any) => {
-                const totalLinea = parseFloat(d.total || 0);
-                const pct =
-                    d.porcentaje_impuesto != null && d.porcentaje_impuesto !== ''
-                        ? Number(d.porcentaje_impuesto)
-                        : empresaIva;
-                d.iva = parseFloat((totalLinea * (pct / 100)).toFixed(4));
-            });
-        }
+        aplicarIvaCompra(compra, empresa?.iva, empresa?.pais);
 
         compra.descuento = parseFloat(String(this.sumAttr(compra.detalles, 'descuento'))).toFixed(
             2
