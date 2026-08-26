@@ -33,6 +33,10 @@ import { CrearCategoriaComponent } from '@shared/modals/crear-categoria/crear-ca
 import { TranslatePipe } from '@ngx-translate/core';
 import { getEmpresaCurrencySymbol } from '@helpers/currency-format.helper';
 import Swal from 'sweetalert2';
+import {
+    debeUsarIvaEmpresaProducto,
+    resolverPorcentajeImpuestoCompra,
+} from '@utils/impuestos-compra.util';
 
 @Component({
     selector: 'app-producto-informacion',
@@ -234,17 +238,19 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
             return;
         }
 
-        if (pct === 0 || pct === '0') {
-            p.id_impuestos = [];
+        if (debeUsarIvaEmpresaProducto(pct, this.usuario?.empresa?.pais) && this.impuestos.length > 0) {
+            const ivaEmpresa = Number(this.usuario?.empresa?.iva ?? 0);
+            if (ivaEmpresa > 0) {
+                const match = this.impuestos.find((i: any) => Number(i.porcentaje) === ivaEmpresa);
+                if (match) {
+                    p.id_impuestos = [match.id];
+                }
+            }
             return;
         }
 
-        const ivaEmpresa = Number(this.usuario?.empresa?.iva ?? 0);
-        if (ivaEmpresa > 0 && this.impuestos.length > 0 && (pct == null || pct === '')) {
-            const match = this.impuestos.find((i: any) => Number(i.porcentaje) === ivaEmpresa);
-            if (match) {
-                p.id_impuestos = [match.id];
-            }
+        if (pct === 0 || pct === '0') {
+            p.id_impuestos = [];
         }
     }
 
@@ -254,7 +260,7 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
 
     public getImpuestosSeleccionados(): any[] {
         const ids: number[] = Array.isArray(this.producto?.id_impuestos) ? this.producto.id_impuestos : [];
-        return this.impuestos.filter((i: any) => ids.includes(i.id));
+        return this.impuestos.filter((i: any) => ids.some((id) => Number(id) === Number(i.id)));
     }
 
     /** Precarga el código de barras correlativo desde la API cuando aplica (producto nuevo + opción de empresa). */
@@ -483,9 +489,12 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
         if (seleccionados.length > 0) {
             return seleccionados.reduce((sum: number, i: any) => sum + Number(i.porcentaje || 0), 0);
         }
-        const p = this.producto?.porcentaje_impuesto;
-        if (p != null && p !== '') return Number(p);
-        return Number(this.usuario?.empresa?.iva ?? 0);
+        return resolverPorcentajeImpuestoCompra(
+            this.producto?.porcentaje_impuesto,
+            this.usuario?.empresa?.iva,
+            true,
+            this.usuario?.empresa?.pais
+        );
     }
 
     public calPrecioBase(){
@@ -579,6 +588,17 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
       id_impuestos: Array.isArray(this.producto.id_impuestos) ? this.producto.id_impuestos : [],
     };
 
+    if (
+      payload.id_impuestos.length === 0 &&
+      debeUsarIvaEmpresaProducto(payload.porcentaje_impuesto, this.usuario?.empresa?.pais)
+    ) {
+      const ivaEmpresa = Number(this.usuario?.empresa?.iva ?? 0);
+      const match = this.impuestos.find((i: any) => Number(i.porcentaje) === ivaEmpresa);
+      if (match) {
+        payload.id_impuestos = [match.id];
+      }
+    }
+
     this.apiService.store('producto', payload)
       .pipe(
         this.untilDestroyed(),
@@ -602,6 +622,7 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
           } else {
             Object.assign(this.producto, producto);
           }
+          this.inicializarImpuestosProducto();
           this.productoGuardado.emit(producto);
           this.productoActualizado.emit();
 

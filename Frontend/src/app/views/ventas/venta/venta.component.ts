@@ -321,9 +321,11 @@ export class VentaComponent implements OnInit {
         );
     }
 
+    /** Precio con IVA × cantidad − descuento con IVA (no reconstruir desde el neto `total`). */
     public totalDetalleConIva(detalle: any): number {
+        const cantidad = parseFloat(String(detalle?.cantidad ?? 0)) || 0;
         return redondearMoneda(
-            (parseFloat(String(detalle?.total ?? 0)) || 0) * this.factorIvaDetalle(detalle)
+            cantidad * this.precioDetalleConIva(detalle) - this.descuentoDetalleConIva(detalle)
         );
     }
 

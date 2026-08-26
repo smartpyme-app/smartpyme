@@ -130,8 +130,8 @@ export function esImpuestoIva(
 }
 
 /**
- * Base gravada por línea para impuestos: misma regla que el neto de cabecera
- * (precio×cantidad−descuento a 6 decimales). El redondeo a moneda es al acumular.
+ * Base gravada por línea para impuestos: precio×cantidad−descuento.
+ * El redondeo a moneda (2) es al persistir gravada y al armar la cabecera/DTE.
  */
 export function baseGravadaLineaImpuesto(detalle: any): number {
   const cantidad = parseFloat(String(detalle?.cantidad ?? 0)) || 0;
@@ -180,8 +180,8 @@ export function porcentajeIvaDetalle(
 
 /**
  * Calcula gravada/exenta/no_sujeta, IVA y total con IVA por línea.
- * Neto (gravada/sub_total) a 6 decimales; total_iva a moneda (2).
- * detalle.iva queda sin redondear para acumular en cabecera.
+ * Neto (gravada/sub_total/total) a moneda (2) por línea — Hacienda suma esas líneas.
+ * total_iva a moneda (2). detalle.iva queda sin redondear para acumular en cabecera.
  */
 export function calcularMontosLineaDetalle(
   detalle: any,
@@ -206,11 +206,11 @@ export function calcularMontosLineaDetalle(
   const tipo = resolverTipoGravadoEfectivo(detalle, cobrarImpuestos, pct);
   detalle.tipo_gravado = tipo;
 
-  const subTotalSinIva = redondear6(cantidad * precioSinIva);
-  const totalSinIva = redondear6(subTotalSinIva - descuento);
+  const subTotalSinIva = redondearMoneda(cantidad * precioSinIva);
+  const totalSinIva = redondearMoneda(cantidad * precioSinIva - descuento);
 
-  detalle.sub_total = subTotalSinIva.toFixed(6);
-  detalle.total = totalSinIva.toFixed(6);
+  detalle.sub_total = subTotalSinIva.toFixed(2);
+  detalle.total = totalSinIva.toFixed(2);
 
   const factorIva = pct > 0 ? 1 + pct / 100 : 1;
   const precioIvaExistente = parseFloat(String(precioIvaRaw ?? ''));
@@ -261,13 +261,13 @@ export function calcularMontosLineaDetalle(
     }
     case 'exenta': {
       detalle.exenta = totalSinIva;
-      detalle.total_iva = redondearMoneda(totalSinIva).toFixed(2);
+      detalle.total_iva = totalSinIva.toFixed(2);
       detalle.iva = 0;
       break;
     }
     case 'no_sujeta': {
       detalle.no_sujeta = totalSinIva;
-      detalle.total_iva = redondearMoneda(totalSinIva).toFixed(2);
+      detalle.total_iva = totalSinIva.toFixed(2);
       detalle.iva = 0;
       break;
     }
@@ -295,15 +295,16 @@ export function sumarTotalConIvaEncabezadoVenta(detalles: any[]): number {
 }
 
 /**
- * Subtotal de encabezado: suma netos a 6 decimales por línea y redondea a moneda al final.
- * Evita el sesgo de round(2) por línea (p. ej. 19/1.13 → 16.81 en vez de 16.80).
+ * Subtotal de encabezado: ROUND(neto, 2) por línea y luego suma.
+ * Misma regla que Hacienda (totalGravada = suma de ventaGravada a 2 decimales).
+ * El centavo frente al total cobrado se absorbe en el IVA residual, no en gravada.
  */
 export function sumarSubTotalEncabezadoVenta(detalles: any[]): number {
   const suma = (detalles || []).reduce((acc, d) => {
     const precio = parseFloat(String(d?.precio ?? 0)) || 0;
     const cantidad = parseFloat(String(d?.cantidad ?? 0)) || 0;
     const descuento = parseFloat(String(d?.descuento ?? 0)) || 0;
-    return acc + redondear6(precio * cantidad - descuento);
+    return acc + redondearMoneda(precio * cantidad - descuento);
   }, 0);
   return redondearMoneda(suma);
 }

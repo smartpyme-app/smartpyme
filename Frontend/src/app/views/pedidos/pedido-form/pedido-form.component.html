@@ -90,6 +90,9 @@
           <tr *ngFor="let l of lineas; let i = index">
             <td>
               {{ l.nombre }}
+              <span *ngIf="l.id_presentacion" class="badge bg-success text-dark ms-1" style="font-size:0.7rem">
+                <i class="fa fa-box me-1"></i>Presentación
+              </span>
               <small class="d-block text-muted" *ngIf="requiereDistribucionLotes(l)">
                 {{ textoLotesLinea(l) }}
               </small>

@@ -234,10 +234,14 @@ export class CuentaMesaComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
       next: () => {
+        const nombre = this.productoSheet?.nombre_mostrar || this.productoSheet?.nombre;
         this.enviandoAgregar = false;
         this.mostrarSheetAgregar = false;
         this.productoSheet = null;
         this.cargarSesion();
+        if (nombre) {
+          this.alertService.success('Producto agregado', `${nombre} añadido a la orden.`);
+        }
         this.cdr.markForCheck();
       },
       error: (err) => {

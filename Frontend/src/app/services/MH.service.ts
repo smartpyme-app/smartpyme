@@ -104,8 +104,10 @@ export class MHService {
 
         let formData:any = {};
         formData.nitEmisor = user.empresa.nit.replace(/-/g, '');
-        formData.tdte = venta.dte.identificacion.tipoDte;
-        formData.codigoGeneracion = venta.dte.codigo_generacion;
+        formData.tdte = venta.dte?.identificacion?.tipoDte ?? venta.tipo_dte;
+        formData.codigoGeneracion = venta.dte?.identificacion?.codigoGeneracion
+            ?? venta.codigo_generacion
+            ?? venta.dte?.codigoGeneracion;
 
         return this.apiService.store('dte/consultar', formData);
     }

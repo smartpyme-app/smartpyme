@@ -208,20 +208,9 @@ class MHFactura extends Model
         $tributosResumen = $this->buildTributosResumenFacturaConsumidor();
         $montoIva = $this->montoIvaDocumento();
         $montoTributosNoIva = $this->montoTributosNoIvaDocumento();
-        $totalGravada = floatval(number_format(
-            $this->documentoTieneIva()
-                ? (float) collect($cuerpoDocumento)->sum('ventaGravada')
-                : (float) $this->venta->gravada,
-            2,
-            '.',
-            ''
-        ));
-        $subTotalVentas = floatval(number_format(
-            $totalGravada + (float) $this->venta->exenta + (float) $this->venta->no_sujeta,
-            2,
-            '.',
-            ''
-        ));
+        $bases = $this->resumenVentasDesdeCuerpoDocumento($cuerpoDocumento);
+        $totalGravada = $bases['totalGravada'];
+        $subTotalVentas = $bases['subTotalVentas'];
         $descuentoPuntos = floatval(number_format($this->venta->descuento_puntos ?? 0, 2, '.', ''));
         $descuGravada = $descuentoPuntos > 0 && $totalGravada > 0 ? $descuentoPuntos : 0.0;
         $descuExenta = $descuentoPuntos > 0 && $descuGravada == 0 && (float) $this->venta->exenta > 0
@@ -248,8 +237,8 @@ class MHFactura extends Model
                 "ventaTercero" => NULL,
                 "cuerpoDocumento" => $cuerpoDocumento,
                 "resumen" => [
-                  "totalNoSuj" => floatval(number_format($this->venta->no_sujeta, 2, '.', '')),
-                  "totalExenta" => floatval(number_format($this->venta->exenta, 2, '.', '')),
+                  "totalNoSuj" => $bases['totalNoSuj'],
+                  "totalExenta" => $bases['totalExenta'],
                   "totalGravada" => $totalGravada,
                   "subTotalVentas" => $subTotalVentas,
                   "descuNoSuj" => $descuNoSuj,

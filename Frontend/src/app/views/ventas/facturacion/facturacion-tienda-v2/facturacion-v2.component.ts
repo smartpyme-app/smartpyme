@@ -49,9 +49,14 @@ import {
 } from '@utils/impuestos-venta.util';
 import { esVentaPorConsigna, sincronizarFlagConsignaVenta, aplicarEstadoConsignaEnVenta } from '@utils/venta-consigna.util';
 import { debeDispararAtajoTcla } from '@utils/atajos-teclado.util';
+import { calcularCambioEfectivo } from '@utils/cambio-efectivo.util';
 import { FACTURA_REMISION, esVentaConsignaRemision } from '../../../../constants/documento.constants';
 import { SharedModule } from '@shared/shared.module';
-import { isImpresionEnFacturacionActiva } from '@helpers/empresa.helper';
+import {
+  debeEmitirDteAlFacturar,
+  debeImprimirTrasFacturar,
+  isImpresionEnFacturacionActiva,
+} from '@helpers/empresa.helper';
 import * as moment from 'moment';
 
 @Component({
@@ -1552,11 +1557,11 @@ export class FacturacionV2Component implements OnInit {
     this.sincronizarRetencionGranContribuyente();
 
     const rawExenta = parseFloat(this.sumPipe.transform(this.venta.detalles, 'exenta'));
-    this.venta.exenta = Number(rawExenta).toFixed(4);
+    this.venta.exenta = redondearMoneda(rawExenta).toFixed(4);
     const rawNoSujeta = parseFloat(this.sumPipe.transform(this.venta.detalles, 'no_sujeta'));
-    this.venta.no_sujeta = Number(rawNoSujeta).toFixed(4);
+    this.venta.no_sujeta = redondearMoneda(rawNoSujeta).toFixed(4);
     const rawGravada = parseFloat(this.sumPipe.transform(this.venta.detalles, 'gravada'));
-    this.venta.gravada = Number(rawGravada).toFixed(4);
+    this.venta.gravada = redondearMoneda(rawGravada).toFixed(4);
     const rawCuentaTerceros = parseFloat(this.sumPipe.transform(this.venta.detalles, 'cuenta_a_terceros'));
     this.venta.cuenta_a_terceros = Number(rawCuentaTerceros).toFixed(4);
 
@@ -1658,19 +1663,15 @@ export class FacturacionV2Component implements OnInit {
     this.actualizarCambioEfectivo();
   }
 
-  /** Vuelto: efectivo recibido (monto_pago) menos lo debido en efectivo (total, o parte en pago mixto). */
+  /** Vuelto: efectivo recibido menos lo debido en efectivo (total + propina, o parte en pago mixto). */
   public actualizarCambioEfectivo(): void {
-    const raw = this.venta.monto_pago;
-    if (raw === null || raw === undefined || raw === '') {
-      this.venta.cambio = '';
-      return;
-    }
-    const recibido = parseFloat(String(raw)) || 0;
-    const totalVenta = parseFloat(String(this.venta.total ?? 0)) || 0;
-    const enMultiple = this.venta.forma_pago === 'Multiple';
-    const parteEfectivo = parseFloat(String(this.venta.efectivo ?? 0)) || 0;
-    const aCobrarEfectivo = enMultiple && parteEfectivo > 0 ? parteEfectivo : totalVenta;
-    this.venta.cambio = (recibido - aCobrarEfectivo).toFixed(2);
+    this.venta.cambio = calcularCambioEfectivo({
+      montoPago: this.venta.monto_pago,
+      total: this.venta.total,
+      propina: this.venta.propina,
+      formaPago: this.venta.forma_pago,
+      efectivo: this.venta.efectivo,
+    });
   }
 
    /** Tras cargar una venta: mostrar el bloque de cuenta a terceros si hay monto en líneas o en cabecera. */
@@ -2464,13 +2465,10 @@ export class FacturacionV2Component implements OnInit {
             'Cotización creada',
             'La cotizacion fue añadida exitosamente.'
           );
-        } else if (this.facturacionElectronica.debeEmitirDteEnImpresion()) {
+        } else if (debeEmitirDteAlFacturar(this.apiService.auth_user()?.empresa)) {
           this.emitirDTE();
         } else {
-          if (
-            isImpresionEnFacturacionActiva(this.apiService.auth_user()?.empresa) &&
-            this.debeImprimir
-          ) {
+          if (debeImprimirTrasFacturar(this.apiService.auth_user()?.empresa, this.debeImprimir)) {
             this.imprimir(venta);
           }
           if (this.preCuentaId && this.venta.id) {
@@ -2548,10 +2546,7 @@ export class FacturacionV2Component implements OnInit {
         }
         this.emiting = false;
 
-        if (
-          isImpresionEnFacturacionActiva(this.apiService.auth_user()?.empresa) &&
-          this.debeImprimir
-        ) {
+        if (debeImprimirTrasFacturar(this.apiService.auth_user()?.empresa, this.debeImprimir)) {
           this.imprimir(venta);
         }
         if (this.preCuentaId && this.venta.id) {

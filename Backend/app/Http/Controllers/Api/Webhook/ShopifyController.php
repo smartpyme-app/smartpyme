@@ -11,7 +11,6 @@ use App\Models\Inventario\Imagen;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Producto;
 use App\Models\User;
-use App\Models\Ventas\Clientes\Cliente;
 use App\Models\Ventas\Venta;
 use App\Services\ShopifyApiClient;
 use Illuminate\Http\Request;
@@ -447,14 +446,14 @@ class ShopifyController extends Controller
 
     private function procesarClienteCreado(Request $request, $empresa, $usuario)
     {
-        // Log::info('=== PROCESANDO CLIENTE CREADO DESDE SHOPIFY ===', [
-        //     'shopify_customer_id' => $request->id,
-        //     'customer_email' => $request->email ?? 'N/A',
-        //     'customer_name' => ($request->first_name ?? '') . ' ' . ($request->last_name ?? ''),
-        //     'empresa_id' => $empresa->id,
-        //     'usuario_id' => $usuario->id,
-        //     'webhook_type' => 'customers/create'
-        // ]);
+        Log::info('=== PROCESANDO CLIENTE CREADO DESDE SHOPIFY ===', [
+            'shopify_customer_id' => $request->id,
+            'customer_email' => $request->email ?? 'N/A',
+            'customer_name' => ($request->first_name ?? '') . ' ' . ($request->last_name ?? ''),
+            'empresa_id' => $empresa->id,
+            'usuario_id' => $usuario->id,
+            'webhook_type' => 'customers/create'
+        ]);
 
         try {
             DB::beginTransaction();
@@ -466,21 +465,21 @@ class ShopifyController extends Controller
 
             $clienteData = $this->transformer->transformarClienteDesdeShopify($request->all());
             
-            // Log::info('=== CLIENTE CREADO - DATOS TRANSFORMADOS ===', [
-            //     'cliente_data' => $clienteData,
-            //     'shopify_customer_id' => $request->id
-            // ]);
+            Log::info('=== CLIENTE CREADO - DATOS TRANSFORMADOS ===', [
+                'cliente_data' => $clienteData,
+                'shopify_customer_id' => $request->id
+            ]);
             
             $cliente = $this->shopifyClienteService->buscarOActualizarCliente($clienteData, $usuario->id_empresa);
             
-            // Log::info('=== CLIENTE CREADO/ACTUALIZADO ===', [
-            //     'cliente_id' => $cliente->id,
-            //     'cliente_correo' => $cliente->correo,
-            //     'cliente_nombre' => $cliente->nombre . ' ' . $cliente->apellido,
-            //     'cliente_creado' => $cliente->wasRecentlyCreated,
-            //     'shopify_customer_id' => $request->id,
-            //     'webhook_type' => 'customers/create'
-            // ]);
+            Log::info('=== CLIENTE CREADO/ACTUALIZADO ===', [
+                'cliente_id' => $cliente->id,
+                'cliente_correo' => $cliente->correo,
+                'cliente_nombre' => $cliente->nombre . ' ' . $cliente->apellido,
+                'cliente_creado' => $cliente->wasRecentlyCreated,
+                'shopify_customer_id' => $request->id,
+                'webhook_type' => 'customers/create'
+            ]);
 
             DB::commit();
 
@@ -503,14 +502,14 @@ class ShopifyController extends Controller
 
     private function procesarClienteActualizado(Request $request, $empresa, $usuario)
     {
-        // Log::info('=== PROCESANDO CLIENTE ACTUALIZADO DESDE SHOPIFY ===', [
-        //     'shopify_customer_id' => $request->id,
-        //     'customer_email' => $request->email ?? 'N/A',
-        //     'customer_name' => ($request->first_name ?? '') . ' ' . ($request->last_name ?? ''),
-        //     'empresa_id' => $empresa->id,
-        //     'usuario_id' => $usuario->id,
-        //     'webhook_type' => 'customers/update'
-        // ]);
+        Log::info('=== PROCESANDO CLIENTE ACTUALIZADO DESDE SHOPIFY ===', [
+            'shopify_customer_id' => $request->id,
+            'customer_email' => $request->email ?? 'N/A',
+            'customer_name' => ($request->first_name ?? '') . ' ' . ($request->last_name ?? ''),
+            'empresa_id' => $empresa->id,
+            'usuario_id' => $usuario->id,
+            'webhook_type' => 'customers/update'
+        ]);
 
         try {
             DB::beginTransaction();
@@ -522,21 +521,21 @@ class ShopifyController extends Controller
 
             $clienteData = $this->transformer->transformarClienteDesdeShopify($request->all());
             
-            // Log::info('=== CLIENTE ACTUALIZADO - DATOS TRANSFORMADOS ===', [
-            //     'cliente_data' => $clienteData,
-            //     'shopify_customer_id' => $request->id
-            // ]);
+            Log::info('=== CLIENTE ACTUALIZADO - DATOS TRANSFORMADOS ===', [
+                'cliente_data' => $clienteData,
+                'shopify_customer_id' => $request->id
+            ]);
             
             $cliente = $this->shopifyClienteService->buscarOActualizarCliente($clienteData, $usuario->id_empresa);
             
-            // Log::info('=== CLIENTE ACTUALIZADO ===', [
-            //     'cliente_id' => $cliente->id,
-            //     'cliente_correo' => $cliente->correo,
-            //     'cliente_nombre' => $cliente->nombre . ' ' . $cliente->apellido,
-            //     'cliente_creado' => $cliente->wasRecentlyCreated,
-            //     'shopify_customer_id' => $request->id,
-            //     'webhook_type' => 'customers/update'
-            // ]);
+            Log::info('=== CLIENTE ACTUALIZADO ===', [
+                'cliente_id' => $cliente->id,
+                'cliente_correo' => $cliente->correo,
+                'cliente_nombre' => $cliente->nombre . ' ' . $cliente->apellido,
+                'cliente_creado' => $cliente->wasRecentlyCreated,
+                'shopify_customer_id' => $request->id,
+                'webhook_type' => 'customers/update'
+            ]);
 
             DB::commit();
 
@@ -1366,15 +1365,6 @@ class ShopifyController extends Controller
             ], 500);
         }
     }
-
-
-    /**
-     * Busca o actualiza un cliente optimizando por shopify_customer_id, correo y teléfono
-     * 
-     * @param array $clienteData
-     * @param int $empresaId
-     * @return Cliente
-     */
 
 
     /**
@@ -2416,13 +2406,6 @@ class ShopifyController extends Controller
             ], 500);
         }
     }
-
-    /**
-     * Obtiene o crea el cliente "Consumidor Final" por defecto
-     * 
-     * @param int $empresaId
-     * @return Cliente
-     */
 
     /**
      * Procesa el webhook de prueba enviado por Shopify

@@ -2,6 +2,7 @@
 
 namespace App\Services\Shopify;
 
+use App\Helpers\ShopifyHelper;
 use App\Models\Admin\Empresa;
 use App\Models\Ventas\Clientes\Cliente;
 use Illuminate\Support\Facades\Log;
@@ -20,6 +21,15 @@ class ShopifyClienteService
         $shopifyCustomerId = $clienteData['shopify_customer_id'] ?? null;
         $correo = $clienteData['correo'] ?? null;
         $telefono = $clienteData['telefono'] ?? null;
+
+        $nombreCompleto = trim(($clienteData['nombre'] ?? '') . ' ' . ($clienteData['apellido'] ?? ''));
+        if (
+            strcasecmp($nombreCompleto, 'Consumidor Final') === 0 ||
+            strcasecmp($clienteData['nombre'] ?? '', 'Consumidor Final') === 0 ||
+            (empty($clienteData['nombre']) && empty($clienteData['apellido']) && empty($correo) && empty($telefono) && empty($shopifyCustomerId))
+        ) {
+            return $this->obtenerClienteConsumidorFinal($empresaId);
+        }
 
         // Validaciones de seguridad para evitar asignaciones incorrectas
         if (!$this->validarDatosCliente($clienteData)) {
@@ -47,10 +57,7 @@ class ShopifyClienteService
                     'telefono' => $cliente->telefono
                 ]);
 
-                // Actualizar datos del cliente excluyendo campos protegidos
-                $clienteDataProtegido = $this->excluirCamposProtegidos($clienteData, $empresaId);
-                $cliente->update($clienteDataProtegido);
-                return $cliente;
+                return $this->actualizarClienteExistenteDesdeShopify($cliente, $clienteData);
             }
         }
 
@@ -82,10 +89,7 @@ class ShopifyClienteService
                     'telefono_nuevo' => $telefono
                 ]);
 
-                // Actualizar datos incluyendo el shopify_customer_id, excluyendo campos protegidos
-                $clienteDataProtegido = $this->excluirCamposProtegidos($clienteData, $empresaId);
-                $cliente->update($clienteDataProtegido);
-                return $cliente;
+                return $this->actualizarClienteExistenteDesdeShopify($cliente, $clienteData);
             }
         }
 
@@ -130,10 +134,7 @@ class ShopifyClienteService
                     'correo_nuevo' => $correo
                 ]);
 
-                // Actualizar datos incluyendo el shopify_customer_id, excluyendo campos protegidos
-                $clienteDataProtegido = $this->excluirCamposProtegidos($clienteData, $empresaId);
-                $cliente->update($clienteDataProtegido);
-                return $cliente;
+                return $this->actualizarClienteExistenteDesdeShopify($cliente, $clienteData);
             }
         }
 
@@ -145,6 +146,75 @@ class ShopifyClienteService
         ]);
 
         return Cliente::create($clienteData);
+    }
+
+    /**
+     * Actualiza contacto/dirección de un cliente existente sin pisar datos fiscales.
+     */
+    public function actualizarClienteExistenteDesdeShopify(Cliente $cliente, array $clienteData): Cliente
+    {
+        if (
+            strcasecmp($cliente->nombre ?? '', 'Consumidor Final') === 0 ||
+            strcasecmp($cliente->nombre_empresa ?? '', 'Consumidor Final') === 0
+        ) {
+            return $cliente;
+        }
+
+        $camposActualizar = [];
+
+        if (!empty($clienteData['shopify_customer_id']) && empty($cliente->shopify_customer_id)) {
+            $camposActualizar['shopify_customer_id'] = $clienteData['shopify_customer_id'];
+        }
+
+        if (!empty($clienteData['nombre'])) {
+            $camposActualizar['nombre'] = $clienteData['nombre'];
+        }
+        if (isset($clienteData['apellido']) && $clienteData['apellido'] !== '') {
+            $camposActualizar['apellido'] = $clienteData['apellido'];
+        }
+        if (!empty($clienteData['correo'])) {
+            $camposActualizar['correo'] = $clienteData['correo'];
+        }
+        if (!empty($clienteData['telefono'])) {
+            $camposActualizar['telefono'] = $clienteData['telefono'];
+        }
+        if (!empty($clienteData['direccion'])) {
+            $camposActualizar['direccion'] = $clienteData['direccion'];
+        }
+
+        if ((empty($cliente->cod_pais) || empty($cliente->pais)) && !empty($clienteData['pais'])) {
+            $camposActualizar['pais'] = $clienteData['pais'];
+            $camposActualizar['cod_pais'] = $clienteData['cod_pais'] ?? null;
+        }
+        if ((empty($cliente->cod_departamento) || !is_numeric($cliente->cod_departamento) || empty($cliente->departamento)) && !empty($clienteData['departamento'])) {
+            $camposActualizar['departamento'] = $clienteData['departamento'];
+            $camposActualizar['cod_departamento'] = $clienteData['cod_departamento'] ?? null;
+        }
+        if ((empty($cliente->cod_municipio) || !is_numeric($cliente->cod_municipio) || empty($cliente->municipio)) && !empty($clienteData['municipio'])) {
+            $camposActualizar['municipio'] = $clienteData['municipio'];
+            $camposActualizar['cod_municipio'] = $clienteData['cod_municipio'] ?? null;
+        }
+        if ((empty($cliente->cod_distrito) || !is_numeric($cliente->cod_distrito) || empty($cliente->distrito)) && !empty($clienteData['distrito'])) {
+            $camposActualizar['distrito'] = $clienteData['distrito'];
+            $camposActualizar['cod_distrito'] = $clienteData['cod_distrito'] ?? null;
+        }
+
+        if (empty($cliente->nombre_empresa) && !empty($clienteData['nombre_empresa'])) {
+            $camposActualizar['nombre_empresa'] = $clienteData['nombre_empresa'];
+        }
+
+        if (empty($cliente->tipo) && !empty($clienteData['tipo'])) {
+            $camposActualizar['tipo'] = $clienteData['tipo'];
+        }
+
+        if (!empty($camposActualizar)) {
+            $cliente->fill($camposActualizar);
+            if ($cliente->exists) {
+                $cliente->save();
+            }
+        }
+
+        return $cliente;
     }
 
     /**
@@ -316,36 +386,7 @@ class ShopifyClienteService
      */
     public function obtenerClienteConsumidorFinal(int $empresaId): Cliente
     {
-        // Buscar cliente "Consumidor Final" existente
-        $cliente = Cliente::where('nombre', 'Consumidor Final')
-            ->where('apellido', '')
-            ->where('id_empresa', $empresaId)
-            ->first();
-
-        if (!$cliente) {
-            // Crear cliente "Consumidor Final" si no existe
-            $cliente = Cliente::create([
-                'nombre' => 'Consumidor Final',
-                'apellido' => '',
-                'correo' => '',
-                'telefono' => '',
-                'direccion' => '',
-                'pais' => '',
-                'municipio' => '',
-                'departamento' => '',
-                'tipo' => 'Persona',
-                'enable' => 1,
-                'id_empresa' => $empresaId,
-                'id_usuario' => null, // No asociado a usuario específico
-            ]);
-
-            Log::info('Cliente Consumidor Final creado', [
-                'cliente_id' => $cliente->id,
-                'empresa_id' => $empresaId
-            ]);
-        }
-
-        return $cliente;
+        return ShopifyHelper::obtenerClienteConsumidorFinal($empresaId);
     }
 }
 

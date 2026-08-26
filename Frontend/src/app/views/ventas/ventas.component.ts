@@ -1658,42 +1658,44 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     }
     this.consulting = true;
     let data = {
-      codigoGeneracion: this.venta.dte.identificacion.codigoGeneracion,
-      fechaEmi: this.venta.dte.identificacion.fecEmi,
-      ambiente: this.venta.dte.identificacion.ambiente
+      codigoGeneracion: this.venta.dte?.identificacion?.codigoGeneracion
+        ?? this.venta.codigo_generacion
+        ?? this.venta.dte?.codigoGeneracion,
+      tdte: this.venta.dte?.identificacion?.tipoDte ?? this.venta.tipo_dte,
     };
 
     setTimeout(() => {
       this.apiService.store('consultarDTE', data)
         .pipe(this.untilDestroyed())
         .subscribe(dte => {
-        if (dte && dte.selloVal) {
-          this.venta.dte.sello = dte.selloVal;
-          this.venta.dte.selloRecibido = dte.selloVal;
-          this.venta.sello_mh = dte.selloVal;
-          this.apiService.store('venta', this.venta)
-            .pipe(this.untilDestroyed())
-            .subscribe(data => {
-            this.alertService.success(this.countryI18n.fe('stampSuccessTitle'), this.countryI18n.fe('stampSuccessBody'));
-            if (this.venta.cliente_id) {
-              this.enviarDTE(this.venta);
-            }
-            setTimeout(() => {
-              this.modalRef?.hide();
-            }, 500);
+          const sello = dte?.selloRecibido || dte?.selloVal;
+          if (dte && sello) {
+            this.venta.dte.sello = sello;
+            this.venta.dte.selloRecibido = sello;
+            this.venta.sello_mh = sello;
+            this.apiService.store('venta', this.venta)
+              .pipe(this.untilDestroyed())
+              .subscribe(data => {
+              this.alertService.success(this.countryI18n.fe('stampSuccessTitle'), this.countryI18n.fe('stampSuccessBody'));
+              if (this.venta.cliente_id) {
+                this.enviarDTE(this.venta);
+              }
+              setTimeout(() => {
+                this.modalRef?.hide();
+              }, 500);
+              this.consulting = false;
+            }, error => { this.alertService.error(error); });
+          } else if (dte) {
             this.consulting = false;
-          }, error => { this.alertService.error(error); });
-        } else if (dte) {
+            this.alertService.info(this.countryI18n.fe('noStampTitle'), this.countryI18n.fe('noStampBody'));
+          } else {
+            this.consulting = false;
+            this.alertService.info('No se obtuvo el sello', 'Hacienda no devolvió el sello.');
+          }
+        }, error => {
           this.consulting = false;
-          this.alertService.info(this.countryI18n.fe('noStampTitle'), this.countryI18n.fe('noStampBody'));
-        } else {
-          this.consulting = false;
-          this.alertService.info('No se obtuvo el sello', 'Hacienda no devolvió el sello.');
-        }
-      }, error => {
-        this.consulting = false;
-        this.alertService.warning('Hubo un problema', error);
-      });
+          this.alertService.warning('Hubo un problema', error);
+        });
     }, 1000);
   }
 

@@ -10,6 +10,7 @@ use App\Http\Requests\MH\GenerarContingenciaRequest;
 use App\Http\Requests\MH\GenerarDTEAnuladoRequest;
 use App\Http\Requests\MH\GenerarDTEJSONRequest;
 use App\Http\Requests\MH\GenerarDTEPDFRequest;
+use App\Models\Admin\Empresa;
 use App\Models\Compras\Compra;
 use App\Models\Compras\Gastos\Gasto;
 use App\Models\MH\MH;
@@ -24,9 +25,11 @@ use App\Models\MH\MHSujetoExcluidoCompra;
 use App\Models\MH\MHSujetoExcluidoGasto;
 use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
 use App\Models\Ventas\Venta;
+use App\Services\MH\ConsultaDteMh;
+use App\Services\MhGovSvGatewayService;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
@@ -35,6 +38,10 @@ use Illuminate\View\View;
  */
 class ElSalvadorDteService
 {
+    public function __construct(private readonly MhGovSvGatewayService $gateway)
+    {
+    }
+
     public function generarDTE(Venta $venta): JsonResponse
     {
         if (! $venta->sucursal()->pluck('cod_estable_mh')->first()) {
@@ -497,14 +504,26 @@ class ElSalvadorDteService
         return response()->json(['error' => 'Registro sin correo electrónico'], 400);
     }
 
-    public function consultarDTE(ConsultarDTERequest $request): JsonResponse|array
+    public function consultarDTE(ConsultarDTERequest $request): JsonResponse
     {
-        $response = Http::get('https://admin.factura.gob.sv/prod/consultas/publica/simple/1', [
-            'codigoGeneracion' => $request->codigoGeneracion,
-            'fechaEmi' => $request->fechaEmi,
-            'ambiente' => $request->ambiente,
-        ]);
+        $tdte = $request->tdte ?? $request->tipoDte;
+        $codigoGeneracion = $request->codigoGeneracion;
 
-        return $response->json();
+        if (! $tdte || ! $codigoGeneracion) {
+            return response()->json(['error' => 'Faltan tipo DTE y código de generación.'], 422);
+        }
+
+        $empresa = Empresa::findOrFail(auth()->user()->id_empresa);
+        $payload = ConsultaDteMh::payload((string) $empresa->nit, (string) $tdte, (string) $codigoGeneracion);
+
+        try {
+            $result = $this->gateway->postJson($empresa, '/fesv/recepcion/consultadte', $payload);
+        } catch (ConnectionException $e) {
+            return response()->json([
+                'descripcionMsg' => 'No se pudo conectar con el Ministerio de Hacienda.',
+            ], 503);
+        }
+
+        return response()->json(ConsultaDteMh::adaptarRespuesta($result['body']), $result['status']);
     }
 }

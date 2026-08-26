@@ -139,7 +139,7 @@
                                 {{ detalle.descripcion }} <br>
                                 <small class="text-muted text-tiny">{{ detalle?.tipo }} <span
                                         *ngIf="detalle.id_presentacion" class="badge bg-success ms-1"
-                                        style="font-size: 10px; cursor: help;" tooltip="Presentación">P</span></small>
+                                        style="font-size: 10px;"><i class="fa fa-box me-1"></i>Presentación</span></small>
 
                                 <br>
                                 <small class="text-muted" *ngIf="detalle.inventario_por_lotes && apiService.isLotesActivo()">
@@ -171,7 +171,7 @@
                                 name="descripcion">
                             <small class="text-muted text-tiny">{{ detalle?.tipo }} <span
                                     *ngIf="detalle.id_presentacion" class="badge bg-success ms-1"
-                                    style="font-size: 10px; cursor: help;" tooltip="Presentación">P</span></small>
+                                    style="font-size: 10px;"><i class="fa fa-box me-1"></i>Presentación</span></small>
                             <br>
                             <small class="text-muted" *ngIf="detalle.inventario_por_lotes && apiService.isLotesActivo()">
                                 <button class="btn btn-sm btn-outline-primary mt-1"
