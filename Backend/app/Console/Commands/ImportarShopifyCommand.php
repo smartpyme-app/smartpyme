@@ -5,7 +5,6 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use App\Models\TrabajosPendientes;
 use App\Services\ShopifyTransformer;
-use App\Services\ShopifySkuResolver;
 use App\Services\ImpuestosService;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
@@ -166,13 +165,7 @@ class ImportarShopifyCommand extends Command
             $productoExistente->costo = $productoData['costo'] ?? 0;
             $productoExistente->codigo = $productoData['codigo'] ?? '';
             $productoExistente->barcode = $productoData['barcode'] ?? '';
-            $productoExistente->shopify_sku = ShopifySkuResolver::resolverSkuUnico(
-                $productoExistente->codigo ?? '',
-                $productoData['shopify_product_id'] ?? null,
-                $productoData['shopify_variant_id'] ?? null,
-                (int) $datos['id_empresa'],
-                $productoExistente->id
-            );
+            $productoExistente->shopify_sku = !empty($productoExistente->codigo) ? $productoExistente->codigo : null;
             $productoExistente->last_shopify_sync = now();
             $productoExistente->save();
             
@@ -207,12 +200,7 @@ class ImportarShopifyCommand extends Command
         $producto->shopify_product_id = $productoData['shopify_product_id'] ?? null;
         $producto->shopify_variant_id = $productoData['shopify_variant_id'] ?? null;
         $producto->shopify_inventory_item_id = $productoData['shopify_inventory_item_id'] ?? null;
-        $producto->shopify_sku = ShopifySkuResolver::resolverSkuUnico(
-            $producto->codigo ?? '',
-            $productoData['shopify_product_id'] ?? null,
-            $productoData['shopify_variant_id'] ?? null,
-            (int) $datos['id_empresa']
-        );
+        $producto->shopify_sku = !empty($producto->codigo) ? $producto->codigo : null;
         $producto->last_shopify_sync = now();
         
         $producto->save();

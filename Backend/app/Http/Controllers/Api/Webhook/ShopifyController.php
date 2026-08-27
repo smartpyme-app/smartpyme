@@ -17,7 +17,6 @@ use App\Models\Ventas\Venta;
 use App\Services\ShopifyApiClient;
 use Illuminate\Http\Request;
 use App\Services\ShopifyTransformer;
-use App\Services\ShopifySkuResolver;
 use App\Services\ShippingService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -361,14 +360,8 @@ class ShopifyController extends Controller
         // NO marcar syncing_from_shopify para webhooks - solo para importaciones masivas
         $productoData['last_shopify_sync'] = now();
 
-        // Asignar SKU canónico único (resolución de conflictos con el SKU del proveedor)
-        $productoData['shopify_sku'] = ShopifySkuResolver::resolverSkuUnico(
-            $productoData['codigo'] ?? '',
-            $productoData['shopify_product_id'] ?? null,
-            $productoData['shopify_variant_id'] ?? null,
-            (int) $usuario->id_empresa,
-            $producto->id
-        );
+        // SKU de Shopify: se guarda tal cual en codigo y shopify_sku
+        $productoData['shopify_sku'] = !empty($productoData['codigo']) ? $productoData['codigo'] : null;
 
         $producto->update($productoData);
 
@@ -405,13 +398,8 @@ class ShopifyController extends Controller
         // NO marcar syncing_from_shopify para webhooks - solo para importaciones masivas
         $productoData['last_shopify_sync'] = now();
 
-        // Asignar SKU canónico único (resolución de conflictos con el SKU del proveedor)
-        $productoData['shopify_sku'] = ShopifySkuResolver::resolverSkuUnico(
-            $productoData['codigo'] ?? '',
-            $productoData['shopify_product_id'] ?? null,
-            $productoData['shopify_variant_id'] ?? null,
-            (int) $usuario->id_empresa
-        );
+        // SKU de Shopify: se guarda tal cual en codigo y shopify_sku
+        $productoData['shopify_sku'] = !empty($productoData['codigo']) ? $productoData['codigo'] : null;
         
         $producto = Producto::create($productoData);
         

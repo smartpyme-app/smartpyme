@@ -492,12 +492,16 @@ class ShopifyTransformer
             $precioConIva = floatval($variant['price'] ?? 0);
             $precioSinIva = $this->impuestosService->calcularPrecioSinImpuesto($precioConIva, $id_empresa);
 
+            // SKU de Shopify: se guarda tal cual en codigo y shopify_sku.
+            // Si viene vacío, se deja vacío (se llena manual o re-sincronizando desde Shopify).
+            $codigo = trim((string) ($variant['sku'] ?? ''));
+
             // Procesar descripción: limitar a 100 caracteres para descripcion, completa para descripcion_completa
             $descripcionCompleta = strip_tags($shopifyData['body_html'] ?? '');
             $descripcionCorta = mb_substr($descripcionCompleta, 0, 100);
 
             $productos[] = [
-                'codigo' => $variant['sku'] ?? '',
+                'codigo' => $codigo,
                 'barcode' => $variant['barcode'] ?? '',
                 'nombre' => $nombreBase,
                 'nombre_variante' => $nombreVariante,
@@ -516,7 +520,7 @@ class ShopifyTransformer
                 'shopify_product_id' => $shopifyData['id'],
                 'shopify_variant_id' => $variant['id'],
                 'shopify_inventory_item_id' => $variant['inventory_item_id'] ?? null,
-                'shopify_sku' => $variant['sku'] ?? null,
+                'shopify_sku' => $codigo !== '' ? $codigo : null,
                 'enable' => $productoActivo,
                 'tipo' => 'Producto',
                 'costo' => $costo,

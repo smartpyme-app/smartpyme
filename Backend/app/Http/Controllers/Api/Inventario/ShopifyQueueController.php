@@ -346,13 +346,7 @@ class ShopifyQueueController extends Controller
             $producto->shopify_product_id = $productoData['shopify_product_id'] ?? null;
             $producto->shopify_variant_id = $productoData['shopify_variant_id'] ?? null;
             $producto->shopify_inventory_item_id = $productoData['shopify_inventory_item_id'] ?? null;
-            $producto->shopify_sku = \App\Services\ShopifySkuResolver::resolverSkuUnico(
-                $producto->codigo ?? '',
-                $productoData['shopify_product_id'] ?? null,
-                $productoData['shopify_variant_id'] ?? null,
-                (int) $usuario->id_empresa,
-                $producto->id
-            );
+            $producto->shopify_sku = !empty($producto->codigo) ? $producto->codigo : null;
             $producto->last_shopify_sync = now();
 
             $producto->save();

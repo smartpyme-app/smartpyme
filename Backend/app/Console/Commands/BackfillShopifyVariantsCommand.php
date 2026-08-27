@@ -5,7 +5,6 @@ namespace App\Console\Commands;
 use App\Models\Admin\Empresa;
 use App\Models\Inventario\Producto;
 use App\Services\ShopifyApiClient;
-use App\Services\ShopifySkuResolver;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -41,7 +40,6 @@ class BackfillShopifyVariantsCommand extends Command
             $dryRun ? ' (dry-run, sin cambios)' : ''
         ));
 
-        $usadosPorEmpresa = [];
         $clientesShopify = [];
 
         $stats = ['sku' => 0, 'opciones' => 0, 'nombres' => 0];
@@ -49,32 +47,12 @@ class BackfillShopifyVariantsCommand extends Command
         foreach ($productos as $producto) {
             $empresa = (int) $producto->id_empresa;
 
-            if (!isset($usadosPorEmpresa[$empresa])) {
-                $usadosPorEmpresa[$empresa] = Producto::withoutGlobalScopes()
-                    ->where('id_empresa', $empresa)
-                    ->whereNotNull('shopify_sku')
-                    ->where('shopify_sku', '!=', '')
-                    ->pluck('shopify_sku')
-                    ->mapWithKeys(function ($sku) {
-                        return [$sku => true];
-                    })
-                    ->all();
-            }
-            $usados = &$usadosPorEmpresa[$empresa];
-
             $cambios = [];
 
-            // 1) shopify_sku canónico y único
-            if (empty($producto->shopify_sku)) {
-                $cambios['shopify_sku'] = ShopifySkuResolver::asignarShopifySku(
-                    (string) $producto->codigo,
-                    $producto->shopify_product_id,
-                    $producto->shopify_variant_id,
-                    $usados
-                );
+            // 1) shopify_sku = SKU de Shopify (igual a codigo). Si codigo está vacío, se deja vacío.
+            if (empty($producto->shopify_sku) && !empty($producto->codigo)) {
+                $cambios['shopify_sku'] = $producto->codigo;
                 $stats['sku']++;
-            } else {
-                $usados[$producto->shopify_sku] = true;
             }
 
             // 2) option*_value desde nombre_variante (best-effort, secuencial)

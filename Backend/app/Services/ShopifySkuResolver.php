@@ -5,8 +5,11 @@ namespace App\Services;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Resuelve un SKU canónico (shopify_sku) contra Shopify y ayuda a asignar
- * SKUs únicos para cumplir el requisito de SKU único por variante.
+ * Resuelve un SKU contra Shopify (busca la variante que posee ese SKU).
+ *
+ * El SKU de Shopify se guarda tal cual en `productos.codigo` y `productos.shopify_sku`.
+ * Si el SKU viene vacío desde Shopify, se deja vacío y se completa manualmente o
+ * re-sincronizando desde Shopify (no se genera un código sintético).
  *
  * Espejo del patrón usado en WooCommerceSkuResolver.
  */
@@ -15,73 +18,6 @@ class ShopifySkuResolver
     private const PAGE_SIZE = 250;
 
     private const MAX_PAGES = 100;
-
-    /**
-     * Normaliza un SKU para comparación/canonicalización.
-     */
-    public static function normalizar(string $sku): string
-    {
-        $sku = strtoupper(trim($sku));
-        $sku = preg_replace('/\s+/', ' ', $sku);
-        $sku = preg_replace('/[^A-Z0-9_\-]/', '-', $sku);
-
-        return trim($sku, '-');
-    }
-
-    /**
-     * Asigna un SKU único (shopify_sku) a partir del SKU del proveedor.
-     *
-     * @param array<string,bool> $usados mapa de shopify_sku ya usados (por referencia)
-     */
-    public static function asignarShopifySku(string $codigo, $productId, $variantId, array &$usados): string
-    {
-        $base = self::normalizar($codigo);
-        if ($base === '') {
-            $base = "{$productId}-{$variantId}";
-        }
-
-        $candidato = $base;
-        $n = 1;
-        while (isset($usados[$candidato])) {
-            $candidato = $base . '-' . $n;
-            $n++;
-        }
-        $usados[$candidato] = true;
-
-        return $candidato;
-    }
-
-    /**
-     * Asigna un SKU único consultando la base de datos (usado en la capa de escritura).
-     * Garantiza unicidad por empresa; sufija "-n" ante colisiones.
-     */
-    public static function resolverSkuUnico(string $codigo, $productId, $variantId, int $empresaId, $excludeId = null): string
-    {
-        $base = self::normalizar($codigo);
-        if ($base === '') {
-            $base = "{$productId}-{$variantId}";
-        }
-
-        $candidato = $base;
-        $n = 1;
-        while (self::skuExiste($candidato, $empresaId, $excludeId)) {
-            $candidato = $base . '-' . $n;
-            $n++;
-        }
-
-        return $candidato;
-    }
-
-    private static function skuExiste(string $sku, int $empresaId, $excludeId = null): bool
-    {
-        return \App\Models\Inventario\Producto::withoutGlobalScopes()
-            ->where('id_empresa', $empresaId)
-            ->where('shopify_sku', $sku)
-            ->when($excludeId !== null, function ($q) use ($excludeId) {
-                $q->where('id', '!=', $excludeId);
-            })
-            ->exists();
-    }
 
     /**
      * Busca un SKU en Shopify recorriendo las variantes de todos los productos.
