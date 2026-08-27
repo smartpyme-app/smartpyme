@@ -59,6 +59,17 @@ import {
   debeImprimirTrasFacturar,
   isImpresionEnFacturacionActiva,
 } from '@helpers/empresa.helper';
+import { aplicarPrefillCredito, prepararVentaParaFacturarCuota } from '@views/ventas/creditos/creditos-facturar';
+import {
+  aplicarPlanAVenta,
+  generarPreviewCuotas,
+  planCuadra,
+  restoreSnapshotVenta,
+  snapshotVentaMontos,
+  sumaMontosCuotas,
+  SnapshotMontosVenta,
+  PreviewCuota,
+} from '@views/ventas/creditos/creditos-cuotas';
 
 @Component({
     selector: 'app-facturacion',
