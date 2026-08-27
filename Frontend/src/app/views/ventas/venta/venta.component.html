@@ -1,4 +1,4 @@
-﻿<style>
+<style>
 .product-zoom-img {
     cursor: zoom-in;
     transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
@@ -86,7 +86,12 @@
         }
     </h2>
     <div>
-        @if (venta.saldo > 0 && venta.estado == 'Pendiente') {
+        @if (puedeFacturarVentaCuota(venta)) {
+            <a [routerLink]="['/venta/crear']" [queryParams]="queryFacturarVenta(venta.id)" class="btn btn-default me-2">
+                <i class="fa fa-fw fa-file-invoice"></i> Facturar
+            </a>
+        }
+        @if (venta.saldo > 0 && venta.estado == 'Pendiente' && !puedeFacturarVentaCuota(venta)) {
             <a (click)="openAbono(mabono, venta)" class="btn btn-default me-2">
                 <i class="fas fa-fw fa-hand-holding-usd"></i> Pagar
             </a>
@@ -107,6 +112,16 @@
                 <label class="fw-medium">Estado</label>
                 <p>{{ venta.estado }}</p>
             </div>
+            @if (creditoCuota?.id_contrato) {
+                <div class="form-group col-lg-4">
+                    <label class="fw-medium">Crédito</label>
+                    <p>
+                        <a [routerLink]="['/clientes/creditos', creditoCuota.id_contrato]">
+                            Cuota {{ creditoCuota.numero }}
+                        </a>
+                    </p>
+                </div>
+            }
             <div class="form-group col-lg-4">
                 <label class="fw-medium">Cliente</label>
                 <p>{{ venta.nombre_cliente }}</p>

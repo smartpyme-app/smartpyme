@@ -471,6 +471,15 @@ class VentasController extends Controller
             $webhookPaquetesFacturadosBulk = false;
             $anulandoVenta = ($venta->estado != 'Anulada') && (($request['estado'] ?? null) == 'Anulada');
 
+            $cuotaCredito = \App\Models\CreditosClientes\CreditoCuota::with('contrato')
+                ->where('id_venta', $venta->id)
+                ->first();
+            $saltarInventarioCredito = $cuotaCredito
+                && !\App\Services\CreditosClientes\KardexCredito::debeMoverInventario(
+                    $cuotaCredito->contrato?->tipo,
+                    $cuotaCredito->numero
+                );
+
             // Ajustar stocks
             foreach ($venta->detalles as $detalle) {
 
@@ -496,25 +505,27 @@ class VentasController extends Controller
                 // Anular venta y regresar stock
                 if (($venta->estado != 'Anulada') && ($request['estado'] == 'Anulada')) {
 
-                    if ($inventario) {
-                        LoteAsignacionService::revertirEntrada($detalle, $venta, $inventario, $cantidadBase);
-                    }
-
-                    // Inventario compuestos (los compuestos no usan presentaciones: su factor es siempre 1)
-                    foreach ($detalle->composiciones()->get() as $comp) {
-                        $inventario = Inventario::where('id_producto', $comp->id_producto)
-                            ->where('id_bodega', $venta->id_bodega)
-                            ->lockForUpdate()
-                            ->first();
-
+                    if (!$saltarInventarioCredito) {
                         if ($inventario) {
-                            $cantidadCompBase = ConversionInventarioService::calcularCantidadBase(
-                                $detalle->cantidad * $comp->cantidad,
-                                1
-                            );
-                            $inventario->stock += $cantidadCompBase;
-                            $inventario->save();
-                            $inventario->kardex($venta, $cantidadCompBase * -1);
+                            LoteAsignacionService::revertirEntrada($detalle, $venta, $inventario, $cantidadBase);
+                        }
+
+                        // Inventario compuestos (los compuestos no usan presentaciones: su factor es siempre 1)
+                        foreach ($detalle->composiciones()->get() as $comp) {
+                            $inventario = Inventario::where('id_producto', $comp->id_producto)
+                                ->where('id_bodega', $venta->id_bodega)
+                                ->lockForUpdate()
+                                ->first();
+
+                            if ($inventario) {
+                                $cantidadCompBase = ConversionInventarioService::calcularCantidadBase(
+                                    $detalle->cantidad * $comp->cantidad,
+                                    1
+                                );
+                                $inventario->stock += $cantidadCompBase;
+                                $inventario->save();
+                                $inventario->kardex($venta, $cantidadCompBase * -1);
+                            }
                         }
                     }
 
@@ -529,31 +540,33 @@ class VentasController extends Controller
                 }
                 // Cancelar anulación de venta y descargar stock
                 if (($venta->estado == 'Anulada') && ($request['estado'] != 'Anulada')) {
-                    if ($inventario) {
-                        LoteAsignacionService::reactivarSalidaDesdeDetalle(
-                            $detalle,
-                            $venta,
-                            $inventario,
-                            $cantidadBase,
-                            (float) ($detalle->precio ?? 0)
-                        );
-                    }
-
-                    // Inventario compuestos
-                    foreach ($detalle->composiciones()->get() as $comp) {
-                        $inventario = Inventario::where('id_producto', $comp->id_producto)
-                            ->where('id_bodega', $venta->id_bodega)
-                            ->lockForUpdate()
-                            ->first();
-
+                    if (!$saltarInventarioCredito) {
                         if ($inventario) {
-                            $cantidadCompBase = ConversionInventarioService::calcularCantidadBase(
-                                $detalle->cantidad * $comp->cantidad,
-                                1
+                            LoteAsignacionService::reactivarSalidaDesdeDetalle(
+                                $detalle,
+                                $venta,
+                                $inventario,
+                                $cantidadBase,
+                                (float) ($detalle->precio ?? 0)
                             );
-                            $inventario->stock -= $cantidadCompBase;
-                            $inventario->save();
-                            $inventario->kardex($venta, $cantidadCompBase);
+                        }
+
+                        // Inventario compuestos
+                        foreach ($detalle->composiciones()->get() as $comp) {
+                            $inventario = Inventario::where('id_producto', $comp->id_producto)
+                                ->where('id_bodega', $venta->id_bodega)
+                                ->lockForUpdate()
+                                ->first();
+
+                            if ($inventario) {
+                                $cantidadCompBase = ConversionInventarioService::calcularCantidadBase(
+                                    $detalle->cantidad * $comp->cantidad,
+                                    1
+                                );
+                                $inventario->stock -= $cantidadCompBase;
+                                $inventario->save();
+                                $inventario->kardex($venta, $cantidadCompBase);
+                            }
                         }
                     }
 

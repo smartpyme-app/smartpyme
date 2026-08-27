@@ -28,6 +28,8 @@ import { MetodosDePagoComponent } from '../facturacion-tienda/metodos-de-pago/me
 import { FidelizacionService, PuntosDisponiblesInfo, ConfiguracionCliente } from '@services/fidelizacion.service';
 import { GiftCardsService, GiftCardLookup } from '@services/gift-cards.service';
 import { esFormaPagoGiftCard, montoPagoGiftCardVenta, ventaUsaGiftCard } from '@utils/gift-card.util';
+import { aplicarPrefillCredito, prepararVentaParaFacturarCuota } from '@views/ventas/creditos/creditos-facturar';
+import { aplicarPlanAVenta, generarPreviewCuotas, planCuadra, restoreSnapshotVenta, snapshotVentaMontos, sumaMontosCuotas, SnapshotMontosVenta, PreviewCuota } from '@views/ventas/creditos/creditos-cuotas';
 import { MHService } from '@services/MH.service';
 import { RestauranteService } from '@services/restaurante.service';
 import Swal from 'sweetalert2';
@@ -107,6 +109,11 @@ export class FacturacionV2Component implements OnInit {
   public sending = false;
   public emiting = false;
   public duplicarventa = false;
+  public documentoCreditoBloqueado = false;
+  public creditosClientesActivo = false;
+  public creditoSnapshot: SnapshotMontosVenta | null = null;
+  public planCuotasForm: any = { tipo: 'bien', n_cuotas: 2, fecha_inicio: '', concepto: '' };
+  public planCuotasPreview: PreviewCuota[] = [];
   public facturarCotizacion = false;
   public api: boolean = false;
   public tieneAccesoPropina: boolean = false;
@@ -306,6 +313,7 @@ export class FacturacionV2Component implements OnInit {
     this.verificarAccesoMultimoneda();
     this.verificarFidelizacionHabilitada();
     this.verificarGiftCardsActivo();
+    this.verificarAccesoCreditosClientes();
   }
 
   public loadData() {
@@ -625,6 +633,9 @@ export class FacturacionV2Component implements OnInit {
       this.venta.id_proyecto =
         +this.route.snapshot.queryParamMap.get('id_proyecto')!;
     }
+
+    this.cargarPrefillCreditoCuota();
+    this.cargarVentaParaFacturar();
 
     // Para cotizaciones Pre-venta
     if (this.route.snapshot.queryParamMap.get('cotizacion')) {
@@ -1721,6 +1732,75 @@ export class FacturacionV2Component implements OnInit {
     }
 
     // Cliente
+    private cargarPrefillCreditoCuota(): void {
+        const idCuota = this.route.snapshot.queryParamMap.get('credito_cuota');
+        if (!idCuota) {
+            return;
+        }
+        this.apiService.get('creditos-clientes/cuotas/' + idCuota + '/prefill').subscribe({
+            next: (prefill) => {
+                const fecha = prefill.fecha;
+                aplicarPrefillCredito(this.venta, prefill);
+                if (prefill.cliente?.id) {
+                    this.setCliente(prefill.cliente);
+                }
+                this.venta.fecha = fecha;
+                this.venta.fecha_pago = fecha;
+                this.documentoCreditoBloqueado = !!prefill.documento_bloqueado;
+                this.syncVentaCreditoConsignaFlagsFromEstado();
+                this.sumTotal();
+                const applyDoc = (attempt = 0) => {
+                    if (prefill.id_documento && this.documentos?.length) {
+                        this.setDocumento(prefill.id_documento);
+                        return;
+                    }
+                    if (attempt < 40) {
+                        setTimeout(() => applyDoc(attempt + 1), 100);
+                    }
+                };
+                applyDoc();
+            },
+            error: (err) => this.alertService.error(err),
+        });
+    }
+
+    private cargarVentaParaFacturar(): void {
+        if (
+            !this.route.snapshot.queryParamMap.get('facturar') ||
+            !this.route.snapshot.queryParamMap.get('id_venta')
+        ) {
+            return;
+        }
+        const idVenta = +this.route.snapshot.queryParamMap.get('id_venta')!;
+        this.apiService.read('venta/', idVenta).subscribe({
+            next: (venta) => {
+                this.venta = venta;
+                this.retencionIvaGcUsuarioDecidio = true;
+                this.normalizarDetallesTipoGravado(this.venta);
+                hidratarImpuestosProductosEnDetalles(
+                    this.venta.detalles,
+                    this.apiService.auth_user()?.empresa?.iva
+                );
+                if (!this.venta.cliente) {
+                    this.venta.cliente = {};
+                } else {
+                    this.venta.cliente.nombre = this.venta.cliente.tipo == 'Empresa'
+                        ? this.venta.cliente.nombre_empresa
+                        : this.venta.cliente.nombre_completo;
+                }
+                this.venta.cobrar_impuestos = this.venta.iva > 0;
+                prepararVentaParaFacturarCuota(this.venta);
+                this.documentoCreditoBloqueado = !!this.venta.id_documento;
+                this.migrarExoneracionCrLegacyADetalles();
+                this.sumTotal();
+            },
+            error: (err) => {
+                this.alertService.error(err);
+                this.loading = false;
+            },
+        });
+    }
+
     public setCliente(cliente: any) {
         if (cliente.id) {
             this.retencionIvaGcUsuarioDecidio = false;
@@ -1807,12 +1887,105 @@ export class FacturacionV2Component implements OnInit {
             this.venta.condicion = 'Crédito';
             this.venta.fecha_pago = moment().add(1, 'month').format('YYYY-MM-DD');
         } else {
+            if (this.creditoSnapshot) {
+                restoreSnapshotVenta(this.venta, this.creditoSnapshot);
+                this.creditoSnapshot = null;
+                this.sumTotal();
+            }
             this.venta.estado = 'Pagada';
             this.venta.condicion = 'Contado';
             this.venta.fecha_pago = moment().format('YYYY-MM-DD');
             // Limpiar mensaje de validación al cambiar a contado
             this.mensajeValidacionFecha = '';
         }
+    }
+
+    private verificarAccesoCreditosClientes(): void {
+        this.funcionalidadesService.verificarAcceso('creditos-clientes').subscribe({
+            next: (acceso) => { this.creditosClientesActivo = acceso; },
+            error: () => { this.creditosClientesActivo = false; },
+        });
+    }
+
+    montoContratoCredito(): number {
+        return this.creditoSnapshot?.total || Number(this.venta.total) || 0;
+    }
+
+    get planCuotasCuadra(): boolean {
+        return planCuadra(this.montoContratoCredito(), this.planCuotasPreview);
+    }
+
+    get sumaPlanCuotas(): number {
+        return sumaMontosCuotas(this.planCuotasPreview);
+    }
+
+    get diferenciaPlanCuotas(): number {
+        return Math.round((this.montoContratoCredito() - this.sumaPlanCuotas) * 100) / 100;
+    }
+
+    regenerarPlanCuotas(usarGuardadas = false): void {
+        this.planCuotasPreview = generarPreviewCuotas(
+            this.montoContratoCredito(),
+            Number(this.planCuotasForm.n_cuotas) || 0,
+            this.planCuotasForm.fecha_inicio,
+        );
+        if (usarGuardadas) {
+            const guardadas = this.venta.credito_contrato?.cuotas;
+            if (Array.isArray(guardadas) && guardadas.length === this.planCuotasPreview.length) {
+                this.planCuotasPreview = this.planCuotasPreview.map((c, i) => ({
+                    ...c,
+                    monto: Number(guardadas[i]?.monto) > 0 ? Number(guardadas[i].monto) : c.monto,
+                }));
+            }
+        }
+    }
+
+    actualizarFechasPlan(): void {
+        const base = generarPreviewCuotas(
+            this.montoContratoCredito(),
+            Number(this.planCuotasForm.n_cuotas) || 0,
+            this.planCuotasForm.fecha_inicio,
+        );
+        if (base.length === this.planCuotasPreview.length) {
+            this.planCuotasPreview.forEach((c, i) => {
+                c.fechaVencimiento = base[i].fechaVencimiento;
+            });
+        } else {
+            this.regenerarPlanCuotas();
+        }
+    }
+
+    public abrirPlanCuotas(template: TemplateRef<any>): void {
+        if (!this.venta.id_cliente) {
+            this.alertService.error('Seleccione un cliente antes de armar el plan de cuotas.');
+            return;
+        }
+        if (!this.venta.detalles?.length || (!(Number(this.venta.total) > 0) && !this.creditoSnapshot)) {
+            this.alertService.error('Agregue productos y un total mayor a 0.');
+            return;
+        }
+        if (!this.creditoSnapshot) {
+            this.creditoSnapshot = snapshotVentaMontos(this.venta);
+        }
+        const fecha = (this.venta.fecha || moment().format('YYYY-MM-DD')).toString().slice(0, 10);
+        this.planCuotasForm = {
+            tipo: this.venta.credito_contrato?.tipo || 'bien',
+            n_cuotas: this.venta.credito_contrato?.n_cuotas || 2,
+            fecha_inicio: this.venta.credito_contrato?.fecha_inicio || fecha,
+            concepto: this.venta.credito_contrato?.concepto || '',
+        };
+        this.regenerarPlanCuotas(true);
+        this.modalRef = this.modalService.show(template, { class: 'modal-lg', backdrop: 'static' });
+    }
+
+    public confirmarPlanCuotas(): void {
+        if (!this.creditoSnapshot || !this.planCuotasCuadra) {
+            this.alertService.error('La suma de las cuotas debe coincidir con el monto del contrato.');
+            return;
+        }
+        aplicarPlanAVenta(this.venta, { ...this.planCuotasForm, cuotas: this.planCuotasPreview }, this.creditoSnapshot);
+        this.sumTotal();
+        this.modalRef?.hide();
     }
 
     /**

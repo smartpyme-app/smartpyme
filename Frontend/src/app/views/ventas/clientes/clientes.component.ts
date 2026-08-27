@@ -15,6 +15,7 @@ import { TruncatePipe } from '@pipes/truncate.pipe';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
 import { FuncionalidadesService } from '@services/functionalities.service';
+import { SLUG_CREDITOS_CLIENTES } from '@views/ventas/creditos/creditos-acceso';
 import {
     configIdentificadorFiscalCliente,
     valorIdentificadorFiscalCliente,
@@ -36,6 +37,7 @@ export class ClientesComponent extends BaseCrudComponent<any> implements OnInit 
     public producto:any = {};
     public categorias:any = [];
     public tieneFidelizacionHabilitada: boolean = false;
+    public tieneCreditosHabilitada: boolean = false;
     override modalRef!: BsModalRef;
 
     constructor(
@@ -71,6 +73,7 @@ export class ClientesComponent extends BaseCrudComponent<any> implements OnInit 
 
     ngOnInit() {
         this.verificarFidelizacionHabilitada();
+        this.verificarCreditosHabilitados();
         this.loadAll();
     }
 
@@ -259,10 +262,25 @@ export class ClientesComponent extends BaseCrudComponent<any> implements OnInit 
         this.funcionalidadesService.verificarAcceso('fidelizacion-clientes').subscribe({
             next: (tieneAcceso: boolean) => {
                 this.tieneFidelizacionHabilitada = tieneAcceso;
+                this.cdr.markForCheck();
             },
             error: (error) => {
                 console.error('Error al verificar acceso a fidelización:', error);
                 this.tieneFidelizacionHabilitada = false;
+                this.cdr.markForCheck();
+            }
+        });
+    }
+
+    private verificarCreditosHabilitados(): void {
+        this.funcionalidadesService.verificarAcceso(SLUG_CREDITOS_CLIENTES).subscribe({
+            next: (tieneAcceso: boolean) => {
+                this.tieneCreditosHabilitada = tieneAcceso;
+                this.cdr.markForCheck();
+            },
+            error: () => {
+                this.tieneCreditosHabilitada = false;
+                this.cdr.markForCheck();
             }
         });
     }

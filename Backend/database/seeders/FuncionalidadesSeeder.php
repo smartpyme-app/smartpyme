@@ -111,6 +111,12 @@ class FuncionalidadesSeeder extends Seeder
                 'descripcion' => 'Emisión y redención de gift cards con saldo parcial',
                 'orden' => 22
             ],
+            [
+                'nombre' => 'Créditos a clientes',
+                'slug' => 'creditos-clientes',
+                'descripcion' => 'Contratos de crédito a clientes con cuotas y facturación programada',
+                'orden' => 23
+            ],
             //Se pueden agregar mas funcionalidades con el mismo formato
         ];
 

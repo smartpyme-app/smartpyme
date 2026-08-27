@@ -9,6 +9,7 @@ import { AlertService } from '@services/alert.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
 import { LibroIvaPaisService } from '@views/contabilidad/libro-iva-shared/libro-iva-pais.service';
 import { SLUG_DESCARGA_AUTOMATIZADA_DTES } from '@guards/funcionalidad.guard';
+import { puedeVerMenuCreditos, SLUG_CREDITOS_CLIENTES } from '@views/ventas/creditos/creditos-acceso';
 
 import { FormControl } from '@angular/forms';
 import { debounceTime, switchMap, filter, filter as rxFilter } from 'rxjs/operators';
@@ -53,9 +54,14 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit, OnDe
     public tieneComisionesHabilitada = false;
     public tieneBonosHabilitada = false;
     public tieneGiftCardsHabilitada = false;
+    public tieneCreditosHabilitada = false;
 
     public get tieneIncentivosHabilitada(): boolean {
         return this.tieneComisionesHabilitada || this.tieneBonosHabilitada || this.tieneGiftCardsHabilitada;
+    }
+
+    public get mostrarMenuCreditos(): boolean {
+        return puedeVerMenuCreditos(this.tieneCreditosHabilitada, true);
     }
     public tieneModuloRestaurante = false;
     public mostrarMenuRestaurante = false;
@@ -179,6 +185,7 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit, OnDe
         this.verificarComisionesHabilitada();
         this.verificarBonosHabilitada();
         this.verificarGiftCardsHabilitada();
+        this.verificarCreditosHabilitada();
         this.verificarModuloRestauranteHabilitado();
         this.verificarDescargaDtesHabilitada();
 
@@ -190,6 +197,7 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit, OnDe
                 this.verificarComisionesHabilitada();
                 this.verificarBonosHabilitada();
                 this.verificarGiftCardsHabilitada();
+                this.verificarCreditosHabilitada();
                 this.verificarModuloRestauranteHabilitado();
                 this.verificarDescargaDtesHabilitada();
             });
@@ -205,6 +213,7 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit, OnDe
                 this.verificarComisionesHabilitada();
                 this.verificarBonosHabilitada();
                 this.verificarGiftCardsHabilitada();
+                this.verificarCreditosHabilitada();
                 this.verificarModuloRestauranteHabilitado();
                 this.verificarDescargaDtesHabilitada();
                 this.actualizarMenusRestaurantePedidos();
@@ -241,6 +250,13 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit, OnDe
         this.funcionalidadesService.verificarAcceso('gift-cards').subscribe({
             next: (tieneAcceso) => { this.tieneGiftCardsHabilitada = tieneAcceso; },
             error: () => { this.tieneGiftCardsHabilitada = false; }
+        });
+    }
+
+    private verificarCreditosHabilitada(): void {
+        this.funcionalidadesService.verificarAcceso(SLUG_CREDITOS_CLIENTES).subscribe({
+            next: (tieneAcceso) => { this.tieneCreditosHabilitada = tieneAcceso; },
+            error: () => { this.tieneCreditosHabilitada = false; }
         });
     }
 

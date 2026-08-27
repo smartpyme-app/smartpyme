@@ -42,6 +42,9 @@
         <div class="col d-flex gap-2 flex-wrap">
             <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/clientes">Todos</button>
             <button class="btn btn-primary tcla-F5" tooltip="Actualizar (F5)" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/clientes/cuentas-cobrar">Cuentas por cobrar</button>
+            @if (tieneCreditosHabilitada) {
+                <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/clientes/creditos">Créditos</button>
+            }
         </div>
     </div>
 
@@ -77,7 +80,7 @@
                             <a *ngIf="venta.id_cliente" [routerLink]="['/cliente/editar', venta.id_cliente]" class="text-decoration-none text-dark">{{ etiquetaCliente(venta) | truncate:30 }}</a>
                             <span *ngIf="!venta.id_cliente">{{ etiquetaCliente(venta) | truncate:30 }}</span>
                         </td>
-                        <td class="d-none d-md-table-cell">{{ (venta.nombre_documento || venta.tipo_documento) }} #{{ venta.correlativo }}</td>
+                        <td class="d-none d-md-table-cell">{{ venta.nombre_documento }} {{ venta.correlativo ? ' #' + venta.correlativo : '' }}</td>
                         <td class="d-none d-md-table-cell">{{ venta.nombre_vendedor || '-' }}</td>
                         <td>{{ venta.fecha_pago | date:'dd/MM/yyyy' }}</td>
                         <td class="text-center">

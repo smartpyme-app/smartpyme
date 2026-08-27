@@ -29,6 +29,9 @@ export class FacturacionVersionGuard implements CanActivate {
             const navState = nav?.extras?.state;
 
             if (versionFacturacion === 'pos') {
+                if (queryParams['credito_cuota'] || queryParams['facturar']) {
+                    return true;
+                }
                 this.router.navigate(['/ventas-pos/crear'], { queryParams, state: navState });
                 return false;
             }

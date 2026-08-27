@@ -9,6 +9,7 @@ import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { FuncionalidadesService } from '@services/functionalities.service';
 import { LibroIvaPaisService } from '@views/contabilidad/libro-iva-shared/libro-iva-pais.service';
 import { SLUG_DESCARGA_AUTOMATIZADA_DTES } from '@guards/funcionalidad.guard';
+import { puedeVerMenuCreditos, SLUG_CREDITOS_CLIENTES } from '@views/ventas/creditos/creditos-acceso';
 
 import { FormControl } from '@angular/forms';
 import { debounceTime, switchMap, filter  } from 'rxjs/operators';
@@ -66,9 +67,17 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
     public tieneComisionesHabilitada: boolean = false;
     public tieneBonosHabilitada: boolean = false;
     public tieneGiftCardsHabilitada: boolean = false;
+    public tieneCreditosHabilitada: boolean = false;
 
     public get tieneIncentivosHabilitada(): boolean {
         return this.tieneComisionesHabilitada || this.tieneBonosHabilitada || this.tieneGiftCardsHabilitada;
+    }
+
+    public get mostrarMenuCreditos(): boolean {
+        return puedeVerMenuCreditos(
+            this.tieneCreditosHabilitada,
+            this.apiService.hasPermission('ventas.ver'),
+        );
     }
     public modules: any = [];
     public contabilidadHabilitada: boolean = false;
@@ -210,6 +219,7 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
         this.verificarComisionesHabilitada();
         this.verificarBonosHabilitada();
         this.verificarGiftCardsHabilitada();
+        this.verificarCreditosHabilitada();
         this.verificarModuloRestauranteHabilitado();
         this.verificarDescargaDtesHabilitada();
 
@@ -221,6 +231,7 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
                 this.verificarComisionesHabilitada();
                 this.verificarBonosHabilitada();
                 this.verificarGiftCardsHabilitada();
+                this.verificarCreditosHabilitada();
                 this.verificarModuloRestauranteHabilitado();
                 this.verificarDescargaDtesHabilitada();
             });
@@ -236,6 +247,7 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
                     this.verificarComisionesHabilitada();
                     this.verificarBonosHabilitada();
                     this.verificarGiftCardsHabilitada();
+                    this.verificarCreditosHabilitada();
                     this.verificarModuloRestauranteHabilitado();
                     this.verificarDescargaDtesHabilitada();
                 } else {
@@ -547,6 +559,17 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
             },
             error: () => {
                 this.tieneGiftCardsHabilitada = false;
+            },
+        });
+    }
+
+    private verificarCreditosHabilitada() {
+        this.funcionalidadesService.verificarAcceso(SLUG_CREDITOS_CLIENTES).subscribe({
+            next: (tieneAcceso: boolean) => {
+                this.tieneCreditosHabilitada = tieneAcceso;
+            },
+            error: () => {
+                this.tieneCreditosHabilitada = false;
             },
         });
     }

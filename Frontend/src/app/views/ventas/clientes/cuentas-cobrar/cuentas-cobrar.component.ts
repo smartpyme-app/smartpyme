@@ -12,6 +12,8 @@ import { PaginationComponent } from '@shared/parts/pagination/pagination.compone
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { FuncionalidadesService } from '@services/functionalities.service';
+import { SLUG_CREDITOS_CLIENTES } from '@views/ventas/creditos/creditos-acceso';
 
 @Component({
   selector: 'app-cuentas-cobrar',
@@ -31,16 +33,30 @@ export class CuentasCobrarComponent implements OnInit {
     public vendedores: any[] = [];
     public sucursales: any[] = [];
     public fechaCorte = '';
+    public tieneCreditosHabilitada = false;
 
     constructor(
         public apiService: ApiService,
         private alertService: AlertService,
-        private modalService: BsModalService
+        private modalService: BsModalService,
+        private funcionalidadesService: FuncionalidadesService,
     ) {}
 
     ngOnInit() {
+        this.verificarCreditosHabilitados();
         this.loadAll();
         this.cargarListasFiltros();
+    }
+
+    private verificarCreditosHabilitados(): void {
+        this.funcionalidadesService.verificarAcceso(SLUG_CREDITOS_CLIENTES).subscribe({
+            next: (tieneAcceso: boolean) => {
+                this.tieneCreditosHabilitada = tieneAcceso;
+            },
+            error: () => {
+                this.tieneCreditosHabilitada = false;
+            }
+        });
     }
 
     cargarListasFiltros() {
