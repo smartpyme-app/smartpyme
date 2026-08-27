@@ -30,6 +30,34 @@ class PedidoRestauranteControllerSearchTest extends TestCase
         );
     }
 
+    public function test_index_expone_total_con_iva_calculado(): void
+    {
+        $source = $this->methodSource(PedidoRestauranteController::class, 'index');
+
+        $this->assertNotFalse(
+            strpos($source, 'PedidoCanalIvaCalculator::calcular'),
+            'El listado debe calcular total con IVA para mostrarlo'
+        );
+        $this->assertNotFalse(
+            strpos($source, "setAttribute('total_con_iva'"),
+            'Debe exponer total_con_iva en el payload del listado'
+        );
+    }
+
+    public function test_imprimir_pasa_desglose_de_iva_a_la_vista(): void
+    {
+        $source = $this->methodSource(PedidoRestauranteController::class, 'imprimir');
+
+        $this->assertNotFalse(
+            strpos($source, 'PedidoCanalIvaCalculator::calcular'),
+            'El ticket debe calcular IVA sobre la base sin IVA del pedido'
+        );
+        $this->assertNotFalse(
+            strpos($source, "'ivaDisplay'"),
+            'Debe enviar ivaDisplay a la vista del ticket'
+        );
+    }
+
     private function methodSource(string $class, string $method): string
     {
         $ref = new ReflectionMethod($class, $method);

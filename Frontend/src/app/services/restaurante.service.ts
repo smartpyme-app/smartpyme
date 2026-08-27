@@ -349,6 +349,8 @@ export interface PedidoCanal {
   subtotal: number;
   descuento: number;
   total: number;
+  iva?: number;
+  total_con_iva?: number;
   detalles?: PedidoCanalDetalle[];
   cliente?: { id: number; nombre_completo?: string; nombre_empresa?: string };
   usuario?: { nombre?: string; name?: string; email?: string };
