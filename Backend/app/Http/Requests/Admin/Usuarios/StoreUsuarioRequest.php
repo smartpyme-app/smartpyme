@@ -162,6 +162,19 @@ class StoreUsuarioRequest extends FormRequest
             ]);
         }
 
+        // Actualización: no validar contraseña si viene vacía desde el front
+        if (!$this->filled('password')) {
+            $this->replace(collect($this->all())->except(['password', 'password_confirmation'])->all());
+        }
+
+        // Actualización: empresa del tenant si el front no la reenvía
+        if (!$this->filled('id_empresa') && $this->filled('id')) {
+            $authUser = $this->user();
+            if ($authUser?->id_empresa) {
+                $this->merge(['id_empresa' => $authUser->id_empresa]);
+            }
+        }
+
         // Derivar tipo legacy si no viene en el request
         if (!$this->filled('tipo')) {
             $tipo = null;

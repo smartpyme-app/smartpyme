@@ -42,4 +42,27 @@ class StoreUsuarioRequestTest extends TestCase
 
         $this->assertSame(['id', 'enable'], array_keys($request->all()));
     }
+
+    public function test_update_payload_without_id_empresa_gets_tenant_default(): void
+    {
+        $request = StoreUsuarioRequest::createFrom(
+            Request::create('/api/usuario', 'POST', [
+                'id' => 1,
+                'name' => 'Test',
+                'email' => 'test@example.com',
+                'id_sucursal' => 1,
+                'id_bodega' => 1,
+                'rol_id' => 2,
+            ])
+        );
+
+        $request->setUserResolver(fn () => (object) ['id_empresa' => 99]);
+
+        $ref = new \ReflectionClass($request);
+        $prep = $ref->getMethod('prepareForValidation');
+        $prep->setAccessible(true);
+        $prep->invoke($request);
+
+        $this->assertSame(99, (int) $request->input('id_empresa'));
+    }
 }

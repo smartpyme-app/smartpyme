@@ -269,46 +269,48 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
       this.usuario.caja_id = null;
     }
 
-    let formData: FormData = new FormData();
-    formData.append('id', this.usuario.id);
-    formData.append('name', this.usuario.name);
-    formData.append('telefono', this.getFullPhoneNumber());
-    formData.append('tipo', this.usuario.tipo);
-    formData.append('codigo', this.usuario.codigo);
-    formData.append('id_sucursal', this.usuario.id_sucursal);
-    formData.append('id_bodega', this.usuario.id_bodega);
+    const authUser = this.apiService.auth_user();
+    const payload: Record<string, string | number> = {
+      name: this.usuario.name,
+      email: this.usuario.email,
+      telefono: this.getFullPhoneNumber() || '',
+      codigo: this.usuario.codigo ?? '',
+      id_empresa: this.usuario.id_empresa ?? authUser.id_empresa,
+      id_sucursal: this.usuario.id_sucursal,
+      id_bodega: this.usuario.id_bodega,
+      rol_id: this.usuario.rol_id,
+    };
 
-    // No reenviar relaciones/objetos que no deben escribirse (roles, pending_changes, etc.)
-    const skipKeys = new Set([
-      'roles', 'permissions', 'empresa', 'sucursal', 'bodega', 'pending_changes',
-      'authorization', 'authorizationTypes', 'accesos', 'suscripciones', 'ordenesPago',
-      'metodoPago', 'whatsappSession', 'whatsappMessages', 'encrypted_id', 'rol', 'rol_name',
-    ]);
-
-    for (var key in this.usuario) {
-      if (skipKeys.has(key)) {
-        continue;
-      }
-
-      if (key == 'activo' || key == 'empleado') {
-        this.usuario[key] = this.usuario[key] ? 1 : 0;
-      }
-
-      // CORRECCIÓN: Manejar objetos complejos
-      let value = this.usuario[key];
-
-      if (value === null || value === undefined) {
-        formData.append(key, '');
-      } else if (typeof value === 'object') {
-        // Saltar objetos no escalares restantes
-        continue;
-      } else {
-        formData.append(key, value.toString());
-      }
+    if (this.usuario.id) {
+      payload.id = this.usuario.id;
+    }
+    if (this.usuario.tipo) {
+      payload.tipo = this.usuario.tipo;
+    }
+    if (this.usuario.codigo_autorizacion) {
+      payload.codigo_autorizacion = this.usuario.codigo_autorizacion;
     }
 
-    // Save the user
-    this.apiService.store('usuario', formData)
+    if (!payload.id_bodega) {
+      this.loading = false;
+      this.alertService.error('Seleccione una bodega');
+      this.cdr.markForCheck();
+      return;
+    }
+
+    let body: FormData | Record<string, string | number> = payload;
+    if (this.file) {
+      const formData = new FormData();
+      for (const [key, value] of Object.entries(payload)) {
+        if (value !== null && value !== undefined) {
+          formData.append(key, String(value));
+        }
+      }
+      formData.append('file', this.file);
+      body = formData;
+    }
+
+    this.apiService.store('usuario', body)
       .pipe(this.untilDestroyed())
       .subscribe(
       (usuario) => {
@@ -343,17 +345,7 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
           return;
         }
 
-        let errorMessage = 'Ha ocurrido un error al guardar el usuario';
-
-        if (error?.error?.message) {
-          errorMessage = error.error.message;
-        } else if (error?.message) {
-          errorMessage = error.message;
-        } else if (typeof error === 'string') {
-          errorMessage = error;
-        }
-
-        this.alertService.error(errorMessage);
+        this.alertService.error(error);
         this.cdr.markForCheck();
       }
     );
