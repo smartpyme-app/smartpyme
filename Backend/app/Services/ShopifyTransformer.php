@@ -521,6 +521,7 @@ class ShopifyTransformer
                 'shopify_variant_id' => $variant['id'],
                 'shopify_inventory_item_id' => $variant['inventory_item_id'] ?? null,
                 'shopify_sku' => $codigo !== '' ? $codigo : null,
+                'shopify_variant_image_id' => $variant['image_id'] ?? null,
                 'enable' => $productoActivo,
                 'tipo' => 'Producto',
                 'costo' => $costo,
