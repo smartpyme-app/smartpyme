@@ -37,7 +37,7 @@ class FacturacionRequest extends FormRequest
         $rules = [
             'fecha'                   => 'required',
             'estado'                  => 'required|max:255',
-            'correlativo'             => 'required|numeric',
+            'correlativo'             => 'nullable|numeric',
             'id_documento'            => 'required|max:255',
             'id_cliente'              => 'required_if:estado,"Pendiente"',
             'detalles'                => 'required|array|min:1',
@@ -61,6 +61,18 @@ class FacturacionRequest extends FormRequest
             'tipo_operacion'          => 'nullable|string|max:255',
             'referencia'              => 'nullable|string|max:255',
             'cotizacion'              => 'nullable|boolean',
+            'id_credito_cuota'        => 'nullable|integer',
+            'credito_contrato'        => 'nullable|array',
+            'credito_contrato.tipo'   => 'required_with:credito_contrato|in:bien,servicio,prestamo',
+            'credito_contrato.monto'  => 'required_with:credito_contrato|numeric|gt:0',
+            'credito_contrato.n_cuotas' => 'required_with:credito_contrato|integer|min:2',
+            'credito_contrato.fecha_inicio' => 'required_with:credito_contrato|date',
+            'credito_contrato.concepto' => 'nullable|string|max:255',
+            'credito_contrato.tasa_interes' => 'nullable|numeric|min:0',
+            'credito_contrato.tasa_mora' => 'nullable|numeric|min:0',
+            'credito_contrato.cuotas' => 'nullable|array|min:2',
+            'credito_contrato.cuotas.*.numero' => 'required_with:credito_contrato.cuotas|integer|min:1',
+            'credito_contrato.cuotas.*.monto' => 'required_with:credito_contrato.cuotas|numeric|gt:0',
         ];
 
         if ($cotizacion !== 1) {

@@ -42,6 +42,9 @@
         <div class="col d-flex gap-2 flex-wrap">
             <button class="btn btn-primary tcla-F5" tooltip="Actualizar (F5)" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/clientes">Todos</button>
             <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/clientes/cuentas-cobrar">Cuentas por cobrar</button>
+            @if (tieneCreditosHabilitada) {
+                <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/clientes/creditos">Créditos</button>
+            }
         </div>
         <div class="col d-flex gap-2 justify-content-end">
             <select name="estado" (change)="filtrarClientes()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">

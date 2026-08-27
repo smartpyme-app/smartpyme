@@ -1,4 +1,4 @@
-﻿import { Component, OnInit, TemplateRef, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { PipesModule } from '@pipes/pipes.module';
@@ -14,12 +14,14 @@ import { CrearAbonoVentaComponent } from '@shared/modals/crear-abono-venta/crear
 import { EditarAbonoComponent } from '@shared/modals/editar-abono/editar-abono.component';
 
 import { AlertService } from '@services/alert.service';
+import { FuncionalidadesService } from '@services/functionalities.service';
 import { ApiService } from '@services/api.service';
 import { FE_PAIS_CR, FE_PAIS_SV, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
 import { detalleTieneExoneracionCr } from '@shared/modals/fe-cr-exoneracion-detalle/fe-cr-exoneracion-detalle.util';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
 import { porcentajeIvaDetalle, redondearMoneda } from '@utils/impuestos-venta.util';
+import { puedeFacturarVentaCuota, queryFacturarVenta } from '@views/ventas/creditos/creditos-facturar';
 
 @Component({
     selector: 'app-venta',
@@ -33,6 +35,11 @@ export class VentaComponent implements OnInit {
 
     public venta:any = {};
     public proyecto:any ={};
+    public creditoCuota: any = null;
+    public creditosClientesActivo = false;
+    public puedeFacturarVentaCuota = (venta: any) =>
+        puedeFacturarVentaCuota(venta, this.creditosClientesActivo);
+    public queryFacturarVenta = queryFacturarVenta;
     public usuario:any = {};
     public loading = false;
     public saving = false;
@@ -59,7 +66,8 @@ export class VentaComponent implements OnInit {
         private router: Router, 
         private modalService: BsModalService,
         private location: Location,
-        private cdr: ChangeDetectorRef
+        private cdr: ChangeDetectorRef,
+        private funcionalidadesService: FuncionalidadesService
     ) {
         // this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
         this.route.data
@@ -71,6 +79,18 @@ export class VentaComponent implements OnInit {
 
     ngOnInit() {
         this.usuario = this.apiService.auth_user();
+        this.funcionalidadesService.verificarAcceso('creditos-clientes')
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (acceso) => {
+                    this.creditosClientesActivo = !!acceso;
+                    this.cdr.markForCheck();
+                },
+                error: () => {
+                    this.creditosClientesActivo = false;
+                    this.cdr.markForCheck();
+                },
+            });
         this.loadAll();
     }
 
@@ -186,6 +206,7 @@ export class VentaComponent implements OnInit {
                 venta => {
                     this.venta = venta;
                     this.venta.cotizacion = this.type === 'cotizacion' ? 1 : 0;
+                    this.cargarCreditoDeVenta();
 
                     if (this.venta.id_proyecto) {
                         this.loadProyecto();
@@ -200,6 +221,24 @@ export class VentaComponent implements OnInit {
                     this.cdr.markForCheck();
                 }
             );
+    }
+
+    private cargarCreditoDeVenta(): void {
+        if (this.type === 'cotizacion' || !this.venta?.id) {
+            return;
+        }
+        this.apiService.get('creditos-clientes/por-venta/' + this.venta.id)
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (cuota) => {
+                    this.creditoCuota = cuota;
+                    this.cdr.markForCheck();
+                },
+                error: () => {
+                    this.creditoCuota = null;
+                    this.cdr.markForCheck();
+                },
+            });
     }
 
     private loadProyecto() {

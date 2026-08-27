@@ -54,7 +54,7 @@
         <div class="form-group col" style="min-width: 8rem">
             <label for="id_documento">Documento</label>
             <select name="id_documento" [(ngModel)]="venta.id_documento" (ngModelChange)="setDocumento($event)"
-                class="form-select">
+                class="form-select" [disabled]="documentoCreditoBloqueado">
                 @for (documento of documentos; track documento.id || $index) {
                     <option [ngValue]="documento.id">{{ documento.nombre }}</option>
                 }
@@ -403,6 +403,13 @@
                   <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setCredito()" [(ngModel)]="venta.credito" name="venta.credito">
                 </div>
             </div>
+            @if (venta.credito && creditosClientesActivo && !venta.id_credito_cuota && !venta.id) {
+                <div class="form-group col-md-6 col-lg-3 without-label">
+                    <button type="button" class="btn btn-default w-100" (click)="abrirPlanCuotas(mPlanCuotas)">
+                        {{ venta.credito_contrato ? 'Editar plan de cuotas' : 'Plan de cuotas' }}
+                    </button>
+                </div>
+            }
         }
       @if (apiService.auth_user().empresa.venta_consigna && venta.cotizacion != 1 && apiService.auth_user().tipo != 'Ventas Limitado') {
           <div class="form-group col-md-6 col-lg-3 without-label" [hidden]="!venta.credito">
@@ -643,7 +650,65 @@
     </div>
 </section>
 
-
+<ng-template #mPlanCuotas>
+  <div class="modal-header">
+    <h4 class="modal-title">Plan de cuotas</h4>
+    <button type="button" class="btn-close" (click)="closeModal()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <p class="text-muted">El total actual de la venta es el monto del contrato. Esta factura será la cuota 1.</p>
+    <p><strong>Contrato:</strong> {{ creditoSnapshot?.total | currency }}</p>
+    <div class="row">
+      <div class="col-md-4 mb-3">
+        <label class="form-label">Número de cuotas</label>
+        <input class="form-control" type="number" min="2" name="plan_n" [(ngModel)]="planCuotasForm.n_cuotas" (ngModelChange)="regenerarPlanCuotas()">
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label">Fecha de inicio</label>
+        <input class="form-control" type="date" name="plan_fecha" [(ngModel)]="planCuotasForm.fecha_inicio" (ngModelChange)="actualizarFechasPlan()">
+      </div>
+      <div class="col-md-12 mb-3">
+        <label class="form-label">Concepto</label>
+        <input class="form-control" type="text" name="plan_concepto" [(ngModel)]="planCuotasForm.concepto">
+      </div>
+    </div>
+    @if (planCuotasPreview.length) {
+      <table class="table">
+        <thead><tr><th>#</th><th>Vencimiento</th><th class="text-end">Monto</th></tr></thead>
+        <tbody>
+          @for (cuota of planCuotasPreview; track cuota.numero) {
+            <tr [class.table-info]="cuota.numero === 1">
+              <td>{{ cuota.numero }}{{ cuota.numero === 1 ? ' (esta factura)' : '' }}</td>
+              <td>{{ cuota.fechaVencimiento | date:'dd/MM/yyyy':'UTC' }}</td>
+              <td class="text-end" style="width: 160px;">
+                <input class="form-control text-end" type="number" min="0.01" step="0.01"
+                  [name]="'plan_cuota_' + cuota.numero" [(ngModel)]="cuota.monto" (ngModelChange)="onMontoPlanChange()">
+              </td>
+            </tr>
+          }
+        </tbody>
+        <tfoot>
+          <tr>
+            <th colspan="2">Suma</th>
+            <th class="text-end">{{ sumaPlanCuotas | currency }}</th>
+          </tr>
+          <tr>
+            <th colspan="2">Total</th>
+            <th class="text-end">{{ montoContratoCredito() | currency }}</th>
+          </tr>
+          <tr>
+            <th colspan="2" [class.text-success]="planCuotasCuadra" [class.text-danger]="!planCuotasCuadra">Diferencia</th>
+            <th class="text-end" [class.text-success]="planCuotasCuadra" [class.text-danger]="!planCuotasCuadra">{{ diferenciaPlanCuotas | currency }}</th>
+          </tr>
+        </tfoot>
+      </table>
+    }
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-default" (click)="closeModal()">Cancelar</button>
+    <button type="button" class="btn btn-primary" [disabled]="!planCuotasCuadra" (click)="confirmarPlanCuotas()">Usar este plan</button>
+  </div>
+</ng-template>
 
 <ng-template #mfacturar>
   <div class="modal-header">

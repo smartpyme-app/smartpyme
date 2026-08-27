@@ -28,6 +28,7 @@ import { PaginationComponent } from '@shared/parts/pagination/pagination.compone
 import { CrearAbonoVentaComponent } from '@shared/modals/crear-abono-venta/crear-abono-venta.component';
 import { TruncatePipe } from '@pipes/truncate.pipe';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
+import { puedeFacturarVentaCuota, queryFacturarVenta } from '@views/ventas/creditos/creditos-facturar';
 import { BoxfulApiService } from '@services/boxful/boxful-api.service';
 import { SharedModule } from '@shared/shared.module';
 import Swal from 'sweetalert2';
@@ -58,6 +59,10 @@ export type VentasExportPeriodoTipo = 'detalles' | 'ventas' | 'general';
 export class VentasComponent extends BaseCrudComponent<any> implements OnInit, OnDestroy {
   private readonly facturacionElectronica = inject(FacturacionElectronicaService);
   private readonly countryI18n = inject(CountryI18nService);
+  public puedeFacturarVentaCuota = (venta: any) =>
+    puedeFacturarVentaCuota(venta, this.creditosClientesActivo);
+  public queryFacturarVenta = queryFacturarVenta;
+  public creditosClientesActivo = false;
 
   private destroy$ = new Subject<void>();
   private searchSubject$ = new Subject<void>();
@@ -270,6 +275,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
   ngOnInit() {
     this.usuario = this.apiService.auth_user();
     this.verificarAccesoContabilidad();
+    this.verificarAccesoCreditosClientes();
 
     this.apiService.getAll('boxful/status')
       .pipe(this.untilDestroyed())
@@ -1842,6 +1848,21 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
       .subscribe(venta => {
         this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
       },error => {this.alertService.error(error);});
+  }
+
+  verificarAccesoCreditosClientes() {
+    this.funcionalidadesService.verificarAcceso('creditos-clientes')
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (acceso: any) => {
+          this.creditosClientesActivo = !!acceso;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.creditosClientesActivo = false;
+          this.cdr.markForCheck();
+        }
+      });
   }
 
   verificarAccesoContabilidad() {
