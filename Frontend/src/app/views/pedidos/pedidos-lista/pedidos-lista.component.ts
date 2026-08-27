@@ -383,6 +383,7 @@ export class PedidosListaComponent implements OnInit, OnDestroy {
             canal: data.canal,
             referencia_externa: data.referencia_externa,
             observaciones: data.observaciones,
+            precios_sin_iva: data.precios_sin_iva !== false,
             detalles: data.detalles
           }
         };

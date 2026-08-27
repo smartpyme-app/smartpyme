@@ -78,8 +78,10 @@ class PedidoRestauranteController extends Controller
                     $qq->orWhere('restaurante_pedidos.canal', 'like', $like)
                         ->orWhere('restaurante_pedidos.referencia_externa', 'like', $like)
                         ->orWhereHas('cliente', function ($cq) use ($like) {
-                            $cq->where('nombre_completo', 'like', $like)
-                                ->orWhere('nombre_empresa', 'like', $like);
+                            $cq->where('nombre', 'like', $like)
+                                ->orWhere('apellido', 'like', $like)
+                                ->orWhere('nombre_empresa', 'like', $like)
+                                ->orWhereRaw("CONCAT(TRIM(nombre), ' ', TRIM(apellido)) LIKE ?", [$like]);
                         });
                 });
             })
@@ -381,8 +383,8 @@ class PedidoRestauranteController extends Controller
             return response()->json(['error' => 'El pedido no tiene líneas de detalle'], 422);
         }
 
-        // En pedidos canal el precio (y descuento) se capturan como monto final / con IVA.
-        // Al preparar la factura se desglosa a base sin IVA para facturación v1/v2.
+        // En pedidos canal el precio (y descuento) se capturan sin IVA, igual que producto.precio
+        // en ventas/facturación. Al preparar la factura se envía la base y precio_con_iva calculado.
         $empresa = Empresa::find($user->id_empresa);
         $ivaEmpresa = $empresa ? max(0, (float) ($empresa->iva ?? 0)) : 0;
 
@@ -391,11 +393,11 @@ class PedidoRestauranteController extends Controller
             $pct = max(0, (float) $pct);
             $factor = $pct > 0 ? (1 + $pct / 100) : 1;
 
-            $precioConIva = (float) $d->precio;
-            $precioSinIva = $pct > 0 ? round($precioConIva / $factor, 4) : $precioConIva;
+            $precioSinIva = (float) $d->precio;
+            $precioConIva = $pct > 0 ? round($precioSinIva * $factor, 4) : $precioSinIva;
 
-            $descuentoConIva = (float) ($d->descuento ?? 0);
-            $descuentoSinIva = $pct > 0 ? round($descuentoConIva / $factor, 4) : $descuentoConIva;
+            $descuentoSinIva = (float) ($d->descuento ?? 0);
+            $descuentoConIva = $pct > 0 ? round($descuentoSinIva * $factor, 4) : $descuentoSinIva;
 
             return [
                 'id_producto' => $d->producto_id,
@@ -406,6 +408,8 @@ class PedidoRestauranteController extends Controller
                 'porcentaje_impuesto' => $pct,
                 'descripcion' => $d->producto->nombre ?? '',
                 'descuento' => $descuentoSinIva,
+                'descuento_con_iva' => $descuentoConIva,
+                'precios_sin_iva' => true,
             ];
         })->values()->toArray();
 
@@ -417,7 +421,7 @@ class PedidoRestauranteController extends Controller
             'fecha' => $pedido->fecha ? $pedido->fecha->format('Y-m-d') : null,
             'subtotal' => (float) $pedido->subtotal,
             'total' => (float) $pedido->total,
-            // `precio` en detalles ya viene desglosado (sin IVA); el pedido original era con IVA.
+            // `precio` en detalles es base sin IVA (como en el pedido y en facturación).
             'precios_sin_iva' => true,
             'canal' => $pedido->canal,
             'referencia_externa' => $pedido->referencia_externa,
