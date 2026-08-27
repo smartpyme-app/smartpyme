@@ -9,6 +9,7 @@ declare let $: any;
 @Component({
   selector: 'app-login-sivar-economics',
   templateUrl: './login-sivar-economics.component.html',
+  styleUrls: ['./login-sivar-economics.component.css'],
 })
 export class LoginSivarEconomicsComponent implements OnInit {
   public user: any = {};
