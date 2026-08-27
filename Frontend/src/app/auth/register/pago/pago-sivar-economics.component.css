@@ -1,0 +1,81 @@
+/* Paleta y tipografía SmartPyme: overrides del shell compartido (pago-layout.css) */
+.pago-shell-page {
+  background-color: #ffffff;
+}
+
+.pago-shell-form-heading,
+.pago-shell-lede,
+.pago-shell-table,
+.pago-shell-table thead th,
+.pago-shell-table thead th.pago-shell-table__total-head,
+.pago-shell-table tbody td,
+.pago-shell-table tbody td:not(.pago-shell-table__total-cell),
+.pago-shell-table tbody td.pago-shell-table__total-cell,
+.pago-shell-trial-msg,
+.pago-shell-btn-primary,
+.pago-shell-link-later,
+.pago-shell-payment-form .form-label {
+  font-family: inherit;
+  letter-spacing: normal;
+}
+
+.pago-shell-form-heading {
+  font-weight: 500;
+  font-size: 2rem;
+  line-height: 1.2;
+}
+
+.pago-shell-lede,
+.pago-shell-table,
+.pago-shell-table thead th.pago-shell-table__total-head,
+.pago-shell-table tbody td:not(.pago-shell-table__total-cell),
+.pago-shell-table tbody td.pago-shell-table__total-cell,
+.pago-shell-trial-msg,
+.pago-shell-btn-primary,
+.pago-shell-link-later,
+.pago-shell-payment-form .form-label {
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+}
+
+.pago-shell-form-heading,
+.pago-shell-table thead th,
+.pago-shell-table tbody td,
+.pago-shell-link-later {
+  color: #1a1a1a;
+}
+
+.pago-shell-table thead th.pago-shell-table__total-head,
+.pago-shell-table tbody td.pago-shell-table__total-cell {
+  color: #005CBB;
+}
+
+.pago-shell-btn-primary {
+  background-color: #005CBB;
+  border-color: #005CBB;
+}
+
+.pago-shell-btn-primary:hover:not(:disabled),
+.pago-shell-btn-primary:focus-visible:not(:disabled) {
+  background-color: #00458F;
+  border-color: #00458F;
+  color: #fff;
+}
+
+.pago-shell-link-later:hover {
+  color: #005CBB;
+}
+
+.pago-shell-payment-form .form-control:focus,
+.pago-shell-payment-form .form-select:focus {
+  border-color: #005CBB;
+  box-shadow: 0 0 0 0.2rem rgba(0, 92, 187, 0.15);
+}
+
+.pago-shell-form-brand-icon--sivar {
+  width: clamp(64px, 5vw + 32px, 80px);
+  height: clamp(64px, 5vw + 32px, 80px);
+  object-fit: cover;
+  border-radius: 50%;
+}

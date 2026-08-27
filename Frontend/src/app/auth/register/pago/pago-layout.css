@@ -125,6 +125,11 @@
   object-fit: contain;
 }
 
+.pago-shell-form-brand-icon--sivar {
+  height: clamp(72px, 7vw + 34px, 112px);
+  margin-inline: auto;
+}
+
 .pago-shell-lede {
   font-family: 'Poppins', sans-serif;
   font-size: 15px;

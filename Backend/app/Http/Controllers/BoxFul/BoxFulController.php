@@ -62,6 +62,53 @@ class BoxFulController extends Controller
     }
 
     /**
+     * Prueba las credenciales contra Boxful y solo si son válidas las guarda (corta la sesión anterior).
+     */
+    public function connect(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'nullable|string',
+        ]);
+
+        try {
+            $result = $this->boxfulService->connectWithCredentials(
+                trim((string) $request->input('email')),
+                $request->input('password')
+            );
+
+            return response()->json([
+                'status' => 'success',
+                'message' => '¡Se ha conectado exitosamente a Boxful!',
+                'diagnostics' => [
+                    'env' => $this->boxfulService->getEnv(),
+                    'base_url' => $this->boxfulService->getBaseUrl(),
+                    'user_info' => $result['user_info'] ?? null,
+                    'sync_origin_addresses' => $result['sync_origin_addresses'] ?? null,
+                ],
+                'boxful_email' => $result['boxful_email'],
+                'boxful_status' => $result['boxful_status'],
+                'has_boxful_password' => $result['has_boxful_password'],
+            ], 200);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
+        } catch (\Exception $e) {
+            Log::error('Boxful connect falló (credenciales no guardadas)', [
+                'message' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage(),
+                'diagnostics' => [
+                    'env' => $this->boxfulService->getEnv(),
+                    'base_url' => $this->boxfulService->getBaseUrl(),
+                ],
+            ], 401);
+        }
+    }
+
+    /**
      * Prueba la conexión de la empresa con Boxful.
      */
     public function testConnection()

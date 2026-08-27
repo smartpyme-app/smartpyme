@@ -2637,6 +2637,15 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
     }
 
     public saveBoxfulCredentials() {
+        this.connectBoxful();
+    }
+
+    public testBoxfulConnection() {
+        this.connectBoxful();
+    }
+
+    /** Prueba contra Boxful primero; solo si responde bien guarda y corta la sesión anterior. */
+    private connectBoxful() {
         if (!this.empresa.boxful_email || this.empresa.boxful_email.trim() === '') {
             this.alertService.error('El correo de la cuenta de Boxful es requerido');
             return;
@@ -2647,48 +2656,39 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         }
 
         this.savingBoxful = true;
-        this.onSubmit().then(() => {
-            this.savingBoxful = false;
-        }).catch(err => {
-            this.savingBoxful = false;
-            this.alertService.error(err?.message || err || 'Error al guardar credenciales de Boxful');
-        });
-    }
-
-    public testBoxfulConnection() {
-        if (!this.empresa.boxful_email || this.empresa.boxful_email.trim() === '') {
-            this.alertService.error('El correo de la cuenta de Boxful es requerido');
-            return;
-        }
-        if (!this.empresa.has_boxful_password && (!this.empresa.boxful_password || this.empresa.boxful_password.trim() === '')) {
-            this.alertService.error('La contraseña de la cuenta de Boxful es requerida');
-            return;
-        }
-
         this.testingConnection = true;
-
-        this.onSubmit().then(() => {
-            this.apiService.getAll('boxful/test-connection').subscribe(
-                (response: any) => {
-                    this.testingConnection = false;
-                    Swal.fire({
-                        title: 'Conexión Exitosa',
-                        text: response.message || 'Conexión con Boxful establecida correctamente.',
-                        icon: 'success',
-                        confirmButtonText: 'Aceptar'
-                    });
-                },
-                (error: any) => {
-                    this.testingConnection = false;
-                    Swal.fire({
-                        title: 'Error de Conexión',
-                        text: error.error && error.error.message ? error.error.message : 'No se pudo conectar a la API de Boxful.',
-                        icon: 'error',
-                        confirmButtonText: 'Aceptar'
-                    });
-                }
-            );
-        });
+        this.apiService.store('boxful/connect', {
+            email: this.empresa.boxful_email.trim(),
+            password: this.empresa.boxful_password || null
+        }).subscribe(
+            (response: any) => {
+                this.savingBoxful = false;
+                this.testingConnection = false;
+                this.empresa.boxful_email = response.boxful_email || this.empresa.boxful_email;
+                this.empresa.boxful_status = response.boxful_status || 'connected';
+                this.empresa.has_boxful_password = true;
+                this.empresa.boxful_password = '';
+                this.loadAll();
+                Swal.fire({
+                    title: 'Conexión Exitosa',
+                    text: response.message || 'Credenciales validadas y guardadas correctamente.',
+                    icon: 'success',
+                    confirmButtonText: 'Aceptar'
+                });
+            },
+            (error: any) => {
+                this.savingBoxful = false;
+                this.testingConnection = false;
+                Swal.fire({
+                    title: 'Error de Conexión',
+                    text: error.error && error.error.message
+                        ? error.error.message
+                        : 'No se pudo conectar a Boxful. Las credenciales anteriores se mantienen.',
+                    icon: 'error',
+                    confirmButtonText: 'Aceptar'
+                });
+            }
+        );
     }
 
     public disconnectBoxful() {
