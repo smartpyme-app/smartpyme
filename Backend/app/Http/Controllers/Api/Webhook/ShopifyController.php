@@ -17,6 +17,7 @@ use App\Models\Ventas\Venta;
 use App\Services\ShopifyApiClient;
 use Illuminate\Http\Request;
 use App\Services\ShopifyTransformer;
+use App\Services\ShopifySkuResolver;
 use App\Services\ShippingService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -252,7 +253,14 @@ class ShopifyController extends Controller
             ->where('id_empresa', $empresaId)
             ->first();
 
-        // Si no se encuentra, buscar por SKU como respaldo (para productos creados antes de la integración)
+        // Si no se encuentra, buscar por SKU canónico de Shopify como respaldo
+        if (!$producto && !empty($productoData['shopify_sku'])) {
+            $producto = Producto::where('shopify_sku', $productoData['shopify_sku'])
+                ->where('id_empresa', $empresaId)
+                ->first();
+        }
+
+        // Si no se encuentra, buscar por SKU del proveedor como respaldo (para productos creados antes de la integración)
         if (!$producto && !empty($productoData['codigo'])) {
             $producto = Producto::where('codigo', $productoData['codigo'])
                 ->where('id_empresa', $empresaId)
@@ -353,6 +361,15 @@ class ShopifyController extends Controller
         // NO marcar syncing_from_shopify para webhooks - solo para importaciones masivas
         $productoData['last_shopify_sync'] = now();
 
+        // Asignar SKU canónico único (resolución de conflictos con el SKU del proveedor)
+        $productoData['shopify_sku'] = ShopifySkuResolver::resolverSkuUnico(
+            $productoData['codigo'] ?? '',
+            $productoData['shopify_product_id'] ?? null,
+            $productoData['shopify_variant_id'] ?? null,
+            (int) $usuario->id_empresa,
+            $producto->id
+        );
+
         $producto->update($productoData);
 
         if ($stockActual != $stockNuevo) {
@@ -387,6 +404,14 @@ class ShopifyController extends Controller
         
         // NO marcar syncing_from_shopify para webhooks - solo para importaciones masivas
         $productoData['last_shopify_sync'] = now();
+
+        // Asignar SKU canónico único (resolución de conflictos con el SKU del proveedor)
+        $productoData['shopify_sku'] = ShopifySkuResolver::resolverSkuUnico(
+            $productoData['codigo'] ?? '',
+            $productoData['shopify_product_id'] ?? null,
+            $productoData['shopify_variant_id'] ?? null,
+            (int) $usuario->id_empresa
+        );
         
         $producto = Producto::create($productoData);
         

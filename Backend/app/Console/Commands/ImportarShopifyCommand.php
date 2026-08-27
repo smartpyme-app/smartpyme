@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use App\Models\TrabajosPendientes;
 use App\Services\ShopifyTransformer;
+use App\Services\ShopifySkuResolver;
 use App\Services\ImpuestosService;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
@@ -154,11 +155,24 @@ class ImportarShopifyCommand extends Command
             // Actualizar datos del producto existente
             $productoExistente->nombre = $productoData['nombre'];
             $productoExistente->nombre_variante = $productoData['nombre_variante'] ?? null;
+            $productoExistente->option1_name = $productoData['option1_name'] ?? null;
+            $productoExistente->option1_value = $productoData['option1_value'] ?? null;
+            $productoExistente->option2_name = $productoData['option2_name'] ?? null;
+            $productoExistente->option2_value = $productoData['option2_value'] ?? null;
+            $productoExistente->option3_name = $productoData['option3_name'] ?? null;
+            $productoExistente->option3_value = $productoData['option3_value'] ?? null;
             $productoExistente->descripcion = $productoData['descripcion'] ?? '';
             $productoExistente->precio = $productoData['precio'] ?? 0;
             $productoExistente->costo = $productoData['costo'] ?? 0;
             $productoExistente->codigo = $productoData['codigo'] ?? '';
             $productoExistente->barcode = $productoData['barcode'] ?? '';
+            $productoExistente->shopify_sku = ShopifySkuResolver::resolverSkuUnico(
+                $productoExistente->codigo ?? '',
+                $productoData['shopify_product_id'] ?? null,
+                $productoData['shopify_variant_id'] ?? null,
+                (int) $datos['id_empresa'],
+                $productoExistente->id
+            );
             $productoExistente->last_shopify_sync = now();
             $productoExistente->save();
             
@@ -173,6 +187,12 @@ class ImportarShopifyCommand extends Command
         $producto = new Producto();
         $producto->nombre = $productoData['nombre'];
         $producto->nombre_variante = $productoData['nombre_variante'] ?? null;
+        $producto->option1_name = $productoData['option1_name'] ?? null;
+        $producto->option1_value = $productoData['option1_value'] ?? null;
+        $producto->option2_name = $productoData['option2_name'] ?? null;
+        $producto->option2_value = $productoData['option2_value'] ?? null;
+        $producto->option3_name = $productoData['option3_name'] ?? null;
+        $producto->option3_value = $productoData['option3_value'] ?? null;
         $producto->descripcion = $productoData['descripcion'] ?? '';
         $producto->precio = $productoData['precio'] ?? 0;
         $producto->costo = $productoData['costo'] ?? 0;
@@ -187,6 +207,12 @@ class ImportarShopifyCommand extends Command
         $producto->shopify_product_id = $productoData['shopify_product_id'] ?? null;
         $producto->shopify_variant_id = $productoData['shopify_variant_id'] ?? null;
         $producto->shopify_inventory_item_id = $productoData['shopify_inventory_item_id'] ?? null;
+        $producto->shopify_sku = ShopifySkuResolver::resolverSkuUnico(
+            $producto->codigo ?? '',
+            $productoData['shopify_product_id'] ?? null,
+            $productoData['shopify_variant_id'] ?? null,
+            (int) $datos['id_empresa']
+        );
         $producto->last_shopify_sync = now();
         
         $producto->save();

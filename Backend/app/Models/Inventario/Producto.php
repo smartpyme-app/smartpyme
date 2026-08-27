@@ -15,6 +15,12 @@ class Producto extends Model
     protected $fillable = array(
         'nombre',
         'nombre_variante',
+        'option1_name',
+        'option1_value',
+        'option2_name',
+        'option2_value',
+        'option3_name',
+        'option3_value',
         'descripcion',
         'descripcion_completa',
         'codigo',
@@ -42,6 +48,7 @@ class Producto extends Model
         'shopify_product_id',
         'shopify_variant_id',
         'shopify_inventory_item_id',
+        'shopify_sku',
         'syncing_from_shopify',
         'last_shopify_sync',
         'genera_comanda',
@@ -105,6 +112,35 @@ class Producto extends Model
             return $this->nombre . ' (' . $this->nombre_variante . ')';
         }
         return $this->nombre;
+    }
+
+    /**
+     * Nombre de variante derivado de las opciones estructuradas (option*_value),
+     * con fallback al campo plano nombre_variante.
+     */
+    public function getNombreVarianteDerivadoAttribute()
+    {
+        $valores = array_filter([
+            $this->option1_value,
+            $this->option2_value,
+            $this->option3_value,
+        ], function ($v) {
+            return !is_null($v) && $v !== '';
+        });
+
+        if (!empty($valores)) {
+            return implode(' - ', $valores);
+        }
+
+        return $this->nombre_variante;
+    }
+
+    /**
+     * Scope: agrupa las variantes que comparten el mismo producto padre de Shopify.
+     */
+    public function scopeMismoPadre($query, $shopifyProductId)
+    {
+        return $query->where('shopify_product_id', $shopifyProductId);
     }
 
     /**

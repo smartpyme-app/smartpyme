@@ -449,8 +449,11 @@ class ShopifyStockService
             'status' => 'active',
             'variants' => [
                 [
-                    'sku' => $producto->codigo,
+                    'sku' => $producto->shopify_sku ?: $producto->codigo,
                     'price' => $producto->precio,
+                    'option1' => $producto->option1_value,
+                    'option2' => $producto->option2_value,
+                    'option3' => $producto->option3_value,
                     'inventory_quantity' => (int)$stock,
                     'inventory_management' => 'shopify',
                     'inventory_policy' => 'deny'
