@@ -76,7 +76,7 @@
           <tr>
             <th>Producto</th>
             <th style="width:100px">Cantidad</th>
-            <th style="width:110px">Precio</th>
+            <th style="width:110px">Precio{{ cobraIva ? ' (sin IVA)' : '' }}</th>
             <th style="width:110px">Desc.</th>
             <th style="width:110px">Total línea</th>
             <th>Notas</th>
@@ -128,8 +128,11 @@
       </table>
     </div>
 
-    <div class="text-end mt-3 fw-bold" *ngIf="lineas.length">
-      Total: {{ totalPedido() | currency }}
+    <div class="text-end mt-3" *ngIf="lineas.length">
+      <div class="fw-bold">Subtotal{{ cobraIva ? ' (sin IVA)' : '' }}: {{ totalPedido() | currency }}</div>
+      <div class="fw-bold" *ngIf="cobraIva && ivaEmpresa > 0">
+        Total estimado con IVA ({{ ivaEmpresa }}%): {{ totalPedidoConIva() | currency }}
+      </div>
     </div>
   </section>
 
