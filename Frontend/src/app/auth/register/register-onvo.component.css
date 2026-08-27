@@ -1,0 +1,8 @@
+.onvo-form-logo {
+  display: block;
+  height: 64px;
+  width: auto;
+  max-width: 280px;
+  object-fit: contain;
+  margin-inline: auto;
+}

@@ -1,0 +1,140 @@
+<div id="login-box" class="bg-white vh-100">
+    <div class="container-fluid h-100">
+        <div class="row h-100">
+            <div class="col-sm-8 col-md-6 d-none d-md-block h-100" style="background-image: url('/assets/img/sivar-economics-bg.png'); background-size: cover; background-position: center; background-repeat: no-repeat;">
+            </div>
+            <div class="col-12 col-md-6 h-100 overflow-auto">
+                <div class="card border-0 px-5 mx-0 mx-lg-2 shadow-none">
+                    <div class="card-body px-3 px-lg-5">
+                        <app-notificaciones-container></app-notificaciones-container>
+                        <h2>Registro</h2>
+                        <p>¡Bienvenido a SmartPyme!</p>
+                        <p class="text-muted" *ngIf="tieneCodigoPromocionalSivarAplicado()">
+                            Los datos de tu usuario no son los mismos que dentro de la plataforma de Sivar Economics. Debes crear un nuevo registro en Business Suite si aún no cuentas con uno.
+                        </p>
+                        <p class="text-muted" *ngIf="codigoPromocionalSivar && !tieneCodigoPromocionalSivarAplicado()">
+                            Utiliza el código <strong>{{ codigoPromocionalSivar.codigo }}</strong> para {{ getTextoDescuentoPromocional() }} en {{ getTextoPlanesPermitidos() }}.
+                        </p>
+                        <form class="row mt-3" name="form" (ngSubmit)="f.form.valid && submit()" #f="ngForm" novalidate>
+                            <div class="form-group col-12 mb-4">
+                                <label>Nombre de la empresa</label>
+                                <input type="text" class="form-control" name="empresa" [(ngModel)]="user.empresa.nombre" #empresa="ngModel" placeholder="Escribe aquí" required/>
+                            </div>
+                            <div class="form-group col-6 mb-4">
+                                <label>Nombre y apellido</label>
+                                <input type="text" class="form-control" name="name" [(ngModel)]="user.name" #name="ngModel" placeholder="Escribe aquí" required focus="true"/>
+                            </div>
+
+                            <div class="form-group col-6 mb-4">
+                                <label>Tipo de negocio</label>
+                                <select class="form-select" name="industria" [(ngModel)]="user.empresa.industria">
+                                    <option value="">Selecciona aquí</option>
+                                    <option value="Comercio">Comercio</option>
+                                    <option value="Servicio">Servicio</option>
+                                    <option value="Ambos">Ambos</option>
+                                    <option value="Otro">Otro</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group col-6 mb-4">
+                                <label>Tipo de plan</label>
+                                <select class="form-select" name="frecuencia_pago" [(ngModel)]="user.empresa.frecuencia_pago" (change)="onFrecuenciaPagoChange()">
+                                    <option value="">Selecciona aquí</option>
+                                    <option
+                                        *ngFor="let frecuencia of frecuenciasPagoDisponibles"
+                                        [value]="frecuencia"
+                                    >
+                                        {{ frecuencia }}
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="form-group col-6 mb-4">
+                                <label class="w-100">Plan
+                                    <span class="float-end" *ngIf="user.empresa.plan && user.empresa.plan !== '' && (user.empresa.total > 0 || totalOriginal > 0)">
+                                        <span *ngIf="tieneDescuento" style="text-decoration: line-through; color: red; margin-right: 8px;">
+                                            {{ totalOriginal | currency:'USD':'symbol':'1.2'}}
+                                        </span>
+                                        Precio: {{ user.empresa.total | currency:'USD':'symbol':'1.2'}}
+                                    </span>
+                                </label>
+                                <div class="input-group">
+                                    <select class="form-select" (change)="setPlan()" name="plan" [(ngModel)]="user.empresa.plan">
+                                        <option value="">Selecciona aquí</option>
+                                        <option value="2">Estándar</option>
+                                        <option value="3">Avanzado</option>
+                                        <option value="4">Pro</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div  class="form-group col-12 mb-4" *ngIf="user.empresa.total > 0">
+                                <label>
+                                    Total {{ getFrecuenciaPago() }}: {{ getTotalAPagar() | currency:'USD':'symbol':'1.2'}}
+                                    <span class="text-success ms-2" *ngIf="esPlanAnual()">
+                                        <i class="fa fa-check-circle"></i> ¡Obtienes un 20% de descuento en tu suscripción anual!
+                                    </span>
+                                </label>
+                            </div>
+                            <div class="form-group col-6 mb-4">
+                                <label>Correo</label>
+                                <input type="email" class="form-control" name="correo" [(ngModel)]="user.email" #email="ngModel" placeholder="Escribe aquí" required/>
+                            </div>
+                            <div class="form-group col-6 mb-4">
+                                <label>Teléfono</label>
+                                <div class="input-group">
+                                    <select class="form-select" name="pais" (change)="setModeda()" [(ngModel)]="user.empresa.pais">
+                                        <option value="Belice">+501 Belice</option>
+                                        <option value="Guatemala">+502 Guatemala</option>
+                                        <option value="El Salvador">+503 El Salvador</option>
+                                        <option value="Honduras">+504 Honduras</option>
+                                        <option value="Nicaragua">+505 Nicaragua</option>
+                                        <option value="Costa Rica">+506 Costa Rica</option>
+                                        <option value="Panamá">+507 Panamá</option>
+                                    </select>
+                                    <input type="tel" class="form-control" name="telefono" [(ngModel)]="user.telefono" #telefono="ngModel" placeholder="Escribe aquí" required [dropSpecialCharacters]="false" mask='0000-0000'/>
+                                </div>
+                            </div>
+                            <div class="form-group mb-4">
+                                <label>Contraseña</label>
+                                <div class="input-group">
+                                    <input [type]="showpassword ? 'text' : 'password'" class="form-control" name="password" [(ngModel)]="user.password" placeholder="Escribe aquí" #password="ngModel" id="password" required />
+                                    <button class="btn btn-light" type="button" (click)="mostrarPassword()">
+                                        <i class="fa" [ngClass]="{'fa-eye-slash': !showpassword, 'fa-eye': showpassword }"></i>
+                                    </button>
+                                </div>
+                                <p>La contraseña debe tener entre 8 y 16 caracteres, al menos un dígito, un símbolo, una minúscula y una mayúscula.</p>
+                            </div>
+                            <div class="form-group mb-4">
+                                <label>
+                                    Código promocional
+                                    <span class="text-success" *ngIf="codigoPromocionalValido && codigoPromocionalValidado">
+                                        ({{ getEtiquetaDescuentoCodigo() }})
+                                    </span>
+                                </label>
+                                <input type="text" class="form-control" name="codigo_promocional" [(ngModel)]="user.empresa.codigo_promocional" (input)="aplicarDescuento()" placeholder="Escribe aquí" #codigo_promocional="ngModel" [class.is-valid]="codigoPromocionalValido" [class.is-invalid]="mensajeErrorCodigo && !codigoPromocionalValido"/>
+                                <small class="text-success" *ngIf="codigoPromocionalValido && user.empresa.codigo_promocional">
+                                    <i class="fa fa-check-circle"></i> Código promocional aplicado
+                                </small>
+                            </div>
+                            <div class="d-grid gap-1">
+                                <button type="submit" [disabled]="loading" class="btn btn-primary d-block">
+                                    <span *ngIf="!loading">Registrarme</span>
+                                    <span *ngIf="loading">Registrando...</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    <p class="text-center">¿Ya tienes una cuenta? <a routerLink="/login">Inicia sesión</a></p>
+                    <div class="bg-white text-center mt-3">
+                        <p class="mb-3">
+                            <a href="https://www.smartpyme.app" target="_blank">
+                                <img src="assets/img/smartpyme.png" width="150px" alt="smartpyme logo">
+                            </a>
+                        </p>
+                        <p>&copy; {{ anio }} SmartPyme</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
