@@ -16,6 +16,20 @@ interface Permission {
   fromRole: boolean;
   selected: boolean;
 }
+
+interface UsuarioSavePayload {
+  id?: number;
+  name: string;
+  email: string;
+  telefono: string;
+  codigo: string;
+  id_empresa: number;
+  id_sucursal: number;
+  id_bodega: number;
+  rol_id: number;
+  tipo?: string;
+  codigo_autorizacion?: string;
+}
 @Component({
     selector: 'app-usuario',
     templateUrl: './usuario.component.html',
@@ -270,7 +284,7 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
     }
 
     const authUser = this.apiService.auth_user();
-    const payload: Record<string, string | number> = {
+    const payload: UsuarioSavePayload = {
       name: this.usuario.name,
       email: this.usuario.email,
       telefono: this.getFullPhoneNumber() || '',
@@ -298,7 +312,7 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
       return;
     }
 
-    let body: FormData | Record<string, string | number> = payload;
+    let body: FormData | UsuarioSavePayload = payload;
     if (this.file) {
       const formData = new FormData();
       for (const [key, value] of Object.entries(payload)) {
