@@ -777,20 +777,12 @@
     <p><strong>Contrato:</strong> {{ creditoSnapshot?.total | currency }}</p>
     <div class="row">
       <div class="col-md-4 mb-3">
-        <label class="form-label">Tipo</label>
-        <select class="form-select" name="plan_tipo" [(ngModel)]="planCuotasForm.tipo">
-          <option value="bien">Bien</option>
-          <option value="servicio">Servicio</option>
-          <option value="prestamo">Préstamo</option>
-        </select>
-      </div>
-      <div class="col-md-4 mb-3">
         <label class="form-label">Número de cuotas</label>
-        <input class="form-control" type="number" min="2" name="plan_n" [(ngModel)]="planCuotasForm.n_cuotas">
+        <input class="form-control" type="number" min="2" name="plan_n" [(ngModel)]="planCuotasForm.n_cuotas" (ngModelChange)="regenerarPlanCuotas()">
       </div>
       <div class="col-md-4 mb-3">
         <label class="form-label">Fecha de inicio</label>
-        <input class="form-control" type="date" name="plan_fecha" [(ngModel)]="planCuotasForm.fecha_inicio">
+        <input class="form-control" type="date" name="plan_fecha" [(ngModel)]="planCuotasForm.fecha_inicio" (ngModelChange)="actualizarFechasPlan()">
       </div>
       <div class="col-md-12 mb-3">
         <label class="form-label">Concepto</label>
@@ -798,19 +790,36 @@
       </div>
     </div>
     <table class="table" *ngIf="planCuotasPreview.length">
-      <thead><tr><th>#</th><th>Vencimiento</th><th>Monto</th></tr></thead>
+      <thead><tr><th>#</th><th>Vencimiento</th><th class="text-end">Monto</th></tr></thead>
       <tbody>
         <tr *ngFor="let cuota of planCuotasPreview" [class.table-info]="cuota.numero === 1">
           <td>{{ cuota.numero }}{{ cuota.numero === 1 ? ' (esta factura)' : '' }}</td>
-          <td>{{ cuota.fechaVencimiento }}</td>
-          <td>{{ cuota.monto | currency }}</td>
+          <td>{{ cuota.fechaVencimiento | date:'dd/MM/yyyy':'UTC' }}</td>
+          <td class="text-end" style="width: 160px;">
+            <input class="form-control text-end" type="number" min="0.01" step="0.01"
+              [name]="'plan_cuota_' + cuota.numero" [(ngModel)]="cuota.monto">
+          </td>
         </tr>
       </tbody>
+      <tfoot>
+        <tr>
+          <th colspan="2">Suma</th>
+          <th class="text-end">{{ sumaPlanCuotas | currency }}</th>
+        </tr>
+        <tr>
+          <th colspan="2">Total</th>
+          <th class="text-end">{{ montoContratoCredito() | currency }}</th>
+        </tr>
+        <tr [class.text-success]="planCuotasCuadra" [class.text-danger]="!planCuotasCuadra">
+          <th colspan="2">Diferencia</th>
+          <th class="text-end">{{ diferenciaPlanCuotas | currency }}</th>
+        </tr>
+      </tfoot>
     </table>
   </div>
   <div class="modal-footer">
     <button type="button" class="btn btn-default" (click)="modalRef.hide()">Cancelar</button>
-    <button type="button" class="btn btn-primary" [disabled]="!planCuotasPreview.length" (click)="confirmarPlanCuotas()">Usar este plan</button>
+    <button type="button" class="btn btn-primary" [disabled]="!planCuotasCuadra" (click)="confirmarPlanCuotas()">Usar este plan</button>
   </div>
 </ng-template>
 

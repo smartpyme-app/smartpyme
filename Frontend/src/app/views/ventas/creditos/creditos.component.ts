@@ -2,23 +2,28 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
+import { PopoverModule } from 'ngx-bootstrap/popover';
+import { ProgressbarModule } from 'ngx-bootstrap/progressbar';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
+import { TruncatePipe } from '@pipes/truncate.pipe';
+import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
-import { puedeCrearCredito } from './creditos-acceso';
-import { etiquetaEstadoCola } from './creditos-cuotas';
+import { avanceCuotas, etiquetaEstadoContrato } from './creditos-cuotas';
 
 @Component({
   selector: 'app-creditos',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, TooltipModule, PopoverModule, ProgressbarModule, TruncatePipe, PaginationComponent, CurrencyPipe],
   templateUrl: './creditos.component.html',
 })
 export class CreditosComponent implements OnInit {
-  creditos: any[] = [];
-  cola: any[] = [];
-  filtroEstado = '';
-  puedeCrear = false;
-  etiquetaEstadoCola = etiquetaEstadoCola;
+  creditos: any = {};
+  loading = false;
+  filtros: any = {};
+  etiquetaEstadoContrato = etiquetaEstadoContrato;
+  avanceCuotas = avanceCuotas;
 
   constructor(
     private apiService: ApiService,
@@ -26,30 +31,62 @@ export class CreditosComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.puedeCrear = puedeCrearCredito(this.apiService.isVentasLimitado());
-    this.cargarContratos();
-    this.cargarCola();
+    this.loadAll();
   }
 
-  cargarContratos(): void {
-    this.apiService.getAll('creditos-clientes').subscribe({
-      next: (res) => {
-        this.creditos = res?.data ?? [];
-      },
-      error: (err) => this.alertService.error(err),
-    });
+  loadAll(): void {
+    this.filtros = {
+      paginate: this.filtros?.paginate || 10,
+      orden: this.filtros?.orden || 'id',
+      direccion: this.filtros?.direccion || 'desc',
+      page: 1,
+      buscador: '',
+    };
+    this.filtrarCreditos(false);
   }
 
-  cargarCola(): void {
-    const filtros: any = {};
-    if (this.filtroEstado) {
-      filtros.estado = this.filtroEstado;
+  filtrarCreditos(resetPage = true): void {
+    if (resetPage) {
+      this.filtros.page = 1;
     }
-    this.apiService.getAll('creditos-clientes/cola', filtros).subscribe({
-      next: (res) => {
-        this.cola = res?.data ?? [];
+    this.loading = true;
+    const page = this.filtros.page != null && this.filtros.page !== '' ? this.filtros.page : 1;
+    const params: any = {
+      paginate: this.filtros.paginate,
+      orden: this.filtros.orden,
+      direccion: this.filtros.direccion,
+      page,
+    };
+    if (this.filtros.buscador) params.buscador = this.filtros.buscador;
+
+    this.apiService.getAll('creditos-clientes', params).subscribe({
+      next: (creditos) => {
+        this.creditos = creditos;
+        this.loading = false;
       },
-      error: (err) => this.alertService.error(err),
+      error: (err) => {
+        this.alertService.error(err);
+        this.loading = false;
+      },
     });
+  }
+
+  setOrden(columna: string): void {
+    if (this.filtros.orden === columna) {
+      this.filtros.direccion = this.filtros.direccion === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.filtros.orden = columna;
+      this.filtros.direccion = 'asc';
+    }
+    this.filtrarCreditos();
+  }
+
+  setPagination(event: any): void {
+    this.filtros.page = event.page;
+    this.filtrarCreditos(false);
+  }
+
+  etiquetaCliente(credito: any): string {
+    return credito?.cliente?.nombre_completo || credito?.cliente?.nombre || '-';
   }
 }

@@ -4,7 +4,7 @@ import { ActivatedRoute, RouterModule } from '@angular/router';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
-import { etiquetaEstadoCola } from './creditos-cuotas';
+import { etiquetaEstadoCola, etiquetaEstadoContrato, etiquetaTipoCredito } from './creditos-cuotas';
 import { puedeFacturarVentaCuota, queryFacturarCuota, queryFacturarVenta } from './creditos-facturar';
 
 @Component({
@@ -18,6 +18,8 @@ export class CreditoDetalleComponent implements OnInit {
   queryFacturarCuota = queryFacturarCuota;
   queryFacturarVenta = queryFacturarVenta;
   puedeFacturarVentaCuota = puedeFacturarVentaCuota;
+  etiquetaTipo = etiquetaTipoCredito;
+  etiquetaEstadoContrato = etiquetaEstadoContrato;
 
   constructor(
     private apiService: ApiService,
@@ -33,19 +35,6 @@ export class CreditoDetalleComponent implements OnInit {
       },
       error: (err) => this.alertService.error(err),
     });
-  }
-
-  etiquetaTipo(tipo: string): string {
-    if (tipo === 'bien') return 'Bien';
-    if (tipo === 'servicio') return 'Servicio';
-    if (tipo === 'prestamo') return 'Préstamo';
-    return tipo || '-';
-  }
-
-  etiquetaEstadoContrato(estado: string): string {
-    if (estado === 'activo') return 'Activo';
-    if (estado === 'cerrado') return 'Cerrado';
-    return estado || '-';
   }
 
   etiquetaEstadoCuota(cuota: any): string {

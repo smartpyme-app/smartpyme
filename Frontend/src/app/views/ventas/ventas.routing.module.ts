@@ -60,27 +60,9 @@ const routes: Routes = [
         { path: 'venta/:id', component: VentaComponent, title: 'Venta'},
 
         { path: 'ventas/recurrentes', canActivate: [AdminGuard], component: RecurrentesComponent, title: 'Abonos de ventas'},
-        {
-            path: 'ventas/creditos',
-            canActivate: [AdminGuard, FuncionalidadGuard],
-            component: CreditosComponent,
-            title: 'Créditos',
-            data: { funcionalidadSlug: SLUG_CREDITOS_CLIENTES },
-        },
-        {
-            path: 'ventas/creditos/nuevo',
-            canActivate: [AdminGuard, FuncionalidadGuard],
-            component: CreditoFormComponent,
-            title: 'Nuevo crédito',
-            data: { funcionalidadSlug: SLUG_CREDITOS_CLIENTES },
-        },
-        {
-            path: 'ventas/creditos/:id',
-            canActivate: [AdminGuard, FuncionalidadGuard],
-            component: CreditoDetalleComponent,
-            title: 'Crédito',
-            data: { funcionalidadSlug: SLUG_CREDITOS_CLIENTES },
-        },
+        { path: 'ventas/creditos/nuevo', redirectTo: '/clientes/creditos/nuevo' },
+        { path: 'ventas/creditos/:id', redirectTo: '/clientes/creditos/:id' },
+        { path: 'ventas/creditos', redirectTo: '/clientes/creditos' },
         { path: 'ventas/abonos', canActivate: [AdminGuard], component: AbonosVentasComponent, title: 'Abonos de ventas'},
 
         { path: 'cotizaciones', component: CotizacionesComponent, title: 'Cotizaciones' },
@@ -112,6 +94,27 @@ const routes: Routes = [
         { path: 'cliente/crear', component: ClienteComponent, title: 'Cliente'},
         { path: 'cliente/editar/:id', component: ClienteComponent, title: 'Cliente'},
         { path: 'clientes/cuentas-cobrar', component: CuentasCobrarComponent, title: 'Cuentas por cobrar' },
+        {
+            path: 'clientes/creditos',
+            canActivate: [AdminGuard, FuncionalidadGuard],
+            component: CreditosComponent,
+            title: 'Créditos',
+            data: { funcionalidadSlug: SLUG_CREDITOS_CLIENTES },
+        },
+        {
+            path: 'clientes/creditos/nuevo',
+            canActivate: [AdminGuard, FuncionalidadGuard],
+            component: CreditoFormComponent,
+            title: 'Nuevo crédito',
+            data: { funcionalidadSlug: SLUG_CREDITOS_CLIENTES },
+        },
+        {
+            path: 'clientes/creditos/:id',
+            canActivate: [AdminGuard, FuncionalidadGuard],
+            component: CreditoDetalleComponent,
+            title: 'Crédito',
+            data: { funcionalidadSlug: SLUG_CREDITOS_CLIENTES },
+        },
         { path: 'clientes/crm', component: ClientesDashComponent },
 
     // Reportes

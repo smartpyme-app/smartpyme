@@ -19,9 +19,32 @@ class CreditosClientesController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $contratos = CreditoContrato::with('cliente')
-            ->orderByDesc('id')
-            ->paginate(min(max((int) $request->input('paginate', 25), 1), 100));
+        $query = CreditoContrato::with('cliente')
+            ->withCount([
+                'cuotas as cuotas_hechas' => fn ($q) => $q->whereNotNull('id_venta'),
+            ]);
+        if ($request->filled('buscador')) {
+            $term = $request->input('buscador');
+            $query->where(function ($inner) use ($term) {
+                $inner->where('concepto', 'like', '%'.$term.'%')
+                    ->orWhereHas('cliente', function ($cliente) use ($term) {
+                        $cliente->where('nombre', 'like', '%'.$term.'%')
+                            ->orWhere('nombre_empresa', 'like', '%'.$term.'%')
+                            ->orWhere('apellido', 'like', '%'.$term.'%');
+                    });
+            });
+        }
+
+        $orden = $request->input('orden', 'id');
+        $columnas = ['id', 'monto', 'n_cuotas', 'fecha_inicio', 'tipo', 'estado'];
+        if (!in_array($orden, $columnas, true)) {
+            $orden = 'id';
+        }
+        $direccion = strtolower((string) $request->input('direccion', 'desc')) === 'asc' ? 'asc' : 'desc';
+
+        $contratos = $query
+            ->orderBy($orden, $direccion)
+            ->paginate(min(max((int) $request->input('paginate', 10), 1), 100));
 
         return response()->json($contratos, 200);
     }
@@ -104,6 +127,9 @@ class CreditosClientesController extends Controller
             'tasa_interes' => 'nullable|numeric|min:0',
             'tasa_mora' => 'nullable|numeric|min:0',
             'concepto' => 'nullable|string|max:255',
+            'cuotas' => 'nullable|array|min:2',
+            'cuotas.*.numero' => 'required_with:cuotas|integer|min:1',
+            'cuotas.*.monto' => 'required_with:cuotas|numeric|gt:0',
         ]);
 
         $contrato = $this->crearCredito->crear($request->user(), $data);

@@ -1,8 +1,12 @@
-import { puedeCrearCredito, puedeVerMenuCreditos, SLUG_CREDITOS_CLIENTES } from './creditos-acceso';
+import { puedeCrearCredito, puedeVerMenuCreditos, RUTA_CREDITOS_CLIENTES, SLUG_CREDITOS_CLIENTES } from './creditos-acceso';
 
 describe('puedeVerMenuCreditos', () => {
   it('usa el slug creditos-clientes', () => {
     expect(SLUG_CREDITOS_CLIENTES).toBe('creditos-clientes');
+  });
+
+  it('vive en clientes, no en el menú de ventas', () => {
+    expect(RUTA_CREDITOS_CLIENTES).toBe('/clientes/creditos');
   });
 
   it('oculta el menú: la cola son las ventas de cuotas', () => {

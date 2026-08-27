@@ -54,7 +54,7 @@ import { FACTURA_REMISION, esVentaConsignaRemision } from '../../../../constants
 import { SharedModule } from '@shared/shared.module';
 import { isImpresionEnFacturacionActiva } from '@helpers/empresa.helper';
 import { aplicarPrefillCredito, prepararVentaParaFacturarCuota } from '@views/ventas/creditos/creditos-facturar';
-import { aplicarPlanAVenta, generarPreviewCuotas, restoreSnapshotVenta, snapshotVentaMontos, SnapshotMontosVenta } from '@views/ventas/creditos/creditos-cuotas';
+import { aplicarPlanAVenta, generarPreviewCuotas, planCuadra, restoreSnapshotVenta, snapshotVentaMontos, sumaMontosCuotas, SnapshotMontosVenta, PreviewCuota } from '@views/ventas/creditos/creditos-cuotas';
 
 @Component({
     selector: 'app-facturacion',
@@ -110,6 +110,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
   public creditosClientesActivo = false;
   public creditoSnapshot: SnapshotMontosVenta | null = null;
   public planCuotasForm: any = { tipo: 'bien', n_cuotas: 2, fecha_inicio: '', concepto: '' };
+  public planCuotasPreview: PreviewCuota[] = [];
   public facturarCotizacion = false;
   public documentoFiscalListo = true;
   public api: boolean = false;
@@ -1768,9 +1769,58 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
             });
     }
 
-    get planCuotasPreview() {
-        const monto = this.creditoSnapshot?.total || Number(this.venta.total) || 0;
-        return generarPreviewCuotas(monto, Number(this.planCuotasForm.n_cuotas) || 0, this.planCuotasForm.fecha_inicio);
+    montoContratoCredito(): number {
+        return this.creditoSnapshot?.total || Number(this.venta.total) || 0;
+    }
+
+    get planCuotasCuadra(): boolean {
+        return planCuadra(this.montoContratoCredito(), this.planCuotasPreview);
+    }
+
+    get sumaPlanCuotas(): number {
+        return sumaMontosCuotas(this.planCuotasPreview);
+    }
+
+    get diferenciaPlanCuotas(): number {
+        return Math.round((this.montoContratoCredito() - this.sumaPlanCuotas) * 100) / 100;
+    }
+
+    regenerarPlanCuotas(usarGuardadas = false): void {
+        this.planCuotasPreview = generarPreviewCuotas(
+            this.montoContratoCredito(),
+            Number(this.planCuotasForm.n_cuotas) || 0,
+            this.planCuotasForm.fecha_inicio,
+        );
+        if (usarGuardadas) {
+            const guardadas = this.venta.credito_contrato?.cuotas;
+            if (Array.isArray(guardadas) && guardadas.length === this.planCuotasPreview.length) {
+                this.planCuotasPreview = this.planCuotasPreview.map((c, i) => ({
+                    ...c,
+                    monto: Number(guardadas[i]?.monto) > 0 ? Number(guardadas[i].monto) : c.monto,
+                }));
+            }
+        }
+        this.cdr.markForCheck();
+    }
+
+    actualizarFechasPlan(): void {
+        const base = generarPreviewCuotas(
+            this.montoContratoCredito(),
+            Number(this.planCuotasForm.n_cuotas) || 0,
+            this.planCuotasForm.fecha_inicio,
+        );
+        if (base.length === this.planCuotasPreview.length) {
+            this.planCuotasPreview.forEach((c, i) => {
+                c.fechaVencimiento = base[i].fechaVencimiento;
+            });
+        } else {
+            this.regenerarPlanCuotas();
+        }
+        this.cdr.markForCheck();
+    }
+
+    onMontoPlanChange(): void {
+        this.cdr.markForCheck();
     }
 
     public abrirPlanCuotas(template: TemplateRef<any>): void {
@@ -1792,15 +1842,16 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
             fecha_inicio: this.venta.credito_contrato?.fecha_inicio || fecha,
             concepto: this.venta.credito_contrato?.concepto || '',
         };
+        this.regenerarPlanCuotas(true);
         this.openModal(template, { class: 'modal-lg', backdrop: 'static' });
     }
 
     public confirmarPlanCuotas(): void {
-        if (!this.creditoSnapshot || this.planCuotasPreview.length === 0) {
-            this.alertService.error('Indique al menos 2 cuotas y una fecha de inicio.');
+        if (!this.creditoSnapshot || !this.planCuotasCuadra) {
+            this.alertService.error('La suma de las cuotas debe coincidir con el monto del contrato.');
             return;
         }
-        aplicarPlanAVenta(this.venta, this.planCuotasForm, this.creditoSnapshot);
+        aplicarPlanAVenta(this.venta, { ...this.planCuotasForm, cuotas: this.planCuotasPreview }, this.creditoSnapshot);
         this.sumTotal({ preservePrecioIva: true });
         this.closeModal();
         this.cdr.markForCheck();

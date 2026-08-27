@@ -35,11 +35,20 @@ class CrearCreditoContratoService
             ]);
         }
 
-        $plan = PlanCuotasIguales::generar(
-            $monto,
-            (int) $data['n_cuotas'],
-            $data['fecha_inicio']
-        );
+        try {
+            $plan = PlanCuotasIguales::generar(
+                $monto,
+                (int) $data['n_cuotas'],
+                $data['fecha_inicio']
+            );
+            if (!empty($data['cuotas']) && is_array($data['cuotas'])) {
+                $plan = PlanCuotasIguales::aplicarMontos($plan, $data['cuotas'], $monto);
+            }
+        } catch (\InvalidArgumentException $e) {
+            throw ValidationException::withMessages([
+                'cuotas' => $e->getMessage(),
+            ]);
+        }
 
         return DB::transaction(function () use ($user, $cliente, $data, $monto, $plan) {
             $contrato = CreditoContrato::create([
@@ -84,8 +93,14 @@ class CrearCreditoContratoService
         }
 
         $monto = round((float) $data['monto'], 2);
-        $nCuotas = (int) $data['n_cuotas'];
-        if (!CuotaInicialFactura::coincide((float) $venta->total, $monto, $nCuotas)) {
+        $primera = null;
+        if (!empty($data['cuotas'][0]['monto'])) {
+            $primera = round((float) $data['cuotas'][0]['monto'], 2);
+        } else {
+            $planIgual = PlanCuotasIguales::generar($monto, (int) $data['n_cuotas'], $data['fecha_inicio'] ?? '2000-01-01');
+            $primera = $planIgual[0]['monto'];
+        }
+        if (!CuotaInicialFactura::coincide((float) $venta->total, $primera)) {
             throw new \App\Exceptions\FacturacionException(
                 'El total de la venta debe ser la primera cuota del crédito.',
                 422

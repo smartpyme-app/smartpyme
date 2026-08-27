@@ -42,6 +42,20 @@ export function generarPreviewCuotas(
     return cuotas;
 }
 
+export function sumaMontosCuotas(cuotas: { monto: number }[]): number {
+  return round2(cuotas.reduce((s, c) => s + (Number(c.monto) || 0), 0));
+}
+
+export function planCuadra(total: number, cuotas: { monto: number }[]): boolean {
+  if (cuotas.length < 2) {
+    return false;
+  }
+  if (cuotas.some((c) => !(Number(c.monto) > 0))) {
+    return false;
+  }
+  return sumaMontosCuotas(cuotas) === round2(total);
+}
+
 export type SnapshotMontosVenta = {
   total: number;
   sub_total: number;
@@ -55,6 +69,7 @@ export type PlanCuotasFactura = {
   n_cuotas: number;
   fecha_inicio: string;
   concepto?: string;
+  cuotas?: PreviewCuota[];
 };
 
 export function snapshotVentaMontos(venta: any): SnapshotMontosVenta {
@@ -136,8 +151,10 @@ export function aplicarMontoADetalles(venta: any, nuevoTotal: number): void {
 
 export function aplicarPlanAVenta(venta: any, form: PlanCuotasFactura, snap: SnapshotMontosVenta): void {
   restoreSnapshotVenta(venta, snap);
-  const preview = generarPreviewCuotas(snap.total, Number(form.n_cuotas) || 0, form.fecha_inicio);
-  if (!preview.length) {
+  const preview = form.cuotas?.length
+    ? form.cuotas
+    : generarPreviewCuotas(snap.total, Number(form.n_cuotas) || 0, form.fecha_inicio);
+  if (!preview.length || !planCuadra(snap.total, preview)) {
     return;
   }
   aplicarMontoADetalles(venta, preview[0].monto);
@@ -148,11 +165,16 @@ export function aplicarPlanAVenta(venta: any, form: PlanCuotasFactura, snap: Sna
   venta.credito_contrato = {
     tipo: form.tipo,
     monto: snap.total,
-    n_cuotas: Number(form.n_cuotas),
+    n_cuotas: preview.length,
     fecha_inicio: form.fecha_inicio,
     concepto: form.concepto || null,
     tasa_interes: 0,
     tasa_mora: 0,
+    cuotas: preview.map((c) => ({
+      numero: c.numero,
+      monto: Number(c.monto),
+      fecha_vencimiento: c.fechaVencimiento,
+    })),
   };
 }
 
@@ -192,4 +214,34 @@ export function etiquetaEstadoCola(estado: string | null | undefined): string {
     return 'Facturada';
   }
   return 'Programada';
+}
+
+export function etiquetaTipoCredito(tipo: string | null | undefined): string {
+  if (tipo === 'bien') return 'Bien';
+  if (tipo === 'servicio') return 'Servicio';
+  if (tipo === 'prestamo') return 'Préstamo';
+  return tipo || '-';
+}
+
+export function etiquetaEstadoContrato(estado: string | null | undefined): string {
+  if (estado === 'activo') return 'Activo';
+  if (estado === 'cerrado') return 'Cerrado';
+  return estado || '-';
+}
+
+export function avanceCuotas(credito: { n_cuotas?: number; cuotas_hechas?: number } | null | undefined): {
+  hechas: number;
+  total: number;
+  porcentaje: number;
+  tipo: 'success' | 'warning';
+} {
+  const total = Math.max(0, Number(credito?.n_cuotas) || 0);
+  const hechas = Math.min(total, Math.max(0, Number(credito?.cuotas_hechas) || 0));
+  const completo = total > 0 && hechas === total;
+  return {
+    hechas,
+    total,
+    porcentaje: total > 0 ? Math.round((hechas / total) * 100) : 0,
+    tipo: completo ? 'success' : 'warning',
+  };
 }

@@ -1,90 +1,110 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
-  <h2 class="page-heading">
-    Créditos
-    @if (cola.length) {
-      <span class="badge bg-danger ms-2">{{ cola.length }}</span>
-    }
-  </h2>
-  @if (puedeCrear) {
-    <a class="btn btn-default" routerLink="/ventas/creditos/nuevo">
-      <i class="fa fa-plus"></i> Añadir crédito
-    </a>
-  }
+    <h2 class="page-heading">Créditos</h2>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h3 class="h5 mb-0">Por facturar</h3>
-    <select class="form-select w-auto" name="filtroEstado" [(ngModel)]="filtroEstado" (change)="cargarCola()">
-      <option value="">Todas</option>
-      <option value="vencida">Vencidas</option>
-      <option value="por_facturar">Próximas (7 días)</option>
-    </select>
-  </div>
-  @if (!cola.length) {
-    <p class="text-muted mb-0">Sin cuotas por facturar</p>
-  } @else {
-    <div class="table-responsive">
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Cliente</th>
-            <th>Cuota</th>
-            <th>Vencimiento</th>
-            <th>Monto</th>
-            <th>Estado</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (item of cola; track item.id) {
-            <tr>
-              <td>{{ item.cliente?.nombre_completo || item.cliente?.nombre }}</td>
-              <td>{{ item.numero }}</td>
-              <td>{{ item.fecha_vencimiento }}</td>
-              <td>{{ item.monto }}</td>
-              <td>{{ etiquetaEstadoCola(item.estado_cola) }}</td>
-              <td>
-                <a class="btn btn-sm btn-default" [routerLink]="['/venta/crear']" [queryParams]="{credito_cuota: item.id}">
-                  Facturar
-                </a>
-                <a class="btn btn-sm btn-link" [routerLink]="['/ventas/creditos', item.id_contrato]">Ver contrato</a>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <span class="text-muted d-flex align-items-center gap-2" *ngIf="creditos?.total">
+                Mostrando
+                <select name="paginate" class="form-select w-auto" (change)="filtrarCreditos()" [(ngModel)]="filtros.paginate">
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+                de {{ creditos?.total + ' registros' }}
+            </span>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <div class="d-flex gap-2">
+                <form class="d-flex input-group flex-grow-1" name="form" (ngSubmit)="filtrarCreditos()" autocomplete="off">
+                    <input type="search" name="buscador" class="form-control" placeholder="Buscar" [(ngModel)]="filtros.buscador">
+                </form>
+            </div>
+        </div>
     </div>
-  }
+
+    <div class="d-flex mb-3">
+        <div class="col d-flex gap-2 flex-wrap">
+            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/clientes">Todos</button>
+            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/clientes/cuentas-cobrar">Cuentas por cobrar</button>
+            <button class="btn btn-primary tcla-F5" tooltip="Actualizar (F5)" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/clientes/creditos">Créditos</button>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="table-responsive">
+            <table class="table table-borderless table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Cliente</th>
+                        <th (click)="setOrden('fecha_inicio')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha_inicio' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha_inicio' && filtros.direccion == 'desc'}" class="click">Inicio</th>
+                        <th class="d-none d-md-table-cell click" (click)="setOrden('n_cuotas')" [ngClass]="{'sorted-asc': filtros.orden == 'n_cuotas' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'n_cuotas' && filtros.direccion == 'desc'}">Cuotas</th>
+                        <th>Estado</th>
+                        <th (click)="setOrden('monto')" [ngClass]="{'sorted-asc': filtros.orden == 'monto' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'monto' && filtros.direccion == 'desc'}" class="click text-right">Monto</th>
+                        <th class="text-center"><i class="fa fa-cog"></i></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="6" class="text-center" *ngIf="creditos?.total < 1 && !loading">
+                            <span class="badge bg-primary">No tiene créditos registrados</span>
+                        </td>
+                        <td colspan="6" class="text-center" *ngIf="loading">
+                            <span class="badge bg-primary">Cargando...</span>
+                        </td>
+                    </tr>
+
+                    <tr *ngFor="let credito of creditos?.data">
+                        <td>
+                            <a *ngIf="credito.id_cliente" [routerLink]="['/cliente/editar', credito.id_cliente]" class="text-decoration-none text-dark">{{ etiquetaCliente(credito) | truncate:30 }}</a>
+                            <span *ngIf="!credito.id_cliente">{{ etiquetaCliente(credito) | truncate:30 }}</span>
+                        </td>
+                        <td>{{ credito.fecha_inicio | date:'dd/MM/yyyy':'UTC' }}</td>
+                        <td class="d-none d-md-table-cell" style="min-width: 140px;">
+                            <progressbar [value]="avanceCuotas(credito).porcentaje" [type]="avanceCuotas(credito).tipo">
+                                <span>{{ avanceCuotas(credito).hechas }}/{{ avanceCuotas(credito).total }}</span>
+                            </progressbar>
+                        </td>
+                        <td>
+                            <span class="badge py-2" [class.bg-success]="credito.estado === 'activo'" [class.bg-secondary]="credito.estado !== 'activo'">
+                                {{ etiquetaEstadoContrato(credito.estado) }}
+                            </span>
+                        </td>
+                        <td class="text-right">{{ credito.monto | currency }}</td>
+                        <td class="text-center">
+                            <button type="button"
+                                class="btn btn-link text-dark p-0 border-0 shadow-none"
+                                style="outline: none;"
+                                [popover]="tplAccionesCredito"
+                                [popoverContext]="{ credito: credito }"
+                                [outsideClick]="true"
+                                container="body"
+                                placement="left"
+                                tooltip="Acciones">
+                                <i class="fa fa-ellipsis-vertical fa-fw" aria-hidden="true"></i>
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="col-12" *ngIf="creditos?.last_page > 1">
+            <app-pagination [items]="creditos" (setPagination)="setPagination($event)"></app-pagination>
+        </div>
+    </div>
 </section>
 
-<section class="bg-white p-4 rounded">
-  @if (!creditos.length) {
-    <p class="text-muted mb-0">Sin créditos</p>
-  } @else {
-    <div class="table-responsive">
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Cliente</th>
-            <th>Tipo</th>
-            <th>Monto</th>
-            <th>Cuotas</th>
-            <th>Inicio</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (credito of creditos; track credito.id) {
-            <tr class="click" [routerLink]="['/ventas/creditos', credito.id]">
-              <td>{{ credito.cliente?.nombre_completo || credito.cliente?.nombre }}</td>
-              <td>{{ credito.tipo }}</td>
-              <td>{{ credito.monto }}</td>
-              <td>{{ credito.n_cuotas }}</td>
-              <td>{{ credito.fecha_inicio }}</td>
-            </tr>
-          }
-        </tbody>
-      </table>
+<ng-template #tplAccionesCredito let-credito="credito">
+    <div class="list-group border-0">
+        <a [routerLink]="['/clientes/creditos', credito.id]" class="list-group-item list-group-item-action border-0 click">
+            <i class="fa fa-fw fa-arrow-right"></i> Ver contrato
+        </a>
+        <a *ngIf="credito.id_cliente" [routerLink]="['/cliente/editar', credito.id_cliente]" class="list-group-item list-group-item-action border-0 click">
+            <i class="fa fa-fw fa-user"></i> Ver cliente
+        </a>
     </div>
-  }
-</section>
+</ng-template>

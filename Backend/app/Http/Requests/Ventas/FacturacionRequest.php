@@ -70,6 +70,9 @@ class FacturacionRequest extends FormRequest
             'credito_contrato.concepto' => 'nullable|string|max:255',
             'credito_contrato.tasa_interes' => 'nullable|numeric|min:0',
             'credito_contrato.tasa_mora' => 'nullable|numeric|min:0',
+            'credito_contrato.cuotas' => 'nullable|array|min:2',
+            'credito_contrato.cuotas.*.numero' => 'required_with:credito_contrato.cuotas|integer|min:1',
+            'credito_contrato.cuotas.*.monto' => 'required_with:credito_contrato.cuotas|numeric|gt:0',
         ];
 
         if ($cotizacion !== 1) {

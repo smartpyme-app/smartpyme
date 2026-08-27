@@ -1,4 +1,4 @@
-﻿import { Component, OnInit, TemplateRef, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { PipesModule } from '@pipes/pipes.module';

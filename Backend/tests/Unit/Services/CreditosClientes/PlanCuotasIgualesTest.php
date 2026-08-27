@@ -33,4 +33,23 @@ class PlanCuotasIgualesTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         PlanCuotasIguales::generar(100.00, 1, '2026-01-15');
     }
+
+    public function test_aplica_montos_si_la_suma_cuadra(): void
+    {
+        $plan = PlanCuotasIguales::generar(90.00, 3, '2026-01-15');
+        $plan = PlanCuotasIguales::aplicarMontos($plan, [
+            ['monto' => 50],
+            ['monto' => 20],
+            ['monto' => 20],
+        ], 90.00);
+
+        $this->assertSame([50.0, 20.0, 20.0], array_column($plan, 'monto'));
+    }
+
+    public function test_rechaza_si_la_suma_no_cuadra(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $plan = PlanCuotasIguales::generar(90.00, 2, '2026-01-15');
+        PlanCuotasIguales::aplicarMontos($plan, [['monto' => 50], ['monto' => 20]], 90.00);
+    }
 }

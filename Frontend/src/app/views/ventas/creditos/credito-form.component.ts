@@ -5,7 +5,7 @@ import { Router, RouterModule } from '@angular/router';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
-import { generarPreviewCuotas, PreviewCuota } from './creditos-cuotas';
+import { generarPreviewCuotas, planCuadra, PreviewCuota, sumaMontosCuotas } from './creditos-cuotas';
 import { puedeCrearCredito } from './creditos-acceso';
 
 @Component({
@@ -17,6 +17,7 @@ import { puedeCrearCredito } from './creditos-acceso';
 export class CreditoFormComponent implements OnInit {
   clientes: any[] = [];
   saving = false;
+  preview: PreviewCuota[] = [];
   form: any = {
     id_cliente: null,
     tipo: 'bien',
@@ -37,7 +38,7 @@ export class CreditoFormComponent implements OnInit {
   ngOnInit(): void {
     if (!puedeCrearCredito(this.apiService.isVentasLimitado())) {
       this.alertService.error('Los usuarios de tipo "Ventas Limitado" no pueden crear créditos.');
-      this.router.navigate(['/ventas/creditos']);
+      this.router.navigate(['/clientes/creditos']);
       return;
     }
 
@@ -49,29 +50,33 @@ export class CreditoFormComponent implements OnInit {
     });
   }
 
-  get preview(): PreviewCuota[] {
-    return generarPreviewCuotas(
+  get previewValido(): boolean {
+    return planCuadra(Number(this.form.monto) || 0, this.preview);
+  }
+
+  get sumaPreview(): number {
+    return sumaMontosCuotas(this.preview);
+  }
+
+  regenerarPreview(): void {
+    this.preview = generarPreviewCuotas(
       Number(this.form.monto) || 0,
       Number(this.form.n_cuotas) || 0,
       this.form.fecha_inicio,
     );
   }
 
-  get previewValido(): boolean {
-    return this.preview.length > 0;
-  }
-
   guardar(): void {
     if (!this.form.id_cliente || !this.previewValido) {
-      this.alertService.error('Complete cliente, tipo, monto, cuotas y fecha de inicio.');
+      this.alertService.error('Complete cliente, monto y cuotas. La suma debe coincidir con el contrato.');
       return;
     }
 
     this.saving = true;
-    this.apiService.store('creditos-clientes', this.form).subscribe({
+    this.apiService.store('creditos-clientes', { ...this.form, cuotas: this.preview }).subscribe({
       next: (contrato) => {
         this.saving = false;
-        this.router.navigate(['/ventas/creditos', contrato.id]);
+        this.router.navigate(['/clientes/creditos', contrato.id]);
       },
       error: (err) => {
         this.saving = false;

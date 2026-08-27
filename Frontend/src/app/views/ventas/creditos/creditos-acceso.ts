@@ -1,4 +1,5 @@
 export const SLUG_CREDITOS_CLIENTES = 'creditos-clientes';
+export const RUTA_CREDITOS_CLIENTES = '/clientes/creditos';
 
 export function puedeVerMenuCreditos(
   _tieneFuncionalidad: boolean,
