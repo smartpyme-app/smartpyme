@@ -5,6 +5,7 @@ import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { BoxfulApiService, BoxfulState, BoxfulCity } from '@services/boxful/boxful-api.service';
 import { AlertService } from '@services/alert.service';
+import { ApiService } from '@services/api.service';
 
 @Component({
   selector: 'app-boxful-shipping-selector',
@@ -67,6 +68,13 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges, OnDes
     { value: '504', label: 'Honduras (+504)' },
   ];
 
+  private readonly codigoAreaPorPais: Record<string, string> = {
+    'El Salvador': '503',
+    'Guatemala': '502',
+    'Costa Rica': '506',
+    'Honduras': '504',
+  };
+
   // Datos de Bodega/Origen de la Empresa
   originAddresses: any[] = [];
   selectedOriginAddressId: string | null = null;
@@ -104,8 +112,21 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges, OnDes
     private fb: FormBuilder,
     private boxfulService: BoxfulApiService,
     private alertService: AlertService,
-    private router: Router
+    private router: Router,
+    private apiService: ApiService
   ) { }
+
+  /** Boxful no manda currency; se usa la de la empresa SmartPyme. */
+  get currencySymbol(): string {
+    const e = this.apiService.auth_user()?.empresa;
+    return e?.currency?.currency_symbol || e?.currency_symbol || e?.moneda || '$';
+  }
+
+  /** Código de área según el país de la empresa (no el default 503 de Boxful). */
+  get codigoAreaEmpresa(): string {
+    const pais = String(this.apiService.auth_user()?.empresa?.pais || '').trim();
+    return this.codigoAreaPorPais[pais] || this.codigosArea[0].value;
+  }
 
   ngOnInit(): void {
     this.initForm();
@@ -245,7 +266,7 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges, OnDes
       direccion: ['', [Validators.required, Validators.maxLength(500)]],
       referencia: ['', [Validators.maxLength(500)]],
       telefono: ['', [Validators.required, Validators.pattern(/^[0-9+ ]{8,20}$/)]],
-      codigo_area: ['503', [Validators.required, Validators.maxLength(10)]],
+      codigo_area: [this.codigoAreaEmpresa, [Validators.required, Validators.maxLength(10)]],
       stateId: [null, [Validators.required]],
       cityId: [null, [Validators.required]],
       latitud: [null, [Validators.required, Validators.pattern(/^-?[0-9]+(\.[0-9]+)?$/)]],
@@ -258,7 +279,7 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges, OnDes
       direccion: ['', [Validators.required, Validators.maxLength(500)]],
       referencia: ['', [Validators.required, Validators.maxLength(500)]], // Requerido por la especificación de origen
       telefono: ['', [Validators.required, Validators.pattern(/^[0-9+ ]{8,20}$/)]],
-      codigo_area: ['503', [Validators.required, Validators.maxLength(10)]],
+      codigo_area: [this.codigoAreaEmpresa, [Validators.required, Validators.maxLength(10)]],
       stateId: [null, [Validators.required]],
       cityId: [null, [Validators.required]],
       latitud: [null, [Validators.required, Validators.pattern(/^-?[0-9]+(\.[0-9]+)?$/)]],
@@ -370,7 +391,7 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges, OnDes
         direccion: '',
         referencia: '',
         telefono: '',
-        codigo_area: '503',
+        codigo_area: this.codigoAreaEmpresa,
         stateId: null,
         cityId: null,
         latitud: null,
@@ -391,7 +412,7 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges, OnDes
       direccion: '',
       referencia: '',
       telefono: '',
-      codigo_area: '503',
+      codigo_area: this.codigoAreaEmpresa,
       stateId: null,
       cityId: null,
       latitud: null,
@@ -430,7 +451,7 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges, OnDes
       direccion: selected.direccion || selected.address || '',
       referencia: selected.referencia || selected.referencePoint || '',
       telefono: selected.telefono || selected.addressPhone || '',
-      codigo_area: this.normalizarCodigoArea(selected.codigo_area || selected.addressAreaCode || '503'),
+      codigo_area: this.normalizarCodigoArea(selected.codigo_area || selected.addressAreaCode),
       stateId,
       cityId,
       latitud: selected.latitud ?? selected.latitude ?? null,
@@ -438,11 +459,11 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges, OnDes
     });
   }
 
-  /** Normaliza "+503" / "503" al value del select. */
+  /** Normaliza "+503" / "503" al value del select. Si no hay valor, usa el país de la empresa. */
   private normalizarCodigoArea(codigo: string | number | null | undefined): string {
-    const raw = String(codigo ?? '503').replace(/^\+/, '').trim();
+    const raw = String(codigo ?? this.codigoAreaEmpresa).replace(/^\+/, '').trim();
     const known = this.codigosArea.find((c) => c.value === raw);
-    return known ? known.value : '503';
+    return known ? known.value : this.codigoAreaEmpresa;
   }
 
   onOriginStateChange(): void {
@@ -611,7 +632,7 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges, OnDes
             direccion: '',
             referencia: '',
             telefono: '',
-            codigo_area: '503',
+            codigo_area: this.codigoAreaEmpresa,
             stateId: null,
             cityId: null,
             latitud: null,
@@ -661,7 +682,7 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges, OnDes
       stateId: formVal.stateId,
       cityId: formVal.cityId,
       telefono: formVal.telefono,
-      codigo_area: formVal.codigo_area || '503'
+      codigo_area: formVal.codigo_area || this.codigoAreaEmpresa
     };
   }
 
@@ -828,7 +849,7 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges, OnDes
         apellido: this.clienteApellido || 'Final',
         email: this.clienteEmail || 'cliente@email.com',
         telefono: destino.telefono || '',
-        codigo_area: destino.codigo_area || '503'
+        codigo_area: destino.codigo_area || this.codigoAreaEmpresa
       },
       clienteId: this.clienteId,
       paqueteId: this.paqueteData?.id || null,
@@ -963,7 +984,7 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges, OnDes
       direccion: '',
       referencia: '',
       telefono: '',
-      codigo_area: '503',
+      codigo_area: this.codigoAreaEmpresa,
       stateId: null,
       cityId: null,
       latitud: null,
@@ -974,7 +995,7 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges, OnDes
       direccion: '',
       referencia: '',
       telefono: '',
-      codigo_area: '503',
+      codigo_area: this.codigoAreaEmpresa,
       stateId: null,
       cityId: null,
       latitud: null,

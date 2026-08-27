@@ -1618,10 +1618,11 @@
                         <i class="fa me-2" [ngClass]="testingConnection ? 'fa-spinner fa-spin' : 'fa-plug'"></i>
                         Probar Conexión
                     </button>
-                    <button class="btn btn-primary" type="button" [disabled]="savingBoxful"
+                    <button class="btn btn-primary" type="button"
+                        [disabled]="savingBoxful || testingConnection || !empresa.boxful_email || (!empresa.has_boxful_password && !empresa.boxful_password)"
                         (click)="saveBoxfulCredentials()">
                         <i class="fa me-2" [ngClass]="savingBoxful ? 'fa-spinner fa-spin' : 'fa-save'"></i>
-                        Guardar Credenciales
+                        Guardar y conectar
                     </button>
                 </div>
             </div>
