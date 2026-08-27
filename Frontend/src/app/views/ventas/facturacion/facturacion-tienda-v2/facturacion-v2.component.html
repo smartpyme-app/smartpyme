@@ -810,9 +810,9 @@
           <th colspan="2">Total</th>
           <th class="text-end">{{ montoContratoCredito() | currency }}</th>
         </tr>
-        <tr [class.text-success]="planCuotasCuadra" [class.text-danger]="!planCuotasCuadra">
-          <th colspan="2">Diferencia</th>
-          <th class="text-end">{{ diferenciaPlanCuotas | currency }}</th>
+        <tr>
+          <th colspan="2" [class.text-success]="planCuotasCuadra" [class.text-danger]="!planCuotasCuadra">Diferencia</th>
+          <th class="text-end" [class.text-success]="planCuotasCuadra" [class.text-danger]="!planCuotasCuadra">{{ diferenciaPlanCuotas | currency }}</th>
         </tr>
       </tfoot>
     </table>
