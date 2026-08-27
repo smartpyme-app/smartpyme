@@ -12,6 +12,7 @@ import {
 import { AlertService } from '@services/alert.service';
 import { DistribucionLotesModalComponent } from '@shared/modals/distribucion-lotes/distribucion-lotes-modal.component';
 import { textoResumenLotesDetalle } from '@utils/lotes-venta.util';
+import { armarListaPreciosPedido, PrecioPedidoOpcion } from './pedido-precios.util';
 
 interface LineaLocal {
   producto_id: number;
@@ -22,6 +23,7 @@ interface LineaLocal {
   precio: number;
   descuento: number;
   notas: string;
+  precios?: PrecioPedidoOpcion[];
   inventario_por_lotes?: boolean;
   lote_id?: number | null;
   lotes_asignados?: any[] | null;
@@ -245,15 +247,8 @@ export class PedidoFormComponent implements OnInit {
       });
     }
 
-    const precio = parseFloat(
-      String(
-        producto.precio_sin_iva ??
-        producto.precio ??
-        producto.precio_publico ??
-        producto.precio_venta ??
-        0
-      )
-    );
+    const precios = armarListaPreciosPedido(producto, this.ivaEmpresa);
+    const precio = precios[0]?.precio ?? 0;
     let notas = producto.notas ?? '';
     let nombre = producto.nombre_mostrar || producto.nombre || producto.descripcion || 'Producto';
     if (producto.id_paquete && producto.descripcion) {
@@ -269,6 +264,7 @@ export class PedidoFormComponent implements OnInit {
       precio: precio,
       descuento: producto.descuento ?? 0,
       notas: notas,
+      precios,
       inventario_por_lotes: producto.inventario_por_lotes,
       lote_id: null,
       lotes_asignados: null,
@@ -375,6 +371,10 @@ export class PedidoFormComponent implements OnInit {
 
   totalLinea(l: LineaLocal): number {
     return Math.max(0, this.subtotalLinea(l) - (l.descuento || 0));
+  }
+
+  tieneListaPrecios(l: LineaLocal): boolean {
+    return (l.precios?.length ?? 0) > 1;
   }
 
   totalPedido(): number {

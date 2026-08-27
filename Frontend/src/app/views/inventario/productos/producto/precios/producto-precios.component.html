@@ -30,9 +30,10 @@
                     <td>{{ (producto.precio * 1) + (producto.precio * (getPorcentajeProducto() / 100) )  | currency }}</td>
                     <td>{{ producto.clasificacion }}</td>
                     <td>Todos los usuarios</td>
+                    <td></td>
                 </tr>
 
-                @for (precio of producto?.precios; track precio.id) {
+                @for (precio of producto?.precios; track precio.id ?? $index) {
                 <tr class="animated fadeIn">
                     <td>{{ precio.precio | currency }}</td>
                     <td>{{ (precio.precio * 1) + (precio.precio * (getPorcentajeProducto() / 100) )  | currency }}</td>
@@ -46,11 +47,11 @@
                             {{ getUsuariosAutorizados(precio) }}
                         </span>
                     </td>
-                    <td width="100" class="text-center">
-                        <div class="d-flex justify-content-center gap-2">
-                            <a (click)="delete(precio)" class="btn btn-light" tooltip="Eliminar"><i class="fa fa-trash"></i></a>
-                            <!-- <a (click)="openModal(mPrecio, precio)" class="btn btn-light"><i class="fa fa-pencil-alt"></i></a> -->
-                        </div>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-outline-danger btn-sm" (click)="delete(precio)"
+                            title="Eliminar">
+                            <i class="fa fa-trash"></i>
+                        </button>
                     </td>
                 </tr>
                 }

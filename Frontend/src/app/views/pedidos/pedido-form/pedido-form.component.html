@@ -102,8 +102,14 @@
                 [name]="'c'+i">
             </td>
             <td>
-              <input type="number" class="form-control form-control-sm" min="0" step="any" [(ngModel)]="l.precio"
-                [name]="'p'+i">
+              <select *ngIf="tieneListaPrecios(l)" class="form-select form-select-sm" [name]="'p'+i"
+                [(ngModel)]="l.precio">
+                <option *ngFor="let p of l.precios" [ngValue]="p.precio">
+                  {{ cobraIva ? (p.precio_con_iva | currency) : (p.precio | currency) }}
+                </option>
+              </select>
+              <input *ngIf="!tieneListaPrecios(l)" type="number" class="form-control form-control-sm" min="0" step="any"
+                [(ngModel)]="l.precio" [name]="'p'+i">
             </td>
             <td>
               <input type="number" class="form-control form-control-sm" min="0" step="any" [(ngModel)]="l.descuento"

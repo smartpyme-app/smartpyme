@@ -128,6 +128,9 @@ export class ProductoPreciosComponent extends BaseModalComponent implements OnIn
           .subscribe(precio => {
             if(!this.precio.id) {
                 this.precio.id = precio.id;
+                if (!Array.isArray(this.producto.precios)) {
+                    this.producto.precios = [];
+                }
                 this.producto.precios.unshift(precio);
                 this.alertService.success('Precio creado', 'El precio fue añadido exitosamente.');
             }else{
@@ -147,15 +150,16 @@ export class ProductoPreciosComponent extends BaseModalComponent implements OnIn
     }
 
     delete(precio:any){
-        if (confirm('¿Desea eliminar el Registro?')) {        
-            this.apiService.delete('producto/precio/', precio.id)
+        const id = precio?.id;
+        if (id == null) {
+            return;
+        }
+        if (confirm('¿Desea eliminar el Registro?')) {
+            this.apiService.delete('producto/precio/', id)
               .pipe(this.untilDestroyed())
-              .subscribe(precio => {
-                for (var i = 0; i < this.producto.precios.length; ++i) {
-                    if (this.producto.precios[i].id === precio.id ){
-                        this.producto.precios.splice(i, 1);
-                    }
-                }
+              .subscribe(() => {
+                const lista = Array.isArray(this.producto.precios) ? this.producto.precios : [];
+                this.producto.precios = lista.filter((p: any) => Number(p.id) !== Number(id));
                 this.cdr.markForCheck();
             },error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
         }
