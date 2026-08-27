@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Constants\ShopifyConstant;
+use App\Helpers\ShopifyHelper;
 use App\Models\Admin\Empresa;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
@@ -35,24 +36,39 @@ class ShopifyTransformer
 
         // Construir dirección completa
         $direccionCompleta = trim(($primaryAddress['address1'] ?? '') . ' ' . ($primaryAddress['address2'] ?? ''));
+        $company = trim($primaryAddress['company'] ?? '');
+
+        $ubicacion = $this->resolverUbicacionElSalvador(
+            $primaryAddress['city'] ?? '',
+            $primaryAddress['province_code'] ?? '',
+            $primaryAddress['province'] ?? '',
+            $primaryAddress['country_code'] ?? 'SV'
+        );
+
+        $rawPhone = $primaryAddress['phone'] ?? $customer['phone'] ?? null;
+        $telefono = !empty(trim((string)$rawPhone)) ? trim((string)$rawPhone) : null;
+        $rawEmail = $customer['email'] ?? null;
+        $correo = !empty(trim((string)$rawEmail)) ? trim((string)$rawEmail) : null;
 
         $clienteData = [
             'nombre' => $customer['first_name'] ?? '',
             'apellido' => $customer['last_name'] ?? '',
-            'nombre_empresa' => $primaryAddress['company'] ?? '',
-            'telefono' => $primaryAddress['phone'] ?? $customer['phone'] ?? '',
-            'correo' => $customer['email'] ?? '',
+            'nombre_empresa' => $company ?: null,
+            'telefono' => $telefono,
+            'correo' => $correo,
             'shopify_customer_id' => $customer['id'] ?? null,
-            'direccion' => $direccionCompleta,
-            'pais' => $primaryAddress['country'] ?? '',
-            'cod_pais' => substr($primaryAddress['country_code'] ?? '', 0, 255),
-            'municipio' => $primaryAddress['city'] ?? '',
-            'departamento' => $primaryAddress['province'] ?? '',
-            'cod_municipio' => substr($primaryAddress['city'] ?? '', 0, 10),
-            'cod_departamento' => $this->obtenerCodigoDepartamento($primaryAddress['province_code'] ?? '', $shopifyData['id_empresa'] ?? null),
-            'tipo' => 'Persona',
-            'empresa_telefono' => $primaryAddress['phone'] ?? $customer['phone'] ?? '',
-            'empresa_direccion' => $direccionCompleta,
+            'direccion' => $direccionCompleta ?: null,
+            'pais' => $primaryAddress['country'] ?? 'El Salvador',
+            'cod_pais' => substr($primaryAddress['country_code'] ?? 'SV', 0, 255),
+            'departamento' => $ubicacion['departamento'],
+            'cod_departamento' => $ubicacion['cod_departamento'],
+            'municipio' => $ubicacion['municipio'],
+            'cod_municipio' => $ubicacion['cod_municipio'],
+            'distrito' => $ubicacion['distrito'],
+            'cod_distrito' => $ubicacion['cod_distrito'],
+            'tipo' => !empty($company) ? 'Empresa' : 'Persona',
+            'empresa_telefono' => $telefono,
+            'empresa_direccion' => $direccionCompleta ?: null,
             'enable' => 1,
             'id_empresa' => $shopifyData['id_empresa'],
             'id_usuario' => $shopifyData['id_usuario'],
@@ -83,24 +99,39 @@ class ShopifyTransformer
 
         // Construir dirección completa
         $direccionCompleta = trim(($defaultAddress['address1'] ?? '') . ' ' . ($defaultAddress['address2'] ?? ''));
+        $company = trim($defaultAddress['company'] ?? '');
+
+        $ubicacion = $this->resolverUbicacionElSalvador(
+            $defaultAddress['city'] ?? '',
+            $defaultAddress['province_code'] ?? '',
+            $defaultAddress['province'] ?? '',
+            $defaultAddress['country_code'] ?? 'SV'
+        );
+
+        $rawPhone = $defaultAddress['phone'] ?? $customer['phone'] ?? null;
+        $telefono = !empty(trim((string)$rawPhone)) ? trim((string)$rawPhone) : null;
+        $rawEmail = $customer['email'] ?? null;
+        $correo = !empty(trim((string)$rawEmail)) ? trim((string)$rawEmail) : null;
 
         $clienteData = [
             'nombre' => $customer['first_name'] ?? '',
             'apellido' => $customer['last_name'] ?? '',
-            'nombre_empresa' => $defaultAddress['company'] ?? '',
-            'telefono' => $defaultAddress['phone'] ?? $customer['phone'] ?? '',
-            'correo' => $customer['email'] ?? '',
+            'nombre_empresa' => $company ?: null,
+            'telefono' => $telefono,
+            'correo' => $correo,
             'shopify_customer_id' => $customer['id'] ?? null,
-            'direccion' => $direccionCompleta,
-            'pais' => $defaultAddress['country'] ?? '',
-            'cod_pais' => substr($defaultAddress['country_code'] ?? '', 0, 255),
-            'municipio' => $defaultAddress['city'] ?? '',
-            'departamento' => $defaultAddress['province'] ?? '',
-            'cod_municipio' => substr($defaultAddress['city'] ?? '', 0, 10),
-            'cod_departamento' => $this->obtenerCodigoDepartamento($defaultAddress['province_code'] ?? '', $shopifyData['id_empresa'] ?? null),
-            'tipo' => 'Persona',
-            'empresa_telefono' => $defaultAddress['phone'] ?? $customer['phone'] ?? '',
-            'empresa_direccion' => $direccionCompleta,
+            'direccion' => $direccionCompleta ?: null,
+            'pais' => $defaultAddress['country'] ?? 'El Salvador',
+            'cod_pais' => substr($defaultAddress['country_code'] ?? 'SV', 0, 255),
+            'departamento' => $ubicacion['departamento'],
+            'cod_departamento' => $ubicacion['cod_departamento'],
+            'municipio' => $ubicacion['municipio'],
+            'cod_municipio' => $ubicacion['cod_municipio'],
+            'distrito' => $ubicacion['distrito'],
+            'cod_distrito' => $ubicacion['cod_distrito'],
+            'tipo' => !empty($company) ? 'Empresa' : 'Persona',
+            'empresa_telefono' => $telefono,
+            'empresa_direccion' => $direccionCompleta ?: null,
             'enable' => 1,
             'id_empresa' => $shopifyData['id_empresa'],
             'id_usuario' => $shopifyData['id_usuario'],
@@ -723,5 +754,19 @@ class ShopifyTransformer
         }
 
         return substr($provinceCode, 0, 10);
+    }
+
+    /**
+     * Resuelve los códigos y nombres oficiales de Departamento, Municipio y Distrito según catálogos de MH.
+     *
+     * @param string|null $city
+     * @param string|null $provinceCode
+     * @param string|null $provinceName
+     * @param string|null $countryCode
+     * @return array
+     */
+    public function resolverUbicacionElSalvador(?string $city, ?string $provinceCode, ?string $provinceName, ?string $countryCode = 'SV'): array
+    {
+        return ShopifyHelper::resolverUbicacionElSalvador($city, $provinceCode, $provinceName, $countryCode);
     }
 }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\DteManagement;
 use App\Http\Controllers\Controller;
 use App\Models\DteManagement\DteDocument;
 use App\Models\DteManagement\UserEmailAccount;
+use App\Services\Dte\DteProcesoOpciones;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Database\QueryException;
@@ -110,7 +111,9 @@ class DteDocumentController extends Controller
         }
 
         $payload = $document->toArray();
-        $payload['line_items'] = $this->parseLineItems($document);
+        $jsonData = $this->jsonData($document);
+        $payload['line_items'] = $this->parseLineItemsFromJson($jsonData);
+        $payload['pago_sugerido'] = DteProcesoOpciones::pagoSugeridoDesdeJson($jsonData);
 
         return response()->json($payload);
     }
@@ -174,9 +177,9 @@ class DteDocumentController extends Controller
     }
 
     /**
-     * @return array<int, array<string, mixed>>
+     * @return array<string, mixed>
      */
-    protected function parseLineItems(DteDocument $document): array
+    protected function jsonData(DteDocument $document): array
     {
         if (!$document->json_path) {
             return [];
@@ -189,7 +192,7 @@ class DteDocumentController extends Controller
 
             $jsonData = json_decode(Storage::disk('dtes')->get($document->json_path), true);
         } catch (\Throwable $e) {
-            Log::warning('DteDocumentController: no se pudo leer JSON para line_items', [
+            Log::warning('DteDocumentController: no se pudo leer JSON', [
                 'dte_id' => $document->id,
                 'json_path' => $document->json_path,
                 'error' => $e->getMessage(),
@@ -197,10 +200,23 @@ class DteDocumentController extends Controller
             return [];
         }
 
-        if (!is_array($jsonData)) {
-            return [];
-        }
+        return is_array($jsonData) ? $jsonData : [];
+    }
 
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    protected function parseLineItems(DteDocument $document): array
+    {
+        return $this->parseLineItemsFromJson($this->jsonData($document));
+    }
+
+    /**
+     * @param array<string, mixed> $jsonData
+     * @return array<int, array<string, mixed>>
+     */
+    protected function parseLineItemsFromJson(array $jsonData): array
+    {
         $items = $jsonData['cuerpoDocumento'] ?? [];
         $lines = [];
 
@@ -268,8 +284,24 @@ class DteDocumentController extends Controller
         $document->refresh();
         $document->load('userEmailAccount');
 
+        $opciones = DteProcesoOpciones::fromArray($request->all());
+        try {
+            $opciones->validarPago();
+            $destino = $document->destino ?? $request->input('destino');
+            if ($destino === 'compra') {
+                $lineCount = count($this->parseLineItemsFromJson($this->jsonData($document)));
+                $opciones->validarLineasCompra($lineCount);
+            }
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        }
+
         $dteToIva = app(\App\Services\Dte\DteToIvaService::class);
-        $result = $dteToIva->insertFromDteDocument($document);
+        try {
+            $result = $dteToIva->insertFromDteDocument($document, $opciones);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        }
 
         if (!empty($result['skipped'])) {
             if ($result['skipped'] === 'duplicate') {

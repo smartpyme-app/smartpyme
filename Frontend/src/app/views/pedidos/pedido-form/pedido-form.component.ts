@@ -16,6 +16,7 @@ import { textoResumenLotesDetalle } from '@utils/lotes-venta.util';
 interface LineaLocal {
   producto_id: number;
   id_paquete?: number | null;
+  id_presentacion?: number | null;
   nombre: string;
   cantidad: number;
   precio: number;
@@ -256,6 +257,7 @@ export class PedidoFormComponent implements OnInit {
     const linea: LineaLocal = {
       producto_id: producto.id ?? producto.id_producto,
       id_paquete: producto.id_paquete || null,
+      id_presentacion: producto.id_presentacion || null,
       nombre: nombre,
       cantidad: producto.cantidad ?? 1,
       precio: precio,

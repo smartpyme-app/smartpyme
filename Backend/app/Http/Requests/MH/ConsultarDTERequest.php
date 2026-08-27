@@ -21,8 +21,10 @@ class ConsultarDTERequest extends FormRequest
     {
         return [
             'codigoGeneracion' => ['required', 'string'],
-            'fechaEmi' => ['required', 'date', 'date_format:Y-m-d'],
-            'ambiente' => ['required', 'string', 'in:00,01'],
+            'tdte' => ['required_without:tipoDte', 'string'],
+            'tipoDte' => ['required_without:tdte', 'string'],
+            'fechaEmi' => ['nullable', 'date', 'date_format:Y-m-d'],
+            'ambiente' => ['nullable', 'string', 'in:00,01'],
         ];
     }
 
@@ -34,10 +36,10 @@ class ConsultarDTERequest extends FormRequest
         return [
             'codigoGeneracion.required' => 'El código de generación es requerido.',
             'codigoGeneracion.string' => 'El código de generación debe ser una cadena de texto.',
-            'fechaEmi.required' => 'La fecha de emisión es requerida.',
+            'tdte.required_without' => 'El tipo DTE es requerido.',
+            'tipoDte.required_without' => 'El tipo DTE es requerido.',
             'fechaEmi.date' => 'La fecha de emisión debe ser una fecha válida.',
             'fechaEmi.date_format' => 'La fecha de emisión debe tener el formato Y-m-d.',
-            'ambiente.required' => 'El ambiente es requerido.',
             'ambiente.in' => 'El ambiente debe ser 00 (prueba) o 01 (producción).',
         ];
     }

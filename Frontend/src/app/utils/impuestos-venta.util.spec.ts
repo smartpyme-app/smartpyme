@@ -573,7 +573,7 @@ describe('impuestos-venta.util — IVA vs especiales', () => {
     };
     calcularMontosLineaDetalle(detalle, true, 13, { preservePrecioIva: true });
 
-    expect(Number(detalle.gravada)).toBeCloseTo(30.964602, 5);
+    expect(Number(detalle.gravada)).toBe(30.96);
     expect(Number(detalle.total_iva)).toBe(34.99);
 
     const ventaImpuestos = [{ id: 1, porcentaje: 13, codigo_mh: '20', nombre: 'IVA', monto: 0 }];
@@ -711,7 +711,7 @@ describe('impuestos-venta.util — IVA vs especiales', () => {
     };
     calcularMontosLineaDetalle(detalle, true, 13, { preservePrecioIva: true });
 
-    expect(Number(detalle.gravada)).toBeCloseTo(11.495575, 5);
+    expect(Number(detalle.gravada)).toBe(11.5);
     expect(Number(detalle.total_iva)).toBe(12.99);
 
     const ventaImpuestos = [{ id: 1, porcentaje: 13, codigo_mh: '20', nombre: 'IVA', monto: 0 }];
@@ -747,16 +747,41 @@ describe('impuestos-venta.util — IVA vs especiales', () => {
     const caso1 = armarLineas([5, 11, 3]);
     const impuestos1 = [{ id: 1, porcentaje: 13, codigo_mh: '20', nombre: 'IVA', monto: 0 }];
     expect(caso1.reduce((s, d) => s + Number(d.total_iva), 0)).toBe(19);
-    expect(sumarSubTotalEncabezadoVenta(caso1)).toBe(16.81);
-    expect(acumularImpuestosVentaConCierreResidual(impuestos1, caso1, true, 13)).toBe(2.19);
+    expect(caso1.reduce((s, d) => s + Number(d.gravada), 0)).toBe(16.8);
+    expect(sumarSubTotalEncabezadoVenta(caso1)).toBe(16.8);
+    expect(acumularImpuestosVentaConCierreResidual(impuestos1, caso1, true, 13)).toBe(2.2);
     expect(sumarTotalEncabezadoVenta(caso1, impuestos1, { empresaIva: 13 })).toBe(19);
 
     const caso2 = armarLineas([15, 8, 21, 11, 3]);
     const impuestos2 = [{ id: 1, porcentaje: 13, codigo_mh: '20', nombre: 'IVA', monto: 0 }];
     expect(caso2.reduce((s, d) => s + Number(d.total_iva), 0)).toBe(58);
-    expect(sumarSubTotalEncabezadoVenta(caso2)).toBe(51.33);
-    expect(acumularImpuestosVentaConCierreResidual(impuestos2, caso2, true, 13)).toBe(6.67);
+    expect(sumarSubTotalEncabezadoVenta(caso2)).toBe(51.31);
+    expect(acumularImpuestosVentaConCierreResidual(impuestos2, caso2, true, 13)).toBe(6.69);
     expect(sumarTotalEncabezadoVenta(caso2, impuestos2, { empresaIva: 13 })).toBe(58);
+  });
+
+  it('con muchos ítems la cabecera es SUM(ROUND(neto, 2)), no ROUND(SUM)', () => {
+    const neto4 = 16.9222;
+    const lineas = Array.from({ length: 46 }, () => {
+      const detalle: any = {
+        cantidad: 1,
+        precio: neto4,
+        descuento: 0,
+        tipo_gravado: 'gravada',
+        impuestos: [{ id: 1, porcentaje: 13, codigo_mh: '20' }],
+      };
+      calcularMontosLineaDetalle(detalle, true, 13);
+      return detalle;
+    });
+
+    const sumaGravada = redondearMoneda(
+      lineas.reduce((s, d) => s + Number(d.gravada), 0)
+    );
+    expect(Number(lineas[0].gravada)).toBe(16.92);
+    expect(sumaGravada).toBe(778.32);
+    expect(redondearMoneda(neto4 * 46)).toBe(778.42);
+    expect(sumarSubTotalEncabezadoVenta(lineas)).toBe(778.32);
+    expect(sumarSubTotalEncabezadoVenta(lineas)).toBe(sumaGravada);
   });
 
   it('el IVA de cabecera se reduce con descuento_puntos', () => {

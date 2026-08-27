@@ -340,6 +340,12 @@ class MH extends Model
 
         $this->venta->gravada = $this->venta->sub_total;
 
+        $cuerpoDocumento = $this->detallesCCF();
+        $totalGravada = floatval(number_format(collect($cuerpoDocumento)->sum('ventaGravada'), 2, '.', ''));
+        $totalExenta = floatval(number_format(collect($cuerpoDocumento)->sum('ventaExenta'), 2, '.', ''));
+        $totalNoSuj = floatval(number_format(collect($cuerpoDocumento)->sum('ventaNoSuj'), 2, '.', ''));
+        $subTotalVentas = floatval(number_format($totalGravada + $totalExenta + $totalNoSuj, 2, '.', ''));
+
         return 
             [
                 "identificacion" => $this->identificador(),
@@ -348,19 +354,19 @@ class MH extends Model
                 "receptor" => $this->receptorCCF(),
                 "otrosDocumentos" => NULL,
                 "ventaTercero" => NULL,
-                "cuerpoDocumento" => $this->detallesCCF(),
+                "cuerpoDocumento" => $cuerpoDocumento,
                "resumen" => [
-                  "totalNoSuj" => floatval(number_format($this->venta->no_sujeta, 2, '.', '')),
-                  "totalExenta" => floatval(number_format($this->venta->exenta, 2, '.', '')),
-                  "totalGravada" => floatval(number_format($this->venta->gravada, 2, '.', '')),
-                  "subTotalVentas" => floatval(number_format($this->venta->sub_total, 2, '.', '')),
+                  "totalNoSuj" => $totalNoSuj,
+                  "totalExenta" => $totalExenta,
+                  "totalGravada" => $totalGravada,
+                  "subTotalVentas" => $subTotalVentas,
                   "descuNoSuj" => 0,
                   "descuExenta" => 0,
                   "descuGravada" => floatval(number_format($this->venta->descuento, 2, '.', '')),
                   "porcentajeDescuento" => 0,
                   "totalDescu" => floatval(number_format($this->venta->descuento, 2, '.', '')),
                   "tributos" => $tributos,
-                  "subTotal" => floatval(number_format($this->venta->sub_total, 2, '.', '')),
+                  "subTotal" => $subTotalVentas,
                   "ivaPerci1" => floatval(number_format($this->venta->iva_percibido, 2, '.', '')),
                   "ivaRete1" => floatval(number_format($this->venta->iva_retenido, 2, '.', '')),
                   "reteRenta" => 0,

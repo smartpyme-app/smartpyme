@@ -108,6 +108,7 @@
               <th>#</th>
               <th *ngIf="esCompra">Código</th>
               <th>{{ esCompra ? 'Producto / Descripción' : 'Descripción' }}</th>
+              <th *ngIf="esCompra">Producto inventario</th>
               <th class="text-end">Cantidad</th>
               <th class="text-end">Precio unit.</th>
               <th class="text-end">Total</th>
@@ -118,7 +119,31 @@
               <td>{{ item.numero }}</td>
               <td *ngIf="esCompra">{{ item.codigo || '—' }}</td>
               <td>{{ item.descripcion || '—' }}</td>
-              <td class="text-end">{{ item.cantidad }}</td>
+              <td *ngIf="esCompra" style="min-width: 220px;">
+                <ng-select
+                  *ngIf="puedeEditarClasificacion"
+                  [items]="searchResults"
+                  bindLabel="nombre"
+                  [(ngModel)]="item.producto"
+                  (ngModelChange)="asignarProducto(item, $event)"
+                  [typeahead]="searchProductos$"
+                  [typeaheadLoading]="searchLoading"
+                  [clearable]="true"
+                  placeholder="Buscar producto..."
+                  class="form-select p-0">
+                </ng-select>
+                <span *ngIf="!puedeEditarClasificacion">{{ item.producto?.nombre || '—' }}</span>
+              </td>
+              <td class="text-end">
+                <input
+                  *ngIf="esCompra && puedeEditarClasificacion"
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  class="form-control form-control-sm text-end"
+                  [(ngModel)]="item.cantidad">
+                <ng-container *ngIf="!(esCompra && puedeEditarClasificacion)">{{ item.cantidad }}</ng-container>
+              </td>
               <td class="text-end">{{ formatMoney(item.precio_unitario) }}</td>
               <td class="text-end">{{ formatMoney(item.total) }}</td>
             </tr>
@@ -242,13 +267,62 @@
         </div>
 
         <div class="form-group col-md-4">
-          <button class="btn btn-primary" [disabled]="procesando || guardando" (click)="procesar()">
+          <label class="fw-medium">Forma de pago</label>
+          <select class="form-select" [(ngModel)]="formaPago" (ngModelChange)="cambioMetodoDePago()">
+            <option *ngFor="let forma of formasPago" [value]="forma.nombre">{{ forma.nombre }}</option>
+            <option *ngIf="!formasPago.length" value="Efectivo">Efectivo</option>
+          </select>
+        </div>
+
+        <div class="form-group col-md-4 without-label">
+          <div class="form-switch border rounded">
+            <label for="dte_credito">{{ esCompra ? 'Compra al crédito' : 'Pendiente (crédito)' }}</label>
+            <input
+              class="form-check-input float-end"
+              type="checkbox"
+              role="switch"
+              id="dte_credito"
+              [(ngModel)]="credito"
+              (ngModelChange)="setCredito()">
+          </div>
+        </div>
+
+        <div class="form-group col-md-4" *ngIf="credito">
+          <label class="fw-medium">Fecha de pago</label>
+          <input type="date" class="form-control" [(ngModel)]="fechaPago">
+        </div>
+
+        <div class="form-group col-md-4" *ngIf="requiereBanco">
+          <label class="fw-medium">Banco</label>
+          <select class="form-select" [(ngModel)]="detalleBanco">
+            <option value="">Seleccione aquí</option>
+            <option *ngFor="let banco of bancos" [value]="banco.nombre_banco">
+              {{ banco.nombre_banco }}{{ banco.numero ? ' — ' + banco.numero : '' }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group col-md-4 without-label" *ngIf="contabilidadHabilitada">
+          <div class="form-switch border rounded">
+            <label for="dte_retaceo">Es para retaceo</label>
+            <input
+              class="form-check-input float-end"
+              type="checkbox"
+              role="switch"
+              id="dte_retaceo"
+              [(ngModel)]="esRetaceo">
+          </div>
+        </div>
+
+        <div class="form-group col-md-4">
+          <button class="btn btn-primary" [disabled]="procesando || guardando || resolviendoProductos" (click)="procesar()">
             <span *ngIf="procesando">Procesando...</span>
             <span *ngIf="!procesando"><i class="fa fa-play me-1"></i> Procesar</span>
           </button>
         </div>
       </div>
       <p class="text-muted small mb-0 mt-2" *ngIf="guardando">Guardando cambios…</p>
+      <p class="text-warning small mb-0 mt-2" *ngIf="esCompra && !compraListaParaProcesar">Vincule un producto y una cantidad mayor a 0 en todas las líneas.</p>
     </div>
   </div>
 

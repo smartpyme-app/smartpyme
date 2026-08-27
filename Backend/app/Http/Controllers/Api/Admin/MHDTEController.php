@@ -428,6 +428,6 @@ class MHDTEController extends Controller
             return $guard;
         }
 
-        return response()->json($this->elSalvadorDte->consultarDTE($request));
+        return $this->elSalvadorDte->consultarDTE($request);
     }
 }
