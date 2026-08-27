@@ -1,12 +1,13 @@
 <div id="login-box" class="bg-white vh-100">
     <div class="container-fluid h-100">
         <div class="row d-flex align-items-center h-100">
-            <div class="col-sm-8 col-md-6 d-none d-md-flex justify-content-center align-items-center position-relative" style="background-image: url('/assets/img/sivar-economics-bg.png'); background-size: cover; background-repeat: no-repeat; height: 100vh;">
+            <div class="col-sm-8 col-md-6 d-none d-md-flex justify-content-center align-items-center position-relative" style="background-image: url('/assets/img/login.jpg'); background-size: cover; background-repeat: no-repeat; height: 100vh;">
             </div>
             <div class="col-12 col-md-6">
                 <div class="card border-0 px-5 mx-0 mx-lg-2 shadow-none">
                     <div class="card-body px-3 px-lg-5">
                         <app-notificaciones-container></app-notificaciones-container>
+                        <img src="assets/img/logo-onvo.png" alt="ONVO" class="onvo-form-logo mb-3" />
                         <h2>Inicio de sesión</h2>
                         <p>¡Bienvenido de regreso!</p>
                         <form class="row mt-5" name="form" (ngSubmit)="f.form.valid && submit()" #f="ngForm" novalidate>

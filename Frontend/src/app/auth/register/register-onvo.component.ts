@@ -7,10 +7,11 @@ import { PromocionalService, CodigoPromocional } from '@services/promocional.ser
 
 
 @Component({
-  selector: 'app-register-sivar-economics',
-  templateUrl: './register-sivar-economics.component.html',
+  selector: 'app-register-onvo',
+  templateUrl: './register-onvo.component.html',
+  styleUrls: ['./register-onvo.component.css'],
 })
-export class RegisterSivarEconomicsComponent implements OnInit {
+export class RegisterOnvoComponent implements OnInit {
 
     public user: any = {};
     public loading = false;
@@ -24,9 +25,9 @@ export class RegisterSivarEconomicsComponent implements OnInit {
     public mensajeErrorCodigo: string = '';
     public planes: any[] = [];
     public planesMap: Map<number, any> = new Map(); // Mapa de planes por ID
-    public codigoPromocionalSivar: CodigoPromocional | null = null;
+    public codigoPromocionalOnvo: CodigoPromocional | null = null;
 
-    private readonly CAMPANIA_SIVAR = 'SIVAR ECONOMICS';
+    private readonly CAMPANIA_ONVO = 'ONVO';
     private readonly TODAS_FRECUENCIAS_PAGO = ['Mensual', 'Trimestral', 'Anual'];
 
     constructor( 
@@ -71,7 +72,7 @@ export class RegisterSivarEconomicsComponent implements OnInit {
                 this.user.empresa.codigo_promocional = this.route.snapshot.queryParamMap.get('promo')!;
             }
 
-            this.iniciarFlujoSivar();
+            this.iniciarFlujoOnvo();
 
         } else {
             // Datos parciales en sesión: si viene promo en la URL, priorizar sobre lo guardado
@@ -80,17 +81,17 @@ export class RegisterSivarEconomicsComponent implements OnInit {
                 this.user.empresa = this.user.empresa || {};
                 this.user.empresa.codigo_promocional = promoUrl;
             }
-            this.iniciarFlujoSivar();
+            this.iniciarFlujoOnvo();
         }
 
     }
 
-    private iniciarFlujoSivar(): void {
-        this.promocionalService.obtenerPorCampania(this.CAMPANIA_SIVAR).subscribe((codigo) => {
-            this.codigoPromocionalSivar = codigo;
+    private iniciarFlujoOnvo(): void {
+        this.promocionalService.obtenerPorCampania(this.CAMPANIA_ONVO).subscribe((codigo) => {
+            this.codigoPromocionalOnvo = codigo;
 
             if (!this.user.empresa.campania) {
-                this.user.empresa.campania = codigo?.campania || this.CAMPANIA_SIVAR;
+                this.user.empresa.campania = codigo?.campania || this.CAMPANIA_ONVO;
             }
 
             this.cargarPlanes();
@@ -98,14 +99,14 @@ export class RegisterSivarEconomicsComponent implements OnInit {
     }
 
     /**
-     * Flujo Sivar Economics: plan estándar y código promocional de campaña SIVAR ECONOMICS por defecto.
+     * Flujo ONVO: plan estándar y código promocional de campaña ONVO por defecto.
      */
-    private aplicarValoresPorDefectoSivar(): void {
+    private aplicarValoresPorDefectoOnvo(): void {
         if (!this.user?.empresa) {
             return;
         }
 
-        const promoRef = this.codigoPromocionalSivar ?? this.codigoPromocionalValidado;
+        const promoRef = this.codigoPromocionalOnvo ?? this.codigoPromocionalValidado;
         const planesPermitidos = this.normalizarPlanesPermitidos(promoRef?.planes_permitidos);
 
         if (!this.user.empresa.frecuencia_pago) {
@@ -122,8 +123,8 @@ export class RegisterSivarEconomicsComponent implements OnInit {
             this.user.empresa.plan = '2';
         }
 
-        if (!this.user.empresa.codigo_promocional && this.codigoPromocionalSivar?.codigo) {
-            this.user.empresa.codigo_promocional = this.codigoPromocionalSivar.codigo;
+        if (!this.user.empresa.codigo_promocional && this.codigoPromocionalOnvo?.codigo) {
+            this.user.empresa.codigo_promocional = this.codigoPromocionalOnvo.codigo;
         }
 
         if (!this.user.empresa.tipo_plan) {
@@ -142,7 +143,7 @@ export class RegisterSivarEconomicsComponent implements OnInit {
                     this.planesMap.set(plan.id, plan);
                 });
 
-                this.aplicarValoresPorDefectoSivar();
+                this.aplicarValoresPorDefectoOnvo();
 
                 // Si ya hay un plan seleccionado, recalcular precios y aplicar descuentos
                 if (this.user?.empresa?.plan) {
@@ -448,7 +449,7 @@ export class RegisterSivarEconomicsComponent implements OnInit {
         const userToSend = JSON.parse(JSON.stringify(this.user));
         userToSend.empresa.total = totalAPagar;
 
-        // Adjuntar el dominio de origen para que el backend identifique registros de Sivar Economics
+        // Adjuntar el dominio de origen para que el backend identifique registros de ONVO
         userToSend.origen_registro = window.location.origin;
 
         this.apiService.register(userToSend)
@@ -540,13 +541,13 @@ export class RegisterSivarEconomicsComponent implements OnInit {
     }
 
     private obtenerPlanesPermitidosPromo(): string[] {
-        if (this.tieneCodigoPromocionalSivarAplicado() && this.codigoPromocionalSivar) {
-            return this.normalizarPlanesPermitidos(this.codigoPromocionalSivar.planes_permitidos);
+        if (this.tieneCodigoPromocionalOnvoAplicado() && this.codigoPromocionalOnvo) {
+            return this.normalizarPlanesPermitidos(this.codigoPromocionalOnvo.planes_permitidos);
         }
         if (this.codigoPromocionalValidado) {
             return this.normalizarPlanesPermitidos(this.codigoPromocionalValidado.planes_permitidos);
         }
-        return this.normalizarPlanesPermitidos(this.codigoPromocionalSivar?.planes_permitidos);
+        return this.normalizarPlanesPermitidos(this.codigoPromocionalOnvo?.planes_permitidos);
     }
 
     private normalizarPlanesPermitidos(planes: unknown): string[] {
@@ -570,7 +571,7 @@ export class RegisterSivarEconomicsComponent implements OnInit {
     }
 
     public getTextoDescuentoPromocional(codigo?: CodigoPromocional | null): string {
-        const promo = codigo ?? this.codigoPromocionalSivar;
+        const promo = codigo ?? this.codigoPromocionalOnvo;
         if (!promo) {
             return 'un descuento especial';
         }
@@ -581,7 +582,7 @@ export class RegisterSivarEconomicsComponent implements OnInit {
     }
 
     public getTextoPlanesPermitidos(codigo?: CodigoPromocional | null): string {
-        const promo = codigo ?? this.codigoPromocionalSivar;
+        const promo = codigo ?? this.codigoPromocionalOnvo;
         const planes = this.normalizarPlanesPermitidos(promo?.planes_permitidos);
         if (!planes.length) {
             return 'todos los tipos de plan';
@@ -607,13 +608,13 @@ export class RegisterSivarEconomicsComponent implements OnInit {
         return `${this.obtenerPorcentajeDescuentoCodigo()}% de descuento`;
     }
 
-    public tieneCodigoPromocionalSivarAplicado(): boolean {
+    public tieneCodigoPromocionalOnvoAplicado(): boolean {
         const codigoIngresado = this.user.empresa?.codigo_promocional?.trim();
-        const codigoSivar = this.codigoPromocionalSivar?.codigo?.trim();
-        if (!codigoIngresado || !codigoSivar) {
+        const codigoOnvo = this.codigoPromocionalOnvo?.codigo?.trim();
+        if (!codigoIngresado || !codigoOnvo) {
             return false;
         }
-        return codigoIngresado.toUpperCase() === codigoSivar.toUpperCase();
+        return codigoIngresado.toUpperCase() === codigoOnvo.toUpperCase();
     }
 
     public obtenerPorcentajeDescuentoCodigo(): number {

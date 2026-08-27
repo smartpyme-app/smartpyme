@@ -9,11 +9,11 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { Estado } from '../../../models/estado.interface';
 
 @Component({
-  selector: 'app-pago-sivar-economics',
-  templateUrl: './pago-sivar-economics.component.html',
-  styleUrls: ['./pago-layout.css', './pago-sivar-economics.component.css'],
+  selector: 'app-pago-onvo',
+  templateUrl: './pago-onvo.component.html',
+  styleUrls: ['./pago-layout.css', './pago-onvo.component.css'],
 })
-export class PagoSivarEconomicsComponent implements OnInit {
+export class PagoOnvoComponent implements OnInit {
   public user: any = {};
   public loading = false;
   public anio: number = new Date().getFullYear();

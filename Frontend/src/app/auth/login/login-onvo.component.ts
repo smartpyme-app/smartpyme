@@ -7,18 +7,19 @@ import { PromocionalService, CodigoPromocional } from '@services/promocional.ser
 declare let $: any;
 
 @Component({
-  selector: 'app-login-sivar-economics',
-  templateUrl: './login-sivar-economics.component.html',
+  selector: 'app-login-onvo',
+  templateUrl: './login-onvo.component.html',
+  styleUrls: ['./login-onvo.component.css'],
 })
-export class LoginSivarEconomicsComponent implements OnInit {
+export class LoginOnvoComponent implements OnInit {
   public user: any = {};
   public loading = false;
   public saludo: string = '';
   public anio: any = '';
   public showpassword: boolean = false;
-  public codigoPromocionalSivar: CodigoPromocional | null = null;
+  public codigoPromocionalOnvo: CodigoPromocional | null = null;
 
-  private readonly CAMPANIA_SIVAR = 'SIVAR ECONOMICS';
+  private readonly CAMPANIA_ONVO = 'ONVO';
 
   constructor(
     private apiService: ApiService,
@@ -30,22 +31,22 @@ export class LoginSivarEconomicsComponent implements OnInit {
 
   ngOnInit() {
     localStorage.clear();
-    this.cargarCodigoPromocionalSivar();
+    this.cargarCodigoPromocionalOnvo();
 
     if (this.route.snapshot.queryParamMap.get('passwordReset')) {
       setTimeout(() => this.alertService.success('¡Listo!', 'Tu contraseña ha sido actualizada correctamente.'));
     }
   }
 
-  private cargarCodigoPromocionalSivar(): void {
-    this.promocionalService.obtenerPorCampania(this.CAMPANIA_SIVAR).subscribe((codigo) => {
-      this.codigoPromocionalSivar = codigo;
+  private cargarCodigoPromocionalOnvo(): void {
+    this.promocionalService.obtenerPorCampania(this.CAMPANIA_ONVO).subscribe((codigo) => {
+      this.codigoPromocionalOnvo = codigo;
     });
   }
 
   public get queryParamsRegistro(): { promo?: string } {
-    if (this.codigoPromocionalSivar?.codigo) {
-      return { promo: this.codigoPromocionalSivar.codigo };
+    if (this.codigoPromocionalOnvo?.codigo) {
+      return { promo: this.codigoPromocionalOnvo.codigo };
     }
     return {};
   }
