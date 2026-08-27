@@ -47,8 +47,9 @@ bootstrapApplication(AppComponent, {
       fallbackLang: CountryI18nService.FALLBACK_LOCALE,
       lang: CountryI18nService.FALLBACK_LOCALE,
       loader: provideTranslateHttpLoader({
-        prefix: './assets/i18n/',
+        prefix: '/assets/i18n/',
         suffix: '.json',
+        useHttpBackend: true,
       }),
     }),
     importProvidersFrom(

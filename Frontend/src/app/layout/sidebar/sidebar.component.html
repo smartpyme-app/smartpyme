@@ -74,7 +74,7 @@
                             @if (contabilidadHabilitada && apiService.hasPermission('productos.campos_personalizados.ver')) {
                                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/custom-fields']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/settings.png" class="icon me-2">Campos personalizados</a></li>
                             }
-                            @if (usuario.empresa.modulo_paquetes && apiService.hasPermission('productos.paquetes.ver')) {
+                            @if (usuario.empresa?.modulo_paquetes && apiService.hasPermission('productos.paquetes.ver')) {
                                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/paquetes']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/package.png" class="icon me-2">Paquetes</a></li>
                             }
                         </ul>
@@ -108,7 +108,7 @@
                             @if (apiService.hasPermission('ventas.cotizaciones.ver')) {
                                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/cotizaciones']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/tag.png" class="icon me-2">Cotizaciones</a></li>
                             }
-                            @if (usuario.empresa.licencia) {
+                            @if (usuario.empresa?.licencia) {
                                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/solicitudes-compra']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/shopping-cart.png" class="icon me-2">Solicitudes</a></li>
                             }
                             <!-- <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/promociones']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/zap.png" class="icon me-2">Promociones</a></li> -->
@@ -118,7 +118,7 @@
                             @if (apiService.hasPermission('ventas.canales_venta.ver')) {
                                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/canales']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/tv.png" class="icon me-2">Canales de venta</a></li>
                             }
-                            @if (usuario.empresa.modulo_proyectos && apiService.hasPermission('ventas.proyectos.ver')) {
+                            @if (usuario.empresa?.modulo_proyectos && apiService.hasPermission('ventas.proyectos.ver')) {
                                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/proyectos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/share-2.png" class="icon me-2">Proyectos</a></li>
                             }
                             @if (contabilidadHabilitada && apiService.hasPermission('ventas.ordenes_produccion.ver')) {
@@ -183,7 +183,7 @@
                     </div>
                 </li>
             }
-            @if (usuario.empresa.modulo_citas && apiService.hasPermission('citas.ver')) {
+            @if (usuario.empresa?.modulo_citas && apiService.hasPermission('citas.ver')) {
                 <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
                     <a [routerLink]="['/citas']" tooltip="Citas" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
                         <img appLazyImage="/assets/icons/calendar.png" class="icon me-2">Citas
@@ -198,7 +198,7 @@
                     <div [collapse]="finanzasIsCollapsed" [isAnimated]="true">
                         <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
                             @if (apiService.hasPermission('finanzas.libro_iva.ver')) {
-                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="libroIvaRoute" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/book.png" class="icon me-2">{{ 'country.tax.libroIva.menuLabel' | translate }}</a></li>
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="libroIvaRoute" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/book.png" class="icon me-2">{{ libroIvaMenuLabel }}</a></li>
                             }
                             @if (apiService.hasPermission('finanzas.presupuestos.ver')) {
                                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/presupuestos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/coin-stack.png" class="icon me-2">Presupuestos</a></li>
@@ -212,16 +212,14 @@
                             @if (apiService.hasPermission('finanzas.cierre_caja.ver')) {
                                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/cierre-de-caja']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/inbox.png" class="icon me-2">Cierre de caja</a></li>
                             }
-                            @if (apiService.hasPermission('finanzas.reporteria.ver')) {
-                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/finanzas/antiguedad-saldos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/filters-lines.png" class="icon me-2">Antigüedad de saldos</a></li>
-                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/clientes/cuentas-cobrar']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/coin-stack.png" class="icon me-2">Cuentas por cobrar</a></li>
-                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/proveedores/cuentas-pagar']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/coins.png" class="icon me-2">Cuentas por pagar</a></li>
-                            }
                             @if (tieneDescargaDtesHabilitada) {
-                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: false}"><a [routerLink]="['/dte-management/cuentas']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/inbox.png" class="icon me-2">{{ 'country.tax.fe.downloadSidebarLabel' | translate }}</a></li>
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: false}"><a [routerLink]="['/dte-management/cuentas']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/inbox.png" class="icon me-2">{{ feDownloadSidebarLabel }}</a></li>
                             }
                             @if (apiService.hasPermission('ventas.formas_pago.ver')) {
                                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/formas-de-pago']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/coins.png" class="icon me-2">Métodos de pago</a></li>
+                            }
+                            @if (apiService.hasPermission('finanzas.reporteria.ver') || apiService.hasPermission('finanzas.libro_iva.ver')) {
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: false}"><a [routerLink]="['/finanzas/reportes']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/bar-chart-2.png" class="icon me-2">Reportes</a></li>
                             }
                         </ul>
                     </div>
@@ -318,7 +316,7 @@
               </ul>
             </div>
           </li>
-          <li *ngIf="usuario.empresa.licencia && usuario.empresa.es_empresa_padre" class="mb-1">
+          <li *ngIf="usuario.empresa?.licencia && usuario.empresa?.es_empresa_padre" class="mb-1">
             <button (click)="toggleLicencias()" tooltip="Licencias" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!licenciasIsCollapsed" aria-controls="collapseLicencias">
               <img src="/assets/icons/pennant.png" class="icon me-2">Licencias
             </button>

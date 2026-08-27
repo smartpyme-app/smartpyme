@@ -48,7 +48,7 @@
                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/bodegas']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/box.png" class="icon me-2">Bodegas</a></li>
                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/kardex']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/file-text.png" class="icon me-2">Kardex</a></li>
                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/categorias']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/folder.png" class="icon me-2">Categorías</a></li>
-                @if (usuario.empresa.modulo_paquetes) {
+                @if (usuario.empresa?.modulo_paquetes) {
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/paquetes']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/package.png" class="icon me-2">Paquetes</a></li>
                 }
               </ul>
@@ -69,7 +69,7 @@
                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/cotizaciones']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/tag.png" class="icon me-2">Cotizaciones</a></li>
                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/clientes']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/users.png" class="icon me-2">Clientes</a></li>
                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/canales']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/tv.png" class="icon me-2">Canales de venta</a></li>
-                @if (usuario.empresa.modulo_proyectos) {
+                @if (usuario.empresa?.modulo_proyectos) {
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/proyectos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/share-2.png" class="icon me-2">Proyectos</a></li>
                 }
                 @if (tieneIncentivosHabilitada) {
@@ -121,15 +121,13 @@
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/documentos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/file-text.png" class="icon me-2">Documentos</a></li>
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/formas-de-pago']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/coins.png" class="icon me-2">Métodos de pago</a></li>
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/impuestos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/filters-lines.png" class="icon me-2">Impuestos</a></li>
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="libroIvaRoute" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/book.png" class="icon me-2">{{ 'country.tax.libroIva.menuLabel' | translate }}</a></li>
-                    <li *ngIf="apiService.hasPermission('finanzas.reporteria.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/finanzas/antiguedad-saldos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/filters-lines.png" class="icon me-2">Antigüedad de saldos</a></li>
-                    <li *ngIf="apiService.hasPermission('finanzas.reporteria.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/clientes/cuentas-cobrar']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/coin-stack.png" class="icon me-2">Cuentas por cobrar</a></li>
-                    <li *ngIf="apiService.hasPermission('finanzas.reporteria.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/proveedores/cuentas-pagar']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/coins.png" class="icon me-2">Cuentas por pagar</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="libroIvaRoute" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/book.png" class="icon me-2">{{ libroIvaMenuLabel }}</a></li>
                     <li *ngIf="tieneDescargaDtesHabilitada" routerLinkActive="active"
                             [routerLinkActiveOptions]="{exact: false}"><a [routerLink]="['/dte-management/cuentas']"
                                 class="link-body-emphasis d-inline-flex text-decoration-none"><img
-                                    src="/assets/icons/inbox.png" class="icon me-2">{{ 'country.tax.fe.downloadSidebarLabel' | translate }}</a></li>
+                                    src="/assets/icons/inbox.png" class="icon me-2">{{ feDownloadSidebarLabel }}</a></li>
                     <!-- <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/cierre-de-caja']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/inbox.png" class="icon me-2">Cierre de caja</a></li> -->
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: false}"><a [routerLink]="['/finanzas/reportes']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/bar-chart-2.png" class="icon me-2">Reportes</a></li>
                   </ul>
                 </div>
             </li>

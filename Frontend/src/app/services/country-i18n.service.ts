@@ -19,19 +19,20 @@ export class CountryI18nService {
       .pipe(
         switchMap(({ locale, sub }) => {
           const translate = this.injector.get(TranslateService);
-          const op =
-            translate.getCurrentLang() === locale
-              ? translate.reloadLang(locale)
-              : translate.use(locale);
+          // ponytail: reloadLang() borra el diccionario y deja las claves crudas en el menú
+          const op = translate.use(locale);
           return op.pipe(
             tap({
               next: (v) => {
                 sub.next(v);
                 sub.complete();
               },
-              error: (e) => sub.error(e),
             }),
-            catchError(() => EMPTY)
+            catchError(() => {
+              sub.next(null);
+              sub.complete();
+              return EMPTY;
+            })
           );
         })
       )
@@ -62,7 +63,11 @@ export class CountryI18nService {
 
   /** Atajo tipado para mensajes en TypeScript. */
   t(key: string): string {
-    return this.translate().instant(key);
+    try {
+      return this.translate().instant(key);
+    } catch {
+      return key;
+    }
   }
 
   /** Alias legible en componentes: `this.countryI18n.k('country.identity.name')` */

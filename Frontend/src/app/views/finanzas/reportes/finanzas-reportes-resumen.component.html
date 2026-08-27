@@ -1,0 +1,21 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+  <h2 class="page-heading mb-0">Reportes</h2>
+</section>
+
+<div class="bg-white p-4 rounded mb-3">
+  <div class="d-flex justify-content-end gap-2 mb-3 flex-wrap align-items-center">
+    <app-libro-iva-periodo-filtros
+      [filtros]="filtros"
+      [years]="years"
+      [sucursales]="sucursales"
+      (periodoChange)="loadData()"
+    />
+    <app-libro-iva-resumen-descargas [filtros]="filtros" />
+  </div>
+
+  <div class="d-flex mb-3">
+    <app-finanzas-reportes-nav />
+  </div>
+
+  <app-libro-iva-resumen-panel [fiscalResumen]="fiscalResumen" [loading]="loading" />
+</div>

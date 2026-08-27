@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { PipesModule } from '@pipes/pipes.module';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { ModalModule } from 'ngx-bootstrap/modal';
 import { PopoverModule } from 'ngx-bootstrap/popover';
@@ -14,12 +14,13 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
 import { SLUG_CREDITOS_CLIENTES } from '@views/ventas/creditos/creditos-acceso';
+import { FinanzasReportesNavComponent } from '@views/finanzas/reportes/finanzas-reportes-nav.component';
 
 @Component({
   selector: 'app-cuentas-cobrar',
   templateUrl: './cuentas-cobrar.component.html',
   standalone: true,
-  imports: [CommonModule, PipesModule, FormsModule, RouterModule, TooltipModule, ModalModule, PopoverModule, TruncatePipe, PaginationComponent, CurrencyPipe]
+  imports: [CommonModule, PipesModule, FormsModule, RouterModule, TooltipModule, ModalModule, PopoverModule, TruncatePipe, PaginationComponent, CurrencyPipe, FinanzasReportesNavComponent]
 })
 export class CuentasCobrarComponent implements OnInit {
 
@@ -40,7 +41,12 @@ export class CuentasCobrarComponent implements OnInit {
         private alertService: AlertService,
         private modalService: BsModalService,
         private funcionalidadesService: FuncionalidadesService,
+        private router: Router,
     ) {}
+
+    esFinanzasReportes(): boolean {
+        return this.router.url.startsWith('/finanzas/reportes');
+    }
 
     ngOnInit() {
         this.verificarCreditosHabilitados();

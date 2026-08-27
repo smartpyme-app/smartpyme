@@ -8,6 +8,7 @@ import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
 import { LibroIvaPaisService } from '@views/contabilidad/libro-iva-shared/libro-iva-pais.service';
+import { CountryI18nService } from '@services/country-i18n.service';
 import { SLUG_DESCARGA_AUTOMATIZADA_DTES } from '@guards/funcionalidad.guard';
 import { puedeVerMenuCreditos, SLUG_CREDITOS_CLIENTES } from '@views/ventas/creditos/creditos-acceso';
 
@@ -15,13 +16,12 @@ import { FormControl } from '@angular/forms';
 import { debounceTime, switchMap, filter, filter as rxFilter } from 'rxjs/operators';
 import { Subject, takeUntil } from 'rxjs';
 import { BaseComponent } from '@shared/base/base.component';
-import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
     selector: 'app-sidebar-admin',
     templateUrl: './sidebar-admin.component.html',
     standalone: true,
-    imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, CollapseModule, TooltipModule, TranslatePipe],
+    imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, CollapseModule, TooltipModule],
 
 })
 
@@ -77,6 +77,7 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit, OnDe
         public alertService: AlertService,
         private funcionalidadesService: FuncionalidadesService,
         private libroIvaPais: LibroIvaPaisService,
+        private countryI18n: CountryI18nService,
         private router: Router
     ) {
         super();
@@ -87,7 +88,19 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit, OnDe
     return this.libroIvaPais.rutaInicioLibroIva();
   }
 
+  get libroIvaMenuLabel(): string {
+    return this.countryI18n.libroIva('menuLabel');
+  }
+
+  get feDownloadSidebarLabel(): string {
+    return this.countryI18n.fe('downloadSidebarLabel');
+  }
+
     ngOnInit() {
+        this.usuario = this.apiService.auth_user() ?? {};
+        if (!this.usuario.empresa) {
+            this.usuario.empresa = {};
+        }
         if (!localStorage.getItem('sidebarCollapsed')) {
             localStorage.setItem('sidebarCollapsed', this.sidebarCollapsed.toString());
         }else{
@@ -163,8 +176,6 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit, OnDe
         }else{
             this.adminIsCollapsed = JSON.parse(localStorage.getItem('adminIsCollapsed')!);
         }
-
-        this.usuario = this.apiService.auth_user();
 
         this.searchControl.valueChanges
           .pipe(

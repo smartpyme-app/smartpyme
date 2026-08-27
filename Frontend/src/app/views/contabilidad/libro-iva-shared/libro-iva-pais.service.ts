@@ -54,6 +54,10 @@ export class LibroIvaPaisService {
     }
   }
 
+  rutaResumenLibroIva(): string[] {
+    return ['/finanzas/reportes/resumen-impuestos'];
+  }
+
   /** Redirige al libro IVA del país correcto si el componente no corresponde. */
   redirigirSiPaisIncorrecto(esperado: LibroIvaPaisTipo, router: Router): boolean {
     if (this.tipoLibroIva() === esperado) {

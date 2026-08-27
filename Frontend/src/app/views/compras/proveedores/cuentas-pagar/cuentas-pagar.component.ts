@@ -2,18 +2,19 @@ import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PipesModule } from '@pipes/pipes.module';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { ModalModule } from 'ngx-bootstrap/modal';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '../../../../services/alert.service';
 import { ApiService } from '../../../../services/api.service';
+import { FinanzasReportesNavComponent } from '@views/finanzas/reportes/finanzas-reportes-nav.component';
 
 @Component({
   selector: 'app-cuentas-pagar',
   templateUrl: './cuentas-pagar.component.html',
   standalone: true,
-  imports: [CommonModule, PipesModule, FormsModule, RouterModule, TooltipModule, ModalModule]
+  imports: [CommonModule, PipesModule, FormsModule, RouterModule, TooltipModule, ModalModule, FinanzasReportesNavComponent]
 })
 export class CuentasPagarComponent implements OnInit {
 
@@ -30,8 +31,13 @@ export class CuentasPagarComponent implements OnInit {
     constructor(
         public apiService: ApiService,
         private alertService: AlertService,
-        private modalService: BsModalService
+        private modalService: BsModalService,
+        private router: Router
     ) {}
+
+    esFinanzasReportes(): boolean {
+        return this.router.url.startsWith('/finanzas/reportes');
+    }
 
     ngOnInit() {
         this.loadAll();

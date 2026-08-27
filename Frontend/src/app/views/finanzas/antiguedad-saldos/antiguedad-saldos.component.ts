@@ -3,17 +3,18 @@ import { CommonModule } from '@angular/common';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { PipesModule } from '@pipes/pipes.module';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { RouterModule, ActivatedRoute } from '@angular/router';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { ModalModule, BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { FinanzasReportesNavComponent } from '@views/finanzas/reportes/finanzas-reportes-nav.component';
 
 @Component({
   selector: 'app-antiguedad-saldos',
   templateUrl: './antiguedad-saldos.component.html',
   standalone: true,
-  imports: [CommonModule, PipesModule, FormsModule, RouterModule, TooltipModule, ModalModule, CurrencyPipe]
+  imports: [CommonModule, PipesModule, FormsModule, RouterModule, TooltipModule, ModalModule, CurrencyPipe, FinanzasReportesNavComponent]
 })
 export class AntiguedadSaldosComponent implements OnInit {
   public reporte: any = null;
@@ -45,7 +46,8 @@ export class AntiguedadSaldosComponent implements OnInit {
   constructor(
     public apiService: ApiService,
     private alertService: AlertService,
-    private modalService: BsModalService
+    private modalService: BsModalService,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit() {
@@ -63,7 +65,16 @@ export class AntiguedadSaldosComponent implements OnInit {
       id_vendedor: ''
     };
     this.cargarListasFiltros();
-    this.cargar();
+    this.route.data.subscribe((data) => {
+      const tipo = data['tipo'] === 'cxp' ? 'cxp' : 'cxc';
+      if (this.filtros.tipo !== tipo) {
+        this.filtros.id_cliente = '';
+        this.filtros.id_proveedor = '';
+        this.filtros.id_vendedor = '';
+      }
+      this.filtros.tipo = tipo;
+      this.cargar();
+    });
   }
 
   cargarListasFiltros() {
@@ -87,14 +98,6 @@ export class AntiguedadSaldosComponent implements OnInit {
       (data: any) => { this.empresas = Array.isArray(data) ? data : (data?.data || []); },
       () => { this.empresas = []; }
     );
-  }
-
-  setTipo(tipo: 'cxc' | 'cxp') {
-    this.filtros.tipo = tipo;
-    this.filtros.id_cliente = '';
-    this.filtros.id_proveedor = '';
-    this.filtros.id_vendedor = '';
-    this.cargar();
   }
 
   bucketsActivos(): string[] {

@@ -128,10 +128,8 @@ const routes: Routes = [
         {
 
           path: 'libro-iva-sv/resumen',
-
-          loadComponent: () => import('@views/contabilidad/libro-iva-sv/resumen/libro-iva-resumen.component').then(m => m.LibroIvaResumenComponent),
-
-          title: 'Resumen fiscal'
+          redirectTo: '/finanzas/reportes/resumen-impuestos',
+          pathMatch: 'full'
 
         },
 
@@ -170,10 +168,8 @@ const routes: Routes = [
         {
 
           path: 'libro-iva-cr/resumen',
-
-          loadComponent: () => import('@views/contabilidad/libro-iva-cr/resumen/libro-iva-cr-resumen.component').then(m => m.LibroIvaCrResumenComponent),
-
-          title: 'Resumen fiscal'
+          redirectTo: '/finanzas/reportes/resumen-impuestos',
+          pathMatch: 'full'
 
         },
 
@@ -232,10 +228,8 @@ const routes: Routes = [
         {
 
           path: 'libro-iva-hd/resumen',
-
-          loadComponent: () => import('@views/contabilidad/libro-iva-hd/resumen/libro-iva-hd-resumen.component').then(m => m.LibroIvaHdResumenComponent),
-
-          title: 'Resumen fiscal'
+          redirectTo: '/finanzas/reportes/resumen-impuestos',
+          pathMatch: 'full'
 
         },
 
@@ -264,10 +258,8 @@ const routes: Routes = [
         {
 
           path: 'libro-iva-general/resumen',
-
-          loadComponent: () => import('@views/contabilidad/libro-iva-general/resumen/libro-iva-general-resumen.component').then(m => m.LibroIvaGeneralResumenComponent),
-
-          title: 'Resumen fiscal'
+          redirectTo: '/finanzas/reportes/resumen-impuestos',
+          pathMatch: 'full'
 
         },
 
@@ -316,9 +308,7 @@ const routes: Routes = [
         {
 
           path: 'libro-iva/resumen',
-
-          redirectTo: 'libro-iva-sv/resumen',
-
+          redirectTo: '/finanzas/reportes/resumen-impuestos',
           pathMatch: 'full'
 
         },

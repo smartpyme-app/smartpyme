@@ -59,6 +59,11 @@ export const routes: Routes = [
       path: '',
       canActivate: [AuthGuard, SubscriptionGuard],
       children: [
+        // Finanzas / reportes (ruta explícita; evita colisión con otros lazy modules en path '')
+        {
+          path: 'finanzas',
+          loadChildren: () => import('./views/finanzas/finanzas.module').then(m => m.FinanzasModule),
+        },
         // Dash
         {
           path: '',
