@@ -19,6 +19,7 @@ class ShopifySyncCommand extends Command
         {--empresa= : ID de la empresa}
         {--bodega= : ID de bodega para el stock (default: primera bodega activa)}
         {--desactivar-ausentes : Desactivar variantes locales que ya no existen en Shopify}
+        {--sin-kardex : No registrar movimientos de kardex durante la sincronización}
         {--dry-run : Solo reporta sin escribir}';
 
     protected $description = 'Sincroniza productos y stock desde Shopify hacia SmartPyme (upsert + dedupe por variant_id)';
@@ -30,6 +31,7 @@ class ShopifySyncCommand extends Command
         $empresaId = (int) $this->option('empresa');
         $dryRun = (bool) $this->option('dry-run');
         $desactivarAusentes = (bool) $this->option('desactivar-ausentes');
+        $registrarKardex = !(bool) $this->option('sin-kardex');
 
         if (!$empresaId) {
             $this->error('Debes indicar --empresa=<id>.');
@@ -67,7 +69,7 @@ class ShopifySyncCommand extends Command
         $productos = $this->obtenerTodosLosProductos($client);
         $this->info('Productos obtenidos de Shopify: ' . count($productos));
 
-        $stats = ['creados' => 0, 'actualizados' => 0, 'stock' => 0, 'variantes' => 0];
+        $stats = ['creados' => 0, 'actualizados' => 0, 'stock' => 0, 'variantes' => 0, 'kardex' => 0];
         $vistos = [];
 
         foreach ($productos as $shopifyProduct) {
@@ -90,7 +92,7 @@ class ShopifySyncCommand extends Command
                 }
 
                 if (!$dryRun) {
-                    $this->upsertVariante($empresaId, $data, $stock, $bodega->id, $stats);
+                    $this->upsertVariante($empresaId, $data, $stock, $bodega->id, $idUsuario, $registrarKardex, $stats);
                 } else {
                     $this->contarStats($empresaId, $data, $stats);
                 }
@@ -104,11 +106,12 @@ class ShopifySyncCommand extends Command
         }
 
         $this->info(sprintf(
-            'Completado. variantes=%d creados=%d actualizados=%d stock_actualizados=%d',
+            'Completado. variantes=%d creados=%d actualizados=%d stock_actualizados=%d kardex=%d',
             $stats['variantes'],
             $stats['creados'],
             $stats['actualizados'],
-            $stats['stock']
+            $stats['stock'],
+            $stats['kardex']
         ));
 
         return self::SUCCESS;
@@ -141,9 +144,9 @@ class ShopifySyncCommand extends Command
         return $productos;
     }
 
-    private function upsertVariante(int $empresaId, array $data, int $stock, int $bodegaId, array &$stats): void
+    private function upsertVariante(int $empresaId, array $data, int $stock, int $bodegaId, ?int $idUsuario, bool $registrarKardex, array &$stats): void
     {
-        Model::withoutEvents(function () use ($empresaId, $data, $stock, $bodegaId, &$stats) {
+        Model::withoutEvents(function () use ($empresaId, $data, $stock, $bodegaId, $idUsuario, $registrarKardex, &$stats) {
             $variantId = $data['shopify_variant_id'] ?? null;
 
             $producto = null;
@@ -176,6 +179,8 @@ class ShopifySyncCommand extends Command
                 ->where('id_bodega', $bodegaId)
                 ->first();
 
+            $stockAnterior = $inventario ? (int) $inventario->stock : 0;
+
             if ($inventario) {
                 if ((int) $inventario->stock !== $stock) {
                     $inventario->stock = $stock;
@@ -183,7 +188,7 @@ class ShopifySyncCommand extends Command
                     $stats['stock']++;
                 }
             } else {
-                Inventario::create([
+                $inventario = Inventario::create([
                     'id_producto' => $producto->id,
                     'id_bodega' => $bodegaId,
                     'stock' => $stock,
@@ -191,6 +196,16 @@ class ShopifySyncCommand extends Command
                     'stock_maximo' => 1000,
                 ]);
                 $stats['stock']++;
+            }
+
+            // Reconciliar kardex por el delta (solo si el stock cambió)
+            $delta = $stock - $stockAnterior;
+            if ($registrarKardex && $delta != 0 && $inventario) {
+                $inventario->kardex($producto, $delta, $producto->precio, $producto->costo, null, [
+                    'origen' => 'shopify',
+                    'id_usuario' => $idUsuario,
+                ]);
+                $stats['kardex']++;
             }
 
             $stats['variantes']++;
