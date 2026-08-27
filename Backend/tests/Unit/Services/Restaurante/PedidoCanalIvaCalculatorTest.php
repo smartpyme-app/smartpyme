@@ -83,4 +83,50 @@ class PedidoCanalIvaCalculatorTest extends TestCase
         $this->assertEquals(11.7, $calc['iva']);
         $this->assertEquals(101.7, $calc['total_con_iva']);
     }
+
+    public function test_iva_es_residual_entre_total_y_base_a_centavos_como_facturacion_v2(): void
+    {
+        $detalles = [
+            (object) [
+                'cantidad' => 1,
+                'precio' => 2.03,
+                'descuento' => 0.0,
+                'total' => 2.03,
+                'producto' => (object) ['porcentaje_impuesto' => 13],
+            ],
+        ];
+
+        $calc = PedidoCanalIvaCalculator::calcular($detalles, 13.0);
+
+        $this->assertEquals(2.03, $calc['subtotal']);
+        $this->assertEquals(2.29, $calc['total_con_iva']);
+        $this->assertEquals(0.26, $calc['iva']);
+        $this->assertEquals(
+            $calc['total_con_iva'],
+            $calc['subtotal'] - $calc['descuento'] + $calc['iva']
+        );
+    }
+
+    public function test_centavo_de_iva_sigue_el_total_cobrado_no_la_tasa_redondeada_aparte(): void
+    {
+        $detalles = [
+            (object) [
+                'cantidad' => 1,
+                'precio' => 2.034,
+                'descuento' => 0.0,
+                'total' => 2.034,
+                'producto' => (object) ['porcentaje_impuesto' => 13],
+            ],
+        ];
+
+        $calc = PedidoCanalIvaCalculator::calcular($detalles, 13.0);
+
+        $this->assertEquals(2.03, $calc['subtotal']);
+        $this->assertEquals(2.30, $calc['total_con_iva']);
+        $this->assertEquals(0.27, $calc['iva']);
+        $this->assertEquals(
+            $calc['total_con_iva'],
+            $calc['subtotal'] - $calc['descuento'] + $calc['iva']
+        );
+    }
 }

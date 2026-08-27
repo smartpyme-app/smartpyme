@@ -23,24 +23,23 @@ class PedidoCanalIvaCalculator
         $lineas = [];
         $subtotal = 0.0;
         $descuentoTotal = 0.0;
-        $ivaTotal = 0.0;
         $totalConIva = 0.0;
 
         foreach ($detalles as $d) {
             $cantidad = (float) self::val($d, 'cantidad', 0);
             $precio = (float) self::val($d, 'precio', 0);
             $descuento = (float) self::val($d, 'descuento', 0);
-            $base = self::val($d, 'total', null);
-            $totalSinIva = $base !== null
-                ? (float) $base
-                : max(0, $cantidad * $precio - $descuento);
 
             $pct = self::pct($d, $ivaEmpresa);
             $factor = $pct > 0 ? (1 + $pct / 100) : 1.0;
 
-            $precioConIva = $pct > 0 ? round($precio * $factor, 4) : $precio;
-            $lineaIva = $pct > 0 ? round($totalSinIva * ($pct / 100), 4) : 0.0;
-            $lineaConIva = $pct > 0 ? round($totalSinIva * $factor, 4) : $totalSinIva;
+            $subtotalLinea = self::redondearMoneda($cantidad * $precio);
+            $base = self::redondearMoneda($cantidad * $precio - $descuento);
+            $precioConIvaUnrounded = $pct > 0 ? $precio * $factor : $precio;
+            $descuentoConIva = $pct > 0 ? $descuento * $factor : $descuento;
+            $precioConIva = self::redondearMoneda($precioConIvaUnrounded);
+            $lineaConIva = self::redondearMoneda($cantidad * $precioConIvaUnrounded - $descuentoConIva);
+            $lineaIva = self::redondearMoneda($lineaConIva - $base);
 
             $lineas[] = [
                 'precio_con_iva' => $precioConIva,
@@ -49,18 +48,22 @@ class PedidoCanalIvaCalculator
                 'porcentaje_impuesto' => $pct,
             ];
 
-            $subtotal += $cantidad * $precio;
-            $descuentoTotal += $descuento;
-            $ivaTotal += $lineaIva;
+            $subtotal += $subtotalLinea;
+            $descuentoTotal += self::redondearMoneda($descuento);
             $totalConIva += $lineaConIva;
         }
 
+        $subtotal = self::redondearMoneda($subtotal);
+        $descuentoTotal = self::redondearMoneda($descuentoTotal);
+        $totalConIva = self::redondearMoneda($totalConIva);
+        $ivaTotal = self::redondearMoneda($totalConIva - ($subtotal - $descuentoTotal));
+
         return [
             'lineas' => $lineas,
-            'subtotal' => round($subtotal, 4),
-            'descuento' => round($descuentoTotal, 4),
-            'iva' => round($ivaTotal, 4),
-            'total_con_iva' => round($totalConIva, 4),
+            'subtotal' => $subtotal,
+            'descuento' => $descuentoTotal,
+            'iva' => $ivaTotal,
+            'total_con_iva' => $totalConIva,
         ];
     }
 
@@ -71,6 +74,18 @@ class PedidoCanalIvaCalculator
         }
 
         return max(0, (float) ($empresa->iva ?? 0));
+    }
+
+    /** Same cent rounding as Frontend redondearMoneda (facturación v2). */
+    public static function redondearMoneda(float $n): float
+    {
+        if (is_nan($n) || is_infinite($n)) {
+            return 0.0;
+        }
+        $sign = $n < 0 ? -1.0 : 1.0;
+        $cents = round(abs($n) * 100 + 1e-10, 0);
+
+        return $sign * $cents / 100.0;
     }
 
     /**
