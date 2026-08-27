@@ -73,8 +73,13 @@
       </tr>
     </thead>
     <tbody>
-      @foreach($pedido->detalles as $d)
-        @php $prod = $d->producto ?? null; @endphp
+      @foreach($pedido->detalles as $i => $d)
+        @php
+          $prod = $d->producto ?? null;
+          $lineaIva = $ivaDisplay['lineas'][$i] ?? null;
+          $precioMostrar = $lineaIva['precio_con_iva'] ?? $d->precio;
+          $totalMostrar = $lineaIva['total_con_iva'] ?? $d->total;
+        @endphp
         <tr>
           <td>{{ number_format((float) $d->cantidad, 2) }}</td>
           <td>
@@ -83,8 +88,8 @@
               <br><small><em>{{ $d->notas }}</em></small>
             @endif
           </td>
-          <td class="text-right">{{ $simbolo }}{{ number_format((float) $d->precio, 2) }}</td>
-          <td class="text-right">{{ $simbolo }}{{ number_format((float) $d->total, 2) }}</td>
+          <td class="text-right">{{ $simbolo }}{{ number_format((float) $precioMostrar, 2) }}</td>
+          <td class="text-right">{{ $simbolo }}{{ number_format((float) $totalMostrar, 2) }}</td>
         </tr>
       @endforeach
     </tbody>
@@ -92,11 +97,20 @@
 
   <hr>
   <div class="text-right">
-    <p>Subtotal: {{ $simbolo }}{{ number_format((float) $pedido->subtotal, 2) }}</p>
-    @if((float) $pedido->descuento > 0)
-    <p>Descuento: -{{ $simbolo }}{{ number_format((float) $pedido->descuento, 2) }}</p>
+    @php
+      $subtotalSinIva = (float) ($ivaDisplay['subtotal'] ?? $pedido->subtotal);
+      $descuentoSinIva = (float) ($ivaDisplay['descuento'] ?? $pedido->descuento);
+      $montoIva = (float) ($ivaDisplay['iva'] ?? 0);
+      $totalConIva = (float) ($ivaDisplay['total_con_iva'] ?? $pedido->total);
+    @endphp
+    <p>Subtotal: {{ $simbolo }}{{ number_format($subtotalSinIva, 2) }}</p>
+    @if($descuentoSinIva > 0)
+    <p>Descuento: -{{ $simbolo }}{{ number_format($descuentoSinIva, 2) }}</p>
     @endif
-    <p><strong>TOTAL: {{ $simbolo }}{{ number_format((float) $pedido->total, 2) }}</strong></p>
+    @if($montoIva > 0)
+    <p>{{ \App\Helpers\CountryTermsHelper::tax('taxLabelColon', $empresa) }} {{ $simbolo }}{{ number_format($montoIva, 2) }}</p>
+    @endif
+    <p><strong>TOTAL: {{ $simbolo }}{{ number_format($totalConIva, 2) }}</strong></p>
   </div>
   <hr>
   <p class="text-center"><strong>--- PEDIDO CANAL ---</strong></p>

@@ -15,6 +15,7 @@ use App\Models\Restaurante\PedidoRestauranteDetalle;
 use App\Models\Ventas\Clientes\Cliente;
 use App\Services\Inventario\LoteAsignacionService;
 use App\Services\Restaurante\PedidoCanalInventarioService;
+use App\Services\Restaurante\PedidoCanalIvaCalculator;
 use App\Services\Restaurante\RestauranteIdempotencyService;
 use App\Services\Restaurante\RestauranteSideEffectDispatcher;
 use App\Services\Restaurante\RestauranteRealtimePublisher;
@@ -59,7 +60,7 @@ class PedidoRestauranteController extends Controller
         $direccion = strtolower((string) $request->get('direccion', 'desc')) === 'asc' ? 'asc' : 'desc';
 
         $query = PedidoRestaurante::where('restaurante_pedidos.id_empresa', $user->id_empresa)
-            ->with(['cliente', 'usuario', 'detalles'])
+            ->with(['cliente', 'usuario', 'detalles.producto'])
             ->when($request->estado, fn ($q) => $q->where('restaurante_pedidos.estado', $request->estado))
             ->when($request->filled('canal'), fn ($q) => $q->where('restaurante_pedidos.canal', 'like', '%' . $request->canal . '%'))
             ->when($request->fecha_desde, fn ($q) => $q->whereDate('restaurante_pedidos.fecha', '>=', $request->fecha_desde))
@@ -90,6 +91,18 @@ class PedidoRestauranteController extends Controller
 
         $pedidos = $query->paginate($paginate, ['restaurante_pedidos.*'], 'page', $page);
 
+        $ivaEmpresa = PedidoCanalIvaCalculator::ivaEmpresa(Empresa::find($user->id_empresa));
+        $pedidos->getCollection()->transform(function (PedidoRestaurante $pedido) use ($ivaEmpresa) {
+            $calc = PedidoCanalIvaCalculator::calcular($pedido->detalles, $ivaEmpresa);
+            $pedido->setAttribute('total_con_iva', $calc['total_con_iva']);
+            $pedido->setAttribute('iva', $calc['iva']);
+            foreach ($pedido->detalles as $d) {
+                $d->unsetRelation('producto');
+            }
+
+            return $pedido;
+        });
+
         return response()->json($this->enrichPaginatedPayload($pedidos->toArray(), (int) $user->id_empresa));
     }
 
@@ -105,11 +118,16 @@ class PedidoRestauranteController extends Controller
             ->findOrFail($id);
 
         $empresa = Empresa::find($user->id_empresa);
+        $ivaDisplay = PedidoCanalIvaCalculator::calcular(
+            $pedido->detalles,
+            PedidoCanalIvaCalculator::ivaEmpresa($empresa)
+        );
 
         return response()
             ->view('restaurante.pedido-canal-ticket', [
                 'pedido' => $pedido,
                 'empresa' => $empresa,
+                'ivaDisplay' => $ivaDisplay,
             ])
             ->header('Content-Type', 'text/html; charset=utf-8');
     }
