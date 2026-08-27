@@ -136,6 +136,11 @@ class StoreUsuarioRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
+        // ponytail: activar/desactivar en lista manda solo id+enable; no derivar tipo aquí
+        if ($this->isEnableOnlyUpdate()) {
+            return;
+        }
+
         // Sanitizar email
         if ($this->has('email')) {
             $this->merge([
