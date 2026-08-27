@@ -245,7 +245,13 @@ export class PedidoFormComponent implements OnInit {
     }
 
     const precio = parseFloat(
-      producto.precio ?? producto.precio_publico ?? producto.precio_venta ?? 0
+      String(
+        producto.precio_sin_iva ??
+        producto.precio ??
+        producto.precio_publico ??
+        producto.precio_venta ??
+        0
+      )
     );
     let notas = producto.notas ?? '';
     let nombre = producto.nombre_mostrar || producto.nombre || producto.descripcion || 'Producto';
@@ -372,6 +378,25 @@ export class PedidoFormComponent implements OnInit {
 
   totalPedido(): number {
     return this.lineas.reduce((s, l) => s + this.totalLinea(l), 0);
+  }
+
+  get cobraIva(): boolean {
+    return this.apiService.auth_user()?.empresa?.cobra_iva === 'Si';
+  }
+
+  get ivaEmpresa(): number {
+    return Number(this.apiService.auth_user()?.empresa?.iva ?? 0) || 0;
+  }
+
+  totalPedidoConIva(): number {
+    if (!this.cobraIva || this.ivaEmpresa <= 0) {
+      return this.totalPedido();
+    }
+    return this.lineas.reduce((s, l) => {
+      const factor = 1 + this.ivaEmpresa / 100;
+      const lineaConIva = Math.max(0, l.cantidad * l.precio * factor - (l.descuento || 0) * factor);
+      return s + lineaConIva;
+    }, 0);
   }
 
   volver(): void {
