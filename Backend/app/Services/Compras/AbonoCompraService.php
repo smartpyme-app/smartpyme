@@ -187,7 +187,7 @@ class AbonoCompraService
         if ($abono->forma_pago != 'Efectivo' && $abono->forma_pago != 'Cheque') {
             $this->transaccionesService->crear(
                 $abono,
-                'Abono',
+                'Cargo',
                 'Abono de compra: ' . $compra->tipo_documento . ' #' . ($compra->referencia ? $compra->referencia : ''),
                 'Abono de Compra'
             );

@@ -97,6 +97,9 @@ class TransaccionesService
             if ($transaccion->referencia == 'Abono de Compra' || $transaccion->referencia == 'Compra') {
                 $tipo = 'CxP';
             }
+            if ($transaccion->referencia == 'Abono de Gasto' || $transaccion->referencia == 'Gasto') {
+                $tipo = 'CxP';
+            }
 
             $partida = Partida::create([
                 'fecha'         => $transaccion->fecha,

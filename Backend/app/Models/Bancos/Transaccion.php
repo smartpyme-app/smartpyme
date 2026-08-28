@@ -57,6 +57,12 @@ class Transaccion extends Model
         if ($this->referencia == 'Compra') {
             return 'compra';
         }
+        if ($this->referencia == 'Abono de Gasto') {
+            return 'gasto/abono';
+        }
+        if ($this->referencia == 'Gasto') {
+            return 'gasto';
+        }
         if ($this->referencia == 'Cheque') {
             return 'bancos/cheque';
         }

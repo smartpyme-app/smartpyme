@@ -55,8 +55,7 @@ class GastoService
      */
     public function procesarPagos(Gasto $gasto, bool $esNuevo): void
     {
-        // Solo procesar pagos para gastos nuevos
-        if (!$esNuevo) {
+        if (!$esNuevo || $gasto->estado === 'Pendiente' || $gasto->forma_pago === 'Efectivo') {
             return;
         }
 
