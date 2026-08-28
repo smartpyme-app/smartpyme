@@ -15,7 +15,8 @@ export class CrearAbonoGastoComponent implements OnInit {
 
   @Input() gasto: any = {};
   @Output() update = new EventEmitter();
-  public formaPagos: any = [];
+  public formaPagos: any[] = [];
+  public bancos: any[] = [];
   public abono: any = {};
   public saving = false;
 
@@ -39,6 +40,32 @@ export class CrearAbonoGastoComponent implements OnInit {
     this.apiService.getAll('formas-de-pago/list').subscribe(formaPagos => {
       this.formaPagos = formaPagos;
     }, error => { this.alertService.error(error); });
+
+    if (this.apiService.isModuloBancos()) {
+      this.apiService.getAll('banco/cuentas/list').subscribe(bancos => {
+        this.bancos = bancos;
+      }, error => { this.alertService.error(error); });
+    } else {
+      this.apiService.getAll('bancos/list').subscribe(bancos => {
+        this.bancos = bancos;
+      }, error => { this.alertService.error(error); });
+    }
+  }
+
+  public requiereBanco(): boolean {
+    const fp = this.abono?.forma_pago;
+    return !!fp && fp !== 'Efectivo' && fp !== 'Wompi';
+  }
+
+  public cambioMetodoDePago(): void {
+    if (!this.requiereBanco()) {
+      this.abono.detalle_banco = '';
+      return;
+    }
+    if (this.apiService.isModuloBancos()) {
+      const formaPagoSeleccionada = this.formaPagos.find((fp: any) => fp.nombre === this.abono.forma_pago);
+      this.abono.detalle_banco = formaPagoSeleccionada?.banco?.nombre_banco || '';
+    }
   }
 
   public setTotal(total: any) {

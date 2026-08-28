@@ -261,6 +261,8 @@ class GastosController extends Controller
         }
 
         return DB::transaction(function () use ($request, $tieneMultiplesItems) {
+            $esNuevo = ! $request->id;
+
             if ($request->id) {
                 $gasto = Gasto::findOrFail($request->id);
             } else {
@@ -295,11 +297,15 @@ class GastosController extends Controller
                 $this->sincronizarDetalleUnico($gasto, $request);
             }
 
-            if (! $request->id && $request->tipo_documento === 'Compra electrónica') {
+            if ($esNuevo && $request->tipo_documento === 'Compra electrónica') {
                 $documento = Documento::where('nombre', $gasto->tipo_documento)->where('id_sucursal', $gasto->id_sucursal)->first();
                 if ($documento) {
                     $documento->increment('correlativo');
                 }
+            }
+
+            if ($esNuevo) {
+                $this->gastoService->procesarPagos($gasto->fresh(), true);
             }
 
             return response()->json($gasto->load(['detalles', 'categoria']), 200);

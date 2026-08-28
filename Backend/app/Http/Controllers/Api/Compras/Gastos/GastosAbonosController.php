@@ -7,7 +7,9 @@ use App\Models\Compras\Gastos\Abono;
 use App\Models\Compras\Gastos\Gasto;
 use App\Services\Bancos\ChequesService;
 use App\Services\Bancos\TransaccionesService;
+use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class GastosAbonosController extends Controller
 {
@@ -40,41 +42,49 @@ class GastosAbonosController extends Controller
             'id_sucursal' => 'required|numeric',
         ]);
 
-        if ($request->id) {
-            $abono = Abono::findOrFail($request->id);
-        } else {
-            $abono = new Abono;
+        try {
+            return DB::transaction(function () use ($request, $gasto) {
+                if ($request->id) {
+                    $abono = Abono::findOrFail($request->id);
+                } else {
+                    $abono = new Abono;
+                }
+
+                $abono->fill($request->all());
+                $abono->save();
+
+                $gasto->refresh();
+                if ($gasto->saldo <= 0) {
+                    $gasto->estado = 'Confirmado';
+                } else {
+                    $gasto->estado = 'Pendiente';
+                }
+                $gasto->save();
+
+                $concepto = 'Abono de gasto: '.$gasto->tipo_documento.' #'.($gasto->referencia ? $gasto->referencia : '');
+
+                if (! $request->id && $abono->forma_pago != 'Efectivo' && $abono->forma_pago != 'Cheque') {
+                    $this->transaccionesService->crear(
+                        $abono,
+                        'Cargo',
+                        $concepto,
+                        'Abono de Gasto'
+                    );
+                }
+
+                if (! $request->id && $abono->forma_pago == 'Cheque') {
+                    $this->chequesService->crear(
+                        $abono,
+                        $gasto->nombre_proveedor,
+                        $concepto,
+                        'Abono de Gasto'
+                    );
+                }
+
+                return response()->json($abono, 200);
+            });
+        } catch (Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 400);
         }
-
-        $abono->fill($request->all());
-        $abono->save();
-
-        $gasto->refresh();
-        if ($gasto->saldo <= 0) {
-            $gasto->estado = 'Confirmado';
-        } else {
-            $gasto->estado = 'Pendiente';
-        }
-        $gasto->save();
-
-        if (! $request->id && $abono->forma_pago != 'Efectivo' && $abono->forma_pago != 'Cheque') {
-            $this->transaccionesService->crear(
-                $abono,
-                'Abono',
-                'Abono de gasto: '.$gasto->tipo_documento.' #'.($gasto->referencia ? $gasto->referencia : ''),
-                'Abono de Gasto'
-            );
-        }
-
-        if (! $request->id && $abono->forma_pago == 'Cheque') {
-            $this->chequesService->crear(
-                $abono,
-                $gasto->nombre_proveedor,
-                'Abono de gasto: '.$gasto->tipo_documento.' #'.($gasto->referencia ? $gasto->referencia : ''),
-                'Abono de Gasto'
-            );
-        }
-
-        return response()->json($abono, 200);
     }
 }

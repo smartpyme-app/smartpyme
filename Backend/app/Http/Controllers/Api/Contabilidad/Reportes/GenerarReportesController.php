@@ -210,105 +210,18 @@ class GenerarReportesController extends Controller
         ini_set('memory_limit', '512M');
         set_time_limit(120);
 
-        $cuentas = [];
-
-        //nivel de cuenta padre, las siguientes van a aceptar datos pero esta no
-        $nivel_datos = 2;
-
         $empresa_id = auth()->user()->id_empresa;
         $startDate = Carbon::parse($fecha_inicio)->startOfDay();
         $endDate = Carbon::parse($fecha_fin)->endOfDay();
-        
-        // Calcular mes y año para mostrar en las vistas
+
         $month = $startDate->month;
         $year = $startDate->year;
         $month_name = $startDate->translatedFormat('F');
 
-        //cuentas que no aceptan datos segun nivel
-        $cuentas_padre = Cuenta::where('nivel', $nivel_datos)->where('id_empresa', auth()->user()->id_empresa)->get();
-
-        $partidas = Detalle::query()
-            ->select(['id', 'id_partida', 'codigo', 'concepto', 'debe', 'haber'])
-            ->with(['partida:id,correlativo,fecha,concepto'])
-            ->whereHas('partida', function ($query) use ($empresa_id, $startDate, $endDate, $cuenta) {
-                $query->where('id_empresa', $empresa_id)
-                    ->whereIn('estado', ['Aplicada', 'Cerrada'])
-                    ->whereBetween('fecha', [$startDate, $endDate]);
-
-                if ($cuenta && $cuenta !== 'all') {
-                    $query->where('id_cuenta', $cuenta);
-                }
-            })->get();
-
-        //elegir entre los detalles de las partidas cuales tienen cuentas que empiezan con los cuatros digitos de las partidas padre
-        foreach ($cuentas_padre->pluck('codigo') as $cod_padre) {
-            $partidasFiltradas = $partidas->filter(function ($detalle) use ($cod_padre) {
-                return strpos($detalle->codigo, (string)$cod_padre) === 0;
-            });
-
-            // Convertir el resultado a una colección nuevamente (opcional)
-            $partidasFiltradas = $partidasFiltradas->values();
-
-            //            LLENADO DE LOS DEBE Y HABER DE CADA CUENTA
-
-            $sum_deb = 0;
-            $sum_hab = 0;
-            foreach ($partidasFiltradas as $det_part) {
-
-                //                las cuentas de ACTIVO, COSTO Y GASTOS (son de saldo deudor), aumentan con un cargo (debe) y disminuyen con un abono(haber) y las cuentas de PASIVO,
-                //                PATRIMONIO E INGRESOS(son de saldo acreedor) aumentan con un abono (haber) y disminuyen con un cargo(debe)
-
-                $sum_deb += $det_part->debe;
-                $sum_hab += $det_part->haber;
-            }
-
-            if (count($partidasFiltradas) != 0) {
-
-                $cnt = $cuentas_padre->firstWhere('codigo', $cod_padre);
-
-
-                $cuenta_reporte = new CuentaReporte();
-                $cuenta_reporte->cuenta = $cod_padre;
-                $cuenta_reporte->nombre = $cnt->nombre;
-                $cuenta_reporte->naturaleza = $cnt->naturaleza;
-                $cuenta_reporte->cargo = $sum_deb;
-                $cuenta_reporte->abono = $sum_hab;
-                $cuenta_reporte->saldo_actual = 0;
-                $cuenta_reporte->saldo_anterior = 0;
-
-                // Calcular saldos progresivos para cada detalle según naturaleza de la cuenta
-                $saldo_actual = 0;
-                foreach ($partidasFiltradas as $detalle) {
-                    $debe_valor = (float)($detalle->debe ?? 0);
-                    $haber_valor = (float)($detalle->haber ?? 0);
-                    
-                    // Calcular saldo según naturaleza de la cuenta
-                    if ($cnt->naturaleza == 'Deudor') {
-                        $saldo_actual = $saldo_actual + $debe_valor - $haber_valor;
-                    } else {
-                        $saldo_actual = $saldo_actual - $debe_valor + $haber_valor;
-                    }
-                    
-                    // Agregar el saldo calculado al detalle
-                    $detalle->saldo_calculado = $saldo_actual;
-                }
-                
-                // Actualizar el saldo final de la cuenta para totales
-                $cuenta_reporte->saldo_actual = $saldo_actual;
-                $cuenta_reporte->detalles = $partidasFiltradas;
-
-
-                array_push($cuentas, $cuenta_reporte);
-            }
-        }
-
+        $cuentas = $this->construirLibroDiarioMayor($empresa_id, $startDate, $endDate, $cuenta);
         $empresa = Empresa::findOrfail($empresa_id);
 
-        //if ($concepto != null) {
-        //$pdf = PDF::loadView('reportes.contabilidad.libro_mayor', compact('cuentas', 'empresa', 'month_name', 'month', 'year', 'concepto'));
-        // } else {
         $pdf = PDF::loadView('reportes.contabilidad.libro_diario_mayor', compact('cuentas', 'empresa', 'month_name', 'month', 'year'));
-        //}
 
         $pdf->setPaper('US Letter', 'portrait');
         $pdf->setOptions([
@@ -322,99 +235,16 @@ class GenerarReportesController extends Controller
 
     public function generarRepLibroDiarioMayorExcel($fecha_inicio, $fecha_fin, $cuenta = null)
     {
-
-        $cuentas = [];
-
-        //nivel de cuenta padre, las siguientes van a aceptar datos pero esta no
-        $nivel_datos = 2;
-
         $empresa_id = auth()->user()->id_empresa;
         $startDate = Carbon::parse($fecha_inicio)->startOfDay();
         $endDate = Carbon::parse($fecha_fin)->endOfDay();
-        
-        // Calcular mes y año para mostrar en las vistas
+
         $month = $startDate->month;
         $year = $startDate->year;
         $month_name = $startDate->translatedFormat('F');
 
-        //cuentas que no aceptan datos segun nivel
-        $cuentas_padre = Cuenta::where('nivel', $nivel_datos)->where('id_empresa', auth()->user()->id_empresa)->get();
-
-        $partidas = Detalle::with(['partida:id,correlativo,fecha,concepto'])
-            ->whereHas('partida', function ($query) use ($empresa_id, $startDate, $endDate, $cuenta) {
-                $query->where('id_empresa', $empresa_id)
-                    ->whereIn('estado', ['Aplicada', 'Cerrada'])
-                    ->whereBetween('fecha', [$startDate, $endDate]);
-
-                if ($cuenta && $cuenta !== 'all') {
-                    $query->where('id_cuenta', $cuenta);
-                }
-            })->get();
-
-        //elegir entre los detalles de las partidas cuales tienen cuentas que empiezan con los cuatros digitos de las partidas padre
-        foreach ($cuentas_padre->pluck('codigo') as $cod_padre) {
-            $partidasFiltradas = $partidas->filter(function ($detalle) use ($cod_padre) {
-                return strpos($detalle->codigo, (string)$cod_padre) === 0;
-            });
-
-            // Convertir el resultado a una colección nuevamente (opcional)
-            $partidasFiltradas = $partidasFiltradas->values();
-
-            //            LLENADO DE LOS DEBE Y HABER DE CADA CUENTA
-
-            $sum_deb = 0;
-            $sum_hab = 0;
-            foreach ($partidasFiltradas as $det_part) {
-
-                //                las cuentas de ACTIVO, COSTO Y GASTOS (son de saldo deudor), aumentan con un cargo (debe) y disminuyen con un abono(haber) y las cuentas de PASIVO,
-                //                PATRIMONIO E INGRESOS(son de saldo acreedor) aumentan con un abono (haber) y disminuyen con un cargo(debe)
-
-                $sum_deb += $det_part->debe;
-                $sum_hab += $det_part->haber;
-            }
-
-            if (count($partidasFiltradas) != 0) {
-
-                $cnt = $cuentas_padre->firstWhere('codigo', $cod_padre);
-
-
-                $cuenta_reporte = new CuentaReporte();
-                $cuenta_reporte->cuenta = $cod_padre;
-                $cuenta_reporte->nombre = $cnt->nombre;
-                $cuenta_reporte->naturaleza = $cnt->naturaleza;
-                $cuenta_reporte->cargo = $sum_deb;
-                $cuenta_reporte->abono = $sum_hab;
-                $cuenta_reporte->saldo_actual = 0;
-                $cuenta_reporte->saldo_anterior = 0;
-
-                // Calcular saldos progresivos para cada detalle según naturaleza de la cuenta
-                $saldo_actual = 0;
-                foreach ($partidasFiltradas as $detalle) {
-                    $debe_valor = (float)($detalle->debe ?? 0);
-                    $haber_valor = (float)($detalle->haber ?? 0);
-                    
-                    // Calcular saldo según naturaleza de la cuenta
-                    if ($cnt->naturaleza == 'Deudor') {
-                        $saldo_actual = $saldo_actual + $debe_valor - $haber_valor;
-                    } else {
-                        $saldo_actual = $saldo_actual - $debe_valor + $haber_valor;
-                    }
-                    
-                    // Agregar el saldo calculado al detalle
-                    $detalle->saldo_calculado = $saldo_actual;
-                }
-                
-                // Actualizar el saldo final de la cuenta para totales
-                $cuenta_reporte->saldo_actual = $saldo_actual;
-                $cuenta_reporte->detalles = $partidasFiltradas;
-
-
-                array_push($cuentas, $cuenta_reporte);
-            }
-        }
-
+        $cuentas = $this->construirLibroDiarioMayor($empresa_id, $startDate, $endDate, $cuenta);
         $empresa = Empresa::findOrfail($empresa_id);
-
 
         $data = [
             'empresa' => $empresa,
@@ -424,8 +254,93 @@ class GenerarReportesController extends Controller
             'cuentas' => $cuentas,
         ];
 
-        // Exportar a Excel
         return Excel::download(new DiarioMayorExport($data), 'libro_diario_mayor.xlsx');
+    }
+
+    /**
+     * Libro diario mayor por cuenta del catálogo (misma base que balance de comprobación).
+     *
+     * @return array<int, CuentaReporte>
+     */
+    private function construirLibroDiarioMayor(int $empresa_id, Carbon $startDate, Carbon $endDate, $cuentaFilter = null): array
+    {
+        $detallesQuery = Detalle::query()
+            ->select(['id', 'id_partida', 'id_cuenta', 'codigo', 'concepto', 'debe', 'haber'])
+            ->with(['partida:id,correlativo,fecha,concepto'])
+            ->whereHas('partida', function ($query) use ($empresa_id, $startDate, $endDate) {
+                $query->where('id_empresa', $empresa_id)
+                    ->whereIn('estado', ['Aplicada', 'Cerrada'])
+                    ->whereBetween('fecha', [$startDate, $endDate]);
+            });
+
+        if ($cuentaFilter && $cuentaFilter !== 'all') {
+            $detallesQuery->where('id_cuenta', $cuentaFilter);
+        }
+
+        $detalles = $detallesQuery->get()->sortBy([
+            fn ($d) => $d->partida->fecha ?? '',
+            fn ($d) => $d->partida->correlativo ?? '',
+            fn ($d) => $d->id,
+        ])->values();
+
+        if ($detalles->isEmpty()) {
+            return [];
+        }
+
+        $saldosIniciales = $this->obtenerSaldosIniciales($startDate, $empresa_id);
+        $catalogo = Cuenta::where('id_empresa', $empresa_id)
+            ->whereIn('id', $detalles->pluck('id_cuenta')->unique()->filter())
+            ->get()
+            ->keyBy('id');
+
+        $cuentaIdsOrdenados = $detalles->pluck('id_cuenta')->unique()->sortBy(function ($id) use ($catalogo) {
+            $cnt = $catalogo->get($id);
+
+            return $cnt ? trim((string) $cnt->codigo) : (string) $id;
+        })->values();
+
+        $detallesPorCuenta = $detalles->groupBy('id_cuenta');
+        $cuentas = [];
+
+        foreach ($cuentaIdsOrdenados as $idCuenta) {
+            $cnt = $catalogo->get($idCuenta);
+            if (!$cnt) {
+                continue;
+            }
+
+            $partidasFiltradas = $detallesPorCuenta->get($idCuenta, collect())->values();
+            $sumDeb = (float) $partidasFiltradas->sum('debe');
+            $sumHab = (float) $partidasFiltradas->sum('haber');
+            $saldoAnterior = (float) ($saldosIniciales[$idCuenta] ?? $cnt->saldo_inicial ?? 0);
+            $saldoActual = $saldoAnterior;
+
+            foreach ($partidasFiltradas as $detalle) {
+                $debeValor = (float) ($detalle->debe ?? 0);
+                $haberValor = (float) ($detalle->haber ?? 0);
+
+                if ($cnt->naturaleza == 'Deudor') {
+                    $saldoActual += $debeValor - $haberValor;
+                } else {
+                    $saldoActual += $haberValor - $debeValor;
+                }
+
+                $detalle->saldo_calculado = $saldoActual;
+            }
+
+            $cuentaReporte = new CuentaReporte();
+            $cuentaReporte->cuenta = trim((string) $cnt->codigo);
+            $cuentaReporte->nombre = trim((string) $cnt->nombre);
+            $cuentaReporte->naturaleza = $cnt->naturaleza;
+            $cuentaReporte->cargo = $sumDeb;
+            $cuentaReporte->abono = $sumHab;
+            $cuentaReporte->saldo_anterior = $saldoAnterior;
+            $cuentaReporte->saldo_actual = $saldoActual;
+            $cuentaReporte->detalles = $partidasFiltradas;
+
+            $cuentas[] = $cuentaReporte;
+        }
+
+        return $cuentas;
     }
 
     public function generarRepBalanceComprobacion($fecha_inicio, $fecha_fin, $cuenta, $type)

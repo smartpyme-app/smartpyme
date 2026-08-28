@@ -86,7 +86,9 @@ class ChequesController extends Controller
 
                     $transaccion = new Transaccion;
                     $transaccion->estado = 'Pendiente';
-                    $transaccion->tipo = 'Abono';
+                    $transaccion->tipo = in_array($cheque->referencia, ['Venta', 'Abono de Venta'], true)
+                        ? 'Abono'
+                        : 'Cargo';
                     $transaccion->tipo_operacion = 'Cheque';
                     $transaccion->concepto = 'Cheque: ' . $cheque->nombre_cuenta . ' #' . $cheque->correlativo;
                     $transaccion->id_cuenta = $cheque->id_cuenta;

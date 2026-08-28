@@ -153,6 +153,7 @@ class MhGovSvGatewayService
         $verify = config('mh.verify_ssl', true);
 
         return Http::timeout((int) config('mh.timeout_seconds', 120))
+            ->withUserAgent((string) config('mh.user_agent', 'SmartPyme-FE-SV/1.0'))
             ->withOptions([
                 'verify' => $verify,
                 'http_errors' => false,

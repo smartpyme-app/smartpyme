@@ -14,4 +14,7 @@ return [
 
     'connect_timeout_seconds' => (int) env('MH_HTTP_CONNECT_TIMEOUT', 30),
 
+    // MH exige User-Agent en /fesv/*; el default de Guzzle a menudo cae en 403 HTML del WAF.
+    'user_agent' => env('MH_HTTP_USER_AGENT', 'SmartPyme-FE-SV/1.0'),
+
 ];
