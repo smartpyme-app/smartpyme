@@ -46,11 +46,11 @@ class ShopifyController extends Controller
     public function handle($tokenEmpresa, Request $request)
     {
         // Log::info("Webhook Shopify recibido para token: {$tokenEmpresa}");
-        // Log::info("Datos del webhook: ", $request->all());
+         //Log::info("Datos del webhook: ", $request->all());
 
         $webhookTopic = $request->header('X-Shopify-Topic');
 
-        // Log::info("Tipo de webhook: {$webhookTopic}");
+        //Log::info("Tipo de webhook: {$webhookTopic}");
 
 
         $empresa = Empresa::where('woocommerce_api_key', $tokenEmpresa)
@@ -106,23 +106,23 @@ class ShopifyController extends Controller
         try {
             switch ($webhookTopic) {
                 case 'test':
-                    // Log::info("Procesando prueba webhook");
+                     //Log::info("Procesando prueba webhook");
                     return $this->procesarPruebaWebhook($request, $empresa);
 
                 case 'orders/create':
-                    // Log::info("Procesando venta creada");
+                     //Log::info("Procesando venta creada");
                     return $this->procesarVenta($tokenEmpresa, $request);
 
                 case 'orders/cancelled':
-                    // Log::info("Procesando venta cancelada");
+                     //Log::info("Procesando venta cancelada");
                     return $this->procesarVentaCancelada($tokenEmpresa, $request);
 
                 case 'orders/updated':
-                    // Log::info("Procesando venta actualizada");
+                     //Log::info("Procesando venta actualizada");
                     return $this->procesarVentaActualizada($tokenEmpresa, $request);
 
                 case 'orders/edited':
-                    // Log::info("Procesando venta editada - redirigiendo a orders/updated");
+                     //Log::info("Procesando venta editada - redirigiendo a orders/updated");
                     // orders/edited no tiene información completa, usar orders/updated
                     return response()->json([
                         'status' => 'success',
@@ -130,35 +130,35 @@ class ShopifyController extends Controller
                     ], 200);
 
                 case 'customers/create':
-                    // Log::info("Procesando cliente creado");
+                     //Log::info("Procesando cliente creado");
                     return $this->procesarClienteCreado($request, $empresa, $usuario);
 
                 case 'customers/update':
-                    // Log::info("Procesando cliente actualizado");
+                     //Log::info("Procesando cliente actualizado");
                     return $this->procesarClienteActualizado($request, $empresa, $usuario);
 
                 case 'products/create':
-                    // Log::info("Procesando producto creado");
+                     //Log::info("Procesando producto creado");
                     return $this->procesarProductoActualizado($request, $empresa, $usuario);
 
                 case 'products/update':
-                    // Log::info("Procesando producto actualizado");
+                     //Log::info("Procesando producto actualizado");
                     return $this->procesarProductoActualizado($request, $empresa, $usuario);
 
                 case 'draft_orders/create':
                     // return $this->procesarDraftOrderCreado($tokenEmpresa, $request);
-                    // Log::info("Draft order ignorado - solo se procesan órdenes pagadas");
+                     //Log::info("Draft order ignorado - solo se procesan órdenes pagadas");
                     return response()->json([
                         'status' => 'ignored',
                         'mensaje' => 'Draft orders no se procesan - solo órdenes pagadas'
                     ], 200);
 
                 case 'inventory_levels/update':
-                    // Log::info("Procesando ajuste de inventario desde Shopify");
+                     //Log::info("Procesando ajuste de inventario desde Shopify");
                     return $this->procesarInventarioActualizadoShopify($request, $empresa, $usuario);
 
                 default:
-                    // Log::warning("Tipo de webhook no manejado: {$webhookTopic}");
+                     //Log::warning("Tipo de webhook no manejado: {$webhookTopic}");
                     return response()->json(['message' => 'Webhook recibido pero no procesado'], 200);
             }
         } catch (\Exception $e) {
@@ -1786,9 +1786,42 @@ class ShopifyController extends Controller
     }
 
     /**
+     * Indica si el cliente es extranjero (país distinto de El Salvador) y por tanto
+     * corresponde emitir una Factura de Exportación.
+     *
+     * @param Cliente $cliente
+     * @return bool
+     */
+    private function esClienteExtranjero(Cliente $cliente)
+    {
+        return !empty($cliente->cod_pais) && strtoupper((string) $cliente->cod_pais) !== 'SV';
+    }
+
+    /**
+     * Resuelve el nombre del documento de facturación según los datos fiscales del cliente:
+     * Factura de Exportación (cliente extranjero), Comprobante de Crédito Fiscal o
+     * Factura de Consumidor Final.
+     *
+     * @param Cliente $cliente
+     * @return string
+     */
+    private function resolverNombreDocumentoFiscal(Cliente $cliente)
+    {
+        if ($this->esClienteExtranjero($cliente)) {
+            return 'Factura de exportación';
+        }
+
+        if ($this->esClienteCreditoFiscal($cliente)) {
+            return 'Crédito fiscal';
+        }
+
+        return 'Factura';
+    }
+
+    /**
      * Resuelve el documento de facturación para una venta proveniente de Shopify:
-     * Comprobante de Crédito Fiscal o Factura de Consumidor Final según los datos
-     * fiscales del cliente.
+     * Factura de Exportación, Comprobante de Crédito Fiscal o Factura de Consumidor
+     * Final según los datos fiscales del cliente.
      *
      * @param User $usuario
      * @param Empresa $empresa
@@ -1797,7 +1830,7 @@ class ShopifyController extends Controller
      */
     private function resolverDocumentoFactura($usuario, $empresa, Cliente $cliente)
     {
-        $nombreDocumento = $this->esClienteCreditoFiscal($cliente) ? 'Crédito fiscal' : 'Factura';
+        $nombreDocumento = $this->resolverNombreDocumentoFiscal($cliente);
 
         $documento = Documento::where('id_sucursal', $usuario->id_sucursal)
             ->where('nombre', $nombreDocumento)
@@ -1817,6 +1850,13 @@ class ShopifyController extends Controller
                 ->where('nombre', 'Factura')
                 ->where('activo', true)
                 ->first();
+
+            if (!$documento) {
+                $documento = Documento::where('id_empresa', $empresa->id)
+                    ->where('nombre', 'Factura')
+                    ->where('activo', true)
+                    ->first();
+            }
         }
 
         return $documento;
@@ -2549,22 +2589,6 @@ class ShopifyController extends Controller
                 ], 200);
             }
 
-            // AGREGAR: Verificar si la venta se creó hace menos de 10 segundos
-            if ($venta->created_at->diffInSeconds(now()) < 10) {
-                // Log::info("Venta recién creada, ignorando actualización inmediata", [
-                //     'venta_id' => $venta->id,
-                //     'created_at' => $venta->created_at,
-                //     'shopify_order_id' => $request->id,
-                //     'tiempo_transcurrido' => $venta->created_at->diffInSeconds(now()) . ' segundos'
-                // ]);
-                
-                return response()->json([
-                    'status' => 'success',
-                    'mensaje' => 'Actualización ignorada - venta recién creada',
-                    'venta_id' => $venta->id
-                ], 200);
-            }
-
             // Obtener usuario para procesar la actualización
             $usuario = User::where('id_empresa', $empresa->id)
                 ->where('shopify_status', 'connected')
@@ -2586,16 +2610,38 @@ class ShopifyController extends Controller
 
             // Cuando un pedido pendiente pasa a pagado y el registro sigue siendo una cotización,
             // se convierte a venta facturable (FCF o CCF). La emisión del DTE queda manual.
+            // Se ejecuta ANTES del guard de 10 segundos para no perder la conversión cuando el
+            // webhook de pago llega inmediatamente después de la creación del pedido.
+            $fueConvertida = false;
             if ($esPagada && (int) $venta->cotizacion === 1) {
                 if ($this->convertirCotizacionAVenta($venta, $empresa, $usuario)) {
                     $venta->refresh();
+                    $fueConvertida = true;
                 }
             }
 
-            // Actualizar estado de la venta si es necesario
+            // Verificar si la venta se creó hace menos de 10 segundos
+            if ($venta->created_at->diffInSeconds(now()) < 10) {
+                // Log::info("Venta recién creada, ignorando actualización inmediata", [
+                //     'venta_id' => $venta->id,
+                //     'created_at' => $venta->created_at,
+                //     'shopify_order_id' => $request->id,
+                //     'tiempo_transcurrido' => $venta->created_at->diffInSeconds(now()) . ' segundos'
+                // ]);
+
+                return response()->json([
+                    'status' => 'success',
+                    'mensaje' => $fueConvertida ? 'Cotización convertida a venta' : 'Actualización ignorada - venta recién creada',
+                    'venta_id' => $venta->id
+                ], 200);
+            }
+
+            // Actualizar estado de la venta si es necesario.
+            // Se omite si la cotización acaba de convertirse en venta, porque la conversión ya
+            // dejó el estado en 'Pagada' (evita que 'partially_paid' lo revierta a 'Pendiente').
             $nuevoEstado = $this->mapearEstado($financialStatus);
             
-            if ($venta->estado !== $nuevoEstado) {
+            if (!$fueConvertida && $venta->estado !== $nuevoEstado) {
                 $observacion = 'Pedido actualizado en Shopify el ' . now()->format('d/m/Y H:i:s');
                 
                 // Agregar observación específica para reembolsos
