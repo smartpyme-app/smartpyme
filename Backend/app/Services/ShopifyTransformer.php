@@ -469,6 +469,13 @@ class ShopifyTransformer
             return [];
         }
 
+        // Capturar los nombres de opción (viven en product.options[], NO en el variant)
+        $optionNames = [
+            1 => $shopifyData['options'][0]['name'] ?? null,
+            2 => $shopifyData['options'][1]['name'] ?? null,
+            3 => $shopifyData['options'][2]['name'] ?? null,
+        ];
+
         $productos = [];
         foreach ($shopifyData['variants'] as $variant) {
             // Verificar que el variant tenga los datos mínimos necesarios
@@ -485,15 +492,25 @@ class ShopifyTransformer
             $precioConIva = floatval($variant['price'] ?? 0);
             $precioSinIva = $this->impuestosService->calcularPrecioSinImpuesto($precioConIva, $id_empresa);
 
+            // SKU de Shopify: se guarda tal cual en codigo y shopify_sku.
+            // Si viene vacío, se deja vacío (se llena manual o re-sincronizando desde Shopify).
+            $codigo = trim((string) ($variant['sku'] ?? ''));
+
             // Procesar descripción: limitar a 100 caracteres para descripcion, completa para descripcion_completa
             $descripcionCompleta = strip_tags($shopifyData['body_html'] ?? '');
             $descripcionCorta = mb_substr($descripcionCompleta, 0, 100);
 
             $productos[] = [
-                'codigo' => $variant['sku'] ?? '',
+                'codigo' => $codigo,
                 'barcode' => $variant['barcode'] ?? '',
                 'nombre' => $nombreBase,
                 'nombre_variante' => $nombreVariante,
+                'option1_name' => $optionNames[1],
+                'option1_value' => $variant['option1'] ?? null,
+                'option2_name' => $optionNames[2],
+                'option2_value' => $variant['option2'] ?? null,
+                'option3_name' => $optionNames[3],
+                'option3_value' => $variant['option3'] ?? null,
                 'descripcion' => $descripcionCorta,
                 'descripcion_completa' => $descripcionCompleta,
                 'id_empresa' => $id_empresa,
@@ -503,6 +520,8 @@ class ShopifyTransformer
                 'shopify_product_id' => $shopifyData['id'],
                 'shopify_variant_id' => $variant['id'],
                 'shopify_inventory_item_id' => $variant['inventory_item_id'] ?? null,
+                'shopify_sku' => $codigo !== '' ? $codigo : null,
+                'shopify_variant_image_id' => $variant['image_id'] ?? null,
                 'enable' => $productoActivo,
                 'tipo' => 'Producto',
                 'costo' => $costo,

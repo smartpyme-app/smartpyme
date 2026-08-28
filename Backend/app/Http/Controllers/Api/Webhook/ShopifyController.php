@@ -7,7 +7,6 @@ use App\Jobs\ExportProductsToShopify;
 use App\Models\Admin\Documento;
 use App\Models\Admin\Empresa;
 use App\Models\Inventario\Categorias\Categoria;
-use App\Models\Inventario\Imagen;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Producto;
 use App\Models\User;
@@ -15,6 +14,7 @@ use App\Models\Ventas\Venta;
 use App\Services\ShopifyApiClient;
 use Illuminate\Http\Request;
 use App\Services\ShopifyTransformer;
+use App\Services\ShopifyImageService;
 use App\Services\ShippingService;
 use App\Services\Shopify\ShopifyVentaService;
 use App\Services\Shopify\ShopifyClienteService;
@@ -22,8 +22,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
-use Intervention\Image\ImageManagerStatic as Image;
 use App\Services\ShopifySyncCache;
 use App\Services\FidelizacionCliente\ConsumoPuntosService;
 
@@ -35,6 +33,7 @@ class ShopifyController extends Controller
     protected $impuestosService;
     protected $shopifyVentaService;
     protected $shopifyClienteService;
+    protected $imageService;
 
 
     public function __construct(
@@ -43,7 +42,8 @@ class ShopifyController extends Controller
         ShippingService $shippingService,
         \App\Services\ImpuestosService $impuestosService,
         ShopifyVentaService $shopifyVentaService,
-        ShopifyClienteService $shopifyClienteService
+        ShopifyClienteService $shopifyClienteService,
+        ShopifyImageService $imageService
     ) {
         $this->transformer = $transformer;
         $this->cache = $cache;
@@ -51,6 +51,7 @@ class ShopifyController extends Controller
         $this->impuestosService = $impuestosService;
         $this->shopifyVentaService = $shopifyVentaService;
         $this->shopifyClienteService = $shopifyClienteService;
+        $this->imageService = $imageService;
     }
 
     public function handle($tokenEmpresa, Request $request)
@@ -209,6 +210,9 @@ class ShopifyController extends Controller
         // Log::info("Categoria desde Shopify", ['categoria_id' => $categoriaData]);
 
         foreach ($productosData as $productoData) {
+            $variantImageId = $productoData['shopify_variant_image_id'] ?? null;
+            unset($productoData['shopify_variant_image_id']);
+
             $producto = $this->buscarProductoExistente($request->id, $productoData, $empresa->id);
             //Log::info("Producto existente", ['producto_id' => $producto->id]);
 
@@ -229,6 +233,10 @@ class ShopifyController extends Controller
                 } else {
                     Log::info("Producto sin cambios desde Shopify", ['producto_id' => $producto->id]);
                 }
+
+                // Sincronizar imágenes SIEMPRE (independiente de si cambiaron los datos del producto),
+                // validando URL y reemplazando solo si la URL o el hash cambiaron.
+                $this->procesarImagenes($request, $producto->id, $variantImageId);
             } else {
                 // Verificación adicional de duplicados antes de crear
                 $duplicadoPorSKU = !empty($productoData['codigo']) ? 
@@ -244,7 +252,7 @@ class ShopifyController extends Controller
                     continue; // Saltar este producto
                 }
 
-                $nuevoProducto = $this->crearNuevoProducto($productoData, $usuario, $request);
+                $nuevoProducto = $this->crearNuevoProducto($productoData, $usuario, $request, $variantImageId);
 
                 if ($nuevoProducto) {
                     $this->cache->lockSync($nuevoProducto->id);
@@ -264,7 +272,14 @@ class ShopifyController extends Controller
             ->where('id_empresa', $empresaId)
             ->first();
 
-        // Si no se encuentra, buscar por SKU como respaldo (para productos creados antes de la integración)
+        // Si no se encuentra, buscar por SKU canónico de Shopify como respaldo
+        if (!$producto && !empty($productoData['shopify_sku'])) {
+            $producto = Producto::where('shopify_sku', $productoData['shopify_sku'])
+                ->where('id_empresa', $empresaId)
+                ->first();
+        }
+
+        // Si no se encuentra, buscar por SKU del proveedor como respaldo (para productos creados antes de la integración)
         if (!$producto && !empty($productoData['codigo'])) {
             $producto = Producto::where('codigo', $productoData['codigo'])
                 ->where('id_empresa', $empresaId)
@@ -365,6 +380,9 @@ class ShopifyController extends Controller
         // NO marcar syncing_from_shopify para webhooks - solo para importaciones masivas
         $productoData['last_shopify_sync'] = now();
 
+        // SKU de Shopify: se guarda tal cual en codigo y shopify_sku
+        $productoData['shopify_sku'] = !empty($productoData['codigo']) ? $productoData['codigo'] : null;
+
         $producto->update($productoData);
 
         if ($stockActual != $stockNuevo) {
@@ -387,7 +405,7 @@ class ShopifyController extends Controller
     }
 
 
-    private function crearNuevoProducto($productoData, $usuario, $request)
+    private function crearNuevoProducto($productoData, $usuario, $request, $variantImageId = null)
     {
         // Extraer datos especiales que no van al modelo
         $stock = $productoData['_stock'] ?? 0;
@@ -395,15 +413,18 @@ class ShopifyController extends Controller
         $idSucursal = $productoData['_id_sucursal'] ?? $usuario->id_sucursal;
         
         // Limpiar datos especiales del array
-        unset($productoData['_stock'], $productoData['_id_usuario'], $productoData['_id_sucursal']);
+        unset($productoData['_stock'], $productoData['_id_usuario'], $productoData['_id_sucursal'], $productoData['shopify_variant_image_id']);
         
         // NO marcar syncing_from_shopify para webhooks - solo para importaciones masivas
         $productoData['last_shopify_sync'] = now();
+
+        // SKU de Shopify: se guarda tal cual en codigo y shopify_sku
+        $productoData['shopify_sku'] = !empty($productoData['codigo']) ? $productoData['codigo'] : null;
         
         $producto = Producto::create($productoData);
         
         $this->actualizarInventario($producto->id, $stock, $usuario->id_bodega, $idUsuario);
-        $this->procesarImagenes($request, $producto->id);
+        $this->procesarImagenes($request, $producto->id, $variantImageId);
 
         $inventario = \App\Models\Inventario\Inventario::where('id_producto', $producto->id)
             ->where('id_bodega', $usuario->id_bodega)
@@ -429,19 +450,54 @@ class ShopifyController extends Controller
         return $producto;
     }
 
-    public function procesarImagenes($request, $productoId)
+    public function procesarImagenes($request, $productoId, $variantImageId = null)
     {
         $imagenes = $request->images;
-        foreach ($imagenes as $imagen) {
-            $imagenData = [
-                'id_producto' => $productoId,
-                'src' => $imagen['src'],
-                'shopify_image_id' => $imagen['id'],
-            ];
-            // Log::info($imagenData);
-            // Log::info("Procesando imagen", ['imagen_id' => $imagen['id']]);
-            $this->storeImage($imagenData);
+        if (!is_array($imagenes) || empty($imagenes)) {
+            return;
         }
+
+        $imagenes = $this->filtrarImagenesPorVariante($imagenes, $variantImageId);
+        if (empty($imagenes)) {
+            return;
+        }
+
+        $this->imageService->sincronizarImagenes($productoId, $imagenes);
+    }
+
+    /**
+     * Filtra las imágenes del producto dejando solo la que corresponde a la variante.
+     *
+     * - Si la variante tiene image_id, se usa SOLO esa imagen.
+     * - Si no tiene image_id, se usan las imágenes generales del producto (sin variant_ids)
+     *   o, como fallback, la primera imagen.
+     */
+    private function filtrarImagenesPorVariante(array $imagenes, $variantImageId): array
+    {
+        // Variante con imagen específica
+        if (!empty($variantImageId)) {
+            foreach ($imagenes as $imagen) {
+                if (($imagen['id'] ?? null) == $variantImageId) {
+                    return [$imagen];
+                }
+            }
+        }
+
+        // Sin imagen específica: imágenes generales (sin variant_ids)
+        $generales = [];
+        foreach ($imagenes as $imagen) {
+            $variantIds = $imagen['variant_ids'] ?? [];
+            if (empty($variantIds)) {
+                $generales[] = $imagen;
+            }
+        }
+
+        if (!empty($generales)) {
+            return $generales;
+        }
+
+        // Fallback: primera imagen del producto
+        return isset($imagenes[0]) ? [$imagenes[0]] : [];
     }
 
     private function procesarClienteCreado(Request $request, $empresa, $usuario)
@@ -1125,102 +1181,6 @@ class ShopifyController extends Controller
                 'trace' => $e->getTraceAsString()
             ]);
             throw $e;
-        }
-    }
-
-    public function storeImage($data)
-    {
-        // Log::info('storeImage', $data);
-
-        try {
-            // Buscar imagen existente por shopify_image_id
-            if (isset($data['shopify_image_id']) && $data['shopify_image_id']) {
-                $imagen = Imagen::where('shopify_image_id', $data['shopify_image_id'])->first();
-
-                if ($imagen) {
-                    // Si la imagen ya existe y tiene la misma URL, no hacer nada
-                    if ($imagen->src === $data['src']) {
-                        Log::info('Imagen ya existe con la misma URL, no se procesa', [
-                            'imagen_id' => $imagen->id,
-                            'shopify_image_id' => $data['shopify_image_id']
-                        ]);
-                        return $imagen;
-                    }
-                } else {
-                    $imagen = new Imagen();
-                }
-            } else {
-                $imagen = new Imagen();
-            }
-
-            $imagen->fill($data);
-
-            // Solo procesar la imagen si es nueva o si la URL ha cambiado
-            if (isset($data['src']) && $data['src']) {
-                // Verificar si ya existe una imagen con la misma URL para el mismo producto
-                $imagenExistente = Imagen::where('id_producto', $data['id_producto'])
-                    ->where('img', $data['src'])
-                    ->first();
-
-                if ($imagenExistente && $imagenExistente->id !== $imagen->id) {
-                    Log::info('Imagen ya existe para este producto con la misma URL', [
-                        'imagen_existente_id' => $imagenExistente->id,
-                        'producto_id' => $data['id_producto']
-                    ]);
-                    return $imagenExistente;
-                }
-
-                // Solo eliminar y recrear si la imagen ya existe y tiene una URL diferente
-                if ($imagen->id && $imagen->img && $imagen->img != 'productos/default.jpg' && $imagen->img !== $data['src']) {
-                    Storage::delete($imagen->img);
-                    Log::info('Imagen anterior eliminada por cambio de URL', ['path' => $imagen->img]);
-                }
-
-                // Solo procesar si no existe o si la URL cambió
-                if (!$imagen->id || $imagen->img !== $data['src']) {
-                    try {
-                        $imageContent = file_get_contents($data['src']);
-                        if ($imageContent === false) {
-                            throw new \Exception('No se pudo descargar la imagen desde: ' . $data['src']);
-                        }
-
-                        $resize = Image::make($imageContent)->resize(750, 750)->encode('jpg', 75);
-                        $hash = md5($resize->__toString());
-                        $path = "productos/{$hash}.jpg";
-
-                        $fullPath = public_path('img/productos');
-                        if (!file_exists($fullPath)) {
-                            mkdir($fullPath, 0755, true);
-                        }
-
-                        $resize->save(public_path('img/' . $path), 50);
-                        $imagen->img = "/" . $path;
-
-                        Log::info('Imagen procesada y guardada', ['path' => $path]);
-                    } catch (\Exception $e) {
-                        Log::error('Error procesando imagen: ' . $e->getMessage());
-                    }
-                } else {
-                    Log::info('Imagen ya procesada, no se vuelve a procesar', [
-                        'imagen_id' => $imagen->id,
-                        'src' => $data['src']
-                    ]);
-                }
-            }
-
-            $saved = $imagen->save();
-
-            if ($saved) {
-                Log::info('Imagen guardada exitosamente', ['imagen_id' => $imagen->id]);
-            } else {
-                Log::error('Error guardando imagen en base de datos');
-            }
-
-            return $imagen;
-        } catch (\Exception $e) {
-            Log::error('Error en storeImage: ' . $e->getMessage());
-            Log::error('Stack trace: ' . $e->getTraceAsString());
-            return false;
         }
     }
 

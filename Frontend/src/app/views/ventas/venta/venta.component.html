@@ -74,6 +74,42 @@
         opacity: 1;
     }
 }
+.product-name .product-eye {
+    opacity: 0;
+    transition: opacity 0.15s ease-in-out;
+}
+.product-name:hover .product-eye {
+    opacity: 1;
+}
+.product-eye-wrap {
+    position: relative;
+    display: inline-block;
+}
+.eye-tooltip {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #343a40;
+    color: #fff;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.15s ease-in-out;
+    z-index: 100;
+    pointer-events: none;
+}
+.product-name:hover .eye-tooltip {
+    opacity: 1;
+    visibility: visible;
+}
+.product-name a:hover {
+    text-decoration: underline !important;
+    color: #1d4ed8 !important;
+}
 </style>
 
 <section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">

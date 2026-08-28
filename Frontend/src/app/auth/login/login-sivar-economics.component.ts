@@ -10,6 +10,7 @@ declare let $: any;
   selector: 'app-login-sivar-economics',
   standalone: false,
   templateUrl: './login-sivar-economics.component.html',
+  styleUrls: ['./login-sivar-economics.component.css'],
 })
 export class LoginSivarEconomicsComponent implements OnInit {
   public user: any = {};
