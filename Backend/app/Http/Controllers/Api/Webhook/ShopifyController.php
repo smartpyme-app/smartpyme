@@ -1245,6 +1245,22 @@ class ShopifyController extends Controller
                 ], 200);
             }
 
+            // Si la venta ya fue emitida (DTE enviado a Hacienda), no se modifica desde Shopify.
+            if ($this->ventaEmitida($venta)) {
+                Log::channel('shopify')->info('Cancelación ignorada - venta ya emitida en SmartPyme', [
+                    'venta_id' => $venta->id,
+                    'shopify_order_id' => $shopifyOrderId,
+                    'sello_mh' => $venta->sello_mh,
+                ]);
+
+                return response()->json([
+                    'status' => 'ignored',
+                    'mensaje' => 'Venta ya emitida en SmartPyme - no se modifica desde Shopify',
+                    'venta_id' => $venta->id,
+                    'emitida' => true
+                ], 200);
+            }
+
             DB::beginTransaction();
 
             // Marcar la venta como anulada
@@ -1738,6 +1754,18 @@ class ShopifyController extends Controller
         ];
         
         return Cliente::create($clienteMinimo);
+    }
+
+    /**
+     * Determina si una venta ya fue emitida (DTE enviado a Hacienda) y por tanto
+     * no debe ser modificada por los webhooks de Shopify.
+     *
+     * @param Venta $venta
+     * @return bool
+     */
+    private function ventaEmitida(Venta $venta)
+    {
+        return !empty($venta->sello_mh);
     }
 
     /**
@@ -2358,6 +2386,22 @@ class ShopifyController extends Controller
                     'status' => 'warning',
                     'mensaje' => 'Venta no encontrada para actualizar'
                 ], 404);
+            }
+
+            // Si la venta ya fue emitida (DTE enviado a Hacienda), no se modifica desde Shopify.
+            if ($this->ventaEmitida($venta)) {
+                Log::channel('shopify')->info('Actualización ignorada - venta ya emitida en SmartPyme', [
+                    'venta_id' => $venta->id,
+                    'shopify_order_id' => $shopifyOrderId,
+                    'sello_mh' => $venta->sello_mh,
+                ]);
+
+                return response()->json([
+                    'status' => 'ignored',
+                    'mensaje' => 'Venta ya emitida en SmartPyme - no se modifica desde Shopify',
+                    'venta_id' => $venta->id,
+                    'emitida' => true
+                ], 200);
             }
 
             // AGREGAR: Verificar si la venta se creó hace menos de 10 segundos
