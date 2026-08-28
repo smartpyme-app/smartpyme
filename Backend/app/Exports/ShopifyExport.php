@@ -153,13 +153,13 @@ class ShopifyExport implements FromCollection, WithHeadings, WithMapping, WithCo
             $productType, // Type
             $tags, // Tags
             'TRUE', // Published
-            '', // Option1 Name (vacío para productos simples)
-            '', // Option1 Value
-            '', // Option2 Name
-            '', // Option2 Value
-            '', // Option3 Name
-            '', // Option3 Value
-            $row->codigo ?: $row->barcode, // Variant SKU
+            $row->option1_name ?? '', // Option1 Name
+            $row->option1_value ?? '', // Option1 Value
+            $row->option2_name ?? '', // Option2 Name
+            $row->option2_value ?? '', // Option2 Value
+            $row->option3_name ?? '', // Option3 Name
+            $row->option3_value ?? '', // Option3 Value
+            $row->shopify_sku ?: ($row->codigo ?: $row->barcode), // Variant SKU
             $pesoGramos, // Variant Grams
             'shopify', // Variant Inventory Tracker
             $stockSum, // Variant Inventory Qty

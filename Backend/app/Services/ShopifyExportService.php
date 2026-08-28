@@ -33,19 +33,38 @@ class ShopifyExportService
             'detalles' => []
         ];
 
-        foreach ($productos as $producto) {
+        // Separar variantes de Shopify (con shopify_product_id) de productos locales sueltos
+        $variantesShopify = $productos->filter(function ($p) {
+            return !empty($p->shopify_product_id);
+        });
+
+        $sueltos = $productos->filter(function ($p) {
+            return empty($p->shopify_product_id);
+        });
+
+        // Exportar variantes agrupadas por producto padre
+        foreach ($variantesShopify->groupBy('shopify_product_id') as $grupo) {
+            try {
+                $this->exportarGrupoVariantes($client, $grupo, $stocks, $resultados);
+            } catch (\Exception $e) {
+                foreach ($grupo as $producto) {
+                    $this->registrarError($producto, $e, $resultados);
+                }
+            }
+        }
+
+        // Exportar productos locales sueltos como productos simples (comportamiento anterior)
+        foreach ($sueltos as $producto) {
             try {
                 $stock = $stocks[$producto->id] ?? 0;
                 $productData = $this->prepararDatosProducto($producto, $stock, $client);
 
-                // Intentar actualizar primero si tenemos shopify_product_id
                 if (!empty($producto->shopify_product_id)) {
                     if ($this->actualizarProductoExistente($client, $producto, $productData, $resultados)) {
                         continue;
                     }
                 }
 
-                // Buscar por SKU solo si no se pudo actualizar por ID
                 $existente = $this->buscarProductoPorSku($client, $producto->codigo);
 
                 if ($existente) {
@@ -59,6 +78,159 @@ class ShopifyExportService
         }
 
         return $resultados;
+    }
+
+    /**
+     * Exporta un grupo de variantes (mismo shopify_product_id) como UN solo producto
+     * con options[] + variants[], reconstruyendo la estructura de opciones.
+     */
+    private function exportarGrupoVariantes($client, $grupo, $stocks, &$resultados)
+    {
+        $primera = $grupo->first();
+        $payload = $this->prepararProductoAgrupado($grupo, $stocks);
+
+        // 1. Actualizar por shopify_product_id
+        if (!empty($primera->shopify_product_id)) {
+            $client->put("products/{$primera->shopify_product_id}.json", [
+                'product' => $payload
+            ]);
+
+            // Actualizar inventario por variante
+            foreach ($grupo as $producto) {
+                $stock = $stocks[$producto->id] ?? 0;
+                $this->actualizarInventarioShopify($client, $producto, $stock);
+            }
+
+            $this->registrarExito($resultados, $primera, 'actualizado', $primera->shopify_product_id);
+            return;
+        }
+
+        // 2. Resolver por SKU canónico (grupo sin product_id: caso raro, por robustez)
+        $resolution = $this->resolverGrupoPorSku($client, $grupo);
+        if ($resolution === 'conflict') {
+            throw new \Exception('Conflicto de SKU en Shopify: el SKU resuelve a más de una variante');
+        }
+        if ($resolution !== null) {
+            $client->put("products/{$resolution['product_id']}.json", [
+                'product' => $payload
+            ]);
+            foreach ($grupo as $producto) {
+                $producto->shopify_product_id = $resolution['product_id'];
+                $producto->save();
+            }
+            $this->registrarExito($resultados, $primera, 'actualizado', $resolution['product_id']);
+            return;
+        }
+
+        // 3. Crear nuevo producto agrupado
+        $response = $client->post('products.json', [
+            'product' => $payload
+        ]);
+
+        if (!isset($response['body']['product'])) {
+            throw new \Exception("No se pudo obtener el ID del producto creado en Shopify");
+        }
+
+        $shopifyProduct = $response['body']['product'];
+        $variantsRespuesta = $shopifyProduct['variants'] ?? [];
+
+        // Vincular cada variante local con su variante remota (mapeando por SKU)
+        foreach ($grupo as $producto) {
+            $skuBuscado = $producto->shopify_sku ?: $producto->codigo;
+            foreach ($variantsRespuesta as $variant) {
+                if (($variant['sku'] ?? '') === $skuBuscado) {
+                    $producto->shopify_product_id = $shopifyProduct['id'];
+                    $producto->shopify_variant_id = $variant['id'];
+                    $producto->shopify_inventory_item_id = $variant['inventory_item_id'] ?? null;
+                    $producto->save();
+                    $stock = $stocks[$producto->id] ?? 0;
+                    $this->actualizarInventarioShopify($client, $producto, $stock);
+                    break;
+                }
+            }
+        }
+
+        $this->registrarExito($resultados, $primera, 'creado', $shopifyProduct['id']);
+    }
+
+    /**
+     * Resuelve el product_id común de un grupo de variantes por SKU.
+     *
+     * @return array|null|string { product_id } | null | 'conflict'
+     */
+    private function resolverGrupoPorSku($client, $grupo)
+    {
+        $resolver = new ShopifySkuResolver();
+        $productIds = [];
+
+        foreach ($grupo as $producto) {
+            $sku = $producto->shopify_sku ?: $producto->codigo;
+            if (empty($sku)) {
+                continue;
+            }
+            $r = $resolver->resolveBySku($client, $sku);
+            if ($r === 'conflict') {
+                return 'conflict';
+            }
+            if ($r !== null && !empty($r['product_id'])) {
+                $productIds[$r['product_id']] = $r;
+            }
+        }
+
+        if (count($productIds) === 1) {
+            return reset($productIds);
+        }
+
+        return null;
+    }
+
+    private function prepararProductoAgrupado($grupo, $stocks)
+    {
+        $primera = $grupo->first();
+
+        $options = [];
+        if (!empty($primera->option1_name)) {
+            $options[] = ['name' => $primera->option1_name];
+        }
+        if (!empty($primera->option2_name)) {
+            $options[] = ['name' => $primera->option2_name];
+        }
+        if (!empty($primera->option3_name)) {
+            $options[] = ['name' => $primera->option3_name];
+        }
+
+        $variants = [];
+        foreach ($grupo as $producto) {
+            $variants[] = [
+                'sku' => $producto->shopify_sku ?: $producto->codigo,
+                'price' => $producto->precio,
+                'option1' => $producto->option1_value,
+                'option2' => $producto->option2_value,
+                'option3' => $producto->option3_value,
+                'barcode' => $producto->barcode ?? null,
+                'inventory_management' => 'shopify',
+                'inventory_policy' => 'deny',
+                'inventory_quantity' => $stocks[$producto->id] ?? 0,
+            ];
+        }
+
+        $images = [];
+        if (!empty($primera->imagenes)) {
+            foreach ($primera->imagenes as $imagen) {
+                $images[] = ['src' => url('/img' . $imagen->img)];
+            }
+        }
+
+        return [
+            'title' => $primera->nombre,
+            'body_html' => $primera->descripcion ?? '',
+            'vendor' => 'Mi Tienda',
+            'product_type' => $this->obtenerCategoria($primera->id_categoria),
+            'status' => 'active',
+            'options' => $options,
+            'variants' => $variants,
+            'images' => $images,
+        ];
     }
 
     private function actualizarProductoExistente($client, $producto, $productData, &$resultados)

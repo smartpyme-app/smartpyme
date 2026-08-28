@@ -303,30 +303,54 @@ class ShopifyQueueController extends Controller
 
     private function crearOActualizarProducto($productoData, $usuario)
     {
-        // Implementar lógica de creación/actualización
-        // Similar al ProductosController pero simplificado
         try {
-            $producto = new \App\Models\Inventario\Producto();
+            // Dedupe por shopify_variant_id (fuente de verdad) para evitar duplicados
+            $producto = null;
+            if (!empty($productoData['shopify_variant_id'])) {
+                $producto = \App\Models\Inventario\Producto::withoutGlobalScopes()
+                    ->where('id_empresa', $usuario->id_empresa)
+                    ->where('shopify_variant_id', $productoData['shopify_variant_id'])
+                    ->first();
+            }
+
+            if (!$producto && !empty($productoData['shopify_sku'])) {
+                $producto = \App\Models\Inventario\Producto::withoutGlobalScopes()
+                    ->where('id_empresa', $usuario->id_empresa)
+                    ->where('shopify_sku', $productoData['shopify_sku'])
+                    ->first();
+            }
+
+            if (!$producto) {
+                $producto = new \App\Models\Inventario\Producto();
+                $producto->id_empresa = $usuario->id_empresa;
+                $producto->id_categoria = $this->obtenerOCrearCategoria($productoData, $usuario->id_empresa)->id;
+                $producto->tipo = 'Producto';
+                $producto->enable = true;
+            }
+
             $producto->nombre = $productoData['nombre'];
             $producto->nombre_variante = $productoData['nombre_variante'] ?? null;
+            $producto->option1_name = $productoData['option1_name'] ?? null;
+            $producto->option1_value = $productoData['option1_value'] ?? null;
+            $producto->option2_name = $productoData['option2_name'] ?? null;
+            $producto->option2_value = $productoData['option2_value'] ?? null;
+            $producto->option3_name = $productoData['option3_name'] ?? null;
+            $producto->option3_value = $productoData['option3_value'] ?? null;
             $producto->descripcion = $productoData['descripcion'] ?? '';
             $producto->precio = $productoData['precio'] ?? 0;
             $producto->costo = $productoData['costo'] ?? 0;
             $producto->codigo = $productoData['codigo'] ?? '';
             $producto->barcode = $productoData['barcode'] ?? '';
-            $producto->id_empresa = $usuario->id_empresa;
-            $producto->id_categoria = $this->obtenerOCrearCategoria($productoData, $usuario->id_empresa)->id;
-            $producto->tipo = 'Producto';
-            $producto->enable = true;
-            
+
             // Campos específicos de Shopify
             $producto->shopify_product_id = $productoData['shopify_product_id'] ?? null;
             $producto->shopify_variant_id = $productoData['shopify_variant_id'] ?? null;
             $producto->shopify_inventory_item_id = $productoData['shopify_inventory_item_id'] ?? null;
+            $producto->shopify_sku = !empty($producto->codigo) ? $producto->codigo : null;
             $producto->last_shopify_sync = now();
-            
+
             $producto->save();
-            
+
             return $producto;
         } catch (\Exception $e) {
             Log::error("Error creando producto", [
