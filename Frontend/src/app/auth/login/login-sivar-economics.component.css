@@ -1,0 +1,49 @@
+:host {
+  display: block;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  background: #fff;
+}
+
+#login-box {
+  height: 100%;
+  overflow: hidden;
+}
+
+.login-sivar-hero-panel {
+  background-color: #141414;
+  overflow: hidden;
+  padding: 0;
+  margin: 0;
+  height: 100%;
+}
+
+.login-sivar-hero-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 38% center;
+}
+
+.login-sivar-form-logo {
+  display: block;
+  width: clamp(64px, 5vw + 32px, 80px);
+  height: clamp(64px, 5vw + 32px, 80px);
+  object-fit: cover;
+  border-radius: 50%;
+  margin-inline: auto;
+}
+
+.login-sivar-form-col {
+  background-color: #ffffff;
+  height: 100%;
+}
+
+.login-sivar-form-col .card {
+  margin-bottom: 0;
+  box-shadow: none;
+}
