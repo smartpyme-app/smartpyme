@@ -725,6 +725,8 @@ class PlanillasController extends Controller
             'otros_descuentos' => 0,
             'descuentos_judiciales' => 0,
             'tipo_contrato' => $empleado->tipo_contrato ?? null,
+            'es_pensionado' => (bool) ($empleado->es_pensionado ?? false),
+            'configuracion_descuentos' => $empleado->configuracion_descuentos ?? [],
         ];
 
         // 🎯 USAR SISTEMA OPTIMIZADO
@@ -1059,7 +1061,8 @@ class PlanillasController extends Controller
                 // Obtener configuración de descuentos del empleado
                 $empleado = $detalle->empleado;
                 $configDescuentos = $empleado->configuracion_descuentos ?? [];
-                $aplicarAfp = $configDescuentos['aplicar_afp'] ?? true; // Por defecto true
+                $esPensionado = (bool) ($empleado->es_pensionado ?? false);
+                $aplicarAfp = !$esPensionado && ($configDescuentos['aplicar_afp'] ?? true); // Por defecto true
                 $aplicarIsss = $configDescuentos['aplicar_isss'] ?? true; // Por defecto true
 
                 // EMPLEADOS ASALARIADOS: Con ISSS y AFP normales (base = base para retenciones)

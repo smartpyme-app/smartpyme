@@ -124,7 +124,8 @@ class EmpleadosController extends Controller
             'contacto_emergencia.direccion' => 'nullable|string',
             'configuracion_descuentos' => 'nullable|array',
             'configuracion_descuentos.aplicar_afp' => 'nullable|boolean',
-            'configuracion_descuentos.aplicar_isss' => 'nullable|boolean'
+            'configuracion_descuentos.aplicar_isss' => 'nullable|boolean',
+            'es_pensionado' => 'nullable|boolean'
         ]);
 
         try {
@@ -153,6 +154,7 @@ class EmpleadosController extends Controller
                 'email' => $request->email,
                 'salario_base' => $request->salario_base,
                 'estado' => $request->estado ?? PlanillaConstants::ESTADO_EMPLEADO_ACTIVO,
+                'es_pensionado' => $request->boolean('es_pensionado'),
             ];
 
             // Manejar configuracion_descuentos si viene en el request
@@ -161,6 +163,12 @@ class EmpleadosController extends Controller
                     'aplicar_afp' => $request->configuracion_descuentos['aplicar_afp'] ?? true,
                     'aplicar_isss' => $request->configuracion_descuentos['aplicar_isss'] ?? true,
                 ];
+            }
+
+            // Normalizar: si es pensionado, no aplica AFP pero sí ISSS
+            if ($datosEmpleado['es_pensionado']) {
+                $datosEmpleado['configuracion_descuentos']['aplicar_afp'] = false;
+                $datosEmpleado['configuracion_descuentos']['aplicar_isss'] = true;
             }
 
             if ($request->boolean('dui_homologado')) {
@@ -291,7 +299,8 @@ class EmpleadosController extends Controller
             'contacto_emergencia.direccion' => 'nullable|string',
             'configuracion_descuentos' => 'nullable|array',
             'configuracion_descuentos.aplicar_afp' => 'nullable|boolean',
-            'configuracion_descuentos.aplicar_isss' => 'nullable|boolean'
+            'configuracion_descuentos.aplicar_isss' => 'nullable|boolean',
+            'es_pensionado' => 'nullable|boolean'
         ];
 
         // Agregar reglas de DUI solo si se definieron
@@ -334,7 +343,8 @@ class EmpleadosController extends Controller
                 'numero_cuenta',
                 'titular_cuenta',
                 'estado',
-                'configuracion_descuentos'
+                'configuracion_descuentos',
+                'es_pensionado'
             ];
 
             foreach ($camposPermitidos as $campo) {
@@ -346,6 +356,8 @@ class EmpleadosController extends Controller
                 if ($request->has($campo) && $request->$campo !== null) {
                     if (in_array($campo, ['tipo_contrato', 'tipo_jornada'])) {
                         $datosActualizar[$campo] = intval($request->$campo);
+                    } elseif ($campo === 'es_pensionado') {
+                        $datosActualizar[$campo] = $request->boolean('es_pensionado');
                     } elseif ($campo === 'configuracion_descuentos' && is_array($request->$campo)) {
                         // Asegurar que configuracion_descuentos tenga el formato correcto
                         $datosActualizar[$campo] = [
@@ -360,6 +372,20 @@ class EmpleadosController extends Controller
 
             if ($request->boolean('dui_homologado')) {
                 $datosActualizar['nit'] = null;
+            }
+
+            // Normalizar: si es pensionado, no aplica AFP pero sí ISSS
+            $esPensionadoFinal = isset($datosActualizar['es_pensionado'])
+                ? (bool) $datosActualizar['es_pensionado']
+                : (bool) $empleado->es_pensionado;
+
+            if ($esPensionadoFinal) {
+                $configActual = isset($datosActualizar['configuracion_descuentos'])
+                    ? $datosActualizar['configuracion_descuentos']
+                    : ($empleado->configuracion_descuentos ?? []);
+                $configActual['aplicar_afp'] = false;
+                $configActual['aplicar_isss'] = true;
+                $datosActualizar['configuracion_descuentos'] = $configActual;
             }
 
             // Actualizar empleado
@@ -534,7 +560,8 @@ class EmpleadosController extends Controller
             } else {
                 // Obtener configuración de descuentos del empleado
                 $configDescuentos = $empleado->configuracion_descuentos ?? [];
-                $aplicarAfp = $configDescuentos['aplicar_afp'] ?? true; // Por defecto true
+                $esPensionado = (bool) ($empleado->es_pensionado ?? false);
+                $aplicarAfp = !$esPensionado && ($configDescuentos['aplicar_afp'] ?? true); // Por defecto true
                 $aplicarIsss = $configDescuentos['aplicar_isss'] ?? true; // Por defecto true
 
                 // EMPLEADOS ASALARIADOS: base para retenciones (excluye abonos si abonos_sin_retencion)
