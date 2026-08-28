@@ -46,11 +46,11 @@ class ShopifyController extends Controller
     public function handle($tokenEmpresa, Request $request)
     {
         // Log::info("Webhook Shopify recibido para token: {$tokenEmpresa}");
-        // Log::info("Datos del webhook: ", $request->all());
+         //Log::info("Datos del webhook: ", $request->all());
 
         $webhookTopic = $request->header('X-Shopify-Topic');
 
-        // Log::info("Tipo de webhook: {$webhookTopic}");
+        //Log::info("Tipo de webhook: {$webhookTopic}");
 
 
         $empresa = Empresa::where('woocommerce_api_key', $tokenEmpresa)
@@ -106,23 +106,23 @@ class ShopifyController extends Controller
         try {
             switch ($webhookTopic) {
                 case 'test':
-                    // Log::info("Procesando prueba webhook");
+                     //Log::info("Procesando prueba webhook");
                     return $this->procesarPruebaWebhook($request, $empresa);
 
                 case 'orders/create':
-                    // Log::info("Procesando venta creada");
+                     //Log::info("Procesando venta creada");
                     return $this->procesarVenta($tokenEmpresa, $request);
 
                 case 'orders/cancelled':
-                    // Log::info("Procesando venta cancelada");
+                     //Log::info("Procesando venta cancelada");
                     return $this->procesarVentaCancelada($tokenEmpresa, $request);
 
                 case 'orders/updated':
-                    // Log::info("Procesando venta actualizada");
+                     //Log::info("Procesando venta actualizada");
                     return $this->procesarVentaActualizada($tokenEmpresa, $request);
 
                 case 'orders/edited':
-                    // Log::info("Procesando venta editada - redirigiendo a orders/updated");
+                     //Log::info("Procesando venta editada - redirigiendo a orders/updated");
                     // orders/edited no tiene información completa, usar orders/updated
                     return response()->json([
                         'status' => 'success',
@@ -130,35 +130,35 @@ class ShopifyController extends Controller
                     ], 200);
 
                 case 'customers/create':
-                    // Log::info("Procesando cliente creado");
+                     //Log::info("Procesando cliente creado");
                     return $this->procesarClienteCreado($request, $empresa, $usuario);
 
                 case 'customers/update':
-                    // Log::info("Procesando cliente actualizado");
+                     //Log::info("Procesando cliente actualizado");
                     return $this->procesarClienteActualizado($request, $empresa, $usuario);
 
                 case 'products/create':
-                    // Log::info("Procesando producto creado");
+                     //Log::info("Procesando producto creado");
                     return $this->procesarProductoActualizado($request, $empresa, $usuario);
 
                 case 'products/update':
-                    // Log::info("Procesando producto actualizado");
+                     //Log::info("Procesando producto actualizado");
                     return $this->procesarProductoActualizado($request, $empresa, $usuario);
 
                 case 'draft_orders/create':
                     // return $this->procesarDraftOrderCreado($tokenEmpresa, $request);
-                    // Log::info("Draft order ignorado - solo se procesan órdenes pagadas");
+                     //Log::info("Draft order ignorado - solo se procesan órdenes pagadas");
                     return response()->json([
                         'status' => 'ignored',
                         'mensaje' => 'Draft orders no se procesan - solo órdenes pagadas'
                     ], 200);
 
                 case 'inventory_levels/update':
-                    // Log::info("Procesando ajuste de inventario desde Shopify");
+                     //Log::info("Procesando ajuste de inventario desde Shopify");
                     return $this->procesarInventarioActualizadoShopify($request, $empresa, $usuario);
 
                 default:
-                    // Log::warning("Tipo de webhook no manejado: {$webhookTopic}");
+                     //Log::warning("Tipo de webhook no manejado: {$webhookTopic}");
                     return response()->json(['message' => 'Webhook recibido pero no procesado'], 200);
             }
         } catch (\Exception $e) {
@@ -652,48 +652,8 @@ class ShopifyController extends Controller
         //     'id_sucursal' => $usuario->id_sucursal
         // ]);
 
-        // Para cotizaciones, buscar cualquier documento activo o usar uno por defecto
-        if ($debeCrearCotizacion) {
-            // Para cotizaciones, buscar cualquier documento activo
-            $documento = Documento::where('id_sucursal', $usuario->id_sucursal)
-                ->where('activo', true)
-                ->first();
-            
-            // Si no encuentra ningún documento, buscar en toda la empresa
-            if (!$documento) {
-                $documento = Documento::where('id_empresa', $empresa->id)
-                    ->where('activo', true)
-                    ->first();
-            }
-        } else {
-            // Para ventas normales, usar la lógica original
-            if ($empresa->facturacion_electronica) {
-                $documento = Documento::where('id_sucursal', $usuario->id_sucursal)
-                    ->where('nombre', 'Factura')
-                    ->where('activo', true)
-                    ->first();
-                
-            } else {
-                $documento = Documento::where('id_sucursal', $usuario->id_sucursal)
-                    ->where('nombre', 'Ticket')
-                    ->where('activo', true)
-                    ->first();
-            }
-        }
-
-        if (!$documento) {
-            Log::channel('shopify')->error("Ningún documento encontrado", [
-                'id_sucursal' => $usuario->id_sucursal,
-                'facturacion_electronica' => $empresa->facturacion_electronica,
-                'debe_crear_cotizacion' => $debeCrearCotizacion
-            ]);
-            return response()->json([
-                'status' => 'error',
-                'mensaje' => 'Ningún documento activo encontrado para la sucursal'
-            ], 500);
-        }
-
-        // Log::info("Documento encontrado", ['documento_id' => $documento->id, 'documento_nombre' => $documento->nombre]);
+        // El documento de facturación se resuelve más adelante, una vez se ha
+        // identificado el cliente (FCF o CCF según sus datos fiscales).
 
         try {
             // Verificar si la orden ya fue procesada previamente
@@ -767,7 +727,6 @@ class ShopifyController extends Controller
                 'id_usuario' => $usuario->id,
                 'id_bodega' => $usuario->id_bodega,
                 'id_sucursal' => $usuario->id_sucursal,
-                'id_documento' => $documento->id,
                 'id_canal' => $canalId
             ]);
 
@@ -814,6 +773,44 @@ class ShopifyController extends Controller
             //     'shopify_order_id' => $request->id ?? 'N/A',
             //     'shopify_customer_id' => $request->customer['id'] ?? 'N/A'
             // ]);
+
+            // Resolver documento de facturación según los datos fiscales del cliente.
+            // - Cotizaciones: cualquier documento activo (solo placeholder, no emite).
+            // - Facturación electrónica: FCF o CCF según los datos fiscales del cliente.
+            // - Sin facturación electrónica: Ticket.
+            if ($debeCrearCotizacion) {
+                $documento = Documento::where('id_sucursal', $usuario->id_sucursal)
+                    ->where('activo', true)
+                    ->first();
+
+                if (!$documento) {
+                    $documento = Documento::where('id_empresa', $empresa->id)
+                        ->where('activo', true)
+                        ->first();
+                }
+            } elseif ($empresa->facturacion_electronica) {
+                $documento = $this->resolverDocumentoFactura($usuario, $empresa, $cliente);
+            } else {
+                $documento = Documento::where('id_sucursal', $usuario->id_sucursal)
+                    ->where('nombre', 'Ticket')
+                    ->where('activo', true)
+                    ->first();
+            }
+
+            if (!$documento) {
+                DB::rollBack();
+                Log::channel('shopify')->error("Ningún documento encontrado", [
+                    'id_sucursal' => $usuario->id_sucursal,
+                    'facturacion_electronica' => $empresa->facturacion_electronica,
+                    'debe_crear_cotizacion' => $debeCrearCotizacion
+                ]);
+                return response()->json([
+                    'status' => 'error',
+                    'mensaje' => 'Ningún documento activo encontrado para la sucursal'
+                ], 500);
+            }
+
+            $request->merge(['id_documento' => $documento->id]);
 
             $ventaData = $this->transformer->transformarVenta(
                 $request->all(),
@@ -1206,6 +1203,22 @@ class ShopifyController extends Controller
                 return response()->json([
                     'status' => 'success',
                     'mensaje' => 'Venta ya estaba anulada'
+                ], 200);
+            }
+
+            // Si la venta ya fue emitida (DTE enviado a Hacienda), no se modifica desde Shopify.
+            if ($this->ventaEmitida($venta)) {
+                Log::channel('shopify')->info('Cancelación ignorada - venta ya emitida en SmartPyme', [
+                    'venta_id' => $venta->id,
+                    'shopify_order_id' => $shopifyOrderId,
+                    'sello_mh' => $venta->sello_mh,
+                ]);
+
+                return response()->json([
+                    'status' => 'ignored',
+                    'mensaje' => 'Venta ya emitida en SmartPyme - no se modifica desde Shopify',
+                    'venta_id' => $venta->id,
+                    'emitida' => true
                 ], 200);
             }
 
@@ -1702,6 +1715,206 @@ class ShopifyController extends Controller
         ];
         
         return Cliente::create($clienteMinimo);
+    }
+
+    /**
+     * Determina si una venta ya fue emitida (DTE enviado a Hacienda) y por tanto
+     * no debe ser modificada por los webhooks de Shopify.
+     *
+     * @param Venta $venta
+     * @return bool
+     */
+    private function ventaEmitida(Venta $venta)
+    {
+        return !empty($venta->sello_mh);
+    }
+
+    /**
+     * Indica si el cliente tiene datos fiscales para emitir un Comprobante de Crédito Fiscal
+     * (NCR presente, o NIT con tipo de documento 36).
+     *
+     * @param Cliente $cliente
+     * @return bool
+     */
+    private function esClienteCreditoFiscal(Cliente $cliente)
+    {
+        if (!empty($cliente->ncr)) {
+            return true;
+        }
+
+        if (!empty($cliente->nit) && $cliente->tipo_documento === '36') {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Indica si el cliente es extranjero (país distinto de El Salvador) y por tanto
+     * corresponde emitir una Factura de Exportación.
+     *
+     * @param Cliente $cliente
+     * @return bool
+     */
+    private function esClienteExtranjero(Cliente $cliente)
+    {
+        return !empty($cliente->cod_pais) && strtoupper((string) $cliente->cod_pais) !== 'SV';
+    }
+
+    /**
+     * Resuelve el nombre del documento de facturación según los datos fiscales del cliente:
+     * Factura de Exportación (cliente extranjero), Comprobante de Crédito Fiscal o
+     * Factura de Consumidor Final.
+     *
+     * @param Cliente $cliente
+     * @return string
+     */
+    private function resolverNombreDocumentoFiscal(Cliente $cliente)
+    {
+        if ($this->esClienteExtranjero($cliente)) {
+            return 'Factura de exportación';
+        }
+
+        if ($this->esClienteCreditoFiscal($cliente)) {
+            return 'Crédito fiscal';
+        }
+
+        return 'Factura';
+    }
+
+    /**
+     * Resuelve el documento de facturación para una venta proveniente de Shopify:
+     * Factura de Exportación, Comprobante de Crédito Fiscal o Factura de Consumidor
+     * Final según los datos fiscales del cliente.
+     *
+     * @param User $usuario
+     * @param Empresa $empresa
+     * @param Cliente $cliente
+     * @return Documento|null
+     */
+    private function resolverDocumentoFactura($usuario, $empresa, Cliente $cliente)
+    {
+        $nombreDocumento = $this->resolverNombreDocumentoFiscal($cliente);
+
+        $documento = Documento::where('id_sucursal', $usuario->id_sucursal)
+            ->where('nombre', $nombreDocumento)
+            ->where('activo', true)
+            ->first();
+
+        if (!$documento) {
+            $documento = Documento::where('id_empresa', $empresa->id)
+                ->where('nombre', $nombreDocumento)
+                ->where('activo', true)
+                ->first();
+        }
+
+        // Si no hay documento de Crédito fiscal configurado, usar Factura como respaldo.
+        if (!$documento && $nombreDocumento === 'Crédito fiscal') {
+            $documento = Documento::where('id_sucursal', $usuario->id_sucursal)
+                ->where('nombre', 'Factura')
+                ->where('activo', true)
+                ->first();
+
+            if (!$documento) {
+                $documento = Documento::where('id_empresa', $empresa->id)
+                    ->where('nombre', 'Factura')
+                    ->where('activo', true)
+                    ->first();
+            }
+        }
+
+        return $documento;
+    }
+
+    /**
+     * Convierte una cotización (generada desde un pedido pendiente de Shopify) en una venta
+     * facturable cuando el pedido pasa a estado pagado. Asigna el documento correspondiente
+     * (FCF o CCF), el correlativo y descuenta el inventario. NO emite el DTE (emisión manual).
+     *
+     * @param Venta $venta
+     * @param Empresa $empresa
+     * @param User $usuario
+     * @return bool
+     */
+    private function convertirCotizacionAVenta(Venta $venta, Empresa $empresa, $usuario)
+    {
+        $cliente = $venta->cliente;
+        if (!$cliente) {
+            $cliente = ShopifyHelper::obtenerClienteConsumidorFinal($empresa->id);
+        }
+
+        $documento = $this->resolverDocumentoFactura($usuario, $empresa, $cliente);
+        if (!$documento) {
+            Log::channel('shopify')->error('No se encontró documento para convertir cotización en venta', [
+                'venta_id' => $venta->id,
+                'id_sucursal' => $usuario->id_sucursal,
+                'empresa_id' => $empresa->id,
+            ]);
+            return false;
+        }
+
+        DB::beginTransaction();
+
+        try {
+            // Bloquear el documento para asignar correlativo sin condiciones de carrera.
+            $documento = Documento::where('id', $documento->id)->lockForUpdate()->first();
+
+            $venta->update([
+                'cotizacion' => 0,
+                'id_documento' => $documento->id,
+                'correlativo' => $documento->correlativo,
+                'estado' => 'Pagada',
+                'fecha_pago' => now(),
+                'observaciones_shopify' => ($venta->observaciones_shopify ? $venta->observaciones_shopify . ' | ' : '') .
+                    'Pedido pagado en Shopify - cotización convertida a venta el ' . now()->format('d/m/Y H:i:s'),
+            ]);
+
+            $documento->increment('correlativo');
+
+            // Descontar inventario (las cotizaciones no lo descuentan al crearse).
+            $detallesProducto = $venta->detalles()
+                ->whereHas('producto', function ($query) {
+                    $query->where('tipo', '!=', 'Servicio');
+                })
+                ->get();
+
+            foreach ($detallesProducto as $detalle) {
+                $producto = $detalle->producto;
+                if (!$producto) {
+                    continue;
+                }
+
+                Inventario::where('id_producto', $producto->id)
+                    ->where('id_bodega', $venta->id_bodega)
+                    ->decrement('stock', $detalle->cantidad);
+
+                $inventario = Inventario::where('id_producto', $producto->id)
+                    ->where('id_bodega', $venta->id_bodega)
+                    ->first();
+
+                if ($inventario) {
+                    $inventario->kardex($venta, $detalle->cantidad, $detalle->precio);
+                }
+            }
+
+            DB::commit();
+
+            Log::channel('shopify')->info('Cotización convertida a venta desde Shopify', [
+                'venta_id' => $venta->id,
+                'documento' => $documento->nombre,
+                'correlativo' => $venta->correlativo,
+                'referencia_shopify' => $venta->referencia_shopify,
+            ]);
+
+            return true;
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::channel('shopify')->error('Error al convertir cotización en venta desde Shopify', [
+                'venta_id' => $venta->id,
+                'error' => $e->getMessage(),
+            ]);
+            return false;
+        }
     }
 
     /**
@@ -2324,7 +2537,54 @@ class ShopifyController extends Controller
                 ], 404);
             }
 
-            // AGREGAR: Verificar si la venta se creó hace menos de 10 segundos
+            // Si la venta ya fue emitida (DTE enviado a Hacienda), no se modifica desde Shopify.
+            if ($this->ventaEmitida($venta)) {
+                Log::channel('shopify')->info('Actualización ignorada - venta ya emitida en SmartPyme', [
+                    'venta_id' => $venta->id,
+                    'shopify_order_id' => $shopifyOrderId,
+                    'sello_mh' => $venta->sello_mh,
+                ]);
+
+                return response()->json([
+                    'status' => 'ignored',
+                    'mensaje' => 'Venta ya emitida en SmartPyme - no se modifica desde Shopify',
+                    'venta_id' => $venta->id,
+                    'emitida' => true
+                ], 200);
+            }
+
+            // Obtener usuario para procesar la actualización
+            $usuario = User::where('id_empresa', $empresa->id)
+                ->where('shopify_status', 'connected')
+                ->first();
+
+            if (!$usuario) {
+                Log::warning("Usuario no encontrado para actualizar venta", [
+                    'empresa_id' => $empresa->id,
+                    'venta_id' => $venta->id
+                ]);
+                return response()->json([
+                    'status' => 'error',
+                    'mensaje' => 'Usuario no encontrado'
+                ], 404);
+            }
+
+            $financialStatus = $request->financial_status ?? 'pending';
+            $esPagada = ($financialStatus === 'paid' || $financialStatus === 'partially_paid');
+
+            // Cuando un pedido pendiente pasa a pagado y el registro sigue siendo una cotización,
+            // se convierte a venta facturable (FCF o CCF). La emisión del DTE queda manual.
+            // Se ejecuta ANTES del guard de 10 segundos para no perder la conversión cuando el
+            // webhook de pago llega inmediatamente después de la creación del pedido.
+            $fueConvertida = false;
+            if ($esPagada && (int) $venta->cotizacion === 1) {
+                if ($this->convertirCotizacionAVenta($venta, $empresa, $usuario)) {
+                    $venta->refresh();
+                    $fueConvertida = true;
+                }
+            }
+
+            // Verificar si la venta se creó hace menos de 10 segundos
             if ($venta->created_at->diffInSeconds(now()) < 10) {
                 // Log::info("Venta recién creada, ignorando actualización inmediata", [
                 //     'venta_id' => $venta->id,
@@ -2332,19 +2592,20 @@ class ShopifyController extends Controller
                 //     'shopify_order_id' => $request->id,
                 //     'tiempo_transcurrido' => $venta->created_at->diffInSeconds(now()) . ' segundos'
                 // ]);
-                
+
                 return response()->json([
                     'status' => 'success',
-                    'mensaje' => 'Actualización ignorada - venta recién creada',
+                    'mensaje' => $fueConvertida ? 'Cotización convertida a venta' : 'Actualización ignorada - venta recién creada',
                     'venta_id' => $venta->id
                 ], 200);
             }
 
-            // Actualizar estado de la venta si es necesario
-            $nuevoEstado = $this->mapearEstado($request->financial_status ?? 'pending');
-            $financialStatus = $request->financial_status ?? 'pending';
+            // Actualizar estado de la venta si es necesario.
+            // Se omite si la cotización acaba de convertirse en venta, porque la conversión ya
+            // dejó el estado en 'Pagada' (evita que 'partially_paid' lo revierta a 'Pendiente').
+            $nuevoEstado = $this->mapearEstado($financialStatus);
             
-            if ($venta->estado !== $nuevoEstado) {
+            if (!$fueConvertida && $venta->estado !== $nuevoEstado) {
                 $observacion = 'Pedido actualizado en Shopify el ' . now()->format('d/m/Y H:i:s');
                 
                 // Agregar observación específica para reembolsos
@@ -2364,22 +2625,6 @@ class ShopifyController extends Controller
                 //     'financial_status' => $financialStatus,
                 //     'shopify_order_id' => $shopifyOrderId
                 // ]);
-            }
-
-            // Obtener usuario para procesar envíos y productos nuevos
-            $usuario = User::where('id_empresa', $empresa->id)
-                ->where('shopify_status', 'connected')
-                ->first();
-
-            if (!$usuario) {
-                Log::warning("Usuario no encontrado para actualizar venta", [
-                    'empresa_id' => $empresa->id,
-                    'venta_id' => $venta->id
-                ]);
-                return response()->json([
-                    'status' => 'error',
-                    'mensaje' => 'Usuario no encontrado'
-                ], 404);
             }
 
             // Actualizar envíos si han cambiado
