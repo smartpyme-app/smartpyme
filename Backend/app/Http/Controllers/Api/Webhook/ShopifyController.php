@@ -597,48 +597,8 @@ class ShopifyController extends Controller
         //     'id_sucursal' => $usuario->id_sucursal
         // ]);
 
-        // Para cotizaciones, buscar cualquier documento activo o usar uno por defecto
-        if ($debeCrearCotizacion) {
-            // Para cotizaciones, buscar cualquier documento activo
-            $documento = Documento::where('id_sucursal', $usuario->id_sucursal)
-                ->where('activo', true)
-                ->first();
-            
-            // Si no encuentra ningún documento, buscar en toda la empresa
-            if (!$documento) {
-                $documento = Documento::where('id_empresa', $empresa->id)
-                    ->where('activo', true)
-                    ->first();
-            }
-        } else {
-            // Para ventas normales, usar la lógica original
-            if ($empresa->facturacion_electronica) {
-                $documento = Documento::where('id_sucursal', $usuario->id_sucursal)
-                    ->where('nombre', 'Factura')
-                    ->where('activo', true)
-                    ->first();
-                
-            } else {
-                $documento = Documento::where('id_sucursal', $usuario->id_sucursal)
-                    ->where('nombre', 'Ticket')
-                    ->where('activo', true)
-                    ->first();
-            }
-        }
-
-        if (!$documento) {
-            Log::channel('shopify')->error("Ningún documento encontrado", [
-                'id_sucursal' => $usuario->id_sucursal,
-                'facturacion_electronica' => $empresa->facturacion_electronica,
-                'debe_crear_cotizacion' => $debeCrearCotizacion
-            ]);
-            return response()->json([
-                'status' => 'error',
-                'mensaje' => 'Ningún documento activo encontrado para la sucursal'
-            ], 500);
-        }
-
-        // Log::info("Documento encontrado", ['documento_id' => $documento->id, 'documento_nombre' => $documento->nombre]);
+        // El documento de facturación se resuelve más adelante, una vez se ha
+        // identificado el cliente (FCF o CCF según sus datos fiscales).
 
         try {
             // Verificar si la orden ya fue procesada previamente
@@ -712,7 +672,6 @@ class ShopifyController extends Controller
                 'id_usuario' => $usuario->id,
                 'id_bodega' => $usuario->id_bodega,
                 'id_sucursal' => $usuario->id_sucursal,
-                'id_documento' => $documento->id,
                 'id_canal' => $canalId
             ]);
 
@@ -759,6 +718,44 @@ class ShopifyController extends Controller
             //     'shopify_order_id' => $request->id ?? 'N/A',
             //     'shopify_customer_id' => $request->customer['id'] ?? 'N/A'
             // ]);
+
+            // Resolver documento de facturación según los datos fiscales del cliente.
+            // - Cotizaciones: cualquier documento activo (solo placeholder, no emite).
+            // - Facturación electrónica: FCF o CCF según los datos fiscales del cliente.
+            // - Sin facturación electrónica: Ticket.
+            if ($debeCrearCotizacion) {
+                $documento = Documento::where('id_sucursal', $usuario->id_sucursal)
+                    ->where('activo', true)
+                    ->first();
+
+                if (!$documento) {
+                    $documento = Documento::where('id_empresa', $empresa->id)
+                        ->where('activo', true)
+                        ->first();
+                }
+            } elseif ($empresa->facturacion_electronica) {
+                $documento = $this->resolverDocumentoFactura($usuario, $empresa, $cliente);
+            } else {
+                $documento = Documento::where('id_sucursal', $usuario->id_sucursal)
+                    ->where('nombre', 'Ticket')
+                    ->where('activo', true)
+                    ->first();
+            }
+
+            if (!$documento) {
+                DB::rollBack();
+                Log::channel('shopify')->error("Ningún documento encontrado", [
+                    'id_sucursal' => $usuario->id_sucursal,
+                    'facturacion_electronica' => $empresa->facturacion_electronica,
+                    'debe_crear_cotizacion' => $debeCrearCotizacion
+                ]);
+                return response()->json([
+                    'status' => 'error',
+                    'mensaje' => 'Ningún documento activo encontrado para la sucursal'
+                ], 500);
+            }
+
+            $request->merge(['id_documento' => $documento->id]);
 
             $ventaData = $this->transformer->transformarVenta(
                 $request->all(),
@@ -1769,6 +1766,154 @@ class ShopifyController extends Controller
     }
 
     /**
+     * Indica si el cliente tiene datos fiscales para emitir un Comprobante de Crédito Fiscal
+     * (NCR presente, o NIT con tipo de documento 36).
+     *
+     * @param Cliente $cliente
+     * @return bool
+     */
+    private function esClienteCreditoFiscal(Cliente $cliente)
+    {
+        if (!empty($cliente->ncr)) {
+            return true;
+        }
+
+        if (!empty($cliente->nit) && $cliente->tipo_documento === '36') {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Resuelve el documento de facturación para una venta proveniente de Shopify:
+     * Comprobante de Crédito Fiscal o Factura de Consumidor Final según los datos
+     * fiscales del cliente.
+     *
+     * @param User $usuario
+     * @param Empresa $empresa
+     * @param Cliente $cliente
+     * @return Documento|null
+     */
+    private function resolverDocumentoFactura($usuario, $empresa, Cliente $cliente)
+    {
+        $nombreDocumento = $this->esClienteCreditoFiscal($cliente) ? 'Crédito fiscal' : 'Factura';
+
+        $documento = Documento::where('id_sucursal', $usuario->id_sucursal)
+            ->where('nombre', $nombreDocumento)
+            ->where('activo', true)
+            ->first();
+
+        if (!$documento) {
+            $documento = Documento::where('id_empresa', $empresa->id)
+                ->where('nombre', $nombreDocumento)
+                ->where('activo', true)
+                ->first();
+        }
+
+        // Si no hay documento de Crédito fiscal configurado, usar Factura como respaldo.
+        if (!$documento && $nombreDocumento === 'Crédito fiscal') {
+            $documento = Documento::where('id_sucursal', $usuario->id_sucursal)
+                ->where('nombre', 'Factura')
+                ->where('activo', true)
+                ->first();
+        }
+
+        return $documento;
+    }
+
+    /**
+     * Convierte una cotización (generada desde un pedido pendiente de Shopify) en una venta
+     * facturable cuando el pedido pasa a estado pagado. Asigna el documento correspondiente
+     * (FCF o CCF), el correlativo y descuenta el inventario. NO emite el DTE (emisión manual).
+     *
+     * @param Venta $venta
+     * @param Empresa $empresa
+     * @param User $usuario
+     * @return bool
+     */
+    private function convertirCotizacionAVenta(Venta $venta, Empresa $empresa, $usuario)
+    {
+        $cliente = $venta->cliente;
+        if (!$cliente) {
+            $cliente = ShopifyHelper::obtenerClienteConsumidorFinal($empresa->id);
+        }
+
+        $documento = $this->resolverDocumentoFactura($usuario, $empresa, $cliente);
+        if (!$documento) {
+            Log::channel('shopify')->error('No se encontró documento para convertir cotización en venta', [
+                'venta_id' => $venta->id,
+                'id_sucursal' => $usuario->id_sucursal,
+                'empresa_id' => $empresa->id,
+            ]);
+            return false;
+        }
+
+        DB::beginTransaction();
+
+        try {
+            // Bloquear el documento para asignar correlativo sin condiciones de carrera.
+            $documento = Documento::where('id', $documento->id)->lockForUpdate()->first();
+
+            $venta->update([
+                'cotizacion' => 0,
+                'id_documento' => $documento->id,
+                'correlativo' => $documento->correlativo,
+                'estado' => 'Pagada',
+                'fecha_pago' => now(),
+                'observaciones_shopify' => ($venta->observaciones_shopify ? $venta->observaciones_shopify . ' | ' : '') .
+                    'Pedido pagado en Shopify - cotización convertida a venta el ' . now()->format('d/m/Y H:i:s'),
+            ]);
+
+            $documento->increment('correlativo');
+
+            // Descontar inventario (las cotizaciones no lo descuentan al crearse).
+            $detallesProducto = $venta->detalles()
+                ->whereHas('producto', function ($query) {
+                    $query->where('tipo', '!=', 'Servicio');
+                })
+                ->get();
+
+            foreach ($detallesProducto as $detalle) {
+                $producto = $detalle->producto;
+                if (!$producto) {
+                    continue;
+                }
+
+                Inventario::where('id_producto', $producto->id)
+                    ->where('id_bodega', $venta->id_bodega)
+                    ->decrement('stock', $detalle->cantidad);
+
+                $inventario = Inventario::where('id_producto', $producto->id)
+                    ->where('id_bodega', $venta->id_bodega)
+                    ->first();
+
+                if ($inventario) {
+                    $inventario->kardex($venta, $detalle->cantidad, $detalle->precio);
+                }
+            }
+
+            DB::commit();
+
+            Log::channel('shopify')->info('Cotización convertida a venta desde Shopify', [
+                'venta_id' => $venta->id,
+                'documento' => $documento->nombre,
+                'correlativo' => $venta->correlativo,
+                'referencia_shopify' => $venta->referencia_shopify,
+            ]);
+
+            return true;
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::channel('shopify')->error('Error al convertir cotización en venta desde Shopify', [
+                'venta_id' => $venta->id,
+                'error' => $e->getMessage(),
+            ]);
+            return false;
+        }
+    }
+
+    /**
      * Mapea el estado financiero de Shopify al estado de SmartPyme
      * 
      * @param string $shopifyStatus
@@ -2420,9 +2565,35 @@ class ShopifyController extends Controller
                 ], 200);
             }
 
-            // Actualizar estado de la venta si es necesario
-            $nuevoEstado = $this->mapearEstado($request->financial_status ?? 'pending');
+            // Obtener usuario para procesar la actualización
+            $usuario = User::where('id_empresa', $empresa->id)
+                ->where('shopify_status', 'connected')
+                ->first();
+
+            if (!$usuario) {
+                Log::warning("Usuario no encontrado para actualizar venta", [
+                    'empresa_id' => $empresa->id,
+                    'venta_id' => $venta->id
+                ]);
+                return response()->json([
+                    'status' => 'error',
+                    'mensaje' => 'Usuario no encontrado'
+                ], 404);
+            }
+
             $financialStatus = $request->financial_status ?? 'pending';
+            $esPagada = ($financialStatus === 'paid' || $financialStatus === 'partially_paid');
+
+            // Cuando un pedido pendiente pasa a pagado y el registro sigue siendo una cotización,
+            // se convierte a venta facturable (FCF o CCF). La emisión del DTE queda manual.
+            if ($esPagada && (int) $venta->cotizacion === 1) {
+                if ($this->convertirCotizacionAVenta($venta, $empresa, $usuario)) {
+                    $venta->refresh();
+                }
+            }
+
+            // Actualizar estado de la venta si es necesario
+            $nuevoEstado = $this->mapearEstado($financialStatus);
             
             if ($venta->estado !== $nuevoEstado) {
                 $observacion = 'Pedido actualizado en Shopify el ' . now()->format('d/m/Y H:i:s');
@@ -2444,22 +2615,6 @@ class ShopifyController extends Controller
                 //     'financial_status' => $financialStatus,
                 //     'shopify_order_id' => $shopifyOrderId
                 // ]);
-            }
-
-            // Obtener usuario para procesar envíos y productos nuevos
-            $usuario = User::where('id_empresa', $empresa->id)
-                ->where('shopify_status', 'connected')
-                ->first();
-
-            if (!$usuario) {
-                Log::warning("Usuario no encontrado para actualizar venta", [
-                    'empresa_id' => $empresa->id,
-                    'venta_id' => $venta->id
-                ]);
-                return response()->json([
-                    'status' => 'error',
-                    'mensaje' => 'Usuario no encontrado'
-                ], 404);
             }
 
             // Actualizar envíos si han cambiado
