@@ -160,6 +160,11 @@
               <span *ngIf="!reactivandoConsumo"><i class="fa fa-undo me-2"></i>Volver a modo consumo</span>
               <span *ngIf="reactivandoConsumo">Actualizando...</span>
             </button>
+            <button type="button" class="btn btn-outline-danger" *ngIf="puedeCerrarMesa()"
+              [disabled]="cerrandoMesa" (click)="cerrarMesa()">
+              <span *ngIf="!cerrandoMesa"><i class="fa fa-door-closed me-2"></i>Cerrar mesa</span>
+              <span *ngIf="cerrandoMesa">Cerrando...</span>
+            </button>
           </div>
           <div class="mt-3" *ngIf="preCuentas.length">
             <h6 class="mb-2">Pre-cuentas</h6>

@@ -144,6 +144,10 @@ export class RestauranteService {
     return this.api.putToUrl(`restaurante/sesiones-mesa/${sesionId}/reactivar-consumo`, {});
   }
 
+  cerrarSesion(sesionId: number): Observable<SesionMesa> {
+    return this.api.putToUrl(`restaurante/sesiones-mesa/${sesionId}/cerrar`, {});
+  }
+
   agregarItem(sesionId: number, data: { producto_id: number; id_presentacion?: number | null; cantidad: number; notas?: string }): Observable<any> {
     // Key única por clic: el UI evita doble-submit; no reutilizar scope entre altas intencionales.
     const key = this.newIdempotencyKey();

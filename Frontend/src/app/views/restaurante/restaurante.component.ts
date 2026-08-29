@@ -14,8 +14,10 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { RestauranteService, Mesa, Reserva, ZonaRestaurante } from '@services/restaurante.service';
 import { AlertService } from '@services/alert.service';
+import { ApiService } from '@services/api.service';
 import { RestauranteRealtimeService } from '@services/restaurante-realtime.service';
 import { buildMesasPorZona, MesaZonaGrupo } from './mesas-por-zona';
+import { MENSAJE_CONFIRMAR_CERRAR_MESA, puedeCerrarMesaRestaurante } from './restaurante-roles.util';
 
 @Component({
   standalone: false,
@@ -42,6 +44,7 @@ export class RestauranteComponent implements OnInit {
   modalReservarRef?: BsModalRef;
   modalMesaReservadaRef?: BsModalRef;
   modalAccionLibreRef?: BsModalRef;
+  modalAccionOcupadaRef?: BsModalRef;
 
   mesaSeleccionada: Mesa | null = null;
   reservaSeleccionada: Reserva | null = null;
@@ -49,6 +52,7 @@ export class RestauranteComponent implements OnInit {
   abrirForm: { num_comensales: number; observaciones: string } = { num_comensales: 2, observaciones: '' };
   reservaForm: Partial<Reserva> = {};
   guardando = false;
+  cerrandoMesa = false;
 
   readonly coloresEstado: Record<string, string> = {
     libre: '#22c55e',
@@ -60,6 +64,7 @@ export class RestauranteComponent implements OnInit {
   constructor(
     private restauranteService: RestauranteService,
     private alertService: AlertService,
+    private apiService: ApiService,
     private modalService: BsModalService,
     private router: Router,
     private realtime: RestauranteRealtimeService,
@@ -149,11 +154,65 @@ export class RestauranteComponent implements OnInit {
         backdrop: 'static'
       });
     } else if (mesa.estado === 'ocupada' || mesa.estado === 'pendiente_pago') {
-      const sesionId = (mesa as any).sesion_activa?.id;
-      if (sesionId) {
-        this.router.navigate(['/restaurante/cuenta', sesionId]);
-      }
+      this.mesaSeleccionada = mesa;
+      this.modalAccionOcupadaRef = this.modalService.show(this.templateAccionMesaOcupada!, {
+        class: 'modal-sm',
+        backdrop: 'static',
+      });
     }
+  }
+
+  puedeCerrarMesa(): boolean {
+    return puedeCerrarMesaRestaurante(this.apiService.auth_user()?.tipo);
+  }
+
+  sesionActivaId(mesa: Mesa | null): number | null {
+    const id = (mesa as any)?.sesion_activa?.id;
+    return id != null ? Number(id) : null;
+  }
+
+  irACuentaMesa(): void {
+    const sesionId = this.sesionActivaId(this.mesaSeleccionada);
+    this.modalAccionOcupadaRef?.hide();
+    this.mesaSeleccionada = null;
+    if (sesionId) {
+      this.router.navigate(['/restaurante/cuenta', sesionId]);
+    }
+  }
+
+  cerrarMesaDesdeMapa(): void {
+    const sesionId = this.sesionActivaId(this.mesaSeleccionada);
+    if (!sesionId || !this.puedeCerrarMesa() || this.cerrandoMesa) {
+      return;
+    }
+    if (!confirm(MENSAJE_CONFIRMAR_CERRAR_MESA)) {
+      return;
+    }
+    this.cerrandoMesa = true;
+    this.cdr.markForCheck();
+    this.restauranteService
+      .cerrarSesion(sesionId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.cerrandoMesa = false;
+          this.modalAccionOcupadaRef?.hide();
+          this.mesaSeleccionada = null;
+          this.alertService.success('Mesa cerrada', 'La mesa quedó libre en el mapa.');
+          this.cargarMesas();
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          this.alertService.error(err);
+          this.cerrandoMesa = false;
+          this.cdr.markForCheck();
+        },
+      });
+  }
+
+  cerrarModalAccionOcupada(): void {
+    this.modalAccionOcupadaRef?.hide();
+    this.mesaSeleccionada = null;
   }
 
   abrirMesaDesdeAccion(): void {
@@ -308,6 +367,7 @@ export class RestauranteComponent implements OnInit {
 
   openModalMesa(template: TemplateRef<any>, mesa?: Mesa): void {
     this.modalAccionLibreRef?.hide();
+    this.modalAccionOcupadaRef?.hide();
     this.modalAbrirRef?.hide();
     this.modalReservarRef?.hide();
     this.modalMesaReservadaRef?.hide();
@@ -376,6 +436,7 @@ export class RestauranteComponent implements OnInit {
 
   @ViewChild('templateAbrirMesa') templateAbrirMesa!: TemplateRef<any>;
   @ViewChild('templateAccionMesaLibre') templateAccionMesaLibre!: TemplateRef<any>;
+  @ViewChild('templateAccionMesaOcupada') templateAccionMesaOcupada!: TemplateRef<any>;
   @ViewChild('templateReservar') templateReservar!: TemplateRef<any>;
   @ViewChild('templateMesaReservada') templateMesaReservada!: TemplateRef<any>;
 }

@@ -18,4 +18,14 @@ class RestauranteAutorizacionService
 
         return in_array($t, ['administrador', 'admin', 'gerente'], true);
     }
+
+    /** SP-2158: cerrar mesa sin factura (Supervisor, Administrador, Ventas). */
+    public function usuarioPuedeCerrarMesa(?User $user): bool
+    {
+        if (! $user || empty($user->tipo)) {
+            return false;
+        }
+
+        return in_array(trim((string) $user->tipo), ['Administrador', 'Supervisor', 'Ventas'], true);
+    }
 }

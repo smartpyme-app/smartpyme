@@ -187,6 +187,26 @@
   </div>
 </ng-template>
 
+<ng-template #templateAccionMesaOcupada>
+  <div class="modal-header justify-content-between">
+    <h3 class="modal-title">Mesa {{ mesaSeleccionada?.numero }}</h3>
+    <button class="btn btn-light text-danger" (click)="cerrarModalAccionOcupada()">Cerrar <i class="fa fa-close"></i></button>
+  </div>
+  <div class="modal-body p-4">
+    <p class="text-muted mb-3">¿Qué desea hacer?</p>
+    <div class="d-flex flex-column gap-2">
+      <button type="button" class="btn btn-primary" (click)="irACuentaMesa()">
+        <i class="fa fa-utensils me-2"></i> Ver cuenta
+      </button>
+      <button type="button" class="btn btn-outline-danger" *ngIf="puedeCerrarMesa()"
+        [disabled]="cerrandoMesa" (click)="cerrarMesaDesdeMapa()">
+        <span *ngIf="!cerrandoMesa"><i class="fa fa-door-closed me-2"></i> Cerrar mesa</span>
+        <span *ngIf="cerrandoMesa">Cerrando...</span>
+      </button>
+    </div>
+  </div>
+</ng-template>
+
 <ng-template #templateAbrirMesa>
   <div class="modal-header justify-content-between">
     <h3 class="modal-title">Abrir mesa {{ mesaSeleccionada?.numero }}</h3>
