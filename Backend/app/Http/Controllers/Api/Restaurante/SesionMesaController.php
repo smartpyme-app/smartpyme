@@ -153,6 +153,13 @@ class SesionMesaController extends Controller
     public function cerrar(int $id): JsonResponse
     {
         $user = auth()->user();
+        $authz = app(RestauranteAutorizacionService::class);
+        if (! $authz->usuarioPuedeCerrarMesa($user)) {
+            return response()->json([
+                'error' => 'Solo Supervisor, Administrador o Ventas pueden cerrar una mesa.',
+            ], 403);
+        }
+
         $sesion = SesionMesa::where('id_empresa', $user->id_empresa)->findOrFail($id);
 
         if ($sesion->estado === 'cerrada') {

@@ -7,6 +7,7 @@ import { Mesa, RestauranteService } from '@services/restaurante.service';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { nombreLineaOrden as nombreLineaOrdenFn } from './pos/pos-menu-nav';
+import { MENSAJE_CONFIRMAR_CERRAR_MESA, puedeCerrarMesaRestaurante } from '../restaurante-roles.util';
 
 @Component({
   standalone: false,
@@ -24,6 +25,7 @@ export class CuentaMesaComponent implements OnInit {
   enviandoComanda = false;
   solicitandoCuenta = false;
   reactivandoConsumo = false;
+  cerrandoMesa = false;
   editandoItemId: number | null = null;
   editCantidad = 1;
   editNotas = '';
@@ -84,6 +86,11 @@ export class CuentaMesaComponent implements OnInit {
   puedeAutorizarOperacionesRestaurante(): boolean {
     const t = String(this.apiService.auth_user()?.tipo || '').toLowerCase().trim();
     return ['administrador', 'admin', 'gerente'].includes(t);
+  }
+
+  /** SP-2158 */
+  puedeCerrarMesa(): boolean {
+    return puedeCerrarMesaRestaurante(this.apiService.auth_user()?.tipo);
   }
 
   itemFueEnviado(item: any): boolean {
@@ -177,6 +184,33 @@ export class CuentaMesaComponent implements OnInit {
           this.alertService.error(err);
           this.cdr.markForCheck();
         }
+      });
+  }
+
+  cerrarMesa(): void {
+    if (!this.sesionId || !this.puedeCerrarMesa() || !this.puedeOperarOrden || this.cerrandoMesa) {
+      return;
+    }
+    const msg = MENSAJE_CONFIRMAR_CERRAR_MESA;
+    if (!confirm(msg)) {
+      return;
+    }
+    this.cerrandoMesa = true;
+    this.cdr.markForCheck();
+    this.restauranteService
+      .cerrarSesion(this.sesionId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.cerrandoMesa = false;
+          this.alertService.success('Mesa cerrada', 'La mesa quedó libre en el mapa.');
+          this.router.navigate(['/restaurante']);
+        },
+        error: (err) => {
+          this.alertService.error(err);
+          this.cerrandoMesa = false;
+          this.cdr.markForCheck();
+        },
       });
   }
 
