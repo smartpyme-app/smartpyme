@@ -8,6 +8,7 @@ use App\Models\Restaurante\DivisionCuenta;
 use App\Models\Restaurante\OrdenDetalle;
 use App\Models\Restaurante\PreCuenta;
 use App\Models\Restaurante\PreCuentaOrdenDetalle;
+use App\Services\Restaurante\PreCuentaSesionCleanup;
 use App\Models\Restaurante\SesionMesa;
 use App\Services\Restaurante\MesaMapaCacheService;
 use App\Services\Restaurante\RestauranteIdempotencyService;
@@ -148,15 +149,7 @@ class PreCuentaController extends Controller
      */
     private function anularPreCuentasPendientesDeSesion(int $sesionId): void
     {
-        $pendientes = PreCuenta::where('sesion_id', $sesionId)->where('estado', 'pendiente')->get();
-        foreach ($pendientes as $pc) {
-            PreCuentaOrdenDetalle::where('pre_cuenta_id', $pc->id)->delete();
-            $pc->delete();
-        }
-
-        DivisionCuenta::where('sesion_id', $sesionId)
-            ->whereDoesntHave('preCuentas')
-            ->delete();
+        PreCuentaSesionCleanup::anularPendientes($sesionId);
     }
 
     /**

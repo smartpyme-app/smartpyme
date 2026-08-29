@@ -144,8 +144,8 @@ export class RestauranteService {
     return this.api.putToUrl(`restaurante/sesiones-mesa/${sesionId}/reactivar-consumo`, {});
   }
 
-  cerrarSesion(sesionId: number): Observable<SesionMesa> {
-    return this.api.putToUrl(`restaurante/sesiones-mesa/${sesionId}/cerrar`, {});
+  cerrarSesion(sesionId: number, body: { codigo_supervisor?: string } = {}): Observable<SesionMesa> {
+    return this.api.putToUrl(`restaurante/sesiones-mesa/${sesionId}/cerrar`, body);
   }
 
   agregarItem(sesionId: number, data: { producto_id: number; id_presentacion?: number | null; cantidad: number; notas?: string }): Observable<any> {

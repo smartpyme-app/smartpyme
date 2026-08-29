@@ -207,6 +207,33 @@
   </div>
 </ng-template>
 
+<!-- Modal supervisor: cierre forzado desde mapa -->
+<div class="modal fade" [class.show]="mostrarModalSupervisorCierre" [class.d-block]="mostrarModalSupervisorCierre" tabindex="-1"
+  *ngIf="mostrarModalSupervisorCierre" (click)="validandoSupervisorCierre || cerrandoMesa ? null : cerrarModalSupervisorCierre()" style="background: rgba(0,0,0,0.5);">
+  <div class="modal-dialog modal-dialog-centered modal-sm" (click)="$event.stopPropagation()">
+    <div class="modal-content shadow">
+      <div class="modal-header">
+        <h5 class="modal-title">Autorización</h5>
+        <button type="button" class="btn-close" (click)="cerrarModalSupervisorCierre()" [disabled]="validandoSupervisorCierre || cerrandoMesa"></button>
+      </div>
+      <div class="modal-body">
+        <p class="small text-muted">Hay consumo o pre-cuentas pendientes. Ingrese el código de supervisor.</p>
+        <label class="form-label" for="mapSupervisorCodigo">Código de supervisor</label>
+        <input type="password" id="mapSupervisorCodigo" class="form-control text-center" [(ngModel)]="supervisorCodigoCierre"
+          [disabled]="validandoSupervisorCierre || cerrandoMesa" autocomplete="off">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" (click)="cerrarModalSupervisorCierre()" [disabled]="validandoSupervisorCierre || cerrandoMesa">Cancelar</button>
+        <button type="button" class="btn btn-primary" (click)="confirmarSupervisorCierreMesa()"
+          [disabled]="validandoSupervisorCierre || cerrandoMesa || !supervisorCodigoCierre.trim()">
+          <span *ngIf="!validandoSupervisorCierre && !cerrandoMesa">Autorizar y cerrar</span>
+          <span *ngIf="validandoSupervisorCierre || cerrandoMesa">Procesando...</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <ng-template #templateAbrirMesa>
   <div class="modal-header justify-content-between">
     <h3 class="modal-title">Abrir mesa {{ mesaSeleccionada?.numero }}</h3>

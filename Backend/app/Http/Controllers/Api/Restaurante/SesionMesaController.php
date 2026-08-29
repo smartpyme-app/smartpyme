@@ -9,7 +9,9 @@ use App\Models\Restaurante\OrdenDetalle;
 use App\Models\Restaurante\PreCuenta;
 use App\Models\Restaurante\SesionMesa;
 use App\Services\Restaurante\MesaMapaCacheService;
+use App\Services\Restaurante\PreCuentaSesionCleanup;
 use App\Services\Restaurante\RestauranteAutorizacionService;
+use App\Services\Restaurante\SesionMesaForceCloseService;
 use App\Services\Restaurante\RestauranteIdempotencyService;
 use App\Services\Restaurante\RestauranteRealtimePublisher;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -140,17 +142,15 @@ class SesionMesaController extends Controller
      *
      * Permite cierre cuando:
      * - estado es `abierta` o `pre_cuenta`
-     * - no hay PreCuenta en estado `pendiente`
      * - no hay OrdenDetalle vivos (consumo abierto)
      * - no hay Comanda cocina/barra en pendiente|preparando|listo
      *
-     * Bloquea (422) si la sesión ya está `cerrada`, hay pre-cuentas pendientes,
-     * quedan ítems por liquidar, o hay comandas de servicio activas.
+     * Si no queda consumo, las pre-cuentas pendientes huérfanas se anulan al cerrar.
      *
-     * No hay “cierre forzado” en esta fase: facturar/anular pre-cuentas y
-     * liquidar consumo primero. `marcarFacturada` ya cierra cuando corresponde.
+     * Cierre forzado (consumo o pre-cuenta pendiente sin pagar): Administrador/Supervisor
+     * directo; Ventas requiere codigo_supervisor (PIN users.codigo, mismo flujo usuario-validar).
      */
-    public function cerrar(int $id): JsonResponse
+    public function cerrar(Request $request, int $id): JsonResponse
     {
         $user = auth()->user();
         $authz = app(RestauranteAutorizacionService::class);
@@ -159,6 +159,10 @@ class SesionMesaController extends Controller
                 'error' => 'Solo Supervisor, Administrador o Ventas pueden cerrar una mesa.',
             ], 403);
         }
+
+        $validated = $request->validate([
+            'codigo_supervisor' => 'nullable|string|max:50',
+        ]);
 
         $sesion = SesionMesa::where('id_empresa', $user->id_empresa)->findOrFail($id);
 
@@ -170,20 +174,43 @@ class SesionMesaController extends Controller
             return response()->json(['error' => 'La sesión no se puede cerrar en su estado actual'], 422);
         }
 
-        $preCuentasPendientes = PreCuenta::where('sesion_id', $sesion->id)
-            ->where('estado', 'pendiente')
-            ->exists();
-        if ($preCuentasPendientes) {
-            return response()->json([
-                'error' => 'No se puede cerrar: hay pre-cuentas pendientes de facturar o anular',
-            ], 422);
+        $tieneItems = OrdenDetalle::where('sesion_id', $sesion->id)->exists();
+        if (! $tieneItems) {
+            PreCuentaSesionCleanup::anularPendientes((int) $sesion->id);
         }
 
-        $itemsPendientes = OrdenDetalle::where('sesion_id', $sesion->id)->exists();
-        if ($itemsPendientes) {
-            return response()->json([
-                'error' => 'No se puede cerrar: la sesión aún tiene ítems de consumo',
-            ], 422);
+        $tienePreCuentasPendientes = PreCuenta::where('sesion_id', $sesion->id)
+            ->where('estado', 'pendiente')
+            ->exists();
+        $requiereForzar = $tieneItems || $tienePreCuentasPendientes;
+
+        if ($requiereForzar) {
+            $supervisorAutorizador = null;
+            if ($authz->usuarioPuedeCerrarMesaForzadaSinCodigo($user)) {
+                $supervisorAutorizador = $user;
+            } else {
+                $supervisorAutorizador = $authz->supervisorAutorizaCierreForzado(
+                    $user,
+                    (string) ($validated['codigo_supervisor'] ?? '')
+                );
+            }
+
+            if (! $supervisorAutorizador) {
+                $mensaje = $authz->usuarioEsVentas($user)
+                    ? 'Hay consumo o pre-cuentas pendientes. Ingrese el código de supervisor para cerrar la mesa sin facturar.'
+                    : 'No se puede cerrar: hay consumo o pre-cuentas pendientes sin autorización.';
+
+                return response()->json([
+                    'error' => $mensaje,
+                    'requiere_codigo_supervisor' => $authz->usuarioEsVentas($user),
+                ], 403);
+            }
+
+            SesionMesaForceCloseService::liquidar(
+                (int) $sesion->id,
+                (int) $user->id,
+                (int) $supervisorAutorizador->id
+            );
         }
 
         $comandasActivas = Comanda::where('sesion_id', $sesion->id)

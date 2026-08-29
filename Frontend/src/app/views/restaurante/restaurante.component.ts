@@ -17,7 +17,12 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { RestauranteRealtimeService } from '@services/restaurante-realtime.service';
 import { buildMesasPorZona, MesaZonaGrupo } from './mesas-por-zona';
-import { MENSAJE_CONFIRMAR_CERRAR_MESA, puedeCerrarMesaRestaurante } from './restaurante-roles.util';
+import { MENSAJE_CONFIRMAR_CERRAR_MESA, MENSAJE_CONFIRMAR_CERRAR_MESA_FORZADO, puedeCerrarMesaRestaurante } from './restaurante-roles.util';
+import {
+  mensajeErrorCierreMesa,
+  requiereCodigoSupervisorEnError,
+  validarCodigoSupervisor,
+} from './restaurante-cerrar-mesa.util';
 
 @Component({
   standalone: false,
@@ -53,6 +58,9 @@ export class RestauranteComponent implements OnInit {
   reservaForm: Partial<Reserva> = {};
   guardando = false;
   cerrandoMesa = false;
+  mostrarModalSupervisorCierre = false;
+  supervisorCodigoCierre = '';
+  validandoSupervisorCierre = false;
 
   readonly coloresEstado: Record<string, string> = {
     libre: '#22c55e',
@@ -185,13 +193,56 @@ export class RestauranteComponent implements OnInit {
     if (!sesionId || !this.puedeCerrarMesa() || this.cerrandoMesa) {
       return;
     }
-    if (!confirm(MENSAJE_CONFIRMAR_CERRAR_MESA)) {
+    const msg = `${MENSAJE_CONFIRMAR_CERRAR_MESA}\n\n${MENSAJE_CONFIRMAR_CERRAR_MESA_FORZADO}`;
+    if (!confirm(msg)) {
+      return;
+    }
+    this.ejecutarCierreMesaDesdeMapa(sesionId);
+  }
+
+  cerrarModalSupervisorCierre(): void {
+    if (this.validandoSupervisorCierre || this.cerrandoMesa) {
+      return;
+    }
+    this.mostrarModalSupervisorCierre = false;
+    this.supervisorCodigoCierre = '';
+    this.cdr.markForCheck();
+  }
+
+  confirmarSupervisorCierreMesa(): void {
+    const sesionId = this.sesionActivaId(this.mesaSeleccionada);
+    if (!sesionId || this.validandoSupervisorCierre || this.cerrandoMesa) {
+      return;
+    }
+    this.validandoSupervisorCierre = true;
+    this.cdr.markForCheck();
+    validarCodigoSupervisor(this.apiService, this.supervisorCodigoCierre)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.validandoSupervisorCierre = false;
+          this.mostrarModalSupervisorCierre = false;
+          const codigo = this.supervisorCodigoCierre.trim();
+          this.supervisorCodigoCierre = '';
+          this.ejecutarCierreMesaDesdeMapa(sesionId, codigo);
+        },
+        error: (err) => {
+          this.alertService.error(mensajeErrorCierreMesa(err));
+          this.validandoSupervisorCierre = false;
+          this.cdr.markForCheck();
+        },
+      });
+  }
+
+  private ejecutarCierreMesaDesdeMapa(sesionId: number, codigoSupervisor?: string): void {
+    if (this.cerrandoMesa) {
       return;
     }
     this.cerrandoMesa = true;
     this.cdr.markForCheck();
+    const body = codigoSupervisor ? { codigo_supervisor: codigoSupervisor } : {};
     this.restauranteService
-      .cerrarSesion(sesionId)
+      .cerrarSesion(sesionId, body)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
@@ -203,8 +254,14 @@ export class RestauranteComponent implements OnInit {
           this.cdr.markForCheck();
         },
         error: (err) => {
-          this.alertService.error(err);
           this.cerrandoMesa = false;
+          if (requiereCodigoSupervisorEnError(err)) {
+            this.supervisorCodigoCierre = '';
+            this.mostrarModalSupervisorCierre = true;
+            this.cdr.markForCheck();
+            return;
+          }
+          this.alertService.error(err);
           this.cdr.markForCheck();
         },
       });

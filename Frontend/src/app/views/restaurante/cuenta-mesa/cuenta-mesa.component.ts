@@ -7,7 +7,18 @@ import { Mesa, RestauranteService } from '@services/restaurante.service';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { nombreLineaOrden as nombreLineaOrdenFn } from './pos/pos-menu-nav';
-import { MENSAJE_CONFIRMAR_CERRAR_MESA, puedeCerrarMesaRestaurante } from '../restaurante-roles.util';
+import {
+  MENSAJE_CONFIRMAR_CERRAR_MESA,
+  MENSAJE_CONFIRMAR_CERRAR_MESA_FORZADO,
+  necesitaCierreForzadoMesa,
+  puedeCerrarMesaForzadaSinCodigo,
+  puedeCerrarMesaRestaurante,
+} from '../restaurante-roles.util';
+import {
+  mensajeErrorCierreMesa,
+  requiereCodigoSupervisorEnError,
+  validarCodigoSupervisor,
+} from '../restaurante-cerrar-mesa.util';
 
 @Component({
   standalone: false,
@@ -26,6 +37,9 @@ export class CuentaMesaComponent implements OnInit {
   solicitandoCuenta = false;
   reactivandoConsumo = false;
   cerrandoMesa = false;
+  mostrarModalSupervisorCierre = false;
+  supervisorCodigoCierre = '';
+  validandoSupervisorCierre = false;
   editandoItemId: number | null = null;
   editCantidad = 1;
   editNotas = '';
@@ -191,14 +205,63 @@ export class CuentaMesaComponent implements OnInit {
     if (!this.sesionId || !this.puedeCerrarMesa() || !this.puedeOperarOrden || this.cerrandoMesa) {
       return;
     }
-    const msg = MENSAJE_CONFIRMAR_CERRAR_MESA;
+    const forzado = necesitaCierreForzadoMesa(this.sesion, this.preCuentas);
+    const msg = forzado ? MENSAJE_CONFIRMAR_CERRAR_MESA_FORZADO : MENSAJE_CONFIRMAR_CERRAR_MESA;
     if (!confirm(msg)) {
+      return;
+    }
+    const tipo = this.apiService.auth_user()?.tipo;
+    if (forzado && !puedeCerrarMesaForzadaSinCodigo(tipo)) {
+      this.supervisorCodigoCierre = '';
+      this.mostrarModalSupervisorCierre = true;
+      this.cdr.markForCheck();
+      return;
+    }
+    this.ejecutarCierreMesa();
+  }
+
+  cerrarModalSupervisorCierre(): void {
+    if (this.validandoSupervisorCierre || this.cerrandoMesa) {
+      return;
+    }
+    this.mostrarModalSupervisorCierre = false;
+    this.supervisorCodigoCierre = '';
+    this.cdr.markForCheck();
+  }
+
+  confirmarSupervisorCierreMesa(): void {
+    if (this.validandoSupervisorCierre || this.cerrandoMesa) {
+      return;
+    }
+    this.validandoSupervisorCierre = true;
+    this.cdr.markForCheck();
+    validarCodigoSupervisor(this.apiService, this.supervisorCodigoCierre)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.validandoSupervisorCierre = false;
+          this.mostrarModalSupervisorCierre = false;
+          const codigo = this.supervisorCodigoCierre.trim();
+          this.supervisorCodigoCierre = '';
+          this.ejecutarCierreMesa(codigo);
+        },
+        error: (err) => {
+          this.alertService.error(mensajeErrorCierreMesa(err));
+          this.validandoSupervisorCierre = false;
+          this.cdr.markForCheck();
+        },
+      });
+  }
+
+  private ejecutarCierreMesa(codigoSupervisor?: string): void {
+    if (!this.sesionId || this.cerrandoMesa) {
       return;
     }
     this.cerrandoMesa = true;
     this.cdr.markForCheck();
+    const body = codigoSupervisor ? { codigo_supervisor: codigoSupervisor } : {};
     this.restauranteService
-      .cerrarSesion(this.sesionId)
+      .cerrarSesion(this.sesionId, body)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
@@ -207,8 +270,14 @@ export class CuentaMesaComponent implements OnInit {
           this.router.navigate(['/restaurante']);
         },
         error: (err) => {
-          this.alertService.error(err);
           this.cerrandoMesa = false;
+          if (requiereCodigoSupervisorEnError(err)) {
+            this.supervisorCodigoCierre = '';
+            this.mostrarModalSupervisorCierre = true;
+            this.cdr.markForCheck();
+            return;
+          }
+          this.alertService.error(err);
           this.cdr.markForCheck();
         },
       });

@@ -202,9 +202,56 @@ final class Phase2ApiHardeningTest extends TestCase
             'enviado_barra' => false,
         ]);
 
-        $resp = app(SesionMesaController::class)->cerrar($sesion->id);
-        $this->assertSame(422, $resp->getStatusCode());
+        $this->userA->tipo = 'Ventas';
+        $this->userA->save();
+
+        $resp = app(SesionMesaController::class)->cerrar(Request::create('/cerrar', 'PUT'), $sesion->id);
+        $this->assertSame(403, $resp->getStatusCode());
+        $body = $resp->getData(true);
+        $this->assertTrue($body['requiere_codigo_supervisor'] ?? false);
         $this->assertSame('abierta', $sesion->fresh()->estado);
+    }
+
+    public function test_cerrar_force_con_consumo_admin_liquida(): void
+    {
+        $producto = Producto::withoutGlobalScope('empresa')
+            ->where('id_empresa', $this->empresaA)
+            ->orderBy('id')
+            ->first();
+        if (! $producto) {
+            $this->markTestSkipped('Sin producto en empresa A.');
+        }
+
+        $mesa = $this->crearMesaLibre('HT2-CFA', $this->empresaA);
+        $sesion = $this->abrirSesion($mesa, $this->userA);
+        OrdenDetalle::create([
+            'sesion_id' => $sesion->id,
+            'producto_id' => $producto->id,
+            'cantidad' => 1,
+            'precio_unitario' => 3,
+            'enviado_cocina' => false,
+            'enviado_barra' => false,
+        ]);
+        PreCuenta::create([
+            'sesion_id' => $sesion->id,
+            'subtotal' => 3,
+            'descuento' => 0,
+            'impuesto' => 0,
+            'propina_monto' => 0,
+            'propina_porcentaje_aplicado' => 0,
+            'total' => 3,
+            'estado' => 'pendiente',
+            'numero_pre_cuenta' => 'PC-HT2-CFA-1',
+        ]);
+
+        $this->userA->tipo = 'Administrador';
+        $this->userA->save();
+
+        $resp = app(SesionMesaController::class)->cerrar(Request::create('/cerrar', 'PUT'), $sesion->id);
+        $this->assertSame(200, $resp->getStatusCode());
+        $this->assertSame('cerrada', $sesion->fresh()->estado);
+        $this->assertSame(0, OrdenDetalle::where('sesion_id', $sesion->id)->count());
+        $this->assertSame(0, PreCuenta::where('sesion_id', $sesion->id)->where('estado', 'pendiente')->count());
     }
 
     public function test_cerrar_empty_session_ok(): void
@@ -212,30 +259,71 @@ final class Phase2ApiHardeningTest extends TestCase
         $mesa = $this->crearMesaLibre('HT2-CLE', $this->empresaA);
         $sesion = $this->abrirSesion($mesa, $this->userA);
 
-        $resp = app(SesionMesaController::class)->cerrar($sesion->id);
+        $resp = app(SesionMesaController::class)->cerrar(Request::create('/cerrar', 'PUT'), $sesion->id);
         $this->assertSame(200, $resp->getStatusCode());
         $this->assertSame('cerrada', $sesion->fresh()->estado);
         $this->assertSame('libre', $mesa->fresh()->estado);
     }
 
-    public function test_cerrar_blocked_when_precuenta_pendiente(): void
+    public function test_cerrar_anula_precuenta_pendiente_sin_consumo(): void
     {
         $mesa = $this->crearMesaLibre('HT2-PCP', $this->empresaA);
         $sesion = $this->abrirSesion($mesa, $this->userA);
         PreCuenta::create([
             'sesion_id' => $sesion->id,
-            'subtotal' => 10,
+            'subtotal' => 0,
             'descuento' => 0,
             'impuesto' => 0,
             'propina_monto' => 0,
             'propina_porcentaje_aplicado' => 0,
-            'total' => 10,
+            'total' => 0,
             'estado' => 'pendiente',
             'numero_pre_cuenta' => 'PC-HT2-PCP-1',
         ]);
 
-        $resp = app(SesionMesaController::class)->cerrar($sesion->id);
-        $this->assertSame(422, $resp->getStatusCode());
+        $resp = app(SesionMesaController::class)->cerrar(Request::create('/cerrar', 'PUT'), $sesion->id);
+        $this->assertSame(200, $resp->getStatusCode());
+        $this->assertSame('cerrada', $sesion->fresh()->estado);
+        $this->assertSame(0, PreCuenta::where('sesion_id', $sesion->id)->where('estado', 'pendiente')->count());
+    }
+
+    public function test_cerrar_blocked_when_precuenta_pendiente_con_consumo(): void
+    {
+        $producto = Producto::withoutGlobalScope('empresa')
+            ->where('id_empresa', $this->empresaA)
+            ->orderBy('id')
+            ->first();
+        if (! $producto) {
+            $this->markTestSkipped('Sin producto en empresa A.');
+        }
+
+        $mesa = $this->crearMesaLibre('HT2-PCC', $this->empresaA);
+        $sesion = $this->abrirSesion($mesa, $this->userA);
+        OrdenDetalle::create([
+            'sesion_id' => $sesion->id,
+            'producto_id' => $producto->id,
+            'cantidad' => 1,
+            'precio_unitario' => 5,
+            'enviado_cocina' => false,
+            'enviado_barra' => false,
+        ]);
+        PreCuenta::create([
+            'sesion_id' => $sesion->id,
+            'subtotal' => 5,
+            'descuento' => 0,
+            'impuesto' => 0,
+            'propina_monto' => 0,
+            'propina_porcentaje_aplicado' => 0,
+            'total' => 5,
+            'estado' => 'pendiente',
+            'numero_pre_cuenta' => 'PC-HT2-PCC-1',
+        ]);
+
+        $this->userA->tipo = 'Ventas';
+        $this->userA->save();
+
+        $resp = app(SesionMesaController::class)->cerrar(Request::create('/cerrar', 'PUT'), $sesion->id);
+        $this->assertSame(403, $resp->getStatusCode());
         $this->assertSame('abierta', $sesion->fresh()->estado);
     }
 
@@ -253,7 +341,7 @@ final class Phase2ApiHardeningTest extends TestCase
             'enviado_at' => now(),
         ]);
 
-        $resp = app(SesionMesaController::class)->cerrar($sesion->id);
+        $resp = app(SesionMesaController::class)->cerrar(Request::create('/cerrar', 'PUT'), $sesion->id);
         $this->assertSame(422, $resp->getStatusCode());
         $body = $resp->getData(true);
         $this->assertStringContainsString('comandas', (string) ($body['error'] ?? ''));

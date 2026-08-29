@@ -35,4 +35,18 @@ class RestauranteAutorizacionServiceTest extends TestCase
             $this->assertFalse($this->svc->usuarioPuedeCerrarMesa($user), $tipo ?: '(vacío)');
         }
     }
+
+    public function test_usuario_puede_cerrar_mesa_forzada_sin_codigo_solo_admin_y_supervisor(): void
+    {
+        foreach (['Administrador', 'Supervisor'] as $tipo) {
+            $user = new User;
+            $user->exists = true;
+            $user->tipo = $tipo;
+            $this->assertTrue($this->svc->usuarioPuedeCerrarMesaForzadaSinCodigo($user), $tipo);
+        }
+        $ventas = new User;
+        $ventas->exists = true;
+        $ventas->tipo = 'Ventas';
+        $this->assertFalse($this->svc->usuarioPuedeCerrarMesaForzadaSinCodigo($ventas));
+    }
 }
