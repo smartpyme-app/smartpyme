@@ -32,6 +32,7 @@ class Compra extends AuditableModel {
         'num_serie',
         'num_orden_compra',
         'detalle_banco',
+        'referencia_pago',
         // 'aplicada_inventario',
         'notas',
         'id_proveedor',

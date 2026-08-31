@@ -37,13 +37,15 @@ class ComprasService
 
         Partida::assertNoExisteParaOrigen('Compra', $compra->id, 'Ya existen partidas contables generadas para esta compra.');
 
+        $concepto = 'Compra de mercancía. ' . ($compra->tipo_documento ?? 'Documento') . ' #' . ($compra->referencia ?? 'Sin referencia');
+
         DB::beginTransaction();
 
         try {
             $partida = Partida::create([
                 'fecha'         => $compra->fecha,
                 'tipo'          => $compra->estado == 'Pendiente' ? 'CxP' : 'Egreso',
-                'concepto'      => 'Compra de mercancía. ' . ($compra->tipo_documento ?? 'Documento') . ' #' . ($compra->referencia ?? 'Sin referencia'),
+                'concepto'      => $concepto,
                 'estado'        => 'Pendiente',
                 'referencia'    => 'Compra',
                 'id_referencia' => $compra->id,
@@ -84,7 +86,7 @@ class ComprasService
                 'id_cuenta'         => $cuenta->id,
                 'codigo'            => $cuenta->codigo,
                 'nombre_cuenta'     => $cuenta->nombre,
-                'concepto'          => 'Compra de mercancía',
+                'concepto'          => $concepto,
                 'debe'              => NULL,
                 'haber'             => $compra->total,
                 'saldo'             => 0,

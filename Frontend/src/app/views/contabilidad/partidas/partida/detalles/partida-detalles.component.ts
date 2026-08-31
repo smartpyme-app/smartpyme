@@ -10,6 +10,7 @@ import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
+import { cuentaCoincideBusqueda } from '../../cuenta-select.util';
 
 import Swal from 'sweetalert2';
 
@@ -75,6 +76,8 @@ export class PartidaDetallesComponent extends BaseModalComponent implements OnIn
         if (!cuenta) return '';
         return `${cuenta.codigo} - ${cuenta.nombre}`;
     }
+
+    searchCuentaFn = cuentaCoincideBusqueda;
 
     public selectCuenta(){
         let cuenta = this.catalogo.find((item:any) => item.id == this.detalle.id_cuenta);

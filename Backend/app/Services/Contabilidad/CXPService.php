@@ -53,10 +53,12 @@ class CXPService
         DB::beginTransaction();
 
         try {
+            $concepto = 'Abono a cuenta por pagar. ' . ($compra->tipo_documento ?? 'Documento') . ' #' . ($compra->referencia ?? 'Sin referencia');
+
             $partida = Partida::create([
                 'fecha'         => $cxp->fecha,
                 'tipo'          => 'CxP',
-                'concepto'      => 'Abono a cuenta por pagar. ' . ($compra->tipo_documento ?? 'Documento') . ' #' . ($compra->referencia ?? 'Sin referencia'),
+                'concepto'      => $concepto,
                 'estado'        => 'Pendiente',
                 'referencia'    => 'Abono de Compra',
                 'id_referencia' => $cxp->id,
@@ -78,7 +80,7 @@ class CXPService
                 'id_cuenta'         => $cuenta_cxp->id,
                 'codigo'            => $cuenta_cxp->codigo,
                 'nombre_cuenta'     => $cuenta_cxp->nombre,
-                'concepto'          => 'Abono a cuenta por pagar',
+                'concepto'          => $concepto,
                 'debe'              => $cxp->total,
                 'haber'             => NULL,
                 'saldo'             => 0,
@@ -104,7 +106,7 @@ class CXPService
                 'id_cuenta'         => $cuenta_forma_pago->id,
                 'codigo'            => $cuenta_forma_pago->codigo,
                 'nombre_cuenta'     => $cuenta_forma_pago->nombre,
-                'concepto'          => 'Abono a cuenta por pagar',
+                'concepto'          => $concepto,
                 'debe'              => NULL,
                 'haber'             => $cxp->total,
                 'saldo'             => 0,

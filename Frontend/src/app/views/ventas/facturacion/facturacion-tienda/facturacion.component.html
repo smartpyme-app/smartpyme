@@ -530,7 +530,11 @@
               <div class="text-danger mt-1" style="font-size: 11px;" *ngIf="mensajeErrorBanco">
                 {{ mensajeErrorBanco }}
             </div>
-        </div>
+            </div>
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="referencia_pago">Referencia</label>
+                <input type="text" class="form-control" name="referencia_pago" [(ngModel)]="venta.referencia_pago" placeholder="N.º de cheque o transferencia">
+            </div>
         }
 
       @if (venta.cotizacion != 1) {
