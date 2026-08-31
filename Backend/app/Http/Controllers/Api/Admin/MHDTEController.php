@@ -382,12 +382,16 @@ class MHDTEController extends Controller
         [$DTE, $esAnulado] = self::dteParaReporte($registro, $request->input('documento'));
 
         if ($esAnulado) {
-            if (!$DTE) {
+            if (is_string($DTE)) {
+                $DTE = json_decode($DTE, true);
+            }
+            if (empty($DTE) || !is_array($DTE)) {
                 return response()->json(['error' => 'El registro no tiene DTE de invalidación.'], 404);
             }
+            self::asignarQrConsultaPublica($registro, $DTE);
             $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Anulado', compact('registro', 'DTE'));
             $pdf->setPaper('US Letter', 'portrait');
-            return $pdf->stream($DTE['identificacion']['codigoGeneracion'] . '.pdf');
+            return $pdf->stream(($DTE['identificacion']['codigoGeneracion'] ?? 'dte-anulado') . '.pdf');
         }
 
         if (!$DTE) {
@@ -482,6 +486,37 @@ class MHDTEController extends Controller
         }
 
         return [$registro->dte, false];
+    }
+
+    /**
+     * El PDF de invalidación usa DNS2D sobre $registro->qr; el evento de anulación no trae fecEmi.
+     */
+    public static function asignarQrConsultaPublica($registro, $dteAnulado = null): void
+    {
+        $dteOriginal = $registro->dte ?? null;
+        if (is_string($dteOriginal)) {
+            $dteOriginal = json_decode($dteOriginal, true);
+        }
+
+        if (is_array($dteOriginal) && !empty($dteOriginal['identificacion']['codigoGeneracion'])) {
+            $ident = $dteOriginal['identificacion'];
+            $registro->qr = 'https://admin.factura.gob.sv/consultaPublica?ambiente=' . ($ident['ambiente'] ?? '') . '&codGen=' . $ident['codigoGeneracion'] . '&fechaEmi=' . ($ident['fecEmi'] ?? '');
+            return;
+        }
+
+        if (is_string($dteAnulado)) {
+            $dteAnulado = json_decode($dteAnulado, true);
+        }
+
+        if (is_array($dteAnulado)) {
+            $ambiente = $dteAnulado['identificacion']['ambiente'] ?? '';
+            $codGen = $dteAnulado['documento']['codigoGeneracion'] ?? ($dteAnulado['identificacion']['codigoGeneracion'] ?? '');
+            $fecEmi = $dteAnulado['documento']['fecEmi'] ?? '';
+            $registro->qr = 'https://admin.factura.gob.sv/consultaPublica?ambiente=' . $ambiente . '&codGen=' . $codGen . '&fechaEmi=' . $fecEmi;
+            return;
+        }
+
+        $registro->qr = '';
     }
 
 

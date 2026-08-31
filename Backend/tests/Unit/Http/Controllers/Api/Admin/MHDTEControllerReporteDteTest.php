@@ -57,6 +57,54 @@ class MHDTEControllerReporteDteTest extends TestCase
         $this->assertNull($dte);
     }
 
+    public function test_qr_de_pdf_anulado_usa_datos_del_dte_original(): void
+    {
+        $registro = $this->registroConOriginalEInvalidacion();
+        $registro->dte['identificacion']['ambiente'] = '00';
+        $registro->dte['identificacion']['fecEmi'] = '2026-08-01';
+
+        MHDTEController::asignarQrConsultaPublica($registro, $registro->dte_invalidacion);
+
+        $this->assertSame(
+            'https://admin.factura.gob.sv/consultaPublica?ambiente=00&codGen=ORIGINAL-UUID&fechaEmi=2026-08-01',
+            $registro->qr
+        );
+    }
+
+    public function test_qr_de_pdf_anulado_usa_documento_si_no_hay_dte_original(): void
+    {
+        $registro = (object) [
+            'dte' => null,
+            'qr' => null,
+        ];
+        $dteAnulado = [
+            'identificacion' => ['ambiente' => '01', 'codigoGeneracion' => 'INVALIDACION-UUID'],
+            'documento' => [
+                'codigoGeneracion' => 'ORIGINAL-UUID',
+                'fecEmi' => '2026-07-15',
+            ],
+        ];
+
+        MHDTEController::asignarQrConsultaPublica($registro, $dteAnulado);
+
+        $this->assertSame(
+            'https://admin.factura.gob.sv/consultaPublica?ambiente=01&codGen=ORIGINAL-UUID&fechaEmi=2026-07-15',
+            $registro->qr
+        );
+    }
+
+    public function test_generar_dte_pdf_asigna_qr_antes_de_renderizar_anulado(): void
+    {
+        $source = $this->methodSource(MHDTEController::class, 'generarDTEPDF');
+        $anuladoView = strpos($source, 'DTE-Anulado');
+
+        $this->assertNotFalse($anuladoView, 'generarDTEPDF debe renderizar DTE-Anulado');
+        $this->assertNotFalse(
+            strpos(substr($source, 0, $anuladoView), 'asignarQrConsultaPublica'),
+            'El PDF anulado debe asignar el QR antes de renderizar DTE-Anulado'
+        );
+    }
+
     public function test_generar_dte_pdf_elige_payload_segun_query_documento(): void
     {
         $source = $this->methodSource(MHDTEController::class, 'generarDTEPDF');
