@@ -2,6 +2,7 @@
 
 namespace App\Exports;
 
+use App\Exports\Support\DetallesConDevolucionesQuery;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -131,78 +132,53 @@ class VentasPorUtilidadesSheet implements FromCollection, WithHeadings, WithMapp
     public function collection()
     {
         $request = $this->request;
-        
-        // Optimización: Construir condiciones WHERE dinámicamente
-        $whereConditions = [];
-        $bindings = [$request->id_empresa, $this->fecha_inicio, $this->fecha_fin];
-        
-        if ($request->sucursales && count($request->sucursales) > 0) {
-            $placeholders = str_repeat('?,', count($request->sucursales) - 1) . '?';
-            $whereConditions[] = "AND v.id_sucursal IN ({$placeholders})";
-            $bindings = array_merge($bindings, $request->sucursales);
-        }
-        
-        if ($request->categorias && count($request->categorias) > 0) {
-            $placeholders = str_repeat('?,', count($request->categorias) - 1) . '?';
-            $whereConditions[] = "AND p.id_categoria IN ({$placeholders})";
-            $bindings = array_merge($bindings, $request->categorias);
-        }
-        
-        if ($request->marcas && count($request->marcas) > 0) {
-            $placeholders = str_repeat('?,', count($request->marcas) - 1) . '?';
-            $whereConditions[] = "AND p.marca IN ({$placeholders})";
-            $bindings = array_merge($bindings, $request->marcas);
-        }
+        $lineas = DetallesConDevolucionesQuery::lineasVenta($request, (string) $this->fecha_inicio, (string) $this->fecha_fin);
 
-        $additionalWhere = implode(' ', $whereConditions);
+        $resultados = DB::query()
+            ->fromSub($lineas, 'lineas')
+            ->join('productos as p', 'p.id', '=', 'lineas.id_producto')
+            ->whereNotNull('p.marca')
+            ->where('p.marca', '!=', '')
+            ->when($request->categorias && count($request->categorias) > 0, function ($query) use ($request) {
+                return $query->whereIn('p.id_categoria', $request->categorias);
+            })
+            ->when($request->marcas && count($request->marcas) > 0, function ($query) use ($request) {
+                return $query->whereIn('p.marca', $request->marcas);
+            })
+            ->select(
+                'p.marca',
+                DB::raw("COALESCE(p.codigo, '') as sku"),
+                DB::raw('YEAR(lineas.fecha) as año'),
+                DB::raw('SUM(lineas.cantidad) as unidades_vendidas'),
+                DB::raw('ROUND(SUM(CASE WHEN MONTH(lineas.fecha) = 1 THEN lineas.total ELSE 0 END), 2) as enero'),
+                DB::raw('ROUND(SUM(CASE WHEN MONTH(lineas.fecha) = 2 THEN lineas.total ELSE 0 END), 2) as febrero'),
+                DB::raw('ROUND(SUM(CASE WHEN MONTH(lineas.fecha) = 3 THEN lineas.total ELSE 0 END), 2) as marzo'),
+                DB::raw('ROUND(SUM(CASE WHEN MONTH(lineas.fecha) = 4 THEN lineas.total ELSE 0 END), 2) as abril'),
+                DB::raw('ROUND(SUM(CASE WHEN MONTH(lineas.fecha) = 5 THEN lineas.total ELSE 0 END), 2) as mayo'),
+                DB::raw('ROUND(SUM(CASE WHEN MONTH(lineas.fecha) = 6 THEN lineas.total ELSE 0 END), 2) as junio'),
+                DB::raw('ROUND(SUM(CASE WHEN MONTH(lineas.fecha) = 7 THEN lineas.total ELSE 0 END), 2) as julio'),
+                DB::raw('ROUND(SUM(CASE WHEN MONTH(lineas.fecha) = 8 THEN lineas.total ELSE 0 END), 2) as agosto'),
+                DB::raw('ROUND(SUM(CASE WHEN MONTH(lineas.fecha) = 9 THEN lineas.total ELSE 0 END), 2) as septiembre'),
+                DB::raw('ROUND(SUM(CASE WHEN MONTH(lineas.fecha) = 10 THEN lineas.total ELSE 0 END), 2) as octubre'),
+                DB::raw('ROUND(SUM(CASE WHEN MONTH(lineas.fecha) = 11 THEN lineas.total ELSE 0 END), 2) as noviembre'),
+                DB::raw('ROUND(SUM(CASE WHEN MONTH(lineas.fecha) = 12 THEN lineas.total ELSE 0 END), 2) as diciembre'),
+                DB::raw('ROUND(SUM(lineas.total), 2) as total_de_ventas_sin_iva'),
+                DB::raw('ROUND(SUM(lineas.total_costo), 2) as total_costos')
+            )
+            ->groupBy('p.id', 'p.marca', 'p.codigo', DB::raw('YEAR(lineas.fecha)'))
+            ->orderBy('p.marca')
+            ->orderBy('año', 'desc')
+            ->orderBy('total_de_ventas_sin_iva', 'desc')
+            ->get();
 
-        // Obtener gastos del período por sucursal
         $gastosWhere = "id_empresa = ? AND fecha BETWEEN ? AND ?";
         $gastosBindings = [$request->id_empresa, $this->fecha_inicio, $this->fecha_fin];
-        
+
         if ($request->sucursales && count($request->sucursales) > 0) {
             $gastosPlaceholders = str_repeat('?,', count($request->sucursales) - 1) . '?';
             $gastosWhere .= " AND id_sucursal IN ({$gastosPlaceholders})";
             $gastosBindings = array_merge($gastosBindings, $request->sucursales);
         }
-
-        // Optimización: Consulta única con cálculo de costos
-        $sql = "
-            SELECT 
-                p.marca,
-                COALESCE(p.codigo, '') AS sku,
-                YEAR(v.fecha) AS año,
-                SUM(dv.cantidad) AS unidades_vendidas,
-                ROUND(SUM(CASE WHEN MONTH(v.fecha) = 1 THEN dv.total ELSE 0 END), 2) AS enero,
-                ROUND(SUM(CASE WHEN MONTH(v.fecha) = 2 THEN dv.total ELSE 0 END), 2) AS febrero,
-                ROUND(SUM(CASE WHEN MONTH(v.fecha) = 3 THEN dv.total ELSE 0 END), 2) AS marzo,
-                ROUND(SUM(CASE WHEN MONTH(v.fecha) = 4 THEN dv.total ELSE 0 END), 2) AS abril,
-                ROUND(SUM(CASE WHEN MONTH(v.fecha) = 5 THEN dv.total ELSE 0 END), 2) AS mayo,
-                ROUND(SUM(CASE WHEN MONTH(v.fecha) = 6 THEN dv.total ELSE 0 END), 2) AS junio,
-                ROUND(SUM(CASE WHEN MONTH(v.fecha) = 7 THEN dv.total ELSE 0 END), 2) AS julio,
-                ROUND(SUM(CASE WHEN MONTH(v.fecha) = 8 THEN dv.total ELSE 0 END), 2) AS agosto,
-                ROUND(SUM(CASE WHEN MONTH(v.fecha) = 9 THEN dv.total ELSE 0 END), 2) AS septiembre,
-                ROUND(SUM(CASE WHEN MONTH(v.fecha) = 10 THEN dv.total ELSE 0 END), 2) AS octubre,
-                ROUND(SUM(CASE WHEN MONTH(v.fecha) = 11 THEN dv.total ELSE 0 END), 2) AS noviembre,
-                ROUND(SUM(CASE WHEN MONTH(v.fecha) = 12 THEN dv.total ELSE 0 END), 2) AS diciembre,
-                ROUND(SUM(dv.total), 2) AS total_de_ventas_sin_iva,
-                ROUND(SUM(COALESCE(dv.total_costo, dv.cantidad * dv.costo, 0)), 2) AS total_costos
-            FROM detalles_venta dv
-            INNER JOIN ventas v ON v.id = dv.id_venta
-            INNER JOIN productos p ON p.id = dv.id_producto
-            WHERE 
-                v.id_empresa = ?
-                AND v.estado != 'Anulada'
-                AND v.cotizacion = 0
-                AND p.marca IS NOT NULL
-                AND p.marca != ''
-                AND v.fecha BETWEEN ? AND ?
-                {$additionalWhere}
-            GROUP BY p.id, p.marca, p.codigo, YEAR(v.fecha)
-            ORDER BY p.marca, año DESC, total_de_ventas_sin_iva DESC
-        ";
-
-        $resultados = DB::select($sql, $bindings);
 
         // Calcular gastos totales del período
         $gastosTotales = DB::select("

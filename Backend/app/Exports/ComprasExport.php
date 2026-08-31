@@ -2,7 +2,9 @@
 
 namespace App\Exports;
 
+use App\Exports\Support\DevolucionEnReporte;
 use App\Models\Compras\Compra;
+use App\Models\Compras\Devoluciones\Devolucion;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -87,11 +89,76 @@ class ComprasExport implements FromCollection, WithHeadings, WithMapping
                         ->orderBy('id', 'desc')
                         ->get();
 
-        return $compras; 
+        $devoluciones = $this->queryDevoluciones()->get()->each(function (Devolucion $devolucion) {
+            DevolucionEnReporte::marcar($devolucion);
+        });
+
+        return $compras->concat($devoluciones)
+            ->sortByDesc(function ($row) {
+                return sprintf('%s-%010d', (string) $row->fecha, (int) ($row->id ?? 0));
+            })
+            ->values();
         
     }
 
+    private function queryDevoluciones()
+    {
+        $request = $this->request;
+        $idEmpresa = Auth::check() ? Auth::user()->id_empresa : ($request->id_empresa ?? null);
+
+        return Devolucion::withoutGlobalScopes()
+            ->with(['proveedor', 'compra.proyecto'])
+            ->where('enable', 1)
+            ->when($idEmpresa, function ($query) use ($idEmpresa) {
+                return $query->where('id_empresa', $idEmpresa);
+            })
+            ->when($request->inicio, function ($query) use ($request) {
+                return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
+            })
+            ->when($request->id_sucursal, function ($query) use ($request) {
+                return $query->where('id_sucursal', $request->id_sucursal);
+            })
+            ->when(!empty($request->sucursales) && is_array($request->sucursales), function ($query) use ($request) {
+                return $query->whereIn('id_sucursal', $request->sucursales);
+            })
+            ->when($request->id_usuario, function ($query) use ($request) {
+                return $query->where('id_usuario', $request->id_usuario);
+            })
+            ->when($request->id_proveedor, function ($query) use ($request) {
+                return $query->where('id_proveedor', $request->id_proveedor);
+            })
+            ->when($request->buscador, function ($query) use ($request) {
+                return $query->where(function ($q) use ($request) {
+                    $q->where('referencia', 'like', '%'.$request->buscador.'%')
+                        ->orWhere('observaciones', 'like', '%'.$request->buscador.'%')
+                        ->orWhere('tipo_documento', 'like', '%'.$request->buscador.'%');
+                });
+            });
+    }
+
     public function map($row): array{
+        if (DevolucionEnReporte::esDevolucion($row)) {
+            $proveedor = $row->proveedor;
+            $compra = $row->compra;
+            return [
+                $row->fecha,
+                $row->nombre_proveedor,
+                $proveedor ? $proveedor->dui : '',
+                $proveedor ? $proveedor->nit : '',
+                $row->tipo_documento ?: 'Devolución',
+                $row->referencia,
+                ($compra && $compra->proyecto) ? $compra->proyecto->nombre : '',
+                $compra ? $compra->num_identificacion : '',
+                DevolucionEnReporte::ESTADO,
+                $compra ? $compra->fecha_pago : '',
+                DevolucionEnReporte::negar($row->sub_total),
+                DevolucionEnReporte::negar($row->iva),
+                DevolucionEnReporte::negar($row->iva_percibido ?? 0),
+                DevolucionEnReporte::negar($row->descuento),
+                DevolucionEnReporte::negar($row->total),
+            ];
+        }
+
            $fields = [
               $row->fecha,
               $row->nombre_proveedor,

@@ -2,6 +2,7 @@
 
 namespace App\Exports;
 
+use App\Exports\Support\DetallesConDevolucionesQuery;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -132,28 +133,21 @@ class VentasCategoriaSheet implements FromCollection, WithTitle, WithHeadings, W
 
       
 
-        $detalles = DB::table('detalles_venta')
-            ->join('ventas', 'ventas.id', '=', 'detalles_venta.id_venta')
-            ->join('productos', 'productos.id', '=', 'detalles_venta.id_producto')
+        $lineas = DetallesConDevolucionesQuery::lineasVenta($request, (string) $this->fecha_inicio, (string) $this->fecha_fin);
+
+        $detalles = DB::query()
+            ->fromSub($lineas, 'lineas')
+            ->join('productos', 'productos.id', '=', 'lineas.id_producto')
             ->join('categorias', 'categorias.id', '=', 'productos.id_categoria')
             ->select(
                 'categorias.id',
                 'categorias.nombre as categoria',
-                DB::raw('SUM(detalles_venta.cantidad) as unidades_vendidas'),
-                DB::raw('SUM(detalles_venta.total) as total_ventas')
+                DB::raw('SUM(lineas.cantidad) as unidades_vendidas'),
+                DB::raw('SUM(lineas.total) as total_ventas')
             )
-            ->when($this->fecha_inicio, function ($query) use ($request) {
-                return $query->whereBetween('ventas.fecha', [$this->fecha_inicio, $this->fecha_fin]);
-            })
-            ->when($request->sucursales, function ($query) use ($request) {
-                return $query->whereIn('ventas.id_sucursal', $request->sucursales);
-            })
             ->when($request->categorias, function ($query) use ($request) {
                 return $query->whereIn('productos.id_categoria', $request->categorias);
             })
-            ->where('ventas.id_empresa', $request->id_empresa)
-            ->where('ventas.estado', '!=', 'Anulada')
-            ->where('ventas.cotizacion', 0)
             ->groupBy('categorias.id', 'categorias.nombre')
             ->orderBy('total_ventas', 'desc')
             ->get();
