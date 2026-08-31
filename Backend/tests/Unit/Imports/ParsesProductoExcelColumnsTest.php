@@ -24,6 +24,16 @@ final class ParsesProductoExcelColumnsTest extends TestCase
             {
                 return $this->parseMarcaExcelValue($v);
             }
+
+            public function subcategoria($v): ?string
+            {
+                return $this->parseSubcategoriaExcelValue($v);
+            }
+
+            public function subcategoriaFromRow(array $row): ?string
+            {
+                return $this->parseSubcategoriaExcelValue($row['subcategoria'] ?? null);
+            }
         };
     }
 
@@ -56,5 +66,25 @@ final class ParsesProductoExcelColumnsTest extends TestCase
         $this->assertNull($this->parser->marca(''));
         $this->assertNull($this->parser->marca('  '));
         $this->assertSame('Nike', $this->parser->marca(' Nike '));
+    }
+
+    public function test_subcategoria_ausente_o_vacia_es_null(): void
+    {
+        $this->assertNull($this->parser->subcategoria(null));
+        $this->assertNull($this->parser->subcategoria(''));
+        $this->assertNull($this->parser->subcategoria('  '));
+    }
+
+    public function test_subcategoria_nombre_trim(): void
+    {
+        $this->assertSame('Bebidas', $this->parser->subcategoria(' Bebidas '));
+    }
+
+    public function test_fila_sin_clave_subcategoria_no_falla(): void
+    {
+        $this->assertNull($this->parser->subcategoriaFromRow([
+            'nombre' => 'Producto',
+            'categoria' => 'Alimentos',
+        ]));
     }
 }

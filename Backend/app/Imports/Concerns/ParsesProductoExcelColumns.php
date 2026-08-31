@@ -49,6 +49,16 @@ trait ParsesProductoExcelColumns
     }
 
     /**
+     * La plantilla oficial no incluye subcategoría; la columna es opcional.
+     *
+     * @param  mixed  $value
+     */
+    protected function parseSubcategoriaExcelValue($value): ?string
+    {
+        return $this->parseMarcaExcelValue($value);
+    }
+
+    /**
      * Aplica impuesto solo si la celda trae valor. Vacío = no error y no borra impuestos existentes.
      *
      * @param  mixed  $rawValue

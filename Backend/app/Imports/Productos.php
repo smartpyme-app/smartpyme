@@ -12,7 +12,6 @@ use App\Models\Inventario\Ajuste;
 use App\Models\Compras\Proveedores\Proveedor;
 use App\Models\Inventario\Proveedor as ProductoProveedor;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\Importable;
@@ -122,22 +121,24 @@ class Productos implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyRo
             $id_categoria = $categoria->id;
         }
 
-        Log::info($row['subcategoria']);
-        $id_subcategoria = Categoria::where('nombre', $row['subcategoria'])
-            ->where('id_empresa', $this->usuario->id_empresa)
-            ->pluck('id')->first();
+        $nombreSubcategoria = $this->parseSubcategoriaExcelValue($row['subcategoria'] ?? null);
+        $id_subcategoria = null;
+        if ($nombreSubcategoria !== null) {
+            $id_subcategoria = Categoria::where('nombre', $nombreSubcategoria)
+                ->where('id_empresa', $this->usuario->id_empresa)
+                ->pluck('id')->first();
 
-
-        if(!$id_subcategoria){
-            $subcategoria = new Categoria();
-            $subcategoria->nombre = $row['categoria'];
-            $subcategoria->descripcion = $row['categoria'];
-            $subcategoria->enable = true;
-            $subcategoria->id_empresa = $this->usuario->id_empresa;
-            $subcategoria->subcategoria = true;
-            $subcategoria->id_cate_padre = $id_categoria;
-            $subcategoria->save();
-            $id_subcategoria = $subcategoria->id;
+            if (!$id_subcategoria) {
+                $subcategoria = new Categoria();
+                $subcategoria->nombre = $nombreSubcategoria;
+                $subcategoria->descripcion = $nombreSubcategoria;
+                $subcategoria->enable = true;
+                $subcategoria->id_empresa = $this->usuario->id_empresa;
+                $subcategoria->subcategoria = true;
+                $subcategoria->id_cate_padre = $id_categoria;
+                $subcategoria->save();
+                $id_subcategoria = $subcategoria->id;
+            }
         }
 
         if (!empty($row['proveedor_nombre'])) {
