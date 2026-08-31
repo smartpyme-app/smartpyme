@@ -7,6 +7,7 @@ use Ramsey\Uuid\Uuid;
 use Illuminate\Support\Facades\Http;
 use App\Models\MH\Unidad;
 use App\Support\ActividadEconomicaEmisor;
+use App\Support\FacturacionElectronica\Cat020Pais;
 use Luecano\NumeroALetras\NumeroALetras;
 use Carbon\Carbon;
 
@@ -161,14 +162,16 @@ class MHFacturaExportacion extends Model
             ];
         }
 
+        $paisMh = Cat020Pais::resolver($this->venta->cliente->cod_pais, $this->venta->cliente->pais);
+
         return [
               "tipoDocumento" => $this->venta->cliente->tipo_documento ?? '36', //36 NIT 13 DUI
               "numDocumento" => $this->venta->cliente->dui ?? str_replace('-', '', $this->venta->cliente->nit),
               "nombre" => $this->venta->nombre_cliente,
               "nombreComercial" => $this->venta->cliente->nombre_empresa,
               "descActividad" => $this->venta->cliente->giro ? $this->venta->cliente->giro : NULL,
-              "codPais" => $this->venta->cliente->cod_pais,
-              "nombrePais" => $this->venta->cliente->pais,
+              "codPais" => $paisMh['cod'],
+              "nombrePais" => $paisMh['nombre'],
               "complemento" => $this->venta->cliente->direccion ? $this->venta->cliente->direccion : $this->venta->cliente->empresa_direccion,
               "tipoPersona" => ($this->venta->cliente->tipo_persona == 'Persona Natural') ? 1 : 2,
               "telefono" => $this->venta->cliente->telefono,
