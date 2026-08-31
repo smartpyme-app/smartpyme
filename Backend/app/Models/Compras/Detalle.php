@@ -51,5 +51,9 @@ class Detalle extends Model {
         return $this->belongsTo('App\Models\Inventario\Lote','lote_id');
     }
 
+    public function presentacion(){
+        return $this->belongsTo('App\Models\Inventario\ProductoPresentacion', 'id_presentacion');
+    }
+
 
 }

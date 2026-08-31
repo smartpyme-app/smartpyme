@@ -39,7 +39,7 @@
             <div class="col-6 col-lg-3">
                 <div class="border rounded px-2 py-2 h-100">
                     <small class="text-muted d-block">Costo actual</small>
-                    <strong class="small">{{ (producto.costo ?? producto.costo_promedio) | currency:'USD':'symbol':'1.2-4' }}</strong>
+                    <strong class="small">{{ (datos.producto?.costo ?? producto.costo ?? producto.costo_promedio) | currency:'USD':'symbol':'1.2-4' }}</strong>
                 </div>
             </div>
             <div class="col-6 col-lg-3">
