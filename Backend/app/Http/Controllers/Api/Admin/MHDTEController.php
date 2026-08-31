@@ -379,21 +379,22 @@ class MHDTEController extends Controller
             return response()->json(['error' => 'No se encontró el registro correspondiente.'], 404);
         }
 
-        $DTE = $registro->dte;
+        [$DTE, $esAnulado] = self::dteParaReporte($registro, $request->input('documento'));
+
+        if ($esAnulado) {
+            if (!$DTE) {
+                return response()->json(['error' => 'El registro no tiene DTE de invalidación.'], 404);
+            }
+            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Anulado', compact('registro', 'DTE'));
+            $pdf->setPaper('US Letter', 'portrait');
+            return $pdf->stream($DTE['identificacion']['codigoGeneracion'] . '.pdf');
+        }
 
         if (!$DTE) {
             return response()->json(['error' => 'El registro no tiene DTE.'], 404);
         }
 
         $registro->qr = 'https://admin.factura.gob.sv/consultaPublica?ambiente='. $DTE['identificacion']['ambiente'] .'&codGen=' . $DTE['identificacion']['codigoGeneracion'] . '&fechaEmi=' . $DTE['identificacion']['fecEmi'];
-
-        // Si esta anulado
-        if ($registro->dte_invalidacion) {
-            $DTE = $registro->dte_invalidacion;
-            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Anulado', compact('registro', 'DTE'));
-            $pdf->setPaper('US Letter', 'portrait');
-            return $pdf->stream($DTE['identificacion']['codigoGeneracion'] . '.pdf');
-        }
 
         if ($DTE['identificacion']['tipoDte'] == '01') {
             $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Factura', compact('registro', 'DTE'));
@@ -457,13 +458,30 @@ class MHDTEController extends Controller
             return response()->json(['error' => 'No se encontró el registro correspondiente.'], 404);
         }
 
-        if ($registro->dte_invalidacion)
-            $DTE = $registro->dte_invalidacion;
-        else
-            $DTE = $registro->dte;
+        [$DTE, $esAnulado] = self::dteParaReporte($registro, $request->input('documento'));
+
+        if ($esAnulado && !$DTE) {
+            return response()->json(['error' => 'El registro no tiene DTE de invalidación.'], 404);
+        }
 
         return Response()->json($DTE, 200);
 
+    }
+
+    /**
+     * Elige el JSON original o el de invalidación según documento=anulado.
+     *
+     * @param  object  $registro
+     * @param  mixed  $documento
+     * @return array{0: mixed, 1: bool}
+     */
+    public static function dteParaReporte($registro, $documento = null): array
+    {
+        if ($documento === 'anulado') {
+            return [$registro->dte_invalidacion, true];
+        }
+
+        return [$registro->dte, false];
     }
 
 
