@@ -67,13 +67,31 @@ class ConfiguracionPlanillaService
                 'renta' => round($totalIngresos * 0.10, 2)
             ];
         } else {
-            // ISSS proporcional al ingreso del período (salario devengado + ingresos gravables)
-            $isss = IsssHelper::calcularIsss($totalIngresos, $tipoPlanilla);
-            $isssEmpleado = $isss['isss_empleado'];
-            $isssPatronal = $isss['isss_patronal'];
-            $afpEmpleado = $totalIngresos * PlanillaConstants::DESCUENTO_AFP_EMPLEADO;
-            $afpPatronal = $totalIngresos * PlanillaConstants::DESCUENTO_AFP_PATRONO;
-            
+            // Configuración de descuentos del empleado (aplicable solo para El Salvador)
+            $esPensionado = (bool) ($datosEmpleado['es_pensionado'] ?? false);
+            $configDescuentos = $datosEmpleado['configuracion_descuentos'] ?? [];
+            $aplicarIsss = (bool) ($configDescuentos['aplicar_isss'] ?? true);
+            $aplicarAfp = !$esPensionado && (bool) ($configDescuentos['aplicar_afp'] ?? true);
+
+            // ISSS: los pensionados sí cotizan ISSS
+            if ($aplicarIsss) {
+                $isss = IsssHelper::calcularIsss($totalIngresos, $tipoPlanilla);
+                $isssEmpleado = $isss['isss_empleado'];
+                $isssPatronal = $isss['isss_patronal'];
+            } else {
+                $isssEmpleado = 0;
+                $isssPatronal = 0;
+            }
+
+            // AFP: los pensionados NO cotizan AFP
+            if ($aplicarAfp) {
+                $afpEmpleado = $totalIngresos * PlanillaConstants::DESCUENTO_AFP_EMPLEADO;
+                $afpPatronal = $totalIngresos * PlanillaConstants::DESCUENTO_AFP_PATRONO;
+            } else {
+                $afpEmpleado = 0;
+                $afpPatronal = 0;
+            }
+
             // Calcular renta usando RentaHelper
             $salarioGravado = RentaHelper::calcularSalarioGravado(
                 $totalIngresos,

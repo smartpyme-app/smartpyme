@@ -32,6 +32,7 @@ class Empleado extends Model
         'isss',
         'afp',
         'configuracion_descuentos',
+        'es_pensionado',
         'fecha_nacimiento',
         'direccion',
         'telefono',
@@ -57,6 +58,7 @@ class Empleado extends Model
     protected $casts = [
         'configuracion_descuentos' => 'array',
         'dui_homologado' => 'boolean',
+        'es_pensionado' => 'boolean',
     ];
 
     /**
@@ -161,12 +163,26 @@ class Empleado extends Model
     }
 
     /**
+     * Verifica si el empleado está identificado como pensionado
+     *
+     * @return bool
+     */
+    public function esPensionado()
+    {
+        return (bool) $this->es_pensionado;
+    }
+
+    /**
      * Verifica si se debe aplicar descuento de AFP
      * 
      * @return bool
      */
     public function aplicarAfp()
     {
+        if ($this->esPensionado()) {
+            return false;
+        }
+
         $config = $this->configuracion_descuentos ?? [];
         return isset($config['aplicar_afp']) ? (bool) $config['aplicar_afp'] : true;
     }
