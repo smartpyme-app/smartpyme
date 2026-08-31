@@ -41,6 +41,7 @@ use App\Services\Inventario\ProductoImportacionDteService;
 use App\Services\Inventario\MigrarStockALotesService;
 use App\Services\Inventario\StockDisponibleService;
 use App\Services\Inventario\LoteAsignacionService;
+use App\Services\Inventario\HistorialPrecioCostoService;
 use App\Services\ShopifyTransformer;
 use App\Services\ImpuestosService;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -912,6 +913,16 @@ class ProductosController extends Controller
         $fin = $request->fin;
         $idUsuario = $request->id_usuario;
 
+        $filtroCompraHistorial = function ($q) use ($idUsuario) {
+            $q->whereIn('estado', ['Pagada', 'Pendiente'])
+                ->where(function ($q2) {
+                    $q2->whereNull('cotizacion')->orWhere('cotizacion', 0);
+                });
+            if ($idUsuario) {
+                $q->where('id_usuario', $idUsuario);
+            }
+        };
+
         $detallesVentas = DetalleVenta::where('id_producto', $producto->id)
             ->whereHas('venta', function ($q) use ($inicio, $fin) {
                 $q->where('estado', 'Pagada')
@@ -933,153 +944,125 @@ class ProductosController extends Controller
             ->values();
 
         $detallesCompras = DetalleCompra::where('id_producto', $producto->id)
-            ->whereHas('compra', function ($q) use ($inicio, $fin, $idUsuario) {
-                $q->where('estado', 'Pagada')
-                    ->whereBetween('fecha', [$inicio, $fin]);
-                if ($idUsuario) {
-                    $q->where('id_usuario', $idUsuario);
-                }
+            ->whereHas('compra', function ($q) use ($inicio, $fin, $filtroCompraHistorial) {
+                $filtroCompraHistorial($q);
+                $q->whereBetween('fecha', [$inicio, $fin]);
             })
-            ->with(['compra:id,fecha,id_usuario,referencia', 'compra.usuario:id,name'])
+            ->with(['compra:id,fecha,id_usuario,referencia', 'compra.usuario:id,name', 'presentacion:id,factor_conversion'])
             ->get()
             ->sortBy(function ($d) {
                 return ($d->compra->fecha ?? '') . '-' . str_pad((string) $d->id, 10, '0', STR_PAD_LEFT);
             })
             ->values();
 
-        $eventosPrecio = [];
-        $ultimoPrecio = null;
-        foreach ($detallesVentas as $detalle) {
-            $precio = round((float) ($detalle->precio_sin_iva ?? $detalle->precio), 4);
-            if ($ultimoPrecio === null || $precio != $ultimoPrecio) {
-                $venta = $detalle->venta;
-                $eventosPrecio[] = [
-                    'fecha'      => $venta->fecha,
-                    'valor'      => $precio,
-                    'tipo'       => 'precio',
-                    'referencia' => 'Venta #' . ($venta->correlativo ?? $venta->id),
-                    'id_documento' => $venta->id,
-                    'usuario'    => $detalle->vendedor->name ?? ($venta->nombre_usuario ?? null),
-                ];
-                $ultimoPrecio = $precio;
+        $detalleCostoApertura = DetalleCompra::where('id_producto', $producto->id)
+            ->whereHas('compra', function ($q) use ($inicio, $filtroCompraHistorial) {
+                $filtroCompraHistorial($q);
+                $q->where('fecha', '<', $inicio);
+            })
+            ->with(['compra:id,fecha,id_usuario,referencia', 'presentacion:id,factor_conversion'])
+            ->orderByDesc(
+                Compra::select('fecha')
+                    ->whereColumn('compras.id', 'detalles_compra.id_compra')
+                    ->limit(1)
+            )
+            ->orderByDesc('id')
+            ->first();
+
+        $detallePrecioApertura = DetalleVenta::where('id_producto', $producto->id)
+            ->whereHas('venta', function ($q) use ($inicio) {
+                $q->where('estado', 'Pagada')
+                    ->where('fecha', '<', $inicio);
+            })
+            ->when($idUsuario, function ($q) use ($idUsuario) {
+                $q->where(function ($q2) use ($idUsuario) {
+                    $q2->where('id_vendedor', $idUsuario)
+                        ->orWhereHas('venta', function ($v) use ($idUsuario) {
+                            $v->where('id_usuario', $idUsuario);
+                        });
+                });
+            })
+            ->with(['venta:id,fecha'])
+            ->orderByDesc(
+                Venta::select('fecha')
+                    ->whereColumn('ventas.id', 'detalles_venta.id_venta')
+                    ->limit(1)
+            )
+            ->orderByDesc('id')
+            ->first();
+
+        $servicio = new HistorialPrecioCostoService();
+        $ventas = $detallesVentas->map(function ($detalle) {
+            $venta = $detalle->venta;
+            return [
+                'fecha'          => $venta->fecha ?? null,
+                'precio'         => $detalle->precio,
+                'precio_sin_iva' => $detalle->precio_sin_iva,
+                'id'             => $detalle->id,
+                'id_documento'   => $venta->id ?? null,
+                'correlativo'    => $venta->correlativo ?? null,
+                'usuario'        => $detalle->vendedor?->name ?? ($venta->nombre_usuario ?? null),
+            ];
+        })->all();
+
+        $compras = $detallesCompras->map(function ($detalle) {
+            return $this->mapearDetalleCompraHistorial($detalle);
+        })->filter()->values()->all();
+
+        $costoApertura = null;
+        if ($detalleCostoApertura) {
+            $mapeado = $this->mapearDetalleCompraHistorial($detalleCostoApertura);
+            if ($mapeado) {
+                $costoApertura = $servicio->costoUnitarioNeto($mapeado);
             }
         }
 
-        $eventosCosto = [];
-        $ultimoCosto = null;
-        foreach ($detallesCompras as $detalle) {
-            $costo = round((float) $detalle->costo, 4);
-            if ($ultimoCosto === null || $costo != $ultimoCosto) {
-                $compra = $detalle->compra;
-                $ref = $compra->referencia ?: ('Compra #' . $compra->id);
-                $eventosCosto[] = [
-                    'fecha'      => $compra->fecha,
-                    'valor'      => $costo,
-                    'tipo'       => 'costo',
-                    'referencia' => $ref,
-                    'id_documento' => $compra->id,
-                    'usuario'    => $compra->nombre_usuario ?? null,
-                ];
-                $ultimoCosto = $costo;
-            }
+        $precioApertura = null;
+        if ($detallePrecioApertura) {
+            $precioApertura = round((float) ($detallePrecioApertura->precio_sin_iva ?? $detallePrecioApertura->precio), 4);
         }
 
-        $fechas = collect($eventosPrecio)->pluck('fecha')
-            ->merge(collect($eventosCosto)->pluck('fecha'))
-            ->unique()
-            ->sort()
-            ->values();
-
-        $mapaPrecio = collect($eventosPrecio)->keyBy('fecha');
-        $mapaCosto = collect($eventosCosto)->keyBy('fecha');
-
-        $labels = [];
-        $seriePrecios = [];
-        $serieCostos = [];
-        $precioAcum = null;
-        $costoAcum = null;
-
-        foreach ($fechas as $fecha) {
-            $labels[] = \Carbon\Carbon::parse($fecha)->format('d/m/Y');
-            if ($mapaPrecio->has($fecha)) {
-                $precioAcum = $mapaPrecio->get($fecha)['valor'];
-            }
-            if ($mapaCosto->has($fecha)) {
-                $costoAcum = $mapaCosto->get($fecha)['valor'];
-            }
-            $seriePrecios[] = $precioAcum;
-            $serieCostos[] = $costoAcum;
-        }
-
-        $eventos = collect($eventosPrecio)->merge($eventosCosto)
-            ->sortBy('fecha')
-            ->values()
-            ->all();
-
-        return Response()->json([
-            'producto' => [
+        $payload = $servicio->construir(
+            [
                 'id'     => $producto->id,
                 'nombre' => $producto->nombre,
                 'codigo' => $producto->codigo,
                 'precio' => (float) $producto->precio,
                 'costo'  => (float) $producto->costo,
             ],
-            'labels'            => $labels,
-            'precios'           => $seriePrecios,
-            'costos'            => $serieCostos,
-            'tendencia_precio'  => $this->calcularTendenciaSerie($seriePrecios),
-            'tendencia_costo'   => $this->calcularTendenciaSerie($serieCostos),
-            'variacion_precio'  => $this->calcularVariacionPorcentual($seriePrecios),
-            'variacion_costo'   => $this->calcularVariacionPorcentual($serieCostos),
-            'eventos'           => $eventos,
-            'total_ventas'      => $detallesVentas->count(),
-            'total_compras'     => $detallesCompras->count(),
-        ], 200);
+            $inicio,
+            $ventas,
+            $compras,
+            $precioApertura,
+            $costoApertura
+        );
+
+        return Response()->json($payload, 200);
     }
 
-    private function calcularTendenciaSerie(array $valores): string
+    private function mapearDetalleCompraHistorial($detalle): ?array
     {
-        $numericos = array_values(array_filter($valores, function ($v) {
-            return $v !== null;
-        }));
-
-        if (count($numericos) < 2) {
-            return count($numericos) === 1 ? 'estable' : 'sin_datos';
-        }
-
-        $primero = (float) $numericos[0];
-        $ultimo = (float) $numericos[count($numericos) - 1];
-
-        if ($primero == 0.0) {
-            return $ultimo > 0 ? 'subiendo' : 'estable';
-        }
-
-        $variacion = (($ultimo - $primero) / abs($primero)) * 100;
-        if (abs($variacion) < 0.5) {
-            return 'estable';
-        }
-
-        return $ultimo > $primero ? 'subiendo' : 'bajando';
-    }
-
-    private function calcularVariacionPorcentual(array $valores): ?float
-    {
-        $numericos = array_values(array_filter($valores, function ($v) {
-            return $v !== null;
-        }));
-
-        if (count($numericos) < 2) {
+        $compra = $detalle->compra;
+        if (!$compra) {
             return null;
         }
 
-        $primero = (float) $numericos[0];
-        $ultimo = (float) $numericos[count($numericos) - 1];
-
-        if ($primero == 0.0) {
-            return null;
+        $factor = 1.0;
+        if (!empty($detalle->id_presentacion) && $detalle->presentacion) {
+            $factor = (float) $detalle->presentacion->factor_conversion;
         }
 
-        return round((($ultimo - $primero) / abs($primero)) * 100, 2);
+        return [
+            'fecha'              => $compra->fecha,
+            'costo'              => $detalle->costo,
+            'cantidad'           => $detalle->cantidad,
+            'descuento'          => $detalle->descuento ?? 0,
+            'factor_conversion'  => $factor,
+            'id'                 => $detalle->id,
+            'id_documento'       => $compra->id,
+            'referencia'         => $compra->referencia ?: ('Compra #' . $compra->id),
+            'usuario'            => $compra->usuario?->name ?? ($compra->nombre_usuario ?? null),
+        ];
     }
 
 
