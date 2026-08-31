@@ -13,6 +13,7 @@ $p:#007bff;$s:#28a745;$d:#dc3545;$w:#ffc107;$i:#0dcaf0;
 .tab-content{min-height:350px;border:1px solid #dee2e6;box-shadow:0 2px 8px rgba(0,0,0,.1);h5{border-bottom:2px solid #e9ecef;padding-bottom:.5rem;margin-bottom:1.5rem;i{opacity:.8}}}
 .form-label{color:#495057;font-size:.9rem;margin-bottom:.5rem}
 .form-select,.form-control{border-radius:6px;border:1px solid #ced4da;&:focus{border-color:#667eea;box-shadow:0 0 0 .2rem rgba(102,126,234,.25)}}
+::ng-deep .ng-dropdown-panel{z-index:1080}
 .alert{border:none;border-radius:6px;font-size:.85rem;&.alert-info{background:rgba(13,202,240,.1);color:#0c5460}&.alert-success{background:rgba(40,167,69,.1);color:#155724}&:focus-within{outline:2px solid $p;outline-offset:2px}}
 .btn-primary{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);border:none;border-radius:6px;font-weight:500;padding:.6rem 1.2rem;&:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 6px 20px rgba(102,126,234,.4)}&:disabled{opacity:.6;cursor:not-allowed}i{margin-right:.5rem}}
 small.text-muted{font-size:.8rem;color:#6c757d!important;i{opacity:.7}}

@@ -12,6 +12,7 @@ import { ModalManagerService } from '@services/modal-manager.service';
 import { HttpCacheService } from '@services/http-cache.service';
 import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 import { SharedModule } from '@shared/shared.module';
+import { armarOpcionesTipoCuentaReporte } from './cuenta-select.util';
 
 import * as moment from 'moment';
 import Swal from 'sweetalert2';
@@ -52,6 +53,9 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
   public notasLoading = false;
   public notasGuardadoId: number | null = null;
   public catalogo: any = [];
+  public opcionesTipoCuentaReporte: Array<{ value: string | number; label: string }> = [
+    { value: 'all', label: 'Todas las cuentas' },
+  ];
   public months: Array<{ value: number; label: string }> = [];
   public years: number[] = [];
   public selectedMonth: number = new Date().getMonth() + 1;
@@ -64,26 +68,7 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
     tipo: 'Ingreso'
   };
 
-  /**
-   * Catálogo para reportes: "Todas" + cuentas con etiqueta "código — nombre".
-   */
-  get opcionesTipoCuentaReporte(): Array<{ value: string | number; label: string }> {
-    const opciones: Array<{ value: string | number; label: string }> = [
-      { value: 'all', label: 'Todas las cuentas' },
-    ];
-    if (!Array.isArray(this.catalogo)) {
-      return opciones;
-    }
-    for (const c of this.catalogo) {
-      const codigo = c?.codigo ?? '';
-      const nombre = c?.nombre ?? '';
-      opciones.push({
-        value: c.id,
-        label: codigo ? `${codigo} — ${nombre}` : nombre || String(c.id),
-      });
-    }
-    return opciones;
-  }
+  compareTipoCuenta = (a: any, b: any) => String(a ?? '') === String(b ?? '');
 
   // NUEVO: Para mostrar totales
   public totalesGenerales: any = {
@@ -126,6 +111,7 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
       .subscribe(
       (catalogo) => {
         this.catalogo = catalogo;
+        this.opcionesTipoCuentaReporte = armarOpcionesTipoCuentaReporte(this.catalogo);
         this.cdr.markForCheck();
       },
       (error) => {

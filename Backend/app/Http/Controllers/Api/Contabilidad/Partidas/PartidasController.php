@@ -1175,7 +1175,7 @@ class PartidasController extends Controller
                     'id_cuenta' => $cuenta_cxc->id,
                     'codigo' => $cuenta_cxc->codigo,
                     'nombre_cuenta' => $cuenta_cxc->nombre,
-                    'concepto' => 'Ingresos por cxc ' . $refDoc,
+                    'concepto' => $partida['concepto'] . ' ' . $refDoc,
                     'debe' => $venta->total,
                     'haber' => NULL,
                     'saldo' => 0,
@@ -1543,7 +1543,7 @@ class PartidasController extends Controller
                     'id_cuenta'         => $cuenta_cxp->id,
                     'codigo'            => $cuenta_cxp->codigo,
                     'nombre_cuenta'     => $cuenta_cxp->nombre,
-                    'concepto'          => 'Compra de mercancía al crédito',
+                    'concepto'          => $partida['concepto'] . ' ' . ($compra->tipo_documento ?? '') . ' #' . ($compra->referencia ?? ''),
                     'debe'              => NULL,
                     'haber'             => $compra->total,
                     'saldo'             => 0

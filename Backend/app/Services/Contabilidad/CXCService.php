@@ -53,10 +53,12 @@ class CXCService
         DB::beginTransaction();
 
         try {
+            $concepto = 'Abono a cuenta por cobrar. ' . ($venta->nombre_documento ?? 'Documento') . ' #' . ($venta->correlativo ?? 'Sin correlativo');
+
             $partida = Partida::create([
                 'fecha'         => $cxc->fecha,
                 'tipo'          => 'CxC',
-                'concepto'      => 'Abono a cuenta por cobrar. ' . ($venta->nombre_documento ?? 'Documento') . ' #' . ($venta->correlativo ?? 'Sin correlativo'),
+                'concepto'      => $concepto,
                 'estado'        => 'Pendiente',
                 'referencia'    => 'Abono de Venta',
                 'id_referencia' => $cxc->id,
@@ -83,7 +85,7 @@ class CXCService
                 'id_cuenta'         => $cuenta_forma_pago->id,
                 'codigo'            => $cuenta_forma_pago->codigo,
                 'nombre_cuenta'     => $cuenta_forma_pago->nombre,
-                'concepto'          => 'Abono a cuenta por cobrar',
+                'concepto'          => $concepto,
                 'debe'              => $cxc->total,
                 'haber'             => NULL,
                 'saldo'             => 0,
@@ -104,7 +106,7 @@ class CXCService
                 'id_cuenta'         => $cuenta_cxc->id,
                 'codigo'            => $cuenta_cxc->codigo,
                 'nombre_cuenta'     => $cuenta_cxc->nombre,
-                'concepto'          => 'Abono a cuenta por cobrar',
+                'concepto'          => $concepto,
                 'debe'              => NULL,
                 'haber'             => $cxc->total,
                 'saldo'             => 0,

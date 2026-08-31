@@ -46,7 +46,8 @@
                                 [items]="catalogo"
                                 bindLabel="nombre"
                                 bindValue="id"
-                                placeholder="Seleccione aquí"
+                                [searchFn]="searchCuentaFn"
+                                placeholder="Buscar por código o nombre"
                                 [clearable]="true">
                                 <ng-template ng-label-tmp let-item="item">
                                     {{ labelCuenta(item) }}
@@ -174,7 +175,8 @@
                     [items]="catalogo"
                     bindLabel="nombre"
                     bindValue="id"
-                    placeholder="Seleccione aquí"
+                    [searchFn]="searchCuentaFn"
+                    placeholder="Buscar por código o nombre"
                     [clearable]="true">
                     <ng-template ng-label-tmp let-item="item">
                         {{ labelCuenta(item) }}

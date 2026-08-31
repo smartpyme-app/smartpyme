@@ -15,6 +15,10 @@ class TransaccionesService
             return;
         }
 
+        if (!CuentaBancariaResolver::debeRegistrarMovimiento()) {
+            return;
+        }
+
         DB::beginTransaction();
 
         try {

@@ -1,25 +1,11 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { cuentaCoincideBusqueda } from '../../cuenta-select.util';
 
-import { PartidaDetallesComponent } from './partida-detalles.component';
+describe('PartidaDetallesComponent - búsqueda de cuenta', () => {
+  const cuenta = { id: 1, codigo: '1101.01', nombre: 'Caja general' };
 
-describe('PartidaDetallesComponent', () => {
-  let component: PartidaDetallesComponent;
-  let fixture: ComponentFixture<PartidaDetallesComponent>;
-
-  beforeEach(async(() => {
-    TestBed.configureTestingModule({
-      declarations: [ PartidaDetallesComponent ]
-    })
-    .compileComponents();
-  }));
-
-  beforeEach(() => {
-    fixture = TestBed.createComponent(PartidaDetallesComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-  });
-
-  it('should be created', () => {
-    expect(component).toBeTruthy();
+  it('encuentra por nombre y por número de cuenta', () => {
+    expect(cuentaCoincideBusqueda('caja', cuenta)).toBe(true);
+    expect(cuentaCoincideBusqueda('1101', cuenta)).toBe(true);
+    expect(cuentaCoincideBusqueda('9999', cuenta)).toBe(false);
   });
 });

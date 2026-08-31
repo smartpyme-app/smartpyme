@@ -10,6 +10,19 @@ use Illuminate\Support\Facades\Auth;
 class CuentaBancariaResolver
 {
     /**
+     * Sin módulo de contabilidad no hay cuentas bancarias de empresa: no registrar ni exigir.
+     */
+    public static function debeRegistrarMovimiento(?object $empresa = null): bool
+    {
+        $empresa = $empresa ?? Auth::user()?->empresa;
+        if (!$empresa || !method_exists($empresa, 'tieneFuncionalidad')) {
+            return false;
+        }
+
+        return (bool) $empresa->tieneFuncionalidad('contabilidad');
+    }
+
+    /**
      * @throws Exception
      */
     public static function resolve(object $registro): Cuenta

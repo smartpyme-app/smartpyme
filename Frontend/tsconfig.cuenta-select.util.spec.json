@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./out-tsc/spec",
+    "types": ["jasmine"]
+  },
+  "include": [
+    "src/app/views/contabilidad/partidas/cuenta-select.util.spec.ts",
+    "src/app/views/contabilidad/partidas/cuenta-select.util.ts",
+    "src/**/*.d.ts"
+  ]
+}

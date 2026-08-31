@@ -32,6 +32,7 @@ class Venta extends AuditableModel {
         'num_identificacion',
         'estado',
         'detalle_banco',
+        'referencia_pago',
         'id_canal',
         'id_documento',
         'forma_pago',

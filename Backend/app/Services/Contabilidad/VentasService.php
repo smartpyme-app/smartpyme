@@ -51,6 +51,7 @@ class VentasService
         Partida::assertNoExisteParaOrigen('Venta', $venta->id, 'Ya existen partidas contables generadas para esta venta.');
 
         $refDocumento = $venta->referenciaDocumentoContable();
+        $concepto = 'Ingresos por ventas. ' . $refDocumento;
 
         DB::beginTransaction();
 
@@ -59,7 +60,7 @@ class VentasService
             $partida_ingresos = Partida::create([
                 'fecha' => $venta->fecha,
                 'tipo' => 'Ingreso',
-                'concepto' => 'Ingresos por ventas. ' . $refDocumento,
+                'concepto' => $concepto,
                 'estado' => 'Pendiente',
                 'referencia' => 'Venta',
                 'id_referencia' => $venta->id,
@@ -102,7 +103,7 @@ class VentasService
                 'id_cuenta' => $cuenta_debe->id,
                 'codigo' => $cuenta_debe->codigo,
                 'nombre_cuenta' => $cuenta_debe->nombre,
-                'concepto' => 'Ingresos por ventas',
+                'concepto' => $concepto,
                 'debe' => $venta->total,
                 'haber' => NULL,
                 'saldo' => 0,

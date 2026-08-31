@@ -1,23 +1,9 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { armarOpcionesTipoCuentaReporte } from './cuenta-select.util';
 
-import { PartidasComponent } from './partidas.component';
-
-describe('PartidasComponent', () => {
-  let component: PartidasComponent;
-  let fixture: ComponentFixture<PartidasComponent>;
-
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      declarations: [ PartidasComponent ]
-    })
-    .compileComponents();
-
-    fixture = TestBed.createComponent(PartidasComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-  });
-
-  it('should create', () => {
-    expect(component).toBeTruthy();
+describe('PartidasComponent - opciones de cuenta en reportes', () => {
+  it('incluye Todas y etiqueta código — nombre', () => {
+    const opts = armarOpcionesTipoCuentaReporte([{ id: 7, codigo: '1101', nombre: 'Caja' }]);
+    expect(opts[0]).toEqual({ value: 'all', label: 'Todas las cuentas' });
+    expect(opts[1]).toEqual({ value: 7, label: '1101 — Caja' });
   });
 });
