@@ -11,6 +11,7 @@ use App\Exports\Contabilidad\FlujoEfectivoExport;
 use App\Exports\Contabilidad\CambiosPatrimonioExport;
 use App\Http\Controllers\Controller;
 use App\Models\Admin\Empresa;
+use App\Services\Contabilidad\ArbolCuentas;
 use App\Services\Contabilidad\BalanceGeneralNiifSvPresenter;
 use App\Services\Contabilidad\CambiosPatrimonioNiifSvPresenter;
 use App\Services\Contabilidad\EstadoResultadosNiifSvPresenter;
@@ -204,7 +205,7 @@ class GenerarReportesController extends Controller
         }
     }
 
-    public function generarRepLibroDiarioMayorPDF($fecha_inicio, $fecha_fin, $cuenta = null)
+    public function generarRepLibroDiarioMayorPDF($fecha_inicio, $fecha_fin, $cuenta = null, $titulo = 'Reporte Libro Diario Mayor')
     {
         // ponytail: mismo techo que el diario; CSS absolute + una tabla por cuenta reventaba 128M en Style.php.
         ini_set('memory_limit', '512M');
@@ -221,7 +222,7 @@ class GenerarReportesController extends Controller
         $cuentas = $this->construirLibroDiarioMayor($empresa_id, $startDate, $endDate, $cuenta);
         $empresa = Empresa::findOrfail($empresa_id);
 
-        $pdf = PDF::loadView('reportes.contabilidad.libro_diario_mayor', compact('cuentas', 'empresa', 'month_name', 'month', 'year'));
+        $pdf = PDF::loadView('reportes.contabilidad.libro_diario_mayor', compact('cuentas', 'empresa', 'month_name', 'month', 'year', 'titulo'));
 
         $pdf->setPaper('US Letter', 'portrait');
         $pdf->setOptions([
@@ -233,7 +234,7 @@ class GenerarReportesController extends Controller
         return $pdf->stream();
     }
 
-    public function generarRepLibroDiarioMayorExcel($fecha_inicio, $fecha_fin, $cuenta = null)
+    public function generarRepLibroDiarioMayorExcel($fecha_inicio, $fecha_fin, $cuenta = null, $titulo = 'Reporte Libro Diario Mayor')
     {
         $empresa_id = auth()->user()->id_empresa;
         $startDate = Carbon::parse($fecha_inicio)->startOfDay();
@@ -252,9 +253,31 @@ class GenerarReportesController extends Controller
             'month' => $month,
             'year' => $year,
             'cuentas' => $cuentas,
+            'titulo' => $titulo,
         ];
 
         return Excel::download(new DiarioMayorExport($data), 'libro_diario_mayor.xlsx');
+    }
+
+    public function generarRepLibroAuxiliar($fecha_inicio, $fecha_fin, $cuenta, $type)
+    {
+        $id = ArbolCuentas::idRequerido($cuenta);
+        if ($id === null) {
+            return response()->json(['error' => 'Debe seleccionar una cuenta.'], 422);
+        }
+
+        $empresa_id = auth()->user()->id_empresa;
+        $catalogo = Cuenta::where('id_empresa', $empresa_id)->get(['id', 'id_cuenta_padre']);
+        $ids = ArbolCuentas::idsDelArbol($catalogo, $id);
+        if ($ids === []) {
+            return response()->json(['error' => 'Cuenta no encontrada.'], 422);
+        }
+
+        if ($type === 'pdf') {
+            return $this->generarRepLibroDiarioMayorPDF($fecha_inicio, $fecha_fin, $ids, 'Libro auxiliar');
+        }
+
+        return $this->generarRepLibroDiarioMayorExcel($fecha_inicio, $fecha_fin, $ids, 'Libro auxiliar');
     }
 
     /**
@@ -274,7 +297,8 @@ class GenerarReportesController extends Controller
             });
 
         if ($cuentaFilter && $cuentaFilter !== 'all') {
-            $detallesQuery->where('id_cuenta', $cuentaFilter);
+            $ids = is_array($cuentaFilter) ? $cuentaFilter : [$cuentaFilter];
+            $detallesQuery->whereIn('id_cuenta', $ids);
         }
 
         $detalles = $detallesQuery->get()->sortBy([

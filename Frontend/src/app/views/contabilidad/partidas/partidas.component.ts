@@ -12,7 +12,7 @@ import { ModalManagerService } from '@services/modal-manager.service';
 import { HttpCacheService } from '@services/http-cache.service';
 import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 import { SharedModule } from '@shared/shared.module';
-import { armarOpcionesTipoCuentaReporte } from './cuenta-select.util';
+import { armarOpcionesCuentaAuxiliar, armarOpcionesTipoCuentaReporte } from './cuenta-select.util';
 
 import * as moment from 'moment';
 import Swal from 'sweetalert2';
@@ -35,6 +35,7 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
     cuenta: '',
     tipo_descarga: 'pdf',
     tipo_cuenta: 'all',
+    cuenta_auxiliar: '' as string | number,
     /** Incluir columna y período anterior inmediato (misma duración) en Estado de resultados. */
     estadoCompararAnterior: false,
     /** Comparativa en Flujo de efectivo (misma regla que estado de resultados). */
@@ -56,6 +57,7 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
   public opcionesTipoCuentaReporte: Array<{ value: string | number; label: string }> = [
     { value: 'all', label: 'Todas las cuentas' },
   ];
+  public opcionesCuentaAuxiliar: Array<{ value: string | number; label: string }> = [];
   public months: Array<{ value: number; label: string }> = [];
   public years: number[] = [];
   public selectedMonth: number = new Date().getMonth() + 1;
@@ -112,6 +114,7 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
       (catalogo) => {
         this.catalogo = catalogo;
         this.opcionesTipoCuentaReporte = armarOpcionesTipoCuentaReporte(this.catalogo);
+        this.opcionesCuentaAuxiliar = armarOpcionesCuentaAuxiliar(this.catalogo);
         this.cdr.markForCheck();
       },
       (error) => {
@@ -221,6 +224,7 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
     this.reporte.fecha_fin = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split('T')[0];
     this.reporte.tipo_descarga = 'pdf';
     this.reporte.tipo_cuenta = 'all';
+    this.reporte.cuenta_auxiliar = '';
     this.reporte.concepto = '';
   }
 
@@ -511,6 +515,30 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
             this.reporte.fecha_fin +
             '/' +
             this.reporte.tipo_cuenta +
+            '/' +
+            this.reporte.tipo_descarga
+        )
+      );
+    } else {
+      console.error('Por favor, llenar los campos requeridos.');
+    }
+  }
+
+  public imprimirAuxiliarCuentas() {
+    if (
+      this.reporte.fecha_inicio &&
+      this.reporte.fecha_fin &&
+      this.reporte.tipo_descarga &&
+      this.reporte.cuenta_auxiliar
+    ) {
+      window.open(
+        this.buildReportDownloadUrl(
+          '/api/reportes/libro/auxiliar/' +
+            this.reporte.fecha_inicio +
+            '/' +
+            this.reporte.fecha_fin +
+            '/' +
+            this.reporte.cuenta_auxiliar +
             '/' +
             this.reporte.tipo_descarga
         )

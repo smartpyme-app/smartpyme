@@ -28,6 +28,7 @@ class DiarioMayorExport implements FromView, WithStyles
             'month_name' => $this->data['month_name'],
             'year' => $this->data['year'],
             'cuentas' => $this->data['cuentas'],
+            'titulo' => $this->data['titulo'] ?? 'Reporte Libro Diario Mayor',
         ]);
     }
 

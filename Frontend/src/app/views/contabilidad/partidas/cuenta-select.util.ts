@@ -23,3 +23,9 @@ export function armarOpcionesTipoCuentaReporte(
   }
   return opciones;
 }
+
+export function armarOpcionesCuentaAuxiliar(
+  catalogo: Array<{ id?: string | number; codigo?: string; nombre?: string }> | null | undefined
+): Array<{ value: string | number; label: string }> {
+  return armarOpcionesTipoCuentaReporte(catalogo).filter((o) => o.value !== 'all');
+}

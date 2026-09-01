@@ -1,4 +1,4 @@
-import { armarOpcionesTipoCuentaReporte, cuentaCoincideBusqueda } from './cuenta-select.util';
+import { armarOpcionesCuentaAuxiliar, armarOpcionesTipoCuentaReporte, cuentaCoincideBusqueda } from './cuenta-select.util';
 
 describe('cuentaCoincideBusqueda', () => {
   const cuenta = { id: 1, codigo: '1101.01', nombre: 'Caja general' };
@@ -25,5 +25,13 @@ describe('armarOpcionesTipoCuentaReporte', () => {
   it('la etiqueta permite buscar por código', () => {
     const opts = armarOpcionesTipoCuentaReporte([{ id: 3, codigo: '2102', nombre: 'Proveedores' }]);
     expect(opts[1].label.toLowerCase().includes('2102')).toBe(true);
+  });
+});
+
+describe('armarOpcionesCuentaAuxiliar', () => {
+  it('no incluye Todas las cuentas', () => {
+    const opts = armarOpcionesCuentaAuxiliar([{ id: 7, codigo: '1101', nombre: 'Caja' }]);
+    expect(opts.find((o) => o.value === 'all')).toBeUndefined();
+    expect(opts).toEqual([{ value: 7, label: '1101 — Caja' }]);
   });
 });

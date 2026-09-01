@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Reporte Libro Diario Mayor</title>
+    <title>{{ $titulo ?? 'Reporte Libro Diario Mayor' }}</title>
     <style>
 
         * {
@@ -150,7 +150,7 @@
 <table>
     <thead>
     <tr>
-        <th colspan="7" style="text-align: center; font-size: 16px;"><strong>Reporte Libro Diario Mayor</strong></th>
+        <th colspan="7" style="text-align: center; font-size: 16px;"><strong>{{ $titulo ?? 'Reporte Libro Diario Mayor' }}</strong></th>
     </tr>
     <tr>
         <th colspan="7" style="text-align: center; font-size: 16px;"><strong>Empresa: {{ $empresa->nombre }}</strong>
