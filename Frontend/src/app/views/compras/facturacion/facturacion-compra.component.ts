@@ -265,6 +265,7 @@ export class FacturacionCompraComponent implements OnInit {
                 this.loading = true;
                 this.apiService.read('compra/', params.id).subscribe(compra => {
                     this.compra = compra;
+                    this.normalizarDetallesLotes();
                     // El API no envía catálogo de impuestos; si aún no hay filas, usar plantilla cargada desde /impuestos
                     if (!this.compra.impuestos || !Array.isArray(this.compra.impuestos) || this.compra.impuestos.length === 0) {
                         this.compra.impuestos = this.impuestos?.length ? this.impuestos : [];
@@ -287,6 +288,7 @@ export class FacturacionCompraComponent implements OnInit {
             this.duplicarcompra = true;
             this.apiService.read('compra/', +this.route.snapshot.queryParamMap.get('id_compra')!).subscribe(compra => {
                 this.compra = compra;
+                this.normalizarDetallesLotes();
                 // Asegurar que impuestos existe y es un array, y usar los impuestos filtrados
                 if (!this.compra.impuestos || !Array.isArray(this.compra.impuestos) || this.compra.impuestos.length === 0) {
                     this.compra.impuestos = this.impuestos?.length ? this.impuestos : [];
@@ -322,6 +324,7 @@ export class FacturacionCompraComponent implements OnInit {
             this.facturarCotizacion = true;
             this.apiService.read('compra/', +this.route.snapshot.queryParamMap.get('id_compra')!).subscribe(compra => {
                 this.compra = compra;
+                this.normalizarDetallesLotes();
                 if (!this.compra.impuestos || !Array.isArray(this.compra.impuestos) || this.compra.impuestos.length === 0) {
                     this.compra.impuestos = this.impuestos?.length ? this.impuestos : [];
                 }
@@ -440,7 +443,27 @@ export class FacturacionCompraComponent implements OnInit {
 
     public updatecompra(compra:any) {
         this.compra = compra;
+        this.normalizarDetallesLotes();
         this.sumTotal();
+    }
+
+    public lineaCompraSinLotes(detalle: any): boolean {
+        if (!detalle?.inventario_por_lotes) {
+            return false;
+        }
+        return !(detalle.lotes_asignados?.length || detalle.lote_id);
+    }
+
+    public normalizarDetallesLotes(): void {
+        (this.compra?.detalles || []).forEach((detalle: any) => {
+            if (detalle.lote_asignaciones?.length && !detalle.lotes_asignados?.length) {
+                detalle.lotes_asignados = detalle.lote_asignaciones.map((item: any) => ({
+                    lote_id: item.lote_id,
+                    numero_lote: item.lote?.numero_lote,
+                    cantidad: item.cantidad,
+                }));
+            }
+        });
     }
 
     public selectTipoDocumento(){
@@ -485,13 +508,13 @@ export class FacturacionCompraComponent implements OnInit {
 
     // Guardar compra
         public onSubmit() {
-            // Validar que productos con lotes tengan lote_id
+            // Validar que productos con lotes tengan lote o distribución
             if (this.compra.detalles && this.compra.detalles.length > 0) {
                 const lotesActivo = this.apiService.isLotesActivo();
                 if (lotesActivo) {
                     for (let detalle of this.compra.detalles) {
-                        if (detalle.inventario_por_lotes && !detalle.lote_id) {
-                            this.alertService.error(`El producto "${detalle.nombre_producto}" requiere seleccionar o crear un lote antes de guardar la compra.`);
+                        if (this.lineaCompraSinLotes(detalle)) {
+                            this.alertService.error(`El producto "${detalle.nombre_producto}" requiere distribuir lotes antes de guardar la compra.`);
                             this.saving = false;
                             return;
                         }
@@ -676,12 +699,12 @@ export class FacturacionCompraComponent implements OnInit {
             return;
         }
         const sinLote = this.compra.detalles.filter(
-            (d: any) => d.inventario_por_lotes && !d.lote_id
+            (d: any) => this.lineaCompraSinLotes(d)
         );
         if (sinLote.length) {
             this.alertService.info(
                 'Lotes / partidas',
-                `Hay ${sinLote.length} línea(s) con control por lotes. Use el botón de lote en cada línea para seleccionar o crear un lote (no se lee del JSON/XML).`
+                `Hay ${sinLote.length} línea(s) con control por lotes. Use el botón de lote en cada línea para distribuir cantidades por lote (no se lee del JSON/XML).`
             );
         }
     }
@@ -1067,6 +1090,7 @@ export class FacturacionCompraComponent implements OnInit {
             inventario_por_lotes: !!producto.inventario_por_lotes,
             lote_id: null,
             lote: null,
+            lotes_asignados: null,
             porcentaje_impuesto: snapshotPorcentajeImpuestoProducto(
                 producto.porcentaje_impuesto,
                 this.apiService.auth_user()?.empresa?.iva,

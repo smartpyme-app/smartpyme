@@ -305,10 +305,15 @@ class Inventario extends Model {
         if ($clase == 'Compra' || $clase == 'Compra a consigna' || $clase == 'Compra Anulada') {
             $detalleCompra = \App\Models\Compras\Detalle::where('id_compra', $modelo->id)
                 ->where('id_producto', $idProducto)
-                ->whereNotNull('lote_id')
                 ->first();
-            if ($detalleCompra && $detalleCompra->lote_id) {
-                return $detalleCompra->lote_id;
+            if ($detalleCompra) {
+                if ($detalleCompra->lote_id) {
+                    return $detalleCompra->lote_id;
+                }
+                $asig = \App\Models\Compras\DetalleCompraLote::where('id_detalle_compra', $detalleCompra->id)->first();
+                if ($asig && $asig->lote_id) {
+                    return $asig->lote_id;
+                }
             }
         }
 

@@ -2,6 +2,8 @@
 
 namespace App\Services\Inventario;
 
+use App\Models\Compras\Detalle as DetalleCompra;
+use App\Models\Compras\DetalleCompraLote;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Lote;
 use App\Models\Inventario\Producto;
@@ -247,7 +249,8 @@ class LoteAsignacionService
         array $asignacionManual,
         int $idProducto,
         int $idBodega,
-        float $cantidadBase
+        float $cantidadBase,
+        bool $validarStock = true
     ): array {
         $asignaciones = [];
         $total = 0.0;
@@ -271,7 +274,7 @@ class LoteAsignacionService
                 throw new RuntimeException('El lote seleccionado no corresponde al producto o bodega.');
             }
 
-            if ((float) $lote->stock < $cantidad) {
+            if ($validarStock && (float) $lote->stock < $cantidad) {
                 $numero = $lote->numero_lote ?: 'S/N';
                 throw new RuntimeException(
                     "Stock insuficiente en el lote {$numero}. Disponible: {$lote->stock}, requerido: {$cantidad}"
@@ -766,5 +769,211 @@ class LoteAsignacionService
             'stock_inicial' => $cantidad,
             'id_empresa' => Auth::user()->id_empresa ?? $producto->id_empresa,
         ]);
+    }
+
+    /**
+     * Resuelve lotes para una compra: siempre explícitos (varios lotes o uno), nunca FIFO/FEFO.
+     *
+     * @param  array<int, array{lote_id:int, cantidad:float|int|string}>|null  $asignacionManual
+     * @return array<int, array{lote_id:int, cantidad:float, lote:Lote}>
+     */
+    public static function resolverAsignacionesEntrada(
+        Producto $producto,
+        int $idBodega,
+        float $cantidadBase,
+        bool $lotesActivo,
+        ?int $lotePreferidoId = null,
+        ?array $asignacionManual = null
+    ): array {
+        if (!$producto->inventario_por_lotes || !$lotesActivo || $cantidadBase <= 0) {
+            return [];
+        }
+
+        if (!empty($asignacionManual)) {
+            return self::validarAsignacionManual(
+                $asignacionManual,
+                (int) $producto->id,
+                $idBodega,
+                $cantidadBase,
+                false
+            );
+        }
+
+        if ($lotePreferidoId) {
+            return self::distribuirDesdeLoteUnicoEntrada(
+                $lotePreferidoId,
+                (int) $producto->id,
+                $idBodega,
+                $cantidadBase
+            );
+        }
+
+        throw new RuntimeException(
+            "El producto '{$producto->nombre}' requiere seleccionar o crear un lote."
+        );
+    }
+
+    /**
+     * Suma stock a cada lote, persiste detalle_compra_lotes y registra kardex por lote.
+     *
+     * @param  array<int, array{lote_id:int, cantidad:float, lote:Lote}>  $asignaciones
+     */
+    public static function aplicarEntradaCompra(
+        array $asignaciones,
+        DetalleCompra $detalle,
+        $compra,
+        Inventario $inventario
+    ): void {
+        if (empty($asignaciones)) {
+            return;
+        }
+
+        self::sincronizarDetalleCompraLotes($detalle->id, $asignaciones);
+
+        $cantidadTotal = 0.0;
+        foreach ($asignaciones as $asig) {
+            $cantidad = (float) $asig['cantidad'];
+            $lote = $asig['lote'];
+            $lote->stock = (float) $lote->stock + $cantidad;
+            $lote->save();
+            $cantidadTotal += $cantidad;
+        }
+
+        $inventario->stock = (float) $inventario->stock + $cantidadTotal;
+        $inventario->save();
+
+        foreach ($asignaciones as $asig) {
+            $inventario->kardex($compra, (float) $asig['cantidad'], null, null, null, [
+                'lote_id' => $asig['lote_id'],
+            ]);
+        }
+
+        $detalle->lote_id = count($asignaciones) === 1 ? $asignaciones[0]['lote_id'] : null;
+        $detalle->save();
+    }
+
+    public static function revertirEntradaCompra(
+        DetalleCompra $detalle,
+        $compra,
+        Inventario $inventario,
+        float $cantidadBase
+    ): void {
+        $registros = DetalleCompraLote::where('id_detalle_compra', $detalle->id)->get();
+
+        $inventario->stock = (float) $inventario->stock - $cantidadBase;
+        $inventario->save();
+
+        if ($registros->isNotEmpty()) {
+            foreach ($registros as $registro) {
+                $lote = Lote::find($registro->lote_id);
+                if ($lote) {
+                    $lote->stock = max(0, (float) $lote->stock - (float) $registro->cantidad);
+                    $lote->save();
+                }
+
+                $inventario->kardex($compra, (float) $registro->cantidad * -1, null, null, null, [
+                    'lote_id' => $registro->lote_id,
+                ]);
+            }
+            return;
+        }
+
+        if ($detalle->lote_id) {
+            $lote = Lote::find($detalle->lote_id);
+            if ($lote) {
+                $lote->stock = max(0, (float) $lote->stock - $cantidadBase);
+                $lote->save();
+            }
+
+            $inventario->kardex($compra, $cantidadBase * -1, null, null, null, [
+                'lote_id' => $detalle->lote_id,
+            ]);
+            return;
+        }
+
+        $inventario->kardex($compra, $cantidadBase * -1);
+    }
+
+    public static function reactivarEntradaCompra(
+        DetalleCompra $detalle,
+        $compra,
+        Inventario $inventario,
+        float $cantidadBase
+    ): void {
+        $registros = DetalleCompraLote::where('id_detalle_compra', $detalle->id)->get();
+
+        $inventario->stock = (float) $inventario->stock + $cantidadBase;
+        $inventario->save();
+
+        if ($registros->isNotEmpty()) {
+            foreach ($registros as $registro) {
+                $lote = Lote::find($registro->lote_id);
+                if ($lote) {
+                    $lote->stock = (float) $lote->stock + (float) $registro->cantidad;
+                    $lote->save();
+                }
+
+                $inventario->kardex($compra, (float) $registro->cantidad, null, null, null, [
+                    'lote_id' => $registro->lote_id,
+                ]);
+            }
+            return;
+        }
+
+        if ($detalle->lote_id) {
+            $lote = Lote::find($detalle->lote_id);
+            if ($lote) {
+                $lote->stock = (float) $lote->stock + $cantidadBase;
+                $lote->save();
+            }
+
+            $inventario->kardex($compra, $cantidadBase, null, null, null, [
+                'lote_id' => $detalle->lote_id,
+            ]);
+            return;
+        }
+
+        $inventario->kardex($compra, $cantidadBase);
+    }
+
+    /**
+     * @param  array<int, array{lote_id:int, cantidad:float, lote:Lote}>  $asignaciones
+     */
+    public static function sincronizarDetalleCompraLotes(int $idDetalleCompra, array $asignaciones): void
+    {
+        DetalleCompraLote::where('id_detalle_compra', $idDetalleCompra)->delete();
+
+        foreach ($asignaciones as $asig) {
+            DetalleCompraLote::create([
+                'id_detalle_compra' => $idDetalleCompra,
+                'lote_id' => $asig['lote_id'],
+                'cantidad' => $asig['cantidad'],
+            ]);
+        }
+    }
+
+    /**
+     * @return array<int, array{lote_id:int, cantidad:float, lote:Lote}>
+     */
+    private static function distribuirDesdeLoteUnicoEntrada(
+        int $loteId,
+        int $idProducto,
+        int $idBodega,
+        float $cantidadBase
+    ): array {
+        $lote = Lote::where('id', $loteId)
+            ->where('id_producto', $idProducto)
+            ->where('id_bodega', $idBodega)
+            ->first();
+
+        if (!$lote) {
+            throw new RuntimeException('El lote seleccionado no corresponde al producto o bodega.');
+        }
+
+        return [[
+            'lote_id' => (int) $lote->id,
+            'cantidad' => $cantidadBase,
+            'lote' => $lote,
+        ]];
     }
 }
