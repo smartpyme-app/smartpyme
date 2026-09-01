@@ -490,6 +490,7 @@ class ShopifyController extends Controller
     private function procesarClienteCreado(Request $request, $empresa, $usuario)
     {
         // Log::info('=== PROCESANDO CLIENTE CREADO DESDE SHOPIFY ===', [
+        //     'shopify_customer_id' => $request->id,
         //     'customer_email' => $request->email ?? 'N/A',
         //     'customer_name' => ($request->first_name ?? '') . ' ' . ($request->last_name ?? ''),
         //     'empresa_id' => $empresa->id,
