@@ -105,6 +105,8 @@
                         <td>
                             <img src="{{ apiService.baseUrl }}/img/{{ detalle.img }}" class="rounded-circle" height="50px" width="50px"> 
                             {{ detalle.nombre_producto }}
+                            <br>
+                            <small *ngIf="detalle.codigo" class="text-muted">SKU: {{ detalle.codigo }}</small>
                         </td>
                         <td>{{ detalle.cantidad }}</td>
                         <td *ngIf="!apiService.supervisorLimitadoRestringidoEnCompras()">{{ detalle.costo | currency:'USD':'symbol':'1.2' }}</td>
