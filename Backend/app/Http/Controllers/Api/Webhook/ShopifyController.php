@@ -1792,10 +1792,20 @@ class ShopifyController extends Controller
      * @param Cliente $cliente
      * @return Documento|null
      */
-    private function resolverDocumentoFactura($usuario, $empresa, Cliente $cliente)
+    private function nombresDocumentoCandidatos(Cliente $cliente): array
     {
-        $nombreDocumento = $this->resolverNombreDocumentoFiscal($cliente);
+        $fiscal = $this->resolverNombreDocumentoFiscal($cliente);
+        $preferido = trim((string) ($cliente->tipo_factura_preferida ?? ''));
 
+        if ($preferido === '' || $preferido === $fiscal) {
+            return [$fiscal];
+        }
+
+        return [$preferido, $fiscal];
+    }
+
+    private function buscarDocumentoActivo($usuario, $empresa, string $nombreDocumento)
+    {
         $documento = Documento::where('id_sucursal', $usuario->id_sucursal)
             ->where('nombre', $nombreDocumento)
             ->where('activo', true)
@@ -1808,19 +1818,24 @@ class ShopifyController extends Controller
                 ->first();
         }
 
-        // Si no hay documento de Crédito fiscal configurado, usar Factura como respaldo.
-        if (!$documento && $nombreDocumento === 'Crédito fiscal') {
-            $documento = Documento::where('id_sucursal', $usuario->id_sucursal)
-                ->where('nombre', 'Factura')
-                ->where('activo', true)
-                ->first();
+        return $documento;
+    }
 
-            if (!$documento) {
-                $documento = Documento::where('id_empresa', $empresa->id)
-                    ->where('nombre', 'Factura')
-                    ->where('activo', true)
-                    ->first();
+    private function resolverDocumentoFactura($usuario, $empresa, Cliente $cliente)
+    {
+        $documento = null;
+
+        foreach ($this->nombresDocumentoCandidatos($cliente) as $nombreDocumento) {
+            $documento = $this->buscarDocumentoActivo($usuario, $empresa, $nombreDocumento);
+            if ($documento) {
+                return $documento;
             }
+        }
+
+        // Si no hay documento de Crédito fiscal configurado, usar Factura como respaldo.
+        $fiscal = $this->resolverNombreDocumentoFiscal($cliente);
+        if ($fiscal === 'Crédito fiscal') {
+            $documento = $this->buscarDocumentoActivo($usuario, $empresa, 'Factura');
         }
 
         return $documento;
