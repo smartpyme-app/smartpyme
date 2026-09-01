@@ -331,6 +331,7 @@ export interface PedidoCanalDetalle {
   cantidad: number;
   precio: number;
   descuento?: number;
+  descuento_porcentaje?: number;
   subtotal?: number;
   total?: number;
   notas?: string;
@@ -374,6 +375,7 @@ export interface PedidoCanalPayload {
     cantidad: number;
     precio: number;
     descuento?: number;
+    descuento_porcentaje?: number;
     notas?: string;
   }>;
 }

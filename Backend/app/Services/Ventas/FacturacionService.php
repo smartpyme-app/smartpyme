@@ -20,6 +20,7 @@ use App\Models\Ventas\DetalleCompuesto;
 use App\Models\Ventas\Impuesto;
 use App\Models\Ventas\MetodoDePago;
 use App\Models\Ventas\Venta;
+use App\Services\Ventas\VentaDescuentoAutorizacion;
 use App\Services\FidelizacionCliente\ConsumoPuntosService as FidelizacionConsumoPuntosService;
 use App\Services\Inventario\ConversionInventarioService;
 use App\Services\Inventario\LoteAsignacionService;
@@ -94,6 +95,9 @@ class FacturacionService
                 );
             }
         }
+
+        $idAutorizador = app(VentaDescuentoAutorizacion::class)->resolverIdAutorizador($user, $request);
+        $request->attributes->set('id_usuario_autorizo_descuento', $idAutorizador);
     }
 
     /**
@@ -173,6 +177,7 @@ class FacturacionService
 
                 // El frontend ya envía el total sin propina, así que no necesitamos ajustarlo
                 $venta->fill($request->all());
+                $venta->id_usuario_autorizo_descuento = $request->attributes->get('id_usuario_autorizo_descuento');
 
                 $documento = Documento::where('id', $request->id_documento)
                     ->lockForUpdate()

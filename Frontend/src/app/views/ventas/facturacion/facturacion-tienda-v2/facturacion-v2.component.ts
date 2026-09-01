@@ -25,9 +25,11 @@ import { CrearClienteComponent } from '@shared/modals/crear-cliente/crear-client
 import { VentaDetallesV2Component } from './detalles/venta-detalles-v2.component';
 import { CrearProyectoComponent } from '@shared/modals/crear-proyecto/crear-proyecto.component';
 import { MetodosDePagoComponent } from '../facturacion-tienda/metodos-de-pago/metodos-de-pago.component';
+import { pedirPinDescuentoSiAplica } from '../venta-descuento-autorizacion.util';
 import { FidelizacionService, PuntosDisponiblesInfo, ConfiguracionCliente } from '@services/fidelizacion.service';
 import { GiftCardsService, GiftCardLookup } from '@services/gift-cards.service';
 import { esFormaPagoGiftCard, montoPagoGiftCardVenta, ventaUsaGiftCard } from '@utils/gift-card.util';
+import { camposDescuentoFacturaDesdePedido } from '@views/pedidos/pedido-form/pedido-descuento.util';
 import { aplicarPrefillCredito, prepararVentaParaFacturarCuota } from '@views/ventas/creditos/creditos-facturar';
 import { aplicarPlanAVenta, generarPreviewCuotas, planCuadra, restoreSnapshotVenta, snapshotVentaMontos, sumaMontosCuotas, SnapshotMontosVenta, PreviewCuota } from '@views/ventas/creditos/creditos-cuotas';
 import { MHService } from '@services/MH.service';
@@ -2520,7 +2522,7 @@ export class FacturacionV2Component implements OnInit {
   }
 
   // Guardar venta
-  public onSubmit() {
+  public async onSubmit() {
     this.saving = true;
 
     // Si se esta duplicando una venta, esta ya no se marca como recurrente para
@@ -2549,6 +2551,16 @@ export class FacturacionV2Component implements OnInit {
     }
 
     const endpointSave = this.venta.cotizacion == 1 ? 'cotizacionVentas' : 'facturacion';
+    const pin = await pedirPinDescuentoSiAplica(this.apiService, this.venta);
+    if (pin === false) {
+      this.saving = false;
+      return;
+    }
+    if (pin) {
+      this.venta.descuento_autorizacion = pin;
+    } else {
+      delete this.venta.descuento_autorizacion;
+    }
     this.apiService.store(endpointSave, this.venta).subscribe(
       (venta) => {
         // Actualizar siempre la venta local con la respuesta del backend (id, correlativo, etc.)
@@ -2833,6 +2845,14 @@ export class FacturacionV2Component implements OnInit {
         precioSinIva = this.calcularPrecioSinIva(precioConIva, pctNum);
       }
 
+      const camposDesc = camposDescuentoFacturaDesdePedido({
+        descuento: descLine,
+        descuento_porcentaje: d.descuento_porcentaje,
+        descuento_is_monto: d.descuento_is_monto,
+        cantidad: cant,
+        ivaPct: pctNum,
+        montoConIva: true,
+      });
       const detalle: any = {
         id_producto: d.id_producto,
         id_presentacion: d.id_presentacion ?? null,
@@ -2841,8 +2861,10 @@ export class FacturacionV2Component implements OnInit {
         precio_iva: redondearMoneda(precioConIva).toFixed(2),
         descripcion: d.descripcion || '',
         costo: 0,
-        descuento: descLine.toFixed(4),
-        descuento_porcentaje: 0,
+        descuento: camposDesc.descuento.toFixed(4),
+        descuento_porcentaje: camposDesc.descuento_porcentaje,
+        descuento_is_monto: camposDesc.descuento_is_monto,
+        descuento_monto: camposDesc.descuento_monto,
         tipo_gravado: 'gravada',
         porcentaje_impuesto: pctNum,
         exenta: 0,

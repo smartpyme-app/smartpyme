@@ -13,6 +13,10 @@ import { AlertService } from '@services/alert.service';
 import { DistribucionLotesModalComponent } from '@shared/modals/distribucion-lotes/distribucion-lotes-modal.component';
 import { textoResumenLotesDetalle } from '@utils/lotes-venta.util';
 import { armarListaPreciosPedido, PrecioPedidoOpcion } from './pedido-precios.util';
+import {
+  descuentoLineaPedido,
+  esDescuentoMontoPedido,
+} from './pedido-descuento.util';
 
 interface LineaLocal {
   producto_id: number;
@@ -22,6 +26,8 @@ interface LineaLocal {
   cantidad: number;
   precio: number;
   descuento: number;
+  descuento_porcentaje: number;
+  descuento_is_monto: boolean;
   notas: string;
   precios?: PrecioPedidoOpcion[];
   inventario_por_lotes?: boolean;
@@ -186,6 +192,8 @@ export class PedidoFormComponent implements OnInit {
           cantidad: +d.cantidad,
           precio: +d.precio,
           descuento: +(d.descuento || 0),
+          descuento_porcentaje: +(d.descuento_porcentaje || 0),
+          descuento_is_monto: esDescuentoMontoPedido(d.descuento_porcentaje),
           notas: d.notas || '',
           inventario_por_lotes: d.producto?.inventario_por_lotes,
           lote_id: d.lote_id ?? null,
@@ -263,6 +271,8 @@ export class PedidoFormComponent implements OnInit {
       cantidad: producto.cantidad ?? 1,
       precio: precio,
       descuento: producto.descuento ?? 0,
+      descuento_porcentaje: 0,
+      descuento_is_monto: true,
       notas: notas,
       precios,
       inventario_por_lotes: producto.inventario_por_lotes,
@@ -373,6 +383,25 @@ export class PedidoFormComponent implements OnInit {
     return Math.max(0, this.subtotalLinea(l) - (l.descuento || 0));
   }
 
+  get simboloMoneda(): string {
+    return this.apiService.auth_user()?.empresa?.currency?.currency_symbol || '$';
+  }
+
+  cambiarModoDescuento(l: LineaLocal, isMonto: boolean): void {
+    l.descuento_is_monto = isMonto;
+    l.descuento = 0;
+    l.descuento_porcentaje = 0;
+  }
+
+  recalcularDescuentoLinea(l: LineaLocal): void {
+    if (l.descuento_is_monto) {
+      l.descuento_porcentaje = 0;
+      return;
+    }
+    const calc = descuentoLineaPedido(l.cantidad, l.precio, false, l.descuento_porcentaje);
+    l.descuento = calc.descuento;
+  }
+
   tieneListaPrecios(l: LineaLocal): boolean {
     return (l.precios?.length ?? 0) > 1;
   }
@@ -456,16 +485,25 @@ export class PedidoFormComponent implements OnInit {
       return;
     }
 
-    const detalles = this.lineas.map((l) => ({
-      producto_id: l.producto_id,
-      id_paquete: l.id_paquete || undefined,
-      cantidad: l.cantidad,
-      precio: l.precio,
-      descuento: l.descuento || 0,
-      notas: l.notas?.trim() || undefined,
-      lote_id: l.lote_id || undefined,
-      lotes_asignados: l.lotes_asignados || undefined,
-    }));
+    const detalles = this.lineas.map((l) => {
+      const calc = descuentoLineaPedido(
+        l.cantidad,
+        l.precio,
+        l.descuento_is_monto,
+        l.descuento_is_monto ? l.descuento : l.descuento_porcentaje
+      );
+      return {
+        producto_id: l.producto_id,
+        id_paquete: l.id_paquete || undefined,
+        cantidad: l.cantidad,
+        precio: l.precio,
+        descuento: calc.descuento,
+        descuento_porcentaje: calc.descuento_porcentaje,
+        notas: l.notas?.trim() || undefined,
+        lote_id: l.lote_id || undefined,
+        lotes_asignados: l.lotes_asignados || undefined,
+      };
+    });
 
     const payload: PedidoCanalPayload = {
       fecha: this.fecha,
