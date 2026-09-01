@@ -168,4 +168,24 @@ class ShopifyTransformerTest extends TestCase
         $this->assertSame('2026-06-02', $fechas['fecha_pago']);
         $this->assertTrue($pagadoLunes->equalTo($fechas['created_at']));
     }
+
+    public function test_mapear_forma_pago_cod_es_contra_entrega(): void
+    {
+        $formaPago = $this->transformer->mapearFormaPago([
+            'payment_gateway_names' => ['Cash on Delivery (COD)'],
+            'financial_status' => 'pending',
+        ]);
+
+        $this->assertSame('Contra entrega', $formaPago);
+    }
+
+    public function test_mapear_forma_pago_bank_deposit_es_transferencia(): void
+    {
+        $formaPago = $this->transformer->mapearFormaPago([
+            'payment_gateway_names' => ['Bank Deposit'],
+            'financial_status' => 'paid',
+        ]);
+
+        $this->assertSame('Transferencia', $formaPago);
+    }
 }

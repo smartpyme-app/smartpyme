@@ -489,14 +489,13 @@ class ShopifyController extends Controller
 
     private function procesarClienteCreado(Request $request, $empresa, $usuario)
     {
-        Log::info('=== PROCESANDO CLIENTE CREADO DESDE SHOPIFY ===', [
-            'shopify_customer_id' => $request->id,
-            'customer_email' => $request->email ?? 'N/A',
-            'customer_name' => ($request->first_name ?? '') . ' ' . ($request->last_name ?? ''),
-            'empresa_id' => $empresa->id,
-            'usuario_id' => $usuario->id,
-            'webhook_type' => 'customers/create'
-        ]);
+        // Log::info('=== PROCESANDO CLIENTE CREADO DESDE SHOPIFY ===', [
+        //     'customer_email' => $request->email ?? 'N/A',
+        //     'customer_name' => ($request->first_name ?? '') . ' ' . ($request->last_name ?? ''),
+        //     'empresa_id' => $empresa->id,
+        //     'usuario_id' => $usuario->id,
+        //     'webhook_type' => 'customers/create'
+        // ]);
 
         try {
             DB::beginTransaction();
@@ -508,21 +507,21 @@ class ShopifyController extends Controller
 
             $clienteData = $this->transformer->transformarClienteDesdeShopify($request->all());
             
-            Log::info('=== CLIENTE CREADO - DATOS TRANSFORMADOS ===', [
-                'cliente_data' => $clienteData,
-                'shopify_customer_id' => $request->id
-            ]);
+            // Log::info('=== CLIENTE CREADO - DATOS TRANSFORMADOS ===', [
+            //     'cliente_data' => $clienteData,
+            //     'shopify_customer_id' => $request->id
+            // ]);
             
             $cliente = $this->buscarOActualizarCliente($clienteData, $usuario->id_empresa);
             
-            Log::info('=== CLIENTE CREADO/ACTUALIZADO ===', [
-                'cliente_id' => $cliente->id,
-                'cliente_correo' => $cliente->correo,
-                'cliente_nombre' => $cliente->nombre . ' ' . $cliente->apellido,
-                'cliente_creado' => $cliente->wasRecentlyCreated,
-                'shopify_customer_id' => $request->id,
-                'webhook_type' => 'customers/create'
-            ]);
+            // Log::info('=== CLIENTE CREADO/ACTUALIZADO ===', [
+            //     'cliente_id' => $cliente->id,
+            //     'cliente_correo' => $cliente->correo,
+            //     'cliente_nombre' => $cliente->nombre . ' ' . $cliente->apellido,
+            //     'cliente_creado' => $cliente->wasRecentlyCreated,
+            //     'shopify_customer_id' => $request->id,
+            //     'webhook_type' => 'customers/create'
+            // ]);
 
             DB::commit();
 
@@ -545,14 +544,14 @@ class ShopifyController extends Controller
 
     private function procesarClienteActualizado(Request $request, $empresa, $usuario)
     {
-        Log::info('=== PROCESANDO CLIENTE ACTUALIZADO DESDE SHOPIFY ===', [
-            'shopify_customer_id' => $request->id,
-            'customer_email' => $request->email ?? 'N/A',
-            'customer_name' => ($request->first_name ?? '') . ' ' . ($request->last_name ?? ''),
-            'empresa_id' => $empresa->id,
-            'usuario_id' => $usuario->id,
-            'webhook_type' => 'customers/update'
-        ]);
+        // Log::info('=== PROCESANDO CLIENTE ACTUALIZADO DESDE SHOPIFY ===', [
+        //     'shopify_customer_id' => $request->id,
+        //     'customer_email' => $request->email ?? 'N/A',
+        //     'customer_name' => ($request->first_name ?? '') . ' ' . ($request->last_name ?? ''),
+        //     'empresa_id' => $empresa->id,
+        //     'usuario_id' => $usuario->id,
+        //     'webhook_type' => 'customers/update'
+        // ]);
 
         try {
             DB::beginTransaction();
@@ -564,21 +563,21 @@ class ShopifyController extends Controller
 
             $clienteData = $this->transformer->transformarClienteDesdeShopify($request->all());
             
-            Log::info('=== CLIENTE ACTUALIZADO - DATOS TRANSFORMADOS ===', [
-                'cliente_data' => $clienteData,
-                'shopify_customer_id' => $request->id
-            ]);
+            // Log::info('=== CLIENTE ACTUALIZADO - DATOS TRANSFORMADOS ===', [
+            //     'cliente_data' => $clienteData,
+            //     'shopify_customer_id' => $request->id
+            // ]);
             
             $cliente = $this->buscarOActualizarCliente($clienteData, $usuario->id_empresa);
             
-            Log::info('=== CLIENTE ACTUALIZADO ===', [
-                'cliente_id' => $cliente->id,
-                'cliente_correo' => $cliente->correo,
-                'cliente_nombre' => $cliente->nombre . ' ' . $cliente->apellido,
-                'cliente_creado' => $cliente->wasRecentlyCreated,
-                'shopify_customer_id' => $request->id,
-                'webhook_type' => 'customers/update'
-            ]);
+            // Log::info('=== CLIENTE ACTUALIZADO ===', [
+            //     'cliente_id' => $cliente->id,
+            //     'cliente_correo' => $cliente->correo,
+            //     'cliente_nombre' => $cliente->nombre . ' ' . $cliente->apellido,
+            //     'cliente_creado' => $cliente->wasRecentlyCreated,
+            //     'shopify_customer_id' => $request->id,
+            //     'webhook_type' => 'customers/update'
+            // ]);
 
             DB::commit();
 
@@ -1836,7 +1835,7 @@ class ShopifyController extends Controller
      * @param User $usuario
      * @return bool
      */
-    private function convertirCotizacionAVenta(Venta $venta, Empresa $empresa, $usuario)
+    private function convertirCotizacionAVenta(Venta $venta, Empresa $empresa, $usuario, array $shopifyData = [])
     {
         $cliente = $venta->cliente;
         if (!$cliente) {
@@ -1860,6 +1859,9 @@ class ShopifyController extends Controller
             $documento = Documento::where('id', $documento->id)->lockForUpdate()->first();
 
             $fechasPago = $this->transformer->fechasOficialesDesdePago();
+            $formaPago = !empty($shopifyData)
+                ? $this->transformer->mapearFormaPago($shopifyData)
+                : $venta->forma_pago;
 
             $venta->update([
                 'cotizacion' => 0,
@@ -1868,6 +1870,7 @@ class ShopifyController extends Controller
                 'estado' => 'Pagada',
                 'fecha' => $fechasPago['fecha'],
                 'fecha_pago' => $fechasPago['fecha_pago'],
+                'forma_pago' => $formaPago,
                 'observaciones_shopify' => ($venta->observaciones_shopify ? $venta->observaciones_shopify . ' | ' : '') .
                     'Pedido pagado en Shopify - cotización convertida a venta el ' . $fechasPago['created_at']->format('d/m/Y H:i:s'),
             ]);
@@ -2584,7 +2587,7 @@ class ShopifyController extends Controller
             // webhook de pago llega inmediatamente después de la creación del pedido.
             $fueConvertida = false;
             if ($esPagada && (int) $venta->cotizacion === 1) {
-                if ($this->convertirCotizacionAVenta($venta, $empresa, $usuario)) {
+                if ($this->convertirCotizacionAVenta($venta, $empresa, $usuario, $request->all())) {
                     $venta->refresh();
                     $fueConvertida = true;
                 }

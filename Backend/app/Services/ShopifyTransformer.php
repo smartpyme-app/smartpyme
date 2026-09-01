@@ -7,7 +7,6 @@ use App\Helpers\ShopifyHelper;
 use App\Models\Admin\Empresa;
 use Carbon\Carbon;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Log;
 
 class ShopifyTransformer
 {
@@ -414,7 +413,7 @@ class ShopifyTransformer
         return $estado;
     }
 
-    private function mapearFormaPago($shopifyData)
+    public function mapearFormaPago($shopifyData)
     {
         $paymentGateways = $shopifyData['payment_gateway_names'] ?? [];
         $gateway = !empty($paymentGateways) ? $paymentGateways[0] : 'unknown';
@@ -437,9 +436,9 @@ class ShopifyTransformer
             'efectivo' => 'Efectivo',
             'cash on delivery (cod)' => 'Contra entrega',
             'pago contra entrega' => 'Contra entrega',
-            'bank_transfer' => 'Transferencia bancaria',
-            'bank deposit' => 'Transferencia bancaria',
-            'depósito bancario' => 'Transferencia bancaria',
+            'bank_transfer' => 'Transferencia',
+            'bank deposit' => 'Transferencia',
+            'depósito bancario' => 'Transferencia',
             'stripe' => 'Tarjeta de crédito/débito',
             'square' => 'Tarjeta de crédito/débito',
             'wompi el salvador' => 'Wompi',
@@ -456,6 +455,10 @@ class ShopifyTransformer
                 $formaPago = 'KueskiPay';
             } elseif (str_contains($gatewayLower, 'wompi')) {
                 $formaPago = 'Wompi';
+            } elseif (str_contains($gatewayLower, 'cod') || str_contains($gatewayLower, 'contra entrega')) {
+                $formaPago = 'Contra entrega';
+            } elseif (str_contains($gatewayLower, 'transferencia') || str_contains($gatewayLower, 'deposit') || str_contains($gatewayLower, 'depósito')) {
+                $formaPago = 'Transferencia';
             }
         }
 
