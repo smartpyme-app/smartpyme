@@ -24,7 +24,7 @@ class Detalle extends Model {
 
     );
 
-    protected $appends = ['nombre_producto', 'img', 'codigo'];
+    protected $appends = ['nombre_producto', 'img', 'codigo', 'inventario_por_lotes'];
 
     public function getNombreProductoAttribute(){
         return $this->producto()->withoutGlobalScopes()->pluck('nombre')->first();
@@ -39,6 +39,10 @@ class Detalle extends Model {
         return $this->producto()->withoutGlobalScopes()->pluck('codigo')->first();
     }
 
+    public function getInventarioPorLotesAttribute(){
+        return (bool) $this->producto()->withoutGlobalScopes()->pluck('inventario_por_lotes')->first();
+    }
+
     public function producto(){
         return $this->belongsTo('App\Models\Inventario\Producto','id_producto');
     }
@@ -49,6 +53,10 @@ class Detalle extends Model {
 
     public function lote(){
         return $this->belongsTo('App\Models\Inventario\Lote','lote_id');
+    }
+
+    public function loteAsignaciones(){
+        return $this->hasMany(DetalleCompraLote::class, 'id_detalle_compra');
     }
 
     public function presentacion(){

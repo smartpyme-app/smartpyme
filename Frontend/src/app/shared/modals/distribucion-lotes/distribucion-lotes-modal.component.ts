@@ -19,6 +19,7 @@ import {
 })
 export class DistribucionLotesModalComponent {
   @Input() etiquetaCantidad = 'Total';
+  @Input() modoEntrada = false;
   @Output() confirmado = new EventEmitter<any>();
 
   @ViewChild('modalTemplate') modalTemplate!: TemplateRef<any>;
@@ -29,6 +30,13 @@ export class DistribucionLotesModalComponent {
   public loading = false;
   public cantidadObjetivoModal = 1;
   public formatCantidadLote = formatCantidadLote;
+  public crearNuevoLote = false;
+  public nuevoLote: any = {
+    numero_lote: '',
+    fecha_vencimiento: null,
+    fecha_fabricacion: null,
+    observaciones: '',
+  };
 
   modalRef!: BsModalRef;
 
@@ -41,6 +49,13 @@ export class DistribucionLotesModalComponent {
   abrir(detalle: any, idBodega: number): void {
     this.detalle = detalle;
     this.idBodega = idBodega;
+    this.crearNuevoLote = false;
+    this.nuevoLote = {
+      numero_lote: '',
+      fecha_vencimiento: null,
+      fecha_fabricacion: null,
+      observaciones: '',
+    };
     const previos = detalle.lotes_asignados || [];
     const factor = factorConversionDetalle(detalle);
     this.cantidadObjetivoModal = previos.length
@@ -57,13 +72,18 @@ export class DistribucionLotesModalComponent {
     }
 
     this.loading = true;
-    this.apiService.getAll('lotes/disponibles', {
-      id_producto: idProducto,
-      id_bodega: this.idBodega,
-    }).subscribe(lotes => {
+    const request$ = this.modoEntrada
+      ? this.apiService.getAll(`lotes/producto/${idProducto}`, { id_bodega: this.idBodega })
+      : this.apiService.getAll('lotes/disponibles', {
+          id_producto: idProducto,
+          id_bodega: this.idBodega,
+        });
+
+    request$.subscribe(lotes => {
       const previos = this.detalle.lotes_asignados || [];
       const factor = factorConversionDetalle(this.detalle);
-      this.lotes = (lotes || []).map((lote: any) => {
+      const lista = Array.isArray(lotes) ? lotes : [];
+      this.lotes = lista.map((lote: any) => {
         const previo = previos.find((p: any) => p.lote_id == lote.id);
         const cantidadBase = previo ? parseFloat(String(previo.cantidad)) || 0 : 0;
         return {
@@ -97,7 +117,13 @@ export class DistribucionLotesModalComponent {
   }
 
   distribucionValida(): boolean {
-    return this.totalAsignadoUnidades() > 0 && !asignacionLotesExcedeStock(this.lotes);
+    if (this.totalAsignadoUnidades() <= 0) {
+      return false;
+    }
+    if (this.modoEntrada) {
+      return true;
+    }
+    return !asignacionLotesExcedeStock(this.lotes);
   }
 
   confirmar(): void {
@@ -109,7 +135,7 @@ export class DistribucionLotesModalComponent {
       return;
     }
 
-    if (asignacionLotesExcedeStock(this.lotes)) {
+    if (!this.modoEntrada && asignacionLotesExcedeStock(this.lotes)) {
       this.alertService.error('Alguna cantidad supera el stock disponible del lote.');
       return;
     }
@@ -134,6 +160,50 @@ export class DistribucionLotesModalComponent {
 
     this.modalRef.hide();
     this.confirmado.emit(this.detalle);
+  }
+
+  crearLote(): void {
+    const idProducto = this.detalle?.id_producto || this.detalle?.producto_id;
+    if (!idProducto || !this.idBodega) {
+      this.alertService.error('Faltan datos para crear el lote');
+      return;
+    }
+    if (!this.nuevoLote.numero_lote || this.nuevoLote.numero_lote.trim() === '') {
+      this.alertService.error('El número de lote es requerido');
+      return;
+    }
+
+    this.loading = true;
+    this.apiService.store('lotes', {
+      id_producto: idProducto,
+      id_bodega: this.idBodega,
+      numero_lote: this.nuevoLote.numero_lote.trim(),
+      fecha_vencimiento: this.nuevoLote.fecha_vencimiento,
+      fecha_fabricacion: this.nuevoLote.fecha_fabricacion,
+      stock: 0,
+      observaciones: this.nuevoLote.observaciones,
+    }).subscribe(lote => {
+      this.lotes = [
+        {
+          ...lote,
+          cantidad_asignada: 0,
+          stock_unidades: 0,
+        },
+        ...this.lotes,
+      ];
+      this.nuevoLote = {
+        numero_lote: '',
+        fecha_vencimiento: null,
+        fecha_fabricacion: null,
+        observaciones: '',
+      };
+      this.crearNuevoLote = false;
+      this.loading = false;
+      this.alertService.success('Lote creado', 'Indique la cantidad a ingresar en el lote.');
+    }, error => {
+      this.alertService.error(error);
+      this.loading = false;
+    });
   }
 
   textoResumen(detalle: any): string {
