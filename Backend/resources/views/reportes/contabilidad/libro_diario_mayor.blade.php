@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Reporte Libro Diario Mayor</title>
+    <title>{{ $titulo ?? 'Reporte Libro Diario Mayor' }}</title>
     <style>
         body { font-family: Helvetica, sans-serif; font-size: 9px; }
         .header { text-align: center; font-weight: bold; margin-bottom: 8px; }
@@ -14,7 +14,7 @@
 </head>
 <body>
     <div class="header">
-        <h2>Reporte Libro Diario Mayor</h2>
+        <h2>{{ $titulo ?? 'Reporte Libro Diario Mayor' }}</h2>
         <p>{{ $empresa->nombre }}</p>
         <p>Periodo: {{ $month_name }} - {{ $year }}</p>
         <p>VALORES EXPRESADOS EN US DOLARES</p>

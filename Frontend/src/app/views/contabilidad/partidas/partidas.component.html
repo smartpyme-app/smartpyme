@@ -296,6 +296,11 @@
                   aria-controls="v-pills-libro-diario-mayor" aria-selected="false">
             <i class="fas fa-book-open me-2"></i>Libro diario mayor
           </button>
+          <button class="nav-link text-start text-dark mb-2" id="v-pills-libro-auxiliar-tab"
+                  data-bs-toggle="pill" data-bs-target="#v-pills-libro-auxiliar" type="button" role="tab"
+                  aria-controls="v-pills-libro-auxiliar" aria-selected="false">
+            <i class="fas fa-list-alt me-2"></i>Auxiliar de cuentas
+          </button>
           <button class="nav-link text-start text-dark mb-2" id="v-pills-balance-comprobacion-tab"
                   data-bs-toggle="pill" data-bs-target="#v-pills-balance-comprobacion" type="button" role="tab"
                   aria-controls="v-pills-balance-comprobacion" aria-selected="false">
@@ -438,6 +443,64 @@
                       Combina libro diario y mayor en un solo reporte
                     </small>
                     <button type="submit" [disabled]="reporteForm.invalid || saving" class="btn btn-primary">
+                      <i class="fas fa-download me-2"></i>
+                      <span *ngIf="!saving">Generar Documento</span>
+                      <span *ngIf="saving">Generando...</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          <!-- tab auxiliar de cuentas -->
+          <div class="tab-pane fade" id="v-pills-libro-auxiliar" role="tabpanel"
+               aria-labelledby="v-pills-libro-auxiliar-tab">
+            <h5 class="mb-3 text-primary"><i class="fas fa-list-alt me-2"></i>Auxiliar de cuentas</h5>
+            <form #auxiliarForm="ngForm" (ngSubmit)="imprimirAuxiliarCuentas()" novalidate>
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Del:</label>
+                  <input type="date" class="form-control" name="fecha_inicio" required [(ngModel)]="reporte.fecha_inicio">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Al:</label>
+                  <input type="date" class="form-control" name="fecha_fin" required [(ngModel)]="reporte.fecha_fin">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Tipo de reporte:</label>
+                  <select name="tipo_descarga" class="form-select" required [(ngModel)]="reporte.tipo_descarga">
+                    <option value="">Seleccione tipo de reporte</option>
+                    <option value="pdf">PDF</option>
+                    <option value="excel">Excel</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Cuenta:</label>
+                  <ng-select
+                    name="cuenta_auxiliar"
+                    class="form-select p-0"
+                    [(ngModel)]="reporte.cuenta_auxiliar"
+                    [items]="opcionesCuentaAuxiliar"
+                    bindLabel="label"
+                    bindValue="value"
+                    [compareWith]="compareTipoCuenta"
+                    placeholder="Buscar por código o nombre…"
+                    [searchable]="true"
+                    [clearable]="false"
+                    appendTo="body"
+                    notFoundText="Sin coincidencias">
+                  </ng-select>
+                </div>
+              </div>
+              <div class="row mt-4">
+                <div class="col-12">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                      <i class="fas fa-info-circle me-1"></i>
+                      Detalle del mayor de una cuenta; si elige un padre, incluye las hijas
+                    </small>
+                    <button type="submit" [disabled]="auxiliarForm.invalid || !reporte.cuenta_auxiliar || saving" class="btn btn-primary">
                       <i class="fas fa-download me-2"></i>
                       <span *ngIf="!saving">Generar Documento</span>
                       <span *ngIf="saving">Generando...</span>

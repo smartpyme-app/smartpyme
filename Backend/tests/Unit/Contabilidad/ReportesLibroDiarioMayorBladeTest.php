@@ -26,4 +26,16 @@ class ReportesLibroDiarioMayorBladeTest extends TestCase
         $this->assertStringContainsString('Helvetica', $html);
         $this->assertStringNotContainsString('media="print"', $html);
     }
+
+    public function test_plantilla_usa_titulo_configurable(): void
+    {
+        $needle = "\$titulo ?? 'Reporte Libro Diario Mayor'";
+        $pdf = $this->blade();
+        $excel = (string) file_get_contents(
+            dirname(__DIR__, 3) . '/resources/views/reportes/contabilidad/excel/libro_diario_mayor_excel.blade.php'
+        );
+
+        $this->assertStringContainsString($needle, $pdf);
+        $this->assertStringContainsString($needle, $excel);
+    }
 }
