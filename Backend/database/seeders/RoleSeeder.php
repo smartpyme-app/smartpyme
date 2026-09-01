@@ -172,6 +172,8 @@ class RoleSeeder extends Seeder
             config('permissions.PERMISSION_VENTAS.formas_pago.crear'),
             config('permissions.PERMISSION_VENTAS.formas_pago.editar'),
             config('permissions.PERMISSION_VENTAS.formas_pago.eliminar'),
+            config('permissions.PERMISSION_VENTAS.descuentos.aplicar'),
+            config('permissions.PERMISSION_VENTAS.descuentos.autorizar'),
         ]);
 
         // Usuario Supervisor --ROL_USUARIO_SUPERVISOR
@@ -205,6 +207,8 @@ class RoleSeeder extends Seeder
             config('permissions.PERMISSION_VENTAS.formas_pago.crear'),
             config('permissions.PERMISSION_VENTAS.formas_pago.editar'),
             config('permissions.PERMISSION_VENTAS.formas_pago.eliminar'),
+            config('permissions.PERMISSION_VENTAS.descuentos.aplicar'),
+            config('permissions.PERMISSION_VENTAS.descuentos.autorizar'),
             // Planilla
             config('permissions.PERMISSION_PLANILLA.ver'),
             config('permissions.PERMISSION_PLANILLA.crear'),
@@ -388,6 +392,9 @@ class RoleSeeder extends Seeder
         foreach ($ventasConfig as $key => $value) {
             if (is_array($value)) {
                 foreach ($value as $subKey => $subValue) {
+                    if ($subValue === 'ventas.descuentos.autorizar') {
+                        continue;
+                    }
                     $ventasPermissions[] = $subValue;
                 }
             } else {
@@ -422,6 +429,7 @@ class RoleSeeder extends Seeder
             config('permissions.PERMISSION_SERVICIOS.editar'),
             config('permissions.PERMISSION_VENTAS.registros.crear'),
             config('permissions.PERMISSION_VENTAS.registros.ver'),
+            config('permissions.PERMISSION_VENTAS.descuentos.aplicar'),
             config('permissions.PERMISSION_VENTAS.clientes.ver'),
             config('permissions.PERMISSION_CITAS.ver'),
             config('permissions.PERMISSION_CITAS.crear'),

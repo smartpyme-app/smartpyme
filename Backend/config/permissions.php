@@ -275,6 +275,10 @@ return [
             'crear' => 'ventas.ordenes_produccion.crear',
             'editar' => 'ventas.ordenes_produccion.editar',
             'eliminar' => 'ventas.ordenes_produccion.eliminar'
+        ],
+        'descuentos' => [
+            'aplicar' => 'ventas.descuentos.aplicar',
+            'autorizar' => 'ventas.descuentos.autorizar',
         ]
     ],
 
