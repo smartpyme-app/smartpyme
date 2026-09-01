@@ -4,6 +4,7 @@ namespace Tests\Unit\Services;
 
 use App\Services\ImpuestosService;
 use App\Services\ShopifyTransformer;
+use Carbon\Carbon;
 use Tests\TestCase;
 
 class ShopifyTransformerTest extends TestCase
@@ -155,5 +156,16 @@ class ShopifyTransformerTest extends TestCase
 
         $this->assertNull($cliente['telefono']);
         $this->assertNull($cliente['empresa_telefono']);
+    }
+
+    public function test_fechas_oficiales_desde_pago_usa_el_momento_del_pago_no_el_del_pedido(): void
+    {
+        $pagadoLunes = Carbon::parse('2026-06-02 09:15:30', 'America/El_Salvador');
+
+        $fechas = $this->transformer->fechasOficialesDesdePago($pagadoLunes);
+
+        $this->assertSame('2026-06-02', $fechas['fecha']);
+        $this->assertSame('2026-06-02', $fechas['fecha_pago']);
+        $this->assertTrue($pagadoLunes->equalTo($fechas['created_at']));
     }
 }

@@ -1859,15 +1859,21 @@ class ShopifyController extends Controller
             // Bloquear el documento para asignar correlativo sin condiciones de carrera.
             $documento = Documento::where('id', $documento->id)->lockForUpdate()->first();
 
+            $fechasPago = $this->transformer->fechasOficialesDesdePago();
+
             $venta->update([
                 'cotizacion' => 0,
                 'id_documento' => $documento->id,
                 'correlativo' => $documento->correlativo,
                 'estado' => 'Pagada',
-                'fecha_pago' => now(),
+                'fecha' => $fechasPago['fecha'],
+                'fecha_pago' => $fechasPago['fecha_pago'],
                 'observaciones_shopify' => ($venta->observaciones_shopify ? $venta->observaciones_shopify . ' | ' : '') .
-                    'Pedido pagado en Shopify - cotización convertida a venta el ' . now()->format('d/m/Y H:i:s'),
+                    'Pedido pagado en Shopify - cotización convertida a venta el ' . $fechasPago['created_at']->format('d/m/Y H:i:s'),
             ]);
+            // horEmi del DTE lee created_at; no es fillable.
+            $venta->created_at = $fechasPago['created_at'];
+            $venta->save();
 
             $documento->increment('correlativo');
 

@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\Webhook\ShopifyController;
 use App\Models\Ventas\Clientes\Cliente;
 use App\Services\ImpuestosService;
 use App\Services\ShippingService;
+use App\Services\ShopifyImageService;
 use App\Services\ShopifySyncCache;
 use App\Services\ShopifyTransformer;
 use ReflectionClass;
@@ -24,8 +25,9 @@ class ShopifyCustomerProtectionTest extends TestCase
         $cache = $this->createMock(ShopifySyncCache::class);
         $shippingService = $this->createMock(ShippingService::class);
         $impuestosService = $this->createMock(ImpuestosService::class);
+        $imageService = $this->createMock(ShopifyImageService::class);
 
-        $this->controller = new ShopifyController($transformer, $cache, $shippingService, $impuestosService);
+        $this->controller = new ShopifyController($transformer, $cache, $shippingService, $impuestosService, $imageService);
 
         $reflector = new ReflectionClass(ShopifyController::class);
         $this->methodActualizarCliente = $reflector->getMethod('actualizarClienteExistenteDesdeShopify');

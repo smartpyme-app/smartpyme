@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Constants\ShopifyConstant;
 use App\Helpers\ShopifyHelper;
 use App\Models\Admin\Empresa;
+use Carbon\Carbon;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 
@@ -243,6 +244,23 @@ class ShopifyTransformer
             'id_canal' => $shopifyData['id_canal'],
             'num_orden' => $shopifyData['order_number'] ?? $shopifyData['name'] ?? null,
             'referencia_shopify' => 'SHOPIFY-' . $shopifyData['id'],
+        ];
+    }
+
+    /**
+     * Fecha oficial de venta al cobrar un pedido Shopify (reportes + fecEmi/horEmi).
+     * created_at no es fillable en Venta: asignarlo aparte, no vía update().
+     */
+    public function fechasOficialesDesdePago($pagadoEn = null): array
+    {
+        $pagadoEn = $pagadoEn instanceof Carbon
+            ? $pagadoEn->copy()->timezone(config('app.timezone'))
+            : now();
+
+        return [
+            'fecha' => $pagadoEn->toDateString(),
+            'fecha_pago' => $pagadoEn->toDateString(),
+            'created_at' => $pagadoEn,
         ];
     }
 
