@@ -8,9 +8,13 @@ class CreateDetalleCompraLotesTable extends Migration
 {
     public function up()
     {
+        // Si un intento previo falló al crear el FK, la tabla puede existir a medias.
+        Schema::dropIfExists('detalle_compra_lotes');
+
         Schema::create('detalle_compra_lotes', function (Blueprint $table) {
             $table->increments('id');
-            $table->unsignedInteger('id_detalle_compra');
+            // detalles_compra.id es INT signed (igual que detalles_venta en detalle_venta_lotes)
+            $table->integer('id_detalle_compra');
             $table->unsignedInteger('lote_id');
             $table->decimal('cantidad', 12, 4);
             $table->timestamps();
