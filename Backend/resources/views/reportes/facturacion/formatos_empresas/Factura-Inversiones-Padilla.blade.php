@@ -166,7 +166,9 @@
         if ($rtnCliente === '') {
             $rtnCliente = trim((string) ($cliente->dui ?? ''));
         }
+        $rtnCliente = str_replace('-', '', $rtnCliente);
     }
+    $rtnEmpresa = str_replace('-', '', trim((string) ($empresa->nit ?? '')));
 
     $vendedorNombre = trim((string) ($venta->nombre_vendedor ?? ''));
     if ($vendedorNombre === '' && $venta->id_vendedor) {
@@ -243,7 +245,7 @@
             <td class="header-right" style="width: 62%;">
                 <p class="num-linea">Número de factura {{ $numFacturaDisplay }}</p>
                 @if ($direccionFactura)<p>{{ $direccionFactura }}</p>@endif
-                @if ($empresa->nit)<p>RTN# {{ $empresa->nit }}</p>@endif
+                @if ($rtnEmpresa !== '')<p>RTN# {{ $rtnEmpresa }}</p>@endif
                 @if ($telefonoFactura)<p>{{ $telefonoFactura }}</p>@endif
                 @if ($correoFactura)<p>{{ $correoFactura }}</p>@endif
             </td>
