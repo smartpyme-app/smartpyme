@@ -33,6 +33,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { FidelizacionService, PuntosDisponiblesInfo, ConfiguracionCliente } from '@services/fidelizacion.service';
 import { GiftCardsService, GiftCardLookup } from '@services/gift-cards.service';
 import { esFormaPagoGiftCard, montoPagoGiftCardVenta, ventaUsaGiftCard } from '@utils/gift-card.util';
+import { pedirPinDescuentoSiAplica } from '../venta-descuento-autorizacion.util';
 import Swal from 'sweetalert2';
 import { BsModalRef, BsModalService } from 'ngx-bootstrap/modal';
 import { CountryI18nService } from '@services/country-i18n.service';
@@ -2756,7 +2757,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
   }
 
   // Guardar venta
-  public onSubmit() {
+  public async onSubmit() {
     if (this.saving || this.emiting) {
       return;
     }
@@ -2808,6 +2809,17 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     }
 
     const endpointSave = this.venta.cotizacion == 1 ? 'cotizacionVentas' : 'facturacion';
+    const pin = await pedirPinDescuentoSiAplica(this.apiService, this.venta);
+    if (pin === false) {
+      this.saving = false;
+      this.cdr.markForCheck();
+      return;
+    }
+    if (pin) {
+      this.venta.descuento_autorizacion = pin;
+    } else {
+      delete this.venta.descuento_autorizacion;
+    }
     this.apiService.store(endpointSave, this.venta).subscribe(
       (venta) => {
         // Actualizar siempre la venta local con la respuesta del backend (id, correlativo, etc.)

@@ -25,6 +25,7 @@ import { CrearClienteComponent } from '@shared/modals/crear-cliente/crear-client
 import { VentaDetallesV2Component } from './detalles/venta-detalles-v2.component';
 import { CrearProyectoComponent } from '@shared/modals/crear-proyecto/crear-proyecto.component';
 import { MetodosDePagoComponent } from '../facturacion-tienda/metodos-de-pago/metodos-de-pago.component';
+import { pedirPinDescuentoSiAplica } from '../venta-descuento-autorizacion.util';
 import { FidelizacionService, PuntosDisponiblesInfo, ConfiguracionCliente } from '@services/fidelizacion.service';
 import { GiftCardsService, GiftCardLookup } from '@services/gift-cards.service';
 import { esFormaPagoGiftCard, montoPagoGiftCardVenta, ventaUsaGiftCard } from '@utils/gift-card.util';
@@ -2520,7 +2521,7 @@ export class FacturacionV2Component implements OnInit {
   }
 
   // Guardar venta
-  public onSubmit() {
+  public async onSubmit() {
     this.saving = true;
 
     // Si se esta duplicando una venta, esta ya no se marca como recurrente para
@@ -2549,6 +2550,16 @@ export class FacturacionV2Component implements OnInit {
     }
 
     const endpointSave = this.venta.cotizacion == 1 ? 'cotizacionVentas' : 'facturacion';
+    const pin = await pedirPinDescuentoSiAplica(this.apiService, this.venta);
+    if (pin === false) {
+      this.saving = false;
+      return;
+    }
+    if (pin) {
+      this.venta.descuento_autorizacion = pin;
+    } else {
+      delete this.venta.descuento_autorizacion;
+    }
     this.apiService.store(endpointSave, this.venta).subscribe(
       (venta) => {
         // Actualizar siempre la venta local con la respuesta del backend (id, correlativo, etc.)
