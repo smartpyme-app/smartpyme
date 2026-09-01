@@ -33,6 +33,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { FidelizacionService, PuntosDisponiblesInfo, ConfiguracionCliente } from '@services/fidelizacion.service';
 import { GiftCardsService, GiftCardLookup } from '@services/gift-cards.service';
 import { esFormaPagoGiftCard, montoPagoGiftCardVenta, ventaUsaGiftCard } from '@utils/gift-card.util';
+import { camposDescuentoFacturaDesdePedido } from '@views/pedidos/pedido-form/pedido-descuento.util';
 import { pedirPinDescuentoSiAplica } from '../venta-descuento-autorizacion.util';
 import Swal from 'sweetalert2';
 import { BsModalRef, BsModalService } from 'ngx-bootstrap/modal';
@@ -2457,15 +2458,25 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
         const precio = parseFloat(String(d.precio)) || 0;
         const cant = parseFloat(String(d.cantidad)) || 0;
         const descLine = parseFloat(String(d.descuento ?? 0)) || 0;
-        const sub = Math.max(0, cant * precio - descLine);
+        const camposDesc = camposDescuentoFacturaDesdePedido({
+          descuento: descLine,
+          descuento_porcentaje: d.descuento_porcentaje,
+          descuento_is_monto: d.descuento_is_monto,
+          cantidad: cant,
+          ivaPct: iva,
+          montoConIva: false,
+        });
+        const sub = Math.max(0, cant * precio - camposDesc.descuento);
         return {
           id_producto: d.id_producto,
           cantidad: cant,
           precio: precio.toFixed(4),
           descripcion: d.descripcion || '',
           costo: 0,
-          descuento: descLine.toFixed(4),
-          descuento_porcentaje: 0,
+          descuento: camposDesc.descuento.toFixed(4),
+          descuento_porcentaje: camposDesc.descuento_porcentaje,
+          descuento_is_monto: camposDesc.descuento_is_monto,
+          descuento_monto: camposDesc.descuento_monto,
           sub_total: sub.toFixed(4),
           total: sub.toFixed(4),
           tipo_gravado: 'gravada',

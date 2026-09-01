@@ -29,6 +29,7 @@ import { pedirPinDescuentoSiAplica } from '../venta-descuento-autorizacion.util'
 import { FidelizacionService, PuntosDisponiblesInfo, ConfiguracionCliente } from '@services/fidelizacion.service';
 import { GiftCardsService, GiftCardLookup } from '@services/gift-cards.service';
 import { esFormaPagoGiftCard, montoPagoGiftCardVenta, ventaUsaGiftCard } from '@utils/gift-card.util';
+import { camposDescuentoFacturaDesdePedido } from '@views/pedidos/pedido-form/pedido-descuento.util';
 import { aplicarPrefillCredito, prepararVentaParaFacturarCuota } from '@views/ventas/creditos/creditos-facturar';
 import { aplicarPlanAVenta, generarPreviewCuotas, planCuadra, restoreSnapshotVenta, snapshotVentaMontos, sumaMontosCuotas, SnapshotMontosVenta, PreviewCuota } from '@views/ventas/creditos/creditos-cuotas';
 import { MHService } from '@services/MH.service';
@@ -2844,6 +2845,14 @@ export class FacturacionV2Component implements OnInit {
         precioSinIva = this.calcularPrecioSinIva(precioConIva, pctNum);
       }
 
+      const camposDesc = camposDescuentoFacturaDesdePedido({
+        descuento: descLine,
+        descuento_porcentaje: d.descuento_porcentaje,
+        descuento_is_monto: d.descuento_is_monto,
+        cantidad: cant,
+        ivaPct: pctNum,
+        montoConIva: true,
+      });
       const detalle: any = {
         id_producto: d.id_producto,
         id_presentacion: d.id_presentacion ?? null,
@@ -2852,8 +2861,10 @@ export class FacturacionV2Component implements OnInit {
         precio_iva: redondearMoneda(precioConIva).toFixed(2),
         descripcion: d.descripcion || '',
         costo: 0,
-        descuento: descLine.toFixed(4),
-        descuento_porcentaje: 0,
+        descuento: camposDesc.descuento.toFixed(4),
+        descuento_porcentaje: camposDesc.descuento_porcentaje,
+        descuento_is_monto: camposDesc.descuento_is_monto,
+        descuento_monto: camposDesc.descuento_monto,
         tipo_gravado: 'gravada',
         porcentaje_impuesto: pctNum,
         exenta: 0,

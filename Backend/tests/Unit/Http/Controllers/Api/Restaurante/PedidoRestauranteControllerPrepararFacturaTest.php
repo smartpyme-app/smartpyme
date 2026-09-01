@@ -26,6 +26,30 @@ class PedidoRestauranteControllerPrepararFacturaTest extends TestCase
         );
     }
 
+    public function test_preparar_factura_emite_modo_de_descuento(): void
+    {
+        $source = $this->methodSource(PedidoRestauranteController::class, 'prepararFactura');
+
+        $this->assertNotFalse(
+            strpos($source, "'descuento_porcentaje'"),
+            'Debe enviar el porcentaje para que facturación conserve el modo %'
+        );
+        $this->assertNotFalse(
+            strpos($source, "'descuento_is_monto'"),
+            'Debe enviar si el descuento es monto para que facturación conserve el modo $'
+        );
+    }
+
+    public function test_crear_detalle_guarda_descuento_porcentaje(): void
+    {
+        $source = $this->methodSource(PedidoRestauranteController::class, 'crearDetalle');
+
+        $this->assertNotFalse(
+            strpos($source, 'descuento_porcentaje'),
+            'Debe persistir descuento_porcentaje junto al monto'
+        );
+    }
+
     private function methodSource(string $class, string $method): string
     {
         $ref = new ReflectionMethod($class, $method);

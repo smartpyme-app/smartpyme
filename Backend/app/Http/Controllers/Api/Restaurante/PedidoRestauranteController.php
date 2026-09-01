@@ -416,6 +416,7 @@ class PedidoRestauranteController extends Controller
 
             $descuentoSinIva = (float) ($d->descuento ?? 0);
             $descuentoConIva = $pct > 0 ? round($descuentoSinIva * $factor, 4) : $descuentoSinIva;
+            $descuentoPorcentaje = (float) ($d->descuento_porcentaje ?? 0);
 
             return [
                 'id_producto' => $d->producto_id,
@@ -427,6 +428,8 @@ class PedidoRestauranteController extends Controller
                 'descripcion' => $d->producto->nombre ?? '',
                 'descuento' => $descuentoSinIva,
                 'descuento_con_iva' => $descuentoConIva,
+                'descuento_porcentaje' => $descuentoPorcentaje,
+                'descuento_is_monto' => $descuentoPorcentaje <= 0,
                 'precios_sin_iva' => true,
             ];
         })->values()->toArray();
@@ -539,6 +542,7 @@ class PedidoRestauranteController extends Controller
             'detalles.*.cantidad' => 'required|numeric|min:0.0001',
             'detalles.*.precio' => 'required|numeric|min:0',
             'detalles.*.descuento' => 'nullable|numeric|min:0',
+            'detalles.*.descuento_porcentaje' => 'nullable|numeric|min:0',
             'detalles.*.notas' => 'nullable|string|max:2000',
         ]);
 
@@ -633,6 +637,7 @@ class PedidoRestauranteController extends Controller
             'detalles.*.cantidad' => 'required_with:detalles|numeric|min:0.0001',
             'detalles.*.precio' => 'required_with:detalles|numeric|min:0',
             'detalles.*.descuento' => 'nullable|numeric|min:0',
+            'detalles.*.descuento_porcentaje' => 'nullable|numeric|min:0',
             'detalles.*.notas' => 'nullable|string|max:2000',
         ]);
 
@@ -728,7 +733,11 @@ class PedidoRestauranteController extends Controller
     {
         $cantidad = (float) $row['cantidad'];
         $precio = (float) $row['precio'];
+        $descuentoPorcentaje = (float) ($row['descuento_porcentaje'] ?? 0);
         $descuento = (float) ($row['descuento'] ?? 0);
+        if ($descuentoPorcentaje > 0) {
+            $descuento = round($cantidad * $precio * ($descuentoPorcentaje / 100), 4);
+        }
         $subtotal = round($cantidad * $precio, 4);
         $total = round(max(0, $subtotal - $descuento), 4);
 
@@ -753,6 +762,7 @@ class PedidoRestauranteController extends Controller
             'cantidad' => $cantidad,
             'precio' => $precio,
             'descuento' => $descuento,
+            'descuento_porcentaje' => $descuentoPorcentaje,
             'subtotal' => $subtotal,
             'total' => $total,
             'notas' => $notas,
