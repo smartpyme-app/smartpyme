@@ -105,11 +105,12 @@ class ConfiguracionPlanillaService
                 'renta' => round($renta, 2)
             ];
         } else {
-            // configuracion_descuentos del empleado puede excluirlo de ISSS y/o AFP
-            $aplicarIsss = $datosEmpleado['aplicar_isss'] ?? true;
-            $aplicarAfp = $datosEmpleado['aplicar_afp'] ?? true;
+            // configuracion_descuentos / flags del empleado; pensionados cotizan ISSS pero no AFP
+            $esPensionado = (bool) ($datosEmpleado['es_pensionado'] ?? false);
+            $configDescuentos = $datosEmpleado['configuracion_descuentos'] ?? [];
+            $aplicarIsss = (bool) ($datosEmpleado['aplicar_isss'] ?? $configDescuentos['aplicar_isss'] ?? true);
+            $aplicarAfp = !$esPensionado && (bool) ($datosEmpleado['aplicar_afp'] ?? $configDescuentos['aplicar_afp'] ?? true);
 
-            // ISSS proporcional al ingreso del período (salario devengado + ingresos gravables)
             $isss = $aplicarIsss
                 ? IsssHelper::calcularIsss($totalIngresos, $tipoPlanilla)
                 : ['isss_empleado' => 0, 'isss_patronal' => 0];
@@ -117,7 +118,7 @@ class ConfiguracionPlanillaService
             $isssPatronal = $isss['isss_patronal'];
             $afpEmpleado = $aplicarAfp ? $totalIngresos * PlanillaConstants::DESCUENTO_AFP_EMPLEADO : 0;
             $afpPatronal = $aplicarAfp ? $totalIngresos * PlanillaConstants::DESCUENTO_AFP_PATRONO : 0;
-            
+
             // Calcular renta usando RentaHelper
             $salarioGravado = RentaHelper::calcularSalarioGravado(
                 $totalIngresos,

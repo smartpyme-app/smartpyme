@@ -51,7 +51,9 @@
                         {{-- <h2>FACTURA</h2> --}}
                     </td>
                     <td style="width: 25%; text-align: right;">
-                        {!! '<img id="qrcode" width="150" height="150" src="data:image/png;base64,' . DNS2D::getBarcodePNG($registro->qr, 'QRCODE', 10, 10, array(0,0,0), true) . '" alt="barcode"   />' !!}
+                        @if (!empty($registro->qr))
+                            {!! '<img id="qrcode" width="150" height="150" src="data:image/png;base64,' . DNS2D::getBarcodePNG($registro->qr, 'QRCODE', 10, 10, array(0,0,0), true) . '" alt="barcode"   />' !!}
+                        @endif
                     </td>
                 </tr>
             </tbody>
@@ -64,7 +66,11 @@
                         <p><b>Código de Generación:</b> {{ $DTE['identificacion']['codigoGeneracion'] }}</p>
                     </td>
                     <td style="width: 50%;">
-                        <p><b>Fecha y Hora de Generación:</b> {{ \Carbon\Carbon::parse($DTE['identificacion']['fecAnula'] . ' ' . $DTE['identificacion']['horAnula'])->format('d/m/Y H:i:s') }}</p>
+                        <p><b>Fecha y Hora de Generación:</b>
+                            @if (!empty($DTE['identificacion']['fecAnula']))
+                                {{ \Carbon\Carbon::parse(($DTE['identificacion']['fecAnula'] ?? '') . ' ' . ($DTE['identificacion']['horAnula'] ?? '00:00:00'))->format('d/m/Y H:i:s') }}
+                            @endif
+                        </p>
                     </td>
                 </tr>
             </tbody>

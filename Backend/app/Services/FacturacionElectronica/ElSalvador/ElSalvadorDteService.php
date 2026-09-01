@@ -2,6 +2,7 @@
 
 namespace App\Services\FacturacionElectronica\ElSalvador;
 
+use App\Http\Controllers\Api\Admin\MHDTEController;
 use App\Http\Requests\MH\AnularDTERequest;
 use App\Http\Requests\MH\AnularDTESujetoExcluidoRequest;
 use App\Http\Requests\MH\ConsultarDTERequest;
@@ -297,6 +298,13 @@ class ElSalvadorDteService
     {
         $registro = null;
 
+        if ($tipo === '' || $tipo === 'null') {
+            $venta = Venta::find($id);
+            $tipo = $venta
+                ? ($venta->tipo_dte ?? data_get($venta->dte, 'identificacion.tipoDte') ?? '01')
+                : (data_get(DevolucionVenta::find($id), 'dte.identificacion.tipoDte') ?? '05');
+        }
+
         if ($tipo == '01' || $tipo == '03' || $tipo == '11') {
             $registro = Venta::findOrFail($id);
         }
@@ -318,21 +326,27 @@ class ElSalvadorDteService
             return response()->json(['error' => 'No se encontró el registro correspondiente.'], 404);
         }
 
-        $DTE = $registro->dte;
+        [$DTE, $esAnulado] = MHDTEController::dteParaReporte($registro, $request->input('documento'));
+
+        if ($esAnulado) {
+            if (is_string($DTE)) {
+                $DTE = json_decode($DTE, true);
+            }
+            if (empty($DTE) || ! is_array($DTE)) {
+                return response()->json(['error' => 'El registro no tiene DTE de invalidación.'], 404);
+            }
+            MHDTEController::asignarQrConsultaPublica($registro, $DTE);
+            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Anulado', compact('registro', 'DTE'));
+            $pdf->setPaper('US Letter', 'portrait');
+
+            return $pdf->stream(($DTE['identificacion']['codigoGeneracion'] ?? 'dte-anulado') . '.pdf');
+        }
 
         if (! $DTE) {
             return response()->json(['error' => 'El registro no tiene DTE.'], 404);
         }
 
         $registro->qr = 'https://admin.factura.gob.sv/consultaPublica?ambiente=' . $DTE['identificacion']['ambiente'] . '&codGen=' . $DTE['identificacion']['codigoGeneracion'] . '&fechaEmi=' . $DTE['identificacion']['fecEmi'];
-
-        if ($registro->dte_invalidacion) {
-            $DTE = $registro->dte_invalidacion;
-            $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Anulado', compact('registro', 'DTE'));
-            $pdf->setPaper('US Letter', 'portrait');
-
-            return $pdf->stream($DTE['identificacion']['codigoGeneracion'] . '.pdf');
-        }
 
         $pdf = null;
         if ($DTE['identificacion']['tipoDte'] == '01') {
@@ -388,10 +402,10 @@ class ElSalvadorDteService
             return response()->json(['error' => 'No se encontró el registro correspondiente.'], 404);
         }
 
-        if ($registro->dte_invalidacion) {
-            $DTE = $registro->dte_invalidacion;
-        } else {
-            $DTE = $registro->dte;
+        [$DTE, $esAnulado] = MHDTEController::dteParaReporte($registro, $request->input('documento'));
+
+        if ($esAnulado && ! $DTE) {
+            return response()->json(['error' => 'El registro no tiene DTE de invalidación.'], 404);
         }
 
         return response()->json($DTE, 200);

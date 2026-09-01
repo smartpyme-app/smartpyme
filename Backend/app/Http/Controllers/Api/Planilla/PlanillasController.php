@@ -624,6 +624,8 @@ class PlanillasController extends Controller
             'otros_descuentos' => 0,
             'descuentos_judiciales' => 0,
             'tipo_contrato' => $empleado->tipo_contrato ?? null,
+            'es_pensionado' => (bool) ($empleado->es_pensionado ?? false),
+            'configuracion_descuentos' => $empleado->configuracion_descuentos ?? [],
         ];
 
         // 🎯 USAR SISTEMA OPTIMIZADO
@@ -2217,6 +2219,8 @@ class PlanillasController extends Controller
                 'otros_descuentos' => $request->input('otros_descuentos', $detalle->otros_descuentos),
                 'descuentos_judiciales' => $request->input('descuentos_judiciales', $detalle->descuentos_judiciales),
                 'tipo_contrato' => $detalle->empleado->tipo_contrato ?? null,
+                'es_pensionado' => (bool) ($detalle->empleado->es_pensionado ?? false),
+                'configuracion_descuentos' => $detalle->empleado->configuracion_descuentos ?? [],
             ];
 
             // Calcular usando sistema híbrido

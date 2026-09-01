@@ -166,6 +166,7 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
       },
       dui_homologado: false,
       ...this.formConfig.defaultsNuevo,
+      es_pensionado: false,
     };
     this.id_empresa = JSON.parse(
       localStorage.getItem('SP_auth_user')!
@@ -473,6 +474,7 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
       },
       dui_homologado: false,
       ...this.formConfig.defaultsNuevo,
+      es_pensionado: false,
     };
   }
 
@@ -630,6 +632,7 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
                   aplicar_isss: this.formConfig.aplicarDescuentosPorDefecto,
                 },
                 dui_homologado: !!empleado.dui_homologado,
+                es_pensionado: !!empleado.es_pensionado,
               };
 
               if (this.empleado.id_departamento) {
@@ -671,6 +674,7 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
             },
             dui_homologado: false,
             ...this.formConfig.defaultsNuevo,
+            es_pensionado: false,
           };
         }
       });
@@ -890,6 +894,15 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
   public onDuiHomologadoChange() {
     if (this.empleado.dui_homologado) {
       this.empleado.nit = null;
+    }
+  }
+
+  public onPensionadoChange() {
+    if (this.empleado.es_pensionado) {
+      this.empleado.configuracion_descuentos = {
+        aplicar_afp: false,
+        aplicar_isss: true,
+      };
     }
   }
 

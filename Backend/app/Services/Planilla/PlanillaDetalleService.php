@@ -103,6 +103,8 @@ class PlanillaDetalleService
             'descuentos_judiciales' => $detalle->descuentos_judiciales,
             'tipo_contrato' => $tipoContrato,
             // Cada motor de país toma lo que necesita de aquí
+            'es_pensionado' => (bool) ($detalle->empleado->es_pensionado ?? false),
+            'configuracion_descuentos' => $configDescuentos,
             'aplicar_isss' => ($configDescuentos['aplicar_isss'] ?? true) !== false,
             'aplicar_afp' => ($configDescuentos['aplicar_afp'] ?? true) !== false,
             'tiene_conyuge_dependiente' => (bool) ($detalle->empleado->tiene_conyuge_dependiente ?? false),

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Http\Controllers\Api\Admin\MHDTEController;
 use App\Models\Ventas\Venta;
 use Illuminate\Support\Facades\Log;
 
@@ -21,6 +22,7 @@ class DteVentaPdfService
                 if (empty($DTE) || !is_array($DTE)) {
                     return null;
                 }
+                MHDTEController::asignarQrConsultaPublica($registro, $DTE);
                 $pdf = app('dompdf.wrapper')->loadView('reportes.facturacion.DTE-Anulado', compact('registro', 'DTE'));
                 $pdf->setPaper('US Letter', 'portrait');
 
