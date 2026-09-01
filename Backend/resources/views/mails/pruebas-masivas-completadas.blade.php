@@ -58,6 +58,11 @@
             background-color: #dff0d8;
             border-color: #d6e9c6;
         }
+        .alert-warning {
+            color: #8a6d3b;
+            background-color: #fcf8e3;
+            border-color: #faebcc;
+        }
         .progress {
             height: 20px;
             margin-bottom: 20px;
@@ -90,7 +95,7 @@
         </div>
         <div class="header">
            
-            <h2>Pruebas Masivas MH Completadas</h2>
+            <h2>{{ !empty($tieneErrores) ? 'Pruebas Masivas MH finalizadas con errores' : 'Pruebas Masivas MH Completadas' }}</h2>
         </div>
         
         <div class="content">
@@ -98,11 +103,11 @@
             
             <p>El proceso de generación de pruebas masivas para el Ministerio de Hacienda ha finalizado con el siguiente resultado:</p>
             
-            <div class="alert alert-success">
+            <div class="alert {{ !empty($tieneErrores) ? 'alert-warning' : 'alert-success' }}">
                 <strong>Tipo de documento:</strong> {{ $tipoTexto ?? 'Documento Tributario Electrónico' }}<br>
                 <strong>Cantidad solicitada:</strong> {{ $cantidad }}<br>
-                <strong>Documentos generados con éxito:</strong> {{ $resultado['exitosos'] }}<br>
-                <strong>Documentos fallidos:</strong> {{ $resultado['fallidos'] }}
+                <strong>Documentos aceptados por Hacienda:</strong> {{ $resultado['exitosos'] }}<br>
+                <strong>Documentos rechazados:</strong> {{ $resultado['fallidos'] }}
             </div>
             
             @if(isset($resultado['detalles']) && count($resultado['detalles']) > 0)

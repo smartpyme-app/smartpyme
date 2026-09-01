@@ -13,7 +13,9 @@ use App\Models\MH\MHFacturaExportacion;
 use App\Models\MH\MHNotaCredito;
 use App\Models\MH\MHNotaDebito;
 use App\Models\MH\MHSujetoExcluidoGasto;
+use App\Models\MH\ActividadEconomica;
 use App\Models\TrabajosPendientes;
+use App\Services\MH\MHPruebasMasivasOutcome;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -39,6 +41,7 @@ class MHPruebasMasivasService
     protected $notasCreditoRequeridas = 50;
     protected $notasDebitoRequeridas = 50;
     protected $detallesOriginales;
+    protected $abortarPorErrorEmisor = false;
 
     public function __construct() {}
 
@@ -70,6 +73,40 @@ class MHPruebasMasivasService
             }
 
             $this->ambiente = $this->empresa->fe_ambiente;
+        }
+    }
+
+    /**
+     * Evita encolar/emitir pruebas si el giro no coincide con el catálogo MH.
+     */
+    protected function validarDatosEmisor(): ?array
+    {
+        if (!$this->empresa) {
+            return [
+                'success' => false,
+                'message' => 'No se pudo obtener la empresa para validar los datos del emisor'
+            ];
+        }
+
+        $cod = $this->empresa->cod_actividad_economica ?? null;
+        $giro = $this->empresa->giro ?? null;
+        $actividad = $cod ? ActividadEconomica::where('cod', $cod)->first() : null;
+        $nombreCatalogo = $actividad->nombre ?? null;
+
+        if (!MHPruebasMasivasOutcome::giroCoincideConCatalogo($giro, $nombreCatalogo)) {
+            return [
+                'success' => false,
+                'message' => MHPruebasMasivasOutcome::mensajeGiroInvalido($cod, $giro, $nombreCatalogo),
+            ];
+        }
+
+        return null;
+    }
+
+    protected function marcarAbortoSiCorresponde(?string $mensaje): void
+    {
+        if (MHPruebasMasivasOutcome::esRechazoEmisorIrrecuperable($mensaje)) {
+            $this->abortarPorErrorEmisor = true;
         }
     }
 
@@ -154,6 +191,11 @@ class MHPruebasMasivasService
                     'success' => false,
                     'message' => 'Las pruebas masivas solo pueden ejecutarse en ambiente de pruebas'
                 ];
+            }
+
+            $validacionEmisor = $this->validarDatosEmisor();
+            if ($validacionEmisor !== null) {
+                return $validacionEmisor;
             }
 
             if ($idDocumentoBase) {
@@ -316,6 +358,15 @@ class MHPruebasMasivasService
                 $this->sucursal = $this->baseVenta->sucursal;
             }
 
+            $validacionEmisor = $this->validarDatosEmisor();
+            if ($validacionEmisor !== null) {
+                if ($userId) {
+                    $this->enviarNotificacionError($validacionEmisor['message'], $tipo, $cantidad);
+                }
+
+                return $validacionEmisor;
+            }
+
             $resultados = [
                 'exitosos' => 0,
                 'fallidos' => 0,
@@ -360,16 +411,30 @@ class MHPruebasMasivasService
             DB::commit();
 
             $estadisticas = $this->obtenerEstadisticas($userId);
+            $exitosos = (int) ($resultados['exitosos'] ?? 0);
+            $fallidos = (int) ($resultados['fallidos'] ?? 0);
+            $falloTotal = MHPruebasMasivasOutcome::esFalloTotal($exitosos, $fallidos);
+            $resultados['detenido_por_emisor'] = $this->abortarPorErrorEmisor;
 
             if ($userId) {
-                $this->enviarNotificacionPorCorreo($resultados, $tipo, $cantidad, $estadisticas);
+                if ($falloTotal) {
+                    $this->enviarNotificacionError(
+                        MHPruebasMasivasOutcome::resumenFallo($resultados, $cantidad),
+                        $tipo,
+                        $cantidad
+                    );
+                } else {
+                    $this->enviarNotificacionPorCorreo($resultados, $tipo, $cantidad, $estadisticas);
+                }
             }
 
             $this->eliminarPruebasMasivas($this->empresa->id);
 
             return [
-                'success' => true,
-                'message' => "Proceso completado: {$resultados['exitosos']} documentos emitidos, {$resultados['fallidos']} fallidos",
+                'success' => !$falloTotal,
+                'message' => $falloTotal
+                    ? MHPruebasMasivasOutcome::resumenFallo($resultados, $cantidad)
+                    : "Proceso completado: {$exitosos} documentos emitidos, {$fallidos} fallidos",
                 'resultados' => $resultados,
                 'stats' => $estadisticas
             ];
@@ -410,11 +475,19 @@ class MHPruebasMasivasService
 
             // Procesar gastos en lotes
             for ($lote = 0; $lote < $totalLotes; $lote++) {
+                if ($this->abortarPorErrorEmisor) {
+                    break;
+                }
+
                 $tamanoLote = min($this->batchSize, $cantidad - ($lote * $this->batchSize));
 
                 if ($tamanoLote <= 0) break;
 
                 for ($i = 0; $i < $tamanoLote; $i++) {
+                    if ($this->abortarPorErrorEmisor) {
+                        break;
+                    }
+
                     $newReferencia = $startReferencia + ($lote * $this->batchSize) + $i;
 
                     try {
@@ -491,11 +564,19 @@ class MHPruebasMasivasService
 
             // Procesar CCF en lotes
             for ($lote = 0; $lote < $totalLotes; $lote++) {
+                if ($this->abortarPorErrorEmisor) {
+                    break;
+                }
+
                 $tamanoLote = min($this->batchSize, $cantidad - ($lote * $this->batchSize));
 
                 if ($tamanoLote <= 0) break;
 
                 for ($i = 0; $i < $tamanoLote; $i++) {
+                    if ($this->abortarPorErrorEmisor) {
+                        break;
+                    }
+
                     $newCorrelativo = $startCorrelativo + ($lote * $this->batchSize) + $i;
 
                     try {
@@ -545,7 +626,9 @@ class MHPruebasMasivasService
             }
 
             // GENERAR NOTAS DE CRÉDITO Y DÉBITO AUTOMÁTICAMENTE
-            $this->generarNotasAutomaticas($resultados, $token);
+            if (!$this->abortarPorErrorEmisor) {
+                $this->generarNotasAutomaticas($resultados, $token);
+            }
 
             return $resultados;
         } catch (\Exception $e) {
@@ -591,10 +674,18 @@ class MHPruebasMasivasService
 
             // Generar CCF y NC en lotes
             for ($lote = 0; $lote < $totalLotes; $lote++) {
+                if ($this->abortarPorErrorEmisor) {
+                    break;
+                }
+
                 $tamanoLote = min($this->batchSize, $cantidad - ($lote * $this->batchSize));
                 if ($tamanoLote <= 0) break;
 
                 for ($i = 0; $i < $tamanoLote; $i++) {
+                    if ($this->abortarPorErrorEmisor) {
+                        break;
+                    }
+
                     $indiceProceso = ($lote * $this->batchSize) + $i;
                     $newCorrelativoCCF = $startCorrelativoCCF + $indiceProceso;
                     $newCorrelativoNC = $startCorrelativoNC + $indiceProceso;
@@ -706,10 +797,18 @@ class MHPruebasMasivasService
 
             // Generar CCF y ND en lotes
             for ($lote = 0; $lote < $totalLotes; $lote++) {
+                if ($this->abortarPorErrorEmisor) {
+                    break;
+                }
+
                 $tamanoLote = min($this->batchSize, $cantidad - ($lote * $this->batchSize));
                 if ($tamanoLote <= 0) break;
 
                 for ($i = 0; $i < $tamanoLote; $i++) {
+                    if ($this->abortarPorErrorEmisor) {
+                        break;
+                    }
+
                     $indiceProceso = ($lote * $this->batchSize) + $i;
                     $newCorrelativoCCF = $startCorrelativoCCF + $indiceProceso;
                     $newCorrelativoND = $startCorrelativoND + $indiceProceso;
@@ -800,6 +899,10 @@ class MHPruebasMasivasService
         $contadorND = 0;
 
         foreach ($this->ventasCCFGeneradas as $ccfVenta) {
+            if ($this->abortarPorErrorEmisor) {
+                break;
+            }
+
             try {
                 // Generar Nota de Crédito con correlativo específico
                 $correlativoNC = $inicioNC + $contadorNC;
@@ -825,6 +928,10 @@ class MHPruebasMasivasService
                     ];
                 }
                 $contadorNC++;
+
+                if ($this->abortarPorErrorEmisor) {
+                    break;
+                }
 
                 // Generar Nota de Débito con correlativo específico
                 $correlativoND = $inicioND + $contadorND;
@@ -933,11 +1040,14 @@ class MHPruebasMasivasService
                         'sello_mh' => $resultado['selloRecibido'] ?? null,
                         'prueba_masiva' => true
                     ]);
+            } else {
+                $this->marcarAbortoSiCorresponde($resultado['message'] ?? '');
             }
 
             return $resultado;
         } catch (\Exception $e) {
             Log::error('Error generando nota de crédito: ' . $e->getMessage());
+            $this->marcarAbortoSiCorresponde($e->getMessage());
             return [
                 'success' => false,
                 'message' => 'Error generando nota de crédito: ' . $e->getMessage()
@@ -1027,11 +1137,14 @@ class MHPruebasMasivasService
                         'sello_mh' => $resultado['selloRecibido'] ?? null,
                         'prueba_masiva' => true
                     ]);
+            } else {
+                $this->marcarAbortoSiCorresponde($resultado['message'] ?? '');
             }
 
             return $resultado;
         } catch (\Exception $e) {
             Log::error('Error generando nota de débito: ' . $e->getMessage());
+            $this->marcarAbortoSiCorresponde($e->getMessage());
             return [
                 'success' => false,
                 'message' => 'Error generando nota de débito: ' . $e->getMessage()
@@ -1091,11 +1204,19 @@ class MHPruebasMasivasService
             $token = null;
 
             for ($lote = 0; $lote < $totalLotes; $lote++) {
+                if ($this->abortarPorErrorEmisor) {
+                    break;
+                }
+
                 $tamanoLote = min($this->batchSize, $cantidad - ($lote * $this->batchSize));
 
                 if ($tamanoLote <= 0) break;
 
                 for ($i = 0; $i < $tamanoLote; $i++) {
+                    if ($this->abortarPorErrorEmisor) {
+                        break;
+                    }
+
                     $newCorrelativo = $startCorrelativo + ($lote * $this->batchSize) + $i;
 
                     try {
@@ -1197,6 +1318,8 @@ class MHPruebasMasivasService
                     'sello_mh' => $resultado['selloRecibido'] ?? null,
                     'estado' => 'Prueba'
                 ]);
+        } else {
+            $this->marcarAbortoSiCorresponde($resultado['message'] ?? '');
         }
 
         return $resultado;
@@ -1275,6 +1398,8 @@ class MHPruebasMasivasService
                 ]);
 
             $resultado['venta'] = $nuevaVenta; // Devolver la venta para posibles notas
+        } else {
+            $this->marcarAbortoSiCorresponde($resultado['message'] ?? '');
         }
 
         return $resultado;
@@ -1285,9 +1410,11 @@ class MHPruebasMasivasService
         try {
             $usuario = \App\Models\User::find($this->userId);
             $tipoTexto = $this->getTipoTexto($tipo);
-
-            // Log detallado de los resultados
-            Log::info('=== PRUEBAS MASIVAS COMPLETADAS ===', [
+            $exitosos = (int) ($resultados['exitosos'] ?? 0);
+            $fallidos = (int) ($resultados['fallidos'] ?? 0);
+            $tieneErrores = $fallidos > 0;
+            $asunto = MHPruebasMasivasOutcome::asuntoCorreo($tipoTexto, $exitosos, $fallidos);
+            $contextoLog = [
                 'usuario_id' => $this->userId,
                 'usuario_email' => $usuario ? $usuario->email : null,
                 'empresa_id' => $this->empresaId,
@@ -1295,13 +1422,19 @@ class MHPruebasMasivasService
                 'tipo_texto' => $tipoTexto,
                 'cantidad_solicitada' => $cantidad,
                 'resultados' => [
-                    'exitosos' => $resultados['exitosos'] ?? 0,
-                    'fallidos' => $resultados['fallidos'] ?? 0,
-                    'total_procesados' => ($resultados['exitosos'] ?? 0) + ($resultados['fallidos'] ?? 0)
+                    'exitosos' => $exitosos,
+                    'fallidos' => $fallidos,
+                    'total_procesados' => $exitosos + $fallidos
                 ],
                 'detalles' => $resultados['detalles'] ?? [],
                 'estadisticas' => $estadisticas
-            ]);
+            ];
+
+            if ($tieneErrores) {
+                Log::warning('=== PRUEBAS MASIVAS FINALIZADAS CON ERRORES ===', $contextoLog);
+            } else {
+                Log::info('=== PRUEBAS MASIVAS COMPLETADAS ===', $contextoLog);
+            }
 
             if ($usuario && $usuario->email) {
                 Mail::send('mails.pruebas-masivas-completadas', [
@@ -1310,11 +1443,11 @@ class MHPruebasMasivasService
                     'tipoDTE' => $tipo,
                     'tipoTexto' => $tipoTexto,
                     'cantidad' => $cantidad,
-                    'estadisticas' => $estadisticas
-                ], function ($mensaje) use ($usuario, $tipoTexto) {
-                    // $mensaje->to("jose.e@smartpyme.sv", $usuario->name)
+                    'estadisticas' => $estadisticas,
+                    'tieneErrores' => $tieneErrores,
+                ], function ($mensaje) use ($usuario, $asunto) {
                     $mensaje->to($usuario->email, $usuario->name)
-                        ->subject('Pruebas Masivas MH Completadas: ' . $tipoTexto);
+                        ->subject($asunto);
                 });
 
                 Log::info('Correo de notificación enviado exitosamente', [

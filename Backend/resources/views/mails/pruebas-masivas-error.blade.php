@@ -64,6 +64,7 @@
             
             <h3>Posibles causas:</h3>
             <ul>
+                <li>Giro o actividad económica de la empresa que no coincide con el catálogo de Hacienda (descActividad)</li>
                 <li>Problemas de conectividad con el servicio de facturación electrónica</li>
                 <li>Credenciales de acceso incorrectas o vencidas</li>
                 <li>Formato de datos no válido en el documento base</li>
@@ -73,6 +74,7 @@
             
             <p>Recomendaciones:</p>
             <ol>
+                <li>Vuelva a seleccionar la actividad económica en Empresa, guarde y emita una factura de prueba</li>
                 <li>Verifique su conexión a internet</li>
                 <li>Compruebe que sus credenciales de acceso al Ministerio de Hacienda sean correctas</li>
                 <li>Asegúrese de que el documento base seleccionado es válido y está completo</li>
