@@ -66,6 +66,10 @@
       "taxCatalogCodeExample": "Ej. 20 (IVA 13%)",
       "taxCatalogCodeHint": "Catálogo MH para facturación electrónica. IVA 13% = 20.",
       "billingVersionV2Short": "V2 (precios con IVA)",
+      "billingVersionOriginalShort": "Original (precios sin IVA)",
+      "billingVersionPosShort": "POS táctil",
+      "billingVersionUpdatedTitle": "Configuración actualizada",
+      "billingVersionChanged": "Versión de facturación cambiada a {{label}}",
       "libroIva": {
         "menuLabel": "Libros fiscales",
         "menuPurchases": "Libro de Compras",

@@ -5,15 +5,7 @@ namespace App\Http\Controllers\Api\Ventas;
 use App\Http\Controllers\Controller;
 use App\Imports\VentasExcelImport;
 use App\Exports\VentasPlantillaExport;
-use App\Models\Admin\Documento;
-use App\Models\Inventario\Inventario;
-use App\Models\Ventas\Detalle;
-use App\Models\Ventas\Venta;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
-use Carbon\Carbon;
 use App\Http\Requests\Ventas\Import\ImportVentasRequest;
 
 
@@ -24,46 +16,57 @@ class VentasImportController extends Controller
 
         $file = $request->file('file');
 
+        $import = new VentasExcelImport();
+
         try {
-            $import = new VentasExcelImport();
             Excel::import($import, $file);
 
             $ventasExitosas = $import->getContador();
             $errores = $import->getErrores();
 
-            if ($ventasExitosas > 0 && count($errores) > 0) {
-                $mensajeExito = "Se procesaron correctamente {$ventasExitosas} ventas.";
-
-                $productosNoEncontrados = [];
-                foreach ($errores as $error) {
-                    if (strpos($error, 'Producto no encontrado:') !== false) {
-                        preg_match('/Producto no encontrado: (.+)/', $error, $matches);
-                        if (isset($matches[1])) {
-                            $productosNoEncontrados[] = $matches[1];
-                        }
-                    }
-                }
-
-                $mensajeFalla = "No se pudieron procesar " . count($errores) . " ventas debido a que no se encontraron los siguientes productos: " . implode(", ", array_unique($productosNoEncontrados));
-
-                return response()->json([
-                    'message' => $mensajeExito . " " . $mensajeFalla,
-                    'procesadas' => $ventasExitosas,
-                    'fallidas' => count($errores),
-                    'productos_faltantes' => array_unique($productosNoEncontrados)
-                ], 200);
-            } else if ($ventasExitosas > 0) {
-                return response()->json([
-                    'message' => "¡Importación completada con éxito! Se procesaron {$ventasExitosas} ventas correctamente.",
-                    'procesadas' => $ventasExitosas,
-                    'fallidas' => 0
-                ], 200);
-            } else {
-                return response()->json(['error' => 'No se pudo procesar ninguna venta. ' . implode("\n", $errores)], 400);
+            if ($errores !== []) {
+                return response()->json(self::payloadErrores($errores), 422);
             }
+
+            if ($ventasExitosas < 1) {
+                return response()->json(self::payloadErrores([
+                    ['fila' => 0, 'columna' => 'archivo', 'mensaje' => 'No se encontraron ventas válidas para importar.'],
+                ]), 422);
+            }
+
+            return response()->json([
+                'message' => "Se importaron {$ventasExitosas} ventas correctamente.",
+                'procesadas' => $ventasExitosas,
+                'errores' => [],
+            ], 200);
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Error al importar: ' . $e->getMessage()], 400);
+            $errores = $import->getErrores();
+            if ($errores !== []) {
+                return response()->json(self::payloadErrores($errores), 422);
+            }
+
+            return response()->json(self::payloadErrores([
+                ['fila' => 0, 'columna' => 'archivo', 'mensaje' => $e->getMessage()],
+            ]), 400);
         }
+    }
+
+    /**
+     * @param  list<array{fila:int,columna:string,mensaje:string}>  $errores
+     * @return array{message:string,procesadas:int,errores:list<array{fila:int,columna:string,mensaje:string}>}
+     */
+    public static function payloadErrores(array $errores): array
+    {
+        $n = count($errores);
+        $message = $n === 1
+            ? 'No se importó ninguna venta. Hay 1 error.'
+            : "No se importó ninguna venta. Hay {$n} errores.";
+
+        return [
+            'message' => $message,
+            'procesadas' => 0,
+            'errores' => $errores,
+        ];
     }
 
     public function downloadPlantilla()

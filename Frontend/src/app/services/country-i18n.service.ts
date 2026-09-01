@@ -80,8 +80,23 @@ export class CountryI18nService {
     return this.translate().instant(`country.tax.fe.${key}`, params);
   }
 
-  tax(key: string): string {
-    return this.t(`country.tax.${key}`);
+  tax(key: string, params?: Record<string, unknown>): string {
+    const full = `country.tax.${key}`;
+    try {
+      const value = this.translate().instant(full, params ?? {});
+      if (typeof value !== 'string' || value === full || value.trim() === '') {
+        return full;
+      }
+      return value;
+    } catch {
+      return full;
+    }
+  }
+
+  /** Como `tax()`, pero si ngx-translate aún no resolvió la clave usa el texto de respaldo. */
+  taxOrFallback(key: string, fallback: string, params?: Record<string, unknown>): string {
+    const value = this.tax(key, params);
+    return value === `country.tax.${key}` ? fallback : value;
   }
 
   /** Libros fiscales / IVA: `libroIva('menuLabel')` → `country.tax.libroIva.*` */

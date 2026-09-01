@@ -66,6 +66,10 @@
       "taxCatalogCodeExample": "Ej. 20 (Impuesto 12%)",
       "taxCatalogCodeHint": "Catálogo tributario para facturación electrónica. Impuesto 12% = 20.",
       "billingVersionV2Short": "V2 (precios con impuesto)",
+      "billingVersionOriginalShort": "Original (precios sin impuesto)",
+      "billingVersionPosShort": "POS táctil",
+      "billingVersionUpdatedTitle": "Configuración actualizada",
+      "billingVersionChanged": "Versión de facturación cambiada a {{label}}",
       "libroIva": {
         "menuLabel": "Libros fiscales",
         "menuPurchases": "Libro de compras",

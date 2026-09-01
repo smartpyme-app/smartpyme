@@ -1975,15 +1975,14 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
 
         // Guardar automáticamente
         this.onSubmit().then(() => {
+            const label = version === 'v2'
+                ? this.countryI18n.taxOrFallback('billingVersionV2Short', 'V2 (precios con IVA)')
+                : version === 'pos'
+                    ? this.countryI18n.taxOrFallback('billingVersionPosShort', 'POS táctil')
+                    : this.countryI18n.taxOrFallback('billingVersionOriginalShort', 'Original');
             this.alertService.success(
-                'Configuración actualizada',
-                `Versión de facturación cambiada a ${
-                    version === 'v2'
-                        ? this.countryI18n.tax('billingVersionV2Short')
-                        : version === 'pos'
-                          ? 'POS táctil'
-                          : 'Original'
-                }`
+                this.countryI18n.taxOrFallback('billingVersionUpdatedTitle', 'Configuración actualizada'),
+                this.countryI18n.taxOrFallback('billingVersionChanged', `Versión de facturación cambiada a ${label}`, { label })
             );
         });
     }

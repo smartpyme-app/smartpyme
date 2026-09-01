@@ -14,6 +14,7 @@ use App\Models\Ventas\Detalle;
 use App\Models\Ventas\Impuesto as ImpuestoVenta;
 use App\Models\Admin\Impuesto;
 use App\Models\Ventas\Venta;
+use App\Support\Ventas\VentasImportFilaValidador;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -26,33 +27,28 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Importación de ventas desde Excel.
+ * Importación de ventas históricas desde la plantilla unificada.
  *
- * Dos plantillas con columnas distintas:
- *
- * — CONSUMIDOR FINAL: nombre, tipo_documento, num_documento, departamento, municipio, distrito,
- *   direccion, telefono, correo, fecha, tipo_documento_venta, correlativo, descripcion, forma_pago,
- *   exenta, gravada, subtotal, iva, iva_retenido, total, condicion, fecha_pago.
- *   tipo_documento: DUI | NIT | Pasaporte | Carnet de residente | Otro.
- *   tipo_documento_venta: Factura | Ticket | Crédito fiscal | Factura de exportación.
- *   condicion: Contado | Crédito.
- *
- * — CRÉDITO FISCAL: nombre_comercial, nombre, NIT, NRC, giro, departamento, municipio, distrito,
- *   direccion, telefono, correo, fecha, descripcion, tipo_item, forma_pago, no_sujeta, exenta, gravada,
- *   subtotal, iva, iva_retenido, total, condicion, fecha_pago.
- *   tipo_documento_venta y condicion con las mismas opciones que arriba.
- *
- * Departamento, municipio y distrito se resuelven por nombre (LOWER) a códigos MH.
- * El tipo de plantilla se detecta por fila: si tiene NIT con valor → crédito fiscal; si no → consumidor final.
+ * Discriminadores: tipo_cliente (Persona|Empresa) y tipo_documento_venta
+ * (Factura|Ticket|Crédito fiscal|Factura de exportación). Correlativo obligatorio.
+ * Crédito fiscal exige nit y nrc aunque el cliente sea Persona.
+ * El detalle siempre es Servicio (id_producto = 0). Errores: fila + columna + mensaje.
  */
 class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
 {
     protected $tipo_documento;
     protected $contador = 0;
+    /** @var list<array{fila:int,columna:string,mensaje:string}> */
     protected $errores = [];
     protected $productos_faltantes = [];
     protected $importar_hoja = true; 
-    protected $primera_hoja_procesada = false; 
+    protected $primera_hoja_procesada = false;
+    protected VentasImportFilaValidador $validador;
+
+    public function __construct()
+    {
+        $this->validador = new VentasImportFilaValidador();
+    } 
 
     public function registerEvents(): array
     {
@@ -95,31 +91,52 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
             $ventasExitosas = 0;
             $ventasFallidas = 0;
 
-            // Si no hay filas, lanzar excepción
             if (count($rows) == 0) {
                 throw new \Exception('El archivo no contiene datos para importar.');
             }
 
-            $ventasAgrupadas = [];
+            $primera = $rows->first();
+            $this->errores = array_merge(
+                $this->errores,
+                $this->validador->validarEncabezados(array_keys($this->filaComoArray($primera)))
+            );
+            if ($this->errores !== []) {
+                DB::rollback();
+                throw new \Exception($this->mensajeErrores());
+            }
 
+            $filasValidas = [];
             foreach ($rows as $index => $row) {
                 if ($this->esFilaVacia($row)) {
-                    Log::info("Fila {$index} ignorada por estar vacía");
                     continue;
                 }
+                $filaExcel = (int) $index + 2;
+                $arr = $this->filaComoArray($row);
+                $arr['fila'] = $filaExcel;
+                if (!$this->validarFilaRequeridos($arr, $filaExcel)) {
+                    continue;
+                }
+                $filasValidas[] = $arr;
+            }
 
+            if ($this->errores !== []) {
+                DB::rollback();
+                throw new \Exception($this->mensajeErrores());
+            }
+
+            $this->errores = array_merge($this->errores, $this->validador->validarAgrupacion($filasValidas));
+            if ($this->errores !== []) {
+                DB::rollback();
+                throw new \Exception($this->mensajeErrores());
+            }
+
+            $ventasAgrupadas = [];
+
+            foreach ($filasValidas as $row) {
                 $this->tipo_documento = $this->determinarTipoDocumento($row);
-
-                if (!$this->validarFilaRequeridos($row)) {
-                    Log::info("Fila {$index} ignorada por faltar datos requeridos");
-                    continue;
-                }
-
                 $validRows++;
-                Log::info("Fila {$index} válida");
-
                 $clienteKey = $this->generarClienteKey($row);
-                Log::info("Cliente key: " . $clienteKey);
+                $filaExcel = (int) ($row['fila'] ?? 0);
 
                 if (!isset($ventasAgrupadas[$clienteKey])) {
                     $id_cliente = $this->buscarOCrearCliente($row);
@@ -127,15 +144,12 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
                         ?: $this->buscarDocumentoPorTipoImportacion();
 
                     if (!$id_cliente || !$id_documento) {
-                        $detalleError = "Fila ignorada: ";
                         if (!$id_cliente) {
-                            $detalleError .= "No se pudo obtener o crear el cliente ('" . ($row['nombre'] ?? 'sin nombre') . "'). ";
+                            $this->agregarError($filaExcel, 'nombre', "No se pudo obtener o crear el cliente ('" . ($row['nombre'] ?? 'sin nombre') . "').");
                         }
                         if (!$id_documento) {
-                            $detalleError .= "No se encontró tipo de documento de venta válido en el sistema. ";
+                            $this->agregarError($filaExcel, 'tipo_documento_venta', 'no existe ese documento en la sucursal.');
                         }
-                        $this->errores[] = $detalleError;
-                        Log::error("Error: ID de cliente o documento no válido. Cliente: {$id_cliente}, Documento: {$id_documento}");
                         continue;
                     }
 
@@ -143,12 +157,14 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
                         'cabecera' => $this->obtenerDatosCabecera($row, $id_cliente, $id_documento),
                         'detalles' => []
                     ];
-
-                    Log::info("Nueva venta agrupada creada para: " . $clienteKey);
                 }
 
                 $ventasAgrupadas[$clienteKey]['detalles'][] = $this->obtenerDatosDetalle($row);
-                Log::info("Detalle agregado a venta: " . $clienteKey);
+            }
+
+            if ($this->errores !== []) {
+                DB::rollback();
+                throw new \Exception($this->mensajeErrores());
             }
 
             Log::info("Total de filas válidas: " . $validRows);
@@ -172,11 +188,10 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
             Log::info("Total de ventas procesadas exitosamente: " . $ventasExitosas);
             Log::info("Total de ventas que no pudieron procesarse: " . $ventasFallidas);
 
-            if (count($this->errores) > 0 && $ventasExitosas == 0) {
-                Log::error("Errores encontrados y ninguna venta procesada: " . count($this->errores));
-                Log::error(implode("\n", $this->errores));
+            if ($this->errores !== []) {
+                Log::error("Errores encontrados, se aborta la importación: " . count($this->errores));
                 DB::rollback();
-                throw new \Exception(implode("\n", $this->errores));
+                throw new \Exception($this->mensajeErrores());
             }
 
             if ($this->contador == 0) {
@@ -239,42 +254,30 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
     }
 
     /**
-     * Determina si el documento es crédito_fiscal o consumidor_final facilmente si viene o no NIT.
+     * Crédito fiscal si tipo_documento_venta lo dice; no se infiere por NIT.
      */
     protected function determinarTipoDocumento($fila)
     {
-        $nit = isset($fila['nit']) ? trim((string) $fila['nit']) : '';
-        if ($nit !== '') {
+        $fila = $this->filaComoArray($fila);
+        if ($this->validador->esCreditoFiscal((string) ($fila['tipo_documento_venta'] ?? ''))) {
             return 'credito_fiscal';
         }
         return 'consumidor_final';
     }
 
-    protected function validarFilaRequeridos($fila)
+    protected function validarFilaRequeridos($fila, int $filaExcel = 2)
     {
-        if ($this->esFilaVacia($fila)) {
+        $arr = $this->filaComoArray($fila);
+        if ($this->esFilaVacia($arr)) {
             return false;
         }
 
-        $tipoDoc = $this->determinarTipoDocumento($fila);
-        $requeridos = ['nombre', 'fecha', 'descripcion', 'total'];
-        $requeridos = array_merge($requeridos, $tipoDoc == 'credito_fiscal' ? ['nit'] : []);
-
-        if (!empty($fila['num_documento']) && $tipoDoc != 'credito_fiscal') {
-            $requeridos[] = 'tipo_documento';
+        $nuevos = $this->validador->validarFila($arr, $filaExcel);
+        foreach ($nuevos as $error) {
+            $this->errores[] = $error;
         }
 
-        $faltantes = array_filter($requeridos, function ($campo) use ($fila) {
-            return !isset($fila[$campo]) || (is_string($fila[$campo]) && trim($fila[$campo]) === '') || $fila[$campo] === null;
-        });
-
-        if (!empty($faltantes)) {
-            $this->errores[] = "Error: Faltan los campos obligatorios '" . implode("', '", $faltantes) . "' en la fila de '" . ($fila['nombre'] ?? 'registro sin nombre') . "'.";
-            Log::warning("Fila inválida - Faltan campos: " . implode(", ", $faltantes) . " - Datos: " . json_encode($fila));
-            return false;
-        }
-
-        return true;
+        return $nuevos === [];
     }
 
     protected function resolverGiroYCodGiro($fila)
@@ -327,14 +330,15 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
             if ($clienteDefault) {
                 return $clienteDefault->id;
             }
-            $this->errores[] = "Error al crear cliente (" . ($fila['nombre'] ?? '') . "): " . $e->getMessage();
+            $this->agregarError((int) ($fila['fila'] ?? 0), 'nombre', 'Error al crear cliente (' . ($fila['nombre'] ?? '') . '): ' . $e->getMessage());
             return null;
         }
     }
 
     protected function buscarCliente($fila)
     {
-        if ($this->tipo_documento == 'credito_fiscal') {
+        $fila = $this->filaComoArray($fila);
+        if ($this->tipo_documento == 'credito_fiscal' || $this->validador->tipoCliente($fila) === 'Empresa') {
             $nit = $this->normalizarTextoNumero($fila['nit'] ?? '');
             $ncr = $this->normalizarTextoNumero($fila['nrc'] ?? $fila['ncr'] ?? '');
 
@@ -395,7 +399,7 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
             'dui' => $this->normalizarTextoNumero($fila['num_documento'] ?? '')
         ];
 
-        if ($this->tipo_documento == 'credito_fiscal') {
+        if ($this->tipo_documento == 'credito_fiscal' || $this->validador->tipoCliente($fila) === 'Empresa') {
             $datosCliente = array_merge($datosCliente, [
                 'nombre_empresa' => $fila['nombre_comercial'] ?? $fila['nombre'],
                 'nit' => $this->normalizarTextoNumero($fila['nit'] ?? ''),
@@ -405,10 +409,9 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
                 'tipo_contribuyente' => 'Otro',
                 'dui' => $this->normalizarTextoNumero($fila['num_documento'] ?? '')
             ]);
-        } else {
-            // Consumidor final: solo tipo_documento y num_documento (no hay NIT, NRC, cod_giro, nombre_comercial)
+        }
+        if ($this->validador->tipoCliente($fila) === 'Persona') {
             $datosCliente = array_merge($datosCliente, [
-                'nombre_empresa' => $fila['nombre'] ?? '',
                 'tipo_documento' => $fila['tipo_documento'] ?? 'DUI',
                 'dui' => $this->normalizarTextoNumero($fila['num_documento'] ?? '')
             ]);
@@ -440,11 +443,11 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
             'cod_distrito' => $distrito ? $distrito->cod : null,
             'distrito' => $distrito ? $distrito->nombre : ($fila['distrito'] ?? null),
             'id_usuario' => Auth::id(),
-            'tipo' => $this->tipo_documento == 'credito_fiscal' ? 'Empresa' : 'Persona',
+            'tipo' => $this->validador->tipoCliente($fila),
             'id_empresa' => Auth::user()->id_empresa
         ];
 
-        if ($this->tipo_documento == 'credito_fiscal') {
+        if ($this->tipo_documento == 'credito_fiscal' || $this->validador->tipoCliente($fila) === 'Empresa') {
             $datosCliente = array_merge($datosCliente, [
                 'nombre_empresa' => $fila['nombre_comercial'] ?? $fila['nombre'],
                 'nit' => $this->normalizarTextoNumero($fila['nit'] ?? ''),
@@ -454,7 +457,8 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
                 'tipo_contribuyente' => 'Otro',
                 'dui' => $this->normalizarTextoNumero($fila['num_documento'] ?? '')
             ]);
-        } else {
+        }
+        if ($this->validador->tipoCliente($fila) === 'Persona') {
             $datosCliente = array_merge($datosCliente, [
                 'tipo_documento' => $fila['tipo_documento'] ?? 'DUI',
                 'dui' => $this->normalizarTextoNumero($fila['num_documento'] ?? '')
@@ -645,14 +649,7 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
 
     protected function generarClienteKey($row)
     {
-        $nitNorm = $this->normalizarTextoNumero($row['nit'] ?? '');
-        $base = $this->tipo_documento == 'credito_fiscal'
-            ? ($nitNorm ?: ($row['nombre'] ?? '')) . '-' . ($row['fecha'] ?? '')
-            : ($row['nombre'] ?? '') . '-' . ($row['fecha'] ?? '');
-        $correlativo = isset($row['correlativo']) && $row['correlativo'] !== '' && $row['correlativo'] !== null
-            ? $row['correlativo']
-            : 'auto';
-        return $base . '-' . $correlativo;
+        return $this->validador->claveAgrupacion($this->filaComoArray($row));
     }
 
     protected function obtenerDatosCabecera($fila, $id_cliente, $id_documento)
@@ -774,6 +771,34 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
         return $this->errores;
     }
 
+    /**
+     * @param  array<string, mixed>|object  $fila
+     * @return array<string, mixed>
+     */
+    protected function filaComoArray($fila): array
+    {
+        $arr = is_array($fila) ? $fila : (method_exists($fila, 'toArray') ? $fila->toArray() : (array) $fila);
+
+        return $this->validador->normalizarClaves($arr);
+    }
+
+    protected function agregarError(int $fila, string $columna, string $mensaje): void
+    {
+        $this->errores[] = ['fila' => $fila, 'columna' => $columna, 'mensaje' => $mensaje];
+    }
+
+    protected function mensajeErrores(): string
+    {
+        $n = count($this->errores);
+        if ($n === 0) {
+            return 'No se importó ninguna venta.';
+        }
+
+        return $n === 1
+            ? 'No se importó ninguna venta. Hay 1 error.'
+            : "No se importó ninguna venta. Hay {$n} errores.";
+    }
+
     public function getProductosFaltantes()
     {
         return array_unique($this->productos_faltantes);
@@ -829,7 +854,7 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
             'cuenta_a_terceros' => 0,
             'iva' => $iva,
             'id_vendedor' => Auth::id(),
-            'tipo_item' => $fila['tipo_item'] ?? 'Servicio',
+            'tipo_item' => $this->validador->tipoItemDetalle(),
             'tipo_gravado' => $gravada > 0 ? 'gravada' : ($exenta > 0 ? 'exenta' : ($noSujeta > 0 ? 'no_sujeta' : 'gravada')),
         ];
     }
@@ -887,7 +912,7 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
             if (empty($detallesValidos)) {
                 $mensajeError = "Error: No se pudo procesar la venta porque no se encontraron productos válidos. ";
                 $mensajeError .= "Productos no encontrados: " . implode(", ", $detallesInvalidos);
-                $this->errores[] = $mensajeError;
+                $this->agregarError(0, 'descripcion', $mensajeError);
                 Log::warning($mensajeError);
                 return false;
             }
@@ -926,7 +951,7 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
 
             return true;
         } catch (\Exception $e) {
-            $this->errores[] = "Error al procesar venta: " . $e->getMessage();
+            $this->agregarError(0, 'archivo', 'Error al procesar venta: ' . $e->getMessage());
             Log::error('Error al procesar venta: ' . $e->getMessage());
             Log::error($e->getTraceAsString());
             return false;
