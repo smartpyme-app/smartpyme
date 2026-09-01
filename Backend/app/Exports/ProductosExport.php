@@ -51,6 +51,13 @@ class ProductosExport implements FromCollection, WithHeadings, WithMapping
         return $stockSum ?: '0';
     }
 
+    public static function tieneFotografiaParaExport($producto): string
+    {
+        $count = (int) ($producto->imagenes_count ?? 0);
+
+        return $count > 0 ? 'Sí' : 'No';
+    }
+
     public function headings(): array
     {
         $headings = [
@@ -73,6 +80,7 @@ class ProductosExport implements FromCollection, WithHeadings, WithMapping
             'Estado',
             // 'Etiquetas',
             'Descripcion',
+            'Tiene fotografía',
         ]);
         return $headings;
     }
@@ -111,6 +119,7 @@ class ProductosExport implements FromCollection, WithHeadings, WithMapping
             $row->enable ? 'Activo' : 'Inactivo',
             // $etiquetas,
             $row->descripcion,
+            self::tieneFotografiaParaExport($row),
         ]);
         return $fields;
     }
@@ -118,7 +127,8 @@ class ProductosExport implements FromCollection, WithHeadings, WithMapping
     public function collection()
     {
         $request = $this->request;
-        return Producto::with(['inventarios' => function ($q) use ($request) {
+        return Producto::withCount('imagenes')
+            ->with(['inventarios' => function ($q) use ($request) {
             if ($request->id_bodega) {
                 $q->where('id_bodega', $request->id_bodega);
             }

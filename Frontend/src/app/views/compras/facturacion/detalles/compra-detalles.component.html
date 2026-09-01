@@ -26,6 +26,8 @@
                         <img src="{{ apiService.baseUrl }}/img/{{ detalle.img }}" class="rounded-circle" height="50px" width="50px"> 
                         {{ detalle.nombre_producto }}
                         <br>
+                        <small *ngIf="detalle.codigo" class="text-muted">SKU: {{ detalle.codigo }}</small>
+                        <br *ngIf="detalle.codigo && requiereDistribucionLotes(detalle)">
                         <small class="text-muted" *ngIf="requiereDistribucionLotes(detalle)">
                             <button class="btn btn-sm mt-1" 
                                     [ngClass]="(detalle.lotes_asignados?.length || detalle.lote_id) ? 'btn-outline-success' : 'btn-outline-warning'" 

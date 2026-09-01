@@ -89,6 +89,7 @@
                             [ngClass]="{'sorted-asc': filtros.orden == 'fecha_pago' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha_pago' && filtros.direccion == 'desc'}"
                             class="click">Fecha vencimiento</th>
                         <th>Estado</th>
+                        <th>Motivo de anulación</th>
                         <th (click)="setOrden('total')"
                             [ngClass]="{'sorted-asc': filtros.orden == 'total' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'total' && filtros.direccion == 'desc'}"
                             class="click text-right">Total</th>
@@ -97,10 +98,10 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td colspan="10" class="text-center" *ngIf="ventas?.total < 1 && !loading">
+                        <td colspan="11" class="text-center" *ngIf="ventas?.total < 1 && !loading">
                             <span class="badge bg-primary">No tiene ventas registradas</span>
                         </td>
-                        <td colspan="10" class="text-center" *ngIf="loading">
+                        <td colspan="11" class="text-center" *ngIf="loading">
                             <span class="badge bg-primary">Cargando...</span>
                         </td>
                     </tr>
@@ -143,6 +144,9 @@
                                     ✅
                                 </span>
                             </span>
+                        </td>
+                        <td>
+                            <span *ngIf="venta.estado == 'Anulada'">{{ venta.motivo_anulacion }}</span>
                         </td>
                         <td class="text-end">
                             <ng-container *ngIf="totalTienePopover(venta); else ventaTotalSinPopover">

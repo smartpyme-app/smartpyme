@@ -58,6 +58,15 @@ class VentasExport implements FromQuery, WithHeadings, WithMapping, WithChunkRea
         return $anio;
     }
 
+    public static function motivoAnulacionParaExport($row): string
+    {
+        if (($row->estado ?? '') !== 'Anulada') {
+            return '';
+        }
+
+        return (string) ($row->motivo_anulacion ?? '');
+    }
+
     /**
      * Procesar en lotes para reducir uso de memoria (evita ->get() que carga todo).
      */
@@ -82,6 +91,7 @@ class VentasExport implements FromQuery, WithHeadings, WithMapping, WithChunkRea
             'Forma de pago',
             'Banco',
             'Estado',
+            'Motivo de Anulación',
             'Canal',
             'Costo',
             'Cuenta terceros',
@@ -131,6 +141,7 @@ class VentasExport implements FromQuery, WithHeadings, WithMapping, WithChunkRea
             'forma_pago',
             'detalle_banco',
             'estado',
+            'motivo_anulacion',
             'sello_mh',
             'cotizacion',
             'observaciones',
@@ -334,6 +345,7 @@ class VentasExport implements FromQuery, WithHeadings, WithMapping, WithChunkRea
             $row->forma_pago,
             $row->detalle_banco,
             $row->estado,
+            self::motivoAnulacionParaExport($row),
             $nombreCanal,
             $row->estado == 'Anulada' ? '0.0' : round($row->total_costo, 2),
             round($cuentaTerceros, 2),
