@@ -43,12 +43,10 @@
                     <a [href]="plantillaUrlConCache" target="_blank">Descargar plantilla</a>
                   </span>
 
-                  <!-- Plantillas específicas para ventas -->
+                  <!-- Plantilla unificada de ventas históricas -->
                   <span *ngIf="this.nombre === 'ventas'">
-                    Puede descargar las plantillas de Excel según el tipo de documento:<br>
-                    <a href="{{ apiService.baseUrl + '/docs/ventas-credito-fiscal-format.xlsx'}}" target="_blank" class="me-3">Descargar plantilla Crédito Fiscal</a>
-                    <br>
-                    <a href="{{ apiService.baseUrl + '/docs/ventas-consumidor-final-format.xlsx'}}" target="_blank">Descargar plantilla Consumidor Final</a>
+                    Puede descargar la plantilla de Excel acá:<br>
+                    <a [href]="plantillaUrlConCache" target="_blank">Descargar plantilla de ventas</a>
                   </span>
                 </p>
               </div>
@@ -56,6 +54,26 @@
 
               <div class="mb-5 form-group col-md-12 text-center">
                 <input type="file" class="form-control" name="file"  (change)="setFile($event)" required>
+              </div>
+
+              <div class="table-responsive validation-errors mb-3" *ngIf="nombre === 'ventas' && ventasErrores.length">
+                <p class="text-danger mb-2">No se importó ninguna venta. Corrija el Excel y vuelva a subirlo.</p>
+                <table class="table table-sm table-striped text-start">
+                  <thead>
+                    <tr>
+                      <th>Fila</th>
+                      <th>Columna</th>
+                      <th>Error</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let e of ventasErrores">
+                      <td>{{ e.fila }}</td>
+                      <td>{{ e.columna }}</td>
+                      <td>{{ e.mensaje }}</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
 
               <div class="d-grid mt-3">

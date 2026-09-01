@@ -35,6 +35,7 @@ export class ImportarExcelComponent implements OnInit, OnDestroy {
     public showResults: boolean = false;
     public validationErrors: string[] = [];
     public businessErrors: string[] = [];
+    public ventasErrores: { fila: number; columna: string; mensaje: string }[] = [];
 
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
@@ -49,7 +50,7 @@ export class ImportarExcelComponent implements OnInit, OnDestroy {
     modalRef!: BsModalRef;
 
     constructor(
-        private apiService: ApiService, public alertService: AlertService,
+        public apiService: ApiService, public alertService: AlertService,
         private modalService: BsModalService
     ) { }
 
@@ -133,10 +134,9 @@ export class ImportarExcelComponent implements OnInit, OnDestroy {
             return;
         }
 
-        // Manejo especial para ventas
+        // Plantilla unificada de ventas históricas
         if (nombreArchivo === 'ventas') {
-            // Las ventas tienen múltiples plantillas, se manejan en el HTML
-            this.plantillaUrl = '';
+            this.plantillaUrl = `${this.apiService.baseUrl}/docs/ventas-format.xlsx`;
             return;
         }
 
@@ -182,6 +182,7 @@ export class ImportarExcelComponent implements OnInit, OnDestroy {
 
     setFile(event:any){
         this.file.file = event.target.files[0];
+        this.ventasErrores = [];
     }
 
     // onSubmit(event:any) {
@@ -216,6 +217,7 @@ export class ImportarExcelComponent implements OnInit, OnDestroy {
 
         console.log(formData);
         this.loading = true;
+        this.ventasErrores = [];
 
         this.apiService.store(this.nombre.toLowerCase() + '/importar', formData).subscribe(
             (data: any) => {
@@ -223,27 +225,20 @@ export class ImportarExcelComponent implements OnInit, OnDestroy {
 
 
                 if (this.nombre.toLowerCase() === 'ventas') {
+                    const mensaje = data && typeof data === 'object' && data.message
+                        ? data.message
+                        : (typeof data === 'number'
+                            ? data + ' ventas procesadas correctamente'
+                            : 'Las ventas fueron procesadas correctamente');
 
-                    if (data && typeof data === 'object' && data.message) {
-                        this.alertService.success('Importación de ventas', data.message);
+                    this.modalRef.hide();
+                    this.alertService.modal = false;
 
-
-                        if (data.productos_faltantes && data.productos_faltantes.length > 0) {
-                            setTimeout(() => {
-                                this.alertService.info(
-                                    'Productos no encontrados',
-                                    'Estos productos deben ser creados en el sistema: ' +
-                                    data.productos_faltantes.join(", ")
-                                );
-                            }, 4000);
-                        }
-                    } else if (typeof data === 'number') {
-
-                        this.alertService.success('Importación exitosa', data + ' ventas procesadas correctamente');
-                    } else {
-
-                        this.alertService.success('Importación exitosa', 'Las ventas fueron procesadas correctamente');
-                    }
+                    setTimeout(() => {
+                        this.alertService.success('Importación de ventas', mensaje);
+                        this.loadAll.emit();
+                    }, 300);
+                    return;
                 } else {
                     // Manejo específico para importación de clientes
                     if (this.nombre.toLowerCase().includes('clientes')) {
@@ -291,14 +286,21 @@ export class ImportarExcelComponent implements OnInit, OnDestroy {
             error => {
                 this.loading = false;
 
-
-                if (this.nombre.toLowerCase() === 'ventas' && error.error && error.error.error) {
-                    this.alertService.error(error.error.error);
-                } else {
-                    this.alertService.error(error);
+                if (this.nombre.toLowerCase() === 'ventas') {
+                    const body = error?.error;
+                    if (Array.isArray(body?.errores) && body.errores.length) {
+                        this.ventasErrores = body.errores;
+                    } else if (typeof body?.error === 'string') {
+                        this.ventasErrores = [{ fila: 0, columna: 'archivo', mensaje: body.error }];
+                    } else if (typeof body?.message === 'string') {
+                        this.ventasErrores = [{ fila: 0, columna: 'archivo', mensaje: body.message }];
+                    }
+                    this.alertService.error(body?.message || body?.error || error);
+                    this.alertService.modal = true;
+                    return;
                 }
 
-
+                this.alertService.error(error);
                 this.alertService.modal = true;
             }
         );
@@ -309,6 +311,7 @@ export class ImportarExcelComponent implements OnInit, OnDestroy {
     this.showResults = false;
     this.validationErrors = [];
     this.businessErrors = [];
+    this.ventasErrores = [];
   }
 
     public closeModal() {

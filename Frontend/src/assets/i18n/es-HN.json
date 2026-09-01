@@ -66,6 +66,10 @@
       "taxCatalogCodeExample": "Ej. 20 (ISV 15%)",
       "taxCatalogCodeHint": "Catálogo tributario para facturación electrónica. ISV 15% = 20.",
       "billingVersionV2Short": "V2 (precios con ISV)",
+      "billingVersionOriginalShort": "Original (precios sin ISV)",
+      "billingVersionPosShort": "POS táctil",
+      "billingVersionUpdatedTitle": "Configuración actualizada",
+      "billingVersionChanged": "Versión de facturación cambiada a {{label}}",
       "libroIva": {
         "menuLabel": "Libros fiscales",
         "menuPurchases": "Libro de compras",
