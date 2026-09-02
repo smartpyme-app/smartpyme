@@ -235,6 +235,7 @@ export class CompraProductoComponent implements OnInit {
             this.detalle.id_presentacion  = producto.id_presentacion ?? null;
             this.detalle.factor_conversion = producto.factor_conversion ?? 1;
             this.detalle.nombre_producto  = producto.nombre_mostrar;
+            this.detalle.codigo           = producto.codigo;
             this.detalle.img              = producto.img; // la imagen del producto base viene en producto.img
             this.detalle.precio           = parseFloat(producto.precio ?? 0);
             
@@ -255,6 +256,7 @@ export class CompraProductoComponent implements OnInit {
             
             // Si la empresa tiene shopify_store_url configurado, concatenar nombre_variante al nombre
             this.detalle.nombre_producto  = this.getNombreCompleto(producto);
+            this.detalle.codigo           = producto.codigo;
             this.detalle.img              = producto.img;
             this.detalle.precio           = parseFloat(producto.precio);
             this.detalle.costo            = parseFloat(producto.costo);
@@ -276,6 +278,7 @@ export class CompraProductoComponent implements OnInit {
         
         // Si la empresa tiene shopify_store_url configurado, concatenar nombre_variante al nombre
         this.detalle.nombre_producto = this.getNombreCompleto(producto);
+        this.detalle.codigo         = producto.codigo;
         this.detalle.img            = producto.img;
         this.detalle.precio         = parseFloat(producto.precio);
         this.detalle.costo          = parseFloat(producto.costo);

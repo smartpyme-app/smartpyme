@@ -15,7 +15,6 @@ use App\Models\Compras\Detalle;
 use App\Models\Compras\Impuesto as CompraImpuesto;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
-use App\Models\Inventario\Lote;
 use App\Models\Inventario\Kardex;
 use App\Models\Admin\Empresa;
 use App\Support\FacturacionElectronica\CostaRica\DocumentoMoneda;
@@ -32,6 +31,7 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 use Auth;
 use App\Services\ShopifyStockService;
 use App\Services\Inventario\ConversionInventarioService;
+use App\Services\Inventario\LoteAsignacionService;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
 use App\Constants\DocumentoConstants;
@@ -117,7 +117,7 @@ class ComprasController extends Controller
 
     public function read($id) {
         $compra = Compra::where('id', $id)
-            ->with('detalles', 'proveedor', 'abonos', 'devoluciones', 'impuestos.impuesto')
+            ->with(['detalles.lote', 'detalles.loteAsignaciones.lote', 'proveedor', 'abonos', 'devoluciones', 'impuestos.impuesto'])
             ->withSum(['abonos' => function ($query) {
                 $query->where('estado', 'Confirmado');
             }], 'total')
@@ -218,15 +218,9 @@ class ComprasController extends Controller
                 // Anular compra y restar stock
                 if(($compra->estado != 'Anulada') && ($request['estado'] == 'Anulada')){
 
-                    if ($producto && $producto->inventario_por_lotes && $lotesActivo && $detalle->lote_id) {
-                        $lote = Lote::find($detalle->lote_id);
-                        if ($lote) {
-                            $lote->stock -= $cantidadBase;
-                            $lote->save();
-                        }
-                    }
-
-                    if ($inventario) {
+                    if ($producto && $producto->inventario_por_lotes && $lotesActivo && $inventario) {
+                        LoteAsignacionService::revertirEntradaCompra($detalle, $compra, $inventario, $cantidadBase);
+                    } elseif ($inventario) {
                         $inventario->stock -= $cantidadBase;
                         $inventario->save();
                         $inventario->kardex($compra, $cantidadBase * -1);
@@ -241,16 +235,9 @@ class ComprasController extends Controller
                 }
                 // Cancelar anulación de compra y descargar stock
                 if(($compra->estado == 'Anulada') && ($request['estado'] != 'Anulada')){
-                    if ($producto && $producto->inventario_por_lotes && $lotesActivo && $detalle->lote_id) {
-                        $lote = Lote::find($detalle->lote_id);
-                        if ($lote) {
-                            $lote->stock += $cantidadBase;
-                            $lote->save();
-                        }
-                    }
-
-                    // Aplicar stock
-                    if ($inventario) {
+                    if ($producto && $producto->inventario_por_lotes && $lotesActivo && $inventario) {
+                        LoteAsignacionService::reactivarEntradaCompra($detalle, $compra, $inventario, $cantidadBase);
+                    } elseif ($inventario) {
                         $inventario->stock += $cantidadBase;
                         $inventario->save();
                         $inventario->kardex($compra, $cantidadBase);
@@ -366,7 +353,7 @@ class ComprasController extends Controller
                     $det['iva'] = 0;
                 }
                 
-                $detalle->fill($det);
+                $detalle->fill(collect($det)->except(['lotes_asignados', 'lote', '_cantidad_base', '_costo_base'])->all());
                 $detalle->save();
 
                 if (!$request->id) {
@@ -442,8 +429,19 @@ class ComprasController extends Controller
                     $cantidadBaseInv = $det['_cantidad_base'];
 
                     if ($producto && $producto->inventario_por_lotes && $lotesActivo) {
-                        // Validar que se haya especificado un lote
-                        if (!isset($det['lote_id']) || !$det['lote_id']) {
+                        $asignacionManual = !empty($det['lotes_asignados']) ? $det['lotes_asignados'] : null;
+                        $lotePreferido = !empty($det['lote_id']) ? (int) $det['lote_id'] : null;
+
+                        $asignaciones = LoteAsignacionService::resolverAsignacionesEntrada(
+                            $producto,
+                            (int) $compra->id_bodega,
+                            (float) $cantidadBaseInv,
+                            $lotesActivo,
+                            $lotePreferido,
+                            $asignacionManual
+                        );
+
+                        if (empty($asignaciones)) {
                             DB::rollBack();
                             return Response()->json([
                                 'error' => "El producto '{$producto->nombre}' requiere seleccionar o crear un lote.",
@@ -451,30 +449,6 @@ class ComprasController extends Controller
                             ], 400);
                         }
 
-                        // Si tiene lotes y se especificó un lote, actualizar el stock del lote
-                        $lote = \App\Models\Inventario\Lote::find($det['lote_id']);
-                        if (!$lote) {
-                            DB::rollBack();
-                            return Response()->json([
-                                'error' => "El lote especificado no existe.",
-                                'code' => 400
-                            ], 400);
-                        }
-
-                        // Verificar que el lote pertenezca al producto y bodega correctos
-                        if ($lote->id_producto != $det['id_producto'] || $lote->id_bodega != $compra->id_bodega) {
-                            DB::rollBack();
-                            return Response()->json([
-                                'error' => "El lote seleccionado no corresponde al producto o bodega especificados.",
-                                'code' => 400
-                            ], 400);
-                        }
-
-                        // Actualizar stock del lote en unidades base
-                        $lote->stock += $cantidadBaseInv;
-                        $lote->save();
-
-                        // Crear inventario si no existe; actualizar el tradicional para mantener consistencia
                         $inventario = Inventario::firstOrCreate(
                             [
                                 'id_producto' => $det['id_producto'],
@@ -482,9 +456,7 @@ class ComprasController extends Controller
                             ],
                             ['stock' => 0, 'stock_minimo' => 0, 'stock_maximo' => 0]
                         );
-                        $inventario->stock += $cantidadBaseInv;
-                        $inventario->save();
-                        $inventario->kardex($compra, $cantidadBaseInv);
+                        LoteAsignacionService::aplicarEntradaCompra($asignaciones, $detalle, $compra, $inventario);
                     } else {
                         // Crear inventario si no existe; actualizar inventario tradicional (sin lotes)
                         $inventario = Inventario::firstOrCreate(
@@ -525,7 +497,7 @@ class ComprasController extends Controller
             $this->sincronizarStockCompraConShopify($compra);
         }
 
-        $compra->load(['detalles', 'proveedor', 'impuestos.impuesto']);
+        $compra->load(['detalles.lote', 'detalles.loteAsignaciones.lote', 'proveedor', 'impuestos.impuesto']);
 
         return Response()->json($compra, 200);
 

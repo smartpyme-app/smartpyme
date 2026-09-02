@@ -16,6 +16,7 @@ import {
     esImpuestoIva,
     hidratarImpuestosProductosEnDetalles,
 } from '@utils/impuestos-venta.util';
+import { resolverCanalVentaDefault } from '@utils/canal-venta.util';
 
 import * as moment from 'moment';
 import { LazyImageDirective } from '../../../../directives/lazy-image.directive';
@@ -121,7 +122,10 @@ export class FacturacionConsignaComponent extends BaseModalComponent implements 
             .pipe(this.untilDestroyed())
             .subscribe(canales => {
                 this.canales = canales;
-                this.venta.id_canal = this.canales[0].id;
+                this.venta.id_canal = resolverCanalVentaDefault(
+                    canales,
+                    this.apiService.auth_user()?.id_canal
+                );
                 this.cdr.markForCheck();
             }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
 

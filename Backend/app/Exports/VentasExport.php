@@ -2,16 +2,18 @@
 
 namespace App\Exports;
 
+use App\Exports\Support\DevolucionEnReporte;
 use App\Helpers\CountryTermsHelper;
 use App\Models\Admin\Empresa;
+use App\Models\Ventas\Devoluciones\Devolucion;
 use App\Models\Ventas\Venta;
-use Maatwebsite\Excel\Concerns\FromQuery;
+use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
-use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 
-class VentasExport implements FromQuery, WithHeadings, WithMapping, WithChunkReading
+class VentasExport implements FromCollection, WithHeadings, WithMapping
 {
     public $request;
 
@@ -59,12 +61,13 @@ class VentasExport implements FromQuery, WithHeadings, WithMapping, WithChunkRea
         return $anio;
     }
 
-    /**
-     * Procesar en lotes para reducir uso de memoria (evita ->get() que carga todo).
-     */
-    public function chunkSize(): int
+    public static function motivoAnulacionParaExport($row): string
     {
-        return 1000; // Subido a 1000 ya que las filas son livianas sin el JSON
+        if (($row->estado ?? '') !== 'Anulada') {
+            return '';
+        }
+
+        return (string) ($row->motivo_anulacion ?? '');
     }
 
     public function headings(): array
@@ -87,6 +90,7 @@ class VentasExport implements FromQuery, WithHeadings, WithMapping, WithChunkRea
             'Forma de pago',
             'Banco',
             'Estado',
+            'Motivo de Anulación',
             'Canal',
             'Costo',
             'Cuenta terceros',
@@ -148,6 +152,7 @@ class VentasExport implements FromQuery, WithHeadings, WithMapping, WithChunkRea
             'forma_pago',
             'detalle_banco',
             'estado',
+            'motivo_anulacion',
             'sello_mh',
             'cotizacion',
             'observaciones',
@@ -161,9 +166,27 @@ class VentasExport implements FromQuery, WithHeadings, WithMapping, WithChunkRea
         ];
     }
 
+    public function collection(): Collection
+    {
+        $ventas = $this->query()->get();
+        $devoluciones = $this->queryDevoluciones()->get()->each(function (Devolucion $devolucion) {
+            DevolucionEnReporte::marcar($devolucion);
+            if ($devolucion->relationLoaded('detalles')) {
+                $devolucion->total_costo = $devolucion->detalles->sum(function ($detalle) {
+                    return ((float) $detalle->cantidad) * ((float) $detalle->costo);
+                });
+            }
+        });
+
+        return $ventas->concat($devoluciones)
+            ->sortByDesc(function ($row) {
+                return sprintf('%s-%010d', (string) $row->fecha, (int) ($row->id ?? 0));
+            })
+            ->values();
+    }
+
     /**
-     * Retorna el query (sin ->get()). WithChunkReading ejecuta en lotes.
-     * Eager loading evita N+1 en map().
+     * Query de ventas (también usado por VentasDesglosadasPorVendedorExport).
      */
     public function query()
     {
@@ -306,12 +329,103 @@ class VentasExport implements FromQuery, WithHeadings, WithMapping, WithChunkRea
             ->orderBy('id', 'desc');
     }
 
+    public function queryDevoluciones()
+    {
+        $request = $this->request;
+        if (!$request) {
+            return Devolucion::query()->whereRaw('1 = 0');
+        }
+
+        $idEmpresaFiltro = null;
+        if (auth()->check()) {
+            $idEmpresaFiltro = auth()->user()->id_empresa;
+        } elseif ($request->id_empresa) {
+            $idEmpresaFiltro = (int) $request->id_empresa;
+        }
+
+        $anio = self::anioDesdeRequest($request);
+
+        return Devolucion::query()
+            ->with([
+                'cliente:id,tipo,nombre,apellido,nombre_empresa,telefono,dui,nit,direccion',
+                'usuario:id,name',
+                'sucursal:id,nombre,id_empresa',
+                'sucursal.empresa:id,nombre',
+                'documento:id,nombre',
+                'detalles:id,id_devolucion_venta,cantidad,costo',
+                'venta:id,id_canal,id_proyecto,id_vendedor,forma_pago,detalle_banco,num_identificacion',
+                'venta.canal:id,nombre',
+                'venta.proyecto:id,nombre',
+                'venta.vendedor:id,name',
+            ])
+            ->where('enable', 1)
+            ->when($idEmpresaFiltro !== null, function ($query) use ($idEmpresaFiltro) {
+                return $query->where('id_empresa', $idEmpresaFiltro);
+            })
+            ->when($anio !== null, function ($query) use ($anio) {
+                return $query->whereYear('fecha', $anio);
+            })
+            ->when($anio === null && $request->inicio, function ($query) use ($request) {
+                return $query->where('fecha', '>=', $request->inicio);
+            })
+            ->when($anio === null && $request->fin, function ($query) use ($request) {
+                return $query->where('fecha', '<=', $request->fin);
+            })
+            ->when($request->id_sucursal, function ($query) use ($request) {
+                return $query->where('id_sucursal', $request->id_sucursal);
+            })
+            ->when(!empty($request->sucursales) && is_array($request->sucursales), function ($query) use ($request) {
+                return $query->whereIn('id_sucursal', $request->sucursales);
+            })
+            ->when($request->id_bodega, function ($query) use ($request) {
+                return $query->where('id_bodega', $request->id_bodega);
+            })
+            ->when($request->id_cliente, function ($query) use ($request) {
+                return $query->where('id_cliente', $request->id_cliente);
+            })
+            ->when($request->id_usuario, function ($query) use ($request) {
+                return $query->where('id_usuario', $request->id_usuario);
+            })
+            ->when($request->id_canal, function ($query) use ($request) {
+                return $query->whereHas('venta', function ($venta) use ($request) {
+                    $venta->where('id_canal', $request->id_canal);
+                });
+            })
+            ->when($request->id_proyecto, function ($query) use ($request) {
+                return $query->whereHas('venta', function ($venta) use ($request) {
+                    $venta->where('id_proyecto', $request->id_proyecto);
+                });
+            })
+            ->when($request->id_vendedor, function ($query) use ($request) {
+                return $query->whereHas('venta', function ($venta) use ($request) {
+                    $venta->where('id_vendedor', $request->id_vendedor);
+                });
+            })
+            ->when($request->buscador, function ($query) use ($request) {
+                $buscador = '%' . $request->buscador . '%';
+                return $query->where(function ($q) use ($buscador) {
+                    $q->whereHas('cliente', function ($qCliente) use ($buscador) {
+                        $qCliente->where('nombre', 'like', $buscador)
+                            ->orWhere('nombre_empresa', 'like', $buscador)
+                            ->orWhere('ncr', 'like', $buscador)
+                            ->orWhere('nit', 'like', $buscador);
+                    })
+                        ->orWhere('correlativo', 'like', $buscador)
+                        ->orWhere('observaciones', 'like', $buscador);
+                });
+            });
+    }
+
     /**
      * Usa relaciones eager-loaded (sin queries adicionales).
      * Compatible con PHP 7.4 (sin el operador ?->).
      */
     public function map($row): array
     {
+        if (DevolucionEnReporte::esDevolucion($row)) {
+            return $this->mapDevolucion($row);
+        }
+
         $cliente = $row->relationLoaded('cliente') ? $row->cliente : null;
         $sucursal = $row->relationLoaded('sucursal') ? $row->sucursal : null;
         $empresa = ($sucursal && $sucursal->relationLoaded('empresa')) ? $sucursal->empresa : null;
@@ -351,6 +465,7 @@ class VentasExport implements FromQuery, WithHeadings, WithMapping, WithChunkRea
             $row->forma_pago,
             $row->detalle_banco,
             $row->estado,
+            self::motivoAnulacionParaExport($row),
             $nombreCanal,
             $row->estado == 'Anulada' ? '0.0' : round($row->total_costo, 2),
             round($cuentaTerceros, 2),
@@ -372,6 +487,67 @@ class VentasExport implements FromQuery, WithHeadings, WithMapping, WithChunkRea
             $fila[] = $paquete !== null ? ($paquete->wr ?? '') : '';
             $fila[] = $paquete !== null ? ($paquete->num_guia ?? '') : '';
             $fila[] = $paquete !== null ? ($paquete->num_seguimiento ?? '') : '';
+        }
+
+        return $fila;
+    }
+
+    private function mapDevolucion(Devolucion $row): array
+    {
+        $cliente = $row->relationLoaded('cliente') ? $row->cliente : null;
+        $sucursal = $row->relationLoaded('sucursal') ? $row->sucursal : null;
+        $empresa = ($sucursal && $sucursal->relationLoaded('empresa')) ? $sucursal->empresa : null;
+        $usuario = $row->relationLoaded('usuario') ? $row->usuario : null;
+        $documento = $row->relationLoaded('documento') ? $row->documento : null;
+        $venta = $row->relationLoaded('venta') ? $row->venta : null;
+        $vendedor = ($venta && $venta->relationLoaded('vendedor')) ? $venta->vendedor : null;
+        $canal = ($venta && $venta->relationLoaded('canal')) ? $venta->canal : null;
+        $proyecto = ($venta && $venta->relationLoaded('proyecto')) ? $venta->proyecto : null;
+
+        $nombreCliente = 'Consumidor Final';
+        if ($cliente) {
+            $nombreCliente = ($cliente->tipo == 'Empresa')
+                ? $cliente->nombre_empresa
+                : trim($cliente->nombre . ' ' . $cliente->apellido);
+        }
+
+        $montos = DevolucionEnReporte::montosVentaNegados($row);
+
+        $fila = [
+            $row->fecha,
+            $nombreCliente,
+            $cliente ? $cliente->telefono : '',
+            $cliente ? $cliente->dui : '',
+            $cliente ? $cliente->nit : '',
+            $cliente ? $cliente->direccion : '',
+            ($documento && isset($documento->nombre)) ? $documento->nombre : 'Devolución',
+            ($proyecto && isset($proyecto->nombre)) ? $proyecto->nombre : '',
+            $venta ? $venta->num_identificacion : '',
+            $row->correlativo,
+            $venta ? $venta->forma_pago : '',
+            $venta ? $venta->detalle_banco : '',
+            DevolucionEnReporte::ESTADO,
+            self::motivoAnulacionParaExport($row),
+            ($canal && isset($canal->nombre)) ? $canal->nombre : '',
+            $montos['costo'],
+            $montos['cuenta_terceros'],
+            $montos['sub_total'],
+            $montos['descuento'],
+            $montos['iva'],
+            $montos['utilidad'],
+            $montos['total_sin_iva'],
+            $montos['total'],
+            $montos['propina'],
+            $empresa ? $empresa->nombre : '',
+            $row->observaciones,
+            ($usuario && isset($usuario->name)) ? $usuario->name : '',
+            ($vendedor && isset($vendedor->name)) ? $vendedor->name : '',
+        ];
+
+        if ($this->tieneModuloPaquetes) {
+            $fila[] = '';
+            $fila[] = '';
+            $fila[] = '';
         }
 
         return $fila;

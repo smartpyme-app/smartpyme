@@ -26,6 +26,7 @@ interface UsuarioSavePayload {
   id_empresa: number;
   id_sucursal: number;
   id_bodega: number;
+  id_canal?: number | null | string;
   rol_id: number;
   tipo?: string;
   codigo_autorizacion?: string;
@@ -45,6 +46,7 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
   };
   public sucursales: any = [];
   public bodegas: any = [];
+  public canales: any = [];
   public empleados: any = [];
   public roles: any = [];
   public rol: any = {};
@@ -212,6 +214,15 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
       }
     );
 
+    this.apiService.getAll('canales/list').subscribe(
+      (canales) => {
+        this.canales = canales;
+      },
+      (error) => {
+        this.alertService.error(error);
+      }
+    );
+
     this.usuarioLogueado();
     this.loadPermissions(id);
   }
@@ -292,6 +303,7 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
       id_empresa: this.usuario.id_empresa ?? authUser.id_empresa,
       id_sucursal: this.usuario.id_sucursal,
       id_bodega: this.usuario.id_bodega,
+      id_canal: this.usuario.id_canal ?? '',
       rol_id: this.usuario.rol_id,
     };
 

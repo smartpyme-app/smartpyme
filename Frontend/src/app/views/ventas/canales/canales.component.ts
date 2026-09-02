@@ -47,6 +47,7 @@ export class CanalesComponent extends BaseCrudComponent<any> implements OnInit {
             initNewItem: (item) => {
                 item.id_empresa = apiService.auth_user().id_empresa;
                 item.enable = true;
+                item.predeterminado = 0;
                 return item;
             },
             afterSave: (item, isNew) => {
@@ -91,9 +92,9 @@ export class CanalesComponent extends BaseCrudComponent<any> implements OnInit {
         super.openModal(template, canal, {class: 'modal-md', backdrop: 'static'});
     }
 
-    public setEstado(canal:any){
+    public setEstado(canal:any, change:boolean = false){
         this.canal = canal;
-        // Usar onSubmit con isStatusChange = true
+        this.canal.change = change;
         this.onSubmit(canal, true);
     }
 

@@ -46,7 +46,7 @@ class UsuariosController extends Controller
     {
 
         $usuarios = Usuario::where('id_empresa', JWTAuth::parseToken()->authenticate()->id_empresa)
-            ->with('sucursal', 'bodega', 'roles')
+            ->with('sucursal', 'bodega', 'roles', 'canal')
             ->when($request->estado !== null, function ($q) use ($request) {
                 $q->where('enable', !!$request->estado);
             })
@@ -115,6 +115,8 @@ class UsuariosController extends Controller
                 }
             }
         }
+
+        $this->normalizarCanalUsuario($request);
 
         $data = $request->all();
         if ($request->hasFile('file')) {
@@ -277,13 +279,27 @@ class UsuariosController extends Controller
             'codigo' => 'sometimes|nullable',
             'id_sucursal' => 'required',
             'id_bodega' => 'required',
+            'id_canal' => 'sometimes|nullable|numeric',
         ]);
 
 
         $user = Usuario::findOrFail($request->id);
+        $this->normalizarCanalUsuario($request);
         $user->fill($request->all());
         $user->save();
         return Response()->json($user, 200);
+    }
+
+    private function normalizarCanalUsuario(Request $request): void
+    {
+        if (!$request->has('id_canal')) {
+            return;
+        }
+
+        $idCanal = $request->input('id_canal');
+        if ($idCanal === '' || $idCanal === null) {
+            $request->merge(['id_canal' => null]);
+        }
     }
 
     public function updateAvatar(UpdateAvatarRequest $request)

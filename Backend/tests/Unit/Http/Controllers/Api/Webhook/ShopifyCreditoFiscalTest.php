@@ -27,6 +27,7 @@ class ShopifyCreditoFiscalTest extends TestCase
         $cache = $this->createMock(ShopifySyncCache::class);
         $shippingService = $this->createMock(ShippingService::class);
         $impuestosService = $this->createMock(ImpuestosService::class);
+        $imageService = $this->createMock(ShopifyImageService::class);
 
         $this->controller = new ShopifyController(
             $transformer,
@@ -35,7 +36,7 @@ class ShopifyCreditoFiscalTest extends TestCase
             $impuestosService,
             $this->createMock(ShopifyVentaService::class),
             $this->createMock(ShopifyClienteService::class),
-            $this->createMock(ShopifyImageService::class)
+            $imageService
         );
 
         $reflector = new ReflectionClass(ShopifyController::class);

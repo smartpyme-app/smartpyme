@@ -178,7 +178,9 @@
         if ($rtnCliente === '') {
             $rtnCliente = trim((string) ($cliente->dui ?? ''));
         }
+        $rtnCliente = str_replace('-', '', $rtnCliente);
     }
+    $rtnEmpresa = str_replace('-', '', trim((string) ($empresa->nit ?? '')));
 
     $vendedorNombre = '';
     if ($venta->relationLoaded('vendedor') && $venta->vendedor) {

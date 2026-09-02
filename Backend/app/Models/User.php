@@ -47,6 +47,7 @@ class User extends Authenticatable implements JWTSubject
         'id_bodega',
         'id_sucursal',
         'id_authorization',
+        'id_canal',
         'tipo',
         'modulo_citas',
         'codigo_autorizacion',
@@ -133,6 +134,11 @@ class User extends Authenticatable implements JWTSubject
     public function bodega()
     {
         return $this->belongsTo('App\Models\Inventario\Bodega', 'id_bodega');
+    }
+
+    public function canal()
+    {
+        return $this->belongsTo('App\Models\Admin\Canal', 'id_canal');
     }
 
     public function accesos()

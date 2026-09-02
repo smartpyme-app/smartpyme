@@ -272,6 +272,15 @@
                     }
                 </select>
             </div>
+            <div class="form-group col-md-6">
+                <label for="id_canal">Canal de venta:</label>
+                <select [(ngModel)]="usuario.id_canal" class="form-control form-select" name="id_canal">
+                    <option value="">Predeterminado de la empresa</option>
+                    <option *ngFor="let canal of canales" [value]="canal.id">
+                        {{ canal.nombre }}
+                    </option>
+                </select>
+            </div>
 
         </div>
 

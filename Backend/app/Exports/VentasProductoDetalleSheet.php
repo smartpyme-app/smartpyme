@@ -2,7 +2,7 @@
 
 namespace App\Exports;
 
-use App\Models\Ventas\Detalle;
+use App\Exports\Support\DetallesConDevolucionesQuery;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -120,30 +120,11 @@ class VentasProductoDetalleSheet implements FromCollection, WithHeadings, WithMa
             $sucursalesTexto = 'Todas';
         }
 
-        // Obtener todas las sucursales que tienen ventas
-        $query = DB::table('ventas')
-            ->join('detalles_venta', 'ventas.id', '=', 'detalles_venta.id_venta')
-            ->join('productos', 'productos.id', '=', 'detalles_venta.id_producto')
-            ->join('sucursales', 'sucursales.id', '=', 'ventas.id_sucursal')
-            ->when($this->fecha_inicio, function ($q) {
-                return $q->whereBetween('ventas.fecha', [$this->fecha_inicio, $this->fecha_fin]);
-            })
-            ->when($this->request->sucursales, function ($q) {
-                return $q->whereIn('ventas.id_sucursal', $this->request->sucursales);
-            })
-            ->when($this->request->categorias, function ($q) {
-                return $q->whereIn('productos.id_categoria', $this->request->categorias);
-            })
-            ->when($this->request->marcas, function ($q) {
-                return $q->whereIn('productos.marca', $this->request->marcas);
-            })
-            ->where('ventas.id_empresa', $this->request->id_empresa)
-            ->where('ventas.estado', '!=', 'Anulada')
-            ->where('ventas.cotizacion', 0)
-            ->select('sucursales.id', 'sucursales.nombre')
-            ->distinct()
-            ->orderBy('sucursales.nombre')
-            ->get();
+        $query = DetallesConDevolucionesQuery::sucursalesVenta(
+            $this->request,
+            (string) $this->fecha_inicio,
+            (string) $this->fecha_fin
+        );
 
         $this->sucursales = $query->pluck('nombre')->toArray();
 
@@ -171,60 +152,38 @@ class VentasProductoDetalleSheet implements FromCollection, WithHeadings, WithMa
 
         // Si las sucursales no se obtuvieron en headings(), obtenerlas aquí
         if (empty($this->sucursales)) {
-            $query = DB::table('ventas')
-                ->join('detalles_venta', 'ventas.id', '=', 'detalles_venta.id_venta')
-                ->join('productos', 'productos.id', '=', 'detalles_venta.id_producto')
-                ->join('sucursales', 'sucursales.id', '=', 'ventas.id_sucursal')
-                ->when($this->fecha_inicio, function ($q) {
-                    return $q->whereBetween('ventas.fecha', [$this->fecha_inicio, $this->fecha_fin]);
-                })
-                ->when($this->request->sucursales, function ($q) {
-                    return $q->whereIn('ventas.id_sucursal', $this->request->sucursales);
-                })
-                ->when($this->request->categorias, function ($q) {
-                    return $q->whereIn('productos.id_categoria', $this->request->categorias);
-                })
-                ->when($this->request->marcas, function ($q) {
-                    return $q->whereIn('productos.marca', $this->request->marcas);
-                })
-                ->where('ventas.id_empresa', $this->request->id_empresa)
-                ->where('ventas.estado', '!=', 'Anulada')
-                ->where('ventas.cotizacion', 0)
-                ->select('sucursales.nombre')
-                ->distinct()
-                ->orderBy('sucursales.nombre')
-                ->get();
-            
+            $query = DetallesConDevolucionesQuery::sucursalesVenta(
+                $this->request,
+                (string) $this->fecha_inicio,
+                (string) $this->fecha_fin
+            );
             $this->sucursales = $query->pluck('nombre')->toArray();
         }
 
-        // Obtener datos agrupados por categoría y sucursal
-        $detalles = Detalle::select(
-            'productos.id_categoria',
-            'ventas.id_sucursal',
-            'sucursales.nombre as sucursal',
-            DB::raw('SUM(detalles_venta.cantidad) as unidades_vendidas'),
-            DB::raw('SUM(detalles_venta.total) as total_ventas')
-        )
-            ->join('ventas', 'ventas.id', '=', 'detalles_venta.id_venta')
-            ->join('productos', 'productos.id', '=', 'detalles_venta.id_producto')
-            ->join('sucursales', 'sucursales.id', '=', 'ventas.id_sucursal')
-            ->when($this->fecha_inicio, function ($query) use ($request) {
-                return $query->whereBetween('ventas.fecha', [$this->fecha_inicio, $this->fecha_fin]);
-            })
-            ->when($request->sucursales, function ($query) use ($request) {
-                return $query->whereIn('ventas.id_sucursal', $request->sucursales);
-            })
+        $lineas = DetallesConDevolucionesQuery::lineasVenta(
+            $request,
+            (string) $this->fecha_inicio,
+            (string) $this->fecha_fin
+        );
+
+        $detalles = DB::query()
+            ->fromSub($lineas, 'lineas')
+            ->join('productos', 'productos.id', '=', 'lineas.id_producto')
+            ->join('sucursales', 'sucursales.id', '=', 'lineas.id_sucursal')
+            ->select(
+                'productos.id_categoria',
+                'sucursales.id as id_sucursal',
+                'sucursales.nombre as sucursal',
+                DB::raw('SUM(lineas.cantidad) as unidades_vendidas'),
+                DB::raw('SUM(lineas.total) as total_ventas')
+            )
             ->when($request->categorias, function ($query) use ($request) {
                 return $query->whereIn('productos.id_categoria', $request->categorias);
             })
             ->when($request->marcas, function ($query) use ($request) {
                 return $query->whereIn('productos.marca', $request->marcas);
             })
-            ->where('ventas.id_empresa', $request->id_empresa)
-            ->where('ventas.estado', '!=', 'Anulada')
-            ->where('ventas.cotizacion', 0)
-            ->groupBy('productos.id_categoria', 'ventas.id_sucursal', 'sucursales.nombre')
+            ->groupBy('productos.id_categoria', 'sucursales.id', 'sucursales.nombre')
             ->get();
 
         // Organizar datos por categoría

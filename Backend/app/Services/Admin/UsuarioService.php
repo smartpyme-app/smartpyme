@@ -141,6 +141,10 @@ class UsuarioService
             $usuario = new User();
         }
 
+        if (array_key_exists('id_canal', $data) && ($data['id_canal'] === '' || $data['id_canal'] === null)) {
+            $data['id_canal'] = null;
+        }
+
         // Procesar contraseña si viene
         if (isset($data['password']) && $data['password']) {
             $data['password'] = Hash::make($data['password']);
@@ -385,6 +389,6 @@ class UsuarioService
      */
     public function obtenerUsuario(int $id): User
     {
-        return User::with('roles')->findOrFail($id);
+        return User::with('roles', 'canal')->findOrFail($id);
     }
 }

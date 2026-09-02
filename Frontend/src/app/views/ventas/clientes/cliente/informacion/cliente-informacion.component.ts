@@ -52,6 +52,7 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
   public actividad_economicas: any = [];
   public contacto: any = {};
   public vendedores: any = [];
+  public documentosSucursal: any[] = [];
   //loading
   public loading_contacto = false;
   public esNuevo = false;
@@ -113,6 +114,29 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
     private haciendaContribuyenteClient: HaciendaContribuyenteClientService,
   ) {
     super(modalManager, alertService);
+  }
+
+  isShopifyActive(): boolean {
+    const empresa = this.apiService.auth_user()?.empresa;
+    return !!(empresa?.shopify_store_url && empresa?.shopify_status === 'connected');
+  }
+
+  loadDocumentosSucursal() {
+    if (!this.isShopifyActive()) {
+      return;
+    }
+
+    const idSucursal = this.apiService.auth_user()?.id_sucursal;
+    this.apiService.getAll('documentos/list').subscribe(
+      (documentos) => {
+        this.documentosSucursal = (documentos || []).filter(
+          (doc: any) => doc.id_sucursal == idSucursal
+        );
+      },
+      (error) => {
+        this.alertService.error(error);
+      }
+    );
   }
 
     esCostaRicaFe(): boolean {
@@ -340,6 +364,7 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
           this.alertService.error(error);
         }
       );
+      this.loadDocumentosSucursal();
     }
 
     verificarAccesoContabilidad() {
@@ -405,6 +430,7 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
         this.cliente.habilita_credito = false;
         this.cliente.dias_credito = null;
         this.cliente.limite_credito = null;
+        this.cliente.tipo_factura_preferida = null;
         this.cliente.id_empresa = this.apiService.auth_user().id_empresa;
         this.cliente.id_usuario = this.apiService.auth_user().id;
         if (this.esCostaRicaFe()) {

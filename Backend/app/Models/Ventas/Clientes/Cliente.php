@@ -68,6 +68,7 @@ class Cliente extends AuditableModel {
        'tipo_documento',
        'codigo_cliente',
        'tiempo_pago',
+       'tipo_factura_preferida',
 
     ];
     protected $appends = ['nombre_completo'];

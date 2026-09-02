@@ -43,6 +43,7 @@
                     <tr>
                         <th>Nombre</th>
                         <th>Descripción</th>
+                        <th>Predeterminado</th>
                         <th>Estado</th>
                         <!-- <th>Propina</th> -->
                         <!-- <th>Envios</th> -->
@@ -71,6 +72,12 @@
                         <tr>
                         <td>{{canal.nombre }}</td>
                         <td>{{canal.descripcion}}</td>
+                        <td>
+                            <select name="predeterminado" [(ngModel)]="canal.predeterminado" class="form-select w-auto border-0" (change)="setEstado(canal, true)" [ngClass]="{'bg-light-danger' : canal.predeterminado == 0, 'bg-light-success' : canal.predeterminado == 1}">
+                                <option value="1">Si</option>
+                                <option value="0">No</option>
+                            </select>
+                        </td>
                         <td>
                             <select [disabled]="!apiService.canChange()" name="enable" [(ngModel)]="canal.enable" class="form-select w-auto border-0" (change)="setEstado(canal)" [ngClass]="{'bg-light-danger' : canal.enable == 0, 'bg-light-success' : canal.enable == 1}">
                                 <option value="1">Activo</option>

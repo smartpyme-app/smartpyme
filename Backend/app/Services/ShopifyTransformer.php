@@ -5,8 +5,8 @@ namespace App\Services;
 use App\Constants\ShopifyConstant;
 use App\Helpers\ShopifyHelper;
 use App\Models\Admin\Empresa;
+use Carbon\Carbon;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Log;
 
 class ShopifyTransformer
 {
@@ -247,6 +247,23 @@ class ShopifyTransformer
     }
 
     /**
+     * Fecha oficial de venta al cobrar un pedido Shopify (reportes + fecEmi/horEmi).
+     * created_at no es fillable en Venta: asignarlo aparte, no vía update().
+     */
+    public function fechasOficialesDesdePago($pagadoEn = null): array
+    {
+        $pagadoEn = $pagadoEn instanceof Carbon
+            ? $pagadoEn->copy()->timezone(config('app.timezone'))
+            : now();
+
+        return [
+            'fecha' => $pagadoEn->toDateString(),
+            'fecha_pago' => $pagadoEn->toDateString(),
+            'created_at' => $pagadoEn,
+        ];
+    }
+
+    /**
      * Calcula subtotal, IVA y total de línea según reglas de Hacienda (El Salvador).
      * Prioridad aritmética: subtotal = round(TotalConIva/1.13, 2), iva = round(subtotal*0.13, 2), total = subtotal + iva.
      *
@@ -396,7 +413,7 @@ class ShopifyTransformer
         return $estado;
     }
 
-    private function mapearFormaPago($shopifyData)
+    public function mapearFormaPago($shopifyData)
     {
         $paymentGateways = $shopifyData['payment_gateway_names'] ?? [];
         $gateway = !empty($paymentGateways) ? $paymentGateways[0] : 'unknown';
@@ -419,9 +436,9 @@ class ShopifyTransformer
             'efectivo' => 'Efectivo',
             'cash on delivery (cod)' => 'Contra entrega',
             'pago contra entrega' => 'Contra entrega',
-            'bank_transfer' => 'Transferencia bancaria',
-            'bank deposit' => 'Transferencia bancaria',
-            'depósito bancario' => 'Transferencia bancaria',
+            'bank_transfer' => 'Transferencia',
+            'bank deposit' => 'Transferencia',
+            'depósito bancario' => 'Transferencia',
             'stripe' => 'Tarjeta de crédito/débito',
             'square' => 'Tarjeta de crédito/débito',
             'wompi el salvador' => 'Wompi',
@@ -438,6 +455,10 @@ class ShopifyTransformer
                 $formaPago = 'KueskiPay';
             } elseif (str_contains($gatewayLower, 'wompi')) {
                 $formaPago = 'Wompi';
+            } elseif (str_contains($gatewayLower, 'cod') || str_contains($gatewayLower, 'contra entrega')) {
+                $formaPago = 'Contra entrega';
+            } elseif (str_contains($gatewayLower, 'transferencia') || str_contains($gatewayLower, 'deposit') || str_contains($gatewayLower, 'depósito')) {
+                $formaPago = 'Transferencia';
             }
         }
 

@@ -25,6 +25,7 @@ class StoreCanalRequest extends FormRequest
             'id_empresa' => ['required', 'integer', 'exists:empresas,id'],
             'id' => ['nullable', 'integer', 'exists:canales,id'],
             'enable' => ['nullable', 'boolean'],
+            'predeterminado' => ['sometimes', 'nullable'],
             'cobra_propina' => ['nullable', 'boolean'],
             'envios' => ['nullable', 'boolean'],
         ];

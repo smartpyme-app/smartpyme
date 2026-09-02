@@ -42,13 +42,20 @@ class InventarioAFechaExport implements FromCollection, WithHeadings, WithMappin
 
     public function headings(): array
     {
-        $headings = ['Nombre', 'Categoría', 'Codigo',  'Costo', 'Stock'];
+        $headings = ['Nombre', 'Categoría', 'Codigo',  'Costo', 'Stock', 'Tiene fotografía'];
 
         foreach ($this->bodegas as $sucursal) {
             $headings[] = $sucursal->nombre;
         }
 
         return $headings;
+    }
+
+    public static function tieneFotografiaParaExport($producto): string
+    {
+        $count = (int) ($producto->imagenes_count ?? 0);
+
+        return $count > 0 ? 'Sí' : 'No';
     }
 
     public function map($producto): array
@@ -67,6 +74,7 @@ class InventarioAFechaExport implements FromCollection, WithHeadings, WithMappin
             $producto->codigo ?? '',
             $producto->costo ?? 0,
             $producto->inventarios ? $producto->inventarios->sum('stock') : 0,
+            self::tieneFotografiaParaExport($producto),
         ];
 
         // Agrupar inventarios por bodegas
@@ -106,7 +114,8 @@ class InventarioAFechaExport implements FromCollection, WithHeadings, WithMappin
         $request = $this->request;
 
         // Usar cursor() en lugar de get() para reducir uso de memoria en empresas con muchos productos
-        return Producto::with(['inventarios' => function ($q) use ($request) {
+        return Producto::withCount('imagenes')
+            ->with(['inventarios' => function ($q) use ($request) {
             if ($request->id_bodega) {
                 $q->where('id_bodega', $request->id_bodega);
             }

@@ -38,6 +38,7 @@ export class UsuariosComponent extends BaseCrudComponent<any> implements OnInit 
 
   public sucursales: any = [];
   public bodegas: any = [];
+  public canales: any = [];
   public usuarios: any = [];
   public roles:any = [];
   public usuario: any = {};
@@ -140,6 +141,15 @@ export class UsuariosComponent extends BaseCrudComponent<any> implements OnInit 
       (bodegas) => {
         this.bodegas = bodegas;
         this.cdr.markForCheck();
+      },
+      (error) => {
+        this.alertService.error(error);
+      }
+    );
+
+    this.apiService.getAll('canales/list').subscribe(
+      (canales) => {
+        this.canales = canales;
       },
       (error) => {
         this.alertService.error(error);

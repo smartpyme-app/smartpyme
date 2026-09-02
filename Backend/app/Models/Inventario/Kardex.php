@@ -198,16 +198,26 @@ class Kardex extends Model {
             }
         }
 
-        // Si es una compra, obtener el lote desde el detalle de compra
+        // Si es una compra, obtener el lote desde el detalle o detalle_compra_lotes
         if ($this->detalle == 'Compra' || $this->detalle == 'Compra a consigna' || $this->detalle == 'Compra Anulada') {
             $compra = \App\Models\Compras\Compra::find($this->referencia);
             if ($compra) {
                 $detalleCompra = \App\Models\Compras\Detalle::where('id_compra', $compra->id)
                     ->where('id_producto', $this->id_producto)
-                    ->whereNotNull('lote_id')
                     ->first();
-                if ($detalleCompra && $detalleCompra->lote_id) {
-                    return (int) $detalleCompra->lote_id;
+                if ($detalleCompra) {
+                    if ($detalleCompra->lote_id) {
+                        return (int) $detalleCompra->lote_id;
+                    }
+                    $cantidadMov = (float) ($this->entrada_cantidad ?: $this->salida_cantidad ?: 0);
+                    if ($cantidadMov > 0) {
+                        $asig = \App\Models\Compras\DetalleCompraLote::where('id_detalle_compra', $detalleCompra->id)
+                            ->whereRaw('ABS(cantidad - ?) < 0.0001', [$cantidadMov])
+                            ->first();
+                        if ($asig && $asig->lote_id) {
+                            return (int) $asig->lote_id;
+                        }
+                    }
                 }
             }
         }

@@ -19,6 +19,15 @@
                 </small>
             }
         </div>
+        <div class="form-group col-12 col-md-6 col-lg-4" *ngIf="isShopifyActive()">
+            <label for="tipo_factura_preferida" class="form-label">Tipo de factura preferida (Shopify)</label>
+            <select class="form-select" name="tipo_factura_preferida" [(ngModel)]="cliente.tipo_factura_preferida">
+                <option [ngValue]="null">Según datos fiscales</option>
+                <option *ngFor="let doc of documentosSucursal" [value]="doc.nombre">
+                    {{ doc.nombre }}
+                </option>
+            </select>
+        </div>
     </div>
     @if (cliente.tipo != 'Extranjero') {
     <div class="row">

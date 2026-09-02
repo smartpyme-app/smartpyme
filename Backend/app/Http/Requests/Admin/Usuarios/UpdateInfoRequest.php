@@ -34,6 +34,8 @@ class UpdateInfoRequest extends FormRequest
             'tipo' => 'required|string',
             'codigo' => 'sometimes|nullable|string|max:255',
             'id_sucursal' => 'required|integer|exists:sucursales,id',
+            'id_bodega' => 'sometimes|nullable|integer|exists:sucursal_bodegas,id',
+            'id_canal' => 'sometimes|nullable|numeric',
         ];
     }
 
@@ -75,6 +77,10 @@ class UpdateInfoRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
+        if ($this->has('id_canal') && ($this->id_canal === '' || $this->id_canal === null)) {
+            $this->merge(['id_canal' => null]);
+        }
+
         // Sanitizar teléfono (remover caracteres no numéricos)
         if ($this->has('telefono') && $this->telefono) {
             $this->merge([

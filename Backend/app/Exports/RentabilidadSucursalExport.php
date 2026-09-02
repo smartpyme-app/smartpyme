@@ -2,6 +2,7 @@
 
 namespace App\Exports;
 
+use App\Exports\Support\DetallesConDevolucionesQuery;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -37,35 +38,53 @@ class RentabilidadSucursalExport implements FromCollection, WithHeadings, WithMa
     {
         $request = $this->request;
 
-        return DB::table('detalles_compra as dc')
-            ->join('productos', 'dc.id_producto', '=', 'productos.id')
+        $ventasNetas = DB::query()
+            ->fromSub(
+                DetallesConDevolucionesQuery::lineasVenta($request, (string) $this->fecha_inicio, (string) $this->fecha_fin),
+                'lv'
+            )
+            ->join('productos', 'lv.id_producto', '=', 'productos.id')
             ->join('categorias', 'productos.id_categoria', '=', 'categorias.id')
-            ->join('compras', 'dc.id_compra', '=', 'compras.id')
-            ->join('detalles_venta as dv', 'dc.id_producto', '=', 'dv.id_producto')
-            ->join('ventas', 'dv.id_venta', '=', 'ventas.id')
-            ->where('compras.id_empresa', $request->id_empresa)
-            ->when($this->fecha_inicio, function ($query) {
-                return $query->whereBetween('ventas.fecha', [$this->fecha_inicio, $this->fecha_fin]);
-            })
-            ->when($request->sucursales, function ($query) use ($request) {
-                return $query->whereIn('compras.id_sucursal', $request->sucursales);
-            })
             ->select(
+                'productos.id as id_producto',
                 'categorias.nombre as categoria',
                 'productos.nombre as producto',
-                DB::raw('SUM(dv.cantidad) as unidades_vendidas'),
-                DB::raw('SUM(dc.cantidad) as unidades_compradas'),
-                DB::raw('SUM(dv.cantidad * dv.precio) as total_venta'),
-                DB::raw('SUM(dc.cantidad * dc.costo) as total_compra'),
-                DB::raw('(SUM(dv.cantidad * dv.precio) - (SUM(dv.cantidad) * (SUM(dc.cantidad * dc.costo) / SUM(dc.cantidad)))) as rentabilidad'),
+                DB::raw('SUM(lv.cantidad) as unidades_vendidas'),
+                DB::raw('SUM(lv.total) as total_venta')
+            )
+            ->groupBy('productos.id', 'categorias.nombre', 'productos.nombre');
+
+        $comprasNetas = DB::query()
+            ->fromSub(
+                DetallesConDevolucionesQuery::lineasCompra($request, (string) $this->fecha_inicio, (string) $this->fecha_fin),
+                'lc'
+            )
+            ->join('productos', 'lc.id_producto', '=', 'productos.id')
+            ->select(
+                'productos.id as id_producto',
+                DB::raw('SUM(lc.cantidad) as unidades_compradas'),
+                DB::raw('SUM(lc.total_costo) as total_compra')
+            )
+            ->groupBy('productos.id');
+
+        return DB::query()
+            ->fromSub($ventasNetas, 'vn')
+            ->leftJoinSub($comprasNetas, 'cn', 'cn.id_producto', '=', 'vn.id_producto')
+            ->select(
+                'vn.categoria',
+                'vn.producto',
+                'vn.unidades_vendidas',
+                DB::raw('COALESCE(cn.unidades_compradas, 0) as unidades_compradas'),
+                'vn.total_venta',
+                DB::raw('COALESCE(cn.total_compra, 0) as total_compra'),
+                DB::raw('(vn.total_venta - (CASE WHEN COALESCE(cn.unidades_compradas, 0) = 0 THEN 0 ELSE vn.unidades_vendidas * (cn.total_compra / cn.unidades_compradas) END)) as rentabilidad'),
                 DB::raw('CASE 
-                    WHEN SUM(dc.cantidad) = 0 OR SUM(dc.cantidad * dc.costo) = 0 THEN 0 
-                    ELSE (((SUM(dv.cantidad * dv.precio) - (SUM(dv.cantidad) * (SUM(dc.cantidad * dc.costo) / SUM(dc.cantidad)))) / (SUM(dv.cantidad) * (SUM(dc.cantidad * dc.costo) / SUM(dc.cantidad)))) * 100) 
+                    WHEN COALESCE(cn.unidades_compradas, 0) = 0 OR COALESCE(cn.total_compra, 0) = 0 THEN 0 
+                    ELSE (((vn.total_venta - (vn.unidades_vendidas * (cn.total_compra / cn.unidades_compradas))) / (vn.unidades_vendidas * (cn.total_compra / cn.unidades_compradas))) * 100) 
                 END as rentabilidad_porcentaje')
             )
-            ->groupBy('categorias.nombre', 'productos.nombre')
-            ->orderBy('categorias.nombre')
-            ->orderBy('productos.nombre')
+            ->orderBy('vn.categoria')
+            ->orderBy('vn.producto')
             ->get();
     }
 

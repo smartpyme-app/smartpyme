@@ -22,10 +22,10 @@ class ShopifySyncCache
         
         Cache::forever($key, $snapshot);
         
-        Log::info("Snapshot guardado", [
-            'producto_id' => $producto->id,
-            'snapshot' => $snapshot
-        ]);
+        // Log::info("Snapshot guardado", [
+        //     'producto_id' => $producto->id,
+        //     'snapshot' => $snapshot
+        // ]);
     }
 
     public function saveInventorySnapshot($inventario, $productoId)
@@ -38,10 +38,10 @@ class ShopifySyncCache
         
         Cache::forever($key, $snapshot);
         
-        Log::info("Snapshot inventario guardado", [
-            'producto_id' => $productoId,
-            'stock' => $inventario->stock
-        ]);
+        // Log::info("Snapshot inventario guardado", [
+        //     'producto_id' => $productoId,
+        //     'stock' => $inventario->stock
+        // ]);
     }
 
     public function hasProductChanged($producto)
@@ -65,12 +65,12 @@ class ShopifySyncCache
         
         $changed = $cached !== $current;
         
-        Log::info("Verificación cambio producto", [
-            'producto_id' => $producto->id,
-            'cached' => $cached,
-            'current' => $current,
-            'changed' => $changed
-        ]);
+        // Log::info("Verificación cambio producto", [
+        //     'producto_id' => $producto->id,
+        //     'cached' => $cached,
+        //     'current' => $current,
+        //     'changed' => $changed
+        // ]);
         
         return $changed;
     }
@@ -88,12 +88,12 @@ class ShopifySyncCache
         $currentStock = (float) $inventario->stock;
         $changed = $cachedStock != $currentStock;
         
-        Log::info("Verificación cambio inventario", [
-            'producto_id' => $productoId,
-            'cached_stock' => $cached['stock'] ?? null,
-            'current_stock' => $inventario->stock,
-            'changed' => $changed
-        ]);
+        // Log::info("Verificación cambio inventario", [
+        //     'producto_id' => $productoId,
+        //     'cached_stock' => $cached['stock'] ?? null,
+        //     'current_stock' => $inventario->stock,
+        //     'changed' => $changed
+        // ]);
         
         return $changed;
     }
@@ -120,12 +120,12 @@ class ShopifySyncCache
         
         $different = $localData !== $shopifyFormatted;
         
-        Log::info("Comparación Shopify vs Local", [
-            'producto_id' => $localProduct->id,
-            'local' => $localData,
-            'shopify' => $shopifyFormatted,
-            'different' => $different
-        ]);
+        // Log::info("Comparación Shopify vs Local", [
+        //     'producto_id' => $localProduct->id,
+        //     'local' => $localData,
+        //     'shopify' => $shopifyFormatted,
+        //     'different' => $different
+        // ]);
         
         return $different;
     }

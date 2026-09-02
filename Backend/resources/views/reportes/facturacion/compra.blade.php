@@ -111,6 +111,7 @@
             <thead>
                 <tr>
                     <th class="border-bottom">Descripción</th>
+                    <th class="border-bottom">SKU</th>
                     <th class="border-bottom text-right">Cantidad</th>
                     <th class="border-bottom text-right">Costo</th>
                     <th class="border-bottom text-right">Total</th>
@@ -120,6 +121,7 @@
                 @foreach($compra->detalles as $detalle)
                 <tr>
                     <td class="border-bottom">   {{ $detalle->nombre_producto  }}</td>
+                    <td class="border-bottom">   {{ $detalle->codigo }}</td>
                     <td class="border-bottom text-right">   {{ number_format($detalle->cantidad, 0) }}</td>
                     <td class="border-bottom text-right">   {{ $compra->empresa->currency->currency_symbol }}{{number_format($detalle->costo , 2) }}</td>
                     <td class="border-bottom text-right">   {{ $compra->empresa->currency->currency_symbol }}{{ number_format($detalle->total, 2) }}</th>
@@ -129,6 +131,7 @@
                         <td>DESCUENTOS</td>
                         <td></td>
                         <td></td>
+                        <td></td>
                         <td class="text-right">- {{ $compra->empresa->currency->currency_symbol }}{{ number_format($detalle->descuento, 2) }} </th>
                     </tr>
                 @endif
@@ -136,7 +139,7 @@
             </tbody>
             <tfoot>
                 <tr>
-                    <td colspan="2"></td>
+                    <td colspan="3"></td>
                     <td class="text-right">Sumas</td>
                     <td class="text-right">{{ $compra->empresa->currency->currency_symbol }}{{ number_format($compra->sub_total, 2) }}</td>
                 </tr>
@@ -144,7 +147,7 @@
                     @foreach ($compra->impuestos as $lineaImpuesto)
                         @if ((float) $lineaImpuesto->monto > 0)
                         <tr>
-                            <td colspan="2"></td>
+                            <td colspan="3"></td>
                             <td class="text-right">
                                 {{ optional($lineaImpuesto->impuesto)->nombre ?? 'Impuesto' }}
                                 ({{ number_format((float) (optional($lineaImpuesto->impuesto)->porcentaje ?? 0), 2) }}%)
@@ -155,32 +158,32 @@
                     @endforeach
                 @elseif ($compra->iva > 0)
                 <tr>
-                    <td colspan="2"></td>
+                    <td colspan="3"></td>
                     <td class="text-right">{{ \App\Helpers\CountryTermsHelper::tax('taxLabel', $compra->empresa) }}</td>
                     <td class="text-right">{{ $compra->empresa->currency->currency_symbol }}{{ number_format($compra->iva, 2) }}</td>
                 </tr>
                 @endif
                 @if ($compra->percepcion > 0)
                 <tr>
-                    <td colspan="2"></td>
+                    <td colspan="3"></td>
                     <td class="text-right">Percepción (1%)</td>
                     <td class="text-right">{{ $compra->empresa->currency->currency_symbol }}{{ number_format($compra->percepcion, 2) }}</td>
                 </tr>
                 @endif
                 @if ($compra->renta_retenida > 0)
                 <tr>
-                    <td colspan="2"></td>
+                    <td colspan="3"></td>
                     <td class="text-right">Renta retenida</td>
                     <td class="text-right">{{ $compra->empresa->currency->currency_symbol }}{{ number_format($compra->renta_retenida, 2) }}</td>
                 </tr>
                 @endif
                 <tr>
-                    <td colspan="2"></td>
+                    <td colspan="3"></td>
                     <td class="text-right">Subtotal</td>
                     <td class="text-right">{{ $compra->empresa->currency->currency_symbol }}{{ number_format($compra->sub_total + $compra->iva, 2) }}</td>
                 </tr>
                 <tr>
-                    <td colspan="2"></td>
+                    <td colspan="3"></td>
                     <td class="text-right"><b>Total</b></td>
                     <td class="text-right"><b>{{ $compra->empresa->currency->currency_symbol }}{{ number_format($compra->total, 2) }}</b></td>
                 </tr>

@@ -57,6 +57,7 @@ class StoreUsuarioRequest extends FormRequest
             'id_empresa'    => 'required|integer|exists:empresas,id',
             'id_sucursal'   => 'required|integer|exists:sucursales,id',
             'id_bodega'     => 'required|integer|exists:sucursal_bodegas,id',
+            'id_canal'      => 'sometimes|nullable|numeric',
             'telefono'      => [
                 'sometimes',
                 'nullable',
@@ -153,6 +154,10 @@ class StoreUsuarioRequest extends FormRequest
             $this->merge([
                 'whatsapp_verified' => filter_var($this->whatsapp_verified, FILTER_VALIDATE_BOOLEAN),
             ]);
+        }
+
+        if ($this->has('id_canal') && ($this->id_canal === '' || $this->id_canal === null)) {
+            $this->merge(['id_canal' => null]);
         }
 
         // Sanitizar teléfono (remover caracteres no numéricos)
