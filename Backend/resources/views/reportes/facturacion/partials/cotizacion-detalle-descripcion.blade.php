@@ -7,12 +7,20 @@
     $rawDesc = $detalle->getRawOriginal('descripcion');
     $tieneDescripcionPersonalizada = $rawDesc !== null && $rawDesc !== '';
 
+    $nombreLinea = trim((string) ($detalle->descripcion ?? ''));
+    if ($nombreLinea === '') {
+        $nombreLinea = trim((string) ($detalle->nombre_producto ?? ''));
+    }
+    if ($nombreLinea === '' && $detalle->producto) {
+        $nombreLinea = trim((string) ($detalle->producto->nombre ?? ''));
+    }
+
     $lineaTexto = $mostrarDesc
-        ? $detalle->nombre_producto
+        ? $nombreLinea
         : (
             $tieneDescripcionPersonalizada && $detalle->producto
                 ? $detalle->producto->nombre
-                : $detalle->nombre_producto
+                : $nombreLinea
           );
 
     $imgRel = $mostrarImg ? ($detalle->img ?? null) : null;
@@ -85,7 +93,7 @@
             </td>
             <td style="vertical-align: top; border: none; padding: 0;">
                 <div style="font-weight: 700; text-transform: uppercase; font-size: 11px; line-height: 1.3; margin-bottom: 4px;">
-                {{ $detalle->descripcion }}
+                    {{ $nombreLinea }}
                 </div>
                 @if($variacionLinea !== '')
                     <div style="font-size: 10px; line-height: 1.35; margin-bottom: 6px; color: #222;">
