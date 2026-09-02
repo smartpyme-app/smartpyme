@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\Webhook\ShopifyController;
 use App\Models\Ventas\Clientes\Cliente;
 use App\Services\ImpuestosService;
 use App\Services\ShippingService;
+use App\Services\ShopifyImageService;
 use App\Services\ShopifySyncCache;
 use App\Services\ShopifyTransformer;
 use ReflectionClass;
@@ -25,8 +26,9 @@ class ShopifyTipoDocumentoFiscalTest extends TestCase
         $cache = $this->createMock(ShopifySyncCache::class);
         $shippingService = $this->createMock(ShippingService::class);
         $impuestosService = $this->createMock(ImpuestosService::class);
+        $imageService = $this->createMock(ShopifyImageService::class);
 
-        $this->controller = new ShopifyController($transformer, $cache, $shippingService, $impuestosService);
+        $this->controller = new ShopifyController($transformer, $cache, $shippingService, $impuestosService, $imageService);
 
         $reflector = new ReflectionClass(ShopifyController::class);
         $this->methodEsClienteExtranjero = $reflector->getMethod('esClienteExtranjero');
@@ -106,5 +108,39 @@ class ShopifyTipoDocumentoFiscalTest extends TestCase
         $resultado = $this->methodResolverNombreDocumentoFiscal->invoke($this->controller, $cliente);
 
         $this->assertSame('Factura', $resultado);
+    }
+
+    public function test_sin_preferencia_solo_usa_el_documento_fiscal(): void
+    {
+        $method = (new ReflectionClass(ShopifyController::class))->getMethod('nombresDocumentoCandidatos');
+        $method->setAccessible(true);
+
+        $cliente = new Cliente([
+            'cod_pais' => 'SV',
+            'nit' => null,
+            'ncr' => null,
+            'tipo_factura_preferida' => null,
+        ]);
+
+        $resultado = $method->invoke($this->controller, $cliente);
+
+        $this->assertSame(['Factura'], $resultado);
+    }
+
+    public function test_preferencia_va_primero_y_fiscal_queda_de_respaldo(): void
+    {
+        $method = (new ReflectionClass(ShopifyController::class))->getMethod('nombresDocumentoCandidatos');
+        $method->setAccessible(true);
+
+        $cliente = new Cliente([
+            'cod_pais' => 'SV',
+            'nit' => '0614-010190-001-1',
+            'tipo_documento' => '36',
+            'tipo_factura_preferida' => 'Ticket',
+        ]);
+
+        $resultado = $method->invoke($this->controller, $cliente);
+
+        $this->assertSame(['Ticket', 'Crédito fiscal'], $resultado);
     }
 }

@@ -82,15 +82,15 @@ class ShippingService
             return null;
         }
 
-        Log::info("Procesando tipo de envío dinámico", [
-            'title' => $title,
-            'original_price' => $originalPrice,
-            'discounted_price' => $price,
-            'discount' => $discount,
-            'venta_id' => $ventaId,
-            'empresa_id' => $empresaId,
-            'tiene_iva' => $tieneIva
-        ]);
+        // Log::info("Procesando tipo de envío dinámico", [
+        //     'title' => $title,
+        //     'original_price' => $originalPrice,
+        //     'discounted_price' => $price,
+        //     'discount' => $discount,
+        //     'venta_id' => $ventaId,
+        //     'empresa_id' => $empresaId,
+        //     'tiene_iva' => $tieneIva
+        // ]);
 
         // Buscar o crear el producto de envío dinámicamente
         $productoEnvio = $this->buscarOCrearProductoEnvio($title, $price, $empresaId, $usuarioId, $sucursalId, $tieneIva);
@@ -187,33 +187,33 @@ class ShippingService
             ->first();
 
         if ($producto) {
-            Log::info("Producto de envío encontrado", [
-                'producto_id' => $producto->id,
-                'nombre' => $producto->nombre,
-                'precio_producto' => $producto->precio,
-                'precio_shopify' => $price
-            ]);
+            // Log::info("Producto de envío encontrado", [
+            //     'producto_id' => $producto->id,
+            //     'nombre' => $producto->nombre,
+            //     'precio_producto' => $producto->precio,
+            //     'precio_shopify' => $price
+            // ]);
 
             // Actualizar el precio del producto si es diferente (opcional)
             if (abs($producto->precio - $precioProducto) > 0.01) {
                 $producto->update(['precio' => $precioProducto]);
-                Log::info("Precio de producto de envío actualizado", [
-                    'producto_id' => $producto->id,
-                    'precio_anterior' => $producto->precio,
-                    'precio_nuevo' => $precioProducto
-                ]);
+                // Log::info("Precio de producto de envío actualizado", [
+                //     'producto_id' => $producto->id,
+                //     'precio_anterior' => $producto->precio,
+                //     'precio_nuevo' => $precioProducto
+                // ]);
             }
 
             return $producto;
         }
 
         // Si no existe, crear el producto de envío automáticamente
-        Log::info("Producto de envío no encontrado, creando nuevo", [
-            'nombre' => $title,
-            'empresa_id' => $empresaId,
-            'precio_con_iva' => $price,
-            'tiene_iva' => $tieneIva
-        ]);
+        // Log::info("Producto de envío no encontrado, creando nuevo", [
+        //     'nombre' => $title,
+        //     'empresa_id' => $empresaId,
+        //     'precio_con_iva' => $price,
+        //     'tiene_iva' => $tieneIva
+        // ]);
 
         // Obtener o crear la categoría "envios"
         $categoria = Categoria::firstOrCreate(
@@ -243,13 +243,13 @@ class ShippingService
             'control_stock' => 0 // Los servicios de envío no controlan stock
         ]);
 
-        Log::info("Producto de envío creado automáticamente", [
-            'producto_id' => $producto->id,
-            'nombre' => $producto->nombre,
-            'precio' => $precioProducto,
-            'precio_shopify' => $price,
-            'categoria_id' => $categoria->id
-        ]);
+        // Log::info("Producto de envío creado automáticamente", [
+        //     'producto_id' => $producto->id,
+        //     'nombre' => $producto->nombre,
+        //     'precio' => $precioProducto,
+        //     'precio_shopify' => $price,
+        //     'categoria_id' => $categoria->id
+        // ]);
 
         return $producto;
     }

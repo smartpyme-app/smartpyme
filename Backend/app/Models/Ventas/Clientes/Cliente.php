@@ -60,6 +60,7 @@ class Cliente extends Model {
        'tipo_persona',
        'tipo_documento',
        'codigo_cliente',
+       'tipo_factura_preferida',
 
     ];
     protected $appends = ['nombre_completo'];
