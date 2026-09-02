@@ -13,7 +13,7 @@ import { FilterPipe } from '@pipes/filter.pipe';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { ModalManagerService } from '@services/modal-manager.service';
-import { copiarImpuestosProductoAlDetalle } from '@utils/impuestos-venta.util';
+import { armarPreciosCatalogoSinIvaV1, copiarImpuestosProductoAlDetalle } from '@utils/impuestos-venta.util';
 
 @Component({
     selector: 'app-tienda-venta-buscador',
@@ -199,17 +199,16 @@ export class TiendaVentaBuscadorComponent extends BasePaginatedModalComponent im
         this.detalle.factor_conversion = producto.factor_conversion ?? 1;
         this.detalle.descripcion    = this.getNombreCompleto(producto);
         this.detalle.img            = producto.img;
-        this.detalle.precio         = parseFloat(producto.precio);
-        this.detalle.porcentaje_impuesto = producto.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
+        const ivaEmpresa = this.apiService.auth_user()?.empresa?.iva ?? 0;
+        const { precioSinIva, precios } = armarPreciosCatalogoSinIvaV1(producto, ivaEmpresa);
+        this.detalle.precio         = precioSinIva;
+        this.detalle.porcentaje_impuesto = producto.porcentaje_impuesto ?? ivaEmpresa;
         copiarImpuestosProductoAlDetalle(
             this.detalle,
             producto,
-            this.apiService.auth_user()?.empresa?.iva ?? 0
+            ivaEmpresa
         );
-        this.detalle.precios        = producto.precios;
-        this.detalle.precios.unshift({
-                'precio' : this.detalle.precio
-            });
+        this.detalle.precios        = precios;
         if(this.apiService.auth_user().empresa.valor_inventario == 'promedio' && producto.costo_promedio > 0){
             this.detalle.costo          = parseFloat(producto.costo_promedio);
         }else{

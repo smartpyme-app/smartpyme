@@ -42,6 +42,7 @@ import { CountryI18nService } from '@services/country-i18n.service';
 import * as moment from 'moment';
 import {
   acumularImpuestosVentaConCierreResidual,
+  armarPreciosCatalogoSinIvaV1,
   calcularMontosLineaDetalle,
   hidratarImpuestosProductosEnDetalles,
   prepararDetallesParaFacturarDesdeCotizacion,
@@ -1141,9 +1142,10 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
           detalle.cantidad = detalleCompra.cantidad;
           detalle.descripcion = producto.nombre;
           detalle.id_producto = producto.id;
-          detalle.precio = parseFloat(producto.precio);
-          detalle.precios = Array.isArray(producto.precios) ? [...producto.precios] : [];
-          detalle.precios.unshift({ precio: detalle.precio });
+          const ivaEmpresa = this.apiService.auth_user()?.empresa?.iva ?? 0;
+          const { precioSinIva, precios } = armarPreciosCatalogoSinIvaV1(producto, ivaEmpresa);
+          detalle.precio = precioSinIva;
+          detalle.precios = precios;
           this.aplicarCoincidenciaListaPreciosOrdenV1(detalle, detalleCompra, producto);
           if (
             this.apiService.auth_user().empresa.valor_inventario == 'promedio' &&
@@ -1236,14 +1238,12 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
                     detalle.id_producto = producto.id;
                     detalle.descripcion = producto.nombre;
                     detalle.img = producto.img;
-                    detalle.precio = parseFloat(producto.precio);
+                    const ivaEmpresa = this.apiService.auth_user()?.empresa?.iva ?? 0;
+                    const { precioSinIva } = armarPreciosCatalogoSinIvaV1(producto, ivaEmpresa);
+                    detalle.precio = precioSinIva;
                     detalle.costo = parseFloat(producto.costo);
-                    detalle.porcentaje_impuesto = producto.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
-          copiarImpuestosProductoAlDetalle(
-            detalle,
-            producto,
-            this.apiService.auth_user()?.empresa?.iva ?? 0
-          );
+                    detalle.porcentaje_impuesto = producto.porcentaje_impuesto ?? ivaEmpresa;
+                    copiarImpuestosProductoAlDetalle(detalle, producto, ivaEmpresa);
                     if (producto.inventarios.length > 0) {
                       producto.inventarios = producto.inventarios.filter(
                         (item: any) =>

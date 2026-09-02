@@ -25,6 +25,8 @@ class ClientesPersonas implements ToModel, WithHeadingRow, WithValidation, WithC
     private $numRows = 0;
     private $errores = [];
     private $clientesProcesados = 0;
+    /** @var array<string, true> */
+    private $duiEnImportacion = [];
     private $esElSalvador = false;
 
     public function __construct()
@@ -101,7 +103,16 @@ class ClientesPersonas implements ToModel, WithHeadingRow, WithValidation, WithC
             $duiValor = $row['dui'] ?? null;
             if ($duiValor !== null && $duiValor !== '') {
                 $duiNormalizado = (string) $duiValor;
-                $duiSinGuion = str_replace('-', '', $duiNormalizado);
+                $duiClave = str_replace('-', '', $duiNormalizado);
+
+                if (isset($this->duiEnImportacion[$duiClave])) {
+                    $this->errores[] = "DUI duplicado en el archivo: {$duiNormalizado} (Fila: " . ($this->numRows + 1) . ')';
+                    Log::warning("DUI duplicado en importación: {$duiNormalizado}");
+
+                    return null;
+                }
+
+                $duiSinGuion = $duiClave;
                 $existeDui = Cliente::where('id_empresa', Auth::user()->id_empresa)
                     ->where(function ($query) use ($duiNormalizado, $duiSinGuion) {
                         $query->where('dui', $duiNormalizado)
@@ -109,7 +120,7 @@ class ClientesPersonas implements ToModel, WithHeadingRow, WithValidation, WithC
                     })->exists();
 
                 if ($existeDui) {
-                    $this->errores[] = "Ya existe un cliente con el DUI: {$duiNormalizado} (Fila: " . ($this->numRows + 1) . ")";
+                    $this->errores[] = "Ya existe un cliente con el DUI: {$duiNormalizado} (Fila: " . ($this->numRows + 1) . ')';
                     Log::warning("DUI duplicado encontrado: {$duiNormalizado}");
 
                     return null;
@@ -165,6 +176,9 @@ class ClientesPersonas implements ToModel, WithHeadingRow, WithValidation, WithC
 
         try {
             $cliente->save();
+            if ($this->esElSalvador && $documentoIdentidad !== null && $documentoIdentidad !== '') {
+                $this->duiEnImportacion[str_replace('-', '', (string) $documentoIdentidad)] = true;
+            }
             $this->clientesProcesados++;
 
             return $cliente;

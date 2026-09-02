@@ -31,6 +31,10 @@ class ClientesEmpresas implements ToModel, WithHeadingRow, WithValidation, WithC
     use NormalizesClienteExcelRow;
 
     private $numRows = 0;
+    private $errores = [];
+    private $clientesProcesados = 0;
+    /** @var array<string, true> */
+    private $identificacionesEnImportacion = [];
     private $esElSalvador = false;
 
     /**
@@ -126,35 +130,39 @@ class ClientesEmpresas implements ToModel, WithHeadingRow, WithValidation, WithC
         
         if (empty($row['nombre_empresa']) || empty($campoIdentificacion)) {
             return null;
-        } 
-
-        ++$this->numRows;
+        }
 
         // Para El Salvador: validar y normalizar NCR
         // Para otros países: usar número de registro como texto libre
         $numeroRegistro = null;
         if ($this->esElSalvador) {
             $ncrNormalizado = $this->normalizarNcr($row['ncr']);
-        
-            if (!empty($ncrNormalizado)) {
-                $existeNcr = Cliente::where('id_empresa', FacadesAuth::user()->id_empresa)
-                    ->where(function($query) use ($row, $ncrNormalizado) {
-                        $query->where('ncr', $row['ncr']) // NCR original
-                              ->orWhere('ncr', $ncrNormalizado); // NCR normalizado
-                    })
-                    ->exists();
-                
-                // if ($existeNcr) {
-                //     throw new \Exception("Ya existe una empresa con el NCR: {$row['ncr']}");
-                // }
-            }
             $numeroRegistro = $ncrNormalizado ?: $row['ncr'];
         } else {
-            // Para otros países, usar el campo como número de registro (texto libre)
-            // Aceptar diferentes nombres de columnas
-            $numeroRegistro = $row['ncr'] ?? $row['rtn'] ?? $row['numero_registro'] ?? $row['identificacion_fiscal'] ?? 
+            $numeroRegistro = $row['ncr'] ?? $row['rtn'] ?? $row['numero_registro'] ?? $row['identificacion_fiscal'] ??
                              $row['n. de registro'] ?? $row['n_de_registro'] ?? null;
         }
+
+        $claveIdentificacion = $this->claveIdentificacionEmpresa($numeroRegistro);
+        if ($claveIdentificacion !== '') {
+            $etiquetaIdentificacion = $this->esElSalvador ? 'NCR' : 'registro';
+
+            if (isset($this->identificacionesEnImportacion[$claveIdentificacion])) {
+                $this->errores[] = "{$etiquetaIdentificacion} duplicado en el archivo: {$campoIdentificacion} (Fila: " . ($this->numRows + 1) . ')';
+                Log::warning("{$etiquetaIdentificacion} duplicado en importación: {$campoIdentificacion}");
+
+                return null;
+            }
+
+            if ($this->existeIdentificacionEnBd($claveIdentificacion, $campoIdentificacion, $numeroRegistro)) {
+                $this->errores[] = "Ya existe una empresa con el {$etiquetaIdentificacion}: {$campoIdentificacion} (Fila: " . ($this->numRows + 1) . ')';
+                Log::warning("{$etiquetaIdentificacion} duplicado en BD: {$campoIdentificacion}");
+
+                return null;
+            }
+        }
+
+        ++$this->numRows;
 
         // Buscar códigos solo si es El Salvador
         $codigos = $this->esElSalvador ? $this->buscarCodigos($row) : null;
@@ -214,21 +222,69 @@ class ClientesEmpresas implements ToModel, WithHeadingRow, WithValidation, WithC
         
         try {
             $cliente->save();
+            if ($claveIdentificacion !== '') {
+                $this->identificacionesEnImportacion[$claveIdentificacion] = true;
+            }
+            $this->clientesProcesados++;
+
             return $cliente;
         } catch (\Exception $e) {
+            $this->errores[] = "Error al guardar empresa {$row['nombre_empresa']}: " . $e->getMessage();
             Log::error("Error al guardar cliente empresa: " . $e->getMessage(), $row);
+
             return null;
         }
     }
 
+    private function claveIdentificacionEmpresa($numeroRegistro): string
+    {
+        $valor = trim((string) $numeroRegistro);
+        if ($valor === '') {
+            return '';
+        }
+
+        if ($this->esElSalvador) {
+            return preg_replace('/[^0-9]/', '', $valor);
+        }
+
+        return strtolower($valor);
+    }
+
+    private function existeIdentificacionEnBd(string $claveIdentificacion, $valorOriginal, $valorNormalizado): bool
+    {
+        $idEmpresa = FacadesAuth::user()->id_empresa;
+
+        $query = Cliente::where('id_empresa', $idEmpresa)
+            ->where('tipo', 'Empresa')
+            ->whereNotNull('ncr')
+            ->where('ncr', '!=', '');
+
+        return $query->where(function ($q) use ($claveIdentificacion, $valorOriginal, $valorNormalizado) {
+            if ($valorOriginal !== null && $valorOriginal !== '') {
+                $q->where('ncr', (string) $valorOriginal);
+            }
+            if ($valorNormalizado !== null && $valorNormalizado !== '' && (string) $valorNormalizado !== (string) $valorOriginal) {
+                $q->orWhere('ncr', (string) $valorNormalizado);
+            }
+            if ($this->esElSalvador) {
+                $q->orWhereRaw(
+                    "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(ncr, '-', ''), ' ', ''), '.', ''), '/', ''), '_', '') = ?",
+                    [$claveIdentificacion]
+                );
+            } else {
+                $q->orWhereRaw('LOWER(TRIM(ncr)) = ?', [$claveIdentificacion]);
+            }
+        })->exists();
+    }
+
     private function normalizarNcr($ncr)
     {
-        $ncr = preg_replace('/[^0-9]/', '', $ncr);
-        
+        $ncr = preg_replace('/[^0-9]/', '', (string) $ncr);
+
         if (strlen($ncr) == 14 && is_numeric($ncr)) {
             return $ncr;
         }
-        
+
         return $ncr;
     }
 
@@ -344,5 +400,15 @@ class ClientesEmpresas implements ToModel, WithHeadingRow, WithValidation, WithC
     public function getRowCount(): int
     {
         return $this->numRows;
+    }
+
+    public function getErrores(): array
+    {
+        return $this->errores;
+    }
+
+    public function getClientesProcesados(): int
+    {
+        return $this->clientesProcesados;
     }
 }

@@ -44,8 +44,11 @@ import {
   hidratarImpuestosProductosEnDetalles,
   normalizarPorcentajeImpuestoDetalle,
   prepararDetallesParaFacturarDesdeCotizacion,
+  redondear4,
   redondearMoneda,
   resolverPorcentajeImpuestoVenta,
+  resolverPrecioConIvaProducto,
+  resolverPrecioSinIvaProducto,
   sincronizarTipoGravadoPorCobroIva,
   sumarDescuentoConIvaEncabezadoVenta,
   sumarSubTotalEncabezadoVenta,
@@ -937,24 +940,27 @@ export class FacturacionV2Component implements OnInit {
           );
           copiarImpuestosProductoAlDetalle(detalle, producto, ivaEmpresa);
 
-          const precioSinIva = parseFloat(producto.precio);
-          const precioConIva = precioSinIva * (1 + pctImpuesto / 100);
-          detalle.precio_iva = redondearMoneda(precioConIva).toFixed(2);
-          detalle.precio = precioSinIva.toFixed(4);
+          const precioSinIva = resolverPrecioSinIvaProducto(producto, pctImpuesto);
+          const precioConIva = resolverPrecioConIvaProducto(producto, pctImpuesto);
+          detalle.precio_iva = redondear4(precioConIva).toFixed(4);
+          detalle.precio = precioSinIva.toFixed(6);
 
           detalle.precios = producto.precios
             ? producto.precios.map((p: any) => {
-                const sin = parseFloat(p.precio);
-                return {
-                  ...p,
-                  precio: sin.toFixed(4),
-                  precio_sin_iva: sin,
-                };
-              })
+              const sin = resolverPrecioSinIvaProducto(p, pctImpuesto);
+              const con = resolverPrecioConIvaProducto(p, pctImpuesto);
+              return {
+                ...p,
+                precio: sin.toFixed(6),
+                precio_sin_iva: sin,
+                precio_con_iva: redondear4(con).toFixed(4),
+              };
+            })
             : [];
           detalle.precios.unshift({
-            precio: precioSinIva.toFixed(4),
+            precio: precioSinIva.toFixed(6),
             precio_sin_iva: precioSinIva,
+            precio_con_iva: redondear4(precioConIva).toFixed(4),
           });
 
           this.aplicarCoincidenciaListaPreciosOrden(detalle, detalleCompra, pctImpuesto);

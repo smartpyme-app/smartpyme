@@ -13,6 +13,7 @@ import { inventariosParaStockVenta } from '@shared/utils/inventario-venta.util';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { ModalManagerService } from '@services/modal-manager.service';
+import { armarPreciosCatalogoSinIvaV1 } from '@utils/impuestos-venta.util';
 
 import * as moment from 'moment';
 import { LazyImageDirective } from '../../../../../directives/lazy-image.directive';
@@ -138,9 +139,11 @@ export class TiendaVentaCitasComponent extends BasePaginatedModalComponent imple
                     detalle.id_producto    = producto.id;
                     detalle.descripcion = producto.nombre;
                     detalle.img            = producto.img;
-                    detalle.precio         = parseFloat(producto.precio);
+                    const ivaEmpresa = this.apiService.auth_user()?.empresa?.iva ?? 0;
+                    const { precioSinIva } = armarPreciosCatalogoSinIvaV1(producto, ivaEmpresa);
+                    detalle.precio         = precioSinIva;
                     detalle.costo          = parseFloat(producto.costo);
-                    detalle.porcentaje_impuesto = producto.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
+                    detalle.porcentaje_impuesto = producto.porcentaje_impuesto ?? ivaEmpresa;
                     if(producto.tipo != 'Servicio' && producto.inventarios.length > 0){
                         producto.inventarios = inventariosParaStockVenta(producto.inventarios, this.venta);
                         detalle.stock          = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
