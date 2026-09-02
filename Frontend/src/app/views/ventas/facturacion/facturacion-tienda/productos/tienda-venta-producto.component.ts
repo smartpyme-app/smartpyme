@@ -17,8 +17,6 @@ import { ModalManagerService } from '@services/modal-manager.service';
 import { LazyImageDirective } from '../../../../../directives/lazy-image.directive';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
 
-import { armarPreciosCatalogoSinIvaV1 } from '@utils/impuestos-venta.util';
-
 @Component({
     selector: 'app-tienda-venta-producto',
     templateUrl: './tienda-venta-producto.component.html',
@@ -151,12 +149,12 @@ export class TiendaVentaProductoComponent extends BasePaginatedModalComponent im
         this.detalle.id_producto    = producto.id;
         this.detalle.descripcion = producto.nombre;
         this.detalle.img            = producto.img;
-        const ivaEmpresa = this.apiService.auth_user()?.empresa?.iva ?? 0;
-        const { precioSinIva, precios } = armarPreciosCatalogoSinIvaV1(producto, ivaEmpresa);
-        this.detalle.precio         = precioSinIva;
-        this.detalle.porcentaje_impuesto = producto.porcentaje_impuesto ?? ivaEmpresa;
-        this.detalle.precios        = precios;
-
+        this.detalle.precio         = parseFloat(producto.precio);
+        this.detalle.porcentaje_impuesto = producto.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
+        this.detalle.precios        = producto.precios;
+        this.detalle.precios.unshift({
+                'precio' : this.detalle.precio
+            });
         if(this.apiService.auth_user().empresa.valor_inventario == 'promedio' && producto.costo_promedio > 0){
             this.detalle.costo          = parseFloat(producto.costo_promedio);
         }else{
@@ -185,11 +183,12 @@ export class TiendaVentaProductoComponent extends BasePaginatedModalComponent im
             this.detalle.id_producto    = producto.id;
             this.detalle.descripcion = producto.nombre;
             this.detalle.img            = producto.img;
-            const ivaEmpresa = this.apiService.auth_user()?.empresa?.iva ?? 0;
-            const { precioSinIva, precios } = armarPreciosCatalogoSinIvaV1(producto, ivaEmpresa);
-            this.detalle.precio         = precioSinIva;
-            this.detalle.porcentaje_impuesto = producto.porcentaje_impuesto ?? ivaEmpresa;
-            this.detalle.precios        = precios;
+            this.detalle.precio         = parseFloat(producto.precio);
+            this.detalle.porcentaje_impuesto = producto.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
+            this.detalle.precios        = producto.precios;
+            this.detalle.precios.unshift({
+                    'precio' : this.detalle.precio
+                });
             if(this.apiService.auth_user().empresa.valor_inventario == 'promedio' && producto.costo_promedio > 0){
                 this.detalle.costo          = parseFloat(producto.costo_promedio);
             }else{

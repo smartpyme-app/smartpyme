@@ -19,8 +19,8 @@ describe('producto-detalle-v2.mapper', () => {
       { id: 1, nombre: 'Cafe', precio: 100, porcentaje_impuesto: 13, tipo: 'Producto', inventarios: [] },
       ctx
     );
-    expect(det.precio_iva).toBe('113.0000');
-    expect(det.precio).toBe('100.000000');
+    expect(det.precio_iva).toBe('113.00');
+    expect(det.precio).toBe('100.0000');
   });
 
   it('usa fila plana del buscador con presentacion', () => {
@@ -50,15 +50,5 @@ describe('producto-detalle-v2.mapper', () => {
     const r = armarPreciosDetalleV2({ precio: 100, porcentaje_impuesto: 0 }, 15);
     expect(r.precioConIva).toBe(100);
     expect(r.porcentajeImpuesto).toBe(0);
-  });
-
-  it('deriva neto desde precio_con_iva cuando el catalogo perdio decimales', () => {
-    const r = armarPreciosDetalleV2(
-      { precio: 10.43, precio_con_iva: 11.79, porcentaje_impuesto: 13 },
-      13
-    );
-    expect(r.precioConIva).toBe(11.79);
-    expect(r.precioSinIva).toBeCloseTo(11.79 / 1.13, 5);
-    expect(r.precioSinIva).not.toBe(10.43);
   });
 });

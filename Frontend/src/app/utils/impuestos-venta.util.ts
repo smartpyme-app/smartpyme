@@ -180,10 +180,8 @@ export function porcentajeIvaDetalle(
 
 /**
  * Calcula gravada/exenta/no_sujeta, IVA y total con IVA por línea.
- * precio_iva / precio_con_iva son la fuente de verdad del unitario cobrado;
- * precio (sin IVA) se deriva con división a 6 decimales.
- * Neto (gravada/sub_total/total) y total_iva a moneda (2) por línea.
- * detalle.iva queda sin redondear para acumular en cabecera.
+ * Neto (gravada/sub_total/total) a moneda (2) por línea — Hacienda suma esas líneas.
+ * total_iva a moneda (2). detalle.iva queda sin redondear para acumular en cabecera.
  */
 export function calcularMontosLineaDetalle(
   detalle: any,
@@ -194,8 +192,10 @@ export function calcularMontosLineaDetalle(
   const cantidad = parseFloat(String(detalle?.cantidad ?? 0)) || 0;
   const preservePrecioIva = options?.preservePrecioIva ?? false;
   const precioIvaRaw = detalle?.precio_iva;
-  const precioConIvaRaw = detalle?.precio_con_iva ?? precioIvaRaw;
   const usuarioBorroPrecioIva = preservePrecioIva && (precioIvaRaw === '' || precioIvaRaw === null);
+  const precioSinIva = usuarioBorroPrecioIva
+    ? 0
+    : parseFloat(String(detalle?.precio ?? 0)) || 0;
   const descuento = parseFloat(String(detalle?.descuento ?? 0)) || 0;
   const pct = porcentajeIvaDetalle(
     detalle,
@@ -206,55 +206,35 @@ export function calcularMontosLineaDetalle(
   const tipo = resolverTipoGravadoEfectivo(detalle, cobrarImpuestos, pct);
   detalle.tipo_gravado = tipo;
 
-  const factorIva = pct > 0 ? 1 + pct / 100 : 1;
-  const precioConIvaGuardado = parseFloat(String(precioConIvaRaw ?? ''));
-  const tienePrecioConIvaGuardado =
-    !usuarioBorroPrecioIva &&
-    Number.isFinite(precioConIvaGuardado) &&
-    String(precioConIvaRaw ?? '') !== '';
-
-  let precioSinIva: number;
-  let precioConIva: number;
-
-  if (usuarioBorroPrecioIva) {
-    precioSinIva = 0;
-    precioConIva = 0;
-    detalle.precio = (0).toFixed(6);
-  } else if (preservePrecioIva && tienePrecioConIvaGuardado) {
-    precioConIva = precioConIvaGuardado;
-    precioSinIva =
-      pct > 0 ? redondear6(precioConIva / factorIva) : redondear6(precioConIva);
-    detalle.precio = precioSinIva.toFixed(6);
-  } else if (
-    tienePrecioConIvaGuardado &&
-    detalle?.precio_con_iva != null &&
-    String(detalle.precio_con_iva) !== ''
-  ) {
-    precioConIva = precioConIvaGuardado;
-    precioSinIva =
-      pct > 0 ? redondear6(precioConIva / factorIva) : redondear6(precioConIva);
-    detalle.precio = precioSinIva.toFixed(6);
-    detalle.precio_iva = redondear4(precioConIva).toFixed(4);
-  } else {
-    precioSinIva = redondear6(parseFloat(String(detalle?.precio ?? 0)) || 0);
-    if (pct > 0) {
-      precioConIva = redondear6(precioSinIva * factorIva);
-      detalle.precio_iva = redondear4(precioConIva).toFixed(4);
-    } else {
-      precioConIva = precioSinIva;
-      if (detalle.precio_iva == null || detalle.precio_iva === '') {
-        detalle.precio_iva = redondear4(precioSinIva).toFixed(4);
-      }
-    }
-    detalle.precio = precioSinIva.toFixed(6);
-  }
-
   const subTotalSinIva = redondearMoneda(cantidad * precioSinIva);
   const totalSinIva = redondearMoneda(cantidad * precioSinIva - descuento);
 
   detalle.sub_total = subTotalSinIva.toFixed(2);
   detalle.total = totalSinIva.toFixed(2);
 
+  const factorIva = pct > 0 ? 1 + pct / 100 : 1;
+  const precioIvaExistente = parseFloat(String(precioIvaRaw ?? ''));
+  let precioConIva: number;
+  if (usuarioBorroPrecioIva) {
+    // Sin valor en el input: el precio es 0 (no el neto anterior ni 1).
+    detalle.precio = (0).toFixed(6);
+    precioConIva = 0;
+  } else if (
+    preservePrecioIva &&
+    Number.isFinite(precioIvaExistente) &&
+    String(precioIvaRaw ?? '') !== ''
+  ) {
+    // Fuente de verdad del monto cobrado: precio_iva (no reconstruir desde precio neto).
+    precioConIva = precioIvaExistente;
+  } else if (pct > 0) {
+    precioConIva = precioSinIva * factorIva;
+    detalle.precio_iva = redondear4(precioConIva).toFixed(4);
+  } else {
+    precioConIva = precioSinIva;
+    if (detalle.precio_iva == null || detalle.precio_iva === '') {
+      detalle.precio_iva = precioSinIva.toFixed(4);
+    }
+  }
   const descuentoConIvaExistente = parseFloat(String(detalle?.descuento_con_iva ?? ''));
   const descuentoConIva =
     Number.isFinite(descuentoConIvaExistente) && String(detalle?.descuento_con_iva ?? '') !== ''
@@ -264,8 +244,9 @@ export function calcularMontosLineaDetalle(
         : descuento;
   const totalConIva = redondearMoneda(cantidad * precioConIva - descuentoConIva);
 
-  detalle.precio_sin_iva = precioSinIva.toFixed(6);
-  detalle.precio_con_iva = redondear4(precioConIva).toFixed(4);
+  // Persistibles para cotización → factura (misma base que una venta).
+  detalle.precio_sin_iva = Number(precioSinIva).toFixed(6);
+  detalle.precio_con_iva = redondearMoneda(precioConIva).toFixed(4);
 
   detalle.gravada = 0;
   detalle.exenta = 0;
@@ -356,79 +337,6 @@ export function normalizarPorcentajeImpuestoDetalle(
   }
   const iva = Number(ivaEmpresa ?? 0);
   return iva > 0 ? iva : null;
-}
-
-function parsePrecioCatalogo(raw: unknown): number | null {
-  if (raw == null || raw === '') {
-    return null;
-  }
-  const n = parseFloat(String(raw));
-  return Number.isFinite(n) ? n : null;
-}
-
-/**
- * Precio sin IVA desde catálogo (producto o tarifa de lista).
- * Si existe precio_con_iva, se deriva por división para recuperar decimales
- * que se perdieron en precio/precio_sin_iva de BD (p. ej. double(10,2)).
- */
-export function resolverPrecioSinIvaProducto(
-  producto: { precio?: unknown; precio_sin_iva?: unknown; precio_con_iva?: unknown },
-  pctImpuesto: number
-): number {
-  const conIva = parsePrecioCatalogo(producto?.precio_con_iva);
-  if (conIva != null && pctImpuesto > 0) {
-    return redondear6(conIva / (1 + pctImpuesto / 100));
-  }
-  if (conIva != null) {
-    return redondear6(conIva);
-  }
-  const sinIva =
-    parsePrecioCatalogo(producto?.precio_sin_iva) ??
-    parsePrecioCatalogo(producto?.precio) ??
-    0;
-  return redondear6(sinIva);
-}
-
-/** Precio con IVA desde catálogo; prioriza precio_con_iva guardado. */
-export function resolverPrecioConIvaProducto(
-  producto: { precio?: unknown; precio_sin_iva?: unknown; precio_con_iva?: unknown },
-  pctImpuesto: number
-): number {
-  const conIva = parsePrecioCatalogo(producto?.precio_con_iva);
-  if (conIva != null) {
-    return conIva;
-  }
-  const sinIva = resolverPrecioSinIvaProducto(producto, pctImpuesto);
-  return pctImpuesto > 0 ? redondear6(sinIva * (1 + pctImpuesto / 100)) : sinIva;
-}
-
-/**
- * Precio sin IVA y tarifas para facturación v1 (columna neto en pantalla).
- * Deriva desde precio_con_iva del catálogo cuando existe.
- */
-export function armarPreciosCatalogoSinIvaV1(
-  producto: {
-    precio?: unknown;
-    precio_sin_iva?: unknown;
-    precio_con_iva?: unknown;
-    precios?: any[];
-    porcentaje_impuesto?: unknown;
-  },
-  ivaEmpresa: unknown
-): { precioSinIva: number; precios: any[]; pctImpuesto: number } {
-  const pctImpuesto = resolverPorcentajeImpuestoVenta(
-    producto.porcentaje_impuesto,
-    ivaEmpresa
-  );
-  const precioSinIva = resolverPrecioSinIvaProducto(producto, pctImpuesto);
-  const precios = Array.isArray(producto.precios)
-    ? producto.precios.map((p: any) => ({
-        ...p,
-        precio: resolverPrecioSinIvaProducto(p, pctImpuesto),
-      }))
-    : [];
-  precios.unshift({ precio: precioSinIva });
-  return { precioSinIva, precios, pctImpuesto };
 }
 
 /** Si el detalle-impuesto tiene id, empareja por el id maestro; si no, por porcentaje. */
@@ -750,12 +658,11 @@ export function prepararDetallesParaFacturarDesdeCotizacion(
     );
 
     if (Number.isFinite(precioConIvaGuardado) && String(detalle?.precio_con_iva ?? detalle?.precio_iva ?? '') !== '') {
-      detalle.precio_con_iva = redondear4(precioConIvaGuardado).toFixed(4);
-      detalle.precio_iva = detalle.precio_con_iva;
+      detalle.precio_iva = redondearMoneda(precioConIvaGuardado).toFixed(2);
       if (pct > 0) {
-        detalle.precio = redondear6(precioConIvaGuardado / (1 + pct / 100)).toFixed(6);
+        detalle.precio = (precioConIvaGuardado / (1 + pct / 100)).toFixed(6);
       } else {
-        detalle.precio = redondear6(precioConIvaGuardado).toFixed(6);
+        detalle.precio = redondearMoneda(precioConIvaGuardado).toFixed(6);
       }
     } else if (
       Number.isFinite(totalIvaGuardado) &&
@@ -764,12 +671,11 @@ export function prepararDetallesParaFacturarDesdeCotizacion(
     ) {
       const descuentoConIva = parseFloat(String(detalle?.descuento_con_iva ?? 0)) || 0;
       const precioConIva = (totalIvaGuardado + descuentoConIva) / cantidad;
-      detalle.precio_con_iva = redondear4(precioConIva).toFixed(4);
-      detalle.precio_iva = detalle.precio_con_iva;
+      detalle.precio_iva = redondearMoneda(precioConIva).toFixed(2);
       if (pct > 0) {
-        detalle.precio = redondear6(precioConIva / (1 + pct / 100)).toFixed(6);
+        detalle.precio = (precioConIva / (1 + pct / 100)).toFixed(6);
       } else {
-        detalle.precio = redondear6(precioConIva).toFixed(6);
+        detalle.precio = redondearMoneda(precioConIva).toFixed(6);
       }
     }
 

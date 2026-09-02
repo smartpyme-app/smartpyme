@@ -1,10 +1,8 @@
 import {
   copiarImpuestosProductoAlDetalle,
   normalizarPorcentajeImpuestoDetalle,
-  redondear4,
+  redondearMoneda,
   resolverPorcentajeImpuestoVenta,
-  resolverPrecioConIvaProducto,
-  resolverPrecioSinIvaProducto,
 } from '@utils/impuestos-venta.util';
 
 export interface ProductoDetalleV2MapperCtx {
@@ -20,8 +18,9 @@ export function getPrecioConIvaProducto(producto: any, ivaEmpresa: number): numb
   if (!producto) {
     return 0;
   }
+  const precio = parseFloat(producto.precio) || 0;
   const pct = resolverPorcentajeImpuestoVenta(producto.porcentaje_impuesto, ivaEmpresa);
-  return resolverPrecioConIvaProducto(producto, pct);
+  return precio * (1 + pct / 100);
 }
 
 export function armarPreciosDetalleV2(producto: any, ivaEmpresa: number): {
@@ -32,33 +31,35 @@ export function armarPreciosDetalleV2(producto: any, ivaEmpresa: number): {
 } {
   const pctImpuesto = resolverPorcentajeImpuestoVenta(producto.porcentaje_impuesto, ivaEmpresa);
   const porcentajeImpuesto = normalizarPorcentajeImpuestoDetalle(producto.porcentaje_impuesto, ivaEmpresa);
-  const precioSinIva = resolverPrecioSinIvaProducto(producto, pctImpuesto);
-  const precioConIva = resolverPrecioConIvaProducto(producto, pctImpuesto);
+  const precioSinIva = parseFloat(producto.precio) || 0;
+  const precioConIva = pctImpuesto > 0
+    ? precioSinIva * (1 + pctImpuesto / 100)
+    : precioSinIva;
   return { pctImpuesto, porcentajeImpuesto, precioSinIva, precioConIva };
 }
 
-export function armarListaPreciosDetalleV2(
-  producto: any,
-  precioSinIva: number,
-  precioConIva: number,
-  pctImpuesto: number
-): any[] {
+export function armarListaPreciosDetalleV2(producto: any, precioSinIva: number, pctImpuesto: number): any[] {
   const lista = producto.precios
     ? producto.precios.map((p: any) => {
-        const sinIvaLista = resolverPrecioSinIvaProducto(p, pctImpuesto);
-        const conIva = resolverPrecioConIvaProducto(p, pctImpuesto);
+        const sinIvaLista = parseFloat(p.precio);
+        const conIva = pctImpuesto > 0
+          ? sinIvaLista * (1 + pctImpuesto / 100)
+          : sinIvaLista;
         return {
           ...p,
-          precio: sinIvaLista.toFixed(6),
+          precio: sinIvaLista.toFixed(4),
           precio_sin_iva: sinIvaLista,
-          precio_con_iva: redondear4(conIva).toFixed(4),
+          precio_con_iva: conIva.toFixed(4),
         };
       })
     : [];
+  const conIvaBase = pctImpuesto > 0
+    ? precioSinIva * (1 + pctImpuesto / 100)
+    : precioSinIva;
   lista.unshift({
-    precio: precioSinIva.toFixed(6),
+    precio: precioSinIva.toFixed(4),
     precio_sin_iva: precioSinIva,
-    precio_con_iva: redondear4(precioConIva).toFixed(4),
+    precio_con_iva: conIvaBase.toFixed(4),
   });
   return lista;
 }
@@ -75,10 +76,10 @@ export function armarDetalleDesdeProductoV2(producto: any, ctx: ProductoDetalleV
 
   detalle.porcentaje_impuesto = porcentajeImpuesto;
   copiarImpuestosProductoAlDetalle(detalle, producto, ctx.ivaEmpresa);
-  detalle.precio_iva = redondear4(precioConIva).toFixed(4);
-  detalle.precio = precioSinIva.toFixed(6);
+  detalle.precio_iva = redondearMoneda(precioConIva).toFixed(2);
+  detalle.precio = precioSinIva.toFixed(4);
   detalle.precio_base = precioSinIva;
-  detalle.precios = armarListaPreciosDetalleV2(producto, precioSinIva, precioConIva, pctImpuesto);
+  detalle.precios = armarListaPreciosDetalleV2(producto, precioSinIva, pctImpuesto);
 
   if (ctx.valorInventarioPromedio && producto.costo_promedio > 0) {
     detalle.costo = parseFloat(producto.costo_promedio);
