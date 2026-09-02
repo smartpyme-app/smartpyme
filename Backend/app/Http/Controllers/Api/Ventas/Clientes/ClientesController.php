@@ -773,15 +773,60 @@ class ClientesController extends Controller
 
     public function importEmpresas(Request $request)
     {
-
         $request->validate([
-            'file'          => 'required',
+            'file' => 'required|file',
         ]);
 
-        $import = new ClientesEmpresas();
-        Excel::import($import, $request->file);
+        try {
+            $import = new ClientesEmpresas();
+            Excel::import($import, $request->file('file'));
 
-        return Response()->json($import->getRowCount(), 200);
+            $errores = $import->getErrores();
+            $clientesProcesados = $import->getClientesProcesados();
+
+            if ($clientesProcesados > 0 && count($errores) > 0) {
+                $mensajeExito = "✅ Se procesaron correctamente {$clientesProcesados} empresas.";
+                $mensajeFalla = '❌ No se pudieron procesar ' . count($errores) . ' registros debido a errores.';
+
+                $erroresNcrDuplicado = array_filter($errores, function ($error) {
+                    return strpos($error, 'NCR duplicado') !== false
+                        || strpos($error, 'Ya existe una empresa con el NCR') !== false
+                        || strpos($error, 'registro duplicado') !== false
+                        || strpos($error, 'Ya existe una empresa con el registro') !== false;
+                });
+
+                return response()->json([
+                    'message' => $mensajeExito . ' ' . $mensajeFalla,
+                    'procesados' => $clientesProcesados,
+                    'fallidos' => count($errores),
+                    'resumen_errores' => [
+                        'ncr_duplicados' => count($erroresNcrDuplicado),
+                    ],
+                    'errores' => $errores,
+                ], 200);
+            } elseif ($clientesProcesados > 0) {
+                return response()->json([
+                    'message' => "¡Importación completada con éxito! Se procesaron {$clientesProcesados} empresas correctamente.",
+                    'procesados' => $clientesProcesados,
+                    'fallidos' => 0,
+                ], 200);
+            }
+
+            return response()->json([
+                'error' => 'No se pudo procesar ninguna empresa. ' . implode("\n", $errores),
+            ], 400);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'error' => 'Los datos del archivo no son válidos.',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error en importación de clientes empresas: ' . $e->getMessage());
+
+            return response()->json([
+                'error' => 'Error al importar empresas: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     public function importExtranjeros(Request $request)
