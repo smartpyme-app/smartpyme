@@ -2573,13 +2573,19 @@ export class FacturacionV2Component implements OnInit {
         // Actualizar siempre la venta local con la respuesta del backend (id, correlativo, etc.)
         // para que en un siguiente guardado se envíe el mismo correlativo.
         const detallesAntes = this.venta.detalles;
+        const cotizacionFlag = this.venta.cotizacion;
         Object.assign(this.venta, venta);
+        this.venta.cotizacion = cotizacionFlag;
         if (
           (!this.venta.detalles || !Array.isArray(this.venta.detalles) || this.venta.detalles.length === 0) &&
           Array.isArray(detallesAntes) &&
           detallesAntes.length > 0
         ) {
           this.venta.detalles = detallesAntes;
+        }
+
+        if (this.venta.cotizacion != 1) {
+          this.generarPartidaVentaSiAutomatico(venta);
         }
 
         // Si es cotización
@@ -2648,6 +2654,18 @@ export class FacturacionV2Component implements OnInit {
     if (venta) {
       this.continuarTrasFacturar(venta);
     }
+  }
+
+  private generarPartidaVentaSiAutomatico(ventaGuardada: any): void {
+    if (this.apiService.auth_user().empresa.generar_partidas !== 'Auto') {
+      return;
+    }
+    this.apiService.store('contabilidad/partida/venta', ventaGuardada).subscribe({
+      next: () => {},
+      error: (error) => {
+        this.alertService.error(error);
+      },
+    });
   }
 
   private continuarTrasFacturar(venta: any): void {

@@ -500,10 +500,19 @@ describe('FacturacionV2Component', () => {
     component.untilDestroyed = () => (source: any) => source;
     component.apiService = {
       auth_user: () => ({ tipo: 'Admin', empresa }),
-      store: jasmine.createSpy('store').and.returnValue({
-        pipe: () => ({
-          subscribe: (ok: any) => ok({ id: 10 }),
-        }),
+      hasPermission: () => true,
+      store: jasmine.createSpy('store').and.callFake(() => {
+        const subscribe = (ok: any, err?: any) => {
+          if (typeof ok === 'function') {
+            ok({ id: 10 });
+            return;
+          }
+          ok?.next?.({ id: 10 });
+        };
+        return {
+          subscribe,
+          pipe: () => ({ subscribe }),
+        };
       }),
     };
     component.emitirDTE = jasmine.createSpy('emitirDTE');
@@ -564,5 +573,49 @@ describe('FacturacionV2Component', () => {
     expect(component.emitirDTE).not.toHaveBeenCalled();
     expect(component.imprimir).not.toHaveBeenCalled();
     expect(component.router.navigate).toHaveBeenCalledWith(['/ventas']);
+  });
+
+  it('con partidas Auto genera partida de venta al facturar', async () => {
+    const component = componenteTrasFacturar({
+      impresion_en_facturacion: false,
+      facturacion_electronica: false,
+      generar_partidas: 'Auto',
+    });
+    component.alertService.error = jasmine.createSpy('error');
+
+    await component.onSubmit();
+
+    const urls = component.apiService.store.calls.allArgs().map((args: any[]) => args[0]);
+    expect(urls).toContain('facturacion');
+    expect(urls).toContain('contabilidad/partida/venta');
+  });
+
+  it('con partidas Manual no genera partida de venta al facturar', async () => {
+    const component = componenteTrasFacturar({
+      impresion_en_facturacion: false,
+      facturacion_electronica: false,
+      generar_partidas: 'Manual',
+    });
+
+    await component.onSubmit();
+
+    const urls = component.apiService.store.calls.allArgs().map((args: any[]) => args[0]);
+    expect(urls).toContain('facturacion');
+    expect(urls).not.toContain('contabilidad/partida/venta');
+  });
+
+  it('no genera partida automatica si la venta es cotizacion', async () => {
+    const component = componenteTrasFacturar({
+      impresion_en_facturacion: false,
+      facturacion_electronica: false,
+      generar_partidas: 'Auto',
+    });
+    component.venta.cotizacion = 1;
+
+    await component.onSubmit();
+
+    const urls = component.apiService.store.calls.allArgs().map((args: any[]) => args[0]);
+    expect(urls).toContain('cotizacionVentas');
+    expect(urls).not.toContain('contabilidad/partida/venta');
   });
 });
