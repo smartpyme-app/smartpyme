@@ -243,6 +243,24 @@
                     <label>Bodega</label>
                   </div>
                 </div>
+                <div class="col-md-6">
+                  <div class="form-floating">
+                    <select
+                      [(ngModel)]="usuario.id_canal"
+                      class="form-select"
+                      name="id_canal"
+                    >
+                      <option value="">Predeterminado de la empresa</option>
+                      <option
+                        *ngFor="let canal of canales"
+                        [value]="canal.id"
+                      >
+                        {{ canal.nombre }}
+                      </option>
+                    </select>
+                    <label>Canal de venta</label>
+                  </div>
+                </div>
               </div>
               <div class="text-end mt-4">
                 <button

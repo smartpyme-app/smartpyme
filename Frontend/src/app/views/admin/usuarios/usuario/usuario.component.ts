@@ -22,6 +22,7 @@ export class UsuarioComponent implements OnInit {
   };
   public sucursales: any = [];
   public bodegas: any = [];
+  public canales: any = [];
   public empleados: any = [];
   public roles: any = [];
   public rol: any = {};
@@ -172,6 +173,15 @@ export class UsuarioComponent implements OnInit {
       }
     );
 
+    this.apiService.getAll('canales/list').subscribe(
+      (canales) => {
+        this.canales = canales;
+      },
+      (error) => {
+        this.alertService.error(error);
+      }
+    );
+
     this.usuarioLogueado();
   }
 
@@ -213,6 +223,7 @@ export class UsuarioComponent implements OnInit {
     formData.append('codigo', this.usuario.codigo);
     formData.append('id_sucursal', this.usuario.id_sucursal);
     formData.append('id_bodega', this.usuario.id_bodega);
+    formData.append('id_canal', this.usuario.id_canal ?? '');
 
 
 

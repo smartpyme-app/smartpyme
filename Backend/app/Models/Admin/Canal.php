@@ -13,11 +13,15 @@ class Canal extends Model {
         'nombre',
         'descripcion',
         'enable',
+        'predeterminado',
         'cobra_propina',
         'envios',
         'id_empresa'
     );
-    protected $casts = ['enable' => 'string'];
+    protected $casts = [
+        'enable' => 'string',
+        'predeterminado' => 'string',
+    ];
 
     protected static function boot()
     {

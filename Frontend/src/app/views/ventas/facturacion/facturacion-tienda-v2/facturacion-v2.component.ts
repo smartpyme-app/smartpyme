@@ -30,6 +30,7 @@ import {
 import { esVentaPorConsigna, sincronizarFlagConsignaVenta, aplicarEstadoConsignaEnVenta } from '@utils/venta-consigna.util';
 import { debeDispararAtajoTcla } from '@utils/atajos-teclado.util';
 import { calcularCambioEfectivo } from '@utils/cambio-efectivo.util';
+import { resolverCanalVentaDefault } from '@utils/canal-venta.util';
 import { FACTURA_REMISION, esVentaConsignaRemision } from '../../../../constants/documento.constants';
 import {
   debeEmitirDteAlFacturar,
@@ -394,7 +395,10 @@ export class FacturacionV2Component implements OnInit, OnDestroy {
       .subscribe(
         (canales) => {
           this.canales = canales;
-          this.venta.id_canal = this.canales[0].id;
+          this.venta.id_canal = resolverCanalVentaDefault(
+            canales,
+            this.apiService.auth_user()?.id_canal
+          );
         },
         (error) => {
           this.alertService.error(error);
@@ -628,7 +632,10 @@ export class FacturacionV2Component implements OnInit, OnDestroy {
     this.venta.iva_retenido = 0;
     this.venta.cotizacion = 0;
     if (this.canales.length > 0) {
-      this.venta.id_canal = this.canales[0].id;
+      this.venta.id_canal = resolverCanalVentaDefault(
+        this.canales,
+        this.apiService.auth_user()?.id_canal
+      );
     }
     this.venta.iva = 0;
     this.venta.total_costo = 0;

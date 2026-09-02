@@ -14,6 +14,7 @@ import { CountryISO, PhoneNumberFormat, SearchCountryField } from 'ngx-intl-tel-
 export class UsuariosComponent implements OnInit {
   public sucursales: any = [];
   public bodegas: any = [];
+  public canales: any = [];
   public usuarios: any = [];
   public usuario: any = {};
   public paginacion = [];
@@ -69,6 +70,15 @@ export class UsuariosComponent implements OnInit {
     this.apiService.getAll('bodegas/list').subscribe(
       (bodegas) => {
         this.bodegas = bodegas;
+      },
+      (error) => {
+        this.alertService.error(error);
+      }
+    );
+
+    this.apiService.getAll('canales/list').subscribe(
+      (canales) => {
+        this.canales = canales;
       },
       (error) => {
         this.alertService.error(error);

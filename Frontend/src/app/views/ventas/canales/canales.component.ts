@@ -41,13 +41,15 @@ export class CanalesComponent implements OnInit {
         if (!this.canal.id) {
             this.canal.id_empresa = this.apiService.auth_user().id_empresa;
             this.canal.enable = true;
+            this.canal.predeterminado = 0;
         }
         this.alertService.modal = true;
         this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop: 'static'});
     }
 
-    public setEstado(canal:any){
+    public setEstado(canal:any, change:boolean = false){
         this.canal = canal;
+        this.canal.change = change;
         this.onSubmit();
     }
 
