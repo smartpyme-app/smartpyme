@@ -7,7 +7,6 @@ import { debounceTime, switchMap, filter  } from 'rxjs/operators';
 import { SumPipe }     from '@pipes/sum.pipe';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
-import { armarPreciosCatalogoSinIvaV1 } from '@utils/impuestos-venta.util';
 
 import * as moment from 'moment';
 
@@ -118,11 +117,9 @@ export class TiendaVentaCitasComponent implements OnInit {
                     detalle.id_producto    = producto.id;
                     detalle.descripcion = producto.nombre;
                     detalle.img            = producto.img;
-                    const ivaEmpresa = this.apiService.auth_user()?.empresa?.iva ?? 0;
-                    const { precioSinIva } = armarPreciosCatalogoSinIvaV1(producto, ivaEmpresa);
-                    detalle.precio         = precioSinIva;
+                    detalle.precio         = parseFloat(producto.precio);
                     detalle.costo          = parseFloat(producto.costo);
-                    detalle.porcentaje_impuesto = producto.porcentaje_impuesto ?? ivaEmpresa;
+                    detalle.porcentaje_impuesto = producto.porcentaje_impuesto ?? this.apiService.auth_user()?.empresa?.iva;
                     if(producto.tipo != 'Servicio' && producto.inventarios.length > 0){
                         producto.inventarios   = producto.inventarios.filter((item:any) => item.id_sucursal == this.venta.id_sucursal);
                         detalle.stock          = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
