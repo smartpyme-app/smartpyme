@@ -2,7 +2,7 @@
 
 namespace App\Exports;
 
-use App\Models\Ventas\Detalle;
+use App\Exports\Support\DetallesConDevolucionesQuery;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -132,31 +132,25 @@ class VentasProductoSheet implements FromCollection, WithHeadings, WithMapping, 
 
         
 
-        $detalles = Detalle::select(
-            'productos.id_categoria',
-            'productos.marca',
-            'productos.nombre as sku',
-            DB::raw('SUM(detalles_venta.cantidad) as unidades_vendidas'),
-            DB::raw('SUM(detalles_venta.total) as total_ventas'),
-            DB::raw('(SELECT SUM(stock) FROM inventario WHERE inventario.id_producto = productos.id) as existencias')
-        )
-            ->join('ventas', 'ventas.id', '=', 'detalles_venta.id_venta')
-            ->join('productos', 'productos.id', '=', 'detalles_venta.id_producto')
-            ->when($this->fecha_inicio, function ($query) use ($request) {
-                return $query->whereBetween('ventas.fecha', [$this->fecha_inicio, $this->fecha_fin]);
-            })
-            ->when($request->sucursales, function ($query) use ($request) {
-                return $query->whereIn('ventas.id_sucursal', $request->sucursales);
-            })
+        $lineas = DetallesConDevolucionesQuery::lineasVenta($request, (string) $this->fecha_inicio, (string) $this->fecha_fin);
+
+        $detalles = DB::query()
+            ->fromSub($lineas, 'lineas')
+            ->join('productos', 'productos.id', '=', 'lineas.id_producto')
+            ->select(
+                'productos.id_categoria',
+                'productos.marca',
+                'productos.nombre as sku',
+                DB::raw('SUM(lineas.cantidad) as unidades_vendidas'),
+                DB::raw('SUM(lineas.total) as total_ventas'),
+                DB::raw('(SELECT SUM(stock) FROM inventario WHERE inventario.id_producto = productos.id) as existencias')
+            )
             ->when($request->categorias, function ($query) use ($request) {
                 return $query->whereIn('productos.id_categoria', $request->categorias);
             })
             ->when($request->marcas, function ($query) use ($request) {
                 return $query->whereIn('productos.marca', $request->marcas);
             })
-            ->where('ventas.id_empresa', $request->id_empresa)
-            ->where('ventas.estado', '!=', 'Anulada')
-            ->where('ventas.cotizacion', 0)
             ->groupBy('productos.id', 'productos.id_categoria', 'productos.marca', 'productos.nombre')
             ->get();
 

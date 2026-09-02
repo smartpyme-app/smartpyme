@@ -3,17 +3,19 @@
 namespace App\Exports;
 
 use App\Constants\OrigenStockVentaConstants;
+use App\Exports\Support\DevolucionEnReporte;
 use App\Models\Admin\Empresa;
 use App\Models\Inventario\Paquete;
 use App\Models\Ventas\Detalle;
+use App\Models\Ventas\Devoluciones\Detalle as DetalleDevolucion;
 use App\Models\Ventas\Venta;
-use Maatwebsite\Excel\Concerns\FromQuery;
-use Maatwebsite\Excel\Concerns\WithChunkReading;
+use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 
-class VentasDetallesExport implements FromQuery, WithHeadings, WithMapping, WithChunkReading
+class VentasDetallesExport implements FromCollection, WithHeadings, WithMapping
 {
     /**
      * @var Request|null
@@ -39,11 +41,6 @@ class VentasDetallesExport implements FromQuery, WithHeadings, WithMapping, With
 
         $empresa = $this->idEmpresaFiltro ? Empresa::find($this->idEmpresaFiltro) : null;
         $this->incluirPaquetes = $empresa && !empty($empresa->modulo_paquetes);
-    }
-
-    public function chunkSize(): int
-    {
-        return 1000;
     }
 
     public function headings():array{
@@ -87,6 +84,23 @@ class VentasDetallesExport implements FromQuery, WithHeadings, WithMapping, With
         }
 
         return $headings;
+    }
+
+    public function collection(): Collection
+    {
+        $detalles = $this->query()->get();
+        $devoluciones = $this->queryDevolucionesDetalles()->get()->each(function (DetalleDevolucion $detalle) {
+            DevolucionEnReporte::marcar($detalle);
+        });
+
+        return $detalles->concat($devoluciones)
+            ->sortByDesc(function ($row) {
+                $fecha = DevolucionEnReporte::esDevolucion($row)
+                    ? optional($row->venta)->fecha
+                    : optional($row->venta)->fecha;
+                return sprintf('%s-%010d', (string) $fecha, (int) ($row->id ?? 0));
+            })
+            ->values();
     }
 
     /**
@@ -265,7 +279,109 @@ class VentasDetallesExport implements FromQuery, WithHeadings, WithMapping, With
             ->orderBy('detalles_venta.id', 'desc');
     }
 
+    public function queryDevolucionesDetalles()
+    {
+        $request = $this->request;
+        if (!$request) {
+            return DetalleDevolucion::query()->whereRaw('1 = 0');
+        }
+
+        $idEmpresa = $this->idEmpresaFiltro;
+
+        return DetalleDevolucion::query()
+            ->with([
+                'venta' => static function ($q) {
+                    $q->select(
+                        'id',
+                        'fecha',
+                        'id_cliente',
+                        'id_documento',
+                        'id_sucursal',
+                        'id_usuario',
+                        'id_venta',
+                        'correlativo',
+                        'observaciones',
+                        'iva',
+                        'sub_total',
+                        'total'
+                    );
+                },
+                'venta.cliente:id,tipo,nombre,apellido,nombre_empresa,telefono,dui,nit',
+                'venta.documento:id,nombre',
+                'venta.sucursal:id,nombre,id_empresa',
+                'venta.sucursal.empresa:id,nombre',
+                'venta.usuario:id,name',
+                'venta.venta:id,id_canal,id_proyecto,id_vendedor,forma_pago,detalle_banco,num_identificacion',
+                'venta.venta.canal:id,nombre',
+                'venta.venta.proyecto:id,nombre',
+                'venta.venta.vendedor:id,name',
+                'producto' => static function ($q) {
+                    $q->withoutGlobalScopes()->select('id', 'nombre', 'codigo', 'marca', 'id_categoria');
+                },
+                'producto.categoria:id,nombre',
+            ])
+            ->whereHas('venta', function ($query) use ($request, $idEmpresa) {
+                $query->where('enable', 1)
+                    ->when($idEmpresa !== null, function ($q) use ($idEmpresa) {
+                        $q->where('id_empresa', $idEmpresa);
+                    })
+                    ->when(!empty($request->sucursales) && is_array($request->sucursales), function ($q) use ($request) {
+                        $q->whereIn('id_sucursal', $request->sucursales);
+                    })
+                    ->when($request->inicio, function ($q) use ($request) {
+                        return $q->where('fecha', '>=', $request->inicio);
+                    })
+                    ->when($request->fin, function ($q) use ($request) {
+                        return $q->where('fecha', '<=', $request->fin);
+                    })
+                    ->when($request->id_sucursal, function ($q) use ($request) {
+                        return $q->where('id_sucursal', $request->id_sucursal);
+                    })
+                    ->when($request->id_bodega, function ($q) use ($request) {
+                        return $q->where('id_bodega', $request->id_bodega);
+                    })
+                    ->when($request->id_cliente, function ($q) use ($request) {
+                        return $q->where('id_cliente', $request->id_cliente);
+                    })
+                    ->when($request->id_usuario, function ($q) use ($request) {
+                        return $q->where('id_usuario', $request->id_usuario);
+                    })
+                    ->when($request->id_canal, function ($q) use ($request) {
+                        return $q->whereHas('venta', function ($venta) use ($request) {
+                            $venta->where('id_canal', $request->id_canal);
+                        });
+                    })
+                    ->when($request->id_proyecto, function ($q) use ($request) {
+                        return $q->whereHas('venta', function ($venta) use ($request) {
+                            $venta->where('id_proyecto', $request->id_proyecto);
+                        });
+                    })
+                    ->when($request->id_vendedor, function ($q) use ($request) {
+                        return $q->whereHas('venta', function ($venta) use ($request) {
+                            $venta->where('id_vendedor', $request->id_vendedor);
+                        });
+                    })
+                    ->when($request->buscador, function ($q) use ($request) {
+                        $buscador = '%' . $request->buscador . '%';
+                        return $q->where(function ($inner) use ($buscador) {
+                            $inner->whereHas('cliente', function ($qCliente) use ($buscador) {
+                                $qCliente->where('nombre', 'like', $buscador)
+                                    ->orWhere('nombre_empresa', 'like', $buscador)
+                                    ->orWhere('ncr', 'like', $buscador)
+                                    ->orWhere('nit', 'like', $buscador);
+                            })
+                                ->orWhere('correlativo', 'like', $buscador)
+                                ->orWhere('observaciones', 'like', $buscador);
+                        });
+                    });
+            });
+    }
+
     public function map($row): array{
+        if (DevolucionEnReporte::esDevolucion($row)) {
+            return $this->mapDevolucionDetalle($row);
+        }
+
         /** @var Venta|null $venta */
         $venta = $row->venta;
         $documentoNombre = ($venta && $venta->documento) ? $venta->documento->nombre : null;
@@ -407,5 +523,74 @@ class VentasDetallesExport implements FromQuery, WithHeadings, WithMapping, With
         }
 
         return null;
+    }
+
+    private function mapDevolucionDetalle(DetalleDevolucion $row): array
+    {
+        $devolucion = $row->venta;
+        $ventaOrigen = ($devolucion && $devolucion->relationLoaded('venta')) ? $devolucion->venta : null;
+        $documentoNombre = ($devolucion && $devolucion->documento) ? $devolucion->documento->nombre : 'Devolución';
+
+        $ivaLinea = 0.0;
+        if ($devolucion && (float) $devolucion->iva > 0 && (float) $devolucion->sub_total > 0 && (float) $row->total > 0) {
+            $ivaLinea = ((float) $row->total / (float) $devolucion->sub_total) * (float) $devolucion->iva;
+        }
+
+        $montos = DevolucionEnReporte::montosDetalleNegados($row, $ivaLinea);
+        $producto = $row->producto;
+        $categoriaNombre = ($producto && $producto->relationLoaded('categoria') && $producto->categoria)
+            ? $producto->categoria->nombre
+            : '';
+        $cliente = ($devolucion && $devolucion->cliente) ? $devolucion->cliente : null;
+
+        $nombreCliente = 'Consumidor Final';
+        if ($cliente) {
+            $nombreCliente = $cliente->tipo == 'Empresa'
+                ? (string) $cliente->nombre_empresa
+                : trim($cliente->nombre . ' ' . $cliente->apellido);
+        }
+
+        $fields = [
+            $devolucion ? $devolucion->fecha : null,
+            $nombreCliente,
+            $cliente ? $cliente->telefono : null,
+            $cliente ? $cliente->dui : null,
+            $cliente ? $cliente->nit : null,
+            $producto ? $producto->nombre : ($row->descripcion ?? null),
+            $producto ? $producto->codigo : null,
+            $producto ? $producto->marca : null,
+            $categoriaNombre,
+            $documentoNombre,
+            ($ventaOrigen && $ventaOrigen->relationLoaded('proyecto') && $ventaOrigen->proyecto)
+                ? $ventaOrigen->proyecto->nombre
+                : null,
+            $ventaOrigen ? $ventaOrigen->num_identificacion : null,
+            $devolucion ? $devolucion->correlativo : null,
+            $ventaOrigen ? $ventaOrigen->forma_pago : null,
+            $ventaOrigen ? $ventaOrigen->detalle_banco : null,
+            DevolucionEnReporte::ESTADO,
+            ($ventaOrigen && $ventaOrigen->canal) ? $ventaOrigen->canal->nombre : null,
+            $montos['cantidad'],
+            $montos['costo'],
+            $montos['precio'],
+            $montos['descuento'],
+            $montos['iva'],
+            $montos['utilidad'],
+            $montos['total'],
+            ($devolucion && $devolucion->sucursal && $devolucion->sucursal->empresa)
+                ? $devolucion->sucursal->empresa->nombre
+                : null,
+            $devolucion ? $devolucion->observaciones : null,
+            ($devolucion && $devolucion->usuario) ? $devolucion->usuario->name : null,
+            ($ventaOrigen && $ventaOrigen->vendedor) ? $ventaOrigen->vendedor->name : 'Sin vendedor',
+            ($devolucion && $devolucion->sucursal) ? $devolucion->sucursal->nombre : null,
+        ];
+        if ($this->incluirPaquetes) {
+            $fields[] = '';
+            $fields[] = '';
+            $fields[] = '';
+        }
+
+        return $fields;
     }
 }
