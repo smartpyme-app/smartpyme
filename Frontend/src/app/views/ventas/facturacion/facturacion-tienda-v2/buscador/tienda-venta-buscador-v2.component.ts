@@ -10,8 +10,10 @@ import { AlertService } from '@services/alert.service';
 import {
     normalizarPorcentajeImpuestoDetalle,
     resolverPorcentajeImpuestoVenta,
+    resolverPrecioConIvaProducto,
+    resolverPrecioSinIvaProducto,
     copiarImpuestosProductoAlDetalle,
-    redondearMoneda,
+    redondear4,
 } from '@utils/impuestos-venta.util';
 
 @Component({
@@ -168,12 +170,11 @@ export class TiendaVentaBuscadorV2Component implements OnInit {
      */
     public getPrecioConIva(producto: any): number {
         if (!producto) return 0;
-        const precio = parseFloat(producto.precio) || 0;
         const pct = resolverPorcentajeImpuestoVenta(
             producto.porcentaje_impuesto,
             this.apiService.auth_user()?.empresa?.iva
         );
-        return precio * (1 + pct / 100);
+        return resolverPrecioConIvaProducto(producto, pct);
     }
 
     private ivaEmpresa(): number {
@@ -190,36 +191,34 @@ export class TiendaVentaBuscadorV2Component implements OnInit {
         const ivaEmpresa = this.ivaEmpresa();
         const pctImpuesto = resolverPorcentajeImpuestoVenta(producto.porcentaje_impuesto, ivaEmpresa);
         const porcentajeImpuesto = normalizarPorcentajeImpuestoDetalle(producto.porcentaje_impuesto, ivaEmpresa);
-        const precioSinIva = parseFloat(producto.precio) || 0;
-        const precioConIva = pctImpuesto > 0
-            ? precioSinIva * (1 + pctImpuesto / 100)
-            : precioSinIva;
+        const precioSinIva = resolverPrecioSinIvaProducto(producto, pctImpuesto);
+        const precioConIva = resolverPrecioConIvaProducto(producto, pctImpuesto);
         return { pctImpuesto, porcentajeImpuesto, precioSinIva, precioConIva };
     }
 
     /** Lista de tarifas del producto (sin IVA) + precio de la fila, como en facturación v1. */
-    private armarListaPreciosDetalleV2(producto: any, precioSinIva: number, pctImpuesto: number): any[] {
+    private armarListaPreciosDetalleV2(
+        producto: any,
+        precioSinIva: number,
+        precioConIva: number,
+        pctImpuesto: number
+    ): any[] {
         const lista = producto.precios
             ? producto.precios.map((p: any) => {
-                const sinIvaLista = parseFloat(p.precio);
-                const conIva = pctImpuesto > 0
-                    ? sinIvaLista * (1 + pctImpuesto / 100)
-                    : sinIvaLista;
+                const sinIvaLista = resolverPrecioSinIvaProducto(p, pctImpuesto);
+                const conIva = resolverPrecioConIvaProducto(p, pctImpuesto);
                 return {
                     ...p,
-                    precio: sinIvaLista.toFixed(4),
+                    precio: sinIvaLista.toFixed(6),
                     precio_sin_iva: sinIvaLista,
-                    precio_con_iva: conIva.toFixed(4),
+                    precio_con_iva: redondear4(conIva).toFixed(4),
                 };
             })
             : [];
-        const conIvaBase = pctImpuesto > 0
-            ? precioSinIva * (1 + pctImpuesto / 100)
-            : precioSinIva;
         lista.unshift({
-            precio: precioSinIva.toFixed(4),
+            precio: precioSinIva.toFixed(6),
             precio_sin_iva: precioSinIva,
-            precio_con_iva: conIvaBase.toFixed(4),
+            precio_con_iva: redondear4(precioConIva).toFixed(4),
         });
         return lista;
     }
@@ -235,10 +234,15 @@ export class TiendaVentaBuscadorV2Component implements OnInit {
 
         this.detalle.porcentaje_impuesto = porcentajeImpuesto;
         copiarImpuestosProductoAlDetalle(this.detalle, producto, this.ivaEmpresa());
-        this.detalle.precio_iva          = redondearMoneda(precioConIva).toFixed(2);
-        this.detalle.precio              = precioSinIva.toFixed(4);
+        this.detalle.precio_iva          = redondear4(precioConIva).toFixed(4);
+        this.detalle.precio              = precioSinIva.toFixed(6);
         this.detalle.precio_base         = precioSinIva;
-        this.detalle.precios             = this.armarListaPreciosDetalleV2(producto, precioSinIva, pctImpuesto);
+        this.detalle.precios             = this.armarListaPreciosDetalleV2(
+            producto,
+            precioSinIva,
+            precioConIva,
+            pctImpuesto
+        );
 
         if(this.apiService.auth_user().empresa.valor_inventario == 'promedio' && producto.costo_promedio > 0){
             this.detalle.costo = parseFloat(producto.costo_promedio);
