@@ -26,6 +26,7 @@ use App\Models\Inventario\Categorias\Cuenta as CuentaCategoria;
 use App\Services\Contabilidad\CierreMesService;
 use App\Services\Contabilidad\CierreEjercicioService;
 use App\Services\Contabilidad\SimulacionCierreService;
+use App\Services\Contabilidad\Partidas\ReglaIngresoVenta;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Maatwebsite\Excel\Facades\Excel;
@@ -627,6 +628,8 @@ class PartidasController extends Controller
                             }
                         ])
                         ->get();
+
+            $ventas = $this->sinPartidaOrigen('Venta', $ventas);
             
             \Log::info('Ventas cargadas', [
                 'cantidad' => $ventas->count(),
@@ -647,6 +650,8 @@ class PartidasController extends Controller
                             }
                         ])
                         ->get();
+
+            $abonos_ventas = $this->sinPartidaOrigen('Abono de Venta', $abonos_ventas);
 
             \Log::info('Abonos cargados', [
                 'cantidad' => $abonos_ventas->count(),
@@ -1146,6 +1151,8 @@ class PartidasController extends Controller
             ->where('estado', 'Pendiente')
             ->whereDate('fecha', $request->fecha)
             ->get();
+
+        $ventas = $this->sinPartidaOrigen('Venta', $ventas);
 
         // Partida
             $partida = [
@@ -2125,6 +2132,22 @@ class PartidasController extends Controller
             COALESCE(SUM(partida_detalles.haber), 0) as gran_total_haber,
             COUNT(DISTINCT partidas.id) as total_registros_filtrados
         ')->first();
+    }
+
+    private function sinPartidaOrigen(string $referencia, $documentos)
+    {
+        $ids = $documentos->pluck('id')->all();
+        if ($ids === []) {
+            return $documentos;
+        }
+
+        $ya = Partida::where('referencia', $referencia)
+            ->whereIn('id_referencia', $ids)
+            ->pluck('id_referencia')
+            ->all();
+        $ok = array_flip(ReglaIngresoVenta::idsSinPartida($ids, $ya));
+
+        return $documentos->filter(fn ($doc) => isset($ok[(int) $doc->id]))->values();
     }
 
     private function referenciaDocumentoIngreso($ingreso): string

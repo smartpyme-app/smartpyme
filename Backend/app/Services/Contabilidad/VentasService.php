@@ -10,6 +10,7 @@ use App\Models\Admin\FormaDePago;
 use App\Models\Ventas\Venta;
 use App\Models\Ventas\Detalle as DetalleVenta;
 use App\Models\Inventario\Categorias\Cuenta as CuentaCategoria;
+use App\Services\Contabilidad\Partidas\ReglaIngresoVenta;
 use Illuminate\Support\Facades\DB;
 use Exception;
 
@@ -68,35 +69,27 @@ class VentasService
                 'id_empresa' => $venta->id_empresa,
             ]);
 
-            // Debe - Determinar cuenta según estado de la venta
-            if ($venta->estado == 'Pendiente') {
-                // Venta al crédito - CxC
-                if (!$configuracion->id_cuenta_cxc) {
-                    throw new Exception('No se ha configurado la cuenta de cuentas por cobrar', 400);
-                }
-                $cuenta_debe = Cuenta::find($configuracion->id_cuenta_cxc);
-                if (!$cuenta_debe) {
-                    throw new Exception('No se encontró la cuenta contable de cuentas por cobrar', 400);
-                }
-            } else {
-                // Venta al contado - según forma de pago
-                if (!$venta->forma_pago) {
-                    throw new Exception('La venta no tiene forma de pago asignada', 400);
-                }
+            // Debe: misma regla que la partida de ingreso del día (contado y crédito → forma de pago).
+            if (ReglaIngresoVenta::origenCuentaDebe($venta) !== 'forma_pago') {
+                throw new Exception('La cuenta de cargo de ingresos debe resolverse por forma de pago.', 400);
+            }
 
-                $formapago = FormaDePago::with('banco')->where('nombre', $venta->forma_pago)->first();
-                if (!$formapago) {
-                    throw new Exception('No se encontró la forma de pago: ' . $venta->forma_pago, 400);
-                }
+            if (!$venta->forma_pago) {
+                throw new Exception('La venta no tiene forma de pago asignada', 400);
+            }
 
-                if (!$formapago->banco || !$formapago->banco->id_cuenta_contable) {
-                    throw new Exception('La forma de pago no tiene un banco o cuenta contable configurada, para configurarla puede ir al menú de la aplicación, en Finanzas > Métodos de pago', 400);
-                }
+            $formapago = FormaDePago::with('banco')->where('nombre', $venta->forma_pago)->first();
+            if (!$formapago) {
+                throw new Exception('No se encontró la forma de pago: ' . $venta->forma_pago, 400);
+            }
 
-                $cuenta_debe = Cuenta::find($formapago->banco->id_cuenta_contable);
-                if (!$cuenta_debe) {
-                    throw new Exception('No se encontró la cuenta contable del banco asociado a la forma de pago, para configurarla puede ir al menú de la aplicación, en Finanzas > Bancos, seleccionar el tab de Cuentas y agregar la cuenta contable al banco.', 400);
-                }
+            if (!$formapago->banco || !$formapago->banco->id_cuenta_contable) {
+                throw new Exception('La forma de pago no tiene un banco o cuenta contable configurada, para configurarla puede ir al menú de la aplicación, en Finanzas > Métodos de pago', 400);
+            }
+
+            $cuenta_debe = Cuenta::find($formapago->banco->id_cuenta_contable);
+            if (!$cuenta_debe) {
+                throw new Exception('No se encontró la cuenta contable del banco asociado a la forma de pago, para configurarla puede ir al menú de la aplicación, en Finanzas > Bancos, seleccionar el tab de Cuentas y agregar la cuenta contable al banco.', 400);
             }
 
             Detalle::create([
