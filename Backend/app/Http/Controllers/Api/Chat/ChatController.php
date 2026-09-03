@@ -7,8 +7,7 @@ use App\Models\Chat\Conversation;
 use App\Models\Chat\Message;
 use App\Models\User;
 use App\Services\AIService;
-use App\Services\ContextService;
-use Carbon\Carbon;
+use App\Services\ChatFormatter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -18,17 +17,15 @@ use App\Http\Requests\Chat\NewConversationRequest;
 class ChatController extends Controller
 {
     protected $aiService;
-    protected $contextService;
 
     /**
      * Constructor
      * 
      * @param AIService $aiService
      */
-    public function __construct(AIService $aiService, ContextService $contextService)
+    public function __construct(AIService $aiService)
     {
         $this->aiService = $aiService;
-        $this->contextService = $contextService;
     }
 
     /**
@@ -44,50 +41,25 @@ class ChatController extends Controller
             $validated = $request->validated();
 
             $user = User::findOrFail($validated['user_id'] ?? $request->user()->id);
-            $conversation = $this->getActiveConversation($user->id, $user->id_empresa);
-
-            if ($conversation) {
-                $conversationId = $conversation->id;
-            } else {
-
-                $conversation = new Conversation([
-                    'id_user' => $user->id,
-                    'title' => 'Nueva conversación ' . $user->id . ' - ' . $user->name . ' - ' . $user->id_empresa,
-                    'id_empresa' => $user->id_empresa
-                ]);
-                $conversation->save();
-                $conversationId = $conversation->id;
-            }
-
-            if (isset($validated['modelType'])) {
-                $this->aiService->useModel($validated['modelType']);
-            }
-
-            $options = array_filter([
-                'maxTokens' => $validated['maxTokens'] ?? null,
-                'temperature' => $validated['temperature'] ?? null,
-                'topP' => $validated['topP'] ?? null,
-                'topK' => $validated['topK'] ?? null
-            ]);
 
             $empresaId = $request->user()->id_empresa ?? null;
             if ($empresaId) {
                 session(['id_empresa' => $empresaId]);
             }
 
-            $empresa = null;
-            $metricas = null;
+            // Identidad requerida por el servicio de IA (Lucas). Se resuelve del
+            // lado servidor a partir del usuario autenticado (límite de confianza).
+            $options = [
+                'user_id' => $user->id,
+                'empresa_id' => $user->id_empresa ?? $empresaId,
+                'user_type' => $user->tipo ?? 'Usuario',
+                'source' => $source,
+            ];
 
-            if ($empresaId) {
-                $empresa = $this->contextService->obtenerInformacionEmpresa($empresaId);
-                $metricas = $this->contextService->obtenerMetricasRecientes($empresaId);
+            // El contexto lo gestiona Lucas con su propio conversation_id
+            if (!empty($validated['conversationId'])) {
+                $options['conversation_id'] = $validated['conversationId'];
             }
-
-            $basePrompt = $source == 'WhatsApp' ? config('bedrock.system_prompt_haiku_whatsapp') : config('bedrock.system_prompt_haiku');
-            $systemPrompt = $this->contextService->generateSystemPrompt($empresa, $metricas, $basePrompt);
-            $systemPrompt = $this->contextService->enrichContextWithQueryData($systemPrompt, $empresa, $validated['prompt']);
-
-            $this->aiService->setSystemPrompt($systemPrompt);
 
             $botResponse = $this->aiService->generateResponse(
                 $validated['prompt'],
@@ -95,49 +67,19 @@ class ChatController extends Controller
                 $options
             );
 
-            // Extraer sugerencias si existen en la respuesta
-            $suggestions = [];
-            if (preg_match('/<sugerencias>(.*?)<\/sugerencias>/s', $botResponse, $matches)) {
-                $suggestionsText = $matches[1];
-                $suggestions = array_map('trim', explode(',', $suggestionsText));
+            // Convertir el marcado estilo WhatsApp a HTML para la Web; para
+            // WhatsApp se conserva el texto plano.
+            $formatter = app(ChatFormatter::class);
+            $botResponse = $formatter->format($botResponse, $source);
 
-                // Eliminar la etiqueta de sugerencias de la respuesta final
-                $botResponse = str_replace($matches[0], '', $botResponse);
-            }
+            $suggestions = $this->aiService->getSuggestions();
+            $lastResponse = $this->aiService->getLastResponse();
 
-            // Asegurar que la respuesta esté en formato HTML
-            if (!preg_match('/<[^>]+>/', $botResponse)) {
-                // Si no contiene etiquetas HTML, convertir a formato HTML básico
-                $botResponse = '<p>' . nl2br(htmlspecialchars($botResponse)) . '</p>';
-            }
-
-            // Si tenemos una conversación, guardar mensajes
-            if ($conversationId && isset($conversation)) {
-                // Guardar mensaje del usuario
-                $userMessage = new Message([
-                    'conversation_id' => $conversationId,
-                    'sender' => 'user',
-                    'content' => $validated['prompt'],
-                    'metadata' => []
-                ]);
-                $userMessage->save();
-
-                // Guardar respuesta del bot con metadatos de sugerencias
-                $botMessage = new Message([
-                    'conversation_id' => $conversationId,
-                    'sender' => 'bot',
-                    'content' => $botResponse,
-                    'metadata' => ['suggestions' => $suggestions]
-                ]);
-                $botMessage->save();
-            }
-
-            // Devolver respuesta con sugerencias
             return response()->json([
                 'message' => $botResponse,
                 'suggestions' => $suggestions,
-                'conversationId' => $conversationId ?? null,
-                'modelUsed' => config('bedrock.model_id_haiku')
+                'conversationId' => $lastResponse['conversation_id'] ?? null,
+                'modelUsed' => $lastResponse['modelUsed'] ?? config('bedrock.model_id_haiku')
             ]);
         } catch (\Exception $e) {
             Log::error('Error en procesamiento de chat:', [
@@ -150,52 +92,6 @@ class ChatController extends Controller
                 'message' => config('app.debug') ? $e->getMessage() : '<p>Error interno del servidor</p>'
             ], 500);
         }
-    }
-
-    private function getActiveConversation($userId, $empresaId)
-    {
-        return Conversation::where('id_user', $userId)
-            ->where('id_empresa', $empresaId)
-            ->where('updated_at', '>=', now()->subDays(7))
-            ->latest('updated_at')
-            ->first();
-    }
-
-    private function generateSystemPrompt($empresa, $metricas)
-    {
-        $basePrompt = config('bedrock.system_prompt_haiku');
-
-        if (!$empresa) {
-            return $basePrompt;
-        }
-
-        $contextInfo = "Información sobre la empresa:
-                        Nombre: {$empresa->nombre}
-                        Industria: {$empresa->industria}
-                        ";
-
-        if ($metricas && count($metricas) > 0) {
-            $contextInfo .= "\nMétricas de la empresa:\n";
-
-            foreach ($metricas as $index => $metrica) {
-                $fecha = Carbon::parse($metrica->fecha)->format('Y-m');
-                $contextInfo .= "- Período {$fecha}:\n";
-                $contextInfo .= "  * Ventas: $" . number_format($metrica->ventas_con_iva, 2) . "\n";
-                $contextInfo .= "  * Egresos: $" . number_format($metrica->egresos_con_iva, 2) . "\n";
-                $contextInfo .= "  * Rentabilidad: " . number_format($metrica->rentabilidad_porcentaje, 2) . "%\n";
-
-                // Limitar a los últimos 3 meses para no sobrecargar el prompt
-                if ($index >= 2) break;
-            }
-        }
-
-        // Añadir instrucciones específicas para el asistente
-        $customPrompt = $basePrompt . "\n\nTienes acceso a la siguiente información contextual sobre la empresa del usuario. Utiliza esta información para proporcionar respuestas más precisas y personalizadas sobre su situación financiera:\n\n" . $contextInfo;
-
-        // Añadir instrucción para no revelar directamente los datos a menos que se soliciten
-        $customPrompt .= "\n\nNo menciones explícitamente que tienes esta información a menos que el usuario la solicite. Usa estos datos para contextualizar tus respuestas y dar mejores consejos financieros.";
-
-        return $customPrompt;
     }
 
     /**

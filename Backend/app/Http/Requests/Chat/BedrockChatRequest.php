@@ -22,7 +22,7 @@ class BedrockChatRequest extends FormRequest
         return [
             'prompt' => ['required', 'string'],
             'history' => ['nullable', 'array'],
-            'conversationId' => ['nullable', 'integer', 'exists:conversations,id'],
+            'conversationId' => ['nullable', 'string'],
             'maxTokens' => ['nullable', 'integer', 'min:1', 'max:4000'],
             'temperature' => ['nullable', 'numeric', 'min:0', 'max:1'],
             'topP' => ['nullable', 'numeric', 'min:0', 'max:1'],
@@ -41,8 +41,7 @@ class BedrockChatRequest extends FormRequest
             'prompt.required' => 'El prompt es requerido.',
             'prompt.string' => 'El prompt debe ser una cadena de texto.',
             'history.array' => 'El historial debe ser un arreglo.',
-            'conversationId.integer' => 'El ID de conversación debe ser un número entero.',
-            'conversationId.exists' => 'La conversación seleccionada no existe.',
+            'conversationId.string' => 'El ID de conversación debe ser un texto.',
             'maxTokens.integer' => 'El máximo de tokens debe ser un número entero.',
             'maxTokens.min' => 'El máximo de tokens debe ser al menos 1.',
             'maxTokens.max' => 'El máximo de tokens no puede exceder 4000.',

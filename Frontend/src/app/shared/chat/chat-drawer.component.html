@@ -1,74 +1,156 @@
 <div class="offcanvas offcanvas-bottom custom-chat-height" tabindex="-1" id="chatOffcanvas" aria-labelledby="chatOffcanvasLabel">
-  <div class="offcanvas-header">
-    <img appLazyImage="/assets/img/logo.png" alt="Logo" class="me-2" style="width: 80px; height: 24px;">
-    <h6 class="offcanvas-title" id="chatOffcanvasLabel">Lucas IA</h6>
-    <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-  </div>
-  <div class="offcanvas-body">
-    <div class="chat-messages" #chatContainer>
-      @for (message of messages; track $index) {
-          <div class="message mb-3" 
-               [ngClass]="{'user-message': message.sender === 'user', 'bot-message': message.sender === 'bot'}">
-              <!-- Avatar para mensajes del bot -->
-              @if (message.sender === 'bot') {
-                  <div class="avatar-container">
-                      <img appLazyImage="/assets/avatares/bot-avatar.png" alt="Bot" class="bot-avatar">
-                  </div>
-              }
-              <div class="message-content p-3">
-                  <div class="mb-0" [innerHTML]="message.text | safeHtml"></div>
-                  
-                  <!-- Sugerencias -->
-                  @if (message.suggestions && message.suggestions.length > 0) {
-                      <div class="suggestions-container mt-2">
-                          @for (suggestion of message.suggestions; track $index) {
-                              <div class="suggestion-chip" 
-                                   tooltip="{{ suggestion }}"
-                                   (click)="handleSuggestionClick(suggestion)">
-                                  {{ suggestion }}
-                              </div>
-                          }
-                      </div>
-                  }
-              </div>
-              <!-- Avatar para mensajes del usuario (opcional) -->
-              @if (message.sender === 'user') {
-                  <div class="avatar-container user-avatar-container">
-                      <div class="user-avatar">
-                          <i class="fa fa-user"></i>
-                      </div>
-                  </div>
-              }
-          </div>
-      }
-      
-      <!-- Indicador de "pensando..." -->
-      @if (isLoading) {
-          <div class="message mb-3 bot-message">
-              <div class="avatar-container">
-                  <img appLazyImage="/assets/avatares/bot-avatar.png" alt="Bot" class="bot-avatar">
-              </div>
-              <div class="message-content p-3">
-                  <div class="thinking-indicator">
-                      <span class="dot"></span>
-                      <span class="dot"></span>
-                      <span class="dot"></span>
-                  </div>
-              </div>
-          </div>
-      }
+  <div class="offcanvas-header chat-header">
+    @if (view === 'chat') {
+      <button type="button" class="btn btn-sm btn-light rounded-circle back-btn me-2" (click)="backToList()" aria-label="Volver al historial">
+        <i class="fa fa-arrow-left"></i>
+      </button>
+    }
+
+    <div class="d-flex align-items-center flex-grow-1 min-width-0">
+      <div class="chat-avatar">
+        <img appLazyImage="/assets/avatares/bot-avatar.png" alt="Lucas" class="chat-avatar-img">
+        <span class="status-dot" title="En línea"></span>
+      </div>
+      <div class="chat-title-block ms-2 min-width-0">
+        <h6 class="mb-0 chat-title" id="chatOffcanvasLabel">Lucas IA</h6>
+        <small class="chat-subtitle">Asistente financiero · En línea</small>
+      </div>
     </div>
+
+    <button type="button" class="btn-close header-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+  </div>
+
+  <div class="offcanvas-body">
+    <!-- Vista: listado de conversaciones -->
+    @if (view === 'list') {
+      <div class="conversation-list">
+        <div class="conversation-list-header">
+          <div class="conversation-list-header-text">
+            <span class="conversation-list-title">Historial de conversaciones</span>
+            <small class="conversation-list-date">{{ today | date: 'fullDate' }}</small>
+          </div>
+          <button type="button" class="btn btn-primary new-conversation-subheader"
+                  (click)="newConversation()"
+                  tooltip="Nueva conversación">
+            <i class="fa fa-plus me-1"></i> Nueva
+          </button>
+        </div>
+
+        @if (conversationsLoading) {
+          <div class="conversation-empty">
+            <div class="thinking-indicator">
+              <span class="dot"></span>
+              <span class="dot"></span>
+              <span class="dot"></span>
+            </div>
+          </div>
+        } @else if (conversations.length === 0) {
+          <div class="conversation-empty">
+            <p class="mb-2">Aún no tienes conversaciones.</p>
+            <button type="button" class="btn btn-sm btn-primary" (click)="newConversation()">
+              Iniciar mi primera conversación
+            </button>
+          </div>
+        } @else {
+          @for (conversation of conversations; track conversation.conversation_id) {
+            <button type="button" class="conversation-item" (click)="openConversation(conversation.conversation_id)">
+              <div class="conversation-item-body">
+                <div class="conversation-item-title">{{ conversation.title }}</div>
+                <div class="conversation-item-meta">
+                  {{ conversation.message_count }} mensajes · {{ conversation.updated_at | date: 'dd/MM/yyyy HH:mm' }}
+                </div>
+              </div>
+              <i class="fa fa-chevron-right conversation-item-chevron"></i>
+            </button>
+          }
+        }
+      </div>
+    }
+
+    <!-- Vista: chat -->
+    @if (view === 'chat') {
+      <div class="chat-messages" #chatContainer>
+        @if (loadingConversation) {
+          <div class="message mb-3 bot-message">
+            <div class="avatar-container">
+              <img appLazyImage="/assets/avatares/bot-avatar.png" alt="Bot" class="bot-avatar">
+            </div>
+            <div class="message-content p-3">
+              <div class="thinking-indicator">
+                <span class="dot"></span>
+                <span class="dot"></span>
+                <span class="dot"></span>
+              </div>
+            </div>
+          </div>
+        }
+
+        @for (message of messages; track message.message_id) {
+            <div class="message mb-3" 
+                 [ngClass]="{'user-message': message.sender === 'user', 'bot-message': message.sender === 'bot'}">
+                <!-- Avatar para mensajes del bot -->
+                @if (message.sender === 'bot') {
+                    <div class="avatar-container">
+                        <img appLazyImage="/assets/avatares/bot-avatar.png" alt="Bot" class="bot-avatar">
+                    </div>
+                }
+                <div class="message-content p-3">
+                    <div class="mb-0" [innerHTML]="message.text | safeHtml" (click)="onMessageContentClick($event)"></div>
+                    
+                    <!-- Sugerencias -->
+                    @if (message.suggestions && message.suggestions.length > 0) {
+                        <div class="suggestions-container mt-2">
+                            @for (suggestion of message.suggestions; track $index) {
+                                <div class="suggestion-chip" 
+                                     tooltip="{{ suggestion }}"
+                                     (click)="handleSuggestionClick(suggestion)">
+                                    {{ suggestion }}
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+                <!-- Avatar para mensajes del usuario (opcional) -->
+                @if (message.sender === 'user') {
+                    <div class="avatar-container user-avatar-container">
+                        <div class="user-avatar">
+                            <i class="fa fa-user"></i>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        
+        <!-- Indicador de "pensando..." -->
+        @if (isLoading) {
+            <div class="message mb-3 bot-message">
+                <div class="avatar-container">
+                    <img appLazyImage="/assets/avatares/bot-avatar.png" alt="Bot" class="bot-avatar">
+                </div>
+                <div class="message-content p-3">
+                    <div class="thinking-indicator">
+                        <span class="dot"></span>
+                        <span class="dot"></span>
+                        <span class="dot"></span>
+                    </div>
+                </div>
+            </div>
+        }
+      </div>
+    }
   </div>
   
-  <div class="offcanvas-footer p-3 border-top">
-    <div class="input-group">
-      <input type="text" class="form-control" 
-             placeholder="Escribe tu mensaje..." 
-             [(ngModel)]="newMessage" 
-             (keyup.enter)="sendMessage()">
-      <button class="btn btn-primary" (click)="sendMessage()">
-        <i class="fa fa-paper-plane"></i>
-      </button>
+  @if (view === 'chat') {
+    <div class="offcanvas-footer p-3 border-top">
+      <div class="input-group">
+        <input type="text" class="form-control" 
+               placeholder="Escribe tu mensaje..." 
+               [(ngModel)]="newMessage" 
+               (keyup.enter)="sendMessage()">
+        <button class="btn btn-primary" (click)="sendMessage()">
+          <i class="fa fa-paper-plane"></i>
+        </button>
+      </div>
     </div>
-  </div>
+  }
 </div>

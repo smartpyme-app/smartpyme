@@ -1,31 +1,57 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, of } from 'rxjs';
-import { HttpClient } from '@angular/common/http';
+import { BehaviorSubject, Subject } from 'rxjs';
+import { debounceTime } from 'rxjs/operators';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { FuncionalidadesService } from '../functionalities.service';
+import { processSvgInMessage } from '@utils/svg-message.util';
 
 export interface ChatMessage {
+  message_id: string;
   sender: 'user' | 'bot';
   text: string;
   timestamp: Date;
   suggestions?: string[];
 }
 
-export interface BedrockRequest {
-  prompt: string;
-  conversationId?: number | null;
-  history?: { role: string; content: string }[];
-  maxTokens?: number;
-  temperature?: number;
-  topP?: number;
-  user_id?: number;
+export interface LucasConversation {
+  conversation_id: string;
+  title: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  message_count: number;
+}
+
+export interface LucasMessage {
+  message_id: string;
+  sender: 'user' | 'bot';
+  content: string;
+  timestamp: string;
+  metadata: any;
+}
+
+export interface LucasChatResponse {
+  message: string;
+  suggestions?: string[];
+  conversation_id?: string;
+  session_id?: string;
 }
 
 @Injectable({
   providedIn: 'root',
 })
 export class ChatService {
-  private currentConversationId: number | null = null;
+  private currentConversationId: string | null = null;
+  private localMessageSeq = 0;
+  private accesoVerificado = false;
+
+  // Agrupa las peticiones de refresco de la lista de conversaciones para no
+  // disparar una petición HTTP por cada mensaje recibido.
+  private refreshConversationsSubject = new Subject<void>();
+  private refreshConversations$ = this.refreshConversationsSubject.pipe(
+    debounceTime(1500)
+  );
 
   private readonly SUGERENCIAS: string[] = [
     'Ventas vs gastos del mes',
@@ -49,6 +75,7 @@ export class ChatService {
 
   private messagesSubject = new BehaviorSubject<ChatMessage[]>([
     {
+      message_id: this.newMessageId(),
       sender: 'bot',
       text: '<p>¡Hola! Soy Lucas, tu asistente financiero. ¿En qué puedo ayudarte hoy?</p>',
       timestamp: new Date(),
@@ -56,6 +83,15 @@ export class ChatService {
     },
   ]);
   messages$ = this.messagesSubject.asObservable();
+
+  private conversationsSubject = new BehaviorSubject<LucasConversation[]>([]);
+  conversations$ = this.conversationsSubject.asObservable();
+
+  private conversationsLoadingSubject = new BehaviorSubject<boolean>(false);
+  conversationsLoading$ = this.conversationsLoadingSubject.asObservable();
+
+  private loadingConversationSubject = new BehaviorSubject<boolean>(false);
+  loadingConversation$ = this.loadingConversationSubject.asObservable();
 
   // Variable para controlar cuando está cargando una respuesta
   private loadingSubject = new BehaviorSubject<boolean>(false);
@@ -80,9 +116,20 @@ export class ChatService {
     } catch (e) {
       console.warn('Error al leer acceso de chat desde localStorage', e);
     }
+
+    // Refrescar la lista de conversaciones una sola vez tras una ráfaga de
+    // mensajes (servicio singleton: no requiere unsubscribe).
+    this.refreshConversations$.subscribe(() => this.loadConversations());
   }
 
   verificarAcceso(): void {
+    // Evitar peticiones HTTP duplicadas: este método se invoca desde varios
+    // componentes (drawer, speed-dial), pero el servicio es singleton.
+    if (this.accesoVerificado) {
+      return;
+    }
+    this.accesoVerificado = true;
+
     // Nota: Este servicio es singleton (providedIn: 'root'), así que las suscripciones
     // no necesitan unsubscribe porque el servicio vive durante toda la aplicación
     this.funcionalidadesService
@@ -100,6 +147,8 @@ export class ChatService {
         error: (error) => {
           console.error('Error al verificar acceso al chat:', error);
           this.tieneAccesoSubject.next(false);
+          // Permitir re-verificación en un próximo intento (p. ej. token expirado)
+          this.accesoVerificado = false;
         },
       });
   }
@@ -114,8 +163,23 @@ export class ChatService {
     this.drawerOpenSubject.next(!this.drawerOpenSubject.value);
   }
 
+  /**
+   * Si una petición a Lucas falla por autenticación/autorización (401/403),
+   * resetea el estado de verificación para que un próximo intento la repita
+   * (cubre la expiración del token de acceso).
+   */
+  private handleAccessError(error: unknown): void {
+    const status = (error as { status?: number })?.status;
+    if (status === 401 || status === 403) {
+      this.accesoVerificado = false;
+      this.tieneAccesoSubject.next(false);
+    }
+  }
+
   closeDrawer() {
     this.drawerOpenSubject.next(false);
+    // Refrescar el historial al cerrar para reflejar message_count / updated_at
+    this.loadConversations();
   }
 
   resetChat() {
@@ -123,6 +187,7 @@ export class ChatService {
     this.currentConversationId = null;
     this.messagesSubject.next([
       {
+        message_id: this.newMessageId(),
         sender: 'bot',
         text: '<p>¡Hola! Soy Lucas, tu asistente financiero. ¿Qué te gustaría saber ahora? Te dejo estas recomendaciones:</p>',
         timestamp: new Date(),
@@ -134,6 +199,14 @@ export class ChatService {
 
   handleSuggestionClick(suggestion: string) {
     this.sendMessage(suggestion);
+  }
+
+  /**
+   * Genera un id único para mensajes locales (no persistidos en Lucas).
+   */
+  private newMessageId(): string {
+    this.localMessageSeq += 1;
+    return `local-${Date.now()}-${this.localMessageSeq}`;
   }
 
   private getRandomSuggestions(count: number): string[] {
@@ -152,393 +225,305 @@ export class ChatService {
     return resultado;
   }
 
-  // Preparar el historial de conversación en formato para Bedrock
-  private prepareConversationHistory(
-    messages: ChatMessage[]
-  ): { role: string; content: string }[] {
-    return messages.map((msg) => ({
-      role: msg.sender === 'user' ? 'user' : 'assistant',
-      content: msg.text,
-    }));
+  /**
+   * Resuelve la identidad del usuario logueado (user_id + empresa_id) desde
+   * localStorage. Lucas agrupa todo el historial por esta identidad.
+   */
+  private getIdentity(): {
+    user_id: number | null;
+    empresa_id: number | null;
+    user_type: string;
+  } {
+    try {
+      const user = JSON.parse(localStorage.getItem('SP_auth_user') || '{}');
+      return {
+        user_id: user?.id ?? null,
+        empresa_id: user?.id_empresa ?? user?.empresa?.id ?? null,
+        user_type: user?.tipo ?? 'Usuario',
+      };
+    } catch (e) {
+      console.warn('Error al leer identidad del usuario', e);
+      return { user_id: null, empresa_id: null, user_type: 'Usuario' };
+    }
   }
 
-  // Llamada a la API de Bedrock - La configuración está en el backend
-  private callBedrockAPI(
-    prompt: string,
-    history: { role: string; content: string }[]
-  ) {
-    const request: BedrockRequest = {
-      prompt,
-      history,
-      user_id: JSON.parse(localStorage.getItem('SP_auth_user')!).id,
-      // La configuración de maxTokens, temperature, etc. se maneja en el backend
+  /**
+   * Headers para Lucas. Si se define LUCAS_API_KEY en producción, se envía
+   * el header X-API-Key en todas las llamadas.
+   */
+  private lucasHeaders(): HttpHeaders {
+    const apiKey = environment.lucasApiKey;
+    if (apiKey) {
+      return new HttpHeaders({ 'X-API-Key': apiKey });
+    }
+    return new HttpHeaders();
+  }
+
+  /**
+   * Lista las conversaciones del usuario/empresa desde Lucas.
+   */
+  loadConversations(): void {
+    if (!this.tieneAccesoSubject.value) {
+      return;
+    }
+
+    const { user_id, empresa_id } = this.getIdentity();
+    if (user_id == null || empresa_id == null) {
+      console.warn('No se pudo resolver user_id/empresa_id para listar conversaciones');
+      return;
+    }
+
+    this.conversationsLoadingSubject.next(true);
+
+    const params = new HttpParams()
+      .set('user_id', String(user_id))
+      .set('empresa_id', String(empresa_id))
+      .set('limit', '20');
+
+    this.http
+      .get<{ conversations: LucasConversation[]; count: number }>(
+        `${environment.lucasApiUrl}/conversations`,
+        { headers: this.lucasHeaders(), params }
+      )
+      .subscribe({
+        next: (res) => {
+          this.conversationsSubject.next(res?.conversations ?? []);
+          this.conversationsLoadingSubject.next(false);
+        },
+        error: (error) => {
+          console.error('Error al listar conversaciones:', error);
+          this.conversationsSubject.next([]);
+          this.conversationsLoadingSubject.next(false);
+          this.handleAccessError(error);
+        },
+      });
+  }
+
+  /**
+   * Carga los mensajes de una conversación existente.
+   */
+  openConversation(conversationId: string): void {
+    if (!this.tieneAccesoSubject.value) {
+      return;
+    }
+
+    this.loadingConversationSubject.next(true);
+
+    const params = new HttpParams().set('limit', '50');
+
+    this.http
+      .get<{ conversation_id: string; messages: LucasMessage[]; count: number }>(
+        `${environment.lucasApiUrl}/conversations/${conversationId}/messages`,
+        { headers: this.lucasHeaders(), params }
+      )
+      .subscribe({
+        next: (res) => {
+          this.currentConversationId = conversationId;
+
+          const messages = (res?.messages ?? [])
+            .map((m) => this.mapLucasMessage(m))
+            .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+
+          this.messagesSubject.next(messages);
+          this.loadingConversationSubject.next(false);
+        },
+        error: (error) => {
+          console.error('Error al cargar la conversación:', error);
+          this.loadingConversationSubject.next(false);
+          this.handleAccessError(error);
+          this.messagesSubject.next([
+            {
+              message_id: this.newMessageId(),
+              sender: 'bot',
+              text: '<p>No se pudo cargar la conversación. Por favor, intenta de nuevo.</p>',
+              timestamp: new Date(),
+            },
+          ]);
+        },
+      });
+  }
+
+  /**
+   * Crea una nueva conversación en Lucas (cierra la activa en el servidor).
+   */
+  startNewConversation(): void {
+    if (!this.tieneAccesoSubject.value) {
+      return;
+    }
+
+    const { user_id, empresa_id } = this.getIdentity();
+    if (user_id == null || empresa_id == null) {
+      console.warn('No se pudo resolver user_id/empresa_id para crear conversación');
+      return;
+    }
+
+    const params = new HttpParams()
+      .set('user_id', String(user_id))
+      .set('empresa_id', String(empresa_id));
+
+    this.http
+      .post<{
+        conversation_id: string;
+        session_id: string;
+        title: string;
+        status: string;
+        created_at: string;
+      }>(`${environment.lucasApiUrl}/conversations/new`, null, {
+        headers: this.lucasHeaders(),
+        params,
+      })
+      .subscribe({
+        next: (res) => {
+          this.currentConversationId = res?.conversation_id ?? null;
+          this.messagesSubject.next([
+            {
+              message_id: this.newMessageId(),
+              sender: 'bot',
+              text: '<p>¡Hola! Soy Lucas, tu asistente financiero. ¿En qué puedo ayudarte hoy?</p>',
+              timestamp: new Date(),
+              suggestions: this.getRandomSuggestions(3),
+            },
+          ]);
+          this.loadConversations();
+        },
+        error: (error) => {
+          console.error('Error al crear nueva conversación:', error);
+          this.handleAccessError(error);
+          this.messagesSubject.next([
+            {
+              message_id: this.newMessageId(),
+              sender: 'bot',
+              text: '<p>No se pudo crear una nueva conversación. Por favor, intenta de nuevo.</p>',
+              timestamp: new Date(),
+            },
+          ]);
+        },
+      });
+  }
+
+  private mapLucasMessage(m: LucasMessage): ChatMessage {
+    return {
+      message_id: m.message_id,
+      sender: m.sender === 'user' ? 'user' : 'bot',
+      text: processSvgInMessage(m.content),
+      timestamp: new Date(m.timestamp),
+      suggestions: this.sanitizeSuggestions(m.metadata?.suggestions),
     };
-
-    return this.http.post<{ message: string; suggestions?: string[] }>(
-      `${environment.API_URL}/api/chat/bedrock`,
-      request
-    );
   }
 
+  /**
+   * Normaliza las sugerencias provenientes de Lucas/servidor: elimina vacíos,
+   * deduplica y trunca textos demasiado largos para que no desborden el chip.
+   */
+  private sanitizeSuggestions(
+    suggestions: unknown
+  ): string[] | undefined {
+    if (!Array.isArray(suggestions) || suggestions.length === 0) {
+      return undefined;
+    }
+
+    const MAX_LENGTH = 60;
+    const seen = new Set<string>();
+
+    const clean = suggestions
+      .map((s) => String(s).trim())
+      .filter((s) => s.length > 0)
+      .map((s) => (s.length > MAX_LENGTH ? `${s.slice(0, MAX_LENGTH - 1)}…` : s))
+      .filter((s) => {
+        if (seen.has(s)) {
+          return false;
+        }
+        seen.add(s);
+        return true;
+      });
+
+    return clean.length > 0 ? clean : undefined;
+  }
+
+  /**
+   * Envía un mensaje a Lucas vía POST /chat (este endpoint persiste el historial).
+   */
   sendMessage(text: string) {
     // Verificar acceso antes de enviar mensaje
     if (!this.tieneAccesoSubject.value) {
       console.warn('La empresa no tiene acceso a la funcionalidad de chat');
       return;
     }
-  
+
     if (!text.trim()) return;
-  
-    const messages = this.messagesSubject.value;
+
+    const { user_id, empresa_id, user_type } = this.getIdentity();
+
     const userMessage: ChatMessage = {
+      message_id: this.newMessageId(),
       sender: 'user',
       text,
       timestamp: new Date(),
     };
-  
+
     // Añadir mensaje del usuario
-    this.messagesSubject.next([...messages, userMessage]);
-  
-    // Preparar el historial para enviar a Bedrock
-    const conversationHistory = this.prepareConversationHistory(messages);
-  
+    this.messagesSubject.next([...this.messagesSubject.value, userMessage]);
+
     // Indicar que estamos cargando
     this.loadingSubject.next(true);
-  
-    // Llamada a la API de Bedrock a través de nuestro backend
-    // Nota: Este servicio es singleton (providedIn: 'root'), así que las suscripciones
-    // no necesitan unsubscribe porque el servicio vive durante toda la aplicación
-    this.callBedrockAPI(text, conversationHistory).subscribe({
-      next: (response) => {
-        // Procesar el mensaje para gestionar SVGs
-        const processedMessage = this.processSVGInMessage(response.message);
-        
-        const botMessage: ChatMessage = {
-          sender: 'bot',
-          text: processedMessage,
-          timestamp: new Date(),
-          suggestions: response.suggestions || []
-        };
-        this.messagesSubject.next([...this.messagesSubject.value, botMessage]);
-        this.loadingSubject.next(false);
-      },
-      error: (error) => {
-        console.error('Error al procesar la consulta:', error);
-        const errorMessage: ChatMessage = {
-          sender: 'bot',
-          text: '<p>Lo siento, ha ocurrido un error al procesar tu consulta. Por favor, intenta de nuevo más tarde.</p>',
-          timestamp: new Date(),
-        };
-        this.messagesSubject.next([
-          ...this.messagesSubject.value,
-          errorMessage,
-        ]);
-        this.loadingSubject.next(false);
-      },
-    });
-  }
 
-  getConversationHistory(): Observable<any> {
-    // Verificar acceso antes de obtener historial
-    if (!this.tieneAccesoSubject.value) {
-      console.warn('La empresa no tiene acceso a la funcionalidad de chat');
-      return of(null); // Devolver Observable vacío
+    const payload: any = {
+      message: text,
+      user_id,
+      empresa_id,
+      user_type,
+      source: 'Web',
+    };
+
+    // El contexto de la conversación lo mantiene Lucas (conversation_id)
+    if (this.currentConversationId) {
+      payload.conversation_id = this.currentConversationId;
     }
 
-    return this.http.get<any>(`${environment.API_URL}/api/chat/history`);
-  }
+    this.http
+      .post<LucasChatResponse>(`${environment.lucasApiUrl}/chat`, payload, {
+        headers: this.lucasHeaders(),
+      })
+      .subscribe({
+        next: (response) => {
+          // Conservar el conversation_id de Lucas para mantener el contexto
+          if (response?.conversation_id) {
+            this.currentConversationId = response.conversation_id;
+          }
 
-  /**
-   * Obtiene una conversación específica por su ID
-   */
-  getConversation(id: number): Observable<any> {
-    // Verificar acceso antes de obtener conversación
-    if (!this.tieneAccesoSubject.value) {
-      console.warn('La empresa no tiene acceso a la funcionalidad de chat');
-      return of(null); // Devolver Observable vacío
-    }
+          // Procesar el mensaje para gestionar SVGs
+          const processedMessage = processSvgInMessage(response.message || '');
 
-    return this.http.get<any>(
-      `${environment.API_URL}/api/chat/conversation/${id}`
-    );
-  }
-
-  /**
-   * Carga una conversación existente en el chat
-   */
-  loadConversation(id: number) {
-    // Verificar acceso antes de cargar conversación
-    if (!this.tieneAccesoSubject.value) {
-      console.warn('La empresa no tiene acceso a la funcionalidad de chat');
-      return;
-    }
-
-    // Nota: Este servicio es singleton (providedIn: 'root'), así que las suscripciones
-    // no necesitan unsubscribe porque el servicio vive durante toda la aplicación
-    this.getConversation(id).subscribe({
-      next: (response) => {
-        // Convertir los mensajes del formato de la base de datos al formato del chat
-        const messages: ChatMessage[] = response.messages.map((msg: any) => ({
-          sender: msg.sender as 'user' | 'bot',
-          text: msg.content,
-          timestamp: new Date(msg.created_at),
-          suggestions: msg.metadata?.suggestions || []
-        }));
-
-        // Establecer la conversación actual
-        this.currentConversationId = id;
-        this.messagesSubject.next(messages);
-      },
-      error: (error) => {
-        console.error('Error al cargar la conversación:', error);
-        this.messagesSubject.next([
-          {
+          const botMessage: ChatMessage = {
+            message_id: this.newMessageId(),
             sender: 'bot',
-            text: '<p>No se pudo cargar la conversación. Por favor, intenta de nuevo.</p>',
+            text: processedMessage,
             timestamp: new Date(),
-          },
-        ]);
-      },
-    });
-  }
+            suggestions: this.sanitizeSuggestions(response.suggestions),
+          };
+          this.messagesSubject.next([...this.messagesSubject.value, botMessage]);
+          this.loadingSubject.next(false);
 
-  /**
-   * Inicia una nueva conversación
-   */
-  startNewConversation() {
-    // Verificar acceso antes de iniciar nueva conversación
-    if (!this.tieneAccesoSubject.value) {
-      console.warn('La empresa no tiene acceso a la funcionalidad de chat');
-      return;
-    }
-
-    this.currentConversationId = null;
-    this.messagesSubject.next([
-      {
-        sender: 'bot',
-        text: '<p>¡Hola! Soy Lucas, tu asistente financiero. ¿En qué puedo ayudarte hoy?</p>',
-        timestamp: new Date(),
-        suggestions: this.getRandomSuggestions(3)
-      },
-    ]);
-  }
-
-  /**
-   * Crea una nueva conversación en el servidor
-   */
-  createNewConversation(title?: string): Observable<any> {
-    // Verificar acceso antes de crear nueva conversación
-    if (!this.tieneAccesoSubject.value) {
-      console.warn('La empresa no tiene acceso a la funcionalidad de chat');
-      return of(null); // Devolver Observable vacío
-    }
-
-    return this.http.post<{ id: number; title: string; created_at: string }>(
-      `${environment.API_URL}/api/chat/new`,
-      { title }
-    );
-  }
-
-  private processSVGInMessage(message: string): string {
-    // Verifica si hay un SVG en el mensaje
-    if (message.includes('<svg')) {
-      // Extraer el SVG
-      const svgMatch = message.match(/<svg[\s\S]*?<\/svg>/);
-      
-      if (svgMatch) {
-        const svg = svgMatch[0];
-        
-        // Obtener dimensiones originales como referencia
-        const widthMatch = svg.match(/width="([^"]*)"/);
-        const heightMatch = svg.match(/height="([^"]*)"/);
-        
-        const width = widthMatch ? parseInt(widthMatch[1], 10) : 400;
-        const height = heightMatch ? parseInt(heightMatch[1], 10) : 300;
-        
-        // Extraer título del SVG si existe
-        const titleMatch = svg.match(/<title>(.*?)<\/title>/);
-        const svgTitle = titleMatch ? titleMatch[1] : 'Gráfico financiero';
-        
-        // Crear un ID único para este SVG
-        const svgId = 'svg-' + new Date().getTime() + '-' + Math.floor(Math.random() * 1000);
-        
-        // Modificar el SVG para agregarle un ID
-        const svgWithId = svg.replace('<svg', `<svg id="${svgId}"`);
-        
-        // Buscar texto adicional para incluir en la imagen
-        let additionalText = '';
-        const paragraphAfterSvg = message.match(/<\/svg>[\s\S]*?<p>([\s\S]*?)<\/p>/);
-        if (paragraphAfterSvg) {
-          additionalText = paragraphAfterSvg[1].replace(/<[^>]*>/g, '').trim();
-        }
-        
-        // Escapar comillas en los textos para evitar problemas con JavaScript
-        const escapedTitle = svgTitle.replace(/'/g, "\\'");
-        const escapedText = additionalText.replace(/'/g, "\\'");
-        
-        // Crear un contenedor con opciones de descarga
-        const wrappedSvg = `
-          <div class="svg-container" style="--svg-width: ${width}px; --svg-height: ${height}px;">
-            ${svgWithId}
-            <div class="svg-download-container mt-2 d-flex justify-content-end gap-2">
-              <button class="btn btn-sm btn-outline-primary svg-download-btn" 
-                      onclick="(function(){
-                        // Obtener el SVG
-                        const svgEl = document.getElementById('${svgId}');
-                        if (!svgEl) return;
-                        
-                        // Crear un canvas con padding extra
-                        const padding = 40; // 20px de padding en cada lado
-                        const canvasWidth = Math.max(${width} + (padding * 2), 500); // Mínimo 500px de ancho
-                        
-                        // Función para dividir texto en múltiples líneas
-                        function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
-                          if (!text) return 0;
-                          
-                          const words = text.split(' ');
-                          let line = '';
-                          let lines = 0;
-                          
-                          for(let n = 0; n < words.length; n++) {
-                            const testLine = line + words[n] + ' ';
-                            const metrics = ctx.measureText(testLine);
-                            const testWidth = metrics.width;
-                            
-                            if (testWidth > maxWidth && n > 0) {
-                              ctx.fillText(line, x, y + (lines * lineHeight));
-                              line = words[n] + ' ';
-                              lines++;
-                            } else {
-                              line = testLine;
-                            }
-                          }
-                          
-                          // Dibujar la última línea
-                          ctx.fillText(line, x, y + (lines * lineHeight));
-                          
-                          // Devolver el número total de líneas
-                          return lines + 1;
-                        }
-                        
-                        // Configuración inicial del canvas
-                        const canvas = document.createElement('canvas');
-                        const ctx = canvas.getContext('2d');
-                        
-                        // Establecer un tamaño temporal para medir el texto
-                        canvas.width = canvasWidth;
-                        canvas.height = 1000;
-                        
-                        // Configurar fuentes para medir el texto
-                        ctx.font = '14px Arial';
-                        
-                        // Calcular el espacio necesario para el texto adicional
-                        let textHeight = 0;
-                        if ('${escapedText}') {
-                          // Medir cuánto espacio necesitará el texto
-                          const maxTextWidth = canvasWidth - (padding * 2);
-                          const tempLines = '${escapedText}'.split('\\n');
-                          let totalLines = 0;
-                          
-                          tempLines.forEach(tempLine => {
-                            const dummyY = 0;
-                            const linesUsed = Math.ceil(ctx.measureText(tempLine).width / maxTextWidth);
-                            totalLines += Math.max(1, linesUsed);
-                          });
-                          
-                          textHeight = (totalLines * 20) + 30; // 20px por línea + margen
-                        }
-                        
-                        // Ahora establecer dimensiones finales del canvas
-                        const canvasHeight = ${height} + (padding * 2) + textHeight + 40; // +40 para título y margen inferior
-                        canvas.height = canvasHeight;
-                        
-                        // Limpiar el canvas y configurar de nuevo
-                        ctx.clearRect(0, 0, canvas.width, canvas.height);
-                        
-                        // Crear imagen a partir del SVG
-                        const svgData = new XMLSerializer().serializeToString(svgEl);
-                        const img = new Image();
-                        
-                        img.onload = function() {
-                          // Fondo blanco
-                          ctx.fillStyle = 'white';
-                          ctx.fillRect(0, 0, canvas.width, canvas.height);
-                          
-                          // Dibujar la imagen en el canvas con padding
-                          ctx.drawImage(img, padding, padding + 25, ${width}, ${height});
-                          
-                          // Añadir título en la parte superior
-                          ctx.font = 'bold 16px Arial';
-                          ctx.fillStyle = '#333';
-                          ctx.textAlign = 'center';
-                          ctx.fillText('${escapedTitle}', canvasWidth / 2, padding / 2 + 16);
-                          
-                          // Añadir texto adicional si existe
-                          if ('${escapedText}') {
-                            ctx.font = '14px Arial';
-                            ctx.fillStyle = '#555';
-                            ctx.textAlign = 'center';
-                            
-                            const maxTextWidth = canvasWidth - 80; // 40px de margen a cada lado
-                            const textY = ${height} + padding + 45;
-                            
-                            wrapText(ctx, '${escapedText}', canvasWidth / 2, textY, maxTextWidth, 20);
-                          }
-                          
-                          // Añadir marca de agua pequeña
-                          ctx.font = '10px Arial';
-                          ctx.fillStyle = '#999';
-                          ctx.textAlign = 'right';
-                          ctx.fillText('Generado por Lucas - ' + new Date().toLocaleDateString(), canvasWidth - 10, canvasHeight - 10);
-                          
-                          // Convertir canvas a PNG
-                          const pngUrl = canvas.toDataURL('image/png');
-                          
-                          // Crear enlace de descarga
-                          const a = document.createElement('a');
-                          a.href = pngUrl;
-                          a.download = 'grafico-lucas-' + new Date().getTime() + '.png';
-                          a.style.display = 'none';
-                          document.body.appendChild(a);
-                          a.click();
-                          document.body.removeChild(a);
-                        };
-                        
-                        // Usar data URI directamente
-                        const dataUri = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgData);
-                        img.src = dataUri;
-                      })()">
-                <i class="fa fa-file-image-o"></i> PNG
-              </button>
-              <button class="btn btn-sm btn-outline-primary svg-download-btn" 
-                      onclick="(function(){
-                        const svgEl = document.getElementById('${svgId}');
-                        if (!svgEl) return;
-                        
-                        const svgData = new XMLSerializer().serializeToString(svgEl);
-                        
-                        // Usar data URI directamente
-                        const dataUri = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgData);
-                        const a = document.createElement('a');
-                        a.href = dataUri;
-                        a.download = 'grafico-lucas-' + new Date().getTime() + '.svg';
-                        a.style.display = 'none';
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                      })()">
-                <i class="fa fa-file-code-o"></i> SVG
-              </button>
-            </div>
-          </div>
-        `;
-        
-        // Reemplazar el SVG original con la versión envuelta
-        return message.replace(svg, wrappedSvg);
-      }
-    }
-    
-    return message;
+          // Actualizar la lista (message_count / updated_at) de forma diferida
+          // para evitar una petición HTTP por cada mensaje.
+          this.refreshConversationsSubject.next();
+        },
+        error: (error) => {
+          console.error('Error al procesar la consulta:', error);
+          this.handleAccessError(error);
+          const errorMessage: ChatMessage = {
+            message_id: this.newMessageId(),
+            sender: 'bot',
+            text: '<p>Lo siento, ha ocurrido un error al procesar tu consulta. Por favor, intenta de nuevo más tarde.</p>',
+            timestamp: new Date(),
+          };
+          this.messagesSubject.next([
+            ...this.messagesSubject.value,
+            errorMessage,
+          ]);
+          this.loadingSubject.next(false);
+        },
+      });
   }
 
 }

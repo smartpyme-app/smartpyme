@@ -6,13 +6,16 @@ export const environment = {
   production: false,
   // API_URL: 'http://localhost:8000',
   // API_URL: 'https://api.smartpyme.bk.test',
-  API_URL: 'https://api.smartpyme.test',
+  API_URL: 'https://api.smartpyme.bk.test',
   // API_URL: 'https://apiunificado.smartpyme.site',
   // API_URL: 'https://apiconta.smartpyme.site',
   // API_URL: 'https://apitest.smartpyme.site',
   APP_URL: 'http://localhost:4200',
   goApiUrl: 'http://localhost:8080',     // la nueva API de Go
   goApiSecret: 'f93a080d7ca3dc5842f6112f7053ef3ada44ce213f04a6cc62c3c31d15beee63',
+  // Lucas (servicio de IA en Python/FastAPI)
+  lucasApiUrl: 'http://localhost:8000',
+  lucasApiKey: '',
   haciendaPublicApiUrl: 'https://api.hacienda.go.cr',
   /** Fase 6: off por defecto — sin Reverb la UI sigue por HTTP GET. */
   restauranteRealtime: {
