@@ -13,6 +13,7 @@ use App\Models\Compras\Compra;
 use App\Models\Compras\Devoluciones\Devolucion as DevolucionCompra;
 use App\Models\Compras\Gastos\Gasto;
 use App\Models\Admin\FormaDePago;
+use App\Services\Admin\ResumenCajaCalculator;
 use Carbon\Carbon;
 
 class Indicador extends Model
@@ -486,15 +487,15 @@ class Indicador extends Model
                         ->orderBy('id', 'asc')->get();
 
         foreach ($formasDePago as $forma) {
-            $forma->cantidad = $this->ventas_pagadas->where('forma_pago', $forma['nombre'])->count() 
-                                + $this->detalles_metodos_de_pago->where('nombre', $forma['nombre'])->count()
-                                + $this->abonos->where('forma_pago', $forma['nombre'])->count()
-                                - $this->devoluciones_ventas->where('forma_pago', $forma['nombre'])->count();
-            
-            $forma->total = $this->ventas_pagadas->where('forma_pago', $forma['nombre'])->sum('total') 
-                                + $this->detalles_metodos_de_pago->where('nombre', $forma['nombre'])->sum('total')
-                                + $this->abonos->where('forma_pago', $forma['nombre'])->sum('total')
-                                - $this->devoluciones_ventas->where('forma_pago', $forma['nombre'])->sum('total');
+            $totales = ResumenCajaCalculator::totalesPorForma(
+                $forma['nombre'],
+                $this->ventas_pagadas,
+                $this->abonos,
+                $this->detalles_metodos_de_pago,
+                $this->devoluciones_ventas
+            );
+            $forma->cantidad = $totales['cantidad'];
+            $forma->total = $totales['total'];
         }
 
         return $formasDePago;
