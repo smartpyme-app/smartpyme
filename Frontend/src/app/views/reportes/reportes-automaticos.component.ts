@@ -107,6 +107,14 @@ export class ReportesAutomaticosComponent extends BasePaginatedModalComponent im
       nombre: 'Detalle de Ventas por Producto',
     },
     {
+      tipo: 'detalle-compras-totales',
+      nombre: 'Detalle de Compras Totales',
+    },
+    {
+      tipo: 'detalle-compras-por-producto',
+      nombre: 'Detalle de Compras por Producto',
+    },
+    {
       tipo: 'inventario-por-sucursal',
       nombre: 'Inventario por Sucursal'
     },

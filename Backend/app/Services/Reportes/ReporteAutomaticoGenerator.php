@@ -11,6 +11,8 @@ use App\Exports\ReportesAutomaticos\VentasComprasPorMarcaProveedor\VentasCompras
 use App\Exports\ReportesAutomaticos\VentasPorCategoriaPorVendedor\VentasPorCategoriaVendedorExport;
 use App\Exports\ReportesAutomaticos\VentasPorCategoriaPorVendedor\VentasPorCategoriaVendedorPdfExport;
 use App\Exports\ReportesAutomaticos\VentasPorVendedor\VentasPorVendedorExport;
+use App\Exports\ComprasDetallesExport;
+use App\Exports\ComprasExport;
 use App\Exports\VentasDesglosadasPorVendedorExport;
 use App\Exports\VentasDetallesExport;
 use App\Exports\VentasPorUtilidadesExport;
@@ -228,6 +230,26 @@ class ReporteAutomaticoGenerator
                 ]));
                 return $export;
 
+            case 'detalle-compras-totales':
+                $export = new ComprasExport();
+                $export->filter(new Request([
+                    'inicio' => $fechaInicio,
+                    'fin' => $fechaFin,
+                    'id_empresa' => $idEmpresa,
+                    'sucursales' => $sucursales,
+                ]));
+                return $export;
+
+            case 'detalle-compras-por-producto':
+                $export = new ComprasDetallesExport();
+                $export->filter(new Request([
+                    'inicio' => $fechaInicio,
+                    'fin' => $fechaFin,
+                    'id_empresa' => $idEmpresa,
+                    'sucursales' => $sucursales,
+                ]));
+                return $export;
+
             default:
                 throw new \InvalidArgumentException("Tipo de reporte no implementado: {$configuracion->tipo_reporte}");
         }
@@ -416,6 +438,8 @@ class ReporteAutomaticoGenerator
             'ventas-compras-por-marca-proveedor' => "Reporte de Ventas y Compras por Marca y Proveedor {$fechaInicio} al {$fechaFin}",
             'detalle-ventas-totales' => "Reporte de Detalle de Ventas Totales {$fechaInicio} al {$fechaFin}",
             'detalle-ventas-por-producto' => "Reporte de Detalle de Ventas por Producto {$fechaInicio} al {$fechaFin}",
+            'detalle-compras-totales' => "Reporte de Detalle de Compras Totales {$fechaInicio} al {$fechaFin}",
+            'detalle-compras-por-producto' => "Reporte de Detalle de Compras por Producto {$fechaInicio} al {$fechaFin}",
         ];
 
         $asunto = $asuntos[$configuracion->tipo_reporte] ?? $configuracion->asunto_correo;
