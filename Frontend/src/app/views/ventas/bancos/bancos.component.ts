@@ -71,30 +71,19 @@ export class BancosComponent extends BaseCrudComponent<any> implements OnInit {
         this.loadAll();
     }
 
-    public async toggleBanco(nombre: string): Promise<void> {
-        // Buscar el banco en la lista
-        const bancoEncontrado = this.bancos.find((b: any) => b.nombre === nombre);
-        if (!bancoEncontrado) {
+    public async toggleBanco(banco: any): Promise<void> {
+        if (this.saving) {
             return;
         }
-        
-        // Preparar el objeto banco para guardar
-        const bancoToSave = {
-            nombre: bancoEncontrado.nombre,
-            activo: bancoEncontrado.activo,
+
+        await super.onSubmit({
+            nombre: banco.nombre,
             id_empresa: this.apiService.auth_user().id_empresa,
-            id: bancoEncontrado.id
-        };
-        
-        // Usar el método heredado del componente base
-        await super.onSubmit(bancoToSave, true);
-        
-        // Actualizar el banco en la lista local después de guardar
-        const index = this.bancos.findIndex((b: any) => b.nombre === nombre);
-        if (index !== -1) {
-            this.bancos[index] = { ...this.bancos[index], ...bancoToSave };
-            this.cdr.markForCheck();
-        }
+        }, true);
+
+        // Recargar desde el servidor: corrige el switch si falló el guardado
+        // y evita sobrescribir activo con el valor previo al toggle.
+        this.loadAll();
     }
 
 }
