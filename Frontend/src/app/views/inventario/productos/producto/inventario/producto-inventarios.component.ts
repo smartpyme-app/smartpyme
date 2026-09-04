@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnChanges, SimpleChanges, TemplateRef, Input, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -21,7 +21,7 @@ import { TooltipModule } from 'ngx-bootstrap/tooltip';
     imports: [CommonModule, RouterModule, FormsModule, SumPipe, CrearAjusteComponent, NotificacionesContainerComponent, TooltipModule],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ProductoInventariosComponent extends BaseModalComponent implements OnInit {
+export class ProductoInventariosComponent extends BaseModalComponent implements OnInit, OnChanges {
 
     @Input() producto: any = {};
     public bodegas: any = [];
@@ -44,6 +44,32 @@ export class ProductoInventariosComponent extends BaseModalComponent implements 
     }
 
     ngOnInit() {
+        this.loadBodegas();
+    }
+
+    ngOnChanges(changes: SimpleChanges) {
+        if (changes['producto'] && this.bodegas.length) {
+            this.actualizarBodegasDisponibles();
+            this.cdr.markForCheck();
+        }
+    }
+
+    private loadBodegas() {
+        this.apiService.getAll('bodegas/list')
+          .pipe(this.untilDestroyed())
+          .subscribe(bodegas => {
+            this.bodegas = bodegas;
+            this.actualizarBodegasDisponibles();
+            this.cdr.markForCheck();
+          }, error => { this.alertService.error(error); this.cdr.markForCheck(); });
+    }
+
+    private actualizarBodegasDisponibles(bodegaEdicionId?: number | string | null) {
+        const idsBodegasAsignadas = (this.producto?.inventarios || []).map((inv: any) => inv.id_bodega);
+        const includeId = bodegaEdicionId ?? this.inventario?.id_bodega;
+        this.bodegasDisponibles = this.bodegas.filter((b: any) =>
+            !idsBodegasAsignadas.some((id: any) => id == b.id) || b.id == includeId
+        );
     }
 
     /** El hijo actualiza la fila por referencia; solo forzamos detección de cambios. */
@@ -54,17 +80,9 @@ export class ProductoInventariosComponent extends BaseModalComponent implements 
     override openModal(template: TemplateRef<any>, inventario:any) {
         this.inventario = inventario;
 
-        this.apiService.getAll('bodegas/list')
-          .pipe(this.untilDestroyed())
-          .subscribe(bodegas => {
-            this.bodegas = bodegas;
-            const idsBodegasAsignadas = (this.producto?.inventarios || []).map((inv: any) => inv.id_bodega);
-            this.bodegasDisponibles = this.bodegas.filter((b: any) => 
-                !idsBodegasAsignadas.includes(b.id) || b.id === this.inventario?.id_bodega
-            );
-            this.loading = false;
-            this.cdr.markForCheck();
-        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
+        this.actualizarBodegasDisponibles(inventario?.id_bodega);
+        this.loading = false;
+        this.cdr.markForCheck();
 
         if (!this.inventario.id) {
             this.inventario.id_producto = this.producto.id;
@@ -89,6 +107,7 @@ export class ProductoInventariosComponent extends BaseModalComponent implements 
           .subscribe(invResp => {
             if (!this.inventario.id) {
                 this.producto.inventarios.push(invResp);
+                this.actualizarBodegasDisponibles();
                 this.alertService.success('Inventario creado', 'El inventario fue añadido exitosamente. Use «Agregar stock» para cargar existencias.');
             } else {
                 const idx = this.producto.inventarios.findIndex((inv: any) => inv.id === invResp.id);
@@ -120,6 +139,7 @@ export class ProductoInventariosComponent extends BaseModalComponent implements 
                     if (this.producto.inventarios[i].id == data.id )
                         this.producto.inventarios.splice(i, 1);
                 }
+                this.actualizarBodegasDisponibles();
                 this.alertService.success('Inventario eliminado', 'El inventario fue eliminado exitosamente.');
                 this.cdr.markForCheck();
             }, error => {this.alertService.error(error); this.cdr.markForCheck(); });

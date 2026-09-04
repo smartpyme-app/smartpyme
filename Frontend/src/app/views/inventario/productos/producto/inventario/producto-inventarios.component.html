@@ -1,8 +1,10 @@
 <div class="row">
     <h6 class="my-3 font-weight-bold">Inventario <span class="badge bg-default text-dark">{{ producto.inventarios | sum:'stock' }} unidades</span>
-        <a class="btn btn-default float-end" (click)="openModal(mbodega, {})" tooltip="Agregar inventario en una bodega">
-            <i class="fa fa-plus"></i> Agregar inventario
-        </a>
+        @if (bodegasDisponibles.length > 0) {
+            <a class="btn btn-default float-end" (click)="openModal(mbodega, {})" tooltip="Agregar inventario en una bodega">
+                <i class="fa fa-plus"></i> Agregar inventario
+            </a>
+        }
     </h6>
     <div class="table-responsive">
         <table class="table table-borderless table-hover">
