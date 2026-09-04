@@ -6,12 +6,13 @@ import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
+import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
 
 @Component({
     selector: 'app-descargar-inventario',
     templateUrl: './descargar-inventario.component.html',
     standalone: true,
-    imports: [CommonModule, FormsModule]
+    imports: [CommonModule, FormsModule, NotificacionesContainerComponent]
 })
 export class DescargarInventarioComponent extends BaseModalComponent implements OnInit {
 
