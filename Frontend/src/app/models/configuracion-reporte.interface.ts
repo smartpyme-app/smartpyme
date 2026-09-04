@@ -27,6 +27,8 @@ export interface ConfiguracionReporte {
     DETALLE_VENTAS_VENDEDOR: 'detalle-ventas-vendedor',
     DETALLE_VENTAS_TOTALES: 'detalle-ventas-totales',
     DETALLE_VENTAS_POR_PRODUCTO: 'detalle-ventas-por-producto',
+    DETALLE_COMPRAS_TOTALES: 'detalle-compras-totales',
+    DETALLE_COMPRAS_POR_PRODUCTO: 'detalle-compras-por-producto',
     VENTAS_DIARIAS: 'ventas-diarias',
     PRODUCTOS_VENDIDOS: 'productos-vendidos'
   };

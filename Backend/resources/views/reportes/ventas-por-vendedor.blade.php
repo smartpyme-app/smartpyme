@@ -28,6 +28,10 @@
                 <h2 style="color: #555; margin: 0 0 8px;">Detalle de Ventas Totales</h2>
             @elseif($datos['tipo_reporte'] === 'detalle-ventas-por-producto')
                 <h2 style="color: #555; margin: 0 0 8px;">Detalle de Ventas por Producto</h2>
+            @elseif($datos['tipo_reporte'] === 'detalle-compras-totales')
+                <h2 style="color: #555; margin: 0 0 8px;">Detalle de Compras Totales</h2>
+            @elseif($datos['tipo_reporte'] === 'detalle-compras-por-producto')
+                <h2 style="color: #555; margin: 0 0 8px;">Detalle de Compras por Producto</h2>
             @else
                 <h2 style="color: #555; margin: 0 0 8px;">Reporte Financiero</h2>
             @endif
@@ -85,6 +89,10 @@
                 <p>Incluye una línea por venta con montos, estado, cliente y demás columnas configuradas en el sistema.</p>
             @elseif($datos['tipo_reporte'] === 'detalle-ventas-por-producto')
                 <p>Incluye una fila por cada producto vendido en el período, con cantidades, precios, IVA y sucursal, según la configuración de la empresa.</p>
+            @elseif($datos['tipo_reporte'] === 'detalle-compras-totales')
+                <p>Incluye una línea por compra con proveedor, documento, montos, forma de pago y devoluciones en negativo, según las sucursales configuradas.</p>
+            @elseif($datos['tipo_reporte'] === 'detalle-compras-por-producto')
+                <p>Incluye una fila por cada producto comprado en el período, con cantidades, costos, IVA y datos del proveedor.</p>
             @endif
 
             <p style="background-color: #f8f8f8; padding: 12px 15px; border-left: 4px solid #1775e5; margin: 20px 0; font-size: 14px;">

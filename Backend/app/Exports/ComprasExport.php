@@ -47,8 +47,18 @@ class ComprasExport implements FromCollection, WithHeadings, WithMapping
     public function collection()
     {
         $request = $this->request;
-        
-        $compras = Compra::when($request->buscador, function($query) use ($request){
+        $idEmpresa = Auth::check()
+            ? Auth::user()->id_empresa
+            : ($request->id_empresa ?? null);
+        $orden = $request->orden ?: 'fecha';
+        $direccion = in_array(strtolower((string) ($request->direccion ?? '')), ['asc', 'desc'], true)
+            ? strtolower($request->direccion)
+            : 'desc';
+
+        $compras = Compra::when($idEmpresa, function ($query) use ($idEmpresa) {
+                            return $query->where('id_empresa', $idEmpresa);
+                        })
+                        ->when($request->buscador, function($query) use ($request){
                         return $query->orwhere('correlativo', 'like', '%'.$request->buscador.'%')
                                     ->orwhere('estado', 'like', '%'.$request->buscador.'%')
                                     ->orwhere('observaciones', 'like', '%'.$request->buscador.'%')
@@ -69,6 +79,9 @@ class ComprasExport implements FromCollection, WithHeadings, WithMapping
                         ->when($request->id_sucursal, function($query) use ($request){
                             return $query->where('id_sucursal', $request->id_sucursal);
                         })
+                        ->when(!empty($request->sucursales) && is_array($request->sucursales), function ($query) use ($request) {
+                            return $query->whereIn('id_sucursal', $request->sucursales);
+                        })
                         ->when($request->id_usuario, function($query) use ($request){
                             return $query->where('id_usuario', $request->id_usuario);
                         })
@@ -85,7 +98,7 @@ class ComprasExport implements FromCollection, WithHeadings, WithMapping
                             return $query->where('metodo_pago', $request->metodo_pago);
                         })
                         ->where('cotizacion', 0)
-                        ->orderBy($request->orden, $request->direccion)
+                        ->orderBy($orden, $direccion)
                         ->orderBy('id', 'desc')
                         ->get();
 

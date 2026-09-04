@@ -100,6 +100,8 @@ class EnviarReportesAutomaticos extends Command
             'ventas-compras-por-marca-proveedor',
             'detalle-ventas-totales',
             'detalle-ventas-por-producto',
+            'detalle-compras-totales',
+            'detalle-compras-por-producto',
         ];
 
         if (!in_array($configuracion->tipo_reporte, $tipos, true)) {
