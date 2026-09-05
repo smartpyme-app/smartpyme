@@ -24,6 +24,7 @@ use Carbon\Carbon;
 use App\Exports\ComprasExport;
 use App\Exports\ComprasDetallesExport;
 use App\Exports\CuentasPagarExport;
+use App\Services\Compras\PagoMasivoBancoAgricolaService;
 use App\Exports\RentabilidadSucursalExport;
 use App\Helpers\ExportPeriodHelper;
 use Maatwebsite\Excel\Facades\Excel;
@@ -822,6 +823,80 @@ class ComprasController extends Controller
             Log::error('CXP Export error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
             return response()->json(['error' => 'Error al generar el reporte: ' . $e->getMessage()], 500);
         }
+    }
+
+    public function cxpBancoAgricola(Request $request, PagoMasivoBancoAgricolaService $service)
+    {
+        $request->validate([
+            'fecha_pago' => 'required|date',
+            'formato' => 'nullable|in:csv,txt',
+        ], [
+            'fecha_pago.required' => 'La fecha de pago es obligatoria.',
+            'fecha_pago.date' => 'La fecha de pago no es válida.',
+            'formato.in' => 'El formato debe ser csv o txt.',
+        ]);
+
+        $fechaPago = $request->fecha_pago;
+        $formato = $request->formato ?? 'csv';
+
+        $compras = Compra::where('estado', 'Pendiente')
+            ->where('cotizacion', 0)
+            ->when($request->id_proveedor, function ($query) use ($request) {
+                return $query->where('id_proveedor', $request->id_proveedor);
+            })
+            ->when($request->id_sucursal, function ($query) use ($request) {
+                return $query->where('id_sucursal', $request->id_sucursal);
+            })
+            ->when($request->buscador, function ($query) use ($request) {
+                $buscador = '%' . $request->buscador . '%';
+                return $query->where(function ($q) use ($buscador) {
+                    $q->whereHas('proveedor', function ($qProveedor) use ($buscador) {
+                        $qProveedor->where('nombre', 'like', $buscador)
+                            ->orWhere('nombre_empresa', 'like', $buscador)
+                            ->orWhere('ncr', 'like', $buscador)
+                            ->orWhere('nit', 'like', $buscador);
+                    })
+                        ->orWhere('referencia', 'like', $buscador)
+                        ->orWhere('estado', 'like', $buscador)
+                        ->orWhere('observaciones', 'like', $buscador);
+                });
+            })
+            ->with('proveedor')
+            ->withSum(['abonos' => function ($query) {
+                $query->where('estado', 'Confirmado');
+            }], 'total')
+            ->withSum(['devoluciones' => function ($query) {
+                $query->where('enable', 1);
+            }], 'total')
+            ->orderBy('id')
+            ->get()
+            ->filter(function ($compra) use ($service, $fechaPago) {
+                return $service->venceEnFecha($compra, $fechaPago);
+            })
+            ->values();
+
+        $resultado = $service->generar($compras, $fechaPago, $formato);
+
+        if ($resultado['incluidos'] === 0) {
+            $detalle = collect($resultado['omitidos'])->map(function ($omitido) {
+                $quien = $omitido['proveedor'] ?: 'Proveedor';
+                if ($omitido['referencia']) {
+                    $quien .= ' (' . $omitido['referencia'] . ')';
+                }
+                return $quien . ': ' . $omitido['motivo'];
+            });
+
+            $mensaje = $detalle->isEmpty()
+                ? 'No hay cuentas por pagar con vencimiento en esa fecha.'
+                : 'No hay pagos válidos para Banco Agrícola. ' . $detalle->implode(' ');
+
+            return response()->json([
+                'error' => $mensaje,
+                'omitidos' => $resultado['omitidos'],
+            ], 422);
+        }
+
+        return response()->json($resultado);
     }
 
     public function cxpBuscar($txt) {

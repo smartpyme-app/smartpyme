@@ -27,6 +27,8 @@ export class CuentasPagarComponent implements OnInit {
     public proveedores: any[] = [];
     public sucursales: any[] = [];
     public fechaCorte = '';
+    public fechaPagoAgricola = '';
+    public formatoAgricola = 'csv';
 
     constructor(
         public apiService: ApiService,
@@ -176,6 +178,53 @@ export class CuentasPagarComponent implements OnInit {
                 this.downloading = false;
             }
         );
+    }
+
+    descargarArchivoBancoAgricola() {
+        if (!this.fechaPagoAgricola) {
+            return;
+        }
+        this.downloading = true;
+        const params: any = {
+            fecha_pago: this.fechaPagoAgricola,
+            formato: this.formatoAgricola || 'csv'
+        };
+        if (this.filtros.id_proveedor) params.id_proveedor = this.filtros.id_proveedor;
+        if (this.filtros.id_sucursal) params.id_sucursal = this.filtros.id_sucursal;
+        if (this.filtros.buscador) params.buscador = this.filtros.buscador;
+
+        this.apiService.getAll('cuentas-pagar/banco-agricola', params).subscribe({
+            next: (res) => {
+                this.descargarTexto(res.contenido, res.filename, res.mime);
+                const omitidos = Array.isArray(res.omitidos) ? res.omitidos.length : 0;
+                const mensaje = omitidos
+                    ? `Se incluyeron ${res.incluidos} pagos. Se omitieron ${omitidos}: ${res.omitidos.map((o: any) => (o.proveedor || 'Proveedor') + (o.referencia ? ' (' + o.referencia + ')' : '') + ' — ' + o.motivo).join('; ')}`
+                    : `Se incluyeron ${res.incluidos} pagos.`;
+                if (omitidos) {
+                    this.alertService.warning('Archivo generado con omitidos', mensaje);
+                } else {
+                    this.alertService.success('Archivo generado', mensaje);
+                }
+                this.downloading = false;
+                if (this.modalRef) this.modalRef.hide();
+            },
+            error: (err) => {
+                this.alertService.error(err);
+                this.downloading = false;
+            }
+        });
+    }
+
+    private descargarTexto(contenido: string, filename: string, mime: string) {
+        const blob = new Blob([contenido], { type: mime || 'text/plain; charset=UTF-8' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
     }
 
     descargarReportePorFechaCorte() {

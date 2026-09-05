@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\Compras\ComprasController;
 
     Route::get('/cuentas-pagar',                  [ComprasController::class, 'cxp']);
     Route::get('/cuentas-pagar/exportar',         [ComprasController::class, 'cxpExport']);
+    Route::get('/cuentas-pagar/banco-agricola',   [ComprasController::class, 'cxpBancoAgricola']);
     Route::get('/cuentas-pagar/buscar/{text}',    [ComprasController::class, 'cxpBuscar']);
 
     Route::post('/proveedores-personas/importar',          [ProveedoresController::class, 'importPersonas']);

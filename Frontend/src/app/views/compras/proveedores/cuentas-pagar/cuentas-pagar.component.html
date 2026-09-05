@@ -25,6 +25,9 @@
                 <button tooltip="Descargar Excel por fecha de corte" (click)="openModal(mFechaCorte)" [disabled]="downloading" class="btn btn-default">
                     <i class="fa fa-calendar"></i>
                 </button>
+                <button tooltip="Archivo Banco Agrícola" (click)="openModal(mBancoAgricola)" [disabled]="downloading" class="btn btn-default">
+                    <i class="fa fa-university"></i>
+                </button>
                 <form class="d-flex input-group flex-grow-1" name="form" (ngSubmit)="filtrarPagos()" autocomplete="off">
                     <input type="search" name="buscador" class="form-control" placeholder="Buscar" [(ngModel)]="filtros.buscador">
                 </form>
@@ -216,6 +219,35 @@
             <button type="button" (click)="descargarReportePorFechaCorte()" [disabled]="downloading || !fechaCorte" class="btn btn-primary btn-block">
                 <span *ngIf="!downloading">Generar reporte</span>
                 <span *ngIf="downloading">Descargando...</span>
+            </button>
+        </div>
+    </div>
+</ng-template>
+
+<ng-template #mBancoAgricola>
+    <div class="modal-header">
+        <div class="modal-title text-center">
+            <h2 class="text-center no-margin">Archivo Banco Agrícola</h2>
+        </div>
+        <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <p class="text-muted mb-3">Genera el archivo de pagos masivos para las cuentas por pagar que vencen en la misma fecha. No registra el pago en SmartPyme.</p>
+        <div class="form-group mb-3">
+            <label for="fechaPagoAgricola">Fecha de pago:</label>
+            <input type="date" class="form-control" name="fechaPagoAgricola" [(ngModel)]="fechaPagoAgricola" />
+        </div>
+        <div class="form-group mb-3">
+            <label for="formatoAgricola">Formato:</label>
+            <select class="form-select" name="formatoAgricola" [(ngModel)]="formatoAgricola">
+                <option value="csv">CSV (coma)</option>
+                <option value="txt">TXT (punto y coma)</option>
+            </select>
+        </div>
+        <div class="d-grid">
+            <button type="button" (click)="descargarArchivoBancoAgricola()" [disabled]="downloading || !fechaPagoAgricola" class="btn btn-primary btn-block">
+                <span *ngIf="!downloading">Generar archivo</span>
+                <span *ngIf="downloading">Generando...</span>
             </button>
         </div>
     </div>
