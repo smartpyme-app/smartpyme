@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -227,7 +228,7 @@ class ComprasDetallesExport implements FromCollection, WithHeadings, WithMapping
             ->when($request->id_proyecto, function ($query) use ($request) {
                 return $query->where('c.id_proyecto', $request->id_proyecto);
             })
-            ->select([
+            ->select(array_merge([
                 'ddc.id',
                 'd.fecha',
                 'p.tipo as proveedor_tipo',
@@ -243,17 +244,49 @@ class ComprasDetallesExport implements FromCollection, WithHeadings, WithMapping
                 'py.nombre as proyecto_nombre',
                 'c.num_identificacion',
                 'c.fecha_pago',
-                'ddc.cantidad',
-                'ddc.costo',
-                'ddc.total',
-                'ddc.subtotal',
-                'ddc.iva',
-                'ddc.descuento',
-            ])
+            ], self::columnasMontoDevolucionSiExisten($this->columnasMontoDevolucionEnBd())))
             ->get()
             ->each(function ($row) {
                 DevolucionEnReporte::marcar($row);
             });
+    }
+
+    /**
+     * subtotal/iva/descuento no siempre existen en producción.
+     *
+     * @param  array<int, string>  $columnasExistentes
+     * @return array<int, string>
+     */
+    public static function columnasMontoDevolucionSiExisten(array $columnasExistentes): array
+    {
+        $select = [
+            'ddc.cantidad',
+            'ddc.costo',
+            'ddc.total',
+        ];
+
+        foreach (['subtotal', 'iva', 'descuento'] as $columna) {
+            if (in_array($columna, $columnasExistentes, true)) {
+                $select[] = 'ddc.' . $columna;
+            }
+        }
+
+        return $select;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function columnasMontoDevolucionEnBd(): array
+    {
+        $existentes = [];
+        foreach (['subtotal', 'iva', 'descuento'] as $columna) {
+            if (Schema::hasColumn('detalles_devolucion_compra', $columna)) {
+                $existentes[] = $columna;
+            }
+        }
+
+        return $existentes;
     }
 
     public function map($row): array

@@ -91,7 +91,7 @@ class DetallesConDevolucionesQuery
                 'd.fecha',
                 'd.id_sucursal',
                 DB::raw('-ABS(ddc.cantidad) as cantidad'),
-                DB::raw('-ABS(COALESCE(ddc.total, ddc.subtotal, ddc.cantidad * ddc.costo, 0)) as total'),
+                DB::raw('-ABS(COALESCE(ddc.total, ddc.cantidad * ddc.costo, 0)) as total'),
                 DB::raw('-ABS(COALESCE(ddc.cantidad * ddc.costo, 0)) as total_costo'),
                 DB::raw('ddc.costo as costo'),
             ]);
