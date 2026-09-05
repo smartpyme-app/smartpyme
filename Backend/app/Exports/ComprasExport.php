@@ -59,10 +59,13 @@ class ComprasExport implements FromCollection, WithHeadings, WithMapping
     public function collection()
     {
         $request = $this->request;
-        
         $idEmpresa = Auth::check()
             ? Auth::user()->id_empresa
             : ($request->id_empresa ?? null);
+        $orden = $request->orden ?: 'fecha';
+        $direccion = in_array(strtolower((string) ($request->direccion ?? '')), ['asc', 'desc'], true)
+            ? strtolower($request->direccion)
+            : 'desc';
 
         $compras = Compra::when($idEmpresa, function ($query) use ($idEmpresa) {
                             return $query->where('id_empresa', $idEmpresa);
@@ -108,7 +111,7 @@ class ComprasExport implements FromCollection, WithHeadings, WithMapping
                         })
                         ->where('cotizacion', 0)
                         ->with(['proveedor', 'proyecto'])
-                        ->orderBy($request->orden, $request->direccion)
+                        ->orderBy($orden, $direccion)
                         ->orderBy('id', 'desc')
                         ->get();
 
