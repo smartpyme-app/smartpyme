@@ -62,9 +62,6 @@
         } @else {
           @for (conversation of conversations; track conversation.conversation_id) {
             <button type="button" class="conversation-item" (click)="openConversation(conversation.conversation_id)">
-              <div class="conversation-item-icon">
-                <i class="fa fa-comments-o"></i>
-              </div>
               <div class="conversation-item-body">
                 <div class="conversation-item-title">{{ conversation.title }}</div>
                 <div class="conversation-item-meta">
