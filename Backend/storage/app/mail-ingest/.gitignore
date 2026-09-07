@@ -1,0 +1,8 @@
+*
+!.gitignore
+!incoming/
+!incoming/.gitkeep
+!processing/
+!processing/.gitkeep
+!failed/
+!failed/.gitkeep
