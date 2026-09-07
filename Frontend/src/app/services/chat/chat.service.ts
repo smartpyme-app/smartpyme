@@ -246,28 +246,6 @@ export class ChatService {
   }
 
   /**
-   * Resuelve la identidad del usuario logueado (user_id + empresa_id) desde
-   * localStorage. Lucas agrupa todo el historial por esta identidad.
-   */
-  private getIdentity(): {
-    user_id: number | null;
-    empresa_id: number | null;
-    user_type: string;
-  } {
-    try {
-      const user = JSON.parse(localStorage.getItem('SP_auth_user') || '{}');
-      return {
-        user_id: user?.id ?? null,
-        empresa_id: user?.id_empresa ?? user?.empresa?.id ?? null,
-        user_type: user?.tipo ?? 'Usuario',
-      };
-    } catch (e) {
-      console.warn('Error al leer identidad del usuario', e);
-      return { user_id: null, empresa_id: null, user_type: 'Usuario' };
-    }
-  }
-
-  /**
    * Base URL del backend Laravel que hace de proxy hacia Lucas.
    * El frontend ya NO habla directo con Lucas; todo pasa por el backend para
    * centralizar el saneamiento de formato y la identidad del usuario.
@@ -287,24 +265,17 @@ export class ChatService {
 
   /**
    * Lista las conversaciones del usuario/empresa (vía backend -> Lucas).
+   * La identidad la resuelve el backend desde el JWT; aquí solo se envía el
+   * límite de resultados.
    */
   loadConversations(): void {
     if (!this.tieneAccesoSubject.value) {
       return;
     }
 
-    const { user_id, empresa_id } = this.getIdentity();
-    if (user_id == null || empresa_id == null) {
-      console.warn('No se pudo resolver user_id/empresa_id para listar conversaciones');
-      return;
-    }
-
     this.conversationsLoadingSubject.next(true);
 
-    const params = new HttpParams()
-      .set('user_id', String(user_id))
-      .set('empresa_id', String(empresa_id))
-      .set('limit', '20');
+    const params = new HttpParams().set('limit', '20');
 
     this.http
       .get<{ conversations: LucasConversation[]; count: number }>(

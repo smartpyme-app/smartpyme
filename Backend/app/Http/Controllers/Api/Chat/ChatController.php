@@ -117,7 +117,7 @@ class ChatController extends Controller
             $payload = [
                 'message' => $request->input('message'),
                 'user_id' => $user->id,
-                'empresa_id' => $request->input('empresa_id', $user->id_empresa),
+                'empresa_id' => $user->id_empresa,
                 'user_type' => $user->tipo ?? 'Usuario',
                 'source' => $request->input('source', $source),
             ];
@@ -171,8 +171,8 @@ class ChatController extends Controller
             $user = $request->user();
 
             $params = [
-                'user_id' => $request->input('user_id', $user->id),
-                'empresa_id' => $request->input('empresa_id', $user->id_empresa),
+                'user_id' => $user->id,
+                'empresa_id' => $user->id_empresa,
                 'limit' => $request->input('limit', 20),
             ];
 
@@ -232,8 +232,8 @@ class ChatController extends Controller
             $user = $request->user();
 
             $params = [
-                'user_id' => $request->input('user_id', $user->id),
-                'empresa_id' => $request->input('empresa_id', $user->id_empresa),
+                'user_id' => $user->id,
+                'empresa_id' => $user->id_empresa,
             ];
 
             $data = $this->lucas->newConversation($params);
@@ -251,7 +251,14 @@ class ChatController extends Controller
     public function conversationMessages(Request $request, $id)
     {
         try {
+            $user = $request->user();
+
+            // Se envía la identidad del usuario autenticado para que Lucas
+            // valide que la conversación le pertenece (evita acceder a
+            // conversaciones de otra empresa).
             $params = [
+                'user_id' => $user->id,
+                'empresa_id' => $user->id_empresa,
                 'limit' => $request->input('limit', 50),
             ];
 

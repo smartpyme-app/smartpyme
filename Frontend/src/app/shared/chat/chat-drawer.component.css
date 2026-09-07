@@ -232,6 +232,8 @@
   border-bottom-right-radius: 0.3rem;
   border-radius: 1rem;
   margin-right: 8px;
+  flex: 0 1 auto;
+  max-width: 100%;
   box-shadow: 0 2px 8px rgba(13, 110, 253, 0.25);
 }
 
@@ -256,10 +258,9 @@
 .message-content {
   flex: 1;
   max-width: calc(100% - 45px);
-  min-width: 60px;
   font-size: 0.92rem;
   line-height: 1.55;
-  word-break: break-word;
+  word-break: normal;
   overflow-wrap: break-word;
 }
 
