@@ -124,6 +124,10 @@ class ChatController extends Controller
 
             if ($request->filled('conversation_id')) {
                 $payload['conversation_id'] = $request->input('conversation_id');
+            } else {
+                // Conversación nueva: sugerir un título a partir del primer
+                // mensaje del usuario para un historial más amigable.
+                $payload['title'] = $this->titleFromMessage($request->input('message'));
             }
 
             $data = $this->lucas->chat($payload);
@@ -143,11 +147,14 @@ class ChatController extends Controller
 
             $botResponse = $formatter->format($botResponse, $payload['source']);
 
+            // Devolver el título sugerido para que el frontend lo use en el
+            // listado sin esperar el refresco.
             return response()->json([
                 'message' => $botResponse,
                 'suggestions' => $suggestions,
                 'conversation_id' => $data['conversation_id'] ?? null,
                 'modelUsed' => $data['modelUsed'] ?? null,
+                'title' => $data['title'] ?? ($payload['title'] ?? null),
             ]);
         } catch (\Exception $e) {
             Log::error('Error en proxy chat Lucas:', [
@@ -220,6 +227,27 @@ class ChatController extends Controller
         }
 
         // Primera letra en mayúscula para un aspecto más cuidado.
+        return mb_strtoupper(mb_substr($clean, 0, 1)) . mb_substr($clean, 1);
+    }
+
+    /**
+     * Deriva un título corto y legible a partir del primer mensaje del usuario.
+     */
+    private function titleFromMessage(?string $message): string
+    {
+        $clean = html_entity_decode(strip_tags((string) $message), ENT_QUOTES, 'UTF-8');
+        $clean = preg_replace('/\s+/u', ' ', $clean) ?? '';
+        $clean = trim($clean);
+
+        $max = 50;
+        if (mb_strlen($clean) > $max) {
+            $clean = mb_substr($clean, 0, $max - 1) . '…';
+        }
+
+        if ($clean === '' || preg_match('/^conversaci[oó]n\b/ui', $clean)) {
+            return 'Nueva conversación';
+        }
+
         return mb_strtoupper(mb_substr($clean, 0, 1)) . mb_substr($clean, 1);
     }
 

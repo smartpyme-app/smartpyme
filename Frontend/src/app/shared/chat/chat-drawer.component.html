@@ -35,7 +35,7 @@
         <div class="conversation-list-header">
           <div class="conversation-list-header-text">
             <span class="conversation-list-title">Historial de conversaciones</span>
-            <small class="conversation-list-date">{{ today | date: 'fullDate' }}</small>
+            <small class="conversation-list-date">{{ friendlyHeaderDate() }}</small>
           </div>
           <button type="button" class="btn btn-primary new-conversation-subheader"
                   (click)="newConversation()"
@@ -65,9 +65,9 @@
               <div class="conversation-item-body">
                 <div class="conversation-item-title">{{ conversation.title }}</div>
                 <div class="conversation-item-meta">
-                  <i class="fa fa-envelope-o me-1"></i>{{ conversation.message_count }} mensajes
+                  {{ conversation.message_count }} mensajes
                   <span class="conversation-item-dot">·</span>
-                  {{ conversation.updated_at | date: 'dd/MM/yyyy HH:mm' }}
+                  {{ relativeTime(conversation.updated_at) }}
                 </div>
               </div>
               <i class="fa fa-chevron-right conversation-item-chevron"></i>

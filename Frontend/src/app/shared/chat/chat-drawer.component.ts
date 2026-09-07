@@ -35,7 +35,6 @@ export class ChatDrawerComponent
   isLoading = false;
   conversationsLoading = false;
   loadingConversation = false;
-  today = new Date();
   minimized = false;
 
   // Evita que el listener `hidden.bs.offcanvas` trate una minimización como un
@@ -356,6 +355,50 @@ export class ChatDrawerComponent
   backToList() {
     this.view = 'list';
     this.chatService.loadConversations();
+  }
+
+  /**
+   * Fecha amigable para el encabezado del listado: "Hoy · 3 de septiembre".
+   */
+  friendlyHeaderDate(): string {
+    const now = new Date();
+    const opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long' };
+    const fecha = now.toLocaleDateString('es-SV', opts);
+    return `Hoy · ${fecha}`;
+  }
+
+  /**
+   * Formatea una fecha como tiempo relativo amigable para el listado:
+   * "ahora", "hace 5 min", "hace 2 h", "ayer" o una fecha corta.
+   */
+  relativeTime(value: string | Date): string {
+    const date = value instanceof Date ? value : new Date(value);
+    if (isNaN(date.getTime())) {
+      return '';
+    }
+
+    const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+
+    if (seconds < 60) {
+      return 'ahora';
+    }
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) {
+      return `hace ${minutes} min`;
+    }
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) {
+      return `hace ${hours} h`;
+    }
+    const days = Math.floor(hours / 24);
+    if (days === 1) {
+      return 'ayer';
+    }
+    if (days < 7) {
+      return `hace ${days} días`;
+    }
+
+    return date.toLocaleDateString('es-SV', { day: 'numeric', month: 'short' });
   }
 
   // Mostrar el offcanvas usando la API de Bootstrap
