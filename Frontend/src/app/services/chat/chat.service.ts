@@ -73,6 +73,10 @@ export class ChatService {
   private drawerOpenSubject = new BehaviorSubject<boolean>(false);
   drawerOpen$ = this.drawerOpenSubject.asObservable();
 
+  // Controla si el chat está minimizado a una burbuja flotante.
+  private minimizedSubject = new BehaviorSubject<boolean>(false);
+  minimized$ = this.minimizedSubject.asObservable();
+
   private messagesSubject = new BehaviorSubject<ChatMessage[]>([
     {
       message_id: this.newMessageId(),
@@ -154,6 +158,13 @@ export class ChatService {
   }
 
   toggleDrawer() {
+    // Si estaba minimizado, reabrir expandido (restaurar la conversación).
+    if (this.minimizedSubject.value) {
+      this.minimizedSubject.next(false);
+      this.drawerOpenSubject.next(true);
+      return;
+    }
+
     // Solo permitir abrir el drawer si tiene acceso
     if (!this.drawerOpenSubject.value && !this.tieneAccesoSubject.value) {
       console.warn('La empresa no tiene acceso a la funcionalidad de chat');
@@ -161,6 +172,21 @@ export class ChatService {
     }
 
     this.drawerOpenSubject.next(!this.drawerOpenSubject.value);
+  }
+
+  /**
+   * Minimiza el chat a una burbuja flotante conservando la conversación.
+   */
+  minimize() {
+    this.drawerOpenSubject.next(false);
+    this.minimizedSubject.next(true);
+  }
+
+  closeDrawer() {
+    this.drawerOpenSubject.next(false);
+    this.minimizedSubject.next(false);
+    // Refrescar el historial al cerrar para reflejar message_count / updated_at
+    this.loadConversations();
   }
 
   /**
@@ -174,12 +200,6 @@ export class ChatService {
       this.accesoVerificado = false;
       this.tieneAccesoSubject.next(false);
     }
-  }
-
-  closeDrawer() {
-    this.drawerOpenSubject.next(false);
-    // Refrescar el historial al cerrar para reflejar message_count / updated_at
-    this.loadConversations();
   }
 
   resetChat() {
@@ -350,61 +370,30 @@ export class ChatService {
   }
 
   /**
-   * Crea una nueva conversación en Lucas (cierra la activa en el servidor).
+   * Inicia una nueva conversación de forma LOCAL, sin crearla aún en Lucas.
+   * La conversación real se crea en Lucas al enviar el primer mensaje (el
+   * backend `/chat` asigna el `conversation_id` en ese momento), evitando así
+   * conversaciones vacías con 0 mensajes en el historial.
    */
   startNewConversation(): void {
     if (!this.tieneAccesoSubject.value) {
       return;
     }
 
-    const { user_id, empresa_id } = this.getIdentity();
-    if (user_id == null || empresa_id == null) {
-      console.warn('No se pudo resolver user_id/empresa_id para crear conversación');
-      return;
-    }
+    // Sin conversation_id, el próximo `/chat` creará la conversación en Lucas.
+    this.currentConversationId = null;
 
-    const params = new HttpParams()
-      .set('user_id', String(user_id))
-      .set('empresa_id', String(empresa_id));
+    this.loadingSubject.next(false);
 
-    this.http
-      .post<{
-        conversation_id: string;
-        session_id: string;
-        title: string;
-        status: string;
-        created_at: string;
-      }>(`${this.backendUrl}/chat/conversations/new`, null, {
-        headers: this.backendHeaders(),
-        params,
-      })
-      .subscribe({
-        next: (res) => {
-          this.currentConversationId = res?.conversation_id ?? null;
-          this.messagesSubject.next([
-            {
-              message_id: this.newMessageId(),
-              sender: 'bot',
-              text: '<p>¡Hola! Soy Lucas, tu asistente financiero. ¿En qué puedo ayudarte hoy?</p>',
-              timestamp: new Date(),
-              suggestions: this.getRandomSuggestions(3),
-            },
-          ]);
-          this.loadConversations();
-        },
-        error: (error) => {
-          console.error('Error al crear nueva conversación:', error);
-          this.handleAccessError(error);
-          this.messagesSubject.next([
-            {
-              message_id: this.newMessageId(),
-              sender: 'bot',
-              text: '<p>No se pudo crear una nueva conversación. Por favor, intenta de nuevo.</p>',
-              timestamp: new Date(),
-            },
-          ]);
-        },
-      });
+    this.messagesSubject.next([
+      {
+        message_id: this.newMessageId(),
+        sender: 'bot',
+        text: '<p>¡Hola! Soy Lucas, tu asistente financiero. ¿En qué puedo ayudarte hoy?</p>',
+        timestamp: new Date(),
+        suggestions: this.getRandomSuggestions(3),
+      },
+    ]);
   }
 
   private mapLucasMessage(m: LucasMessage): ChatMessage {

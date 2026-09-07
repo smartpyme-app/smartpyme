@@ -36,6 +36,15 @@ export class ChatDrawerComponent
   conversationsLoading = false;
   loadingConversation = false;
   today = new Date();
+  minimized = false;
+
+  // Evita que el listener `hidden.bs.offcanvas` trate una minimización como un
+  // cierre (y reseteé la conversación).
+  private isMinimizing = false;
+
+  // Marca que el chat se está restaurando desde la burbuja minimizada, para no
+  // volver a la vista de listado y conservar la conversación actual.
+  private isRestoring = false;
 
   private destroyRef = inject(DestroyRef);
   private untilDestroyed = subscriptionHelper(this.destroyRef);
@@ -67,12 +76,24 @@ export class ChatDrawerComponent
         // Manipulación del offcanvas de Bootstrap mediante JavaScript
         if (isOpen) {
           this.showOffcanvas();
-          // Al abrir, mostrar el listado de conversaciones
-          this.view = 'list';
-          this.chatService.loadConversations();
+          // Al abrir desde cero, mostrar el listado; al restaurar desde la
+          // burbuja minimizada, conservar la conversación en curso.
+          if (this.isRestoring) {
+            this.isRestoring = false;
+          } else {
+            this.view = 'list';
+            this.chatService.loadConversations();
+          }
         } else {
           this.hideOffcanvas();
         }
+      });
+
+    // Estado minimizado (burbuja flotante)
+    this.chatService.minimized$
+      .pipe(this.untilDestroyed())
+      .subscribe((minimized) => {
+        this.minimized = minimized;
       });
 
     // Suscribirse a los mensajes
@@ -114,6 +135,24 @@ export class ChatDrawerComponent
   }
 
   toggle() {
+    this.chatService.toggleDrawer();
+  }
+
+  /**
+   * Minimiza el chat a una burbuja flotante, conservando la conversación y la
+   * vista actual (se restaura tal cual al volver a abrirlo).
+   */
+  minimize() {
+    this.isMinimizing = true;
+    this.chatService.minimize();
+    this.hideOffcanvas();
+  }
+
+  /**
+   * Restaura el chat desde la burbuja flotante, reabriendo en la conversación.
+   */
+  restore() {
+    this.isRestoring = true;
     this.chatService.toggleDrawer();
   }
 
@@ -332,6 +371,11 @@ export class ChatDrawerComponent
       offcanvasElement.addEventListener(
         'hidden.bs.offcanvas',
         () => {
+          // Si fue una minimización, no resetear la conversación.
+          if (this.isMinimizing) {
+            this.isMinimizing = false;
+            return;
+          }
           this.chatService.closeDrawer();
         },
         { once: true }

@@ -178,11 +178,49 @@ class ChatController extends Controller
 
             $data = $this->lucas->conversations($params);
 
+            // Normalizar títulos para un listado más amigable: limpiar HTML,
+            // acortar y dar un fallback si Lucas devuelve título vacío.
+            if (!empty($data['conversations']) && is_array($data['conversations'])) {
+                foreach ($data['conversations'] as &$conv) {
+                    if (array_key_exists('title', $conv)) {
+                        $conv['title'] = $this->normalizeTitle($conv['title']);
+                    }
+                }
+                unset($conv);
+            }
+
             return response()->json($data);
         } catch (\Exception $e) {
             Log::error('Error listando conversaciones Lucas:', ['error' => $e->getMessage()]);
             return response()->json(['error' => 'Error al listar conversaciones'], 500);
         }
+    }
+
+    /**
+     * Limpia y acorta un título de conversación para mostrarse en el listado.
+     */
+    private function normalizeTitle(?string $title): string
+    {
+        // Quitar HTML/Markdown y entidades; colapsar espacios.
+        $clean = html_entity_decode(strip_tags((string) $title), ENT_QUOTES, 'UTF-8');
+        $clean = preg_replace('/\s+/u', ' ', $clean) ?? '';
+        $clean = trim($clean, " \t\n\r\0\x0B-\"'");
+
+        // Quitar encabezados markdown como "###" o viñetas "- " iniciales.
+        $clean = preg_replace('/^#+\s*/u', '', $clean) ?? $clean;
+        $clean = preg_replace('/^(?:[-*•·]\s*)+/u', '', $clean) ?? $clean;
+
+        $max = 60;
+        if (mb_strlen($clean) > $max) {
+            $clean = mb_substr($clean, 0, $max - 1) . '…';
+        }
+
+        if ($clean === '') {
+            return 'Nueva conversación';
+        }
+
+        // Primera letra en mayúscula para un aspecto más cuidado.
+        return mb_strtoupper(mb_substr($clean, 0, 1)) . mb_substr($clean, 1);
     }
 
     /**

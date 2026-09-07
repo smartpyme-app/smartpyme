@@ -17,7 +17,15 @@
       </div>
     </div>
 
-    <button type="button" class="btn-close header-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    <div class="d-flex align-items-center header-actions">
+      <button type="button" class="btn btn-sm btn-light min-btn" (click)="minimize()" aria-label="Minimizar chat">
+        <i class="fa fa-minus"></i>
+      </button>
+
+      <button type="button" class="btn btn-sm btn-light close-btn" (click)="minimize()" aria-label="Cerrar chat">
+        <i class="fa fa-times"></i>
+      </button>
+    </div>
   </div>
 
   <div class="offcanvas-body">
@@ -163,3 +171,11 @@
     </div>
   }
 </div>
+
+<!-- Burbuja flotante cuando el chat está minimizado -->
+@if (minimized) {
+  <div class="chat-minimized-bubble" (click)="restore()" role="button" tabindex="0" aria-label="Abrir chat" title="Abrir chat">
+    <img src="/assets/avatares/bot-avatar.png" alt="Lucas" class="chat-minimized-avatar">
+    <span class="chat-minimized-dot" title="En línea"></span>
+  </div>
+}
