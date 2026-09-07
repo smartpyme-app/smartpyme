@@ -8,8 +8,8 @@ use App\Models\Chat\Message;
 use App\Models\User;
 use App\Services\AIService;
 use App\Services\ChatFormatter;
+use App\Services\LucasService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Requests\Chat\BedrockChatRequest;
 use App\Http\Requests\Chat\NewConversationRequest;
@@ -18,14 +18,17 @@ class ChatController extends Controller
 {
     protected $aiService;
 
+    protected $lucas;
+
     /**
      * Constructor
      * 
      * @param AIService $aiService
      */
-    public function __construct(AIService $aiService)
+    public function __construct(AIService $aiService, LucasService $lucas)
     {
         $this->aiService = $aiService;
+        $this->lucas = $lucas;
     }
 
     /**
@@ -67,13 +70,21 @@ class ChatController extends Controller
                 $options
             );
 
+            $lastResponse = $this->aiService->getLastResponse();
+
+            // Sugerencias: priorizar el array que Lucas devuelve por separado;
+            // si Lucas las mete dentro del message, extraerlas y quitarlas.
+            $formatter = app(ChatFormatter::class);
+            $suggestions = $this->aiService->getSuggestions();
+            if (empty($suggestions)) {
+                $extracted = $formatter->extractSuggestions($botResponse);
+                $botResponse = $extracted['message'];
+                $suggestions = $extracted['suggestions'];
+            }
+
             // Convertir el marcado estilo WhatsApp a HTML para la Web; para
             // WhatsApp se conserva el texto plano.
-            $formatter = app(ChatFormatter::class);
             $botResponse = $formatter->format($botResponse, $source);
-
-            $suggestions = $this->aiService->getSuggestions();
-            $lastResponse = $this->aiService->getLastResponse();
 
             return response()->json([
                 'message' => $botResponse,
@@ -91,6 +102,139 @@ class ChatController extends Controller
                 'error' => 'Error al procesar la solicitud',
                 'message' => config('app.debug') ? $e->getMessage() : '<p>Error interno del servidor</p>'
             ], 500);
+        }
+    }
+
+    /**
+     * POST /chat — Proxy directo a Lucas con saneamiento de formato e
+     * identidad resuelta del servidor. Punto único de entrada para el chat web.
+     */
+    public function chat(Request $request, $source = 'Web')
+    {
+        try {
+            $user = $request->user();
+
+            $payload = [
+                'message' => $request->input('message'),
+                'user_id' => $user->id,
+                'empresa_id' => $request->input('empresa_id', $user->id_empresa),
+                'user_type' => $user->tipo ?? 'Usuario',
+                'source' => $request->input('source', $source),
+            ];
+
+            if ($request->filled('conversation_id')) {
+                $payload['conversation_id'] = $request->input('conversation_id');
+            }
+
+            $data = $this->lucas->chat($payload);
+
+            $botResponse = $data['message'] ?? '';
+            if ($botResponse === '') {
+                throw new \RuntimeException('No se pudo obtener una respuesta clara del servicio de IA.');
+            }
+
+            $formatter = app(ChatFormatter::class);
+            $suggestions = $data['suggestions'] ?? [];
+            if (empty($suggestions)) {
+                $extracted = $formatter->extractSuggestions($botResponse);
+                $botResponse = $extracted['message'];
+                $suggestions = $extracted['suggestions'];
+            }
+
+            $botResponse = $formatter->format($botResponse, $payload['source']);
+
+            return response()->json([
+                'message' => $botResponse,
+                'suggestions' => $suggestions,
+                'conversation_id' => $data['conversation_id'] ?? null,
+                'modelUsed' => $data['modelUsed'] ?? null,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error en proxy chat Lucas:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'error' => 'Error al procesar la solicitud',
+                'message' => config('app.debug') ? $e->getMessage() : '<p>Error interno del servidor</p>'
+            ], 500);
+        }
+    }
+
+    /**
+     * GET /conversations — lista conversaciones del usuario/empresa en Lucas.
+     */
+    public function conversations(Request $request)
+    {
+        try {
+            $user = $request->user();
+
+            $params = [
+                'user_id' => $request->input('user_id', $user->id),
+                'empresa_id' => $request->input('empresa_id', $user->id_empresa),
+                'limit' => $request->input('limit', 20),
+            ];
+
+            $data = $this->lucas->conversations($params);
+
+            return response()->json($data);
+        } catch (\Exception $e) {
+            Log::error('Error listando conversaciones Lucas:', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Error al listar conversaciones'], 500);
+        }
+    }
+
+    /**
+     * POST /conversations/new — crea una conversación en Lucas.
+     */
+    public function startConversation(Request $request)
+    {
+        try {
+            $user = $request->user();
+
+            $params = [
+                'user_id' => $request->input('user_id', $user->id),
+                'empresa_id' => $request->input('empresa_id', $user->id_empresa),
+            ];
+
+            $data = $this->lucas->newConversation($params);
+
+            return response()->json($data);
+        } catch (\Exception $e) {
+            Log::error('Error creando conversación Lucas:', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Error al crear conversación'], 500);
+        }
+    }
+
+    /**
+     * GET /conversations/{id}/messages — mensajes de una conversación en Lucas.
+     */
+    public function conversationMessages(Request $request, $id)
+    {
+        try {
+            $params = [
+                'limit' => $request->input('limit', 50),
+            ];
+
+            $data = $this->lucas->conversationMessages($id, $params);
+
+            // Saneamiento del contenido de cada mensaje del bot (Markdown -> HTML)
+            // para que el frontend renderice igual que en el chat en vivo.
+            if (!empty($data['messages']) && is_array($data['messages'])) {
+                $formatter = app(ChatFormatter::class);
+                foreach ($data['messages'] as &$msg) {
+                    if (($msg['sender'] ?? '') === 'bot' && !empty($msg['content'])) {
+                        $msg['content'] = $formatter->format($msg['content'], 'Web');
+                    }
+                }
+                unset($msg);
+            }
+
+            return response()->json($data);
+        } catch (\Exception $e) {
+            Log::error('Error obteniendo mensajes de conversación Lucas:', ['error' => $e->getMessage(), 'id' => $id]);
+            return response()->json(['error' => 'Error al obtener mensajes'], 500);
         }
     }
 

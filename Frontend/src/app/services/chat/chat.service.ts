@@ -248,19 +248,25 @@ export class ChatService {
   }
 
   /**
-   * Headers para Lucas. Si se define LUCAS_API_KEY en producción, se envía
-   * el header X-API-Key en todas las llamadas.
+   * Base URL del backend Laravel que hace de proxy hacia Lucas.
+   * El frontend ya NO habla directo con Lucas; todo pasa por el backend para
+   * centralizar el saneamiento de formato y la identidad del usuario.
    */
-  private lucasHeaders(): HttpHeaders {
-    const apiKey = environment.lucasApiKey;
-    if (apiKey) {
-      return new HttpHeaders({ 'X-API-Key': apiKey });
-    }
-    return new HttpHeaders();
+  private get backendUrl(): string {
+    return `${environment.API_URL}/api`;
   }
 
   /**
-   * Lista las conversaciones del usuario/empresa desde Lucas.
+   * Headers para el backend. La API key de Lucas la gestiona el backend; aquí
+   * solo se conserva el interceptor JWT (Authorization) que se añade de forma
+   * automática a todas las peticiones.
+   */
+  private backendHeaders(): HttpHeaders {
+    return new HttpHeaders({ Accept: 'application/json' });
+  }
+
+  /**
+   * Lista las conversaciones del usuario/empresa (vía backend -> Lucas).
    */
   loadConversations(): void {
     if (!this.tieneAccesoSubject.value) {
@@ -282,8 +288,8 @@ export class ChatService {
 
     this.http
       .get<{ conversations: LucasConversation[]; count: number }>(
-        `${environment.lucasApiUrl}/conversations`,
-        { headers: this.lucasHeaders(), params }
+        `${this.backendUrl}/chat/conversations`,
+        { headers: this.backendHeaders(), params }
       )
       .subscribe({
         next: (res) => {
@@ -313,8 +319,8 @@ export class ChatService {
 
     this.http
       .get<{ conversation_id: string; messages: LucasMessage[]; count: number }>(
-        `${environment.lucasApiUrl}/conversations/${conversationId}/messages`,
-        { headers: this.lucasHeaders(), params }
+        `${this.backendUrl}/chat/conversations/${conversationId}/messages`,
+        { headers: this.backendHeaders(), params }
       )
       .subscribe({
         next: (res) => {
@@ -368,8 +374,8 @@ export class ChatService {
         title: string;
         status: string;
         created_at: string;
-      }>(`${environment.lucasApiUrl}/conversations/new`, null, {
-        headers: this.lucasHeaders(),
+      }>(`${this.backendUrl}/chat/conversations/new`, null, {
+        headers: this.backendHeaders(),
         params,
       })
       .subscribe({
@@ -452,8 +458,6 @@ export class ChatService {
 
     if (!text.trim()) return;
 
-    const { user_id, empresa_id, user_type } = this.getIdentity();
-
     const userMessage: ChatMessage = {
       message_id: this.newMessageId(),
       sender: 'user',
@@ -467,12 +471,10 @@ export class ChatService {
     // Indicar que estamos cargando
     this.loadingSubject.next(true);
 
+    // La identidad la resuelve el backend a partir del JWT; solo se envía el
+    // mensaje y el contexto de la conversación.
     const payload: any = {
       message: text,
-      user_id,
-      empresa_id,
-      user_type,
-      source: 'Web',
     };
 
     // El contexto de la conversación lo mantiene Lucas (conversation_id)
@@ -481,8 +483,8 @@ export class ChatService {
     }
 
     this.http
-      .post<LucasChatResponse>(`${environment.lucasApiUrl}/chat`, payload, {
-        headers: this.lucasHeaders(),
+      .post<LucasChatResponse>(`${this.backendUrl}/chat`, payload, {
+        headers: this.backendHeaders(),
       })
       .subscribe({
         next: (response) => {

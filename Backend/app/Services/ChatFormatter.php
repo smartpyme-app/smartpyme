@@ -3,12 +3,19 @@
 namespace App\Services;
 
 /**
- * Convierte la respuesta de Lucas al formato adecuado para cada canal.
+ * Adapta la respuesta de Lucas al canal correspondiente.
  *
- * Lucas/el modelo devuelve texto plano con marcado estilo WhatsApp
- * (*negrita*, _cursiva_, saltos \n, viñetas) y, en ocasiones, bloques <svg>
- * embebidos. Para la Web se convierte ese marcado a HTML seguro; para
- * WhatsApp se devuelve el texto plano tal cual.
+ * Lucas NO devuelve Markdown: según el canal devuelve directamente:
+ *   - Web     → HTML bien formado (<p>, <strong>, <ul>, <table>, <svg>, ...)
+ *   - WhatsApp → marcado de WhatsApp (*negrita*, _cursiva_, viñetas •, saltos)
+ *
+ * Por eso este servicio NO re-convierte el texto: solo:
+ *   - Para Web: devuelve el HTML tal cual (el frontend ya lo sanitiza con
+ *     DOMPurify vía el pipe `safeHtml`), protegiendo los bloques <svg>.
+ *   - Para WhatsApp: devuelve el texto plano tal cual.
+ *
+ * Adicionalmente expone `extractSuggestions()` para rescatar las sugerencias
+ * que Lucas incluye dentro del propio `message` (bloque "---SUGGESTIONS---").
  */
 class ChatFormatter
 {
@@ -21,145 +28,80 @@ class ChatFormatter
     public function format(string $text, string $source = 'Web'): string
     {
         if ($source === 'WhatsApp') {
-            // WhatsApp ya muestra texto plano: no se toca.
+            // WhatsApp ya muestra texto plano con marcado propio: no se toca.
             return $text;
         }
 
-        return $this->toHtml($text);
+        // Web: Lucas entrega HTML bien formado; solo se quita el bloque de
+        // sugerencias incrustado y se devuelve el HTML. El frontend sanitiza.
+        return $this->stripEmbeddedSuggestions($text);
     }
 
     /**
-     * Convierte texto con marcado estilo WhatsApp a HTML seguro para la Web.
-     *
-     * - Protege los bloques <svg> existentes para no corromperlos.
-     * - Escapa el resto del HTML crudo.
-     * - Convierte *negrita*, _cursiva_, saltos de línea y viñetas.
+     * Elimina el bloque "---SUGGESTIONS---" que Lucas pueda incrustar dentro
+     * del HTML/mensaje, dejando el contenido limpio.
      */
-    private function toHtml(string $text): string
+    private function stripEmbeddedSuggestions(string $text): string
     {
-        // 1. Proteger bloques <svg>...</svg> reemplazándolos por marcadores.
-        $svgs = [];
-        $protected = preg_replace_callback(
-            '/<svg[\s\S]*?<\/svg>/i',
-            function (array $m) use (&$svgs): string {
-                $token = "\x1E" . count($svgs) . "\x1E";
-                $svgs[] = $m[0];
-
-                return $token;
-            },
+        return preg_replace(
+            '/--+\s*SUGGESTIONS?\s*--+[\s\S]*$/i',
+            '',
             $text
-        );
-
-        // 2. Escapar HTML crudo (respeta los marcadores de SVG).
-        $escaped = htmlspecialchars($protected ?? $text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-
-        // 3. Negrita con *asteriscos* (sin confundir con listas).
-        $escaped = $this->replaceBold($escaped);
-
-        // 4. Cursiva con _guiones bajos_.
-        $escaped = $this->replaceItalic($escaped);
-
-        // 5. Viñetas y saltos de línea (las listas conservan su estructura sin
-        //    que nl2br introduzca <br> dentro de <ul>).
-        $escaped = $this->replaceLines($escaped);
-
-        // 6. Restaurar los SVGs originales.
-        if ($svgs !== []) {
-            $escaped = preg_replace_callback(
-                '/\x1E(\d+)\x1E/',
-                function (array $m) use ($svgs): string {
-                    return $svgs[(int) $m[1]];
-                },
-                $escaped
-            );
-        }
-
-        return $escaped;
+        ) ?? $text;
     }
 
     /**
-     * Convierte *texto* y **texto** en <strong>.
+     * Extrae las sugerencias que Lucas incluye dentro del propio `message`
+     * bajo un separador "---SUGGESTIONS---" (o simplemente como preguntas al
+     * final), dejando el `message` sin ese bloque.
+     *
+     * Si Lucas ya devuelve un array `suggestions` por separado, éste no se
+     * usa; aquí solo se rescatan las que Lucas mete dentro del texto.
+     *
+     * @return array{message: string, suggestions: string[]}
      */
-    private function replaceBold(string $text): string
+    public function extractSuggestions(string $text): array
     {
-        // **texto** (doble asterisco)
-        $text = preg_replace('/\*\*(.+?)\*\*/s', '<strong>$1</strong>', $text);
+        $suggestions = [];
+        $body = $text;
 
-        // *texto* (asterisco simple, cualquier número de asteriscos restante)
-        return preg_replace('/\*(.+?)\*/s', '<strong>$1</strong>', $text);
-    }
+        if (preg_match('/--+\s*SUGGESTIONS?\s*--+/i', $text, $m, PREG_OFFSET_CAPTURE)) {
+            $body = substr($text, 0, $m[0][1]);
+            $rest = substr($text, $m[0][1] + strlen($m[0][0]));
 
-    /**
-     * Convierte _texto_ en <em>.
-     */
-    private function replaceItalic(string $text): string
-    {
-        return preg_replace('/_(.+?)_/s', '<em>$1</em>', $text);
-    }
-
-    /**
-     * Recorre línea por línea: convierte viñetas (•, -, *) a listas <ul><li> y
-     * añade saltos <br> entre las líneas de texto normales, sin contaminar la
-     * estructura interna de las listas.
-     */
-    private function replaceLines(string $text): string
-    {
-        $lines = explode("\n", $text);
-        $inList = false;
-        $out = [];
-
-        foreach ($lines as $line) {
-            // Detecta viñeta al inicio de línea: "• ", "- ", "* ", "· "
-            if (preg_match('/^\s*(?:[•·]|\-|\*)\s+/u', $line)) {
-                $content = preg_replace('/^\s*(?:[•·]|\-|\*)\s+/u', '', $line);
-
-                if (! $inList) {
-                    $out[] = ['open_list', null];
-                    $inList = true;
+            // Cada línea no vacía posterior a la marca se toma como sugerencia.
+            $lines = preg_split('/\R/', $rest);
+            foreach ($lines as $line) {
+                $line = trim($line);
+                if ($line === '') {
+                    continue;
                 }
-                $out[] = ['item', $content];
-            } else {
-                if ($inList) {
-                    $out[] = ['close_list', null];
-                    $inList = false;
-                }
-
-                $out[] = ['text', $line];
-            }
-        }
-
-        if ($inList) {
-            $out[] = ['close_list', null];
-        }
-
-        // Construir el HTML final aplicando <br /> solo entre líneas de texto.
-        $html = '';
-        $prevText = false;
-
-        foreach ($out as [$type, $value]) {
-            if ($type === 'open_list') {
-                if ($prevText) {
-                    $html .= '<br />';
-                }
-                $html .= '<ul>';
-                $prevText = false;
-            } elseif ($type === 'close_list') {
-                $html .= '</ul>';
-                $prevText = false;
-            } elseif ($type === 'item') {
-                $html .= '<li>' . $value . '</li>';
-                $prevText = false;
-            } else {
-                if ($prevText) {
-                    $html .= '<br />';
-                }
-                if ($value !== '') {
-                    $html .= $value;
-                    $prevText = true;
+                // Quitar guiones/asteriscos/espacios ASCII únicamente (no
+                // multibyte: ltrim byte a byte rompería caracteres como "¿").
+                $line = ltrim($line, '-* ');
+                $line = trim($line);
+                if ($line !== '' && $this->looksLikeQuestion($line)) {
+                    $suggestions[] = $line;
                 }
             }
         }
 
-        return $html;
+        return [
+            'message' => trim($body),
+            'suggestions' => $suggestions,
+        ];
+    }
+
+    /**
+     * True si la línea es una pregunta o sugerencia razonable (comienza con
+     * "¿" o con verbo interrogativo).
+     */
+    private function looksLikeQuestion(string $line): bool
+    {
+        if (str_starts_with($line, '¿')) {
+            return true;
+        }
+
+        return (bool) preg_match('/^(?:quisieras|quieres|necesitas|te muestro|puedo|podrias|podrías|te gustaria|te gustaría)\b/i', $line);
     }
 }

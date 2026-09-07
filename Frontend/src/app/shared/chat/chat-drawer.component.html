@@ -54,10 +54,15 @@
         } @else {
           @for (conversation of conversations; track conversation.conversation_id) {
             <button type="button" class="conversation-item" (click)="openConversation(conversation.conversation_id)">
+              <div class="conversation-item-icon">
+                <i class="fa fa-comments-o"></i>
+              </div>
               <div class="conversation-item-body">
                 <div class="conversation-item-title">{{ conversation.title }}</div>
                 <div class="conversation-item-meta">
-                  {{ conversation.message_count }} mensajes · {{ conversation.updated_at | date: 'dd/MM/yyyy HH:mm' }}
+                  <i class="fa fa-envelope-o me-1"></i>{{ conversation.message_count }} mensajes
+                  <span class="conversation-item-dot">·</span>
+                  {{ conversation.updated_at | date: 'dd/MM/yyyy HH:mm' }}
                 </div>
               </div>
               <i class="fa fa-chevron-right conversation-item-chevron"></i>
@@ -95,11 +100,11 @@
                     </div>
                 }
                 <div class="message-content p-3">
-                    <div class="mb-0" [innerHTML]="message.text | safeHtml" (click)="onMessageContentClick($event)"></div>
+                    <div class="message-text" [innerHTML]="message.text | safeHtml" (click)="onMessageContentClick($event)"></div>
                     
                     <!-- Sugerencias -->
                     @if (message.suggestions && message.suggestions.length > 0) {
-                        <div class="suggestions-container mt-2">
+                        <div class="suggestions-container">
                             @for (suggestion of message.suggestions; track $index) {
                                 <div class="suggestion-chip" 
                                      tooltip="{{ suggestion }}"
@@ -109,6 +114,10 @@
                             }
                         </div>
                     }
+
+                    <div class="message-time">
+                        {{ message.timestamp | date: 'HH:mm' }}
+                    </div>
                 </div>
                 <!-- Avatar para mensajes del usuario (opcional) -->
                 @if (message.sender === 'user') {
