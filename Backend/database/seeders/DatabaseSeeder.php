@@ -28,6 +28,7 @@ class DatabaseSeeder extends Seeder
             PaisConfiguracionImpuestosSeeder::class,
             PaisConfiguracionMonedaSeeder::class,
             RestauranteFuncionalidadSeeder::class,
+            PrestamosEmpresaPermissionSeeder::class,
             // PaquetesTableSeeder::class,
             // EmpresaTableSeeder::class,
             // UsersTableSeeder::class,

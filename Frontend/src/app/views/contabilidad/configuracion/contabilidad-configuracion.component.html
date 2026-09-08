@@ -212,6 +212,49 @@
                 }
             </ng-select>
         </div>
+        <h6>Préstamos</h6>
+        <div class="form-group col-md-12 col-lg-6">
+            <label for="configuracion.id_cuenta_prestamos_corto">Préstamos por pagar (corto plazo):</label>
+            <ng-select [(ngModel)]="configuracion.id_cuenta_prestamos_corto" class="form-select p-0" name="configuracion.id_cuenta_prestamos_corto" [loading]="loadingCatalogo" [clearable]="true" [searchable]="true">
+                <ng-option value="">Seleccione aquí</ng-option>
+                @for (cuenta of catalogo; track cuenta.id || $index) {
+                  <ng-option [value]="cuenta.id">
+                    <div class="d-flex align-items-center">
+                        <span style="width: 75px;">{{ cuenta.codigo }} </span>
+                        <span class="col-8"> - {{ cuenta.nombre }}</span>
+                    </div>
+                  </ng-option>
+                }
+            </ng-select>
+        </div>
+        <div class="form-group col-md-12 col-lg-6">
+            <label for="configuracion.id_cuenta_prestamos_largo">Préstamos por pagar (largo plazo):</label>
+            <ng-select [(ngModel)]="configuracion.id_cuenta_prestamos_largo" class="form-select p-0" name="configuracion.id_cuenta_prestamos_largo" [loading]="loadingCatalogo" [clearable]="true" [searchable]="true">
+                <ng-option value="">Seleccione aquí</ng-option>
+                @for (cuenta of catalogo; track cuenta.id || $index) {
+                  <ng-option [value]="cuenta.id">
+                    <div class="d-flex align-items-center">
+                        <span style="width: 75px;">{{ cuenta.codigo }} </span>
+                        <span class="col-8"> - {{ cuenta.nombre }}</span>
+                    </div>
+                  </ng-option>
+                }
+            </ng-select>
+        </div>
+        <div class="form-group col-md-12 col-lg-6">
+            <label for="configuracion.id_cuenta_gastos_financieros">Gastos financieros:</label>
+            <ng-select [(ngModel)]="configuracion.id_cuenta_gastos_financieros" class="form-select p-0" name="configuracion.id_cuenta_gastos_financieros" [loading]="loadingCatalogo" [clearable]="true" [searchable]="true">
+                <ng-option value="">Seleccione aquí</ng-option>
+                @for (cuenta of catalogo; track cuenta.id || $index) {
+                  <ng-option [value]="cuenta.id">
+                    <div class="d-flex align-items-center">
+                        <span style="width: 75px;">{{ cuenta.codigo }} </span>
+                        <span class="col-8"> - {{ cuenta.nombre }}</span>
+                    </div>
+                  </ng-option>
+                }
+            </ng-select>
+        </div>
         <div class="form-group col-md-12 col-lg-6">
             <label for="configuracion.id_cuenta_cxp">Cuentas por pagar:</label>
             <ng-select [(ngModel)]="configuracion.id_cuenta_cxp" class="form-select p-0" name="configuracion.id_cuenta_cxp" [loading]="loadingCatalogo" [clearable]="true" [searchable]="true">

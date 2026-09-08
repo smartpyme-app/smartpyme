@@ -236,6 +236,12 @@ class Partida extends AuditableModel
         if ($this->referencia == 'Cheque') {
             return 'bancos/cheque';
         }
+        if ($this->referencia == 'Desembolso de Prestamo') {
+            return 'finanzas/prestamos';
+        }
+        if ($this->referencia == 'Pago de Prestamo') {
+            return 'finanzas/prestamos';
+        }
 
     }
 

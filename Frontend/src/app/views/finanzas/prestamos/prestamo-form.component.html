@@ -1,0 +1,121 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+  <h2 class="page-heading">Nuevo préstamo</h2>
+  <a class="btn btn-default" routerLink="/finanzas/prestamos">Regresar</a>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+  <form (ngSubmit)="guardar()">
+    <div class="row">
+      <div class="form-group col-md-4 mb-3 without-label">
+        <div class="form-switch bg-light-info rounded">
+          <label for="historico">Ya existía (histórico)</label>
+          <input id="historico" class="form-check-input float-end" type="checkbox" role="switch" name="historico" [(ngModel)]="form.historico" (ngModelChange)="onHistoricoChange()">
+        </div>
+      </div>
+      <div class="form-group col-md-4 mb-3">
+        <label class="form-label">Tipo de acreedor</label>
+        <select class="form-select" name="tipo_acreedor" [(ngModel)]="form.tipo_acreedor">
+          <option value="institucion">Institución financiera</option>
+          <option value="persona">Persona</option>
+        </select>
+      </div>
+      <div class="form-group col-md-4 mb-3">
+        <label class="form-label">Acreedor</label>
+        <input class="form-control" name="acreedor" [(ngModel)]="form.acreedor">
+      </div>
+      <div class="form-group col-md-4 mb-3">
+        <label class="form-label">Concepto</label>
+        <input class="form-control" name="concepto" [(ngModel)]="form.concepto" placeholder="Capital de trabajo, equipo...">
+      </div>
+      <div class="form-group col-md-4 mb-3">
+        <label class="form-label">{{ form.historico ? 'Saldo actual' : 'Monto' }}</label>
+        <input class="form-control" type="number" min="0.01" step="0.01" name="monto" [(ngModel)]="form.monto">
+      </div>
+      @if (form.historico) {
+        <div class="form-group col-md-4 mb-3">
+          <label class="form-label">Monto original (opcional)</label>
+          <input class="form-control" type="number" min="0" step="0.01" name="monto_original" [(ngModel)]="form.monto_original">
+        </div>
+      }
+      <div class="form-group col-md-4 mb-3">
+        <label class="form-label">Fecha de desembolso</label>
+        <input class="form-control" type="date" name="fecha_desembolso" [(ngModel)]="form.fecha_desembolso">
+      </div>
+      <div class="form-group col-md-4 mb-3">
+        <label class="form-label">Fecha primera cuota</label>
+        <input class="form-control" type="date" name="fecha_primera_cuota" [(ngModel)]="form.fecha_primera_cuota">
+      </div>
+      <div class="form-group col-md-4 mb-3">
+        <label class="form-label">Frecuencia</label>
+        <select class="form-select" name="frecuencia" [(ngModel)]="form.frecuencia">
+          <option value="mensual">Mensual</option>
+          <option value="quincenal">Quincenal</option>
+          <option value="semanal">Semanal</option>
+        </select>
+      </div>
+      <div class="form-group col-md-4 mb-3">
+        <label class="form-label">Número de cuotas</label>
+        <input class="form-control" type="number" min="2" name="n_cuotas" [(ngModel)]="form.n_cuotas">
+      </div>
+      <div class="form-group col-md-4 mb-3">
+        <label class="form-label">Cuenta caja/banco</label>
+        <ng-select [(ngModel)]="form.id_cuenta_banco" class="form-select p-0" name="id_cuenta_banco" [clearable]="true" [searchable]="true">
+          <ng-option value="">Seleccione aquí</ng-option>
+          @for (cuenta of cuentas; track cuenta.id) {
+            <ng-option [value]="cuenta.id">{{ cuenta.nombre_banco || cuenta.nombre }}{{ cuenta.numero ? ' — ' + cuenta.numero : '' }}</ng-option>
+          }
+        </ng-select>
+      </div>
+      <div class="form-group col-md-4 mb-3 without-label">
+        <div class="form-switch bg-light-info rounded">
+          <label for="genera_interes">Genera interés</label>
+          <input id="genera_interes" class="form-check-input float-end" type="checkbox" role="switch" name="genera_interes" [(ngModel)]="form.genera_interes">
+        </div>
+      </div>
+      @if (form.genera_interes) {
+        <div class="form-group col-md-4 mb-3">
+          <label class="form-label">Tasa anual (%)</label>
+          <input class="form-control" type="number" min="0" step="0.01" name="tasa_interes" [(ngModel)]="form.tasa_interes">
+        </div>
+      }
+      <div class="form-group col-md-4 mb-3 without-label">
+        <div class="form-switch bg-light-info rounded">
+          <label for="generar_asiento_desembolso">Generar asiento de desembolso</label>
+          <input id="generar_asiento_desembolso" class="form-check-input float-end" type="checkbox" role="switch" name="generar_asiento_desembolso" [(ngModel)]="form.generar_asiento_desembolso">
+        </div>
+      </div>
+    </div>
+
+    @if (preview.length) {
+      <div class="table-responsive mb-3">
+        <table class="table table-borderless table-hover mb-0">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Vencimiento</th>
+              <th class="text-right">Capital</th>
+              <th class="text-right">Interés</th>
+              <th class="text-right">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (cuota of preview; track cuota.numero) {
+              <tr>
+                <td>{{ cuota.numero }}</td>
+                <td><input class="form-control" type="date" [name]="'f'+cuota.numero" [(ngModel)]="cuota.fecha_vencimiento"></td>
+                <td><input class="form-control text-end" type="number" step="0.01" [name]="'c'+cuota.numero" [(ngModel)]="cuota.capital"></td>
+                <td><input class="form-control text-end" type="number" step="0.01" [name]="'i'+cuota.numero" [(ngModel)]="cuota.interes"></td>
+                <td><input class="form-control text-end" type="number" step="0.01" [name]="'t'+cuota.numero" [(ngModel)]="cuota.total"></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <div class="form-group col-lg-12 mt-3">
+      <button class="btn btn-primary float-end" type="submit" [disabled]="saving || preview.length < 2">Guardar</button>
+      <button type="button" class="btn btn-default float-end me-2" (click)="regenerarPreview()" [disabled]="loadingPreview">Generar tabla</button>
+    </div>
+  </form>
+</section>
