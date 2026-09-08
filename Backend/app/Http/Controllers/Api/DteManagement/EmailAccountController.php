@@ -30,6 +30,7 @@ class EmailAccountController extends Controller
                 'bodega:id,nombre',
                 'notificationUser:id,name,email',
             ])
+            ->where('provider', '!=', 'forward')
             ->orderBy('created_at', 'desc')
             ->get()
             ->map(function ($account) {
