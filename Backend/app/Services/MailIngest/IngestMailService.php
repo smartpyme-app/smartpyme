@@ -13,6 +13,7 @@ class IngestMailService
         private readonly IngestRecipientResolver $resolver,
         private readonly InboundMimeParser $parser,
         private readonly EmailInboxService $inboxes,
+        private readonly GmailForwardingVerificationDetector $gmailVerification,
     ) {
     }
 
@@ -77,11 +78,30 @@ class IngestMailService
             return 'unknown_token';
         }
 
-        $inbox = $this->inboxes->findActiveByToken($token);
+        $inbox = $this->inboxes->findByToken($token);
         if (!$inbox) {
             $this->fail($emlProcessing, $metaProcessing, $failedDir, 'unknown_token', $meta);
 
             return 'unknown_token';
+        }
+
+        $verification = $this->gmailVerification->detect($raw);
+        if ($verification !== null) {
+            $this->inboxes->storeVerification($inbox, $verification);
+            $this->forget($emlProcessing, $metaProcessing);
+            Log::info('dte-ingest: gmail forwarding verification stored', [
+                'inbox_id' => $inbox->id,
+                'id_empresa' => $inbox->id_empresa,
+            ]);
+
+            return 'gmail_verification';
+        }
+
+        if (!$inbox->isAccepting()) {
+            $inbox->increment('emails_rejected');
+            $this->fail($emlProcessing, $metaProcessing, $failedDir, 'inbox_inactive', $meta);
+
+            return 'inbox_inactive';
         }
 
         $empresa = $inbox->empresa;

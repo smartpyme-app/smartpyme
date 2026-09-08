@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\DteManagement\EmailAccountController;
+use App\Http\Controllers\Api\DteManagement\EmailInboxController;
 use App\Http\Controllers\Api\DteManagement\GmailAuthController;
 use Illuminate\Support\Facades\Route;
 
@@ -19,4 +20,13 @@ Route::group(['middleware' => ['jwt.auth', 'verificar.funcionalidad:descarga-aut
     Route::post('/{id}/sync', [EmailAccountController::class, 'sync']);
     Route::post('/{id}/notificaciones', [EmailAccountController::class, 'updateNotificaciones']);
     Route::delete('/{id}', [EmailAccountController::class, 'destroy']);
+});
+
+Route::group(['middleware' => ['jwt.auth', 'verificar.funcionalidad:descarga-automatizada-dtes'], 'prefix' => 'email-inboxes'], function () {
+    Route::get('/', [EmailInboxController::class, 'show']);
+    Route::post('/', [EmailInboxController::class, 'store']);
+    Route::post('/{id}/pause', [EmailInboxController::class, 'pause']);
+    Route::post('/{id}/resume', [EmailInboxController::class, 'resume']);
+    Route::post('/{id}/regenerate', [EmailInboxController::class, 'regenerate']);
+    Route::delete('/{id}', [EmailInboxController::class, 'destroy']);
 });

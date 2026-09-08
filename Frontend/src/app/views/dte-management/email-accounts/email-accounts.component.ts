@@ -9,6 +9,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { EmailAccountService, EmailAccount } from '@services/dte-management/email-account.service';
+import { EmailInboxService, EmailInbox } from '@services/dte-management/email-inbox.service';
 import { CountryI18nService } from '@services/country-i18n.service';
 import { TranslatePipe } from '@ngx-translate/core';
 
@@ -56,8 +57,14 @@ export class EmailAccountsComponent implements OnInit {
   sucursales: any[] = [];
   bodegas: any[] = [];
 
+  inbox: EmailInbox | null = null;
+  inboxLoading = false;
+  inboxBusy = false;
+  showForwardHelp = false;
+
   constructor(
     private emailAccountService: EmailAccountService,
+    private emailInboxService: EmailInboxService,
     private apiService: ApiService,
     private alertService: AlertService,
     private modalService: BsModalService,
@@ -67,6 +74,7 @@ export class EmailAccountsComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadAccounts();
+    this.loadInbox();
     this.loadSucursales();
     this.loadBodegas();
     this.loadUsuarios();
@@ -481,5 +489,130 @@ export class EmailAccountsComponent implements OnInit {
 
   providerLabel(provider: string): string {
     return provider === 'gmail' ? 'Gmail' : provider === 'imap' ? 'IMAP' : provider;
+  }
+
+  loadInbox(): void {
+    this.inboxLoading = true;
+    this.emailInboxService.show().subscribe({
+      next: (res) => {
+        this.inbox = res.inbox;
+        this.inboxLoading = false;
+      },
+      error: (err) => {
+        this.inboxLoading = false;
+        this.alertService.error(err);
+      }
+    });
+  }
+
+  activateInbox(): void {
+    this.inboxBusy = true;
+    this.emailInboxService.activate().subscribe({
+      next: (res) => {
+        this.inbox = res.inbox;
+        this.inboxBusy = false;
+        this.showForwardHelp = true;
+        this.alertService.success(res.message, res.inbox.email);
+      },
+      error: (err) => {
+        this.inboxBusy = false;
+        this.alertService.error(err);
+      }
+    });
+  }
+
+  pauseInbox(): void {
+    if (!this.inbox) {
+      return;
+    }
+    this.inboxBusy = true;
+    this.emailInboxService.pause(this.inbox.id).subscribe({
+      next: (res) => {
+        this.inbox = res.inbox;
+        this.inboxBusy = false;
+        this.alertService.success('Reenvío pausado', '');
+      },
+      error: (err) => {
+        this.inboxBusy = false;
+        this.alertService.error(err);
+      }
+    });
+  }
+
+  resumeInbox(): void {
+    if (!this.inbox) {
+      return;
+    }
+    this.inboxBusy = true;
+    this.emailInboxService.resume(this.inbox.id).subscribe({
+      next: (res) => {
+        this.inbox = res.inbox;
+        this.inboxBusy = false;
+        this.alertService.success('Reenvío reanudado', '');
+      },
+      error: (err) => {
+        this.inboxBusy = false;
+        this.alertService.error(err);
+      }
+    });
+  }
+
+  regenerateInbox(): void {
+    if (!this.inbox || !confirm('Se invalidará la dirección actual. Tendrás que actualizar la regla de reenvío. ¿Continuar?')) {
+      return;
+    }
+    this.inboxBusy = true;
+    this.emailInboxService.regenerate(this.inbox.id).subscribe({
+      next: (res) => {
+        this.inbox = res.inbox;
+        this.inboxBusy = false;
+        this.alertService.success(res.message, res.inbox.email);
+      },
+      error: (err) => {
+        this.inboxBusy = false;
+        this.alertService.error(err);
+      }
+    });
+  }
+
+  disableInbox(): void {
+    if (!this.inbox || !confirm('¿Desactivar el reenvío automático?')) {
+      return;
+    }
+    this.inboxBusy = true;
+    this.emailInboxService.disable(this.inbox.id).subscribe({
+      next: (res) => {
+        this.inbox = null;
+        this.inboxBusy = false;
+        this.alertService.success(res.message, '');
+      },
+      error: (err) => {
+        this.inboxBusy = false;
+        this.alertService.error(err);
+      }
+    });
+  }
+
+  copyInboxEmail(): void {
+    if (!this.inbox) {
+      return;
+    }
+    navigator.clipboard.writeText(this.inbox.email).then(
+      () => this.alertService.success('Dirección copiada', this.inbox!.email),
+      () => this.alertService.warning('No se pudo copiar', 'Copia la dirección manualmente.')
+    );
+  }
+
+  inboxStatusLabel(): string {
+    if (!this.inbox) {
+      return 'No configurado';
+    }
+    if (this.inbox.status === 'ACTIVE') {
+      return 'Activo';
+    }
+    if (this.inbox.status === 'PAUSED') {
+      return 'Pausado';
+    }
+    return this.inbox.status;
   }
 }
