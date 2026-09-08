@@ -44,21 +44,38 @@ class GmailForwardingVerificationDetector
 
     private function extractConfirmLink(string $text): ?string
     {
-        $flat = preg_replace('/\s+/', '', $text) ?? $text;
-        $flat = html_entity_decode($flat, ENT_QUOTES);
-
-        if (preg_match('#https://(?:mail-settings\.google\.com|mail\.google\.com|accounts\.google\.com)/mail/vf-[A-Za-z0-9._%\-\[\]]+#i', $flat, $m)) {
-            return $m[0];
+        $text = html_entity_decode($text, ENT_QUOTES);
+        if (!preg_match('#https://(?:mail-settings\.google\.com|mail\.google\.com|accounts\.google\.com)/mail/vf-#i', $text, $m, PREG_OFFSET_CAPTURE)) {
+            return null;
         }
 
-        if (preg_match('#https://(?:mail-settings\.google\.com|mail\.google\.com|accounts\.google\.com)[A-Za-z0-9._/%\-?=&#\[\]]+#i', $flat, $m)) {
-            $link = $m[0];
-            if (!str_contains(strtolower($link), '/mail/uf-')) {
-                return $link;
+        $link = $m[0][0];
+        $i = $m[0][1] + strlen($link);
+        $len = strlen($text);
+        while ($i < $len) {
+            $ch = $text[$i];
+            if (preg_match('/[A-Za-z0-9._%\-\[\]]/', $ch) === 1) {
+                $link .= $ch;
+                $i++;
+                continue;
             }
+            if ($ch === "\n" || $ch === "\r") {
+                $j = $i + 1;
+                while ($j < $len && ($text[$j] === "\n" || $text[$j] === "\r")) {
+                    $j++;
+                }
+                $rest = strtolower(substr($text, $j, 24));
+                // Line-wrap inside the token vs the English sentence Gmail puts after the URL.
+                if ($j < $len && preg_match('/^[a-z0-9.%\[\]]/', $rest) === 1
+                    && preg_match('/^(if |if you|please |to allow|thanks|sincerely|click )/', $rest) !== 1) {
+                    $i = $j;
+                    continue;
+                }
+            }
+            break;
         }
 
-        return null;
+        return $link;
     }
 
     private function flatten(string $raw): string

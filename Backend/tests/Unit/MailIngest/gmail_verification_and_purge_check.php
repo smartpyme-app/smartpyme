@@ -59,6 +59,17 @@ $qp = "From: forwarding-noreply@google.com\r\n"
 $qpFound = $detector->detect($qp);
 $check($qpFound !== null && is_string($qpFound['link']) && str_contains($qpFound['link'], 'QPWRAPPEDTOKEN'), 'qp-wrapped vf- link');
 
+$withProse = "From: forwarding-noreply@google.com\r\n"
+    . "Subject: Gmail Forwarding Confirmation\r\n\r\n"
+    . "has requested to automatically forward mail\r\n"
+    . "https://mail-settings.google.com/mail/vf-%5BFAKECONFIRM%5D-T72jy_us9PNQ_aYkQWQyCJkKOG0\r\n"
+    . "If you click the link and it appears to be broken, please copy and paste it\r\n";
+$proseFound = $detector->detect($withProse);
+$check(
+    ($proseFound['link'] ?? '') === 'https://mail-settings.google.com/mail/vf-%5BFAKECONFIRM%5D-T72jy_us9PNQ_aYkQWQyCJkKOG0',
+    'must not glue "If you click…" onto the vf- link, got ' . ($proseFound['link'] ?? '')
+);
+
 $root = sys_get_temp_dir() . '/dte-purge-' . uniqid();
 mkdir($root . '/failed', 0700, true);
 mkdir($root . '/incoming', 0700, true);
