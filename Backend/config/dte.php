@@ -23,4 +23,6 @@ return [
     */
     'schedule_enabled' => filter_var(env('DTE_S3_SCHEDULE_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
 
+    'ingest_domain' => env('DTE_INGEST_DOMAIN', 'ingest.smartpyme.site'),
+
 ];

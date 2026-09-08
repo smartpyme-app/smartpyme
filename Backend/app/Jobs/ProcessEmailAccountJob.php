@@ -35,7 +35,7 @@ class ProcessEmailAccountJob implements ShouldQueue
     public function handle(GmailReaderService $gmailReader, ImapReaderService $imapReader): void
     {
         $account = $this->account->fresh();
-        if (!$account || !$account->is_active) {
+        if (!$account || !$account->is_active || $account->provider === 'forward') {
             return;
         }
 

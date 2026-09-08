@@ -21,6 +21,7 @@ class SyncDteEmailAccounts extends Command
 
         $accounts = UserEmailAccount::withoutGlobalScopes()
             ->where('is_active', true)
+            ->where('provider', '!=', 'forward')
             ->get();
 
         if ($accounts->isEmpty()) {
