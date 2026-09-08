@@ -38,13 +38,17 @@
       Último correo: {{ inbox.last_email_at ? (inbox.last_email_at | date:'dd/MM/yyyy HH:mm') : '—' }}
       · Último DTE: {{ inbox.last_dte_at ? (inbox.last_dte_at | date:'dd/MM/yyyy HH:mm') : '—' }}
     </p>
-    <div *ngIf="inbox.verification_code || inbox.verification_link" class="alert alert-warning small mb-3">
+    <div *ngIf="inbox.verification_code || inbox.verification_link || inbox.verification_received_at" class="alert alert-warning small mb-3">
       Gmail envió un correo de confirmación a esta dirección.
       <span *ngIf="inbox.verification_code"> Código: <strong>{{ inbox.verification_code }}</strong>.</span>
       <span *ngIf="inbox.verification_link">
         <a [href]="inbox.verification_link" target="_blank" rel="noopener">Abrir enlace de verificación</a>
+        (tiene que abrirlo usted; SmartPyme no lo confirma).
       </span>
-      Complétalo en Gmail; hasta entonces el reenvío no funciona.
+      <span *ngIf="!inbox.verification_link && !inbox.verification_code">
+        Recargue esta página en un minuto. Si no aparece el enlace, quite y vuelva a añadir la dirección en Gmail.
+      </span>
+      Hasta confirmarlo en Gmail, el reenvío no funciona.
     </div>
     <div class="d-flex flex-wrap gap-2">
       <button *ngIf="inbox.status === 'ACTIVE'" type="button" class="btn btn-sm btn-outline-secondary" (click)="pauseInbox()" [disabled]="inboxBusy">Pausar</button>
