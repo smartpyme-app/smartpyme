@@ -117,6 +117,23 @@ try {
     fclose($runStream);
     $check($exit === 0, 'over-limit pipe must exit 0');
 
+    $pipeBin = realpath(__DIR__ . '/../../../bin/dte-ingest-pipe.php');
+    $check($pipeBin !== false, 'pipe binary missing');
+    $cmd = escapeshellarg(PHP_BINARY) . ' -q -d display_errors=0 ' . escapeshellarg($pipeBin);
+    $desc = [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']];
+    $proc = proc_open($cmd, $desc, $pipes, null, ['DTE_INGEST_SPOOL' => $spool, 'DTE_INGEST_MAX_BYTES' => '1024']);
+    $check(is_resource($proc), 'could not spawn pipe');
+    fwrite($pipes[0], "Delivered-To: cli@ingest.smartpyme.site\r\n\r\nok\r\n");
+    fclose($pipes[0]);
+    $stdout = stream_get_contents($pipes[1]);
+    $stderr = stream_get_contents($pipes[2]);
+    fclose($pipes[1]);
+    fclose($pipes[2]);
+    $status = proc_close($proc);
+    $check($status === 0, 'cli pipe exit must be 0, got ' . $status);
+    $check($stdout === '', 'cli pipe must write nothing to stdout, got: ' . $stdout);
+    $check($stderr === '', 'cli pipe must write nothing to stderr, got: ' . $stderr);
+
     fwrite(STDOUT, "dte_ingest_pipe_check: ok\n");
 } finally {
     putenv('DTE_INGEST_SPOOL');
