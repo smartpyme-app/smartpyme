@@ -31,6 +31,9 @@ class EmailInbox extends Model
         'dtes_imported',
         'created_by_user_id',
         'revoked_at',
+        'verification_code',
+        'verification_link',
+        'verification_received_at',
     ];
 
     protected $casts = [
@@ -38,6 +41,7 @@ class EmailInbox extends Model
         'last_dte_at' => 'datetime',
         'last_error_at' => 'datetime',
         'revoked_at' => 'datetime',
+        'verification_received_at' => 'datetime',
     ];
 
     public function empresa()

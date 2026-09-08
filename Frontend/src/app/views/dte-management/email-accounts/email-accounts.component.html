@@ -1,3 +1,119 @@
+<section class="bg-white p-4 rounded mb-3">
+  <h5 class="mb-2">Método de recepción de documentos</h5>
+  <p class="text-muted mb-3">
+    Puedes conectar tu cuenta de Gmail directamente o utilizar reenvío automático.
+    Con el reenvío SmartPyme no necesita acceder a tu bandeja de entrada.
+  </p>
+
+  <div *ngIf="inboxLoading" class="text-muted small">Cargando reenvío automático…</div>
+
+  <div *ngIf="!inboxLoading && !inbox" class="d-flex flex-wrap gap-2 align-items-center">
+    <button class="btn btn-outline-success" (click)="activateInbox()" [disabled]="inboxBusy || isSyncing">
+      Activar reenvío automático
+    </button>
+    <button type="button" class="btn btn-link" (click)="showForwardHelp = !showForwardHelp">
+      {{ showForwardHelp ? 'Ocultar instrucciones' : 'Ver instrucciones' }}
+    </button>
+  </div>
+
+  <div *ngIf="inbox" class="border rounded p-3">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+      <div>
+        <div class="text-muted small">Tu dirección de recepción</div>
+        <strong class="user-select-all">{{ inbox.email }}</strong>
+      </div>
+      <span class="badge" [ngClass]="inbox.status === 'ACTIVE' ? 'bg-success' : 'bg-secondary'">
+        {{ inboxStatusLabel() }}
+      </span>
+    </div>
+    <div class="d-flex flex-wrap gap-2 mb-3">
+      <button type="button" class="btn btn-sm btn-outline-primary" (click)="copyInboxEmail()" [disabled]="inboxBusy">
+        Copiar dirección
+      </button>
+      <button type="button" class="btn btn-sm btn-link" (click)="showForwardHelp = !showForwardHelp">
+        {{ showForwardHelp ? 'Ocultar instrucciones' : 'Ver instrucciones' }}
+      </button>
+    </div>
+    <p class="small text-muted mb-2">
+      Último correo: {{ inbox.last_email_at ? (inbox.last_email_at | date:'dd/MM/yyyy HH:mm') : '—' }}
+      · Último DTE: {{ inbox.last_dte_at ? (inbox.last_dte_at | date:'dd/MM/yyyy HH:mm') : '—' }}
+    </p>
+    <div *ngIf="inbox.verification_code || inbox.verification_link" class="alert alert-warning small mb-3">
+      Gmail envió un correo de confirmación a esta dirección.
+      <span *ngIf="inbox.verification_code"> Código: <strong>{{ inbox.verification_code }}</strong>.</span>
+      <span *ngIf="inbox.verification_link">
+        <a [href]="inbox.verification_link" target="_blank" rel="noopener">Abrir enlace de verificación</a>
+      </span>
+      Complétalo en Gmail; hasta entonces el reenvío no funciona.
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <button *ngIf="inbox.status === 'ACTIVE'" type="button" class="btn btn-sm btn-outline-secondary" (click)="pauseInbox()" [disabled]="inboxBusy">Pausar</button>
+      <button *ngIf="inbox.status === 'PAUSED'" type="button" class="btn btn-sm btn-outline-success" (click)="resumeInbox()" [disabled]="inboxBusy">Reanudar</button>
+      <button type="button" class="btn btn-sm btn-outline-secondary" (click)="regenerateInbox()" [disabled]="inboxBusy">Regenerar dirección</button>
+      <button type="button" class="btn btn-sm btn-outline-danger" (click)="disableInbox()" [disabled]="inboxBusy">Desactivar</button>
+    </div>
+  </div>
+
+  <div *ngIf="showForwardHelp" class="small mt-3 pt-3 border-top">
+    <h6 class="mb-2">Cómo configurar el reenvío</h6>
+    <p class="text-muted mb-3">
+      Primero pulse <strong>Activar reenvío automático</strong> y copie la dirección.
+      Luego configure su correo. Puede usar Gmail y Outlook a la vez; los documentos llegan a la misma bandeja de DTEs.
+    </p>
+
+    <p class="mb-1"><strong>Gmail — 1. Verificar la dirección</strong> (en el ordenador; esta pantalla no está en el celular)</p>
+    <ol class="mb-3 ps-3">
+      <li>Gmail → Ajustes → Ver todos los ajustes → pestaña <em>Reenvío y correo POP/IMAP</em>.</li>
+      <li><em>Añadir una dirección de reenvío</em> → pegue la de SmartPyme → Siguiente → Continuar → Aceptar.</li>
+      <li>Gmail envía un correo de verificación aquí. En unos minutos verá el código o el enlace en esta tarjeta. Confírmelo en Gmail y recargue Ajustes.</li>
+    </ol>
+    <p class="mb-1"><strong>Gmail — 2. Reenviar solo facturas (filtro)</strong></p>
+    <p class="text-muted mb-2">
+      El reenvío general manda <em>todos</em> los correos nuevos, excepto el spam. No lo deje encendido.
+      Inhabilite el reenvío automático y use un filtro (la dirección solo aparece después de verificarla).
+    </p>
+    <ol class="mb-3 ps-3">
+      <li>En el cuadro de búsqueda de Gmail: Mostrar opciones de búsqueda.</li>
+      <li>Criterio útil: correos con adjunto (y el remitente de Hacienda o su proveedor, si siempre es el mismo).</li>
+      <li>Crear filtro → marque <em>Reenviar</em> → elija la dirección de SmartPyme → Crear filtro.</li>
+    </ol>
+    <p class="text-muted mb-3">
+      Gmail no reenvía el spam. Si una factura no llega, revísela en Spam y márquela como “No es spam”.
+      En Google Workspace un administrador puede prohibir el reenvío.
+    </p>
+
+    <p class="mb-1"><strong>Outlook.com</strong></p>
+    <ol class="mb-3 ps-3">
+      <li>Configuración → Correo → Reenvío.</li>
+      <li>Activar reenvío → pegue la dirección de SmartPyme. Microsoft pedirá verificación en dos pasos de <em>su</em> cuenta, no un código aquí.</li>
+      <li>Marque conservar una copia si quiere quedarse el original → Guardar.</li>
+    </ol>
+    <p class="text-muted mb-3">
+      Eso reenvía todo el correo nuevo. Para solo facturas, use una regla “Reenviar a” o “Redirigir a”.
+    </p>
+
+    <p class="mb-1"><strong>Microsoft 365 / correo de empresa</strong></p>
+    <p class="mb-3">
+      Cree una regla Reenviar a / Redirigir a. Si aparece el error <strong>5.7.520</strong>, TI bloqueó el reenvío externo:
+      pídales que permitan <code>ingest.smartpyme.site</code>, o use Conectar Gmail / IMAP.
+    </p>
+
+    <p class="mb-1"><strong>Qué debe llevar el correo</strong></p>
+    <ul class="mb-3 ps-3">
+      <li>Adjunto JSON (El Salvador) o XML (Costa Rica). Un PDF solo no se importa.</li>
+      <li>Los documentos aparecen en Bandeja de DTEs para revisión; no se contabilizan solos.</li>
+    </ul>
+
+    <p class="mb-1"><strong>Si no llega nada</strong></p>
+    <ul class="mb-0 ps-3">
+      <li>¿La tarjeta está Activa y el filtro usa esta misma dirección?</li>
+      <li>¿Confirmó la verificación de Gmail?</li>
+      <li>¿El correo está en spam de Gmail? ¿Es solo PDF?</li>
+      <li>Último correo con fecha y último DTE vacío: el reenvío funciona, pero ese mensaje no traía JSON/XML.</li>
+    </ul>
+  </div>
+</section>
+
 <section class="d-flex justify-content-between align-items-center bg-white p-4 rounded mb-3">
   <h5 class="mb-0">Cuentas de correo</h5>
   <div class="d-flex gap-2 flex-wrap">

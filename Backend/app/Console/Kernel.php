@@ -179,6 +179,11 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping(5)
             ->appendOutputTo(storage_path('logs/dte-ingest-spool.log'));
 
+        $schedule->command('dte:ingest-purge --days=7')
+            ->dailyAt('03:20')
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/dte-ingest-purge.log'));
+
         // Cache TC del día en pais_configuracion (paises con fuente=api, p.ej. BCCR CR)
         $schedule->command('tipos-cambio:sync-dia')
             ->dailyAt('06:00')
