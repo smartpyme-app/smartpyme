@@ -14,7 +14,9 @@ class ShopifyExportService
     {
         $client = new ShopifyApiClient(
             $user->empresa->shopify_store_url,
-            $user->empresa->shopify_consumer_secret
+            $user->empresa->shopify_consumer_secret,
+            app(ShopifyTokenService::class),
+            $user->empresa
         );
 
         // Precalcular stocks para todos los productos de una vez

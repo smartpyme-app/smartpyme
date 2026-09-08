@@ -1465,11 +1465,18 @@
                                 placeholder="Ej: https://mitienda.com">
                         </div>
                         <div class="col-md-6">
-                            <label for="shopify_consumer_secret" class="form-label">Clave Secreta:</label>
+                            <label for="shopify_client_id" class="form-label">Client ID:</label>
+                            <input type="text" class="form-control" [(ngModel)]="empresa.shopify_client_id"
+                                name="shopify_client_id"
+                                [readonly]="empresa.status_conexion_shopify === 'connected'"
+                                placeholder="Ingrese su Client ID de la app">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="shopify_consumer_secret" class="form-label">Client Secret:</label>
                             <input type="text" class="form-control" [(ngModel)]="empresa.shopify_consumer_secret"
                                 name="shopify_consumer_secret"
                                 [readonly]="empresa.status_conexion_shopify === 'connected'"
-                                placeholder="Ingrese su clave secreta de Shopify">
+                                placeholder="Ingrese su Client Secret de la app">
                         </div>
 
                         <div class="col-md-6">
@@ -1532,8 +1539,9 @@
                                     *ngIf="empresa.status_conexion_shopify !== 'connected' || empresa.is_current_user_connected_to_shopify"
                                     [disabled]="empresa.status_conexion_shopify === 'connected' && !empresa.is_current_user_connected_to_shopify"
                                     (click)="saveCredentials('shopify')">
-                                    <i class="fa fa-save me-2"></i>
-                                    Guardar Credenciales
+                                    <i class="fa me-2"
+                                        [ngClass]="empresa.status_conexion_shopify === 'connected' ? 'fa-plug' : 'fa-save'"></i>
+                                    {{ empresa.status_conexion_shopify === 'connected' ? 'Probar Conexión' : 'Guardar Credenciales' }}
                                 </button>
                             </div>
 

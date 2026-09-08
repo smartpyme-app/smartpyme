@@ -39,14 +39,16 @@ class ShopifySyncCommand extends Command
         }
 
         $empresa = Empresa::withoutGlobalScope('empresa')->find($empresaId);
-        if (!$empresa || empty($empresa->shopify_store_url) || empty($empresa->shopify_consumer_secret)) {
-            $this->error('Empresa sin configuración Shopify (shopify_store_url / shopify_consumer_secret).');
+        if (!$empresa || empty($empresa->shopify_store_url) || !$empresa->tieneCredencialesShopify()) {
+            $this->error('Empresa sin configuración Shopify (shopify_store_url / credenciales).');
             return self::FAILURE;
         }
 
         $client = new ShopifyApiClient(
-            rtrim($empresa->shopify_store_url, '/'),
-            $empresa->shopify_consumer_secret
+            $empresa->shopify_store_url,
+            $empresa->shopify_consumer_secret,
+            app(\App\Services\ShopifyTokenService::class),
+            $empresa
         );
 
         $bodega = $this->resolverBodega($empresaId);
