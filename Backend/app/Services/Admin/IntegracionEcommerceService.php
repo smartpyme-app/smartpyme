@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Admin\Empresa;
 use App\Services\WooCommerceApiClient;
 use App\Services\ShopifyApiClient;
+use App\Services\ShopifyTokenService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
@@ -37,6 +38,7 @@ class IntegracionEcommerceService
                 $empresa->woocommerce_canal_id = $credenciales['canal_id'] ?? null;
             } else { // shopify
                 $empresa->shopify_store_url = $credenciales['store_url'];
+                $empresa->shopify_client_id = $credenciales['client_id'] ?? null;
                 $empresa->shopify_consumer_secret = $credenciales['consumer_secret'];
                 $empresa->shopify_status = 'connecting';
                 $empresa->shopify_canal_id = $credenciales['canal_id'] ?? null;
@@ -151,7 +153,9 @@ class IntegracionEcommerceService
     {
         $client = new ShopifyApiClient(
             $empresa->shopify_store_url,
-            $empresa->shopify_consumer_secret
+            $empresa->shopify_consumer_secret,
+            app(ShopifyTokenService::class),
+            $empresa
         );
 
         $response = $client->get('shop.json');

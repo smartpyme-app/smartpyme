@@ -1024,7 +1024,7 @@ class ShopifyController extends Controller
 
         if (
             empty($empresa->shopify_store_url) ||
-            empty($empresa->shopify_consumer_secret)
+            !$empresa->tieneCredencialesShopify()
         ) {
             return response()->json([
                 'status' => 'error',

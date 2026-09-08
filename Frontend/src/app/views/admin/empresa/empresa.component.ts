@@ -1275,7 +1275,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
                 endpoint: 'usuario/save-credentials',
                 requiredFields: ['shopify_store_url', 'shopify_consumer_secret'],
                 validationMessages: {
-                    requiredFields: 'La URL de la tienda y la clave secreta son requeridos'
+                    requiredFields: 'La URL de la tienda y el Client Secret son requeridos'
                 }
             }
         };
@@ -1296,6 +1296,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
             return {
                 store_url: this.empresa.shopify_store_url,
                 tipo: 'shopify',
+                client_id: this.empresa.shopify_client_id,
                 consumer_secret: this.empresa.shopify_consumer_secret,
                 canal_id: this.empresa.shopify_canal_id
             };
@@ -1347,6 +1348,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         this.cdr.markForCheck();
 
         this.empresa.shopify_store_url = '';
+        this.empresa.shopify_client_id = '';
         this.empresa.shopify_consumer_secret = '';
 
         this.apiService.store('usuario/disconnect-shopify', {})
@@ -1368,7 +1370,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
                 this.loadAll();
                 Swal.fire({
                     title: 'Error de Conexión',
-                    text: error.error && error.error.mensaje ? error.error.mensaje : 'No se pudo desconectar de WooCommerce',
+                    text: error.error && error.error.mensaje ? error.error.mensaje : 'No se pudo desconectar de Shopify',
                     icon: 'error',
                     confirmButtonText: 'Aceptar'
                 });

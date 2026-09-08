@@ -30,6 +30,7 @@ class SaveCredentialsRequest extends FormRequest
             $rules['consumer_secret'] = 'required|string';
         } else { // shopify
             $rules['store_url'] = 'required|string';
+            $rules['client_id'] = 'nullable|string';
             $rules['consumer_secret'] = 'required|string';
         }
 

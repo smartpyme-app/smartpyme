@@ -148,7 +148,11 @@ class Empresa extends Model
         'mostrar_sello_firma',
         'mostrar_sello_firma_cotizacion',
         'shopify_store_url',
+        'shopify_client_id',
+        'shopify_client_secret',
         'shopify_consumer_secret',
+        'shopify_access_token',
+        'shopify_token_expires_at',
         'shopify_webhook_secret',
         'shopify_status',
         'shopify_canal_id',
@@ -170,11 +174,15 @@ class Empresa extends Model
         'custom_empresa' => 'json',
         'importacion_productos_shopify' => 'boolean',
         'shopify_sync_bidirectional' => 'boolean',
+        'shopify_token_expires_at' => 'datetime',
         'restringir_compras_supervisor_limitado' => 'boolean',
         'impresion_en_facturacion' => 'boolean',
     ];
 
     protected $hidden = [
+        'shopify_access_token',
+        'shopify_client_secret',
+        'shopify_token_expires_at',
     ];
 
     protected $appends = [
@@ -1289,6 +1297,22 @@ class Empresa extends Model
         }
 
         return 'disconnected';
+    }
+
+    /**
+     * Indica si la empresa tiene credenciales Shopify suficientes para
+     * autenticarse (client_id + client/consumer secret para renovación
+     * automática, o un access token fijo legado).
+     */
+    public function tieneCredencialesShopify(): bool
+    {
+        if (empty($this->shopify_store_url)) {
+            return false;
+        }
+
+        return !empty($this->shopify_consumer_secret)
+            || !empty($this->shopify_client_secret)
+            || !empty($this->shopify_access_token);
     }
 
     public function getIsCurrentUserConnectedToShopifyAttribute()

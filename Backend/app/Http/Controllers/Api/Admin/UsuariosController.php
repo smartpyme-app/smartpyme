@@ -180,6 +180,7 @@ class UsuariosController extends Controller
                 'store_url' => $request->store_url,
                 'consumer_key' => $request->consumer_key ?? null,
                 'consumer_secret' => $request->consumer_secret,
+                'client_id' => $request->client_id ?? null,
                 'canal_id' => $request->canal_id ?? null
             ];
 
@@ -226,6 +227,53 @@ class UsuariosController extends Controller
             return response()->json([
                 'status' => 'error',
                 'mensaje' => 'Error al desactivar la conexión con WooCommerce: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function disconnectShopify(Request $request)
+    {
+        try {
+            $id_usuario = Auth::user()->id;
+            $usuario = User::find($id_usuario);
+            if (!$usuario) {
+                return response()->json([
+                    'status' => 'error',
+                    'mensaje' => 'Usuario no encontrado'
+                ], 404);
+            }
+
+            $empresa = Empresa::find($usuario->id_empresa);
+            if (!$empresa) {
+                return response()->json([
+                    'status' => 'error',
+                    'mensaje' => 'Empresa no encontrada'
+                ], 404);
+            }
+
+            $empresa->shopify_status = 'disconnected';
+            $empresa->shopify_client_id = null;
+            $empresa->shopify_client_secret = null;
+            $empresa->shopify_access_token = null;
+            $empresa->shopify_token_expires_at = null;
+            $empresa->shopify_consumer_secret = null;
+            $empresa->save();
+
+            // Desmarcar a los usuarios conectados a Shopify para liberar la UI
+            User::where('id_empresa', $empresa->id)
+                ->where('shopify_status', 'connected')
+                ->update(['shopify_status' => 'disconnected']);
+
+            app(\App\Services\ShopifyTokenService::class)->olvidarCache($empresa);
+
+            return response()->json([
+                'status' => 'success',
+                'mensaje' => 'Conexión con Shopify desactivada'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'mensaje' => 'Error al desactivar la conexión con Shopify: ' . $e->getMessage()
             ], 500);
         }
     }
