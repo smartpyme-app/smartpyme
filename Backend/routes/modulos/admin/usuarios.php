@@ -23,6 +23,8 @@ use Illuminate\Support\Facades\Route;
     Route::post('/usuario/save-credentials', [UsuariosController::class, 'saveCredentials']);
     //usuario/disconnect-woocommerce
     Route::post('/usuario/disconnect-woocommerce', [UsuariosController::class, 'disconnectWooCommerce']);
+    //usuario/disconnect-shopify
+    Route::post('/usuario/disconnect-shopify', [UsuariosController::class, 'disconnectShopify']);
 
     Route::put('/usuario/email/{id}',       [UsuariosController::class, 'updateEmail']);
     Route::put('/usuario/password/{id}',       [UsuariosController::class, 'updatePassword']);

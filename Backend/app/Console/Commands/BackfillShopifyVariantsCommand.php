@@ -118,13 +118,15 @@ class BackfillShopifyVariantsCommand extends Command
         try {
             if (!isset($clientes[$empresaId])) {
                 $empresa = Empresa::withoutGlobalScope('empresa')->find($empresaId);
-                if (!$empresa || empty($empresa->shopify_store_url) || empty($empresa->shopify_consumer_secret)) {
+                if (!$empresa || empty($empresa->shopify_store_url) || !$empresa->tieneCredencialesShopify()) {
                     $clientes[$empresaId] = null;
                     return null;
                 }
                 $clientes[$empresaId] = new ShopifyApiClient(
                     $empresa->shopify_store_url,
-                    $empresa->shopify_consumer_secret
+                    $empresa->shopify_consumer_secret,
+                    app(\App\Services\ShopifyTokenService::class),
+                    $empresa
                 );
             }
 

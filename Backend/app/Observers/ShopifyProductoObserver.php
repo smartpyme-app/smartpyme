@@ -61,9 +61,9 @@ class ShopifyProductoObserver
 
         $empresa = Empresa::where('id', $producto->id_empresa)
             ->whereNotNull('shopify_store_url')
-            ->whereNotNull('shopify_consumer_secret')
             ->where('shopify_status', 'connected')
-            ->first();
+            ->get()
+            ->first(fn ($e) => $e->tieneCredencialesShopify());
 
         if (!$empresa) return;
 
@@ -178,9 +178,9 @@ class ShopifyProductoObserver
 
         $empresa = Empresa::where('id', $producto->id_empresa)
             ->whereNotNull('shopify_store_url')
-            ->whereNotNull('shopify_consumer_secret')
             ->where('shopify_status', 'connected')
-            ->first();
+            ->get()
+            ->first(fn ($e) => $e->tieneCredencialesShopify());
 
         if (!$empresa) return;
 

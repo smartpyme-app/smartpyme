@@ -53,7 +53,9 @@ class ShopifyStockService
 
             $shopifyClient = new ShopifyApiClient(
                 $empresa->shopify_store_url,
-                $empresa->shopify_consumer_secret
+                $empresa->shopify_consumer_secret,
+                app(ShopifyTokenService::class),
+                $empresa
             );
             return $this->actualizarSoloInventario($shopifyClient, $producto, $stock);
         } catch (\Exception $e) {
@@ -112,7 +114,9 @@ class ShopifyStockService
 
             $shopifyClient = new ShopifyApiClient(
                 $empresa->shopify_store_url,
-                $empresa->shopify_consumer_secret
+                $empresa->shopify_consumer_secret,
+                app(ShopifyTokenService::class),
+                $empresa
             );
 
             $productData = $this->prepararDatosProducto($producto, $stock, $shopifyClient);
@@ -183,7 +187,9 @@ class ShopifyStockService
 
             $shopifyClient = new ShopifyApiClient(
                 $empresa->shopify_store_url,
-                $empresa->shopify_consumer_secret
+                $empresa->shopify_consumer_secret,
+                app(ShopifyTokenService::class),
+                $empresa
             );
 
             $productData = $this->prepararDatosProducto($producto, $stock, $shopifyClient);

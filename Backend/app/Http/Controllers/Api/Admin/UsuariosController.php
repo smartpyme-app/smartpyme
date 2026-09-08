@@ -10,6 +10,7 @@ use App\Models\User as Usuario;
 use App\Models\User;
 use App\Services\WooCommerceApiClient;
 use App\Services\ShopifyApiClient;
+use App\Services\ShopifyTokenService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\ImageManagerStatic as Image;
@@ -240,10 +241,11 @@ class UsuariosController extends Controller
                 $messages['consumer_secret.required'] = 'El Consumer Secret es obligatorio';
             } else { // shopify
                 $rules['store_url'] = 'required|string';
+                $rules['client_id'] = 'nullable|string';
                 $rules['consumer_secret'] = 'required|string';
 
                 $messages['store_url.required'] = 'La URL de la tienda es obligatoria';
-                $messages['consumer_secret.required'] = 'El Consumer Secret es obligatorio';
+                $messages['consumer_secret.required'] = 'El Client Secret es obligatorio';
             }
 
             $request->validate($rules, $messages);
@@ -282,6 +284,7 @@ class UsuariosController extends Controller
                 $empresa->woocommerce_canal_id = $request->canal_id;
             } else { // shopify
                 $empresa->shopify_store_url = $request->store_url;
+                $empresa->shopify_client_id = $request->client_id;
                 $empresa->shopify_consumer_secret = $request->consumer_secret;
                 $empresa->shopify_status = 'connecting';
                 $empresa->shopify_canal_id = $request->canal_id;
@@ -389,7 +392,9 @@ class UsuariosController extends Controller
             } else { // shopify
                 $client = new ShopifyApiClient(
                     $empresa->shopify_store_url,
-                    $empresa->shopify_consumer_secret
+                    $empresa->shopify_consumer_secret,
+                    app(ShopifyTokenService::class),
+                    $empresa
                 );
 
                 $response = $client->get('shop.json');
@@ -453,6 +458,53 @@ class UsuariosController extends Controller
             return response()->json([
                 'status' => 'error',
                 'mensaje' => 'Error al desactivar la conexión con WooCommerce: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function disconnectShopify(Request $request)
+    {
+        try {
+            $id_usuario = Auth::user()->id;
+            $usuario = User::find($id_usuario);
+            if (!$usuario) {
+                return response()->json([
+                    'status' => 'error',
+                    'mensaje' => 'Usuario no encontrado'
+                ], 404);
+            }
+
+            $empresa = Empresa::find($usuario->id_empresa);
+            if (!$empresa) {
+                return response()->json([
+                    'status' => 'error',
+                    'mensaje' => 'Empresa no encontrada'
+                ], 404);
+            }
+
+            $empresa->shopify_status = 'disconnected';
+            $empresa->shopify_client_id = null;
+            $empresa->shopify_client_secret = null;
+            $empresa->shopify_access_token = null;
+            $empresa->shopify_token_expires_at = null;
+            $empresa->shopify_consumer_secret = null;
+            $empresa->save();
+
+            // Desmarcar a los usuarios conectados a Shopify para liberar la UI
+            User::where('id_empresa', $empresa->id)
+                ->where('shopify_status', 'connected')
+                ->update(['shopify_status' => 'disconnected']);
+
+            app(\App\Services\ShopifyTokenService::class)->olvidarCache($empresa);
+
+            return response()->json([
+                'status' => 'success',
+                'mensaje' => 'Conexión con Shopify desactivada'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'mensaje' => 'Error al desactivar la conexión con Shopify: ' . $e->getMessage()
             ], 500);
         }
     }

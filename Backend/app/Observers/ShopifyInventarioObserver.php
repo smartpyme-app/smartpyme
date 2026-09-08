@@ -40,8 +40,7 @@ class ShopifyInventarioObserver
 
         // Si la empresa tiene Shopify conectado, sincronizar SmartPyme -> Shopify (ajustes, compras, etc.)
         if ($empresa->shopify_status === 'connected'
-            && !empty($empresa->shopify_store_url)
-            && !empty($empresa->shopify_consumer_secret)) {
+            && $empresa->tieneCredencialesShopify()) {
             $this->syncBidirectional($inventario);
         }
 
@@ -115,9 +114,9 @@ class ShopifyInventarioObserver
 
         $empresa = Empresa::where('id', $bodega->id_empresa)
             ->whereNotNull('shopify_store_url')
-            ->whereNotNull('shopify_consumer_secret')
             ->where('shopify_status', 'connected')
-            ->first();
+            ->get()
+            ->first(fn ($e) => $e->tieneCredencialesShopify());
 
         if (!$empresa) {
             if ($empresaBase->shopify_status === 'connecting') {
