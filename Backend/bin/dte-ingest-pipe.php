@@ -4,6 +4,10 @@
 /**
  * cPanel/Exim pipe: STDIN → spool. No Laravel, no DB, no Redis.
  *
+ * Production must invoke bin/dte-ingest-pipe.sh (or `php -q this-file`).
+ * Piping this .php directly makes cPanel use PHP CGI, which prints
+ * "Content-type: text/html" and Exim bounces the message.
+ *
  * Recipient candidates are collected only. This process never resolves empresa.
  *
  * Later consumer (not this file) may accept a token ONLY when the address
@@ -277,6 +281,18 @@ function dte_ingest_run(array $argv, array $env, $stdin): int
 }
 
 $script = $_SERVER['SCRIPT_FILENAME'] ?? ($argv[0] ?? '');
-if (PHP_SAPI === 'cli' && $script !== '' && @realpath((string) $script) === @realpath(__FILE__)) {
-    exit(dte_ingest_run($argv, $_SERVER, STDIN));
+$invokedDirectly = $script !== '' && @realpath((string) $script) === @realpath(__FILE__);
+if ($invokedDirectly) {
+    // CGI/cPanel: any stdout (including auto Content-type) makes Exim bounce.
+    @ini_set('display_errors', '0');
+    @ini_set('display_startup_errors', '0');
+    if (function_exists('header_remove')) {
+        @header_remove();
+    }
+    ob_start();
+    $code = dte_ingest_run($argv, $_SERVER, STDIN);
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+    exit($code);
 }
