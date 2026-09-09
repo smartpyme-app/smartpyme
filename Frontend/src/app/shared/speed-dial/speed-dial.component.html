@@ -1,4 +1,4 @@
-@if (mostrarBotonChat && isAdmin()) {
+@if (mostrarBotonChat && isAdmin() && !chatMinimizado) {
   <div class="floating-speed-dial">
     <button class="btn btn-primary rounded-circle shadow" (click)="openChat()">
       <img src="/assets/avatares/bot-avatar.png" alt="Bot" class="bot-avatar">

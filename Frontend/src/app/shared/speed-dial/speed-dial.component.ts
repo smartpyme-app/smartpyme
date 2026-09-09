@@ -17,6 +17,10 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
 export class SpeedDialComponent implements OnInit, OnDestroy {
   // Variable para controlar la visibilidad del botón
   mostrarBotonChat = false;
+
+  // Oculta el botón flotante normal mientras el chat está minimizado (la
+  // burbuja del chat ocupa su lugar y reabre la conversación).
+  chatMinimizado = false;
   
   private destroyRef = inject(DestroyRef);
   private untilDestroyed = subscriptionHelper(this.destroyRef);
@@ -35,6 +39,12 @@ export class SpeedDialComponent implements OnInit, OnDestroy {
       .pipe(this.untilDestroyed())
       .subscribe(tieneAcceso => {
         this.mostrarBotonChat = tieneAcceso;
+      });
+
+    this.chatService.minimized$
+      .pipe(this.untilDestroyed())
+      .subscribe(minimizado => {
+        this.chatMinimizado = minimizado;
       });
   }
 

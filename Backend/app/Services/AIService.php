@@ -4,41 +4,42 @@ namespace App\Services;
 
 use App\Models\CostoIA;
 use Illuminate\Support\Facades\Log;
-use Aws\BedrockRuntime\BedrockRuntimeClient;
-use Aws\Exception\AwsException;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
 
 class AIService
 {
-    
-    protected $client;
-    protected $modelId;
-    protected $inferenceProfileArn;
-    protected $maxTokens;
-    protected $temperature;
-    protected $topP;
-    protected $topK;
+    protected $source = 'Web';
     protected $systemPrompt;
+    protected $lastResponse = [];
 
     public function __construct(string $modelType = 'haiku')
     {
-        // Inicializar el cliente de Bedrock
-        $this->client = new BedrockRuntimeClient([
-            'version' => 'latest',
-            'region' => config('bedrock.region'),
-            'credentials' => [
-                'key'    => config('bedrock.key'),
-                'secret' => config('bedrock.secret'),
-            ],
-        ]);
-
-        $this->loadModelConfig($modelType);
+        // El modelo lo gestiona el servicio de IA (Lucas) internamente
+        // (LUCAS_MODEL_PRESET). Se conserva el parámetro por compatibilidad
+        // con los ServiceProviders existentes.
     }
 
     public function useModel(string $modelType): self
     {
-        $this->loadModelConfig($modelType);
+        // Lucas selecciona el modelo por su cuenta; no-op por compatibilidad.
         return $this;
+    }
+
+    public function setSource(string $source): self
+    {
+        $this->source = $source;
+        return $this;
+    }
+
+    public function getLastResponse(): array
+    {
+        return $this->lastResponse;
+    }
+
+    public function getSuggestions(): array
+    {
+        return $this->lastResponse['suggestions'] ?? [];
     }
 
     public function estimateTokenCount(string $text): int
@@ -121,8 +122,11 @@ class AIService
 
             $outputTokens = $this->estimateTokenCount($response);
 
+            // El modelo usado lo reporta Lucas; fallback al modelo haiku de Bedrock
+            $modelId = $this->lastResponse['modelUsed'] ?? config('bedrock.model_id_haiku');
+
             // Estimar costo
-            $cost = $this->estimateCost($inputTokens, $outputTokens, $this->modelId);
+            $cost = $this->estimateCost($inputTokens, $outputTokens, $modelId);
 
             // Obtener ID de usuario y empresa
             $userId = Auth::id() ?? null;
@@ -132,7 +136,7 @@ class AIService
             CostoIA::create([
                 'id_usuario' => $userId,
                 'id_empresa' => $empresaId,
-                'modelo' => $this->modelId,
+                'modelo' => $modelId,
                 'tokens_entrada' => $inputTokens,
                 'tokens_salida' => $outputTokens,
                 'costo_estimado' => $cost,
@@ -148,173 +152,88 @@ class AIService
         }
     }
 
-    protected function loadModelConfig(string $modelType): void
-    {
-        $this->modelId = config("bedrock.model_id_$modelType");
-        $this->inferenceProfileArn = config("bedrock.inference_profile_arn_$modelType");
-        $this->maxTokens = config("bedrock.max_tokens_$modelType");
-        $this->temperature = config("bedrock.temperature_$modelType");
-        $this->topP = config("bedrock.top_p_$modelType");
-        $this->topK = config("bedrock.top_k_$modelType");
-        $this->systemPrompt = config("bedrock.system_prompt_$modelType");
-    }
-
     public function generateResponse(string $prompt, array $history = [], array $options = []): string
     {
-        try {
-            $formattedMessages = $this->formatMessages($history, $prompt);
+        $this->lastResponse = [];
 
-            $systemPrompt = $options['systemPrompt'] ?? $this->systemPrompt;
-
-            // Configurar los parámetros de generación con valores predeterminados o personalizados
-            $maxTokens = $options['maxTokens'] ?? $this->maxTokens;
-            $temperature = $options['temperature'] ?? $this->temperature;
-            $topP = $options['topP'] ?? $this->topP;
-            $topK = $options['topK'] ?? $this->topK;
-            $systemPrompt = $options['systemPrompt'] ?? $this->systemPrompt;
-
-            // Crear cuerpo de la solicitud para Claude
-            $requestBody = [
-                'anthropic_version' => 'bedrock-2023-05-31',
-                'max_tokens' => (int)$maxTokens,
-                'messages' => $formattedMessages,
-                'temperature' => (float)$temperature,
-                'top_p' => (float)$topP,
-                'top_k' => (int)$topK,
-                'system' => $systemPrompt
-            ];
-
-            // Log para depuración
-            // Log::debug('Solicitud a Bedrock:', [
-            //     'modelId' => $this->modelId,
-            //     'inferenceProfileArn' => $this->inferenceProfileArn,
-            //     'body' => $requestBody
-            // ]);
-
-            // Invocar al modelo
-            $response = $this->client->invokeModel([
-                'body' => json_encode($requestBody),
-                'contentType' => 'application/json',
-                'accept' => 'application/json',
-                'modelId' => $this->inferenceProfileArn,
-            ]);
-
-            // Procesar la respuesta
-            $result = json_decode($response->get('body')->getContents(), true);
-
-            //Log::info($result);
-
-            // Extraer el texto de la respuesta
-            $botResponse = $this->extractResponseText($result);
-
-            $this->registerUsage($prompt, $botResponse, [
-                'history' => $history,
-                'systemPrompt' => $systemPrompt
-            ]);
-
-            // Manejar respuesta vacía
-            if (empty($botResponse)) {
-                throw new \Exception('No se pudo obtener una respuesta clara del modelo');
-            }
-
-            return $botResponse;
-        } catch (AwsException $e) {
-            // Registrar errores específicos de AWS
-            Log::error('Error en AWS Bedrock:', [
-                'message' => $e->getMessage(),
-                'awsErrorType' => $e->getAwsErrorType(),
-                'awsErrorCode' => $e->getAwsErrorCode(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            throw $e;
-        }
-    }
-
-    protected function formatMessages(array $history, string $prompt): array
-    {
-        $formattedMessages = [];
-
-        // Si hay historial, procesarlo
-        if (!empty($history)) {
-            foreach ($history as $message) {
-                $formattedMessages[] = [
-                    'role' => $message['role'],
-                    'content' => [
-                        [
-                            'type' => 'text',
-                            'text' => $message['content']
-                        ]
-                    ]
-                ];
-            }
-        }
-
-        // Añadir el mensaje actual del usuario
-        $formattedMessages[] = [
-            'role' => 'user',
-            'content' => [
-                [
-                    'type' => 'text',
-                    'text' => $prompt
-                ]
-            ]
+        // Resolver la identidad requerida por Lucas
+        $user = Auth::user();
+        $payload = [
+            'message' => $prompt,
+            'user_id' => $options['user_id'] ?? Auth::id(),
+            'empresa_id' => $options['empresa_id'] ?? session('id_empresa'),
+            'user_type' => $options['user_type'] ?? ($user ? $user->tipo : 'Usuario'),
+            'source' => $options['source'] ?? $this->source,
         ];
 
-        return $formattedMessages;
-    }
-
-    protected function extractResponseText(array $result): string
-    {
-        $botResponse = '';
-
-        if (isset($result['content']) && is_array($result['content'])) {
-            foreach ($result['content'] as $content) {
-                if ($content['type'] === 'text') {
-                    $botResponse .= $content['text'];
-                }
-            }
+        // El contexto de la conversación lo mantiene Lucas (conversation_id)
+        if (!empty($options['conversation_id'])) {
+            $payload['conversation_id'] = $options['conversation_id'];
         }
 
-        if (empty($botResponse) && isset($result['error'])) {
-            throw new \Exception('Error en la respuesta del modelo: ' . $result['error']);
+        $request = Http::timeout((int) config('lucas.timeout', 120));
+
+        $apiKey = config('lucas.api_key');
+        if (!empty($apiKey)) {
+            $request = $request->withHeaders(['X-API-Key' => $apiKey]);
         }
 
-        // Si hay un error al extraer el texto, mostrar toda la respuesta para debug
+        $response = $request->post(rtrim(config('lucas.base_url'), '/') . '/chat', $payload);
+
+        if ($response->failed()) {
+            Log::error('Error en la API de Lucas:', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+                'payload' => $payload,
+            ]);
+            throw new \Exception('El servicio de IA no pudo procesar la solicitud (Lucas).');
+        }
+
+        $data = $response->json() ?? [];
+
+        $this->lastResponse = $data;
+
+        $botResponse = $data['message'] ?? '';
+
         if (empty($botResponse)) {
-            Log::warning('No se pudo extraer texto de la respuesta:', ['response' => $result]);
-            throw new \Exception('No se pudo obtener una respuesta clara');
+            throw new \Exception('No se pudo obtener una respuesta clara del servicio de IA.');
         }
+
+        $this->registerUsage($prompt, $botResponse, [
+            'history' => $history,
+        ]);
 
         return $botResponse;
     }
 
     public function setMaxTokens(int $maxTokens): self
     {
-        $this->maxTokens = $maxTokens;
+        // Lucas gestiona los parámetros de generación; no-op por compatibilidad.
         return $this;
     }
 
     public function setTemperature(float $temperature): self
     {
-        $this->temperature = $temperature;
+        // Lucas gestiona los parámetros de generación; no-op por compatibilidad.
         return $this;
     }
 
     public function setTopP(float $topP): self
     {
-        $this->topP = $topP;
+        // Lucas gestiona los parámetros de generación; no-op por compatibilidad.
         return $this;
     }
 
     public function setTopK(int $topK): self
     {
-        $this->topK = $topK;
+        // Lucas gestiona los parámetros de generación; no-op por compatibilidad.
         return $this;
     }
 
     public function setSystemPrompt(string $systemPrompt): self
     {
+        // Lucas usa su propio system prompt interno; se conserva solo para
+        // mantener el registro de uso (registerUsage).
         $this->systemPrompt = $systemPrompt;
         return $this;
     }
