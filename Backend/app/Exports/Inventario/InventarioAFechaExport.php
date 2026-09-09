@@ -8,13 +8,14 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 use Illuminate\Http\Request;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Bodega;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class InventarioAFechaExport implements FromCollection, WithHeadings, WithMapping
 {
     private $request;
     private $bodegas;
-    private $kardexData;
+    private $kardexData = [];
 
     public function filter(Request $request)
     {
@@ -27,17 +28,64 @@ class InventarioAFechaExport implements FromCollection, WithHeadings, WithMappin
             })
             ->where('activo', true)->get();
 
-        // Precalcula los datos del Kardex agrupados por bodega (id_inventario = id_bodega).
-        // Filtrar por bodegas de la empresa para reducir tiempo y memoria.
-        $bodegaIds = $this->bodegas->pluck('id')->toArray();
-        $this->kardexData = DB::table('kardexs')
+        $bodegaIds = $this->bodegas->pluck('id')->all();
+        $this->kardexData = self::indexarUltimoKardexPorFechaId(
+            $this->filasUltimoKardexAFecha($bodegaIds, $this->request->fecha)
+        );
+    }
+
+    /** Última fila por (bodega, producto): fecha DESC, id DESC. */
+    public static function indexarUltimoKardexPorFechaId(iterable $rows): array
+    {
+        $best = [];
+        foreach ($rows as $row) {
+            $bodegaId = (int) $row->id_inventario;
+            $productoId = (int) $row->id_producto;
+            $prev = $best[$bodegaId][$productoId] ?? null;
+            if ($prev === null || self::kardexEsMasReciente($row, $prev)) {
+                $best[$bodegaId][$productoId] = $row;
+            }
+        }
+
+        $snapshot = [];
+        foreach ($best as $bodegaId => $porProducto) {
+            foreach ($porProducto as $productoId => $row) {
+                $snapshot[$bodegaId][$productoId] = $row->total_cantidad;
+            }
+        }
+
+        return $snapshot;
+    }
+
+    private static function kardexEsMasReciente(object $candidato, object $actual): bool
+    {
+        $fechaCandidato = (string) ($candidato->fecha ?? '');
+        $fechaActual = (string) ($actual->fecha ?? '');
+        if ($fechaCandidato !== $fechaActual) {
+            return $fechaCandidato > $fechaActual;
+        }
+
+        return (int) ($candidato->id ?? 0) > (int) ($actual->id ?? 0);
+    }
+
+    private function filasUltimoKardexAFecha(array $bodegaIds, string $fecha): \Illuminate\Support\Collection
+    {
+        if ($bodegaIds === []) {
+            return collect();
+        }
+
+        $fechaFin = Carbon::parse($fecha)->endOfDay()->format('Y-m-d H:i:s');
+        // ponytail: window still scans kardex in MySQL. If this times out, index (id_inventario, id_producto, fecha, id) or go async (opción B).
+        $ranked = DB::table('kardexs')
             ->select('id_inventario', 'id_producto', 'total_cantidad')
+            ->selectRaw('ROW_NUMBER() OVER (PARTITION BY id_inventario, id_producto ORDER BY fecha DESC, id DESC) as rn')
             ->whereIn('id_inventario', $bodegaIds)
-            ->whereDate('fecha', '<=', $this->request->fecha)
-            ->orderBy('fecha', 'desc')
-            ->orderBy('id', 'desc')
-            ->get()
-            ->groupBy('id_inventario');
+            ->where('fecha', '<=', $fechaFin);
+
+        return DB::query()
+            ->fromSub($ranked, 'kardex_ranked')
+            ->where('rn', 1)
+            ->get(['id_inventario', 'id_producto', 'total_cantidad']);
     }
 
     public function headings(): array
@@ -87,19 +135,7 @@ class InventarioAFechaExport implements FromCollection, WithHeadings, WithMappin
             $inventario = $inventarios->get($bodega->id);
 
             if ($inventario) {
-                // Verifica si existe el índice en $kardexData
-                if (isset($this->kardexData[$bodega->id])) {
-                    // Busca el Kardex para este producto en el inventario
-                    $kardex = $this->kardexData[$bodega->id]
-                        ->where('id_producto', $producto->id)
-                        ->first();
-
-                    // Si hay Kardex, toma el total_cantidad; si no asignar 0
-                    $stock = $kardex ? $kardex->total_cantidad : '0';
-                } else {
-                    // No hay Kardex asociado, asignar 0
-                    $stock = '0';
-                }
+                $stock = $this->kardexData[(int) $bodega->id][(int) $producto->id] ?? '0';
             }
 
             $fields[] = $stock;
