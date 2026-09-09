@@ -5,6 +5,9 @@ export const environment = {
   APP_URL: 'https://app-unificado.smartpyme.site',
   goApiUrl:    'https://go-api.smartpyme.site',
   goApiSecret: 'f93a080d7ca3dc5842f6112f7053ef3ada44ce213f04a6cc62c3c31d15beee63',
+  // Lucas (servicio de IA en Python/FastAPI)
+  lucasApiUrl: 'http://localhost:8000',
+  lucasApiKey: '',
   haciendaPublicApiUrl: 'https://api.hacienda.go.cr',
   /** Fase 6: habilitar solo cuando Reverb esté desplegado. */
   restauranteRealtime: {
