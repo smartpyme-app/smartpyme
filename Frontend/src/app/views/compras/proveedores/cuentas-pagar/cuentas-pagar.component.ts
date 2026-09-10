@@ -1,10 +1,16 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { PipesModule } from '@pipes/pipes.module';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
+import { NgSelectModule } from '@ng-select/ng-select';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { ModalModule } from 'ngx-bootstrap/modal';
+import { PopoverModule } from 'ngx-bootstrap/popover';
+import { TruncatePipe } from '@pipes/truncate.pipe';
+import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '../../../../services/alert.service';
 import { ApiService } from '../../../../services/api.service';
@@ -14,7 +20,7 @@ import { FinanzasReportesNavComponent } from '@views/finanzas/reportes/finanzas-
   selector: 'app-cuentas-pagar',
   templateUrl: './cuentas-pagar.component.html',
   standalone: true,
-  imports: [CommonModule, PipesModule, FormsModule, RouterModule, TooltipModule, ModalModule, FinanzasReportesNavComponent]
+  imports: [CommonModule, PipesModule, FormsModule, RouterModule, NgSelectModule, TooltipModule, ModalModule, PopoverModule, TruncatePipe, PaginationComponent, CurrencyPipe, FinanzasReportesNavComponent, NotificacionesContainerComponent]
 })
 export class CuentasPagarComponent implements OnInit {
 
