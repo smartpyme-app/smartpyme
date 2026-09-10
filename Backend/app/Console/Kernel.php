@@ -103,6 +103,11 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->appendOutputTo(storage_path('logs/suscripciones-recordatorios-correo.log'));
 
+        $schedule->command('prestamos:recordatorios-vencimiento')
+            ->dailyAt('07:00')
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/prestamos-recordatorios-vencimiento.log'));
+
         $schedule->command('suscripciones:reportes-internos-equipo --solo=diario')
             ->dailyAt('08:00')
             ->withoutOverlapping()

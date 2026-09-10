@@ -117,6 +117,12 @@ class FuncionalidadesSeeder extends Seeder
                 'descripcion' => 'Contratos de crédito a clientes con cuotas y facturación programada',
                 'orden' => 23
             ],
+            [
+                'nombre' => 'Préstamos de la empresa',
+                'slug' => 'prestamos-empresa',
+                'descripcion' => 'Préstamos que la empresa recibe (pasivo) con tabla de amortización y asientos',
+                'orden' => 24
+            ],
             //Se pueden agregar mas funcionalidades con el mismo formato
         ];
 

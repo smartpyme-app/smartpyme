@@ -49,6 +49,9 @@ class Configuracion extends Model
         'id_cuenta_pasivo_salarios_por_pagar',
         'id_cuenta_pasivo_provision_aguinaldo',
         'id_cuenta_pasivo_provision_vacaciones',
+        'id_cuenta_prestamos_corto',
+        'id_cuenta_prestamos_largo',
+        'id_cuenta_gastos_financieros',
         'id_empresa',
     ];
 

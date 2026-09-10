@@ -2,12 +2,38 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { LayoutComponent } from '../../layout/layout.component';
 import { PermissionGuard } from '@guards/permission.guard';
+import { FuncionalidadGuard } from '@guards/funcionalidad.guard';
+import { SLUG_PRESTAMOS_EMPRESA } from './prestamos/prestamos-acceso';
+
+const prestamosGuards = [PermissionGuard, FuncionalidadGuard];
+const prestamosData = { permission: 'finanzas.prestamos.ver', funcionalidadSlug: SLUG_PRESTAMOS_EMPRESA };
 
 const routes: Routes = [
   {
     path: '',
     component: LayoutComponent,
     children: [
+      {
+        path: 'prestamos',
+        loadComponent: () => import('./prestamos/prestamos-list.component').then(m => m.PrestamosListComponent),
+        canActivate: prestamosGuards,
+        data: prestamosData,
+        title: 'Préstamos'
+      },
+      {
+        path: 'prestamos/nuevo',
+        loadComponent: () => import('./prestamos/prestamo-form.component').then(m => m.PrestamoFormComponent),
+        canActivate: prestamosGuards,
+        data: { permission: 'finanzas.prestamos.crear', funcionalidadSlug: SLUG_PRESTAMOS_EMPRESA },
+        title: 'Nuevo préstamo'
+      },
+      {
+        path: 'prestamos/:id',
+        loadComponent: () => import('./prestamos/prestamo-detalle.component').then(m => m.PrestamoDetalleComponent),
+        canActivate: prestamosGuards,
+        data: prestamosData,
+        title: 'Préstamo'
+      },
       {
         path: 'antiguedad-saldos',
         redirectTo: '/finanzas/reportes/antiguedad-cxc',

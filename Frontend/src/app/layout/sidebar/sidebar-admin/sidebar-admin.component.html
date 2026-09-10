@@ -127,6 +127,7 @@
                                 class="link-body-emphasis d-inline-flex text-decoration-none"><img
                                     src="/assets/icons/inbox.png" class="icon me-2">{{ feDownloadSidebarLabel }}</a></li>
                     <!-- <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/cierre-de-caja']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/inbox.png" class="icon me-2">Cierre de caja</a></li> -->
+                    <li *ngIf="mostrarMenuPrestamos" routerLinkActive="active" [routerLinkActiveOptions]="{exact: false}"><a [routerLink]="['/finanzas/prestamos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/coin-stack.png" class="icon me-2">Préstamos</a></li>
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: false}"><a [routerLink]="['/finanzas/reportes']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/bar-chart-2.png" class="icon me-2">Reportes</a></li>
                   </ul>
                 </div>

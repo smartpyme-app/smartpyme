@@ -25,6 +25,8 @@ assert.match(sidebar, /validateRole\('admin', true\)/);
 assert.doesNotMatch(sidebar, /<li \*ngIf="apiService\.auth_user\(\)\.tipo != 'Contador'"/);
 assert.match(sidebar, /\[routerLink\]="\['\/reportes-automaticos'\]"/);
 assert.match(sidebar, /\[routerLink\]="\['\/finanzas\/reportes'\]"/);
+assert.match(sidebar, /mostrarMenuPrestamos/);
+assert.match(sidebar, /\[routerLink\]="\['\/finanzas\/prestamos'\]"/);
 assert.doesNotMatch(sidebar, /toggleFinanzasReportes\(\)/);
 assert.doesNotMatch(sidebar, /libroIvaResumenRoute/);
 assert.doesNotMatch(sidebar, /\/finanzas\/reportes\/cuentas-cobrar/);
@@ -48,6 +50,8 @@ const finanzasRouting = fs.readFileSync(path.join(root, 'src/app/views/finanzas/
 assert.match(finanzasRouting, /reportes\/antiguedad-cxc/);
 assert.match(finanzasRouting, /reportes\/antiguedad-cxp/);
 assert.match(finanzasRouting, /redirectTo: '\/finanzas\/reportes\/antiguedad-cxc'/);
+assert.match(finanzasRouting, /prestamos\/nuevo/);
+assert.match(finanzasRouting, /funcionalidadSlug: SLUG_PRESTAMOS_EMPRESA/);
 
 const resumenHtml = fs.readFileSync(path.join(root, 'src/app/views/finanzas/reportes/finanzas-reportes-resumen.component.html'), 'utf8');
 assert.ok(resumenHtml.indexOf('app-libro-iva-periodo-filtros') < resumenHtml.indexOf('app-finanzas-reportes-nav'));

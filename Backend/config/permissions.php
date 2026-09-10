@@ -525,6 +525,11 @@ return [
             'editar' => 'finanzas.transacciones.editar',
             'eliminar' => 'finanzas.transacciones.eliminar'
         ],
+        'prestamos' => [
+            'ver' => 'finanzas.prestamos.ver',
+            'crear' => 'finanzas.prestamos.crear',
+            'pagar' => 'finanzas.prestamos.pagar',
+        ],
     ],
 
     /*

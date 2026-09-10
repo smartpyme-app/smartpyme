@@ -8,6 +8,7 @@ use App\Models\Inventario\Producto;
 use App\Models\Ventas\Venta;
 use App\Models\Compras\Compra;
 use App\Models\Compras\Gastos\Gasto;
+use App\Services\PrestamosEmpresa\PrestamoRecordatorioService;
 
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
@@ -129,6 +130,8 @@ class Notificaciones extends Command
                     }
 
                 }
+
+        app(PrestamoRecordatorioService::class)->sincronizarNotificacionesInAppRango($fechaStart, $fechaEnd);
 
         $data = [
             'titulo' => 'Notificaciones.',

@@ -11,6 +11,7 @@ import { LibroIvaPaisService } from '@views/contabilidad/libro-iva-shared/libro-
 import { CountryI18nService } from '@services/country-i18n.service';
 import { SLUG_DESCARGA_AUTOMATIZADA_DTES } from '@guards/funcionalidad.guard';
 import { puedeVerMenuCreditos, SLUG_CREDITOS_CLIENTES } from '@views/ventas/creditos/creditos-acceso';
+import { puedeVerMenuPrestamos, SLUG_PRESTAMOS_EMPRESA } from '@views/finanzas/prestamos/prestamos-acceso';
 
 import { FormControl } from '@angular/forms';
 import { debounceTime, switchMap, filter  } from 'rxjs/operators';
@@ -76,6 +77,14 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
         return puedeVerMenuCreditos(
             this.tieneCreditosHabilitada,
             this.apiService.hasPermission('ventas.ver'),
+        );
+    }
+    public tienePrestamosHabilitada: boolean = false;
+    public get mostrarMenuPrestamos(): boolean {
+        return puedeVerMenuPrestamos(
+            this.contabilidadHabilitada,
+            this.tienePrestamosHabilitada,
+            this.apiService.hasPermission('finanzas.prestamos.ver'),
         );
     }
     public modules: any = [];
@@ -222,6 +231,7 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
         this.verificarBonosHabilitada();
         this.verificarGiftCardsHabilitada();
         this.verificarCreditosHabilitada();
+        this.verificarPrestamosHabilitada();
         this.verificarModuloRestauranteHabilitado();
         this.verificarDescargaDtesHabilitada();
 
@@ -234,6 +244,7 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
                 this.verificarBonosHabilitada();
                 this.verificarGiftCardsHabilitada();
                 this.verificarCreditosHabilitada();
+                this.verificarPrestamosHabilitada();
                 this.verificarModuloRestauranteHabilitado();
                 this.verificarDescargaDtesHabilitada();
             });
@@ -250,6 +261,7 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
                     this.verificarBonosHabilitada();
                     this.verificarGiftCardsHabilitada();
                     this.verificarCreditosHabilitada();
+                    this.verificarPrestamosHabilitada();
                     this.verificarModuloRestauranteHabilitado();
                     this.verificarDescargaDtesHabilitada();
                 } else {
@@ -581,6 +593,17 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
             },
             error: () => {
                 this.tieneCreditosHabilitada = false;
+            },
+        });
+    }
+
+    private verificarPrestamosHabilitada() {
+        this.funcionalidadesService.verificarAcceso(SLUG_PRESTAMOS_EMPRESA).subscribe({
+            next: (tieneAcceso: boolean) => {
+                this.tienePrestamosHabilitada = tieneAcceso;
+            },
+            error: () => {
+                this.tienePrestamosHabilitada = false;
             },
         });
     }

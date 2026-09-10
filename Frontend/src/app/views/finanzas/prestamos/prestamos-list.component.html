@@ -1,0 +1,114 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+  <h2 class="page-heading">Préstamos</h2>
+  @if (puedeCrear) {
+    <a routerLink="/finanzas/prestamos/nuevo" class="btn btn-default">
+      <i class="fa fa-plus"></i> Nuevo préstamo
+    </a>
+  }
+</section>
+
+<div class="row g-2 mb-3">
+  @for (kpi of kpis; track kpi.title) {
+    <div class="col-6 col-xl">
+      <app-chart-card [data]="kpi"></app-chart-card>
+    </div>
+  }
+</div>
+
+<section class="bg-white p-4 rounded mb-3">
+  <div class="row">
+    <div class="col-md-6 mb-3">
+      @if (prestamos?.total) {
+        <span class="text-muted d-flex align-items-center gap-2">
+          Mostrando
+          <select name="paginate" class="form-select w-auto" (change)="filtrar()" [(ngModel)]="filtros.paginate">
+            <option value="10">10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+          de {{ prestamos?.total + ' registros' }}
+        </span>
+      }
+    </div>
+    <div class="col-md-6 mb-3">
+      <div class="d-flex gap-2 justify-content-end flex-wrap">
+        <select class="form-select bg-default w-auto" name="estado" [(ngModel)]="filtros.estado" (change)="filtrar()">
+          <option value="">Todos los estados</option>
+          <option value="activo">Activo</option>
+          <option value="pagado">Pagado</option>
+        </select>
+        <select class="form-select bg-default w-auto" name="tipo_acreedor" [(ngModel)]="filtros.tipo_acreedor" (change)="filtrar()">
+          <option value="">Todos los acreedores</option>
+          <option value="institucion">Institución</option>
+          <option value="persona">Persona</option>
+        </select>
+        <form class="d-flex input-group" style="max-width: 280px" (ngSubmit)="filtrar()" autocomplete="off">
+          <input type="search" name="buscador" class="form-control" placeholder="Buscar acreedor o concepto" [(ngModel)]="filtros.buscador">
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="table-responsive">
+      <table class="table table-borderless table-hover mb-0">
+        <thead>
+          <tr>
+            <th class="click" (click)="setOrden('acreedor')" [ngClass]="claseOrden('acreedor')">Acreedor</th>
+            <th>Tipo</th>
+            <th class="click" (click)="setOrden('fecha_desembolso')" [ngClass]="claseOrden('fecha_desembolso')">Desembolso</th>
+            <th class="click text-right" (click)="setOrden('monto')" [ngClass]="claseOrden('monto')">Monto</th>
+            <th class="click text-right" (click)="setOrden('saldo')" [ngClass]="claseOrden('saldo')">Saldo</th>
+            <th class="click" (click)="setOrden('estado')" [ngClass]="claseOrden('estado')">Estado</th>
+            <th class="text-center"><i class="fa fa-cog"></i></th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (!loading && prestamos?.total < 1) {
+            <tr>
+              <td colspan="7" class="text-center">
+                <span class="badge bg-primary">No hay préstamos registrados</span>
+              </td>
+            </tr>
+          }
+          @if (loading) {
+            <tr>
+              <td colspan="7" class="text-center">
+                <span class="badge bg-primary">Cargando...</span>
+              </td>
+            </tr>
+          }
+          @for (p of prestamos?.data; track p.id) {
+            <tr>
+              <td>
+                <a class="text-decoration-none text-dark" [routerLink]="['/finanzas/prestamos', p.id]">{{ p.acreedor }}</a>
+              </td>
+              <td>
+                <span class="badge py-2" [class.bg-info]="p.tipo_acreedor === 'institucion'" [class.bg-secondary]="p.tipo_acreedor !== 'institucion'">
+                  {{ p.tipo_acreedor === 'institucion' ? 'Institución' : 'Persona' }}
+                </span>
+              </td>
+              <td>{{ p.fecha_desembolso | date:'dd/MM/yyyy':'UTC' }}</td>
+              <td class="text-right">{{ p.monto | currency }}</td>
+              <td class="text-right">{{ p.saldo | currency }}</td>
+              <td>
+                <span class="badge py-2" [class.bg-success]="p.estado === 'activo'" [class.bg-secondary]="p.estado === 'pagado'">
+                  {{ p.estado === 'activo' ? 'Activo' : 'Pagado' }}
+                </span>
+              </td>
+              <td class="text-center">
+                <a class="text-decoration-none text-dark" [routerLink]="['/finanzas/prestamos', p.id]" tooltip="Ver préstamo">
+                  <i class="fa fa-eye"></i>
+                </a>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    @if (prestamos?.last_page > 1) {
+      <app-pagination [items]="prestamos" (setPagination)="setPagination($event)"></app-pagination>
+    }
+  </div>
+</section>

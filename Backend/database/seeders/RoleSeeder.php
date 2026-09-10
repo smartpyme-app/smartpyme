@@ -92,6 +92,9 @@ class RoleSeeder extends Seeder
             config('permissions.PERMISSION_FINANZAS.libro_iva.editar'),
             config('permissions.PERMISSION_FINANZAS.libro_iva.eliminar'),
             config('permissions.PERMISSION_FINANZAS.reporteria.ver'),
+            config('permissions.PERMISSION_FINANZAS.prestamos.ver'),
+            config('permissions.PERMISSION_FINANZAS.prestamos.crear'),
+            config('permissions.PERMISSION_FINANZAS.prestamos.pagar'),
             // Planilla
             config('permissions.PERMISSION_PLANILLA.ver'),
             config('permissions.PERMISSION_PLANILLA.crear'),
@@ -139,6 +142,7 @@ class RoleSeeder extends Seeder
             config('permissions.PERMISSION_CONTABILIDAD.partidas.ver'),
             config('permissions.PERMISSION_CONTABILIDAD.catalogo_cuentas.ver'),
             config('permissions.PERMISSION_FINANZAS.ver'),
+            config('permissions.PERMISSION_FINANZAS.prestamos.ver'),
         ]);
 
         // Gerente Ventas --ROL_GERENTE_VENTAS

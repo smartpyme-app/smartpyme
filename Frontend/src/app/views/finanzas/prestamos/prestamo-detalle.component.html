@@ -1,0 +1,293 @@
+<section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
+  <h2 class="page-heading">{{ prestamo?.acreedor || 'Préstamo' }}</h2>
+  <a class="btn btn-default" routerLink="/finanzas/prestamos"><i class="fa fa-arrow-left"></i> Regresar</a>
+</section>
+
+@if (prestamo) {
+  <div class="row g-2 mb-3">
+    @for (kpi of kpis; track kpi.title) {
+      <div class="col-6 col-xl">
+        <app-chart-card [data]="kpi"></app-chart-card>
+      </div>
+    }
+  </div>
+
+  <section class="bg-white p-4 rounded mb-3">
+    <h6 class="mb-3">Información</h6>
+    <div class="row">
+      <div class="form-group col-lg-4 mb-3">
+        <label class="fw-medium">Acreedor</label>
+        <p class="mb-0">{{ prestamo.acreedor }}</p>
+      </div>
+      <div class="form-group col-lg-4 mb-3">
+        <label class="fw-medium">Tipo</label>
+        <p class="mb-0">
+          <span class="badge py-2" [class.bg-info]="prestamo.tipo_acreedor === 'institucion'" [class.bg-secondary]="prestamo.tipo_acreedor !== 'institucion'">
+            {{ etiquetaTipo(prestamo.tipo_acreedor) }}
+          </span>
+        </p>
+      </div>
+      <div class="form-group col-lg-4 mb-3">
+        <label class="fw-medium">Estado</label>
+        <p class="mb-0">
+          <span class="badge py-2" [class.bg-success]="prestamo.estado === 'activo'" [class.bg-secondary]="prestamo.estado !== 'activo'">
+            {{ etiquetaEstado(prestamo.estado) }}
+          </span>
+        </p>
+      </div>
+      <div class="form-group col-lg-4 mb-3">
+        <label class="fw-medium">Desembolso</label>
+        <p class="mb-0">{{ prestamo.fecha_desembolso | date:'dd/MM/yyyy':'UTC' }}</p>
+      </div>
+      <div class="form-group col-lg-4 mb-3">
+        <label class="fw-medium">Frecuencia</label>
+        <p class="mb-0">{{ etiquetaFrecuencia(prestamo.frecuencia) }}</p>
+      </div>
+      <div class="form-group col-lg-4 mb-3">
+        <label class="fw-medium">Cuotas</label>
+        <p class="mb-0">{{ prestamo.n_cuotas }}</p>
+      </div>
+      @if (prestamo.genera_interes) {
+        <div class="form-group col-lg-4 mb-3">
+          <label class="fw-medium">Tasa anual</label>
+          <p class="mb-0">{{ prestamo.tasa_interes }}%</p>
+        </div>
+      }
+      @if (prestamo.concepto) {
+        <div class="form-group col-lg-4 mb-3">
+          <label class="fw-medium">Concepto</label>
+          <p class="mb-0">{{ prestamo.concepto }}</p>
+        </div>
+      }
+    </div>
+  </section>
+
+  <section class="bg-white p-4 rounded mb-3">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+      <h6 class="mb-0">Historial de pagos</h6>
+      @if (puedePagar && prestamo.estado === 'activo' && pendientes.length) {
+        <button type="button" class="btn btn-default" (click)="abrirPago(mpago)">
+          <i class="fas fa-fw fa-hand-holding-usd"></i> Registrar pago
+        </button>
+      }
+    </div>
+    <div class="table-responsive">
+      <table class="table table-borderless table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th class="text-right">Monto</th>
+            <th class="text-right">Capital</th>
+            <th class="text-right">Interés</th>
+            <th>Método</th>
+            <th>Referencia</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (!prestamo.pagos?.length) {
+            <tr>
+              <td colspan="6" class="text-center">
+                <span class="badge bg-primary">No tiene pagos registrados</span>
+              </td>
+            </tr>
+          }
+          @for (pago of prestamo.pagos; track pago.id) {
+            <tr>
+              <td>{{ pago.fecha | date:'dd/MM/yyyy':'UTC' }}</td>
+              <td class="text-right">{{ pago.monto | currency }}</td>
+              <td class="text-right">{{ pago.capital | currency }}</td>
+              <td class="text-right">{{ pago.interes | currency }}</td>
+              <td>{{ pago.metodo || '-' }}</td>
+              <td>
+                @if (pago.referencia || pago.detalle_banco) {
+                  @if (pago.detalle_banco) {
+                    <span>{{ pago.detalle_banco }}</span>
+                    @if (pago.referencia) {
+                      <span> · {{ pago.referencia }}</span>
+                    }
+                  } @else {
+                    {{ pago.referencia }}
+                  }
+                } @else {
+                  -
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="bg-white p-4 rounded mb-3">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+      <h6 class="mb-0">Tabla de cuotas</h6>
+      @if (puedeEditar && prestamo.estado === 'activo') {
+        <button class="btn btn-default" type="button" (click)="guardarTabla()" [disabled]="saving">Guardar tabla</button>
+      }
+    </div>
+    <div class="table-responsive">
+      <table class="table table-borderless table-hover mb-0">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Vencimiento</th>
+            <th class="text-right">Capital</th>
+            <th class="text-right">Interés</th>
+            <th class="text-right">Total</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (!prestamo.cuotas?.length) {
+            <tr>
+              <td colspan="6" class="text-center">
+                <span class="badge bg-primary">No hay cuotas</span>
+              </td>
+            </tr>
+          }
+          @for (cuota of prestamo.cuotas; track cuota.id) {
+            <tr>
+              <td>{{ cuota.numero }}</td>
+              <td>
+                @if (cuota.estado !== 'pagada' && puedeEditar) {
+                  <input class="form-control" type="date" [(ngModel)]="cuota.fecha_vencimiento" [name]="'cf'+cuota.id">
+                } @else {
+                  {{ formatFecha(cuota.fecha_vencimiento) }}
+                }
+              </td>
+              <td>
+                @if (cuota.estado !== 'pagada' && puedeEditar) {
+                  <input class="form-control text-end" type="number" step="0.01" [(ngModel)]="cuota.capital" [name]="'cc'+cuota.id">
+                } @else {
+                  <span class="d-block text-right">{{ cuota.capital | currency }}</span>
+                }
+              </td>
+              <td>
+                @if (cuota.estado !== 'pagada' && puedeEditar) {
+                  <input class="form-control text-end" type="number" step="0.01" [(ngModel)]="cuota.interes" [name]="'ci'+cuota.id">
+                } @else {
+                  <span class="d-block text-right">{{ cuota.interes | currency }}</span>
+                }
+              </td>
+              <td>
+                @if (cuota.estado !== 'pagada' && puedeEditar) {
+                  <input class="form-control text-end" type="number" step="0.01" [(ngModel)]="cuota.total" [name]="'ct'+cuota.id">
+                } @else {
+                  <span class="d-block text-right">{{ cuota.total | currency }}</span>
+                }
+              </td>
+              <td>
+                <span class="badge py-2" [ngClass]="claseEstadoCuota(cuota.estado)">
+                  {{ etiquetaEstadoCuota(cuota.estado) }}
+                </span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+}
+
+<ng-template #mpago>
+  <div class="modal-header">
+    <h5 class="modal-title mb-0">Registrar pago</h5>
+    <button type="button" class="btn-close" (click)="cerrarModal()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <div class="row">
+      <div class="form-group col-md-6 mb-3">
+        <label class="form-label">Fecha</label>
+        <input class="form-control" type="date" name="pago_fecha" [(ngModel)]="pago.fecha">
+      </div>
+      <div class="form-group col-md-6 mb-3">
+        <label class="form-label">Método</label>
+        <select class="form-select" name="pago_metodo" [(ngModel)]="pago.metodo" (change)="cambioMetodoDePago()">
+          <option value="">Seleccione</option>
+          @for (f of formas; track f.id || f.nombre) {
+            <option [value]="f.nombre">{{ f.nombre }}</option>
+          }
+        </select>
+      </div>
+      @if (requiereBanco()) {
+        <div class="form-group col-md-6 mb-3">
+          <label class="form-label">Banco</label>
+          <select class="form-select" name="pago_banco" [(ngModel)]="pago.detalle_banco">
+            <option value="">Seleccione</option>
+            @if (apiService.isModuloBancos()) {
+              @for (banco of bancos; track banco.id) {
+                <option [value]="banco.nombre_banco">{{ banco.nombre_banco }} - {{ banco.numero }}</option>
+              }
+            } @else {
+              @for (banco of bancos; track banco.id) {
+                <option [value]="banco.nombre">{{ banco.nombre }}</option>
+              }
+            }
+          </select>
+        </div>
+        <div class="form-group col-md-6 mb-3">
+          <label class="form-label">Referencia</label>
+          <input class="form-control" type="text" name="pago_referencia" [(ngModel)]="pago.referencia">
+        </div>
+      }
+      <div class="form-group col-md-12 mb-3">
+        <label class="form-label">Cuotas a pagar</label>
+        <select class="form-select" name="pago_n" [(ngModel)]="pago.n_cuotas">
+          @for (c of pendientes; track c.id; let i = $index) {
+            <option [ngValue]="i + 1">
+              @if (i === 0) {
+                Cuota {{ c.numero }}
+              } @else {
+                {{ i + 1 }} cuotas
+              }
+            </option>
+          }
+        </select>
+      </div>
+      @if (cuotasPago.length) {
+        <div class="form-group col-md-12 mb-0">
+          <div class="table-responsive">
+            <table class="table table-bordered mb-0">
+              <thead>
+                <tr>
+                  <th colspan="5" class="text-center">Detalle del pago</th>
+                </tr>
+                <tr>
+                  <th>#</th>
+                  <th>Vencimiento</th>
+                  <th class="text-end">Capital</th>
+                  <th class="text-end">Interés</th>
+                  <th class="text-end">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (cuota of cuotasPago; track cuota.id) {
+                  <tr>
+                    <td>{{ cuota.numero }}</td>
+                    <td>{{ formatFecha(cuota.fecha_vencimiento) }}</td>
+                    <td class="text-end">{{ cuota.capital | currency }}</td>
+                    <td class="text-end">{{ cuota.interes | currency }}</td>
+                    <td class="text-end">{{ cuota.total | currency }}</td>
+                  </tr>
+                }
+              </tbody>
+              <tfoot>
+                <tr>
+                  <th colspan="2">Total a pagar</th>
+                  <th class="text-end">{{ resumenPago.capital | currency }}</th>
+                  <th class="text-end">{{ resumenPago.interes | currency }}</th>
+                  <th class="text-end">{{ resumenPago.total | currency }}</th>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-light" (click)="cerrarModal()">Cancelar</button>
+    <button type="button" class="btn btn-primary" (click)="registrarPago()" [disabled]="saving">Registrar</button>
+  </div>
+</ng-template>
