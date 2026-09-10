@@ -8,7 +8,7 @@ use App\Models\Inventario\Producto;
 use App\Models\Ventas\Venta;
 use App\Models\Compras\Compra;
 use App\Models\Compras\Gastos\Gasto;
-use App\Models\PrestamosEmpresa\PrestamoCuota;
+use App\Services\PrestamosEmpresa\PrestamoRecordatorioService;
 
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
@@ -131,33 +131,7 @@ class Notificaciones extends Command
 
                 }
 
-        $cuotasPrestamo = PrestamoCuota::query()
-            ->where('estado', '!=', 'pagada')
-            ->whereBetween('fecha_vencimiento', [$fechaStart->toDateString(), $fechaEnd->toDateString()])
-            ->with('prestamo')
-            ->get();
-
-        foreach ($cuotasPrestamo as $cuota) {
-            $prestamo = $cuota->prestamo;
-            if (!$prestamo || $prestamo->estado !== 'activo') {
-                continue;
-            }
-            $descripcion = 'Cuota #'.$cuota->numero.' del préstamo '.$prestamo->acreedor.' por $'.number_format((float) $cuota->total, 2).' vence el '.Carbon::parse($cuota->fecha_vencimiento)->format('d/m/Y').'.';
-            $existe = Notificacion::where('descripcion', $descripcion)->first();
-            if (!$existe) {
-                Notificacion::create([
-                    'titulo' => 'Préstamo próximo a vencer',
-                    'descripcion' => $descripcion,
-                    'tipo' => 'Préstamos',
-                    'categoria' => 'Finanzas',
-                    'prioridad' => 'Alta',
-                    'leido' => false,
-                    'referencia' => 'prestamo',
-                    'id_referencia' => $prestamo->id,
-                    'id_empresa' => $prestamo->id_empresa,
-                ]);
-            }
-        }
+        app(PrestamoRecordatorioService::class)->sincronizarNotificacionesInAppRango($fechaStart, $fechaEnd);
 
         $data = [
             'titulo' => 'Notificaciones.',

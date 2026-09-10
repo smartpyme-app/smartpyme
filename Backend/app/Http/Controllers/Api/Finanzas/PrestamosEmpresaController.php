@@ -141,6 +141,8 @@ class PrestamosEmpresaController extends Controller
         $data = $request->validate([
             'fecha' => 'required|date',
             'metodo' => 'nullable|string|max:191',
+            'referencia' => 'nullable|string|max:191',
+            'detalle_banco' => 'nullable|string|max:191',
             'n_cuotas' => 'nullable|integer|min:1',
         ]);
 

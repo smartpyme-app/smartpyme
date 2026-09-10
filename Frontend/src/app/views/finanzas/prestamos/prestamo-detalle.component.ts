@@ -18,15 +18,16 @@ import { MetricCard } from '../../dashboard/models/chart-config.model';
 export class PrestamoDetalleComponent implements OnInit {
   prestamo: any = null;
   formas: any[] = [];
+  bancos: any[] = [];
   saving = false;
-  pago: any = { fecha: '', metodo: '', n_cuotas: 1 };
+  pago: any = { fecha: '', metodo: '', referencia: '', detalle_banco: '', n_cuotas: 1 };
   puedePagar = false;
   puedeEditar = false;
   modalRef?: BsModalRef;
 
   constructor(
     private route: ActivatedRoute,
-    private apiService: ApiService,
+    public apiService: ApiService,
     private alertService: AlertService,
     private modalService: BsModalService,
   ) {}
@@ -37,6 +38,15 @@ export class PrestamoDetalleComponent implements OnInit {
     this.apiService.getAll('formas-de-pago/list').subscribe({
       next: (formas) => { this.formas = formas ?? []; },
     });
+    if (this.apiService.isModuloBancos()) {
+      this.apiService.getAll('banco/cuentas/list').subscribe({
+        next: (bancos) => { this.bancos = bancos ?? []; },
+      });
+    } else {
+      this.apiService.getAll('bancos/list').subscribe({
+        next: (bancos) => { this.bancos = bancos ?? []; },
+      });
+    }
     this.cargar();
   }
 
@@ -74,7 +84,7 @@ export class PrestamoDetalleComponent implements OnInit {
   cargar(): void {
     const id = Number(this.route.snapshot.paramMap.get('id'));
     this.apiService.read('prestamos-empresa/', id).subscribe({
-      next: (p) => { this.prestamo = p; },
+      next: (p) => { this.prestamo = this.normalizarPrestamo(p); },
       error: (err) => this.alertService.error(err),
     });
   }
@@ -83,9 +93,28 @@ export class PrestamoDetalleComponent implements OnInit {
     this.pago = {
       fecha: this.pago.fecha || new Date().toISOString().slice(0, 10),
       metodo: this.pago.metodo || '',
+      referencia: '',
+      detalle_banco: '',
       n_cuotas: 1,
     };
     this.modalRef = this.modalService.show(template, { class: 'modal-lg' });
+  }
+
+  requiereBanco(): boolean {
+    const m = this.pago?.metodo;
+    return !!m && m !== 'Efectivo' && m !== 'Wompi';
+  }
+
+  cambioMetodoDePago(): void {
+    if (!this.requiereBanco()) {
+      this.pago.detalle_banco = '';
+      this.pago.referencia = '';
+      return;
+    }
+    if (this.apiService.isModuloBancos()) {
+      const forma = this.formas.find((f: any) => f.nombre === this.pago.metodo);
+      this.pago.detalle_banco = forma?.banco?.nombre_banco || '';
+    }
   }
 
   cerrarModal(): void {
@@ -94,9 +123,16 @@ export class PrestamoDetalleComponent implements OnInit {
 
   guardarTabla(): void {
     this.saving = true;
-    this.apiService.store('prestamos-empresa/' + this.prestamo.id + '/cuotas', { cuotas: this.prestamo.cuotas }).subscribe({
+    const cuotas = (this.prestamo.cuotas ?? []).map((c: any) => ({
+      numero: c.numero,
+      fecha_vencimiento: this.fechaInput(c.fecha_vencimiento),
+      capital: c.capital,
+      interes: c.interes,
+      total: c.total,
+    }));
+    this.apiService.store('prestamos-empresa/' + this.prestamo.id + '/cuotas', { cuotas }).subscribe({
       next: (p) => {
-        this.prestamo = p;
+        this.prestamo = this.normalizarPrestamo(p);
         this.saving = false;
         this.alertService.success('Listo', 'Tabla actualizada');
       },
@@ -116,7 +152,13 @@ export class PrestamoDetalleComponent implements OnInit {
     this.apiService.store('prestamos-empresa/' + this.prestamo.id + '/pagos', this.pago).subscribe({
       next: () => {
         this.saving = false;
-        this.pago = { fecha: this.pago.fecha, metodo: this.pago.metodo, n_cuotas: 1 };
+        this.pago = {
+          fecha: this.pago.fecha,
+          metodo: this.pago.metodo,
+          referencia: '',
+          detalle_banco: '',
+          n_cuotas: 1,
+        };
         this.cerrarModal();
         this.alertService.success('Listo', 'Pago registrado');
         this.cargar();
@@ -154,5 +196,26 @@ export class PrestamoDetalleComponent implements OnInit {
       'bg-danger': estado === 'atrasada',
       'bg-secondary': estado !== 'pagada' && estado !== 'atrasada',
     };
+  }
+
+  /** YYYY-MM-DD para input type="date" (evita ISO UTC que desplaza el día). */
+  fechaInput(fecha: string | null | undefined): string {
+    if (!fecha) return '';
+    return String(fecha).slice(0, 10);
+  }
+
+  formatFecha(fecha: string | null | undefined): string {
+    const iso = this.fechaInput(fecha);
+    if (!iso) return '-';
+    const [y, m, d] = iso.split('-');
+    return y && m && d ? `${d}/${m}/${y}` : iso;
+  }
+
+  private normalizarPrestamo(p: any): any {
+    if (!p?.cuotas) return p;
+    for (const c of p.cuotas) {
+      c.fecha_vencimiento = this.fechaInput(c.fecha_vencimiento);
+    }
+    return p;
   }
 }

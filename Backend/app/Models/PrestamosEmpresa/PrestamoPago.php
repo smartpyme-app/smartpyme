@@ -18,6 +18,8 @@ class PrestamoPago extends Model
         'capital',
         'interes',
         'metodo',
+        'referencia',
+        'detalle_banco',
         'id_usuario',
     ];
 

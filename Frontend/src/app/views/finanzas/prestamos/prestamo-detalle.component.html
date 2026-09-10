@@ -80,12 +80,13 @@
             <th class="text-right">Capital</th>
             <th class="text-right">Interés</th>
             <th>Método</th>
+            <th>Referencia</th>
           </tr>
         </thead>
         <tbody>
           @if (!prestamo.pagos?.length) {
             <tr>
-              <td colspan="5" class="text-center">
+              <td colspan="6" class="text-center">
                 <span class="badge bg-primary">No tiene pagos registrados</span>
               </td>
             </tr>
@@ -97,6 +98,20 @@
               <td class="text-right">{{ pago.capital | currency }}</td>
               <td class="text-right">{{ pago.interes | currency }}</td>
               <td>{{ pago.metodo || '-' }}</td>
+              <td>
+                @if (pago.referencia || pago.detalle_banco) {
+                  @if (pago.detalle_banco) {
+                    <span>{{ pago.detalle_banco }}</span>
+                    @if (pago.referencia) {
+                      <span> · {{ pago.referencia }}</span>
+                    }
+                  } @else {
+                    {{ pago.referencia }}
+                  }
+                } @else {
+                  -
+                }
+              </td>
             </tr>
           }
         </tbody>
@@ -138,7 +153,7 @@
                 @if (cuota.estado !== 'pagada' && puedeEditar) {
                   <input class="form-control" type="date" [(ngModel)]="cuota.fecha_vencimiento" [name]="'cf'+cuota.id">
                 } @else {
-                  {{ cuota.fecha_vencimiento | date:'dd/MM/yyyy':'UTC' }}
+                  {{ formatFecha(cuota.fecha_vencimiento) }}
                 }
               </td>
               <td>
@@ -188,13 +203,34 @@
       </div>
       <div class="form-group col-md-6 mb-3">
         <label class="form-label">Método</label>
-        <select class="form-select" name="pago_metodo" [(ngModel)]="pago.metodo">
+        <select class="form-select" name="pago_metodo" [(ngModel)]="pago.metodo" (change)="cambioMetodoDePago()">
           <option value="">Seleccione</option>
           @for (f of formas; track f.id || f.nombre) {
             <option [value]="f.nombre">{{ f.nombre }}</option>
           }
         </select>
       </div>
+      @if (requiereBanco()) {
+        <div class="form-group col-md-6 mb-3">
+          <label class="form-label">Banco</label>
+          <select class="form-select" name="pago_banco" [(ngModel)]="pago.detalle_banco">
+            <option value="">Seleccione</option>
+            @if (apiService.isModuloBancos()) {
+              @for (banco of bancos; track banco.id) {
+                <option [value]="banco.nombre_banco">{{ banco.nombre_banco }} - {{ banco.numero }}</option>
+              }
+            } @else {
+              @for (banco of bancos; track banco.id) {
+                <option [value]="banco.nombre">{{ banco.nombre }}</option>
+              }
+            }
+          </select>
+        </div>
+        <div class="form-group col-md-6 mb-3">
+          <label class="form-label">Referencia</label>
+          <input class="form-control" type="text" name="pago_referencia" [(ngModel)]="pago.referencia">
+        </div>
+      }
       <div class="form-group col-md-12 mb-3">
         <label class="form-label">Cuotas a pagar</label>
         <select class="form-select" name="pago_n" [(ngModel)]="pago.n_cuotas">
@@ -229,7 +265,7 @@
                 @for (cuota of cuotasPago; track cuota.id) {
                   <tr>
                     <td>{{ cuota.numero }}</td>
-                    <td>{{ cuota.fecha_vencimiento | date:'dd/MM/yyyy':'UTC' }}</td>
+                    <td>{{ formatFecha(cuota.fecha_vencimiento) }}</td>
                     <td class="text-end">{{ cuota.capital | currency }}</td>
                     <td class="text-end">{{ cuota.interes | currency }}</td>
                     <td class="text-end">{{ cuota.total | currency }}</td>

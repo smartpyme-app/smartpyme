@@ -61,6 +61,8 @@ class RegistrarPagoService
                 'capital' => $capitalPago,
                 'interes' => $interesPago,
                 'metodo' => $data['metodo'] ?? null,
+                'referencia' => $data['referencia'] ?? null,
+                'detalle_banco' => $data['detalle_banco'] ?? null,
                 'id_usuario' => $usuarioId,
             ]);
 
