@@ -79,6 +79,7 @@ use App\Exports\ReportesAutomaticos\VentasPorVendedor\VentasPorVendedorExport;
 use App\Exports\VentasPorUtilidadesExport;
 use App\Exports\VentasPorMarcasExport;
 use App\Exports\CobrosPorVendedorExport;
+use App\Exports\VentasPorClienteExport;
 use App\Exports\CuentasCobrarExport;
 use App\Mail\ReporteVentasPorVendedor;
 use Maatwebsite\Excel\Facades\Excel;
@@ -1528,6 +1529,20 @@ class VentasController extends Controller
                 $cobros->filter($request);
 
                 return [$cobros, 'cobros-por-vendedor.xlsx'];
+            }
+        );
+    }
+
+    public function ventasPorClienteExport(Request $request)
+    {
+        return $this->downloadVentasExcel(
+            $request,
+            ExportPeriodHelper::MAX_DIAS_GENERAL,
+            function () use ($request) {
+                $export = new VentasPorClienteExport();
+                $export->filter($request);
+
+                return [$export, 'ventas-por-cliente.xlsx'];
             }
         );
     }

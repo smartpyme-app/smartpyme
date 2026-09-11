@@ -84,6 +84,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
   public downloadingDetalles: boolean = false;
   public downloadingVentas: boolean = false;
   public downloadingCobrosVendedor: boolean = false;
+  public downloadingVentasCliente: boolean = false;
   public reporteSeleccionado: string = '';
 
   /** Años disponibles: desde 2023 hasta el año en curso (más reciente primero). */
@@ -101,6 +102,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
   public esReporteMarca: boolean = false;
   public esReporteUtilidades: boolean = false;
   public esReporteCobrosVendedor: boolean = false;
+  public esReporteVentasCliente: boolean = false;
 
   // Permisos para evitar problemas con ICU messages en el template
   public readonly permisoVentasCrear = 'ventas.crear';
@@ -167,6 +169,13 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     id_sucursal: '',
     id_vendedor: '',
   };
+  public filtrosVentasCliente: any = {
+    inicio: '',
+    fin: '',
+    id_cliente: '',
+    id_sucursal: '',
+    estado: '',
+  };
 
   /**
    * Período para exportar "Detalles por producto" y "Detalles ventas totales" cuando el listado no tiene inicio/fin en la URL.
@@ -196,6 +205,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
   public modalRefAcumulado!: any; // BsModalRef
   public modalRefPorMarca!: any; // BsModalRef
   public modalRefCobrosVendedor!: any; // BsModalRef
+  public modalRefVentasCliente!: any; // BsModalRef
   downloadingPorMarca: boolean = false;
 
   public override modalRef!: BsModalRef;
@@ -208,6 +218,9 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
 
   @ViewChild('mfiltrosCobrosVendedor')
   public mfiltrosCobrosVendedorTpl!: TemplateRef<any>;
+
+  @ViewChild('mfiltrosVentasCliente')
+  public mfiltrosVentasClienteTpl!: TemplateRef<any>;
 
   constructor(
     protected override apiService: ApiService,
@@ -422,6 +435,44 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     } else {
       this.abrirModalCobrosVendedor(template);
     }
+  }
+
+  public abrirModalFiltrosVentasCliente(template: TemplateRef<any>) {
+    if (this.modalRefDescargar) {
+      this.modalRefDescargar.hide();
+      this.modalRefDescargar = undefined;
+    }
+
+    if (!this.clientes.length) {
+      this.sharedDataService.getClientes()
+        .pipe(this.untilDestroyed())
+        .subscribe({
+          next: (clientes) => {
+            this.clientes = clientes;
+            this.abrirModalVentasCliente(template);
+          },
+          error: (error) => {
+            this.alertService.error(error);
+          },
+        });
+    } else {
+      this.abrirModalVentasCliente(template);
+    }
+  }
+
+  private abrirModalVentasCliente(template: TemplateRef<any>) {
+    if (!this.filtrosVentasCliente.inicio && !this.filtrosVentasCliente.fin) {
+      this.filtrosVentasCliente.inicio = this.filtros.inicio || '';
+      this.filtrosVentasCliente.fin = this.filtros.fin || '';
+      this.filtrosVentasCliente.id_cliente = this.filtros.id_cliente || '';
+      this.filtrosVentasCliente.id_sucursal = this.filtros.id_sucursal || '';
+    }
+
+    setTimeout(() => {
+      this.modalRefVentasCliente = this.modalService.show(template, {
+        class: 'modal-md',
+      });
+    }, 100);
   }
 
   private abrirModalCobrosVendedor(template: TemplateRef<any>) {
@@ -830,6 +881,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     this.esReporteMarca = false;
     this.esReporteUtilidades = false;
     this.esReporteCobrosVendedor = false;
+    this.esReporteVentasCliente = false;
     this.resetExportPeriodo();
     this.modalRefDescargar = this.modalManager.openModal(template);
   }
@@ -846,6 +898,10 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     if (this.modalRefCobrosVendedor) {
       this.modalRefCobrosVendedor.hide();
       this.modalRefCobrosVendedor = undefined;
+    }
+    if (this.modalRefVentasCliente) {
+      this.modalRefVentasCliente.hide();
+      this.modalRefVentasCliente = undefined;
     }
   }
 
@@ -901,6 +957,8 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
         return this.downloadingPorMarca;
       case 'cobros-vendedor':
         return this.downloadingCobrosVendedor;
+      case 'ventas-cliente':
+        return this.downloadingVentasCliente;
       default:
         return this.downloadingVentas;
     }
@@ -909,7 +967,8 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
   public get reporteRequiereFiltrosAdicionales(): boolean {
     return (
       this.reporteSeleccionado === 'acumulado' ||
-      this.reporteSeleccionado === 'cobros-vendedor'
+      this.reporteSeleccionado === 'cobros-vendedor' ||
+      this.reporteSeleccionado === 'ventas-cliente'
     );
   }
 
@@ -946,6 +1005,10 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
         this.esReporteCobrosVendedor = true;
         this.abrirModalFiltrosCobrosVendedor(this.mfiltrosCobrosVendedorTpl);
         break;
+      case 'ventas-cliente':
+        this.esReporteVentasCliente = true;
+        this.abrirModalFiltrosVentasCliente(this.mfiltrosVentasClienteTpl);
+        break;
     }
   }
 
@@ -956,6 +1019,8 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     this.filtrosPorMarca.fin = fechas.fin;
     this.filtrosCobrosVendedor.inicio = fechas.inicio;
     this.filtrosCobrosVendedor.fin = fechas.fin;
+    this.filtrosVentasCliente.inicio = fechas.inicio;
+    this.filtrosVentasCliente.fin = fechas.fin;
   }
 
   private prefillExportPeriodoDesdeListado(): void {
@@ -1062,6 +1127,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     this.downloadingVentas = false;
     this.downloadingDetalles = false;
     this.downloadingCobrosVendedor = false;
+    this.downloadingVentasCliente = false;
     this.downloadingPorMarca = false;
     this.saving = false;
   }
@@ -2009,6 +2075,55 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
       );
   }
 
+  public descargarVentasPorCliente() {
+    const check = validarPeriodoExport(
+      this.filtrosVentasCliente.inicio,
+      this.filtrosVentasCliente.fin,
+      MAX_DIAS_EXPORT_GENERAL
+    );
+    if (!check.valid) {
+      this.alertService.error(check.error);
+      return;
+    }
+    this.downloadingVentasCliente = true;
+    this.saving = true;
+    this.apiService.export('ventas-por-cliente/exportar', this.filtrosVentasCliente)
+      .pipe(this.untilDestroyed())
+      .subscribe(
+        (data: Blob) => {
+          const blob = new Blob([data], {
+            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          const fechaInicio = this.filtrosVentasCliente.inicio || 'sin-fecha';
+          const fechaFin = this.filtrosVentasCliente.fin || 'sin-fecha';
+          a.download = 'ventas-por-cliente_' + fechaInicio + '_' + fechaFin + '.xlsx';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+
+          if (this.modalRefVentasCliente) {
+            this.modalRefVentasCliente.hide();
+            this.modalRefVentasCliente = undefined;
+          }
+          if (this.modalRefDescargar) {
+            this.modalRefDescargar.hide();
+            this.modalRefDescargar = undefined;
+          }
+
+          this.downloadingVentasCliente = false;
+          this.saving = false;
+        },
+        (error) => {
+          this.handleErrorExportVentas(error, MAX_DIAS_EXPORT_GENERAL);
+          this.finalizarDescargaExport();
+        }
+      );
+  }
+
   public descargarReportePorMarcaOUtilidades() {
     if (this.reporteSeleccionado === 'marca') {
       this.descargarPorMarcasPorMes();
@@ -2072,6 +2187,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     this.esReporteMarca = false;
     this.esReporteUtilidades = false;
     this.esReporteCobrosVendedor = false;
+    this.esReporteVentasCliente = false;
 
     if (reporte) {
       switch (reporte) {
@@ -2083,6 +2199,9 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
           break;
         case 'cobros-vendedor':
           this.esReporteCobrosVendedor = true;
+          break;
+        case 'ventas-cliente':
+          this.esReporteVentasCliente = true;
           break;
       }
       this.resetExportPeriodo();
