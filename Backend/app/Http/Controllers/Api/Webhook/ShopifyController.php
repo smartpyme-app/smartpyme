@@ -875,12 +875,6 @@ class ShopifyController extends Controller
 
                 // Si no se encuentra el producto, crearlo
                 if (!$producto) {
-                    // Log::info("Producto no encontrado, creando nuevo producto", [
-                    //     'variant_id' => $item['variant_id'] ?? 'N/A',
-                    //     'sku' => $item['sku'] ?? 'N/A',
-                    //     'title' => $item['title'] ?? 'N/A'
-                    // ]);
-                    
                     $productoData = $this->transformer->transformarProducto(
                         $item,
                         $usuario->id_empresa,
@@ -888,8 +882,21 @@ class ShopifyController extends Controller
                         $usuario->id_sucursal
                     );
                     $producto = Producto::create($productoData);
-                    
-                    // Log::info("Producto creado", ['producto_id' => $producto->id]);
+                } else {
+                    // Si el producto ya existía pero no tiene vinculado shopify_variant_id, auto-vincularlo
+                    if (!empty($item['variant_id']) && $producto->shopify_variant_id != $item['variant_id']) {
+                        $existeConVariant = Producto::where('shopify_variant_id', $item['variant_id'])
+                            ->where('id_empresa', $usuario->id_empresa)
+                            ->where('id', '!=', $producto->id)
+                            ->exists();
+                        if (!$existeConVariant) {
+                            $producto->shopify_variant_id = $item['variant_id'];
+                            if (!empty($item['product_id']) && empty($producto->shopify_product_id)) {
+                                $producto->shopify_product_id = $item['product_id'];
+                            }
+                            $producto->save();
+                        }
+                    }
                 }
 
                 $taxesIncluded = $request->taxes_included ?? false;
@@ -1288,9 +1295,9 @@ class ShopifyController extends Controller
                             $precio = is_numeric($detalle->precio) ? (float)$detalle->precio : 0;
                             $costoProducto = is_numeric($producto->costo) ? (float)$producto->costo : 0;
                             
-                            // Registrar en el kardex solo si tenemos valores válidos
+                            // Registrar en el kardex solo si tenemos valores válidos (signo negativo para Venta Anulada)
                             if ($cantidad > 0) {
-                                $inventario->kardex($venta, $cantidad, $precio, $costoProducto);
+                                $inventario->kardex($venta, -$cantidad, $precio, $costoProducto);
                             }
                             
                             // Log::info("Stock restaurado para producto", [
@@ -1583,73 +1590,82 @@ class ShopifyController extends Controller
         ]);
 
         $lineItems = $request->line_items ?? [];
-        
-        // Crear un mapa de variant_ids a current_quantity para búsqueda O(1) en lugar de O(n)
-        $variantIdsMap = [];
-        foreach ($lineItems as $item) {
-            $variantId = $item['variant_id'] ?? null;
-            if ($variantId) {
-                $variantIdsMap[$variantId] = $item['current_quantity'] ?? $item['quantity'] ?? 0;
-            }
+
+        // Guard de seguridad: si no vienen line_items en el webhook, no tocar detalles ni inventario
+        if (empty($lineItems) || !is_array($lineItems)) {
+            return;
         }
-        
-        // Obtener todos los detalles de venta que son productos de Shopify (tienen shopify_variant_id)
-        // Esto excluye automáticamente los servicios de envío que no tienen variant_id
+
+        $financialStatus = $request->financial_status ?? 'pending';
+        $esReembolso = $financialStatus === 'refunded';
+        $esEdicion = !empty($request->order_edit);
+
+        // Helper para resolver la cantidad efectiva de un line_item de Shopify
+        $resolverCantidadShopify = function($item) use ($esEdicion, $esReembolso) {
+            if (isset($item['current_quantity']) && is_numeric($item['current_quantity'])) {
+                $cq = (float)$item['current_quantity'];
+                // Si es > 0, es la cantidad vigente.
+                // Si es 0, solo se toma como 0 si hubo edición o reembolso explícito.
+                if ($cq > 0 || $esEdicion || $esReembolso) {
+                    return $cq;
+                }
+            }
+            return (float)($item['quantity'] ?? 0);
+        };
+
+        // Obtener detalles existentes que corresponden a productos (excluyendo envíos / servicios)
         $detallesExistentes = $venta->detalles()
-            ->whereHas('producto', function($query) {
-                $query->whereNotNull('shopify_variant_id');
-            })
+            ->whereNotNull('id_producto')
+            ->with('producto')
             ->get();
-        
-        // Eliminar detalles que ya no están en Shopify o tienen current_quantity = 0
-        foreach ($detallesExistentes as $detalle) {
-            $producto = $detalle->producto;
-            $variantId = $producto->shopify_variant_id ?? null;
-            
-            // Buscar en el mapa en lugar de hacer un loop (más eficiente)
-            $encontradoEnShopify = isset($variantIdsMap[$variantId]);
-            $currentQuantity = $encontradoEnShopify ? $variantIdsMap[$variantId] : 0;
-            
-            // Si no está en Shopify o tiene cantidad 0, eliminarlo
-            if (!$encontradoEnShopify || $currentQuantity == 0) {
-                Log::info("Eliminando detalle de producto removido de Shopify", [
-                    'detalle_id' => $detalle->id,
-                    'producto_id' => $producto->id,
-                    'producto_nombre' => $producto->nombre,
-                    'cantidad_anterior' => $detalle->cantidad,
-                    'encontrado_en_shopify' => $encontradoEnShopify,
-                    'current_quantity' => $currentQuantity,
-                    'venta_id' => $venta->id
-                ]);
-                
-                // Ajustar inventario si no es cotización
-                if ($venta->cotizacion != 1) {
-                    $inventario = Inventario::where('id_producto', $producto->id)
-                        ->where('id_bodega', $venta->id_bodega)
-                        ->first();
-                    
-                    if ($inventario) {
-                        // Incrementar stock porque se está eliminando el producto
-                        $inventario->increment('stock', $detalle->cantidad);
-                        
-                        // Registrar en el kardex (con cantidad negativa para indicar devolución)
-                        $inventario->kardex($venta, $detalle->cantidad, $detalle->precio, $producto->costo);
-                        
-                        Log::info("Inventario ajustado por eliminación de producto", [
-                            'producto_id' => $producto->id,
-                            'cantidad_devuelta' => $detalle->cantidad,
-                            'stock_actual' => $inventario->stock,
-                            'venta_id' => $venta->id
-                        ]);
+
+        // Eliminar detalles que fueron removidos de Shopify (si hubo edición del pedido y ya no están)
+        // Nota: En reembolsos no se eliminan detalles para mantener evidencia y registro histórico.
+        if (!$esReembolso) {
+            foreach ($detallesExistentes as $detalle) {
+                $producto = $detalle->producto;
+                if (!$producto) {
+                    continue;
+                }
+
+                // Buscar si el producto del detalle sigue presente en los line_items de Shopify
+                // Emparejar por shopify_variant_id, SKU (codigo) o id_producto
+                $itemEncontrado = null;
+                foreach ($lineItems as $item) {
+                    if (!empty($item['variant_id']) && !empty($producto->shopify_variant_id) && $item['variant_id'] == $producto->shopify_variant_id) {
+                        $itemEncontrado = $item;
+                        break;
+                    }
+                    if (!empty($item['sku']) && !empty($producto->codigo) && $item['sku'] === $producto->codigo) {
+                        $itemEncontrado = $item;
+                        break;
                     }
                 }
-                
-                // Eliminar el detalle
-                $detalle->delete();
+
+                $cantidadShopify = $itemEncontrado ? $resolverCantidadShopify($itemEncontrado) : 0;
+
+                // Solo eliminar si el producto ya no existe en el pedido o su cantidad quedó en 0 tras edición
+                if (!$itemEncontrado || $cantidadShopify == 0) {
+                    if ($venta->cotizacion != 1) {
+                        $inventario = Inventario::where('id_producto', $producto->id)
+                            ->where('id_bodega', $venta->id_bodega)
+                            ->first();
+
+                        if ($inventario) {
+                            // Incrementar stock porque se está eliminando el producto de la venta
+                            $inventario->increment('stock', $detalle->cantidad);
+
+                            // Registrar en el kardex con signo negativo para indicar Venta Anulada (Entrada)
+                            $inventario->kardex($venta, -$detalle->cantidad, $detalle->precio, $producto->costo);
+                        }
+                    }
+
+                    $detalle->delete();
+                }
             }
         }
-        
-        // Procesar los line_items de Shopify
+
+        // Procesar los line_items de Shopify para actualizar cantidades o agregar nuevos
         foreach ($lineItems as $item) {
             // Validar que el item tenga los datos mínimos necesarios
             if (empty($item) || !is_array($item)) {
@@ -1657,44 +1673,31 @@ class ShopifyController extends Controller
                 continue;
             }
 
-            // Verificar current_quantity - si es 0, el detalle ya debería haber sido eliminado arriba
-            // Saltar este item para evitar recrearlo
-            $currentQuantity = $item['current_quantity'] ?? $item['quantity'] ?? 0;
-            if ($currentQuantity == 0) {
-                Log::info("Saltando item con cantidad 0 - detalle ya eliminado", [
-                    'variant_id' => $item['variant_id'] ?? 'N/A',
-                    'title' => $item['title'] ?? 'N/A',
-                    'venta_id' => $venta->id
-                ]);
+            $currentQuantity = $resolverCantidadShopify($item);
+            if ($currentQuantity == 0 && !$esReembolso) {
                 continue;
             }
 
             // Buscar el producto por variant_id o SKU
             // Si hay múltiples productos con el mismo variant_id, usar el más reciente
             $producto = null;
-            
+
             if (!empty($item['variant_id'])) {
                 $producto = Producto::where('shopify_variant_id', $item['variant_id'])
                     ->where('id_empresa', $venta->id_empresa)
-                    ->orderBy('id', 'desc') // Usar el más reciente si hay duplicados
+                    ->orderBy('id', 'desc')
                     ->first();
             }
-            
+
             if (!$producto && !empty($item['sku'])) {
                 $producto = Producto::where('codigo', $item['sku'])
                     ->where('id_empresa', $venta->id_empresa)
-                    ->orderBy('id', 'desc') // Usar el más reciente si hay duplicados
+                    ->orderBy('id', 'desc')
                     ->first();
             }
-            
+
             // Si no se encuentra el producto, crearlo
             if (!$producto) {
-                Log::info("Producto no encontrado, creando nuevo producto durante actualización", [
-                    'variant_id' => $item['variant_id'] ?? 'N/A',
-                    'sku' => $item['sku'] ?? 'N/A',
-                    'title' => $item['title'] ?? 'N/A'
-                ]);
-                
                 $productoData = $this->transformer->transformarProducto(
                     $item,
                     $usuario->id_empresa,
@@ -1702,150 +1705,101 @@ class ShopifyController extends Controller
                     $usuario->id_sucursal
                 );
                 $producto = Producto::create($productoData);
-                
-                Log::info("Producto creado durante actualización", ['producto_id' => $producto->id]);
+            } else {
+                // Si el producto existe pero no tiene shopify_variant_id, auto-vincularlo
+                if (!empty($item['variant_id']) && $producto->shopify_variant_id != $item['variant_id']) {
+                    $existeConVariant = Producto::where('shopify_variant_id', $item['variant_id'])
+                        ->where('id_empresa', $venta->id_empresa)
+                        ->where('id', '!=', $producto->id)
+                        ->exists();
+                    if (!$existeConVariant) {
+                        $producto->shopify_variant_id = $item['variant_id'];
+                        if (!empty($item['product_id']) && empty($producto->shopify_product_id)) {
+                            $producto->shopify_product_id = $item['product_id'];
+                        }
+                        $producto->save();
+                    }
+                }
             }
-            
+
             // Buscar el detalle de venta existente por variant_id para evitar duplicados
-            // Esto es importante porque puede haber múltiples productos con el mismo variant_id
             $variantId = $item['variant_id'] ?? null;
             $detalle = null;
-            
+
             if ($variantId) {
-                // Buscar detalle que tenga un producto con este variant_id
                 $detalle = $venta->detalles()
                     ->whereHas('producto', function($query) use ($variantId) {
                         $query->where('shopify_variant_id', $variantId);
                     })
                     ->first();
             }
-            
+
             // Si no se encontró por variant_id, buscar por id_producto como fallback
             if (!$detalle) {
                 $detalle = $venta->detalles()
                     ->where('id_producto', $producto->id)
                     ->first();
             }
-                
+
             // Si no existe el detalle, crearlo (producto nuevo agregado al pedido)
             if (!$detalle) {
-                Log::info("Detalle de venta no encontrado - creando nuevo detalle para producto agregado", [
-                    'venta_id' => $venta->id,
-                    'producto_id' => $producto->id,
-                    'producto_nombre' => $producto->nombre,
-                    'variant_id' => $variantId
-                ]);
-                
-                // Crear el detalle usando el transformer
                 $taxesIncluded = $request->taxes_included ?? false;
                 $detalleData = $this->transformer->transformarDetallesVenta($item, $venta->id, $usuario->id_empresa, $taxesIncluded);
                 $detalleData['id_producto'] = $producto->id;
+                $detalleData['cantidad'] = $currentQuantity;
                 $detalle = $venta->detalles()->create($detalleData);
-                
+
                 // Actualizar inventario para el nuevo producto
                 if ($venta->cotizacion != 1) {
                     Inventario::where('id_producto', $producto->id)
                         ->where('id_bodega', $venta->id_bodega)
-                        ->decrement('stock', $item['quantity']);
+                        ->decrement('stock', $currentQuantity);
 
                     $inventario = Inventario::where('id_producto', $producto->id)
                         ->where('id_bodega', $venta->id_bodega)
                         ->first();
 
                     if ($inventario) {
-                        $inventario->kardex($venta, $item['quantity'], $item['price']);
+                        $inventario->kardex($venta, $currentQuantity, $item['price'] ?? 0);
                     }
-                    
-                    Log::info("Inventario actualizado para producto nuevo agregado", [
-                        'producto_id' => $producto->id,
-                        'cantidad' => $item['quantity'],
-                        'venta_id' => $venta->id
-                    ]);
                 }
-                
+
                 // Continuar al siguiente item ya que este es nuevo
                 continue;
             } else {
                 // Si se encontró un detalle pero con un producto diferente (mismo variant_id), actualizar el id_producto
                 if ($detalle->id_producto != $producto->id) {
-                    Log::info("Detalle encontrado con producto diferente - actualizando id_producto", [
-                        'detalle_id' => $detalle->id,
-                        'producto_anterior_id' => $detalle->id_producto,
-                        'producto_nuevo_id' => $producto->id,
-                        'variant_id' => $variantId,
-                        'venta_id' => $venta->id
-                    ]);
                     $detalle->update(['id_producto' => $producto->id]);
                 }
             }
-            
-            $cantidadAnterior = $detalle->cantidad;
-            // Usar current_quantity si está disponible, sino quantity
-            $cantidadNueva = $item['current_quantity'] ?? $item['quantity'];
-            $financialStatus = $request->financial_status ?? 'pending';
-            $esReembolso = $financialStatus === 'refunded';
-            
-            Log::info("Comparando cantidades de producto", [
-                'venta_id' => $venta->id,
-                'producto_id' => $producto->id,
-                'cantidad_anterior' => $cantidadAnterior,
-                'cantidad_nueva' => $cantidadNueva,
-                'quantity_shopify' => $item['quantity'],
-                'current_quantity_shopify' => $item['current_quantity'] ?? 'N/A',
-                'fulfillable_quantity_shopify' => $item['fulfillable_quantity'] ?? 'N/A',
-                'diferencia' => $cantidadNueva - $cantidadAnterior,
-                'financial_status' => $financialStatus,
-                'es_reembolso' => $esReembolso
-            ]);
-            
+
+            $cantidadAnterior = (float)$detalle->cantidad;
+            $cantidadNueva = $currentQuantity;
+
             // Solo actualizar si la cantidad ha cambiado O si es un reembolso
             if ($cantidadAnterior != $cantidadNueva || $esReembolso) {
-                Log::info("Actualizando cantidad de producto", [
-                    'venta_id' => $venta->id,
-                    'producto_id' => $producto->id,
-                    'cantidad_anterior' => $cantidadAnterior,
-                    'cantidad_nueva' => $cantidadNueva,
-                    'diferencia' => $cantidadNueva - $cantidadAnterior,
-                    'precio_original_detalle' => $detalle->precio,
-                    'precio_shopify' => $item['price'] ?? 'N/A',
-                    'es_reembolso' => $esReembolso,
-                    'financial_status' => $financialStatus
-                ]);
-                
                 // Para reembolsos, mantener la cantidad y total originales para evidencia
                 if ($esReembolso) {
-                    // Mantener cantidad y total originales para evidencia
-                    $cantidadFinal = $cantidadAnterior; // Mantener cantidad original
-                    $precioProducto = $detalle->precio; // Mantener precio original
-                    $totalFinal = $detalle->total; // Mantener total original para evidencia
-                    $ivaFinal = $detalle->iva; // Mantener IVA original
-                    $gravadaFinal = $detalle->gravada; // Mantener gravada original
-                    
-                    Log::info("Procesando reembolso - manteniendo valores originales", [
-                        'venta_id' => $venta->id,
-                        'producto_id' => $producto->id,
-                        'cantidad_original' => $cantidadAnterior,
-                        'cantidad_mantenida' => $cantidadFinal,
-                        'precio_mantenido' => $precioProducto,
-                        'total_original' => $detalle->total,
-                        'total_mantenido' => $totalFinal
-                    ]);
+                    $cantidadFinal = $cantidadAnterior;
+                    $precioProducto = $detalle->precio;
+                    $totalFinal = $detalle->total;
+                    $ivaFinal = $detalle->iva;
+                    $gravadaFinal = $detalle->gravada;
                 } else {
-                // Actualización normal
-                $cantidadFinal = $cantidadNueva;
-                $precioProducto = $detalle->precio;
-                if ($cantidadNueva == 0 && !empty($item['price'])) {
-                    $precioProducto = floatval($item['price']);
+                    // Actualización normal
+                    $cantidadFinal = $cantidadNueva;
+                    $precioProducto = $detalle->precio;
+                    if ($cantidadNueva == 0 && !empty($item['price'])) {
+                        $precioProducto = floatval($item['price']);
+                    }
+                    $totalFinal = $cantidadFinal * $precioProducto;
+
+                    // Recalcular IVA y gravada para el detalle individual
+                    $ivaPorUnidad = round($precioProducto * 0.13, 2);
+                    $ivaFinal = round($cantidadFinal * $ivaPorUnidad, 2);
+                    $gravadaFinal = round($cantidadFinal * $precioProducto, 2);
                 }
-                $totalFinal = $cantidadFinal * $precioProducto;
-                
-                // Recalcular IVA y gravada para el detalle individual
-                // $precioProducto ya es el precio sin IVA, así que calculamos el IVA correctamente
-                $ivaPorUnidad = round($precioProducto * 0.13, 2); // 13% IVA sobre precio sin IVA, redondeado a 2 decimales
-                $ivaFinal = round($cantidadFinal * $ivaPorUnidad, 2); // IVA total redondeado
-                $gravadaFinal = round($cantidadFinal * $precioProducto, 2); // Gravada = cantidad × precio sin IVA, redondeado
-                }
-                
+
                 $detalle->update([
                     'cantidad' => $cantidadFinal,
                     'precio' => $precioProducto,
@@ -1853,16 +1807,16 @@ class ShopifyController extends Controller
                     'iva' => $ivaFinal,
                     'gravada' => $gravadaFinal
                 ]);
-                
+
                 // Ajustar el inventario solo si NO es un reembolso
                 if (!$esReembolso) {
                     $diferenciaStock = $cantidadNueva - $cantidadAnterior;
-                    
+
                     if ($diferenciaStock != 0) {
                         $inventario = Inventario::where('id_producto', $producto->id)
                             ->where('id_bodega', $venta->id_bodega)
                             ->first();
-                            
+
                         if ($inventario) {
                             if ($diferenciaStock > 0) {
                                 // Se agregaron productos, reducir stock
@@ -1871,15 +1825,10 @@ class ShopifyController extends Controller
                                 // Se quitaron productos, incrementar stock
                                 $inventario->increment('stock', abs($diferenciaStock));
                             }
-                            
-                            // Registrar en el kardex
-                            $inventario->kardex($venta, abs($diferenciaStock), $detalle->precio, $producto->costo);
-                            
-                            Log::info("Inventario ajustado por cambio de cantidad", [
-                                'producto_id' => $producto->id,
-                                'diferencia_stock' => $diferenciaStock,
-                                'stock_actual' => $inventario->stock
-                            ]);
+
+                            // Registrar en el kardex:
+                            // Positivo = Salida (Venta adicional), Negativo = Entrada (Venta Anulada)
+                            $inventario->kardex($venta, $diferenciaStock, $detalle->precio, $producto->costo);
                         }
                     }
                 } else {
@@ -1889,12 +1838,6 @@ class ShopifyController extends Controller
                         'cantidad_mantenida' => $cantidadAnterior
                     ]);
                 }
-            } else {
-                Log::info("Cantidad sin cambios para producto", [
-                    'venta_id' => $venta->id,
-                    'producto_id' => $producto->id,
-                    'cantidad' => $cantidadAnterior
-                ]);
             }
         }
         
@@ -2532,12 +2475,6 @@ class ShopifyController extends Controller
 
                     // Si no se encuentra el producto, crearlo
                     if (!$producto) {
-                        Log::info("Producto no encontrado en draft order, creando nuevo producto", [
-                            'variant_id' => $item['variant_id'] ?? 'N/A',
-                            'sku' => $item['sku'] ?? 'N/A',
-                            'title' => $item['title'] ?? 'N/A'
-                        ]);
-                        
                         $productoData = $this->transformer->transformarProducto(
                             $item,
                             $usuario->id_empresa,
@@ -2545,8 +2482,21 @@ class ShopifyController extends Controller
                             $usuario->id_sucursal
                         );
                         $producto = Producto::create($productoData);
-                        
-                        Log::info("Producto creado para draft order", ['producto_id' => $producto->id]);
+                    } else {
+                        // Si el producto ya existía pero no tiene vinculado shopify_variant_id, auto-vincularlo
+                        if (!empty($item['variant_id']) && $producto->shopify_variant_id != $item['variant_id']) {
+                            $existeConVariant = Producto::where('shopify_variant_id', $item['variant_id'])
+                                ->where('id_empresa', $usuario->id_empresa)
+                                ->where('id', '!=', $producto->id)
+                                ->exists();
+                            if (!$existeConVariant) {
+                                $producto->shopify_variant_id = $item['variant_id'];
+                                if (!empty($item['product_id']) && empty($producto->shopify_product_id)) {
+                                    $producto->shopify_product_id = $item['product_id'];
+                                }
+                                $producto->save();
+                            }
+                        }
                     }
 
                     // Crear detalle de venta

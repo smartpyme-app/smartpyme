@@ -10,7 +10,6 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithCustomCsvSettings;
 use Illuminate\Http\Request;
 use App\Models\Admin\Empresa;
-use App\Services\Contabilidad\LibroIvaMontosHelper;
 
 class AnexoContribuyentesExport implements FromCollection, WithMapping, WithCustomCsvSettings
 {
@@ -87,13 +86,11 @@ class AnexoContribuyentesExport implements FromCollection, WithMapping, WithCust
     public function collection()
     {
         $request = $this->request;//where('id_empresa', Auth::user()->id_empresa)
-
+        
         $ventas = Venta::with(['cliente', 'documento'])
                         ->where('estado', '!=', 'Anulada')
-                        ->when($request->tipo_documento, function($query) {
-                            return $query->whereHas('documento', function($q) {
-                                $q->where('nombre', 'Crédito fiscal');
-                            });
+                        ->whereHas('documento', function($q) {
+                            $q->where('nombre', 'Crédito fiscal');
                         })
                         ->when($request->id_sucursal, function ($query) use ($request) {
                             return $query->where('id_sucursal', $request->id_sucursal);
@@ -106,7 +103,15 @@ class AnexoContribuyentesExport implements FromCollection, WithMapping, WithCust
         $devoluciones = DevolucionVenta::with(['cliente', 'documento'])
             ->where('enable', true)
             ->whereHas('venta', function ($query) {
-                $query->where('estado', '!=', 'Anulada');
+                $query->where('estado', '!=', 'Anulada')
+                    ->whereHas('documento', function ($q) {
+                        $q->where('nombre', 'Crédito fiscal');
+                    });
+            })
+            ->where(function ($query) {
+                $query->whereHas('documento', function ($q) {
+                    $q->whereIn('nombre', ['Nota de crédito', 'Nota de débito']);
+                })->orWhereIn('tipo_dte', ['05', '06']);
             })
             ->when($request->id_sucursal, function ($query) use ($request) {
                 return $query->where('id_sucursal', $request->id_sucursal);
@@ -114,92 +119,163 @@ class AnexoContribuyentesExport implements FromCollection, WithMapping, WithCust
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->get();
 
-        $libroVentas = $ventas->merge($ventas)->merge($devoluciones)->sortBy(function ($item) {
-                return [$item['fecha'], $item['correlativo']];
+        if ($this->tieneFacturacionElectronica()) {
+            $ventas = $ventas->reject(function ($venta) {
+                return empty($venta->sello_mh);
             });
+            $devoluciones = $devoluciones->reject(function ($devolucion) {
+                return empty($devolucion->sello_mh) && empty($devolucion->dte);
+            });
+        }
 
-        return $libroVentas;
+        return $this->unirDocumentos($ventas, $devoluciones);
+    }
 
+    /**
+     * Una fila por documento. No volver a mergear $ventas consigo misma.
+     */
+    private function unirDocumentos($ventas, $devoluciones)
+    {
+        return $ventas->merge($devoluciones)->sortBy(function ($item) {
+            return [data_get($item, 'fecha'), data_get($item, 'correlativo')];
+        });
     }
 
     public function map($venta): array{
             setlocale(LC_NUMERIC, 'C');
 
+            $dte = $this->dteDe($venta);
+            $identificacion = $dte['identificacion'] ?? [];
             $documento = $venta->documento;
             $cliente = optional($venta->cliente);
+            $montos = $this->montosDe($venta, $dte);
 
-            $tipo = '03'; //CCF
+            $tipo = $identificacion['tipoDte'] ?? $this->tipoDesdeDocumentoLocal($documento);
 
-            if ($documento && $documento->nombre == 'Nota de crédito') {
-                $tipo = '05';
-            }
-
-            if ($documento && $documento->nombre == 'Nota de débito') {
-                $tipo = '06';
-            }
-
-            $ventaExenta = LibroIvaMontosHelper::ventasExentas($venta);
-            $ventaGravada = LibroIvaMontosHelper::ventasGravadas($venta);
-
-            $cuentaTerceros = (float) ($venta->cuenta_a_terceros ?? 0);
-
-            // Obtener número de control y sello según facturación electrónica
             $numeroControl = '';
             $sello = '';
             if ($this->tieneFacturacionElectronica()) {
-                // Para devoluciones
                 if (isset($venta->numero_control) && $venta->numero_control) {
                     $numeroControl = str_replace('-', '', $venta->numero_control);
                 }
-                // Para ventas
-                if ($venta->sello_mh && isset($venta->dte['identificacion']['numeroControl'])) {
-                    $numeroControl = str_replace('-', '', $venta->dte['identificacion']['numeroControl']);
+                if (isset($identificacion['numeroControl'])) {
+                    $numeroControl = str_replace('-', '', $identificacion['numeroControl']);
                 }
-                // Para devoluciones con DTE
-                $dte = $venta->dte ?? [];
-                if (isset($dte['identificacion']['numeroControl'])) {
-                    $numeroControl = str_replace('-', '', $dte['identificacion']['numeroControl']);
-                }
-                
-                // Obtener sello
-                if (isset($venta->dte['sello'])) {
-                    $sello = $venta->dte['sello'];
+
+                if (isset($dte['sello'])) {
+                    $sello = $dte['sello'];
                 } elseif (isset($venta->sello_mh) && $venta->sello_mh) {
                     $sello = $venta->sello_mh;
                 }
             }
 
-            // Según guía de Hacienda:
-            // Para documentos IMPRESOS (sin FE): F = correlativo, G = correlativo
-            // Para documentos DTE (con FE): F = código generación, G = vacío
-            $tieneFE = $this->tieneFacturacionElectronica() && ($venta->sello_mh || !empty($venta->dte ?? []));
-            $correlativo = trim($venta->correlativo);
+            $tieneFE = $this->tieneFacturacionElectronica() && ($venta->sello_mh || $dte !== []);
+            $correlativo = trim((string) $venta->correlativo);
             $codigoDoc = $this->obtenerCodigoGeneracion($venta);
-            
+            $fecha = $identificacion['fecEmi'] ?? $venta->fecha;
+
             $fields = [
-                \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y'), //A Fecha sin ceros a la izquierda
-                $this->obtenerClaseDocumentoGeneral($venta), //B Clase DTE o Impreso
-                $tipo, //C Tipo
-                $numeroControl, //D Num Resolución (vacío si impreso)
-                $sello, //E Num Serie (vacío si impreso)
-                $codigoDoc, //F Num Documento (código generación si DTE, correlativo si impreso)
-                $tieneFE ? '' : $correlativo, //G Número Control Interno (vacío si DTE, correlativo si impreso)
-                $cliente->ncr ?? $cliente->nit, //H NIT/NRC
-                isset($venta->dte['receptor']) ? $venta->dte['receptor']['nombre'] : $venta->nombre_cliente, //I Nombre
-                number_format($ventaExenta, 2, '.', ''), //J Exentas (formato numérico con 2 decimales)
-                number_format($venta->no_sujeta, 2, '.', ''), //K No sujetas (formato numérico con 2 decimales)
-                number_format($ventaGravada, 2, '.', ''), //L Gravadas (formato numérico con 2 decimales)
-                number_format($venta->iva, 2, '.', ''), //M Debido fiscal (formato numérico con 2 decimales)
-                number_format($cuentaTerceros, 2, '.', ''), //N Ventas a terceros
-                '0.00', //O Débito ventas a terceros (sin cálculo separado en sistema; coherente con libro IVA)
-                number_format($venta->total, 2, '.', ''), //P Total (formato numérico con 2 decimales)
-                '', //Q DUI (vacío)
-                $this->tipoOperacion($venta->tipo_operacion), //R Tipo operación renta 1 Gravada 2 Exenta
-                $this->tipoRenta($venta->tipo_renta), //S Tipo ingreso renta
-                1, //T Número de Anexo
+                \Carbon\Carbon::parse($fecha)->format('d/m/Y'),
+                $this->obtenerClaseDocumentoGeneral($venta),
+                $tipo,
+                $numeroControl,
+                $sello,
+                $codigoDoc,
+                $tieneFE ? '' : $correlativo,
+                $this->nitONrc($cliente, $dte),
+                $dte['receptor']['nombre'] ?? $venta->nombre_cliente,
+                number_format($montos['exenta'], 2, '.', ''),
+                number_format($montos['no_sujeta'], 2, '.', ''),
+                number_format($montos['gravada'], 2, '.', ''),
+                number_format($montos['iva'], 2, '.', ''),
+                number_format($montos['terceros'], 2, '.', ''),
+                '0.00',
+                number_format($montos['total'], 2, '.', ''),
+                '',
+                $this->tipoOperacion($venta->tipo_operacion),
+                $this->tipoRenta($venta->tipo_renta),
+                1,
             ];
 
         return $fields;
+    }
+
+    private function dteDe($item): array
+    {
+        $dte = $item->dte ?? [];
+
+        return is_array($dte) ? $dte : [];
+    }
+
+    private function tipoDesdeDocumentoLocal($documento): string
+    {
+        if ($documento && $documento->nombre == 'Nota de crédito') {
+            return '05';
+        }
+        if ($documento && $documento->nombre == 'Nota de débito') {
+            return '06';
+        }
+
+        return '03';
+    }
+
+    private function nitONrc($cliente, array $dte): string
+    {
+        $receptor = $dte['receptor'] ?? [];
+        if (!empty($receptor['nit'])) {
+            return str_replace('-', '', (string) $receptor['nit']);
+        }
+        if (!empty($receptor['nrc'])) {
+            return str_replace('-', '', (string) $receptor['nrc']);
+        }
+
+        return (string) ($cliente->ncr ?? $cliente->nit ?? '');
+    }
+
+    private function ivaDesdeResumen(array $resumen): ?float
+    {
+        foreach ($resumen['tributos'] ?? [] as $tributo) {
+            if (($tributo['codigo'] ?? '') === '20') {
+                return (float) ($tributo['valor'] ?? 0);
+            }
+        }
+
+        return null;
+    }
+
+    private function montosDe($venta, array $dte): array
+    {
+        $resumen = $dte['resumen'] ?? [];
+        if ($resumen !== []) {
+            return [
+                'exenta' => (float) ($resumen['totalExenta'] ?? 0),
+                'no_sujeta' => (float) ($resumen['totalNoSuj'] ?? 0),
+                'gravada' => (float) ($resumen['totalGravada'] ?? 0),
+                'iva' => $this->ivaDesdeResumen($resumen) ?? (float) ($venta->iva ?? 0),
+                'terceros' => (float) ($resumen['totalNoGravado'] ?? $venta->cuenta_a_terceros ?? 0),
+                'total' => (float) ($resumen['montoTotalOperacion'] ?? $resumen['totalPagar'] ?? $venta->total ?? 0),
+            ];
+        }
+
+        $exenta = (float) ($venta->exenta ?? 0);
+        $noSujeta = (float) ($venta->no_sujeta ?? 0);
+        $gravada = (float) ($venta->gravada ?? 0);
+        if ($gravada == 0.0 && $exenta == 0.0) {
+            if ((float) ($venta->iva ?? 0) > 0) {
+                $gravada = (float) ($venta->sub_total ?? 0);
+            } else {
+                $exenta = (float) ($venta->sub_total ?? 0);
+            }
+        }
+
+        return [
+            'exenta' => $exenta,
+            'no_sujeta' => $noSujeta,
+            'gravada' => $gravada,
+            'iva' => (float) ($venta->iva ?? 0),
+            'terceros' => (float) ($venta->cuenta_a_terceros ?? 0),
+            'total' => (float) ($venta->total ?? 0),
+        ];
     }
 
     public function getCsvSettings(): array
