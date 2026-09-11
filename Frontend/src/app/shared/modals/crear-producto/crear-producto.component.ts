@@ -79,6 +79,7 @@ export class CrearProductoComponent extends BaseModalComponent implements OnInit
 
     override openModal(template: TemplateRef<any>) {
         this.producto = {};
+        this.producto.mostrar_en_restaurante = true;
         this.subcategoriasFiltradas = [];
         if (this.permitirElegirTipo) {
             this.producto.tipo = 'Producto';

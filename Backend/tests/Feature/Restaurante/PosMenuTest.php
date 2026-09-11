@@ -145,6 +145,29 @@ final class PosMenuTest extends TestCase
         $this->assertSame(self::EMPRESA, $wheres['id_empresa']);
     }
 
+    public function test_consultas_restaurante_filtran_mostrar_en_restaurante(): void
+    {
+        $casos = [
+            PosMenuController::queryCategoriasRaiz(self::EMPRESA),
+            PosMenuController::querySubcategorias(self::EMPRESA, 42),
+            PosMenuController::queryProductos(self::EMPRESA),
+            PosMenuController::queryProductosDeCategoria(self::EMPRESA, 42),
+            PosMenuController::queryProductosDeSubcategoria(self::EMPRESA, 99),
+        ];
+
+        foreach ($casos as $query) {
+            $wheres = $this->wheres($query);
+            $this->assertTrue($wheres['mostrar_en_restaurante'] ?? false, $query->getModel()->getTable());
+        }
+
+        $raiz = PosMenuController::queryCategoriasRaiz(self::EMPRESA);
+        $grammar = $raiz->getQuery()->getGrammar();
+        $columnas = collect($raiz->getQuery()->columns)
+            ->map(fn ($c) => $c instanceof Expression ? (string) $c->getValue($grammar) : (string) $c)
+            ->implode(' ');
+        $this->assertStringContainsString('mostrar_en_restaurante', $columnas);
+    }
+
     public function test_modo_contenido_ramifica_por_subcategorias_activas(): void
     {
         $this->assertSame('productos', PosMenuController::modoContenido(0));

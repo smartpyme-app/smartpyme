@@ -54,7 +54,7 @@ import {
 import { esVentaPorConsigna, sincronizarFlagConsignaVenta, aplicarEstadoConsignaEnVenta } from '@utils/venta-consigna.util';
 import { debeDispararAtajoTcla } from '@utils/atajos-teclado.util';
 import { calcularCambioEfectivo } from '@utils/cambio-efectivo.util';
-import { resolverCanalVentaDefault } from '@utils/canal-venta.util';
+import { aplicarMeseroPrefillVenta, meseroPrefillDesdeNav, MeseroPrefill, resolverCanalVentaDefault } from '@utils/canal-venta.util';
 import { FACTURA_REMISION, esVentaConsignaRemision } from '../../../../constants/documento.constants';
 import { SharedModule } from '@shared/shared.module';
 import {
@@ -182,6 +182,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
   /** Pre-cuenta restaurante: al facturar desde cuenta-mesa */
   preCuentaId: number | null = null;
   sesionId: number | null = null;
+  private meseroPrefill: MeseroPrefill | null = null;
 
   /** Pedido canal (Spoties / manual): al facturar desde listado de pedidos */
   pedidoCanalId: number | null = null;
@@ -548,7 +549,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
         this.canales = canales;
         this.venta.id_canal = resolverCanalVentaDefault(
           canales,
-          this.apiService.auth_user()?.id_canal
+          this.meseroPrefill?.id_canal ?? this.apiService.auth_user()?.id_canal
         );
         this.cdr.markForCheck();
       },
@@ -768,6 +769,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
   }
 
   public cargarDatosIniciales() {
+    this.meseroPrefill = meseroPrefillDesdeNav(history.state) ?? this.meseroPrefill;
     this.venta = {};
     this.habilitarCuentaTerceros = false;
     this.retencionIvaGcUsuarioDecidio = false;
@@ -818,6 +820,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     this.venta.id_bodega = this.apiService.auth_user().id_bodega;
     this.venta.id_usuario = this.apiService.auth_user().id;
     this.venta.id_vendedor = this.apiService.auth_user().id;
+    aplicarMeseroPrefillVenta(this.venta, this.meseroPrefill, this.canales);
     this.venta.id_sucursal = this.apiService.auth_user().id_sucursal;
     this.venta.id_empresa = this.apiService.auth_user().id_empresa;
     this.inicializarMonedaVenta();

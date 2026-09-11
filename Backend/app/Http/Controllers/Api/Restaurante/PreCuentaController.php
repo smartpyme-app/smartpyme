@@ -539,6 +539,8 @@ class PreCuentaController extends Controller
         return response()->json([
             'pre_cuenta_id' => $preCuenta->id,
             'sesion_id' => $preCuenta->sesion_id,
+            'mesero_id' => $preCuenta->sesion->usuario_id,
+            'mesero_id_canal' => $preCuenta->sesion->mesero?->id_canal,
             'mesa_numero' => $preCuenta->sesion->mesa->numero,
             'subtotal' => $preCuenta->subtotal,
             'impuesto' => (float) ($preCuenta->impuesto ?? 0),

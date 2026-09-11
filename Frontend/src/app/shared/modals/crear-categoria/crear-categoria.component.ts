@@ -33,6 +33,7 @@ export class CrearCategoriaComponent extends BaseModalComponent implements OnIni
   override openModal(template: TemplateRef<any>) {
     this.categoria = {};
     this.categoria.enable = true;
+    this.categoria.mostrar_en_restaurante = true;
     this.categoria.subcategoria = false;
     this.categoria.id_empresa = this.apiService.auth_user().id_empresa;
     super.openModal(template, { class: 'modal-sm', backdrop: 'static' });

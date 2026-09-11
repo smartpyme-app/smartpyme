@@ -29,6 +29,17 @@
           </div>
         </div>
 
+        <div class="form-group col-md-12">
+          <div class="form-switch bg-light-info rounded">
+            <label for="mostrar_en_restaurante">Mostrar en restaurante</label>
+            <input class="form-check-input float-end"
+                   type="checkbox"
+                   role="switch"
+                   [(ngModel)]="categoria.mostrar_en_restaurante"
+                   name="mostrar_en_restaurante">
+          </div>
+        </div>
+
         <div class="form-group col-12">
           <label for="categoria.descripcion">Descripción</label>
           <textarea name="categoria.descripcion"

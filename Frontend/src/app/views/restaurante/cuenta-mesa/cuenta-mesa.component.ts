@@ -685,6 +685,8 @@ export class CuentaMesaComponent implements OnInit {
         const state = {
           preCuentaId: data.pre_cuenta_id,
           sesionId: data.sesion_id,
+          mesero_id: data.mesero_id,
+          mesero_id_canal: data.mesero_id_canal,
           preCuentaData: {
             mesa_numero: data.mesa_numero,
             subtotal: data.subtotal,

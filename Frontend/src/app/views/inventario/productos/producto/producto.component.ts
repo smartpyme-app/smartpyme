@@ -62,6 +62,9 @@ export class ProductoComponent implements OnInit {
 		        this.loading = true;
 		        this.apiService.read('producto/', params.id).subscribe(producto => {
 		            this.producto = producto;
+		            if (this.producto.mostrar_en_restaurante == null) {
+		                this.producto.mostrar_en_restaurante = true;
+		            }
                 const empresa = this.apiService.auth_user()?.empresa;
                 const pct = resolverPorcentajeImpuestoCompra(
                     producto.porcentaje_impuesto,
@@ -76,6 +79,7 @@ export class ProductoComponent implements OnInit {
 		        },error => {this.alertService.error(error);this.loading = false;});
 	      	} else {
 				this.producto = {};
+				this.producto.mostrar_en_restaurante = true;
 				this.producto.tipo = 'Producto';
 				this.producto.medida = 'Unidad';
 				this.producto.id_empresa = this.apiService.auth_user().id_empresa;
