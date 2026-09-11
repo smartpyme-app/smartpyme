@@ -972,7 +972,6 @@ class PartidasController extends Controller
                         'debe' => NULL,
                         'haber' => $ingreso->total,
                         'saldo' => 0,
-                        'productos' => $productos_venta,
                     ];
                 }
 
