@@ -370,9 +370,14 @@ class ShopifyTransformer
         $nombreVariante = $this->construirNombreVariante($shopifyData);
 
         // Obtener categoría "Uncategorized" por defecto para productos personalizados
-        $categoriaUncategorized = \App\Models\Inventario\Categorias\Categoria::where('id_empresa', $id_empresa)
-            ->where('nombre', 'Uncategorized')
-            ->first();
+        $categoriaUncategorized = null;
+        try {
+            $categoriaUncategorized = \App\Models\Inventario\Categorias\Categoria::where('id_empresa', $id_empresa)
+                ->where('nombre', 'Uncategorized')
+                ->first();
+        } catch (\Throwable $e) {
+            $categoriaUncategorized = null;
+        }
 
         // Procesar descripción: limitar a 100 caracteres para descripcion, completa para descripcion_completa
         $descripcionCompleta = $shopifyData['product']['body_html'] ?? '';
@@ -392,7 +397,8 @@ class ShopifyTransformer
             'costo' => $shopifyData['price'],
             'precio' => $shopifyData['price'],
             'shopify_id' => $shopifyData['id'],
-            'shopify_product_id' => $shopifyData['product_id'],
+            'shopify_product_id' => $shopifyData['product_id'] ?? null,
+            'shopify_variant_id' => $shopifyData['variant_id'] ?? null,
         ];
     }
 
