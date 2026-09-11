@@ -188,6 +188,30 @@ export class ClientesComponent extends BaseCrudComponent<any> implements OnInit 
     this.modalRef = this.modalService.show(template);
   }
 
+    public async descargarTodos(): Promise<void> {
+        this.downloading = true;
+        try {
+            const data = await this.apiService.export('clientes/exportar', this.filtros)
+                .pipe(this.untilDestroyed())
+                .toPromise() as Blob;
+            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'clientes.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            this.alertService.modal = false;
+        } catch (error: any) {
+            this.alertService.error(error);
+            this.alertService.modal = false;
+        } finally {
+            this.downloading = false;
+        }
+    }
+
     public async descargarPersonas(): Promise<void> {
         this.downloading = true;
         try {

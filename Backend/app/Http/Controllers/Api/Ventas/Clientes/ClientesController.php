@@ -15,6 +15,7 @@ use App\Imports\ClientesEmpresas;
 use App\Exports\ClientesPersonasExport;
 use App\Exports\ClientesEmpresasExport;
 use App\Exports\ClientesExtranjerosExport;
+use App\Exports\ClientesTodosExport;
 use App\Exports\ClientesPersonasPlantillaExport;
 use App\Exports\ClientesEmpresasPlantillaExport;
 use App\Exports\ClientesExtranjerosPlantillaExport;
@@ -784,6 +785,14 @@ class ClientesController extends Controller
         $clientes->filter($request);
 
         return Excel::download($clientes, 'clientes-extranjeros.xlsx');
+    }
+
+    public function exportTodos(Request $request)
+    {
+        $clientes = new ClientesTodosExport();
+        $clientes->filter($request);
+
+        return Excel::download($clientes, 'clientes.xlsx');
     }
 
     public function downloadPlantillaPersonas()
