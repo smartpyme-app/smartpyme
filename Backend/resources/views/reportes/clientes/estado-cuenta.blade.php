@@ -13,8 +13,15 @@
         
         body {
             font-family: sans-serif;
-            margin: 50px;
-            font-size: 10px;
+            margin: 36px;
+            font-size: 9px;
+        }
+
+        .logo {
+            display: block;
+            max-height: 56px;
+            max-width: 160px;
+            margin: 0 auto 8px auto;
         }
         
         h1,h2,h3,h4,h5,h6{
@@ -138,31 +145,50 @@
         }
         
         .col-documento { width: 8%; }
-        .col-fecha-doc { width: 8%; }
-        .col-valor-doc { width: 8%; }
-        .col-plazo { width: 6%; }
-        .col-vence { width: 8%; }
-        .col-saldo { width: 9%; }
-        .col-dias-mora { width: 6%; }
-        .col-sin-vencer { width: 8%; }
-        .col-30 { width: 8%; }
-        .col-60 { width: 8%; }
-        .col-90 { width: 8%; }
-        .col-120 { width: 8%; }
+        .col-fecha-doc { width: 7%; }
+        .col-valor-doc { width: 7%; }
+        .col-plazo { width: 5%; }
+        .col-vence { width: 7%; }
+        .col-saldo { width: 8%; }
+        .col-dias-mora { width: 5%; }
+        .col-sin-vencer { width: 7%; }
+        .col-30 { width: 7%; }
+        .col-60 { width: 7%; }
+        .col-90 { width: 7%; }
+        .col-120 { width: 7%; }
         .col-mas120 { width: 8%; }
+        .col-mas365 { width: 7%; }
     </style>
 </head>
 <body>
     @php
         $fechaActual = \Carbon\Carbon::now();
         $fechaActualStr = $fechaActual->format('d/m/Y');
-        $horaActualStr = $fechaActual->format('H:i:s');
-        
-        // Obtener la empresa y su moneda
+
         $empresa = $cliente->empresa;
         $simboloMoneda = $empresa && $empresa->currency ? $empresa->currency->currency_symbol : '$';
-        
-        // Calcular antigüedad para cada venta
+
+        $logoSrc = null;
+        if (!empty($empresa->logo)) {
+            $logoRel = ltrim(str_replace('\\', '/', (string) $empresa->logo), '/');
+            if ($logoRel !== '' && strpos($logoRel, '..') === false) {
+                $fullLogo = public_path('img'.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $logoRel));
+                if (is_file($fullLogo)) {
+                    $mime = null;
+                    if (function_exists('finfo_open')) {
+                        $fi = finfo_open(FILEINFO_MIME_TYPE);
+                        if ($fi) {
+                            $mime = finfo_file($fi, $fullLogo) ?: null;
+                            finfo_close($fi);
+                        }
+                    }
+                    if ($mime && strpos($mime, 'image/') === 0) {
+                        $logoSrc = 'data:'.$mime.';base64,'.base64_encode(file_get_contents($fullLogo));
+                    }
+                }
+            }
+        }
+
         $ventasConAntiguedad = [];
         $totales = [
             'saldo' => 0,
@@ -171,77 +197,50 @@
             'dias_60' => 0,
             'dias_90' => 0,
             'dias_120' => 0,
-            'mas_120' => 0
+            'mas_120' => 0,
+            'mas_365' => 0,
         ];
-        
+
         foreach($cliente->ventas as $venta) {
             $fechaDoc = \Carbon\Carbon::parse($venta->fecha);
             $fechaVence = $venta->fecha_pago ? \Carbon\Carbon::parse($venta->fecha_pago) : $fechaDoc->copy()->addDays(30);
-            
-            // Calcular plazo en días
-            $plazoDias = $fechaDoc->diffInDays($fechaVence);
-            
-            // Calcular días de mora (positivo si está vencido)
-            if ($fechaActual->greaterThan($fechaVence)) {
-                $diasMora = $fechaActual->diffInDays($fechaVence);
-            } else {
-                $diasMora = 0;
-            }
-            
-            // Antigüedad y saldos según saldo pendiente (abonos y devoluciones ya aplicados en el modelo)
+            $plazoDias = \App\Helpers\EstadoCuentaAntiguedadHelper::plazoDias($fechaDoc, $fechaVence);
+            $diasMora = \App\Helpers\EstadoCuentaAntiguedadHelper::diasMora($fechaVence, $fechaActual);
             $saldoPendiente = max(0, round((float) $venta->saldo, 2));
-            
-            // Clasificar según antigüedad
-            $sinVencer = 0;
-            $dias30 = 0;
-            $dias60 = 0;
-            $dias90 = 0;
-            $dias120 = 0;
-            $mas120 = 0;
-            
+
+            $montos = [
+                'sin_vencer' => 0,
+                'dias_30' => 0,
+                'dias_60' => 0,
+                'dias_90' => 0,
+                'dias_120' => 0,
+                'mas_120' => 0,
+                'mas_365' => 0,
+            ];
             if ($saldoPendiente > 0) {
-                if ($diasMora == 0) {
-                    $sinVencer = $saldoPendiente;
-                } elseif ($diasMora <= 30) {
-                    $dias30 = $saldoPendiente;
-                } elseif ($diasMora <= 60) {
-                    $dias60 = $saldoPendiente;
-                } elseif ($diasMora <= 90) {
-                    $dias90 = $saldoPendiente;
-                } elseif ($diasMora <= 120) {
-                    $dias120 = $saldoPendiente;
-                } else {
-                    $mas120 = $saldoPendiente;
-                }
+                $montos[\App\Helpers\EstadoCuentaAntiguedadHelper::bucket($diasMora)] = $saldoPendiente;
             }
-            
+
             $ventasConAntiguedad[] = [
                 'venta' => $venta,
                 'fecha_doc' => $fechaDoc,
                 'fecha_vence' => $fechaVence,
                 'plazo_dias' => $plazoDias,
                 'dias_mora' => $diasMora,
-                'sin_vencer' => $sinVencer,
-                'dias_30' => $dias30,
-                'dias_60' => $dias60,
-                'dias_90' => $dias90,
-                'dias_120' => $dias120,
-                'mas_120' => $mas120
-            ];
-            
-            // Acumular totales (solo saldo pendiente por documento)
+            ] + $montos;
+
             $totales['saldo'] += $saldoPendiente;
-            $totales['sin_vencer'] += $sinVencer;
-            $totales['dias_30'] += $dias30;
-            $totales['dias_60'] += $dias60;
-            $totales['dias_90'] += $dias90;
-            $totales['dias_120'] += $dias120;
-            $totales['mas_120'] += $mas120;
+            foreach ($montos as $key => $monto) {
+                $totales[$key] += $monto;
+            }
         }
     @endphp
     
     <!-- Encabezado simplificado -->
     <div class="header-simple">
+        @if($logoSrc)
+            <img class="logo" src="{{ $logoSrc }}" alt="">
+        @endif
         <div class="title">ANTIGÜEDAD DE SALDOS POR PAGAR</div>
         <div class="cliente-nombre">
             {{ $cliente->tipo == 'Empresa' ? $cliente->nombre_empresa : $cliente->nombre_completo }}
@@ -273,6 +272,7 @@
                 <th class="col-90">90 días</th>
                 <th class="col-120">120 días</th>
                 <th class="col-mas120">Más de 120</th>
+                <th class="col-mas365">+365 días</th>
             </tr>
         </thead>
         <tbody>
@@ -292,6 +292,7 @@
                     <td class="text-right">{{ $item['dias_90'] > 0 ? $simboloMoneda . number_format($item['dias_90'], 2, '.', ',') : $simboloMoneda . '0.00' }}</td>
                     <td class="text-right">{{ $item['dias_120'] > 0 ? $simboloMoneda . number_format($item['dias_120'], 2, '.', ',') : $simboloMoneda . '0.00' }}</td>
                     <td class="text-right">{{ $item['mas_120'] > 0 ? $simboloMoneda . number_format($item['mas_120'], 2, '.', ',') : $simboloMoneda . '0.00' }}</td>
+                    <td class="text-right">{{ $item['mas_365'] > 0 ? $simboloMoneda . number_format($item['mas_365'], 2, '.', ',') : $simboloMoneda . '0.00' }}</td>
                 </tr>
                 @foreach($v->abonos as $abono)
                     @php
@@ -303,6 +304,7 @@
                         <td class="col-documento">- {{ $nomDocAbono }} #{{ $corrAbono }}@if($abono->concepto)<br><span style="font-style:normal;font-size:8px;">{{ \Illuminate\Support\Str::limit($abono->concepto, 48) }}</span>@endif</td>
                         <td>{{ $fechaAbono->format('d/m/Y') }}</td>
                         <td class="text-right">{{ $simboloMoneda }}{{ number_format((float) $abono->total, 2, '.', ',') }}</td>
+                        <td>—</td>
                         <td>—</td>
                         <td>—</td>
                         <td>—</td>
@@ -329,6 +331,7 @@
                     <td class="text-right"><strong>{{ $simboloMoneda }}{{ number_format($totales['dias_90'], 2, '.', ',') }}</strong></td>
                     <td class="text-right"><strong>{{ $simboloMoneda }}{{ number_format($totales['dias_120'], 2, '.', ',') }}</strong></td>
                     <td class="text-right"><strong>{{ $simboloMoneda }}{{ number_format($totales['mas_120'], 2, '.', ',') }}</strong></td>
+                    <td class="text-right"><strong>{{ $simboloMoneda }}{{ number_format($totales['mas_365'], 2, '.', ',') }}</strong></td>
                 </tr>
             @endif
             
@@ -343,6 +346,7 @@
                 <td class="text-right"><strong>{{ $simboloMoneda }}{{ number_format($totales['dias_90'], 2, '.', ',') }}</strong></td>
                 <td class="text-right"><strong>{{ $simboloMoneda }}{{ number_format($totales['dias_120'], 2, '.', ',') }}</strong></td>
                 <td class="text-right"><strong>{{ $simboloMoneda }}{{ number_format($totales['mas_120'], 2, '.', ',') }}</strong></td>
+                <td class="text-right"><strong>{{ $simboloMoneda }}{{ number_format($totales['mas_365'], 2, '.', ',') }}</strong></td>
             </tr>
         </tbody>
     </table>
