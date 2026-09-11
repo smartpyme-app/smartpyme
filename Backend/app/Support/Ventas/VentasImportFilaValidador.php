@@ -10,7 +10,15 @@ class VentasImportFilaValidador
         'correlativo',
     ];
 
-    public const TIPOS_CLIENTE = ['Persona', 'Empresa'];
+    public const TIPOS_CLIENTE = ['Persona', 'Empresa', 'Extranjero'];
+
+    /** Identidad personal (Persona/Extranjero). NIT va en columnas nit/nrc (Empresa o CCF). */
+    public const TIPOS_DOCUMENTO_IDENTIDAD = [
+        'DUI',
+        'Pasaporte',
+        'Carnet de residente',
+        'Otro',
+    ];
 
     public const TIPOS_DOCUMENTO_VENTA = [
         'Factura',
@@ -62,7 +70,9 @@ class VentasImportFilaValidador
             $errores[] = $this->error(
                 $filaExcel,
                 'tipo_cliente',
-                $tipoCliente === '' ? 'es obligatorio (Persona o Empresa).' : 'debe ser Persona o Empresa.'
+                $tipoCliente === ''
+                    ? 'es obligatorio (Persona, Empresa o Extranjero).'
+                    : 'debe ser Persona, Empresa o Extranjero.'
             );
         }
 
@@ -127,13 +137,17 @@ class VentasImportFilaValidador
         }
 
         $esPersona = $this->igual($tipoCliente, 'Persona');
+        $esExtranjero = $this->igual($tipoCliente, 'Extranjero');
         $nombre = $this->celda($fila, 'nombre');
+
         if ($esPersona && !$this->esCreditoFiscal($tipoDocVenta) && !$this->esConsumidorFinal($nombre)) {
-            if ($this->celda($fila, 'tipo_documento') === '') {
-                $errores[] = $this->error($filaExcel, 'tipo_documento', 'es obligatorio para Persona (DUI, NIT, Pasaporte, etc.).');
-            }
-            if ($this->celda($fila, 'num_documento') === '') {
-                $errores[] = $this->error($filaExcel, 'num_documento', 'es obligatorio para Persona.');
+            $this->validarDocumentoIdentidad($fila, $filaExcel, $errores, 'Persona');
+        }
+
+        if ($esExtranjero) {
+            $this->validarDocumentoIdentidad($fila, $filaExcel, $errores, 'Extranjero');
+            if ($this->celda($fila, 'pais') === '') {
+                $errores[] = $this->error($filaExcel, 'pais', 'es obligatorio para Extranjero.');
             }
         }
 
@@ -214,7 +228,19 @@ class VentasImportFilaValidador
         $fila = $this->normalizarClaves($fila);
         $tipo = $this->celda($fila, 'tipo_cliente');
 
-        return $this->igual($tipo, 'Empresa') ? 'Empresa' : 'Persona';
+        if ($this->igual($tipo, 'Empresa')) {
+            return 'Empresa';
+        }
+        if ($this->igual($tipo, 'Extranjero')) {
+            return 'Extranjero';
+        }
+
+        return 'Persona';
+    }
+
+    public function esExtranjero(string $tipoCliente): bool
+    {
+        return $this->igual($tipoCliente, 'Extranjero');
     }
 
     /**
@@ -244,12 +270,42 @@ class VentasImportFilaValidador
                 return 'nit:' . $nit . '|nrc:' . $nrc;
             }
         }
+        if ($this->igual($this->celda($fila, 'tipo_cliente'), 'Extranjero')) {
+            $num = $this->celda($fila, 'num_documento');
+            if ($num !== '') {
+                return 'ext:' . $this->norm($this->celda($fila, 'pais')) . '|doc:' . $num;
+            }
+        }
         $num = $this->celda($fila, 'num_documento');
         if ($num !== '') {
             return 'doc:' . $num;
         }
 
         return 'nombre:' . $this->norm($this->celda($fila, 'nombre'));
+    }
+
+    /**
+     * @param  list<array{fila:int,columna:string,mensaje:string}>  $errores
+     */
+    private function validarDocumentoIdentidad(array $fila, int $filaExcel, array &$errores, string $etiqueta): void
+    {
+        $tipoDoc = $this->celda($fila, 'tipo_documento');
+        if ($tipoDoc === '') {
+            $errores[] = $this->error(
+                $filaExcel,
+                'tipo_documento',
+                "es obligatorio para {$etiqueta} (DUI, Pasaporte, Carnet de residente u Otro)."
+            );
+        } elseif (!$this->enLista($tipoDoc, self::TIPOS_DOCUMENTO_IDENTIDAD)) {
+            $errores[] = $this->error(
+                $filaExcel,
+                'tipo_documento',
+                'debe ser DUI, Pasaporte, Carnet de residente u Otro. Para NIT use tipo_cliente=Empresa y columnas nit/nrc.'
+            );
+        }
+        if ($this->celda($fila, 'num_documento') === '') {
+            $errores[] = $this->error($filaExcel, 'num_documento', "es obligatorio para {$etiqueta}.");
+        }
     }
 
     /**

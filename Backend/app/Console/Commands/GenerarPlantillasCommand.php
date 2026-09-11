@@ -6,6 +6,7 @@ use App\Models\MH\ActividadEconomica;
 use App\Models\MH\Departamento;
 use App\Models\MH\Distrito;
 use App\Models\MH\Municipio;
+use App\Models\MH\Pais;
 use Illuminate\Console\Command;
 use PhpOffice\PhpSpreadsheet\Cell\DataValidation;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -35,8 +36,8 @@ class GenerarPlantillasCommand extends Command
 
         $encabezados = [
             'tipo_cliente', 'tipo_documento_venta', 'correlativo', 'estado_factura',
-            'nombre', 'tipo_documento', 'num_documento',
-            'nombre_comercial', 'nit', 'nrc', 'giro',
+            'nombre', 'apellido', 'tipo_documento', 'num_documento',
+            'nombre_comercial', 'nit', 'nrc', 'giro', 'pais',
             'departamento', 'municipio', 'distrito', 'direccion', 'telefono', 'correo',
             'fecha', 'descripcion', 'tipo_item', 'forma_pago',
             'no_sujeta', 'exenta', 'gravada', 'subtotal', 'iva', 'iva_retenido', 'total',
@@ -85,9 +86,9 @@ class GenerarPlantillasCommand extends Command
     {
         $numFilas = 100;
         $listas = [
-            'tipo_cliente' => '"Persona,Empresa"',
+            'tipo_cliente' => '"Persona,Empresa,Extranjero"',
             'tipo_documento_venta' => '"Factura,Ticket,Crédito fiscal,Factura de exportación"',
-            'tipo_documento' => '"DUI,NIT,Pasaporte,Carnet de residente,Otro"',
+            'tipo_documento' => '"DUI,Pasaporte,Carnet de residente,Otro"',
             'estado_factura' => '"Pagada,Pendiente,Anulada"',
             'tipo_item' => '"Servicio"',
             'forma_pago' => '"Efectivo,Tarjeta de crédito/débito,Cheque,Transferencia,Vales,Chivo Wallet,Bitcoin"',
@@ -125,15 +126,17 @@ class GenerarPlantillasCommand extends Command
         $valores->setCellValue('B1', 'municipio');
         $valores->setCellValue('C1', 'distrito');
         $valores->setCellValue('D1', 'giro');
-        $valores->getStyle('A1:D1')->getFont()->setBold(true);
+        $valores->setCellValue('E1', 'pais');
+        $valores->getStyle('A1:E1')->getFont()->setBold(true);
 
         try {
             $deps = Departamento::orderBy('nombre')->pluck('nombre')->all();
             $muns = Municipio::orderBy('nombre')->pluck('nombre')->all();
             $dists = Distrito::orderBy('nombre')->pluck('nombre')->all();
             $giros = ActividadEconomica::orderBy('nombre')->pluck('nombre')->all();
+            $paises = Pais::orderBy('nombre')->pluck('nombre')->all();
         } catch (\Throwable $e) {
-            $deps = $muns = $dists = $giros = [];
+            $deps = $muns = $dists = $giros = $paises = [];
         }
 
         foreach ($deps as $i => $nombre) {
@@ -147,6 +150,9 @@ class GenerarPlantillasCommand extends Command
         }
         foreach ($giros as $i => $nombre) {
             $valores->setCellValue('D' . ($i + 2), $nombre);
+        }
+        foreach ($paises as $i => $nombre) {
+            $valores->setCellValue('E' . ($i + 2), $nombre);
         }
     }
 
@@ -165,17 +171,18 @@ class GenerarPlantillasCommand extends Command
             ['A8', 'tipo_cliente, tipo_documento_venta, correlativo, nombre, fecha, descripcion, total, forma_pago.'],
             ['A9', 'El correlativo es el número histórico de la factura; no se asigna automáticamente.'],
             ['A11', '3. TIPO DE CLIENTE Y DOCUMENTO:'],
-            ['A12', 'tipo_cliente: Persona o Empresa. Una Persona también puede recibir Crédito fiscal.'],
-            ['A13', 'Si tipo_documento_venta es Crédito fiscal, nit y nrc son obligatorios (Persona o Empresa).'],
-            ['A14', 'tipo_documento_venta: Factura, Ticket, Crédito fiscal, Factura de exportación.'],
-            ['A16', '4. FORMAS DE PAGO:'],
-            ['A17', 'Efectivo, Tarjeta de crédito/débito, Cheque, Transferencia, Vales, Chivo Wallet, Bitcoin.'],
-            ['A19', '5. DETALLE:'],
-            ['A20', 'Son ventas históricas: el ítem se guarda siempre como Servicio. No se busca en inventario.'],
-            ['A22', '6. CONDICIÓN:'],
-            ['A23', 'Contado o Crédito. Si es Crédito, fecha_pago es obligatorio.'],
-            ['A25', '7. ERRORES:'],
-            ['A26', 'Si hay un error no se importa nada. El sistema indica fila, columna y motivo.'],
+            ['A12', 'tipo_cliente: Persona, Empresa o Extranjero. Una Persona también puede recibir Crédito fiscal.'],
+            ['A13', 'Persona/Extranjero: tipo_documento + num_documento (DUI, Pasaporte, etc.). Empresa o Crédito fiscal: columnas nit y nrc (no repita NIT en tipo_documento).'],
+            ['A14', 'Extranjero: obligatorio pais, tipo_documento y num_documento. Suele usarse con Factura de exportación.'],
+            ['A15', 'tipo_documento_venta: Factura, Ticket, Crédito fiscal, Factura de exportación.'],
+            ['A17', '4. FORMAS DE PAGO:'],
+            ['A18', 'Efectivo, Tarjeta de crédito/débito, Cheque, Transferencia, Vales, Chivo Wallet, Bitcoin.'],
+            ['A20', '5. DETALLE:'],
+            ['A21', 'Son ventas históricas: el ítem se guarda siempre como Servicio. No se busca en inventario.'],
+            ['A23', '6. CONDICIÓN:'],
+            ['A24', 'Contado o Crédito. Si es Crédito, fecha_pago es obligatorio.'],
+            ['A26', '7. ERRORES:'],
+            ['A27', 'Si hay un error no se importa nada. El sistema indica fila, columna y motivo.'],
         ];
 
         foreach ($filas as $fila) {

@@ -106,4 +106,64 @@ class VentasImportFilaValidadorTest extends TestCase
     {
         $this->assertSame('Servicio', $this->v->tipoItemDetalle());
     }
+
+    public function test_extranjero_factura_exportacion_valida(): void
+    {
+        $this->assertSame([], $this->v->validarFila($this->fila([
+            'tipo_cliente' => 'Extranjero',
+            'tipo_documento_venta' => 'Factura de exportación',
+            'nombre' => 'John',
+            'apellido' => 'Doe',
+            'tipo_documento' => 'Pasaporte',
+            'num_documento' => 'AB123456',
+            'pais' => 'Estados Unidos',
+        ]), 2));
+    }
+
+    public function test_extranjero_sin_pais(): void
+    {
+        $err = $this->v->validarFila($this->fila([
+            'tipo_cliente' => 'Extranjero',
+            'tipo_documento' => 'Pasaporte',
+            'num_documento' => 'AB123456',
+            'pais' => '',
+        ]), 4);
+        $this->assertSame('pais', $err[0]['columna']);
+    }
+
+    public function test_persona_con_tipo_documento_nit_rechazado(): void
+    {
+        $err = $this->v->validarFila($this->fila([
+            'tipo_documento' => 'NIT',
+            'num_documento' => '0614-010190-001-1',
+        ]), 6);
+        $cols = array_column($err, 'columna');
+        $this->assertContains('tipo_documento', $cols);
+    }
+
+    public function test_tipo_cliente_extranjero(): void
+    {
+        $fila = ['tipo_cliente' => 'Extranjero'];
+        $this->assertSame('Extranjero', $this->v->tipoCliente($fila));
+    }
+
+    public function test_agrupa_extranjero_por_pais_y_documento(): void
+    {
+        $a = $this->fila([
+            'tipo_cliente' => 'Extranjero',
+            'tipo_documento_venta' => 'Factura de exportación',
+            'tipo_documento' => 'Pasaporte',
+            'num_documento' => 'X1',
+            'pais' => 'Guatemala',
+        ]);
+        $b = $this->fila([
+            'tipo_cliente' => 'Extranjero',
+            'tipo_documento_venta' => 'Factura de exportación',
+            'tipo_documento' => 'Pasaporte',
+            'num_documento' => 'X1',
+            'pais' => 'Guatemala',
+            'descripcion' => 'Otro item',
+        ]);
+        $this->assertSame($this->v->claveAgrupacion($a), $this->v->claveAgrupacion($b));
+    }
 }

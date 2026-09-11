@@ -113,8 +113,8 @@ class VentasExcelImportConsumidorFinalTest extends TestCase
         return [
             'tipo_cliente' => 'Persona',
             'nombre' => 'DESARROLLADORA ORIZABA, S.A. DE C.V.',
-            'tipo_documento' => 'NIT',
-            'num_documento' => 6231609241075,
+            'tipo_documento' => 'DUI',
+            'num_documento' => '05027470-7',
             'departamento' => 'San Salvador',
             'municipio' => 'SAN SALVADOR CENTRO',
             'distrito' => 'SAN SALVADOR',

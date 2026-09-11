@@ -9,6 +9,7 @@ use App\Models\MH\ActividadEconomica;
 use App\Models\MH\Departamento;
 use App\Models\MH\Distrito;
 use App\Models\MH\Municipio;
+use App\Models\MH\Pais;
 use App\Models\Ventas\Clientes\Cliente;
 use App\Models\Ventas\Detalle;
 use App\Models\Ventas\Impuesto as ImpuestoVenta;
@@ -29,7 +30,7 @@ use Illuminate\Support\Facades\Log;
 /**
  * Importación de ventas históricas desde la plantilla unificada.
  *
- * Discriminadores: tipo_cliente (Persona|Empresa) y tipo_documento_venta
+ * Discriminadores: tipo_cliente (Persona|Empresa|Extranjero) y tipo_documento_venta
  * (Factura|Ticket|Crédito fiscal|Factura de exportación). Correlativo obligatorio.
  * Crédito fiscal exige nit y nrc aunque el cliente sea Persona.
  * El detalle siempre es Servicio (id_producto = 0). Errores: fila + columna + mensaje.
@@ -44,6 +45,15 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
     protected $importar_hoja = true; 
     protected $primera_hoja_procesada = false;
     protected VentasImportFilaValidador $validador;
+
+    /** @var array<string, string> Códigos MH (mismo mapa que ClientesExtranjeros). */
+    private const CODIGOS_TIPO_DOCUMENTO = [
+        'DUI' => '13',
+        'NIT' => '36',
+        'Pasaporte' => '03',
+        'Carnet de residente' => '02',
+        'Otro' => '37',
+    ];
 
     public function __construct()
     {
@@ -338,6 +348,27 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
     protected function buscarCliente($fila)
     {
         $fila = $this->filaComoArray($fila);
+        if ($this->validador->tipoCliente($fila) === 'Extranjero') {
+            $numDoc = $this->normalizarTextoNumero($fila['num_documento'] ?? '');
+            if ($numDoc !== '') {
+                $codTipoDoc = $this->codigoTipoDocumento($fila['tipo_documento'] ?? 'Pasaporte');
+                $cliente = Cliente::where('id_empresa', Auth::user()->id_empresa)
+                    ->where('tipo', 'Extranjero')
+                    ->where(function ($q) use ($numDoc, $fila) {
+                        $q->where('dui', $numDoc)
+                            ->orWhere('dui', (string) ($fila['num_documento'] ?? ''));
+                    })
+                    ->where('tipo_documento', $codTipoDoc)
+                    ->first();
+                if ($cliente) {
+                    $this->actualizarCliente($cliente, $fila);
+                }
+
+                return $cliente;
+            }
+
+            return null;
+        }
         if ($this->tipo_documento == 'credito_fiscal' || $this->validador->tipoCliente($fila) === 'Empresa') {
             $nit = $this->normalizarTextoNumero($fila['nit'] ?? '');
             $ncr = $this->normalizarTextoNumero($fila['nrc'] ?? $fila['ncr'] ?? '');
@@ -416,6 +447,9 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
                 'dui' => $this->normalizarTextoNumero($fila['num_documento'] ?? '')
             ]);
         }
+        if ($this->validador->tipoCliente($fila) === 'Extranjero') {
+            $datosCliente = array_merge($datosCliente, $this->datosClienteExtranjero($fila, $giroInfo));
+        }
         $cliente->fill($datosCliente);
         $cliente->save();
         return $cliente;
@@ -464,11 +498,50 @@ class VentasExcelImport implements ToCollection, WithHeadingRow, WithEvents
                 'dui' => $this->normalizarTextoNumero($fila['num_documento'] ?? '')
             ]);
         }
+        if ($this->validador->tipoCliente($fila) === 'Extranjero') {
+            $datosCliente = array_merge($datosCliente, $this->datosClienteExtranjero($fila, $giroInfo));
+        }
 
         $cliente->fill($datosCliente);
         $cliente->save();
 
         return $cliente;
+    }
+
+    /**
+     * @param  array<string, mixed>  $fila
+     * @param  array{giro:?string,cod_giro:?string}  $giroInfo
+     * @return array<string, mixed>
+     */
+    protected function datosClienteExtranjero(array $fila, array $giroInfo): array
+    {
+        $pais = trim((string) ($fila['pais'] ?? ''));
+
+        return [
+            'tipo_contribuyente' => 'Pequeño',
+            'tipo_documento' => $this->codigoTipoDocumento($fila['tipo_documento'] ?? 'Pasaporte'),
+            'dui' => $this->normalizarTextoNumero($fila['num_documento'] ?? ''),
+            'pais' => $pais,
+            'cod_pais' => $this->resolverCodPais($pais),
+            'giro' => $giroInfo['giro'],
+            'cod_giro' => $giroInfo['cod_giro'],
+            'nombre_empresa' => $fila['nombre_comercial'] ?? null,
+        ];
+    }
+
+    protected function codigoTipoDocumento(string $tipoDocumento): string
+    {
+        return self::CODIGOS_TIPO_DOCUMENTO[$tipoDocumento] ?? '37';
+    }
+
+    protected function resolverCodPais(string $pais): ?string
+    {
+        if ($pais === '') {
+            return null;
+        }
+        $registro = Pais::whereRaw('LOWER(TRIM(nombre)) = ?', [strtolower($pais)])->first();
+
+        return $registro ? $registro->cod : null;
     }
 
     /**
