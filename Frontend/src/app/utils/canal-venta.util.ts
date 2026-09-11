@@ -34,3 +34,38 @@ export function resolverCanalVentaDefault(
 
   return Number(canales[0].id);
 }
+
+export interface MeseroPrefill {
+  id: number;
+  id_canal: number | null;
+}
+
+/** Lee mesero_id / mesero_id_canal del state al facturar una pre-cuenta de mesa. */
+export function meseroPrefillDesdeNav(state: unknown): MeseroPrefill | null {
+  const s = state as { mesero_id?: unknown; mesero_id_canal?: unknown; preCuentaData?: { mesero_id?: unknown; mesero_id_canal?: unknown } } | null;
+  const rawId = s?.mesero_id ?? s?.preCuentaData?.mesero_id;
+  if (rawId == null || rawId === '') {
+    return null;
+  }
+  const rawCanal = s?.mesero_id_canal ?? s?.preCuentaData?.mesero_id_canal;
+  return {
+    id: Number(rawId),
+    id_canal: rawCanal == null || rawCanal === '' ? null : Number(rawCanal),
+  };
+}
+
+/** Prefill vendedor y canal con el mesero de la mesa. El usuario de caja no se toca. */
+export function aplicarMeseroPrefillVenta(
+  venta: { id_vendedor?: unknown; id_canal?: unknown },
+  mesero: MeseroPrefill | null | undefined,
+  canales?: CanalVentaOption[] | null,
+): boolean {
+  if (!mesero?.id) {
+    return false;
+  }
+  venta.id_vendedor = mesero.id;
+  if (canales?.length) {
+    venta.id_canal = resolverCanalVentaDefault(canales, mesero.id_canal);
+  }
+  return true;
+}

@@ -118,27 +118,27 @@ class PosMenuController extends Controller
 
     public static function queryCategoriasRaiz(int $idEmpresa): Builder
     {
-        return PosMenuCatalog::queryCategoriasRaiz($idEmpresa);
+        return PosMenuCatalog::queryCategoriasRaiz($idEmpresa, true);
     }
 
     public static function querySubcategorias(int $idEmpresa, int $idCategoria): Builder
     {
-        return PosMenuCatalog::querySubcategorias($idEmpresa, $idCategoria);
+        return PosMenuCatalog::querySubcategorias($idEmpresa, $idCategoria, true);
     }
 
     public static function queryProductosDeCategoria(int $idEmpresa, int $idCategoria): Builder
     {
-        return PosMenuCatalog::queryProductosDeCategoria($idEmpresa, $idCategoria);
+        return PosMenuCatalog::queryProductosDeCategoria($idEmpresa, $idCategoria, true);
     }
 
     public static function queryProductosDeSubcategoria(int $idEmpresa, int $idSubcategoria): Builder
     {
-        return PosMenuCatalog::queryProductosDeSubcategoria($idEmpresa, $idSubcategoria);
+        return PosMenuCatalog::queryProductosDeSubcategoria($idEmpresa, $idSubcategoria, true);
     }
 
     public static function queryProductos(int $idEmpresa): Builder
     {
-        return PosMenuCatalog::queryProductos($idEmpresa);
+        return PosMenuCatalog::queryProductos($idEmpresa, true);
     }
 
     public static function modoContenido(int $subcategoriasCount): string

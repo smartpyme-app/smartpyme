@@ -1,4 +1,4 @@
-import { resolverCanalVentaDefault } from './canal-venta.util';
+import { aplicarMeseroPrefillVenta, meseroPrefillDesdeNav, resolverCanalVentaDefault } from './canal-venta.util';
 
 describe('resolverCanalVentaDefault', () => {
   const canales = [
@@ -29,5 +29,33 @@ describe('resolverCanalVentaDefault', () => {
 
   it('retorna null si no hay canales', () => {
     expect(resolverCanalVentaDefault([], 10)).toBeNull();
+  });
+});
+
+describe('meseroPrefillDesdeNav / aplicarMeseroPrefillVenta', () => {
+  const canales = [
+    { id: 10, predeterminado: 0 },
+    { id: 20, predeterminado: 1 },
+  ];
+
+  it('lee mesero_id del state de navegación', () => {
+    expect(meseroPrefillDesdeNav({ mesero_id: 7, mesero_id_canal: 10 })).toEqual({
+      id: 7,
+      id_canal: 10,
+    });
+  });
+
+  it('no prellena si no hay mesero', () => {
+    const venta = { id_usuario: 1, id_vendedor: 1, id_canal: 20 };
+    expect(aplicarMeseroPrefillVenta(venta, null, canales)).toBe(false);
+    expect(venta.id_usuario).toBe(1);
+  });
+
+  it('pone vendedor y canal del mesero y deja el usuario de caja', () => {
+    const venta = { id_usuario: 1, id_vendedor: 1, id_canal: 20 };
+    expect(aplicarMeseroPrefillVenta(venta, { id: 7, id_canal: 10 }, canales)).toBe(true);
+    expect(venta.id_usuario).toBe(1);
+    expect(venta.id_vendedor).toBe(7);
+    expect(venta.id_canal).toBe(10);
   });
 });

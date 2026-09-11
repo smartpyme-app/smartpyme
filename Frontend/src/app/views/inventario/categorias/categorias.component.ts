@@ -52,6 +52,7 @@ export class CategoriasComponent extends BaseCrudComponent<any> implements OnIni
             initNewItem: (item) => {
                 item.id_empresa = apiService.auth_user().id_empresa;
                 item.enable = true;
+                item.mostrar_en_restaurante = true;
                 return item;
             }
         });
@@ -143,6 +144,9 @@ export class CategoriasComponent extends BaseCrudComponent<any> implements OnIni
                 .subscribe({
                     next: (categoriaCompleta) => {
                         this.loading = false;
+                        if (categoriaCompleta.mostrar_en_restaurante == null) {
+                            categoriaCompleta.mostrar_en_restaurante = true;
+                        }
                         // Usar el método heredado con la categoría completa que incluye las cuentas
                         super.openModal(template, categoriaCompleta, {
                             class: 'modal-lg',
@@ -186,7 +190,7 @@ export class CategoriasComponent extends BaseCrudComponent<any> implements OnIni
         }
 
         const formData = new FormData();
-        const keys = ['id', 'nombre', 'descripcion', 'id_empresa', 'enable', 'subcategoria', 'id_cate_padre'];
+        const keys = ['id', 'nombre', 'descripcion', 'id_empresa', 'enable', 'mostrar_en_restaurante', 'subcategoria', 'id_cate_padre'];
         for (const key of keys) {
             const val = categoriaToSave[key];
             if (val === undefined || val === null) {

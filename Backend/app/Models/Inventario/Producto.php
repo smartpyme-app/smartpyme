@@ -69,6 +69,7 @@ class Producto extends AuditableModel
         'syncing_from_shopify',
         'last_shopify_sync',
         'genera_comanda',
+        'mostrar_en_restaurante',
         'cod_proveed_prod',
         'talla',
         'color',
@@ -87,6 +88,7 @@ class Producto extends AuditableModel
         'imported_from_woocommerce_csv' => 'boolean',
         'inventario_por_lotes' => 'boolean',
         'genera_comanda' => 'boolean',
+        'mostrar_en_restaurante' => 'boolean',
         'destino_comanda' => 'string',
     ];
 

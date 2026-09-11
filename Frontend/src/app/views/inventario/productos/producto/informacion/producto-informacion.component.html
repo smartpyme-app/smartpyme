@@ -198,6 +198,13 @@
 
         <div class="form-group col-md-6 col-lg-5 without-label">
             <div class="form-switch bg-light-info rounded">
+                <label>Mostrar en restaurante</label>
+                <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="producto.mostrar_en_restaurante" name="mostrar_en_restaurante">
+            </div>
+        </div>
+
+        <div class="form-group col-md-6 col-lg-5 without-label">
+            <div class="form-switch bg-light-info rounded">
                 <label>Genera comanda</label>
                 <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="producto.genera_comanda" name="genera_comanda">
             </div>

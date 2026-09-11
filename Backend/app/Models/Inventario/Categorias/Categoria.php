@@ -14,12 +14,16 @@ class Categoria extends Model
         'img',
         'descripcion',
         'enable',
+        'mostrar_en_restaurante',
         'id_empresa',
         'subcategoria',
         'id_cate_padre'
     );
 
-    protected $casts = ['enable' => 'string'];
+    protected $casts = [
+        'enable' => 'string',
+        'mostrar_en_restaurante' => 'boolean',
+    ];
 
     protected static function boot()
     {

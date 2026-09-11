@@ -58,4 +58,17 @@ final class PosMenuVentasTest extends TestCase
         $this->assertTrue($wheres->has('enable'));
         $this->assertTrue($wheres->has('subcategoria'));
     }
+
+    public function test_catalogo_facturacion_no_filtra_mostrar_en_restaurante(): void
+    {
+        $cat = collect(PosMenuCatalog::queryCategoriasRaiz(self::EMPRESA)->getQuery()->wheres)
+            ->pluck('column')
+            ->all();
+        $prod = collect(PosMenuCatalog::queryProductos(self::EMPRESA)->getQuery()->wheres)
+            ->pluck('column')
+            ->all();
+
+        $this->assertNotContains('mostrar_en_restaurante', $cat);
+        $this->assertNotContains('mostrar_en_restaurante', $prod);
+    }
 }
