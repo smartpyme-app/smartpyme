@@ -85,7 +85,7 @@ export class KardexComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.filtros.inicio = this.apiService.date();
     this.filtros.fin = this.apiService.date();
-    this.filtros.id_inventario = this.apiService.auth_user().id_sucursal;
+    this.filtros.id_inventario = this.apiService.auth_user().id_bodega;
     this.filtros.lote_id = '';
     this.filtros.detalle = '';
     this.filtros.orden = 'fecha';
