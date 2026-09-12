@@ -23,10 +23,10 @@ class ShopifySyncCache
         
         Cache::forever($key, $snapshot);
         
-        ShopifyHelper::log("ShopifySyncCache: Snapshot de producto guardado", [
-            'producto_id' => $producto->id,
-            'snapshot' => $snapshot
-        ]);
+        // ShopifyHelper::log("ShopifySyncCache: Snapshot de producto guardado", [
+        //     'producto_id' => $producto->id,
+        //     'snapshot' => $snapshot
+        // ]);
     }
 
     public function saveInventorySnapshot($inventario, $productoId)
@@ -39,10 +39,10 @@ class ShopifySyncCache
         
         Cache::forever($key, $snapshot);
         
-        ShopifyHelper::log("ShopifySyncCache: Snapshot inventario guardado", [
-            'producto_id' => $productoId,
-            'stock' => $inventario->stock
-        ]);
+        // ShopifyHelper::log("ShopifySyncCache: Snapshot inventario guardado", [
+        //     'producto_id' => $productoId,
+        //     'stock' => $inventario->stock
+        // ]);
     }
 
     public function hasProductChanged($producto)
@@ -66,12 +66,12 @@ class ShopifySyncCache
         
         $changed = $cached !== $current;
         
-        ShopifyHelper::log("ShopifySyncCache: Verificación cambio producto", [
-            'producto_id' => $producto->id,
-            'cached' => $cached,
-            'current' => $current,
-            'changed' => $changed
-        ]);
+        // ShopifyHelper::log("ShopifySyncCache: Verificación cambio producto", [
+        //     'producto_id' => $producto->id,
+        //     'cached' => $cached,
+        //     'current' => $current,
+        //     'changed' => $changed
+        // ]);
         
         return $changed;
     }
@@ -89,12 +89,12 @@ class ShopifySyncCache
         $currentStock = (float) $inventario->stock;
         $changed = $cachedStock != $currentStock;
         
-        ShopifyHelper::log("ShopifySyncCache: Verificación cambio inventario", [
-            'producto_id' => $productoId,
-            'cached_stock' => $cached['stock'] ?? null,
-            'current_stock' => $inventario->stock,
-            'changed' => $changed
-        ]);
+        // ShopifyHelper::log("ShopifySyncCache: Verificación cambio inventario", [
+        //     'producto_id' => $productoId,
+        //     'cached_stock' => $cached['stock'] ?? null,
+        //     'current_stock' => $inventario->stock,
+        //     'changed' => $changed
+        // ]);
         
         return $changed;
     }
@@ -121,12 +121,12 @@ class ShopifySyncCache
         
         $different = $localData !== $shopifyFormatted;
         
-        ShopifyHelper::log("ShopifySyncCache: Comparación Shopify vs Local", [
-            'producto_id' => $localProduct->id,
-            'local' => $localData,
-            'shopify' => $shopifyFormatted,
-            'different' => $different
-        ]);
+        // ShopifyHelper::log("ShopifySyncCache: Comparación Shopify vs Local", [
+        //     'producto_id' => $localProduct->id,
+        //     'local' => $localData,
+        //     'shopify' => $shopifyFormatted,
+        //     'different' => $different
+        // ]);
         
         return $different;
     }

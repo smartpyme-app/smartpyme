@@ -563,15 +563,15 @@ class ShopifyTransformer
                 'shopify_image_id' => $this->obtenerPrimeraImagenId($shopifyData),
             ];
 
-            ShopifyHelper::log("ShopifyTransformer: Variante transformada desde Shopify", [
-                'shopify_product_id' => $shopifyData['id'] ?? null,
-                'shopify_variant_id' => $variant['id'] ?? null,
-                'sku' => $codigo,
-                'inventory_item_id' => $variant['inventory_item_id'] ?? null,
-                'inventory_quantity_total_shopify' => $variant['inventory_quantity'] ?? null,
-                '_stock_asignado' => intval($variant['inventory_quantity'] ?? 0),
-                'es_importacion_masiva' => $esImportacionMasiva,
-            ]);
+            // ShopifyHelper::log("ShopifyTransformer: Variante transformada desde Shopify", [
+            //     'shopify_product_id' => $shopifyData['id'] ?? null,
+            //     'shopify_variant_id' => $variant['id'] ?? null,
+            //     'sku' => $codigo,
+            //     'inventory_item_id' => $variant['inventory_item_id'] ?? null,
+            //     'inventory_quantity_total_shopify' => $variant['inventory_quantity'] ?? null,
+            //     '_stock_asignado' => intval($variant['inventory_quantity'] ?? 0),
+            //     'es_importacion_masiva' => $esImportacionMasiva,
+            // ]);
         }
         return $productos;
     }
