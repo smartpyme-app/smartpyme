@@ -500,7 +500,7 @@ class GenerarDocumentosController extends Controller
                 $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos', 'documento');
                 $configurePdf = fn ($pdf) => $pdf->setPaper('US Letter', 'portrait');
             }
-            elseif(Auth::user()->id_empresa == 830 || Auth::user()->id_empresa == 774 ){ //830 Inversiones Padilla - Honduras
+            elseif(Auth::user()->id_empresa == 830 || Auth::user()->id_empresa == 774 || Auth::user()->id_empresa ==  839 ){ //830 Inversiones Padilla - Honduras y ECINCO
                 $venta->load('detalles.producto', 'vendedor', 'sucursal');
                 $viewImpresion = 'reportes.facturacion.formatos_empresas.Factura-Inversiones-Padilla';
                 $viewData = compact('venta', 'empresa', 'cliente', 'dolares', 'centavos', 'documento');
