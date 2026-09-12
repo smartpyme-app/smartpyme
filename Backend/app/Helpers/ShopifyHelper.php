@@ -7,9 +7,24 @@ use App\Models\MH\Departamento;
 use App\Models\MH\Distrito;
 use App\Models\MH\Municipio;
 use App\Models\Ventas\Clientes\Cliente;
+use Illuminate\Support\Facades\Log;
 
 class ShopifyHelper
 {
+    /**
+     * Registra logs simultáneamente en el canal 'shopify' (logs/shopify/shopify-*.log)
+     * y en el log principal de la aplicación (laravel.log).
+     */
+    public static function log(string $message, array $context = [], string $level = 'info'): void
+    {
+        try {
+            Log::channel('shopify')->$level($message, $context);
+        } catch (\Throwable $e) {
+            // Ignorar si el canal específico tiene problema de permisos
+        }
+        Log::$level($message, $context);
+    }
+
     /**
      * Resuelve los códigos y nombres oficiales de Departamento, Municipio y Distrito según catálogos de MH de El Salvador.
      *

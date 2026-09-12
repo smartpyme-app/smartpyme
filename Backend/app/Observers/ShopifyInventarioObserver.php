@@ -2,6 +2,7 @@
 
 namespace App\Observers;
 
+use App\Helpers\ShopifyHelper;
 use App\Models\Admin\Empresa;
 use App\Models\Inventario\Bodega;
 use App\Models\Inventario\Inventario;
@@ -28,34 +29,48 @@ class ShopifyInventarioObserver
      */
     public function updated(Inventario $inventario)
     {
+        // ShopifyHelper::log("ShopifyInventarioObserver::updated disparado", [
+        //     'inventario_id' => $inventario->id,
+        //     'producto_id' => $inventario->id_producto,
+        //     'bodega_id' => $inventario->id_bodega,
+        //     'was_changed_stock' => $inventario->wasChanged('stock'),
+        //     'stock_anterior' => $inventario->getOriginal('stock'),
+        //     'stock_nuevo' => $inventario->stock,
+        // ]);
+
         $bodega = Bodega::find($inventario->id_bodega);
         if (!$bodega) {
+            // ShopifyHelper::log("ShopifyInventarioObserver::updated omitido: bodega no encontrada", [
+            //     'inventario_id' => $inventario->id,
+            //     'id_bodega' => $inventario->id_bodega
+            // ]);
             return;
         }
 
         $empresa = Empresa::find($bodega->id_empresa);
         if (!$empresa) {
+            // ShopifyHelper::log("ShopifyInventarioObserver::updated omitido: empresa no encontrada", [
+            //     'inventario_id' => $inventario->id,
+            //     'id_empresa' => $bodega->id_empresa
+            // ]);
             return;
         }
 
         // Si la empresa tiene Shopify conectado, sincronizar SmartPyme -> Shopify (ajustes, compras, etc.)
         if ($empresa->shopify_status === 'connected'
             && $empresa->tieneCredencialesShopify()) {
+            // ShopifyHelper::log("ShopifyInventarioObserver::updated: Empresa conectada con credenciales, llamando syncBidirectional", [
+            //     'inventario_id' => $inventario->id,
+            //     'empresa_id' => $empresa->id
+            // ]);
             $this->syncBidirectional($inventario);
+        } else {
+            // ShopifyHelper::log("ShopifyInventarioObserver::updated omitido: empresa no conectada o sin credenciales", [
+            //     'inventario_id' => $inventario->id,
+            //     'empresa_id' => $empresa->id,
+            //     'shopify_status' => $empresa->shopify_status ?? 'null',
+            // ]);
         }
-
-        // Lógica anterior: solo sincronizaba si shopify_sync_bidirectional estaba activo (comentado)
-        // if ($empresa->shopify_sync_bidirectional) {
-        //     Log::info("Sincronización inversa habilitada para actualizaciones de inventario - SmartPyme -> Shopify ", [
-        //         'inventario_id' => $inventario->id,
-        //         'producto_id' => $inventario->id_producto,
-        //         'stock' => $inventario->stock,
-        //         'motivo' => 'Sincronización unidireccional configurada'
-        //     ]);
-        //     $this->syncBidirectional($inventario);
-        // }
-        // Si no es bidireccional, no hacer nada
-        // Log::info("Sincronización inversa deshabilitada para actualizaciones de inventario - solo Shopify -> SmartPyme", [...]);
     }
 
     // Para actualizacion de stock doble direccional (SmartPyme -> Shopify)
@@ -63,34 +78,39 @@ class ShopifyInventarioObserver
     {
         // wasChanged: en evento "updated" el modelo ya fue guardado; isDirty sería false
         if (!$inventario->wasChanged('stock')) {
+            // ShopifyHelper::log("syncBidirectional omitido: wasChanged('stock') es false", [
+            //     'inventario_id' => $inventario->id,
+            //     'producto_id' => $inventario->id_producto,
+            //     'bodega_id' => $inventario->id_bodega,
+            //     'stock' => $inventario->stock,
+            // ]);
             return;
         }
 
         // IMPORTANTE: Verificar si el producto está siendo sincronizado desde Shopify
         $producto = $inventario->producto;
-        if ($producto && $producto->syncing_from_shopify) {
-            Log::info("Producto siendo sincronizado desde Shopify, omitiendo sincronización de inventario", [
-                'inventario_id' => $inventario->id,
-                'producto_id' => $inventario->id_producto,
-                'syncing_from_shopify' => $producto->syncing_from_shopify
-            ]);
-            return;
-        }
-
-        // Log::info("Cambio de stock detectado para Shopify", [
+        // ShopifyHelper::log("syncBidirectional: evaluando flag syncing_from_shopify", [
         //     'inventario_id' => $inventario->id,
         //     'producto_id' => $inventario->id_producto,
-        //     'bodega_id' => $inventario->id_bodega,
-        //     'stock_anterior' => $inventario->getOriginal('stock'),
-        //     'stock_nuevo' => $inventario->stock
+        //     'producto_encontrado' => (bool)$producto,
+        //     'syncing_from_shopify' => $producto ? (bool)$producto->syncing_from_shopify : false,
         // ]);
+
+        if ($producto && $producto->syncing_from_shopify) {
+            // ShopifyHelper::log("Producto siendo sincronizado desde Shopify, omitiendo sincronización de inventario para evitar ciclo", [
+            //     'inventario_id' => $inventario->id,
+            //     'producto_id' => $inventario->id_producto,
+            //     'syncing_from_shopify' => $producto->syncing_from_shopify
+            // ]);
+            return;
+        }
 
         // No usar isLocked aquí: el lock se pone al procesar products/update desde Shopify
         // y bloquearía enviar ajustes desde SmartPyme a Shopify durante 2 min.
 
         $bodega = Bodega::find($inventario->id_bodega);
         if (!$bodega) {
-            Log::debug("Sync Shopify omitido: bodega no encontrada", ['id_bodega' => $inventario->id_bodega]);
+            // ShopifyHelper::log("Sync Shopify omitido: bodega no encontrada", ['id_bodega' => $inventario->id_bodega], 'warning');
             return;
         }
 
@@ -103,12 +123,12 @@ class ShopifyInventarioObserver
             $empresaBase->shopify_status === 'disconnected' || 
             $empresaBase->shopify_status === 'disabled') {
             
-            Log::debug("Empresa sin integración Shopify habilitada - omitiendo sincronización", [
-                'bodega_id' => $inventario->id_bodega,
-                'empresa_id' => $empresaBase->id,
-                'empresa_nombre' => $empresaBase->nombre,
-                'shopify_status' => $empresaBase->shopify_status ?? 'null'
-            ]);
+            // ShopifyHelper::log("Empresa sin integración Shopify habilitada - omitiendo sincronización", [
+            //     'bodega_id' => $inventario->id_bodega,
+            //     'empresa_id' => $empresaBase->id,
+            //     'empresa_nombre' => $empresaBase->nombre,
+            //     'shopify_status' => $empresaBase->shopify_status ?? 'null'
+            // ]);
             return;
         }
 
@@ -120,11 +140,11 @@ class ShopifyInventarioObserver
 
         if (!$empresa) {
             if ($empresaBase->shopify_status === 'connecting') {
-                Log::info("Empresa en proceso de configuración Shopify - sincronización pendiente", [
-                    'bodega_id' => $inventario->id_bodega,
-                    'empresa_id' => $empresaBase->id,
-                    'current_status' => $empresaBase->shopify_status
-                ]);
+                // ShopifyHelper::log("Empresa en proceso de configuración Shopify - sincronización pendiente", [
+                //     'bodega_id' => $inventario->id_bodega,
+                //     'empresa_id' => $empresaBase->id,
+                //     'current_status' => $empresaBase->shopify_status
+                // ]);
             }
             return;
         }
@@ -135,33 +155,47 @@ class ShopifyInventarioObserver
             ->first();
 
         if (!$usuario) {
-            Log::warning("Sync Shopify omitido: no hay usuario con Shopify conectado en esta bodega", [
-                'producto_id' => $inventario->id_producto,
-                'id_bodega' => $inventario->id_bodega,
-                'id_empresa' => $empresa->id,
-            ]);
+            // ShopifyHelper::log("Sync Shopify omitido: no hay usuario con Shopify conectado en esta bodega", [
+            //     'producto_id' => $inventario->id_producto,
+            //     'id_bodega' => $inventario->id_bodega,
+            //     'id_empresa' => $empresa->id,
+            // ], 'warning');
             return;
         }
 
-        Log::info("Iniciando sincronización con Shopify", [
-            'inventario_id' => $inventario->id,
-            'stock' => $inventario->stock,
-            'producto_id' => $inventario->id_producto,
-            'bodega_id' => $inventario->id_bodega,
-            'usuario_id' => $usuario->id
-        ]);
+        $hasChanged = $this->cache->hasInventoryChanged($inventario, $inventario->id_producto);
+        // ShopifyHelper::log("syncBidirectional: resultado de hasInventoryChanged", [
+        //     'producto_id' => $inventario->id_producto,
+        //     'stock_actual' => $inventario->stock,
+        //     'has_changed' => $hasChanged,
+        // ]);
 
-        if (!$this->cache->hasInventoryChanged($inventario, $inventario->id_producto)) {
-            Log::debug("Sync Shopify omitido: cache indica que el inventario no cambió", [
-                'producto_id' => $inventario->id_producto,
-                'stock' => $inventario->stock,
-            ]);
+        if (!$hasChanged) {
+            // ShopifyHelper::log("Sync Shopify omitido: cache indica que el inventario no cambió", [
+            //     'producto_id' => $inventario->id_producto,
+            //     'stock' => $inventario->stock,
+            // ]);
             return;
         }
+
+        // ShopifyHelper::log("Iniciando sincronización con Shopify", [
+        //     'inventario_id' => $inventario->id,
+        //     'stock' => $inventario->stock,
+        //     'producto_id' => $inventario->id_producto,
+        //     'bodega_id' => $inventario->id_bodega,
+        //     'usuario_id' => $usuario->id
+        // ]);
+
         $success = $this->stockService->actualizarSoloStockEnShopify(
             $inventario->id_producto,
             $usuario->id
         );
+
+        // ShopifyHelper::log("Resultado de sincronización con Shopify", [
+        //     'producto_id' => $inventario->id_producto,
+        //     'stock' => $inventario->stock,
+        //     'success' => $success,
+        // ]);
 
         if ($success) {
             $this->cache->saveInventorySnapshot($inventario, $inventario->id_producto);
