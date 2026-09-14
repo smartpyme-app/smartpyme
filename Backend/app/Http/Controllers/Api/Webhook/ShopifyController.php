@@ -2008,6 +2008,27 @@ class ShopifyController extends Controller
                 }
             }
 
+            // Agregar detalles de envío si el webhook los trae y la venta aún no los tiene.
+            // Las cotizaciones crean el detalle de envío al guardarse, pero puede que no existieran
+            // (precio 0 en create, luego con precio en updated) o que se perdieran por algún motivo.
+            if (!empty($shopifyData['shipping_lines'])) {
+                $tieneEnvios = $venta->detalles()
+                    ->whereHas('producto', fn($q) =>
+                        $q->where('tipo', 'Servicio')
+                          ->whereHas('categoria', fn($q2) => $q2->where('nombre', 'envios'))
+                    )->exists();
+
+                if (!$tieneEnvios) {
+                    $this->shippingService->procesarTiposEnvio(
+                        $shopifyData['shipping_lines'],
+                        $venta->id,
+                        $empresa->id,
+                        $usuario->id,
+                        $usuario->id_sucursal
+                    );
+                }
+            }
+
             DB::commit();
 
             Log::channel('shopify')->info('Cotización convertida a venta desde Shopify', [
@@ -2674,6 +2695,21 @@ class ShopifyController extends Controller
                 if ($this->convertirCotizacionAVenta($venta, $empresa, $usuario, $request->all())) {
                     $venta->refresh();
                     $fueConvertida = true;
+                }
+            }
+
+            // Si la venta no tiene detalles de envío pero el webhook sí los trae, agregarlos ANTES
+            // del guard de 10 segundos. Las tarifas calculadas (Advanced Shipping Rules) pueden
+            // llegar en orders/updated incluso cuando la orden se acaba de crear.
+            if (!$fueConvertida && !empty($request->shipping_lines)) {
+                $yaHayEnvios = $venta->detalles()
+                    ->whereHas('producto', fn($q) =>
+                        $q->where('tipo', 'Servicio')
+                          ->whereHas('categoria', fn($q2) => $q2->where('nombre', 'envios'))
+                    )->exists();
+
+                if (!$yaHayEnvios) {
+                    $this->actualizarEnvio($venta, $request, $usuario);
                 }
             }
 
