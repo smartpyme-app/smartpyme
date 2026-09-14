@@ -2115,6 +2115,12 @@ class ShopifyController extends Controller
         // Obtener detalles existentes que corresponden a productos (excluyendo envíos / servicios)
         $detallesExistentes = $venta->detalles()
             ->whereNotNull('id_producto')
+            ->whereHas('producto', function($query) {
+                $query->where('tipo', '!=', 'Servicio')
+                    ->whereDoesntHave('categoria', function($q) {
+                        $q->where('nombre', 'envios');
+                    });
+            })
             ->with('producto')
             ->get();
 
@@ -2550,7 +2556,7 @@ class ShopifyController extends Controller
         $gravada  = 0;
         $exenta   = 0;
 
-        foreach ($venta->detalles as $detalle) {
+        foreach ($venta->detalles()->get() as $detalle) {
             $subtotal += round($detalle->cantidad * $detalle->precio, 2);
             $iva      += round($detalle->iva, 2);
             $gravada  += round($detalle->gravada, 2);
