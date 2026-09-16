@@ -48,18 +48,19 @@ class ShopifyController extends Controller
         $webhookTopic = $request->header('X-Shopify-Topic');
         $webhookId = $request->header('X-Shopify-Webhook-Id');
 
-        // ShopifyHelper::log("Webhook Shopify recibido", [
-            // 'topic' => $webhookTopic,
-            // 'webhook_id' => $webhookId,
-            // 'token' => substr($tokenEmpresa, 0, 8) . '...',
-        // ]);
+        ShopifyHelper::log("=== WEBHOOK SHOPIFY RECIBIDO ===", [
+            'topic' => $webhookTopic,
+            'webhook_id' => $webhookId,
+            'token' => substr($tokenEmpresa, 0, 8) . '...',
+            'ip' => $request->ip(),
+        ]);
 
         $empresa = Empresa::where('woocommerce_api_key', $tokenEmpresa)
             ->where('shopify_status', 'connected')
             ->first();
 
         if (!$empresa) {
-            // ShopifyHelper::log("Token de empresa Shopify no válido: {$tokenEmpresa}", [], 'error');
+            ShopifyHelper::log("Token de empresa Shopify no válido: {$tokenEmpresa}", [], 'error');
             return response()->json([
                 'status' => 'error',
                 'mensaje' => 'Token de acceso no válido o no conectado'
@@ -71,11 +72,11 @@ class ShopifyController extends Controller
             ->first();
 
         if (!$usuario) {
-            // ShopifyHelper::log("Usuario no encontrado para empresa", [
-                // 'empresa_id' => $empresa->id,
-                // 'empresa_nombre' => $empresa->nombre,
-                // 'token' => $tokenEmpresa
-            // ], 'error');
+            ShopifyHelper::log("Usuario no encontrado para empresa", [
+                'empresa_id' => $empresa->id,
+                'empresa_nombre' => $empresa->nombre,
+                'token' => substr($tokenEmpresa, 0, 8) . '...'
+            ], 'error');
             return response()->json([
                 'status' => 'error',
                 'mensaje' => 'Usuario no encontrado'
@@ -84,11 +85,11 @@ class ShopifyController extends Controller
 
         // Verificar que el usuario tenga bodega asignada
         if (!$usuario->id_bodega) {
-            // ShopifyHelper::log("Usuario sin bodega asignada", [
-                // 'usuario_id' => $usuario->id,
-                // 'usuario_nombre' => $usuario->name,
-                // 'id_empresa' => $usuario->id_empresa
-            // ], 'error');
+            ShopifyHelper::log("Usuario sin bodega asignada", [
+                'usuario_id' => $usuario->id,
+                'usuario_nombre' => $usuario->name,
+                'id_empresa' => $usuario->id_empresa
+            ], 'error');
             return response()->json([
                 'status' => 'error',
                 'mensaje' => 'Usuario sin bodega asignada'
@@ -98,76 +99,81 @@ class ShopifyController extends Controller
         try {
             switch ($webhookTopic) {
                 case 'test':
-                    // ShopifyHelper::log("Procesando prueba webhook");
+                    ShopifyHelper::log("Procesando prueba webhook");
                     return $this->procesarPruebaWebhook($request, $empresa);
 
                 case 'orders/create':
-                    // ShopifyHelper::log("Procesando webhook orders/create", [
-                        // 'shopify_order_id' => $request->id,
-                        // 'order_number' => $request->order_number,
-                        // 'financial_status' => $request->financial_status,
-                    // ]);
+                    ShopifyHelper::log(">> ENRUTANDO A orders/create", [
+                        'shopify_order_id' => $request->id,
+                        'order_number' => $request->order_number,
+                        'financial_status' => $request->financial_status,
+                        'total_line_items' => count($request->line_items ?? []),
+                    ]);
                     return $this->procesarVenta($tokenEmpresa, $request);
 
                 case 'orders/cancelled':
-                    // ShopifyHelper::log("Procesando webhook orders/cancelled", [
-                        // 'shopify_order_id' => $request->id,
-                        // 'financial_status' => $request->financial_status,
-                        // 'cancel_reason' => $request->cancel_reason,
-                    // ]);
+                    ShopifyHelper::log(">> ENRUTANDO A orders/cancelled", [
+                        'shopify_order_id' => $request->id,
+                        'financial_status' => $request->financial_status,
+                        'cancel_reason' => $request->cancel_reason,
+                    ]);
                     return $this->procesarVentaCancelada($tokenEmpresa, $request);
 
                 case 'orders/updated':
-                    // ShopifyHelper::log("Procesando webhook orders/updated", [
-                        // 'shopify_order_id' => $request->id,
-                        // 'financial_status' => $request->financial_status,
-                    // ]);
+                    ShopifyHelper::log(">> ENRUTANDO A orders/updated", [
+                        'shopify_order_id' => $request->id,
+                        'financial_status' => $request->financial_status,
+                    ]);
                     return $this->procesarVentaActualizada($tokenEmpresa, $request);
 
                 case 'orders/edited':
-                    // ShopifyHelper::log("Procesando webhook orders/edited");
+                    ShopifyHelper::log("Webhook recibido: orders/edited");
                     return response()->json([
                         'status' => 'success',
                         'mensaje' => 'orders/edited recibido - usar orders/updated para información completa'
                     ], 200);
 
                 case 'customers/create':
+                    ShopifyHelper::log("Webhook recibido: customers/create", ['customer_id' => $request->id]);
                     return $this->procesarClienteCreado($request, $empresa, $usuario);
 
                 case 'customers/update':
+                    ShopifyHelper::log("Webhook recibido: customers/update", ['customer_id' => $request->id]);
                     return $this->procesarClienteActualizado($request, $empresa, $usuario);
 
                 case 'products/create':
-                    // ShopifyHelper::log("Procesando webhook products/create", ['shopify_product_id' => $request->id]);
+                    ShopifyHelper::log("Webhook recibido: products/create", ['shopify_product_id' => $request->id]);
                     return $this->procesarProductoActualizado($request, $empresa, $usuario);
 
                 case 'products/update':
-                    // ShopifyHelper::log("Procesando webhook products/update", ['shopify_product_id' => $request->id]);
+                    ShopifyHelper::log("Webhook recibido: products/update", ['shopify_product_id' => $request->id]);
                     return $this->procesarProductoActualizado($request, $empresa, $usuario);
 
                 case 'draft_orders/create':
+                    ShopifyHelper::log("Webhook recibido: draft_orders/create (ignorado)", ['draft_order_id' => $request->id]);
                     return response()->json([
                         'status' => 'ignored',
                         'mensaje' => 'Draft orders no se procesan - solo órdenes pagadas'
                     ], 200);
 
                 case 'inventory_levels/update':
-                    // ShopifyHelper::log("Procesando ajuste de inventario desde Shopify", [
-                        // 'inventory_item_id' => $request->input('inventory_item_id'),
-                        // 'location_id' => $request->input('location_id'),
-                        // 'available' => $request->input('available'),
-                    // ]);
+                    ShopifyHelper::log(">> ENRUTANDO A inventory_levels/update", [
+                        'inventory_item_id' => $request->input('inventory_item_id'),
+                        'location_id' => $request->input('location_id'),
+                        'available' => $request->input('available'),
+                        'updated_at' => $request->input('updated_at'),
+                    ]);
                     return $this->procesarInventarioActualizadoShopify($request, $empresa, $usuario);
 
                 default:
-                    // ShopifyHelper::log("Tipo de webhook no manejado: {$webhookTopic}", [], 'warning');
+                    ShopifyHelper::log("Tipo de webhook no manejado: {$webhookTopic}", [], 'warning');
                     return response()->json(['message' => 'Webhook recibido pero no procesado'], 200);
             }
         } catch (\Exception $e) {
-            // ShopifyHelper::log("Error procesando webhook Shopify: " . $e->getMessage(), [
-                // 'error' => $e->getMessage(),
-                // 'trace' => $e->getTraceAsString()
-            // ], 'error');
+            ShopifyHelper::log("Error procesando webhook Shopify: " . $e->getMessage(), [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 'error');
             return response()->json([
                 'status' => 'error',
                 'mensaje' => 'Error al procesar webhook',
@@ -319,15 +325,15 @@ class ShopifyController extends Controller
         $locationId = $request->input('location_id');
         $available = (int) $request->input('available', 0);
 
-        // ShopifyHelper::log("Procesando ajuste de inventario desde Shopify (inventory_levels/update)", [
-            // 'inventory_item_id' => $inventoryItemId,
-            // 'location_id' => $locationId,
-            // 'available' => $available,
-            // 'updated_at' => $request->input('updated_at'),
-        // ]);
+        ShopifyHelper::log("inventory_levels/update: Procesando ajuste de inventario", [
+            'inventory_item_id' => $inventoryItemId,
+            'location_id' => $locationId,
+            'available_shopify' => $available,
+            'updated_at' => $request->input('updated_at'),
+        ]);
 
         if (empty($inventoryItemId)) {
-            // ShopifyHelper::log("Webhook inventory_levels/update sin inventory_item_id", [], 'warning');
+            ShopifyHelper::log("inventory_levels/update: [IGNORADO] Sin inventory_item_id", [], 'warning');
             return response()->json(['status' => 'ignored', 'message' => 'Missing inventory_item_id'], 200);
         }
 
@@ -337,35 +343,86 @@ class ShopifyController extends Controller
             ->first();
 
         if (!$producto) {
-            // ShopifyHelper::log("Webhook inventory_levels/update: producto no encontrado por shopify_inventory_item_id", [
-                // 'inventory_item_id' => $inventoryItemId,
-                // 'location_id' => $locationId,
-            // ], 'warning');
+            ShopifyHelper::log("inventory_levels/update: [IGNORADO] Producto no vinculado en SmartPyme", [
+                'inventory_item_id' => $inventoryItemId,
+                'location_id' => $locationId,
+            ], 'warning');
             return response()->json(['status' => 'ignored', 'message' => 'Product not linked'], 200);
         }
 
+        // Resolver la bodega destino según el location_id que envía Shopify
+        $bodegaId = null;
+        if (!empty($locationId)) {
+            $mapping = \App\Models\Admin\ShopifyLocation::withoutGlobalScope('empresa')
+                ->where('id_empresa', $empresa->id)
+                ->where('shopify_location_id', $locationId)
+                ->first();
+
+            if ($mapping && !empty($mapping->id_bodega)) {
+                $bodegaId = $mapping->id_bodega;
+            }
+        }
+
+        // Fallback a la bodega del usuario conectado si no hay mapeo específico
+        if (!$bodegaId) {
+            $bodegaId = $usuario->id_bodega;
+        }
+
         $inventario = Inventario::where('id_producto', $producto->id)
-            ->where('id_bodega', $usuario->id_bodega)
+            ->where('id_bodega', $bodegaId)
             ->first();
 
         $stockAnterior = $inventario ? (int) $inventario->stock : 0;
 
-        // ShopifyHelper::log("Producto encontrado para ajuste de inventario", [
-            // 'producto_id' => $producto->id,
-            // 'codigo' => $producto->codigo,
-            // 'nombre' => $producto->nombre,
-            // 'shopify_product_id' => $producto->shopify_product_id,
-            // 'shopify_inventory_item_id' => $producto->shopify_inventory_item_id,
-            // 'bodega_id' => $usuario->id_bodega,
-            // 'stock_local_anterior' => $stockAnterior,
-            // 'available_shopify' => $available,
-            // 'location_id_webhook' => $locationId,
-        // ]);
+        ShopifyHelper::log("inventory_levels/update: Datos resueltos", [
+            'producto_id' => $producto->id,
+            'producto_nombre' => $producto->nombre,
+            'bodega_id' => $bodegaId,
+            'stock_smartpyme' => $stockAnterior,
+            'available_shopify' => $available,
+        ]);
+
+        // 1. Si el stock en SmartPyme ya es igual al stock available de Shopify, no hay nada que cambiar
+        if ($stockAnterior === $available) {
+            ShopifyHelper::log("inventory_levels/update: [OMITIDO] Stock en SmartPyme ({$stockAnterior}) ya es igual al available de Shopify ({$available})", [
+                'producto_id' => $producto->id,
+                'bodega_id' => $bodegaId,
+                'stock' => $stockAnterior,
+            ]);
+            return response()->json(['status' => 'success', 'message' => 'Stock ya sincronizado'], 200);
+        }
+
+        // 2. En SmartPyme (ERP), las reducciones de inventario son gestionadas exclusivamente
+        // por el flujo de ventas/órdenes (orders/create, convertirCotizacionAVenta), las cuales
+        // emiten el documento fiscal (Factura/CCF) y registran la salida formal en Kardex.
+        // Toda orden en Shopify emite concurrentemente inventory_levels/update con available < stock;
+        // procesar reducciones aquí produce condiciones de carrera y doble descuento en Kardex.
+        if ($available < $stockAnterior) {
+            ShopifyHelper::log("inventory_levels/update: [OMITIDO] Reducción de inventario detectada (disponible: {$available}, stock actual: {$stockAnterior}). Las reducciones de stock son gestionadas exclusivamente por el flujo de ventas/órdenes para evitar duplicación y garantizar trazabilidad fiscal.", [
+                'producto_id' => $producto->id,
+                'bodega_id' => $bodegaId,
+                'stock_smartpyme' => $stockAnterior,
+                'available_shopify' => $available,
+                'delta' => $available - $stockAnterior,
+            ]);
+            return response()->json([
+                'status' => 'ignored',
+                'message' => 'Reducciones de stock son gestionadas exclusivamente por el flujo de ventas/órdenes.'
+            ], 200);
+        }
+
+        ShopifyHelper::log("inventory_levels/update: [APLICANDO AJUSTE DIRECTO] Modificando inventario por cambio en Shopify", [
+            'producto_id' => $producto->id,
+            'bodega_id' => $bodegaId,
+            'stock_anterior' => $stockAnterior,
+            'stock_nuevo' => $available,
+            'delta' => $available - $stockAnterior,
+        ]);
 
         $this->actualizarInventario(
             $producto->id,
             $available,
-            $usuario->id_bodega,
+            $bodegaId,
             $usuario->id,
             ['origen' => 'shopify', 'stock_anterior' => $stockAnterior, 'location_id' => $locationId]
         );
@@ -374,13 +431,13 @@ class ShopifyController extends Controller
             $this->cache->saveInventorySnapshot($inventario->fresh(), $producto->id);
         }
 
-        // ShopifyHelper::log("Inventario actualizado desde Shopify exitosamente", [
-            // 'producto_id' => $producto->id,
-            // 'inventory_item_id' => $inventoryItemId,
-            // 'location_id' => $locationId,
-            // 'stock_anterior' => $stockAnterior,
-            // 'stock_nuevo' => $available,
-        // ]);
+        ShopifyHelper::log("inventory_levels/update: [COMPLETADO] Inventario actualizado exitosamente", [
+            'producto_id' => $producto->id,
+            'inventory_item_id' => $inventoryItemId,
+            'location_id' => $locationId,
+            'stock_anterior' => $stockAnterior,
+            'stock_nuevo' => $available,
+        ]);
 
         return response()->json(['status' => 'success', 'message' => 'Inventario actualizado'], 200);
     }
@@ -624,62 +681,44 @@ class ShopifyController extends Controller
 
     public function procesarVenta($tokenEmpresa, Request $request)
     {
-        // ShopifyHelper::log("orders/create: Iniciando procesamiento de venta", [
-            // 'token_empresa' => substr($tokenEmpresa, 0, 8) . '...',
-            // 'shopify_order_id' => $request->id ?? 'N/A',
-            // 'order_number' => $request->order_number ?? 'N/A',
-            // 'financial_status' => $request->financial_status ?? 'N/A',
-            // 'line_items_count' => count($request->line_items ?? []),
-        // ]);
-
         $empresa = Empresa::where('woocommerce_api_key', $tokenEmpresa)
             ->where('shopify_status', 'connected')
             ->first();
 
         if (!$empresa) {
-            Log::channel('shopify')->error("Token de empresa Shopify no válido: {$tokenEmpresa}");
+            ShopifyHelper::log("Token de empresa Shopify no válido: {$tokenEmpresa}", [], 'error');
             return response()->json([
                 'status' => 'error',
                 'mensaje' => 'Token de acceso no válido o no conectado'
             ], 401);
         }
 
-        // Log::info("Empresa encontrada", ['empresa_id' => $empresa->id, 'empresa_nombre' => $empresa->nombre]);
-
         $usuario = User::where('id_empresa', $empresa->id)
             ->where('shopify_status', 'connected')
             ->first();
 
         if (!$usuario) {
-            Log::channel('shopify')->error("Usuario no encontrado", ['empresa_id' => $empresa->id]);
+            ShopifyHelper::log("Usuario no encontrado", ['empresa_id' => $empresa->id], 'error');
             return response()->json([
                 'status' => 'error',
                 'mensaje' => 'Usuario no encontrado'
             ], 401);
         }
 
-        // Log::info("Usuario encontrado", ['usuario_id' => $usuario->id, 'usuario_nombre' => $usuario->name]);
-
         // Verificar primero si debe crearse como cotización
         $financialStatus = $request->financial_status ?? 'pending';
         $esPagada = ($financialStatus === 'paid' || $financialStatus === 'partially_paid');
         $debeCrearCotizacion = $empresa->facturacion_electronica && !$esPagada;
 
-        // Log::info("Verificando si debe crearse como cotización", [
-        //     'empresa_id' => $empresa->id,
-        //     'facturacion_electronica' => $empresa->facturacion_electronica,
-        //     'financial_status' => $financialStatus,
-        //     'es_pagada' => $esPagada,
-        //     'debe_crear_cotizacion' => $debeCrearCotizacion
-        // ]);
-
-        // Log::info("Buscando documento", [
-        //     'facturacion_electronica' => $empresa->facturacion_electronica,
-        //     'id_sucursal' => $usuario->id_sucursal
-        // ]);
-
-        // El documento de facturación se resuelve más adelante, una vez se ha
-        // identificado el cliente (FCF o CCF según sus datos fiscales).
+        ShopifyHelper::log("orders/create: Iniciando procesamiento de orden", [
+            'token_empresa' => substr($tokenEmpresa, 0, 8) . '...',
+            'shopify_order_id' => $request->id ?? 'N/A',
+            'order_number' => $request->order_number ?? 'N/A',
+            'financial_status' => $financialStatus,
+            'es_pagada' => $esPagada,
+            'debe_crear_cotizacion' => $debeCrearCotizacion,
+            'line_items_count' => count($request->line_items ?? []),
+        ]);
 
         try {
             // Verificar si la orden ya fue procesada previamente
@@ -689,13 +728,11 @@ class ShopifyController extends Controller
                 ->first();
 
             if ($ventaExistente) {
-                // Log::info("Venta duplicada detectada - orden ya procesada previamente", [
-                //     'shopify_order_id' => $request->id,
-                //     'venta_id_existente' => $ventaExistente->id,
-                //     'referencia_shopify' => $referenciaShopify,
-                //     'webhook_id' => $request->header('X-Shopify-Webhook-Id'),
-                //     'fecha_creacion_venta' => $ventaExistente->created_at
-                // ]);
+                ShopifyHelper::log("orders/create: [OMITIDO] Venta duplicada detectada - orden ya procesada previamente", [
+                    'shopify_order_id' => $request->id,
+                    'venta_id_existente' => $ventaExistente->id,
+                    'referencia_shopify' => $referenciaShopify,
+                ]);
 
                 return response()->json([
                     'status' => 'success',
@@ -748,11 +785,23 @@ class ShopifyController extends Controller
             // Mapear canal de venta según el tipo de canal de Shopify
             $canalId = $this->mapearCanalVenta($request, $usuario->id_empresa);
 
+            // Resolver sucursal y bodega para la orden usando ShopifyLocationService
+            $locationService = app(\App\Services\ShopifyLocationService::class);
+            $locationMapeada = $locationService->resolverUbicacionParaOrden($empresa, $request->all());
+
+            $idSucursalOrden = ($locationMapeada && $locationMapeada->id_sucursal) 
+                ? $locationMapeada->id_sucursal 
+                : $usuario->id_sucursal;
+
+            $idBodegaOrden = ($locationMapeada && $locationMapeada->id_bodega) 
+                ? $locationMapeada->id_bodega 
+                : $usuario->id_bodega;
+
             $request->merge([
                 'id_empresa' => $usuario->id_empresa,
                 'id_usuario' => $usuario->id,
-                'id_bodega' => $usuario->id_bodega,
-                'id_sucursal' => $usuario->id_sucursal,
+                'id_bodega' => $idBodegaOrden,
+                'id_sucursal' => $idSucursalOrden,
                 'id_canal' => $canalId
             ]);
 
@@ -767,45 +816,18 @@ class ShopifyController extends Controller
             if ($hasValidCustomer) {
                 // Transformar cliente si hay datos válidos
                 $clienteData = $this->transformer->transformarCliente($request->all());
-                
-                // Log::info('=== PROCESANDO CLIENTE EN VENTA SHOPIFY ===', [
-                //     'shopify_order_id' => $request->id ?? 'N/A',
-                //     'shopify_customer_id' => $request->customer['id'] ?? 'N/A',
-                //     'customer_email' => $clienteData['correo'],
-                //     'customer_name' => $clienteData['nombre'] . ' ' . $clienteData['apellido'],
-                //     'empresa_id' => $usuario->id_empresa,
-                //     'usuario_id' => $usuario->id
-                // ]);
-                
                 $cliente = $this->buscarOActualizarCliente($clienteData, $usuario->id_empresa);
             } else {
                 // Usar cliente "Consumidor Final" por defecto
                 $cliente = ShopifyHelper::obtenerClienteConsumidorFinal($usuario->id_empresa);
-                
-                // Log::info('=== USANDO CLIENTE CONSUMIDOR FINAL EN VENTA ===', [
-                //     'shopify_order_id' => $request->id ?? 'N/A',
-                //     'cliente_id' => $cliente->id,
-                //     'cliente_nombre' => $cliente->nombre_completo,
-                //     'empresa_id' => $usuario->id_empresa,
-                //     'usuario_id' => $usuario->id
-                // ]);
             }
-            
-            // Log::info('=== CLIENTE PROCESADO EN VENTA ===', [
-            //     'cliente_id' => $cliente->id,
-            //     'cliente_correo' => $cliente->correo,
-            //     'cliente_nombre' => $cliente->nombre . ' ' . $cliente->apellido,
-            //     'cliente_creado' => $cliente->wasRecentlyCreated,
-            //     'shopify_order_id' => $request->id ?? 'N/A',
-            //     'shopify_customer_id' => $request->customer['id'] ?? 'N/A'
-            // ]);
 
             // Resolver documento de facturación según los datos fiscales del cliente.
             // - Cotizaciones: cualquier documento activo (solo placeholder, no emite).
             // - Facturación electrónica: FCF o CCF según los datos fiscales del cliente.
             // - Sin facturación electrónica: Ticket.
             if ($debeCrearCotizacion) {
-                $documento = Documento::where('id_sucursal', $usuario->id_sucursal)
+                $documento = Documento::where('id_sucursal', $idSucursalOrden)
                     ->where('activo', true)
                     ->first();
 
@@ -815,18 +837,25 @@ class ShopifyController extends Controller
                         ->first();
                 }
             } elseif ($empresa->facturacion_electronica) {
-                $documento = $this->resolverDocumentoFactura($usuario, $empresa, $cliente);
+                $documento = $this->resolverDocumentoFactura($usuario, $empresa, $cliente, $idSucursalOrden);
             } else {
-                $documento = Documento::where('id_sucursal', $usuario->id_sucursal)
+                $documento = Documento::where('id_sucursal', $idSucursalOrden)
                     ->where('nombre', 'Ticket')
                     ->where('activo', true)
                     ->first();
+
+                if (!$documento) {
+                    $documento = Documento::where('id_empresa', $empresa->id)
+                        ->where('nombre', 'Ticket')
+                        ->where('activo', true)
+                        ->first();
+                }
             }
 
             if (!$documento) {
                 DB::rollBack();
                 Log::channel('shopify')->error("Ningún documento encontrado", [
-                    'id_sucursal' => $usuario->id_sucursal,
+                    'id_sucursal' => $idSucursalOrden,
                     'facturacion_electronica' => $empresa->facturacion_electronica,
                     'debe_crear_cotizacion' => $debeCrearCotizacion
                 ]);
@@ -932,26 +961,34 @@ class ShopifyController extends Controller
                         ->where('id_bodega', $venta->id_bodega)
                         ->first();
 
-                    // ShopifyHelper::log("orders/create: Inventario descontado por venta", [
-                        // 'producto_id' => $producto->id,
-                        // 'codigo' => $producto->codigo,
-                        // 'nombre' => $producto->nombre,
-                        // 'bodega_id' => $venta->id_bodega,
-                        // 'stock_anterior' => $stockAntes,
-                        // 'cantidad_descontada' => $item['quantity'],
-                        // 'stock_nuevo' => $inventario ? $inventario->stock : null,
-                        // 'shopify_order_id' => $request->id,
-                        // 'line_item_id' => $item['id'] ?? null,
-                    // ]);
+                    ShopifyHelper::log("orders/create: [DESCUENTO VENTA PAGADA] Inventario descontado por venta directa", [
+                        'producto_id' => $producto->id,
+                        'codigo' => $producto->codigo,
+                        'nombre' => $producto->nombre,
+                        'bodega_id' => $venta->id_bodega,
+                        'stock_anterior' => $stockAntes,
+                        'cantidad_descontada' => $item['quantity'],
+                        'stock_nuevo' => $inventario ? $inventario->stock : null,
+                        'shopify_order_id' => $request->id,
+                        'line_item_id' => $item['id'] ?? null,
+                    ]);
 
                     if ($inventario) {
                         $inventario->kardex($venta, $item['quantity'], $item['price']);
                     }
                 } else {
-                    // ShopifyHelper::log("orders/create: Omitiendo descuento de inventario (cotización)", [
-                        // 'producto_id' => $producto->id,
-                        // 'shopify_order_id' => $request->id,
-                    // ]);
+                    $stockActual = Inventario::where('id_producto', $producto->id)
+                        ->where('id_bodega', $venta->id_bodega)
+                        ->value('stock') ?? 0;
+
+                    ShopifyHelper::log("orders/create: [OMITIDO POR COTIZACIÓN] No se descuenta inventario (orden pendiente creada como cotización)", [
+                        'producto_id' => $producto->id,
+                        'nombre' => $producto->nombre,
+                        'bodega_id' => $venta->id_bodega,
+                        'cantidad_orden' => $item['quantity'],
+                        'stock_actual_mantenido' => $stockActual,
+                        'shopify_order_id' => $request->id,
+                    ]);
                 }
             }
 
@@ -1112,14 +1149,14 @@ class ShopifyController extends Controller
         }
 
         try {
-            // ShopifyHelper::log("Iniciando actualización de inventario", [
-                // 'producto_id' => $productoId,
-                // 'cantidad_stock_nuevo' => $cantidad,
-                // 'bodega_id' => $bodegaId,
-                // 'usuario_id' => $usuarioId,
-                // 'opciones' => $opciones,
-                // 'es_desde_shopify' => $esDesdeShopify,
-            // ]);
+            ShopifyHelper::log("actualizarInventario: Ejecutando ajuste", [
+                'producto_id' => $productoId,
+                'cantidad_stock_nuevo' => $cantidad,
+                'bodega_id' => $bodegaId,
+                'usuario_id' => $usuarioId,
+                'opciones' => $opciones,
+                'es_desde_shopify' => $esDesdeShopify,
+            ]);
 
             $inventario = Inventario::where('id_producto', $productoId)
                 ->where('id_bodega', $bodegaId)
@@ -1129,15 +1166,15 @@ class ShopifyController extends Controller
                 $stockAnterior = $inventario->stock;
                 $delta = $cantidad - ($opciones['stock_anterior'] ?? $stockAnterior);
 
-                // ShopifyHelper::log("Inventario existente encontrado, actualizando stock", [
-                    // 'inventario_id' => $inventario->id,
-                    // 'producto_id' => $productoId,
-                    // 'bodega_id' => $bodegaId,
-                    // 'stock_anterior' => $stockAnterior,
-                    // 'stock_nuevo' => $cantidad,
-                    // 'delta' => $delta,
-                    // 'origen' => $opciones['origen'] ?? 'local',
-                // ]);
+                ShopifyHelper::log("actualizarInventario: Inventario existente encontrado, actualizando stock", [
+                    'inventario_id' => $inventario->id,
+                    'producto_id' => $productoId,
+                    'bodega_id' => $bodegaId,
+                    'stock_anterior' => $stockAnterior,
+                    'stock_nuevo' => $cantidad,
+                    'delta' => $delta,
+                    'origen' => $opciones['origen'] ?? 'local',
+                ]);
 
                 $inventario->update([
                     'stock' => $cantidad
@@ -1150,11 +1187,11 @@ class ShopifyController extends Controller
                 if ($esDesdeShopify && $producto) {
                     $deltaKardex = $cantidad - $stockAnteriorOp;
                     if ($deltaKardex != 0) {
-                        // ShopifyHelper::log("Registrando movimiento en kardex desde Shopify", [
-                            // 'producto_id' => $productoId,
-                            // 'delta_kardex' => $deltaKardex,
-                            // 'stock_nuevo' => $cantidad,
-                        // ]);
+                        ShopifyHelper::log("actualizarInventario: Registrando movimiento en kardex desde Shopify", [
+                            'producto_id' => $productoId,
+                            'delta_kardex' => $deltaKardex,
+                            'stock_nuevo' => $cantidad,
+                        ]);
                         $inventario->kardex($producto, $deltaKardex, $producto->precio, $producto->costo, null, [
                             'origen' => 'shopify',
                             'id_usuario' => $usuarioId,
@@ -1165,11 +1202,11 @@ class ShopifyController extends Controller
                     $inventario->kardex($producto, 0, $producto->precio, $producto->costo);
                 }
             } else {
-                // ShopifyHelper::log("Inventario no existe, creando nuevo registro con stock inicial", [
-                    // 'producto_id' => $productoId,
-                    // 'bodega_id' => $bodegaId,
-                    // 'stock_nuevo' => $cantidad,
-                // ]);
+                ShopifyHelper::log("actualizarInventario: Inventario no existe, creando nuevo registro con stock inicial", [
+                    'producto_id' => $productoId,
+                    'bodega_id' => $bodegaId,
+                    'stock_nuevo' => $cantidad,
+                ]);
 
                 $inventario = Inventario::create([
                     'id_producto' => $productoId,
@@ -1190,9 +1227,12 @@ class ShopifyController extends Controller
                     }
                 }
 
-                // ShopifyHelper::log("Inventario creado exitosamente", [
-                    // 'inventario_id' => $inventario->id,
-                    // 'producto_id' => $productoId,
+                ShopifyHelper::log("actualizarInventario: Inventario creado exitosamente", [
+                    'inventario_id' => $inventario->id,
+                    'producto_id' => $productoId,
+                    'bodega_id' => $bodegaId,
+                    'stock' => $cantidad,
+                ]);
                     // 'bodega_id' => $bodegaId,
                     // 'stock' => $cantidad,
                 // ]);
@@ -1890,9 +1930,10 @@ class ShopifyController extends Controller
         return [$preferido, $fiscal];
     }
 
-    private function buscarDocumentoActivo($usuario, $empresa, string $nombreDocumento)
+    private function buscarDocumentoActivo($usuario, $empresa, string $nombreDocumento, $idSucursal = null)
     {
-        $documento = Documento::where('id_sucursal', $usuario->id_sucursal)
+        $sucursalId = $idSucursal ?: $usuario->id_sucursal;
+        $documento = Documento::where('id_sucursal', $sucursalId)
             ->where('nombre', $nombreDocumento)
             ->where('activo', true)
             ->first();
@@ -1907,12 +1948,12 @@ class ShopifyController extends Controller
         return $documento;
     }
 
-    private function resolverDocumentoFactura($usuario, $empresa, Cliente $cliente)
+    private function resolverDocumentoFactura($usuario, $empresa, Cliente $cliente, $idSucursal = null)
     {
         $documento = null;
 
         foreach ($this->nombresDocumentoCandidatos($cliente) as $nombreDocumento) {
-            $documento = $this->buscarDocumentoActivo($usuario, $empresa, $nombreDocumento);
+            $documento = $this->buscarDocumentoActivo($usuario, $empresa, $nombreDocumento, $idSucursal);
             if ($documento) {
                 return $documento;
             }
@@ -1921,7 +1962,7 @@ class ShopifyController extends Controller
         // Si no hay documento de Crédito fiscal configurado, usar Factura como respaldo.
         $fiscal = $this->resolverNombreDocumentoFiscal($cliente);
         if ($fiscal === 'Crédito fiscal') {
-            $documento = $this->buscarDocumentoActivo($usuario, $empresa, 'Factura');
+            $documento = $this->buscarDocumentoActivo($usuario, $empresa, 'Factura', $idSucursal);
         }
 
         return $documento;
@@ -1944,11 +1985,12 @@ class ShopifyController extends Controller
             $cliente = ShopifyHelper::obtenerClienteConsumidorFinal($empresa->id);
         }
 
-        $documento = $this->resolverDocumentoFactura($usuario, $empresa, $cliente);
+        $idSucursalVenta = $venta->id_sucursal ?: $usuario->id_sucursal;
+        $documento = $this->resolverDocumentoFactura($usuario, $empresa, $cliente, $idSucursalVenta);
         if (!$documento) {
             Log::channel('shopify')->error('No se encontró documento para convertir cotización en venta', [
                 'venta_id' => $venta->id,
-                'id_sucursal' => $usuario->id_sucursal,
+                'id_sucursal' => $idSucursalVenta,
                 'empresa_id' => $empresa->id,
             ]);
             return false;
@@ -1989,11 +2031,23 @@ class ShopifyController extends Controller
                 })
                 ->get();
 
+            ShopifyHelper::log("convertirCotizacionAVenta: Descontando inventario para cotización convertida a venta", [
+                'venta_id' => $venta->id,
+                'documento' => $documento->nombre,
+                'correlativo' => $documento->correlativo,
+                'id_bodega' => $venta->id_bodega,
+                'detalles_count' => count($detallesProducto),
+            ]);
+
             foreach ($detallesProducto as $detalle) {
                 $producto = $detalle->producto;
                 if (!$producto) {
                     continue;
                 }
+
+                $stockAntes = Inventario::where('id_producto', $producto->id)
+                    ->where('id_bodega', $venta->id_bodega)
+                    ->value('stock') ?? 0;
 
                 Inventario::where('id_producto', $producto->id)
                     ->where('id_bodega', $venta->id_bodega)
@@ -2002,6 +2056,16 @@ class ShopifyController extends Controller
                 $inventario = Inventario::where('id_producto', $producto->id)
                     ->where('id_bodega', $venta->id_bodega)
                     ->first();
+
+                ShopifyHelper::log("convertirCotizacionAVenta: [INVENTARIO DESCONTADO]", [
+                    'venta_id' => $venta->id,
+                    'producto_id' => $producto->id,
+                    'nombre' => $producto->nombre,
+                    'bodega_id' => $venta->id_bodega,
+                    'stock_anterior' => $stockAntes,
+                    'cantidad_descontada' => $detalle->cantidad,
+                    'stock_nuevo' => $inventario ? $inventario->stock : null,
+                ]);
 
                 if ($inventario) {
                     $inventario->kardex($venta, $detalle->cantidad, $detalle->precio);

@@ -85,4 +85,21 @@ class ShopifyStockActualizarTest extends TestCase
         $this->assertNull($resultado['shopify_variant_id']);
         $this->assertNull($resultado['shopify_product_id']);
     }
+
+    public function test_procesar_inventario_actualizado_retorna_ignorado_si_falta_inventory_item_id(): void
+    {
+        $reflector = new ReflectionClass(ShopifyController::class);
+        $method = $reflector->getMethod('procesarInventarioActualizadoShopify');
+        $method->setAccessible(true);
+
+        $empresa = new \App\Models\Admin\Empresa();
+        $usuario = new \App\Models\User();
+        $request = new Request([]);
+
+        $response = $method->invoke($this->controller, $request, $empresa, $usuario);
+        $data = $response->getData(true);
+
+        $this->assertSame('ignored', $data['status']);
+        $this->assertSame('Missing inventory_item_id', $data['message']);
+    }
 }

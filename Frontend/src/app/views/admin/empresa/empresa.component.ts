@@ -134,6 +134,10 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
                 // this.cargarDocumentosBase();
             }
 
+            if (this.empresa && this.empresa.status_conexion_shopify === 'connected') {
+                this.cargarShopifyLocations();
+            }
+
             // Después de cargar la empresa, verificar si hay un tab en la URL
             const tabParam = this.route.snapshot.queryParams['tab'];
             if (tabParam) {
@@ -1857,6 +1861,10 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
             console.log('Tab name mapeado:', tabName); // Debug
 
             if (tabName) {
+                if (tabName === 'shopify') {
+                    this.cargarShopifyLocations();
+                }
+
                 const currentTab = this.route.snapshot.queryParams['tab'];
                 console.log('Tab actual en URL:', currentTab, 'Nuevo tab:', tabName); // Debug
 
@@ -1915,7 +1923,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
             'Facturación electrónica': 'facturacion-electronica',
             'Integraciones': 'integraciones',
             'WooCommerce': 'woocommerce',
-            'Shopify': 'shopify',
+            'Integración Shopify': 'shopify',
             'Integración BoxFul': 'boxful'
         };
         return headingMap[heading] ?? null;
@@ -2165,6 +2173,257 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
                         Swal.fire({
                             title: 'Error al desconectar',
                             text: error.error && error.error.message ? error.error.message : 'No se pudo desconectar de Boxful.',
+                            icon: 'error',
+                            confirmButtonText: 'Aceptar'
+                        });
+                    }
+                );
+            }
+        });
+    }
+
+    // ==========================================
+    // SHOPIFY MULTI-SUCURSAL LOCATIONS
+    // ==========================================
+    public tabShopifyActiva: 'credenciales' | 'sucursales' | 'productos' = 'credenciales';
+    public shopifyLocations: any[] = [];
+    public shopifySucursales: any[] = [];
+    public loadingShopifyLocations: boolean = false;
+    public syncingShopifyLocations: boolean = false;
+    public savingAllShopifyLocations: boolean = false;
+    public savingShopifyLocationId: number | null = null;
+    public creatingSucursalLocationId: number | null = null;
+
+    public compareIds(id1: any, id2: any): boolean {
+        if (id1 == null && id2 == null) return true;
+        if (id1 == null || id2 == null) return false;
+        return String(id1) === String(id2);
+    }
+
+    public actualizarLocationsPreservandoSelecciones(nuevasLocations: any[]) {
+        const mapaExistente = new Map<any, any>();
+        (this.shopifyLocations || []).forEach((loc: any) => {
+            mapaExistente.set(loc.id, loc);
+        });
+
+        this.shopifyLocations = (nuevasLocations || []).map((newLoc: any) => {
+            const existente = mapaExistente.get(newLoc.id);
+            if (!existente) {
+                return newLoc;
+            }
+
+            // Si la ubicación en backend ya tiene asignación explícita (ej. recién creada en backend), tomarla
+            // Si no, preservar lo que el usuario tenía seleccionado en la interfaz
+            const idSucursal = newLoc.id_sucursal != null ? newLoc.id_sucursal : existente.id_sucursal;
+            const idBodega = newLoc.id_bodega != null ? newLoc.id_bodega : existente.id_bodega;
+
+            return {
+                ...newLoc,
+                id_sucursal: idSucursal,
+                id_bodega: idBodega,
+                sincronizar_stock: existente.sincronizar_stock !== undefined ? existente.sincronizar_stock : newLoc.sincronizar_stock,
+                es_default: existente.es_default !== undefined ? existente.es_default : newLoc.es_default
+            };
+        });
+    }
+
+    public cargarShopifyLocations(preservar: boolean = true) {
+        if (!this.empresa || this.empresa.status_conexion_shopify !== 'connected') {
+            return;
+        }
+
+        if (!this.shopifyLocations || this.shopifyLocations.length === 0) {
+            this.loadingShopifyLocations = true;
+        }
+
+        this.apiService.getAll('shopify/locations').subscribe(
+            (response: any) => {
+                this.loadingShopifyLocations = false;
+                this.shopifySucursales = response.sucursales || [];
+                if (preservar && this.shopifyLocations && this.shopifyLocations.length > 0) {
+                    this.actualizarLocationsPreservandoSelecciones(response.locations || []);
+                } else {
+                    this.shopifyLocations = response.locations || [];
+                }
+            },
+            (error: any) => {
+                this.loadingShopifyLocations = false;
+                console.error('Error cargando ubicaciones de Shopify:', error);
+            }
+        );
+    }
+
+    public sincronizarShopifyLocations() {
+        this.syncingShopifyLocations = true;
+        this.apiService.store('shopify/locations/sync', {}).subscribe(
+            (response: any) => {
+                this.syncingShopifyLocations = false;
+                this.shopifySucursales = response.sucursales || [];
+                this.actualizarLocationsPreservandoSelecciones(response.locations || []);
+                Swal.fire({
+                    title: 'Ubicaciones Sincronizadas',
+                    text: 'Se han sincronizado las ubicaciones de Shopify correctamente.',
+                    icon: 'success',
+                    confirmButtonText: 'Aceptar'
+                });
+            },
+            (error: any) => {
+                this.syncingShopifyLocations = false;
+                Swal.fire({
+                    title: 'Error al sincronizar',
+                    text: error.error && error.error.mensaje ? error.error.mensaje : 'No se pudieron sincronizar las ubicaciones de Shopify.',
+                    icon: 'error',
+                    confirmButtonText: 'Aceptar'
+                });
+            }
+        );
+    }
+
+    public onSucursalChange(loc: any) {
+        if (!loc.id_sucursal) {
+            loc.id_bodega = null;
+        } else {
+            const bodegas = this.getBodegasForSucursal(loc.id_sucursal);
+            if (bodegas.length > 0 && (!loc.id_bodega || !bodegas.some((b: any) => String(b.id) === String(loc.id_bodega)))) {
+                loc.id_bodega = bodegas[0].id;
+            }
+        }
+        this.guardarMapeoLocation(loc, true);
+    }
+
+    public onBodegaChange(loc: any) {
+        this.guardarMapeoLocation(loc, true);
+    }
+
+    public onSincronizarStockChange(loc: any) {
+        this.guardarMapeoLocation(loc, true);
+    }
+
+    public getBodegasForSucursal(idSucursal: any): any[] {
+        if (!idSucursal) return [];
+        const sucursal = this.shopifySucursales.find((s: any) => s.id == idSucursal);
+        return sucursal && sucursal.bodegas ? sucursal.bodegas : [];
+    }
+
+    public setLocDefault(selectedLoc: any) {
+        this.shopifyLocations.forEach((loc: any) => {
+            loc.es_default = (loc.id === selectedLoc.id);
+        });
+        this.guardarMapeoLocation(selectedLoc);
+    }
+
+    public guardarMapeoLocation(loc: any, silent: boolean = false) {
+        if (!silent) {
+            this.savingShopifyLocationId = loc.id;
+        }
+        const payload = {
+            id_sucursal: loc.id_sucursal,
+            id_bodega: loc.id_bodega,
+            sincronizar_stock: loc.sincronizar_stock,
+            es_default: loc.es_default
+        };
+
+        this.apiService.update('shopify/locations', loc.id, payload).subscribe(
+            (response: any) => {
+                this.savingShopifyLocationId = null;
+                if (!silent) {
+                    Swal.fire({
+                        title: 'Guardado',
+                        text: 'El mapeo de la ubicación ha sido actualizado.',
+                        icon: 'success',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                }
+            },
+            (error: any) => {
+                this.savingShopifyLocationId = null;
+                if (!silent) {
+                    Swal.fire({
+                        title: 'Error al guardar',
+                        text: error.error && error.error.mensaje ? error.error.mensaje : 'No se pudo guardar el mapeo.',
+                        icon: 'error',
+                        confirmButtonText: 'Aceptar'
+                    });
+                }
+            }
+        );
+    }
+
+    public guardarTodosMapeosShopify() {
+        if (!this.shopifyLocations || this.shopifyLocations.length === 0) return;
+        this.savingAllShopifyLocations = true;
+
+        const promesas = this.shopifyLocations.map((loc: any) => {
+            const payload = {
+                id_sucursal: loc.id_sucursal,
+                id_bodega: loc.id_bodega,
+                sincronizar_stock: loc.sincronizar_stock,
+                es_default: loc.es_default
+            };
+            return this.apiService.update('shopify/locations', loc.id, payload).toPromise();
+        });
+
+        Promise.all(promesas).then(() => {
+            this.savingAllShopifyLocations = false;
+            Swal.fire({
+                title: 'Mapeos Guardados',
+                text: 'Todas las asignaciones han sido guardadas exitosamente.',
+                icon: 'success',
+                timer: 2000,
+                showConfirmButton: false
+            });
+        }).catch((err) => {
+            this.savingAllShopifyLocations = false;
+            this.alertService.error('Ocurrió un error al guardar algunas ubicaciones: ' + err);
+        });
+    }
+
+    public crearSucursalDesdeShopify(loc: any) {
+        Swal.fire({
+            title: '¿Crear sucursal en SmartPyme?',
+            text: `Se creará la sucursal y bodega principal para "${loc.shopify_location_name}". Si ya existe una con el mismo nombre o identificador, se vinculará para no duplicarla.`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, crear / vincular',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                this.creatingSucursalLocationId = loc.id;
+                this.apiService.store(`shopify/locations/${loc.id}/crear-sucursal`, {}).subscribe(
+                    (response: any) => {
+                        this.creatingSucursalLocationId = null;
+
+                        // 1. Actualizar lista de sucursales disponibles en los selects
+                        if (response.sucursales) {
+                            this.shopifySucursales = response.sucursales;
+                        }
+
+                        // 2. Actualizar ubicaciones preservando intactas las selecciones de todos los selects
+                        if (response.locations) {
+                            this.actualizarLocationsPreservandoSelecciones(response.locations);
+                        } else if (response.location) {
+                            const idx = this.shopifyLocations.findIndex((l: any) => l.id === loc.id);
+                            if (idx !== -1) {
+                                this.shopifyLocations[idx].id_sucursal = response.location.id_sucursal;
+                                this.shopifyLocations[idx].id_bodega = response.location.id_bodega;
+                                this.shopifyLocations[idx].sucursal = response.location.sucursal;
+                                this.shopifyLocations[idx].bodega = response.location.bodega;
+                            }
+                        }
+
+                        Swal.fire({
+                            title: response.ya_existia ? 'Sucursal Vinculada' : 'Sucursal Creada',
+                            text: response.mensaje || 'Operación completada exitosamente.',
+                            icon: 'success',
+                            confirmButtonText: 'Aceptar'
+                        });
+                    },
+                    (error: any) => {
+                        this.creatingSucursalLocationId = null;
+                        Swal.fire({
+                            title: 'Error',
+                            text: error.error && error.error.mensaje ? error.error.mensaje : 'No se pudo crear la sucursal.',
                             icon: 'error',
                             confirmButtonText: 'Aceptar'
                         });

@@ -1437,122 +1437,320 @@
     <tab heading="Shopify" (selectTab)="onTabSelect($event)">
         <section class="bg-white rounded p-4 mb-4">
             <div class="row">
-                <div class="col-12">
-                    <h5 class="mb-3">Integración Shopify</h5>
+                <!-- SIDEBAR VERTICAL DE PESTAÑAS SHOPIFY -->
+                <div class="col-12 col-md-4 col-lg-3 col-xl-2 mb-4 mb-md-0">
+                    <div class="nav flex-column nav-pills shopify-nav-pills gap-1" role="tablist" aria-orientation="vertical">
+                        <button type="button" class="nav-link text-start py-2 px-3"
+                            [ngClass]="{'active': tabShopifyActiva === 'credenciales'}"
+                            (click)="tabShopifyActiva = 'credenciales'" role="tab">
+                            <i class="fa fa-key me-2"></i>Credenciales
+                        </button>
+                        <button type="button" class="nav-link text-start py-2 px-3 d-flex justify-content-between align-items-center"
+                            *ngIf="empresa.status_conexion_shopify === 'connected'"
+                            [ngClass]="{'active': tabShopifyActiva === 'sucursales'}"
+                            (click)="tabShopifyActiva = 'sucursales'; cargarShopifyLocations()" role="tab">
+                            <span><i class="fa fa-store me-2"></i>Sucursales</span>
+                            <span class="badge" [ngClass]="tabShopifyActiva === 'sucursales' ? 'bg-white text-primary' : 'bg-primary'"
+                                *ngIf="shopifyLocations.length > 0">{{ shopifyLocations.length }}</span>
+                        </button>
+                        <button type="button" class="nav-link text-start py-2 px-3"
+                            *ngIf="empresa.status_conexion_shopify === 'connected'"
+                            [ngClass]="{'active': tabShopifyActiva === 'productos'}"
+                            (click)="tabShopifyActiva = 'productos'" role="tab">
+                            <i class="fa fa-boxes me-2"></i>Productos
+                        </button>
+                    </div>
+                </div>
 
-                    <div class="row g-3">
+                <!-- CONTENIDO DE LAS PESTAÑAS SHOPIFY -->
+                <div class="col-12 col-md-8 col-lg-9 col-xl-10">
 
-                        <div class="col-12">
-                            <label for="url_webhook_shopify" class="form-label">URL Webhook para Shopify:</label>
-                            <div class="input-group">
-                                <input type="text" class="form-control" [(ngModel)]="empresa.shopify_webhook_url"
-                                    name="url_webhook_shopify" placeholder="URL del Webhook para Shopify" readonly>
-                                <button class="btn btn-secondary" type="button"
-                                    (click)="copyToClipboard(empresa.shopify_webhook_url)" tooltip="Copiar URL">
-                                    <i class="fa fa-copy"></i>
-                                </button>
-                            </div>
-                            <small class="text-muted d-block mt-2">
-                                Configure esta URL en su tienda Shopify para sincronizar datos automáticamente
-                            </small>
-                        </div>
+                    <!-- CONTENIDO PESTAÑA 1: CREDENCIALES -->
+                    <div *ngIf="tabShopifyActiva === 'credenciales'">
+                        <div class="row g-3">
 
-
-                        <div class="col-md-6">
-                            <label for="shopify_store_url" class="form-label">URL de la Tienda:</label>
-                            <input type="text" class="form-control" [(ngModel)]="empresa.shopify_store_url"
-                                name="shopify_store_url" [readonly]="empresa.status_conexion_shopify === 'connected'"
-                                placeholder="Ej: https://mitienda.com">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="shopify_client_id" class="form-label">Client ID:</label>
-                            <input type="text" class="form-control" [(ngModel)]="empresa.shopify_client_id"
-                                name="shopify_client_id"
-                                [readonly]="empresa.status_conexion_shopify === 'connected'"
-                                placeholder="Ingrese su Client ID de la app">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="shopify_consumer_secret" class="form-label">Client Secret:</label>
-                            <input type="text" class="form-control" [(ngModel)]="empresa.shopify_consumer_secret"
-                                name="shopify_consumer_secret"
-                                [readonly]="empresa.status_conexion_shopify === 'connected'"
-                                placeholder="Ingrese su Client Secret de la app">
-                        </div>
-
-                        <div class="col-md-6">
-                            <label for="shopify_canal" class="form-label">Canal de ventas:</label>
-                            <select class="form-select" [(ngModel)]="empresa.shopify_canal_id" name="shopify_canal"
-                                [disabled]="empresa.status_conexion_shopify === 'connected'">
-                                <option [value]="0" selected>Seleccione un canal</option>
-                                <option *ngFor="let canal of canales" [value]="canal.id">{{canal.nombre}}</option>
-                            </select>
-                            <small class="text-muted">
-                                Este canal se asignará automáticamente a todas las ventas realizadas desde Shopify.
-                            </small>
-                        </div>
-
-                        <!-- Importaciones -->
-                        <div class="col-12" *ngIf="empresa.status_conexion_shopify === 'connected'">
-                            <h5 class="mb-3">Importaciones</h5>
-                            <div class="d-flex gap-2 flex-wrap">
-                                <button tooltip="Importar productos desde Shopify"
-                                    (click)="confirmarImportacionShopify()" class="btn btn-primary">
-                                    <i class="fa fa-download me-2"></i>
-                                    Importar productos
-                                </button>
-
-                                <!-- <button tooltip="Importar clientes desde Shopify" 
-                                        (click)="confirmarImportacionClientesShopify()" 
-                                        class="btn btn-default">
-                                    <i class="fa fa-users me-2"></i>
-                                    Importar clientes
-                                </button> -->
-                            </div>
-                        </div>
-
-
-                        <div class="col-12">
-                            <div *ngIf="empresa.shopify_store_url && empresa.shopify_consumer_secret" class="alert mt-3"
-                                [ngClass]="{'alert-success': empresa.shopify_status === 'connected', 'alert-warning': empresa.shopify_status === 'disconnected', 'alert-info': !empresa.shopify_status}">
-                                <i class="fa"
-                                    [ngClass]="{'fa-check-circle': empresa.shopify_status === 'connected', 'fa-exclamation-circle': empresa.shopify_status === 'disconnected', 'fa-info-circle': !empresa.shopify_status}"></i>
-                                <span *ngIf="empresa.shopify_status === 'connected'"> Conexión establecida con
-                                    Shopify</span>
-                                <span *ngIf="empresa.shopify_status === 'disconnected'"> Sin conexión con Shopify</span>
-                                <span *ngIf="!empresa.shopify_status"> Estado de conexión desconocido</span>
+                            <div class="col-12">
+                                <label for="url_webhook_shopify" class="form-label">URL Webhook para Shopify:</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" [(ngModel)]="empresa.shopify_webhook_url"
+                                        name="url_webhook_shopify" placeholder="URL del Webhook para Shopify" readonly>
+                                    <button class="btn btn-secondary" type="button"
+                                        (click)="copyToClipboard(empresa.shopify_webhook_url)" tooltip="Copiar URL">
+                                        <i class="fa fa-copy"></i>
+                                    </button>
+                                </div>
+                                <small class="text-muted d-block mt-2">
+                                    Configure esta URL en su tienda Shopify para sincronizar datos automáticamente
+                                </small>
                             </div>
 
-                            <div class="text-end mt-3">
-                                <button tooltip="Descargar productos para importar en Shopify (F7)"
-                                    (click)="descargarShopify()" class="btn btn-light me-2"
-                                    *ngIf="empresa.status_conexion_shopify === 'connected'">
-                                    <img src="/assets/icons/woocommerce.png" class="icon me-2">
-                                    Descargar productos
-                                </button>
-
-                                <button class="btn btn-light text-danger me-2" type="button"
-                                    *ngIf="empresa.is_current_user_connected_to_shopify" (click)="disconnectShopify()">
-                                    <i class="fa fa-unlink me-2"></i>
-                                    Desconectar Shopify
-                                </button>
-                                <button class="btn btn-light text-success" type="button"
-                                    *ngIf="empresa.status_conexion_shopify !== 'connected' || empresa.is_current_user_connected_to_shopify"
-                                    [disabled]="empresa.status_conexion_shopify === 'connected' && !empresa.is_current_user_connected_to_shopify"
-                                    (click)="saveCredentials('shopify')">
-                                    <i class="fa me-2"
-                                        [ngClass]="empresa.status_conexion_shopify === 'connected' ? 'fa-plug' : 'fa-save'"></i>
-                                    {{ empresa.status_conexion_shopify === 'connected' ? 'Probar Conexión' : 'Guardar Credenciales' }}
-                                </button>
+                            <div class="col-md-6">
+                                <label for="shopify_store_url" class="form-label">URL de la Tienda:</label>
+                                <input type="text" class="form-control" [(ngModel)]="empresa.shopify_store_url"
+                                    name="shopify_store_url" [readonly]="empresa.status_conexion_shopify === 'connected'"
+                                    placeholder="Ej: https://mitienda.com">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="shopify_client_id" class="form-label">Client ID:</label>
+                                <input type="text" class="form-control" [(ngModel)]="empresa.shopify_client_id"
+                                    name="shopify_client_id"
+                                    [readonly]="empresa.status_conexion_shopify === 'connected'"
+                                    placeholder="Ingrese su Client ID de la app">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="shopify_consumer_secret" class="form-label">Client Secret:</label>
+                                <input type="text" class="form-control" [(ngModel)]="empresa.shopify_consumer_secret"
+                                    name="shopify_consumer_secret"
+                                    [readonly]="empresa.status_conexion_shopify === 'connected'"
+                                    placeholder="Ingrese su Client Secret de la app">
                             </div>
 
-                            <div class="alert alert-info mt-3"
-                                *ngIf="empresa.status_conexion_shopify === 'connected' && !empresa.is_current_user_connected_to_shopify">
-                                <i class="fa fa-info-circle me-2"></i>
-                                Hay otros usuarios conectados a Shopify. Solo el usuario que estableció la conexión
-                                puede desconectarla.
+                            <div class="col-md-6">
+                                <label for="shopify_canal" class="form-label">Canal de ventas:</label>
+                                <select class="form-select" [(ngModel)]="empresa.shopify_canal_id" name="shopify_canal"
+                                    [disabled]="empresa.status_conexion_shopify === 'connected'">
+                                    <option [value]="0" selected>Seleccione un canal</option>
+                                    <option *ngFor="let canal of canales" [value]="canal.id">{{canal.nombre}}</option>
+                                </select>
+                                <small class="text-muted">
+                                    Este canal se asignará automáticamente a todas las ventas realizadas desde Shopify.
+                                </small>
+                            </div>
+
+                            <div class="col-12">
+                                <div *ngIf="empresa.shopify_store_url && empresa.shopify_consumer_secret" class="alert mt-3"
+                                    [ngClass]="{'alert-success': empresa.shopify_status === 'connected', 'alert-warning': empresa.shopify_status === 'disconnected', 'alert-info': !empresa.shopify_status}">
+                                    <i class="fa"
+                                        [ngClass]="{'fa-check-circle': empresa.shopify_status === 'connected', 'fa-exclamation-circle': empresa.shopify_status === 'disconnected', 'fa-info-circle': !empresa.shopify_status}"></i>
+                                    <span *ngIf="empresa.shopify_status === 'connected'"> Conexión establecida con
+                                        Shopify</span>
+                                    <span *ngIf="empresa.shopify_status === 'disconnected'"> Sin conexión con Shopify</span>
+                                    <span *ngIf="!empresa.shopify_status"> Estado de conexión desconocido</span>
+                                </div>
+
+                                <div class="text-end mt-3">
+                                    <button class="btn btn-light text-danger me-2" type="button"
+                                        *ngIf="empresa.is_current_user_connected_to_shopify" (click)="disconnectShopify()">
+                                        <i class="fa fa-unlink me-2"></i>
+                                        Desconectar Shopify
+                                    </button>
+                                    <button class="btn btn-light text-success" type="button"
+                                        *ngIf="empresa.status_conexion_shopify !== 'connected' || empresa.is_current_user_connected_to_shopify"
+                                        [disabled]="empresa.status_conexion_shopify === 'connected' && !empresa.is_current_user_connected_to_shopify"
+                                        (click)="saveCredentials('shopify')">
+                                        <i class="fa me-2"
+                                            [ngClass]="empresa.status_conexion_shopify === 'connected' ? 'fa-plug' : 'fa-save'"></i>
+                                        {{ empresa.status_conexion_shopify === 'connected' ? 'Probar Conexión' : 'Guardar Credenciales' }}
+                                    </button>
+                                </div>
+
+                                <div class="alert alert-info mt-3"
+                                    *ngIf="empresa.status_conexion_shopify === 'connected' && !empresa.is_current_user_connected_to_shopify">
+                                    <i class="fa fa-info-circle me-2"></i>
+                                    Hay otros usuarios conectados a Shopify. Solo el usuario que estableció la conexión
+                                    puede desconectarla.
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- CONTENIDO PESTAÑA 2: SUCURSALES Y UBICACIONES (MULTI-SUCURSAL) -->
+                    <div *ngIf="tabShopifyActiva === 'sucursales'">
+                        <div class="card border">
+                            <div class="card-header bg-light d-flex justify-content-between align-items-center py-3">
+                                <div>
+                                    <h6 class="mb-1 fw-bold text-dark">
+                                        <i class="fa fa-store me-2 text-primary"></i>
+                                        Sucursales y Ubicaciones
+                                    </h6>
+                                    <small class="text-muted">
+                                        Mapea cada ubicación de tu tienda Shopify con la sucursal y bodega correspondiente en SmartPyme.
+                                    </small>
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <button class="btn btn-sm btn-outline-success me-2" type="button"
+                                        [disabled]="savingAllShopifyLocations || shopifyLocations.length === 0"
+                                        (click)="guardarTodosMapeosShopify()"
+                                        tooltip="Guarda todas las asignaciones de sucursales y bodegas">
+                                        <i class="fa fa-save me-1" [ngClass]="{'fa-spin': savingAllShopifyLocations}"></i>
+                                        Guardar asignaciones
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-primary" type="button"
+                                        [disabled]="syncingShopifyLocations || loadingShopifyLocations"
+                                        (click)="sincronizarShopifyLocations()"
+                                        tooltip="Consulta y actualiza la lista de sucursales desde Shopify">
+                                        <i class="fa fa-sync me-1" [ngClass]="{'fa-spin': syncingShopifyLocations}"></i>
+                                        Sincronizar ubicaciones
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div *ngIf="loadingShopifyLocations" class="text-center p-4">
+                                    <i class="fa fa-spinner fa-spin fa-2x text-primary"></i>
+                                    <p class="mt-2 mb-0 text-muted">Cargando ubicaciones de Shopify...</p>
+                                </div>
+
+                                <div *ngIf="!loadingShopifyLocations && shopifyLocations.length === 0" class="text-center p-4">
+                                    <i class="fa fa-info-circle fa-2x text-muted mb-2"></i>
+                                    <p class="mb-2">No se han sincronizado ubicaciones de Shopify todavía.</p>
+                                    <button class="btn btn-sm btn-primary" (click)="sincronizarShopifyLocations()">
+                                        <i class="fa fa-sync me-1"></i> Sincronizar desde Shopify
+                                    </button>
+                                </div>
+
+                                <div class="table-responsive" *ngIf="!loadingShopifyLocations && shopifyLocations.length > 0">
+                                    <table class="table table-hover align-middle mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Ubicación Shopify</th>
+                                                <th style="min-width: 220px;">Sucursal SmartPyme</th>
+                                                <th style="min-width: 220px;">Bodega SmartPyme</th>
+                                                <th class="text-center" style="width: 140px;">Sincronizar Stock</th>
+                                                <th class="text-center" style="width: 140px;" tooltip="Sucursal que atiende pedidos web online">
+                                                    Predeterminada
+                                                </th>
+                                                <th class="text-end" style="width: 180px;">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr *ngFor="let loc of shopifyLocations">
+                                                <td>
+                                                    <div class="fw-bold">{{ loc.shopify_location_name }}</div>
+                                                    <small class="text-muted">ID: {{ loc.shopify_location_id }}</small>
+                                                    <span class="badge ms-1" [ngClass]="loc.shopify_active ? 'bg-success' : 'bg-secondary'">
+                                                        {{ loc.shopify_active ? 'Activa' : 'Inactiva' }}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <select class="form-select form-select-sm" [(ngModel)]="loc.id_sucursal" [compareWith]="compareIds" (change)="onSucursalChange(loc)">
+                                                        <option [ngValue]="null">-- Sin asignar --</option>
+                                                        <option *ngFor="let suc of shopifySucursales" [ngValue]="suc.id">
+                                                            {{ suc.nombre }}
+                                                        </option>
+                                                    </select>
+                                                </td>
+                                                <td>
+                                                    <select class="form-select form-select-sm" [(ngModel)]="loc.id_bodega" [compareWith]="compareIds" (change)="onBodegaChange(loc)" [disabled]="!loc.id_sucursal">
+                                                        <option [ngValue]="null">-- Seleccionar bodega --</option>
+                                                        <option *ngFor="let bod of getBodegasForSucursal(loc.id_sucursal)" [ngValue]="bod.id">
+                                                            {{ bod.nombre }}
+                                                        </option>
+                                                    </select>
+                                                </td>
+                                                <td class="text-center">
+                                                    <div class="form-check form-switch d-inline-block">
+                                                        <input class="form-check-input" type="checkbox" [(ngModel)]="loc.sincronizar_stock" (change)="onSincronizarStockChange(loc)" id="syncStock_{{loc.id}}">
+                                                    </div>
+                                                </td>
+                                                <td class="text-center">
+                                                    <input type="radio" class="form-check-input" name="loc_default"
+                                                        [checked]="loc.es_default"
+                                                        (change)="setLocDefault(loc)"
+                                                        [disabled]="!loc.id_sucursal || !loc.id_bodega">
+                                                    <div *ngIf="loc.es_default" class="text-primary small fw-bold mt-1">Web Online</div>
+                                                </td>
+                                                <td class="text-end">
+                                                    <button class="btn btn-sm btn-outline-success me-1"
+                                                        (click)="guardarMapeoLocation(loc)"
+                                                        [disabled]="savingShopifyLocationId === loc.id"
+                                                        tooltip="Guardar cambios de esta ubicación">
+                                                        <i class="fa fa-save" [ngClass]="{'fa-spin': savingShopifyLocationId === loc.id}"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-primary"
+                                                        *ngIf="!loc.id_sucursal"
+                                                        (click)="crearSucursalDesdeShopify(loc)"
+                                                        [disabled]="creatingSucursalLocationId === loc.id"
+                                                        tooltip="Crear esta sucursal y bodega en SmartPyme">
+                                                        <i class="fa fa-plus-circle" [ngClass]="{'fa-spin': creatingSucursalLocationId === loc.id}"></i>
+                                                        Crear en SP
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="p-3 bg-light border-top">
+                                    <small class="text-muted">
+                                        <i class="fa fa-info-circle me-1 text-info"></i>
+                                        <strong>Nota:</strong> La ubicación marcada como <strong>Predeterminada</strong> es la que procesará los pedidos de la tienda online cuando Shopify no especifique una sucursal física de origen (Shopify POS).
+                                    </small>
+                                </div>
                             </div>
                         </div>
                     </div>
+
+                    <!-- CONTENIDO PESTAÑA 3: PRODUCTOS -->
+                    <div *ngIf="tabShopifyActiva === 'productos'">
+                        <div class="row g-3">
+                            <!-- Descargar Productos (CSV) -->
+                            <div class="col-12">
+                                <div class="card border">
+                                    <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-3 p-3">
+                                        <div>
+                                            <h6 class="fw-bold mb-1 text-dark">
+                                                <i class="fa fa-file-excel text-muted me-2"></i>
+                                                Descargar Productos
+                                            </h6>
+                                            <small class="text-muted">
+                                                Genera y descarga un archivo CSV compatible con Shopify para importar o actualizar los productos de SmartPyme.
+                                            </small>
+                                        </div>
+                                        <button tooltip="Descargar productos para importar en Shopify (F7)"
+                                            (click)="descargarShopify()" class="btn btn-sm btn-outline-primary"
+                                            [disabled]="downloading">
+                                            <i class="fa fa-file-download me-1" [ngClass]="{'fa-spin': downloading}"></i>
+                                            Descargar productos (CSV)
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Importar Productos -->
+                            <div class="col-12">
+                                <div class="card border">
+                                    <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-3 p-3">
+                                        <div>
+                                            <h6 class="fw-bold mb-1 text-dark">
+                                                <i class="fa fa-cloud-download-alt text-muted me-2"></i>
+                                                Importar Productos
+                                            </h6>
+                                            <small class="text-muted">
+                                                Importa el catálogo de productos y variantes desde Shopify a SmartPyme.<br> Los activos se importan como activos y los borradores como inactivos.
+                                            </small>
+                                        </div>
+                                        <button tooltip="Importar catálogo completo desde Shopify"
+                                            (click)="confirmarImportacionShopify()" class="btn btn-sm btn-outline-primary">
+                                            <i class="fa fa-download me-1"></i>
+                                            Importar productos desde Shopify
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Sincronización / Exportación directa vía API -->
+                            <div class="col-12">
+                                <div class="card border">
+                                    <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-3 p-3">
+                                        <div>
+                                            <h6 class="fw-bold mb-1 text-dark">
+                                                <i class="fa fa-cloud-upload-alt text-muted me-2"></i>
+                                                Exportar Productos por API
+                                            </h6>
+                                            <small class="text-muted">
+                                                Envía masivamente los productos relacionados a tu sucursal actual hacia Shopify en segundo plano.
+                                            </small>
+                                        </div>
+                                        <button class="btn btn-sm btn-outline-primary" (click)="exportarShopify()">
+                                            <i class="fa fa-upload me-1"></i>
+                                            Exportar productos a Shopify
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </section>
