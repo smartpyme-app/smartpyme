@@ -98,6 +98,39 @@ class LibrosIvaCrController extends Controller
         return Excel::download(new ReporteDetalleIvaComprasExport($filas), 'Reporte_Detalle_IVA_Compras.csv', \Maatwebsite\Excel\Excel::CSV);
     }
 
+    public function reporteDetalleIvaVentasPdf(BaseLibroIVARequest $request)
+    {
+        return $this->descargarDetalleIvaPdf($request, 'ventas');
+    }
+
+    public function reporteDetalleIvaComprasPdf(BaseLibroIVARequest $request)
+    {
+        return $this->descargarDetalleIvaPdf($request, 'compras');
+    }
+
+    private function descargarDetalleIvaPdf(BaseLibroIVARequest $request, string $tipo)
+    {
+        $this->assertEmpresaCostaRica();
+
+        $idSucursal = $request->id_sucursal ? (int) $request->id_sucursal : null;
+        $meta = ReporteDetalleIvaCrService::metaPdf($tipo);
+        $filas = $meta['es_ventas']
+            ? $this->reporteDetalleIvaCrService->filasVentas($request->inicio, $request->fin, $idSucursal)
+            : $this->reporteDetalleIvaCrService->filasCompras($request->inicio, $request->fin, $idSucursal);
+
+        $pdf = app('dompdf.wrapper')->loadView('reportes.contabilidad.costa_rica.reporte-detalle-iva', [
+            'filas' => $filas,
+            'totales' => $this->reporteDetalleIvaCrService->totales($filas),
+            'esVentas' => $meta['es_ventas'],
+            'titulo' => $meta['titulo'],
+            'request' => $request,
+            'empresa' => Empresa::query()->find(Auth::user()->id_empresa),
+        ]);
+        $pdf->setPaper('legal', 'landscape');
+
+        return $pdf->download($meta['filename']);
+    }
+
     private function assertEmpresaCostaRica(): void
     {
         $empresa = Empresa::query()->find(Auth::user()->id_empresa);

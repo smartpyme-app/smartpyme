@@ -14,7 +14,7 @@
                     <table class="table table-borderless">
                         <tr *ngFor="let formaPago of formaPagos">
                             <td>{{ formaPago.nombre }}:</td>
-                            <td width="150px"><input autocomplete="off" class="text-end" type="text" [(ngModel)]="formaPago.total" (keyup)="sumTotal()" name="total" class="form-control text-end"></td>
+                            <td width="150px"><input autocomplete="off" type="text" [(ngModel)]="formaPago.total" (ngModelChange)="sumTotal()" [name]="'total-' + $index" class="form-control text-end"></td>
                         </tr>
                         <tr>
                             <td><b>Total de la venta: </b></td>
@@ -26,13 +26,17 @@
                         </tr>
                         <tr>
                             <td><b>Pendiente: </b></td>
-                            <td class="text-end"><b [ngClass]="{ 'text-danger' : (formaPagos.total - venta.total) < 0 }">{{formaPagos.total - venta.total | currency  }}</b></td>
+                            <td class="text-end"><b [ngClass]="{ 'text-danger' : pendiente > 0 }">{{ pendiente | currency }}</b></td>
+                        </tr>
+                        <tr *ngIf="vuelto > 0">
+                            <td><b>Vuelto: </b></td>
+                            <td class="text-end"><b class="text-success">{{ vuelto | currency }}</b></td>
                         </tr>
                     </table>
                 </div>
 
                 <div class="row d-grid">
-                    <button class="btn btn-primary" [disabled]="aplicarCambios">Aplicar cambios</button>
+                    <button class="btn btn-primary" [disabled]="!puedeAplicar">Aplicar cambios</button>
                 </div>
             </form>
         </section>

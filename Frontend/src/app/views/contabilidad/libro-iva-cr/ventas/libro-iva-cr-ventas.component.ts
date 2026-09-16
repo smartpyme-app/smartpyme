@@ -102,4 +102,19 @@ export class LibroIvaCrVentasComponent implements OnInit {
       }
     );
   }
+
+  descargarPdf(): void {
+    aplicarRangoMesLibroIva(this.filtros);
+    this.downloading = true;
+    this.apiService.export('libro-iva-cr/ventas/descargar-pdf', this.filtros).subscribe(
+      (data: Blob) => {
+        descargarBlob(data, 'application/pdf', 'Reporte_Detalle_IVA.pdf');
+        this.downloading = false;
+      },
+      (error) => {
+        manejarErrorDescargaLibroIva(error, this.alertService);
+        this.downloading = false;
+      }
+    );
+  }
 }

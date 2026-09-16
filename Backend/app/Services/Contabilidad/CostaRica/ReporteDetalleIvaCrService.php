@@ -13,6 +13,20 @@ use Carbon\Carbon;
  */
 final class ReporteDetalleIvaCrService
 {
+    /**
+     * @return array{es_ventas: bool, titulo: string, filename: string}
+     */
+    public static function metaPdf(string $tipo): array
+    {
+        $esVentas = $tipo === 'ventas';
+
+        return [
+            'es_ventas' => $esVentas,
+            'titulo' => $esVentas ? 'REPORTE DETALLE IVA VENTAS' : 'REPORTE DETALLE IVA COMPRAS',
+            'filename' => $esVentas ? 'Reporte_Detalle_IVA.pdf' : 'Reporte_Detalle_IVA_Compras.pdf',
+        ];
+    }
+
     /** @return array<int, array<string, mixed>> */
     public function filasVentas(string $inicio, string $fin, ?int $idSucursal): array
     {

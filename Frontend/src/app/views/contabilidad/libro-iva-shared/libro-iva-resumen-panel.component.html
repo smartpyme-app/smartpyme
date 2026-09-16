@@ -56,6 +56,40 @@
     </div>
   </div>
 
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-0">
+      <div class="px-3 pt-3 pb-2 border-bottom bg-light bg-opacity-50">
+        <h6 class="text-dark mb-0 fw-semibold">Ventas vs gastos</h6>
+      </div>
+      <div class="table-responsive px-2 pb-2">
+        <table class="table table-borderless table-hover align-middle mb-0">
+          <tbody>
+            <tr>
+              <td class="text-dark">Ventas</td>
+              <td class="text-end">{{ comparativoVentasGastos.ventas | currency }}</td>
+            </tr>
+            <tr>
+              <td class="text-dark">Gastos</td>
+              <td class="text-end">{{ comparativoVentasGastos.gastos | currency }}</td>
+            </tr>
+            <tr class="fw-semibold">
+              <td class="text-dark">Diferencia</td>
+              <td class="text-end" [class.text-danger]="comparativoVentasGastos.diferencia < 0">
+                {{ comparativoVentasGastos.diferencia | currency }}
+              </td>
+            </tr>
+            <tr>
+              <td class="text-muted">Gastos sobre ventas</td>
+              <td class="text-end">
+                {{ comparativoVentasGastos.porcentajeGastos == null ? '—' : (comparativoVentasGastos.porcentajeGastos | number:'1.0-2') + '%' }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   @if (comprasPorImpuesto.length > 0) {
     <div class="card border-0 shadow-sm mb-4">
       <div class="card-body p-0">

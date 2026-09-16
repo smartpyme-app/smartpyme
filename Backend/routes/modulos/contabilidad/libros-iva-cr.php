@@ -8,6 +8,8 @@ Route::prefix('libro-iva-cr')->group(function () {
     Route::get('/compras', [LibrosIvaCrController::class, 'reporteDetalleIvaCompras']);
     Route::get('/ventas/descargar-excel', [LibrosIvaCrController::class, 'reporteDetalleIvaVentasExcel']);
     Route::get('/ventas/descargar-csv', [LibrosIvaCrController::class, 'reporteDetalleIvaVentasCsv']);
+    Route::get('/ventas/descargar-pdf', [LibrosIvaCrController::class, 'reporteDetalleIvaVentasPdf']);
     Route::get('/compras/descargar-excel', [LibrosIvaCrController::class, 'reporteDetalleIvaComprasExcel']);
     Route::get('/compras/descargar-csv', [LibrosIvaCrController::class, 'reporteDetalleIvaComprasCsv']);
+    Route::get('/compras/descargar-pdf', [LibrosIvaCrController::class, 'reporteDetalleIvaComprasPdf']);
 });
