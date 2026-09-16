@@ -1,10 +1,13 @@
 <section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
   <h2 class="page-heading">{{ 'country.tax.fe.detailPageTitle' | translate }}</h2>
   <div class="d-flex gap-2 flex-wrap">
-    <button *ngIf="document?.json_path" class="btn btn-default" (click)="openVerJson(mjson)" tooltip="Ver JSON">
-      <i class="fa fa-file-code"></i> Ver JSON
+    <button *ngIf="payloadVista === 'json'" class="btn btn-default" (click)="openVerJson(mjson)" [tooltip]="'country.tax.fe.viewJson' | translate">
+      <i class="fa fa-file-code"></i> {{ 'country.tax.fe.viewJson' | translate }}
     </button>
-    <button *ngIf="document?.json_path" class="btn btn-default" (click)="downloadJson()" [disabled]="downloading" tooltip="Descargar JSON">
+    <button *ngIf="payloadVista === 'xml'" class="btn btn-default" (click)="openVerXml(mjson)" [tooltip]="'country.tax.fe.viewXml' | translate">
+      <i class="fa fa-file-code"></i> {{ 'country.tax.fe.viewXml' | translate }}
+    </button>
+    <button *ngIf="payloadVista === 'json'" class="btn btn-default" (click)="downloadJson()" [disabled]="downloading" [tooltip]="'country.tax.fe.viewJson' | translate">
       <i class="fa fa-download"></i>
     </button>
     <button *ngIf="document?.xml_path" class="btn btn-default" (click)="downloadXml()" [disabled]="downloading" tooltip="Descargar XML">
@@ -57,7 +60,7 @@
           <p class="text-break mb-0">{{ document.dte_uuid }}</p>
         </div>
         <div class="form-group col-lg-3">
-          <label class="fw-medium">Emisor NIT</label>
+          <label class="fw-medium">{{ 'country.tax.fe.issuerTaxId' | translate }}</label>
           <p>{{ document.issuer_nit }}</p>
         </div>
         <div class="form-group col-lg-3">
@@ -65,7 +68,7 @@
           <p>{{ document.issuer_name }}</p>
         </div>
         <div class="form-group col-lg-3">
-          <label class="fw-medium">Receptor NIT</label>
+          <label class="fw-medium">{{ 'country.tax.fe.receiverTaxId' | translate }}</label>
           <p>{{ document.receiver_nit || '—' }}</p>
         </div>
         <div class="form-group col-lg-3" *ngIf="document.acuse_estado">
@@ -352,14 +355,14 @@
 
 <ng-template #mjson>
   <div class="modal-header">
-    <h4 class="modal-title">{{ 'country.tax.fe.jsonModalTitle' | translate }}</h4>
+    <h4 class="modal-title">{{ (payloadVista === 'xml' ? 'country.tax.fe.xmlModalTitle' : 'country.tax.fe.jsonModalTitle') | translate }}</h4>
     <button type="button" class="btn-close" (click)="closeModal()" aria-label="Close"></button>
   </div>
   <div class="modal-body p-0">
     <pre class="mb-0 p-3 bg-light" style="max-height: 70vh; overflow: auto; font-size: 12px;">{{ jsonPreview }}</pre>
   </div>
   <div class="modal-footer">
-    <button type="button" class="btn btn-default" (click)="downloadJson()"><i class="fa fa-download"></i> Descargar</button>
+    <button type="button" class="btn btn-default" (click)="payloadVista === 'xml' ? downloadXml() : downloadJson()"><i class="fa fa-download"></i> Descargar</button>
     <button type="button" class="btn btn-light" (click)="closeModal()">Cerrar</button>
   </div>
 </ng-template>

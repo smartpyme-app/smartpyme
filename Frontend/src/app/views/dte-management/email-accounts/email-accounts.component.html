@@ -36,7 +36,7 @@
     </div>
     <p class="small text-muted mb-2">
       Último correo: {{ inbox.last_email_at ? (inbox.last_email_at | date:'dd/MM/yyyy HH:mm') : '—' }}
-      · Último DTE: {{ inbox.last_dte_at ? (inbox.last_dte_at | date:'dd/MM/yyyy HH:mm') : '—' }}
+      · {{ 'country.tax.fe.lastDocumentAt' | translate }}: {{ inbox.last_dte_at ? (inbox.last_dte_at | date:'dd/MM/yyyy HH:mm') : '—' }}
     </p>
     <div *ngIf="inbox.verification_code || inbox.verification_link || inbox.verification_received_at" class="alert alert-warning small mb-3">
       Gmail envió un correo de confirmación a esta dirección.
@@ -62,7 +62,7 @@
     <h6 class="mb-2">Cómo configurar el reenvío</h6>
     <p class="text-muted mb-3">
       Primero pulse <strong>Activar reenvío automático</strong> y copie la dirección.
-      Luego configure su correo. Puede usar Gmail y Outlook a la vez; los documentos llegan a la misma bandeja de DTEs.
+      {{ 'country.tax.fe.helpForwardSameInbox' | translate }}
     </p>
 
     <p class="mb-1"><strong>Gmail — 1. Verificar la dirección</strong> (en el ordenador; esta pantalla no está en el celular)</p>
@@ -105,7 +105,7 @@
     <p class="mb-1"><strong>Qué debe llevar el correo</strong></p>
     <ul class="mb-3 ps-3">
       <li>Adjunto JSON (El Salvador) o XML (Costa Rica). Un PDF solo no se importa.</li>
-      <li>Los documentos aparecen en Bandeja de DTEs para revisión; no se contabilizan solos.</li>
+      <li>{{ 'country.tax.fe.helpDocsInInbox' | translate }}</li>
     </ul>
 
     <p class="mb-1"><strong>Si no llega nada</strong></p>
@@ -113,7 +113,7 @@
       <li>¿La tarjeta está Activa y el filtro usa esta misma dirección?</li>
       <li>¿Confirmó la verificación de Gmail?</li>
       <li>¿El correo está en spam de Gmail? ¿Es solo PDF?</li>
-      <li>Último correo con fecha y último DTE vacío: el reenvío funciona, pero ese mensaje no traía JSON/XML.</li>
+      <li>{{ 'country.tax.fe.helpLastDocumentEmpty' | translate }}</li>
     </ul>
   </div>
 </section>

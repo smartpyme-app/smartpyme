@@ -6,6 +6,7 @@ import {
   pagoCuentaIvaResumenLibroIva,
   resumenIvaLibroIva,
   resumenPeriodoSinMovimientosLibroIva,
+  comparativoVentasGastosLibroIva,
   resumenTotalesLibroIva,
   comprasPorImpuestoResumenLibroIva,
   sumaBaseDesgloseLibroIva,
@@ -40,6 +41,10 @@ export class LibroIvaResumenPanelComponent {
 
   get totales(): { ventas: number; compras: number; compras_sin_devoluciones: number; gastos: number } {
     return resumenTotalesLibroIva(this.fiscalResumen);
+  }
+
+  get comparativoVentasGastos() {
+    return comparativoVentasGastosLibroIva(this.fiscalResumen);
   }
 
   get ventasPorImpuesto(): { tarifa: string; etiqueta: string; base: number; iva: number }[] {

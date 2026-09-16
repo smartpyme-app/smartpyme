@@ -87,6 +87,23 @@ export function pagoCuentaIvaResumenLibroIva(fiscalResumen: unknown): {
   };
 }
 
+export type ComparativoVentasGastos = {
+  ventas: number;
+  gastos: number;
+  diferencia: number;
+  porcentajeGastos: number | null;
+};
+
+export function comparativoVentasGastosLibroIva(fiscalResumen: unknown): ComparativoVentasGastos {
+  const t = resumenTotalesLibroIva(fiscalResumen);
+  return {
+    ventas: t.ventas,
+    gastos: t.gastos,
+    diferencia: Math.round((t.ventas - t.gastos) * 100) / 100,
+    porcentajeGastos: t.ventas === 0 ? null : Math.round((t.gastos / t.ventas) * 10000) / 100,
+  };
+}
+
 export function resumenPeriodoSinMovimientosLibroIva(fiscalResumen: unknown): boolean {
   if (!fiscalResumen) {
     return false;

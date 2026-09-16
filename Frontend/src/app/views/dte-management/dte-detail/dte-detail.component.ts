@@ -18,6 +18,7 @@ import { CurrencyFormatService } from '@services/currency-format.service';
 import { CountryI18nService } from '@services/country-i18n.service';
 import { TranslatePipe } from '@ngx-translate/core';
 import { CrearProyectoComponent } from '@shared/modals/crear-proyecto/crear-proyecto.component';
+import { tipoVistaPayload } from '../dte-payload-vista.util';
 
 @Component({
   selector: 'app-dte-detail',
@@ -191,6 +192,10 @@ export class DteDetailComponent implements OnInit {
     return null;
   }
 
+  get payloadVista() {
+    return tipoVistaPayload(this.document);
+  }
+
   goBack(): void {
     this.router.navigate(['/dte-management/dtes']);
   }
@@ -256,13 +261,28 @@ export class DteDetailComponent implements OnInit {
   }
 
   openVerJson(template: TemplateRef<any>): void {
+    this.openVerPayload(template, 'json');
+  }
+
+  openVerXml(template: TemplateRef<any>): void {
+    this.openVerPayload(template, 'xml');
+  }
+
+  private openVerPayload(template: TemplateRef<any>, tipo: 'json' | 'xml'): void {
     if (!this.document) return;
-    this.dteService.downloadJson(this.document.id).subscribe({
+    const req = tipo === 'xml'
+      ? this.dteService.downloadXml(this.document.id)
+      : this.dteService.downloadJson(this.document.id);
+    req.subscribe({
       next: async (blob) => {
         const text = await blob.text();
-        try {
-          this.jsonPreview = JSON.stringify(JSON.parse(text), null, 2);
-        } catch {
+        if (tipo === 'json') {
+          try {
+            this.jsonPreview = JSON.stringify(JSON.parse(text), null, 2);
+          } catch {
+            this.jsonPreview = text;
+          }
+        } else {
           this.jsonPreview = text;
         }
         this.modalRef = this.modalService.show(template, { class: 'modal-xl' });

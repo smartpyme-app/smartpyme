@@ -405,7 +405,7 @@ export class EmailAccountsComponent implements OnInit {
         this.syncingAccountId = null;
         const parts = [
           `${totals.synced} cuenta(s) sincronizada(s)`,
-          `${totals.new} DTE(s) nuevo(s)`,
+          this.countryI18n.fe('syncNewCount', { count: totals.new }),
           `${totals.duplicates} duplicado(s) omitido(s)`,
         ];
         if (totals.failed > 0) {
