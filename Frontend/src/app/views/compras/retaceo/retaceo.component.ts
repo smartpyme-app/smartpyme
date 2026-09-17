@@ -8,7 +8,7 @@ import { ApiService } from '@services/api.service';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import Swal from 'sweetalert2';
 import { forkJoin } from 'rxjs';
-
+import { productoDesdeDetalleCompra } from './retaceo-producto.util';
 
 interface Gasto {
   id?: number;
@@ -354,7 +354,7 @@ export class RetaceoComponent implements OnInit {
               compra_referencia: compra.referencia,
               id_producto: detalle.id_producto,
               id_detalle_compra: detalle.id,
-              producto: detalle.producto || { nombre: detalle.descripcion },
+              producto: productoDesdeDetalleCompra(detalle),
               cantidad: detalle.cantidad,
               costo_original: detalle.costo || 0,
               valor_fob: detalle.cantidad * (detalle.costo || 0),

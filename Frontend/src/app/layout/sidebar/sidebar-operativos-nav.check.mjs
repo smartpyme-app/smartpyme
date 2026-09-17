@@ -27,6 +27,8 @@ assert.match(sidebar, /\[routerLink\]="\['\/reportes-automaticos'\]"/);
 assert.match(sidebar, /\[routerLink\]="\['\/finanzas\/reportes'\]"/);
 assert.match(sidebar, /mostrarMenuPrestamos/);
 assert.match(sidebar, /\[routerLink\]="\['\/finanzas\/prestamos'\]"/);
+assert.match(sidebar, /mostrarBancosEnFinanzas\(contabilidadHabilitada\)/);
+assert.match(sidebar, /\[routerLink\]="\['\/bancos\/cuentas'\]"/);
 assert.doesNotMatch(sidebar, /toggleFinanzasReportes\(\)/);
 assert.doesNotMatch(sidebar, /libroIvaResumenRoute/);
 assert.doesNotMatch(sidebar, /\/finanzas\/reportes\/cuentas-cobrar/);

@@ -9,6 +9,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { FuncionalidadesService } from '@services/functionalities.service';
 import { BaseComponent } from '@shared/base/base.component';
 
 import * as moment from 'moment';
@@ -27,6 +28,7 @@ export class CuentaComponent extends BaseComponent implements OnInit {
     public catalogo:any = [];
     public loading = false;
     public saving = false;
+    public contabilidadHabilitada = false;
     modalRef?: BsModalRef;
 
 	constructor(
@@ -35,18 +37,32 @@ export class CuentaComponent extends BaseComponent implements OnInit {
 	    private route: ActivatedRoute,
 	    private router: Router,
 	    private modalService: BsModalService,
-	    private cdr: ChangeDetectorRef
+	    private cdr: ChangeDetectorRef,
+	    private funcionalidadesService: FuncionalidadesService
 	) {
         super();
     }
 
 	ngOnInit() {
         this.loadAll();
+        this.funcionalidadesService.verificarAcceso('contabilidad')
+          .pipe(this.untilDestroyed())
+          .subscribe({
+            next: (acceso) => {
+                this.contabilidadHabilitada = acceso;
+                if (acceso) {
+                    this.cargarCatalogo();
+                }
+                this.cdr.markForCheck();
+            },
+            error: () => {
+                this.contabilidadHabilitada = false;
+                this.cdr.markForCheck();
+            },
+          });
+    }
 
-        // this.apiService.getAll('bancos/list').subscribe(bancos => {
-        //     this.bancos = bancos;
-        // }, error => {this.alertService.error(error);});
-
+    private cargarCatalogo() {
         this.apiService.getAll('catalogo/list')
           .pipe(this.untilDestroyed())
           .subscribe(catalogo => {

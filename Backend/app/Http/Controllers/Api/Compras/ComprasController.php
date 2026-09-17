@@ -118,7 +118,7 @@ class ComprasController extends Controller
 
     public function read($id) {
         $compra = Compra::where('id', $id)
-            ->with(['detalles.lote', 'detalles.loteAsignaciones.lote', 'proveedor', 'abonos', 'devoluciones', 'impuestos.impuesto'])
+            ->with(['detalles.producto', 'detalles.lote', 'detalles.loteAsignaciones.lote', 'proveedor', 'abonos', 'devoluciones', 'impuestos.impuesto'])
             ->withSum(['abonos' => function ($query) {
                 $query->where('estado', 'Confirmado');
             }], 'total')

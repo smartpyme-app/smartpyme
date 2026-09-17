@@ -121,6 +121,7 @@
                 <input type="text" class="form-control" maxlength="5" [(ngModel)]="impuesto.codigo_mh" name="impuesto.codigo_mh" [placeholder]="'country.tax.taxCatalogCodeExample' | translate">
                 <small class="text-muted">{{ 'country.tax.taxCatalogCodeHint' | translate }}</small>
             </div>
+            @if (contabilidadHabilitada) {
             <div class="bg-white rounded p-3 my-3">
                 <div class="row">
                     <h6>Configuración Contable</h6>
@@ -154,6 +155,7 @@
                     </div>
                 </div>
             </div>
+            }
         </div>
         <div class="row mt-3">
             <h6 class="col-12 pb-2 mb-2">Aplicación del impuesto</h6>

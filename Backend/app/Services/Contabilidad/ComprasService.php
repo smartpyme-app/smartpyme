@@ -9,6 +9,7 @@ use App\Models\Contabilidad\Partidas\Detalle;
 use App\Models\Contabilidad\Catalogo\Cuenta;
 use App\Models\Compras\Detalle as DetalleCompra;
 use App\Models\Inventario\Categorias\Cuenta as CuentaCategoria;
+use App\Services\Contabilidad\Partidas\ReglaCuentaIva;
 use Illuminate\Support\Facades\DB;
 use Exception;
 
@@ -172,11 +173,12 @@ class ComprasService
 
             // IVA
             if ($compra->iva > 0) {
-                if (!$configuracion->id_cuenta_iva_compras) {
+                $idIva = ReglaCuentaIva::idCuentaCompras($configuracion, ReglaCuentaIva::tipoDe($compra));
+                if (!$idIva) {
                     throw new Exception('No se ha configurado la cuenta de IVA compras', 400);
                 }
 
-                $cuenta = Cuenta::find($configuracion->id_cuenta_iva_compras);
+                $cuenta = Cuenta::find($idIva);
                 if (!$cuenta) {
                     throw new Exception('No se encontró la cuenta contable de IVA compras', 400);
                 }

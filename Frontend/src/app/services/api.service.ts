@@ -401,6 +401,16 @@ export class ApiService {
         return customConfig?.configuraciones?.modulo_bancos === true;
     }
 
+    /** Formas de pago y selects de banco usan cuentas bancarias si hay contabilidad o el módulo de bancos. */
+    usarCuentasBancarias(contabilidadHabilitada: boolean): boolean {
+        return contabilidadHabilitada || this.isModuloBancos();
+    }
+
+    /** Bancos en el menú Finanzas cuando no hay contabilidad pero el módulo está activo. */
+    mostrarBancosEnFinanzas(contabilidadHabilitada: boolean): boolean {
+        return !contabilidadHabilitada && this.isModuloBancos();
+    }
+
     /** Indica si el módulo de presentaciones de producto está activo para la empresa del usuario actual */
     isModuloPresentaciones(): boolean {
         const empresa = this.auth_user()?.empresa;

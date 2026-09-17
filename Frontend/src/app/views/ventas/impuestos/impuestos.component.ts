@@ -12,6 +12,7 @@ import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { FilterPipe } from '@pipes/filter.pipe';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { TranslatePipe } from '@ngx-translate/core';
+import { FuncionalidadesService } from '@services/functionalities.service';
 
 import Swal from 'sweetalert2';
 
@@ -30,12 +31,14 @@ export class ImpuestosComponent extends BaseCrudComponent<any> implements OnInit
     public catalogo:any = [];
     public filtro:any = {};
     public filtrado:boolean = false;
+    public contabilidadHabilitada: boolean = false;
     private cdr = inject(ChangeDetectorRef);
 
     constructor(
         apiService: ApiService,
         alertService: AlertService,
-        modalManager: ModalManagerService
+        modalManager: ModalManagerService,
+        private funcionalidadesService: FuncionalidadesService
     ){
         super(apiService, alertService, modalManager, {
             endpoint: 'impuesto',
@@ -59,6 +62,24 @@ export class ImpuestosComponent extends BaseCrudComponent<any> implements OnInit
 
     ngOnInit() {
         this.loadAll();
+        this.funcionalidadesService.verificarAcceso('contabilidad')
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (acceso) => {
+                    this.contabilidadHabilitada = acceso;
+                    if (acceso) {
+                        this.cargarCatalogo();
+                    }
+                    this.cdr.markForCheck();
+                },
+                error: () => {
+                    this.contabilidadHabilitada = false;
+                    this.cdr.markForCheck();
+                },
+            });
+    }
+
+    private cargarCatalogo() {
         this.apiService.getAll('catalogo/list')
             .pipe(this.untilDestroyed())
             .subscribe({

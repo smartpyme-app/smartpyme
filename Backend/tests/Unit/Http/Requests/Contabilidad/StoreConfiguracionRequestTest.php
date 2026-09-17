@@ -29,4 +29,16 @@ class StoreConfiguracionRequestTest extends TestCase
         $this->assertTrue($this->validarGenerarPartidas(true)->errors()->has('generar_partidas'));
         $this->assertTrue($this->validarGenerarPartidas('automatico')->errors()->has('generar_partidas'));
     }
+
+    public function test_flags_aceptan_boolean(): void
+    {
+        $reglas = (new StoreConfiguracionRequest())->rules();
+
+        foreach (['separar_cuentas_iva', 'abonos_en_cartera'] as $campo) {
+            $ok = Validator::make([$campo => true], [$campo => $reglas[$campo]]);
+            $bad = Validator::make([$campo => 'si'], [$campo => $reglas[$campo]]);
+            $this->assertFalse($ok->errors()->has($campo));
+            $this->assertTrue($bad->errors()->has($campo));
+        }
+    }
 }

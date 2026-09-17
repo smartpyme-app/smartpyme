@@ -24,6 +24,7 @@ class StoreConfiguracionRequest extends FormRequest
             'id_cuenta_ventas' => ['required', 'integer', 'exists:catalogo_cuentas,id'],
             'id_cuenta_devoluciones_ventas' => ['required', 'integer', 'exists:catalogo_cuentas,id'],
             'id_cuenta_iva_ventas' => ['required', 'integer', 'exists:catalogo_cuentas,id'],
+            'id_cuenta_iva_ventas_cf' => ['nullable', 'integer', 'exists:catalogo_cuentas,id'],
             'id_cuenta_iva_retenido_ventas' => ['required', 'integer', 'exists:catalogo_cuentas,id'],
             'id_cuenta_renta_retenida_ventas' => ['required', 'integer', 'exists:catalogo_cuentas,id'],
             'id_cuenta_cxc' => ['required', 'integer', 'exists:catalogo_cuentas,id'],
@@ -32,11 +33,27 @@ class StoreConfiguracionRequest extends FormRequest
             'id_cuenta_cxp' => ['required', 'integer', 'exists:catalogo_cuentas,id'],
             'id_cuenta_devoluciones_proveedores' => ['required', 'integer', 'exists:catalogo_cuentas,id'],
             'id_cuenta_iva_compras' => ['required', 'integer', 'exists:catalogo_cuentas,id'],
+            'id_cuenta_iva_compras_cf' => ['nullable', 'integer', 'exists:catalogo_cuentas,id'],
             'id_cuenta_iva_retenido_compras' => ['required', 'integer', 'exists:catalogo_cuentas,id'],
             'id_cuenta_renta_retenida_compras' => ['required', 'integer', 'exists:catalogo_cuentas,id'],
             'generar_partidas' => ['required', 'string', 'in:Manual,Auto'],
+            'separar_cuentas_iva' => ['sometimes', 'boolean'],
+            'abonos_en_cartera' => ['sometimes', 'boolean'],
             'id_empresa' => ['required', 'integer', 'exists:empresas,id'],
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $merge = [];
+        foreach (['id_cuenta_iva_ventas_cf', 'id_cuenta_iva_compras_cf'] as $campo) {
+            if ($this->input($campo) === '' || $this->input($campo) === 'null') {
+                $merge[$campo] = null;
+            }
+        }
+        if ($merge !== []) {
+            $this->merge($merge);
+        }
     }
 
     /**

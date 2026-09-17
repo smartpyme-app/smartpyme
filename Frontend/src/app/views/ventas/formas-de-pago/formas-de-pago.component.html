@@ -1,5 +1,5 @@
-@if (contabilidadHabilitada) {
-    <!-- Vista con contabilidad habilitada -->
+@if (apiService.usarCuentasBancarias(contabilidadHabilitada)) {
+    <!-- Vista con cuentas bancarias (contabilidad o módulo de bancos) -->
     <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
         <h2 class="page-heading">Formas de pago</h2>
         <button (click)="openModal(mdetalle, {})"  tooltip="Crear forma de pago (F7)" class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir forma de pago</button>
@@ -158,7 +158,7 @@
                 <label for="forma_pago.nombre">Nombre</label>
                 <input type="text" class="form-control" [(ngModel)]="forma_pago.nombre" name="forma_pago.nombre">
             </div>
-            @if (contabilidadHabilitada) {
+            @if (apiService.usarCuentasBancarias(contabilidadHabilitada)) {
                 <div class="form-group col-md-12">
                     <label for="forma_pago.id_banco">Banco:</label>
                     <ng-select [(ngModel)]="forma_pago.id_banco" class="form-select p-0" name="forma_pago.id_banco">
