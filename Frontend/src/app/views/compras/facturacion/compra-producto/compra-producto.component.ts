@@ -226,6 +226,7 @@ export class CompraProductoComponent implements OnInit {
             this.detalle.id_presentacion  = producto.id_presentacion ?? null;
             this.detalle.factor_conversion = producto.factor_conversion ?? 1;
             this.detalle.nombre_producto  = producto.nombre_mostrar;
+            this.detalle.nombre_variante  = producto.nombre_variante;
             this.detalle.codigo           = producto.codigo;
             this.detalle.img              = producto.img; // la imagen del producto base viene en producto.img
             this.detalle.precio           = parseFloat(producto.precio ?? 0);
@@ -245,8 +246,8 @@ export class CompraProductoComponent implements OnInit {
             this.detalle.id_presentacion  = null;
             this.detalle.factor_conversion = 1;
             
-            // Si la empresa tiene shopify_store_url configurado, concatenar nombre_variante al nombre
             this.detalle.nombre_producto  = this.getNombreCompleto(producto);
+            this.detalle.nombre_variante  = producto.nombre_variante;
             this.detalle.codigo           = producto.codigo;
             this.detalle.img              = producto.img;
             this.detalle.precio           = parseFloat(producto.precio);
@@ -267,8 +268,8 @@ export class CompraProductoComponent implements OnInit {
         this.detalle = Object.assign({}, producto);
         this.detalle.id_producto    = producto.id;
         
-        // Si la empresa tiene shopify_store_url configurado, concatenar nombre_variante al nombre
         this.detalle.nombre_producto = this.getNombreCompleto(producto);
+        this.detalle.nombre_variante = producto.nombre_variante;
         this.detalle.codigo         = producto.codigo;
         this.detalle.img            = producto.img;
         this.detalle.precio         = parseFloat(producto.precio);
@@ -307,10 +308,11 @@ export class CompraProductoComponent implements OnInit {
      * Obtiene el nombre completo del producto (nombre + nombre_variante si aplica)
      */
     getNombreCompleto(producto: any): string {
-        if (this.tieneShopify && producto.nombre_variante) {
-            return `${producto.nombre} ${producto.nombre_variante}`;
+        if (!producto) return '';
+        if (producto.nombre_variante && !producto.nombre?.includes(producto.nombre_variante)) {
+            return `${producto.nombre} (${producto.nombre_variante})`;
         }
-        return producto.nombre;
+        return producto.nombre || '';
     }
 
     /**

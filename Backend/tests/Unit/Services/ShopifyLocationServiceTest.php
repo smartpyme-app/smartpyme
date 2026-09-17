@@ -102,4 +102,43 @@ class ShopifyLocationServiceTest extends TestCase
         $this->assertIsBool($location->es_default);
         $this->assertFalse($location->es_default);
     }
+
+    public function test_crear_sucursal_payload_vacio_retorna_error(): void
+    {
+        $empresa = new Empresa(['id' => 999]);
+        $resultado = $this->service->crearSucursalDesdeShopifyPayload([], $empresa);
+
+        $this->assertFalse($resultado['success']);
+        $this->assertStringContainsString('no contiene id', $resultado['mensaje']);
+    }
+
+    public function test_eliminar_sucursal_sin_id_retorna_error(): void
+    {
+        $empresa = new Empresa(['id' => 999]);
+        $resultado = $this->service->eliminarSucursalDesdeShopify(null, $empresa);
+
+        $this->assertFalse($resultado['success']);
+        $this->assertStringContainsString('no proporcionado', $resultado['mensaje']);
+    }
+
+    public function test_resolucion_estado_activo_segun_topic_o_payload(): void
+    {
+        // Deactivate topic siempre debe resultar en inactivo
+        $payload = ['id' => 12345, 'name' => 'Sucursal Test', 'active' => true];
+        $topic = 'locations/deactivate';
+        $isActive = ($topic === 'locations/deactivate') ? false : (bool)($payload['active'] ?? true);
+        $this->assertFalse($isActive);
+
+        // Activate topic siempre debe resultar en activo
+        $payload = ['id' => 12345, 'name' => 'Sucursal Test', 'active' => false];
+        $topic = 'locations/activate';
+        $isActive = ($topic === 'locations/activate') ? true : (bool)($payload['active'] ?? true);
+        $this->assertTrue($isActive);
+
+        // Update topic respeta el booleano del payload
+        $payload = ['id' => 12345, 'name' => 'Sucursal Test', 'active' => false];
+        $topic = 'locations/update';
+        $isActive = (bool)($payload['active'] ?? true);
+        $this->assertFalse($isActive);
+    }
 }

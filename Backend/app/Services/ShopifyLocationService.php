@@ -103,6 +103,12 @@ class ShopifyLocationService
             }
 
             $mapping->save();
+
+            // Si después de buscar no tiene sucursal vinculada, auto-crear la sucursal y bodega
+            if (empty($mapping->id_sucursal)) {
+                $this->crearSucursalYBodega($mapping, $empresa, $loc);
+            }
+
             $sincronizadas[] = $mapping;
         }
 
@@ -118,7 +124,7 @@ class ShopifyLocationService
      * Crea una Sucursal y su Bodega en SmartPyme a partir de una ubicación de Shopify,
      * verificando exhaustivamente que no se dupliquen.
      */
-    public function crearSucursalYBodega(ShopifyLocation $location, Empresa $empresa): array
+    public function crearSucursalYBodega(ShopifyLocation $location, Empresa $empresa, array $locData = []): array
     {
         // 1. Si ya tiene sucursal asignada, retornar esa misma
         if (!empty($location->id_sucursal)) {
@@ -193,13 +199,22 @@ class ShopifyLocationService
         // 4. Si no existe ninguna coincidencia, crear la Sucursal y su Bodega
         DB::beginTransaction();
         try {
+            $telefono = !empty($locData['phone']) ? $locData['phone'] : ($empresa->telefono ?? '');
+            $direccion = trim(($locData['address1'] ?? '') . ' ' . ($locData['address2'] ?? ''));
+            $direccionFinal = !empty($direccion) ? $direccion : ($empresa->direccion ?? '');
+            $municipio = $locData['city'] ?? '';
+            $departamento = $locData['province'] ?? '';
+            $activo = isset($locData['active']) ? ($locData['active'] ? '1' : '0') : '1';
+
             $nuevaSucursal = Sucursal::create([
                 'nombre' => $location->shopify_location_name,
-                'telefono' => $empresa->telefono ?? '',
+                'telefono' => $telefono,
                 'correo' => $empresa->correo ?? '',
-                'direccion' => $empresa->direccion ?? '',
+                'direccion' => $direccionFinal,
+                'municipio' => $municipio,
+                'departamento' => $departamento,
                 'tipo_establecimiento' => '02', // Sucursal/Agencia
-                'activo' => '1',
+                'activo' => $activo,
                 'id_empresa' => $empresa->id,
                 'shopify_location_id' => $location->shopify_location_id,
             ]);
@@ -211,6 +226,31 @@ class ShopifyLocationService
                 'id_sucursal' => $nuevaSucursal->id,
                 'id_empresa' => $empresa->id,
             ]);
+
+            // Inicializar inventario en 0 para productos activos de la empresa
+            $productos = \App\Models\Inventario\Producto::withoutGlobalScope('empresa')
+                ->where('id_empresa', $empresa->id)
+                ->whereIn('tipo', ['Producto', 'Compuesto'])
+                ->get(['id']);
+
+            if ($productos->isNotEmpty()) {
+                $now = now();
+                $rows = [];
+                foreach ($productos as $prod) {
+                    $rows[] = [
+                        'id_bodega' => $nuevaBodega->id,
+                        'id_producto' => $prod->id,
+                        'stock' => 0,
+                        'stock_minimo' => 0,
+                        'stock_maximo' => 0,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
+                }
+                foreach (array_chunk($rows, 200) as $chunk) {
+                    \App\Models\Inventario\Inventario::insert($chunk);
+                }
+            }
 
             $location->id_sucursal = $nuevaSucursal->id;
             $location->id_bodega = $nuevaBodega->id;
@@ -231,6 +271,261 @@ class ShopifyLocationService
             return [
                 'success' => false,
                 'mensaje' => 'Error al crear la sucursal: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Procesa la creación de una sucursal desde un payload de webhook de Shopify (locations/create).
+     */
+    public function crearSucursalDesdeShopifyPayload(array $locData, Empresa $empresa): array
+    {
+        $shopifyLocId = $locData['id'] ?? null;
+        if (empty($shopifyLocId)) {
+            return ['success' => false, 'mensaje' => 'Payload no contiene id de ubicación.'];
+        }
+
+        $shopifyLocName = $locData['name'] ?? 'Sucursal Shopify';
+        $isActive = (bool)($locData['active'] ?? true);
+
+        // 1. Buscar o crear mapping en shopify_locations
+        $mapping = ShopifyLocation::withoutGlobalScope('empresa')
+            ->where('id_empresa', $empresa->id)
+            ->where('shopify_location_id', $shopifyLocId)
+            ->first();
+
+        if (!$mapping) {
+            $mapping = new ShopifyLocation();
+            $mapping->id_empresa = $empresa->id;
+            $mapping->shopify_location_id = $shopifyLocId;
+            $mapping->sincronizar_stock = true;
+            $mapping->es_default = !ShopifyLocation::withoutGlobalScope('empresa')
+                ->where('id_empresa', $empresa->id)
+                ->where('es_default', true)
+                ->exists();
+        }
+
+        $mapping->shopify_location_name = $shopifyLocName;
+        $mapping->shopify_active = $isActive;
+        $mapping->save();
+
+        // 2. Crear o vincular sucursal y bodega
+        return $this->crearSucursalYBodega($mapping, $empresa, $locData);
+    }
+
+    /**
+     * Procesa la actualización de una sucursal desde un webhook de Shopify (locations/update, locations/activate, locations/deactivate).
+     */
+    public function actualizarSucursalDesdeShopifyPayload(array $locData, Empresa $empresa, ?string $topic = null): array
+    {
+        $shopifyLocId = $locData['id'] ?? null;
+        if (empty($shopifyLocId)) {
+            return ['success' => false, 'mensaje' => 'Payload no contiene id de ubicación.'];
+        }
+
+        $mapping = ShopifyLocation::withoutGlobalScope('empresa')
+            ->where('id_empresa', $empresa->id)
+            ->where('shopify_location_id', $shopifyLocId)
+            ->first();
+
+        if (!$mapping) {
+            // Si la ubicación no existía aún en SP, la creamos directamente
+            return $this->crearSucursalDesdeShopifyPayload($locData, $empresa);
+        }
+
+        // Determinar estado activo según topic o payload
+        $isActive = (bool)($locData['active'] ?? true);
+        if ($topic === 'locations/deactivate') {
+            $isActive = false;
+        } elseif ($topic === 'locations/activate') {
+            $isActive = true;
+        }
+
+        $nuevoNombre = $locData['name'] ?? $mapping->shopify_location_name;
+        $mapping->shopify_location_name = $nuevoNombre;
+        $mapping->shopify_active = $isActive;
+        $mapping->save();
+
+        // Buscar la sucursal vinculada
+        $sucursal = null;
+        if ($mapping->id_sucursal) {
+            $sucursal = Sucursal::withoutGlobalScope('empresa')
+                ->where('id_empresa', $empresa->id)
+                ->find($mapping->id_sucursal);
+        }
+
+        if (!$sucursal) {
+            $sucursal = Sucursal::withoutGlobalScope('empresa')
+                ->where('id_empresa', $empresa->id)
+                ->where('shopify_location_id', $shopifyLocId)
+                ->first();
+        }
+
+        if (!$sucursal) {
+            // Si el mapping existía pero no la sucursal, la creamos
+            return $this->crearSucursalYBodega($mapping, $empresa, $locData);
+        }
+
+        // Actualizar datos de la sucursal
+        $nombreAnterior = $sucursal->nombre;
+        $sucursal->nombre = $nuevoNombre;
+        $sucursal->activo = $isActive ? '1' : '0';
+
+        if (!empty($locData['phone'])) {
+            $sucursal->telefono = $locData['phone'];
+        }
+
+        $direccion = trim(($locData['address1'] ?? '') . ' ' . ($locData['address2'] ?? ''));
+        if (!empty($direccion)) {
+            $sucursal->direccion = $direccion;
+        }
+
+        if (!empty($locData['city'])) {
+            $sucursal->municipio = $locData['city'];
+        }
+
+        if (!empty($locData['province'])) {
+            $sucursal->departamento = $locData['province'];
+        }
+
+        $sucursal->save();
+
+        // Si el nombre de la sucursal cambió, actualizar también el nombre de la bodega por defecto
+        if ($nombreAnterior !== $nuevoNombre) {
+            Bodega::withoutGlobalScope('empresa')
+                ->where('id_sucursal', $sucursal->id)
+                ->where(function ($q) use ($nombreAnterior) {
+                    $q->where('nombre', 'Bodega ' . $nombreAnterior)
+                      ->orWhere('nombre', $nombreAnterior);
+                })
+                ->update(['nombre' => 'Bodega ' . $nuevoNombre]);
+        }
+
+        // Si se desactivó la sucursal, desactivar también sus bodegas
+        if (!$isActive) {
+            Bodega::withoutGlobalScope('empresa')
+                ->where('id_sucursal', $sucursal->id)
+                ->update(['activo' => '0']);
+        } elseif ($isActive && $sucursal->wasChanged('activo')) {
+            // Si se reactivó, reactivar la bodega vinculada a la ubicación
+            if ($mapping->id_bodega) {
+                Bodega::withoutGlobalScope('empresa')
+                    ->where('id', $mapping->id_bodega)
+                    ->update(['activo' => '1']);
+            }
+        }
+
+        return [
+            'success' => true,
+            'mensaje' => "Sucursal '{$sucursal->nombre}' actualizada exitosamente desde Shopify.",
+            'sucursal' => $sucursal,
+            'location' => $mapping
+        ];
+    }
+
+    /**
+     * Procesa la eliminación de una sucursal desde un webhook de Shopify (locations/delete).
+     * Si la sucursal tiene historial (ventas, compras, traslados, usuarios o stock > 0), se desactiva
+     * de forma segura para preservar integridad de datos. Si no tiene historial, se elimina limpiamente.
+     */
+    public function eliminarSucursalDesdeShopify($shopifyLocationId, Empresa $empresa): array
+    {
+        if (empty($shopifyLocationId)) {
+            return ['success' => false, 'mensaje' => 'Identificador de ubicación no proporcionado.'];
+        }
+
+        $mapping = ShopifyLocation::withoutGlobalScope('empresa')
+            ->where('id_empresa', $empresa->id)
+            ->where('shopify_location_id', $shopifyLocationId)
+            ->first();
+
+        $sucursal = null;
+        if ($mapping && $mapping->id_sucursal) {
+            $sucursal = Sucursal::withoutGlobalScope('empresa')
+                ->where('id_empresa', $empresa->id)
+                ->find($mapping->id_sucursal);
+        }
+
+        if (!$sucursal) {
+            $sucursal = Sucursal::withoutGlobalScope('empresa')
+                ->where('id_empresa', $empresa->id)
+                ->where('shopify_location_id', $shopifyLocationId)
+                ->first();
+        }
+
+        if (!$sucursal) {
+            if ($mapping) {
+                $mapping->delete();
+            }
+            return [
+                'success' => true,
+                'mensaje' => 'La ubicación de Shopify fue eliminada y no tenía sucursal vinculada en SmartPyme.',
+                'accion' => 'mapping_eliminado'
+            ];
+        }
+
+        // Evaluar si tiene transacciones o historial
+        $bodegaIds = Bodega::withoutGlobalScope('empresa')
+            ->where('id_sucursal', $sucursal->id)
+            ->pluck('id');
+
+        $tieneVentas = \App\Models\Ventas\Venta::where('id_sucursal', $sucursal->id)->exists();
+        $tieneCompras = \App\Models\Compras\Compra::where('id_sucursal', $sucursal->id)->exists();
+        $tieneTraslados = \App\Models\Inventario\Traslados\Traslado::where('id_sucursal_origen', $sucursal->id)
+            ->orWhere('id_sucursal_destino', $sucursal->id)->exists();
+        $tieneUsuarios = \App\Models\User::where('id_sucursal', $sucursal->id)->exists();
+        $tieneStock = \App\Models\Inventario\Inventario::whereIn('id_bodega', $bodegaIds)
+            ->where('stock', '>', 0)->exists();
+
+        $tieneHistorial = $tieneVentas || $tieneCompras || $tieneTraslados || $tieneUsuarios || $tieneStock;
+
+        DB::beginTransaction();
+        try {
+            if ($tieneHistorial) {
+                // Desactivación segura para proteger histórico
+                $sucursal->activo = '0';
+                $sucursal->shopify_location_id = null;
+                $sucursal->save();
+
+                Bodega::withoutGlobalScope('empresa')
+                    ->where('id_sucursal', $sucursal->id)
+                    ->update(['activo' => '0']);
+
+                if ($mapping) {
+                    $mapping->delete();
+                }
+
+                DB::commit();
+
+                return [
+                    'success' => true,
+                    'mensaje' => "La sucursal '{$sucursal->nombre}' tiene historial transaccional, por lo que se desactivó y desvinculó de Shopify para proteger los registros.",
+                    'accion' => 'desactivada'
+                ];
+            } else {
+                // Eliminación física completa (no hay historial)
+                \App\Models\Inventario\Inventario::whereIn('id_bodega', $bodegaIds)->delete();
+                Bodega::withoutGlobalScope('empresa')->where('id_sucursal', $sucursal->id)->delete();
+                $sucursal->delete();
+
+                if ($mapping) {
+                    $mapping->delete();
+                }
+
+                DB::commit();
+
+                return [
+                    'success' => true,
+                    'mensaje' => "La sucursal '{$sucursal->nombre}' y su bodega fueron eliminadas exitosamente.",
+                    'accion' => 'eliminada'
+                ];
+            }
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error('Error al eliminar sucursal desde Shopify: ' . $e->getMessage());
+            return [
+                'success' => false,
+                'mensaje' => 'Error al procesar la eliminación de la sucursal: ' . $e->getMessage()
             ];
         }
     }

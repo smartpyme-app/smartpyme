@@ -24,10 +24,18 @@ class Detalle extends Model {
 
     );
 
-    protected $appends = ['nombre_producto', 'img', 'codigo', 'inventario_por_lotes'];
+    protected $appends = ['nombre_producto', 'nombre_variante', 'img', 'codigo', 'inventario_por_lotes'];
 
     public function getNombreProductoAttribute(){
-        return $this->producto()->withoutGlobalScopes()->pluck('nombre')->first();
+        $producto = $this->producto()->withoutGlobalScopes()->first();
+        if ($producto && !empty($producto->nombre_variante)) {
+            return $producto->nombre . ' (' . $producto->nombre_variante . ')';
+        }
+        return $producto ? $producto->nombre : null;
+    }
+
+    public function getNombreVarianteAttribute(){
+        return $this->producto()->withoutGlobalScopes()->pluck('nombre_variante')->first();
     }
 
     public function getImgAttribute(){

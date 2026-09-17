@@ -17,6 +17,7 @@ use App\Services\ShopifyApiClient;
 use Illuminate\Http\Request;
 use App\Services\ShopifyTransformer;
 use App\Services\ShopifyImageService;
+use App\Services\ShopifyLocationService;
 use App\Services\ShippingService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -179,6 +180,29 @@ class ShopifyController extends Controller
                         'line_items_count' => count($request->input('line_items', [])),
                     ]);
                     return $this->procesarTrasladoInventarioShopify($request, $empresa, $usuario, $webhookTopic);
+
+                case 'locations/create':
+                    ShopifyHelper::log(">> ENRUTANDO A locations/create", [
+                        'shopify_location_id' => $request->id,
+                        'name' => $request->name,
+                    ]);
+                    return $this->procesarUbicacionCreadaShopify($request, $empresa);
+
+                case 'locations/update':
+                case 'locations/activate':
+                case 'locations/deactivate':
+                    ShopifyHelper::log(">> ENRUTANDO A {$webhookTopic}", [
+                        'shopify_location_id' => $request->id,
+                        'name' => $request->name,
+                        'topic' => $webhookTopic,
+                    ]);
+                    return $this->procesarUbicacionActualizadaShopify($request, $empresa, $webhookTopic);
+
+                case 'locations/delete':
+                    ShopifyHelper::log(">> ENRUTANDO A locations/delete", [
+                        'shopify_location_id' => $request->id,
+                    ]);
+                    return $this->procesarUbicacionEliminadaShopify($request, $empresa);
 
                 default:
                     ShopifyHelper::log("Tipo de webhook no manejado: {$webhookTopic}", [], 'warning');
@@ -3794,5 +3818,70 @@ class ShopifyController extends Controller
         }
 
         return $canal->id;
+    }
+
+    /**
+     * Procesa la creación de una sucursal recibida vía webhook locations/create de Shopify.
+     */
+    private function procesarUbicacionCreadaShopify(Request $request, $empresa)
+    {
+        $payload = $request->all();
+        $locationService = app(ShopifyLocationService::class);
+        $resultado = $locationService->crearSucursalDesdeShopifyPayload($payload, $empresa);
+
+        ShopifyHelper::log("locations/create procesado", [
+            'empresa_id' => $empresa->id,
+            'location_id' => $request->id,
+            'resultado' => $resultado,
+        ]);
+
+        return response()->json([
+            'status' => ($resultado['success'] ?? false) ? 'success' : 'error',
+            'mensaje' => $resultado['mensaje'] ?? '',
+        ], ($resultado['success'] ?? false) ? 200 : 400);
+    }
+
+    /**
+     * Procesa la actualización o cambio de estado de una sucursal recibida vía webhook
+     * locations/update, locations/activate o locations/deactivate de Shopify.
+     */
+    private function procesarUbicacionActualizadaShopify(Request $request, $empresa, $topic)
+    {
+        $payload = $request->all();
+        $locationService = app(ShopifyLocationService::class);
+        $resultado = $locationService->actualizarSucursalDesdeShopifyPayload($payload, $empresa, $topic);
+
+        ShopifyHelper::log("{$topic} procesado", [
+            'empresa_id' => $empresa->id,
+            'location_id' => $request->id,
+            'resultado' => $resultado,
+        ]);
+
+        return response()->json([
+            'status' => ($resultado['success'] ?? false) ? 'success' : 'error',
+            'mensaje' => $resultado['mensaje'] ?? '',
+        ], ($resultado['success'] ?? false) ? 200 : 400);
+    }
+
+    /**
+     * Procesa la eliminación de una sucursal recibida vía webhook locations/delete de Shopify.
+     */
+    private function procesarUbicacionEliminadaShopify(Request $request, $empresa)
+    {
+        $shopifyLocationId = $request->input('id');
+        $locationService = app(ShopifyLocationService::class);
+        $resultado = $locationService->eliminarSucursalDesdeShopify($shopifyLocationId, $empresa);
+
+        ShopifyHelper::log("locations/delete procesado", [
+            'empresa_id' => $empresa->id,
+            'location_id' => $shopifyLocationId,
+            'resultado' => $resultado,
+        ]);
+
+        return response()->json([
+            'status' => ($resultado['success'] ?? false) ? 'success' : 'error',
+            'mensaje' => $resultado['mensaje'] ?? '',
+            'accion' => $resultado['accion'] ?? '',
+        ], ($resultado['success'] ?? false) ? 200 : 400);
     }
 }

@@ -1073,7 +1073,10 @@ export class FacturacionCompraComponent implements OnInit {
             id: null,
             id_producto: producto.id,
             nombre: producto.nombre,
-            nombre_producto: producto.nombre, // Campo requerido por el template
+            nombre_producto: producto.nombre_variante && !producto.nombre?.includes(producto.nombre_variante)
+                ? `${producto.nombre} (${producto.nombre_variante})`
+                : producto.nombre,
+            nombre_variante: producto.nombre_variante,
             descripcion: producto.descripcion || item.descripcion,
             cantidad: cantidad,
             precio: precio,
