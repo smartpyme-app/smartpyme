@@ -71,6 +71,8 @@ export class ContabilidadConfiguracionComponent extends BaseComponent implements
                 this.configuracion = {};
                 this.configuracion.id_empresa = this.apiService.auth_user().id_empresa;
             }
+            this.configuracion.separar_cuentas_iva = !!this.configuracion.separar_cuentas_iva;
+            this.configuracion.abonos_en_cartera = !!this.configuracion.abonos_en_cartera;
             this.loading = false;
             this.cdr.markForCheck();
         }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });

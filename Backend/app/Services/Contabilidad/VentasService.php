@@ -10,6 +10,7 @@ use App\Models\Admin\FormaDePago;
 use App\Models\Ventas\Venta;
 use App\Models\Ventas\Detalle as DetalleVenta;
 use App\Models\Inventario\Categorias\Cuenta as CuentaCategoria;
+use App\Services\Contabilidad\Partidas\ReglaCuentaIva;
 use App\Services\Contabilidad\Partidas\ReglaIngresoVenta;
 use Illuminate\Support\Facades\DB;
 use Exception;
@@ -178,11 +179,12 @@ class VentasService
 
             // IVA
             if ($venta->iva > 0) {
-                if (!$configuracion->id_cuenta_iva_ventas) {
+                $idIva = ReglaCuentaIva::idCuentaVentas($configuracion, ReglaCuentaIva::tipoDe($venta));
+                if (!$idIva) {
                     throw new Exception('No se ha configurado la cuenta de IVA ventas', 400);
                 }
 
-                $cuenta = Cuenta::find($configuracion->id_cuenta_iva_ventas);
+                $cuenta = Cuenta::find($idIva);
                 if (!$cuenta) {
                     throw new Exception('No se encontró la cuenta contable de IVA ventas', 400);
                 }

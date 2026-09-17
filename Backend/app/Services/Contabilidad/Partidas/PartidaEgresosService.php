@@ -32,15 +32,18 @@ class PartidaEgresosService
         $configuracion = Configuracion::first();
         $compras = Compra::where('estado', 'Pagada')
                             ->where('fecha', $fecha)->get();
-        $abonos_compras = AbonoCompra::where('estado', 'Confirmado')
-                            ->where('fecha', $fecha)->with('compra')->get();
+        $abonos_compras = collect();
+        if (ReglaAbonosCartera::incluirEnIngresosEgresos($configuracion)) {
+            $abonos_compras = AbonoCompra::where('estado', 'Confirmado')
+                                ->where('fecha', $fecha)->with('compra')->get();
+            $abonos_compras->each(function ($abono) {
+                $abono->tipo = 'abono';
+                $abono->tipo_documento = $abono->compra ? $abono->compra->tipo_documento : null;
+                $abono->referencia = $abono->compra ? $abono->compra->referencia : null;
+            });
+        }
 
         $compras->each->setAttribute('tipo', 'compra');
-        $abonos_compras->each(function ($abono) {
-            $abono->tipo = 'abono';
-            $abono->tipo_documento = $abono->compra ? $abono->compra->tipo_documento : null;
-            $abono->referencia = $abono->compra ? $abono->compra->referencia : null;
-        });
 
         $egresos = $compras->merge($abonos_compras);
 
@@ -123,10 +126,12 @@ class PartidaEgresosService
                 }
 
                 if ($egreso->iva > 0) {
+                    $idIva = ReglaCuentaIva::idCuentaCompras($configuracion, ReglaCuentaIva::tipoDe($egreso));
+                    $cuentaIvaDoc = $idIva ? Cuenta::find($idIva) : $cuenta_iva;
                     $detalles[] = [
-                        'id_cuenta' => $cuenta_iva->id,
-                        'codigo' => $cuenta_iva->codigo,
-                        'nombre_cuenta' => $cuenta_iva->nombre,
+                        'id_cuenta' => $cuentaIvaDoc->id,
+                        'codigo' => $cuentaIvaDoc->codigo,
+                        'nombre_cuenta' => $cuentaIvaDoc->nombre,
                         'concepto' => 'Compra de mercadería ' . $egreso->tipo_documento . '#' . $egreso->referencia,
                         'debe' => $egreso->iva,
                         'haber' => NULL,

@@ -23,13 +23,14 @@ import {
   mensajeErrorTimeoutExport,
 } from '../../../../helpers/export-period.helper';
 import { PipesModule } from '../../../../pipes/pipes.module';
+import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 
 @Component({
     selector: 'app-caja-ventas',
     templateUrl: './caja-ventas.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, ImportarExcelComponent, AlertsHaciendaComponent, PipesModule, TooltipModule],
+    imports: [CommonModule, RouterModule, FormsModule, ImportarExcelComponent, AlertsHaciendaComponent, PipesModule, PopoverModule, TooltipModule],
 })
 
 export class CajaVentasComponent extends BaseCrudComponent<any> implements OnInit {

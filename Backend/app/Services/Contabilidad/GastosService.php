@@ -9,6 +9,7 @@ use App\Models\Contabilidad\Partidas\Detalle;
 use App\Models\Contabilidad\Catalogo\Cuenta;
 use App\Models\Compras\Gastos\Gasto;
 use App\Models\Compras\Gastos\Abono as AbonoGasto;
+use App\Services\Contabilidad\Partidas\ReglaCuentaIva;
 use Illuminate\Support\Facades\DB;
 use Exception;
 
@@ -354,7 +355,8 @@ class GastosService
             }
 
             if ((float) $linea->iva > 0) {
-                $cuenta_iva = $this->cuentaConfigurada($configuracion->id_cuenta_iva_compras, 'IVA compras');
+                $idIva = ReglaCuentaIva::idCuentaCompras($configuracion, ReglaCuentaIva::tipoDe($gastoCompleto));
+                $cuenta_iva = $this->cuentaConfigurada($idIva, 'IVA compras');
                 $detalles[] = [
                     'id_cuenta' => $cuenta_iva->id,
                     'codigo' => $cuenta_iva->codigo,
@@ -441,7 +443,8 @@ class GastosService
         $detalles = [];
 
         if ($gastoCompleto->iva > 0) {
-            $cuenta_iva = $this->cuentaConfigurada($configuracion->id_cuenta_iva_compras, 'IVA compras');
+            $idIva = ReglaCuentaIva::idCuentaCompras($configuracion, ReglaCuentaIva::tipoDe($gastoCompleto));
+            $cuenta_iva = $this->cuentaConfigurada($idIva, 'IVA compras');
             $detalles[] = [
                 'id_cuenta' => $cuenta_iva->id,
                 'codigo' => $cuenta_iva->codigo,

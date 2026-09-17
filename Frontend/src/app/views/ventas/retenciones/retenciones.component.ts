@@ -9,6 +9,7 @@ import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { FilterPipe } from '@pipes/filter.pipe';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { FuncionalidadesService } from '@services/functionalities.service';
 
 import Swal from 'sweetalert2';
 
@@ -27,12 +28,14 @@ export class RetencionesComponent extends BaseCrudComponent<any> implements OnIn
     public catalogo:any = [];
     public filtro:any = {};
     public filtrado:boolean = false;
+    public contabilidadHabilitada: boolean = false;
 
     constructor(
         apiService: ApiService,
         alertService: AlertService,
         modalManager: ModalManagerService,
-        private cdr: ChangeDetectorRef
+        private cdr: ChangeDetectorRef,
+        private funcionalidadesService: FuncionalidadesService
     ){
         super(apiService, alertService, modalManager, {
             endpoint: 'retencion',
@@ -56,6 +59,18 @@ export class RetencionesComponent extends BaseCrudComponent<any> implements OnIn
 
     ngOnInit() {
         this.loadAll();
+        this.funcionalidadesService.verificarAcceso('contabilidad')
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (acceso) => {
+                    this.contabilidadHabilitada = acceso;
+                    this.cdr.markForCheck();
+                },
+                error: () => {
+                    this.contabilidadHabilitada = false;
+                    this.cdr.markForCheck();
+                },
+            });
     }
 
     public override loadAll() {
@@ -76,14 +91,15 @@ export class RetencionesComponent extends BaseCrudComponent<any> implements OnIn
     }
 
     public override openModal(template: TemplateRef<any>, retencion?: any) {
-        // Cargar catálogo antes de abrir el modal
-        this.apiService.getAll('catalogo/list')
-            .pipe(this.untilDestroyed())
-            .subscribe(catalogo => {
-                this.catalogo = catalogo;
-                this.cdr.markForCheck();
-            }, error => {this.alertService.error(error); this.cdr.markForCheck();});
-        
+        if (this.contabilidadHabilitada) {
+            this.apiService.getAll('catalogo/list')
+                .pipe(this.untilDestroyed())
+                .subscribe(catalogo => {
+                    this.catalogo = catalogo;
+                    this.cdr.markForCheck();
+                }, error => {this.alertService.error(error); this.cdr.markForCheck();});
+        }
+
         super.openModal(template, retencion, {class: 'modal-md', backdrop: 'static'});
     }
 

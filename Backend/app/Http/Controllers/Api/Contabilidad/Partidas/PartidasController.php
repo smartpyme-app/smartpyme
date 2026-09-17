@@ -26,6 +26,8 @@ use App\Models\Inventario\Categorias\Cuenta as CuentaCategoria;
 use App\Services\Contabilidad\CierreMesService;
 use App\Services\Contabilidad\CierreEjercicioService;
 use App\Services\Contabilidad\SimulacionCierreService;
+use App\Services\Contabilidad\Partidas\ReglaAbonosCartera;
+use App\Services\Contabilidad\Partidas\ReglaCuentaIva;
 use App\Services\Contabilidad\Partidas\ReglaIngresoVenta;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
@@ -637,21 +639,24 @@ class PartidasController extends Controller
             ]);
             
             // OPTIMIZACIÓN 2: Eager loading optimizado para abonos
-            $abonos_ventas = AbonoVenta::where('estado', 'Confirmado')
-                        ->where('fecha', $request->fecha)
-                        ->where('id_empresa', auth()->user()->id_empresa)
-                        ->select(['id', 'fecha', 'total', 'forma_pago', 'id_venta', 'id_sucursal'])
-                        ->with([
-                            'venta' => function($query) {
-                                $query->select(['id', 'correlativo', 'id_documento']);
-                            },
-                            'venta.documento' => function($query) {
-                                $query->select(['id', 'nombre']);
-                            }
-                        ])
-                        ->get();
+            $abonos_ventas = collect();
+            if (ReglaAbonosCartera::incluirEnIngresosEgresos($configuracion)) {
+                $abonos_ventas = AbonoVenta::where('estado', 'Confirmado')
+                            ->where('fecha', $request->fecha)
+                            ->where('id_empresa', auth()->user()->id_empresa)
+                            ->select(['id', 'fecha', 'total', 'forma_pago', 'id_venta', 'id_sucursal'])
+                            ->with([
+                                'venta' => function($query) {
+                                    $query->select(['id', 'correlativo', 'id_documento']);
+                                },
+                                'venta.documento' => function($query) {
+                                    $query->select(['id', 'nombre']);
+                                }
+                            ])
+                            ->get();
 
-            $abonos_ventas = $this->sinPartidaOrigen('Abono de Venta', $abonos_ventas);
+                $abonos_ventas = $this->sinPartidaOrigen('Abono de Venta', $abonos_ventas);
+            }
 
             \Log::info('Abonos cargados', [
                 'cantidad' => $abonos_ventas->count(),
@@ -779,6 +784,7 @@ class PartidasController extends Controller
             $cuentasIds = [
                 $configuracion->id_cuenta_ventas,
                 $configuracion->id_cuenta_iva_ventas,
+                $configuracion->id_cuenta_iva_ventas_cf,
                 $configuracion->id_cuenta_iva_retenido_ventas,
                 $configuracion->id_cuenta_costo_venta,
                 $configuracion->id_cuenta_inventario,
@@ -941,10 +947,12 @@ class PartidasController extends Controller
                     }
 
                     if ($ingreso->iva > 0) {
+                        $idIva = ReglaCuentaIva::idCuentaVentas($configuracion, ReglaCuentaIva::tipoDe($ingreso));
+                        $cuentaIvaDoc = $idIva ? ($cuentas[$idIva] ?? $cuenta_iva) : $cuenta_iva;
                         $detalles[] = [
-                            'id_cuenta' => $cuenta_iva->id,
-                            'codigo' => $cuenta_iva->codigo,
-                            'nombre_cuenta' => $cuenta_iva->nombre,
+                            'id_cuenta' => $cuentaIvaDoc->id,
+                            'codigo' => $cuentaIvaDoc->codigo,
+                            'nombre_cuenta' => $cuentaIvaDoc->nombre,
                             'concepto' => 'IVA Débito Fiscal ' . $refDoc,
                             'debe' => NULL,
                             'haber' => $ingreso->iva,
@@ -1232,10 +1240,12 @@ class PartidasController extends Controller
                 }
 
                 if ($venta->iva > 0) {
+                    $idIva = ReglaCuentaIva::idCuentaVentas($configuracion, ReglaCuentaIva::tipoDe($venta));
+                    $cuentaIvaDoc = $idIva ? Cuenta::find($idIva) : $cuenta_iva;
                     $detalles[] = [
-                        'id_cuenta' => $cuenta_iva->id,
-                        'codigo' => $cuenta_iva->codigo,
-                        'nombre_cuenta' => $cuenta_iva->nombre,
+                        'id_cuenta' => $cuentaIvaDoc->id,
+                        'codigo' => $cuentaIvaDoc->codigo,
+                        'nombre_cuenta' => $cuentaIvaDoc->nombre,
                         'concepto' => 'IVA Débito Fiscal ' . $refDoc,
                         'debe' => NULL,
                         'haber' => $venta->iva,
@@ -1332,17 +1342,18 @@ class PartidasController extends Controller
         $configuracion = Configuracion::first();
         $compras = Compra::where('estado', 'Pagada')
                             ->whereDate('fecha', $request->fecha)->get();
-        $abonos_compras = AbonoCompra::where('estado', 'Confirmado')
-                            ->whereDate('fecha', $request->fecha)->with('compra')->get();
+        $abonos_compras = collect();
+        if (ReglaAbonosCartera::incluirEnIngresosEgresos($configuracion)) {
+            $abonos_compras = AbonoCompra::where('estado', 'Confirmado')
+                                ->whereDate('fecha', $request->fecha)->with('compra')->get();
+            $abonos_compras->each(function ($abono) {
+                $abono->tipo = 'abono';
+                $abono->tipo_documento = $abono->compra ? $abono->compra->tipo_documento : null;
+                $abono->referencia = $abono->compra ? $abono->compra->referencia : null;
+            });
+        }
 
         $compras->each->setAttribute('tipo', 'compra');
-        // $abonos_compras->each->setAttribute('tipo', 'abono');
-
-        $abonos_compras->each(function ($abono) {
-            $abono->tipo = 'abono';
-            $abono->tipo_documento = $abono->compra ? $abono->compra->tipo_documento : null;
-            $abono->referencia = $abono->compra ? $abono->compra->referencia : null;
-        });
 
         $egresos = $compras->merge($abonos_compras);
 
@@ -1429,10 +1440,12 @@ class PartidasController extends Controller
                     }
 
                     if ($egreso->iva > 0) {
+                        $idIva = ReglaCuentaIva::idCuentaCompras($configuracion, ReglaCuentaIva::tipoDe($egreso));
+                        $cuentaIvaDoc = $idIva ? Cuenta::find($idIva) : $cuenta_iva;
                         $detalles[] = [
-                            'id_cuenta' => $cuenta_iva->id,
-                            'codigo' => $cuenta_iva->codigo,
-                            'nombre_cuenta' => $cuenta_iva->nombre,
+                            'id_cuenta' => $cuentaIvaDoc->id,
+                            'codigo' => $cuentaIvaDoc->codigo,
+                            'nombre_cuenta' => $cuentaIvaDoc->nombre,
                             'concepto' => 'Compra de mercadería ' . $egreso->tipo_documento . '#' . $egreso->referencia,
                             'debe' => $egreso->iva,
                             'haber' => NULL,
@@ -1597,10 +1610,12 @@ class PartidasController extends Controller
                 }
 
                 if ($compra->iva > 0) {
+                    $idIva = ReglaCuentaIva::idCuentaCompras($configuracion, ReglaCuentaIva::tipoDe($compra));
+                    $cuentaIvaDoc = $idIva ? Cuenta::find($idIva) : $cuenta_iva;
                     $detalles[] = [
-                        'id_cuenta' => $cuenta_iva->id,
-                        'codigo' => $cuenta_iva->codigo,
-                        'nombre_cuenta' => $cuenta_iva->nombre,
+                        'id_cuenta' => $cuentaIvaDoc->id,
+                        'codigo' => $cuentaIvaDoc->codigo,
+                        'nombre_cuenta' => $cuentaIvaDoc->nombre,
                         'concepto' => 'Compra de mercadería ' . $compra->tipo_documento . '#' . $compra->referencia,
                         'debe' => $compra->iva,
                         'haber' => NULL,

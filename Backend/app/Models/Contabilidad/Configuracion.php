@@ -24,11 +24,15 @@ class Configuracion extends Model
         'id_cuenta_propina_ventas',
 
         'id_cuenta_iva_ventas',
+        'id_cuenta_iva_ventas_cf',
         'id_cuenta_iva_retenido_ventas',
         'id_cuenta_renta_retenida_ventas',
         'id_cuenta_iva_compras',
+        'id_cuenta_iva_compras_cf',
         'id_cuenta_iva_retenido_compras',
         'id_cuenta_renta_retenida_compras',
+        'separar_cuentas_iva',
+        'abonos_en_cartera',
 
         'id_cuenta_perdida_ajuste',
         'id_cuenta_ganancia_ajuste',
@@ -57,6 +61,8 @@ class Configuracion extends Model
 
     protected $casts = [
         'estado_resultados_prefijos' => 'array',
+        'separar_cuentas_iva' => 'boolean',
+        'abonos_en_cartera' => 'boolean',
     ];
 
     protected static function boot()

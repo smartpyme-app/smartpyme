@@ -114,6 +114,7 @@
                     <span class="input-group-text">%</span>
                 </div>
             </div>
+            @if (contabilidadHabilitada) {
             <div class="bg-white rounded p-3 my-3">
                 <div class="row">
                     <h6>Configuración Contable</h6>
@@ -147,6 +148,7 @@
                     </div>
                 </div>
             </div>
+            }
         </div>
         <div class="d-grid mt-3">
             <button type="submit" [disabled]="saving" class="btn btn-primary btn-block">

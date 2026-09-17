@@ -22,6 +22,27 @@
   <form autocomplete="off" (ngSubmit)="onSubmit()">
 <div class="bg-white rounded p-3 my-3">
     <div class="row">
+        <h6>Reglas</h6>
+        <div class="form-group col-md-12 col-lg-6">
+            <div class="form-check form-switch d-flex justify-content-between align-items-center p-0">
+                <label class="form-check-label" for="separar_cuentas_iva">Separar cuentas de IVA (consumidor final / crédito fiscal)</label>
+                <input class="form-check-input" type="checkbox" role="switch" id="separar_cuentas_iva"
+                    [(ngModel)]="configuracion.separar_cuentas_iva" name="separar_cuentas_iva"
+                    style="width: 3.2em; height: 1.6em; cursor: pointer; float: none;">
+            </div>
+        </div>
+        <div class="form-group col-md-12 col-lg-6">
+            <div class="form-check form-switch d-flex justify-content-between align-items-center p-0">
+                <label class="form-check-label" for="abonos_en_cartera">Registrar abonos en CXC / CXP (no en ingresos / egresos)</label>
+                <input class="form-check-input" type="checkbox" role="switch" id="abonos_en_cartera"
+                    [(ngModel)]="configuracion.abonos_en_cartera" name="abonos_en_cartera"
+                    style="width: 3.2em; height: 1.6em; cursor: pointer; float: none;">
+            </div>
+        </div>
+    </div>
+</div>
+<div class="bg-white rounded p-3 my-3">
+    <div class="row">
         <h6>Ventas</h6>
         <div class="form-group col-md-12 col-lg-6">
             <label for="configuracion.id_cuenta_ventas">Ventas:</label>
@@ -52,7 +73,7 @@
             </ng-select>
         </div>
         <div class="form-group col-md-12 col-lg-6">
-            <label for="configuracion.id_cuenta_iva_ventas">{{ 'country.tax.taxLabelColon' | translate }}</label>
+            <label for="configuracion.id_cuenta_iva_ventas">{{ configuracion.separar_cuentas_iva ? 'IVA crédito fiscal:' : ('country.tax.taxLabelColon' | translate) }}</label>
             <ng-select [(ngModel)]="configuracion.id_cuenta_iva_ventas" class="form-select p-0" name="configuracion.id_cuenta_iva_ventas" [loading]="loadingCatalogo" [clearable]="true" [searchable]="true">
                 <ng-option value="">Seleccione aquí</ng-option>
                 @for (cuenta of catalogo; track cuenta.id || $index) {
@@ -65,6 +86,22 @@
                 }
             </ng-select>
         </div>
+        @if (configuracion.separar_cuentas_iva) {
+        <div class="form-group col-md-12 col-lg-6">
+            <label for="configuracion.id_cuenta_iva_ventas_cf">IVA consumidor final:</label>
+            <ng-select [(ngModel)]="configuracion.id_cuenta_iva_ventas_cf" class="form-select p-0" name="configuracion.id_cuenta_iva_ventas_cf" [loading]="loadingCatalogo" [clearable]="true" [searchable]="true">
+                <ng-option value="">Seleccione aquí</ng-option>
+                @for (cuenta of catalogo; track cuenta.id || $index) {
+                  <ng-option [value]="cuenta.id">
+                    <div class="d-flex align-items-center">
+                        <span style="width: 75px;">{{ cuenta.codigo }} </span>
+                        <span class="col-8"> - {{ cuenta.nombre }}</span>
+                    </div>
+                  </ng-option>
+                }
+            </ng-select>
+        </div>
+        }
         <div class="form-group col-md-12 col-lg-6">
             <label for="configuracion.id_cuenta_iva_retenido_ventas">{{ 'country.tax.taxWithheldLabel' | translate }}</label>
             <ng-select [(ngModel)]="configuracion.id_cuenta_iva_retenido_ventas" class="form-select p-0" name="configuracion.id_cuenta_iva_retenido_ventas" [loading]="loadingCatalogo" [clearable]="true" [searchable]="true">
@@ -284,7 +321,7 @@
             </ng-select>
         </div>
         <div class="form-group col-md-12 col-lg-6">
-            <label for="configuracion.id_cuenta_iva_compras">{{ 'country.tax.taxLabelColon' | translate }}</label>
+            <label for="configuracion.id_cuenta_iva_compras">{{ configuracion.separar_cuentas_iva ? 'IVA crédito fiscal:' : ('country.tax.taxLabelColon' | translate) }}</label>
             <ng-select [(ngModel)]="configuracion.id_cuenta_iva_compras" class="form-select p-0" name="configuracion.id_cuenta_iva_compras" [loading]="loadingCatalogo" [clearable]="true" [searchable]="true">
                 <ng-option value="">Seleccione aquí</ng-option>
                 @for (cuenta of catalogo; track cuenta.id || $index) {
@@ -297,6 +334,22 @@
                 }
             </ng-select>
         </div>
+        @if (configuracion.separar_cuentas_iva) {
+        <div class="form-group col-md-12 col-lg-6">
+            <label for="configuracion.id_cuenta_iva_compras_cf">IVA consumidor final:</label>
+            <ng-select [(ngModel)]="configuracion.id_cuenta_iva_compras_cf" class="form-select p-0" name="configuracion.id_cuenta_iva_compras_cf" [loading]="loadingCatalogo" [clearable]="true" [searchable]="true">
+                <ng-option value="">Seleccione aquí</ng-option>
+                @for (cuenta of catalogo; track cuenta.id || $index) {
+                  <ng-option [value]="cuenta.id">
+                    <div class="d-flex align-items-center">
+                        <span style="width: 75px;">{{ cuenta.codigo }} </span>
+                        <span class="col-8"> - {{ cuenta.nombre }}</span>
+                    </div>
+                  </ng-option>
+                }
+            </ng-select>
+        </div>
+        }
         <div class="form-group col-md-12 col-lg-6">
             <label for="configuracion.id_cuenta_iva_retenido_compras">{{ 'country.tax.taxWithheldLabel' | translate }}</label>
             <ng-select [(ngModel)]="configuracion.id_cuenta_iva_retenido_compras" class="form-select p-0" name="configuracion.id_cuenta_iva_retenido_compras" [loading]="loadingCatalogo" [clearable]="true" [searchable]="true">

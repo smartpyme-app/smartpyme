@@ -81,7 +81,7 @@ export class FormasDePagoComponent extends BaseCrudComponent<any> implements OnI
     cargarBancos() {
         // Solo cargar bancos si tiene contabilidad habilitada (para el select del modal)
         // Si no tiene contabilidad, los bancos se muestran en el componente <app-bancos> y no se necesitan para el modal
-        if (this.contabilidadHabilitada) {
+        if (this.apiService.usarCuentasBancarias(this.contabilidadHabilitada)) {
             this.apiService.getAll('banco/cuentas/list')
                 .pipe(this.untilDestroyed())
                 .subscribe(bancos => {
@@ -103,7 +103,7 @@ export class FormasDePagoComponent extends BaseCrudComponent<any> implements OnI
                 .pipe(this.untilDestroyed())
                 .subscribe({
                     next: (formas_pago) => {
-                if (!this.contabilidadHabilitada) {
+                if (!this.apiService.usarCuentasBancarias(this.contabilidadHabilitada)) {
                     // LÓGICA DEL BRANCH DE MAIN: Mostrar todas las formas de pago posibles
                     // independientemente de si existen en BD o no
                     const todasLasFormas = [

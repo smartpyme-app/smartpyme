@@ -84,15 +84,21 @@ class PartidaIngresosService
             ]);
 
             // OPTIMIZACIÓN 2: Eager loading optimizado para abonos
-            $abonos_ventas = AbonoVenta::where('estado', 'Confirmado')
-                        ->where('fecha', $fecha)
-                        ->select(['id', 'fecha', 'total', 'forma_pago', 'id_venta', 'id_sucursal'])
-                        ->with([
-                            'venta' => function($query) {
-                                $query->select(['id', 'correlativo', 'nombre_documento']);
-                            }
-                        ])
-                        ->get();
+            $abonos_ventas = collect();
+            if (ReglaAbonosCartera::incluirEnIngresosEgresos($configuracion)) {
+                $abonos_ventas = AbonoVenta::where('estado', 'Confirmado')
+                            ->where('fecha', $fecha)
+                            ->select(['id', 'fecha', 'total', 'forma_pago', 'id_venta', 'id_sucursal'])
+                            ->with([
+                                'venta' => function($query) {
+                                    $query->select(['id', 'correlativo', 'id_documento']);
+                                },
+                                'venta.documento' => function($query) {
+                                    $query->select(['id', 'nombre']);
+                                }
+                            ])
+                            ->get();
+            }
 
             Log::info('Abonos cargados', [
                 'cantidad' => $abonos_ventas->count(),
@@ -151,6 +157,7 @@ class PartidaIngresosService
             $cuentasConfigIds = [
                 $configuracion->id_cuenta_ventas,
                 $configuracion->id_cuenta_iva_ventas,
+                $configuracion->id_cuenta_iva_ventas_cf,
                 $configuracion->id_cuenta_iva_retenido_ventas,
                 $configuracion->id_cuenta_costo_venta,
                 $configuracion->id_cuenta_inventario,
@@ -360,10 +367,12 @@ class PartidaIngresosService
                     }
 
                     if ($ingreso->iva > 0) {
+                        $idIva = ReglaCuentaIva::idCuentaVentas($configuracion, ReglaCuentaIva::tipoDe($ingreso));
+                        $cuentaIvaDoc = $idIva ? $cuentasConfig->get($idIva) : $cuenta_iva;
                         $detalles[] = [
-                            'id_cuenta' => $cuenta_iva->id,
-                            'codigo' => $cuenta_iva->codigo,
-                            'nombre_cuenta' => $cuenta_iva->nombre,
+                            'id_cuenta' => $cuentaIvaDoc->id,
+                            'codigo' => $cuentaIvaDoc->codigo,
+                            'nombre_cuenta' => $cuentaIvaDoc->nombre,
                             'concepto' => '  ' . $ingreso->nombre_documento . '#' . $ingreso->correlativo,
                             'debe' => NULL,
                             'haber' => $ingreso->iva,
