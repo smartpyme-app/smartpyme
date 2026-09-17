@@ -120,6 +120,8 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
             this.empresa = empresa;
             if (this.empresa) {
                 this.empresa.impresion_en_facturacion = isImpresionEnFacturacionActiva(this.empresa);
+                this.empresa.shopify_sync_bidirectional = !!this.empresa.shopify_sync_bidirectional;
+                this.empresa.importacion_productos_shopify = !!this.empresa.importacion_productos_shopify;
             }
             if (!this.empresa.woocommerce_sync_mode) {
                 this.empresa.woocommerce_sync_mode = 'bidirectional';
@@ -177,6 +179,8 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
                 this.empresa = empresa;
                 if (this.empresa) {
                     this.empresa.impresion_en_facturacion = isImpresionEnFacturacionActiva(this.empresa);
+                    this.empresa.shopify_sync_bidirectional = !!this.empresa.shopify_sync_bidirectional;
+                    this.empresa.importacion_productos_shopify = !!this.empresa.importacion_productos_shopify;
                 }
 
                 this.initializeCustomConfig();
@@ -2185,7 +2189,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
     // ==========================================
     // SHOPIFY MULTI-SUCURSAL LOCATIONS
     // ==========================================
-    public tabShopifyActiva: 'credenciales' | 'sucursales' | 'productos' = 'credenciales';
+    public tabShopifyActiva: 'credenciales' | 'configuracion' | 'sucursales' | 'productos' = 'credenciales';
     public shopifyLocations: any[] = [];
     public shopifySucursales: any[] = [];
     public loadingShopifyLocations: boolean = false;
