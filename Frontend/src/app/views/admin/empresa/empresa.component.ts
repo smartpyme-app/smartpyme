@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit, ViewChild, TemplateRef } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy, ViewChild, TemplateRef } from '@angular/core';
 import { BsModalService, BsModalRef, } from 'ngx-bootstrap/modal';
 import { Router, ActivatedRoute } from '@angular/router';
 import { TabsetComponent } from 'ngx-bootstrap/tabs';
@@ -14,7 +14,7 @@ import Swal from 'sweetalert2';
     templateUrl: './empresa.component.html',
     styleUrls: ['./empresa.component.css']
 })
-export class EmpresaComponent implements OnInit, AfterViewInit {
+export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
 
     public empresa: any = {};
     public loading = false;
@@ -113,6 +113,10 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         });
     }
 
+    ngOnDestroy() {
+        this.detenerPollingConsolidacion();
+    }
+
 
     public loadAll() {
         this.loading = true;
@@ -121,6 +125,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
             if (this.empresa) {
                 this.empresa.impresion_en_facturacion = isImpresionEnFacturacionActiva(this.empresa);
                 this.empresa.shopify_sync_bidirectional = !!this.empresa.shopify_sync_bidirectional;
+                this.empresa.shopify_sync_ventas = !!this.empresa.shopify_sync_ventas;
                 this.empresa.importacion_productos_shopify = !!this.empresa.importacion_productos_shopify;
             }
             if (!this.empresa.woocommerce_sync_mode) {
@@ -180,6 +185,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
                 if (this.empresa) {
                     this.empresa.impresion_en_facturacion = isImpresionEnFacturacionActiva(this.empresa);
                     this.empresa.shopify_sync_bidirectional = !!this.empresa.shopify_sync_bidirectional;
+                    this.empresa.shopify_sync_ventas = !!this.empresa.shopify_sync_ventas;
                     this.empresa.importacion_productos_shopify = !!this.empresa.importacion_productos_shopify;
                 }
 
@@ -2437,4 +2443,106 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         });
     }
 
+    // ==========================================
+    // CONSOLIDACIÓN BIDIRECCIONAL SHOPIFY
+    // ==========================================
+    public direccionConsolidacion: 'shopify_to_sp' | 'sp_to_shopify' = 'shopify_to_sp';
+    public opcionesConsolidacion: any = {
+        vincular_sku: true,
+        actualizar_precios: true,
+        actualizar_stock: false,
+        crear_nuevos: true
+    };
+    public estadoConsolidacion: any = null;
+    public procesandoConsolidacion: boolean = false;
+    private pollingConsolidacionInterval: any = null;
+
+    public abrirModalConsolidar(template: TemplateRef<any>, direccion: 'shopify_to_sp' | 'sp_to_shopify' = 'shopify_to_sp') {
+        this.direccionConsolidacion = direccion;
+        this.consultarEstadoConsolidacion(false);
+        this.modalRef = this.modalService.show(template, { class: 'modal-lg' });
+    }
+
+    public iniciarConsolidacion() {
+        if (!this.empresa || this.empresa.status_conexion_shopify !== 'connected') {
+            Swal.fire('Atención', 'Shopify no está conectado o las credenciales no son válidas.', 'warning');
+            return;
+        }
+
+        const payload = {
+            direccion: this.direccionConsolidacion,
+            vincular_sku: this.opcionesConsolidacion.vincular_sku,
+            actualizar_precios: this.opcionesConsolidacion.actualizar_precios,
+            actualizar_stock: this.opcionesConsolidacion.actualizar_stock,
+            crear_nuevos: this.opcionesConsolidacion.crear_nuevos
+        };
+
+        this.procesandoConsolidacion = true;
+        this.apiService.store('shopify/consolidacion/iniciar', payload).subscribe(
+            (res: any) => {
+                this.alertService.success('Consolidación', res.mensaje || 'Consolidación iniciada exitosamente.');
+                this.consultarEstadoConsolidacion(false);
+                this.iniciarPollingConsolidacion();
+            },
+            (err: any) => {
+                this.procesandoConsolidacion = false;
+                const msg = err.error && err.error.mensaje ? err.error.mensaje : 'Error al iniciar consolidación.';
+                Swal.fire('Error', msg, 'error');
+            }
+        );
+    }
+
+    public consultarEstadoConsolidacion(mostrarAlertaFinal: boolean = true) {
+        this.apiService.getAll('shopify/consolidacion/estado').subscribe(
+            (res: any) => {
+                if (res && res.estado) {
+                    this.estadoConsolidacion = res;
+                    if (res.estado === 'procesando') {
+                        this.procesandoConsolidacion = true;
+                        if (!this.pollingConsolidacionInterval) {
+                            this.iniciarPollingConsolidacion();
+                        }
+                    } else {
+                        const estabaProcesando = this.procesandoConsolidacion;
+                        this.procesandoConsolidacion = false;
+                        this.detenerPollingConsolidacion();
+
+                        if (mostrarAlertaFinal && estabaProcesando && res.estado === 'completado') {
+                            Swal.fire({
+                                title: '¡Consolidación Completada!',
+                                html: `<b>Resumen del proceso:</b><br>` +
+                                      `• Vinculados por SKU: <strong>${res.vinculados || 0}</strong><br>` +
+                                      `• Actualizados: <strong>${res.actualizados || 0}</strong><br>` +
+                                      `• Creados: <strong>${res.creados || 0}</strong><br>` +
+                                      `• Errores: <strong>${res.errores || 0}</strong>`,
+                                icon: 'success',
+                                confirmButtonText: 'Aceptar'
+                            });
+                        } else if (mostrarAlertaFinal && estabaProcesando && res.estado === 'error') {
+                            Swal.fire('Error en la consolidación', res.mensaje || 'Ocurrió un fallo en el proceso.', 'error');
+                        }
+                    }
+                }
+            },
+            (err: any) => {
+                console.error('Error consultando estado de consolidación:', err);
+            }
+        );
+    }
+
+    public iniciarPollingConsolidacion() {
+        this.detenerPollingConsolidacion();
+        this.pollingConsolidacionInterval = setInterval(() => {
+            this.consultarEstadoConsolidacion(true);
+        }, 2500);
+    }
+
+    public detenerPollingConsolidacion() {
+        if (this.pollingConsolidacionInterval) {
+            clearInterval(this.pollingConsolidacionInterval);
+            this.pollingConsolidacionInterval = null;
+        }
+    }
+
 }
+

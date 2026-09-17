@@ -30,6 +30,7 @@ use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Lote;
 use App\Models\Inventario\Paquete;
 use App\Services\Webhooks\WebhookPaqueteVentaDispatcher;
+use App\Jobs\SincronizarVentaAShopifyJob;
 use App\Models\Contabilidad\Proyecto;
 use App\Models\Eventos\Evento;
 use App\Models\Admin\Canal;
@@ -1104,6 +1105,13 @@ class VentasController extends Controller
 
             DB::commit();
             $venta->refresh();
+
+            // Sincronizar orden hacia Shopify si la empresa lo tiene configurado
+            $empresaActual = $empresa ?: Empresa::find($venta->id_empresa);
+            if ($empresaActual && $empresaActual->shopify_sync_ventas && empty($venta->referencia_shopify) && (int) ($request->cotizacion ?? 0) === 0) {
+                SincronizarVentaAShopifyJob::dispatch($venta->id);
+            }
+
             // Exponer stub BoxFul al FE para abrir el wizard con paqueteId real
             $venta->load(['paquetes' => function ($query) {
                 $query->where('transportista', 'Boxful')

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Webhook;
 use App\Helpers\ShopifyHelper;
 use App\Http\Controllers\Controller;
 use App\Jobs\ExportProductsToShopify;
+use App\Jobs\ConsolidarProductosShopifyJob;
 use App\Models\Admin\Documento;
 use App\Models\Admin\Empresa;
 use App\Models\Inventario\Categorias\Categoria;
@@ -1596,6 +1597,78 @@ class ShopifyController extends Controller
             'status' => 'success',
             'mensaje' => 'Exportación de productos a Shopify iniciada. Este proceso puede tomar varios minutos.'
         ]);
+    }
+
+    public function iniciarConsolidacion(Request $request)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['error' => 'No autorizado'], 401);
+        }
+
+        $empresa = Empresa::find($user->id_empresa);
+        if (!$empresa || !$empresa->tieneCredencialesShopify()) {
+            return response()->json([
+                'status' => 'error',
+                'mensaje' => 'La empresa no tiene credenciales de Shopify configuradas o no está conectada.',
+            ], 400);
+        }
+
+        $direccion = $request->input('direccion', 'shopify_to_sp');
+        $opciones = [
+            'vincular_sku' => filter_var($request->input('vincular_sku', true), FILTER_VALIDATE_BOOLEAN),
+            'actualizar_precios' => filter_var($request->input('actualizar_precios', true), FILTER_VALIDATE_BOOLEAN),
+            'actualizar_stock' => filter_var($request->input('actualizar_stock', false), FILTER_VALIDATE_BOOLEAN),
+            'crear_nuevos' => filter_var($request->input('crear_nuevos', true), FILTER_VALIDATE_BOOLEAN),
+        ];
+
+        // Limpiar o inicializar estado previo en caché
+        $cacheKey = "shopify_consolidacion_{$empresa->id}";
+        Cache::put($cacheKey, [
+            'estado' => 'procesando',
+            'progreso' => 0,
+            'mensaje' => 'Iniciando consolidación...',
+            'total' => 0,
+            'procesados' => 0,
+            'vinculados' => 0,
+            'actualizados' => 0,
+            'creados' => 0,
+            'errores' => 0,
+            'direccion' => $direccion,
+            'fecha_inicio' => now()->toIso8601String(),
+        ], 7200);
+
+        // Despachar Job en segundo plano
+        ConsolidarProductosShopifyJob::dispatch($empresa->id, $user->id, $direccion, $opciones);
+
+        return response()->json([
+            'status' => 'success',
+            'mensaje' => 'Consolidación iniciada exitosamente en segundo plano.',
+            'direccion' => $direccion,
+        ]);
+    }
+
+    public function obtenerEstadoConsolidacion(Request $request)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['error' => 'No autorizado'], 401);
+        }
+
+        $cacheKey = "shopify_consolidacion_{$user->id_empresa}";
+        $estado = Cache::get($cacheKey, [
+            'estado' => 'inactivo',
+            'progreso' => 0,
+            'mensaje' => 'No hay consolidación activa.',
+            'total' => 0,
+            'procesados' => 0,
+            'vinculados' => 0,
+            'actualizados' => 0,
+            'creados' => 0,
+            'errores' => 0,
+        ]);
+
+        return response()->json($estado);
     }
 
     private function buscarCategoria($nombre, $id_empresa)

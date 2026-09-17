@@ -1462,7 +1462,7 @@
                         <button type="button" class="nav-link text-start py-2 px-3"
                             *ngIf="empresa.status_conexion_shopify === 'connected'"
                             [ngClass]="{'active': tabShopifyActiva === 'productos'}"
-                            (click)="tabShopifyActiva = 'productos'" role="tab">
+                            (click)="tabShopifyActiva = 'productos'; consultarEstadoConsolidacion(false)" role="tab">
                             <i class="fa fa-boxes me-2"></i>Productos
                         </button>
                     </div>
@@ -1621,6 +1621,23 @@
                                                     Permite recibir e importar automáticamente el catálogo de productos y variantes creados en Shopify hacia SmartPyme.
                                                 </small>
                                             </div>
+
+                                            <!-- Sincronización de ventas hacia Shopify -->
+                                            <div class="col-12 col-lg-6">
+                                                <div class="form-switch bg-light-info rounded mb-2">
+                                                    <label for="shopify_sync_ventas" class="form-check-label fw-bold">
+                                                        Sincronizar ventas hacia Shopify
+                                                    </label>
+                                                    <input class="form-check-input float-end" type="checkbox" role="switch"
+                                                        id="shopify_sync_ventas"
+                                                        [(ngModel)]="empresa.shopify_sync_ventas"
+                                                        (change)="onSubmit()"
+                                                        name="shopify_sync_ventas">
+                                                </div>
+                                                <small class="text-muted d-block ps-2">
+                                                    Crea automáticamente una orden en Shopify cuando se emite una venta física o local en SmartPyme.
+                                                </small>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -1756,6 +1773,64 @@
                     <!-- CONTENIDO PESTAÑA 3: PRODUCTOS -->
                     <div *ngIf="tabShopifyActiva === 'productos'">
                         <div class="row g-3">
+                            <!-- Consolidación Inteligente de Productos y Variantes -->
+                            <div class="col-12">
+                                <div class="card border border-primary border-opacity-25 shadow-sm">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                                            <div>
+                                                <h6 class="fw-bold mb-1 text-primary">
+                                                    <i class="fa fa-sync-alt text-primary me-2"></i>
+                                                    Consolidación Inteligente de Catálogo
+                                                </h6>
+                                                <small class="text-muted">
+                                                    Vincula productos y variantes entre SmartPyme y Shopify por SKU sin duplicar, respetando Rate Limits en segundo plano.
+                                                </small>
+                                            </div>
+                                            <div class="d-flex gap-2 flex-wrap">
+                                                <button class="btn btn-sm btn-outline-primary"
+                                                    (click)="abrirModalConsolidar(mconsolidarShopify, 'shopify_to_sp')"
+                                                    [disabled]="procesandoConsolidacion">
+                                                    <i class="fa fa-download me-1"></i>
+                                                    Shopify &rarr; SmartPyme
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-success"
+                                                    (click)="abrirModalConsolidar(mconsolidarShopify, 'sp_to_shopify')"
+                                                    [disabled]="procesandoConsolidacion">
+                                                    <i class="fa fa-upload me-1"></i>
+                                                    SmartPyme &rarr; Shopify
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <!-- Banner si hay una consolidación en curso -->
+                                        <div *ngIf="estadoConsolidacion && estadoConsolidacion.estado === 'procesando'" class="mt-3 p-3 bg-light rounded border">
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <span class="small fw-bold text-primary">
+                                                    <i class="fa fa-spinner fa-spin me-1"></i>
+                                                    Consolidación en curso: {{ estadoConsolidacion.direccion === 'shopify_to_sp' ? 'Shopify → SmartPyme' : 'SmartPyme → Shopify' }}
+                                                </span>
+                                                <span class="small text-muted fw-bold">{{ estadoConsolidacion.procesados }} de {{ estadoConsolidacion.total }} ({{ estadoConsolidacion.progreso }}%)</span>
+                                            </div>
+                                            <div class="progress mb-2" style="height: 8px;">
+                                                <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+                                                    [style.width.%]="estadoConsolidacion.progreso"></div>
+                                            </div>
+                                            <div class="d-flex gap-3 flex-wrap small text-muted">
+                                                <span><i class="fa fa-link text-info me-1"></i> Vinculados SKU: <strong>{{ estadoConsolidacion.vinculados || 0 }}</strong></span>
+                                                <span><i class="fa fa-check-circle text-success me-1"></i> Actualizados: <strong>{{ estadoConsolidacion.actualizados || 0 }}</strong></span>
+                                                <span><i class="fa fa-plus-circle text-primary me-1"></i> Creados: <strong>{{ estadoConsolidacion.creados || 0 }}</strong></span>
+                                                <span *ngIf="estadoConsolidacion.errores > 0"><i class="fa fa-exclamation-triangle text-danger me-1"></i> Errores: <strong>{{ estadoConsolidacion.errores }}</strong></span>
+                                                <button class="btn btn-link btn-sm text-decoration-none p-0 ms-auto small"
+                                                    (click)="abrirModalConsolidar(mconsolidarShopify, estadoConsolidacion.direccion || 'shopify_to_sp')">
+                                                    Ver detalles <i class="fa fa-arrow-right ms-1"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- Descargar Productos (CSV) -->
                             <div class="col-12">
                                 <div class="card border">
@@ -2013,6 +2088,199 @@
             </span>
             <span *ngIf="importandoWooCommerceCsv">
                 <i class="fa fa-spinner fa-spin me-1"></i> Importando...
+            </span>
+        </button>
+    </div>
+</ng-template>
+
+<!-- MODAL: Consolidación Inteligente de Productos y Variantes con Shopify -->
+<ng-template #mconsolidarShopify>
+    <div class="modal-header bg-light">
+        <h5 class="modal-title d-flex align-items-center gap-2 mb-0">
+            <i class="fa fa-sync-alt text-primary"></i>
+            <span>Consolidación Inteligente de Catálogo</span>
+        </h5>
+        <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    </div>
+
+    <div class="modal-body p-4">
+        <!-- Dirección de Consolidación -->
+        <label class="form-label fw-bold text-dark mb-2">Seleccione la dirección del proceso:</label>
+        <div class="row g-3 mb-3">
+            <!-- Opción 1: Shopify -> SmartPyme -->
+            <div class="col-md-6">
+                <div class="card h-100 border"
+                    [ngClass]="direccionConsolidacion === 'shopify_to_sp' ? 'border-primary border-2' : 'border-light'"
+                    (click)="!procesandoConsolidacion && (direccionConsolidacion = 'shopify_to_sp')"
+                    style="cursor: pointer;">
+                    <div class="card-body p-3">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <i class="fa fa-download text-primary fs-5"></i>
+                            <span class="fw-bold text-dark">Shopify &rarr; SmartPyme</span>
+                            <span *ngIf="direccionConsolidacion === 'shopify_to_sp'" class="badge bg-primary ms-auto">Activo</span>
+                        </div>
+                        <p class="small text-muted mb-0">
+                            Descarga catálogo de Shopify, vincula por SKU productos existentes en SmartPyme para evitar duplicados y crea variantes faltantes.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Opción 2: SmartPyme -> Shopify -->
+            <div class="col-md-6">
+                <div class="card h-100 border"
+                    [ngClass]="direccionConsolidacion === 'sp_to_shopify' ? 'border-primary border-2' : 'border-light'"
+                    (click)="!procesandoConsolidacion && (direccionConsolidacion = 'sp_to_shopify')"
+                    style="cursor: pointer;">
+                    <div class="card-body p-3">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <i class="fa fa-upload text-success fs-5"></i>
+                            <span class="fw-bold text-dark">SmartPyme &rarr; Shopify</span>
+                            <span *ngIf="direccionConsolidacion === 'sp_to_shopify'" class="badge bg-success ms-auto">Activo</span>
+                        </div>
+                        <p class="small text-muted mb-0">
+                            Escanea productos de SmartPyme, enlaza los existentes en Shopify por SKU y crea productos y variantes faltantes en tu tienda online.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Opciones avanzadas de sincronización -->
+        <div class="card border border-light bg-light p-3 mb-3">
+            <h6 class="fw-bold mb-2 text-dark small text-uppercase">
+                <i class="fa fa-sliders-h me-1 text-muted"></i> Opciones de sincronización
+            </h6>
+            <div class="row g-2">
+                <div class="col-md-6">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="chkSku"
+                            [(ngModel)]="opcionesConsolidacion.vincular_sku"
+                            [disabled]="procesandoConsolidacion">
+                        <label class="form-check-label small" for="chkSku">
+                            <strong>Vincular por SKU</strong> (Evita crear duplicados)
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="chkPrecios"
+                            [(ngModel)]="opcionesConsolidacion.actualizar_precios"
+                            [disabled]="procesandoConsolidacion">
+                        <label class="form-check-label small" for="chkPrecios">
+                            <strong>Actualizar precios</strong>
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="chkStock"
+                            [(ngModel)]="opcionesConsolidacion.actualizar_stock"
+                            [disabled]="procesandoConsolidacion">
+                        <label class="form-check-label small" for="chkStock">
+                            <strong>Actualizar existencias / stock</strong>
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="chkCrear"
+                            [(ngModel)]="opcionesConsolidacion.crear_nuevos"
+                            [disabled]="procesandoConsolidacion">
+                        <label class="form-check-label small" for="chkCrear">
+                            <strong>Crear nuevos faltantes</strong>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info Leaky Bucket / Segundo plano -->
+        <div class="alert alert-info py-2 px-3 mb-3 d-flex align-items-center gap-2 small">
+            <i class="fa fa-info-circle text-info fs-5 flex-shrink-0"></i>
+            <div>
+                <strong>Segundo plano con control de Rate Limits:</strong> La consolidación se ejecuta de forma asíncrona respetando el límite de 2 req/seg de la API de Shopify (Leaky Bucket). Puedes cerrar este modal o navegar por el sistema sin interrumpir la sincronización.
+            </div>
+        </div>
+
+        <!-- Estado / Progreso en tiempo real -->
+        <div *ngIf="estadoConsolidacion && estadoConsolidacion.estado !== 'inactivo'" class="border rounded p-3 bg-white shadow-sm">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="badge"
+                    [ngClass]="{
+                        'bg-warning text-dark': estadoConsolidacion.estado === 'procesando',
+                        'bg-success': estadoConsolidacion.estado === 'completado',
+                        'bg-danger': estadoConsolidacion.estado === 'error'
+                    }">
+                    <i class="fa me-1"
+                        [ngClass]="{
+                            'fa-spinner fa-spin': estadoConsolidacion.estado === 'procesando',
+                            'fa-check': estadoConsolidacion.estado === 'completado',
+                            'fa-times': estadoConsolidacion.estado === 'error'
+                        }"></i>
+                    {{ estadoConsolidacion.estado === 'procesando' ? 'En ejecución en segundo plano' : (estadoConsolidacion.estado === 'completado' ? 'Consolidación Finalizada' : 'Error') }}
+                </span>
+                <span class="small text-muted fw-bold">{{ estadoConsolidacion.progreso || 0 }}%</span>
+            </div>
+
+            <!-- Barra de progreso -->
+            <div class="progress mb-2" style="height: 10px;">
+                <div class="progress-bar progress-bar-striped"
+                    [ngClass]="{
+                        'progress-bar-animated bg-primary': estadoConsolidacion.estado === 'procesando',
+                        'bg-success': estadoConsolidacion.estado === 'completado',
+                        'bg-danger': estadoConsolidacion.estado === 'error'
+                    }"
+                    [style.width.%]="estadoConsolidacion.progreso || 0">
+                </div>
+            </div>
+
+            <div class="text-muted small mb-3">
+                <i class="fa fa-info-circle me-1"></i> {{ estadoConsolidacion.mensaje }}
+            </div>
+
+            <!-- Métricas -->
+            <div class="row g-2 text-center small">
+                <div class="col-3">
+                    <div class="border rounded p-2 bg-light">
+                        <div class="text-info fw-bold fs-6">{{ estadoConsolidacion.vinculados || 0 }}</div>
+                        <div class="text-muted" style="font-size: 0.72rem;">Vinculados SKU</div>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="border rounded p-2 bg-light">
+                        <div class="text-success fw-bold fs-6">{{ estadoConsolidacion.actualizados || 0 }}</div>
+                        <div class="text-muted" style="font-size: 0.72rem;">Actualizados</div>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="border rounded p-2 bg-light">
+                        <div class="text-primary fw-bold fs-6">{{ estadoConsolidacion.creados || 0 }}</div>
+                        <div class="text-muted" style="font-size: 0.72rem;">Creados</div>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="border rounded p-2 bg-light">
+                        <div class="text-danger fw-bold fs-6">{{ estadoConsolidacion.errores || 0 }}</div>
+                        <div class="text-muted" style="font-size: 0.72rem;">Errores</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="modalRef.hide()">
+            {{ estadoConsolidacion?.estado === 'procesando' ? 'Minimizar' : 'Cerrar' }}
+        </button>
+        <button type="button" class="btn btn-primary"
+            (click)="iniciarConsolidacion()"
+            [disabled]="procesandoConsolidacion || empresa?.status_conexion_shopify !== 'connected'">
+            <span *ngIf="!procesandoConsolidacion">
+                <i class="fa fa-play me-1"></i> Iniciar Consolidación
+            </span>
+            <span *ngIf="procesandoConsolidacion">
+                <i class="fa fa-spinner fa-spin me-1"></i> En ejecución...
             </span>
         </button>
     </div>
