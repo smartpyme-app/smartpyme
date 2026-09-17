@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Requests\Admin\EmpresasFuncionalidades\ActualizarFuncionalidadRequest;
 use App\Http\Requests\Admin\EmpresasFuncionalidades\ActualizarMultipleFuncionalidadesRequest;
+use App\Services\Contabilidad\ActivosCategoriasBootstrapService;
 use App\Services\GiftCards\GiftCardCategoryBootstrap;
 
 class EmpresasFuncionalidadesController extends Controller
@@ -77,6 +78,7 @@ class EmpresasFuncionalidadesController extends Controller
             );
 
             $this->bootstrapGiftCardsIfActivated($empresaFunc);
+            $this->bootstrapActivosFijosIfActivated($empresaFunc);
             $empresaFunc->refresh();
 
             return response()->json([
@@ -110,6 +112,7 @@ class EmpresasFuncionalidadesController extends Controller
                 );
 
                 $this->bootstrapGiftCardsIfActivated($empresaFunc);
+                $this->bootstrapActivosFijosIfActivated($empresaFunc);
             }
 
             DB::commit();
@@ -260,5 +263,24 @@ class EmpresasFuncionalidadesController extends Controller
         }
 
         app(GiftCardCategoryBootstrap::class)->ensureForEmpresa($empresa);
+    }
+
+    private function bootstrapActivosFijosIfActivated(EmpresaFuncionalidad $empresaFunc): void
+    {
+        if (! $empresaFunc->activo) {
+            return;
+        }
+
+        $funcionalidad = $empresaFunc->funcionalidad ?? Funcionalidad::find($empresaFunc->id_funcionalidad);
+        if ($funcionalidad === null || $funcionalidad->slug !== ActivosCategoriasBootstrapService::SLUG) {
+            return;
+        }
+
+        $empresa = Empresa::find($empresaFunc->id_empresa);
+        if ($empresa === null) {
+            return;
+        }
+
+        app(ActivosCategoriasBootstrapService::class)->copiarPlantillasEmpresa($empresa, true);
     }
 }

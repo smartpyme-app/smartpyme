@@ -1,0 +1,155 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading mb-0">Reportes de activos fijos</h2>
+    <button class="btn btn-light text-danger" routerLink="/contabilidad/activos"><i class="fa fa-arrow-left"></i> Regresar</button>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+    <div class="d-flex flex-wrap gap-2 mb-4">
+        @for (t of tipos; track t.id) {
+            <button
+                type="button"
+                class="btn"
+                [class.btn-primary]="tipo === t.id"
+                [class.btn-light]="tipo !== t.id"
+                (click)="cambiarTipo(t.id)"
+            >{{ t.label }}</button>
+        }
+    </div>
+
+    <div class="d-flex flex-wrap gap-2 mb-3 align-items-end justify-content-between">
+        <div class="d-flex flex-wrap gap-2 align-items-end">
+            @if (tipo === 'libro-activos' || tipo === 'bajas-periodo') {
+                <div>
+                    <label class="form-label small text-muted mb-1">Desde</label>
+                    <input type="date" class="form-control" style="width: auto; min-width: 10rem;" [(ngModel)]="filtros.inicio">
+                </div>
+                <div>
+                    <label class="form-label small text-muted mb-1">Hasta</label>
+                    <input type="date" class="form-control" style="width: auto; min-width: 10rem;" [(ngModel)]="filtros.fin">
+                </div>
+            }
+            @if (tipo === 'depreciacion-periodo') {
+                <div>
+                    <label class="form-label small text-muted mb-1">Período</label>
+                    <input type="month" class="form-control" style="width: auto; min-width: 10rem;" [(ngModel)]="filtros.periodo">
+                </div>
+            }
+            @if (tipo === 'estado-activos') {
+                <div>
+                    <label class="form-label small text-muted mb-1">Fecha de corte</label>
+                    <input type="date" class="form-control" style="width: auto; min-width: 10rem;" [(ngModel)]="filtros.fecha_corte">
+                </div>
+            }
+            <div>
+                <label class="form-label small text-muted mb-1">Sucursal</label>
+                <select class="form-select" style="width: auto; min-width: 10rem;" [(ngModel)]="filtros.id_sucursal">
+                    <option value="">Todas</option>
+                    @for (s of sucursales; track s.id) {
+                        <option [value]="s.id">{{ s.nombre }}</option>
+                    }
+                </select>
+            </div>
+            @if (tipo === 'libro-activos' || tipo === 'estado-activos') {
+                <div>
+                    <label class="form-label small text-muted mb-1">Categoría</label>
+                    <select class="form-select" style="width: auto; min-width: 10rem;" [(ngModel)]="filtros.id_categoria">
+                        <option value="">Todas</option>
+                        @for (c of categorias; track c.id) {
+                            <option [value]="c.id">{{ c.nombre }}</option>
+                        }
+                    </select>
+                </div>
+            }
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+            <button type="button" class="btn btn-default" tooltip="Filtrar" (click)="generar()" [disabled]="loading">
+                <img src="/assets/icons/filter.png" class="icon">
+            </button>
+            <div class="dropdown">
+                <button
+                    class="btn btn-default dropdown-toggle"
+                    type="button"
+                    data-bs-toggle="dropdown"
+                    [disabled]="downloading || loading || !reporte?.lineas?.length"
+                >Descargas</button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                        <button type="button" class="dropdown-item" (click)="descargarExcel()" [disabled]="downloading">
+                            @if (downloading) {
+                                <span class="spinner-border spinner-border-sm me-2"></span>
+                            }
+                            Excel
+                        </button>
+                    </li>
+                    <li>
+                        <button type="button" class="dropdown-item" (click)="descargarPdf()" [disabled]="downloading">
+                            PDF
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    @if (reporte?.cantidad && !loading) {
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+            <span class="text-muted">{{ reporte.cantidad }} registro(s)</span>
+            @if (totalesEntries().length) {
+                <span class="text-muted small">
+                    @for (entry of totalesEntries(); track entry.key) {
+                        {{ entry.label }}:
+                        @if (entry.esMoneda) {
+                            {{ entry.value | currency }}
+                        } @else {
+                            {{ entry.value }}
+                        }
+                        @if (!$last) { · }
+                    }
+                </span>
+            }
+        </div>
+    }
+
+    <div class="table-responsive">
+        <table class="table table-borderless table-hover mb-0">
+            <thead>
+                <tr>
+                    @for (col of reporte?.columnas ?? columnasVacias; track col) {
+                        <th [class.text-end]="esColumnaNumerica(col)">{{ col }}</th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @if (loading) {
+                    <tr>
+                        <td [attr.colspan]="(reporte?.columnas?.length || 1)" class="text-center">
+                            <span class="badge bg-primary">Cargando...</span>
+                        </td>
+                    </tr>
+                } @else if (!reporte?.lineas?.length) {
+                    <tr>
+                        <td [attr.colspan]="(reporte?.columnas?.length || 1)" class="text-center">
+                            <span class="badge bg-primary">No hay registros para los filtros seleccionados</span>
+                        </td>
+                    </tr>
+                } @else {
+                    @for (fila of reporte.lineas; track $index) {
+                        <tr>
+                            @for (celda of fila; track $index; let i = $index) {
+                                <td [class.text-end]="esColumnaNumerica(reporte.columnas[i])">
+                                    @if (esColumnaNumerica(reporte.columnas[i]) && celda !== '' && celda != null) {
+                                        {{ celda | currency }}
+                                    } @else if (esColumnaEstado(reporte.columnas[i]) && celda !== '' && celda != null) {
+                                        <span class="badge py-2" style="font-size: 0.8rem; text-transform: capitalize;" [ngClass]="clasesBadgeEstado(celda)">{{ celda }}</span>
+                                    } @else {
+                                        {{ celda }}
+                                    }
+                                </td>
+                            }
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</section>

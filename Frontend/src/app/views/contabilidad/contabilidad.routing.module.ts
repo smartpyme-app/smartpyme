@@ -35,6 +35,102 @@ const routes: Routes = [
 
         {
 
+          path: 'contabilidad/activos',
+
+          loadComponent: () => import('@views/contabilidad/activos/activos.component').then(m => m.ActivosComponent),
+
+          title: 'Activos fijos',
+
+          ...CONTABILIDAD_FUNCIONALIDAD,
+
+        },
+
+        {
+
+          path: 'contabilidad/activo/crear',
+
+          loadComponent: () => import('@views/contabilidad/activos/activo/activo.component').then(m => m.ActivoComponent),
+
+          title: 'Nuevo activo',
+
+          ...CONTABILIDAD_FUNCIONALIDAD,
+
+        },
+
+        {
+
+          path: 'contabilidad/activo/editar/:id',
+
+          loadComponent: () => import('@views/contabilidad/activos/activo/activo.component').then(m => m.ActivoComponent),
+
+          title: 'Editar activo',
+
+          ...CONTABILIDAD_FUNCIONALIDAD,
+
+        },
+
+        {
+
+          path: 'contabilidad/activos/categorias',
+
+          loadComponent: () => import('@views/contabilidad/activos/categorias/categorias.component').then(m => m.ActivosCategoriasComponent),
+
+          title: 'Categorías activos fijos',
+
+          ...CONTABILIDAD_FUNCIONALIDAD,
+
+        },
+
+        {
+
+          path: 'contabilidad/activos/configuracion',
+
+          loadComponent: () => import('@views/contabilidad/activos/configuracion/configuracion.component').then(m => m.ActivosConfiguracionComponent),
+
+          title: 'Configuración activos fijos',
+
+          ...CONTABILIDAD_FUNCIONALIDAD,
+
+        },
+
+        {
+
+          path: 'contabilidad/activos/depreciacion',
+
+          loadComponent: () => import('@views/contabilidad/activos/depreciacion/depreciacion.component').then(m => m.ActivosDepreciacionComponent),
+
+          title: 'Depreciación activos',
+
+          ...CONTABILIDAD_FUNCIONALIDAD,
+
+        },
+
+        {
+
+          path: 'contabilidad/activos/reportes',
+
+          loadComponent: () => import('@views/contabilidad/activos/reportes/reportes.component').then(m => m.ActivosReportesComponent),
+
+          title: 'Reportes activos fijos',
+
+          ...CONTABILIDAD_FUNCIONALIDAD,
+
+        },
+
+        {
+
+          path: 'contabilidad/activos/capitalizar-compra/:id',
+
+          loadComponent: () => import('@views/contabilidad/activos/capitalizar-compra/capitalizar-compra.component').then(m => m.CapitalizarCompraComponent),
+
+          title: 'Capitalizar compra',
+
+          ...CONTABILIDAD_FUNCIONALIDAD,
+
+        },
+
+        {
+
           path: 'presupuestos',
 
           loadComponent: () => import('@views/contabilidad/presupuestos/presupuestos.component').then(m => m.PresupuestosComponent),

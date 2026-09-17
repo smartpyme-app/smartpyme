@@ -20,9 +20,16 @@ class Detalle extends Model {
         'porcentaje_impuesto',
         'subtotal',
         'total',
-        'id_compra'
-
+        'id_compra',
+        'id_activo',
+        'es_activo_fijo',
+        'pendiente_capitalizacion',
     );
+
+    protected $casts = [
+        'es_activo_fijo' => 'boolean',
+        'pendiente_capitalizacion' => 'boolean',
+    ];
 
     protected $appends = ['nombre_producto', 'img', 'codigo', 'inventario_por_lotes'];
 

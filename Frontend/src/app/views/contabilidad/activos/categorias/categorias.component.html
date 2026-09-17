@@ -1,0 +1,115 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading mb-0">Activos fijos</h2>
+    <div class="d-flex gap-2">
+        @if (apiService.canCreateTest('contabilidad.activos.categorias')) {
+            <button type="button" class="btn btn-light" (click)="importarPlantillas()" [disabled]="loading" tooltip="Importar plantillas del país">
+                <i class="fa fa-download"></i> Importar plantillas
+            </button>
+            <button type="button" class="btn btn-default" (click)="openModal(mdetalle)" tooltip="Crear categoría">
+                <i class="fa fa-plus"></i> Añadir categoría
+            </button>
+        }
+    </div>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+    <app-activos-nav-tabs></app-activos-nav-tabs>
+    <div class="table-responsive">
+        <table class="table table-borderless table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th class="text-end">% anual</th>
+                    <th class="text-end">Vida útil (años)</th>
+                    <th class="text-end">Valor residual default</th>
+                    <th class="text-center">Bien usado</th>
+                    @if (apiService.canCreateTest('contabilidad.activos.categorias')) {
+                        <th class="text-center"><i class="fa fa-cog"></i></th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @if (loading) {
+                    <tr>
+                        <td [attr.colspan]="apiService.canCreateTest('contabilidad.activos.categorias') ? 6 : 5" class="text-center">
+                            <span class="badge bg-primary">Cargando...</span>
+                        </td>
+                    </tr>
+                } @else if (!categorias?.length) {
+                    <tr>
+                        <td [attr.colspan]="apiService.canCreateTest('contabilidad.activos.categorias') ? 6 : 5" class="text-center">
+                            <span class="badge bg-primary">No hay categorías registradas</span>
+                        </td>
+                    </tr>
+                } @else {
+                    @for (cat of categorias; track cat.id) {
+                        <tr>
+                            <td>{{ cat.nombre }}</td>
+                            <td class="text-end">{{ cat.porcentaje_anual ?? '—' }}</td>
+                            <td class="text-end">{{ cat.vida_util_anios ?? '—' }}</td>
+                            <td class="text-end">{{ cat.valor_residual_default ?? 0 }}</td>
+                            <td class="text-center">
+                                @if (cat.permite_bien_usado) {
+                                    <span class="badge py-2 bg-success" style="font-size: 0.8rem;">Sí</span>
+                                } @else {
+                                    <span class="badge py-2 bg-secondary" style="font-size: 0.8rem;">No</span>
+                                }
+                            </td>
+                            @if (apiService.canCreateTest('contabilidad.activos.categorias')) {
+                                <td class="text-center">
+                                    <div class="d-inline-flex gap-2">
+                                        <button type="button" class="btn btn-default btn-sm" (click)="openModal(mdetalle, cat)" tooltip="Editar">
+                                            <i class="fa fa-pencil"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-light btn-sm text-danger" (click)="delete(cat)" tooltip="Eliminar">
+                                            <i class="fa fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            }
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<ng-template #mdetalle>
+    <div class="modal-header">
+        <h5 class="modal-title">{{ categoria.id ? 'Editar categoría' : 'Nueva categoría' }}</h5>
+        <button type="button" class="btn-close" (click)="modalRef.hide()"></button>
+    </div>
+    <div class="modal-body">
+        <form autocomplete="off" (ngSubmit)="onSubmit()">
+            <div class="mb-3">
+                <label class="form-label">Nombre</label>
+                <input type="text" class="form-control" [(ngModel)]="categoria.nombre" name="nombre" required>
+            </div>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">% depreciación anual</label>
+                    <input type="number" class="form-control" [(ngModel)]="categoria.porcentaje_anual" name="porcentaje_anual" min="0" max="100" step="0.01" (change)="sincronizarDesdePorcentaje()">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Vida útil (años)</label>
+                    <input type="number" class="form-control" [(ngModel)]="categoria.vida_util_anios" name="vida_util_anios" min="0" step="0.01" (change)="sincronizarDesdeVidaUtil()">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Valor residual default</label>
+                    <input type="number" class="form-control" [(ngModel)]="categoria.valor_residual_default" name="valor_residual_default" min="0" step="0.01">
+                </div>
+                <div class="col-md-6 d-flex align-items-end">
+                    <div class="form-check mb-2">
+                        <input type="checkbox" class="form-check-input" [(ngModel)]="categoria.permite_bien_usado" name="permite_bien_usado" id="permite_bien_usado">
+                        <label class="form-check-label" for="permite_bien_usado">Permite bien usado</label>
+                    </div>
+                </div>
+            </div>
+            <p class="text-muted small mt-3 mb-0">Método: línea recta. Al cambiar % o vida útil se calcula el otro valor (100 ÷ años).</p>
+            <button type="submit" class="btn btn-primary w-100 mt-3" [disabled]="saving">
+                @if (saving) { Guardando... } @else { Guardar }
+            </button>
+        </form>
+    </div>
+</ng-template>

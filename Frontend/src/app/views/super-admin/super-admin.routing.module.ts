@@ -81,6 +81,11 @@ const routes: Routes = [
           title: 'Configuración por país'
         },
         {
+          path: 'activos-fijos/plantillas',
+          loadComponent: () => import('./activos-plantillas/admin-activos-plantillas.component').then(m => m.AdminActivosPlantillasComponent),
+          title: 'Plantillas activos fijos'
+        },
+        {
           path: 'funcionalidades',
           loadComponent: () => import('@views/super-admin/funcionalidades/empresas-funcionalidades.component').then(m => m.EmpresasFuncionalidadesComponent),
           title: 'Funcionalidades'

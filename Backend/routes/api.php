@@ -114,7 +114,7 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	// require base_path('routes/modulos/empleados/metas.php');
 
 	// Contabilidad
-	//require base_path('routes/modulos/contabilidad/activos.php');
+	require base_path('routes/modulos/contabilidad/activos.php');
 	//require base_path('routes/modulos/contabilidad/cajas-chicas.php');
 	require base_path('routes/modulos/contabilidad/presupuestos.php');
 	require base_path('routes/modulos/contabilidad/proyectos.php');
@@ -170,6 +170,7 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	require base_path('routes/modulos/super-admin/transacciones.php');
 	require base_path('routes/modulos/super-admin/auditoria.php');
 	require base_path('routes/modulos/super-admin/clientes.php');
+	require base_path('routes/modulos/super-admin/activos-plantillas.php');
 
 	//Crequire base_path('rhatbot
 	require base_path('routes/modulos/chat/chat.php');

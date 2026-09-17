@@ -356,6 +356,7 @@ class ComprasController extends Controller
                 
                 $detalle->fill(collect($det)->except(['lotes_asignados', 'lote', '_cantidad_base', '_costo_base'])->all());
                 $detalle->save();
+                $this->aplicarFlagsCapitalizacionDetalle($detalle, $det);
 
                 if (!$request->id) {
                     $producto = $detalle->producto()->with('inventarios')->first();
@@ -1289,5 +1290,16 @@ class ComprasController extends Controller
         }
     }
 
+    private function aplicarFlagsCapitalizacionDetalle(Detalle $detalle, array $det): void
+    {
+        if ($detalle->id_activo) {
+            return;
+        }
+
+        $esActivoFijo = ! empty($det['es_activo_fijo']);
+        $detalle->es_activo_fijo = $esActivoFijo;
+        $detalle->pendiente_capitalizacion = $esActivoFijo;
+        $detalle->save();
+    }
 
 }

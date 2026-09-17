@@ -1,0 +1,40 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading mb-0">Capitalizar compra #{{ compraId }}</h2>
+    <button class="btn btn-light text-danger" routerLink="/contabilidad/activos"><i class="fa fa-arrow-left"></i> Regresar</button>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+    @if (loading) {
+        <p class="text-center"><span class="badge bg-primary">Cargando...</span></p>
+    } @else if (!lineas.length) {
+        <p class="text-muted mb-0">No hay líneas pendientes de capitalizar en esta compra.</p>
+    } @else {
+        <p class="text-muted mb-3">Seleccione una línea para registrar el activo fijo correspondiente.</p>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Producto / línea</th>
+                        <th class="text-end">Cantidad</th>
+                        <th class="text-end">Total</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (linea of lineas; track linea.id) {
+                        <tr>
+                            <td>{{ linea.nombre }}</td>
+                            <td class="text-end">{{ linea.cantidad }}</td>
+                            <td class="text-end">{{ linea.total | currency }}</td>
+                            <td class="text-end">
+                                <a class="btn btn-default btn-sm" [routerLink]="['/contabilidad/activo/crear']" [queryParams]="{ compra_detalle_id: linea.id, compra_id: compraId }">
+                                    Capitalizar
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

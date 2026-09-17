@@ -1,0 +1,39 @@
+<div class="d-flex flex-wrap gap-2 mb-3">
+    @if (apiService.canCreateTest('contabilidad.activos.ver')) {
+        <button
+            type="button"
+            class="btn"
+            routerLinkActive="btn-primary"
+            [routerLinkActiveOptions]="{ exact: true }"
+            routerLink="/contabilidad/activos"
+            (click)="onTodosClick()"
+        >Todos</button>
+    }
+    @if (apiService.canCreateTest('contabilidad.activos.categorias')) {
+        <button
+            type="button"
+            class="btn"
+            routerLinkActive="btn-primary"
+            [routerLinkActiveOptions]="{ exact: true }"
+            routerLink="/contabilidad/activos/categorias"
+        >Categorías</button>
+    }
+    @if (apiService.canCreateTest('contabilidad.activos.configuracion')) {
+        <button
+            type="button"
+            class="btn"
+            routerLinkActive="btn-primary"
+            [routerLinkActiveOptions]="{ exact: true }"
+            routerLink="/contabilidad/activos/configuracion"
+        >Configuración</button>
+    }
+    @if (apiService.canCreateTest('contabilidad.activos.depreciar')) {
+        <button
+            type="button"
+            class="btn"
+            routerLinkActive="btn-primary"
+            [routerLinkActiveOptions]="{ exact: true }"
+            routerLink="/contabilidad/activos/depreciacion"
+        >Depreciación</button>
+    }
+</div>

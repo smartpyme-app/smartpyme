@@ -66,9 +66,12 @@ class Gasto extends AuditableModel {
         'exchange_rate_date',
         'equivalent_total',
         'equivalent_iva',
+        'id_activo',
+        'pendiente_capitalizacion',
     ];
 
     protected $casts = [
+        'pendiente_capitalizacion' => 'boolean',
         'otros_impuestos' => 'json',
         'exchange_rate' => 'decimal:5',
         'exchange_rate_date' => 'date',

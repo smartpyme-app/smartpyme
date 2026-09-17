@@ -160,7 +160,7 @@
 <section class="card border-0 p-3 mb-3">
     <h6 class="mt-3">Productos y servicios</h6>
 
-    <app-compra-detalles [compra]="compra" (update)="updatecompra($event)" (sumTotal)="sumTotal()"></app-compra-detalles>
+    <app-compra-detalles [compra]="compra" [contabilidadHabilitada]="contabilidadHabilitada" (update)="updatecompra($event)" (sumTotal)="sumTotal()"></app-compra-detalles>
     <div class="row" *ngIf="!apiService.supervisorLimitadoRestringidoEnCompras()">
         <div class="col-md-12">
             <table class="table table-sm table-borderless table-condensed mb-0">

@@ -286,7 +286,6 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
             });
     }
 
-
     /** Ruta de Libros de IVA según país (SV / CR / HD / general). */
     get libroIvaRoute(): string[] {
         return this.libroIvaPais.rutaInicioLibroIva();

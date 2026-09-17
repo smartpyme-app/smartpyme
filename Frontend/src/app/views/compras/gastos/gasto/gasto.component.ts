@@ -1166,6 +1166,20 @@ export class GastoComponent implements OnInit {
 
       this.alertService.success(titulo, mensaje);
       this.cdr.markForCheck();
+
+      const esActivoFijo = payload.tipo === 'Activo Fijo'
+        || (Array.isArray(payload.detalles) && payload.detalles.some((d: any) => d.tipo === 'Activo Fijo'));
+      if (
+        isNew
+        && esActivoFijo
+        && this.contabilidadHabilitada
+        && this.apiService.canCreateTest('contabilidad.activos.capitalizar')
+        && !gastoGuardado?.id_activo
+      ) {
+        this.router.navigate(['/contabilidad/activo/crear'], { queryParams: { egreso_id: gastoGuardado.id } });
+        return;
+      }
+
       this.router.navigate(['/gastos']);
     } catch (error: any) {
       // Cerrar cualquier modal abierto para que se muestre el error
