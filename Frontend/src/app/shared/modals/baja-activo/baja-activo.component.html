@@ -1,0 +1,67 @@
+<ng-template #mBaja>
+    <div class="modal-header">
+        <h5 class="modal-title">Baja o transferencia</h5>
+        <button type="button" class="btn-close" (click)="closeModal()"></button>
+    </div>
+    <div class="modal-body">
+        <p class="text-muted mb-3">{{ activo.nombre }}</p>
+        <div class="row g-3">
+            <div class="form-group col-md-6">
+                <label>Tipo</label>
+                <select class="form-select" name="baja_tipo" [(ngModel)]="bajaForm.tipo">
+                    <option value="desecho">Desecho</option>
+                    <option value="venta">Venta</option>
+                    <option value="transferencia">Transferencia</option>
+                </select>
+            </div>
+            <div class="form-group col-md-6">
+                <label>Fecha</label>
+                <input type="date" class="form-control" name="baja_fecha" [(ngModel)]="bajaForm.fecha" required>
+            </div>
+            <div class="form-group col-12">
+                <label>Motivo</label>
+                <input type="text" class="form-control" name="baja_motivo" [(ngModel)]="bajaForm.motivo" placeholder="Opcional">
+            </div>
+
+            @if (bajaForm.tipo === 'venta') {
+                <div class="form-group col-12">
+                    <label>Monto de venta</label>
+                    <div class="input-group">
+                        <div class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</div>
+                        <input type="number" class="form-control" name="baja_monto_venta" [(ngModel)]="bajaForm.monto_venta" min="0" step="0.01" required>
+                    </div>
+                </div>
+            }
+
+            @if (bajaForm.tipo === 'transferencia') {
+                <div class="form-group col-12">
+                    <label>Nueva sucursal</label>
+                    <ng-select name="baja_sucursal" placeholder="Sin cambio" [(ngModel)]="bajaForm.id_sucursal" class="form-select p-0" [clearable]="true">
+                        @for (s of sucursales; track s.id) {
+                            <ng-option [value]="s.id">{{ s.nombre }}</ng-option>
+                        }
+                    </ng-select>
+                </div>
+                <div class="form-group col-12">
+                    <label>Nuevo responsable</label>
+                    <ng-select name="baja_responsable" placeholder="Sin cambio" [(ngModel)]="bajaForm.id_responsable" class="form-select p-0" [clearable]="true">
+                        @for (u of usuarios; track u.id) {
+                            <ng-option [value]="u.id">{{ u.name }}</ng-option>
+                        }
+                    </ng-select>
+                </div>
+                <div class="form-group col-12">
+                    <label>Nueva ubicación</label>
+                    <input type="text" class="form-control" name="baja_ubicacion" [(ngModel)]="bajaForm.ubicacion" placeholder="Dejar vacío si no cambia">
+                </div>
+            }
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-light" (click)="closeModal()">Cancelar</button>
+        <button type="button" class="btn btn-default" (click)="registrarBaja()" [disabled]="loading">
+            @if (!loading) { <span>Confirmar</span> }
+            @if (loading) { <span>Procesando...</span> }
+        </button>
+    </div>
+</ng-template>

@@ -1,0 +1,154 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading">Activos fijos</h2>
+    <div class="d-flex gap-2">
+        @if (apiService.canCreateTest('contabilidad.activos.ver')) {
+            <button routerLink="/contabilidad/activos/reportes" class="btn btn-light"><i class="fa fa-file-text-o"></i> Reportes</button>
+        }
+        @if (apiService.canCreateTest('contabilidad.activos.crear')) {
+            <button routerLink="/contabilidad/activo/crear" class="btn btn-default"><i class="fa fa-plus"></i> Añadir activo</button>
+        }
+    </div>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+    <div class="row mb-3">
+        <div class="col">
+            @if (activos?.total) {
+                <span class="text-muted">Mostrando {{ activos?.to }} de {{ activos?.total }} registros</span>
+            }
+        </div>
+        <div class="col">
+            <div class="d-flex gap-2">
+                <form class="d-flex input-group flex-grow-1" (ngSubmit)="filtrarActivos()" autocomplete="off">
+                    <input type="text" name="search" class="form-control" placeholder="Buscar" [(ngModel)]="filtros.buscador">
+                </form>
+                <button tooltip="Filtrar" (click)="openFilter(mfilter)" class="btn btn-default"><img src="/assets/icons/filter.png" class="icon"></button>
+            </div>
+        </div>
+    </div>
+
+    <app-activos-nav-tabs [todosClickable]="true" (todosClick)="loadAll()"></app-activos-nav-tabs>
+
+    <div class="table-responsive">
+        <table class="table table-borderless table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Categoría</th>
+                    <th>Fecha compra</th>
+                    <th class="text-end">Valor compra</th>
+                    <th class="text-end">Valor en libros</th>
+                    <th>Estado</th>
+                    <th class="text-center"></th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (activos?.total < 1 && !loading) {
+                    <tr>
+                        <td colspan="7" class="text-center"><span class="badge bg-primary">No hay activos registrados</span></td>
+                    </tr>
+                }
+                @if (loading) {
+                    <tr>
+                        <td colspan="7" class="text-center"><span class="badge bg-primary">Cargando...</span></td>
+                    </tr>
+                }
+                @for (activo of activos?.data; track activo.id) {
+                    <tr>
+                        <td>{{ activo.nombre }}</td>
+                        <td>{{ activo.categoria?.nombre }}</td>
+                        <td>{{ activo.fecha_compra | date:'dd/MM/yyyy' }}</td>
+                        <td class="text-end">{{ activo.valor_compra | currency }}</td>
+                        <td class="text-end">{{ activo.valor_en_libros | currency }}</td>
+                        <td>
+                            @if (activo.estado_registro === 'baja') {
+                                <span class="badge py-2 bg-danger" style="font-size: 0.8rem;">Baja</span>
+                            } @else {
+                                {{ activo.estado }}
+                            }
+                        </td>
+                        <td class="text-center">
+                            @if (apiService.canEditTest('contabilidad.activos.crear') || apiService.canCreateTest('contabilidad.activos.baja')) {
+                                <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                                    <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                                </span>
+                                <ng-template #accionesTemplate>
+                                    <div class="list-group border-0">
+                                        @if (apiService.canEditTest('contabilidad.activos.crear')) {
+                                            <a [routerLink]="['/contabilidad/activo/editar', activo.id]" class="list-group-item list-group-item-action border-0 click">
+                                                <i class="fa fa-fw fa-pencil"></i> Editar
+                                            </a>
+                                        }
+                                        @if (apiService.canCreateTest('contabilidad.activos.baja') && activo.estado_registro !== 'baja') {
+                                            <a (click)="bajaActivo.open(activo)" class="list-group-item list-group-item-action border-0 click">
+                                                <i class="fa fa-fw fa-exchange"></i> Baja / transferir
+                                            </a>
+                                        }
+                                        @if (apiService.canEditTest('contabilidad.activos.crear')) {
+                                            <a (click)="onDelete(activo)" class="list-group-item list-group-item-action border-0 click text-danger">
+                                                <i class="fa fa-fw fa-trash"></i> Eliminar
+                                            </a>
+                                        }
+                                    </div>
+                                </ng-template>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (activos?.last_page > 1) {
+        <nav class="mt-3">
+            <ul class="pagination mb-0">
+                <li class="page-item" [class.disabled]="activos.current_page <= 1">
+                    <button class="page-link" (click)="filtros.page = activos.current_page - 1; filtrarActivos()">Anterior</button>
+                </li>
+                <li class="page-item disabled"><span class="page-link">{{ activos.current_page }} / {{ activos.last_page }}</span></li>
+                <li class="page-item" [class.disabled]="activos.current_page >= activos.last_page">
+                    <button class="page-link" (click)="filtros.page = activos.current_page + 1; filtrarActivos()">Siguiente</button>
+                </li>
+            </ul>
+        </nav>
+    }
+</section>
+
+<ng-template #mfilter>
+    <div class="modal-header">
+        <h5 class="modal-title">Filtrar activos</h5>
+        <button type="button" class="btn-close" (click)="modalRef.hide()"></button>
+    </div>
+    <div class="modal-body">
+        <div class="mb-3">
+            <label>Categoría</label>
+            <select class="form-select" [(ngModel)]="filtros.id_categoria">
+                <option value="">Todas</option>
+                @for (cat of categorias; track cat.id) {
+                    <option [value]="cat.id">{{ cat.nombre }}</option>
+                }
+            </select>
+        </div>
+        <div class="mb-3">
+            <label>Sucursal</label>
+            <select class="form-select" [(ngModel)]="filtros.id_sucursal">
+                <option value="">Todas</option>
+                @for (s of sucursales; track s.id) {
+                    <option [value]="s.id">{{ s.nombre }}</option>
+                }
+            </select>
+        </div>
+        <div class="mb-3">
+            <label>Estado operativo</label>
+            <select class="form-select" [(ngModel)]="filtros.estado">
+                <option value="">Todos</option>
+                <option value="En uso">En uso</option>
+                <option value="En reparación">En reparación</option>
+                <option value="Desechado">Desechado</option>
+            </select>
+        </div>
+        <button class="btn btn-primary w-100" (click)="filtrarActivos()">Aplicar</button>
+    </div>
+</ng-template>
+
+<app-baja-activo #bajaActivo (update)="onBajaAplicada()"></app-baja-activo>

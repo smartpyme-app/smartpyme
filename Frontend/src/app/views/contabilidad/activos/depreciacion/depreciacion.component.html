@@ -1,0 +1,58 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading">Activos fijos</h2>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+    <app-activos-nav-tabs></app-activos-nav-tabs>
+    <div class="row g-3 align-items-end mb-4">
+        <div class="col-md-4">
+            <label class="form-label">Período</label>
+            <input type="month" class="form-control" [(ngModel)]="periodo" (change)="cargarPreview()">
+        </div>
+        <div class="col-md-4">
+            <button class="btn btn-primary" (click)="cargarPreview()" [disabled]="loading">Actualizar vista previa</button>
+        </div>
+    </div>
+
+    @if (loading) {
+        <p class="text-center"><span class="badge bg-primary">Cargando...</span></p>
+    } @else if (preview?.ya_aplicada) {
+        <div class="alert alert-info">La depreciación de {{ periodo }} ya fue aplicada.</div>
+    } @else if (!preview?.cantidad) {
+        <div class="alert alert-warning">No hay cuotas pendientes para {{ periodo }}.</div>
+    } @else {
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <span class="text-muted">{{ preview.cantidad }} activo(s) — Total: {{ preview.total | currency }}</span>
+            @if (apiService.canCreateTest('contabilidad.activos.depreciar')) {
+                <button class="btn btn-default" (click)="ejecutar()" [disabled]="ejecutando">
+                    <i class="fa fa-play"></i> Ejecutar corrida
+                </button>
+            }
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-borderless table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Activo</th>
+                        <th>Referencia</th>
+                        <th class="text-end">Monto</th>
+                        <th class="text-end">Acumulada</th>
+                        <th class="text-end">Valor en libros</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (linea of preview.lineas; track linea.id) {
+                        <tr>
+                            <td>{{ linea.activo?.nombre }}</td>
+                            <td>{{ linea.activo?.referencia }}</td>
+                            <td class="text-end">{{ linea.monto | currency }}</td>
+                            <td class="text-end">{{ linea.depreciacion_acumulada | currency }}</td>
+                            <td class="text-end">{{ linea.valor_en_libros | currency }}</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>

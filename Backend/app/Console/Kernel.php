@@ -161,6 +161,12 @@ class Kernel extends ConsoleKernel
             ->runInBackground()
             ->appendOutputTo(storage_path('logs/bonos-evaluar.log'));
 
+        $schedule->command('activos:depreciacion-mensual')
+            ->dailyAt('05:00')
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->appendOutputTo(storage_path('logs/activos-depreciacion.log'));
+
         if (config('dte.schedule_enabled')) {
             $schedule->command('dte:migrate-to-s3')
                 ->dailyAt('02:45')

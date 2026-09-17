@@ -25,6 +25,7 @@ export class CompraDetallesComponent extends BaseModalComponent implements OnIni
 
   @Input() compra: any = {};
   @Input() isOrdenCompra: boolean = false;
+  @Input() contabilidadHabilitada = false;
   public detalle: any = {};
   public supervisor: any = {};
 
@@ -53,6 +54,14 @@ export class CompraDetallesComponent extends BaseModalComponent implements OnIni
 
   ngOnInit() {
 
+  }
+
+  colspanDetalles(): number {
+    let cols = this.apiService.isSupervisorLimitado() ? 4 : 6;
+    if (this.contabilidadHabilitada && this.apiService.canCreateTest('contabilidad.activos.capitalizar')) {
+      cols += 1;
+    }
+    return cols;
   }
 
   openModalEdit(template: TemplateRef<any>, detalle: any) {

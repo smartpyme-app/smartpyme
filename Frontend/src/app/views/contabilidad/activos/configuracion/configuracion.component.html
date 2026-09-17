@@ -1,0 +1,40 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading mb-0">Activos fijos</h2>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+    <app-activos-nav-tabs></app-activos-nav-tabs>
+    @if (loading) {
+        <p class="text-center"><span class="badge bg-primary">Cargando...</span></p>
+    } @else {
+        <form autocomplete="off" (ngSubmit)="onSubmit()">
+            <p class="text-muted mb-4">Parámetros de depreciación y redondeo para la empresa.</p>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Frecuencia de depreciación</label>
+                    <select class="form-select" [(ngModel)]="config.frecuencia" name="frecuencia" disabled>
+                        <option value="mensual">Mensual</option>
+                    </select>
+                    <small class="text-muted">En v1 solo está disponible la corrida mensual.</small>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Día de corte</label>
+                    <input type="number" class="form-control" [(ngModel)]="config.dia_corte" name="dia_corte" min="1" max="28" required>
+                    <small class="text-muted">Día del mes sugerido para ejecutar la corrida (1–28).</small>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Decimales de redondeo</label>
+                    <input type="number" class="form-control" [(ngModel)]="config.redondeo_decimales" name="redondeo_decimales" min="0" max="4" required>
+                    <small class="text-muted">Aplica a cuotas y montos de depreciación.</small>
+                </div>
+            </div>
+            @if (apiService.canCreateTest('contabilidad.activos.configuracion')) {
+                <div class="text-end mt-4">
+                    <button type="submit" class="btn btn-primary" [disabled]="saving">
+                        @if (saving) { Guardando... } @else { Guardar configuración }
+                    </button>
+                </div>
+            }
+        </form>
+    }
+</section>

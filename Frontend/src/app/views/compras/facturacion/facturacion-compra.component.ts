@@ -862,6 +862,30 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
             this.apiService.store('compra/facturacion', payload).subscribe(compra => {
                 this.saving = false;
 
+                const pendientesAf = (compra?.detalles || []).filter(
+                    (d: any) => d.es_activo_fijo && !d.id_activo && d.pendiente_capitalizacion
+                );
+                const puedeCapitalizar = this.compra.cotizacion != 1
+                    && this.contabilidadHabilitada
+                    && this.apiService.canCreateTest('contabilidad.activos.capitalizar')
+                    && pendientesAf.length > 0;
+
+                if (puedeCapitalizar && pendientesAf.length === 1) {
+                    this.alertService.success('Compra creada', 'Capitalice el activo fijo de esta compra.');
+                    this.router.navigate(['/contabilidad/activo/crear'], {
+                        queryParams: { compra_detalle_id: pendientesAf[0].id, compra_id: compra.id },
+                    });
+                    this.cdr.markForCheck();
+                    return;
+                }
+
+                if (puedeCapitalizar && pendientesAf.length > 1) {
+                    this.alertService.success('Compra creada', `Capitalice ${pendientesAf.length} líneas marcadas como activo fijo.`);
+                    this.router.navigate(['/contabilidad/activos/capitalizar-compra', compra.id]);
+                    this.cdr.markForCheck();
+                    return;
+                }
+
                 if(this.compra.cotizacion == 1){
                     this.router.navigate(['/ordenes-de-compras']);
                     this.alertService.success('Orden de compra creada', 'La orden de compra fue añadida exitosamente.');

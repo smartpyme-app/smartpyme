@@ -308,8 +308,28 @@ class GastosController extends Controller
                 $this->gastoService->procesarPagos($gasto->fresh(), true);
             }
 
-            return response()->json($gasto->load(['detalles', 'categoria']), 200);
+            $gasto = $gasto->fresh(['detalles', 'categoria']);
+            $this->marcarPendienteCapitalizacionSiAplica($gasto);
+
+            return response()->json($gasto, 200);
         });
+    }
+
+    private function marcarPendienteCapitalizacionSiAplica(Gasto $gasto): void
+    {
+        if ($gasto->id_activo || in_array($gasto->estado, ['Anulada', 'Anulado', 'Cancelado'], true)) {
+            return;
+        }
+
+        $esActivoFijo = $gasto->tipo === 'Activo Fijo'
+            || $gasto->detalles()->where('tipo', 'Activo Fijo')->exists();
+
+        if (! $esActivoFijo) {
+            return;
+        }
+
+        $gasto->pendiente_capitalizacion = true;
+        $gasto->save();
     }
 
     private function guardarConDetalles(Gasto $gasto, array $detalles, ?string $tipoCabecera = null, ?Request $request = null): void
