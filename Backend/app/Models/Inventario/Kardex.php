@@ -76,16 +76,14 @@ class Kardex extends Model {
                 $info = 'Devolución';
             }
         }
-        if (strpos($this->detalle , 'Traslado') !== false || strpos($this->detalle , 'traslado') !== false) {
+        if ((strpos($this->detalle, 'Traslado') !== false || strpos($this->detalle, 'traslado') !== false) && stripos($this->detalle, 'ajuste') === false) {
             $detalle = \App\Models\Inventario\Traslado::find($this->referencia);
             $info = 'Traslado';
-        }
-        if (strpos($this->detalle , 'Ajuste') !== false || strpos($this->detalle , 'ajuste') !== false) {
+        } elseif (strpos($this->detalle, 'Shopify') !== false || strpos($this->detalle, 'shopify') !== false || $this->detalle == 'Actualización de producto') {
+            $info = $this->detalle;
+        } elseif (strpos($this->detalle , 'Ajuste') !== false || strpos($this->detalle , 'ajuste') !== false) {
             $detalle = \App\Models\Inventario\Ajuste::find($this->referencia);
             $info = 'Ajuste';
-        }
-        if ($this->detalle == 'Actualización de producto' || $this->detalle == 'Actualización de producto desde Shopify') {
-            $info = $this->detalle;
         }
         if ($this->detalle == 'Otra Entrada' || $this->detalle == 'Otra Entrada Anulada') {
             $info = 'Entrada #' . $this->referencia;
@@ -110,13 +108,13 @@ class Kardex extends Model {
         if ($this->detalle == 'Compra' || $this->detalle == 'Compra a consigna' || $this->detalle == 'Compra Anulada') {
             return 'compra';
         }
-        if (strpos($this->detalle , 'Traslado') !== false || strpos($this->detalle , 'traslado') !== false) {
+        if ((strpos($this->detalle, 'Traslado') !== false || strpos($this->detalle, 'traslado') !== false) && stripos($this->detalle, 'ajuste') === false) {
             return 'traslado';
         }
         if (strpos($this->detalle , 'Ajuste') !== false || strpos($this->detalle , 'ajuste') !== false) {
             return 'ajuste';
         }
-        if ($this->detalle == 'Actualización de producto' || $this->detalle == 'Actualización de producto desde Shopify') {
+        if (strpos($this->detalle, 'Shopify') !== false || $this->detalle == 'Actualización de producto') {
             return 'producto';
         }
         if ($this->detalle == 'Otra Entrada' || $this->detalle == 'Otra Entrada Anulada') {

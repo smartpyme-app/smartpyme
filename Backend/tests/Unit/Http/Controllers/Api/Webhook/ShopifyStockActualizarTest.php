@@ -102,4 +102,78 @@ class ShopifyStockActualizarTest extends TestCase
         $this->assertSame('ignored', $data['status']);
         $this->assertSame('Missing inventory_item_id', $data['message']);
     }
+
+    public function test_procesar_traslado_retorna_ignorado_si_falta_transfer_id(): void
+    {
+        $reflector = new ReflectionClass(ShopifyController::class);
+        $method = $reflector->getMethod('procesarTrasladoInventarioShopify');
+        $method->setAccessible(true);
+
+        $empresa = new \App\Models\Admin\Empresa();
+        $usuario = new \App\Models\User();
+        $request = new Request([]);
+
+        $response = $method->invoke($this->controller, $request, $empresa, $usuario);
+        $data = $response->getData(true);
+
+        $this->assertSame('ignored', $data['status']);
+        $this->assertSame('Missing or invalid transfer id', $data['message']);
+    }
+
+    public function test_procesar_traslado_retorna_ignorado_si_faltan_ubicaciones(): void
+    {
+        $reflector = new ReflectionClass(ShopifyController::class);
+        $method = $reflector->getMethod('procesarTrasladoInventarioShopify');
+        $method->setAccessible(true);
+
+        $empresa = new \App\Models\Admin\Empresa();
+        $usuario = new \App\Models\User();
+        $request = new Request(['id' => '123456789']);
+
+        $response = $method->invoke($this->controller, $request, $empresa, $usuario);
+        $data = $response->getData(true);
+
+        $this->assertSame('ignored', $data['status']);
+        $this->assertSame('Missing origin or destination location', $data['message']);
+    }
+
+    public function test_procesar_traslado_sin_destino_valida_mapeo_origen(): void
+    {
+        $reflector = new ReflectionClass(ShopifyController::class);
+        $method = $reflector->getMethod('procesarTrasladoInventarioShopify');
+        $method->setAccessible(true);
+
+        $empresa = new \App\Models\Admin\Empresa();
+        $usuario = new \App\Models\User();
+        $request = new Request([
+            'id' => '123456789',
+            'origin' => ['id' => 'gid://shopify/Location/999999'],
+        ]);
+
+        $response = $method->invoke($this->controller, $request, $empresa, $usuario);
+        $data = $response->getData(true);
+
+        $this->assertSame('ignored', $data['status']);
+        $this->assertSame('Ubicaciones no mapeadas a bodegas en SmartPyme', $data['message']);
+    }
+
+    public function test_procesar_traslado_sin_origen_valida_mapeo_destino(): void
+    {
+        $reflector = new ReflectionClass(ShopifyController::class);
+        $method = $reflector->getMethod('procesarTrasladoInventarioShopify');
+        $method->setAccessible(true);
+
+        $empresa = new \App\Models\Admin\Empresa();
+        $usuario = new \App\Models\User();
+        $request = new Request([
+            'id' => '123456789',
+            'destination' => ['id' => 'gid://shopify/Location/888888'],
+        ]);
+
+        $response = $method->invoke($this->controller, $request, $empresa, $usuario);
+        $data = $response->getData(true);
+
+        $this->assertSame('ignored', $data['status']);
+        $this->assertSame('Ubicaciones no mapeadas a bodegas en SmartPyme', $data['message']);
+    }
 }

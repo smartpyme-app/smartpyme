@@ -21,7 +21,9 @@ use App\Services\ShippingService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use App\Models\Inventario\Kardex;
 use App\Services\ShopifySyncCache;
 use App\Services\FidelizacionCliente\ConsumoPuntosService;
 
@@ -164,6 +166,19 @@ class ShopifyController extends Controller
                         'updated_at' => $request->input('updated_at'),
                     ]);
                     return $this->procesarInventarioActualizadoShopify($request, $empresa, $usuario);
+
+                case 'inventory_transfers/complete':
+                case 'inventory_transfers/updated':
+                case 'transfers/complete':
+                case 'transfers/update':
+                    ShopifyHelper::log(">> ENRUTANDO A traslado de inventario ({$webhookTopic})", [
+                        'topic' => $webhookTopic,
+                        'transfer_id' => $request->input('id'),
+                        'origin' => $request->input('origin'),
+                        'destination' => $request->input('destination'),
+                        'line_items_count' => count($request->input('line_items', [])),
+                    ]);
+                    return $this->procesarTrasladoInventarioShopify($request, $empresa, $usuario, $webhookTopic);
 
                 default:
                     ShopifyHelper::log("Tipo de webhook no manejado: {$webhookTopic}", [], 'warning');
@@ -424,7 +439,7 @@ class ShopifyController extends Controller
             $available,
             $bodegaId,
             $usuario->id,
-            ['origen' => 'shopify', 'stock_anterior' => $stockAnterior, 'location_id' => $locationId]
+            ['origen' => 'shopify', 'tipo' => 'ajuste_inventario', 'stock_anterior' => $stockAnterior, 'location_id' => $locationId]
         );
 
         if ($inventario) {
@@ -440,6 +455,453 @@ class ShopifyController extends Controller
         ]);
 
         return response()->json(['status' => 'success', 'message' => 'Inventario actualizado'], 200);
+    }
+
+    /**
+     * Procesa los webhooks de traslados de inventario de Shopify (inventory_transfers/complete, inventory_transfers/updated).
+     * Crea el registro formal en la tabla traslados y asienta las salidas/entradas correspondientes en kardex.
+     */
+    private function procesarTrasladoInventarioShopify(Request $request, $empresa, $usuario, $webhookTopic = 'inventory_transfers/complete')
+    {
+        $rawTransferId = $request->input('id');
+        $transferId = preg_replace('/[^0-9]/', '', (string)$rawTransferId);
+
+        if (empty($transferId)) {
+            ShopifyHelper::log("inventory_transfers: [IGNORADO] Sin id de traslado válido", [], 'warning');
+            return response()->json(['status' => 'ignored', 'message' => 'Missing or invalid transfer id'], 200);
+        }
+
+        // 2. Extraer datos del payload
+        $originRaw = $request->input('origin.id') ?? $request->input('origin_location_id');
+        $destRaw = $request->input('destination.id') ?? $request->input('destination_location_id');
+        $lineItems = $request->input('line_items', []);
+        $transferName = "#{$transferId}";
+
+        // Si faltan line_items o ubicaciones en el payload (habitual en webhooks de transferencias de Shopify),
+        // consultar la API GraphQL para obtener el detalle completo del traslado.
+        if ((empty($lineItems) || empty($originRaw) || empty($destRaw)) && !empty($empresa->shopify_store_url)) {
+            $transferData = $this->obtenerDetallesTrasladoShopify($empresa, $transferId);
+            if ($transferData) {
+                $status = strtoupper($transferData['status'] ?? '');
+                // Para eventos de actualización, solo procesar cuando la transferencia esté efectivamente realizada/completada
+                if (!in_array($status, ['TRANSFERRED', 'COMPLETED'])) {
+                    ShopifyHelper::log("inventory_transfers: [OMITIDO] Traslado {$transferId} en estado '{$status}', solo se procesa al completarse/transferirse", [
+                        'status' => $status,
+                        'transfer_id' => $transferId,
+                    ]);
+                    return response()->json(['status' => 'ignored', 'message' => "Transfer in status {$status}"], 200);
+                }
+
+                $transferName = $transferData['name'] ?? $transferName;
+                if (empty($originRaw)) {
+                    $originRaw = $transferData['origin']['location']['id'] ?? null;
+                }
+                if (empty($destRaw)) {
+                    $destRaw = $transferData['destination']['location']['id'] ?? null;
+                }
+
+                if (empty($lineItems) && !empty($transferData['lineItems']['edges'])) {
+                    foreach ($transferData['lineItems']['edges'] as $edge) {
+                        $node = $edge['node'] ?? [];
+                        $qty = (float) ($node['totalQuantity'] ?? $node['shippedQuantity'] ?? 0);
+                        $invItemId = !empty($node['inventoryItem']['id']) ? preg_replace('/[^0-9]/', '', (string)$node['inventoryItem']['id']) : null;
+                        if ($qty > 0 && $invItemId) {
+                            $lineItems[] = [
+                                'inventory_item_id' => $invItemId,
+                                'quantity' => $qty,
+                                'title' => $node['title'] ?? '',
+                            ];
+                        }
+                    }
+                }
+            }
+        }
+
+        $originLocationId = !empty($originRaw) ? preg_replace('/[^0-9]/', '', (string)$originRaw) : null;
+        $destLocationId = !empty($destRaw) ? preg_replace('/[^0-9]/', '', (string)$destRaw) : null;
+
+        if (empty($originLocationId) && empty($destLocationId)) {
+            ShopifyHelper::log("inventory_transfers: [IGNORADO] Faltan ubicaciones de origen o destino en el payload", [
+                'origin' => $originRaw,
+                'destination' => $destRaw,
+                'transfer_id' => $transferId,
+            ], 'warning');
+            return response()->json(['status' => 'ignored', 'message' => 'Missing origin or destination location'], 200);
+        }
+
+        // 3. Idempotencia: Verificar si ya existe este traslado o ajuste registrado en SmartPyme
+        $conceptoReferencia = "SHOPIFY-TRANSFER-{$transferId}";
+        if (!empty($empresa->id)) {
+            $yaExisteTraslado = \App\Models\Inventario\Traslado::withoutGlobalScope('empresa')
+                ->where('id_empresa', $empresa->id)
+                ->where('concepto', 'like', "%{$conceptoReferencia}%")
+                ->exists();
+
+            $yaExisteKardex = Kardex::where('referencia', $conceptoReferencia)
+                ->orWhere('detalle', 'like', "%(Transferencia {$transferName})%")
+                ->exists();
+
+            if ($yaExisteTraslado || $yaExisteKardex) {
+                ShopifyHelper::log("inventory_transfers: [OMITIDO] Traslado {$transferId} ya procesado anteriormente en SmartPyme", [
+                    'transfer_id' => $transferId,
+                    'empresa_id' => $empresa->id,
+                ]);
+                return response()->json(['status' => 'ignored', 'message' => 'Traslado ya procesado previamente'], 200);
+            }
+        }
+
+        // 4. Mapear ubicaciones de Shopify a bodegas en SmartPyme
+        $originMapping = !empty($originLocationId)
+            ? \App\Models\Admin\ShopifyLocation::withoutGlobalScope('empresa')
+                ->where('id_empresa', $empresa->id)
+                ->where('shopify_location_id', $originLocationId)
+                ->first()
+            : null;
+
+        $destMapping = !empty($destLocationId)
+            ? \App\Models\Admin\ShopifyLocation::withoutGlobalScope('empresa')
+                ->where('id_empresa', $empresa->id)
+                ->where('shopify_location_id', $destLocationId)
+                ->first()
+            : null;
+
+        $bodegaOrigenId = $originMapping ? $originMapping->id_bodega : null;
+        $bodegaDestinoId = $destMapping ? $destMapping->id_bodega : null;
+
+        if (!empty($originLocationId) && !empty($destLocationId)) {
+            if (!$bodegaOrigenId || !$bodegaDestinoId) {
+                ShopifyHelper::log("inventory_transfers: [IGNORADO] Una o ambas ubicaciones de Shopify no están mapeadas a bodegas en SmartPyme", [
+                    'origin_location_id' => $originLocationId,
+                    'bodega_origen_id' => $bodegaOrigenId,
+                    'dest_location_id' => $destLocationId,
+                    'bodega_destino_id' => $bodegaDestinoId,
+                    'transfer_id' => $transferId,
+                ], 'warning');
+                return response()->json(['status' => 'ignored', 'message' => 'Ubicaciones no mapeadas a bodegas en SmartPyme'], 200);
+            }
+
+            if ($bodegaOrigenId === $bodegaDestinoId) {
+                ShopifyHelper::log("inventory_transfers: [OMITIDO] Bodega de origen y destino son iguales en SmartPyme ({$bodegaOrigenId})", [
+                    'transfer_id' => $transferId,
+                ]);
+                return response()->json(['status' => 'ignored', 'message' => 'Misma bodega de origen y destino'], 200);
+            }
+        } elseif (!empty($originLocationId) && empty($destLocationId)) {
+            if (!$bodegaOrigenId) {
+                ShopifyHelper::log("inventory_transfers: [IGNORADO] Ubicación de origen de Shopify no está mapeada a bodega en SmartPyme", [
+                    'origin_location_id' => $originLocationId,
+                    'transfer_id' => $transferId,
+                ], 'warning');
+                return response()->json(['status' => 'ignored', 'message' => 'Ubicaciones no mapeadas a bodegas en SmartPyme'], 200);
+            }
+        } elseif (empty($originLocationId) && !empty($destLocationId)) {
+            if (!$bodegaDestinoId) {
+                ShopifyHelper::log("inventory_transfers: [IGNORADO] Ubicación de destino de Shopify no está mapeada a bodega en SmartPyme", [
+                    'dest_location_id' => $destLocationId,
+                    'transfer_id' => $transferId,
+                ], 'warning');
+                return response()->json(['status' => 'ignored', 'message' => 'Ubicaciones no mapeadas a bodegas en SmartPyme'], 200);
+            }
+        }
+
+        if (empty($lineItems)) {
+            ShopifyHelper::log("inventory_transfers: [IGNORADO] Sin line_items en el traslado", ['transfer_id' => $transferId], 'warning');
+            return response()->json(['status' => 'ignored', 'message' => 'No line items in transfer'], 200);
+        }
+
+        // 4. Procesar los line_items transferidos
+        $trasladosCreados = 0;
+        \Illuminate\Support\Facades\DB::beginTransaction();
+
+        try {
+            foreach ($lineItems as $item) {
+                $qty = (float) ($item['quantity'] ?? 0);
+                if ($qty <= 0) {
+                    continue;
+                }
+
+                // Resolver producto en SmartPyme
+                $itemInvId = !empty($item['inventory_item_id']) ? preg_replace('/[^0-9]/', '', (string)$item['inventory_item_id']) : null;
+                $itemVariantId = !empty($item['variant_id']) ? preg_replace('/[^0-9]/', '', (string)$item['variant_id']) : null;
+                $itemProdId = !empty($item['product_id']) ? preg_replace('/[^0-9]/', '', (string)$item['product_id']) : null;
+
+                $producto = null;
+                if ($itemInvId) {
+                    $producto = Producto::withoutGlobalScope('empresa')
+                        ->where('id_empresa', $empresa->id)
+                        ->where('shopify_inventory_item_id', $itemInvId)
+                        ->first();
+                }
+
+                if (!$producto && $itemVariantId) {
+                    $producto = Producto::withoutGlobalScope('empresa')
+                        ->where('id_empresa', $empresa->id)
+                        ->where('shopify_variant_id', $itemVariantId)
+                        ->first();
+                }
+
+                if (!$producto && $itemProdId) {
+                    $producto = Producto::withoutGlobalScope('empresa')
+                        ->where('id_empresa', $empresa->id)
+                        ->where('shopify_product_id', $itemProdId)
+                        ->first();
+                }
+
+                if (!$producto) {
+                    ShopifyHelper::log("inventory_transfers: Producto no vinculado para line_item", [
+                        'inventory_item_id' => $itemInvId,
+                        'variant_id' => $itemVariantId,
+                        'product_id' => $itemProdId,
+                    ], 'warning');
+                    continue;
+                }
+
+                // Evitar ciclos en el observer al actualizar inventario desde Shopify
+                $producto->syncing_from_shopify = true;
+
+                if ($bodegaOrigenId && $bodegaDestinoId) {
+                    // --- CASO 1: Traslado formal entre 2 bodegas ---
+                    $invOrigen = Inventario::firstOrCreate(
+                        ['id_producto' => $producto->id, 'id_bodega' => $bodegaOrigenId],
+                        ['stock' => 0, 'stock_minimo' => 0, 'stock_maximo' => 0]
+                    );
+
+                    $invDestino = Inventario::firstOrCreate(
+                        ['id_producto' => $producto->id, 'id_bodega' => $bodegaDestinoId],
+                        ['stock' => 0, 'stock_minimo' => 0, 'stock_maximo' => 0]
+                    );
+
+                    // Si un webhook inventory_levels/update previo ya había creado un "Ajuste de inventario desde Shopify"
+                    // espurio debido a la condición de carrera antes de que procesáramos el traslado,
+                    // revertimos ese ajuste para que el Kardex y stock queden asentados formalmente como traslado.
+                    $ajusteReciente = Kardex::where('id_producto', $producto->id)
+                        ->where('id_inventario', $bodegaDestinoId)
+                        ->where('detalle', 'Ajuste de inventario desde Shopify')
+                        ->where('created_at', '>=', now()->subMinutes(15))
+                        ->orderBy('id', 'desc')
+                        ->first();
+
+                    if ($ajusteReciente && (float)$ajusteReciente->entrada_cantidad === (float)$qty) {
+                        ShopifyHelper::log("inventory_transfers: Reemplazando ajuste espurio previo por traslado formal", [
+                            'kardex_id' => $ajusteReciente->id,
+                            'producto_id' => $producto->id,
+                            'bodega_destino_id' => $bodegaDestinoId,
+                        ]);
+                        $invDestino->stock -= $qty;
+                        $ajusteReciente->delete();
+                    }
+
+                    // Crear el registro formal de Traslado en SmartPyme
+                    $traslado = \App\Models\Inventario\Traslado::create([
+                        'id_producto' => $producto->id,
+                        'id_bodega_de' => $bodegaOrigenId,
+                        'id_bodega' => $bodegaDestinoId,
+                        'cantidad' => $qty,
+                        'costo' => $producto->costo ?? 0,
+                        'id_empresa' => $empresa->id,
+                        'id_usuario' => $usuario->id,
+                        'concepto' => "Traslado {$transferName} de Shopify #{$conceptoReferencia}",
+                        'estado' => 'Confirmado',
+                    ]);
+
+                    // 1. Salida en origen
+                    $invOrigen->stock -= $qty;
+                    $invOrigen->save();
+                    $invOrigen->kardex($traslado, $qty * -1, $producto->precio, $producto->costo, null, ['origen' => 'shopify']);
+
+                    // 2. Entrada en destino
+                    $invDestino->stock += $qty;
+                    $invDestino->save();
+                    $invDestino->kardex($traslado, $qty, $producto->precio, $producto->costo, null, ['origen' => 'shopify']);
+
+                    // Actualizar snapshots de caché
+                    $this->cache->saveInventorySnapshot($invOrigen->fresh(), $producto->id);
+                    $this->cache->saveInventorySnapshot($invDestino->fresh(), $producto->id);
+
+                    ShopifyHelper::log("inventory_transfers: Traslado procesado exitosamente", [
+                        'traslado_id' => $traslado->id,
+                        'producto_id' => $producto->id,
+                        'cantidad' => $qty,
+                        'bodega_origen_id' => $bodegaOrigenId,
+                        'bodega_destino_id' => $bodegaDestinoId,
+                        'stock_origen_nuevo' => $invOrigen->stock,
+                        'stock_destino_nuevo' => $invDestino->stock,
+                    ]);
+
+                } elseif ($bodegaOrigenId && !$bodegaDestinoId) {
+                    // --- CASO 2: Transferencia de salida sin destino -> Ajuste de salida de inventario ---
+                    $invOrigen = Inventario::firstOrCreate(
+                        ['id_producto' => $producto->id, 'id_bodega' => $bodegaOrigenId],
+                        ['stock' => 0, 'stock_minimo' => 0, 'stock_maximo' => 0]
+                    );
+
+                    $invOrigen->stock -= $qty;
+                    $invOrigen->save();
+                    $invOrigen->kardex($producto, -$qty, $producto->precio, $producto->costo, null, [
+                        'origen' => 'shopify',
+                        'detalle_personalizado' => "Ajuste de salida desde shopify (Transferencia {$transferName})",
+                        'referencia' => $conceptoReferencia,
+                        'id_usuario' => $usuario->id,
+                    ]);
+
+                    $this->cache->saveInventorySnapshot($invOrigen->fresh(), $producto->id);
+
+                    ShopifyHelper::log("inventory_transfers: Ajuste de salida procesado exitosamente (sin destino)", [
+                        'producto_id' => $producto->id,
+                        'cantidad' => $qty,
+                        'bodega_origen_id' => $bodegaOrigenId,
+                        'stock_origen_nuevo' => $invOrigen->stock,
+                        'transfer_id' => $transferId,
+                    ]);
+
+                } elseif (!$bodegaOrigenId && $bodegaDestinoId) {
+                    // --- CASO 3: Transferencia de entrada sin origen -> Ajuste de entrada de inventario ---
+                    $invDestino = Inventario::firstOrCreate(
+                        ['id_producto' => $producto->id, 'id_bodega' => $bodegaDestinoId],
+                        ['stock' => 0, 'stock_minimo' => 0, 'stock_maximo' => 0]
+                    );
+
+                    $invDestino->stock += $qty;
+                    $invDestino->save();
+                    $invDestino->kardex($producto, $qty, $producto->precio, $producto->costo, null, [
+                        'origen' => 'shopify',
+                        'detalle_personalizado' => "Ajuste de entrada desde shopify (Transferencia {$transferName})",
+                        'referencia' => $conceptoReferencia,
+                        'id_usuario' => $usuario->id,
+                    ]);
+
+                    $this->cache->saveInventorySnapshot($invDestino->fresh(), $producto->id);
+
+                    ShopifyHelper::log("inventory_transfers: Ajuste de entrada procesado exitosamente (sin origen)", [
+                        'producto_id' => $producto->id,
+                        'cantidad' => $qty,
+                        'bodega_destino_id' => $bodegaDestinoId,
+                        'stock_destino_nuevo' => $invDestino->stock,
+                        'transfer_id' => $transferId,
+                    ]);
+                }
+
+                $trasladosCreados++;
+            }
+
+            \Illuminate\Support\Facades\DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => "Traslado procesado exitosamente. {$trasladosCreados} productos trasladados.",
+                'transfer_id' => $transferId,
+            ], 200);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            ShopifyHelper::log("inventory_transfers: Error procesando traslado: " . $e->getMessage(), [
+                'transfer_id' => $transferId,
+                'error' => $e->getMessage(),
+            ], 'error');
+            return response()->json([
+                'status' => 'error',
+                'mensaje' => 'Error al procesar traslado de Shopify',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Consulta los detalles completos de un InventoryTransfer mediante la API GraphQL de Shopify.
+     * Requerido porque los webhooks de transferencias en Shopify son ligeros y no incluyen los line_items.
+     */
+    private function obtenerDetallesTrasladoShopify($empresa, $transferId)
+    {
+        if (empty($empresa->shopify_store_url)) {
+            return null;
+        }
+
+        $tokenService = app(\App\Services\ShopifyTokenService::class);
+        $token = $tokenService->getAccessToken($empresa);
+
+        if (!$token) {
+            ShopifyHelper::log("No se pudo obtener token de acceso para consultar traslado", [
+                'empresa_id' => $empresa->id,
+                'transfer_id' => $transferId,
+            ], 'error');
+            return null;
+        }
+
+        $endpoint = rtrim($empresa->shopify_store_url, '/') . '/admin/api/2024-01/graphql.json';
+        $numericId = preg_replace('/[^0-9]/', '', (string)$transferId);
+        $gid = "gid://shopify/InventoryTransfer/{$numericId}";
+
+        $query = 'query getTransfer($id: ID!) {
+          node(id: $id) {
+            ... on InventoryTransfer {
+              id
+              name
+              status
+              origin {
+                name
+                location {
+                  id
+                  name
+                }
+              }
+              destination {
+                name
+                location {
+                  id
+                  name
+                }
+              }
+              lineItems(first: 50) {
+                edges {
+                  node {
+                    id
+                    title
+                    totalQuantity
+                    shippedQuantity
+                    inventoryItem {
+                      id
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }';
+
+        try {
+            $response = Http::withHeaders([
+                'X-Shopify-Access-Token' => $token,
+                'Content-Type' => 'application/json',
+            ])->timeout(15)->post($endpoint, [
+                'query' => $query,
+                'variables' => ['id' => $gid]
+            ]);
+
+            if (!$response->successful()) {
+                ShopifyHelper::log("Error HTTP al consultar traslado en GraphQL", [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                    'transfer_id' => $transferId,
+                ], 'error');
+                return null;
+            }
+
+            $node = $response->json('data.node');
+            if (!$node) {
+                ShopifyHelper::log("Traslado no encontrado en Shopify GraphQL", [
+                    'transfer_id' => $transferId,
+                    'response' => $response->json(),
+                ], 'warning');
+                return null;
+            }
+
+            return $node;
+        } catch (\Exception $e) {
+            ShopifyHelper::log("Excepción al consultar traslado en Shopify GraphQL: " . $e->getMessage(), [
+                'transfer_id' => $transferId,
+                'error' => $e->getMessage(),
+            ], 'error');
+            return null;
+        }
     }
 
     private function actualizarProductoExistente($producto, $productoData, $usuario)
@@ -490,7 +952,7 @@ class ShopifyController extends Controller
         
         $producto = Producto::create($productoData);
         
-        $this->actualizarInventario($producto->id, $stock, $usuario->id_bodega, $idUsuario);
+        $this->actualizarInventario($producto->id, $stock, $usuario->id_bodega, $idUsuario, ['origen' => 'shopify', 'tipo' => 'inventario_inicial']);
         $this->procesarImagenes($request, $producto->id, $variantImageId);
 
         $inventario = \App\Models\Inventario\Inventario::where('id_producto', $producto->id)

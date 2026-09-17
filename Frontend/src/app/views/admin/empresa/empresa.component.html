@@ -1480,7 +1480,15 @@
                                     </button>
                                 </div>
                                 <small class="text-muted d-block mt-2">
-                                    Configure esta URL en su tienda Shopify para sincronizar datos automáticamente
+                                    Configure esta URL en los webhooks de su tienda Shopify. Eventos recomendados:
+                                    <span class="badge bg-light text-dark border me-1">orders/create</span>
+                                    <span class="badge bg-light text-dark border me-1">orders/updated</span>
+                                    <span class="badge bg-light text-dark border me-1">orders/cancelled</span>
+                                    <span class="badge bg-light text-dark border me-1">inventory_levels/update</span>
+                                    <span class="badge bg-light text-primary border me-1" tooltip="Requerido para sincronizar traslados entre sucursales">inventory_transfers/complete</span>
+                                    <span class="badge bg-light text-primary border me-1" tooltip="Requerido para sincronizar traslados entre sucursales cuando se actualiza el envío">inventory_transfers/updated</span>
+                                    <span class="badge bg-light text-dark border me-1">products/create</span>
+                                    <span class="badge bg-light text-dark border">products/update</span>
                                 </small>
                             </div>
 
