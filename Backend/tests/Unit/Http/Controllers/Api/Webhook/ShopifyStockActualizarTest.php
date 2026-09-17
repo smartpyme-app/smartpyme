@@ -22,6 +22,19 @@ class ShopifyStockActualizarTest extends TestCase
     {
         parent::setUp();
 
+        config([
+            'database.default' => 'sqlite',
+            'database.connections.sqlite.database' => ':memory:',
+        ]);
+
+        \Illuminate\Support\Facades\Schema::create('shopify_locations', function ($table) {
+            $table->id();
+            $table->unsignedBigInteger('id_empresa')->nullable();
+            $table->unsignedBigInteger('shopify_location_id')->nullable();
+            $table->unsignedBigInteger('id_sucursal')->nullable();
+            $table->timestamps();
+        });
+
         $impuestosService = $this->createMock(ImpuestosService::class);
         $this->transformer = new ShopifyTransformer($impuestosService);
         $cache = $this->createMock(ShopifySyncCache::class);
