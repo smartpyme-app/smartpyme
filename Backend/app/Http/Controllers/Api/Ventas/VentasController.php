@@ -687,6 +687,17 @@ class VentasController extends Controller
             // El frontend ya envía el total sin propina, así que no necesitamos ajustarlo
             $venta->fill($request->all());
 
+            // Si la factura proviene de una cotización y no traía referencia_shopify, heredarla
+            if (empty($venta->referencia_shopify) && !empty($venta->num_cotizacion)) {
+                $cotizacionOrigen = Venta::withoutGlobalScopes()->find($venta->num_cotizacion);
+                if ($cotizacionOrigen && !empty($cotizacionOrigen->referencia_shopify)) {
+                    $venta->referencia_shopify = $cotizacionOrigen->referencia_shopify;
+                    if (empty($venta->num_orden)) {
+                        $venta->num_orden = $cotizacionOrigen->num_orden;
+                    }
+                }
+            }
+
             $documento = Documento::where('id', $request->id_documento)
                 ->lockForUpdate()
                 ->firstOrFail();

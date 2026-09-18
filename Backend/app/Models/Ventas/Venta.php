@@ -131,11 +131,12 @@ class Venta extends Model {
     {
         parent::boot();
 
-        if (Auth::check()) {
-            static::addGlobalScope('empresa', function (Builder $builder) {
-                $builder->where('id_empresa', Auth::user()->id_empresa);
-            });
-        }
+        static::addGlobalScope('empresa', function (Builder $builder) {
+            $user = Auth::guard('api')->user() ?? Auth::user();
+            if ($user && isset($user->id_empresa)) {
+                $builder->where('ventas.id_empresa', $user->id_empresa);
+            }
+        });
     }
 
     public function getNombreClienteAttribute()

@@ -1442,7 +1442,7 @@
                     <div class="nav flex-column nav-pills shopify-nav-pills gap-1" role="tablist" aria-orientation="vertical">
                         <button type="button" class="nav-link text-start py-2 px-3"
                             [ngClass]="{'active': tabShopifyActiva === 'credenciales'}"
-                            (click)="tabShopifyActiva = 'credenciales'" role="tab">
+                            (click)="tabShopifyActiva = 'credenciales'; mostrarWebhooksShopify = false" role="tab">
                             <i class="fa fa-key me-2"></i>Credenciales
                         </button>
                         <button type="button" class="nav-link text-start py-2 px-3"
@@ -1475,29 +1475,6 @@
                     <div *ngIf="tabShopifyActiva === 'credenciales'">
                         <div class="row g-3">
 
-                            <div class="col-12">
-                                <label for="url_webhook_shopify" class="form-label">URL Webhook para Shopify:</label>
-                                <div class="input-group">
-                                    <input type="text" class="form-control" [(ngModel)]="empresa.shopify_webhook_url"
-                                        name="url_webhook_shopify" placeholder="URL del Webhook para Shopify" readonly>
-                                    <button class="btn btn-secondary" type="button"
-                                        (click)="copyToClipboard(empresa.shopify_webhook_url)" tooltip="Copiar URL">
-                                        <i class="fa fa-copy"></i>
-                                    </button>
-                                </div>
-                                <small class="text-muted d-block mt-2">
-                                    Configure esta URL en los webhooks de su tienda Shopify. Eventos recomendados:
-                                    <span class="badge bg-light text-dark border me-1">orders/create</span>
-                                    <span class="badge bg-light text-dark border me-1">orders/updated</span>
-                                    <span class="badge bg-light text-dark border me-1">orders/cancelled</span>
-                                    <span class="badge bg-light text-dark border me-1">inventory_levels/update</span>
-                                    <span class="badge bg-light text-primary border me-1" tooltip="Requerido para sincronizar traslados entre sucursales">inventory_transfers/complete</span>
-                                    <span class="badge bg-light text-primary border me-1" tooltip="Requerido para sincronizar traslados entre sucursales cuando se actualiza el envío">inventory_transfers/updated</span>
-                                    <span class="badge bg-light text-dark border me-1">products/create</span>
-                                    <span class="badge bg-light text-dark border">products/update</span>
-                                </small>
-                            </div>
-
                             <div class="col-md-6">
                                 <label for="shopify_store_url" class="form-label">URL de la Tienda:</label>
                                 <input type="text" class="form-control" [(ngModel)]="empresa.shopify_store_url"
@@ -1529,6 +1506,71 @@
                                 <small class="text-muted">
                                     Este canal se asignará automáticamente a todas las ventas realizadas desde Shopify.
                                 </small>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="card border">
+                                    <button type="button"
+                                        class="btn btn-link text-start text-decoration-none text-body w-100 px-3 py-3 d-flex justify-content-between align-items-center"
+                                        (click)="mostrarWebhooksShopify = !mostrarWebhooksShopify"
+                                        [attr.aria-expanded]="mostrarWebhooksShopify">
+                                        <span>
+                                            <i class="fa fa-bolt me-2"></i>
+                                            Configurar webhooks en Shopify
+                                        </span>
+                                        <i class="fa"
+                                            [ngClass]="mostrarWebhooksShopify ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                                    </button>
+                                    <div class="card-body border-top" *ngIf="mostrarWebhooksShopify">
+                                        <p class="text-muted small mb-3">
+                                            Copia esta URL y créala en Shopify → Configuración → Notificaciones → Webhooks.
+                                        </p>
+                                        <label for="url_webhook_shopify" class="form-label">URL Webhook para Shopify:</label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" [(ngModel)]="empresa.shopify_webhook_url"
+                                                name="url_webhook_shopify" placeholder="URL del Webhook para Shopify" readonly>
+                                            <button class="btn btn-secondary" type="button"
+                                                (click)="copyToClipboard(empresa.shopify_webhook_url)" tooltip="Copiar URL">
+                                                <i class="fa fa-copy"></i>
+                                            </button>
+                                        </div>
+                                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3 mb-2">
+                                            <small class="text-muted mb-0">Nombres exactos del menú Evento en Shopify. Si el panel de la tienda está en inglés, cámbialo aquí.</small>
+                                            <div class="btn-group btn-group-sm" role="group" aria-label="Idioma de eventos">
+                                                <button type="button" class="btn"
+                                                    [ngClass]="webhooksShopifyEnEspanol ? 'btn-primary' : 'btn-outline-secondary'"
+                                                    (click)="webhooksShopifyEnEspanol = true">Español</button>
+                                                <button type="button" class="btn"
+                                                    [ngClass]="!webhooksShopifyEnEspanol ? 'btn-primary' : 'btn-outline-secondary'"
+                                                    (click)="webhooksShopifyEnEspanol = false">Inglés</button>
+                                            </div>
+                                        </div>
+                                        <div class="row g-3">
+                                            <div class="col-12 col-md-6">
+                                                <div class="fw-bold small mb-1">{{ webhooksShopifyEnEspanol ? 'Pedido' : 'Order' }}</div>
+                                                <p class="text-muted small mb-2">Ventas nuevas, actualizadas o canceladas.</p>
+                                                <span class="badge bg-light text-dark border me-1">{{ webhooksShopifyEnEspanol ? 'Creación del pedido' : 'Order creation' }}</span>
+                                                <span class="badge bg-light text-dark border me-1">{{ webhooksShopifyEnEspanol ? 'Actualización del pedido' : 'Order update' }}</span>
+                                                <span class="badge bg-light text-dark border">{{ webhooksShopifyEnEspanol ? 'Cancelación del pedido' : 'Order cancellation' }}</span>
+                                            </div>
+                                            <div class="col-12 col-md-6">
+                                                <div class="fw-bold small mb-1">{{ webhooksShopifyEnEspanol ? 'Inventario' : 'Inventory' }}</div>
+                                                <p class="text-muted small mb-2">Stock y traslados entre sucursales.</p>
+                                                <span class="badge bg-light text-dark border me-1">{{ webhooksShopifyEnEspanol ? 'Actualización del nivel de inventario' : 'Inventory level update' }}</span>
+                                                <span class="badge bg-light text-primary border me-1"
+                                                    tooltip="Requerido para sincronizar traslados entre sucursales">{{ webhooksShopifyEnEspanol ? 'Completado de la transferencia de inventario' : 'Inventory transfer complete' }}</span>
+                                                <span class="badge bg-light text-primary border"
+                                                    tooltip="Requerido para sincronizar traslados entre sucursales cuando se actualiza el envío">{{ webhooksShopifyEnEspanol ? 'Actualización de la transferencia de inventario' : 'Inventory transfer update' }}</span>
+                                            </div>
+                                            <div class="col-12 col-md-6">
+                                                <div class="fw-bold small mb-1">{{ webhooksShopifyEnEspanol ? 'Producto' : 'Product' }}</div>
+                                                <p class="text-muted small mb-2">Altas y cambios de catálogo.</p>
+                                                <span class="badge bg-light text-dark border me-1">{{ webhooksShopifyEnEspanol ? 'Creación del producto' : 'Product creation' }}</span>
+                                                <span class="badge bg-light text-dark border">{{ webhooksShopifyEnEspanol ? 'Actualización del producto' : 'Product update' }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             <div class="col-12">

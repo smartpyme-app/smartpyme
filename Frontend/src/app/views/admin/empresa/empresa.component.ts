@@ -2196,6 +2196,8 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
     // SHOPIFY MULTI-SUCURSAL LOCATIONS
     // ==========================================
     public tabShopifyActiva: 'credenciales' | 'configuracion' | 'sucursales' | 'productos' = 'credenciales';
+    public mostrarWebhooksShopify = false;
+    public webhooksShopifyEnEspanol = true;
     public shopifyLocations: any[] = [];
     public shopifySucursales: any[] = [];
     public loadingShopifyLocations: boolean = false;

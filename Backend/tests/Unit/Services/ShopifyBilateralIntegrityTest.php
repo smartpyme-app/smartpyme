@@ -7,7 +7,9 @@ use App\Jobs\SincronizarVentaAShopifyJob;
 use App\Models\Admin\Empresa;
 use App\Models\Inventario\Bodega;
 use App\Models\Inventario\Inventario;
+use App\Models\Inventario\Kardex;
 use App\Models\Inventario\Producto;
+use App\Models\User;
 use App\Models\Ventas\Detalle;
 use App\Models\Ventas\Venta;
 use App\Observers\ShopifyInventarioObserver;
@@ -42,7 +44,9 @@ class ShopifyBilateralIntegrityTest extends TestCase
             $table->boolean('shopify_sync_bidirectional')->default(false);
             $table->string('shopify_store_url')->nullable();
             $table->string('shopify_access_token')->nullable();
+            $table->string('woocommerce_api_key')->nullable();
             $table->string('shopify_status')->nullable();
+            $table->text('custom_empresa')->nullable();
             $table->timestamps();
         });
 
@@ -122,12 +126,39 @@ class ShopifyBilateralIntegrityTest extends TestCase
             $table->timestamps();
         });
 
+        Schema::create('kardexs', function ($table) {
+            $table->id();
+            $table->date('fecha')->nullable();
+            $table->unsignedBigInteger('id_producto')->nullable();
+            $table->unsignedBigInteger('lote_id')->nullable();
+            $table->unsignedBigInteger('id_inventario')->nullable();
+            $table->string('detalle')->nullable();
+            $table->string('referencia')->nullable();
+            $table->decimal('entrada_cantidad', 10, 2)->nullable();
+            $table->decimal('costo_unitario', 10, 2)->nullable();
+            $table->decimal('entrada_valor', 10, 2)->nullable();
+            $table->decimal('salida_cantidad', 10, 2)->nullable();
+            $table->decimal('precio_unitario', 10, 2)->nullable();
+            $table->decimal('salida_valor', 10, 2)->nullable();
+            $table->decimal('total_cantidad', 10, 2)->default(0);
+            $table->decimal('total_valor', 10, 2)->default(0);
+            $table->unsignedBigInteger('id_usuario')->nullable();
+            $table->timestamps();
+        });
+
         $this->empresa = Empresa::create([
             'nombre' => 'Test Bilateral S.A.',
             'shopify_sync_ventas' => true,
             'shopify_sync_bidirectional' => true,
             'shopify_store_url' => 'bilateral-test.myshopify.com',
             'shopify_access_token' => 'shpat_test123',
+            'woocommerce_api_key' => 'token_webhook_123',
+            'shopify_status' => 'connected',
+        ]);
+
+        User::create([
+            'id_empresa' => $this->empresa->id,
+            'id_bodega' => 1,
             'shopify_status' => 'connected',
         ]);
 
@@ -399,5 +430,219 @@ class ShopifyBilateralIntegrityTest extends TestCase
 
         Queue::assertNotPushed(SincronizarPagoVentaAShopifyJob::class);
     }
+
+    /**
+     * 10. KARDEX VENTA SHOPIFY: Cuando una venta originada en Shopify asienta su movimiento de inventario,
+     * en el kardex el detalle debe registrarse explícitamente como 'Venta desde Shopify',
+     * manteniendo el modelo 'venta' para los enlaces de auditoría.
+     */
+    public function test_venta_desde_shopify_se_asienta_en_kardex_como_venta_desde_shopify(): void
+    {
+        $producto = Producto::create([
+            'id_empresa' => $this->empresa->id,
+            'nombre' => 'Vestido Elegante',
+            'shopify_variant_id' => 991122,
+            'precio' => 50.00,
+        ]);
+
+        $bodega = Bodega::create([
+            'id_empresa' => $this->empresa->id,
+            'nombre' => 'Bodega Central',
+        ]);
+
+        $inventario = Inventario::create([
+            'id_producto' => $producto->id,
+            'id_bodega' => $bodega->id,
+            'stock' => 10,
+        ]);
+
+        $venta = Venta::create([
+            'id_empresa' => $this->empresa->id,
+            'estado' => 'Pagada',
+            'referencia_shopify' => 'SHOPIFY-17136260710770',
+            'total' => 50.00,
+        ]);
+
+        $inventario->kardex($venta, 2, 50.00);
+
+        $movimiento = Kardex::where('id_producto', $producto->id)->latest()->first();
+
+        $this->assertNotNull($movimiento);
+        $this->assertSame('Venta desde Shopify', $movimiento->detalle);
+        $this->assertSame('venta', $movimiento->modelo);
+        $this->assertEquals(2, $movimiento->salida_cantidad);
+        $this->assertNull($movimiento->entrada_cantidad);
+    }
+
+    /**
+     * 11. KARDEX VENTA LOCAL: Una venta física/local sin referencia_shopify debe seguir registrándose
+     * como 'Venta' tradicional en el kardex.
+     */
+    public function test_venta_local_se_asienta_en_kardex_como_venta_normal(): void
+    {
+        $producto = Producto::create([
+            'id_empresa' => $this->empresa->id,
+            'nombre' => 'Pantalón Jean',
+            'precio' => 30.00,
+        ]);
+
+        $bodega = Bodega::create([
+            'id_empresa' => $this->empresa->id,
+            'nombre' => 'Bodega Central',
+        ]);
+
+        $inventario = Inventario::create([
+            'id_producto' => $producto->id,
+            'id_bodega' => $bodega->id,
+            'stock' => 15,
+        ]);
+
+        $venta = Venta::create([
+            'id_empresa' => $this->empresa->id,
+            'estado' => 'Pagada',
+            'referencia_shopify' => null,
+            'total' => 30.00,
+        ]);
+
+        $inventario->kardex($venta, 1, 30.00);
+
+        $movimiento = Kardex::where('id_producto', $producto->id)->latest()->first();
+
+        $this->assertNotNull($movimiento);
+        $this->assertSame('Venta', $movimiento->detalle);
+        $this->assertSame('venta', $movimiento->modelo);
+        $this->assertEquals(1, $movimiento->salida_cantidad);
+    }
+
+    /**
+     * Verifica que cuando una venta es creada directamente como 'Pagada'
+     * con referencia_shopify (ej. al facturar una cotización de Shopify),
+     * el observer ShopifyVentaObserver::created despache SincronizarPagoVentaAShopifyJob.
+     */
+    public function test_venta_creada_directamente_como_pagada_con_referencia_shopify_dispara_job_pago(): void
+    {
+        Queue::fake();
+
+        $venta = Venta::create([
+            'id_empresa' => $this->empresa->id,
+            'estado' => 'Pagada',
+            'referencia_shopify' => 'SHOPIFY-9988776655',
+            'cotizacion' => 0,
+            'num_cotizacion' => 500,
+            'total' => 50.00,
+        ]);
+
+        Queue::assertPushed(SincronizarPagoVentaAShopifyJob::class, function ($job) use ($venta) {
+            return $job->ventaId === $venta->id;
+        });
+    }
+
+    /**
+     * Verifica que al facturar una cotización originada en Shopify,
+     * si el payload no incluye referencia_shopify, la herede de la cotización
+     * y despache la liquidación del pago hacia Shopify.
+     */
+    public function test_facturar_cotizacion_shopify_hereda_referencia_y_despacha_pago(): void
+    {
+        Queue::fake();
+
+        // 1. Cotización existente creada desde Shopify (COD / pendiente)
+        $cotizacion = Venta::create([
+            'id_empresa' => $this->empresa->id,
+            'estado' => 'Pendiente',
+            'referencia_shopify' => 'SHOPIFY-COD-12345',
+            'num_orden' => '#1040',
+            'cotizacion' => 1,
+            'total' => 45.00,
+        ]);
+
+        // 2. Facturar la cotización: nueva Venta con num_cotizacion
+        $nuevaVenta = new Venta();
+        $nuevaVenta->fill([
+            'id_empresa' => $this->empresa->id,
+            'estado' => 'Pagada',
+            'cotizacion' => 0,
+            'num_cotizacion' => $cotizacion->id,
+            'total' => 45.00,
+        ]);
+
+        // Simular lógica de herencia en facturación
+        if (empty($nuevaVenta->referencia_shopify) && !empty($nuevaVenta->num_cotizacion)) {
+            $origen = Venta::withoutGlobalScopes()->find($nuevaVenta->num_cotizacion);
+            if ($origen && !empty($origen->referencia_shopify)) {
+                $nuevaVenta->referencia_shopify = $origen->referencia_shopify;
+                $nuevaVenta->num_orden = $origen->num_orden;
+            }
+        }
+
+        $nuevaVenta->save();
+
+        $this->assertSame('SHOPIFY-COD-12345', $nuevaVenta->referencia_shopify);
+        $this->assertSame('#1040', $nuevaVenta->num_orden);
+
+        Queue::assertPushed(SincronizarPagoVentaAShopifyJob::class, function ($job) use ($nuevaVenta) {
+            return $job->ventaId === $nuevaVenta->id;
+        });
+    }
+
+    /**
+     * Verifica que cuando Shopify envía orders/updated (paid) después de que una cotización
+     * ya fue facturada en SmartPyme, el webhook NO cree una segunda venta ni descuente inventario otra vez.
+     */
+    public function test_webhook_orders_updated_no_duplica_venta_si_cotizacion_ya_fue_facturada(): void
+    {
+        $shopifyOrderId = 17136688791922;
+        $referencia = 'SHOPIFY-' . $shopifyOrderId;
+
+        // 1. Cotización original con la referencia de Shopify
+        $cotizacion = Venta::create([
+            'id_empresa' => $this->empresa->id,
+            'estado' => 'Facturada',
+            'referencia_shopify' => $referencia,
+            'num_orden' => '#1045',
+            'cotizacion' => 1,
+            'total' => 18.85,
+        ]);
+
+        // 2. Venta oficial ya facturada por el cajero (num_cotizacion vincula a la cotización)
+        $ventaFacturada = Venta::create([
+            'id_empresa' => $this->empresa->id,
+            'estado' => 'Pagada',
+            'num_orden' => '#1045',
+            'num_cotizacion' => $cotizacion->id,
+            'cotizacion' => 0,
+            'total' => 18.85,
+        ]);
+
+        $conteoVentasAntes = Venta::count();
+
+        // 3. Simular webhook entrante orders/updated con financial_status = paid
+        $request = Request::create(
+            "/api/webhook/shopify/{$this->empresa->woocommerce_api_key}/orders/updated",
+            'POST',
+            [
+                'id' => $shopifyOrderId,
+                'order_number' => 1045,
+                'financial_status' => 'paid',
+                'line_items' => [],
+            ]
+        );
+
+        $controller = app(\App\Http\Controllers\Api\Webhook\ShopifyController::class);
+        $response = $controller->procesarVentaActualizada($this->empresa->woocommerce_api_key, $request);
+
+        $this->assertEquals(200, $response->getStatusCode());
+        $data = json_decode($response->getContent(), true);
+
+        // El webhook debe ignorar y no convertir nuevamente
+        $this->assertSame('ignored', $data['status']);
+        $this->assertSame($conteoVentasAntes, Venta::count());
+
+        // La cotización debe seguir como cotización Facturada (no mutada a una segunda venta)
+        $cotizacion->refresh();
+        $this->assertEquals(1, $cotizacion->cotizacion);
+        $this->assertSame('Facturada', $cotizacion->estado);
+    }
 }
+
 

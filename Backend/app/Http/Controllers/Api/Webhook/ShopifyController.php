@@ -1461,7 +1461,7 @@ class ShopifyController extends Controller
                     ]);
 
                     if ($inventario) {
-                        $inventario->kardex($venta, $item['quantity'], $item['price']);
+                        $inventario->kardex($venta, $item['quantity'], $item['price'], null, null, ['origen' => 'shopify']);
                     }
                 } else {
                     $stockActual = Inventario::where('id_producto', $producto->id)
@@ -1856,6 +1856,8 @@ class ShopifyController extends Controller
             
             $venta = Venta::where('referencia_shopify', $referencia)
                 ->where('id_empresa', $empresa->id)
+                ->orderBy('cotizacion', 'asc')
+                ->orderBy('id', 'desc')
                 ->first();
 
             if (!$venta) {
@@ -1937,7 +1939,7 @@ class ShopifyController extends Controller
                             
                             // Registrar en el kardex solo si tenemos valores válidos (signo negativo para Venta Anulada)
                             if ($cantidad > 0) {
-                                $inventario->kardex($venta, -$cantidad, $precio, $costoProducto);
+                                $inventario->kardex($venta, -$cantidad, $precio, $costoProducto, null, ['origen' => 'shopify']);
                             }
                             
                             // ShopifyHelper::log("orders/cancelled: Stock restaurado para producto", [
@@ -2539,6 +2541,11 @@ class ShopifyController extends Controller
      */
     private function convertirCotizacionAVenta(Venta $venta, Empresa $empresa, $usuario, array $shopifyData = [])
     {
+        if ($venta->estado === 'Facturada' || (int) $venta->cotizacion === 0) {
+            ShopifyHelper::log("convertirCotizacionAVenta: Omitido - cotización #{$venta->id} ya está {$venta->estado} (cotizacion={$venta->cotizacion})");
+            return false;
+        }
+
         $cliente = $venta->cliente;
         if (!$cliente) {
             $cliente = ShopifyHelper::obtenerClienteConsumidorFinal($empresa->id);
@@ -2627,7 +2634,7 @@ class ShopifyController extends Controller
                 ]);
 
                 if ($inventario) {
-                    $inventario->kardex($venta, $detalle->cantidad, $detalle->precio);
+                    $inventario->kardex($venta, $detalle->cantidad, $detalle->precio, null, null, ['origen' => 'shopify']);
                 }
             }
 
@@ -2797,7 +2804,7 @@ class ShopifyController extends Controller
                             // ]);
 
                             // Registrar en el kardex con signo negativo para indicar Venta Anulada (Entrada)
-                            $inventario->kardex($venta, -$detalle->cantidad, $detalle->precio, $producto->costo);
+                            $inventario->kardex($venta, -$detalle->cantidad, $detalle->precio, $producto->costo, null, ['origen' => 'shopify']);
                         }
                     }
 
@@ -2916,7 +2923,7 @@ class ShopifyController extends Controller
                     // ]);
 
                     if ($inventario) {
-                        $inventario->kardex($venta, $currentQuantity, $item['price'] ?? 0);
+                        $inventario->kardex($venta, $currentQuantity, $item['price'] ?? 0, null, null, ['origen' => 'shopify']);
                     }
                 }
 
@@ -2999,7 +3006,7 @@ class ShopifyController extends Controller
 
                             // Registrar en el kardex:
                             // Positivo = Salida (Venta adicional), Negativo = Entrada (Venta Anulada)
-                            $inventario->kardex($venta, $diferenciaStock, $detalle->precio, $producto->costo);
+                            $inventario->kardex($venta, $diferenciaStock, $detalle->precio, $producto->costo, null, ['origen' => 'shopify']);
                         }
                     }
                 }
@@ -3216,7 +3223,7 @@ class ShopifyController extends Controller
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    private function procesarVentaActualizada($tokenEmpresa, Request $request)
+    public function procesarVentaActualizada($tokenEmpresa, Request $request)
     {
         // Log::info("Webhook de pedido actualizado recibido de Shopify", [
         //     'shopify_order_id' => $request->id,
@@ -3253,17 +3260,16 @@ class ShopifyController extends Controller
             
             $venta = Venta::where('referencia_shopify', $referencia)
                 ->where('id_empresa', $empresa->id)
+                ->orderBy('cotizacion', 'asc')
+                ->orderBy('id', 'desc')
                 ->first();
 
             // Si no se encuentra por ID, buscar por order_number
             if (!$venta && $orderNumber) {
-                // Log::info("Buscando venta por order_number", [
-                //     'order_number' => $orderNumber,
-                //     'empresa_id' => $empresa->id
-                // ]);
-                
                 $venta = Venta::where('referencia_shopify', 'SHOPIFY-' . $orderNumber)
                     ->where('id_empresa', $empresa->id)
+                    ->orderBy('cotizacion', 'asc')
+                    ->orderBy('id', 'desc')
                     ->first();
             }
 
@@ -3321,6 +3327,29 @@ class ShopifyController extends Controller
             // webhook de pago llega inmediatamente después de la creación del pedido.
             $fueConvertida = false;
             if ($esPagada && (int) $venta->cotizacion === 1) {
+                // Si la cotización ya fue facturada en SmartPyme, o ya existe una venta activa para esta orden, omitir
+                $yaFacturada = ($venta->estado === 'Facturada')
+                    || Venta::where('id_empresa', $empresa->id)
+                        ->where('cotizacion', 0)
+                        ->where(function ($q) use ($venta, $referencia) {
+                            $q->where('num_cotizacion', $venta->id)
+                              ->orWhere('referencia_shopify', $referencia);
+                        })
+                        ->exists();
+
+                if ($yaFacturada) {
+                    ShopifyHelper::log("orders/updated: Cotización #{$venta->id} ya fue facturada en SmartPyme, omitiendo conversión redundante", [
+                        'venta_id' => $venta->id,
+                        'estado' => $venta->estado,
+                        'referencia_shopify' => $referencia,
+                    ]);
+                    return response()->json([
+                        'status' => 'ignored',
+                        'mensaje' => 'La orden ya fue facturada en SmartPyme',
+                        'venta_id' => $venta->id,
+                    ], 200);
+                }
+
                 if ($this->convertirCotizacionAVenta($venta, $empresa, $usuario, $request->all())) {
                     $venta->refresh();
                     $fueConvertida = true;

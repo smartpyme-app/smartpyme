@@ -41,12 +41,16 @@ class Inventario extends Model {
         $salidaCantidad =  null;
 
         if ($clase == 'App\Models\Ventas\Venta') { //Salida
+            $esShopify = (!empty($opciones['origen']) && $opciones['origen'] === 'shopify')
+                || !empty($modelo->referencia_shopify);
+            $sufijoShopify = $esShopify ? ' desde Shopify' : '';
+
             if ($cantidad > 0) {
                 $salidaCantidad =  $cantidad;
-                $clase = $modelo->estado == 'Consigna' ? 'Venta a consigna' : 'Venta';
+                $clase = $modelo->estado == 'Consigna' ? 'Venta a consigna' : ('Venta' . $sufijoShopify);
             }else{
                 $entradaCantidad =  abs($cantidad);
-                $clase = 'Venta Anulada';
+                $clase = 'Venta Anulada' . $sufijoShopify;
             }
         }
         else if ($clase == 'App\Models\Compras\Compra') {
@@ -309,7 +313,7 @@ class Inventario extends Model {
         }
 
         // Si es una venta
-        if ($clase == 'Venta' || $clase == 'Venta a consigna' || $clase == 'Venta Anulada') {
+        if (str_starts_with($clase, 'Venta') || $clase == 'Venta a consigna') {
             $detalleVenta = \App\Models\Ventas\Detalle::where('id_venta', $modelo->id)
                 ->where('id_producto', $idProducto)
                 ->whereNotNull('lote_id')

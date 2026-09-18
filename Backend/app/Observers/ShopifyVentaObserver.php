@@ -10,6 +10,24 @@ use App\Models\Ventas\Venta;
 class ShopifyVentaObserver
 {
     /**
+     * Se dispara cuando una venta es creada directamente como 'Pagada' en SmartPyme.
+     * Aplica cuando se factura una cotización originada en Shopify.
+     */
+    public function created(Venta $venta): void
+    {
+        if ($venta->estado !== 'Pagada') {
+            return;
+        }
+
+        // Solo aplica si proviene de la facturación de una cotización
+        if (empty($venta->num_cotizacion)) {
+            return;
+        }
+
+        $this->despacharPagoSiAplica($venta, 'created');
+    }
+
+    /**
      * Se dispara cuando una venta es actualizada en SmartPyme.
      * Si la venta cambió su estado a 'Pagada' y tiene una orden enlazada en Shopify,
      * sincroniza la transacción de pago a Shopify.
@@ -21,6 +39,14 @@ class ShopifyVentaObserver
             return;
         }
 
+        $this->despacharPagoSiAplica($venta, 'updated');
+    }
+
+    /**
+     * Valida salvaguardas y encola el job de sincronización de pago hacia Shopify.
+     */
+    private function despacharPagoSiAplica(Venta $venta, string $evento): void
+    {
         // Solo si la venta está enlazada con una orden en Shopify
         if (empty($venta->referencia_shopify)) {
             return;
@@ -45,7 +71,7 @@ class ShopifyVentaObserver
             return;
         }
 
-        ShopifyHelper::log("ShopifyVentaObserver::updated: Venta #{$venta->id} pasó a Pagada. Encolando sincronización de pago hacia Shopify.");
+        ShopifyHelper::log("ShopifyVentaObserver::{$evento}: Venta #{$venta->id} en estado Pagada con orden Shopify. Encolando sincronización de pago hacia Shopify.");
 
         SincronizarPagoVentaAShopifyJob::dispatch($venta->id);
     }
