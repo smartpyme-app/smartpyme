@@ -26,6 +26,11 @@ class ShopifyVentaObserver
             return;
         }
 
+        // Evitar bucle si el cambio de estado proviene de un webhook entrante de Shopify
+        if (request()->is('*webhook/shopify*')) {
+            return;
+        }
+
         // Evitar procesar cotizaciones
         if ((int) ($venta->getAttribute('cotizacion') ?? 0) === 1) {
             return;

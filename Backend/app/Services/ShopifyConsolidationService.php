@@ -352,31 +352,33 @@ class ShopifyConsolidationService
                         if ($prodActual) {
                             $invItemId = $fila['shopify_inventory_item_id'] ?? null;
 
-                            if ($invItemId && !empty($mapaStockPorItemYBodega[$invItemId])) {
-                                // Multi-sucursal: Asignar el stock correspondiente a cada bodega mapeada
-                                foreach ($mapaStockPorItemYBodega[$invItemId] as $bodegaId => $stockCantidad) {
+                            Inventario::withoutEvents(function () use ($invItemId, $mapaStockPorItemYBodega, $idBodegaDefault, $fila, $prodActual) {
+                                if ($invItemId && !empty($mapaStockPorItemYBodega[$invItemId])) {
+                                    // Multi-sucursal: Asignar el stock correspondiente a cada bodega mapeada
+                                    foreach ($mapaStockPorItemYBodega[$invItemId] as $bodegaId => $stockCantidad) {
+                                        Inventario::updateOrCreate(
+                                            [
+                                                'id_producto' => $prodActual->id,
+                                                'id_bodega' => $bodegaId,
+                                            ],
+                                            [
+                                                'stock' => (float) $stockCantidad,
+                                            ]
+                                        );
+                                    }
+                                } elseif ($idBodegaDefault && isset($fila['stock'])) {
+                                    // Fallback para mono-sucursal o sin mapeos específicos
                                     Inventario::updateOrCreate(
                                         [
                                             'id_producto' => $prodActual->id,
-                                            'id_bodega' => $bodegaId,
+                                            'id_bodega' => $idBodegaDefault,
                                         ],
                                         [
-                                            'stock' => (float) $stockCantidad,
+                                            'stock' => (float) $fila['stock'],
                                         ]
                                     );
                                 }
-                            } elseif ($idBodegaDefault && isset($fila['stock'])) {
-                                // Fallback para mono-sucursal o sin mapeos específicos
-                                Inventario::updateOrCreate(
-                                    [
-                                        'id_producto' => $prodActual->id,
-                                        'id_bodega' => $idBodegaDefault,
-                                    ],
-                                    [
-                                        'stock' => (float) $fila['stock'],
-                                    ]
-                                );
-                            }
+                            });
                         }
                     }
                 } catch (\Throwable $e) {
