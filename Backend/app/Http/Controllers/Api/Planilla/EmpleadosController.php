@@ -94,7 +94,7 @@ class EmpleadosController extends Controller
                     ->where('id_empresa', auth()->user()->id_empresa),
             ],
             'dui_homologado' => 'nullable|boolean',
-            'nit' => $this->reglasNit($request),
+            'nit' => 'nullable|string',
             'isss' => 'nullable|string',
             'afp' => 'nullable|string',
             'fecha_nacimiento' => 'required|date',
@@ -273,7 +273,7 @@ class EmpleadosController extends Controller
             'nombres' => 'sometimes|string|max:100',
             'apellidos' => 'sometimes|string|max:100',
             'dui_homologado' => 'nullable|boolean',
-            'nit' => $this->reglasNit($request, $empleado),
+            'nit' => 'nullable|string',
             'isss' => 'nullable|string',
             'afp' => 'nullable|string',
             'fecha_nacimiento' => 'sometimes|date',
@@ -1026,14 +1026,4 @@ class EmpleadosController extends Controller
         }
     }
 
-    private function reglasNit(Request $request, ?Empleado $empleado = null): array
-    {
-        $duiHomologado = $request->has('dui_homologado')
-            ? $request->boolean('dui_homologado')
-            : ($empleado ? (bool) $empleado->dui_homologado : false);
-
-        return $duiHomologado
-            ? ['nullable', 'string']
-            : ['required', 'string'];
-    }
 }
