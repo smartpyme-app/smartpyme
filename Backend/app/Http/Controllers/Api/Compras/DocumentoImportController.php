@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Compras;
 use App\Exceptions\Compras\DocumentoImportException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Compras\ImportarDocumentoRequest;
+use App\Services\Compras\CodigoGeneracionDuplicadoFinder;
 use App\Services\Compras\DocumentoImport\DocumentoImportService;
 use App\Models\User;
 use App\Services\Compras\Gastos\GastoImportService;
@@ -19,6 +20,7 @@ class DocumentoImportController extends Controller
     public function __construct(
         private readonly DocumentoImportService $documentoImportService,
         private readonly GastoImportService $gastoImportService,
+        private readonly CodigoGeneracionDuplicadoFinder $codigoGeneracionDuplicadoFinder,
     ) {}
 
     /**
@@ -30,6 +32,7 @@ class DocumentoImportController extends Controller
             $result = $this->documentoImportService->importar(
                 $request->contenidoDocumento()
             );
+            $this->assertCodigoNoDuplicado($result->dte, $request);
 
             return response()->json(array_merge(
                 $result->toResponseArray(),
@@ -62,6 +65,7 @@ class DocumentoImportController extends Controller
             $result = $this->documentoImportService->importar(
                 $request->contenidoDocumento()
             );
+            $this->assertCodigoNoDuplicado($result->dte, $request);
 
             $gasto = $this->gastoImportService->importarDesdeJson($result->dte);
             $gasto->tipo_documento = $result->tipoDocumentoNombre;
@@ -85,6 +89,17 @@ class DocumentoImportController extends Controller
                 'error' => 'Error al procesar el documento: '.$e->getMessage(),
             ], 422);
         }
+    }
+
+    private function assertCodigoNoDuplicado(array $dte, ImportarDocumentoRequest $request): void
+    {
+        $codigo = $dte['identificacion']['codigoGeneracion'] ?? null;
+        $this->codigoGeneracionDuplicadoFinder->assertDisponible(
+            (int) (auth()->user()?->id_empresa ?? 0),
+            is_scalar($codigo) ? (string) $codigo : null,
+            $request->filled('id_compra') ? (int) $request->input('id_compra') : null,
+            $request->filled('id_gasto') ? (int) $request->input('id_gasto') : null,
+        );
     }
 
     private function respuestaGastosRestringidosSupervisorLimitado(?User $user): ?JsonResponse

@@ -38,6 +38,11 @@ import { BsModalRef } from 'ngx-bootstrap/modal';
 import { DocumentoImportService } from '@services/compras/documento-import.service';
 import { ProveedorDesdeEmisorService } from '@services/compras/proveedor-desde-emisor.service';
 import {
+  esErrorCodigoGeneracionDuplicado,
+  mensajeErrorDocumentoImport,
+  TITULO_CODIGO_GENERACION_DUPLICADO,
+} from '@services/compras/codigo-generacion.util';
+import {
   costoUnitarioDesdeLineaDte,
   descuentoDesdeLineaDte,
   totalLineaDesdeDte,
@@ -1134,7 +1139,11 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
                     ? this.jsonImportEtiqueta
                     : 'Contenido pegado';
 
-            const res = await firstValueFrom(this.documentoImportService.importarCompra(texto));
+            const res = await firstValueFrom(
+                this.documentoImportService.importarCompra(texto, {
+                    id_compra: this.compra?.id ? Number(this.compra.id) : undefined,
+                })
+            );
             const data = res?.dte;
             if (!data?.identificacion) {
                 this.alertService.error(
@@ -1162,11 +1171,12 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
                 this.alertService.success('Datos importados', 'El documento se importó correctamente.');
             }
         } catch (error: any) {
-            const msg =
-                error?.error?.error ||
-                error?.message ||
-                'No se pudo interpretar el documento electrónico.';
-            this.alertService.error(msg);
+            const msg = mensajeErrorDocumentoImport(error);
+            if (esErrorCodigoGeneracionDuplicado(error)) {
+                this.alertService.warning(TITULO_CODIGO_GENERACION_DUPLICADO, msg);
+            } else {
+                this.alertService.error(msg);
+            }
         } finally {
             this.processingJson = false;
             this.cdr.markForCheck();

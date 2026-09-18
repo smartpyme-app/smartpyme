@@ -92,7 +92,9 @@ class GastoImportService
             $gasto->tipo_documento = $tiposDte[$identificacion['tipoDte']] ?? 'Factura';
         }
 
-        $gasto->codigo_generacion = $identificacion['codigoGeneracion'] ?? null;
+        $gasto->codigo_generacion = isset($identificacion['codigoGeneracion'])
+            ? strtoupper(trim((string) $identificacion['codigoGeneracion']))
+            : null;
         $gasto->numero_control = $identificacion['numeroControl'] ?? null;
     }
 

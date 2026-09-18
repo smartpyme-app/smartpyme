@@ -36,6 +36,8 @@ use App\Services\Inventario\LoteAsignacionService;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
 use App\Constants\DocumentoConstants;
+use App\Exceptions\Compras\DocumentoImportException;
+use App\Services\Compras\CodigoGeneracionDuplicadoFinder;
 
 class ComprasController extends Controller
 {
@@ -261,6 +263,14 @@ class ComprasController extends Controller
 
         $compra->fill($request->except(array_merge(['detalles', 'dte'], DocumentoMoneda::CAMPOS_PERSISTIDOS)));
         $this->aplicarIdentificadoresDteImportado($compra, $request);
+        if ($bloqueado = $this->respuestaCodigoGeneracionDuplicado(
+            $compra->id_empresa,
+            $compra->codigo_generacion,
+            $compra->id,
+            null
+        )) {
+            return $bloqueado;
+        }
         $compra->save();
 
         return Response()->json($compra, 200);
@@ -309,6 +319,15 @@ class ComprasController extends Controller
                     'code' => 403,
                 ], 403);
             }
+        }
+
+        if ($bloqueado = $this->respuestaCodigoGeneracionDuplicado(
+            $request->input('id_empresa') ?: auth()->user()?->id_empresa,
+            $this->codigoGeneracionDesdeRequest($request),
+            $request->id,
+            null
+        )) {
+            return $bloqueado;
         }
 
         DB::beginTransaction();
@@ -503,6 +522,9 @@ class ComprasController extends Controller
 
         return Response()->json($compra, 200);
 
+        } catch (DocumentoImportException $e) {
+            DB::rollback();
+            return Response()->json(['error' => $e->getMessage()], 422);
         } catch (\Exception $e) {
             DB::rollback();
             return Response()->json(['error' => $e->getMessage()], 400);
@@ -1151,6 +1173,41 @@ class ComprasController extends Controller
 
     }
 
+    private function codigoGeneracionDesdeRequest(Request $request): ?string
+    {
+        if ($request->filled('codigo_generacion')) {
+            return (string) $request->input('codigo_generacion');
+        }
+
+        $dte = $request->input('dte');
+        if (is_string($dte) && $dte !== '') {
+            $dte = json_decode($dte, true);
+        }
+        $codigo = is_array($dte) ? ($dte['identificacion']['codigoGeneracion'] ?? null) : null;
+
+        return is_scalar($codigo) ? (string) $codigo : null;
+    }
+
+    private function respuestaCodigoGeneracionDuplicado(
+        mixed $idEmpresa,
+        ?string $codigo,
+        mixed $excluirCompraId,
+        mixed $excluirGastoId
+    ): ?\Illuminate\Http\JsonResponse {
+        try {
+            app(CodigoGeneracionDuplicadoFinder::class)->assertDisponible(
+                (int) $idEmpresa,
+                $codigo,
+                $excluirCompraId ? (int) $excluirCompraId : null,
+                $excluirGastoId ? (int) $excluirGastoId : null,
+            );
+        } catch (DocumentoImportException $e) {
+            return Response()->json(['error' => $e->getMessage()], 422);
+        }
+
+        return null;
+    }
+
     /**
      * Persiste código de generación, número de control y DTE importado desde el frontend.
      */
@@ -1158,7 +1215,7 @@ class ComprasController extends Controller
     {
         if ($request->has('codigo_generacion')) {
             $codigo = trim((string) $request->input('codigo_generacion', ''));
-            $compra->codigo_generacion = $codigo !== '' ? $codigo : null;
+            $compra->codigo_generacion = $codigo !== '' ? strtoupper($codigo) : null;
         }
 
         if ($request->has('numero_control')) {

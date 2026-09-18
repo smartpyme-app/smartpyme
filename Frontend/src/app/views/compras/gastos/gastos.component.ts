@@ -19,6 +19,10 @@ import { FuncionalidadesService } from '@services/functionalities.service';
 import { DocumentoImportService } from '@services/compras/documento-import.service';
 import { GastoJsonBulkService } from '@services/gasto-json-bulk.service';
 import {
+  codigoGeneracionDesdeDte,
+  codigoGeneracionYaUsadoEnLote,
+} from '@services/compras/codigo-generacion.util';
+import {
   ExportPeriodoState,
   MESES_EXPORT_PERIODO,
   MAX_DIAS_EXPORT_VENTAS,
@@ -631,17 +635,40 @@ export class GastosComponent implements OnInit {
                         estado: 'error',
                     });
                 } else {
-                    const item: BulkGastoItem = {
-                        uid,
-                        fileName: f.name,
-                        gasto: prep.gasto,
-                        detalles: prep.detalles,
-                        varios_items: prep.varios_items,
-                        jsonData: prep.jsonData,
-                        estado: 'lista',
-                    };
-                    this.aplicarCategoriaImportada(item);
-                    this.bulkItems.push(item);
+                    const codigo =
+                        codigoGeneracionDesdeDte(prep.jsonData) ||
+                        String(prep.gasto?.codigo_generacion || '');
+                    const usados = this.bulkItems
+                        .filter((it) => it.estado !== 'error')
+                        .map(
+                            (it) =>
+                                codigoGeneracionDesdeDte(it.jsonData) ||
+                                String(it.gasto?.codigo_generacion || '')
+                        );
+                    if (codigo && codigoGeneracionYaUsadoEnLote(codigo, usados)) {
+                        this.bulkItems.push({
+                            uid,
+                            fileName: f.name,
+                            gasto: prep.gasto,
+                            detalles: prep.detalles,
+                            varios_items: prep.varios_items,
+                            jsonData: prep.jsonData,
+                            error: 'Ya está cargada un gasto con ese código de generación.',
+                            estado: 'error',
+                        });
+                    } else {
+                        const item: BulkGastoItem = {
+                            uid,
+                            fileName: f.name,
+                            gasto: prep.gasto,
+                            detalles: prep.detalles,
+                            varios_items: prep.varios_items,
+                            jsonData: prep.jsonData,
+                            estado: 'lista',
+                        };
+                        this.aplicarCategoriaImportada(item);
+                        this.bulkItems.push(item);
+                    }
                 }
             } catch (e: any) {
                 this.bulkItems.push({
