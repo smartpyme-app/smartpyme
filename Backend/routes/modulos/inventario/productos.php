@@ -11,8 +11,8 @@ use App\Http\Controllers\Api\Inventario\ProveedorController;
 use App\Http\Controllers\Api\Inventario\KardexController;
 use App\Http\Controllers\Api\Inventario\SucursalesController;
 use App\Http\Controllers\Api\Inventario\PresentacionesController;
-//use Route;
 use App\Http\Controllers\Api\Webhook\WooCommerceController;
+use App\Http\Controllers\Api\Webhook\ShopifyController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -127,6 +127,8 @@ Route::get('/productos/kardex/estado-cola', [KardexController::class, 'estadoCol
     Route::get('/productos/exportar/shopify',          [ProductosController::class, 'exportarShopifyTemplate']);
     //productos/importar-shopify
     Route::post('/producto/importar-shopify',          [ProductosController::class, 'importarShopify']);
+    Route::post('/shopify/consolidacion/iniciar',      [ShopifyController::class, 'iniciarConsolidacion']);
+    Route::get('/shopify/consolidacion/estado',        [ShopifyController::class, 'obtenerEstadoConsolidacion']);
     //productos/exportar-traslado (GET: plantilla por IDs; POST: listado con stocks y cantidades desde la UI)
     Route::get('/productos/exportar-traslado',          [ProductosController::class, 'exportarPlantillaTraslado']);
     Route::post('/productos/exportar-traslado',         [ProductosController::class, 'exportarPlantillaTraslado']);

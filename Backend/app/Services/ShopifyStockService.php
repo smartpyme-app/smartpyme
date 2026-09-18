@@ -13,56 +13,47 @@ use Illuminate\Support\Facades\Cache;
 class ShopifyStockService
 {
    
-    public function actualizarSoloStockEnShopify($productoId, $userId)
+    public function actualizarSoloStockEnShopify($productoId, $userId = null, $bodegaId = null)
     {
-        // return true;
         try {
-            // ShopifyHelper::log("actualizarSoloStockEnShopify iniciado", [
-                // 'producto_id' => $productoId,
-                // 'user_id' => $userId
-            // ]);
-
             $producto = Producto::find($productoId);
 
             if (!$producto) {
-                // ShopifyHelper::log("Producto no encontrado para actualizar stock", ['producto_id' => $productoId], 'error');
-                return false;
-            }
-
-            $usuario = User::find($userId);
-            $empresa = Empresa::where('id', $usuario->id_empresa)->first();
-
-            if (!$usuario || empty($empresa->shopify_consumer_secret) || empty($empresa->shopify_store_url)) {
-                // ShopifyHelper::log("Usuario/empresa sin configuración Shopify", ['user_id' => $userId], 'error');
                 return false;
             }
 
             if (empty($producto->shopify_variant_id) || empty($producto->shopify_inventory_item_id)) {
-                // ShopifyHelper::log("Producto sin IDs de Shopify - no se actualiza stock", [
-                    // 'producto_id' => $productoId,
-                    // 'codigo' => $producto->codigo,
-                    // 'variant_id' => $producto->shopify_variant_id,
-                    // 'inventory_item_id' => $producto->shopify_inventory_item_id
-                // ], 'warning');
                 return false;
             }
 
-            $stock = Inventario::where('id_producto', $productoId)
-                ->where('id_bodega', $usuario->id_bodega)
-                ->value('stock');
-
-            if ($stock === null) {
-                $stock = 0;
+            $empresa = null;
+            if ($bodegaId) {
+                $bodega = \App\Models\Inventario\Bodega::withoutGlobalScope('empresa')->find($bodegaId);
+                if ($bodega) {
+                    $empresa = Empresa::find($bodega->id_empresa);
+                }
             }
 
-            // ShopifyHelper::log("Stock local obtenido para sincronizar a Shopify", [
-                // 'producto_id' => $productoId,
-                // 'codigo' => $producto->codigo,
-                // 'bodega_id' => $usuario->id_bodega,
-                // 'stock_local' => $stock,
-                // 'shopify_inventory_item_id' => $producto->shopify_inventory_item_id,
-                // 'shopify_variant_id' => $producto->shopify_variant_id,
-            // ]);
+            if (!$empresa && $userId) {
+                $usuario = User::find($userId);
+                if ($usuario) {
+                    $empresa = Empresa::where('id', $usuario->id_empresa)->first();
+                    if (!$bodegaId) {
+                        $bodegaId = $usuario->id_bodega;
+                    }
+                }
+            }
+
+            if (!$empresa || empty($empresa->shopify_consumer_secret) || empty($empresa->shopify_store_url)) {
+                return false;
+            }
+
+            $stock = 0;
+            if ($bodegaId) {
+                $stock = Inventario::where('id_producto', $productoId)
+                    ->where('id_bodega', $bodegaId)
+                    ->value('stock') ?? 0;
+            }
 
             $shopifyClient = new ShopifyApiClient(
                 $empresa->shopify_store_url,
@@ -70,13 +61,28 @@ class ShopifyStockService
                 app(ShopifyTokenService::class),
                 $empresa
             );
-            return $this->actualizarSoloInventario($shopifyClient, $producto, $stock);
+
+            // Buscar si esta bodega tiene una location mapeada en shopify_locations
+            $locationId = null;
+            if ($bodegaId) {
+                $mapping = \App\Models\Admin\ShopifyLocation::withoutGlobalScope('empresa')
+                    ->where('id_empresa', $empresa->id)
+                    ->where('id_bodega', $bodegaId)
+                    ->where('sincronizar_stock', true)
+                    ->first();
+
+                if ($mapping) {
+                    $locationId = $mapping->shopify_location_id;
+                }
+            }
+
+            if (!$locationId) {
+                $locationId = $this->getDefaultLocationId($shopifyClient);
+            }
+
+            return $this->actualizarSoloInventario($shopifyClient, $producto, $stock, $locationId);
         } catch (\Exception $e) {
-            // ShopifyHelper::log("Error al actualizar solo stock en Shopify: " . $e->getMessage(), [
-                // 'producto_id' => $productoId,
-                // 'error' => $e->getMessage(),
-                // 'trace' => $e->getTraceAsString()
-            // ], 'error');
+            Log::error("Error al actualizar solo stock en Shopify: " . $e->getMessage());
             return false;
         }
     }
@@ -236,10 +242,16 @@ class ShopifyStockService
     }
 
 
-    private function actualizarSoloInventario($client, $producto, $stock)
+    private function actualizarSoloInventario($client, $producto, $stock, $locationId = null)
     {
         try {
-            $locationId = $this->getDefaultLocationId($client);
+            if (!$locationId) {
+                $locationId = $this->getDefaultLocationId($client);
+            }
+
+            if (!$locationId) {
+                return false;
+            }
 
             $payload = [
                 'location_id' => $locationId,
@@ -247,31 +259,10 @@ class ShopifyStockService
                 'available' => (int)$stock
             ];
 
-            // ShopifyHelper::log("Enviando POST inventory_levels/set.json a Shopify", [
-                // 'producto_id' => $producto->id,
-                // 'codigo' => $producto->codigo,
-                // 'payload' => $payload,
-            // ]);
-
             $response = $client->post('inventory_levels/set.json', $payload);
-
-            // ShopifyHelper::log("Solo stock actualizado en Shopify", [
-                // 'producto_id' => $producto->id,
-                // 'variant_id' => $producto->shopify_variant_id,
-                // 'inventory_item_id' => $producto->shopify_inventory_item_id,
-                // 'location_id' => $locationId,
-                // 'stock' => $stock,
-                // 'response_status' => $response['status'] ?? null,
-                // 'response_body' => $response['body'] ?? null,
-            // ]);
 
             return true;
         } catch (\Exception $e) {
-            // ShopifyHelper::log("Error actualizando solo inventario en Shopify: " . $e->getMessage(), [
-                // 'producto_id' => $producto->id,
-                // 'stock' => $stock,
-                // 'error' => $e->getMessage(),
-            // ], 'warning');
             return false;
         }
     }
@@ -300,20 +291,34 @@ class ShopifyStockService
                 'variant' => $variantUpdate
             ]);
 
-            $locationId = $this->getDefaultLocationId($client);
-            $setPayload = [
-                'location_id' => $locationId,
-                'inventory_item_id' => $producto->shopify_inventory_item_id,
-                'available' => (int)$productData['stock_quantity']
-            ];
+            // Sincronizar niveles de inventario multi-sucursal si están configuradas
+            $mappings = \App\Models\Admin\ShopifyLocation::withoutGlobalScope('empresa')
+                ->where('id_empresa', $producto->id_empresa)
+                ->where('sincronizar_stock', true)
+                ->whereNotNull('id_bodega')
+                ->get();
 
-            // ShopifyHelper::log("actualizarProductoPorId: seteando inventario en Shopify", [
-                // 'producto_id' => $producto->id,
-                // 'shopify_product_id' => $producto->shopify_product_id,
-                // 'payload' => $setPayload,
-            // ]);
+            if ($mappings->isNotEmpty()) {
+                foreach ($mappings as $map) {
+                    $stockBodega = Inventario::where('id_producto', $producto->id)
+                        ->where('id_bodega', $map->id_bodega)
+                        ->value('stock') ?? 0;
 
-            $client->post('inventory_levels/set.json', $setPayload);
+                    $client->post('inventory_levels/set.json', [
+                        'location_id' => $map->shopify_location_id,
+                        'inventory_item_id' => $producto->shopify_inventory_item_id,
+                        'available' => (int)$stockBodega
+                    ]);
+                }
+            } else {
+                $locationId = $this->getDefaultLocationId($client);
+                $setPayload = [
+                    'location_id' => $locationId,
+                    'inventory_item_id' => $producto->shopify_inventory_item_id,
+                    'available' => (int)$productData['stock_quantity']
+                ];
+                $client->post('inventory_levels/set.json', $setPayload);
+            }
 
             if (!empty($productData['images'])) {
                 $this->actualizarImagenesProducto($client, $producto->shopify_product_id, $productData['images']);

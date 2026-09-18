@@ -22,6 +22,7 @@ class Sucursal extends Model {
         'codigo_punto_venta',
         'activo',
         'id_empresa',
+        'shopify_location_id',
     ];
 
     protected $casts = [
@@ -45,6 +46,10 @@ class Sucursal extends Model {
         return $this->hasMany('App\Models\Admin\Caja', 'sucursal_id');
     }
 
+    public function bodegas(){
+        return $this->hasMany('App\Models\Inventario\Bodega', 'id_sucursal');
+    }
+
     public function usuarios(){
         return $this->hasMany('App\Models\User', 'id_sucursal');
     }
@@ -53,5 +58,7 @@ class Sucursal extends Model {
         return $this->belongsTo('App\Models\Admin\Empresa', 'id_empresa');
     }
 
-
+    public function shopifyLocation(){
+        return $this->hasOne('App\Models\Admin\ShopifyLocation', 'id_sucursal');
+    }
 }

@@ -41,12 +41,16 @@ class Inventario extends Model {
         $salidaCantidad =  null;
 
         if ($clase == 'App\Models\Ventas\Venta') { //Salida
+            $esShopify = (!empty($opciones['origen']) && $opciones['origen'] === 'shopify')
+                || !empty($modelo->referencia_shopify);
+            $sufijoShopify = $esShopify ? ' desde Shopify' : '';
+
             if ($cantidad > 0) {
                 $salidaCantidad =  $cantidad;
-                $clase = $modelo->estado == 'Consigna' ? 'Venta a consigna' : 'Venta';
+                $clase = $modelo->estado == 'Consigna' ? 'Venta a consigna' : ('Venta' . $sufijoShopify);
             }else{
                 $entradaCantidad =  abs($cantidad);
-                $clase = 'Venta Anulada';
+                $clase = 'Venta Anulada' . $sufijoShopify;
             }
         }
         else if ($clase == 'App\Models\Compras\Compra') {
@@ -79,21 +83,26 @@ class Inventario extends Model {
             }
         }
         else if ($clase == 'App\Models\Inventario\Traslado') {
+            $sufijoShopify = (!empty($opciones['origen']) && $opciones['origen'] === 'shopify')
+                || (isset($modelo->concepto) && (str_contains($modelo->concepto, 'SHOPIFY-TRANSFER') || stripos($modelo->concepto, 'Shopify') !== false))
+                ? ' desde Shopify'
+                : '';
+
             if ($cantidad > 0) {
                 if ($modelo->estado == 'Cancelado') {
-                    $clase = 'Traslado de ' . $modelo->destino()->pluck('nombre')->first() . ' cancelado';
+                    $clase = 'Traslado de ' . $modelo->destino()->pluck('nombre')->first() . ' cancelado' . $sufijoShopify;
                     $salidaCantidad =  $cantidad;
                 }else{
                     $entradaCantidad =  $cantidad;
-                    $clase = 'Traslado de ' . $modelo->origen()->pluck('nombre')->first();
+                    $clase = 'Traslado de ' . $modelo->origen()->pluck('nombre')->first() . $sufijoShopify;
                 }
             }else{
                 if ($modelo->estado == 'Cancelado') {
-                    $clase = 'Traslado a ' . $modelo->origen()->pluck('nombre')->first() . ' cancelado';
+                    $clase = 'Traslado a ' . $modelo->origen()->pluck('nombre')->first() . ' cancelado' . $sufijoShopify;
                     $entradaCantidad =  abs($cantidad);
                 }else{
                     $salidaCantidad =  abs($cantidad);
-                    $clase = 'Traslado a ' . $modelo->destino()->pluck('nombre')->first();
+                    $clase = 'Traslado a ' . $modelo->destino()->pluck('nombre')->first() . $sufijoShopify;
                 }
             }
         }
@@ -115,11 +124,24 @@ class Inventario extends Model {
                 $clase = 'Devolución Compra Anulada';
             }
         }else if ($clase == 'App\Models\Inventario\Producto') {
-            // Actualización de producto: desde Shopify mostramos texto y cantidades; desde SmartPyme solo texto
-            if (!empty($opciones['origen']) && $opciones['origen'] === 'shopify' && $cantidad != 0) {
-                $clase = 'Actualización de producto desde Shopify';
-                $entradaCantidad = $cantidad > 0 ? $cantidad : null;
-                $salidaCantidad = $cantidad < 0 ? abs($cantidad) : null;
+            if (!empty($opciones['origen']) && $opciones['origen'] === 'shopify') {
+                if (!empty($opciones['tipo']) && $opciones['tipo'] === 'inventario_inicial') {
+                    $clase = 'Inventario inicial desde Shopify';
+                    $entradaCantidad = $cantidad > 0 ? $cantidad : null;
+                    $salidaCantidad = null;
+                } elseif (!empty($opciones['detalle_personalizado'])) {
+                    $clase = $opciones['detalle_personalizado'];
+                    $entradaCantidad = $cantidad > 0 ? $cantidad : null;
+                    $salidaCantidad = $cantidad < 0 ? abs($cantidad) : null;
+                } elseif ($cantidad != 0) {
+                    $clase = 'Ajuste de inventario desde Shopify';
+                    $entradaCantidad = $cantidad > 0 ? $cantidad : null;
+                    $salidaCantidad = $cantidad < 0 ? abs($cantidad) : null;
+                } else {
+                    $clase = 'Actualización de producto desde Shopify';
+                    $entradaCantidad = null;
+                    $salidaCantidad = null;
+                }
             } else {
                 $clase = 'Actualización de producto';
                 $entradaCantidad = null;
@@ -202,7 +224,7 @@ class Inventario extends Model {
             'lote_id'           => $opciones['lote_id'] ?? null,
             'id_inventario'     => $this->id_bodega,
             'detalle'           => $clase,
-            'referencia'        => $modelo->id,
+            'referencia'        => $opciones['referencia'] ?? $modelo->id,
             'precio_unitario'   => $precio,
             'costo_unitario'    => $costo,
             'entrada_cantidad'  => $entradaCantidad,
@@ -291,7 +313,7 @@ class Inventario extends Model {
         }
 
         // Si es una venta
-        if ($clase == 'Venta' || $clase == 'Venta a consigna' || $clase == 'Venta Anulada') {
+        if (str_starts_with($clase, 'Venta') || $clase == 'Venta a consigna') {
             $detalleVenta = \App\Models\Ventas\Detalle::where('id_venta', $modelo->id)
                 ->where('id_producto', $idProducto)
                 ->whereNotNull('lote_id')

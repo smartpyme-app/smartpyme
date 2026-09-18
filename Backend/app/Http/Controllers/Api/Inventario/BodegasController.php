@@ -30,7 +30,7 @@ class BodegasController extends Controller
                 return $query->where('nombre', 'like', '%' . $request->buscador . '%')
                     ->orwhere('descripcion', 'like', "%" . $request->buscador . "%");
             })
-            ->orderBy($request->orden, $request->direccion)
+            ->orderBy($request->orden ?: 'id', in_array(strtolower($request->direccion ?: ''), ['asc', 'desc']) ? $request->direccion : 'asc')
             ->paginate($request->paginate);
 
         return Response()->json($bodegas, 200);
