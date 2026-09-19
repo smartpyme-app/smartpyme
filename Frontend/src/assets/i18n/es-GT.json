@@ -192,7 +192,9 @@
       "municipality": "Municipio",
       "municipalityColon": "Municipio:",
       "district": "Distrito",
-      "districtColon": "Distrito:"
+      "districtColon": "Distrito:",
+      "address": "Dirección",
+      "addressColon": "Dirección:"
     }
   },
   "ui": {
