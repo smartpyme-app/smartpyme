@@ -146,18 +146,46 @@
                 <label for="">Correo:</label>
                 <input type="email" class="form-control" name="sucursal.correo" [(ngModel)]="sucursal.correo"/>
             </div>
-            <div class="form-group col-lg-6">
-                <label for="">{{ 'country.location.municipalityColon' | translate }}</label>
-                <input type="text" class="form-control" name="sucursal.municipio" [(ngModel)]="sucursal.municipio"/>
+            <div class="form-group col-lg-12">
+                <label for="">{{ 'country.location.addressColon' | translate }}</label>
+                <input type="text" class="form-control" name="sucursal.direccion" [(ngModel)]="sucursal.direccion"/>
             </div>
+            @if (!esCostaRicaFe()) {
             <div class="form-group col-lg-6">
                 <label for="">{{ 'country.location.departmentColon' | translate }}</label>
                 <input type="text" class="form-control" name="sucursal.departamento" [(ngModel)]="sucursal.departamento"/>
             </div>
-            <div class="form-group col-lg-12">
-                <label for="">Dirección:</label>
-                <input type="text" class="form-control" name="sucursal.direccion" [(ngModel)]="sucursal.direccion"/>
+            <div class="form-group col-lg-6">
+                <label for="">{{ 'country.location.municipalityColon' | translate }}</label>
+                <input type="text" class="form-control" name="sucursal.municipio" [(ngModel)]="sucursal.municipio"/>
             </div>
+            }
+            @if (esCostaRicaFe()) {
+            <div class="form-group col-lg-4">
+                <label for="sucursal_cr_provincia_modal">{{ 'country.location.departmentColon' | translate }}</label>
+                <ng-select [(ngModel)]="sucursal.cod_departamento" (ngModelChange)="setDepartamento($event)" class="form-select p-0" name="sucursal_cr_provincia_modal" id="sucursal_cr_provincia_modal" placeholder="Seleccione">
+                  @for (prov of departamentos; track trackUbicacion(prov)) {
+                    <ng-option [value]="prov.cod">{{ prov.nombre }}</ng-option>
+                  }
+                </ng-select>
+            </div>
+            <div class="form-group col-lg-4">
+                <label for="sucursal_cr_canton_modal">{{ 'country.location.municipalityColon' | translate }}</label>
+                <ng-select [(ngModel)]="sucursal.cod_municipio" (ngModelChange)="setMunicipio($event)" class="form-select p-0" name="sucursal_cr_canton_modal" id="sucursal_cr_canton_modal" placeholder="Seleccione">
+                  @for (mun of municipiosFiltradosCr(); track trackUbicacion(mun)) {
+                    <ng-option [value]="mun.cod">{{ mun.nombre }}</ng-option>
+                  }
+                </ng-select>
+            </div>
+            <div class="form-group col-lg-4">
+                <label for="sucursal_cr_distrito_modal">{{ 'country.location.districtColon' | translate }}</label>
+                <ng-select [(ngModel)]="sucursal.cod_distrito" (ngModelChange)="setDistrito($event)" class="form-select p-0" name="sucursal_cr_distrito_modal" id="sucursal_cr_distrito_modal" placeholder="Seleccione">
+                  @for (dis of distritosFiltradosCr(); track trackUbicacion(dis)) {
+                    <ng-option [value]="dis.cod">{{ dis.nombre }}</ng-option>
+                  }
+                </ng-select>
+            </div>
+            }
             <div class="form-group col-md-4">
                 <label for="tipo_establecimiento ">Tipo establecimiento:</label>
                 <select class="form-select" [(ngModel)]="sucursal.tipo_establecimiento" name="tipo_establecimiento ">

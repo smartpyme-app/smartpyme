@@ -17,6 +17,14 @@ import {
     mapContribuyenteAeResponseToActividades,
 } from '@services/facturacion-electronica/contribuyente-hacienda.mapper';
 import { HaciendaContribuyenteClientService } from '@services/facturacion-electronica/hacienda-contribuyente-client.service';
+import { FeCrUbicacionService } from '@services/fe-cr-ubicacion.service';
+import {
+    alCambiarDepartamento,
+    alCambiarDistrito,
+    alCambiarMunicipio,
+    hidratarCodigosUbicacion,
+    trackUbicacionCod,
+} from '@utils/ubicacion-catalogo.util';
 
 @Component({
     selector: 'app-sucursales',
@@ -34,6 +42,10 @@ export class SucursalesComponent extends BaseCrudComponent<any> implements OnIni
     public actividadesContribuyenteCr: ContribuyenteActividadOption[] = [];
     public actividadContribuyenteSeleccionada: ContribuyenteActividadOption | null = null;
     public contribuyenteCargandoCr = false;
+    public departamentos: any[] = [];
+    public municipios: any[] = [];
+    public distritos: any[] = [];
+    readonly trackUbicacion = trackUbicacionCod;
 
     readonly compareActividadContribuyenteCr = (
         a: ContribuyenteActividadOption,
@@ -48,6 +60,7 @@ export class SucursalesComponent extends BaseCrudComponent<any> implements OnIni
         private router: Router,
         private cdr: ChangeDetectorRef,
         private haciendaContribuyenteClient: HaciendaContribuyenteClientService,
+        private feCrUbic: FeCrUbicacionService,
     ) {
         super(apiService, alertService, modalManager, {
             endpoint: 'sucursal',
@@ -80,6 +93,7 @@ export class SucursalesComponent extends BaseCrudComponent<any> implements OnIni
         this.filtros.direccion = 'desc';
         this.filtros.paginate = 10;
 
+        this.cargarCatalogosUbicacion();
         this.loadAll();
     }
 
@@ -103,6 +117,7 @@ export class SucursalesComponent extends BaseCrudComponent<any> implements OnIni
 
     override openModal(template: TemplateRef<any>, sucursal?: any) {
         super.openModal(template, sucursal, {class: 'modal-lg'});
+        this.hidratarUbicacion();
         this.prepararGiroModal();
     }
 
@@ -112,6 +127,33 @@ export class SucursalesComponent extends BaseCrudComponent<any> implements OnIni
 
     public esElSalvadorFe(): boolean {
         return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_SV;
+    }
+
+    public municipiosFiltradosCr(): any[] {
+        return this.feCrUbic.municipiosPorProvincia(this.municipios, this.sucursal?.cod_departamento);
+    }
+
+    public distritosFiltradosCr(): any[] {
+        return this.feCrUbic.distritosPorCanton(
+            this.distritos,
+            this.sucursal?.cod_departamento,
+            this.sucursal?.cod_municipio,
+        );
+    }
+
+    public setDepartamento(cod?: unknown): void {
+        alCambiarDepartamento(this.sucursal, this.departamentos, cod ?? this.sucursal.cod_departamento);
+        this.cdr.markForCheck();
+    }
+
+    public setMunicipio(cod?: unknown): void {
+        alCambiarMunicipio(this.sucursal, this.municipios, cod ?? this.sucursal.cod_municipio);
+        this.cdr.markForCheck();
+    }
+
+    public setDistrito(cod?: unknown): void {
+        alCambiarDistrito(this.sucursal, this.distritos, this.municipios, cod ?? this.sucursal.cod_distrito);
+        this.cdr.markForCheck();
     }
 
     public setGiro(): void {
@@ -184,6 +226,38 @@ export class SucursalesComponent extends BaseCrudComponent<any> implements OnIni
                 },
                 error: (e) => this.alertService.error(e),
             });
+    }
+
+    private cargarCatalogosUbicacion(): void {
+        try {
+            this.departamentos = JSON.parse(localStorage.getItem('departamentos') || '[]');
+            this.municipios = JSON.parse(localStorage.getItem('municipios') || '[]');
+            this.distritos = JSON.parse(localStorage.getItem('distritos') || '[]');
+        } catch {
+            this.departamentos = [];
+            this.municipios = [];
+            this.distritos = [];
+        }
+        this.feCrUbic.cargarCatalogosYLs().pipe(this.untilDestroyed()).subscribe((r) => {
+            if (r) {
+                this.departamentos = r.dep;
+                this.municipios = r.mun;
+                this.distritos = r.dis;
+                this.hidratarUbicacion();
+                this.cdr.markForCheck();
+            }
+        });
+    }
+
+    private hidratarUbicacion(): void {
+        if (!this.sucursal || !this.esCostaRicaFe()) {
+            return;
+        }
+        hidratarCodigosUbicacion(this.sucursal, {
+            departamentos: this.departamentos,
+            municipios: this.municipios,
+            distritos: this.distritos,
+        });
     }
 
     public contarActivos(){

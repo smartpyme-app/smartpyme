@@ -1,7 +1,10 @@
 import {
   alCambiarDepartamento,
+  alCambiarDistrito,
+  alCambiarMunicipio,
   dedupePorCod,
   filtrarPorCodDepartamento,
+  hidratarCodigosUbicacion,
   trackUbicacionCod,
 } from './ubicacion-catalogo.util';
 
@@ -66,6 +69,63 @@ describe('ubicacion-catalogo.util', () => {
       expect(cliente.cod_municipio).toBe('');
       expect(cliente.distrito).toBe('');
       expect(cliente.cod_distrito).toBe('');
+    });
+  });
+
+  describe('alCambiarMunicipio', () => {
+    it('guarda el cantón y limpia distrito', () => {
+      const sucursal: any = {
+        cod_departamento: '1',
+        departamento: 'San José',
+        municipio: 'Central',
+        cod_municipio: '01',
+        distrito: 'Carmen',
+        cod_distrito: '10101',
+      };
+      const municipios = [
+        { cod: '01', nombre: 'Central', cod_departamento: '1' },
+        { cod: '02', nombre: 'Escazú', cod_departamento: '1' },
+      ];
+
+      alCambiarMunicipio(sucursal, municipios, '02');
+
+      expect(sucursal.cod_municipio).toBe('02');
+      expect(sucursal.municipio).toBe('Escazú');
+      expect(sucursal.distrito).toBe('');
+      expect(sucursal.cod_distrito).toBe('');
+    });
+  });
+
+  describe('alCambiarDistrito', () => {
+    it('rellena distrito y cantón del catálogo', () => {
+      const sucursal: any = { cod_departamento: '1', cod_municipio: '01' };
+      const distritos = [
+        { cod: '10101', nombre: 'Carmen', cod_departamento: '1', cod_municipio: '01' },
+      ];
+      const municipios = [{ cod: '01', nombre: 'Central', cod_departamento: '1' }];
+
+      alCambiarDistrito(sucursal, distritos, municipios, '10101');
+
+      expect(sucursal.distrito).toBe('Carmen');
+      expect(sucursal.cod_distrito).toBe('10101');
+      expect(sucursal.municipio).toBe('Central');
+    });
+  });
+
+  describe('hidratarCodigosUbicacion', () => {
+    it('completa códigos desde nombres guardados', () => {
+      const sucursal: any = { departamento: 'San José', municipio: 'Escazú', distrito: 'San Rafael' };
+      hidratarCodigosUbicacion(sucursal, {
+        departamentos: [{ cod: '1', nombre: 'San José' }],
+        municipios: [{ cod: '02', nombre: 'Escazú', cod_departamento: '1' }],
+        distritos: [
+          { cod: '10203', nombre: 'San Rafael', cod_departamento: '1', cod_municipio: '02' },
+        ],
+      });
+
+      expect(sucursal.cod_departamento).toBe('1');
+      expect(sucursal.cod_municipio).toBe('02');
+      expect(sucursal.cod_distrito).toBe('10203');
     });
   });
 
