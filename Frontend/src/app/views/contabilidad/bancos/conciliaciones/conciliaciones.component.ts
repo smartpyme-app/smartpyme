@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { PopoverModule } from 'ngx-bootstrap/popover';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -16,7 +18,7 @@ import Swal from 'sweetalert2';
     selector: 'app-conciliaciones',
     templateUrl: './conciliaciones.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, ReactiveFormsModule, NgSelectModule, CurrencyPipe],
+    imports: [CommonModule, RouterModule, FormsModule, ReactiveFormsModule, NgSelectModule, PopoverModule, TooltipModule, CurrencyPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 
