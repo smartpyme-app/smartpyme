@@ -17,6 +17,7 @@ use App\Services\Compras\DocumentoImport\DocumentoImportService;
 use App\Services\Compras\Gastos\GastoImportService;
 use App\Exceptions\Compras\DocumentoImportException;
 use App\Models\Compras\Gastos\DetalleEgreso;
+use App\Services\Compras\CodigoGeneracionDuplicadoFinder;
 use Illuminate\Support\Facades\DB;
 
 use App\Exports\GastosExport;
@@ -54,15 +55,18 @@ class GastosController extends Controller
     protected $gastoService;
     protected $gastoImportService;
     protected $documentoImportService;
+    protected $codigoGeneracionDuplicadoFinder;
 
     public function __construct(
         GastoService $gastoService,
         GastoImportService $gastoImportService,
-        DocumentoImportService $documentoImportService
+        DocumentoImportService $documentoImportService,
+        CodigoGeneracionDuplicadoFinder $codigoGeneracionDuplicadoFinder
     ) {
         $this->gastoService = $gastoService;
         $this->gastoImportService = $gastoImportService;
         $this->documentoImportService = $documentoImportService;
+        $this->codigoGeneracionDuplicadoFinder = $codigoGeneracionDuplicadoFinder;
     }
 
 
@@ -197,6 +201,15 @@ class GastosController extends Controller
                     'code' => 403,
                 ], 403);
             }
+        }
+
+        if ($bloqueado = $this->respuestaCodigoGeneracionDuplicado(
+            $request->input('id_empresa') ?: auth()->user()?->id_empresa,
+            $this->codigoGeneracionDesdeRequest($request),
+            null,
+            $request->id
+        )) {
+            return $bloqueado;
         }
 
         if ($request->input('id_categoria') === '' || $request->input('id_categoria') === null) {
@@ -549,6 +562,14 @@ class GastosController extends Controller
 
         try {
             $result = $this->documentoImportService->importar($request->json_data);
+            $this->codigoGeneracionDuplicadoFinder->assertDisponible(
+                (int) (auth()->user()?->id_empresa ?? 0),
+                is_scalar($result->dte['identificacion']['codigoGeneracion'] ?? null)
+                    ? (string) $result->dte['identificacion']['codigoGeneracion']
+                    : null,
+                null,
+                null,
+            );
             $gasto = $this->gastoImportService->importarDesdeJson($result->dte);
             $gasto->tipo_documento = $result->tipoDocumentoNombre;
 
@@ -734,6 +755,41 @@ class GastosController extends Controller
         $documento->increment('correlativo');
     }
 
+    private function codigoGeneracionDesdeRequest(Request $request): ?string
+    {
+        if ($request->filled('codigo_generacion')) {
+            return (string) $request->input('codigo_generacion');
+        }
+
+        $dte = $request->input('dte');
+        if (is_string($dte) && $dte !== '') {
+            $dte = json_decode($dte, true);
+        }
+        $codigo = is_array($dte) ? ($dte['identificacion']['codigoGeneracion'] ?? null) : null;
+
+        return is_scalar($codigo) ? (string) $codigo : null;
+    }
+
+    private function respuestaCodigoGeneracionDuplicado(
+        mixed $idEmpresa,
+        ?string $codigo,
+        mixed $excluirCompraId,
+        mixed $excluirGastoId
+    ): ?\Illuminate\Http\JsonResponse {
+        try {
+            $this->codigoGeneracionDuplicadoFinder->assertDisponible(
+                (int) $idEmpresa,
+                $codigo,
+                $excluirCompraId ? (int) $excluirCompraId : null,
+                $excluirGastoId ? (int) $excluirGastoId : null,
+            );
+        } catch (DocumentoImportException $e) {
+            return Response()->json(['error' => $e->getMessage()], 422);
+        }
+
+        return null;
+    }
+
     /**
      * Persiste código de generación, número de control y DTE importado desde el frontend.
      */
@@ -741,7 +797,7 @@ class GastosController extends Controller
     {
         if ($request->has('codigo_generacion')) {
             $codigo = trim((string) $request->input('codigo_generacion', ''));
-            $gasto->codigo_generacion = $codigo !== '' ? $codigo : null;
+            $gasto->codigo_generacion = $codigo !== '' ? strtoupper($codigo) : null;
         }
 
         if ($request->has('numero_control')) {

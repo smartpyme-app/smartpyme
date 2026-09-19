@@ -39,6 +39,10 @@ import { of } from 'rxjs';
 import { esTipoFacturaElectronicaCompraCr } from '@views/ventas/documentos/documento-nombre-options';
 import { esElSalvadorFe as empresaEsElSalvador } from '@services/facturacion-electronica/fe-pais.util';
 import {
+  codigoGeneracionDesdeDte,
+  codigoGeneracionYaUsadoEnLote,
+} from '@services/compras/codigo-generacion.util';
+import {
   ExportLimiteTipo,
   ExportPeriodoState,
   MESES_EXPORT_PERIODO,
@@ -1310,16 +1314,32 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit, 
             estado: 'error',
           });
         } else {
-          const estado: BulkCompraItem['estado'] =
-            prep.noEncontrados.length > 0 ? 'pendiente_productos' : 'lista';
-          this.bulkItems.push({
-            uid,
-            fileName: f.name,
-            compra: prep.compra,
-            jsonData,
-            noEncontrados: prep.noEncontrados,
-            estado,
-          });
+          const codigo = codigoGeneracionDesdeDte(jsonData) || String(prep.compra?.codigo_generacion || '');
+          const usados = this.bulkItems
+            .filter((it) => it.estado !== 'error')
+            .map((it) => codigoGeneracionDesdeDte(it.jsonData) || String(it.compra?.codigo_generacion || ''));
+          if (codigo && codigoGeneracionYaUsadoEnLote(codigo, usados)) {
+            this.bulkItems.push({
+              uid,
+              fileName: f.name,
+              compra: prep.compra,
+              jsonData,
+              noEncontrados: [],
+              error: 'Ya está cargada una compra con ese código de generación.',
+              estado: 'error',
+            });
+          } else {
+            const estado: BulkCompraItem['estado'] =
+              prep.noEncontrados.length > 0 ? 'pendiente_productos' : 'lista';
+            this.bulkItems.push({
+              uid,
+              fileName: f.name,
+              compra: prep.compra,
+              jsonData,
+              noEncontrados: prep.noEncontrados,
+              estado,
+            });
+          }
         }
       } catch (e: any) {
         this.bulkItems.push({

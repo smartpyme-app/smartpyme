@@ -300,6 +300,15 @@ export class CompraJsonBulkService {
         } else if (jsonData.identificacion?.tipoDte) {
             compra.tipo_documento = this.getTipoDocumento(jsonData.identificacion.tipoDte) || 'Factura';
         }
+        if (jsonData.identificacion?.codigoGeneracion) {
+            compra.codigo_generacion = String(jsonData.identificacion.codigoGeneracion).trim();
+        }
+        if (jsonData.identificacion?.numeroControl) {
+            compra.numero_control = String(jsonData.identificacion.numeroControl).trim();
+        }
+        if (jsonData.identificacion?.tipoDte) {
+            compra.tipo_dte = String(jsonData.identificacion.tipoDte);
+        }
         this.aplicarReferenciaCorrelativo(compra, documentos, jsonData);
         if (proveedorRow?.id) {
             compra.id_proveedor = proveedorRow.id;

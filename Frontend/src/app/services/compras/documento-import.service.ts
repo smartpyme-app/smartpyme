@@ -47,12 +47,26 @@ export class DocumentoImportService {
     return cr ? '.xml,.json,.txt' : '.json,.txt';
   }
 
-  importarCompra(contenido: string): Observable<DocumentoImportResponse> {
-    return this.apiService.store('compras/importar-documento', { contenido });
+  importarCompra(
+    contenido: string,
+    opts?: { id_compra?: number }
+  ): Observable<DocumentoImportResponse> {
+    const body: Record<string, unknown> = { contenido };
+    if (opts?.id_compra) {
+      body['id_compra'] = opts.id_compra;
+    }
+    return this.apiService.store('compras/importar-documento', body);
   }
 
-  importarGasto(contenido: string): Observable<DocumentoImportResponse> {
-    return this.apiService.store('gastos/importar-documento', { contenido });
+  importarGasto(
+    contenido: string,
+    opts?: { id_gasto?: number }
+  ): Observable<DocumentoImportResponse> {
+    const body: Record<string, unknown> = { contenido };
+    if (opts?.id_gasto) {
+      body['id_gasto'] = opts.id_gasto;
+    }
+    return this.apiService.store('gastos/importar-documento', body);
   }
 
   /**

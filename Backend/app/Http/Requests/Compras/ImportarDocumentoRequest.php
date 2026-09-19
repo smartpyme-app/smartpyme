@@ -17,6 +17,8 @@ class ImportarDocumentoRequest extends FormRequest
             'contenido' => 'required_without:archivo|string|max:5000000',
             'archivo' => 'required_without:contenido|file|max:5120|mimes:xml,json,txt',
             'json_data' => 'sometimes|string|max:5000000',
+            'id_compra' => 'sometimes|nullable|integer',
+            'id_gasto' => 'sometimes|nullable|integer',
         ];
     }
 

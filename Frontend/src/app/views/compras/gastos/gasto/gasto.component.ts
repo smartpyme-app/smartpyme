@@ -24,6 +24,11 @@ import * as moment from 'moment';
 import { LazyImageDirective } from '../../../../directives/lazy-image.directive';
 import { firstValueFrom, forkJoin } from 'rxjs';
 import { DocumentoImportService } from '@services/compras/documento-import.service';
+import {
+  esErrorCodigoGeneracionDuplicado,
+  mensajeErrorDocumentoImport,
+  TITULO_CODIGO_GENERACION_DUPLICADO,
+} from '@services/compras/codigo-generacion.util';
 import { FE_PAIS_CR, FE_PAIS_HN, esElSalvadorFe as empresaEsElSalvador, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
 import {
   esTipoFacturaElectronicaCompraCr,
@@ -1331,7 +1336,11 @@ export class GastoComponent implements OnInit {
 
       // 1) Intentar primero con el servicio del backend (DTE firmado, etc.)
       try {
-        const res = await firstValueFrom(this.documentoImportService.importarGasto(texto));
+        const res = await firstValueFrom(
+          this.documentoImportService.importarGasto(texto, {
+            id_gasto: this.gasto?.id ? Number(this.gasto.id) : undefined,
+          })
+        );
         jsonData = res?.dte ?? res;
 
         if (res?.tipo_documento_nombre && jsonData?.identificacion) {
@@ -1341,6 +1350,13 @@ export class GastoComponent implements OnInit {
           };
         }
       } catch (backendErr) {
+        if (esErrorCodigoGeneracionDuplicado(backendErr)) {
+          this.alertService.warning(
+            TITULO_CODIGO_GENERACION_DUPLICADO,
+            mensajeErrorDocumentoImport(backendErr)
+          );
+          return;
+        }
         // 2) Fallback: parsear directamente como JSON crudo
         console.warn('Fallo el servicio de importación, usando JSON.parse:', backendErr);
         try {
@@ -1363,11 +1379,12 @@ export class GastoComponent implements OnInit {
       this.modalRef?.hide();
       this.alertService.success('Datos importados', 'El documento se importó correctamente.');
     } catch (error: any) {
-      const msg =
-        error?.error?.error ||
-        error?.message ||
-        'No se pudo interpretar el documento electrónico.';
-      this.alertService.error(msg);
+      const msg = mensajeErrorDocumentoImport(error);
+      if (esErrorCodigoGeneracionDuplicado(error)) {
+        this.alertService.warning(TITULO_CODIGO_GENERACION_DUPLICADO, msg);
+      } else {
+        this.alertService.error(msg);
+      }
     } finally {
       this.processingJson = false;
       // ponytail: CRÍTICO con OnPush — sin esto la vista no refleja los cambios
