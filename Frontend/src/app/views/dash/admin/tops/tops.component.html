@@ -95,7 +95,7 @@
                                 </td>
                             </tr>
                         }
-                        @if (dash?.total_compras > 0) {
+                        @if ((dash?.total_compras ?? 0) !== 0) {
                             <tr>
                                 <td>Compras</td>
                                 <td class="text-right">{{ dash?.total_compras | currency }}</td>
@@ -107,7 +107,7 @@
                                 <td class="text-right">{{ dash?.total_gastos | currency }}</td>
                             </tr>
                         }
-                        @if (dash?.total_compras > 0 && dash?.total_gastos > 0) {
+                        @if ((dash?.total_compras ?? 0) !== 0 && dash?.total_gastos > 0) {
                             <tr>
                                 <td>Total</td>
                                 <td class="text-right">{{ dash?.total_salidas | currency }}</td>

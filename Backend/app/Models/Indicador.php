@@ -419,14 +419,29 @@ class Indicador extends Model
         return $this->getTotalVentas() - $this->getTotalGastos();
     }
 
+    /**
+     * La devolución no tiene canal, forma de pago ni banco: salen de la venta ligada.
+     */
+    public static function filtrarDevolucionesPorVenta($devoluciones, string $campo, $valor)
+    {
+        return collect($devoluciones)->filter(function ($devolucion) use ($campo, $valor) {
+            $venta = $devolucion->venta ?? null;
+
+            return $venta && ($venta->{$campo} ?? null) == $valor;
+        })->values();
+    }
+
     public function getVentasByCanal(){
 
         return $this->ventas->where('estado', '!=', 'Anulada')->groupBy('id_canal')->map(function ($group) {
+                    $idCanal = $group->first()['id_canal'];
+                    $devoluciones = self::filtrarDevolucionesPorVenta($this->devoluciones_ventas, 'id_canal', $idCanal);
+
                     return [
                         'id' => $group->first()['id'],
                         'nombre' => $group->first()->canal()->pluck('nombre')->first(),
-                        'cantidad' => $group->count() - $this->devoluciones_ventas->where('id_canal', $group->first()['id_canal'])->count(),
-                        'total' => $group->sum('total') - $this->devoluciones_ventas->where('id_canal', $group->first()['id_canal'])->sum('total'),
+                        'cantidad' => $group->count() - $devoluciones->count(),
+                        'total' => $group->sum('total') - $devoluciones->sum('total'),
                     ];
                 })->sortByDesc('total')->values()->all();
     }
@@ -436,11 +451,14 @@ class Indicador extends Model
         $formasDePago = [];
 
         $ventas = $this->ventas_pagadas->where('forma_pago', '!=', 'Multiple')->groupBy('forma_pago')->map(function ($group) {
+                    $forma = $group->first()['forma_pago'];
+                    $devoluciones = self::filtrarDevolucionesPorVenta($this->devoluciones_ventas, 'forma_pago', $forma);
+
                     return [
                         'id' => $group->first()['id'],
-                        'nombre' => $group->first()['forma_pago'],
-                        'cantidad' => $group->count() - $this->devoluciones_ventas->where('forma_pago', $group->first()['forma_pago'])->count(),
-                        'total' => $group->sum('total') - $this->devoluciones_ventas->where('forma_pago', $group->first()['forma_pago'])->sum('total'),
+                        'nombre' => $forma,
+                        'cantidad' => $group->count() - $devoluciones->count(),
+                        'total' => $group->sum('total') - $devoluciones->sum('total'),
                     ];
                  })->sortByDesc('total')->values()->all();
 
@@ -504,11 +522,14 @@ class Indicador extends Model
     public function getVentasByBanco(){
 
         return $this->ventas_pagadas->groupBy('detalle_banco')->map(function ($group) {
+                    $banco = $group->first()['detalle_banco'];
+                    $devoluciones = self::filtrarDevolucionesPorVenta($this->devoluciones_ventas, 'detalle_banco', $banco);
+
                     return [
                         'id' => $group->first()['id'],
-                        'nombre' => $group->first()['detalle_banco'],
-                        'cantidad' => $group->count() - $this->devoluciones_ventas->where('detalle_banco', $group->first()['detalle_banco'])->count(),
-                        'total' => $group->sum('total') - $this->devoluciones_ventas->where('detalle_banco', $group->first()['detalle_banco'])->sum('total'),
+                        'nombre' => $banco,
+                        'cantidad' => $group->count() - $devoluciones->count(),
+                        'total' => $group->sum('total') - $devoluciones->sum('total'),
                     ];
                  })->sortByDesc('total')->values()->all();
     }

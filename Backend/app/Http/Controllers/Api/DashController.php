@@ -62,7 +62,9 @@ class DashController extends Controller
 
             $indicadores->total_salidas = $indicadores->getTotalGastos();
         
-            $indicadores->total_compras = $indicadores->getTotalComprasPagadas() + $indicadores->getTotalComprasPendientes();
+            $indicadores->total_compras = $indicadores->getTotalComprasPagadas()
+                + $indicadores->getTotalComprasPendientes()
+                - $indicadores->getTotalDevolucionesCompra();
             $indicadores->total_gastos = $indicadores->getTotalGastosPagados() + $indicadores->getTotalGastosPendientes();
 
             $indicadores->total_cxp = $indicadores->getTotalComprasPendientes() + $indicadores->getTotalGastosPendientes();
