@@ -129,14 +129,16 @@
                       <input type="text" class="form-control" [(ngModel)]="documento.rangos" name="documento.rangos">
                   </div>
               }
-              <div class="form-group col-md-6">
-                  <label for="documento.numero_autorizacion">{{ esHonduras ? 'Rango autorizado' : 'Autorización' }}</label>
-                  <input type="text" class="form-control" [(ngModel)]="documento.numero_autorizacion" name="documento.numero_autorizacion">
-              </div>
-              <div class="form-group col-md-6">
-                  <label for="documento.resolucion">{{ labelResolucion }}</label>
-                  <input type="text" class="form-control" [(ngModel)]="documento.resolucion" name="documento.resolucion">
-              </div>
+              @if (showResolucionAutorizacion) {
+                  <div class="form-group col-md-6">
+                      <label for="documento.numero_autorizacion">{{ esHonduras ? 'Rango autorizado' : 'Autorización' }}</label>
+                      <input type="text" class="form-control" [(ngModel)]="documento.numero_autorizacion" name="documento.numero_autorizacion">
+                  </div>
+                  <div class="form-group col-md-6">
+                      <label for="documento.resolucion">{{ labelResolucion }}</label>
+                      <input type="text" class="form-control" [(ngModel)]="documento.resolucion" name="documento.resolucion">
+                  </div>
+              }
               <div class="form-group col-md-6">
                   <label for="documento.fecha">Fecha</label>
                   <input type="date" class="form-control" [(ngModel)]="documento.fecha" name="documento.fecha">

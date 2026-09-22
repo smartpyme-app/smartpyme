@@ -8,7 +8,7 @@ import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
-import { FE_PAIS_HN, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
+import { FE_PAIS_HN, esCostaRicaFe, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
 import {
     documentoNombreOpciones,
     DocumentoNombreOption,
@@ -49,9 +49,18 @@ export class DocumentoHistorialComponent extends BasePaginatedModalComponent imp
         return resolveCodigoPaisFe(this.apiService.auth_user()?.empresa) === FE_PAIS_HN;
     }
 
-    /** Serie (rangos) es de SV; en HN el CAI va en resolución y el rango en autorización. */
+    get esCostaRica(): boolean {
+        return esCostaRicaFe(this.apiService.auth_user()?.empresa);
+    }
+
+    /** Serie (rangos) es de SV. HN usa CAI; CR no usa serie. */
     get showSerie(): boolean {
-        return !this.esHonduras;
+        return !this.esHonduras && !this.esCostaRica;
+    }
+
+    /** Resolución y autorización son de SV/HN. En CR no aplican. */
+    get showResolucionAutorizacion(): boolean {
+        return !this.esCostaRica;
     }
 
     get labelResolucion(): string {
