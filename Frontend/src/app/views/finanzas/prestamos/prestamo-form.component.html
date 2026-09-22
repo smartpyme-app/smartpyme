@@ -5,24 +5,29 @@
 
 <section class="bg-white p-4 rounded mb-3">
   <form (ngSubmit)="guardar()">
+    <h6 class="mb-3">Información general</h6>
     <div class="row">
-      <div class="form-group col-md-4 mb-3 without-label">
-        <div class="form-switch bg-light-info rounded">
-          <label for="historico">Ya existía (histórico)</label>
-          <input id="historico" class="form-check-input float-end" type="checkbox" role="switch" name="historico" [(ngModel)]="form.historico" (ngModelChange)="onHistoricoChange()">
+      <div class="form-group col-md-4 mb-3">
+        <label class="form-label">Fecha de desembolso</label>
+        <input class="form-control" type="date" name="fecha_desembolso" [(ngModel)]="form.fecha_desembolso">
+      </div>
+      <div class="form-group col-md-8 mb-3">
+        <label class="form-label">Acreedor (proveedor)</label>
+        <div class="input-group flex-nowrap">
+          <ng-select [(ngModel)]="form.id_proveedor" class="form-select p-0 flex-grow-1" name="id_proveedor" [clearable]="true" [searchable]="true" placeholder="Buscar proveedor">
+            @for (proveedor of proveedores; track proveedor.id) {
+              <ng-option [value]="proveedor.id">
+                {{ proveedor.tipo == 'Empresa' ? proveedor.nombre_empresa : proveedor.nombre_completo }}
+              </ng-option>
+            }
+          </ng-select>
+          <app-crear-proveedor (update)="setProveedor($event)"></app-crear-proveedor>
         </div>
       </div>
-      <div class="form-group col-md-4 mb-3">
-        <label class="form-label">Tipo de acreedor</label>
-        <select class="form-select" name="tipo_acreedor" [(ngModel)]="form.tipo_acreedor">
-          <option value="institucion">Institución financiera</option>
-          <option value="persona">Persona</option>
-        </select>
-      </div>
-      <div class="form-group col-md-4 mb-3">
-        <label class="form-label">Acreedor</label>
-        <input class="form-control" name="acreedor" [(ngModel)]="form.acreedor">
-      </div>
+    </div>
+
+    <h6 class="mb-3 mt-2">Condiciones del préstamo</h6>
+    <div class="row">
       <div class="form-group col-md-4 mb-3">
         <label class="form-label">Concepto</label>
         <input class="form-control" name="concepto" [(ngModel)]="form.concepto" placeholder="Capital de trabajo, equipo...">
@@ -38,15 +43,11 @@
         </div>
       }
       <div class="form-group col-md-4 mb-3">
-        <label class="form-label">Fecha de desembolso</label>
-        <input class="form-control" type="date" name="fecha_desembolso" [(ngModel)]="form.fecha_desembolso">
+        <label class="form-label">Número de cuotas</label>
+        <input class="form-control" type="number" min="2" name="n_cuotas" [(ngModel)]="form.n_cuotas">
       </div>
       <div class="form-group col-md-4 mb-3">
-        <label class="form-label">Fecha primera cuota</label>
-        <input class="form-control" type="date" name="fecha_primera_cuota" [(ngModel)]="form.fecha_primera_cuota">
-      </div>
-      <div class="form-group col-md-4 mb-3">
-        <label class="form-label">Frecuencia</label>
+        <label class="form-label">Frecuencia de pago</label>
         <select class="form-select" name="frecuencia" [(ngModel)]="form.frecuencia">
           <option value="mensual">Mensual</option>
           <option value="quincenal">Quincenal</option>
@@ -54,8 +55,8 @@
         </select>
       </div>
       <div class="form-group col-md-4 mb-3">
-        <label class="form-label">Número de cuotas</label>
-        <input class="form-control" type="number" min="2" name="n_cuotas" [(ngModel)]="form.n_cuotas">
+        <label class="form-label">Fecha primera cuota</label>
+        <input class="form-control" type="date" name="fecha_primera_cuota" [(ngModel)]="form.fecha_primera_cuota">
       </div>
       <div class="form-group col-md-4 mb-3">
         <label class="form-label">Cuenta caja/banco</label>
@@ -66,6 +67,10 @@
           }
         </ng-select>
       </div>
+    </div>
+
+    <h6 class="mb-3 mt-2">Opciones</h6>
+    <div class="row">
       <div class="form-group col-md-4 mb-3 without-label">
         <div class="form-switch bg-light-info rounded">
           <label for="genera_interes">Genera interés</label>
@@ -80,6 +85,12 @@
       }
       <div class="form-group col-md-4 mb-3 without-label">
         <div class="form-switch bg-light-info rounded">
+          <label for="historico">Ya existía (histórico)</label>
+          <input id="historico" class="form-check-input float-end" type="checkbox" role="switch" name="historico" [(ngModel)]="form.historico" (ngModelChange)="onHistoricoChange()">
+        </div>
+      </div>
+      <div class="form-group col-md-4 mb-3 without-label">
+        <div class="form-switch bg-light-info rounded">
           <label for="generar_asiento_desembolso">Generar asiento de desembolso</label>
           <input id="generar_asiento_desembolso" class="form-check-input float-end" type="checkbox" role="switch" name="generar_asiento_desembolso" [(ngModel)]="form.generar_asiento_desembolso">
         </div>
@@ -87,6 +98,7 @@
     </div>
 
     @if (preview.length) {
+      <h6 class="mb-3 mt-2">Tabla de cuotas</h6>
       <div class="table-responsive mb-3">
         <table class="table table-borderless table-hover mb-0">
           <thead>

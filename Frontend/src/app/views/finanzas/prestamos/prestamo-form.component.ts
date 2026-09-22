@@ -5,22 +5,23 @@ import { Router, RouterModule } from '@angular/router';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
+import { CrearProveedorComponent } from '@shared/modals/crear-proveedor/crear-proveedor.component';
 
 @Component({
   selector: 'app-prestamo-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, NgSelectModule],
+  imports: [CommonModule, FormsModule, RouterModule, NgSelectModule, CrearProveedorComponent],
   templateUrl: './prestamo-form.component.html',
 })
 export class PrestamoFormComponent implements OnInit {
   cuentas: any[] = [];
+  proveedores: any[] = [];
   preview: any[] = [];
   saving = false;
   loadingPreview = false;
   form: any = {
     historico: false,
-    tipo_acreedor: 'institucion',
-    acreedor: '',
+    id_proveedor: null,
     concepto: '',
     monto: null,
     monto_original: null,
@@ -47,6 +48,23 @@ export class PrestamoFormComponent implements OnInit {
       },
       error: (err) => this.alertService.error(err),
     });
+    this.apiService.getAll('proveedores/list').subscribe({
+      next: (proveedores) => {
+        this.proveedores = proveedores ?? [];
+      },
+      error: (err) => this.alertService.error(err),
+    });
+  }
+
+  setProveedor(id: number): void {
+    this.form.id_proveedor = id;
+    if (!this.proveedores.some((p) => p.id === id)) {
+      this.apiService.getAll('proveedores/list').subscribe({
+        next: (proveedores) => {
+          this.proveedores = proveedores ?? [];
+        },
+      });
+    }
   }
 
   onHistoricoChange(): void {
@@ -79,8 +97,8 @@ export class PrestamoFormComponent implements OnInit {
   }
 
   guardar(): void {
-    if (!this.form.acreedor || !this.form.monto || this.preview.length < 2) {
-      this.alertService.error('Complete acreedor, monto y genere la tabla.');
+    if (!this.form.id_proveedor || !this.form.monto || this.preview.length < 2) {
+      this.alertService.error('Seleccione acreedor, indique monto y genere la tabla.');
       return;
     }
     this.saving = true;
