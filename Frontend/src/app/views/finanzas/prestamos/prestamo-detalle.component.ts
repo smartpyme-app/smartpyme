@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterModule } from '@angular/router';
@@ -17,6 +17,8 @@ import { getEmpresaCurrencySymbol } from '@helpers/currency-format.helper';
   templateUrl: './prestamo-detalle.component.html',
 })
 export class PrestamoDetalleComponent implements OnInit {
+  @ViewChild('mpago') mpagoTpl?: TemplateRef<any>;
+
   prestamo: any = null;
   formas: any[] = [];
   bancos: any[] = [];
@@ -89,9 +91,22 @@ export class PrestamoDetalleComponent implements OnInit {
   cargar(): void {
     const id = Number(this.route.snapshot.paramMap.get('id'));
     this.apiService.read('prestamos-empresa/', id).subscribe({
-      next: (p) => { this.prestamo = this.normalizarPrestamo(p); },
+      next: (p) => {
+        this.prestamo = this.normalizarPrestamo(p);
+        this.abrirAbonoSiVieneEnQuery();
+      },
       error: (err) => this.alertService.error(err),
     });
+  }
+
+  private abrirAbonoSiVieneEnQuery(): void {
+    if (this.route.snapshot.queryParamMap.get('abono') !== '1') {
+      return;
+    }
+    if (!this.puedePagar || this.prestamo?.estado !== 'activo' || !this.pendientes.length || !this.mpagoTpl) {
+      return;
+    }
+    setTimeout(() => this.abrirPago(this.mpagoTpl!));
   }
 
   abrirPago(template: TemplateRef<any>): void {

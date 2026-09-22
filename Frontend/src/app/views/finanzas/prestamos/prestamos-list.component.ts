@@ -1,8 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
+import { BsModalRef, BsModalService } from 'ngx-bootstrap/modal';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { ChartCardComponent } from '../../dashboard/components/chart-card/chart-card.component';
@@ -22,14 +23,21 @@ export class PrestamosListComponent implements OnInit {
   loading = false;
   filtros: any = {};
   puedeCrear = false;
+  puedePagar = false;
+  prestamosActivos: any[] = [];
+  prestamoAbonoId: number | null = null;
+  modalRef?: BsModalRef;
 
   constructor(
     private apiService: ApiService,
     private alertService: AlertService,
+    private router: Router,
+    private modalService: BsModalService,
   ) {}
 
   ngOnInit(): void {
     this.puedeCrear = this.apiService.hasPermission('finanzas.prestamos.crear');
+    this.puedePagar = this.apiService.hasPermission('finanzas.prestamos.pagar');
     this.loadAll();
   }
 
@@ -72,6 +80,34 @@ export class PrestamosListComponent implements OnInit {
         this.loading = false;
       },
     });
+  }
+
+  abrirSelectorAbono(template: TemplateRef<any>): void {
+    this.prestamoAbonoId = null;
+    this.apiService.getAll('prestamos-empresa', { estado: 'activo', paginate: 100, orden: 'acreedor', direccion: 'asc' }).subscribe({
+      next: (res) => {
+        this.prestamosActivos = res?.data ?? [];
+        if (!this.prestamosActivos.length) {
+          this.alertService.error('No hay préstamos activos para abonar.');
+          return;
+        }
+        this.modalRef = this.modalService.show(template, { class: 'modal-md' });
+      },
+      error: (err) => this.alertService.error(err),
+    });
+  }
+
+  confirmarAbono(): void {
+    if (!this.prestamoAbonoId) {
+      this.alertService.error('Seleccione un préstamo.');
+      return;
+    }
+    this.modalRef?.hide();
+    this.irAbono(this.prestamoAbonoId);
+  }
+
+  irAbono(id: number): void {
+    this.router.navigate(['/finanzas/prestamos', id], { queryParams: { abono: 1 } });
   }
 
   setPagination(ev: any): void {

@@ -1,10 +1,17 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
   <h2 class="page-heading">Préstamos</h2>
-  @if (puedeCrear) {
-    <a routerLink="/finanzas/prestamos/nuevo" class="btn btn-default">
-      <i class="fa fa-plus"></i> Nuevo préstamo
-    </a>
-  }
+  <div class="d-flex gap-2">
+    @if (puedePagar) {
+      <button type="button" class="btn btn-default" (click)="abrirSelectorAbono(mselectorAbono)">
+        <i class="fas fa-fw fa-hand-holding-usd"></i> Registrar abono
+      </button>
+    }
+    @if (puedeCrear) {
+      <a routerLink="/finanzas/prestamos/nuevo" class="btn btn-default">
+        <i class="fa fa-plus"></i> Nuevo préstamo
+      </a>
+    }
+  </div>
 </section>
 
 <div class="row g-2 mb-3">
@@ -98,6 +105,11 @@
                 </span>
               </td>
               <td class="text-center">
+                @if (puedePagar && p.estado === 'activo') {
+                  <button type="button" class="btn btn-link text-dark p-0 me-2" (click)="irAbono(p.id)" tooltip="Registrar abono">
+                    <i class="fas fa-hand-holding-usd"></i>
+                  </button>
+                }
                 <a class="text-decoration-none text-dark" [routerLink]="['/finanzas/prestamos', p.id]" tooltip="Ver préstamo">
                   <i class="fa fa-eye"></i>
                 </a>
@@ -112,3 +124,23 @@
     }
   </div>
 </section>
+
+<ng-template #mselectorAbono>
+  <div class="modal-header">
+    <h5 class="modal-title mb-0">Registrar abono</h5>
+    <button type="button" class="btn-close" (click)="modalRef?.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <label class="form-label">Préstamo</label>
+    <select class="form-select" name="prestamo_abono" [(ngModel)]="prestamoAbonoId">
+      <option [ngValue]="null">Seleccione</option>
+      @for (p of prestamosActivos; track p.id) {
+        <option [ngValue]="p.id">{{ p.acreedor }} — saldo {{ p.saldo | currency }}</option>
+      }
+    </select>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-light" (click)="modalRef?.hide()">Cancelar</button>
+    <button type="button" class="btn btn-primary" (click)="confirmarAbono()">Continuar</button>
+  </div>
+</ng-template>
