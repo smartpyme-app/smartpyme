@@ -26,7 +26,7 @@ class PrestamosEmpresaController extends Controller
     {
         ResumenPrestamos::marcarAtrasadas();
 
-        $query = PrestamoEmpresa::query();
+        $query = PrestamoEmpresa::query()->with('proveedor');
         if ($request->filled('estado') && in_array($request->estado, ['activo', 'pagado'], true)) {
             $query->where('estado', $request->estado);
         }
@@ -90,7 +90,7 @@ class PrestamosEmpresaController extends Controller
     public function show(int $id): JsonResponse
     {
         ResumenPrestamos::marcarAtrasadas();
-        $prestamo = PrestamoEmpresa::with(['cuotas', 'pagos'])->findOrFail($id);
+        $prestamo = PrestamoEmpresa::with(['cuotas', 'pagos', 'proveedor'])->findOrFail($id);
 
         return response()->json($prestamo);
     }
@@ -98,8 +98,7 @@ class PrestamosEmpresaController extends Controller
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'tipo_acreedor' => 'required|in:institucion,persona',
-            'acreedor' => 'required|string|max:191',
+            'id_proveedor' => 'required|integer',
             'concepto' => 'nullable|string|max:191',
             'historico' => 'sometimes|boolean',
             'monto_original' => 'nullable|numeric|min:0',
@@ -157,7 +156,7 @@ class PrestamosEmpresaController extends Controller
 
     public function anularUltimoPago(int $id): JsonResponse
     {
-        $prestamo = PrestamoEmpresa::with(['cuotas', 'pagos'])->findOrFail($id);
+        $prestamo = PrestamoEmpresa::with(['cuotas', 'pagos', 'proveedor'])->findOrFail($id);
 
         try {
             $prestamo = $this->anular->anular($prestamo);

@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterModule } from '@angular/router';
@@ -8,6 +8,7 @@ import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { ChartCardComponent } from '../../dashboard/components/chart-card/chart-card.component';
 import { MetricCard } from '../../dashboard/models/chart-config.model';
+import { getEmpresaCurrencySymbol } from '@helpers/currency-format.helper';
 
 @Component({
   selector: 'app-prestamo-detalle',
@@ -16,6 +17,8 @@ import { MetricCard } from '../../dashboard/models/chart-config.model';
   templateUrl: './prestamo-detalle.component.html',
 })
 export class PrestamoDetalleComponent implements OnInit {
+  @ViewChild('mpago') mpagoTpl?: TemplateRef<any>;
+
   prestamo: any = null;
   formas: any[] = [];
   bancos: any[] = [];
@@ -70,6 +73,10 @@ export class PrestamoDetalleComponent implements OnInit {
     );
   }
 
+  get simboloMoneda(): string {
+    return getEmpresaCurrencySymbol(this.apiService.auth_user()?.empresa);
+  }
+
   get kpis(): MetricCard[] {
     const monto = Number(this.prestamo?.monto || 0);
     const saldo = Number(this.prestamo?.saldo || 0);
@@ -84,9 +91,22 @@ export class PrestamoDetalleComponent implements OnInit {
   cargar(): void {
     const id = Number(this.route.snapshot.paramMap.get('id'));
     this.apiService.read('prestamos-empresa/', id).subscribe({
-      next: (p) => { this.prestamo = this.normalizarPrestamo(p); },
+      next: (p) => {
+        this.prestamo = this.normalizarPrestamo(p);
+        this.abrirAbonoSiVieneEnQuery();
+      },
       error: (err) => this.alertService.error(err),
     });
+  }
+
+  private abrirAbonoSiVieneEnQuery(): void {
+    if (this.route.snapshot.queryParamMap.get('abono') !== '1') {
+      return;
+    }
+    if (!this.puedePagar || this.prestamo?.estado !== 'activo' || !this.pendientes.length || !this.mpagoTpl) {
+      return;
+    }
+    setTimeout(() => this.abrirPago(this.mpagoTpl!));
   }
 
   abrirPago(template: TemplateRef<any>): void {

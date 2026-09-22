@@ -5,22 +5,24 @@ import { Router, RouterModule } from '@angular/router';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
+import { CrearProveedorComponent } from '@shared/modals/crear-proveedor/crear-proveedor.component';
+import { getEmpresaCurrencySymbol } from '@helpers/currency-format.helper';
 
 @Component({
   selector: 'app-prestamo-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, NgSelectModule],
+  imports: [CommonModule, FormsModule, RouterModule, NgSelectModule, CrearProveedorComponent],
   templateUrl: './prestamo-form.component.html',
 })
 export class PrestamoFormComponent implements OnInit {
   cuentas: any[] = [];
+  proveedores: any[] = [];
   preview: any[] = [];
   saving = false;
   loadingPreview = false;
   form: any = {
     historico: false,
-    tipo_acreedor: 'institucion',
-    acreedor: '',
+    id_proveedor: null,
     concepto: '',
     monto: null,
     monto_original: null,
@@ -35,10 +37,25 @@ export class PrestamoFormComponent implements OnInit {
   };
 
   constructor(
-    private apiService: ApiService,
+    public apiService: ApiService,
     private alertService: AlertService,
     private router: Router,
   ) {}
+
+  get simboloMoneda(): string {
+    return getEmpresaCurrencySymbol(this.apiService.auth_user()?.empresa);
+  }
+
+  /** SP-2215: asiento contable solo para roles de contabilidad. */
+  get puedeVerGenerarAsiento(): boolean {
+    return (
+      this.apiService.validateRole('usuario_contador', true) ||
+      this.apiService.validateRole('contador_superior', true) ||
+      this.apiService.validateRole('contador_auxiliar', true) ||
+      this.apiService.validateRole('admin', true) ||
+      this.apiService.validateRole('super_admin', true)
+    );
+  }
 
   ngOnInit(): void {
     this.apiService.getAll('banco/cuentas/list').subscribe({
@@ -47,6 +64,23 @@ export class PrestamoFormComponent implements OnInit {
       },
       error: (err) => this.alertService.error(err),
     });
+    this.apiService.getAll('proveedores/list').subscribe({
+      next: (proveedores) => {
+        this.proveedores = proveedores ?? [];
+      },
+      error: (err) => this.alertService.error(err),
+    });
+  }
+
+  setProveedor(id: number): void {
+    this.form.id_proveedor = id;
+    if (!this.proveedores.some((p) => p.id === id)) {
+      this.apiService.getAll('proveedores/list').subscribe({
+        next: (proveedores) => {
+          this.proveedores = proveedores ?? [];
+        },
+      });
+    }
   }
 
   onHistoricoChange(): void {
@@ -79,12 +113,16 @@ export class PrestamoFormComponent implements OnInit {
   }
 
   guardar(): void {
-    if (!this.form.acreedor || !this.form.monto || this.preview.length < 2) {
-      this.alertService.error('Complete acreedor, monto y genere la tabla.');
+    if (!this.form.id_proveedor || !this.form.monto || this.preview.length < 2) {
+      this.alertService.error('Seleccione acreedor, indique monto y genere la tabla.');
       return;
     }
+    const payload = { ...this.form, cuotas: this.preview };
+    if (!this.puedeVerGenerarAsiento) {
+      payload.generar_asiento_desembolso = !this.form.historico;
+    }
     this.saving = true;
-    this.apiService.store('prestamos-empresa', { ...this.form, cuotas: this.preview }).subscribe({
+    this.apiService.store('prestamos-empresa', payload).subscribe({
       next: (prestamo) => {
         this.saving = false;
         this.router.navigate(['/finanzas/prestamos', prestamo.id]);

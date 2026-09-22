@@ -4,6 +4,7 @@ namespace App\Services\PrestamosEmpresa;
 
 use App\Models\PrestamosEmpresa\PrestamoCuota;
 use App\Models\PrestamosEmpresa\PrestamoEmpresa;
+use App\Support\PrestamosEmpresa\AcreedorProveedorResolver;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -34,12 +35,15 @@ class CrearPrestamoService
             ? (bool) $data['generar_asiento_desembolso']
             : !$historico;
 
-        $prestamo = DB::transaction(function () use ($data, $empresaId, $usuarioId, $historico, $monto, $nCuotas, $frecuencia, $generaInteres, $tasa, $fechaDesembolso, $fechaPrimera, $plan, $generarAsiento) {
+        $acreedor = AcreedorProveedorResolver::resolve((int) $data['id_proveedor'], $empresaId);
+
+        $prestamo = DB::transaction(function () use ($data, $empresaId, $usuarioId, $historico, $monto, $nCuotas, $frecuencia, $generaInteres, $tasa, $fechaDesembolso, $fechaPrimera, $plan, $generarAsiento, $acreedor) {
             $prestamo = PrestamoEmpresa::create([
                 'id_empresa' => $empresaId,
                 'id_usuario' => $usuarioId,
-                'tipo_acreedor' => $data['tipo_acreedor'],
-                'acreedor' => $data['acreedor'],
+                'id_proveedor' => $acreedor['id_proveedor'],
+                'tipo_acreedor' => $acreedor['tipo_acreedor'],
+                'acreedor' => $acreedor['acreedor'],
                 'concepto' => $data['concepto'] ?? null,
                 'historico' => $historico,
                 'monto_original' => isset($data['monto_original']) ? round((float) $data['monto_original'], 2) : null,
