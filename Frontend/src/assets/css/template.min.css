@@ -233,6 +233,11 @@ img.icon-2{
 
     .sidebar.collapsed {
         width: 70px;
+        overflow-x: hidden;
+    }
+
+    .sidebar.collapsed .badge {
+        display: none !important;
     }
 
     .sidebar.collapsed li button, .sidebar.collapsed li a , .sidebar.collapsed li.active a {
