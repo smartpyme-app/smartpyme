@@ -3,6 +3,7 @@
 namespace App\Models\PrestamosEmpresa;
 
 use App\Models\Bancos\Cuenta;
+use App\Models\Compras\Proveedores\Proveedor;
 use App\Models\User;
 use Auth;
 use Illuminate\Database\Eloquent\Builder;
@@ -17,6 +18,7 @@ class PrestamoEmpresa extends Model
     protected $fillable = [
         'id_empresa',
         'id_usuario',
+        'id_proveedor',
         'tipo_acreedor',
         'acreedor',
         'concepto',
@@ -76,6 +78,11 @@ class PrestamoEmpresa extends Model
     public function usuario(): BelongsTo
     {
         return $this->belongsTo(User::class, 'id_usuario');
+    }
+
+    public function proveedor(): BelongsTo
+    {
+        return $this->belongsTo(Proveedor::class, 'id_proveedor');
     }
 
     public function cuentaBanco(): BelongsTo
