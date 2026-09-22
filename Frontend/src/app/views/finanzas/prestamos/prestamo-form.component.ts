@@ -6,6 +6,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { CrearProveedorComponent } from '@shared/modals/crear-proveedor/crear-proveedor.component';
+import { getEmpresaCurrencySymbol } from '@helpers/currency-format.helper';
 
 @Component({
   selector: 'app-prestamo-form',
@@ -40,6 +41,10 @@ export class PrestamoFormComponent implements OnInit {
     private alertService: AlertService,
     private router: Router,
   ) {}
+
+  get simboloMoneda(): string {
+    return getEmpresaCurrencySymbol(this.apiService.auth_user()?.empresa);
+  }
 
   /** SP-2215: asiento contable solo para roles de contabilidad. */
   get puedeVerGenerarAsiento(): boolean {

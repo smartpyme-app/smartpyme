@@ -8,6 +8,7 @@ import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { ChartCardComponent } from '../../dashboard/components/chart-card/chart-card.component';
 import { MetricCard } from '../../dashboard/models/chart-config.model';
+import { getEmpresaCurrencySymbol } from '@helpers/currency-format.helper';
 
 @Component({
   selector: 'app-prestamo-detalle',
@@ -68,6 +69,10 @@ export class PrestamoDetalleComponent implements OnInit {
       }),
       { capital: 0, interes: 0, total: 0 },
     );
+  }
+
+  get simboloMoneda(): string {
+    return getEmpresaCurrencySymbol(this.apiService.auth_user()?.empresa);
   }
 
   get kpis(): MetricCard[] {
