@@ -3,6 +3,8 @@
 use App\Http\Controllers\Api\Admin\PaisConfiguracionController;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/identificacion-tipos', [PaisConfiguracionController::class, 'identificacionOpciones']);
+
 Route::middleware('role:super_admin')->group(function () {
     Route::get('/pais-configuraciones', [PaisConfiguracionController::class, 'index']);
     Route::get('/pais-configuracion/{id}', [PaisConfiguracionController::class, 'read']);

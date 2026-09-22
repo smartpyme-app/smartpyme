@@ -36,6 +36,11 @@ import {
     resolverGrupoPreferencias,
 } from './preferencias-grupo';
 import { configIdentificadorFiscalCliente } from '@utils/identificador-fiscal-cliente.util';
+import {
+    TipoIdentificacionOpcion,
+    configIdentificacionTipos,
+    tiposPorUso,
+} from '@utils/identificacion-tipos.util';
 
 @Component({
     selector: 'app-empresa',
@@ -148,6 +153,25 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
         { slug: 'permisos', label: 'Permisos' },
         { slug: 'cuenta', label: 'Cuenta' },
     ];
+    tiposEmisorIdentificacion: TipoIdentificacionOpcion[] = [];
+
+    tiposEmisorOpciones(): TipoIdentificacionOpcion[] {
+        return this.tiposEmisorIdentificacion.length
+            ? this.tiposEmisorIdentificacion
+            : tiposPorUso(configIdentificacionTipos(this.empresa || this.apiService.auth_user()?.empresa), 'emisor');
+    }
+
+    private cargarTiposEmisorIdentificacion(): void {
+        this.apiService.getAll('identificacion-tipos').pipe(this.untilDestroyed()).subscribe({
+            next: (res: { tipos_emisor?: TipoIdentificacionOpcion[] }) => {
+                if (Array.isArray(res?.tipos_emisor) && res.tipos_emisor.length) {
+                    this.tiposEmisorIdentificacion = res.tipos_emisor;
+                    this.cdr.markForCheck();
+                }
+            },
+            error: () => {},
+        });
+    }
 
     ngOnInit() {
         const tabFromUrl = this.route.snapshot.queryParamMap.get('tab');
@@ -156,6 +180,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit {
             this.activeTabSlug = tabFromUrl.toLowerCase();
         }
 
+        this.cargarTiposEmisorIdentificacion();
         this.apiService.getAll('canales')
             .pipe(this.untilDestroyed())
             .subscribe(canales => {

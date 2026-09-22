@@ -11,7 +11,12 @@ import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
-import { CountryI18nService } from '@services/country-i18n.service';
+import {
+    ConfigIdentificacionTipos,
+    configIdentificacionTipos,
+    labelTipoIdentificacion,
+    plantillaIdentificacionTipos,
+} from '@utils/identificacion-tipos.util';
 
 @Component({
     selector: 'app-cliente-detalles',
@@ -27,7 +32,7 @@ export class ClienteDetallesComponent extends BaseModalComponent implements OnIn
         'Persona': [
             'nombre', 'apellido', 'correo', 'dui',
             //  'tipo_contribuyente', 
-            'nota', 'telefono', 'municipio', 'departamento', 'direccion'
+            'nota', 'telefono', 'municipio', 'departamento', 'direccion', 'tipo_documento'
         ],
         'Empresa': [
             'nombre_empresa', 'ncr', 'nit', 'giro', 'telefono',
@@ -42,15 +47,9 @@ export class ClienteDetallesComponent extends BaseModalComponent implements OnIn
     };
     public override loading = false;
     public contacto: any = {};
-    public tipoDocumento: Record<string, string> = {
-        '36': 'NIT',
-        '03': 'Pasaporte',
-        '02': 'Carnet de residente',
-        '37': 'Otro'
-    };
+    identificacionCfg: ConfigIdentificacionTipos = plantillaIdentificacionTipos('SV');
 
     private cdr = inject(ChangeDetectorRef);
-    private countryI18n = inject(CountryI18nService);
 
     constructor(
         private apiService: ApiService,
@@ -62,7 +61,7 @@ export class ClienteDetallesComponent extends BaseModalComponent implements OnIn
     }
 
     ngOnInit() {
-        this.tipoDocumento['13'] = this.countryI18n.k('country.identity.name');
+        this.identificacionCfg = configIdentificacionTipos(this.apiService.auth_user()?.empresa);
         this.loadAll();
     }
 
@@ -125,7 +124,13 @@ export class ClienteDetallesComponent extends BaseModalComponent implements OnIn
         if (!this.cliente?.tipo) return false;
 
         const camposValidos = this.camposPorTipoCliente[this.cliente.tipo];
-        return camposValidos ? camposValidos.includes(campo) : false;
+        if (!camposValidos || !camposValidos.includes(campo)) {
+            return false;
+        }
+        if (campo === 'tipo_documento') {
+            return !!String(this.cliente.tipo_documento ?? '').trim();
+        }
+        return true;
     }
 
     /**Verifica si múltiples campos deben mostrarse
@@ -165,7 +170,7 @@ export class ClienteDetallesComponent extends BaseModalComponent implements OnIn
     /**Obtiene el nombre del tipo de documento
      * @returns string - El nombre del tipo de documento*/
     public obtenerNombreTipoDocumento(): string {
-        return this.tipoDocumento[this.cliente.tipo_documento] || '';
+        return labelTipoIdentificacion(this.identificacionCfg, this.cliente.tipo_documento);
     }
 
 }

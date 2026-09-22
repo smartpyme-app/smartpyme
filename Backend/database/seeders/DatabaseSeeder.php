@@ -27,6 +27,7 @@ class DatabaseSeeder extends Seeder
             PaisConfiguracionPlanillasSeeder::class,
             PaisConfiguracionImpuestosSeeder::class,
             PaisConfiguracionMonedaSeeder::class,
+            PaisConfiguracionIdentificacionSeeder::class,
             RestauranteFuncionalidadSeeder::class,
             ActivosFijosPermissionSeeder::class,
             ActivosFijosFuncionalidadSeeder::class,

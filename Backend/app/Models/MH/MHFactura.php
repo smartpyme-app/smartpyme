@@ -4,6 +4,7 @@ namespace App\Models\MH;
 
 use App\Models\MH\Concerns\BuildsTributosVenta;
 use App\Support\ActividadEconomicaEmisor;
+use App\Support\FacturacionElectronica\TipoIdentificacionReceptor;
 use Illuminate\Database\Eloquent\Model;
 use Ramsey\Uuid\Uuid;
 use Illuminate\Support\Facades\Http;
@@ -152,9 +153,13 @@ class MHFactura extends Model
             ];
         }
 
-        if($this->venta->cliente->tipo_documento){
-            $this->venta->cliente->num_documento = $this->venta->cliente->dui ? $this->venta->cliente->dui : NULL;
-        }else{
+        if (TipoIdentificacionReceptor::tipoGuardado($this->venta->cliente->tipo_documento)) {
+            $this->venta->cliente->num_documento = TipoIdentificacionReceptor::numeroElSalvador(
+                $this->venta->cliente->tipo_documento,
+                $this->venta->cliente->nit,
+                $this->venta->cliente->dui
+            );
+        } else {
             if ($this->venta->cliente->nit) {
                 $this->venta->cliente->tipo_documento = '36';
                 $this->venta->cliente->num_documento = $this->venta->cliente->nit ? str_replace('-', '', $this->venta->cliente->nit) : NULL;

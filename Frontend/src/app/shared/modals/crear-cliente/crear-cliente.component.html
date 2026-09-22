@@ -61,13 +61,10 @@
                             <input type="text" class="form-control" placeholder="Escribe aquí" name="apellido" [(ngModel)]="cliente.apellido">
                         </div>
                         <div class="form-group col-6 col-lg-3">
-                            @if (apiService.auth_user().empresa.pais == 'El Salvador') {
-                                <label for="ncr">{{ 'country.identity.name' | translate }}</label>
+                            <label for="ncr">{{ labelIdentificacionDui() }}</label>
+                            @for (maskDui of [mascaraIdentificacionDui()]; track maskDui) {
+                            <input type="text" class="form-control" placeholder="Escribe aquí" name="dui" [(ngModel)]="cliente.dui" [dropSpecialCharacters]="false" [mask]="maskDui">
                             }
-                            @if (apiService.auth_user().empresa.pais != 'El Salvador') {
-                                <label for="ncr">Número de Identificación</label>
-                            }
-                            <input type="text" class="form-control" placeholder="Escribe aquí" name="dui" [(ngModel)]="cliente.dui" [dropSpecialCharacters]="false"  mask={{apiService.auth_user().empresa.validador_dui}}>
                         </div>
                         <div class="form-group col-6 col-lg-3">
                             <label for="correo">Correo</label>
@@ -80,9 +77,20 @@
                         }
                         @if (cliente.tipo == 'Persona' && esCostaRicaFe()) {
                         <div class="form-group col-6 col-lg-3">
-                            <label for="cliente_cr_ident_persona_modal">Identificación</label>
+                            <label for="tipo_documento_cr_p_modal">Tipo de identificación</label>
+                            <select class="form-select" name="tipo_documento" id="tipo_documento_cr_p_modal" [(ngModel)]="cliente.tipo_documento">
+                                <option value="">Según datos fiscales</option>
+                                @for (t of tiposIdentificacionReceptor(); track t.codigo) {
+                                    <option [value]="t.codigo">{{ t.label }}</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="form-group col-6 col-lg-3">
+                            <label for="cliente_cr_ident_persona_modal">{{ labelIdentificacionDui() }}</label>
+                            @for (maskDui of [mascaraIdentificacionDui()]; track maskDui) {
                             <input type="text" class="form-control" id="cliente_cr_ident_persona_modal" placeholder="Escribe aquí" name="dui" [(ngModel)]="cliente.dui"
-                              (ngModelChange)="onIdentificacionClienteCrDebounced()" [dropSpecialCharacters]="false" mask={{apiService.auth_user().empresa.validador_dui}}>
+                              (ngModelChange)="onIdentificacionClienteCrDebounced()" [dropSpecialCharacters]="false" [mask]="maskDui">
+                            }
                             @if (contribuyenteCargandoCr) {
                               <small class="text-muted">Consultando Hacienda…</small>
                             }
@@ -122,13 +130,19 @@
                             <input type="text" class="form-control" placeholder="Escribe aquí" name="apellido" [(ngModel)]="cliente.apellido">
                         </div>
                         <div class="form-group col-6 col-lg-3">
-                            @if (apiService.auth_user().empresa.pais == 'El Salvador') {
-                                <label for="ncr">{{ 'country.identity.name' | translate }}</label>
+                            <label for="tipo_documento_p_modal">Tipo de identificación</label>
+                            <select class="form-select" name="tipo_documento" id="tipo_documento_p_modal" [(ngModel)]="cliente.tipo_documento">
+                                <option value="">Según datos fiscales</option>
+                                @for (t of tiposIdentificacionReceptor(); track t.codigo) {
+                                    <option [value]="t.codigo">{{ t.label }}</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="form-group col-6 col-lg-3">
+                            <label for="ncr">{{ labelIdentificacionDui() }}</label>
+                            @for (maskDui of [mascaraIdentificacionDui()]; track maskDui) {
+                            <input type="text" class="form-control" placeholder="Escribe aquí" name="dui" [(ngModel)]="cliente.dui" [dropSpecialCharacters]="false" [mask]="maskDui">
                             }
-                            @if (apiService.auth_user().empresa.pais != 'El Salvador') {
-                                <label for="ncr">Número de Identificación</label>
-                            }
-                            <input type="text" class="form-control" placeholder="Escribe aquí" name="dui" [(ngModel)]="cliente.dui" [dropSpecialCharacters]="false"  mask={{apiService.auth_user().empresa.validador_dui}}>
                         </div>
                         <div class="form-group col-6 col-lg-3">
                             <label for="correo">Correo</label>
@@ -605,18 +619,19 @@
                     <input type="text" class="form-control" placeholder="Escribe aquí" name="apellido" [(ngModel)]="cliente.apellido">
                 </div>
                 <div class="form-group col-6 col-lg-3">
-                    <label for="tipo_documento">Tipo de documento</label>
-                    <select class="form-select" placeholder="Escribe aquí" name="tipo_documento" [(ngModel)]="cliente.tipo_documento">
-                        <option value="13">{{ 'country.identity.identityDocument' | translate }}</option>
-                        <option value="36">{{ 'country.tax.nit' | translate }}</option>
-                        <option value="03">Pasaporte</option>
-                        <option value="02">Carnet de residente</option>
-                        <option value="37">Otro</option>
+                    <label for="tipo_documento_ex_modal">Tipo de identificación</label>
+                    <select class="form-select" name="tipo_documento" id="tipo_documento_ex_modal" [(ngModel)]="cliente.tipo_documento">
+                        <option value="">Según datos fiscales</option>
+                        @for (t of tiposIdentificacionReceptor(); track t.codigo) {
+                            <option [value]="t.codigo">{{ t.label }}</option>
+                        }
                     </select>
                 </div>
                 <div class="form-group col-6 col-lg-3">
-                    <label for="dui">{{ 'country.identity.name' | translate }}</label>
-                    <input type="text" class="form-control" placeholder="Escribe aquí" name="dui" [(ngModel)]="cliente.dui">
+                    <label for="dui">{{ labelIdentificacionDui() }}</label>
+                    @for (maskDui of [mascaraIdentificacionDui()]; track maskDui) {
+                    <input type="text" class="form-control" placeholder="Escribe aquí" name="dui" [(ngModel)]="cliente.dui" [dropSpecialCharacters]="false" [mask]="maskDui">
+                    }
                 </div>
                 <div class="form-group col-6 col-lg-3">
                     <label for="nombre_empresa">Nombre comercial</label>
