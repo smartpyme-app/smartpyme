@@ -36,10 +36,21 @@ export class PrestamoFormComponent implements OnInit {
   };
 
   constructor(
-    private apiService: ApiService,
+    public apiService: ApiService,
     private alertService: AlertService,
     private router: Router,
   ) {}
+
+  /** SP-2215: asiento contable solo para roles de contabilidad. */
+  get puedeVerGenerarAsiento(): boolean {
+    return (
+      this.apiService.validateRole('usuario_contador', true) ||
+      this.apiService.validateRole('contador_superior', true) ||
+      this.apiService.validateRole('contador_auxiliar', true) ||
+      this.apiService.validateRole('admin', true) ||
+      this.apiService.validateRole('super_admin', true)
+    );
+  }
 
   ngOnInit(): void {
     this.apiService.getAll('banco/cuentas/list').subscribe({
@@ -101,8 +112,12 @@ export class PrestamoFormComponent implements OnInit {
       this.alertService.error('Seleccione acreedor, indique monto y genere la tabla.');
       return;
     }
+    const payload = { ...this.form, cuotas: this.preview };
+    if (!this.puedeVerGenerarAsiento) {
+      payload.generar_asiento_desembolso = !this.form.historico;
+    }
     this.saving = true;
-    this.apiService.store('prestamos-empresa', { ...this.form, cuotas: this.preview }).subscribe({
+    this.apiService.store('prestamos-empresa', payload).subscribe({
       next: (prestamo) => {
         this.saving = false;
         this.router.navigate(['/finanzas/prestamos', prestamo.id]);

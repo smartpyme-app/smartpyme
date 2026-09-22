@@ -89,12 +89,14 @@
           <input id="historico" class="form-check-input float-end" type="checkbox" role="switch" name="historico" [(ngModel)]="form.historico" (ngModelChange)="onHistoricoChange()">
         </div>
       </div>
-      <div class="form-group col-md-4 mb-3 without-label">
-        <div class="form-switch bg-light-info rounded">
-          <label for="generar_asiento_desembolso">Generar asiento de desembolso</label>
-          <input id="generar_asiento_desembolso" class="form-check-input float-end" type="checkbox" role="switch" name="generar_asiento_desembolso" [(ngModel)]="form.generar_asiento_desembolso">
+      @if (puedeVerGenerarAsiento) {
+        <div class="form-group col-md-4 mb-3 without-label">
+          <div class="form-switch bg-light-info rounded">
+            <label for="generar_asiento_desembolso">Generar asiento de desembolso</label>
+            <input id="generar_asiento_desembolso" class="form-check-input float-end" type="checkbox" role="switch" name="generar_asiento_desembolso" [(ngModel)]="form.generar_asiento_desembolso">
+          </div>
         </div>
-      </div>
+      }
     </div>
 
     @if (preview.length) {
