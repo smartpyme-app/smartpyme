@@ -16,6 +16,7 @@ use App\Models\Ventas\Devoluciones\Detalle as DetalleDevolucion;
 use App\Models\Ventas\Devoluciones\Devolucion;
 use App\Models\Ventas\Venta;
 use App\Support\ActividadEconomicaEmisor;
+use App\Support\FacturacionElectronica\TipoIdentificacionReceptor;
 use Carbon\Carbon;
 use InvalidArgumentException;
 
@@ -815,18 +816,14 @@ final class CostaRicaInvoiceFromVentaMapper
 
         $nit = $this->soloDigitos((string) ($cliente->nit ?? ''));
         $dui = $this->soloDigitos((string) ($cliente->dui ?? ''));
-
-        if (strlen($nit) >= 9) {
-            $tipo = '02';
-            $num = $nit;
-            $nombre = $cliente->nombre_empresa ?: trim(($cliente->nombre ?? '').' '.($cliente->apellido ?? ''));
-        } elseif (strlen($dui) >= 9) {
-            $tipo = '01';
-            $num = substr(str_pad($dui, 9, '0', STR_PAD_LEFT), 0, 9);
-            $nombre = trim(($cliente->nombre ?? '').' '.($cliente->apellido ?? ''));
-        } else {
+        $tipo = TipoIdentificacionReceptor::costaRica($cliente->tipo_documento ?? null, $nit, $dui);
+        $num = $tipo !== null ? TipoIdentificacionReceptor::numeroCostaRica($tipo, $nit, $dui) : null;
+        if ($tipo === null || $num === null) {
             return $this->receptorGenerico($empresa, trim(($cliente->nombre ?? '').' '.($cliente->apellido ?? '')) ?: 'Cliente');
         }
+        $nombre = in_array($tipo, ['02', '04'], true)
+            ? ($cliente->nombre_empresa ?: trim(($cliente->nombre ?? '').' '.($cliente->apellido ?? '')))
+            : (trim(($cliente->nombre ?? '').' '.($cliente->apellido ?? '')) ?: $cliente->nombre_empresa);
 
         $loc = $this->ubicacionEmisor($empresa);
 
@@ -1808,20 +1805,19 @@ final class CostaRicaInvoiceFromVentaMapper
     {
         $nit = $this->soloDigitos((string) ($proveedor->nit ?? ''));
         $dui = $this->soloDigitos((string) ($proveedor->dui ?? ''));
-        if (strlen($nit) >= 9) {
-            $tipo = '02';
-            $num = $nit;
-            $nombre = (string) ($proveedor->nombre_empresa ?: trim(($proveedor->nombre ?? '').' '.($proveedor->apellido ?? '')));
-        } elseif (strlen($dui) >= 9) {
-            $tipo = '01';
-            $num = substr(str_pad($dui, 9, '0', STR_PAD_LEFT), 0, 9);
-            $nombre = trim(($proveedor->nombre ?? '').' '.($proveedor->apellido ?? ''));
-        } else {
+        $tipo = TipoIdentificacionReceptor::costaRica($proveedor->tipo_documento ?? null, $nit, $dui);
+        $num = $tipo !== null ? TipoIdentificacionReceptor::numeroCostaRica($tipo, $nit, $dui) : null;
+        if ($tipo === null || $num === null) {
             $tipo = '06';
             $num = '00000000000000';
             $nombre = $proveedor->tipo === 'Empresa'
                 ? (string) ($proveedor->nombre_empresa ?? 'Proveedor')
                 : trim(($proveedor->nombre ?? '').' '.($proveedor->apellido ?? ''));
+        } elseif (in_array($tipo, ['02', '04'], true)) {
+            $nombre = (string) ($proveedor->nombre_empresa ?: trim(($proveedor->nombre ?? '').' '.($proveedor->apellido ?? '')));
+        } else {
+            $nombre = trim(($proveedor->nombre ?? '').' '.($proveedor->apellido ?? ''))
+                ?: (string) ($proveedor->nombre_empresa ?? 'Proveedor');
         }
 
         $loc = $this->ubicacionProveedorOEmpresa($proveedor, $empresaCompradora);

@@ -3,12 +3,35 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Admin\Empresa;
 use App\Models\PaisConfiguracion;
+use App\Services\FacturacionElectronica\FacturacionElectronicaCountryResolver;
+use App\Support\Admin\IdentificacionDefaultPorPais;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 
 class PaisConfiguracionController extends Controller
 {
+    /** Catálogo de tipos de identificación (pais_configuracion / plantilla). Auth de empresa, no solo super admin. */
+    public function identificacionOpciones(Request $request)
+    {
+        $empresa = Auth::user()->empresa ?? Empresa::find(Auth::user()->id_empresa);
+        $pais = $request->query('pais')
+            ?: FacturacionElectronicaCountryResolver::resolveCodigoPaisFe($empresa);
+        $pais = strtoupper((string) $pais);
+        $cfg = IdentificacionDefaultPorPais::configuracion($pais);
+
+        return response()->json([
+            'pais' => $pais,
+            'default_persona' => $cfg['default_persona'],
+            'default_empresa' => $cfg['default_empresa'],
+            'default_extranjero' => $cfg['default_extranjero'],
+            'tipos' => IdentificacionDefaultPorPais::tiposReceptor($pais),
+            'tipos_emisor' => IdentificacionDefaultPorPais::tiposEmisor($pais),
+        ], 200);
+    }
+
     public function index(Request $request)
     {
         $q = PaisConfiguracion::query()->orderBy('pais')->orderBy('modulo');

@@ -5,6 +5,7 @@ namespace App\Models\MH;
 use Illuminate\Database\Eloquent\Model;
 use Ramsey\Uuid\Uuid;
 use App\Support\ActividadEconomicaEmisor;
+use App\Support\FacturacionElectronica\TipoIdentificacionReceptor;
 use Luecano\NumeroALetras\NumeroALetras;
 
 class MHSujetoExcluidoCompra extends Model
@@ -132,9 +133,13 @@ class MHSujetoExcluidoCompra extends Model
         $tributos = NULL;
         $apendice = NULL;
 
-        if($this->compra->proveedor->tipo_documento){
-            $this->compra->proveedor->num_documento = $this->compra->proveedor->dui ? $this->compra->proveedor->dui : NULL;
-        }else{
+        if (TipoIdentificacionReceptor::tipoGuardado($this->compra->proveedor->tipo_documento)) {
+            $this->compra->proveedor->num_documento = TipoIdentificacionReceptor::numeroElSalvador(
+                $this->compra->proveedor->tipo_documento,
+                $this->compra->proveedor->nit,
+                $this->compra->proveedor->dui
+            );
+        } else {
             if ($this->compra->proveedor->nit) {
                 $this->compra->proveedor->tipo_documento = '36';
                 $this->compra->proveedor->num_documento = $this->compra->proveedor->nit ? str_replace('-', '', $this->compra->proveedor->nit) : NULL;

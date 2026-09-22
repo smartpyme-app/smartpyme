@@ -12,6 +12,7 @@ import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '../../base/base-modal.component';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { TagInputModule } from 'ngx-chips';
+import { NgxMaskDirective } from 'ngx-mask';
 import { FilterPipe } from '@pipes/filter.pipe';
 import {
     ContribuyenteActividadOption,
@@ -20,12 +21,22 @@ import {
 } from '@services/facturacion-electronica/contribuyente-hacienda.mapper';
 import { HaciendaContribuyenteClientService } from '@services/facturacion-electronica/hacienda-contribuyente-client.service';
 import { finalize } from 'rxjs/operators';
+import {
+    ConfigIdentificacionTipos,
+    configDesdeApi,
+    configIdentificacionTipos,
+    defaultTipoIdentificacion,
+    labelCampoIdentificacion,
+    mascaraIdentificacion,
+    plantillaIdentificacionTipos,
+    tiposPorUso,
+} from '@utils/identificacion-tipos.util';
 
 @Component({
     selector: 'app-crear-proveedor',
     templateUrl: './crear-proveedor.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TagInputModule, FilterPipe, TranslatePipe],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TagInputModule, FilterPipe, TranslatePipe, NgxMaskDirective],
     
 })
 export class CrearProveedorComponent extends BaseModalComponent implements OnInit {
@@ -41,6 +52,7 @@ export class CrearProveedorComponent extends BaseModalComponent implements OnIni
     actividadesContribuyenteCr: ContribuyenteActividadOption[] = [];
     actividadContribuyenteSeleccionada: ContribuyenteActividadOption | null = null;
     contribuyenteCargandoCr = false;
+    identificacionCfg: ConfigIdentificacionTipos = plantillaIdentificacionTipos('SV');
     private nitCrActividadesTimer: ReturnType<typeof setTimeout> | null = null;
     private identificacionPersonaCrTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -100,6 +112,9 @@ export class CrearProveedorComponent extends BaseModalComponent implements OnIni
         private haciendaContribuyenteClient: HaciendaContribuyenteClientService,
     ) {
         super(modalManager, alertService);
+        this.identificacionCfg = configIdentificacionTipos(this.apiService.auth_user()?.empresa);
+        this.proveedor.tipo = this.proveedor.tipo || 'Persona';
+        this.aplicarDefaultTipoDocumento();
     }
 
     esCostaRicaFe(): boolean {
@@ -118,7 +133,37 @@ export class CrearProveedorComponent extends BaseModalComponent implements OnIni
         );
     }
 
+    tiposIdentificacionReceptor() {
+        return tiposPorUso(this.identificacionCfg, 'receptor');
+    }
+
+    mascaraIdentificacionDui(): string {
+        return mascaraIdentificacion(this.proveedor?.tipo_documento, this.apiService.auth_user()?.empresa);
+    }
+
+    labelIdentificacionDui(): string {
+        return labelCampoIdentificacion(this.identificacionCfg, this.proveedor?.tipo_documento);
+    }
+
+    private cargarIdentificacionTipos(): void {
+        this.identificacionCfg = configIdentificacionTipos(this.apiService.auth_user()?.empresa);
+        this.apiService.getAll('identificacion-tipos').pipe(this.untilDestroyed()).subscribe({
+            next: (res) => {
+                this.identificacionCfg = configDesdeApi(res, this.identificacionCfg);
+                if (!this.proveedor.id && !this.proveedor.tipo_documento) {
+                    this.aplicarDefaultTipoDocumento();
+                }
+            },
+            error: () => {},
+        });
+    }
+
+    private aplicarDefaultTipoDocumento(): void {
+        this.proveedor.tipo_documento = defaultTipoIdentificacion(this.identificacionCfg, this.proveedor.tipo);
+    }
+
     ngOnInit() {
+        this.cargarIdentificacionTipos();
         this.destroyRef.onDestroy(() => {
             if (this.nitCrActividadesTimer !== null) {
                 clearTimeout(this.nitCrActividadesTimer);
@@ -184,6 +229,7 @@ export class CrearProveedorComponent extends BaseModalComponent implements OnIni
             if (this.esCostaRicaFe()) {
                 this.aplicarPaisPorDefectoDesdeEmpresa();
             }
+            this.aplicarDefaultTipoDocumento();
         }
         super.openModal(template, { class: 'modal-xl', backdrop: 'static' });
     }
@@ -399,6 +445,7 @@ export class CrearProveedorComponent extends BaseModalComponent implements OnIni
 
     public setTipo(tipo:any){
         this.proveedor.tipo = tipo;
+        this.aplicarDefaultTipoDocumento();
     }
 
     public onSubmit() {

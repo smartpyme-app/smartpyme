@@ -28,7 +28,7 @@ export class AdminPaisConfiguracionComponent implements OnInit {
   modalRef!: BsModalRef;
 
   readonly paises = ['SV', 'CR', 'HN', 'GT', 'NI', 'PA', 'BZ', 'MX'];
-  readonly modulosSugeridos = ['documentos', 'planillas', 'impuestos', 'retenciones'];
+  readonly modulosSugeridos = ['documentos', 'planillas', 'impuestos', 'retenciones', 'identificacion'];
 
   resumen(row: any): string {
     const c = row?.configuracion;

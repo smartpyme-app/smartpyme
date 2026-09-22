@@ -7,6 +7,7 @@ use Ramsey\Uuid\Uuid;
 use Illuminate\Support\Facades\Http;
 use App\Models\MH\Unidad;
 use App\Support\ActividadEconomicaEmisor;
+use App\Support\FacturacionElectronica\TipoIdentificacionReceptor;
 use Luecano\NumeroALetras\NumeroALetras;
 
 class MH extends Model
@@ -268,13 +269,21 @@ class MH extends Model
             return NULL;
         }
 
-        if ($this->venta->cliente->nit) {
-            $this->venta->cliente->tipo_documento = '36';
-            $this->venta->cliente->num_documento = $this->venta->cliente->nit ? str_replace('-', '', $this->venta->cliente->nit) : NULL;
-        }
-        if ($this->venta->cliente->dui) {
-            $this->venta->cliente->tipo_documento = '13';
-            $this->venta->cliente->num_documento = $this->venta->cliente->dui ? $this->venta->cliente->dui : NULL;
+        if (TipoIdentificacionReceptor::tipoGuardado($this->venta->cliente->tipo_documento)) {
+            $this->venta->cliente->num_documento = TipoIdentificacionReceptor::numeroElSalvador(
+                $this->venta->cliente->tipo_documento,
+                $this->venta->cliente->nit,
+                $this->venta->cliente->dui
+            );
+        } else {
+            if ($this->venta->cliente->nit) {
+                $this->venta->cliente->tipo_documento = '36';
+                $this->venta->cliente->num_documento = $this->venta->cliente->nit ? str_replace('-', '', $this->venta->cliente->nit) : NULL;
+            }
+            if ($this->venta->cliente->dui) {
+                $this->venta->cliente->tipo_documento = '13';
+                $this->venta->cliente->num_documento = $this->venta->cliente->dui ? $this->venta->cliente->dui : NULL;
+            }
         }
 
         return [

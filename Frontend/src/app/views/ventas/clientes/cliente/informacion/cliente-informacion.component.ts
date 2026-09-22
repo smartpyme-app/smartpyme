@@ -6,6 +6,7 @@ import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { TagInputModule } from 'ngx-chips';
+import { NgxMaskDirective } from 'ngx-mask';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -31,12 +32,22 @@ import {
 import { HaciendaContribuyenteClientService } from '@services/facturacion-electronica/hacienda-contribuyente-client.service';
 import { finalize } from 'rxjs/operators';
 import { configIdentificadorFiscalCliente } from '@utils/identificador-fiscal-cliente.util';
+import {
+    ConfigIdentificacionTipos,
+    configDesdeApi,
+    configIdentificacionTipos,
+    defaultTipoIdentificacion,
+    labelCampoIdentificacion,
+    mascaraIdentificacion,
+    plantillaIdentificacionTipos,
+    tiposPorUso,
+} from '@utils/identificacion-tipos.util';
 
 @Component({
     selector: 'app-cliente-informacion',
     templateUrl: './cliente-informacion.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TagInputModule, LazyImageDirective, TranslatePipe],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TagInputModule, LazyImageDirective, TranslatePipe, NgxMaskDirective],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ClienteInformacionComponent extends BaseModalComponent implements OnInit {
@@ -68,6 +79,7 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
   actividadContribuyenteSeleccionada: ContribuyenteActividadOption | null = null;
   contribuyenteCargandoCr = false;
   private identificacionCrTimer: ReturnType<typeof setTimeout> | null = null;
+  identificacionCfg: ConfigIdentificacionTipos = plantillaIdentificacionTipos('SV');
 
   readonly compareActividadContribuyenteCr = (
       a: ContribuyenteActividadOption,
@@ -114,6 +126,9 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
     private haciendaContribuyenteClient: HaciendaContribuyenteClientService,
   ) {
     super(modalManager, alertService);
+    this.identificacionCfg = configIdentificacionTipos(this.apiService.auth_user()?.empresa);
+    this.cliente.tipo = this.cliente.tipo || 'Persona';
+    this.aplicarDefaultTipoDocumento();
   }
 
   isShopifyActive(): boolean {
@@ -328,7 +343,38 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
         );
     }
 
+    tiposIdentificacionReceptor() {
+        return tiposPorUso(this.identificacionCfg, 'receptor');
+    }
+
+    mascaraIdentificacionDui(): string {
+        return mascaraIdentificacion(this.cliente?.tipo_documento, this.apiService.auth_user()?.empresa);
+    }
+
+    labelIdentificacionDui(): string {
+        return labelCampoIdentificacion(this.identificacionCfg, this.cliente?.tipo_documento);
+    }
+
+    private cargarIdentificacionTipos(): void {
+        this.identificacionCfg = configIdentificacionTipos(this.apiService.auth_user()?.empresa);
+        this.apiService.getAll('identificacion-tipos').pipe(this.untilDestroyed()).subscribe({
+            next: (res) => {
+                this.identificacionCfg = configDesdeApi(res, this.identificacionCfg);
+                if (this.esNuevo && !this.cliente.tipo_documento) {
+                    this.aplicarDefaultTipoDocumento();
+                }
+                this.cdr.markForCheck();
+            },
+            error: () => {},
+        });
+    }
+
+    private aplicarDefaultTipoDocumento(): void {
+        this.cliente.tipo_documento = defaultTipoIdentificacion(this.identificacionCfg, this.cliente.tipo);
+    }
+
     ngOnInit() {
+        this.cargarIdentificacionTipos();
         this.loadAll();
         this.paises = dedupePorCod(JSON.parse(localStorage.getItem('paises') || '[]'));
         this.departamentos = JSON.parse(localStorage.getItem('departamentos') || '[]');
@@ -437,6 +483,8 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
           this.aplicarPaisPorDefectoDesdeEmpresa();
         }
         this.cliente.etiquetas = [];
+        this.aplicarDefaultTipoDocumento();
+        this.cdr.markForCheck();
       }
     });
   }
@@ -789,6 +837,7 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
           this.mapearCamposEntreTipos(tipoAnterior, nuevoTipo);
       }
 
+      this.aplicarDefaultTipoDocumento();
       this.tipoAnterior = this.cliente.tipo;
   }
 
@@ -870,14 +919,12 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
         'Persona->Extranjero': {
             ...datosComunes,
             tipo_persona: 'Persona Natural',
-            tipo_documento: '13', // DUI
             dui: this.cliente.dui
         },
         'Empresa->Extranjero': {
             ...datosComunes,
             nombre_empresa: this.cliente.nombre_empresa,
             tipo_persona: 'Persona Juridica',
-            tipo_documento: '36', // NIT
             giro: this.cliente.giro,
             telefono: this.cliente.empresa_telefono || this.cliente.telefono
         },

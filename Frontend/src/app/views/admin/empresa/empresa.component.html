@@ -138,11 +138,9 @@
                         <select class="form-select" id="fe_cr_emisor_tipo_identificacion" name="fe_cr_emisor_tipo_identificacion"
                             [(ngModel)]="customConfig.facturacion_fe.emisor_tipo_identificacion"
                             (ngModelChange)="onFacturacionFeEmisorIdentificacionChange()">
-                            <option value="01">01 — Cédula física</option>
-                            <option value="02">02 — Cédula jurídica</option>
-                            <option value="03">03 — DIMEX</option>
-                            <option value="04">04 — NITE</option>
-                            <option value="05">05 — Extranjero no domiciliado</option>
+                            @for (t of tiposEmisorOpciones(); track t.codigo) {
+                                <option [value]="t.codigo">{{ t.codigo }} — {{ t.label }}</option>
+                            }
                         </select>
                     </div>
                     }

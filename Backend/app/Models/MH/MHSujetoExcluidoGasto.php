@@ -5,6 +5,7 @@ namespace App\Models\MH;
 use Illuminate\Database\Eloquent\Model;
 use Ramsey\Uuid\Uuid;
 use App\Support\ActividadEconomicaEmisor;
+use App\Support\FacturacionElectronica\TipoIdentificacionReceptor;
 use Luecano\NumeroALetras\NumeroALetras;
 
 class MHSujetoExcluidoGasto extends Model
@@ -132,13 +133,21 @@ class MHSujetoExcluidoGasto extends Model
         $apendice = NULL;
         $this->gasto->proveedor = $this->gasto->proveedor()->first();
 
-        if ($this->gasto->proveedor->nit) {
-            $this->gasto->proveedor->tipo_documento = '36';
-            $this->gasto->proveedor->num_documento = $this->gasto->proveedor->nit ? str_replace('-', '', $this->gasto->proveedor->nit) : NULL;
-        }
-        if ($this->gasto->proveedor->dui) {
-            $this->gasto->proveedor->tipo_documento = $this->gasto->proveedor->tipo_documento ?? '13';
-            $this->gasto->proveedor->num_documento = $this->gasto->proveedor->dui ? str_replace('-', '', $this->gasto->proveedor->dui) : NULL;
+        if (TipoIdentificacionReceptor::tipoGuardado($this->gasto->proveedor->tipo_documento)) {
+            $this->gasto->proveedor->num_documento = TipoIdentificacionReceptor::numeroElSalvador(
+                $this->gasto->proveedor->tipo_documento,
+                $this->gasto->proveedor->nit,
+                $this->gasto->proveedor->dui
+            );
+        } else {
+            if ($this->gasto->proveedor->nit) {
+                $this->gasto->proveedor->tipo_documento = '36';
+                $this->gasto->proveedor->num_documento = $this->gasto->proveedor->nit ? str_replace('-', '', $this->gasto->proveedor->nit) : NULL;
+            }
+            if ($this->gasto->proveedor->dui) {
+                $this->gasto->proveedor->tipo_documento = $this->gasto->proveedor->tipo_documento ?? '13';
+                $this->gasto->proveedor->num_documento = $this->gasto->proveedor->dui ? str_replace('-', '', $this->gasto->proveedor->dui) : NULL;
+            }
         }
 
         return 

@@ -6,6 +6,7 @@ import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { TagInputModule } from 'ngx-chips';
+import { NgxMaskDirective } from 'ngx-mask';
 
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
@@ -23,12 +24,22 @@ import {
 } from '@services/facturacion-electronica/contribuyente-hacienda.mapper';
 import { HaciendaContribuyenteClientService } from '@services/facturacion-electronica/hacienda-contribuyente-client.service';
 import { finalize } from 'rxjs/operators';
+import {
+    ConfigIdentificacionTipos,
+    configDesdeApi,
+    configIdentificacionTipos,
+    defaultTipoIdentificacion,
+    labelCampoIdentificacion,
+    mascaraIdentificacion,
+    plantillaIdentificacionTipos,
+    tiposPorUso,
+} from '@utils/identificacion-tipos.util';
 
 @Component({
     selector: 'app-proveedor',
     templateUrl: './proveedor.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TagInputModule, FilterPipe, TranslatePipe],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TagInputModule, FilterPipe, TranslatePipe, NgxMaskDirective],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ProveedorComponent extends BaseComponent implements OnInit {
@@ -43,6 +54,7 @@ export class ProveedorComponent extends BaseComponent implements OnInit {
     actividadesContribuyenteCr: ContribuyenteActividadOption[] = [];
     actividadContribuyenteSeleccionada: ContribuyenteActividadOption | null = null;
     contribuyenteCargandoCr = false;
+    identificacionCfg: ConfigIdentificacionTipos = plantillaIdentificacionTipos('SV');
     private nitCrActividadesTimer: ReturnType<typeof setTimeout> | null = null;
     private identificacionPersonaCrTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -113,6 +125,9 @@ export class ProveedorComponent extends BaseComponent implements OnInit {
         private haciendaContribuyenteClient: HaciendaContribuyenteClientService,
     ) {
         super();
+        this.identificacionCfg = configIdentificacionTipos(this.apiService.auth_user()?.empresa);
+        this.proveedor.tipo = this.proveedor.tipo || 'Persona';
+        this.aplicarDefaultTipoDocumento();
     }
 
     private parseLocalJson(key: string): any[] {
@@ -144,7 +159,38 @@ export class ProveedorComponent extends BaseComponent implements OnInit {
         );
     }
 
+    tiposIdentificacionReceptor() {
+        return tiposPorUso(this.identificacionCfg, 'receptor');
+    }
+
+    mascaraIdentificacionDui(): string {
+        return mascaraIdentificacion(this.proveedor?.tipo_documento, this.apiService.auth_user()?.empresa);
+    }
+
+    labelIdentificacionDui(): string {
+        return labelCampoIdentificacion(this.identificacionCfg, this.proveedor?.tipo_documento);
+    }
+
+    private cargarIdentificacionTipos(): void {
+        this.identificacionCfg = configIdentificacionTipos(this.apiService.auth_user()?.empresa);
+        this.apiService.getAll('identificacion-tipos').pipe(this.untilDestroyed()).subscribe({
+            next: (res) => {
+                this.identificacionCfg = configDesdeApi(res, this.identificacionCfg);
+                if (!this.proveedor.id && !this.proveedor.tipo_documento) {
+                    this.aplicarDefaultTipoDocumento();
+                }
+                this.cdr.markForCheck();
+            },
+            error: () => {},
+        });
+    }
+
+    private aplicarDefaultTipoDocumento(): void {
+        this.proveedor.tipo_documento = defaultTipoIdentificacion(this.identificacionCfg, this.proveedor.tipo);
+    }
+
     ngOnInit() {
+        this.cargarIdentificacionTipos();
         this.paises = this.parseLocalJson('paises');
         this.departamentos = this.parseLocalJson('departamentos');
         this.municipios = this.parseLocalJson('municipios');
@@ -493,6 +539,7 @@ export class ProveedorComponent extends BaseComponent implements OnInit {
                     if (this.esCostaRicaFe()) {
                         this.aplicarPaisPorDefectoDesdeEmpresa();
                     }
+                    this.aplicarDefaultTipoDocumento();
                 }
             });
     }
@@ -540,6 +587,7 @@ export class ProveedorComponent extends BaseComponent implements OnInit {
 
     public setTipo(tipo:any){
         this.proveedor.tipo = tipo;
+        this.aplicarDefaultTipoDocumento();
     }
 
     public onSubmit():void{
