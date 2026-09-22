@@ -212,7 +212,8 @@
   [paqueteData]="paqueteData"
   [sugerirCod]="false"
   [montoCodSugerido]="pedidoRecienCreado?.total ?? null"
-  (guiaGenerada)="onBoxfulGuiaGenerada($event)" (cerrar)="cerrarModalBoxful()">
+  (guiaGenerada)="onBoxfulGuiaGenerada($event)" (cerrar)="cerrarModalBoxful()"
+  (crearOtraVenta)="iniciarOtraVentaTrasBoxful()">
 </app-boxful-shipping-selector>
 
 <!-- Modal Detalles Envío Boxful Shared -->

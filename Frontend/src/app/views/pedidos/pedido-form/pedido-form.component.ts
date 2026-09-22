@@ -364,6 +364,11 @@ export class PedidoFormComponent implements OnInit {
     this.router.navigate(['/pedidos']);
   }
 
+  iniciarOtraVentaTrasBoxful(): void {
+    this.mostrarModalBoxful = false;
+    this.router.navigate(['/venta/crear']);
+  }
+
   quitarLinea(i: number): void {
     this.lineas.splice(i, 1);
   }

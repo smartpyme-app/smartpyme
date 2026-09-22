@@ -23,6 +23,8 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges, OnDes
   @Input() montoCodSugerido: number | null = null;
   @Output() guiaGenerada = new EventEmitter<any>();
   @Output() cerrar = new EventEmitter<void>();
+  /** Tras generar la guía: el padre abre otra venta sin tratarlo como un cierre. */
+  @Output() crearOtraVenta = new EventEmitter<void>();
 
   public clientData: any = null;
 
@@ -1055,12 +1057,11 @@ export class BoxfulShippingSelectorComponent implements OnInit, OnChanges, OnDes
   }
 
   /**
-   * Tras generar guía: cierra el wizard y abre facturación.
-   * /venta/crear → FacturacionVersionGuard redirige a v1 o ventas-v2/crear.
+   * Tras generar guía: el padre decide si reinicia el formulario
+   * o abre /venta/crear. No emite `cerrar`, porque ese camino sale al listado.
    */
   crearOtroEnvio(): void {
-    this.cerrar.emit();
-    this.router.navigate(['/venta/crear']);
+    this.crearOtraVenta.emit();
   }
 
   /** Cierra el wizard y lleva al listado de pedidos (seguimiento BoxFul). */

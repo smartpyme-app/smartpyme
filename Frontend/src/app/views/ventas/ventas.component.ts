@@ -1960,4 +1960,10 @@ export class VentasComponent implements OnInit, OnDestroy {
     this.filtrarVentas(false);
   }
 
+  /** Desde el listado sí hay que abrir facturación: el componente se crea de nuevo. */
+  iniciarOtraVentaTrasBoxful(): void {
+    this.cerrarModalBoxful();
+    this.router.navigate(['/venta/crear']);
+  }
+
 }

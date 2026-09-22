@@ -260,6 +260,17 @@ export class FacturacionV2Component implements OnInit, OnDestroy {
   }
 
   cerrarModalBoxful(): void {
+    this.limpiarEstadoModalBoxful();
+    this.router.navigate(['/ventas']);
+  }
+
+  /** Misma pantalla de facturación, formulario vacío para otra venta y otra guía. */
+  iniciarOtraVentaTrasBoxful(): void {
+    this.limpiarEstadoModalBoxful();
+    this.cargarDatosIniciales();
+  }
+
+  private limpiarEstadoModalBoxful(): void {
     this.mostrarModalBoxful = false;
     this.boxfulVentaId = null;
     this.boxfulClienteId = null;
@@ -268,7 +279,8 @@ export class FacturacionV2Component implements OnInit, OnDestroy {
     this.boxfulPaqueteData = {
       peso: 1, alto: 11, ancho: 43, largo: 47.5, es_fragil: false, id: null, parcels: []
     };
-    this.router.navigate(['/ventas']);
+    this.lastSyncedPaqueteId = null;
+    this.paqueteData = { peso: 1, alto: 10, ancho: 10, largo: 10, es_fragil: false, id: null };
   }
 
   ngOnDestroy(): void {
