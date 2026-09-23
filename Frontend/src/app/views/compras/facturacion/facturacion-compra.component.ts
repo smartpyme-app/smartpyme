@@ -1704,12 +1704,16 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
     const costo = costoUnitarioDesdeLineaDte(item);
     const totalFinal = totalLineaDesdeDte(item);
     const empresa = this.apiService.auth_user()?.empresa;
+    const nombreProducto = producto.nombre_variante && !producto.nombre?.includes(producto.nombre_variante)
+      ? `${producto.nombre} (${producto.nombre_variante})`
+      : producto.nombre;
 
     return {
       id: null,
       id_producto: producto.id,
       nombre: producto.nombre,
-      nombre_producto: producto.nombre, // Campo requerido por el template
+      nombre_producto: nombreProducto,
+      nombre_variante: producto.nombre_variante,
       descripcion: producto.descripcion || item.descripcion,
       cantidad: cantidad,
       precio: costo,
@@ -1734,6 +1738,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
       ),
     };
   }
+
 
     async confirmarAjusteProductos() {
         let todosAsignados = true;

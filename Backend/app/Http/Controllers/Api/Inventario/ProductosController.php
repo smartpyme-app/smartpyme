@@ -421,11 +421,15 @@ class ProductosController extends Controller
 
             $stockBase = $this->calcularStockBaseParaBusqueda($producto, $id_bodega ? (int) $id_bodega : null, $empresa);
 
+            $nombreMostrar = !empty($producto->nombre_variante)
+                ? "{$producto->nombre} ({$producto->nombre_variante})"
+                : $producto->nombre;
+
             // Fila del producto base
             $resultado[] = array_merge($producto->toArray(), [
                 'id_producto'      => $producto->id,
                 'id_presentacion'  => null,
-                'nombre_mostrar'   => $producto->nombre,
+                'nombre_mostrar'   => $nombreMostrar,
                 'precio'           => $producto->precio,
                 'stock_base_actual'=> $stockBase,
                 'factor_conversion'=> 1,
@@ -496,9 +500,11 @@ class ProductosController extends Controller
                 })
                 ->where(function ($q) use ($query, $incluirComponenteQuimico) {
                     $q->where('nombre', 'like', "%$query%")
+                        ->orWhere('nombre_variante', 'like', "%$query%")
                         ->orWhere('barcode', 'like', "%$query%")
                         ->orWhere('codigo', 'like', "%$query%")
-                        ->orWhere('etiquetas', 'like', "%$query%");
+                        ->orWhere('etiquetas', 'like', "%$query%")
+                        ->orWhereRaw("CONCAT(nombre, ' (', COALESCE(nombre_variante, ''), ')') LIKE ?", ["%$query%"]);
                     if ($incluirComponenteQuimico) {
                         $q->orWhere('componente_quimico', 'like', "%$query%");
                     }
@@ -518,9 +524,11 @@ class ProductosController extends Controller
                 ->whereIn('tipo', ['Producto', 'Compuesto', 'Servicio'])
                 ->where(function ($q) use ($query, $incluirComponenteQuimico) {
                     $q->where('nombre', 'like', "%$query%")
+                        ->orWhere('nombre_variante', 'like', "%$query%")
                         ->orWhere('barcode', 'like', "%$query%")
                         ->orWhere('codigo', 'like', "%$query%")
-                        ->orWhere('etiquetas', 'like', "%$query%");
+                        ->orWhere('etiquetas', 'like', "%$query%")
+                        ->orWhereRaw("CONCAT(nombre, ' (', COALESCE(nombre_variante, ''), ')') LIKE ?", ["%$query%"]);
                     if ($incluirComponenteQuimico) {
                         $q->orWhere('componente_quimico', 'like', "%$query%");
                     }
@@ -536,11 +544,15 @@ class ProductosController extends Controller
 
             $stockBase = $this->calcularStockBaseParaBusqueda($producto, $id_bodega ? (int) $id_bodega : null, $empresa);
 
+            $nombreMostrar = !empty($producto->nombre_variante)
+                ? "{$producto->nombre} ({$producto->nombre_variante})"
+                : $producto->nombre;
+
             // Fila del producto base
             $resultado[] = array_merge($producto->toArray(), [
                 'id_producto'      => $producto->id,
                 'id_presentacion'  => null,
-                'nombre_mostrar'   => $producto->nombre,
+                'nombre_mostrar'   => $nombreMostrar,
                 'precio'           => $producto->precio,
                 'stock_base_actual'=> $stockBase,
                 'factor_conversion'=> 1,

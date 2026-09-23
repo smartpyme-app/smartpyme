@@ -111,7 +111,7 @@
                   <!-- Información Personal -->
                   <h5 class="col-12 pb-2 mb-2 fw-bold">Información Personal</h5>
                   <div class="form-group col-md-2">
-                    <label for="codigo">Código:</label>
+                    <label for="codigo">Código <span class="text-danger">*</span>:</label>
                     <input
                       type="text"
                       [(ngModel)]="empleado.codigo"
@@ -121,7 +121,7 @@
                     />
                   </div>
                   <div class="form-group col-md-5">
-                    <label for="nombres">Nombres:</label>
+                    <label for="nombres">Nombres <span class="text-danger">*</span>:</label>
                     <input
                       type="text"
                       [(ngModel)]="empleado.nombres"
@@ -132,7 +132,7 @@
                     />
                   </div>
                   <div class="form-group col-md-5">
-                    <label for="apellidos">Apellidos:</label>
+                    <label for="apellidos">Apellidos <span class="text-danger">*</span>:</label>
                     <input
                       type="text"
                       [(ngModel)]="empleado.apellidos"
@@ -263,7 +263,7 @@
                   <!-- Información Laboral -->
                   <h6 class="col-12 pb-2 mb-2 mt-4 fw-bold">Información Laboral</h6>
                   <div class="form-group col-md-4">
-                    <label for="id_departamento">Departamento:</label>
+                    <label for="id_departamento">Departamento <span class="text-danger">*</span>:</label>
                     <div class="input-group">
                       <select
                         [(ngModel)]="empleado.id_departamento"
@@ -292,7 +292,7 @@
                     </div>
                   </div>
                   <div class="form-group col-md-4">
-                    <label for="id_cargo">Cargo:</label>
+                    <label for="id_cargo">Cargo <span class="text-danger">*</span>:</label>
                     <div class="input-group">
                       <select
                         [(ngModel)]="empleado.id_cargo"
@@ -330,7 +330,7 @@
                   <!-- Salario y Fechas -->
                   <h6 class="col-12 pb-2 mb-2 mt-4 fw-bold">Salario y Fechas</h6>
                   <div class="form-group col-md-4">
-                    <label for="salario_base">Salario Base:</label>
+                    <label for="salario_base">Salario Base <span class="text-danger">*</span>:</label>
                     <div class="input-group">
                       <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                       <input
@@ -344,7 +344,7 @@
                     </div>
                   </div>
                   <div class="form-group col-md-4">
-                    <label for="fecha_nacimiento">Fecha de Nacimiento:</label>
+                    <label for="fecha_nacimiento">Fecha de Nacimiento <span class="text-danger">*</span>:</label>
                     <input
                       type="date"
                       [(ngModel)]="empleado.fecha_nacimiento"
@@ -354,7 +354,7 @@
                     />
                   </div>
                   <div class="form-group col-md-4">
-                    <label for="fecha_ingreso">Fecha de Ingreso:</label>
+                    <label for="fecha_ingreso">Fecha de Ingreso <span class="text-danger">*</span>:</label>
                     <input
                       type="date"
                       [(ngModel)]="empleado.fecha_ingreso"
@@ -366,7 +366,7 @@
 
                   <!-- Tipo de Jornada -->
                   <div class="form-group col-md-4">
-                    <label for="tipo_jornada">Tipo de Jornada:</label>
+                    <label for="tipo_jornada">Tipo de Jornada <span class="text-danger">*</span>:</label>
                     <select
                       [(ngModel)]="empleado.tipo_jornada"
                       name="tipo_jornada"
@@ -400,7 +400,7 @@
 
                   <!-- Tipo de contrato -->
                   <div class="form-group col-md-4">
-                    <label for="tipo_contrato">Tipo de Contrato:</label>
+                    <label for="tipo_contrato">Tipo de Contrato <span class="text-danger">*</span>:</label>
                     <select
                       [(ngModel)]="empleado.tipo_contrato"
                       name="tipo_contrato"
@@ -467,7 +467,7 @@
 
                   <!-- Estado -->
                   <div class="form-group col-md-4">
-                    <label for="estado">Estado:</label>
+                    <label for="estado">Estado <span class="text-danger">*</span>:</label>
                     <select
                       [(ngModel)]="empleado.estado"
                       name="estado"

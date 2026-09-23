@@ -83,11 +83,6 @@ export class ProductosComponent implements OnInit {
                 && this.apiService.isTransformacionProductosConfigActivo();
         });
 
-        // Verificar si Shopify está activo y obtener la bodega del usuario
-        const empresa = this.apiService.auth_user()?.empresa;
-        const usuario = this.apiService.auth_user();
-        const shopifyActivo = !!(empresa?.shopify_store_url);
-
         this.route.queryParams.subscribe(params => {
             this.filtros = {
                 buscador: params['buscador'] || '',
@@ -105,14 +100,6 @@ export class ProductosComponent implements OnInit {
                 page: params['page'] || 1,
             };
 
-            // Si Shopify está activo y no hay bodega seleccionada, seleccionar automáticamente la bodega del usuario
-            if (shopifyActivo && !this.filtros.id_bodega && usuario?.id_bodega) {
-                this.filtros.id_bodega = usuario.id_bodega;
-                // ponytail: Forzar actualización de URL para sincronizar bodega, lo cual re-disparará queryParams
-                this.filtrarProductos(false);
-                return;
-            }
-
             // ponytail: Evitar doble llamada HTTP en el init usando flujo de datos unidireccional
             this.cargarProductos();
         });
@@ -128,14 +115,6 @@ export class ProductosComponent implements OnInit {
     }
 
     public loadAll() {
-        // Verificar si Shopify está activo para mantener el filtro de bodega
-        const empresa = this.apiService.auth_user()?.empresa;
-        const usuario = this.apiService.auth_user();
-        const shopifyActivo = !!(empresa?.shopify_store_url);
-
-        // Guardar temporalmente la bodega si Shopify está activo
-        const bodegaActual = shopifyActivo && this.filtros.id_bodega ? this.filtros.id_bodega : '';
-
         this.filtros.id_bodega = '';
         this.filtros.id_categoria = '';
         this.filtros.id_proveedor = '';
@@ -148,11 +127,6 @@ export class ProductosComponent implements OnInit {
         this.filtros.sin_stock = '';
         this.filtros.paginate = 10;
         this.filtros.page = 1;
-
-        // Si Shopify está activo, restaurar la bodega del usuario
-        if (shopifyActivo) {
-            this.filtros.id_bodega = bodegaActual || usuario?.id_bodega || '';
-        }
 
         this.filtrarProductos(false);
     }

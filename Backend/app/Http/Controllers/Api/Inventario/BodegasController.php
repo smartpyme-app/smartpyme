@@ -33,7 +33,7 @@ class BodegasController extends Controller
                       });
                 });
             })
-            ->orderBy($request->orden, $request->direccion)
+            ->orderBy($request->orden ?: 'id', in_array(strtolower($request->direccion ?: ''), ['asc', 'desc']) ? $request->direccion : 'asc')
             ->paginate($request->paginate);
 
         return Response()->json($bodegas, 200);

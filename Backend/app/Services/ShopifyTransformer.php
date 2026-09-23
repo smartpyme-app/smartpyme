@@ -607,7 +607,7 @@ class ShopifyTransformer
     /**
      * Construye el nombre de la variante basado en las opciones del variant
      */
-    private function construirNombreVariante($variant)
+    public function construirNombreVariante($variant)
     {
         $opciones = [];
 

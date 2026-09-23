@@ -36,8 +36,10 @@ use Illuminate\Support\Facades\Route;
     Route::post('/reporte/requisicion-compras',    [ReportesController::class, 'requisicionCompra']);
     Route::get('/reporte/corte/{id}',              [ReportesController::class, 'corte']);
 
-
-
-
+    // Shopify Multi-Sucursal Locations
+    Route::get('/shopify/locations',               [\App\Http\Controllers\Api\Admin\ShopifyLocationController::class, 'index']);
+    Route::post('/shopify/locations/sync',          [\App\Http\Controllers\Api\Admin\ShopifyLocationController::class, 'sync']);
+    Route::put('/shopify/locations/{id}',          [\App\Http\Controllers\Api\Admin\ShopifyLocationController::class, 'update']);
+    Route::post('/shopify/locations/{id}/crear-sucursal', [\App\Http\Controllers\Api\Admin\ShopifyLocationController::class, 'crearSucursal']);
 
 ?>

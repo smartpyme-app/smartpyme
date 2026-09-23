@@ -154,10 +154,9 @@ class Venta extends AuditableModel {
         // Auth::check() (guard web) no ve el usuario api. Ver Cliente::boot().
         static::addGlobalScope('empresa', function (Builder $builder) {
             $user = Auth::guard('api')->user() ?? Auth::user();
-            if (! $user) {
-                return;
+            if ($user && isset($user->id_empresa)) {
+                $builder->where('ventas.id_empresa', $user->id_empresa);
             }
-            $builder->where('id_empresa', $user->id_empresa);
         });
     }
 

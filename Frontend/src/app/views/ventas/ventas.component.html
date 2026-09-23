@@ -1230,7 +1230,8 @@
   [sugerirCod]="boxfulSugerirCod"
   [montoCodSugerido]="boxfulMontoCod"
   (guiaGenerada)="onBoxfulGuiaGenerada($event)"
-  (cerrar)="cerrarModalBoxful()">
+  (cerrar)="cerrarModalBoxful()"
+  (crearOtraVenta)="iniciarOtraVentaTrasBoxful()">
 </app-boxful-shipping-selector>
 
 <app-boxful-shipment-details *ngIf="mostrarDetallesEnvio" [shipmentId]="selectedShipmentId"

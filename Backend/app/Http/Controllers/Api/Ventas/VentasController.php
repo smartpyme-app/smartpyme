@@ -58,11 +58,10 @@ use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Lote;
 use App\Models\Inventario\Paquete;
 use App\Services\Webhooks\WebhookPaqueteVentaDispatcher;
+use App\Jobs\SincronizarVentaAShopifyJob;
 use App\Models\Contabilidad\Proyecto;
 use App\Models\Eventos\Evento;
 use App\Models\Admin\Canal;
-use App\Models\Restaurante\PedidoRestaurante;
-use App\Services\Restaurante\PedidoCanalInventarioService;
 use Illuminate\Support\Str;
 use App\Services\Inventario\ConversionInventarioService;
 use App\Services\Inventario\ConsignaDisponibleService;
@@ -687,6 +686,11 @@ class VentasController extends Controller
 
             if ((int) ($request->cotizacion ?? 0) === 0) {
                 $this->crearPaqueteStubBoxfulSiAplica($venta);
+            }
+
+            $empresaActual = Empresa::find($venta->id_empresa);
+            if ($empresaActual && $empresaActual->shopify_sync_ventas && empty($venta->referencia_shopify) && (int) ($request->cotizacion ?? 0) === 0) {
+                SincronizarVentaAShopifyJob::dispatch($venta->id);
             }
 
             $venta->load(['paquetes' => function ($query) {

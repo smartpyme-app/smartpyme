@@ -469,6 +469,11 @@ export class PedidosListaComponent implements OnInit, OnDestroy {
     this.pedidoRecienCreado = null;
   }
 
+  iniciarOtraVentaTrasBoxful(): void {
+    this.cerrarModalBoxful();
+    this.router.navigate(['/venta/crear']);
+  }
+
   verDetallesEnvio(boxfulShipmentId: string): void {
     this.selectedShipmentId = boxfulShipmentId;
     this.mostrarDetallesEnvio = true;

@@ -618,4 +618,27 @@ describe('FacturacionV2Component', () => {
     expect(urls).toContain('cotizacionVentas');
     expect(urls).not.toContain('contabilidad/partida/venta');
   });
+
+  it('crear otra venta Boxful limpia el formulario sin ir al listado', () => {
+    const component: any = Object.create(FacturacionV2Component.prototype);
+    component.mostrarModalBoxful = true;
+    component.boxfulVentaId = 9;
+    component.boxfulClienteId = 3;
+    component.boxfulSugerirCod = true;
+    component.boxfulMontoCod = 50;
+    component.lastSyncedPaqueteId = 4;
+    component.paqueteData = { id: 4, peso: 2 };
+    component.cargarDatosIniciales = jasmine.createSpy('cargarDatosIniciales');
+    component.router = { navigate: jasmine.createSpy('navigate') };
+
+    component.iniciarOtraVentaTrasBoxful();
+
+    expect(component.mostrarModalBoxful).toBeFalse();
+    expect(component.boxfulVentaId).toBeNull();
+    expect(component.boxfulClienteId).toBeNull();
+    expect(component.lastSyncedPaqueteId).toBeNull();
+    expect(component.paqueteData.id).toBeNull();
+    expect(component.cargarDatosIniciales).toHaveBeenCalled();
+    expect(component.router.navigate).not.toHaveBeenCalled();
+  });
 });

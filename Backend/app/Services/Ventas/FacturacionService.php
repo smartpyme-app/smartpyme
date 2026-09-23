@@ -179,6 +179,16 @@ class FacturacionService
                 $venta->fill($request->all());
                 $venta->id_usuario_autorizo_descuento = $request->attributes->get('id_usuario_autorizo_descuento');
 
+                if (empty($venta->referencia_shopify) && !empty($venta->num_cotizacion)) {
+                    $cotizacionOrigen = Venta::withoutGlobalScopes()->find($venta->num_cotizacion);
+                    if ($cotizacionOrigen && !empty($cotizacionOrigen->referencia_shopify)) {
+                        $venta->referencia_shopify = $cotizacionOrigen->referencia_shopify;
+                        if (empty($venta->num_orden)) {
+                            $venta->num_orden = $cotizacionOrigen->num_orden;
+                        }
+                    }
+                }
+
                 $documento = Documento::where('id', $request->id_documento)
                     ->lockForUpdate()
                     ->firstOrFail();
@@ -628,6 +638,13 @@ class FacturacionService
                 } elseif ($request->filled('id_credito_cuota')) {
                     app(\App\Services\CreditosClientes\VincularCuotaVentaService::class)
                         ->vincular((int) $request->id_credito_cuota, $venta);
+                }
+
+                if ((int) ($request->cotizacion ?? 0) === 0 && !empty($venta->num_cotizacion)) {
+                    Venta::where('id', $venta->num_cotizacion)
+                        ->where('cotizacion', 1)
+                        ->where('estado', '!=', 'Anulada')
+                        ->update(['estado' => 'Facturada']);
                 }
 
                 DB::commit();
