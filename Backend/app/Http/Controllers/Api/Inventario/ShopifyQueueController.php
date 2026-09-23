@@ -68,7 +68,7 @@ class ShopifyQueueController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error("Error iniciando importación Shopify", [
+            Log::channel('shopify')->error("Error iniciando importación Shopify", [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
@@ -117,7 +117,7 @@ class ShopifyQueueController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error("Error verificando estado de trabajos", [
+            Log::channel('shopify')->error("Error verificando estado de trabajos", [
                 'error' => $e->getMessage()
             ]);
 
@@ -170,7 +170,7 @@ class ShopifyQueueController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error("Error continuando importación Shopify", [
+            Log::channel('shopify')->error("Error continuando importación Shopify", [
                 'error' => $e->getMessage()
             ]);
 
@@ -200,7 +200,7 @@ class ShopifyQueueController extends Controller
             
             return $productos;
         } catch (\Exception $e) {
-            Log::error("Error obteniendo productos de Shopify", [
+            Log::channel('shopify')->error("Error obteniendo productos de Shopify", [
                 'error' => $e->getMessage()
             ]);
             return [];
@@ -240,7 +240,7 @@ class ShopifyQueueController extends Controller
             curl_close($ch);
             
             if ($httpCode !== 200) {
-                Log::error("Error obteniendo productos de Shopify", [
+                Log::channel('shopify')->error("Error obteniendo productos de Shopify", [
                     'http_code' => $httpCode,
                     'response' => $response
                 ]);
@@ -291,7 +291,7 @@ class ShopifyQueueController extends Controller
                     }
                 }
             } catch (\Exception $e) {
-                Log::error("Error procesando producto en cola", [
+                Log::channel('shopify')->error("Error procesando producto en cola", [
                     'producto_id' => $productoShopify['id'] ?? 'N/A',
                     'error' => $e->getMessage()
                 ]);
@@ -353,7 +353,7 @@ class ShopifyQueueController extends Controller
 
             return $producto;
         } catch (\Exception $e) {
-            Log::error("Error creando producto", [
+            Log::channel('shopify')->error("Error creando producto", [
                 'producto_data' => $productoData,
                 'error' => $e->getMessage()
             ]);
@@ -417,14 +417,14 @@ class ShopifyQueueController extends Controller
             $trabajo->id_empresa = $usuario->id_empresa;
             $trabajo->save();
 
-            Log::info("Trabajo creado para producto Shopify", [
+            Log::channel('shopify')->info("Trabajo creado para producto Shopify", [
                 'trabajo_id' => $trabajo->id,
                 'producto_id' => $productoShopify['id'],
                 'titulo' => $productoShopify['title']
             ]);
 
         } catch (\Exception $e) {
-            Log::error("Error creando trabajo para producto", [
+            Log::channel('shopify')->error("Error creando trabajo para producto", [
                 'producto_id' => $productoShopify['id'] ?? 'N/A',
                 'error' => $e->getMessage()
             ]);
@@ -440,7 +440,7 @@ class ShopifyQueueController extends Controller
                 ->first();
 
             if (!$bodega) {
-                Log::warning("No se encontró bodega activa para la empresa {$idEmpresa}");
+                Log::channel('shopify')->warning("No se encontró bodega activa para la empresa {$idEmpresa}");
                 return;
             }
 
@@ -462,7 +462,7 @@ class ShopifyQueueController extends Controller
                 $inventario->save();
             }
         } catch (\Exception $e) {
-            Log::error("Error creando inventario", [
+            Log::channel('shopify')->error("Error creando inventario", [
                 'producto_id' => $productoId,
                 'error' => $e->getMessage()
             ]);

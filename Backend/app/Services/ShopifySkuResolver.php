@@ -74,7 +74,7 @@ class ShopifySkuResolver
                 $page++;
             } while ($page <= self::MAX_PAGES);
         } catch (\Exception $e) {
-            Log::warning('ShopifySkuResolver: error buscando por SKU', [
+            Log::channel('shopify')->warning('ShopifySkuResolver: error buscando por SKU', [
                 'sku' => $sku,
                 'error' => $e->getMessage(),
             ]);

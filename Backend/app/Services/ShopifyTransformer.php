@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Constants\ShopifyConstant;
 use App\Helpers\ShopifyHelper;
 use App\Models\Admin\Empresa;
+use App\Models\Inventario\Categorias\Categoria;
 use Carbon\Carbon;
 use Illuminate\Support\Arr;
 
@@ -552,6 +553,7 @@ class ShopifyTransformer
                 'enable' => $productoActivo,
                 'tipo' => 'Producto',
                 'costo' => $costo,
+                'id_categoria' => $this->resolverCategoria($shopifyData['product_type'] ?? '', $id_empresa),
                 // Campos de control para prevenir ciclos - solo para importaciones masivas
                 'syncing_from_shopify' => $esImportacionMasiva,
                 'last_shopify_sync' => now(),
@@ -824,5 +826,22 @@ class ShopifyTransformer
     public function resolverUbicacionElSalvador(?string $city, ?string $provinceCode, ?string $provinceName, ?string $countryCode = 'SV'): array
     {
         return ShopifyHelper::resolverUbicacionElSalvador($city, $provinceCode, $provinceName, $countryCode);
+    }
+
+    /**
+     * Resuelve (o crea) la categoría para un producto importado desde Shopify.
+     * Usa product_type de Shopify si viene; si no, crea/reutiliza "General".
+     * firstOrCreate garantiza 1 sola categoría por (nombre, empresa).
+     */
+    private function resolverCategoria(string $productType, int $idEmpresa): int
+    {
+        $nombre = trim($productType) !== '' ? trim($productType) : 'General';
+
+        return Categoria::withoutGlobalScope('empresa')
+            ->firstOrCreate(
+                ['nombre' => $nombre, 'id_empresa' => $idEmpresa],
+                ['enable' => '1', 'descripcion' => '']
+            )
+            ->id;
     }
 }

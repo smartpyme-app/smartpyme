@@ -79,7 +79,7 @@ class ShopifyApiClient
         try {
             $url = "{$this->shopDomain}/admin/api/{$this->apiVersion}/" . ltrim($endpoint, '/');
 
-            Log::info("Enviando petición a Shopify API", [
+            Log::channel('shopify')->info("Enviando petición a Shopify API", [
                 'method' => $method,
                 'url' => $url,
                 'params' => $params
@@ -101,7 +101,7 @@ class ShopifyApiClient
             }
 
             if ($response->status() === 401 && $retryOnUnauthorized && $this->empresa && !empty($this->empresa->shopify_client_id)) {
-                Log::warning('Shopify devolvió 401. Intentando renovar token automáticamente.', [
+                Log::channel('shopify')->warning('Shopify devolvió 401. Intentando renovar token automáticamente.', [
                     'empresa_id' => $this->empresa->id,
                 ]);
                 $newToken = $this->resolveToken(true);
@@ -112,7 +112,7 @@ class ShopifyApiClient
 
             if ($response->status() === 429) {
                 $retryAfter = (int) ($response->header('Retry-After') ?: 2);
-                Log::warning("ShopifyApiClient: Rate limit 429 alcanzado, esperando {$retryAfter}s antes de reintentar...", [
+                Log::channel('shopify')->warning("ShopifyApiClient: Rate limit 429 alcanzado, esperando {$retryAfter}s antes de reintentar...", [
                     'endpoint' => $endpoint,
                     'empresa_id' => $this->empresa ? $this->empresa->id : null,
                 ]);
@@ -121,7 +121,7 @@ class ShopifyApiClient
             }
 
             if ($response->failed()) {
-                Log::error("Error en petición a Shopify API", [
+                Log::channel('shopify')->error("Error en petición a Shopify API", [
                     'status' => $response->status(),
                     'body' => $response->body()
                 ]);
@@ -139,7 +139,7 @@ class ShopifyApiClient
                 ];
             }
         } catch (\Exception $e) {
-            Log::error("Excepción en petición a Shopify API: " . $e->getMessage());
+            Log::channel('shopify')->error("Excepción en petición a Shopify API: " . $e->getMessage());
             throw $e;
         }
     }

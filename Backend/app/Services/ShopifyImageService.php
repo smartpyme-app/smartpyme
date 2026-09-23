@@ -36,7 +36,7 @@ class ShopifyImageService
 
             if ($src === null) {
                 $stats['invalidas']++;
-                Log::warning('ShopifyImageService: URL inválida, imagen omitida', [
+                Log::channel('shopify')->warning('ShopifyImageService: URL inválida, imagen omitida', [
                     'producto_id' => $productoId,
                     'shopify_image_id' => $shopifyImageId,
                 ]);
@@ -165,7 +165,7 @@ class ShopifyImageService
             curl_close($ch);
 
             if ($error || $httpCode !== 200 || empty($contenido)) {
-                Log::warning('ShopifyImageService: no se pudo descargar imagen', [
+                Log::channel('shopify')->warning('ShopifyImageService: no se pudo descargar imagen', [
                     'url' => $url,
                     'http_code' => $httpCode,
                     'error' => $error,
@@ -175,7 +175,7 @@ class ShopifyImageService
 
             return $contenido;
         } catch (\Exception $e) {
-            Log::warning('ShopifyImageService: excepción descargando imagen', [
+            Log::channel('shopify')->warning('ShopifyImageService: excepción descargando imagen', [
                 'url' => $url,
                 'error' => $e->getMessage(),
             ]);
@@ -204,7 +204,7 @@ class ShopifyImageService
 
             return ['path' => $path, 'hash' => $hash];
         } catch (\Exception $e) {
-            Log::error('ShopifyImageService: error procesando imagen', [
+            Log::channel('shopify')->error('ShopifyImageService: error procesando imagen', [
                 'error' => $e->getMessage(),
             ]);
             return null;

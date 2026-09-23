@@ -72,7 +72,7 @@ class ShopifyConsolidationService
 
         // Si Shopify retorna 429 (Too Many Requests), esperar Retry-After
         if ($status === 429) {
-            ShopifyHelper::log("Shopify 429 Rate Limit alcanzado, durmiendo {$retryAfter}s...", [], 'warning');
+            Log::channel('shopify_consolidacion')->warning("Shopify 429 Rate Limit alcanzado, durmiendo {$retryAfter}s...");
             sleep($retryAfter + 1);
             return;
         }
@@ -112,10 +112,10 @@ class ShopifyConsolidationService
                 $linkHeader = $response['link'] ?? ($response['headers']['Link'][0] ?? null);
             } elseif (is_object($response) && method_exists($response, 'json')) {
                 if (method_exists($response, 'successful') && !$response->successful()) {
-                    ShopifyHelper::log("Fallo al obtener productos de Shopify en consolidación", [
+                    Log::channel('shopify_consolidacion')->error("Fallo al obtener productos de Shopify en consolidación", [
                         'status' => method_exists($response, 'status') ? $response->status() : null,
                         'body' => method_exists($response, 'body') ? $response->body() : null,
-                    ], 'error');
+                    ]);
                     break;
                 }
                 $data = $response->json();
@@ -167,6 +167,11 @@ class ShopifyConsolidationService
         $actualizarPrecios = $opciones['actualizar_precios'] ?? true;
         $actualizarStock = $opciones['actualizar_stock'] ?? false;
         $crearNuevos = $opciones['crear_nuevos'] ?? true;
+
+        Log::channel('shopify_consolidacion')->info("Iniciando consolidación Shopify -> SmartPyme", [
+            'empresa_id' => $empresa->id,
+            'opciones' => $opciones,
+        ]);
 
         $client = $this->getClient($empresa);
         if ($onProgreso) {
@@ -383,7 +388,7 @@ class ShopifyConsolidationService
                     }
                 } catch (\Throwable $e) {
                     $metricas['errores']++;
-                    Log::error("Error al consolidar variante Shopify {$fila['shopify_variant_id']}: " . $e->getMessage());
+                    Log::channel('shopify_consolidacion')->error("Error al consolidar variante Shopify {$fila['shopify_variant_id']}: " . $e->getMessage());
                 }
 
                 $metricas['procesados']++;
@@ -403,6 +408,18 @@ class ShopifyConsolidationService
         if ($onProgreso) {
             $onProgreso(100, 'Consolidación desde Shopify completada exitosamente.', $metricas);
         }
+
+        Log::channel('shopify_consolidacion')->info("Consolidación Shopify -> SmartPyme completada exitosamente", [
+            'empresa_id' => $empresa->id,
+            'metricas' => [
+                'total' => $metricas['total'],
+                'procesados' => $metricas['procesados'],
+                'vinculados' => $metricas['vinculados'],
+                'actualizados' => $metricas['actualizados'],
+                'creados' => $metricas['creados'],
+                'errores' => $metricas['errores'],
+            ],
+        ]);
 
         return $metricas;
     }
@@ -428,6 +445,11 @@ class ShopifyConsolidationService
             'errores' => 0,
             'detalles' => [],
         ];
+
+        Log::channel('shopify_consolidacion')->info("Iniciando consolidación SmartPyme -> Shopify", [
+            'empresa_id' => $empresa->id,
+            'opciones' => $opciones,
+        ]);
 
         $client = $this->getClient($empresa);
 
@@ -591,7 +613,7 @@ class ShopifyConsolidationService
                 }
             } catch (\Throwable $e) {
                 $metricas['errores']++;
-                Log::error("Error consolidando producto #{$producto->id} a Shopify: " . $e->getMessage());
+                Log::channel('shopify_consolidacion')->error("Error consolidando producto #{$producto->id} a Shopify: " . $e->getMessage());
             }
 
             $metricas['procesados']++;
@@ -609,6 +631,18 @@ class ShopifyConsolidationService
         if ($onProgreso) {
             $onProgreso(100, 'Consolidación hacia Shopify completada exitosamente.', $metricas);
         }
+
+        Log::channel('shopify_consolidacion')->info("Consolidación SmartPyme -> Shopify completada exitosamente", [
+            'empresa_id' => $empresa->id,
+            'metricas' => [
+                'total' => $metricas['total'],
+                'procesados' => $metricas['procesados'],
+                'vinculados' => $metricas['vinculados'],
+                'actualizados' => $metricas['actualizados'],
+                'creados' => $metricas['creados'],
+                'errores' => $metricas['errores'],
+            ],
+        ]);
 
         return $metricas;
     }

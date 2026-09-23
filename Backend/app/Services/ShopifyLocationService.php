@@ -267,7 +267,7 @@ class ShopifyLocationService
             ];
         } catch (\Throwable $e) {
             DB::rollBack();
-            Log::error('Error creando sucursal desde Shopify: ' . $e->getMessage());
+            Log::channel('shopify')->error('Error creando sucursal desde Shopify: ' . $e->getMessage());
             return [
                 'success' => false,
                 'mensaje' => 'Error al crear la sucursal: ' . $e->getMessage()
@@ -522,7 +522,7 @@ class ShopifyLocationService
             }
         } catch (\Throwable $e) {
             DB::rollBack();
-            Log::error('Error al eliminar sucursal desde Shopify: ' . $e->getMessage());
+            Log::channel('shopify')->error('Error al eliminar sucursal desde Shopify: ' . $e->getMessage());
             return [
                 'success' => false,
                 'mensaje' => 'Error al procesar la eliminación de la sucursal: ' . $e->getMessage()

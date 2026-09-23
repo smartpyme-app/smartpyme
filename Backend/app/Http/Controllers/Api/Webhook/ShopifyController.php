@@ -992,7 +992,7 @@ class ShopifyController extends Controller
             // ]);
             $this->cache->saveInventorySnapshot($inventario, $producto->id);
         } else {
-            Log::error('Inventario NO encontrado después de crear producto', [
+            Log::channel('shopify')->error('Inventario NO encontrado después de crear producto', [
                 'producto_id' => $producto->id,
                 'bodega_id' => $usuario->id_bodega,
                 'stock_solicitado' => $stock
@@ -1101,7 +1101,7 @@ class ShopifyController extends Controller
 
         } catch (\Exception $e) {
             DB::rollback();
-            Log::error("Error procesando cliente creado desde Shopify: " . $e->getMessage());
+            Log::channel('shopify')->error("Error procesando cliente creado desde Shopify: " . $e->getMessage());
             return response()->json([
                 'status' => 'error',
                 'mensaje' => 'Error al procesar cliente',
@@ -1157,7 +1157,7 @@ class ShopifyController extends Controller
 
         } catch (\Exception $e) {
             DB::rollback();
-            Log::error("Error procesando cliente actualizado desde Shopify: " . $e->getMessage());
+            Log::channel('shopify')->error("Error procesando cliente actualizado desde Shopify: " . $e->getMessage());
             return response()->json([
                 'status' => 'error',
                 'mensaje' => 'Error al actualizar cliente',
@@ -1235,7 +1235,7 @@ class ShopifyController extends Controller
                 try {
                     $cacheKey = "shopify_webhook_processed_{$webhookId}";
                     if (Cache::has($cacheKey)) {
-                        Log::warning("Webhook duplicado detectado por webhook_id", [
+                        Log::channel('shopify')->warning("Webhook duplicado detectado por webhook_id", [
                             'shopify_order_id' => $request->id,
                             'webhook_id' => $webhookId,
                             'referencia_shopify' => $referenciaShopify
@@ -1253,7 +1253,7 @@ class ShopifyController extends Controller
                 } catch (\Throwable $e) {
                     // Redis/cache no disponible (ej: MISCONF) - continuar sin cache
                     // La verificación por referencia_shopify en DB previene duplicados
-                    Log::warning("Cache no disponible para verificación de webhook duplicado - continuando", [
+                    Log::channel('shopify')->warning("Cache no disponible para verificación de webhook duplicado - continuando", [
                         'error' => $e->getMessage(),
                         'shopify_order_id' => $request->id,
                     ]);
@@ -1531,7 +1531,7 @@ class ShopifyController extends Controller
                     $consumoPuntosService = app(ConsumoPuntosService::class);
                     $consumoPuntosService->procesarAcumulacionPuntos($venta);
                 } catch (\Exception $e) {
-                    Log::error('Error al procesar puntos de fidelización en Shopify', [
+                    Log::channel('shopify')->error('Error al procesar puntos de fidelización en Shopify', [
                         'venta_id' => $venta->id,
                         'error' => $e->getMessage()
                     ]);
@@ -1556,7 +1556,7 @@ class ShopifyController extends Controller
             ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Error procesando venta de Shopify: ' . $e->getMessage());
+            Log::channel('shopify')->error('Error procesando venta de Shopify: ' . $e->getMessage());
 
             return response()->json([
                 'status' => 'error',
@@ -2121,7 +2121,7 @@ class ShopifyController extends Controller
             if ($cliente) {
                 // Validar que no haya conflicto con shopify_customer_id existente
                 if ($cliente->shopify_customer_id && $cliente->shopify_customer_id !== $shopifyCustomerId) {
-                    Log::warning('Conflicto de shopify_customer_id detectado por teléfono', [
+                    Log::channel('shopify')->warning('Conflicto de shopify_customer_id detectado por teléfono', [
                         'cliente_id' => $cliente->id,
                         'telefono' => $telefono,
                         'shopify_customer_id_existente' => $cliente->shopify_customer_id,
@@ -2134,7 +2134,7 @@ class ShopifyController extends Controller
                 
                 // Validar que el correo coincida si está disponible
                 if ($correo && $cliente->correo && $cliente->correo !== $correo) {
-                    Log::warning('Conflicto de correo detectado por teléfono', [
+                    Log::channel('shopify')->warning('Conflicto de correo detectado por teléfono', [
                         'cliente_id' => $cliente->id,
                         'telefono' => $telefono,
                         'correo_cliente' => $cliente->correo,
@@ -3308,7 +3308,7 @@ class ShopifyController extends Controller
                 ->first();
 
             if (!$usuario) {
-                Log::warning("Usuario no encontrado para actualizar venta", [
+                Log::channel('shopify')->warning("Usuario no encontrado para actualizar venta", [
                     'empresa_id' => $empresa->id,
                     'venta_id' => $venta->id
                 ]);

@@ -249,7 +249,7 @@ class ShopifyExportService
             $this->registrarExito($resultados, $producto, 'actualizado', $producto->shopify_product_id);
             return true;
         } catch (\Exception $e) {
-            Log::warning("Error actualizando producto por ID en Shopify: " . $e->getMessage());
+            Log::channel('shopify')->warning("Error actualizando producto por ID en Shopify: " . $e->getMessage());
             return false;
         }
     }
@@ -312,7 +312,7 @@ class ShopifyExportService
                 ]);
             }
         } catch (\Exception $e) {
-            Log::warning("Error actualizando inventario en Shopify: " . $e->getMessage());
+            Log::channel('shopify')->warning("Error actualizando inventario en Shopify: " . $e->getMessage());
         }
     }
 
@@ -327,7 +327,7 @@ class ShopifyExportService
                     $locationId = $response['body']['locations'][0]['id'];
                 }
             } catch (\Exception $e) {
-                Log::error("Error obteniendo ubicaciones de Shopify: " . $e->getMessage());
+                Log::channel('shopify')->error("Error obteniendo ubicaciones de Shopify: " . $e->getMessage());
             }
         }
 
@@ -346,7 +346,7 @@ class ShopifyExportService
 
     private function registrarError($producto, $e, &$resultados)
     {
-        Log::error("Error procesando producto Shopify {$producto->id}: " . $e->getMessage());
+        Log::channel('shopify')->error("Error procesando producto Shopify {$producto->id}: " . $e->getMessage());
         $resultados['errores']++;
         $resultados['detalles'][] = [
             'producto_id' => $producto->id,
@@ -384,7 +384,7 @@ class ShopifyExportService
 
             return null;
         } catch (\Exception $e) {
-            Log::warning("Error buscando producto por SKU en Shopify ({$sku}): " . $e->getMessage());
+            Log::channel('shopify')->warning("Error buscando producto por SKU en Shopify ({$sku}): " . $e->getMessage());
             return null;
         }
     }

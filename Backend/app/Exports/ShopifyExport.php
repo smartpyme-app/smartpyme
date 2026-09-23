@@ -202,7 +202,7 @@ class ShopifyExport implements FromCollection, WithHeadings, WithMapping, WithCo
             $user = User::find($this->userId);
 
             if (!$user) {
-                Log::warning("Usuario no encontrado para Shopify export", [
+                Log::channel('shopify')->warning("Usuario no encontrado para Shopify export", [
                     'user_id' => $this->userId
                 ]);
                 return collect([]);
@@ -243,12 +243,12 @@ class ShopifyExport implements FromCollection, WithHeadings, WithMapping, WithCo
                 ->orderBy('codigo')
                 ->get();
 
-            Log::info("Exportando " . $productos->count() . " productos para Shopify");
+            Log::channel('shopify')->info("Exportando " . $productos->count() . " productos para Shopify");
             
             return $productos;
 
         } catch (\Exception $e) {
-            Log::error("Error al exportar productos para Shopify: " . $e->getMessage(), [
+            Log::channel('shopify')->error("Error al exportar productos para Shopify: " . $e->getMessage(), [
                 'trace' => $e->getTraceAsString()
             ]);
 

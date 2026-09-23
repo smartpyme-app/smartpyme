@@ -28,7 +28,7 @@ class ShopifyTokenService
     public function getAccessToken(Empresa $empresa): ?string
     {
         if (empty($empresa->shopify_store_url)) {
-            Log::error('ShopifyTokenService: empresa sin shopify_store_url.', ['empresa_id' => $empresa->id]);
+            Log::channel('shopify')->error('ShopifyTokenService: empresa sin shopify_store_url.', ['empresa_id' => $empresa->id]);
             return null;
         }
 
@@ -58,7 +58,7 @@ class ShopifyTokenService
         $clientSecret = $empresa->shopify_consumer_secret ?: $empresa->shopify_client_secret;
 
         if (empty($clientId) || empty($clientSecret)) {
-            Log::error('ShopifyTokenService: faltan client_id/client_secret para renovar token.', [
+            Log::channel('shopify')->error('ShopifyTokenService: faltan client_id/client_secret para renovar token.', [
                 'empresa_id' => $empresa->id,
             ]);
             return null;
@@ -74,7 +74,7 @@ class ShopifyTokenService
             ]);
 
             if ($response->failed()) {
-                Log::error('ShopifyTokenService: error renovando token.', [
+                Log::channel('shopify')->error('ShopifyTokenService: error renovando token.', [
                     'empresa_id' => $empresa->id,
                     'status' => $response->status(),
                     'body' => $response->body(),
@@ -86,7 +86,7 @@ class ShopifyTokenService
             $token = $data['access_token'] ?? null;
 
             if (empty($token)) {
-                Log::error('ShopifyTokenService: respuesta sin access_token.', [
+                Log::channel('shopify')->error('ShopifyTokenService: respuesta sin access_token.', [
                     'empresa_id' => $empresa->id,
                     'body' => $data,
                 ]);
@@ -104,14 +104,14 @@ class ShopifyTokenService
 
             $this->cacheToken($empresa, $token);
 
-            Log::info('ShopifyTokenService: token renovado.', [
+            Log::channel('shopify')->info('ShopifyTokenService: token renovado.', [
                 'empresa_id' => $empresa->id,
                 'expires_at' => $expiresAt->toDateTimeString(),
             ]);
 
             return $token;
         } catch (\Throwable $e) {
-            Log::error('ShopifyTokenService: excepción renovando token: ' . $e->getMessage(), [
+            Log::channel('shopify')->error('ShopifyTokenService: excepción renovando token: ' . $e->getMessage(), [
                 'empresa_id' => $empresa->id,
             ]);
             return null;
