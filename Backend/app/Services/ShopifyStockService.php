@@ -145,12 +145,18 @@ class ShopifyStockService
 
 
 
-            if (!empty($producto->shopify_variant_id)) {
+            if (!empty($producto->shopify_variant_id) || !empty($producto->shopify_product_id)) {
                 if ($this->actualizarProductoPorId($shopifyClient, $producto, $productData)) {
                     return true;
                 }
-            }
 
+                Log::channel('shopify')->warning("No se pudo actualizar el producto existente en Shopify por ID", [
+                    'producto_id' => $producto->id,
+                    'shopify_product_id' => $producto->shopify_product_id,
+                    'shopify_variant_id' => $producto->shopify_variant_id,
+                ]);
+                return false;
+            }
 
             $existente = $this->buscarProductoPorSku($shopifyClient, $producto->codigo);
 

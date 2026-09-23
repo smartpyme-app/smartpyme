@@ -59,6 +59,24 @@ class ShopifyController extends Controller
             'ip' => $request->ip(),
         ]);
 
+        if ($webhookId && !in_array($webhookTopic, ['orders/create', 'orders/updated', 'orders/cancelled'])) {
+            try {
+                $cacheKey = "shopify_webhook_processed_{$webhookId}";
+                if (!\Illuminate\Support\Facades\Cache::add($cacheKey, true, 3600)) {
+                    ShopifyHelper::log("Webhook ya procesado o en ejecución (deduplicado)", [
+                        'webhook_id' => $webhookId,
+                        'topic' => $webhookTopic,
+                    ]);
+                    return response()->json([
+                        'status' => 'success',
+                        'message' => 'Webhook ya procesado previamente'
+                    ], 200);
+                }
+            } catch (\Throwable $e) {
+                // Si falla cache, continuar
+            }
+        }
+
         $empresa = Empresa::where('woocommerce_api_key', $tokenEmpresa)
             ->where('shopify_status', 'connected')
             ->first();
@@ -458,6 +476,8 @@ class ShopifyController extends Controller
             'stock_nuevo' => $available,
             'delta' => $available - $stockAnterior,
         ]);
+
+        $this->cache->lockSync($producto->id);
 
         $this->actualizarInventario(
             $producto->id,
@@ -977,6 +997,10 @@ class ShopifyController extends Controller
         
         $producto = Producto::create($productoData);
         
+        // Bloquear sincronización inversa y guardar snapshot inmediatamente para prevenir disparos de observers
+        $this->cache->lockSync($producto->id);
+        $this->cache->saveProductSnapshot($producto);
+
         $this->actualizarInventario($producto->id, $stock, $usuario->id_bodega, $idUsuario, ['origen' => 'shopify', 'tipo' => 'inventario_inicial']);
         $this->procesarImagenes($request, $producto->id, $variantImageId);
 
@@ -1698,12 +1722,10 @@ class ShopifyController extends Controller
         if ($esDesdeShopify) {
             $productoParaFlag = Producto::find($productoId);
             if ($productoParaFlag) {
-                $productoParaFlag->syncing_from_shopify = true;
-                $productoParaFlag->save();
-                // ShopifyHelper::log("Flag syncing_from_shopify activado para producto", [
-                    // 'producto_id' => $productoId,
-                    // 'syncing_from_shopify' => true,
-                // ]);
+                Producto::withoutEvents(function () use ($productoParaFlag) {
+                    $productoParaFlag->syncing_from_shopify = true;
+                    $productoParaFlag->save();
+                });
             }
         }
 
@@ -1798,12 +1820,10 @@ class ShopifyController extends Controller
             }
 
             if ($productoParaFlag) {
-                $productoParaFlag->syncing_from_shopify = false;
-                $productoParaFlag->save();
-                // ShopifyHelper::log("Flag syncing_from_shopify desactivado para producto", [
-                    // 'producto_id' => $productoId,
-                    // 'syncing_from_shopify' => false,
-                // ]);
+                Producto::withoutEvents(function () use ($productoParaFlag) {
+                    $productoParaFlag->syncing_from_shopify = false;
+                    $productoParaFlag->save();
+                });
             }
 
             return [
@@ -1814,8 +1834,10 @@ class ShopifyController extends Controller
             ];
         } catch (\Exception $e) {
             if ($productoParaFlag) {
-                $productoParaFlag->syncing_from_shopify = false;
-                $productoParaFlag->save();
+                Producto::withoutEvents(function () use ($productoParaFlag) {
+                    $productoParaFlag->syncing_from_shopify = false;
+                    $productoParaFlag->save();
+                });
             }
             // ShopifyHelper::log("Error en actualizarInventario: " . $e->getMessage(), [
                 // 'producto_id' => $productoId,
