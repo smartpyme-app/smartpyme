@@ -455,17 +455,65 @@ class ShopifyController extends Controller
         // emiten el documento fiscal (Factura/CCF) y registran la salida formal en Kardex.
         // Toda orden en Shopify emite concurrentemente inventory_levels/update con available < stock;
         // procesar reducciones aquí produce condiciones de carrera y doble descuento en Kardex.
+        //
+        // BUG-2 mitigation: si la reducción llega pero no hay venta reciente en SmartPyme que la
+        // justifique, es probable que el webhook orders/create se haya perdido. Se registra una
+        // alerta de discrepancia para que pueda reconciliarse sin aplicar el descuento de forma
+        // insegura (lo que causaría doble descuento cuando orders/create SÍ llegue).
         if ($available < $stockAnterior) {
-            ShopifyHelper::log("inventory_levels/update: [OMITIDO] Reducción de inventario detectada (disponible: {$available}, stock actual: {$stockAnterior}). Las reducciones de stock son gestionadas exclusivamente por el flujo de ventas/órdenes para evitar duplicación y garantizar trazabilidad fiscal.", [
-                'producto_id' => $producto->id,
-                'bodega_id' => $bodegaId,
-                'stock_smartpyme' => $stockAnterior,
-                'available_shopify' => $available,
-                'delta' => $available - $stockAnterior,
-            ]);
+            $delta = $stockAnterior - $available; // unidades reducidas en Shopify
+
+            // Verificar si ya existe una venta reciente en SmartPyme que justifique esta reducción.
+            // Ventana: 5 minutos — suficiente para que orders/create haya sido procesado.
+            $ventaReciente = \App\Models\Ventas\DetalleVenta::whereHas('venta', function ($q) use ($empresa) {
+                    $q->where('id_empresa', $empresa->id)
+                      ->where('created_at', '>=', now()->subMinutes(5));
+                })
+                ->whereHas('producto', function ($q) use ($producto) {
+                    $q->where('id', $producto->id);
+                })
+                ->exists();
+
+            if ($ventaReciente) {
+                // orders/create ya fue procesado — reducción esperada, ignorar correctamente.
+                ShopifyHelper::log("inventory_levels/update: [OMITIDO] Reducción cubierta por venta reciente en SmartPyme", [
+                    'producto_id'      => $producto->id,
+                    'bodega_id'        => $bodegaId,
+                    'stock_smartpyme'  => $stockAnterior,
+                    'available_shopify'=> $available,
+                    'delta'            => -$delta,
+                ]);
+            } else {
+                // No hay venta reciente: posible webhook orders/create perdido.
+                // NO aplicamos la reducción para evitar doble descuento cuando orders/create llegue tarde.
+                // Se registra como warning para reconciliación manual o automatizada.
+                Log::channel('shopify')->warning("inventory_levels/update: [DISCREPANCIA STOCK] Reducción sin venta reciente en SmartPyme — posible webhook orders/create perdido", [
+                    'producto_id'          => $producto->id,
+                    'producto_nombre'      => $producto->nombre,
+                    'bodega_id'            => $bodegaId,
+                    'stock_smartpyme'      => $stockAnterior,
+                    'available_shopify'    => $available,
+                    'unidades_sin_cubrir'  => $delta,
+                    'inventory_item_id'    => $inventoryItemId,
+                    'location_id'          => $locationId,
+                    'accion_recomendada'   => "Verificar si existe orden en Shopify para este producto y reconciliar stock manualmente si orders/create no llega.",
+                ]);
+
+                // Guardar la discrepancia en cache (TTL 30min) para que un job de reconciliación
+                // pueda detectarla y actuar. Clave: shopify_stock_discrepancy_{producto_id}_{bodega_id}
+                Cache::put("shopify_stock_discrepancy_{$producto->id}_{$bodegaId}", [
+                    'producto_id'      => $producto->id,
+                    'bodega_id'        => $bodegaId,
+                    'stock_smartpyme'  => $stockAnterior,
+                    'available_shopify'=> $available,
+                    'detected_at'      => now()->toISOString(),
+                    'inventory_item_id'=> $inventoryItemId,
+                ], 1800);
+            }
+
             return response()->json([
-                'status' => 'ignored',
-                'message' => 'Reducciones de stock son gestionadas exclusivamente por el flujo de ventas/órdenes.'
+                'status'  => 'ignored',
+                'message' => 'Reducciones de stock son gestionadas exclusivamente por el flujo de ventas/órdenes.',
             ], 200);
         }
 
@@ -1717,16 +1765,13 @@ class ShopifyController extends Controller
     private function actualizarInventario($productoId, $cantidad, $bodegaId, $usuarioId, $opciones = [])
     {
         $esDesdeShopify = !empty($opciones['origen']) && $opciones['origen'] === 'shopify';
-        $productoParaFlag = null;
 
+        // BUG-1 fix: señalizar la sincronización en cache (TTL 60s) en lugar de en BD.
+        // Con la BD: si el proceso muere entre set true y set false, el flag queda atascado
+        // en true indefinidamente y el observer bloquea toda sincronización futura.
+        // Con cache TTL: la clave expira automáticamente aunque el proceso muera.
         if ($esDesdeShopify) {
-            $productoParaFlag = Producto::find($productoId);
-            if ($productoParaFlag) {
-                Producto::withoutEvents(function () use ($productoParaFlag) {
-                    $productoParaFlag->syncing_from_shopify = true;
-                    $productoParaFlag->save();
-                });
-            }
+            Cache::put("shopify_syncing_inv_{$productoId}", true, 60);
         }
 
         try {
@@ -1819,13 +1864,6 @@ class ShopifyController extends Controller
                 // ]);
             }
 
-            if ($productoParaFlag) {
-                Producto::withoutEvents(function () use ($productoParaFlag) {
-                    $productoParaFlag->syncing_from_shopify = false;
-                    $productoParaFlag->save();
-                });
-            }
-
             return [
                 'id_producto' => $productoId,
                 'id_bodega' => $bodegaId,
@@ -1833,12 +1871,6 @@ class ShopifyController extends Controller
                 'updated_at' => now()
             ];
         } catch (\Exception $e) {
-            if ($productoParaFlag) {
-                Producto::withoutEvents(function () use ($productoParaFlag) {
-                    $productoParaFlag->syncing_from_shopify = false;
-                    $productoParaFlag->save();
-                });
-            }
             // ShopifyHelper::log("Error en actualizarInventario: " . $e->getMessage(), [
                 // 'producto_id' => $productoId,
                 // 'bodega_id' => $bodegaId,
@@ -1846,6 +1878,11 @@ class ShopifyController extends Controller
                 // 'trace' => $e->getTraceAsString()
             // ], 'error');
             throw $e;
+        } finally {
+            // Siempre liberar la señal de cache al terminar, sea éxito o excepción.
+            if ($esDesdeShopify) {
+                Cache::forget("shopify_syncing_inv_{$productoId}");
+            }
         }
     }
 
@@ -2751,15 +2788,18 @@ class ShopifyController extends Controller
             // 'es_edicion' => $esEdicion,
         // ]);
 
-        // Helper para resolver la cantidad efectiva de un line_item de Shopify
-        $resolverCantidadShopify = function($item) use ($esEdicion, $esReembolso) {
+        // Helper para resolver la cantidad efectiva de un line_item de Shopify.
+        // current_quantity = cantidad vigente en la orden (post-ediciones y reembolsos).
+        // quantity         = cantidad original al crear la orden (no cambia).
+        //
+        // Bug fix: el closure anterior devolvía `quantity` (original) cuando current_quantity era 0
+        // y el webhook no traía `order_edit`. Eso ocurre cuando el admin de Shopify edita la orden
+        // sin usar la Order Editing API — el producto removido llega con current_quantity=0 pero
+        // quantity=1, y al devolver 1 el loop de eliminación nunca lo borraba de la venta.
+        // Solución: si Shopify incluye current_quantity, siempre es autoritativo.
+        $resolverCantidadShopify = function($item) {
             if (isset($item['current_quantity']) && is_numeric($item['current_quantity'])) {
-                $cq = (float)$item['current_quantity'];
-                // Si es > 0, es la cantidad vigente.
-                // Si es 0, solo se toma como 0 si hubo edición o reembolso explícito.
-                if ($cq > 0 || $esEdicion || $esReembolso) {
-                    return $cq;
-                }
+                return (float)$item['current_quantity'];
             }
             return (float)($item['quantity'] ?? 0);
         };
@@ -3381,6 +3421,9 @@ class ShopifyController extends Controller
             // Si la venta no tiene detalles de envío pero el webhook sí los trae, agregarlos ANTES
             // del guard de 10 segundos. Las tarifas calculadas (Advanced Shipping Rules) pueden
             // llegar en orders/updated incluso cuando la orden se acaba de crear.
+            // BUG-4 fix: se usa un flag para no volver a llamar actualizarEnvio dentro de la
+            // transacción cuando ya se ejecutó aquí, evitando duplicados de detalles de envío.
+            $enviosYaProcesados = false;
             if (!$fueConvertida && !empty($request->shipping_lines)) {
                 $yaHayEnvios = $venta->detalles()
                     ->whereHas('producto', fn($q) =>
@@ -3390,6 +3433,7 @@ class ShopifyController extends Controller
 
                 if (!$yaHayEnvios) {
                     $this->actualizarEnvio($venta, $request, $usuario);
+                    $enviosYaProcesados = true;
                 }
             }
 
@@ -3413,34 +3457,48 @@ class ShopifyController extends Controller
             // Se omite si la cotización acaba de convertirse en venta, porque la conversión ya
             // dejó el estado en 'Pagada' (evita que 'partially_paid' lo revierta a 'Pendiente').
             $nuevoEstado = $this->mapearEstado($financialStatus);
-            
-            if (!$fueConvertida && $venta->estado !== $nuevoEstado) {
-                $observacion = 'Pedido actualizado en Shopify el ' . now()->format('d/m/Y H:i:s');
-                
-                // Agregar observación específica para reembolsos
-                if ($financialStatus === 'refunded') {
-                    $observacion = 'Pedido reembolsado en Shopify el ' . now()->format('d/m/Y H:i:s');
+
+            // BUG-3 fix: estado + envíos + cantidades deben ser atómicos.
+            // Si actualizarCantidadesProductos falla, el rollback revierte también
+            // el cambio de estado y los envíos, evitando inventario/kardex inconsistentes.
+            DB::beginTransaction();
+            try {
+                if (!$fueConvertida && $venta->estado !== $nuevoEstado) {
+                    $observacion = 'Pedido actualizado en Shopify el ' . now()->format('d/m/Y H:i:s');
+
+                    // Agregar observación específica para reembolsos
+                    if ($financialStatus === 'refunded') {
+                        $observacion = 'Pedido reembolsado en Shopify el ' . now()->format('d/m/Y H:i:s');
+                    }
+
+                    $venta->update([
+                        'estado' => $nuevoEstado,
+                        'observaciones_shopify' => ($venta->observaciones_shopify ? $venta->observaciones_shopify . ' | ' : '') . $observacion,
+                    ]);
+
+                    // Log::info("Estado de venta actualizado", [
+                    //     'venta_id' => $venta->id,
+                    //     'estado_anterior' => $venta->getOriginal('estado'),
+                    //     'estado_nuevo' => $nuevoEstado,
+                    //     'financial_status' => $financialStatus,
+                    //     'shopify_order_id' => $shopifyOrderId
+                    // ]);
                 }
-                
-                $venta->update([
-                    'estado' => $nuevoEstado,
-                    'observaciones_shopify' => ($venta->observaciones_shopify ? $venta->observaciones_shopify . ' | ' : '') . $observacion,
-                ]);
-                
-                // Log::info("Estado de venta actualizado", [
-                //     'venta_id' => $venta->id,
-                //     'estado_anterior' => $venta->getOriginal('estado'),
-                //     'estado_nuevo' => $nuevoEstado,
-                //     'financial_status' => $financialStatus,
-                //     'shopify_order_id' => $shopifyOrderId
-                // ]);
+
+                // Actualizar envíos si han cambiado.
+                // Saltar si ya se procesaron antes del guard de 10s (evita duplicar detalles de envío).
+                if (!$enviosYaProcesados) {
+                    $this->actualizarEnvio($venta, $request, $usuario);
+                }
+
+                // Actualizar cantidades de productos y crear productos nuevos si han cambiado
+                $this->actualizarCantidadesProductos($venta, $request, $usuario);
+
+                DB::commit();
+            } catch (\Throwable $innerEx) {
+                DB::rollBack();
+                throw $innerEx; // el catch exterior logea y devuelve 500
             }
-
-            // Actualizar envíos si han cambiado
-            $this->actualizarEnvio($venta, $request, $usuario);
-
-            // Actualizar cantidades de productos y crear productos nuevos si han cambiado
-            $this->actualizarCantidadesProductos($venta, $request, $usuario);
 
             return response()->json([
                 'status' => 'success',

@@ -54,9 +54,19 @@ class ShopifyConsolidationServiceTest extends TestCase
             $table->timestamps();
         });
 
+        Schema::create('categorias', function ($table) {
+            $table->id();
+            $table->unsignedBigInteger('id_empresa')->nullable();
+            $table->string('nombre')->nullable();
+            $table->boolean('enable')->default(true);
+            $table->text('descripcion')->nullable();
+            $table->timestamps();
+        });
+
         Schema::create('productos', function ($table) {
             $table->id();
             $table->unsignedBigInteger('id_empresa')->nullable();
+            $table->unsignedBigInteger('id_categoria')->nullable();
             $table->unsignedBigInteger('shopify_product_id')->nullable();
             $table->unsignedBigInteger('shopify_variant_id')->nullable();
             $table->unsignedBigInteger('shopify_inventory_item_id')->nullable();
@@ -428,6 +438,227 @@ class ShopifyConsolidationServiceTest extends TestCase
 
         $this->assertCount(1, $products);
         $this->assertEquals(101, $products[0]['id']);
+    }
+
+    public function test_consolidar_smartpyme_hacia_shopify_agrupa_variantes_en_un_solo_producto(): void
+    {
+        $prod1 = Producto::forceCreate([
+            'id_empresa' => 1,
+            'nombre' => 'Camisa Lino',
+            'nombre_variante' => 'S',
+            'option1_name' => 'Talla',
+            'option1_value' => 'S',
+            'codigo' => 'CAM-LINO-S',
+            'precio' => 25.00,
+            'precio_sin_iva' => 25.00,
+            'precio_con_iva' => 28.25,
+            'enable' => true,
+        ]);
+
+        $prod2 = Producto::forceCreate([
+            'id_empresa' => 1,
+            'nombre' => 'Camisa Lino',
+            'nombre_variante' => 'M',
+            'option1_name' => 'Talla',
+            'option1_value' => 'M',
+            'codigo' => 'CAM-LINO-M',
+            'precio' => 25.00,
+            'precio_sin_iva' => 25.00,
+            'precio_con_iva' => 28.25,
+            'enable' => true,
+        ]);
+
+        $mockClient = $this->createMock(ShopifyApiClient::class);
+        $mockClient->expects($this->once())
+            ->method('post')
+            ->with(
+                'products.json',
+                $this->callback(function ($payload) {
+                    $prod = $payload['product'] ?? [];
+                    return ($prod['title'] ?? '') === 'Camisa Lino'
+                        && count($prod['options'] ?? []) === 1
+                        && ($prod['options'][0]['name'] ?? '') === 'Talla'
+                        && count($prod['variants'] ?? []) === 2
+                        && ($prod['variants'][0]['price'] ?? '') === '28.25'
+                        && ($prod['variants'][0]['option1'] ?? '') === 'S'
+                        && ($prod['variants'][1]['option1'] ?? '') === 'M';
+                })
+            )
+            ->willReturn([
+                'status' => 'success',
+                'body' => [
+                    'product' => [
+                        'id' => 777001,
+                        'title' => 'Camisa Lino',
+                        'variants' => [
+                            [
+                                'id' => 888001,
+                                'sku' => 'CAM-LINO-S',
+                                'inventory_item_id' => 999001,
+                            ],
+                            [
+                                'id' => 888002,
+                                'sku' => 'CAM-LINO-M',
+                                'inventory_item_id' => 999002,
+                            ],
+                        ],
+                    ],
+                ],
+            ]);
+
+        $service = $this->getMockBuilder(ShopifyConsolidationService::class)
+            ->setConstructorArgs([$this->transformer, $mockClient])
+            ->onlyMethods(['obtenerTodosProductosShopify'])
+            ->getMock();
+
+        $service->method('obtenerTodosProductosShopify')->willReturn([]);
+
+        $metricas = $service->consolidarSmartpymeHaciaShopify($this->empresa, $this->user, [
+            'vincular_sku' => true,
+            'actualizar_precios' => true,
+            'actualizar_stock' => false,
+            'crear_nuevos' => true,
+        ]);
+
+        $this->assertEquals(2, $metricas['total']);
+        $this->assertEquals(2, $metricas['creados']);
+        $this->assertEquals(0, $metricas['errores']);
+
+        $p1 = Producto::find($prod1->id);
+        $p2 = Producto::find($prod2->id);
+
+        $this->assertEquals(777001, $p1->shopify_product_id);
+        $this->assertEquals(888001, $p1->shopify_variant_id);
+        $this->assertEquals(999001, $p1->shopify_inventory_item_id);
+
+        $this->assertEquals(777001, $p2->shopify_product_id);
+        $this->assertEquals(888002, $p2->shopify_variant_id);
+        $this->assertEquals(999002, $p2->shopify_inventory_item_id);
+    }
+
+    public function test_consolidar_smartpyme_hacia_shopify_agrega_variante_a_producto_existente(): void
+    {
+        // Variante 1 ya sincronizada en Shopify
+        Producto::forceCreate([
+            'id_empresa' => 1,
+            'nombre' => 'Pantalón Chino',
+            'nombre_variante' => '30',
+            'option1_name' => 'Talla',
+            'option1_value' => '30',
+            'codigo' => 'PANT-CHINO-30',
+            'precio' => 35.00,
+            'precio_con_iva' => 39.55,
+            'enable' => true,
+            'shopify_product_id' => 666001,
+            'shopify_variant_id' => 777001,
+        ]);
+
+        // Variante 2 nueva, sin shopify_variant_id
+        $prod2 = Producto::forceCreate([
+            'id_empresa' => 1,
+            'nombre' => 'Pantalón Chino',
+            'nombre_variante' => '32',
+            'option1_name' => 'Talla',
+            'option1_value' => '32',
+            'codigo' => 'PANT-CHINO-32',
+            'precio' => 35.00,
+            'precio_con_iva' => 39.55,
+            'enable' => true,
+            'shopify_product_id' => null,
+            'shopify_variant_id' => null,
+        ]);
+
+        $mockClient = $this->createMock(ShopifyApiClient::class);
+        $mockClient->expects($this->once())
+            ->method('post')
+            ->with(
+                'products/666001/variants.json',
+                $this->callback(function ($payload) {
+                    $v = $payload['variant'] ?? [];
+                    return ($v['sku'] ?? '') === 'PANT-CHINO-32'
+                        && ($v['option1'] ?? '') === '32'
+                        && ($v['price'] ?? '') === '39.55';
+                })
+            )
+            ->willReturn([
+                'status' => 'success',
+                'body' => [
+                    'variant' => [
+                        'id' => 777002,
+                        'product_id' => 666001,
+                        'sku' => 'PANT-CHINO-32',
+                        'inventory_item_id' => 888002,
+                    ]
+                ]
+            ]);
+
+        $service = $this->getMockBuilder(ShopifyConsolidationService::class)
+            ->setConstructorArgs([$this->transformer, $mockClient])
+            ->onlyMethods(['obtenerTodosProductosShopify'])
+            ->getMock();
+
+        $service->method('obtenerTodosProductosShopify')->willReturn([]);
+
+        $metricas = $service->consolidarSmartpymeHaciaShopify($this->empresa, $this->user, [
+            'vincular_sku' => false,
+            'actualizar_precios' => false,
+            'actualizar_stock' => false,
+            'crear_nuevos' => true,
+        ]);
+
+        $this->assertEquals(1, $metricas['creados']);
+        $p2 = Producto::find($prod2->id);
+        $this->assertEquals(666001, $p2->shopify_product_id);
+        $this->assertEquals(777002, $p2->shopify_variant_id);
+        $this->assertEquals(888002, $p2->shopify_inventory_item_id);
+    }
+
+    public function test_consolidar_smartpyme_hacia_shopify_actualiza_precios_existentes_con_iva(): void
+    {
+        Producto::forceCreate([
+            'id_empresa' => 1,
+            'nombre' => 'Cinturón Cuero',
+            'codigo' => 'CINT-CUERO-01',
+            'precio' => 18.00,
+            'precio_sin_iva' => 18.00,
+            'precio_con_iva' => 20.34,
+            'enable' => true,
+            'shopify_product_id' => 555001,
+            'shopify_variant_id' => 444001,
+        ]);
+
+        $mockClient = $this->createMock(ShopifyApiClient::class);
+        $mockClient->expects($this->once())
+            ->method('put')
+            ->with(
+                'variants/444001.json',
+                $this->callback(function ($payload) {
+                    $v = $payload['variant'] ?? [];
+                    return ($v['price'] ?? '') === '20.34'
+                        && ($v['sku'] ?? '') === 'CINT-CUERO-01';
+                })
+            )
+            ->willReturn([
+                'status' => 'success',
+                'body' => ['variant' => ['id' => 444001, 'price' => '20.34']]
+            ]);
+
+        $service = $this->getMockBuilder(ShopifyConsolidationService::class)
+            ->setConstructorArgs([$this->transformer, $mockClient])
+            ->onlyMethods(['obtenerTodosProductosShopify'])
+            ->getMock();
+
+        $service->method('obtenerTodosProductosShopify')->willReturn([]);
+
+        $metricas = $service->consolidarSmartpymeHaciaShopify($this->empresa, $this->user, [
+            'vincular_sku' => false,
+            'actualizar_precios' => true,
+            'actualizar_stock' => false,
+            'crear_nuevos' => false,
+        ]);
+
+        $this->assertEquals(1, $metricas['actualizados']);
+        $this->assertEquals(0, $metricas['errores']);
     }
 }
 

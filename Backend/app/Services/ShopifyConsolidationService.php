@@ -15,15 +15,18 @@ class ShopifyConsolidationService
     protected ShopifyTransformer $transformer;
     protected ?ShopifyApiClient $apiClient;
     protected ShopifyTokenService $tokenService;
+    protected ?ShopifySyncCache $syncCache;
 
     public function __construct(
         ShopifyTransformer $transformer,
         ?ShopifyApiClient $apiClient = null,
-        ?ShopifyTokenService $tokenService = null
+        ?ShopifyTokenService $tokenService = null,
+        ?ShopifySyncCache $syncCache = null
     ) {
         $this->transformer = $transformer;
         $this->apiClient = $apiClient;
         $this->tokenService = $tokenService ?: app(ShopifyTokenService::class);
+        $this->syncCache = $syncCache ?: app(ShopifySyncCache::class);
     }
 
     /**
@@ -291,6 +294,12 @@ class ShopifyConsolidationService
 
                         if ($actualizarPrecios && isset($fila['precio'])) {
                             $existente->precio = $fila['precio'];
+                            if (isset($fila['precio_sin_iva'])) {
+                                $existente->precio_sin_iva = $fila['precio_sin_iva'];
+                            }
+                            if (isset($fila['precio_con_iva'])) {
+                                $existente->precio_con_iva = $fila['precio_con_iva'];
+                            }
                         }
                         if (empty($existente->shopify_sku) && $sku) {
                             $existente->shopify_sku = $sku;
@@ -331,6 +340,12 @@ class ShopifyConsolidationService
                             }
                             if ($actualizarPrecios && isset($fila['precio'])) {
                                 $productoVinculable->precio = $fila['precio'];
+                                if (isset($fila['precio_sin_iva'])) {
+                                    $productoVinculable->precio_sin_iva = $fila['precio_sin_iva'];
+                                }
+                                if (isset($fila['precio_con_iva'])) {
+                                    $productoVinculable->precio_con_iva = $fila['precio_con_iva'];
+                                }
                             }
 
                             if (method_exists($productoVinculable, 'saveQuietly')) {
@@ -509,18 +524,49 @@ class ShopifyConsolidationService
             }
         }
 
+        // Paso 1: Enlazar primero por SKU los productos no vinculados
         foreach ($productos as $producto) {
+            if (empty($producto->shopify_variant_id)) {
+                $skuLocal = trim((string) ($producto->codigo ?: $producto->shopify_sku));
+                if (!empty($skuLocal) && isset($mapaSkusShopify[$skuLocal])) {
+                    $encontrado = $mapaSkusShopify[$skuLocal];
+                    $producto->shopify_product_id = $encontrado['product_id'];
+                    $producto->shopify_variant_id = $encontrado['variant_id'];
+                    $producto->shopify_inventory_item_id = $encontrado['inventory_item_id'];
+                    $producto->shopify_sku = $skuLocal;
+
+                    if (method_exists($producto, 'saveQuietly')) {
+                        $producto->saveQuietly();
+                    } else {
+                        $producto->save();
+                    }
+
+                    $metricas['vinculados']++;
+                }
+            }
+        }
+
+        // Paso 2: Separar entre productos ya vinculados (actualizar) y no vinculados (crear agrupados)
+        $vinculados = $productos->filter(fn($p) => !empty($p->shopify_variant_id));
+        $noVinculados = $productos->filter(fn($p) => empty($p->shopify_variant_id));
+
+        // 2.1 Procesar productos ya vinculados
+        foreach ($vinculados as $producto) {
             try {
-                // Caso A: Ya tiene variant_id asignado -> Actualizar en Shopify
-                if (!empty($producto->shopify_variant_id)) {
+                if ($actualizarPrecios) {
+                    $precioVenta = ($producto->precio_con_iva > 0) ? $producto->precio_con_iva : $producto->precio;
                     $variantPayload = [
                         'variant' => [
                             'id' => (int) $producto->shopify_variant_id,
-                            'price' => number_format((float) $producto->precio, 2, '.', ''),
+                            'price' => number_format((float) $precioVenta, 2, '.', ''),
                         ],
                     ];
                     if (!empty($producto->codigo)) {
                         $variantPayload['variant']['sku'] = $producto->codigo;
+                    }
+
+                    if ($this->syncCache) {
+                        $this->syncCache->lockSync($producto->id);
                     }
 
                     $res = $client->put("variants/{$producto->shopify_variant_id}.json", $variantPayload);
@@ -533,41 +579,170 @@ class ShopifyConsolidationService
                     } else {
                         $metricas['errores']++;
                     }
-                } else {
-                    // Caso B: No tiene IDs de Shopify
-                    $skuLocal = trim((string) ($producto->codigo ?: $producto->shopify_sku));
-                    $encontradoEnShopify = (!empty($skuLocal) && isset($mapaSkusShopify[$skuLocal]))
-                        ? $mapaSkusShopify[$skuLocal]
-                        : null;
+                }
 
-                    if ($encontradoEnShopify) {
-                        // VINCULAR los IDs en SmartPyme
-                        $producto->shopify_product_id = $encontradoEnShopify['product_id'];
-                        $producto->shopify_variant_id = $encontradoEnShopify['variant_id'];
-                        $producto->shopify_inventory_item_id = $encontradoEnShopify['inventory_item_id'];
-                        $producto->shopify_sku = $skuLocal;
+                $this->sincronizarStockVarianteShopify($client, $producto, $ubicacionesMapeadas, $actualizarStock);
+            } catch (\Throwable $e) {
+                $metricas['errores']++;
+                Log::channel('shopify_consolidacion')->error("Error actualizando variante #{$producto->shopify_variant_id} a Shopify: " . $e->getMessage());
+            }
 
-                        if (method_exists($producto, 'saveQuietly')) {
-                            $producto->saveQuietly();
-                        } else {
-                            $producto->save();
+            $metricas['procesados']++;
+            $this->notificarProgreso($metricas, $total, $onProgreso);
+        }
+
+        // 2.2 Procesar productos NO vinculados (crear nuevos agrupando variantes)
+        if ($crearNuevos && $noVinculados->isNotEmpty()) {
+            // Agrupar por nombre normalizado para reunir variantes del mismo producto
+            $gruposPorNombre = $noVinculados->groupBy(fn($p) => trim(mb_strtolower($p->nombre)));
+
+            foreach ($gruposPorNombre as $nombreNorm => $grupo) {
+                $primerProd = $grupo->first();
+
+                try {
+                    // Verificar si ya existe un producto padre en Shopify para este nombre
+                    $existingShopifyProductId = Producto::withoutGlobalScope('empresa')
+                        ->where('id_empresa', $empresa->id)
+                        ->where('nombre', $primerProd->nombre)
+                        ->whereNotNull('shopify_product_id')
+                        ->value('shopify_product_id');
+
+                    if ($existingShopifyProductId) {
+                        // Caso 2.2.A: El producto padre ya existe en Shopify -> Agregar variantes a ese producto
+                        foreach ($grupo as $prod) {
+                            try {
+                                $precioVenta = ($prod->precio_con_iva > 0) ? $prod->precio_con_iva : $prod->precio;
+                                $varPayload = [
+                                    'variant' => [
+                                        'price' => number_format((float) $precioVenta, 2, '.', ''),
+                                        'sku' => $prod->codigo,
+                                    ]
+                                ];
+
+                                $opt1 = $prod->option1_value ?: ($prod->nombre_variante ?: null);
+                                if ($opt1) {
+                                    $varPayload['variant']['option1'] = $opt1;
+                                }
+                                if (!empty($prod->option2_value)) {
+                                    $varPayload['variant']['option2'] = $prod->option2_value;
+                                }
+                                if (!empty($prod->option3_value)) {
+                                    $varPayload['variant']['option3'] = $prod->option3_value;
+                                }
+                                if (!empty($prod->barcode)) {
+                                    $varPayload['variant']['barcode'] = $prod->barcode;
+                                }
+
+                                if ($this->syncCache) {
+                                    $this->syncCache->lockSync($prod->id);
+                                }
+
+                                $res = $client->post("products/{$existingShopifyProductId}/variants.json", $varPayload);
+                                $this->controlarRateLimit($res);
+
+                                $exito = is_array($res) ? (($res['status'] ?? '') === 'success') : ($res && method_exists($res, 'successful') && $res->successful());
+                                if ($exito) {
+                                    $varCreada = is_array($res) ? ($res['body']['variant'] ?? null) : ($res->json()['variant'] ?? null);
+                                    if ($varCreada && !empty($varCreada['id'])) {
+                                        $prod->shopify_product_id = $existingShopifyProductId;
+                                        $prod->shopify_variant_id = $varCreada['id'];
+                                        $prod->shopify_inventory_item_id = $varCreada['inventory_item_id'] ?? null;
+                                        $prod->shopify_sku = $prod->codigo;
+
+                                        if (method_exists($prod, 'saveQuietly')) {
+                                            $prod->saveQuietly();
+                                        } else {
+                                            $prod->save();
+                                        }
+
+                                        $metricas['creados']++;
+                                        $this->sincronizarStockVarianteShopify($client, $prod, $ubicacionesMapeadas, $actualizarStock);
+                                    } else {
+                                        $metricas['errores']++;
+                                    }
+                                } else {
+                                    $metricas['errores']++;
+                                }
+                            } catch (\Throwable $e) {
+                                $metricas['errores']++;
+                                Log::channel('shopify_consolidacion')->error("Error agregando variante #{$prod->id} al producto Shopify #{$existingShopifyProductId}: " . $e->getMessage());
+                            }
+
+                            $metricas['procesados']++;
+                            $this->notificarProgreso($metricas, $total, $onProgreso);
                         }
+                    } else {
+                        // Caso 2.2.B: Producto nuevo completo en Shopify
+                        $esAgrupado = ($grupo->count() > 1 || !empty($primerProd->option1_name));
 
-                        $metricas['vinculados']++;
-                    } elseif ($crearNuevos) {
-                        // Caso C: Crear producto nuevo en Shopify
-                        $nuevoPayload = [
-                            'product' => [
-                                'title' => $producto->nombre,
-                                'status' => 'active',
-                                'variants' => [
-                                    [
-                                        'price' => number_format((float) $producto->precio, 2, '.', ''),
-                                        'sku' => $producto->codigo,
+                        if ($esAgrupado) {
+                            $options = [];
+                            if (!empty($primerProd->option1_name)) {
+                                $options[] = ['name' => $primerProd->option1_name];
+                            }
+                            if (!empty($primerProd->option2_name)) {
+                                $options[] = ['name' => $primerProd->option2_name];
+                            }
+                            if (!empty($primerProd->option3_name)) {
+                                $options[] = ['name' => $primerProd->option3_name];
+                            }
+                            if (empty($options)) {
+                                $options[] = ['name' => 'Opción'];
+                            }
+
+                            $variants = [];
+                            foreach ($grupo as $prod) {
+                                $precioVenta = ($prod->precio_con_iva > 0) ? $prod->precio_con_iva : $prod->precio;
+                                $v = [
+                                    'price' => number_format((float) $precioVenta, 2, '.', ''),
+                                    'sku' => $prod->codigo,
+                                    'option1' => $prod->option1_value ?: ($prod->nombre_variante ?: 'Default'),
+                                ];
+                                if (!empty($prod->option2_value)) {
+                                    $v['option2'] = $prod->option2_value;
+                                }
+                                if (!empty($prod->option3_value)) {
+                                    $v['option3'] = $prod->option3_value;
+                                }
+                                if (!empty($prod->barcode)) {
+                                    $v['barcode'] = $prod->barcode;
+                                }
+                                $variants[] = $v;
+                            }
+
+                            $nuevoPayload = [
+                                'product' => [
+                                    'title' => $primerProd->nombre,
+                                    'status' => 'active',
+                                    'options' => $options,
+                                    'variants' => $variants,
+                                ]
+                            ];
+                        } else {
+                            $precioVenta = ($primerProd->precio_con_iva > 0) ? $primerProd->precio_con_iva : $primerProd->precio;
+                            $nuevoPayload = [
+                                'product' => [
+                                    'title' => $primerProd->nombre,
+                                    'status' => 'active',
+                                    'variants' => [
+                                        [
+                                            'price' => number_format((float) $precioVenta, 2, '.', ''),
+                                            'sku' => $primerProd->codigo,
+                                        ]
                                     ]
                                 ]
-                            ]
-                        ];
+                            ];
+                        }
+
+                        if (!empty($primerProd->descripcion_completa) || !empty($primerProd->descripcion)) {
+                            $nuevoPayload['product']['body_html'] = $primerProd->descripcion_completa ?: $primerProd->descripcion;
+                        }
+
+                        foreach ($grupo as $prod) {
+                            if ($this->syncCache) {
+                                $this->syncCache->lockSync($prod->id);
+                            }
+                        }
 
                         $res = $client->post('products.json', $nuevoPayload);
                         $this->controlarRateLimit($res);
@@ -576,55 +751,59 @@ class ShopifyConsolidationService
 
                         if ($exito) {
                             $prodCreado = is_array($res) ? ($res['body']['product'] ?? null) : ($res->json()['product'] ?? null);
-                            if ($prodCreado && !empty($prodCreado['variants'][0]['id'])) {
-                                $producto->shopify_product_id = $prodCreado['id'];
-                                $producto->shopify_variant_id = $prodCreado['variants'][0]['id'];
-                                $producto->shopify_inventory_item_id = $prodCreado['variants'][0]['inventory_item_id'] ?? null;
-                                $producto->shopify_sku = $producto->codigo;
+                            $variantsShopify = $prodCreado['variants'] ?? [];
 
-                                if (method_exists($producto, 'saveQuietly')) {
-                                    $producto->saveQuietly();
-                                } else {
-                                    $producto->save();
+                            foreach ($grupo as $idx => $prod) {
+                                $skuBuscado = trim((string) $prod->codigo);
+                                $varMatch = null;
+                                foreach ($variantsShopify as $vShopify) {
+                                    if (!empty($skuBuscado) && ($vShopify['sku'] ?? '') === $skuBuscado) {
+                                        $varMatch = $vShopify;
+                                        break;
+                                    }
+                                }
+                                if (!$varMatch && isset($variantsShopify[$idx])) {
+                                    $varMatch = $variantsShopify[$idx];
                                 }
 
-                                $metricas['creados']++;
+                                if ($varMatch) {
+                                    $prod->shopify_product_id = $prodCreado['id'];
+                                    $prod->shopify_variant_id = $varMatch['id'];
+                                    $prod->shopify_inventory_item_id = $varMatch['inventory_item_id'] ?? null;
+                                    $prod->shopify_sku = $prod->codigo;
+
+                                    if (method_exists($prod, 'saveQuietly')) {
+                                        $prod->saveQuietly();
+                                    } else {
+                                        $prod->save();
+                                    }
+
+                                    $metricas['creados']++;
+                                    $this->sincronizarStockVarianteShopify($client, $prod, $ubicacionesMapeadas, $actualizarStock);
+                                } else {
+                                    $metricas['errores']++;
+                                }
+
+                                $metricas['procesados']++;
+                                $this->notificarProgreso($metricas, $total, $onProgreso);
                             }
                         } else {
-                            $metricas['errores']++;
+                            $metricas['errores'] += $grupo->count();
+                            $metricas['procesados'] += $grupo->count();
+                            $this->notificarProgreso($metricas, $total, $onProgreso);
                         }
                     }
+                } catch (\Throwable $e) {
+                    $metricas['errores'] += $grupo->count();
+                    $metricas['procesados'] += $grupo->count();
+                    Log::channel('shopify_consolidacion')->error("Error creando producto agrupado '{$primerProd->nombre}' en Shopify: " . $e->getMessage());
+                    $this->notificarProgreso($metricas, $total, $onProgreso);
                 }
-
-                // Si está activo actualizar stock y tiene inventory_item_id, sincronizar stock por cada sucursal/ubicación en Shopify
-                if ($actualizarStock && !empty($producto->shopify_inventory_item_id) && $ubicacionesMapeadas->isNotEmpty()) {
-                    foreach ($ubicacionesMapeadas as $locMap) {
-                        $stockBodega = Inventario::where('id_producto', $producto->id)
-                            ->where('id_bodega', $locMap->id_bodega)
-                            ->value('stock') ?? 0;
-
-                        $resInv = $client->post('inventory_levels/set.json', [
-                            'location_id' => $locMap->shopify_location_id,
-                            'inventory_item_id' => $producto->shopify_inventory_item_id,
-                            'available' => (int) $stockBodega,
-                        ]);
-                        $this->controlarRateLimit($resInv);
-                    }
-                }
-            } catch (\Throwable $e) {
-                $metricas['errores']++;
-                Log::channel('shopify_consolidacion')->error("Error consolidando producto #{$producto->id} a Shopify: " . $e->getMessage());
             }
-
-            $metricas['procesados']++;
-
-            if ($onProgreso && ($metricas['procesados'] % 10 === 0 || $metricas['procesados'] === $total)) {
-                $porcentaje = (int) round(($metricas['procesados'] / $total) * 85) + 15;
-                $onProgreso(
-                    min(99, $porcentaje),
-                    "Consolidando producto {$metricas['procesados']} de {$total} hacia Shopify...",
-                    $metricas
-                );
+        } elseif (!$crearNuevos && $noVinculados->isNotEmpty()) {
+            foreach ($noVinculados as $nv) {
+                $metricas['procesados']++;
+                $this->notificarProgreso($metricas, $total, $onProgreso);
             }
         }
 
@@ -645,5 +824,53 @@ class ShopifyConsolidationService
         ]);
 
         return $metricas;
+    }
+
+    /**
+     * Sincroniza las existencias de una variante hacia las ubicaciones de Shopify configuradas.
+     */
+    protected function sincronizarStockVarianteShopify(
+        ShopifyApiClient $client,
+        Producto $producto,
+        $ubicacionesMapeadas,
+        bool $actualizarStock
+    ): void {
+        if (!$actualizarStock || empty($producto->shopify_inventory_item_id) || $ubicacionesMapeadas->isEmpty()) {
+            return;
+        }
+
+        foreach ($ubicacionesMapeadas as $locMap) {
+            try {
+                $stockBodega = Inventario::where('id_producto', $producto->id)
+                    ->where('id_bodega', $locMap->id_bodega)
+                    ->value('stock') ?? 0;
+
+                $resInv = $client->post('inventory_levels/set.json', [
+                    'location_id' => $locMap->shopify_location_id,
+                    'inventory_item_id' => $producto->shopify_inventory_item_id,
+                    'available' => (int) $stockBodega,
+                ]);
+                $this->controlarRateLimit($resInv);
+            } catch (\Throwable $e) {
+                Log::channel('shopify_consolidacion')->warning(
+                    "Error actualizando stock para producto #{$producto->id} en ubicación #{$locMap->shopify_location_id}: " . $e->getMessage()
+                );
+            }
+        }
+    }
+
+    /**
+     * Notifica el progreso a través del callback en hitos porcentuales o al finalizar.
+     */
+    protected function notificarProgreso(array $metricas, int $total, ?callable $onProgreso): void
+    {
+        if ($onProgreso && ($metricas['procesados'] % 10 === 0 || $metricas['procesados'] === $total)) {
+            $porcentaje = (int) round(($metricas['procesados'] / $total) * 85) + 15;
+            $onProgreso(
+                min(99, $porcentaje),
+                "Consolidando producto {$metricas['procesados']} de {$total} hacia Shopify...",
+                $metricas
+            );
+        }
     }
 }

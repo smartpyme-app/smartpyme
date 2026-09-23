@@ -130,7 +130,9 @@ class ShopifyProductoObserver
         $camposRelevantes = ['costo', 'codigo', 'nombre', 'descripcion', 'id_categoria'];
 
         // Verificar si solo cambió el precio (no sincronizar)
-        if ($producto->isDirty('precio') && !$producto->isDirty($camposRelevantes)) {
+        // wasChanged() es correcto en evento 'updated' (modelo ya persistido).
+        // isDirty() siempre retorna false después del save y no debe usarse aquí.
+        if ($producto->wasChanged('precio') && !$producto->wasChanged($camposRelevantes)) {
             // Log::info("Cambio de precio detectado - no sincronizando (Shopify es fuente de verdad)", [
             //     'producto_id' => $producto->id,
             //     'nombre' => $producto->nombre,
@@ -148,7 +150,7 @@ class ShopifyProductoObserver
         // Verificar cambios en campos directos
         $hayCambiosEnCampos = false;
         foreach ($camposRelevantes as $campo) {
-            if ($producto->isDirty($campo)) {
+            if ($producto->wasChanged($campo)) {
                 $hayCambiosEnCampos = true;
                 break;
             }
