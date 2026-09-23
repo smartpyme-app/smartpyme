@@ -138,45 +138,51 @@ class MessageHandler
     private function handleWithLucasIA(WhatsAppSession $session, string $message): string
     {
         try {
+            if (!$session->usuario) {
+                throw new \Exception('Sesión WhatsApp sin usuario para Lucas');
+            }
+
             $requestData = [
-                'prompt' => $message,
-                'history' => $this->getWhatsAppConversationHistory($session),
-                'conversationId' => null,
-                'maxTokens' => 300,
-                'temperature' => 0.7,
+                'message' => $message,
+                'source' => 'WhatsApp',
             ];
+
+            $conversationId = $session->getSessionData('lucas_conversation_id');
+            if ($conversationId) {
+                $requestData['conversation_id'] = $conversationId;
+            }
 
             $request = new Request();
             $request->replace($requestData);
-
             $request->setUserResolver(function () use ($session) {
                 return $session->usuario;
             });
 
-            $response = $this->chatController->bedrockChat($request,'WhatsApp');
-
+            $response = $this->chatController->chat($request, 'WhatsApp');
             $responseData = $response->getData(true);
 
-            if (isset($responseData['message'])) {
-
-                $lucasResponse = $this->processLucasResponseForWhatsApp($responseData['message']);
-
-
-                WhatsAppMessage::logAIInteraction(
-                    $session->whatsapp_number,
-                    $message,
-                    $lucasResponse,
-                    $session,
-                    [
-                        'ai_model' => $responseData['modelUsed'] ?? 'bedrock-haiku',
-                        'suggestions' => $responseData['suggestions'] ?? []
-                    ]
-                );
-
-                return $lucasResponse;
+            if ($response->getStatusCode() >= 400 || !empty($responseData['error']) || empty($responseData['message'])) {
+                throw new \Exception($responseData['error'] ?? 'No se recibió respuesta válida de Lucas IA');
             }
 
-            throw new \Exception('No se recibió respuesta válida de Lucas IA');
+            if (!empty($responseData['conversation_id'])) {
+                $session->updateSessionData('lucas_conversation_id', $responseData['conversation_id']);
+            }
+
+            $lucasResponse = $this->processLucasResponseForWhatsApp($responseData['message']);
+
+            WhatsAppMessage::logAIInteraction(
+                $session->whatsapp_number,
+                $message,
+                $lucasResponse,
+                $session,
+                [
+                    'ai_model' => $responseData['modelUsed'] ?? 'lucas',
+                    'suggestions' => $responseData['suggestions'] ?? []
+                ]
+            );
+
+            return $lucasResponse;
         } catch (\Exception $e) {
             Log::error('Error en Lucas IA WhatsApp', [
                 'error' => $e->getMessage(),
@@ -190,54 +196,19 @@ class MessageHandler
         }
     }
 
-    private function getWhatsAppConversationHistory(WhatsAppSession $session): array
-    {
-        $messages = WhatsAppMessage::where('whatsapp_number', $session->whatsapp_number)
-            ->where('created_at', '>=', now()->subHours(2))
-            ->orderBy('created_at', 'asc')
-            ->limit(8)
-            ->get();
-
-        $history = [];
-        foreach ($messages as $msg) {
-            $content = $msg->is_bot_response ? strip_tags($msg->message_content) : $msg->message_content;
-
-            $history[] = [
-                'role' => $msg->message_type === 'incoming' ? 'user' : 'assistant',
-                'content' => $content
-            ];
-        }
-
-        return $history;
-    }
-
-
     private function processLucasResponseForWhatsApp(string $lucasResponse): string
     {
-        $cleanResponse = strip_tags($lucasResponse);
+        $cleanResponse = trim($lucasResponse);
 
-        $cleanResponse = html_entity_decode($cleanResponse, ENT_QUOTES, 'UTF-8');
-
-        $cleanResponse = preg_replace('/\s+/', ' ', $cleanResponse);
-        $cleanResponse = trim($cleanResponse);
+        if ($cleanResponse === '') {
+            throw new \RuntimeException('Respuesta de Lucas vacía');
+        }
 
         if (strlen($cleanResponse) > 1500) {
-            $cleanResponse = substr($cleanResponse, 0, 1450) . "...\n\n📱 *Respuesta truncada para WhatsApp*\n¿Quieres que continúe?";
-        }
-
-        if (!$this->endsWithQuestion($cleanResponse) && !str_contains($cleanResponse, '¿')) {
-            $cleanResponse .= "\n\n¿Te ayudo con algo más? 😊";
-        }
-        if (!preg_match('/[\x{1F600}-\x{1F64F}]|[\x{1F300}-\x{1F5FF}]|[\x{1F680}-\x{1F6FF}]|[\x{1F1E0}-\x{1F1FF}]/u', $cleanResponse)) {
-            $cleanResponse = "🤖 " . $cleanResponse;
+            $cleanResponse = substr($cleanResponse, 0, 1450) . "...\n\n*Respuesta truncada para WhatsApp*\n¿Quieres que continúe?";
         }
 
         return $cleanResponse;
-    }
-
-    private function endsWithQuestion(string $text): bool
-    {
-        return str_ends_with(trim($text), '?');
     }
 
     private function getWelcomeMessage(): string
