@@ -262,7 +262,7 @@ class GastoImportService
         $proveedor->nit = $emisorData['nit'];
         $proveedor->ncr = $emisorData['nrc'] ?? '';
         $proveedor->telefono = $emisorData['telefono'] ?? '';
-        $proveedor->email = $emisorData['correo'] ?? '';
+        $proveedor->correo = $emisorData['correo'] ?? '';
 
         // Manejar dirección
         if (isset($emisorData['direccion']) && isset($emisorData['direccion']['complemento'])) {

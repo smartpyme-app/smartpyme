@@ -1081,16 +1081,9 @@ export class GastoComponent implements OnInit {
     const usarCategoriaBd = this.apiService.mostrarMenuConfigGastos(this.contabilidadHabilitada);
     const categoriasPersonalizadas = this.apiService.isGastosCategoriasPersonalizadasHabilitadas();
 
-    // Sin selector de categoría BD: solo tipo libre; con contabilidad se prioriza id_categoria sobre tipo
-    if (!usarCategoriaBd) {
-      if (this.gasto.id_categoria) {
-        this.gasto.id_categoria = null;
-      }
-      if (!this.gasto.tipo) {
-        this.gasto.tipo = '';
-      }
-    } else if (this.contabilidadHabilitada && this.gasto.tipo && !this.gasto.id_categoria) {
-      this.gasto.tipo = '';
+    // La categoría de contabilidad es opcional. El API siempre exige `tipo`.
+    if (!usarCategoriaBd && this.gasto.id_categoria) {
+      this.gasto.id_categoria = null;
     }
 
     const payload: any = { ...this.gasto };
@@ -1362,7 +1355,8 @@ export class GastoComponent implements OnInit {
         try {
           jsonData = JSON.parse(texto);
         } catch (parseErr) {
-          this.alertService.error('El archivo no es un documento electrónico válido.');
+          const detalle = (backendErr as any)?.error?.error as string;
+          this.alertService.error(detalle || 'El archivo no es un documento electrónico válido.');
           return;
         }
       }
@@ -1728,7 +1722,7 @@ export class GastoComponent implements OnInit {
         nit: emisorData.nit,
         ncr: emisorData.nrc || '',
         telefono: emisorData.telefono || '',
-        email: emisorData.correo || '',
+        correo: emisorData.correo || '',
         direccion:
           emisorData.direccion && emisorData.direccion.complemento
             ? emisorData.direccion.complemento

@@ -83,7 +83,7 @@ export class ProveedorDesdeEmisorService {
       nit: String(emisor['nit'] ?? ''),
       nrc: String(emisor['nrc'] ?? ''),
       telefono: String(emisor['telefono'] ?? ''),
-      email: String(emisor['correo'] ?? ''),
+      correo: String(emisor['correo'] ?? ''),
       direccion:
         (emisor['direccion'] as { complemento?: string })?.complemento || 'No especificada',
       id_empresa: auth?.id_empresa,
