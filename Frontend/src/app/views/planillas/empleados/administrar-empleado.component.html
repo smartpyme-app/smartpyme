@@ -51,7 +51,7 @@
                   <!-- Información Personal -->
                   <h5 class="col-12 pb-2 mb-2 fw-bold">Información Personal</h5>
                   <div class="form-group col-md-2">
-                    <label for="codigo">Código:</label>
+                    <label for="codigo">Código <span class="text-danger">*</span>:</label>
                     <input
                       type="text"
                       [(ngModel)]="empleado.codigo"
@@ -61,7 +61,7 @@
                     />
                   </div>
                   <div class="form-group col-md-5">
-                    <label for="nombres">Nombres:</label>
+                    <label for="nombres">Nombres <span class="text-danger">*</span>:</label>
                     <input
                       type="text"
                       [(ngModel)]="empleado.nombres"
@@ -72,7 +72,7 @@
                     />
                   </div>
                   <div class="form-group col-md-5">
-                    <label for="apellidos">Apellidos:</label>
+                    <label for="apellidos">Apellidos <span class="text-danger">*</span>:</label>
                     <input
                       type="text"
                       [(ngModel)]="empleado.apellidos"
@@ -86,7 +86,7 @@
                   <!-- Documentos -->
                   <h6 class="col-12 pb-2 mb-2 mt-4 fw-bold">Documentos</h6>
                   <div class="form-group col-md-3">
-                    <label for="dui">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'DUI:' : 'Número de identificación:' }}</label>
+                    <label for="dui">{{ apiService.auth_user().empresa.pais == 'El Salvador' ? 'DUI' : 'Número de identificación' }} <span class="text-danger">*</span>:</label>
                     <input
                       type="text"
                       [(ngModel)]="empleado.dui"
@@ -123,14 +123,13 @@
                       [(ngModel)]="empleado.nit"
                       name="nit"
                       class="form-control"
-                      required
                       mask="0000-000000-000-0"
                       [dropSpecialCharacters]="false"
                       placeholder="0000-000000-000-0"
                     />
                   </div>
                   <div class="form-group col-md-3">
-                    <label for="isss">Número ISSS:</label>
+                    <label for="isss">Número ISSS <span class="text-danger">*</span>:</label>
                     <input
                       type="text"
                       [(ngModel)]="empleado.isss"
@@ -140,7 +139,7 @@
                     />
                   </div>
                   <div class="form-group col-md-3">
-                    <label for="afp">Número AFP:</label>
+                    <label for="afp">Número AFP <span class="text-danger">*</span>:</label>
                     <input
                       type="text"
                       [(ngModel)]="empleado.afp"
@@ -155,7 +154,7 @@
                     Información Laboral
                   </h6>
                   <div class="form-group col-md-4">
-                    <label for="id_departamento">Departamento:</label>
+                    <label for="id_departamento">Departamento <span class="text-danger">*</span>:</label>
                     <div class="input-group">
                       <select
                         [(ngModel)]="empleado.id_departamento"
@@ -183,7 +182,7 @@
                     </div>
                   </div>
                   <div class="form-group col-md-4">
-                    <label for="id_cargo">Cargo:</label>
+                    <label for="id_cargo">Cargo <span class="text-danger">*</span>:</label>
                     <div class="input-group">
                       <select
                         [(ngModel)]="empleado.id_cargo"
@@ -220,7 +219,7 @@
                     Salario y Fechas
                   </h6>
                   <div class="form-group col-md-4">
-                    <label for="salario_base">Salario Base:</label>
+                    <label for="salario_base">Salario Base <span class="text-danger">*</span>:</label>
                     <div class="input-group">
                       <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                       <input
@@ -234,7 +233,7 @@
                     </div>
                   </div>
                   <div class="form-group col-md-4">
-                    <label for="fecha_nacimiento">Fecha de Nacimiento:</label>
+                    <label for="fecha_nacimiento">Fecha de Nacimiento <span class="text-danger">*</span>:</label>
                     <input
                       type="date"
                       [(ngModel)]="empleado.fecha_nacimiento"
@@ -244,7 +243,7 @@
                     />
                   </div>
                   <div class="form-group col-md-4">
-                    <label for="fecha_ingreso">Fecha de Ingreso:</label>
+                    <label for="fecha_ingreso">Fecha de Ingreso <span class="text-danger">*</span>:</label>
                     <input
                       type="date"
                       [(ngModel)]="empleado.fecha_ingreso"
@@ -256,7 +255,7 @@
 
                   <!-- Tipo de Jornada -->
                   <div class="form-group col-md-4">
-                    <label for="tipo_jornada">Tipo de Jornada:</label>
+                    <label for="tipo_jornada">Tipo de Jornada <span class="text-danger">*</span>:</label>
                     <select
                       [(ngModel)]="empleado.tipo_jornada"
                       name="tipo_jornada"
@@ -275,7 +274,7 @@
 
                   <!-- Tipo de contrato -->
                   <div class="form-group col-md-4">
-                    <label for="tipo_contrato">Tipo de Contrato:</label>
+                    <label for="tipo_contrato">Tipo de Contrato <span class="text-danger">*</span>:</label>
                     <select
                       [(ngModel)]="empleado.tipo_contrato"
                       name="tipo_contrato"
@@ -294,7 +293,7 @@
 
                   <!-- Estado -->
                   <div class="form-group col-md-4">
-                    <label for="estado">Estado:</label>
+                    <label for="estado">Estado <span class="text-danger">*</span>:</label>
                     <select
                       [(ngModel)]="empleado.estado"
                       name="estado"
@@ -409,7 +408,7 @@
                   <!-- Contacto -->
                   <h5 class="col-12 pb-2 mb-2 mt-4">Información de Contacto</h5>
                   <div class="form-group col-md-12">
-                    <label for="direccion">Dirección:</label>
+                    <label for="direccion">Dirección <span class="text-danger">*</span>:</label>
                     <textarea
                       [(ngModel)]="empleado.direccion"
                       name="direccion"
@@ -419,7 +418,7 @@
                     ></textarea>
                   </div>
                   <div class="form-group col-md-6">
-                    <label for="telefono">Teléfono:</label>
+                    <label for="telefono">Teléfono <span class="text-danger">*</span>:</label>
                     <input
                       type="text"
                       [(ngModel)]="empleado.telefono"
@@ -429,7 +428,7 @@
                     />
                   </div>
                   <div class="form-group col-md-6">
-                    <label for="email">Correo Electrónico:</label>
+                    <label for="email">Correo Electrónico <span class="text-danger">*</span>:</label>
                     <input
                       type="email"
                       [(ngModel)]="empleado.email"
@@ -499,7 +498,7 @@
                   <!-- Contacto de Emergencia -->
                   <h5 class="col-12 pb-2 mb-2 mt-4">Contacto de Emergencia</h5>
                   <div class="form-group col-md-12">
-                    <label for="nombre_contacto">Nombre del Contacto:</label>
+                    <label for="nombre_contacto">Nombre del Contacto <span class="text-danger">*</span>:</label>
                     <input
                       type="text"
                       [(ngModel)]="empleado.contacto_emergencia.nombre"
@@ -510,7 +509,7 @@
                   </div>
 
                   <div class="form-group col-md-6">
-                    <label for="relacion_contacto">Relación:</label>
+                    <label for="relacion_contacto">Relación <span class="text-danger">*</span>:</label>
                     <input
                       type="text"
                       [(ngModel)]="empleado.contacto_emergencia.relacion"
@@ -522,7 +521,7 @@
 
                   <div class="form-group col-md-6">
                     <label for="telefono_contacto"
-                      >Teléfono del Contacto:</label
+                      >Teléfono del Contacto <span class="text-danger">*</span>:</label
                     >
                     <input
                       type="text"
@@ -535,7 +534,7 @@
 
                   <div class="form-group col-md-12">
                     <label for="direccion_contacto"
-                      >Dirección del Contacto:</label
+                      >Dirección del Contacto <span class="text-danger">*</span>:</label
                     >
                     <textarea
                       [(ngModel)]="empleado.contacto_emergencia.direccion"
@@ -552,8 +551,7 @@
                         saving ||
                         !empleado.nombres ||
                         !empleado.apellidos ||
-                        !empleado.dui ||
-                        (!empleado.dui_homologado && !empleado.nit)
+                        !empleado.dui
                       "
                       class="btn btn-primary btn-lg"
                     >
