@@ -40,7 +40,7 @@ class Kardex extends Model {
     public function getModeloDetalleattribute(){
         $detalle = [];
         $info = '';
-        if ($this->detalle == 'Venta' || $this->detalle == 'Venta a consigna' || $this->detalle == 'Venta Anulada') {
+        if (str_starts_with($this->detalle, 'Venta') || $this->detalle == 'Venta a consigna') {
             $detalle = \App\Models\Ventas\Venta::find($this->referencia);
             if ($detalle) {
                 $nombre = $detalle->nombre_documento ?? 'Venta';
@@ -48,8 +48,7 @@ class Kardex extends Model {
             } else {
                 $info = 'Venta #' . $this->referencia;
             }
-        }
-        if (str_contains($this->detalle, 'Devolución Venta')) {
+        } elseif (str_contains($this->detalle, 'Devolución Venta')) {
             $detalle = \App\Models\Ventas\Devoluciones\Devolucion::find($this->referencia);
             if ($detalle) {
                 $nombre = $detalle->nombre_documento ?: 'Devolución';
@@ -57,8 +56,7 @@ class Kardex extends Model {
             } else {
                 $info = 'Devolución';
             }
-        }
-        if ($this->detalle == 'Compra' || $this->detalle == 'Compra a consigna' || $this->detalle == 'Compra Anulada') {
+        } elseif ($this->detalle == 'Compra' || $this->detalle == 'Compra a consigna' || $this->detalle == 'Compra Anulada') {
             $detalle = \App\Models\Compras\Compra::find($this->referencia);
             if ($detalle) {
                 $nombre = $detalle->tipo_documento ?? 'Compra';
@@ -66,8 +64,7 @@ class Kardex extends Model {
             } else {
                 $info = 'Compra #' . $this->referencia;
             }
-        }
-        if (str_contains($this->detalle, 'Devolución Compra')) {
+        } elseif (str_contains($this->detalle, 'Devolución Compra')) {
             $detalle = \App\Models\Compras\Devoluciones\Devolucion::find($this->referencia);
             if ($detalle) {
                 $nombre = $detalle->tipo_documento ?: 'Devolución';
@@ -75,22 +72,17 @@ class Kardex extends Model {
             } else {
                 $info = 'Devolución';
             }
-        }
-        if (strpos($this->detalle , 'Traslado') !== false || strpos($this->detalle , 'traslado') !== false) {
+        } elseif ((strpos($this->detalle, 'Traslado') !== false || strpos($this->detalle, 'traslado') !== false) && stripos($this->detalle, 'ajuste') === false) {
             $detalle = \App\Models\Inventario\Traslado::find($this->referencia);
             $info = 'Traslado';
-        }
-        if (strpos($this->detalle , 'Ajuste') !== false || strpos($this->detalle , 'ajuste') !== false) {
+        } elseif (strpos($this->detalle, 'Shopify') !== false || strpos($this->detalle, 'shopify') !== false || $this->detalle == 'Actualización de producto') {
+            $info = $this->detalle;
+        } elseif (strpos($this->detalle , 'Ajuste') !== false || strpos($this->detalle , 'ajuste') !== false) {
             $detalle = \App\Models\Inventario\Ajuste::find($this->referencia);
             $info = 'Ajuste';
-        }
-        if ($this->detalle == 'Actualización de producto' || $this->detalle == 'Actualización de producto desde Shopify') {
-            $info = $this->detalle;
-        }
-        if ($this->detalle == 'Otra Entrada' || $this->detalle == 'Otra Entrada Anulada') {
+        } elseif ($this->detalle == 'Otra Entrada' || $this->detalle == 'Otra Entrada Anulada') {
             $info = 'Entrada #' . $this->referencia;
-        }
-        if ($this->detalle == 'Otra Salida' || $this->detalle == 'Otra Salida Anulada') {
+        } elseif ($this->detalle == 'Otra Salida' || $this->detalle == 'Otra Salida Anulada') {
             $info = 'Salida #' . $this->referencia;
         }
 
@@ -98,7 +90,7 @@ class Kardex extends Model {
     }
 
     public function getModeloattribute(){
-        if ($this->detalle == 'Venta' || $this->detalle == 'Venta a consigna' || $this->detalle == 'Venta Anulada') {
+        if (str_starts_with($this->detalle, 'Venta') || $this->detalle == 'Venta a consigna') {
             return 'venta';
         }
         if ($this->detalle == 'Devolución Venta' || $this->detalle == 'Devolución Venta Anulada') {
@@ -110,13 +102,13 @@ class Kardex extends Model {
         if ($this->detalle == 'Compra' || $this->detalle == 'Compra a consigna' || $this->detalle == 'Compra Anulada') {
             return 'compra';
         }
-        if (strpos($this->detalle , 'Traslado') !== false || strpos($this->detalle , 'traslado') !== false) {
+        if ((strpos($this->detalle, 'Traslado') !== false || strpos($this->detalle, 'traslado') !== false) && stripos($this->detalle, 'ajuste') === false) {
             return 'traslado';
         }
         if (strpos($this->detalle , 'Ajuste') !== false || strpos($this->detalle , 'ajuste') !== false) {
             return 'ajuste';
         }
-        if ($this->detalle == 'Actualización de producto' || $this->detalle == 'Actualización de producto desde Shopify') {
+        if (strpos($this->detalle, 'Shopify') !== false || $this->detalle == 'Actualización de producto') {
             return 'producto';
         }
         if ($this->detalle == 'Otra Entrada' || $this->detalle == 'Otra Entrada Anulada') {
@@ -175,7 +167,7 @@ class Kardex extends Model {
         }
         
         // Si es una venta, obtener el lote desde kardex, detalle o detalle_venta_lotes
-        if ($this->detalle == 'Venta' || $this->detalle == 'Venta a consigna' || $this->detalle == 'Venta Anulada') {
+        if (str_starts_with($this->detalle, 'Venta') || $this->detalle == 'Venta a consigna') {
             $venta = \App\Models\Ventas\Venta::find($this->referencia);
             if ($venta) {
                 $detalleVenta = \App\Models\Ventas\Detalle::where('id_venta', $venta->id)
@@ -305,7 +297,7 @@ class Kardex extends Model {
                 return $devolucion->proveedor->tipo == 'Empresa' ? ($devolucion->proveedor->nombre_empresa ?? '') : trim(($devolucion->proveedor->nombre ?? '') . ' ' . ($devolucion->proveedor->apellido ?? ''));
             }
         }
-        if ($this->detalle == 'Venta' || $this->detalle == 'Venta a consigna' || $this->detalle == 'Venta Anulada' || str_contains($this->detalle, 'Devolución Venta')) {
+        if (str_starts_with($this->detalle, 'Venta') || $this->detalle == 'Venta a consigna' || str_contains($this->detalle, 'Devolución Venta')) {
             $venta = \App\Models\Ventas\Venta::find($this->referencia);
             if ($venta && $venta->cliente) {
                 return $venta->cliente->nombre ?? '';

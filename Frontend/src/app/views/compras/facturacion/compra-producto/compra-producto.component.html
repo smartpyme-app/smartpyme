@@ -18,7 +18,11 @@
                     <span class="flex-fill min-w-0 ps-1">
                         <!-- nombre_mostrar viene del endpoint aplanado; getNombreCompleto del clásico -->
                         <span class="fw-semibold">
-                            {{ producto.nombre_mostrar || getNombreCompleto(producto) }}
+                            {{ producto.id_presentacion ? producto.nombre_mostrar : (producto.nombre || getNombreCompleto(producto)) }}
+                        </span>
+                        <!-- Badge visual de variante cuando el producto tiene variante -->
+                        <span *ngIf="producto.nombre_variante" class="badge bg-info text-dark ms-1" style="font-size:0.75rem">
+                            <i class="fa fa-tag me-1"></i>{{ producto.nombre_variante }}
                         </span>
                         <!-- Badge visual de empaque cuando viene con presentación -->
                         <span *ngIf="producto.id_presentacion" class="badge bg-success text-dark ms-1" style="font-size:0.7rem">
@@ -161,7 +165,10 @@
                                     <td>
                                         <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}"
                                             class="rounded-circle" width="50px">
-                                        {{ getNombreCompleto(producto) }}
+                                        {{ producto.nombre }}
+                                        <span *ngIf="producto.nombre_variante" class="badge bg-info text-dark ms-1" style="font-size:0.75rem">
+                                            <i class="fa fa-tag me-1"></i>{{ producto.nombre_variante }}
+                                        </span>
                                         <br>
                                         <small *ngIf="tieneShopify && producto.descripcion" class="text-muted">
                                             {{ getDescripcion(producto) }}

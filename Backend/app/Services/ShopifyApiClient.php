@@ -110,6 +110,16 @@ class ShopifyApiClient
                 }
             }
 
+            if ($response->status() === 429) {
+                $retryAfter = (int) ($response->header('Retry-After') ?: 2);
+                Log::warning("ShopifyApiClient: Rate limit 429 alcanzado, esperando {$retryAfter}s antes de reintentar...", [
+                    'endpoint' => $endpoint,
+                    'empresa_id' => $this->empresa ? $this->empresa->id : null,
+                ]);
+                sleep(min(max($retryAfter, 1), 10));
+                return $this->request($method, $endpoint, $params, $data, false);
+            }
+
             if ($response->failed()) {
                 Log::error("Error en petición a Shopify API", [
                     'status' => $response->status(),
@@ -121,7 +131,11 @@ class ShopifyApiClient
                 $jsonData = json_decode($response->body(), true);
                 return [
                     'status' => 'success',
-                    'body' => $jsonData
+                    'body' => $jsonData,
+                    'headers' => $response->headers(),
+                    'link' => $response->header('Link'),
+                    'call_limit' => $response->header('X-Shopify-Shop-Api-Call-Limit'),
+                    'http_status' => $response->status(),
                 ];
             }
         } catch (\Exception $e) {

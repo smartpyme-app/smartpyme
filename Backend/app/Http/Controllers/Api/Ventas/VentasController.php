@@ -30,6 +30,7 @@ use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Lote;
 use App\Models\Inventario\Paquete;
 use App\Services\Webhooks\WebhookPaqueteVentaDispatcher;
+use App\Jobs\SincronizarVentaAShopifyJob;
 use App\Models\Contabilidad\Proyecto;
 use App\Models\Eventos\Evento;
 use App\Models\Admin\Canal;
@@ -686,6 +687,17 @@ class VentasController extends Controller
             // El frontend ya envía el total sin propina, así que no necesitamos ajustarlo
             $venta->fill($request->all());
 
+            // Si la factura proviene de una cotización y no traía referencia_shopify, heredarla
+            if (empty($venta->referencia_shopify) && !empty($venta->num_cotizacion)) {
+                $cotizacionOrigen = Venta::withoutGlobalScopes()->find($venta->num_cotizacion);
+                if ($cotizacionOrigen && !empty($cotizacionOrigen->referencia_shopify)) {
+                    $venta->referencia_shopify = $cotizacionOrigen->referencia_shopify;
+                    if (empty($venta->num_orden)) {
+                        $venta->num_orden = $cotizacionOrigen->num_orden;
+                    }
+                }
+            }
+
             $documento = Documento::where('id', $request->id_documento)
                 ->lockForUpdate()
                 ->firstOrFail();
@@ -1104,6 +1116,13 @@ class VentasController extends Controller
 
             DB::commit();
             $venta->refresh();
+
+            // Sincronizar orden hacia Shopify si la empresa lo tiene configurado
+            $empresaActual = $empresa ?: Empresa::find($venta->id_empresa);
+            if ($empresaActual && $empresaActual->shopify_sync_ventas && empty($venta->referencia_shopify) && (int) ($request->cotizacion ?? 0) === 0) {
+                SincronizarVentaAShopifyJob::dispatch($venta->id);
+            }
+
             // Exponer stub BoxFul al FE para abrir el wizard con paqueteId real
             $venta->load(['paquetes' => function ($query) {
                 $query->where('transportista', 'Boxful')

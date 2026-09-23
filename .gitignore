@@ -16,3 +16,4 @@ load-tests/restaurante/results/*.json
 load-tests/restaurante/results/*.log
 .env.load
 **/.env.load
+/Backend/public/img/productos

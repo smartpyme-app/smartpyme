@@ -17,6 +17,7 @@ use App\Observers\PaqueteWebhookObserver;
 use App\Observers\ProductoObserver;
 use App\Observers\ShopifyInventarioObserver;
 use App\Observers\ShopifyProductoObserver;
+use App\Observers\ShopifyVentaObserver;
 use Illuminate\Support\Facades\Auth;
 
 class AppServiceProvider extends ServiceProvider
@@ -53,6 +54,7 @@ class AppServiceProvider extends ServiceProvider
         Producto::observe(ProductoObserver::class);
         Inventario::observe(ShopifyInventarioObserver::class);
         Producto::observe(ShopifyProductoObserver::class);
+        Venta::observe(ShopifyVentaObserver::class);
 
         // Registra este scope nuevamente para asegurarte de que se aplique después del observer
         Producto::addGlobalScope('empresa', function ($builder) {
