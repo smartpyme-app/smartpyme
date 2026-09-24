@@ -48,7 +48,7 @@ class Devolucion extends Model {
     public function getNombreProveedorAttribute()
     {   $proveedor = $this->proveedor()->first();
         if ($proveedor) {
-            return $proveedor->tipo == 'Empresa' ? $proveedor->nombre_empresa : $proveedor->nombre . ' ' . $proveedor->apellido;
+            return $proveedor->nombreParaDocumento();
         }
         return 'Consumidor Final';
     }

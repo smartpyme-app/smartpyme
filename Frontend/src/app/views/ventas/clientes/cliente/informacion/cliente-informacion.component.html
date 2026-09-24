@@ -94,6 +94,10 @@
                     <label for="apellido_cr_p">Apellido</label>
                     <input type="text" class="form-control" id="apellido_cr_p" placeholder="Escribe aquí" name="apellido" [(ngModel)]="cliente.apellido">
                 </div>
+                <div class="form-group col-lg-3">
+                    <label for="nombre_comercial_cr_p">Nombre comercial</label>
+                    <input type="text" class="form-control" id="nombre_comercial_cr_p" placeholder="Opcional" name="nombre_comercial" [(ngModel)]="cliente.nombre_comercial">
+                </div>
                 <div class="form-group col-6 col-lg-3">
                     <label for="correo_cr_p">Correo</label>
                     <input type="email" class="form-control" id="correo_cr_p" placeholder="Escribe aquí" name="correo" [(ngModel)]="cliente.correo">
@@ -115,6 +119,10 @@
                 <div class="form-group col-lg-3">
                     <label for="apellido">Apellido</label>
                     <input type="text" class="form-control" placeholder="Escribe aquí" name="apellido" [(ngModel)]="cliente.apellido">
+                </div>
+                <div class="form-group col-lg-3">
+                    <label for="nombre_comercial_persona">Nombre comercial</label>
+                    <input type="text" class="form-control" id="nombre_comercial_persona" placeholder="Opcional" name="nombre_comercial" [(ngModel)]="cliente.nombre_comercial">
                 </div>
                 <div class="form-group col-6 col-lg-3">
                     <label for="tipo_documento_p">Tipo de identificación</label>
@@ -307,6 +315,10 @@
                     <label for="nombre_empresa_cr_info">Nombre o razón social</label>
                     <input type="text" class="form-control" id="nombre_empresa_cr_info" placeholder="Se puede completar desde Hacienda" name="nombre_empresa" [(ngModel)]="cliente.nombre_empresa">
                 </div>
+                <div class="form-group col-12 col-md-6 col-lg-4">
+                    <label for="nombre_comercial_cr_empresa">Nombre comercial</label>
+                    <input type="text" class="form-control" id="nombre_comercial_cr_empresa" placeholder="Opcional" name="nombre_comercial" [(ngModel)]="cliente.nombre_comercial">
+                </div>
                 <div class="form-group col-12 col-lg-8">
                     <label for="actividad_cr_cliente_info">Actividad económica</label>
                     <ng-select
@@ -350,6 +362,10 @@
                 <div class="form-group col-6 col-lg-4">
                     <label for="nombre_empresa">Empresa:</label>
                     <input type="text" class="form-control" placeholder="Escribe aquí" name="nombre_empresa" [(ngModel)]="cliente.nombre_empresa">
+                </div>
+                <div class="form-group col-6 col-lg-4">
+                    <label for="nombre_comercial_empresa">Nombre comercial</label>
+                    <input type="text" class="form-control" id="nombre_comercial_empresa" placeholder="Opcional" name="nombre_comercial" [(ngModel)]="cliente.nombre_comercial">
                 </div>
                 <div class="form-group col-6 col-lg-3">
                     <label for="nit">{{ 'country.tax.nit' | translate }}</label>
@@ -658,8 +674,12 @@
                 }
             </div>
             <div class="form-group col-6 col-lg-3">
-                <label for="nombre_empresa">Nombre comercial</label>
+                <label for="nombre_empresa">Empresa</label>
                 <input type="text" class="form-control" placeholder="Escribe aquí" name="nombre_empresa" [(ngModel)]="cliente.nombre_empresa">
+            </div>
+            <div class="form-group col-6 col-lg-3">
+                <label for="nombre_comercial_extranjero">Nombre comercial</label>
+                <input type="text" class="form-control" id="nombre_comercial_extranjero" placeholder="Opcional" name="nombre_comercial" [(ngModel)]="cliente.nombre_comercial">
             </div>
             <div class="form-group col-6 col-lg-3">
                 <label for="tipo_persona">Tipo Persona:</label>

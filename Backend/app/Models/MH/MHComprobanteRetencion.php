@@ -171,7 +171,7 @@ class MHComprobanteRetencion extends Model
               "tipoDocumento" => $this->venta->cliente->tipo_documento, //36 NIT 13 DUI
               "numDocumento" => $this->venta->cliente->num_documento,
               "nrc" => str_replace('-', '', $this->venta->cliente->ncr),
-              "nombre" => $this->venta->nombre_cliente,
+              "nombre" => $this->venta->nombreClienteFiscal(),
               "codActividad" => $this->venta->cliente->cod_giro ? $this->venta->cliente->cod_giro : NULL,
               "descActividad" => $this->venta->cliente->giro ? $this->venta->cliente->giro : NULL,
               "nombreComercial" =>  $this->venta->cliente->nombre_empresa,

@@ -86,7 +86,7 @@
                     }
                     @for (cliente of clientes?.data; track cliente.id) {
                         <tr>
-                        <td>{{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo | truncate:30 }}</td>
+                        <td>{{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo| truncate:30 }}@if (cliente.nombre_comercial) { ({{ cliente.nombre_comercial }}) }</td>
                         <td>{{ cliente.telefono }}</td>
                         <td class="d-none d-md-table-cell">{{ cliente.dui}}</td>
                         <td class="d-none d-md-table-cell">{{ valorIdentificadorFiscal(cliente) }}</td>

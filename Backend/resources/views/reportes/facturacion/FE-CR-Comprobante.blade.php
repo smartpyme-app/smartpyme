@@ -311,7 +311,7 @@
                     @endif
                 </td>
                 <td style="width: 50%;">
-                    <p><b>Nombre o razón social:</b> {{ $rec['name'] ?? '—' }}</p>
+                    <p><b>Nombre o razón social:</b> {{ \App\Support\NombreComercial::mostrar($rec['name'] ?? '—', $registro ?? null) }}</p>
                     @if(!empty($rec['identification_number']))
                         <p><b>Identificación:</b> {{ $tipoId($rec['identification_type'] ?? '') }} · {{ $rec['identification_number'] }}</p>
                     @endif

@@ -117,7 +117,7 @@
                     </td>
                     <td style="width: 50%; vertical-align: top;">
                         @if ($DTE['sujetoExcluido'])
-                            <p><b>Nombre o razón social: </b>{{ $DTE['sujetoExcluido']['nombre'] }}</p>
+                            <p><b>Nombre o razón social: </b>{{ \App\Support\NombreComercial::mostrar($DTE['sujetoExcluido']['nombre'] ?? '', $registro ?? ($venta ?? null)) }}</p>
                             <p><b>Tipo de Documento:</b> {{ $DTE['sujetoExcluido']['tipoDocumento'] == '36' ? 'NIT' : 'DUI' }}</p>
                             <p><b>Núm de Documento:</b> {{ $DTE['sujetoExcluido']['numDocumento'] }}</p>
                             <p><b>Act. económica:</b> {{ $DTE['sujetoExcluido']['descActividad'] }}</p>

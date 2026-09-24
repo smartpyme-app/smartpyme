@@ -8,6 +8,7 @@ use App\Models\FidelizacionClientes\PuntosCliente;
 use App\Models\FidelizacionClientes\TipoClienteEmpresa;
 use App\Models\FidelizacionClientes\TransaccionPuntos;
 use App\Models\MH\ActividadEconomica;
+use App\Support\NombreComercial;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
@@ -35,6 +36,7 @@ class Cliente extends AuditableModel {
        'dui',
        'nit',
        'nombre_empresa',
+       'nombre_comercial',
        'empresa_telefono',
        'empresa_direccion',
        'direccion',
@@ -121,6 +123,20 @@ class Cliente extends AuditableModel {
     public function getNombreCompletoAttribute()
     {
         return $this->nombre . ' ' . ($this->apellido ? $this->apellido : '');
+    }
+
+    public function nombreLegal(): string
+    {
+        if ($this->tipo == 'Empresa') {
+            return (string) $this->nombre_empresa;
+        }
+
+        return $this->nombre.' '.$this->apellido;
+    }
+
+    public function nombreParaDocumento(): string
+    {
+        return NombreComercial::anexar($this->nombreLegal(), $this->nombre_comercial);
     }
 
     public function getNombreActividadEconomicaAttribute()

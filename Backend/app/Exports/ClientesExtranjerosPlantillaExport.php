@@ -18,6 +18,7 @@ class ClientesExtranjerosPlantillaExport implements FromCollection, WithHeadings
             'numero_identificacion',
             'giro',
             'nombre_empresa',
+            'nombre_comercial',
             'pais',
             'direccion',
             'telefono',

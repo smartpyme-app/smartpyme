@@ -81,7 +81,7 @@
                     }
                     @for (proveedor of proveedores?.data; track proveedor.id) {
                         <tr>
-                        <td>{{ proveedor.tipo == 'Empresa' ? proveedor.nombre_empresa : proveedor.nombre_completo | truncate:30 }}</td>
+                        <td>{{ proveedor.tipo == 'Empresa' ? proveedor.nombre_empresa : proveedor.nombre_completo| truncate:30 }}@if (proveedor.nombre_comercial) { ({{ proveedor.nombre_comercial }}) }</td>
                         <td>{{ proveedor.telefono }}</td>
                         <td class="d-none d-md-table-cell">{{ proveedor.dui}}</td>
                         <td class="d-none d-md-table-cell">{{ proveedor.ncr }}</td>

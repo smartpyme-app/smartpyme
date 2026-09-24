@@ -169,8 +169,23 @@ class Venta extends AuditableModel {
         }
 
         if ($cliente) {
-            return $cliente->tipo == 'Empresa' ? $cliente->nombre_empresa : $cliente->nombre . ' ' . $cliente->apellido;
+            return $cliente->nombreParaDocumento();
         }
+        return 'Consumidor Final';
+    }
+
+    public function nombreClienteFiscal(): string
+    {
+        if (!$this->relationLoaded('cliente')) {
+            $cliente = $this->cliente()->first();
+        } else {
+            $cliente = $this->cliente;
+        }
+
+        if ($cliente) {
+            return $cliente->nombreLegal();
+        }
+
         return 'Consumidor Final';
     }
 

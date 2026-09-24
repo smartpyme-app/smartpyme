@@ -39,6 +39,7 @@ class ClientesTodosExport implements FromCollection, WithHeadings, WithMapping
             'Telefono',
             'Correo',
             'Nota',
+            'Nombre comercial',
             'Estado',
         ];
     }
@@ -51,6 +52,7 @@ class ClientesTodosExport implements FromCollection, WithHeadings, WithMapping
                     ->when($request->buscador, function ($query) use ($request) {
                         return $query->where('nombre', 'like', '%' . $request->buscador . '%')
                                     ->orwhere('nombre_empresa', 'like', '%' . $request->buscador . '%')
+                                    ->orwhere('nombre_comercial', 'like', '%' . $request->buscador . '%')
                                     ->orwhere('nit', 'like', '%' . $request->buscador . '%')
                                     ->orwhere('giro', 'like', '%' . $request->buscador . '%')
                                     ->orwhere('telefono', 'like', '%' . $request->buscador . '%')
@@ -86,6 +88,7 @@ class ClientesTodosExport implements FromCollection, WithHeadings, WithMapping
             $row->telefono,
             $row->correo,
             $row->nota,
+            $row->nombre_comercial,
             $row->enable ? 'Activo' : 'Inactivo',
         ];
     }

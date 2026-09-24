@@ -61,7 +61,7 @@
                 class="form-select p-0 border-0 bg-default w-auto" [clearable]="true" placeholder="Proveedor">
                 @for (proveedor of proveedores; track proveedor.id) {
                     <ng-option [value]="proveedor.id">
-                        {{ proveedor.tipo == 'Empresa' ? proveedor.nombre_empresa : proveedor.nombre_completo }}
+                        {{ proveedor.tipo == 'Empresa' ? proveedor.nombre_empresa : proveedor.nombre_completo }}@if (proveedor.nombre_comercial) { ({{ proveedor.nombre_comercial }}) }
                     </ng-option>
                 }
             </ng-select>
@@ -380,7 +380,7 @@
                     [clearable]="true" placeholder="Todos los proveedores">
                     @for (proveedor of proveedores; track proveedor.id) {
                         <ng-option [value]="proveedor.id">
-                            {{ proveedor.tipo == 'Empresa' ? proveedor.nombre_empresa : proveedor.nombre_completo }}
+                            {{ proveedor.tipo == 'Empresa' ? proveedor.nombre_empresa : proveedor.nombre_completo }}@if (proveedor.nombre_comercial) { ({{ proveedor.nombre_comercial }}) }
                         </ng-option>
                     }
                 </ng-select>
@@ -853,7 +853,7 @@
                   [name]="'bf-' + item.uid + '-prov'"
                   placeholder="Seleccione proveedor">
                   <ng-option [value]="p.id" *ngFor="let p of proveedores">
-                    {{ p.tipo == 'Empresa' ? p.nombre_empresa : p.nombre_completo }}
+                    {{ p.tipo == 'Empresa' ? p.nombre_empresa : p.nombre_completo }}@if (p.nombre_comercial) { ({{ p.nombre_comercial }}) }
                   </ng-option>
                 </ng-select>
                 <app-crear-proveedor

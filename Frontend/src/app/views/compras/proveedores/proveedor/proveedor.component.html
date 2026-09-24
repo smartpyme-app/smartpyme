@@ -86,6 +86,10 @@
                         <label for="apellido_cr_p">Apellido</label>
                         <input type="text" class="form-control" id="apellido_cr_p" (change)="verificarSiExiste()" placeholder="Escribe aquí" name="apellido" [(ngModel)]="proveedor.apellido">
                       </div>
+                      <div class="form-group col-lg-3">
+                        <label for="nombre_comercial_cr_p_pv">Nombre comercial</label>
+                        <input type="text" class="form-control" id="nombre_comercial_cr_p_pv" placeholder="Opcional" name="nombre_comercial" [(ngModel)]="proveedor.nombre_comercial">
+                      </div>
                       <div class="form-group col-6 col-lg-3">
                         <label for="correo_cr_p">Correo</label>
                         <input type="email" class="form-control" id="correo_cr_p" placeholder="Escribe aquí" name="correo" [(ngModel)]="proveedor.correo">
@@ -107,6 +111,10 @@
                       <div class="form-group col-lg-3">
                         <label for="apellido">Apellido</label>
                         <input type="text" class="form-control" (change)="verificarSiExiste()" placeholder="Escribe aquí" name="apellido" [(ngModel)]="proveedor.apellido">
+                      </div>
+                      <div class="form-group col-lg-3">
+                        <label for="nombre_comercial_p_pv">Nombre comercial</label>
+                        <input type="text" class="form-control" id="nombre_comercial_p_pv" placeholder="Opcional" name="nombre_comercial" [(ngModel)]="proveedor.nombre_comercial">
                       </div>
                       <div class="form-group col-6 col-lg-3">
                         <label for="tipo_documento_p_pv">Tipo de identificación</label>
@@ -274,6 +282,10 @@
                         <label for="nombre_empresa_cr_pv_e">Nombre o razón social</label>
                         <input type="text" class="form-control" id="nombre_empresa_cr_pv_e" placeholder="Se puede completar desde Hacienda" name="nombre_empresa" [(ngModel)]="proveedor.nombre_empresa">
                     </div>
+                    <div class="form-group col-12 col-md-6 col-lg-4">
+                        <label for="nombre_comercial_cr_pv_e">Nombre comercial</label>
+                        <input type="text" class="form-control" id="nombre_comercial_cr_pv_e" placeholder="Opcional" name="nombre_comercial" [(ngModel)]="proveedor.nombre_comercial">
+                    </div>
                     <div class="form-group col-12 col-lg-8">
                         <label for="actividad_contribuyente_cr_pv">Actividad económica</label>
                         @if (apiService.auth_user().empresa.facturacion_electronica) {
@@ -327,6 +339,10 @@
                     <div class="form-group col-6 col-lg-6">
                         <label for="nombre_empresa">Empresa:</label>
                         <input type="text" class="form-control" placeholder="Escribe aquí" name="nombre_empresa" [(ngModel)]="proveedor.nombre_empresa">
+                    </div>
+                    <div class="form-group col-6 col-lg-4">
+                        <label for="nombre_comercial_pv_e">Nombre comercial</label>
+                        <input type="text" class="form-control" id="nombre_comercial_pv_e" placeholder="Opcional" name="nombre_comercial" [(ngModel)]="proveedor.nombre_comercial">
                     </div>
                     <div class="form-group col-6" [ngClass]="apiService.auth_user().empresa.pais == 'El Salvador' ? 'col-lg-3' : 'col-lg-6'">
                         <label for="nit">{{ 'country.tax.nitColon' | translate }}</label>
@@ -523,8 +539,12 @@
                 }
             </div>
             <div class="form-group col-6">
-                <label for="nombre_empresa">Nombre comercial</label>
+                <label for="nombre_empresa">Empresa</label>
                 <input type="text" class="form-control" placeholder="Escribe aquí" name="nombre_empresa" [(ngModel)]="proveedor.nombre_empresa">
+            </div>
+            <div class="form-group col-6 col-lg-3">
+                <label for="nombre_comercial_ex_pv">Nombre comercial</label>
+                <input type="text" class="form-control" id="nombre_comercial_ex_pv" placeholder="Opcional" name="nombre_comercial" [(ngModel)]="proveedor.nombre_comercial">
             </div>
             <div class="form-group col-6 col-lg-3">
                 <label for="tipo_persona">Tipo Persona:</label>

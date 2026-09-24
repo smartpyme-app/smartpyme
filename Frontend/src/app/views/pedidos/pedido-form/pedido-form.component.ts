@@ -225,8 +225,14 @@ export class PedidoFormComponent implements OnInit {
     );
   };
 
-  getClienteDisplay = (cliente: any): string =>
-    cliente?.tipo === 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo;
+  getClienteDisplay = (cliente: any): string => {
+    const legal = cliente?.tipo === 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo;
+    const comercial = String(cliente?.nombre_comercial ?? '').trim();
+    if (!comercial || comercial.toLowerCase() === String(legal ?? '').trim().toLowerCase()) {
+      return legal;
+    }
+    return `${legal} (${comercial})`;
+  };
 
   requiereDistribucionLotes(linea: LineaLocal): boolean {
     return !!linea.inventario_por_lotes

@@ -51,6 +51,7 @@ class ClientesExtranjeros implements ToModel, WithHeadingRow, WithValidation, Sk
         $cliente->giro = $row['giro'];
         $cliente->cod_giro = $actividadEconomica->cod ?? null;
         $cliente->nombre_empresa = $row['nombre_empresa'] ?? null;
+        $cliente->nombre_comercial = $row['nombre_comercial'] ?? null;
         $cliente->pais = $row['pais'];
         $cliente->cod_pais = $this->getCodPais($row['pais']);
         $cliente->direccion = $row['direccion'];

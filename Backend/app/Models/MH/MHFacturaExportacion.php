@@ -167,7 +167,7 @@ class MHFacturaExportacion extends Model
         return [
               "tipoDocumento" => $this->venta->cliente->tipo_documento ?? '36', //36 NIT 13 DUI
               "numDocumento" => $this->venta->cliente->dui ?? str_replace('-', '', $this->venta->cliente->nit),
-              "nombre" => $this->venta->nombre_cliente,
+              "nombre" => $this->venta->nombreClienteFiscal(),
               "nombreComercial" => $this->venta->cliente->nombre_empresa,
               "descActividad" => $this->venta->cliente->giro ? $this->venta->cliente->giro : NULL,
               "codPais" => $paisMh['cod'],

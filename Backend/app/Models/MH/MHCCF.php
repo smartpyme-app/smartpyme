@@ -147,7 +147,7 @@ class MHCCF extends Model
               "nit" =>  $this->venta->cliente->nit ? str_replace('-', '', $this->venta->cliente->nit) : str_replace('-', '', $this->venta->cliente->dui),
               "nombreComercial" =>  $this->venta->cliente->nombre_empresa,
               "nrc" => str_replace('-', '', $this->venta->cliente->ncr),
-              "nombre" => $this->venta->nombre_cliente,
+              "nombre" => $this->venta->nombreClienteFiscal(),
               "codActividad" => $this->venta->cliente->cod_giro,
               "descActividad" => $this->venta->cliente->giro,
               "direccion" => [

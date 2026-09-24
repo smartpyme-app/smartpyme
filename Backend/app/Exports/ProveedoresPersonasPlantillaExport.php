@@ -13,6 +13,7 @@ class ProveedoresPersonasPlantillaExport implements FromCollection, WithHeadings
         return [
             'Nombre',
             'Apellido',
+            'Nombre_comercial',
             'DUI',
             'NIT',
             'Direccion',

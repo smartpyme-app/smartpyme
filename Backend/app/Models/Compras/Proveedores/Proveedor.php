@@ -3,6 +3,7 @@
 namespace App\Models\Compras\Proveedores;
 
 use App\Models\Concerns\AuditableModel;
+use App\Support\NombreComercial;
 use Illuminate\Database\Eloquent\Builder;
 use Auth;
 // use Illuminate\Database\Eloquent\SoftDeletes;
@@ -27,6 +28,7 @@ class Proveedor extends AuditableModel {
         'dui',
         'nit',
         'nombre_empresa',
+        'nombre_comercial',
         'direccion',
         'municipio',
         'pais',
@@ -70,6 +72,20 @@ class Proveedor extends AuditableModel {
     public function getNombreCompletoAttribute()
     {
         return $this->nombre . ' ' . ($this->apellido ? $this->apellido : '');
+    }
+
+    public function nombreLegal(): string
+    {
+        if ($this->tipo == 'Empresa') {
+            return (string) $this->nombre_empresa;
+        }
+
+        return $this->nombre.' '.$this->apellido;
+    }
+
+    public function nombreParaDocumento(): string
+    {
+        return NombreComercial::anexar($this->nombreLegal(), $this->nombre_comercial);
     }
 
     public function getEtiquetasAttribute($value)

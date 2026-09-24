@@ -105,7 +105,7 @@ class ClientesEmpresas implements ToModel, WithHeadingRow, WithValidation, WithC
     public function prepareForValidation(array $row, $index): array
     {
         $stringKeys = [
-            'nombre_empresa', 'ncr', 'giro', 'cod_giro', 'tipo_contribuyente', 'dui', 'nit', 'rtn',
+            'nombre_empresa', 'nombre_comercial', 'ncr', 'giro', 'cod_giro', 'tipo_contribuyente', 'dui', 'nit', 'rtn',
             'direccion', 'departamento', 'cod_departamento', 'municipio', 'cod_municipio',
             'distrito', 'cod_distrito', 'telefono', 'correo', 'pais',
             'numero_registro', 'identificacion_fiscal', 'n. de registro', 'n_de_registro',
@@ -169,6 +169,7 @@ class ClientesEmpresas implements ToModel, WithHeadingRow, WithValidation, WithC
 
         $cliente = new Cliente();
         $cliente->nombre_empresa = $row['nombre_empresa'];
+        $cliente->nombre_comercial = $row['nombre_comercial'] ?? null;
         $cliente->ncr = $numeroRegistro;
         
         // Para El Salvador: buscar código de actividad económica
@@ -295,6 +296,7 @@ class ClientesEmpresas implements ToModel, WithHeadingRow, WithValidation, WithC
             return [
                 // Campos obligatorios básicos
                 'nombre_empresa' => 'required|string|max:255',
+                'nombre_comercial' => 'nullable|string|max:255',
                 'ncr' => 'required|max:50',
                 
                 // Validar giro/actividad económica
@@ -339,6 +341,7 @@ class ClientesEmpresas implements ToModel, WithHeadingRow, WithValidation, WithC
         return [
             // Campos obligatorios básicos
             'nombre_empresa' => 'required|string|max:255',
+            'nombre_comercial' => 'nullable|string|max:255',
             'numero_registro' => 'required|max:50', // Puede ser ncr, numero_registro o identificacion_fiscal
             
             // Giro/Rubro es opcional para otros países

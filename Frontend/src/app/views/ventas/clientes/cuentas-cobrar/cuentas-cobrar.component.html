@@ -208,7 +208,7 @@
                     <ng-select name="filtros.id_cliente" [(ngModel)]="filtros.id_cliente" placeholder="Todos los clientes" class="form-select p-0" [clearable]="true">
                         <ng-option [value]="''">Todos</ng-option>
                         <ng-option *ngFor="let c of clientes" [value]="c.id">
-                            {{ c.tipo == 'Empresa' ? c.nombre_empresa : c.nombre_completo }}
+                            {{ c.tipo == 'Empresa' ? c.nombre_empresa : c.nombre_completo }}@if (c.nombre_comercial) { ({{ c.nombre_comercial }}) }
                         </ng-option>
                     </ng-select>
                 </div>

@@ -33,6 +33,7 @@ class ClientesExtranjerosExport implements FromCollection, WithHeadings, WithMap
             'Giro',
             'Correo',
             'Teléfono',
+            'nombre_comercial',
             'Estado',
         ];
     }
@@ -45,6 +46,7 @@ class ClientesExtranjerosExport implements FromCollection, WithHeadings, WithMap
                     ->when($request->buscador, function($query) use ($request){
                         return $query->where('nombre', 'like' ,'%' . $request->buscador . '%')
                                     ->orwhere('nombre_empresa', 'like',  '%'. $request->buscador .'%')
+                                    ->orwhere('nombre_comercial', 'like',  '%'. $request->buscador .'%')
                                     ->orwhere('nit', 'like',  '%'. $request->buscador .'%')
                                     ->orwhere('giro', 'like',  '%'. $request->buscador .'%')
                                     ->orwhere('telefono', 'like',  '%'. $request->buscador .'%')
@@ -74,6 +76,7 @@ class ClientesExtranjerosExport implements FromCollection, WithHeadings, WithMap
             $row->giro,
             $row->correo,
             $row->telefono,
+            $row->nombre_comercial,
             $row->enable ? 'Activo' : 'Inactivo',
         ];
     }
