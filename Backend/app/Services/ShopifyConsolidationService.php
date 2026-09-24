@@ -8,10 +8,36 @@ use App\Models\Admin\ShopifyLocation;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Producto;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class ShopifyConsolidationService
 {
+    /**
+     * Tablas con FK id_producto a reasignar hacia la fila canónica durante la deduplicación.
+     */
+    public const TABLAS_ID_PRODUCTO = [
+        'kardexs',
+        'ajustes',
+        'lotes',
+        'productos_imagenes',
+        'traslados',
+        'producto_precios',
+        'detalles_venta',
+        'detalles_compra',
+        'detalles_promocion',
+        'producto_composiciones',
+        'inventario_entrada_detalles',
+        'inventario_salida_detalles',
+        'producto_traslado_detalles',
+        'detalles_compuesto_venta',
+        'detalles_devolucion_venta',
+        'detalles_devolucion_compra',
+        'transformacion_detalles',
+        'promociones',
+        'producto_presentaciones',
+    ];
     protected ShopifyTransformer $transformer;
     protected ?ShopifyApiClient $apiClient;
     protected ShopifyTokenService $tokenService;
@@ -145,6 +171,248 @@ class ShopifyConsolidationService
     }
 
     /**
+     * Deduplica y fusiona productos repetidos dentro de la empresa antes de consolidar.
+     * Criterios de certeza estricta:
+     *   1) Mismo shopify_variant_id (certeza 100%).
+     *   2) Mismo SKU normalizado (codigo) no vacío con nombre compatible (certeza 99%).
+     *
+     * Protocolo de seguridad:
+     *   - Elige canónico priorizando ventas registradas, existencia de stock e historial.
+     *   - Transfiere y suma el stock por bodega hacia el canónico.
+     *   - Reasigna todas las llaves foráneas dependientes en cascada.
+     *   - Inactiva (enable = 0, stock = 0, shopify_variant_id = null) y soft-delete de las filas duplicadas.
+     */
+    public function deduplicarProductosLocales(Empresa $empresa): array
+    {
+        $stats = [
+            'grupos' => 0,
+            'duplicados_inactivados' => 0,
+        ];
+
+        // 1) Grupos por shopify_variant_id repetido (certeza 100%)
+        $gruposVariant = Producto::withoutGlobalScopes()
+            ->where('id_empresa', $empresa->id)
+            ->whereNotNull('shopify_variant_id')
+            ->get()
+            ->groupBy('shopify_variant_id')
+            ->filter(fn($g) => $g->count() > 1);
+
+        foreach ($gruposVariant as $grupo) {
+            $inactivados = $this->fusionarGrupoDuplicados($grupo);
+            if ($inactivados > 0) {
+                $stats['grupos']++;
+                $stats['duplicados_inactivados'] += $inactivados;
+            }
+        }
+
+        // 2) Grupos por SKU normalizado repetido (certeza 99% con verificación de nombres)
+        $gruposSku = Producto::withoutGlobalScopes()
+            ->where('id_empresa', $empresa->id)
+            ->where('enable', 1)
+            ->whereNotNull('codigo')
+            ->where('codigo', '!=', '')
+            ->get()
+            ->groupBy(fn(Producto $p) => trim(mb_strtoupper((string) $p->codigo)))
+            ->filter(fn($g) => $g->count() > 1);
+
+        foreach ($gruposSku as $skuNorm => $grupo) {
+            $primerNombre = trim(mb_strtolower($grupo->first()->nombre ?? ''));
+            $nombresCompatibles = $grupo->every(function (Producto $p) use ($primerNombre) {
+                $nom = trim(mb_strtolower($p->nombre ?? ''));
+                if ($nom === $primerNombre || str_contains($nom, $primerNombre) || str_contains($primerNombre, $nom)) {
+                    return true;
+                }
+                similar_text($nom, $primerNombre, $percent);
+                return $percent >= 70;
+            });
+
+            if ($nombresCompatibles) {
+                $inactivados = $this->fusionarGrupoDuplicados($grupo);
+                if ($inactivados > 0) {
+                    $stats['grupos']++;
+                    $stats['duplicados_inactivados'] += $inactivados;
+                }
+            } else {
+                Log::channel('shopify_consolidacion')->warning("Deduplicación preventiva por SKU {$skuNorm} omitida por nombres no compatibles", [
+                    'productos' => $grupo->pluck('nombre', 'id')->toArray()
+                ]);
+            }
+        }
+
+        return $stats;
+    }
+
+    /**
+     * Fusiona un grupo de duplicados hacia una sola fila canónica.
+     */
+    protected function fusionarGrupoDuplicados($grupo): int
+    {
+        if ($grupo->count() <= 1) {
+            return 0;
+        }
+
+        $canonica = $this->elegirCanonica($grupo);
+        $duplicadas = $grupo->filter(fn($p) => $p->id !== $canonica->id);
+        $inactivados = 0;
+
+        foreach ($duplicadas as $dup) {
+            try {
+                DB::transaction(function () use ($canonica, $dup) {
+                    // a) Copiar campos de texto vacíos en la canónica desde el duplicado
+                    $camposTexto = [
+                        'nombre_variante', 'codigo', 'barcode', 'descripcion',
+                        'descripcion_completa', 'option1_name', 'option1_value',
+                        'option2_name', 'option2_value', 'option3_name', 'option3_value',
+                        'shopify_sku', 'shopify_inventory_item_id', 'shopify_product_id'
+                    ];
+                    $necesitaGuardar = false;
+                    foreach ($camposTexto as $c) {
+                        if (empty($canonica->{$c}) && !empty($dup->{$c})) {
+                            $canonica->{$c} = $dup->{$c};
+                            $necesitaGuardar = true;
+                        }
+                    }
+                    if ($necesitaGuardar) {
+                        if (method_exists($canonica, 'saveQuietly')) {
+                            $canonica->saveQuietly();
+                        } else {
+                            $canonica->save();
+                        }
+                    }
+
+                    // b) Consolidar inventario: sumar existencias por bodega
+                    $filasInvDup = DB::table('inventario')
+                        ->where('id_producto', $dup->id)
+                        ->get();
+
+                    foreach ($filasInvDup as $rowInv) {
+                        $existenteInv = DB::table('inventario')
+                            ->where('id_producto', $canonica->id)
+                            ->where('id_bodega', $rowInv->id_bodega)
+                            ->whereNull('deleted_at')
+                            ->first();
+
+                        if ($existenteInv) {
+                            DB::table('inventario')
+                                ->where('id', $existenteInv->id)
+                                ->update([
+                                    'stock' => (float) $existenteInv->stock + (float) $rowInv->stock,
+                                    'updated_at' => now(),
+                                ]);
+                        } else {
+                            DB::table('inventario')
+                                ->where('id', $rowInv->id)
+                                ->update([
+                                    'id_producto' => $canonica->id,
+                                    'updated_at' => now(),
+                                ]);
+                        }
+                    }
+
+                    // Poner stock a 0 en las filas del duplicado
+                    DB::table('inventario')
+                        ->where('id_producto', $dup->id)
+                        ->update(['stock' => 0, 'updated_at' => now()]);
+
+                    // c) Reasignar llaves foráneas dependientes
+                    foreach (self::TABLAS_ID_PRODUCTO as $tabla) {
+                        try {
+                            if (!Schema::hasTable($tabla)) {
+                                continue;
+                            }
+                            DB::table($tabla)
+                                ->where('id_producto', $dup->id)
+                                ->update(['id_producto' => $canonica->id]);
+                        } catch (\Throwable $t) {
+                            Log::channel('shopify_consolidacion')->warning("No se pudo reasignar id_producto en {$tabla} de #{$dup->id} a #{$canonica->id}: " . $t->getMessage());
+                        }
+                    }
+
+                    // d) Consolidar tabla pivote producto_impuestos si existe
+                    if (Schema::hasTable('producto_impuestos')) {
+                        $impuestosDup = DB::table('producto_impuestos')
+                            ->where('id_producto', $dup->id)
+                            ->get();
+
+                        foreach ($impuestosDup as $imp) {
+                            $yaTiene = DB::table('producto_impuestos')
+                                ->where('id_producto', $canonica->id)
+                                ->where('id_impuesto', $imp->id_impuesto)
+                                ->exists();
+
+                            if ($yaTiene) {
+                                DB::table('producto_impuestos')->where('id', $imp->id)->delete();
+                            } else {
+                                DB::table('producto_impuestos')
+                                    ->where('id', $imp->id)
+                                    ->update(['id_producto' => $canonica->id]);
+                            }
+                        }
+                    }
+
+                    // e) Inactivación limpia y segura del duplicado
+                    $dup->enable = 0;
+                    $dup->shopify_variant_id = null;
+                    if (method_exists($dup, 'saveQuietly')) {
+                        $dup->saveQuietly();
+                    } else {
+                        $dup->save();
+                    }
+
+                    $dup->delete(); // Soft-delete
+                });
+
+                $inactivados++;
+                Log::channel('shopify_consolidacion')->info("Producto duplicado fusionado e inactivado exitosamente", [
+                    'duplicado_id' => $dup->id,
+                    'canonica_id' => $canonica->id,
+                    'codigo' => $canonica->codigo,
+                    'nombre' => $canonica->nombre,
+                ]);
+            } catch (\Throwable $e) {
+                Log::channel('shopify_consolidacion')->error("Error al fusionar duplicado #{$dup->id} con canónico #{$canonica->id}: " . $e->getMessage());
+            }
+        }
+
+        return $inactivados;
+    }
+
+    /**
+     * Elige el producto canónico (el que sobrevive):
+     * 1º Mayor cantidad de ventas registradas en detalles_venta.
+     * 2º Stock total positivo.
+     * 3º shopify_variant_id asignado.
+     * 4º Código (SKU) no vacío.
+     * 5º El más recientemente actualizado.
+     */
+    protected function elegirCanonica($grupo): Producto
+    {
+        return $grupo->sortByDesc(function (Producto $p) {
+            $ventas = 0;
+            if (Schema::hasTable('detalles_venta')) {
+                $ventas = DB::table('detalles_venta')->where('id_producto', $p->id)->count();
+            }
+            $stock = 0;
+            if (Schema::hasTable('inventario')) {
+                $stock = (float) (DB::table('inventario')->where('id_producto', $p->id)->sum('stock') ?? 0);
+            }
+            $tieneCodigo = !empty($p->codigo) ? 1 : 0;
+            $tieneShopifyId = !empty($p->shopify_variant_id) ? 1 : 0;
+            $reciente = $p->updated_at ? $p->updated_at->getTimestamp() : 0;
+
+            return sprintf(
+                '%08d_%d_%d_%d_%012d_%012d',
+                min(99999999, $ventas),
+                $stock > 0 ? 1 : 0,
+                $tieneShopifyId,
+                $tieneCodigo,
+                $reciente,
+                $p->id
+            );
+        })->first();
+    }
+
+    /**
      * DIRECCIÓN 1: Consolidar de Shopify hacia SmartPyme.
      * - Busca por IDs de Shopify para actualizar.
      * - Si no tiene IDs pero el SKU coincide con un producto local, lo VINCULA sin duplicar.
@@ -166,6 +434,7 @@ class ShopifyConsolidationService
             'detalles' => [],
         ];
 
+        $deduplicar = $opciones['deduplicar'] ?? true;
         $vincularSku = $opciones['vincular_sku'] ?? true;
         $actualizarPrecios = $opciones['actualizar_precios'] ?? true;
         $actualizarStock = $opciones['actualizar_stock'] ?? false;
@@ -175,6 +444,15 @@ class ShopifyConsolidationService
             'empresa_id' => $empresa->id,
             'opciones' => $opciones,
         ]);
+
+        // Deduplicación preventiva antes de procesar
+        if ($deduplicar) {
+            if ($onProgreso) {
+                $onProgreso(3, 'Deduplicando y fusionando productos locales preexistentes...', $metricas);
+            }
+            $statsDedupe = $this->deduplicarProductosLocales($empresa);
+            $metricas['duplicados_inactivados'] = $statsDedupe['duplicados_inactivados'] ?? 0;
+        }
 
         $client = $this->getClient($empresa);
         if ($onProgreso) {
@@ -273,7 +551,8 @@ class ShopifyConsolidationService
                 try {
                     $shopifyProdId = $fila['shopify_product_id'];
                     $shopifyVarId = $fila['shopify_variant_id'];
-                    $sku = !empty($fila['codigo']) ? $fila['codigo'] : null;
+                    $sku = !empty($fila['codigo']) ? trim((string) $fila['codigo']) : null;
+                    $barcode = !empty($fila['barcode']) ? trim((string) $fila['barcode']) : null;
 
                     // 1. Búsqueda por IDs directos de Shopify
                     $existente = Producto::withoutGlobalScope('empresa')
@@ -316,17 +595,46 @@ class ShopifyConsolidationService
 
                         $metricas['actualizados']++;
                     } else {
-                        // 2. Si no tiene IDs, buscar por SKU para VINCULAR (evitar duplicado)
+                        // 2. Si no tiene IDs, búsqueda multicriterio para VINCULAR (evitar duplicado)
                         $productoVinculable = null;
+
+                        // 2.1 Coincidencia por SKU (priorizar no vinculados, pero permitir re-vincular si tenía ID viejo)
                         if ($vincularSku && $sku) {
+                            $skuUpper = mb_strtoupper($sku);
                             $productoVinculable = Producto::withoutGlobalScope('empresa')
                                 ->where('id_empresa', $empresa->id)
-                                ->where(function ($q) use ($sku) {
+                                ->where(function ($q) use ($sku, $skuUpper) {
                                     $q->where('codigo', $sku)
-                                      ->orWhere('shopify_sku', $sku);
+                                      ->orWhere('shopify_sku', $sku)
+                                      ->orWhereRaw('UPPER(codigo) = ?', [$skuUpper])
+                                      ->orWhereRaw('UPPER(shopify_sku) = ?', [$skuUpper]);
                                 })
-                                ->whereNull('shopify_variant_id')
+                                ->orderByRaw('CASE WHEN shopify_variant_id IS NULL THEN 0 ELSE 1 END')
+                                ->orderBy('id', 'desc')
                                 ->first();
+                        }
+
+                        // 2.2 Coincidencia por código de barra (barcode)
+                        if (!$productoVinculable && !empty($barcode)) {
+                            $productoVinculable = Producto::withoutGlobalScope('empresa')
+                                ->where('id_empresa', $empresa->id)
+                                ->where('barcode', $barcode)
+                                ->orderByRaw('CASE WHEN shopify_variant_id IS NULL THEN 0 ELSE 1 END')
+                                ->orderBy('id', 'desc')
+                                ->first();
+                        }
+
+                        // 2.3 Si no tiene SKU ni barcode, coincidencia por nombre exacto si hay un solo candidato no vinculado
+                        if (!$productoVinculable && empty($sku) && !empty($fila['nombre'])) {
+                            $candidatosNombre = Producto::withoutGlobalScope('empresa')
+                                ->where('id_empresa', $empresa->id)
+                                ->where('nombre', $fila['nombre'])
+                                ->whereNull('shopify_variant_id')
+                                ->get();
+
+                            if ($candidatosNombre->count() === 1) {
+                                $productoVinculable = $candidatosNombre->first();
+                            }
                         }
 
                         if ($productoVinculable) {
@@ -468,10 +776,20 @@ class ShopifyConsolidationService
 
         $client = $this->getClient($empresa);
 
+        $deduplicar = $opciones['deduplicar'] ?? true;
         $vincularSku = $opciones['vincular_sku'] ?? true;
         $actualizarPrecios = $opciones['actualizar_precios'] ?? true;
         $actualizarStock = $opciones['actualizar_stock'] ?? false;
         $crearNuevos = $opciones['crear_nuevos'] ?? true;
+
+        // Deduplicación preventiva antes de consolidar hacia Shopify
+        if ($deduplicar) {
+            if ($onProgreso) {
+                $onProgreso(3, 'Deduplicando y fusionando productos locales preexistentes...', $metricas);
+            }
+            $statsDedupe = $this->deduplicarProductosLocales($empresa);
+            $metricas['duplicados_inactivados'] = $statsDedupe['duplicados_inactivados'] ?? 0;
+        }
 
         $ubicacionesMapeadas = collect();
         if ($actualizarStock) {
@@ -503,17 +821,24 @@ class ShopifyConsolidationService
             return $metricas;
         }
 
-        // Si se va a vincular por SKU, descargar el mapa de SKUs existentes en Shopify
+        // Si se va a vincular por SKU o prevenir duplicados, descargar mapa de variantes y títulos de Shopify
         $mapaSkusShopify = [];
-        if ($vincularSku) {
+        $mapaTitulosShopify = [];
+        if ($vincularSku || $crearNuevos) {
             if ($onProgreso) {
-                $onProgreso(10, 'Indexando variantes existentes en Shopify por SKU...', $metricas);
+                $onProgreso(10, 'Indexando catálogo existente en Shopify por SKU y título...', $metricas);
             }
             $productosShopify = $this->obtenerTodosProductosShopify($client);
             foreach ($productosShopify as $spProd) {
+                $tituloNorm = trim(mb_strtolower((string) ($spProd['title'] ?? '')));
+                if ($tituloNorm !== '' && !isset($mapaTitulosShopify[$tituloNorm])) {
+                    $mapaTitulosShopify[$tituloNorm] = (int) $spProd['id'];
+                }
+
                 foreach ($spProd['variants'] ?? [] as $spVar) {
                     if (!empty($spVar['sku'])) {
-                        $mapaSkusShopify[trim((string) $spVar['sku'])] = [
+                        $skuKey = trim(mb_strtoupper((string) $spVar['sku']));
+                        $mapaSkusShopify[$skuKey] = [
                             'product_id' => $spProd['id'],
                             'variant_id' => $spVar['id'],
                             'inventory_item_id' => $spVar['inventory_item_id'] ?? null,
@@ -528,8 +853,9 @@ class ShopifyConsolidationService
         foreach ($productos as $producto) {
             if (empty($producto->shopify_variant_id)) {
                 $skuLocal = trim((string) ($producto->codigo ?: $producto->shopify_sku));
-                if (!empty($skuLocal) && isset($mapaSkusShopify[$skuLocal])) {
-                    $encontrado = $mapaSkusShopify[$skuLocal];
+                $skuKey = trim(mb_strtoupper($skuLocal));
+                if (!empty($skuKey) && isset($mapaSkusShopify[$skuKey])) {
+                    $encontrado = $mapaSkusShopify[$skuKey];
                     $producto->shopify_product_id = $encontrado['product_id'];
                     $producto->shopify_variant_id = $encontrado['variant_id'];
                     $producto->shopify_inventory_item_id = $encontrado['inventory_item_id'];
@@ -606,6 +932,12 @@ class ShopifyConsolidationService
                         ->where('nombre', $primerProd->nombre)
                         ->whereNotNull('shopify_product_id')
                         ->value('shopify_product_id');
+
+                    // Anti-duplicados: Si no se encontró en la BD local, buscar en el catálogo descargado de Shopify por título
+                    if (!$existingShopifyProductId && isset($mapaTitulosShopify[$nombreNorm])) {
+                        $existingShopifyProductId = $mapaTitulosShopify[$nombreNorm];
+                        Log::channel('shopify_consolidacion')->info("Producto padre existente encontrado en Shopify por título: '{$primerProd->nombre}' (#{$existingShopifyProductId})");
+                    }
 
                     if ($existingShopifyProductId) {
                         // Caso 2.2.A: El producto padre ya existe en Shopify -> Agregar variantes a ese producto
