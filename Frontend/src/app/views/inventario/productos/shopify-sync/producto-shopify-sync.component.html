@@ -71,7 +71,7 @@
                         <div class="d-flex justify-content-between align-items-center py-2 px-3 bg-light rounded">
                             <div>
                                 <small class="text-muted d-block" style="font-size: 0.75rem;">SmartPyme (Local)</small>
-                                <span class="fs-5 fw-bold text-primary">{{ comparativaShopify.local?.precio | currency:'USD':'symbol':'1.2' }}</span>
+                                <span class="fs-5 fw-bold text-primary">{{ comparativaShopify.local?.precio_venta | currency:'USD':'symbol':'1.2' }}</span>
                             </div>
                             <i class="fa fa-arrows-left-right text-muted"></i>
                             <div class="text-end">
@@ -162,7 +162,7 @@
                                 <span *ngIf="syncShopifyConfig.direccion === 'sp_to_shopify'" class="badge bg-primary ms-auto">Activo</span>
                             </div>
                             <p class="small text-muted mb-0">
-                                Actualiza la tienda en línea con los datos de SmartPyme (Precio: <strong class="text-dark">{{ comparativaShopify.local?.precio | currency:'USD':'symbol':'1.2' }}</strong>, Stock: <strong class="text-dark">{{ comparativaShopify.local?.stock_total }}</strong> unid.).
+                                Actualiza la tienda en línea con los datos de SmartPyme (Precio: <strong class="text-dark">{{ comparativaShopify.local?.precio_venta | currency:'USD':'symbol':'1.2' }}</strong>, Stock: <strong class="text-dark">{{ comparativaShopify.local?.stock_total }}</strong> unid.).
                             </p>
                         </div>
                     </div>
