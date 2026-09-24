@@ -78,7 +78,11 @@ class LibroRetencionesExport implements FromCollection, WithMapping, WithHeading
             ->get()
             ->map(fn($c) => (object) ['registro' => $c, 'origen' => 'compra']);
 
-        return $ventas->merge($compras)->sortBy(fn($x) => $x->registro->fecha)->values();
+        return collect()
+            ->concat($ventas)
+            ->concat($compras)
+            ->sortBy(fn($x) => $x->registro->fecha)
+            ->values();
     }
 
     public function map($item): array

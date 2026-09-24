@@ -3,6 +3,7 @@
 namespace Tests\Unit\Contabilidad\Honduras;
 
 use App\Exports\Contabilidad\Honduras\LibroComprasExport;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
 
@@ -147,6 +148,23 @@ class LibroComprasExportTest extends TestCase
         $row = $this->invokeMap((object) ['registro' => $registro, 'mult' => 1], 5);
 
         $this->assertSame(3.5, $row['anticipo_iva_percibido']);
+    }
+
+    public function test_une_gastos_cuando_no_hay_compras_en_el_periodo(): void
+    {
+        $compras = new EloquentCollection();
+        $gastos = collect([
+            (object) ['registro' => (object) ['fecha' => '2026-07-15'], 'mult' => 1],
+        ]);
+        $devoluciones = new EloquentCollection();
+
+        $export = new LibroComprasExport();
+        $method = new ReflectionMethod(LibroComprasExport::class, 'unirRegistros');
+        $method->setAccessible(true);
+        $unidos = $method->invoke($export, $compras, $gastos, $devoluciones);
+
+        $this->assertCount(1, $unidos);
+        $this->assertSame('2026-07-15', $unidos->first()->registro->fecha);
     }
 
     private function invokeMap(object $item, int $no): array

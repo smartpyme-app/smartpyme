@@ -192,7 +192,21 @@ class LibroComprasExport implements FromCollection, WithMapping, WithHeadings, W
             ->get()
             ->map(fn($d) => (object) ['registro' => $d, 'mult' => -1]);
 
-        return $compras->merge($gastos)->merge($devoluciones)->sortBy(fn($x) => $x->registro->fecha)->values();
+        return $this->unirRegistros($compras, $gastos, $devoluciones);
+    }
+
+    /**
+     * Eloquent\Collection::merge() llama getKey(). Una lista vacía sigue siendo
+     * Eloquent tras map(), y la siguiente trae stdClass.
+     */
+    private function unirRegistros($compras, $gastos, $devoluciones)
+    {
+        return collect()
+            ->concat($compras)
+            ->concat($gastos)
+            ->concat($devoluciones)
+            ->sortBy(fn ($x) => $x->registro->fecha)
+            ->values();
     }
 
     /**

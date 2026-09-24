@@ -277,7 +277,9 @@ class LibroContribuyentesExport implements FromCollection, WithMapping, WithHead
             ->get()
             ->map(fn ($d) => (object) ['registro' => $d, 'mult' => -1]);
 
-        return $ventas->merge($devoluciones)
+        return collect()
+            ->concat($ventas)
+            ->concat($devoluciones)
             ->sortBy(fn ($x) => [(string) $x->registro->fecha, (string) ($x->registro->correlativo ?? '')])
             ->values();
     }
