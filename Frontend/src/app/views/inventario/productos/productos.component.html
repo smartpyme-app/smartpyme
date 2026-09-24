@@ -298,6 +298,11 @@
                                         class="btn text-start border-0 text-black">
                                         <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalle
                                     </button>
+                                    <button *ngIf="isShopifyActive() && apiService.canEdit()" type="button"
+                                        (click)="abrirModalShopifySync(producto)"
+                                        class="btn text-start border-0">
+                                        <i class="fa-brands fa-shopify me-2"></i>Sincronizar Shopify
+                                    </button>
                                 </div>
                             </ng-template>
                         </td>
@@ -602,3 +607,8 @@
         </form>
     </div>
 </ng-template>
+
+<app-producto-shopify-sync
+    [bodegas]="bodegas"
+    (stockActualizado)="cargarProductos()">
+</app-producto-shopify-sync>

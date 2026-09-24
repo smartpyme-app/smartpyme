@@ -27,9 +27,9 @@ class ShopifySkuResolver
      *   - null si no hay coincidencias
      *   - 'conflict' si hay más de una coincidencia
      */
-    public function resolveBySku(ShopifyApiClient $client, string $sku)
+    public function resolveBySku(ShopifyApiClient $client, ?string $sku)
     {
-        $sku = trim($sku);
+        $sku = trim((string) $sku);
         if ($sku === '') {
             return null;
         }

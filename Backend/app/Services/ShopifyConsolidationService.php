@@ -680,17 +680,18 @@ class ShopifyConsolidationService
                         if ($prodActual) {
                             $invItemId = $fila['shopify_inventory_item_id'] ?? null;
 
-                            Inventario::withoutEvents(function () use ($invItemId, $mapaStockPorItemYBodega, $idBodegaDefault, $fila, $prodActual) {
-                                if ($invItemId && !empty($mapaStockPorItemYBodega[$invItemId])) {
+                            Inventario::withoutEvents(function () use ($invItemId, $mapaStockPorItemYBodega, $ubicacionesMapeadas, $idBodegaDefault, $fila, $prodActual) {
+                                if ($invItemId && $ubicacionesMapeadas->isNotEmpty()) {
                                     // Multi-sucursal: Asignar el stock correspondiente a cada bodega mapeada
-                                    foreach ($mapaStockPorItemYBodega[$invItemId] as $bodegaId => $stockCantidad) {
+                                    foreach ($ubicacionesMapeadas as $locMap) {
+                                        $stockCantidad = (float) ($mapaStockPorItemYBodega[$invItemId][$locMap->id_bodega] ?? 0);
                                         Inventario::updateOrCreate(
                                             [
                                                 'id_producto' => $prodActual->id,
-                                                'id_bodega' => $bodegaId,
+                                                'id_bodega' => $locMap->id_bodega,
                                             ],
                                             [
-                                                'stock' => (float) $stockCantidad,
+                                                'stock' => $stockCantidad,
                                             ]
                                         );
                                     }
@@ -824,18 +825,22 @@ class ShopifyConsolidationService
         // Si se va a vincular por SKU o prevenir duplicados, descargar mapa de variantes y títulos de Shopify
         $mapaSkusShopify = [];
         $mapaTitulosShopify = [];
+        $idsVariantesShopify = [];
+        $idsProductosShopify = [];
         if ($vincularSku || $crearNuevos) {
             if ($onProgreso) {
                 $onProgreso(10, 'Indexando catálogo existente en Shopify por SKU y título...', $metricas);
             }
             $productosShopify = $this->obtenerTodosProductosShopify($client);
             foreach ($productosShopify as $spProd) {
+                $idsProductosShopify[(string) $spProd['id']] = true;
                 $tituloNorm = trim(mb_strtolower((string) ($spProd['title'] ?? '')));
                 if ($tituloNorm !== '' && !isset($mapaTitulosShopify[$tituloNorm])) {
                     $mapaTitulosShopify[$tituloNorm] = (int) $spProd['id'];
                 }
 
                 foreach ($spProd['variants'] ?? [] as $spVar) {
+                    $idsVariantesShopify[(string) $spVar['id']] = true;
                     if (!empty($spVar['sku'])) {
                         $skuKey = trim(mb_strtoupper((string) $spVar['sku']));
                         $mapaSkusShopify[$skuKey] = [
@@ -844,6 +849,25 @@ class ShopifyConsolidationService
                             'inventory_item_id' => $spVar['inventory_item_id'] ?? null,
                             'title' => $spVar['title'] ?? '',
                         ];
+                    }
+                }
+            }
+
+            // Paso 0: Limpiar vínculos huérfanos solo si se indexaron variantes de Shopify
+            if (!empty($idsVariantesShopify)) {
+                foreach ($productos as $producto) {
+                    if (!empty($producto->shopify_variant_id) && !isset($idsVariantesShopify[(string) $producto->shopify_variant_id])) {
+                        Log::channel('shopify_consolidacion')->warning("Producto local #{$producto->id} tiene variante #{$producto->shopify_variant_id} que fue eliminada en Shopify. Desvinculando para re-enlazar o re-crear...");
+                        $producto->shopify_variant_id = null;
+                        $producto->shopify_inventory_item_id = null;
+                        if (!empty($producto->shopify_product_id) && !isset($idsProductosShopify[(string) $producto->shopify_product_id])) {
+                            $producto->shopify_product_id = null;
+                        }
+                        if (method_exists($producto, 'saveQuietly')) {
+                            $producto->saveQuietly();
+                        } else {
+                            $producto->save();
+                        }
                     }
                 }
             }
@@ -909,6 +933,17 @@ class ShopifyConsolidationService
 
                 $this->sincronizarStockVarianteShopify($client, $producto, $ubicacionesMapeadas, $actualizarStock);
             } catch (\Throwable $e) {
+                if (str_contains($e->getMessage(), '404') || str_contains($e->getMessage(), 'Not Found')) {
+                    Log::channel('shopify_consolidacion')->warning("Variante #{$producto->shopify_variant_id} no encontrada en Shopify (404). Desvinculando producto #{$producto->id}...");
+                    $producto->shopify_variant_id = null;
+                    $producto->shopify_inventory_item_id = null;
+                    $producto->shopify_product_id = null;
+                    if (method_exists($producto, 'saveQuietly')) {
+                        $producto->saveQuietly();
+                    } else {
+                        $producto->save();
+                    }
+                }
                 $metricas['errores']++;
                 Log::channel('shopify_consolidacion')->error("Error actualizando variante #{$producto->shopify_variant_id} a Shopify: " . $e->getMessage());
             }
@@ -948,6 +983,7 @@ class ShopifyConsolidationService
                                     'variant' => [
                                         'price' => number_format((float) $precioVenta, 2, '.', ''),
                                         'sku' => $prod->codigo,
+                                        'inventory_management' => 'shopify',
                                     ]
                                 ];
 
@@ -1029,6 +1065,7 @@ class ShopifyConsolidationService
                                     'price' => number_format((float) $precioVenta, 2, '.', ''),
                                     'sku' => $prod->codigo,
                                     'option1' => $prod->option1_value ?: ($prod->nombre_variante ?: 'Default'),
+                                    'inventory_management' => 'shopify',
                                 ];
                                 if (!empty($prod->option2_value)) {
                                     $v['option2'] = $prod->option2_value;
@@ -1060,6 +1097,7 @@ class ShopifyConsolidationService
                                         [
                                             'price' => number_format((float) $precioVenta, 2, '.', ''),
                                             'sku' => $primerProd->codigo,
+                                            'inventory_management' => 'shopify',
                                         ]
                                     ]
                                 ]
@@ -1180,10 +1218,31 @@ class ShopifyConsolidationService
                 $resInv = $client->post('inventory_levels/set.json', [
                     'location_id' => $locMap->shopify_location_id,
                     'inventory_item_id' => $producto->shopify_inventory_item_id,
-                    'available' => (int) $stockBodega,
+                    'available' => (int) round((float) $stockBodega),
                 ]);
                 $this->controlarRateLimit($resInv);
             } catch (\Throwable $e) {
+                if (str_contains($e->getMessage(), 'tracking enabled') || str_contains($e->getMessage(), 'inventory tracking')) {
+                    // España Dev: Activar seguimiento de inventario en Shopify si estaba desactivado y reintentar
+                    try {
+                        $client->put("inventory_items/{$producto->shopify_inventory_item_id}.json", [
+                            'inventory_item' => [
+                                'id' => (int) $producto->shopify_inventory_item_id,
+                                'tracked' => true,
+                            ]
+                        ]);
+                        $resInv = $client->post('inventory_levels/set.json', [
+                            'location_id' => $locMap->shopify_location_id,
+                            'inventory_item_id' => $producto->shopify_inventory_item_id,
+                            'available' => (int) round((float) $stockBodega),
+                        ]);
+                        $this->controlarRateLimit($resInv);
+                        continue;
+                    } catch (\Throwable $t2) {
+                        Log::channel('shopify_consolidacion')->warning("No se pudo activar tracking para item #{$producto->shopify_inventory_item_id}: " . $t2->getMessage());
+                    }
+                }
+
                 Log::channel('shopify_consolidacion')->warning(
                     "Error actualizando stock para producto #{$producto->id} en ubicación #{$locMap->shopify_location_id}: " . $e->getMessage()
                 );

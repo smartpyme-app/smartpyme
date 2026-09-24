@@ -434,7 +434,12 @@ class ShopifyQueueController extends Controller
     private function crearInventarioProducto($productoId, $productoData, $idEmpresa, $idUsuario)
     {
         try {
-            // Obtener la primera bodega activa de la empresa
+            // España Dev: si hay múltiples sucursales mapeadas en shopify_locations, asignar stock por sucursal
+            if ($this->crearInventarioProductoMultiSucursal($productoId, $productoData, $idEmpresa, $idUsuario)) {
+                return;
+            }
+
+            // Obtener la primera bodega activa de la empresa (fallback mono-sucursal)
             $bodega = \App\Models\Inventario\Bodega::where('id_empresa', $idEmpresa)
                 ->where('enable', true)
                 ->first();
@@ -466,6 +471,63 @@ class ShopifyQueueController extends Controller
                 'producto_id' => $productoId,
                 'error' => $e->getMessage()
             ]);
+        }
+    }
+
+    /**
+     * Sincroniza el inventario distribuyéndolo por sucursal si la empresa tiene mapeos en shopify_locations.
+     */
+    private function crearInventarioProductoMultiSucursal($productoId, $productoData, $idEmpresa, $idUsuario): bool
+    {
+        $ubicacionesMapeadas = \App\Models\Admin\ShopifyLocation::withoutGlobalScope('empresa')
+            ->where('id_empresa', $idEmpresa)
+            ->where('sincronizar_stock', true)
+            ->whereNotNull('id_bodega')
+            ->get();
+
+        $empresa = \App\Models\Admin\Empresa::find($idEmpresa);
+        $inventoryItemId = $productoData['shopify_inventory_item_id'] ?? null;
+
+        if (!$empresa || !$empresa->tieneCredencialesShopify() || $ubicacionesMapeadas->isEmpty() || empty($inventoryItemId)) {
+            return false;
+        }
+
+        try {
+            $client = new \App\Services\ShopifyApiClient(
+                $empresa->shopify_store_url,
+                $empresa->shopify_consumer_secret,
+                app(\App\Services\ShopifyTokenService::class),
+                $empresa
+            );
+            $resLevels = $client->get('inventory_levels.json', [
+                'inventory_item_ids' => $inventoryItemId,
+            ]);
+            $levels = is_array($resLevels)
+                ? ($resLevels['body']['inventory_levels'] ?? [])
+                : (method_exists($resLevels, 'json') ? ($resLevels->json()['inventory_levels'] ?? []) : []);
+
+            $levelsMap = [];
+            foreach ($levels as $lvl) {
+                $levelsMap[(string) $lvl['location_id']] = (float) ($lvl['available'] ?? 0);
+            }
+
+            foreach ($ubicacionesMapeadas as $locMap) {
+                $locId = (string) $locMap->shopify_location_id;
+                $stockLoc = (float) ($levelsMap[$locId] ?? 0.0);
+
+                $inv = \App\Models\Inventario\Inventario::firstOrCreate(
+                    ['id_producto' => $productoId, 'id_bodega' => $locMap->id_bodega],
+                    ['stock' => $stockLoc, 'stock_minimo' => 0, 'stock_maximo' => 1000]
+                );
+                if (!$inv->wasRecentlyCreated && $inv->stock != $stockLoc) {
+                    $inv->stock = $stockLoc;
+                    $inv->save();
+                }
+            }
+            return true;
+        } catch (\Throwable $t) {
+            Log::channel('shopify')->warning("Error en ShopifyQueueController::crearInventarioProductoMultiSucursal: " . $t->getMessage());
+            return false;
         }
     }
 }

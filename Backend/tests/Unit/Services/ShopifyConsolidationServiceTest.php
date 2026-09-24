@@ -114,6 +114,16 @@ class ShopifyConsolidationServiceTest extends TestCase
             $table->timestamps();
         });
 
+        Schema::create('shopify_locations', function ($table) {
+            $table->id();
+            $table->unsignedBigInteger('id_empresa');
+            $table->unsignedBigInteger('shopify_location_id');
+            $table->string('shopify_location_name')->nullable();
+            $table->unsignedBigInteger('id_bodega')->nullable();
+            $table->boolean('sincronizar_stock')->default(true);
+            $table->timestamps();
+        });
+
         $this->empresa = Empresa::forceCreate([
             'id' => 1,
             'nombre' => 'Test Company',
@@ -907,6 +917,123 @@ class ShopifyConsolidationServiceTest extends TestCase
         $prodActualizado = Producto::where('codigo', 'SUD-CAP-L')->first();
         $this->assertEquals(999111, $prodActualizado->shopify_product_id);
         $this->assertEquals(888222, $prodActualizado->shopify_variant_id);
+    }
+
+    public function test_shopify_sku_resolver_retorna_null_con_sku_nulo_o_vacio(): void
+    {
+        $mockClient = $this->createMock(\App\Services\ShopifyApiClient::class);
+        $resolver = new \App\Services\ShopifySkuResolver();
+
+        $this->assertNull($resolver->resolveBySku($mockClient, null));
+        $this->assertNull($resolver->resolveBySku($mockClient, ''));
+        $this->assertNull($resolver->resolveBySku($mockClient, '   '));
+    }
+
+    public function test_consolidar_hacia_shopify_detecta_variante_eliminada_y_desvincula(): void
+    {
+        $prod = Producto::forceCreate([
+            'id_empresa' => 1,
+            'nombre' => 'Producto Eliminado en Shopify',
+            'codigo' => 'PROD-DEL-01',
+            'precio' => 10.00,
+            'precio_con_iva' => 11.30,
+            'enable' => true,
+            'shopify_product_id' => 999888,
+            'shopify_variant_id' => 62389439496562,
+        ]);
+
+        $mockClient = $this->createMock(ShopifyApiClient::class);
+        $mockClient->expects($this->once())
+            ->method('put')
+            ->with('variants/62389439496562.json')
+            ->willThrowException(new \Exception('Error en petición a Shopify API: 404 - {"errors":"Not Found"}'));
+
+        $service = $this->getMockBuilder(ShopifyConsolidationService::class)
+            ->setConstructorArgs([$this->transformer, $mockClient])
+            ->onlyMethods(['obtenerTodosProductosShopify'])
+            ->getMock();
+
+        $service->method('obtenerTodosProductosShopify')->willReturn([]);
+
+        $service->consolidarSmartpymeHaciaShopify($this->empresa, $this->user, [
+            'vincular_sku' => false,
+            'actualizar_precios' => true,
+            'actualizar_stock' => false,
+            'crear_nuevos' => false,
+        ]);
+
+        $prod->refresh();
+        $this->assertNull($prod->shopify_variant_id);
+        $this->assertNull($prod->shopify_product_id);
+    }
+
+    public function test_consolidar_hacia_shopify_activa_tracking_automaticamente_en_error_422(): void
+    {
+        \App\Models\Admin\ShopifyLocation::forceCreate([
+            'id_empresa' => 1,
+            'shopify_location_id' => 111222,
+            'shopify_location_name' => 'Bodega Central',
+            'id_bodega' => 1,
+            'sincronizar_stock' => true,
+        ]);
+
+        $prod = Producto::forceCreate([
+            'id_empresa' => 1,
+            'nombre' => 'Producto Sin Tracking',
+            'codigo' => 'PROD-NOTRACK-01',
+            'precio' => 10.00,
+            'enable' => true,
+            'shopify_product_id' => 555666,
+            'shopify_variant_id' => 777888,
+            'shopify_inventory_item_id' => 999000,
+        ]);
+
+        DB::table('inventario')->insert([
+            'id_producto' => $prod->id,
+            'id_bodega' => 1,
+            'stock' => 15,
+        ]);
+
+        $mockClient = $this->createMock(ShopifyApiClient::class);
+
+        // 1st call fails with 422 tracking error, 2nd call succeeds after enabling tracking
+        $matcher = $this->exactly(2);
+        $mockClient->expects($matcher)
+            ->method('post')
+            ->with('inventory_levels/set.json')
+            ->willReturnCallback(function () use ($matcher) {
+                if ($matcher->getInvocationCount() === 1) {
+                    throw new \Exception('Error en petición a Shopify API: 422 - {"errors":["Inventory item does not have inventory tracking enabled"]}');
+                }
+                return ['status' => 'success', 'body' => []];
+            });
+
+        // Expects PUT to activate tracking on inventory_item
+        $mockClient->expects($this->once())
+            ->method('put')
+            ->with('inventory_items/999000.json', [
+                'inventory_item' => [
+                    'id' => 999000,
+                    'tracked' => true,
+                ]
+            ])
+            ->willReturn(['status' => 'success']);
+
+        $service = $this->getMockBuilder(ShopifyConsolidationService::class)
+            ->setConstructorArgs([$this->transformer, $mockClient])
+            ->onlyMethods(['obtenerTodosProductosShopify'])
+            ->getMock();
+
+        $service->method('obtenerTodosProductosShopify')->willReturn([]);
+
+        $metricas = $service->consolidarSmartpymeHaciaShopify($this->empresa, $this->user, [
+            'vincular_sku' => false,
+            'actualizar_precios' => false,
+            'actualizar_stock' => true,
+            'crear_nuevos' => false,
+        ]);
+
+        $this->assertEquals(0, $metricas['errores']);
     }
 }
 
