@@ -495,6 +495,10 @@ class ShopifyImportService
      */
     private function crearInventarioProducto(int $productoId, array $productoData, int $idEmpresa, int $idUsuario): void
     {
+        if ($this->crearInventarioProductoMultiSucursal($productoId, $productoData, $idEmpresa, $idUsuario)) {
+            return;
+        }
+
         // Obtener la primera bodega activa de la empresa
         $bodega = Bodega::where('id_empresa', $idEmpresa)
             ->where('activo', true)
@@ -536,6 +540,81 @@ class ShopifyImportService
             ]);
 
             $inventario->kardex($ajuste, $ajuste->ajuste);
+        }
+    }
+
+    /**
+     * Reparte el stock por sucursal cuando hay mapeos en shopify_locations.
+     * Si no hay mapeo, devuelve false y el caller usa la bodega única.
+     */
+    private function crearInventarioProductoMultiSucursal(int $productoId, array $productoData, int $idEmpresa, int $idUsuario): bool
+    {
+        $ubicacionesMapeadas = \App\Models\Admin\ShopifyLocation::withoutGlobalScope('empresa')
+            ->where('id_empresa', $idEmpresa)
+            ->where('sincronizar_stock', true)
+            ->whereNotNull('id_bodega')
+            ->get();
+
+        $empresa = Empresa::find($idEmpresa);
+        $inventoryItemId = $productoData['shopify_inventory_item_id'] ?? null;
+
+        if (!$empresa || !$empresa->tieneCredencialesShopify() || $ubicacionesMapeadas->isEmpty() || empty($inventoryItemId)) {
+            return false;
+        }
+
+        try {
+            $client = new \App\Services\ShopifyApiClient(
+                $empresa->shopify_store_url,
+                $empresa->shopify_consumer_secret,
+                app(\App\Services\ShopifyTokenService::class),
+                $empresa
+            );
+            $resLevels = $client->get('inventory_levels.json', [
+                'inventory_item_ids' => $inventoryItemId,
+            ]);
+            $levels = is_array($resLevels)
+                ? ($resLevels['body']['inventory_levels'] ?? [])
+                : (method_exists($resLevels, 'json') ? ($resLevels->json()['inventory_levels'] ?? []) : []);
+
+            $levelsMap = [];
+            foreach ($levels as $lvl) {
+                $levelsMap[(string) $lvl['location_id']] = (float) ($lvl['available'] ?? 0);
+            }
+
+            foreach ($ubicacionesMapeadas as $locMap) {
+                $locId = (string) $locMap->shopify_location_id;
+                $stockLoc = (float) ($levelsMap[$locId] ?? 0.0);
+
+                $inv = Inventario::where('id_producto', $productoId)
+                    ->where('id_bodega', $locMap->id_bodega)
+                    ->first();
+                if (!$inv) {
+                    $inv = new Inventario();
+                    $inv->id_producto = $productoId;
+                    $inv->id_bodega = $locMap->id_bodega;
+                }
+                $inv->stock = $stockLoc;
+                $inv->save();
+
+                if ($stockLoc > 0) {
+                    $ajuste = Ajuste::create([
+                        'concepto' => 'Importación desde Shopify',
+                        'id_producto' => $productoId,
+                        'id_bodega' => $locMap->id_bodega,
+                        'stock_actual' => 0,
+                        'stock_real' => $stockLoc,
+                        'ajuste' => $stockLoc,
+                        'estado' => 'Confirmado',
+                        'id_empresa' => $idEmpresa,
+                        'id_usuario' => $idUsuario,
+                    ]);
+                    $inv->kardex($ajuste, $ajuste->ajuste);
+                }
+            }
+            return true;
+        } catch (\Throwable $t) {
+            Log::warning("Error en crearInventarioProductoMultiSucursal: " . $t->getMessage());
+            return false;
         }
     }
 

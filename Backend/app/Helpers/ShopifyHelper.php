@@ -12,8 +12,7 @@ use Illuminate\Support\Facades\Log;
 class ShopifyHelper
 {
     /**
-     * Registra logs simultáneamente en el canal 'shopify' (logs/shopify/shopify-*.log)
-     * y en el log principal de la aplicación (laravel.log).
+     * Registra logs exclusivamente en el canal 'shopify' (logs/shopify/shopify-*.log).
      */
     public static function log(string $message, array $context = [], string $level = 'info'): void
     {
@@ -22,7 +21,38 @@ class ShopifyHelper
         } catch (\Throwable $e) {
             // Ignorar si el canal específico tiene problema de permisos
         }
-        Log::$level($message, $context);
+    }
+
+    public static function info(string $message, array $context = []): void
+    {
+        self::log($message, $context, 'info');
+    }
+
+    public static function error(string $message, array $context = []): void
+    {
+        self::log($message, $context, 'error');
+    }
+
+    public static function warning(string $message, array $context = []): void
+    {
+        self::log($message, $context, 'warning');
+    }
+
+    public static function debug(string $message, array $context = []): void
+    {
+        self::log($message, $context, 'debug');
+    }
+
+    /**
+     * Registra logs exclusivamente en el canal de consolidación de Shopify (logs/shopify/consolidacion-*.log).
+     */
+    public static function logConsolidacion(string $message, array $context = [], string $level = 'info'): void
+    {
+        try {
+            Log::channel('shopify_consolidacion')->$level($message, $context);
+        } catch (\Throwable $e) {
+            // Ignorar si el canal específico tiene problema de permisos
+        }
     }
 
     /**

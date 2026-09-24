@@ -193,4 +193,13 @@ class ShopifyStockActualizarTest extends TestCase
         $this->assertSame('ignored', $data['status']);
         $this->assertSame('Ubicaciones no mapeadas a bodegas en SmartPyme', $data['message']);
     }
+
+    public function test_sincronizar_stock_desde_shopify_multi_sucursal_existe_y_es_accesible(): void
+    {
+        $reflector = new ReflectionClass(ShopifyController::class);
+        $this->assertTrue($reflector->hasMethod('sincronizarStockDesdeShopifyMultiSucursal'));
+
+        $method = $reflector->getMethod('sincronizarStockDesdeShopifyMultiSucursal');
+        $this->assertTrue($method->isPrivate());
+    }
 }

@@ -44,6 +44,7 @@ export class VentaComponent implements OnInit {
     public loading = false;
     public saving = false;
     public type: string = '';
+    public consolidandoShopify = false;
 
     public abonoEdit:any = {};
 
@@ -258,8 +259,31 @@ export class VentaComponent implements OnInit {
             );
     }
 
-
-
+    public consolidarShopify(){
+        if (!this.venta?.referencia_shopify || this.consolidandoShopify) {
+            return;
+        }
+        this.consolidandoShopify = true;
+        this.cdr?.markForCheck();
+        this.apiService.store('venta/' + this.venta.id + '/shopify/consolidar', {}).subscribe((resp: any) => {
+            this.consolidandoShopify = false;
+            if (resp?.status === 'ignored') {
+                this.alertService.warning('Shopify', resp.mensaje);
+                this.cdr?.markForCheck();
+                return;
+            }
+            if (resp?.venta) {
+                this.venta = resp.venta;
+            }
+            this.alertService.success('Shopify', resp?.mensaje || 'Venta consolidada');
+            this.loadAll();
+            this.cdr?.markForCheck();
+        }, error => {
+            this.consolidandoShopify = false;
+            this.alertService.error(error);
+            this.cdr?.markForCheck();
+        });
+    }
 
     public setEstado(abono:any){
         this.saving = false;
@@ -349,12 +373,32 @@ export class VentaComponent implements OnInit {
     }
 
     public precioDetalleConIva(detalle: any): number {
+        if (this.venta?.referencia_shopify && detalle?.precio_con_iva != null && detalle.precio_con_iva !== '') {
+            return redondearMoneda(parseFloat(String(detalle.precio_con_iva)) || 0);
+        }
         return redondearMoneda(
             (parseFloat(String(detalle?.precio ?? 0)) || 0) * this.factorIvaDetalle(detalle)
         );
     }
 
+    /** Total de la línea con IVA, tal como lo cerró Shopify (gravada + exenta + IVA). */
+    private totalLineaShopifyConIva(detalle: any): number {
+        return redondearMoneda(
+            (parseFloat(String(detalle?.gravada ?? 0)) || 0) +
+            (parseFloat(String(detalle?.exenta ?? 0)) || 0) +
+            (parseFloat(String(detalle?.no_sujeta ?? 0)) || 0) +
+            (parseFloat(String(detalle?.iva ?? 0)) || 0)
+        );
+    }
+
     public descuentoDetalleConIva(detalle: any): number {
+        if (this.venta?.referencia_shopify) {
+            const cantidad = parseFloat(String(detalle?.cantidad ?? 0)) || 0;
+            const descuento = redondearMoneda(
+                cantidad * this.precioDetalleConIva(detalle) - this.totalLineaShopifyConIva(detalle)
+            );
+            return descuento > 0 ? descuento : 0;
+        }
         return redondearMoneda(
             (parseFloat(String(detalle?.descuento ?? 0)) || 0) * this.factorIvaDetalle(detalle)
         );
@@ -362,6 +406,9 @@ export class VentaComponent implements OnInit {
 
     /** Precio con IVA × cantidad − descuento con IVA (no reconstruir desde el neto `total`). */
     public totalDetalleConIva(detalle: any): number {
+        if (this.venta?.referencia_shopify) {
+            return this.totalLineaShopifyConIva(detalle);
+        }
         const cantidad = parseFloat(String(detalle?.cantidad ?? 0)) || 0;
         return redondearMoneda(
             cantidad * this.precioDetalleConIva(detalle) - this.descuentoDetalleConIva(detalle)

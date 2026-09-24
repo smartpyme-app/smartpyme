@@ -2455,6 +2455,7 @@ class ProductosController extends Controller
     }
 
     // Métodos movidos a ProductoService, CategoriaService y ShopifyImportService
+
     /**
      * Siguiente código de barras correlativo sugerido: máximo barcode solo numérico en la empresa + 1 (si la opción está activa).
      * Ruta histórica siguiente-sku-correlativo delega aquí por compatibilidad.

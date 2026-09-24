@@ -122,6 +122,15 @@
         }
     </h2>
     <div>
+        @if (venta.referencia_shopify && !venta.sello_mh) {
+            <button
+                class="btn btn-default me-2"
+                tooltip="Iguala líneas, envío y totales con el pedido actual de Shopify."
+                [disabled]="consolidandoShopify"
+                (click)="consolidarShopify()">
+                <i class="fa fa-sync"></i> Consolidar venta con Shopify
+            </button>
+        }
         @if (puedeFacturarVentaCuota(venta)) {
             <a [routerLink]="['/venta/crear']" [queryParams]="queryFacturarVenta(venta.id)" class="btn btn-default me-2">
                 <i class="fa fa-fw fa-file-invoice"></i> Facturar

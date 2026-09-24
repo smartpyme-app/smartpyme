@@ -61,7 +61,7 @@ class ShopifyQueueController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error("Error iniciando importación Shopify", [
+            Log::channel('shopify')->error("Error iniciando importación Shopify", [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
@@ -110,7 +110,7 @@ class ShopifyQueueController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error("Error verificando estado de trabajos", [
+            Log::channel('shopify')->error("Error verificando estado de trabajos", [
                 'error' => $e->getMessage()
             ]);
 
@@ -163,7 +163,7 @@ class ShopifyQueueController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error("Error continuando importación Shopify", [
+            Log::channel('shopify')->error("Error continuando importación Shopify", [
                 'error' => $e->getMessage()
             ]);
 
@@ -193,7 +193,7 @@ class ShopifyQueueController extends Controller
             
             return $productos;
         } catch (\Exception $e) {
-            Log::error("Error obteniendo productos de Shopify", [
+            Log::channel('shopify')->error("Error obteniendo productos de Shopify", [
                 'error' => $e->getMessage()
             ]);
             return [];
@@ -233,7 +233,7 @@ class ShopifyQueueController extends Controller
             curl_close($ch);
             
             if ($httpCode !== 200) {
-                Log::error("Error obteniendo productos de Shopify", [
+                Log::channel('shopify')->error("Error obteniendo productos de Shopify", [
                     'http_code' => $httpCode,
                     'response' => $response
                 ]);
@@ -284,7 +284,7 @@ class ShopifyQueueController extends Controller
                     }
                 }
             } catch (\Exception $e) {
-                Log::error("Error procesando producto en cola", [
+                Log::channel('shopify')->error("Error procesando producto en cola", [
                     'producto_id' => $productoShopify['id'] ?? 'N/A',
                     'error' => $e->getMessage()
                 ]);
@@ -346,7 +346,7 @@ class ShopifyQueueController extends Controller
 
             return $producto;
         } catch (\Exception $e) {
-            Log::error("Error creando producto", [
+            Log::channel('shopify')->error("Error creando producto", [
                 'producto_data' => $productoData,
                 'error' => $e->getMessage()
             ]);
@@ -410,14 +410,14 @@ class ShopifyQueueController extends Controller
             $trabajo->id_empresa = $usuario->id_empresa;
             $trabajo->save();
 
-            Log::info("Trabajo creado para producto Shopify", [
+            Log::channel('shopify')->info("Trabajo creado para producto Shopify", [
                 'trabajo_id' => $trabajo->id,
                 'producto_id' => $productoShopify['id'],
                 'titulo' => $productoShopify['title']
             ]);
 
         } catch (\Exception $e) {
-            Log::error("Error creando trabajo para producto", [
+            Log::channel('shopify')->error("Error creando trabajo para producto", [
                 'producto_id' => $productoShopify['id'] ?? 'N/A',
                 'error' => $e->getMessage()
             ]);
@@ -427,13 +427,18 @@ class ShopifyQueueController extends Controller
     private function crearInventarioProducto($productoId, $productoData, $idEmpresa, $idUsuario)
     {
         try {
-            // Obtener la primera bodega activa de la empresa
+            // España Dev: si hay múltiples sucursales mapeadas en shopify_locations, asignar stock por sucursal
+            if ($this->crearInventarioProductoMultiSucursal($productoId, $productoData, $idEmpresa, $idUsuario)) {
+                return;
+            }
+
+            // Obtener la primera bodega activa de la empresa (fallback mono-sucursal)
             $bodega = \App\Models\Inventario\Bodega::where('id_empresa', $idEmpresa)
                 ->where('enable', true)
                 ->first();
 
             if (!$bodega) {
-                Log::warning("No se encontró bodega activa para la empresa {$idEmpresa}");
+                Log::channel('shopify')->warning("No se encontró bodega activa para la empresa {$idEmpresa}");
                 return;
             }
 
@@ -455,10 +460,67 @@ class ShopifyQueueController extends Controller
                 $inventario->save();
             }
         } catch (\Exception $e) {
-            Log::error("Error creando inventario", [
+            Log::channel('shopify')->error("Error creando inventario", [
                 'producto_id' => $productoId,
                 'error' => $e->getMessage()
             ]);
+        }
+    }
+
+    /**
+     * Sincroniza el inventario distribuyéndolo por sucursal si la empresa tiene mapeos en shopify_locations.
+     */
+    private function crearInventarioProductoMultiSucursal($productoId, $productoData, $idEmpresa, $idUsuario): bool
+    {
+        $ubicacionesMapeadas = \App\Models\Admin\ShopifyLocation::withoutGlobalScope('empresa')
+            ->where('id_empresa', $idEmpresa)
+            ->where('sincronizar_stock', true)
+            ->whereNotNull('id_bodega')
+            ->get();
+
+        $empresa = \App\Models\Admin\Empresa::find($idEmpresa);
+        $inventoryItemId = $productoData['shopify_inventory_item_id'] ?? null;
+
+        if (!$empresa || !$empresa->tieneCredencialesShopify() || $ubicacionesMapeadas->isEmpty() || empty($inventoryItemId)) {
+            return false;
+        }
+
+        try {
+            $client = new \App\Services\ShopifyApiClient(
+                $empresa->shopify_store_url,
+                $empresa->shopify_consumer_secret,
+                app(\App\Services\ShopifyTokenService::class),
+                $empresa
+            );
+            $resLevels = $client->get('inventory_levels.json', [
+                'inventory_item_ids' => $inventoryItemId,
+            ]);
+            $levels = is_array($resLevels)
+                ? ($resLevels['body']['inventory_levels'] ?? [])
+                : (method_exists($resLevels, 'json') ? ($resLevels->json()['inventory_levels'] ?? []) : []);
+
+            $levelsMap = [];
+            foreach ($levels as $lvl) {
+                $levelsMap[(string) $lvl['location_id']] = (float) ($lvl['available'] ?? 0);
+            }
+
+            foreach ($ubicacionesMapeadas as $locMap) {
+                $locId = (string) $locMap->shopify_location_id;
+                $stockLoc = (float) ($levelsMap[$locId] ?? 0.0);
+
+                $inv = \App\Models\Inventario\Inventario::firstOrCreate(
+                    ['id_producto' => $productoId, 'id_bodega' => $locMap->id_bodega],
+                    ['stock' => $stockLoc, 'stock_minimo' => 0, 'stock_maximo' => 1000]
+                );
+                if (!$inv->wasRecentlyCreated && $inv->stock != $stockLoc) {
+                    $inv->stock = $stockLoc;
+                    $inv->save();
+                }
+            }
+            return true;
+        } catch (\Throwable $t) {
+            Log::channel('shopify')->warning("Error en ShopifyQueueController::crearInventarioProductoMultiSucursal: " . $t->getMessage());
+            return false;
         }
     }
 }

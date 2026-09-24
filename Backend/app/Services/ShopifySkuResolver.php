@@ -27,9 +27,9 @@ class ShopifySkuResolver
      *   - null si no hay coincidencias
      *   - 'conflict' si hay más de una coincidencia
      */
-    public function resolveBySku(ShopifyApiClient $client, string $sku)
+    public function resolveBySku(ShopifyApiClient $client, ?string $sku)
     {
-        $sku = trim($sku);
+        $sku = trim((string) $sku);
         if ($sku === '') {
             return null;
         }
@@ -74,7 +74,7 @@ class ShopifySkuResolver
                 $page++;
             } while ($page <= self::MAX_PAGES);
         } catch (\Exception $e) {
-            Log::warning('ShopifySkuResolver: error buscando por SKU', [
+            Log::channel('shopify')->warning('ShopifySkuResolver: error buscando por SKU', [
                 'sku' => $sku,
                 'error' => $e->getMessage(),
             ]);

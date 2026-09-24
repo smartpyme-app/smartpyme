@@ -82,7 +82,7 @@ class ShopifyStockService
 
             return $this->actualizarSoloInventario($shopifyClient, $producto, $stock, $locationId);
         } catch (\Exception $e) {
-            Log::error("Error al actualizar solo stock en Shopify: " . $e->getMessage());
+            Log::channel('shopify')->error("Error al actualizar solo stock en Shopify: " . $e->getMessage());
             return false;
         }
     }
@@ -93,7 +93,7 @@ class ShopifyStockService
             $producto = Producto::with('imagenes')->find($productoId);
 
             if (!$producto) {
-                Log::error("Producto no encontrado", ['producto_id' => $productoId]);
+                Log::channel('shopify')->error("Producto no encontrado", ['producto_id' => $productoId]);
                 return false;
             }
 
@@ -106,12 +106,12 @@ class ShopifyStockService
             $empresa = Empresa::where('id', $usuario->id_empresa)->first();
 
             if (!$usuario || empty($empresa->shopify_consumer_secret)) {
-                Log::error("Usuario no encontrado o sin consumer secret de Shopify", ['user_id' => $userId]);
+                Log::channel('shopify')->error("Usuario no encontrado o sin consumer secret de Shopify", ['user_id' => $userId]);
                 return false;
             }
 
             if (empty($empresa->shopify_store_url)) {
-                Log::error("Empresa sin store URL de Shopify configurado", ['empresa_id' => $empresa->id]);
+                Log::channel('shopify')->error("Empresa sin store URL de Shopify configurado", ['empresa_id' => $empresa->id]);
                 return false;
             }
 
@@ -128,7 +128,7 @@ class ShopifyStockService
                 ->value('stock');
 
             if ($stock === null) {
-                Log::warning("No se encontró inventario para el producto", ['producto_id' => $productoId]);
+                Log::channel('shopify')->warning("No se encontró inventario para el producto", ['producto_id' => $productoId]);
                 $stock = 0;
             }
 
@@ -145,12 +145,18 @@ class ShopifyStockService
 
 
 
-            if (!empty($producto->shopify_variant_id)) {
+            if (!empty($producto->shopify_variant_id) || !empty($producto->shopify_product_id)) {
                 if ($this->actualizarProductoPorId($shopifyClient, $producto, $productData)) {
                     return true;
                 }
-            }
 
+                Log::channel('shopify')->warning("No se pudo actualizar el producto existente en Shopify por ID", [
+                    'producto_id' => $producto->id,
+                    'shopify_product_id' => $producto->shopify_product_id,
+                    'shopify_variant_id' => $producto->shopify_variant_id,
+                ]);
+                return false;
+            }
 
             $existente = $this->buscarProductoPorSku($shopifyClient, $producto->codigo);
 
@@ -162,7 +168,7 @@ class ShopifyStockService
 
             return true;
         } catch (\Exception $e) {
-            Log::error("Error al actualizar producto completo en Shopify: " . $e->getMessage(), [
+            Log::channel('shopify')->error("Error al actualizar producto completo en Shopify: " . $e->getMessage(), [
                 'producto_id' => $productoId,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -178,7 +184,7 @@ class ShopifyStockService
             $producto = Producto::with('imagenes')->find($productoId);
 
             if (!$producto) {
-                Log::error("Producto no encontrado", ['producto_id' => $productoId]);
+                Log::channel('shopify')->error("Producto no encontrado", ['producto_id' => $productoId]);
                 return false;
             }
 
@@ -186,12 +192,12 @@ class ShopifyStockService
             $empresa = Empresa::where('id', $usuario->id_empresa)->first();
 
             if (!$usuario || empty($empresa->shopify_consumer_secret)) {
-                Log::error("Usuario no encontrado o sin consumer secret de Shopify", ['user_id' => $userId]);
+                Log::channel('shopify')->error("Usuario no encontrado o sin consumer secret de Shopify", ['user_id' => $userId]);
                 return false;
             }
 
             if (empty($empresa->shopify_store_url)) {
-                Log::error("Empresa sin store URL de Shopify configurado", ['empresa_id' => $empresa->id]);
+                Log::channel('shopify')->error("Empresa sin store URL de Shopify configurado", ['empresa_id' => $empresa->id]);
                 return false;
             }
 
@@ -201,7 +207,7 @@ class ShopifyStockService
                 ->value('stock');
 
             if ($stock === null) {
-                Log::warning("No se encontró inventario para el producto", ['producto_id' => $productoId]);
+                Log::channel('shopify')->warning("No se encontró inventario para el producto", ['producto_id' => $productoId]);
                 $stock = 0;
             }
 
@@ -216,7 +222,7 @@ class ShopifyStockService
 
             $this->crearNuevoProducto($shopifyClient, $producto, $productData);
 
-            Log::info("Producto creado exitosamente en Shopify", [
+            Log::channel('shopify')->info("Producto creado exitosamente en Shopify", [
                 'producto_id' => $producto->id,
                 'nombre' => $producto->nombre,
                 'shopify_product_id' => $producto->shopify_product_id
@@ -224,7 +230,7 @@ class ShopifyStockService
 
             return true;
         } catch (\Exception $e) {
-            Log::error("Error al crear producto en Shopify: " . $e->getMessage(), [
+            Log::channel('shopify')->error("Error al crear producto en Shopify: " . $e->getMessage(), [
                 'producto_id' => $productoId,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()

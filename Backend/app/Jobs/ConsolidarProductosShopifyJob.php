@@ -44,6 +44,7 @@ class ConsolidarProductosShopifyJob implements ShouldQueue
         $user = User::find($this->userId);
 
         if (!$empresa || !$user) {
+            Log::channel('shopify_consolidacion')->error("ConsolidarProductosShopifyJob omitido: Empresa #{$this->empresaId} o usuario #{$this->userId} no encontrado.");
             Cache::put($cacheKey, [
                 'estado' => 'error',
                 'progreso' => 0,
@@ -52,6 +53,12 @@ class ConsolidarProductosShopifyJob implements ShouldQueue
             ], 7200);
             return;
         }
+
+        Log::channel('shopify_consolidacion')->info("Iniciando ConsolidarProductosShopifyJob [{$this->direccion}]", [
+            'empresa_id' => $this->empresaId,
+            'user_id' => $this->userId,
+            'opciones' => $this->opciones,
+        ]);
 
         // Registrar inicio en caché
         Cache::put($cacheKey, [
@@ -105,15 +112,28 @@ class ConsolidarProductosShopifyJob implements ShouldQueue
                 'fecha_finalizacion' => now()->toIso8601String(),
             ], 7200);
 
+            Log::channel('shopify_consolidacion')->info("ConsolidarProductosShopifyJob [{$this->direccion}] finalizado exitosamente", [
+                'empresa_id' => $this->empresaId,
+                'metricas' => [
+                    'total' => $metricas['total'] ?? 0,
+                    'procesados' => $metricas['procesados'] ?? 0,
+                    'vinculados' => $metricas['vinculados'] ?? 0,
+                    'actualizados' => $metricas['actualizados'] ?? 0,
+                    'creados' => $metricas['creados'] ?? 0,
+                    'errores' => $metricas['errores'] ?? 0,
+                ],
+            ]);
+
             // Actualizar última sincronización en la empresa
             try {
                 $empresa->shopify_last_sync = now();
                 $empresa->save();
             } catch (\Throwable $t) {
-                Log::warning("No se pudo actualizar shopify_last_sync en empresa #{$empresa->id}: " . $t->getMessage());
+                Log::channel('shopify_consolidacion')->warning("No se pudo actualizar shopify_last_sync en empresa #{$empresa->id}: " . $t->getMessage());
             }
         } catch (\Throwable $e) {
-            Log::error("ConsolidarProductosShopifyJob falló para empresa #{$this->empresaId}: " . $e->getMessage(), [
+            Log::channel('shopify_consolidacion')->error("ConsolidarProductosShopifyJob falló para empresa #{$this->empresaId}: " . $e->getMessage(), [
+                'direccion' => $this->direccion,
                 'trace' => $e->getTraceAsString()
             ]);
 

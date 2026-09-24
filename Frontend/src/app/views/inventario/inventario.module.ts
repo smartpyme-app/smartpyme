@@ -70,6 +70,7 @@ import { LotesComponent } from './lotes/lotes.component';
 import { CustomFieldsComponent } from './custom-fields/custom-fields.component';
 import { TransformacionCrearComponent } from './transformacion/transformacion-crear.component';
 import { ProductoPresentacionesComponent } from './productos/producto/presentaciones/producto-presentaciones.component';
+import { ProductoShopifySyncComponent } from './productos/shopify-sync/producto-shopify-sync.component';
 
 @NgModule({
   imports: [
@@ -133,7 +134,8 @@ import { ProductoPresentacionesComponent } from './productos/producto/presentaci
     LotesComponent,
     CustomFieldsComponent,
     TransformacionCrearComponent,
-    ProductoPresentacionesComponent
+    ProductoPresentacionesComponent,
+    ProductoShopifySyncComponent
   ],
   exports: [
   	ProductosComponent,
@@ -181,7 +183,8 @@ import { ProductoPresentacionesComponent } from './productos/producto/presentaci
     LotesComponent,
     CustomFieldsComponent,
     TransformacionCrearComponent,
-    ProductoPresentacionesComponent
+    ProductoPresentacionesComponent,
+    ProductoShopifySyncComponent
   ]
 })
 export class InventarioModule { }

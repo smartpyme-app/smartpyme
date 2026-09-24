@@ -1,4 +1,4 @@
-﻿import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule } from '@angular/forms';
@@ -13,6 +13,7 @@ import { FuncionalidadesService } from '@services/functionalities.service';
 import { ImportarExcelComponent } from '@shared/parts/importar-excel/importar-excel.component';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
+import { ProductoShopifySyncComponent } from './shopify-sync/producto-shopify-sync.component';
 import {
   ExportPeriodoState,
   MESES_EXPORT_PERIODO,
@@ -44,6 +45,7 @@ import { DescargarInventarioComponent } from '@shared/parts/descargar-inventario
         ImportarExcelComponent,
         PaginationComponent,
         NotificacionesContainerComponent,
+        ProductoShopifySyncComponent,
         TranslatePipe, CurrencyPipe, RecalcularPreciosTcComponent, DescargarInventarioComponent],
 })
 export class ProductosComponent implements OnInit {
@@ -71,6 +73,8 @@ export class ProductosComponent implements OnInit {
     public readonly maxDiasKardexExport = MAX_DIAS_EXPORT_GENERAL;
 
     modalRef!: BsModalRef;
+
+    @ViewChild(ProductoShopifySyncComponent) private shopifySync!: ProductoShopifySyncComponent;
 
     constructor(public apiService: ApiService, private alertService: AlertService,
         private modalService: BsModalService, private router: Router, private route: ActivatedRoute,
@@ -526,6 +530,10 @@ export class ProductosComponent implements OnInit {
 
     public tieneLotes(producto: any): boolean {
         return Array.isArray(producto?.lotes) && producto.lotes.length > 0;
+    }
+
+    public abrirModalShopifySync(producto: any): void {
+        this.shopifySync.abrir(producto);
     }
 
 }

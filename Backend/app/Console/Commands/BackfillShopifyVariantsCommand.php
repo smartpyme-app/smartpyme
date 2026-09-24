@@ -148,7 +148,7 @@ class BackfillShopifyVariantsCommand extends Command
 
             return $nombres;
         } catch (\Exception $e) {
-            Log::warning('BackfillShopifyVariants: error obteniendo nombres de opción', [
+            Log::channel('shopify')->warning('BackfillShopifyVariants: error obteniendo nombres de opción', [
                 'producto_id' => $producto->id,
                 'error' => $e->getMessage(),
             ]);

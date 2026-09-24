@@ -154,6 +154,8 @@ Route::delete('/producto/composicion/opcion/{id}', [OpcionesController::class, '
     Route::post('/producto/importar-shopify',          [ProductosController::class, 'importarShopify']);
     Route::post('/shopify/consolidacion/iniciar',      [ShopifyController::class, 'iniciarConsolidacion']);
     Route::get('/shopify/consolidacion/estado',        [ShopifyController::class, 'obtenerEstadoConsolidacion']);
+    Route::get('/shopify/producto/{id}/comparativa',   [ShopifyController::class, 'obtenerComparativaProducto']);
+    Route::post('/shopify/producto/{id}/sincronizar',  [ShopifyController::class, 'sincronizarProductoIndividual']);
     //productos/exportar-traslado (GET: plantilla por IDs; POST: listado con stocks y cantidades desde la UI)
     Route::get('/productos/exportar-traslado',          [ProductosController::class, 'exportarPlantillaTraslado']);
     Route::post('/productos/exportar-traslado',         [ProductosController::class, 'exportarPlantillaTraslado']);

@@ -652,6 +652,40 @@ class ShopifyBilateralIntegrityTest extends TestCase
         $this->assertEquals(1, $cotizacion->cotizacion);
         $this->assertSame('Facturada', $cotizacion->estado);
     }
+
+    /**
+     * Un orders/updated atrasado con financial_status pending no debe bajar una venta ya Pagada.
+     */
+    public function test_orders_updated_pending_no_degrada_venta_pagada(): void
+    {
+        $shopifyOrderId = 17147272855922;
+        $venta = Venta::create([
+            'id_empresa' => $this->empresa->id,
+            'estado' => 'Pagada',
+            'cotizacion' => 0,
+            'referencia_shopify' => 'SHOPIFY-' . $shopifyOrderId,
+            'total' => 10,
+        ]);
+        $venta->created_at = now()->subMinute();
+        $venta->save();
+
+        $request = Request::create(
+            "/api/webhook/shopify/{$this->empresa->woocommerce_api_key}/orders/updated",
+            'POST',
+            [
+                'id' => $shopifyOrderId,
+                'financial_status' => 'pending',
+                'line_items' => [],
+            ]
+        );
+
+        $controller = app(\App\Http\Controllers\Api\Webhook\ShopifyController::class);
+        $response = $controller->procesarVentaActualizada($this->empresa->woocommerce_api_key, $request);
+
+        $this->assertEquals(200, $response->getStatusCode());
+        $venta->refresh();
+        $this->assertSame('Pagada', $venta->estado);
+    }
 }
 
 

@@ -45,7 +45,7 @@ class ExportProductsToShopify implements ShouldQueue
             $empresa->shopify_error = null;
             $empresa->save();
 
-            Log::info("Iniciando exportación a Shopify", [
+            Log::channel('shopify')->info("Iniciando exportación a Shopify", [
                 'user_id' => $this->userId,
                 'sucursal_id' => $this->sucursalId
             ]);
@@ -68,14 +68,14 @@ class ExportProductsToShopify implements ShouldQueue
 
             $totalProductos = count($productosIds);
 
-            Log::info("Total de productos a procesar en Shopify: {$totalProductos}");
+            Log::channel('shopify')->info("Total de productos a procesar en Shopify: {$totalProductos}");
 
             if ($totalProductos == 0) {
                 $empresa->shopify_sync_status = 'completed';
                 $empresa->shopify_last_sync = now();
                 $empresa->save();
 
-                Log::info("No hay productos para sincronizar con Shopify");
+                Log::channel('shopify')->info("No hay productos para sincronizar con Shopify");
                 return;
             }
 
@@ -83,7 +83,7 @@ class ExportProductsToShopify implements ShouldQueue
             $lotes = array_chunk($productosIds, $this->limit);
             $totalLotes = count($lotes);
 
-            Log::info("Dividiendo exportación a Shopify en {$totalLotes} lotes");
+            Log::channel('shopify')->info("Dividiendo exportación a Shopify en {$totalLotes} lotes");
 
             // Crear un job para cada lote de productos
             foreach ($lotes as $index => $loteIds) {
@@ -107,7 +107,7 @@ class ExportProductsToShopify implements ShouldQueue
             $empresa->shopify_sync_processed_batches = 0;
             $empresa->save();
 
-            Log::info("Todos los lotes de Shopify han sido programados");
+            Log::channel('shopify')->info("Todos los lotes de Shopify han sido programados");
         } catch (\Exception $e) {
             if (isset($empresa)) {
                 $empresa->shopify_sync_status = 'error';
@@ -115,7 +115,7 @@ class ExportProductsToShopify implements ShouldQueue
                 $empresa->save();
             }
 
-            Log::error("Error iniciando exportación a Shopify", [
+            Log::channel('shopify')->error("Error iniciando exportación a Shopify", [
                 'user_id' => $this->userId,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()

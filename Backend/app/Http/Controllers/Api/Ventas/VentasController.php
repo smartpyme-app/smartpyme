@@ -64,6 +64,9 @@ use App\Models\Eventos\Evento;
 use App\Models\Admin\Canal;
 use Illuminate\Support\Str;
 use App\Services\Inventario\ConversionInventarioService;
+use App\Services\ShopifyApiClient;
+use App\Services\ShopifyTokenService;
+use App\Services\ShopifyVentaConsolidacionService;
 use App\Services\Inventario\ConsignaDisponibleService;
 use App\Services\Inventario\LoteAsignacionService;
 use App\Services\Inventario\StockDisponibleService;
@@ -2119,8 +2122,61 @@ class VentasController extends Controller
         return (int) $paquete->id;
     }
 
-    public function getNumerosIdentificacion()
+    public function consolidarShopify($id)
     {
+        $usuario = auth()->user();
+        $venta = Venta::where('id', $id)
+            ->where('id_empresa', $usuario->id_empresa)
+            ->first();
+
+        if (!$venta) {
+            return response()->json(['status' => 'error', 'mensaje' => 'Venta no encontrada'], 404);
+        }
+
+        if (empty($venta->referencia_shopify)) {
+            return response()->json(['status' => 'error', 'mensaje' => 'La venta no viene de Shopify'], 422);
+        }
+
+        $empresa = Empresa::find($usuario->id_empresa);
+        if (!$empresa || $empresa->shopify_status !== 'connected' || !$empresa->tieneCredencialesShopify()) {
+            return response()->json(['status' => 'error', 'mensaje' => 'Shopify no está conectado'], 422);
+        }
+
+        $shopifyOrderId = preg_replace('/^SHOPIFY-/', '', $venta->referencia_shopify);
+        try {
+            $client = new ShopifyApiClient(
+                $empresa->shopify_store_url,
+                $empresa->shopify_consumer_secret,
+                app(ShopifyTokenService::class),
+                $empresa
+            );
+            $respuesta = $client->get("orders/{$shopifyOrderId}.json");
+            $order = $respuesta['body']['order'] ?? null;
+        } catch (\Throwable $e) {
+            return response()->json(['status' => 'error', 'mensaje' => 'No se pudo leer el pedido en Shopify'], 422);
+        }
+
+        if (!$order) {
+            return response()->json(['status' => 'error', 'mensaje' => 'Shopify no devolvió el pedido'], 422);
+        }
+
+        $resultado = app(ShopifyVentaConsolidacionService::class)->consolidar($venta, $order, $usuario);
+        $venta->refresh();
+
+        return response()->json([
+            'status' => $resultado['status'],
+            'mensaje' => $resultado['mensaje'],
+            'venta' => [
+                'id' => $venta->id,
+                'total' => $venta->total,
+                'estado' => $venta->estado,
+                'referencia_shopify' => $venta->referencia_shopify,
+                'sello_mh' => $venta->sello_mh,
+            ],
+        ], 200);
+    }
+
+    public function getNumerosIdentificacion(){
         $numsIds = Venta::select('num_identificacion')
             ->distinct()
             ->where('id_empresa', auth()->user()->id_empresa)
