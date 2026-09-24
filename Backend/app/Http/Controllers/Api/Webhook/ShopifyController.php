@@ -2231,7 +2231,9 @@ class ShopifyController extends Controller
             }
         }
 
-        $precioLocal = (float) (($producto->precio_con_iva > 0) ? $producto->precio_con_iva : $producto->precio);
+        // `precio` es la base sin IVA. Shopify guarda el precio de venta con IVA,
+        // igual que la columna del listado (precio * (1 + iva)).
+        $precioLocal = $this->impuestosService->calcularPrecioConImpuesto((float) $producto->precio, $empresa->id);
         $precioShopify = $encontradoEnShopify ? (float) ($variantShopify['price'] ?? 0) : null;
         $precioDifiere = ($precioShopify !== null) ? (abs($precioLocal - $precioShopify) > 0.009) : null;
 
@@ -2248,6 +2250,7 @@ class ShopifyController extends Controller
                 'precio' => (float) $producto->precio,
                 'precio_sin_iva' => (float) $producto->precio_sin_iva,
                 'precio_con_iva' => (float) $producto->precio_con_iva,
+                'precio_venta' => $precioLocal,
                 'shopify_product_id' => $producto->shopify_product_id,
                 'shopify_variant_id' => $producto->shopify_variant_id,
                 'shopify_sku' => $producto->shopify_sku,
@@ -2304,6 +2307,20 @@ class ShopifyController extends Controller
         $syncImagenes = filter_var($request->input('sincronizar_imagenes', false), FILTER_VALIDATE_BOOLEAN);
         $idBodega = $request->input('id_bodega', 'todas') ?: 'todas';
 
+        ShopifyHelper::logConsolidacion('Consolidación individual iniciada', [
+            'empresa_id' => $empresa->id,
+            'producto_id' => $producto->id,
+            'nombre' => $producto->nombre,
+            'direccion' => $direccion,
+            'sincronizar_precio' => $syncPrecio,
+            'sincronizar_stock' => $syncStock,
+            'sincronizar_imagenes' => $syncImagenes,
+            'id_bodega' => $idBodega,
+            'precio' => (float) $producto->precio,
+            'precio_sin_iva' => (float) $producto->precio_sin_iva,
+            'precio_con_iva' => (float) $producto->precio_con_iva,
+        ]);
+
         $client = new ShopifyApiClient(
             $empresa->shopify_store_url,
             $empresa->shopify_consumer_secret,
@@ -2331,6 +2348,13 @@ class ShopifyController extends Controller
             }
 
             if (!$variantShopify) {
+                ShopifyHelper::logConsolidacion('Consolidación individual: variante no encontrada en Shopify', [
+                    'empresa_id' => $empresa->id,
+                    'producto_id' => $producto->id,
+                    'shopify_variant_id' => $producto->shopify_variant_id,
+                    'sku' => $producto->codigo ?: $producto->shopify_sku,
+                ], 'warning');
+
                 return response()->json([
                     'status' => 'error',
                     'mensaje' => 'No se encontró la variante correspondiente en Shopify para sincronizar.',
@@ -2345,13 +2369,26 @@ class ShopifyController extends Controller
                 $producto->shopify_sku = $variantShopify['sku'];
             }
 
-            // Sincronizar precio si aplica
+            // El price de Shopify ya incluye IVA. `precio` es la base sin IVA
+            // (igual que al crear el producto en ShopifyTransformer).
             if ($syncPrecio && isset($variantShopify['price'])) {
-                $precioShopify = (float) $variantShopify['price'];
-                $producto->precio = $precioShopify;
-                $producto->precio_con_iva = $precioShopify;
+                $precioConIva = (float) $variantShopify['price'];
                 $impuestosService = app(\App\Services\ImpuestosService::class);
-                $producto->precio_sin_iva = $impuestosService->calcularPrecioSinImpuesto($precioShopify, $empresa->id);
+                $precioSinIva = $impuestosService->calcularPrecioSinImpuesto($precioConIva, $empresa->id);
+                ShopifyHelper::logConsolidacion('Consolidación individual: precio Shopify -> SmartPyme', [
+                    'producto_id' => $producto->id,
+                    'shopify_variant_id' => $variantShopify['id'] ?? null,
+                    'precio_shopify' => $precioConIva,
+                    'precio_anterior' => (float) $producto->getOriginal('precio'),
+                    'precio_sin_iva_anterior' => (float) $producto->getOriginal('precio_sin_iva'),
+                    'precio_con_iva_anterior' => (float) $producto->getOriginal('precio_con_iva'),
+                    'precio' => $precioSinIva,
+                    'precio_sin_iva' => $precioSinIva,
+                    'precio_con_iva' => $precioConIva,
+                ]);
+                $producto->precio = $precioSinIva;
+                $producto->precio_sin_iva = $precioSinIva;
+                $producto->precio_con_iva = $precioConIva;
             }
 
             $producto->saveQuietly();
@@ -2374,8 +2411,16 @@ class ShopifyController extends Controller
                     foreach ($levels as $lvl) {
                         $levelsMap[(string) $lvl['location_id']] = (float) ($lvl['available'] ?? 0);
                     }
+                    ShopifyHelper::logConsolidacion('Consolidación individual: stock Shopify -> SmartPyme', [
+                        'producto_id' => $producto->id,
+                        'id_bodega' => $idBodega,
+                        'niveles' => $levelsMap,
+                    ]);
                 } catch (\Throwable $t) {
-                    Log::channel('shopify')->warning("Error consultando inventory_levels en sincronización individual: " . $t->getMessage());
+                    ShopifyHelper::logConsolidacion('Consolidación individual: error consultando stock en Shopify', [
+                        'producto_id' => $producto->id,
+                        'error' => $t->getMessage(),
+                    ], 'warning');
                 }
 
                 Cache::put("shopify_syncing_inv_{$producto->id}", true, 60);
@@ -2470,9 +2515,20 @@ class ShopifyController extends Controller
                         $this->imageService->sincronizarImagenes($producto->id, $prodShopify['images']);
                     }
                 } catch (\Throwable $t) {
-                    Log::channel('shopify')->warning("Error sincronizando imágenes desde Shopify en sincronización individual: " . $t->getMessage());
+                    ShopifyHelper::logConsolidacion('Consolidación individual: error sincronizando imágenes desde Shopify', [
+                        'producto_id' => $producto->id,
+                        'error' => $t->getMessage(),
+                    ], 'warning');
                 }
             }
+
+            ShopifyHelper::logConsolidacion('Consolidación individual finalizada', [
+                'producto_id' => $producto->id,
+                'direccion' => 'shopify_to_sp',
+                'precio' => (float) $producto->precio,
+                'precio_sin_iva' => (float) $producto->precio_sin_iva,
+                'precio_con_iva' => (float) $producto->precio_con_iva,
+            ]);
 
             return response()->json([
                 'status' => 'success',
@@ -2502,6 +2558,11 @@ class ShopifyController extends Controller
                     $bodegaExport = (!empty($idBodega) && $idBodega !== 'todas') ? (int) $idBodega : null;
                     $resExport = $exportService->exportarProductos($user, collect([$producto]), $bodegaExport);
                     if (($resExport['errores'] ?? 0) > 0) {
+                        ShopifyHelper::logConsolidacion('Consolidación individual: no se pudo crear el producto en Shopify', [
+                            'producto_id' => $producto->id,
+                            'detalles' => $resExport['detalles'] ?? [],
+                        ], 'error');
+
                         return response()->json([
                             'status' => 'error',
                             'mensaje' => 'No se pudo crear el producto en Shopify: ' . json_encode($resExport['detalles'] ?? []),
@@ -2512,6 +2573,11 @@ class ShopifyController extends Controller
             }
 
             if (empty($producto->shopify_variant_id)) {
+                ShopifyHelper::logConsolidacion('Consolidación individual: producto sin vínculo en Shopify', [
+                    'producto_id' => $producto->id,
+                    'sku' => $producto->codigo ?: $producto->shopify_sku,
+                ], 'warning');
+
                 return response()->json([
                     'status' => 'error',
                     'mensaje' => 'El producto no está vinculado con Shopify y no se pudo enlazar.',
@@ -2520,7 +2586,15 @@ class ShopifyController extends Controller
 
             // Sincronizar precio hacia Shopify
             if ($syncPrecio) {
-                $precioVenta = ($producto->precio_con_iva > 0) ? $producto->precio_con_iva : $producto->precio;
+                $precioVenta = $this->impuestosService->calcularPrecioConImpuesto((float) $producto->precio, $empresa->id);
+                ShopifyHelper::logConsolidacion('Consolidación individual: precio SmartPyme -> Shopify', [
+                    'producto_id' => $producto->id,
+                    'shopify_variant_id' => $producto->shopify_variant_id,
+                    'precio' => (float) $producto->precio,
+                    'precio_sin_iva' => (float) $producto->precio_sin_iva,
+                    'precio_con_iva' => (float) $producto->precio_con_iva,
+                    'precio_enviado' => (float) $precioVenta,
+                ]);
                 $payload = [
                     'variant' => [
                         'id' => (int) $producto->shopify_variant_id,
@@ -2544,6 +2618,11 @@ class ShopifyController extends Controller
                         $bodegaExport = (!empty($idBodega) && $idBodega !== 'todas') ? (int) $idBodega : null;
                         $resExport = $exportService->exportarProductos($user, collect([$producto]), $bodegaExport);
                         if (($resExport['errores'] ?? 0) > 0) {
+                            ShopifyHelper::logConsolidacion('Consolidación individual: variante eliminada y no se pudo recrear', [
+                                'producto_id' => $producto->id,
+                                'detalles' => $resExport['detalles'] ?? [],
+                            ], 'error');
+
                             return response()->json([
                                 'status' => 'error',
                                 'mensaje' => 'La variante en Shopify fue eliminada y no se pudo recrear: ' . json_encode($resExport['detalles'] ?? []),
@@ -2609,6 +2688,12 @@ class ShopifyController extends Controller
             if ($syncImagenes && !empty($producto->shopify_product_id)) {
                 $this->imageService->sincronizarImagenesHaciaShopify($producto, $client);
             }
+
+            ShopifyHelper::logConsolidacion('Consolidación individual finalizada', [
+                'producto_id' => $producto->id,
+                'direccion' => 'sp_to_shopify',
+                'shopify_variant_id' => $producto->shopify_variant_id,
+            ]);
 
             return response()->json([
                 'status' => 'success',
