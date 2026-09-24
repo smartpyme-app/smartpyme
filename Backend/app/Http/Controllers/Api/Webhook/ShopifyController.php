@@ -148,7 +148,25 @@ class ShopifyController extends Controller
                         'shopify_order_id' => $request->id,
                         'financial_status' => $request->financial_status,
                     ]);
-                    return $this->procesarVentaActualizada($tokenEmpresa, $request);
+                    // Shopify reintenta el mismo webhook_id si la respuesta tarda.
+                    // Procesarlo otra vez duplica el envío. Si esta pasada falla, se suelta
+                    // la llave para que el reintento sí pueda corregir la venta.
+                    $ordersUpdatedKey = $webhookId ? "shopify_webhook_processed_{$webhookId}" : null;
+                    if ($ordersUpdatedKey && !\Illuminate\Support\Facades\Cache::add($ordersUpdatedKey, true, 3600)) {
+                        ShopifyHelper::log("Webhook ya procesado o en ejecución (deduplicado)", [
+                            'webhook_id' => $webhookId,
+                            'topic' => $webhookTopic,
+                        ]);
+                        return response()->json([
+                            'status' => 'success',
+                            'message' => 'Webhook ya procesado previamente'
+                        ], 200);
+                    }
+                    $respuestaVenta = $this->procesarVentaActualizada($tokenEmpresa, $request);
+                    if ($ordersUpdatedKey && $respuestaVenta->getStatusCode() !== 200) {
+                        \Illuminate\Support\Facades\Cache::forget($ordersUpdatedKey);
+                    }
+                    return $respuestaVenta;
 
                 case 'orders/edited':
                     ShopifyHelper::log("Webhook recibido: orders/edited");
@@ -4307,25 +4325,6 @@ class ShopifyController extends Controller
                 }
             }
 
-            // Si la venta no tiene detalles de envío pero el webhook sí los trae, agregarlos ANTES
-            // del guard de 10 segundos. Las tarifas calculadas (Advanced Shipping Rules) pueden
-            // llegar en orders/updated incluso cuando la orden se acaba de crear.
-            // BUG-4 fix: se usa un flag para no volver a llamar actualizarEnvio dentro de la
-            // transacción cuando ya se ejecutó aquí, evitando duplicados de detalles de envío.
-            $enviosYaProcesados = false;
-            if (!$fueConvertida && !empty($request->shipping_lines)) {
-                $yaHayEnvios = $venta->detalles()
-                    ->whereHas('producto', fn($q) =>
-                        $q->where('tipo', 'Servicio')
-                          ->whereHas('categoria', fn($q2) => $q2->where('nombre', 'envios'))
-                    )->exists();
-
-                if (!$yaHayEnvios) {
-                    $this->actualizarEnvio($venta, $request, $usuario);
-                    $enviosYaProcesados = true;
-                }
-            }
-
             // Verificar si la venta se creó hace menos de 10 segundos
             if ($venta->created_at->diffInSeconds(now()) < 10) {
                 // Log::info("Venta recién creada, ignorando actualización inmediata", [
@@ -4357,49 +4356,18 @@ class ShopifyController extends Controller
                     'financial_status' => $financialStatus,
                     'shopify_order_id' => $shopifyOrderId,
                 ]);
+
+                return response()->json([
+                    'status' => 'success',
+                    'mensaje' => 'Se conserva Pagada',
+                    'venta_id' => $venta->id,
+                    'estado' => $venta->estado,
+                ], 200);
             }
 
-            // BUG-3 fix: estado + envíos + cantidades deben ser atómicos.
-            // Si actualizarCantidadesProductos falla, el rollback revierte también
-            // el cambio de estado y los envíos, evitando inventario/kardex inconsistentes.
-            DB::beginTransaction();
-            try {
-                if (!$fueConvertida && !$degradaPago && $venta->estado !== $nuevoEstado) {
-                    $observacion = 'Pedido actualizado en Shopify el ' . now()->format('d/m/Y H:i:s');
-
-                    // Agregar observación específica para reembolsos
-                    if ($financialStatus === 'refunded') {
-                        $observacion = 'Pedido reembolsado en Shopify el ' . now()->format('d/m/Y H:i:s');
-                    }
-
-                    $venta->update([
-                        'estado' => $nuevoEstado,
-                        'observaciones_shopify' => ($venta->observaciones_shopify ? $venta->observaciones_shopify . ' | ' : '') . $observacion,
-                    ]);
-
-                    // Log::info("Estado de venta actualizado", [
-                    //     'venta_id' => $venta->id,
-                    //     'estado_anterior' => $venta->getOriginal('estado'),
-                    //     'estado_nuevo' => $nuevoEstado,
-                    //     'financial_status' => $financialStatus,
-                    //     'shopify_order_id' => $shopifyOrderId
-                    // ]);
-                }
-
-                // Actualizar envíos si han cambiado.
-                // Saltar si ya se procesaron antes del guard de 10s (evita duplicar detalles de envío).
-                if (!$enviosYaProcesados) {
-                    $this->actualizarEnvio($venta, $request, $usuario);
-                }
-
-                // Actualizar cantidades de productos y crear productos nuevos si han cambiado
-                $this->actualizarCantidadesProductos($venta, $request, $usuario);
-
-                DB::commit();
-            } catch (\Throwable $innerEx) {
-                DB::rollBack();
-                throw $innerEx; // el catch exterior logea y devuelve 500
-            }
+            app(\App\Services\ShopifyVentaConsolidacionService::class)
+                ->consolidar($venta, $request->all(), $usuario);
+            $venta->refresh();
 
             return response()->json([
                 'status' => 'success',

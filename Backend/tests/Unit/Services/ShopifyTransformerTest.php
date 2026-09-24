@@ -169,6 +169,86 @@ class ShopifyTransformerTest extends TestCase
         $this->assertTrue($pagadoLunes->equalTo($fechas['created_at']));
     }
 
+    public function test_descuentos_de_shopify_quedan_en_el_campo_descuento(): void
+    {
+        $lineaCodigo = $this->transformer->transformarDetallesVenta([
+            'title' => 'Producto A',
+            'price' => '11.30',
+            'quantity' => 1,
+            'discount_allocations' => [['amount' => '1.13']],
+            'tax_lines' => [['price' => '1.17']],
+        ], 1, null, true);
+
+        $lineaPersonalizado = $this->transformer->transformarDetallesVenta([
+            'title' => 'Producto B',
+            'price' => '22.60',
+            'quantity' => 1,
+            'discount_allocations' => [['amount' => '2.26']],
+            'tax_lines' => [['price' => '2.34']],
+        ], 1, null, true);
+
+        $this->assertSame(10.0, (float) $lineaCodigo['precio']);
+        $this->assertSame(1.0, (float) $lineaCodigo['descuento']);
+        $this->assertSame(9.0, (float) $lineaCodigo['total']);
+
+        $this->assertSame(20.0, (float) $lineaPersonalizado['precio']);
+        $this->assertSame(2.0, (float) $lineaPersonalizado['descuento']);
+        $this->assertSame(18.0, (float) $lineaPersonalizado['total']);
+
+        $venta = $this->transformer->transformarVenta([
+            'id' => 99,
+            'created_at' => '2026-09-24T10:19:53-06:00',
+            'financial_status' => 'paid',
+            'taxes_included' => true,
+            'total_price' => '30.51',
+            'total_tax' => '3.51',
+            'id_empresa' => null,
+            'id_bodega' => 1,
+            'id_usuario' => 1,
+            'id_sucursal' => 1,
+            'id_canal' => 1,
+            'line_items' => [
+                [
+                    'title' => 'Producto A',
+                    'price' => '11.30',
+                    'quantity' => 1,
+                    'discount_allocations' => [['amount' => '1.13']],
+                    'tax_lines' => [['price' => '1.17']],
+                ],
+                [
+                    'title' => 'Producto B',
+                    'price' => '22.60',
+                    'quantity' => 1,
+                    'discount_allocations' => [['amount' => '2.26']],
+                    'tax_lines' => [['price' => '2.34']],
+                ],
+            ],
+        ], 1, 1, 1);
+
+        $this->assertSame(3.0, (float) $venta['descuento']);
+        $this->assertSame(30.51, (float) $venta['total']);
+
+        // 9 × $12 con IVA, descuentos de $1 y $10. En pantalla el descuento debe verse $11.00, no $11.01.
+        $calcetines = $this->transformer->transformarDetallesVenta([
+            'title' => 'Calcetines visibles',
+            'price' => '12.00',
+            'quantity' => 9,
+            'discount_allocations' => [
+                ['amount' => '1.00'],
+                ['amount' => '10.00'],
+            ],
+            'tax_lines' => [['price' => '11.16']],
+        ], 1, null, true);
+
+        $mostrar = function ($monto) {
+            return round(((float) $monto) * 1.13, 2);
+        };
+
+        $this->assertSame(12.0, $mostrar($calcetines['precio']));
+        $this->assertSame(11.0, $mostrar($calcetines['descuento']));
+        $this->assertSame(85.84, (float) $calcetines['total']);
+    }
+
     public function test_mapear_forma_pago_cod_es_contra_entrega(): void
     {
         $formaPago = $this->transformer->mapearFormaPago([

@@ -49,6 +49,12 @@ class ShopifyProductoObserver
     // Para sincronización doble direccional (SmartPyme -> Shopify)
     public function createdSyncBidirectional(Producto $producto)
     {
+        // El envío es un servicio local de la venta. Si se publica en Shopify,
+        // el products/create de vuelta lo convierte en producto y la línea se pierde.
+        if ($this->esServicioDeEnvio($producto)) {
+            return;
+        }
+
         // PREVENIR CICLO: No sincronizar productos que vienen de Shopify
         if ($producto->shopify_product_id || $producto->syncing_from_shopify) {
             return;
@@ -108,7 +114,7 @@ class ShopifyProductoObserver
     // Para sincronización doble direccional (SmartPyme -> Shopify)
     public function updatedSyncBidirectional(Producto $producto)
     {
-        if (!$producto->enable) {
+        if (!$producto->enable || $this->esServicioDeEnvio($producto)) {
             return;
         }
 
@@ -203,6 +209,18 @@ class ShopifyProductoObserver
         if ($success) {
             $this->cache->saveProductSnapshot($producto);
         }
+    }
+
+    private function esServicioDeEnvio(Producto $producto): bool
+    {
+        if ($producto->tipo !== 'Servicio') {
+            return false;
+        }
+        if (!$producto->relationLoaded('categoria')) {
+            $producto->load('categoria');
+        }
+
+        return ($producto->categoria->nombre ?? null) === 'envios';
     }
 
 

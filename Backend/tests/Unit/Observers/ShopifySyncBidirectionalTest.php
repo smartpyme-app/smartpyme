@@ -4,6 +4,7 @@ namespace Tests\Unit\Observers;
 
 use App\Http\Controllers\Api\Webhook\ShopifyController;
 use App\Models\Admin\Empresa;
+use App\Models\Inventario\Categorias\Categoria;
 use App\Models\Inventario\Producto;
 use App\Models\User;
 use App\Observers\ShopifyProductoObserver;
@@ -217,6 +218,36 @@ class ShopifySyncBidirectionalTest extends TestCase
             ->method('createdProductoCompletoEnShopify')
             ->with($producto->id, $user->id, true)
             ->willReturn(true);
+
+        $this->observer->created($producto);
+    }
+
+    /**
+     * Un servicio de la categoría envios no se publica en Shopify.
+     * Si se publica, el products/create de vuelta lo convierte en producto y la venta pierde la línea.
+     */
+    public function test_observer_no_publica_un_servicio_de_envio(): void
+    {
+        $empresa = Empresa::create([
+            'shopify_sync_bidirectional' => true,
+            'shopify_store_url' => 'https://mitienda.myshopify.com',
+            'shopify_access_token' => 'shpat_test123456789',
+            'shopify_status' => 'connected',
+        ]);
+
+        $categoria = new Categoria();
+        $categoria->nombre = 'envios';
+
+        $producto = new Producto();
+        $producto->id = 1007;
+        $producto->nombre = 'cargo express';
+        $producto->tipo = 'Servicio';
+        $producto->id_empresa = $empresa->id;
+        $producto->setRelation('categoria', $categoria);
+
+        $this->stockServiceMock
+            ->expects($this->never())
+            ->method('createdProductoCompletoEnShopify');
 
         $this->observer->created($producto);
     }

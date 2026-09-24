@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Route;
 
     Route::get('/ventas',               [VentasController::class, 'index']);
     Route::get('/venta/{id}',           [VentasController::class, 'read']);
+    Route::post('/venta/{id}/shopify/consolidar', [VentasController::class, 'consolidarShopify']);
     Route::post('/venta',               [VentasController::class, 'store']);
     Route::delete('/venta/{id}',        [VentasController::class, 'delete']);
 
