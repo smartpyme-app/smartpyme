@@ -32,4 +32,37 @@ class ShopifyHelperTest extends TestCase
     {
         $this->assertTrue(method_exists(ShopifyHelper::class, 'obtenerClienteConsumidorFinal'));
     }
+
+    public function test_log_escribe_exclusivamente_en_canal_shopify(): void
+    {
+        $channelMock = \Mockery::mock();
+        $channelMock->shouldReceive('info')
+            ->once()
+            ->with('Test shopify info log', ['order_id' => 123]);
+
+        $channelMock->shouldReceive('error')
+            ->once()
+            ->with('Test shopify error log', ['error' => 'fail']);
+
+        \Illuminate\Support\Facades\Log::shouldReceive('channel')
+            ->with('shopify')
+            ->andReturn($channelMock);
+
+        ShopifyHelper::info('Test shopify info log', ['order_id' => 123]);
+        ShopifyHelper::error('Test shopify error log', ['error' => 'fail']);
+    }
+
+    public function test_log_consolidacion_escribe_en_canal_shopify_consolidacion(): void
+    {
+        $channelMock = \Mockery::mock();
+        $channelMock->shouldReceive('info')
+            ->once()
+            ->with('Test shopify consolidacion info log', ['direccion' => 'shopify_to_sp']);
+
+        \Illuminate\Support\Facades\Log::shouldReceive('channel')
+            ->with('shopify_consolidacion')
+            ->andReturn($channelMock);
+
+        ShopifyHelper::logConsolidacion('Test shopify consolidacion info log', ['direccion' => 'shopify_to_sp']);
+    }
 }

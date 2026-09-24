@@ -49,6 +49,12 @@ class ShopifyProductoObserver
     // Para sincronización doble direccional (SmartPyme -> Shopify)
     public function createdSyncBidirectional(Producto $producto)
     {
+        // El envío es un servicio local de la venta. Si se publica en Shopify,
+        // el products/create de vuelta lo convierte en producto y la línea se pierde.
+        if ($this->esServicioDeEnvio($producto)) {
+            return;
+        }
+
         // PREVENIR CICLO: No sincronizar productos que vienen de Shopify
         if ($producto->shopify_product_id || $producto->syncing_from_shopify) {
             return;
@@ -108,7 +114,7 @@ class ShopifyProductoObserver
     // Para sincronización doble direccional (SmartPyme -> Shopify)
     public function updatedSyncBidirectional(Producto $producto)
     {
-        if (!$producto->enable) {
+        if (!$producto->enable || $this->esServicioDeEnvio($producto)) {
             return;
         }
 
@@ -130,7 +136,9 @@ class ShopifyProductoObserver
         $camposRelevantes = ['costo', 'codigo', 'nombre', 'descripcion', 'id_categoria'];
 
         // Verificar si solo cambió el precio (no sincronizar)
-        if ($producto->isDirty('precio') && !$producto->isDirty($camposRelevantes)) {
+        // wasChanged() es correcto en evento 'updated' (modelo ya persistido).
+        // isDirty() siempre retorna false después del save y no debe usarse aquí.
+        if ($producto->wasChanged('precio') && !$producto->wasChanged($camposRelevantes)) {
             // Log::info("Cambio de precio detectado - no sincronizando (Shopify es fuente de verdad)", [
             //     'producto_id' => $producto->id,
             //     'nombre' => $producto->nombre,
@@ -148,7 +156,7 @@ class ShopifyProductoObserver
         // Verificar cambios en campos directos
         $hayCambiosEnCampos = false;
         foreach ($camposRelevantes as $campo) {
-            if ($producto->isDirty($campo)) {
+            if ($producto->wasChanged($campo)) {
                 $hayCambiosEnCampos = true;
                 break;
             }
@@ -201,6 +209,18 @@ class ShopifyProductoObserver
         if ($success) {
             $this->cache->saveProductSnapshot($producto);
         }
+    }
+
+    private function esServicioDeEnvio(Producto $producto): bool
+    {
+        if ($producto->tipo !== 'Servicio') {
+            return false;
+        }
+        if (!$producto->relationLoaded('categoria')) {
+            $producto->load('categoria');
+        }
+
+        return ($producto->categoria->nombre ?? null) === 'envios';
     }
 
 

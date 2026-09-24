@@ -58,7 +58,7 @@ class ShopifyResolvedProductWriter
         $producto->shopify_inventory_item_id = $resolution['inventory_item_id'] ?? $producto->shopify_inventory_item_id;
         $producto->saveQuietly();
 
-        Log::info('ShopifyResolvedProductWriter: variante actualizada por SKU', [
+        Log::channel('shopify')->info('ShopifyResolvedProductWriter: variante actualizada por SKU', [
             'producto_id' => $producto->id,
             'variant_id' => $variantId,
         ]);

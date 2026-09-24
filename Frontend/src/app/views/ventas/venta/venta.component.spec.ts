@@ -43,4 +43,61 @@ describe('VentaComponent', () => {
     expect(component.descuentoDetalleConIva(detalle)).toBe(1);
     expect(component.totalDetalleConIva(detalle)).toBe(9);
   });
+
+  it('en una venta de Shopify el descuento es precio por cantidad menos el total, sin el centavo del IVA', () => {
+    const component = createComponent();
+    component.venta.referencia_shopify = 'SHOPIFY-17148113387890';
+    const detalle = {
+      cantidad: 9,
+      precio: 10.62,
+      precio_con_iva: 12,
+      descuento: 9.74,
+      gravada: 85.84,
+      exenta: 0,
+      no_sujeta: 0,
+      iva: 11.16,
+      total: 85.84,
+    };
+
+    expect(component.precioDetalleConIva(detalle)).toBe(12);
+    expect(component.descuentoDetalleConIva(detalle)).toBe(11);
+    expect(component.totalDetalleConIva(detalle)).toBe(97);
+  });
+
+  it('consolidarShopify pide el pedido y sustituye la venta', () => {
+    const component = createComponent();
+    component.venta = { id: 5, referencia_shopify: 'SHOPIFY-1' };
+    component.alertService = { success: () => undefined, warning: () => undefined, error: () => undefined };
+    component.loadAll = () => undefined;
+    let urlLlamada = '';
+    component.apiService.store = (url: string) => {
+      urlLlamada = url;
+      return {
+        subscribe: (ok: (resp: any) => void) => ok({
+          status: 'ok',
+          venta: { id: 5, total: 102, referencia_shopify: 'SHOPIFY-1' },
+          mensaje: 'Venta consolidada con Shopify',
+        }),
+      };
+    };
+
+    component.consolidarShopify();
+
+    expect(urlLlamada).toBe('venta/5/shopify/consolidar');
+    expect(component.venta.total).toBe(102);
+  });
+
+  it('sin referencia de Shopify no llama al API', () => {
+    const component = createComponent();
+    component.venta = { id: 5 };
+    let llamado = false;
+    component.apiService.store = () => {
+      llamado = true;
+      return { subscribe: () => undefined };
+    };
+
+    component.consolidarShopify();
+
+    expect(llamado).toBeFalse();
+  });
 });

@@ -117,7 +117,7 @@ class DedupeShopifyVariantsCommand extends Command
                     $canonica->id
                 ));
             } catch (\Exception $e) {
-                Log::error('DedupeShopifyVariants: error consolidando', [
+                Log::channel('shopify')->error('DedupeShopifyVariants: error consolidando', [
                     'variant_id' => $canonica->shopify_variant_id,
                     'error' => $e->getMessage(),
                 ]);
@@ -222,7 +222,7 @@ class DedupeShopifyVariantsCommand extends Command
                     ->where('id_producto', $dup->id)
                     ->update(['id_producto' => $canonica->id]);
             } catch (\Exception $e) {
-                Log::warning('DedupeShopifyVariants: no se pudo reasignar en ' . $tabla, [
+                Log::channel('shopify')->warning('DedupeShopifyVariants: no se pudo reasignar en ' . $tabla, [
                     'error' => $e->getMessage(),
                 ]);
             }

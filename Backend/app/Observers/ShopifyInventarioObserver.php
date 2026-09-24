@@ -87,13 +87,13 @@ class ShopifyInventarioObserver
             return;
         }
 
-        // IMPORTANTE: Verificar si el producto está siendo sincronizado desde Shopify
-        $producto = $inventario->producto;
-        if ($producto && $producto->syncing_from_shopify) {
+        // BUG-1 fix: verificar clave de cache en lugar de leer syncing_from_shopify de BD.
+        // La clave la pone actualizarInventario() con TTL 60s; expira automáticamente
+        // si el proceso muere, evitando bloqueos permanentes.
+        if (\Illuminate\Support\Facades\Cache::has("shopify_syncing_inv_{$inventario->id_producto}")) {
             ShopifyHelper::log("Producto siendo sincronizado desde Shopify, omitiendo sincronización hacia Shopify para evitar ciclo", [
                 'inventario_id' => $inventario->id,
-                'producto_id' => $inventario->id_producto,
-                'syncing_from_shopify' => $producto->syncing_from_shopify
+                'producto_id'   => $inventario->id_producto,
             ]);
             return;
         }

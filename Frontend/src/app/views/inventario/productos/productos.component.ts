@@ -1,9 +1,10 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
+import { ProductoShopifySyncComponent } from './shopify-sync/producto-shopify-sync.component';
 import {
   ExportPeriodoState,
   MESES_EXPORT_PERIODO,
@@ -48,6 +49,8 @@ export class ProductosComponent implements OnInit {
     public readonly maxDiasKardexExport = MAX_DIAS_EXPORT_GENERAL;
 
     modalRef!: BsModalRef;
+
+    @ViewChild(ProductoShopifySyncComponent) private shopifySync!: ProductoShopifySyncComponent;
 
     constructor(public apiService: ApiService, private alertService: AlertService,
         private modalService: BsModalService, private router: Router, private route: ActivatedRoute,
@@ -479,6 +482,10 @@ export class ProductosComponent implements OnInit {
 
     public isInventarioSumarStockBusquedas(): boolean {
         return this.apiService.isInventarioSumarStockBusquedas();
+    }
+
+    public abrirModalShopifySync(producto: any): void {
+        this.shopifySync.abrir(producto);
     }
 
 }

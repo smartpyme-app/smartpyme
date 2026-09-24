@@ -4,6 +4,7 @@ namespace Tests\Unit\Observers;
 
 use App\Http\Controllers\Api\Webhook\ShopifyController;
 use App\Models\Admin\Empresa;
+use App\Models\Inventario\Categorias\Categoria;
 use App\Models\Inventario\Producto;
 use App\Models\User;
 use App\Observers\ShopifyProductoObserver;
@@ -40,27 +41,83 @@ class ShopifySyncBidirectionalTest extends TestCase
             $table->boolean('importacion_productos_shopify')->default(true);
             $table->string('shopify_store_url')->nullable();
             $table->string('shopify_access_token')->nullable();
+            $table->string('shopify_consumer_secret')->nullable();
+            $table->string('woocommerce_api_key')->nullable();
             $table->string('shopify_status')->nullable();
+            $table->text('custom_empresa')->nullable();
             $table->timestamps();
         });
 
         Schema::create('users', function ($table) {
             $table->id();
             $table->unsignedBigInteger('id_empresa')->nullable();
+            $table->unsignedBigInteger('id_bodega')->nullable();
             $table->string('shopify_status')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('categorias', function ($table) {
+            $table->id();
+            $table->unsignedBigInteger('id_empresa')->nullable();
+            $table->string('nombre')->nullable();
+            $table->boolean('enable')->default(true);
+            $table->text('descripcion')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('sucursal_bodegas', function ($table) {
+            $table->id();
+            $table->unsignedBigInteger('id_empresa')->nullable();
+            $table->string('nombre')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('inventario', function ($table) {
+            $table->id();
+            $table->unsignedBigInteger('id_producto');
+            $table->unsignedBigInteger('id_bodega');
+            $table->decimal('stock', 10, 2)->default(0);
+            $table->decimal('stock_minimo', 10, 2)->default(0);
+            $table->decimal('stock_maximo', 10, 2)->default(0);
+            $table->softDeletes();
+            $table->timestamps();
+        });
+
+        Schema::create('kardexs', function ($table) {
+            $table->id();
+            $table->date('fecha')->nullable();
+            $table->unsignedBigInteger('id_producto')->nullable();
+            $table->unsignedBigInteger('lote_id')->nullable();
+            $table->unsignedBigInteger('id_inventario')->nullable();
+            $table->string('detalle')->nullable();
+            $table->string('referencia')->nullable();
+            $table->decimal('entrada_cantidad', 10, 2)->nullable();
+            $table->decimal('costo_unitario', 10, 2)->nullable();
+            $table->decimal('entrada_valor', 10, 2)->nullable();
+            $table->decimal('salida_cantidad', 10, 2)->nullable();
+            $table->decimal('precio_unitario', 10, 2)->nullable();
+            $table->decimal('salida_valor', 10, 2)->nullable();
+            $table->decimal('total_cantidad', 10, 2)->default(0);
+            $table->decimal('total_valor', 10, 2)->default(0);
+            $table->unsignedBigInteger('id_usuario')->nullable();
             $table->timestamps();
         });
 
         Schema::create('productos', function ($table) {
             $table->id();
             $table->unsignedBigInteger('id_empresa')->nullable();
+            $table->unsignedBigInteger('id_categoria')->nullable();
             $table->unsignedBigInteger('shopify_product_id')->nullable();
             $table->unsignedBigInteger('shopify_variant_id')->nullable();
+            $table->unsignedBigInteger('shopify_inventory_item_id')->nullable();
             $table->string('shopify_sku')->nullable();
             $table->string('codigo')->nullable();
             $table->string('nombre')->nullable();
             $table->string('nombre_variante')->nullable();
             $table->decimal('precio', 10, 2)->default(0);
+            $table->decimal('costo', 10, 2)->default(0);
+            $table->boolean('syncing_from_shopify')->default(false);
+            $table->timestamp('last_shopify_sync')->nullable();
             $table->boolean('enable')->default(true);
             $table->softDeletes();
             $table->timestamps();
@@ -161,6 +218,36 @@ class ShopifySyncBidirectionalTest extends TestCase
             ->method('createdProductoCompletoEnShopify')
             ->with($producto->id, $user->id, true)
             ->willReturn(true);
+
+        $this->observer->created($producto);
+    }
+
+    /**
+     * Un servicio de la categoría envios no se publica en Shopify.
+     * Si se publica, el products/create de vuelta lo convierte en producto y la venta pierde la línea.
+     */
+    public function test_observer_no_publica_un_servicio_de_envio(): void
+    {
+        $empresa = Empresa::create([
+            'shopify_sync_bidirectional' => true,
+            'shopify_store_url' => 'https://mitienda.myshopify.com',
+            'shopify_access_token' => 'shpat_test123456789',
+            'shopify_status' => 'connected',
+        ]);
+
+        $categoria = new Categoria();
+        $categoria->nombre = 'envios';
+
+        $producto = new Producto();
+        $producto->id = 1007;
+        $producto->nombre = 'cargo express';
+        $producto->tipo = 'Servicio';
+        $producto->id_empresa = $empresa->id;
+        $producto->setRelation('categoria', $categoria);
+
+        $this->stockServiceMock
+            ->expects($this->never())
+            ->method('createdProductoCompletoEnShopify');
 
         $this->observer->created($producto);
     }
@@ -351,5 +438,128 @@ class ShopifySyncBidirectionalTest extends TestCase
         $this->assertSame($varianteAzul->id, $encontrado->id);
         $this->assertSame('Azul - M', $encontrado->nombre_variante);
         $this->assertNotSame($varianteBlanca->id, $encontrado->id);
+    }
+
+    /**
+     * Verifica que si un producto ya posee shopify_product_id o shopify_variant_id,
+     * ante un fallo en actualizarProductoPorId NUNCA llame a crearNuevoProducto ni
+     * sobreescriba los identificadores de Shopify.
+     */
+    public function test_actualizar_producto_completo_no_crea_producto_si_ya_tiene_shopify_id(): void
+    {
+        \Illuminate\Support\Facades\Http::fake([
+            '*' => \Illuminate\Support\Facades\Http::response(['error' => 'Simulated error'], 500),
+        ]);
+
+        $empresa = Empresa::create([
+            'shopify_sync_bidirectional' => true,
+            'shopify_store_url' => 'https://mitienda.myshopify.com',
+            'shopify_access_token' => 'shpat_test123',
+            'shopify_consumer_secret' => 'secret123',
+            'shopify_status' => 'connected',
+        ]);
+
+        $user = User::create([
+            'id_empresa' => $empresa->id,
+            'id_bodega' => 1,
+            'shopify_status' => 'connected',
+        ]);
+
+        $producto = Producto::create([
+            'id_empresa' => $empresa->id,
+            'nombre' => 'Jumpsuit Test',
+            'codigo' => 'JUMP-01',
+            'shopify_product_id' => 8937577512983,
+            'shopify_variant_id' => 47663254142999,
+            'precio' => 50.00,
+        ]);
+
+        $service = new ShopifyStockService();
+
+        $resultado = $service->actualizarProductoCompletoEnShopify($producto->id, $user->id);
+
+        $this->assertFalse($resultado);
+
+        // NUNCA debe intentar crear un nuevo producto en Shopify (POST products.json) si ya tiene shopify_variant_id / shopify_product_id
+        \Illuminate\Support\Facades\Http::assertNotSent(function ($request) {
+            return $request->method() === 'POST' && str_contains($request->url(), 'products.json');
+        });
+
+        // Asegurar que los IDs originales no fueron sobreescritos
+        $producto->refresh();
+        $this->assertEquals(8937577512983, $producto->shopify_product_id);
+        $this->assertEquals(47663254142999, $producto->shopify_variant_id);
+    }
+
+    /**
+     * Verifica que handle() deduplique webhooks entrantes que compartan el mismo X-Shopify-Webhook-Id.
+     */
+    public function test_handle_deduplica_webhooks_con_mismo_webhook_id(): void
+    {
+        $empresa = Empresa::create([
+            'woocommerce_api_key' => 'token123456789',
+            'shopify_status' => 'connected',
+        ]);
+
+        User::create([
+            'id_empresa' => $empresa->id,
+            'id_bodega' => 1,
+            'shopify_status' => 'connected',
+        ]);
+
+        $request = \Illuminate\Http\Request::create('/webhook', 'POST', [
+            'id' => 888111,
+            'title' => 'Producto Prueba',
+            'variants' => [],
+        ]);
+        $request->headers->set('X-Shopify-Topic', 'products/update');
+        $request->headers->set('X-Shopify-Webhook-Id', 'webhook-uuid-test-12345');
+
+        // Primer envío: procesa
+        $resp1 = $this->controller->handle('token123456789', $request);
+        $this->assertEquals(200, $resp1->getStatusCode());
+
+        // Segundo envío con mismo X-Shopify-Webhook-Id: deduplicado inmediatamente
+        $resp2 = $this->controller->handle('token123456789', $request);
+        $this->assertEquals(200, $resp2->getStatusCode());
+        $data = json_decode($resp2->getContent(), true);
+        $this->assertSame('Webhook ya procesado previamente', $data['message']);
+    }
+
+    /**
+     * Verifica que actualizarInventario con origen shopify use withoutEvents para no disparar observers.
+     */
+    public function test_actualizar_inventario_silencia_eventos_y_no_dispara_observador(): void
+    {
+        $empresa = Empresa::create([
+            'shopify_sync_bidirectional' => true,
+        ]);
+
+        $producto = Producto::create([
+            'id_empresa' => $empresa->id,
+            'nombre' => 'Producto Sin Eventos',
+            'shopify_product_id' => 12345,
+            'shopify_variant_id' => 67890,
+            'precio' => 10.00,
+        ]);
+
+        // Aseguramos que el mock del stock service NUNCA sea llamado
+        $this->stockServiceMock->expects($this->never())->method('actualizarProductoCompletoEnShopify');
+
+        $reflector = new ReflectionClass(ShopifyController::class);
+        $method = $reflector->getMethod('actualizarInventario');
+        $method->setAccessible(true);
+
+        $method->invoke(
+            $this->controller,
+            $producto->id,
+            5,
+            1,
+            1,
+            ['origen' => 'shopify', 'tipo' => 'inventario_inicial']
+        );
+
+        $producto->refresh();
+        $this->assertFalse((bool)$producto->syncing_from_shopify);
     }
 }

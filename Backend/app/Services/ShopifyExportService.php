@@ -20,11 +20,17 @@ class ShopifyExportService
         );
 
         // Precalcular stocks para todos los productos de una vez
-        $stocks = Inventario::whereIn('id_producto', $productos->pluck('id'))
-            ->where('id_bodega', $bodega)
+        $stocksQuery = Inventario::whereIn('id_producto', $productos->pluck('id'));
+        if (!empty($bodega) && $bodega !== 'todas') {
+            $stocksQuery->where('id_bodega', $bodega);
+        }
+        $stocks = $stocksQuery
             ->select('id_producto', DB::raw('SUM(stock) as total_stock'))
             ->groupBy('id_producto')
             ->pluck('total_stock', 'id_producto')
+            ->map(function ($val) {
+                return (int) round((float) $val);
+            })
             ->toArray();
 
         $resultados = [
@@ -58,7 +64,7 @@ class ShopifyExportService
         // Exportar productos locales sueltos como productos simples (comportamiento anterior)
         foreach ($sueltos as $producto) {
             try {
-                $stock = $stocks[$producto->id] ?? 0;
+                $stock = (int) round((float) ($stocks[$producto->id] ?? 0));
                 $productData = $this->prepararDatosProducto($producto, $stock, $client);
 
                 if (!empty($producto->shopify_product_id)) {
@@ -99,7 +105,7 @@ class ShopifyExportService
 
             // Actualizar inventario por variante
             foreach ($grupo as $producto) {
-                $stock = $stocks[$producto->id] ?? 0;
+                $stock = (int) round((float) ($stocks[$producto->id] ?? 0));
                 $this->actualizarInventarioShopify($client, $producto, $stock);
             }
 
@@ -145,9 +151,22 @@ class ShopifyExportService
                     $producto->shopify_variant_id = $variant['id'];
                     $producto->shopify_inventory_item_id = $variant['inventory_item_id'] ?? null;
                     $producto->save();
-                    $stock = $stocks[$producto->id] ?? 0;
+                    $stock = (int) round((float) ($stocks[$producto->id] ?? 0));
                     $this->actualizarInventarioShopify($client, $producto, $stock);
                     break;
+                }
+            }
+        }
+
+        // Vincular imágenes creadas
+        if (!empty($shopifyProduct['images']) && $primera->imagenes && $primera->imagenes->isNotEmpty()) {
+            foreach ($shopifyProduct['images'] as $idx => $sImg) {
+                if (isset($primera->imagenes[$idx])) {
+                    $primera->imagenes[$idx]->shopify_image_id = $sImg['id'];
+                    if (!empty($sImg['src'])) {
+                        $primera->imagenes[$idx]->src = $sImg['src'];
+                    }
+                    $primera->imagenes[$idx]->saveQuietly();
                 }
             }
         }
@@ -204,23 +223,16 @@ class ShopifyExportService
         $variants = [];
         foreach ($grupo as $producto) {
             $variants[] = [
-                'sku' => $producto->shopify_sku ?: $producto->codigo,
-                'price' => $producto->precio,
+                'sku' => (string) ($producto->shopify_sku ?: $producto->codigo ?? ''),
+                'price' => (string) ($producto->precio ?? 0),
                 'option1' => $producto->option1_value,
                 'option2' => $producto->option2_value,
                 'option3' => $producto->option3_value,
                 'barcode' => $producto->barcode ?? null,
                 'inventory_management' => 'shopify',
                 'inventory_policy' => 'deny',
-                'inventory_quantity' => $stocks[$producto->id] ?? 0,
+                'inventory_quantity' => (int) round((float) ($stocks[$producto->id] ?? 0)),
             ];
-        }
-
-        $images = [];
-        if (!empty($primera->imagenes)) {
-            foreach ($primera->imagenes as $imagen) {
-                $images[] = ['src' => url('/img' . $imagen->img)];
-            }
         }
 
         return [
@@ -231,7 +243,7 @@ class ShopifyExportService
             'status' => 'active',
             'options' => $options,
             'variants' => $variants,
-            'images' => $images,
+            'images' => $this->formatearImagenesParaExport($primera->imagenes),
         ];
     }
 
@@ -244,12 +256,12 @@ class ShopifyExportService
             ]);
 
             // Actualizar inventario
-            $this->actualizarInventarioShopify($client, $producto, $productData['variants'][0]['inventory_quantity']);
+            $this->actualizarInventarioShopify($client, $producto, (int) round((float) ($productData['variants'][0]['inventory_quantity'] ?? 0)));
 
             $this->registrarExito($resultados, $producto, 'actualizado', $producto->shopify_product_id);
             return true;
         } catch (\Exception $e) {
-            Log::warning("Error actualizando producto por ID en Shopify: " . $e->getMessage());
+            Log::channel('shopify')->warning("Error actualizando producto por ID en Shopify: " . $e->getMessage());
             return false;
         }
     }
@@ -268,7 +280,7 @@ class ShopifyExportService
         $producto->save();
 
         // Actualizar inventario
-        $this->actualizarInventarioShopify($client, $producto, $productData['variants'][0]['inventory_quantity']);
+        $this->actualizarInventarioShopify($client, $producto, (int) round((float) ($productData['variants'][0]['inventory_quantity'] ?? 0)));
 
         $this->registrarExito($resultados, $producto, 'actualizado', $existente['product_id']);
     }
@@ -290,10 +302,26 @@ class ShopifyExportService
         $producto->shopify_product_id = $shopifyProduct['id'];
         $producto->shopify_variant_id = $variant['id'];
         $producto->shopify_inventory_item_id = $variant['inventory_item_id'];
+        if (empty($producto->shopify_sku)) {
+            $producto->shopify_sku = $variant['sku'] ?? $producto->codigo;
+        }
         $producto->save();
 
+        // Vincular imágenes creadas
+        if (!empty($shopifyProduct['images']) && $producto->imagenes && $producto->imagenes->isNotEmpty()) {
+            foreach ($shopifyProduct['images'] as $idx => $sImg) {
+                if (isset($producto->imagenes[$idx])) {
+                    $producto->imagenes[$idx]->shopify_image_id = $sImg['id'];
+                    if (!empty($sImg['src'])) {
+                        $producto->imagenes[$idx]->src = $sImg['src'];
+                    }
+                    $producto->imagenes[$idx]->saveQuietly();
+                }
+            }
+        }
+
         // Actualizar inventario
-        $this->actualizarInventarioShopify($client, $producto, $productData['variants'][0]['inventory_quantity']);
+        $this->actualizarInventarioShopify($client, $producto, (int) round((float) ($productData['variants'][0]['inventory_quantity'] ?? 0)));
 
         $this->registrarExito($resultados, $producto, 'creado', $shopifyProduct['id']);
     }
@@ -306,13 +334,13 @@ class ShopifyExportService
 
             if ($producto->shopify_inventory_item_id && $locationId) {
                 $client->post('inventory_levels/set.json', [
-                    'location_id' => $locationId,
-                    'inventory_item_id' => $producto->shopify_inventory_item_id,
-                    'available' => $stock
+                    'location_id' => (int) $locationId,
+                    'inventory_item_id' => (int) $producto->shopify_inventory_item_id,
+                    'available' => (int) round((float) $stock)
                 ]);
             }
         } catch (\Exception $e) {
-            Log::warning("Error actualizando inventario en Shopify: " . $e->getMessage());
+            Log::channel('shopify')->warning("Error actualizando inventario en Shopify: " . $e->getMessage());
         }
     }
 
@@ -327,7 +355,7 @@ class ShopifyExportService
                     $locationId = $response['body']['locations'][0]['id'];
                 }
             } catch (\Exception $e) {
-                Log::error("Error obteniendo ubicaciones de Shopify: " . $e->getMessage());
+                Log::channel('shopify')->error("Error obteniendo ubicaciones de Shopify: " . $e->getMessage());
             }
         }
 
@@ -346,7 +374,7 @@ class ShopifyExportService
 
     private function registrarError($producto, $e, &$resultados)
     {
-        Log::error("Error procesando producto Shopify {$producto->id}: " . $e->getMessage());
+        Log::channel('shopify')->error("Error procesando producto Shopify {$producto->id}: " . $e->getMessage());
         $resultados['errores']++;
         $resultados['detalles'][] = [
             'producto_id' => $producto->id,
@@ -384,22 +412,13 @@ class ShopifyExportService
 
             return null;
         } catch (\Exception $e) {
-            Log::warning("Error buscando producto por SKU en Shopify ({$sku}): " . $e->getMessage());
+            Log::channel('shopify')->warning("Error buscando producto por SKU en Shopify ({$sku}): " . $e->getMessage());
             return null;
         }
     }
 
     private function prepararDatosProducto($producto, $stock, $client)
     {
-        $images = [];
-        if (!empty($producto->imagenes)) {
-            foreach ($producto->imagenes as $imagen) {
-                $images[] = [
-                    'src' => url('/img' . $imagen->img)
-                ];
-            }
-        }
-
         return [
             'title' => $producto->nombre,
             'body_html' => $producto->descripcion ?? '',
@@ -409,18 +428,42 @@ class ShopifyExportService
             'tags' => $producto->tags ?? '',
             'variants' => [
                 [
-                    'sku' => $producto->codigo,
-                    'price' => $producto->precio,
-                    'compare_at_price' => $producto->precio_comparacion ?? null,
-                    'inventory_quantity' => $stock,
+                    'sku' => (string) ($producto->shopify_sku ?: $producto->codigo ?? ''),
+                    'price' => (string) ($producto->precio ?? 0),
+                    'compare_at_price' => $producto->precio_comparacion ? (string) $producto->precio_comparacion : null,
+                    'inventory_quantity' => (int) round((float) $stock),
                     'inventory_management' => 'shopify',
                     'inventory_policy' => 'deny',
-                    'weight' => $producto->peso ?? 0,
+                    'weight' => (float) ($producto->peso ?? 0),
                     'weight_unit' => 'g'
                 ]
             ],
-            'images' => $images
+            'images' => $this->formatearImagenesParaExport($producto->imagenes)
         ];
+    }
+
+    private function formatearImagenesParaExport($imagenes)
+    {
+        $images = [];
+        if (!empty($imagenes)) {
+            foreach ($imagenes as $imagen) {
+                $rawPath = ltrim((string) $imagen->img, '/');
+                $filePath = public_path('img/' . $rawPath);
+                if (!file_exists($filePath)) {
+                    $filePath = public_path($rawPath);
+                }
+
+                if (file_exists($filePath) && !is_dir($filePath)) {
+                    $images[] = [
+                        'attachment' => base64_encode(file_get_contents($filePath)),
+                        'filename' => basename($filePath),
+                    ];
+                } elseif (!empty($imagen->src)) {
+                    $images[] = ['src' => $imagen->src];
+                }
+            }
+        }
+        return $images;
     }
 
     private function obtenerCategoria($categoriaId)

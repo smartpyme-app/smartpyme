@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Inventario\Imagen;
+use App\Models\Inventario\Producto;
+use App\Services\ShopifyImageService;
 use Intervention\Image\ImageManagerStatic as Image;
 
 class ImagenesController extends Controller
@@ -38,9 +40,23 @@ class ImagenesController extends Controller
             $path = "productos/{$hash}.jpg";
             $resize->save(public_path('img/'.$path), 50);
             $imagen->img = "/" . $path;
+            $imagen->hash = $hash;
         }
 
         $imagen->save();
+
+        // Sincronizar automáticamente hacia Shopify si el producto está vinculado
+        try {
+            $producto = Producto::withoutGlobalScope('empresa')->find($imagen->id_producto);
+            if ($producto && !empty($producto->shopify_product_id)) {
+                app(ShopifyImageService::class)->subirImagenAShopify($imagen);
+            }
+        } catch (\Throwable $t) {
+            \Illuminate\Support\Facades\Log::channel('shopify')->warning('ImagenesController: error en sincronización automática a Shopify', [
+                'imagen_id' => $imagen->id,
+                'error' => $t->getMessage(),
+            ]);
+        }
 
         return Response()->json($imagen, 200);
 
@@ -49,6 +65,19 @@ class ImagenesController extends Controller
     public function delete($id)
     {
         $imagen = Imagen::findOrFail($id);
+
+        // Si la imagen está en Shopify, eliminarla también de Shopify
+        try {
+            if (!empty($imagen->shopify_image_id)) {
+                app(ShopifyImageService::class)->eliminarImagenDeShopify($imagen);
+            }
+        } catch (\Throwable $t) {
+            \Illuminate\Support\Facades\Log::channel('shopify')->warning('ImagenesController: error al eliminar imagen de Shopify', [
+                'imagen_id' => $imagen->id,
+                'error' => $t->getMessage(),
+            ]);
+        }
+
         if ($imagen->img)
             Storage::delete($imagen->img);
         $imagen->delete();

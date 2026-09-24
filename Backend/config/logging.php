@@ -138,8 +138,16 @@ return [
         'shopify' => [
             'driver' => 'daily',
             'path' => storage_path('logs/shopify/shopify.log'),
-            'level' => 'info',
-            'days' => 14,
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => env('LOG_SHOPIFY_DAYS', 14),
+            'permission' => 0664,
+            'rotate' => true
+        ],
+        'shopify_consolidacion' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/shopify/consolidacion.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => env('LOG_SHOPIFY_DAYS', 14),
             'permission' => 0664,
             'rotate' => true
         ],

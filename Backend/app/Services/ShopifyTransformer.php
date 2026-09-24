@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Constants\ShopifyConstant;
 use App\Helpers\ShopifyHelper;
 use App\Models\Admin\Empresa;
+use App\Models\Inventario\Categorias\Categoria;
 use Carbon\Carbon;
 use Illuminate\Support\Arr;
 
@@ -215,6 +216,12 @@ class ShopifyTransformer
 
         }
 
+        $descuento = 0.0;
+        foreach ($shopifyData['line_items'] ?? [] as $item) {
+            $detalle = $this->transformarDetallesVenta($item, 0, $empresaId, (bool) $taxesIncluded);
+            $descuento += (float) ($detalle['descuento'] ?? 0);
+        }
+
         return [
             'codigo_generacion' => null,
             'estado' => $estado,
@@ -231,7 +238,7 @@ class ShopifyTransformer
             'iva' => $totalIVA,
             'iva_retenido' => 0,
             'iva_percibido' => 0,
-            'descuento' => 0.00,
+            'descuento' => round($descuento, 2),
             'monto_pago' => $totalAPagar,
             'id_cliente' => $clienteId,
             'correlativo' => $correlativo,
@@ -271,6 +278,13 @@ class ShopifyTransformer
      * @param int|null $empresaId
      * @return array{0: float, 1: float, 2: float} [subtotal, iva, total]
      */
+    private function factorIva($empresaId = null): float
+    {
+        $porcentajeIva = $empresaId ? $this->impuestosService->obtenerPorcentajeImpuesto($empresaId) : 13.0;
+
+        return $porcentajeIva > 0 ? 1 + ($porcentajeIva / 100) : 1.0;
+    }
+
     private function calcularValoresLineaConIva($totalLineaConIVA, $empresaId = null)
     {
         $totalLineaConIVA = floatval($totalLineaConIVA);
@@ -285,7 +299,7 @@ class ShopifyTransformer
             return [round($totalLineaConIVA, 2), 0.0, round($totalLineaConIVA, 2)];
         }
 
-        $factor = 1 + ($porcentajeIva / 100);
+        $factor = $this->factorIva($empresaId);
         $subtotal = round($totalLineaConIVA / $factor, 2);
         $iva = $empresaId
             ? $this->impuestosService->calcularIvaDesdeBaseGravada($subtotal, $empresaId)
@@ -332,16 +346,37 @@ class ShopifyTransformer
         }
 
         $precioSinImpuesto = $cantidad > 0 ? round($subtotalLinea / $cantidad, 4) : 0;
+        $descuentoSinIva = 0.0;
+        $precioConIva = $cantidad > 0 ? round($totalLinea / $cantidad, 2) : $precio;
+
+        // El descuento de Shopify (código o monto personalizado) llega en discount_allocations.
+        // Se guarda aparte: el precio queda de lista y el descuento se ve en la venta.
+        if ($descuentoTotal > 0) {
+            if ($taxesIncluded) {
+                // El monto de Shopify ya incluye IVA. Se divide por el factor, sin
+                // restar bases redondeadas: eso convertía $11.00 en $11.01 en pantalla.
+                $factor = $this->factorIva($empresaId);
+                $precioSinImpuesto = round($precio / $factor, 4);
+                $descuentoSinIva = round($descuentoTotal / $factor, 4);
+                $precioConIva = round($precio, 2);
+            } else {
+                $precioSinImpuesto = round($precio, 4);
+                $descuentoSinIva = round($descuentoTotal, 2);
+            }
+            if ($descuentoSinIva < 0) {
+                $descuentoSinIva = 0.0;
+            }
+        }
 
         return [
             'cantidad' => $lineItem['quantity'],
             'costo' => 0,
             'precio' => $precioSinImpuesto,
             'precio_sin_iva' => $precioSinImpuesto,
-            'precio_con_iva' => $cantidad > 0 ? round($totalLinea / $cantidad, 2) : $precio,
+            'precio_con_iva' => $precioConIva,
             'total' => $subtotalLinea,
             'total_costo' => 0,
-            'descuento' => 0.00,
+            'descuento' => $descuentoSinIva,
             'no_sujeta' => 0,
             'exenta' => 0,
             'cuenta_a_terceros' => 0,
@@ -552,6 +587,7 @@ class ShopifyTransformer
                 'enable' => $productoActivo,
                 'tipo' => 'Producto',
                 'costo' => $costo,
+                'id_categoria' => $this->resolverCategoria($shopifyData['product_type'] ?? '', $id_empresa),
                 // Campos de control para prevenir ciclos - solo para importaciones masivas
                 'syncing_from_shopify' => $esImportacionMasiva,
                 'last_shopify_sync' => now(),
@@ -824,5 +860,22 @@ class ShopifyTransformer
     public function resolverUbicacionElSalvador(?string $city, ?string $provinceCode, ?string $provinceName, ?string $countryCode = 'SV'): array
     {
         return ShopifyHelper::resolverUbicacionElSalvador($city, $provinceCode, $provinceName, $countryCode);
+    }
+
+    /**
+     * Resuelve (o crea) la categoría para un producto importado desde Shopify.
+     * Usa product_type de Shopify si viene; si no, crea/reutiliza "General".
+     * firstOrCreate garantiza 1 sola categoría por (nombre, empresa).
+     */
+    private function resolverCategoria(string $productType, int $idEmpresa): int
+    {
+        $nombre = trim($productType) !== '' ? trim($productType) : 'General';
+
+        return Categoria::withoutGlobalScope('empresa')
+            ->firstOrCreate(
+                ['nombre' => $nombre, 'id_empresa' => $idEmpresa],
+                ['enable' => '1', 'descripcion' => '']
+            )
+            ->id;
     }
 }

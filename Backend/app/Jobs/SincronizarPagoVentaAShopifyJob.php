@@ -32,7 +32,7 @@ class SincronizarPagoVentaAShopifyJob implements ShouldQueue
         $venta = Venta::withoutGlobalScopes()->find($this->ventaId);
 
         if (!$venta) {
-            Log::warning("SincronizarPagoVentaAShopifyJob omitido: Venta #{$this->ventaId} no encontrada.");
+            Log::channel('shopify')->warning("SincronizarPagoVentaAShopifyJob omitido: Venta #{$this->ventaId} no encontrada.");
             return;
         }
 

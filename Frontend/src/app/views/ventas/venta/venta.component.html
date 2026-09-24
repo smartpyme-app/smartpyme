@@ -118,6 +118,13 @@
         <span *ngIf="!loading && venta.estado == 'Pre-venta'">Cotización</span>
     </h2>
     <div>
+        <button *ngIf="venta.referencia_shopify && !venta.sello_mh"
+            class="btn btn-default me-2"
+            tooltip="Iguala líneas, envío y totales con el pedido actual de Shopify."
+            [disabled]="consolidandoShopify"
+            (click)="consolidarShopify()">
+            <i class="fa fa-sync"></i> Consolidar venta con Shopify
+        </button>
         <a *ngIf="venta.saldo > 0 && venta.estado == 'Pendiente'" (click)="openAbono(mabono, venta)"
             class="btn btn-default me-2">
             <i class="fas fa-fw fa-hand-holding-usd"></i> Pagar

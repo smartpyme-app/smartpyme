@@ -49,12 +49,12 @@ class ProcessShopifyProductBatch implements ShouldQueue
         $empresa = Empresa::find($user->id_empresa);
 
         if (!$user) {
-            Log::error("Usuario no encontrado para Shopify", ['user_id' => $this->userId]);
+            Log::channel('shopify')->error("Usuario no encontrado para Shopify", ['user_id' => $this->userId]);
             return;
         }
 
         try {
-            Log::info("Procesando lote Shopify {$this->batchNumber} de {$this->totalBatches}", [
+            Log::channel('shopify')->info("Procesando lote Shopify {$this->batchNumber} de {$this->totalBatches}", [
                 'productos' => count($this->productIds)
             ]);
 
@@ -65,7 +65,7 @@ class ProcessShopifyProductBatch implements ShouldQueue
                 ->get();
 
             if ($productos->isEmpty()) {
-                Log::info("No hay productos válidos en el lote Shopify {$this->batchNumber}");
+                Log::channel('shopify')->info("No hay productos válidos en el lote Shopify {$this->batchNumber}");
                 $this->updateProgress($user, $empresa);
                 return;
             }
@@ -80,7 +80,7 @@ class ProcessShopifyProductBatch implements ShouldQueue
                     // Procesar mini-lote
                     $result = $exportService->exportarProductos($user, $productosMiniBatch, $this->bodegaId);
 
-                    Log::info("Mini-lote Shopify procesado", [
+                    Log::channel('shopify')->info("Mini-lote Shopify procesado", [
                         'lote' => $this->batchNumber,
                         'productos' => count($productosMiniBatch),
                         'resultado' => [
@@ -93,14 +93,14 @@ class ProcessShopifyProductBatch implements ShouldQueue
                     // Pausa más larga para Shopify (rate limit de 40 req/seg)
                     sleep(5);
                 } catch (\Exception $e) {
-                    Log::error("Error procesando mini-lote Shopify", [
+                    Log::channel('shopify')->error("Error procesando mini-lote Shopify", [
                         'lote' => $this->batchNumber,
                         'error' => $e->getMessage()
                     ]);
 
                     // Si es error de rate limit, esperar más tiempo
                     if (str_contains($e->getMessage(), 'rate') || str_contains($e->getMessage(), '429')) {
-                        Log::warning("Rate limit detectado, esperando 30 segundos");
+                        Log::channel('shopify')->warning("Rate limit detectado, esperando 30 segundos");
                         sleep(30);
                     }
 
@@ -111,9 +111,9 @@ class ProcessShopifyProductBatch implements ShouldQueue
 
             $this->updateProgress($user, $empresa);
 
-            Log::info("Lote Shopify {$this->batchNumber} completado");
+            Log::channel('shopify')->info("Lote Shopify {$this->batchNumber} completado");
         } catch (\Exception $e) {
-            Log::error("Error procesando lote Shopify {$this->batchNumber}", [
+            Log::channel('shopify')->error("Error procesando lote Shopify {$this->batchNumber}", [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
@@ -131,7 +131,7 @@ class ProcessShopifyProductBatch implements ShouldQueue
             $empresa->shopify_sync_status = 'completed';
             $empresa->shopify_last_sync = now();
 
-            Log::info("Exportación a Shopify completada", [
+            Log::channel('shopify')->info("Exportación a Shopify completada", [
                 'empresa_id' => $empresa->id
             ]);
         }
