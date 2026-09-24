@@ -118,6 +118,21 @@ export class ProductoShopifySyncComponent {
         });
     }
 
+    public nombreImpuesto(): string {
+        const pais = this.apiService.auth_user()?.empresa?.pais;
+        const nombres: Record<string, string> = {
+            'El Salvador': 'IVA',
+            'Guatemala': 'IVA',
+            'Nicaragua': 'IVA',
+            'Costa Rica': 'IVA',
+            'México': 'IVA',
+            'Honduras': 'ISV',
+            'Panamá': 'ITBMS',
+            'Belice': 'GST',
+        };
+        return nombres[pais] || 'Impuesto';
+    }
+
     private configInicial() {
         return {
             direccion: 'sp_to_shopify',
