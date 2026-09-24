@@ -45,7 +45,7 @@
                 <ng-option value="">Proveedor</ng-option>
                 @for (proveedor of proveedores; track proveedor.id) {
                     <ng-option [value]="proveedor.id">
-                        {{ proveedor.tipo == 'Empresa' ? proveedor.nombre_empresa : proveedor.nombre_completo }}
+                        {{ proveedor.tipo == 'Empresa' ? proveedor.nombre_empresa : proveedor.nombre_completo }}@if (proveedor.nombre_comercial) { ({{ proveedor.nombre_comercial }}) }
                     </ng-option>
                 }
             </ng-select>
@@ -152,7 +152,7 @@
                     <ng-option value="">Todos</ng-option>
                     @for (proveedor of proveedores; track proveedor.id) {
                         <ng-option [value]="proveedor.id">
-                            {{ proveedor.tipo == 'Empresa' ? proveedor.nombre_empresa : proveedor.nombre_completo }}
+                            {{ proveedor.tipo == 'Empresa' ? proveedor.nombre_empresa : proveedor.nombre_completo }}@if (proveedor.nombre_comercial) { ({{ proveedor.nombre_comercial }}) }
                         </ng-option>
                     }
                 </ng-select>

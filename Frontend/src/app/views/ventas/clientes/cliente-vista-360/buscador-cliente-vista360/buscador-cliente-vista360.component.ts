@@ -91,10 +91,14 @@ export class BuscadorClienteVista360Component implements OnDestroy {
   }
 
   nombreCliente(cliente: any): string {
-    if (cliente?.tipo === 'Empresa' && cliente?.nombre_empresa) {
-      return cliente.nombre_empresa;
+    const legal = cliente?.tipo === 'Empresa' && cliente?.nombre_empresa
+      ? cliente.nombre_empresa
+      : (cliente?.nombre_completo || cliente?.nombre || 'Sin nombre');
+    const comercial = String(cliente?.nombre_comercial ?? '').trim();
+    if (!comercial || comercial.toLowerCase() === String(legal).trim().toLowerCase()) {
+      return legal;
     }
-    return cliente?.nombre_completo || cliente?.nombre || 'Sin nombre';
+    return `${legal} (${comercial})`;
   }
 
   detalleCliente(cliente: any): string {

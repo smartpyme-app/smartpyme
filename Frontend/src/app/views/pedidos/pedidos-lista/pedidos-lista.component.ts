@@ -635,10 +635,13 @@ export class PedidosListaComponent implements OnInit, OnDestroy {
     if (!c) {
       return '—';
     }
-    return (c as { nombre_empresa?: string; nombre_completo?: string })
-      .nombre_empresa ||
-      (c as { nombre_completo?: string }).nombre_completo ||
-      '—';
+    const parte = c as { nombre_empresa?: string; nombre_completo?: string; nombre_comercial?: string };
+    const legal = parte.nombre_empresa || parte.nombre_completo || '—';
+    const comercial = String(parte.nombre_comercial ?? '').trim();
+    if (!comercial || comercial.toLowerCase() === legal.trim().toLowerCase()) {
+      return legal;
+    }
+    return `${legal} (${comercial})`;
   }
 
   tieneBoxfulShipmentValido(p: any): boolean {

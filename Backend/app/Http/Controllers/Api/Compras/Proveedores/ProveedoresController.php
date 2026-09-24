@@ -27,6 +27,7 @@ class ProveedoresController extends Controller
                     ->when($request->buscador, function($query) use ($request){
                         return $query->where('nombre', 'like' ,'%' . $request->buscador . '%')
                                     ->orwhere('nombre_empresa', 'like',  '%'. $request->buscador .'%')
+                                    ->orwhere('nombre_comercial', 'like',  '%'. $request->buscador .'%')
                                     ->orwhere('nit', 'like',  '%'. $request->buscador .'%')
                                     ->orwhere('giro', 'like',  '%'. $request->buscador .'%')
                                     ->orwhere('telefono', 'like',  '%'. $request->buscador .'%')

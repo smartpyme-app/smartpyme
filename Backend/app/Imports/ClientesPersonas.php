@@ -70,7 +70,7 @@ class ClientesPersonas implements ToModel, WithHeadingRow, WithValidation, WithC
     public function prepareForValidation(array $row, $index): array
     {
         $stringKeys = [
-            'nombre', 'apellido', 'codigo_de_cliente', 'codigo_cliente', 'dui', 'nit', 'rtn', 'direccion',
+            'nombre', 'apellido', 'nombre_comercial', 'codigo_de_cliente', 'codigo_cliente', 'dui', 'nit', 'rtn', 'direccion',
             'departamento', 'cod_departamento', 'distrito', 'cod_distrito', 'municipio', 'cod_municipio',
             'telefono', 'tipo_contribuyente', 'pais', 'documento_identidad',
             'provincia', 'estado', 'ciudad', 'n_de_documento',
@@ -137,6 +137,7 @@ class ClientesPersonas implements ToModel, WithHeadingRow, WithValidation, WithC
 
         $cliente = new Cliente();
         $cliente->nombre = $row['nombre'];
+        $cliente->nombre_comercial = $row['nombre_comercial'] ?? null;
         $apellidoRaw = $row['apellido'] ?? '';
         $cliente->apellido = is_string($apellidoRaw) ? trim($apellidoRaw) : '';
         $codigoCliente = $row['codigo_de_cliente'] ?? $row['codigo_cliente'] ?? null;
@@ -195,6 +196,7 @@ class ClientesPersonas implements ToModel, WithHeadingRow, WithValidation, WithC
         if ($this->esElSalvador) {
             return [
                 'nombre' => 'required|string|max:255',
+                'nombre_comercial' => 'nullable|string|max:255',
                 'apellido' => 'nullable|string|max:255',
                 'dui' => 'nullable|string|max:20',
                 'nit' => 'nullable|string|max:20',
@@ -215,6 +217,7 @@ class ClientesPersonas implements ToModel, WithHeadingRow, WithValidation, WithC
         return [
             'nombre' => 'required|string|max:255',
             'apellido' => 'nullable|string|max:255',
+            'nombre_comercial' => 'nullable|string|max:255',
             'dui' => 'nullable|string|max:50',
             'documento_identidad' => 'nullable|string|max:50',
             'n. de documento' => 'nullable|string|max:50',

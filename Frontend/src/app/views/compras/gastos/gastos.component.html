@@ -56,7 +56,7 @@
             <ng-select name="id_proveedor" (change)="filtrarGastos()" [(ngModel)]="filtros.id_proveedor" class="form-select p-0 border-0 bg-default  w-auto">
                 <ng-option value="">Proveedor</ng-option>
                 <ng-option *ngFor="let proveedor of proveedores" [value]="proveedor.id">
-                    {{ proveedor.tipo == 'Empresa' ? proveedor.nombre_empresa : proveedor.nombre_completo | truncate:30 }}
+                    {{ proveedor.tipo == 'Empresa' ? proveedor.nombre_empresa : proveedor.nombre_completo| truncate:30 }}@if (proveedor.nombre_comercial) { ({{ proveedor.nombre_comercial }}) }
                 </ng-option>
             </ng-select>
         </div>
@@ -190,7 +190,7 @@
                 <ng-select [(ngModel)]="filtros.id_proveedor" class="form-select p-0" name="filtros.id_proveedor">
                     <ng-option value="">Todos</ng-option>
                     <ng-option *ngFor="let proveedor of proveedores" [value]="proveedor.id">
-                        {{ proveedor.tipo == 'Empresa' ? proveedor.nombre_empresa : proveedor.nombre_completo | truncate:30 }}
+                        {{ proveedor.tipo == 'Empresa' ? proveedor.nombre_empresa : proveedor.nombre_completo| truncate:30 }}@if (proveedor.nombre_comercial) { ({{ proveedor.nombre_comercial }}) }
                     </ng-option>
                 </ng-select>
             </div>
@@ -479,7 +479,7 @@
                   [name]="'bg-' + item.uid + '-prov'"
                   placeholder="Seleccione proveedor">
                   <ng-option [value]="p.id" *ngFor="let p of proveedores">
-                    {{ p.tipo == 'Empresa' ? p.nombre_empresa : p.nombre_completo }}
+                    {{ p.tipo == 'Empresa' ? p.nombre_empresa : p.nombre_completo }}@if (p.nombre_comercial) { ({{ p.nombre_comercial }}) }
                   </ng-option>
                 </ng-select>
                 <app-crear-proveedor

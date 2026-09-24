@@ -13,6 +13,7 @@ class ClientesPersonasPlantillaExport implements FromCollection, WithHeadings
         return [
             'nombre',
             'apellido',
+            'nombre_comercial',
             'dui',
             'nit',
             'direccion',

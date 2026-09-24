@@ -79,7 +79,7 @@
                     <ng-option value=""> Consumidor final </ng-option>
                     <ng-option value="" *ngIf="loading"> Cargando clientes... </ng-option>
                     <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
-                        {{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
+                        {{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}@if (cliente.nombre_comercial) { ({{ cliente.nombre_comercial }}) }
                     </ng-option>
                 </ng-select>
                 <app-crear-cliente [id_cliente]="venta.id_cliente" (update)="setCliente($event)"></app-crear-cliente>
@@ -836,7 +836,7 @@
       <div class="alert alert-info mb-3">
         <div class="d-flex justify-content-between align-items-center">
           <div>
-            <strong>{{ venta.cliente?.nombre_completo || venta.cliente?.nombre_empresa }}</strong>
+            <strong>{{ venta.cliente?.nombre_completo || venta.cliente?.nombre_empresa }}@if (venta.cliente?.nombre_comercial) { ({{ venta.cliente.nombre_comercial }}) }</strong>
             <small class="d-block text-muted" *ngIf="puntosInfoModal.configuracion">
               {{ puntosInfoModal.configuracion.tipo_cliente }} - Nivel {{ puntosInfoModal.configuracion.nivel }}
             </small>

@@ -17,7 +17,7 @@
           <ng-select [(ngModel)]="form.id_proveedor" class="form-select p-0 flex-grow-1" name="id_proveedor" [clearable]="true" [searchable]="true" placeholder="Buscar proveedor">
             @for (proveedor of proveedores; track proveedor.id) {
               <ng-option [value]="proveedor.id">
-                {{ proveedor.tipo == 'Empresa' ? proveedor.nombre_empresa : proveedor.nombre_completo }}
+                {{ proveedor.tipo == 'Empresa' ? proveedor.nombre_empresa : proveedor.nombre_completo }}@if (proveedor.nombre_comercial) { ({{ proveedor.nombre_comercial }}) }
               </ng-option>
             }
           </ng-select>

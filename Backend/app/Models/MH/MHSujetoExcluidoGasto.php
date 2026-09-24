@@ -157,7 +157,7 @@ class MHSujetoExcluidoGasto extends Model
                 "sujetoExcluido" =>  [
                     "tipoDocumento" => $this->gasto->proveedor->tipo_documento, //36 NIT 13 DUI
                     "numDocumento" => $this->gasto->proveedor->num_documento,
-                    "nombre" => $this->gasto->nombre_proveedor,
+                    "nombre" => $this->gasto->nombreProveedorFiscal(),
                     "codActividad" => $this->gasto->proveedor->cod_giro ? $this->gasto->proveedor->cod_giro : NULL,
                     "descActividad" => $this->gasto->proveedor->giro ? $this->gasto->proveedor->giro : NULL,
                     "direccion" => [

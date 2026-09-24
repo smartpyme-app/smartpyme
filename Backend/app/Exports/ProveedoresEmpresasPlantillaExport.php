@@ -12,6 +12,7 @@ class ProveedoresEmpresasPlantillaExport implements FromCollection, WithHeadings
     {
         return [
             'Nombre empresa',
+            'Nombre_comercial',
             'NCR',
             'Giro',
             'Tipo_contribuyente',

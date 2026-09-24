@@ -69,7 +69,7 @@ class ClientesController extends Controller
         $clientes = Cliente::withoutGlobalScope('empresa')
             ->with('empresa')
             ->select([
-                'id', 'nombre', 'apellido', 'nombre_empresa', 'tipo', 'tipo_contribuyente',
+                'id', 'nombre', 'apellido', 'nombre_empresa', 'nombre_comercial', 'tipo', 'tipo_contribuyente',
                 'nit', 'dui', 'ncr', 'giro', 'telefono', 'correo', 'direccion',
                 'red_social', 'enable', 'fecha_cumpleanos', 'created_at', 'updated_at', 'id_empresa',
                 'codigo_cliente',
@@ -89,6 +89,7 @@ class ClientesController extends Controller
                     $q->where('nombre', 'like', $searchTerm)
                         ->orWhere('apellido', 'like', $searchTerm)
                         ->orWhere('nombre_empresa', 'like', $searchTerm)
+                        ->orWhere('nombre_comercial', 'like', $searchTerm)
                         ->orWhere('nit', 'like', $searchTerm)
                         ->orWhere('correo', 'like', $searchTerm)
                         ->orWhere('giro', 'like', $searchTerm)
@@ -127,7 +128,7 @@ class ClientesController extends Controller
     {
         // Optimización: Remover withSum que es muy lento y usar lazy loading si es necesario
         $clientes = Cliente::select([
-                'id', 'nombre', 'apellido', 'nombre_empresa', 'tipo', 'tipo_contribuyente',
+                'id', 'nombre', 'apellido', 'nombre_empresa', 'nombre_comercial', 'tipo', 'tipo_contribuyente',
                 'nit', 'dui', 'ncr', 'giro', 'telefono', 'correo', 'direccion',
                 'red_social', 'enable', 'fecha_cumpleanos', 'created_at', 'updated_at', 'id_empresa',
                 'habilita_credito', 'dias_credito', 'limite_credito',
@@ -142,6 +143,7 @@ class ClientesController extends Controller
                     $q->where('nombre', 'like', $searchTerm)
                       ->orWhere('apellido', 'like', $searchTerm)
                       ->orWhere('nombre_empresa', 'like', $searchTerm)
+                        ->orWhere('nombre_comercial', 'like', $searchTerm)
                       ->orWhere('nit', 'like', $searchTerm)
                       ->orWhere('giro', 'like', $searchTerm)
                       ->orWhere('telefono', 'like', $searchTerm)
@@ -179,7 +181,7 @@ class ClientesController extends Controller
 
     public function list()
     {
-        $clientes = Cliente::select(['id', 'nombre', 'apellido', 'nombre_empresa', 'tipo'])
+        $clientes = Cliente::select(['id', 'nombre', 'apellido', 'nombre_empresa', 'nombre_comercial', 'tipo'])
             ->where('enable', true)
             ->orderBy('nombre', 'asc')
             ->get();
@@ -196,11 +198,12 @@ class ClientesController extends Controller
             return response()->json([], 200);
         }
 
-        $clientes = Cliente::select(['id', 'nombre', 'apellido', 'nombre_empresa', 'tipo', 'correo', 'telefono'])
+        $clientes = Cliente::select(['id', 'nombre', 'apellido', 'nombre_empresa', 'nombre_comercial', 'tipo', 'correo', 'telefono'])
             ->where('enable', true)
             ->where(function ($query) use ($term) {
                 $query->where('nombre', 'LIKE', "%{$term}%")
                 ->orWhere('nombre_empresa', 'LIKE', "%{$term}%")
+                ->orWhere('nombre_comercial', 'LIKE', "%{$term}%")
                 ->orWhere('correo', 'LIKE', "%{$term}%")
                 ->orWhere('telefono', 'LIKE', "%{$term}%")
                 ->orWhereRaw("CONCAT(nombre, ' ', apellido) LIKE ?", ["%{$term}%"]);
@@ -254,6 +257,7 @@ class ClientesController extends Controller
 
         $rules = [
             'nombre'         => 'required_if:tipo,"Persona"',
+            'nombre_comercial' => 'nullable|string|max:255',
             'apellido'       => 'required_if:tipo,"Persona"',
             'nombre_empresa' => 'required_if:tipo,"Empresa"',
             'id_empresa'     => 'required|numeric|exists:empresas,id',
@@ -316,6 +320,7 @@ class ClientesController extends Controller
 
         $rules = [
             'nombre'         => 'required_if:tipo,"Persona"',
+            'nombre_comercial' => 'nullable|string|max:255',
             'apellido'       => 'required_if:tipo,"Persona"',
             'nombre_empresa' => 'required_if:tipo,"Empresa"',
             'id_empresa'     => 'required|numeric|exists:empresas,id',
@@ -410,6 +415,7 @@ class ClientesController extends Controller
     {
         $rules = [
             'nombre'         => 'required_if:tipo,"Persona"',
+            'nombre_comercial' => 'nullable|string|max:255',
             'apellido'       => 'required_if:tipo,"Persona"',
             'nombre_empresa' => 'required_if:tipo,"Empresa"',
             'id_empresa'     => 'required|numeric|exists:empresas,id',
@@ -484,6 +490,7 @@ class ClientesController extends Controller
 
         $rules = [
             'nombre'         => 'required_if:tipo,"Persona"',
+            'nombre_comercial' => 'nullable|string|max:255',
             'apellido'       => 'required_if:tipo,"Persona"',
             'nombre_empresa' => 'required_if:tipo,"Empresa"',
             'id_empresa'     => 'required|numeric|exists:empresas,id',

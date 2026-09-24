@@ -25,6 +25,7 @@ class StoreProveedorRequest extends FormRequest
             'nombre' => 'required_if:tipo,"Persona"|nullable|string|max:255',
             'apellido' => 'required_if:tipo,"Persona"|nullable|string|max:255',
             'nombre_empresa' => 'required_if:tipo,"Empresa"|nullable|string|max:255',
+            'nombre_comercial' => 'nullable|string|max:255',
             'tipo' => 'required|string|max:255|in:Persona,Empresa',
             'id_empresa' => 'required|integer|exists:empresas,id',
             'ncr' => [

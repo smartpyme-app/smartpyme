@@ -157,7 +157,7 @@ class MHSujetoExcluidoCompra extends Model
                 "sujetoExcluido" =>  [
                     "tipoDocumento" => $this->compra->proveedor->tipo_documento, //36 NIT 13 DUI
                     "numDocumento" => $this->compra->proveedor->num_documento,
-                    "nombre" => $this->compra->nombre_proveedor,
+                    "nombre" => $this->compra->nombreProveedorFiscal(),
                     "codActividad" => $this->compra->proveedor->cod_giro ? $this->compra->proveedor->cod_giro : NULL,
                     "descActividad" => $this->compra->proveedor->giro ? $this->compra->proveedor->giro : NULL,
                     "direccion" => [

@@ -76,7 +76,7 @@ class CotizacionVenta extends AuditableModel
     {
         $cliente = $this->cliente()->first();
         if ($cliente) {
-            return $cliente->tipo == 'Empresa' ? $cliente->nombre_empresa : $cliente->nombre . ' ' . $cliente->apellido;
+            return $cliente->nombreParaDocumento();
         }
         return 'Consumidor Final';
     }

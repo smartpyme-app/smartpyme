@@ -147,7 +147,7 @@
                 </td>
                 <td style="width: 50%; vertical-align: top;">
                     @if ($DTE['receptor'])
-                        <p><b>Nombre o razón social: </b>{{ $DTE['receptor']['nombre'] }}</p>
+                        <p><b>Nombre o razón social: </b>{{ \App\Support\NombreComercial::mostrar($DTE['receptor']['nombre'] ?? '', $registro ?? ($venta ?? null)) }}</p>
                         <p><b>Tipo de Documento:</b>
                             @if ($DTE['receptor']['tipoDocumento'] == '36')
                                 NIT

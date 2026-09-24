@@ -101,7 +101,7 @@ class OrdenCompra extends AuditableModel
     {
         $proveedor = $this->proveedor()->first();
         if ($proveedor) {
-            return $proveedor->tipo == 'Empresa' ? $proveedor->nombre_empresa : $proveedor->nombre . ' ' . $proveedor->apellido;
+            return $proveedor->nombreParaDocumento();
         }
         return 'Consumidor Final';
     }

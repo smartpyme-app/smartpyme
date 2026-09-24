@@ -667,7 +667,7 @@
       <div class="alert alert-info mb-3">
         <div class="d-flex justify-content-between align-items-center">
           <div>
-            <strong>{{ venta.cliente?.nombre_completo || venta.cliente?.nombre_empresa }}</strong>
+            <strong>{{ venta.cliente?.nombre_completo || venta.cliente?.nombre_empresa }}@if (venta.cliente?.nombre_comercial) { ({{ venta.cliente.nombre_comercial }}) }</strong>
             <small class="d-block text-muted" *ngIf="puntosInfoModal.configuracion">
               {{ puntosInfoModal.configuracion.tipo_cliente }} - Nivel {{ puntosInfoModal.configuracion.nivel }}
             </small>

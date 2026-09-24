@@ -290,7 +290,7 @@ class MH extends Model
               "tipoDocumento" => $this->venta->cliente->tipo_documento, //36 NIT 13 DUI
               "numDocumento" => $this->venta->cliente->num_documento,
               "nrc" => NULL,
-              "nombre" => $this->venta->nombre_cliente,
+              "nombre" => $this->venta->nombreClienteFiscal(),
               "codActividad" => $this->venta->cliente->cod_giro ? $this->venta->cliente->cod_giro : NULL,
               "descActividad" => $this->venta->cliente->giro ? $this->venta->cliente->giro : NULL,
               "direccion" => [
@@ -310,7 +310,7 @@ class MH extends Model
                 "nit" => NULL,
                 "nombreComercial" => NULL,
                 "nrc" => NULL,
-                "nombre" => $this->venta->nombre_cliente ?? 'Consumidor Final',
+                "nombre" => $this->venta->nombreClienteFiscal(),
                 "codActividad" => NULL,
                 "descActividad" => NULL,
                 "direccion" => ["departamento" => NULL, "municipio" => NULL, "complemento" => NULL],

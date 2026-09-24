@@ -31,7 +31,7 @@ class ProveedoresPersonas implements ToModel, WithHeadingRow, WithValidation, Sk
     public function prepareForValidation(array $row, $index): array
     {
         $stringKeys = [
-            'nombre', 'apellido', 'dui', 'nit', 'rtn', 'n_de_identificacion',
+            'nombre', 'apellido', 'nombre_comercial', 'dui', 'nit', 'rtn', 'n_de_identificacion',
             'direccion', 'municipio', 'departamento', 'telefono', 'correo',
             'banco', 'tipo_cuenta', 'numero_cuenta', 'titular_cuenta', 'forma_pago',
         ];
@@ -64,6 +64,7 @@ class ProveedoresPersonas implements ToModel, WithHeadingRow, WithValidation, Sk
 
         $proveedor = new Proveedor();
         $proveedor->nombre = $row['nombre'];
+        $proveedor->nombre_comercial = $row['nombre_comercial'] ?? null;
         $proveedor->apellido = $row['apellido'];
         $proveedor->tipo = 'Persona';
         $proveedor->tipo_contribuyente = 'Pequeño';
@@ -93,6 +94,7 @@ class ProveedoresPersonas implements ToModel, WithHeadingRow, WithValidation, Sk
     {
         return [
             'nombre' => 'required|string',
+            'nombre_comercial' => 'nullable|string|max:255',
             'apellido' => 'required|string',
             'dui' => 'nullable|string',
             'n_de_identificacion' => 'nullable|string',

@@ -2,6 +2,7 @@
 
 namespace App\Models\Inventario;
 
+use App\Support\NombreComercial;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
@@ -19,7 +20,9 @@ class Proveedor extends Model
     public function getNombreProveedorAttribute()
     {   $proveedor = $this->proveedor()->first();
         if ($proveedor) {
-            return $proveedor->tipo == 'Persona' ? $proveedor->nombre . ' ' . $proveedor->apellido : $proveedor->nombre_empresa;
+            $legal = $proveedor->tipo == 'Persona' ? $proveedor->nombre . ' ' . $proveedor->apellido : $proveedor->nombre_empresa;
+
+            return NombreComercial::anexar($legal, $proveedor->nombre_comercial);
         }
         return 'Consumidor Final';
     }

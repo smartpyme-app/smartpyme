@@ -28,6 +28,7 @@ class ClienteService
                 $q->where('nombre', 'like', '%' . $request->buscador . '%')
                     ->orWhere('apellido', 'like', '%' . $request->buscador . '%')
                     ->orWhere('nombre_empresa', 'like', '%' . $request->buscador . '%')
+                    ->orWhere('nombre_comercial', 'like', '%' . $request->buscador . '%')
                     ->orWhere('nit', 'like', '%' . $request->buscador . '%')
                     ->orWhere('giro', 'like', '%' . $request->buscador . '%')
                     ->orWhere('telefono', 'like', '%' . $request->buscador . '%')
@@ -107,6 +108,7 @@ class ClienteService
             ->where(function ($query) use ($term) {
                 $query->where('nombre', 'LIKE', "%{$term}%")
                     ->orWhere('nombre_empresa', 'LIKE', "%{$term}%")
+                    ->orWhere('nombre_comercial', 'LIKE', "%{$term}%")
                     ->orWhere('correo', 'LIKE', "%{$term}%")
                     ->orWhere('telefono', 'LIKE', "%{$term}%")
                     ->orWhereRaw("CONCAT(nombre, ' ', apellido) LIKE ?", ["%{$term}%"]);
@@ -115,6 +117,7 @@ class ClienteService
                 CASE 
                     WHEN nombre LIKE '{$term}%' THEN 1
                     WHEN nombre_empresa LIKE '{$term}%' THEN 2
+                    WHEN nombre_comercial LIKE '{$term}%' THEN 2
                     WHEN CONCAT(nombre, ' ', apellido) LIKE '{$term}%' THEN 3
                     ELSE 4
                 END
@@ -138,6 +141,7 @@ class ClienteService
             $query->where('nombre', 'like', '%' . $txt . '%')
                 ->orWhere('apellido', 'like', $txt . '%')
                 ->orWhere('nombre_empresa', 'like', $txt . '%')
+                ->orWhere('nombre_comercial', 'like', '%' . $txt . '%')
                 ->orWhere('telefono', 'like', $txt . '%')
                 ->orWhere('empresa_telefono', 'like', $txt . '%')
                 ->orWhere('red_social', 'like', $txt . '%')

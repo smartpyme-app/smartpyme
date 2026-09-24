@@ -44,7 +44,7 @@
               <ng-option value="">Cliente</ng-option>
               @for (cliente of clientes; track cliente.id) {
                   <ng-option [value]="cliente.id">
-                      {{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
+                      {{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}@if (cliente.nombre_comercial) { ({{ cliente.nombre_comercial }}) }
                   </ng-option>
               }
           </ng-select>
@@ -206,7 +206,7 @@
                   <ng-option value="">Todos</ng-option>
                   @for (cliente of clientes; track cliente.id) {
                       <ng-option [value]="cliente.id">
-                          {{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
+                          {{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}@if (cliente.nombre_comercial) { ({{ cliente.nombre_comercial }}) }
                       </ng-option>
                   }
               </ng-select>

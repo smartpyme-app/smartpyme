@@ -12,6 +12,7 @@ class ClientesEmpresasPlantillaExport implements FromCollection, WithHeadings
     {
         return [
             'nombre_empresa',
+            'nombre_comercial',
             'ncr',
             'giro',
             'tipo_contribuyente',

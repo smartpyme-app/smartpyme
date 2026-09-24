@@ -55,6 +55,12 @@
                     </div> -->
                     <!-- <h6 class="col-12 pb-2 my-3">Información de la empresa (Opcional)</h6> -->
 
+                    @if (cliente.nombre_comercial) {
+                        <div class="form-group col-6 col-lg-6">
+                            <label class="fw-medium">Nombre comercial:</label>
+                            <p>{{ cliente.nombre_comercial }}</p>
+                        </div>
+                    }
                     @if (mostrarCampo('nombre_empresa')) {
                         <div class="form-group col-6 col-lg-6">
                             <label class="fw-medium">Empresa:</label>

@@ -118,7 +118,7 @@ class Evento extends Model
     public function getNombreClienteAttribute()
     {   $cliente = $this->cliente()->first();
         if ($cliente) {
-            return $cliente->tipo == 'Empresa' ? $cliente->nombre_empresa : $cliente->nombre . ' ' . $cliente->apellido;
+            return $cliente->nombreParaDocumento();
         }
         return 'Consumidor Final';
     }

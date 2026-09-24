@@ -31,7 +31,7 @@ class ProveedoresEmpresas implements ToModel, WithHeadingRow, WithValidation, Sk
     public function prepareForValidation(array $row, $index): array
     {
         $stringKeys = [
-            'nombre_empresa', 'ncr', 'giro', 'tipo_contribuyente', 'dui', 'nit', 'rtn',
+            'nombre_empresa', 'nombre_comercial', 'ncr', 'giro', 'tipo_contribuyente', 'dui', 'nit', 'rtn',
             'n_de_identificacion', 'direccion', 'municipio', 'departamento', 'telefono', 'correo',
             'banco', 'tipo_cuenta', 'numero_cuenta', 'titular_cuenta', 'forma_pago',
         ];
@@ -72,6 +72,7 @@ class ProveedoresEmpresas implements ToModel, WithHeadingRow, WithValidation, Sk
 
         $proveedor = new Proveedor();
         $proveedor->nombre_empresa = $row['nombre_empresa'];
+        $proveedor->nombre_comercial = $row['nombre_comercial'] ?? null;
         // Honduras: RTN; El Salvador: NCR
         $proveedor->ncr = $ncr !== '' ? $ncr : ($rtn !== '' ? $rtn : null);
         $proveedor->giro = $row['giro'] ?? null;
@@ -103,6 +104,7 @@ class ProveedoresEmpresas implements ToModel, WithHeadingRow, WithValidation, Sk
     {
         return [
             'nombre_empresa' => 'required|string',
+            'nombre_comercial' => 'nullable|string|max:255',
             // SV: ncr; HN: rtn (equivalente)
             'ncr' => 'nullable|string',
             'rtn' => 'nullable|string',
