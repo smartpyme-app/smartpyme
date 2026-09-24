@@ -72,6 +72,8 @@
                             <div>
                                 <small class="text-muted d-block" style="font-size: 0.75rem;">SmartPyme (Local)</small>
                                 <span class="fs-5 fw-bold text-primary">{{ comparativaShopify.local?.precio_venta | currency:'USD':'symbol':'1.2' }}</span>
+                                <small class="text-muted d-block" style="font-size: 0.7rem;">Con IVA</small>
+                                <small class="text-muted d-block" style="font-size: 0.7rem;">Sin IVA: {{ comparativaShopify.local?.precio | currency:'USD':'symbol':'1.2' }}</small>
                             </div>
                             <i class="fa fa-arrows-left-right text-muted"></i>
                             <div class="text-end">
@@ -80,6 +82,7 @@
                                     {{ comparativaShopify.shopify?.price | currency:'USD':'symbol':'1.2' }}
                                 </span>
                                 <span class="text-muted" *ngIf="comparativaShopify.shopify?.price === null || comparativaShopify.shopify?.price === undefined">—</span>
+                                <small class="text-muted d-block" style="font-size: 0.7rem;">Con IVA</small>
                             </div>
                         </div>
                     </div>
@@ -162,7 +165,7 @@
                                 <span *ngIf="syncShopifyConfig.direccion === 'sp_to_shopify'" class="badge bg-primary ms-auto">Activo</span>
                             </div>
                             <p class="small text-muted mb-0">
-                                Actualiza la tienda en línea con los datos de SmartPyme (Precio: <strong class="text-dark">{{ comparativaShopify.local?.precio_venta | currency:'USD':'symbol':'1.2' }}</strong>, Stock: <strong class="text-dark">{{ comparativaShopify.local?.stock_total }}</strong> unid.).
+                                Actualiza la tienda en línea con los datos de SmartPyme (Precio con IVA: <strong class="text-dark">{{ comparativaShopify.local?.precio_venta | currency:'USD':'symbol':'1.2' }}</strong>, Stock: <strong class="text-dark">{{ comparativaShopify.local?.stock_total }}</strong> unid.).
                             </p>
                         </div>
                     </div>
@@ -185,7 +188,7 @@
                                 <span *ngIf="syncShopifyConfig.direccion === 'shopify_to_sp'" class="badge bg-success ms-auto">Activo</span>
                             </div>
                             <p class="small text-muted mb-0">
-                                Actualiza SmartPyme con los datos de Shopify (Precio: <strong class="text-dark">{{ comparativaShopify.shopify?.price !== null && comparativaShopify.shopify?.price !== undefined ? (comparativaShopify.shopify?.price | currency:'USD':'symbol':'1.2') : '—' }}</strong>, Stock: <strong class="text-dark">{{ comparativaShopify.shopify?.inventory_quantity !== null && comparativaShopify.shopify?.inventory_quantity !== undefined ? comparativaShopify.shopify?.inventory_quantity : '—' }}</strong> unid.).
+                                Actualiza SmartPyme con los datos de Shopify (Precio con IVA: <strong class="text-dark">{{ comparativaShopify.shopify?.price !== null && comparativaShopify.shopify?.price !== undefined ? (comparativaShopify.shopify?.price | currency:'USD':'symbol':'1.2') : '—' }}</strong>, Stock: <strong class="text-dark">{{ comparativaShopify.shopify?.inventory_quantity !== null && comparativaShopify.shopify?.inventory_quantity !== undefined ? comparativaShopify.shopify?.inventory_quantity : '—' }}</strong> unid.).
                             </p>
                         </div>
                     </div>
