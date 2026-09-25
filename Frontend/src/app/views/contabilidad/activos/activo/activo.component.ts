@@ -366,7 +366,6 @@ export class ActivoComponent extends BaseComponent implements OnInit {
                 this.origenEgreso = null;
                 this.origenCompraDetalle = null;
                 this.alertService.success('Guardado', 'Activo registrado correctamente.');
-                this.cargarDepreciaciones(activo.id);
 
                 const compraId = this.compraCapitalizacionId;
                 if (compraId && activo.id_compra_detalle) {
@@ -375,11 +374,12 @@ export class ActivoComponent extends BaseComponent implements OnInit {
                         .subscribe((pendientes: any[]) => {
                             if (pendientes?.length) {
                                 this.router.navigate(['/contabilidad/activos/capitalizar-compra', compraId]);
+                            } else {
+                                this.router.navigate(['/contabilidad/activos']);
                             }
-                            this.cdr.markForCheck();
-                        }, () => this.cdr.markForCheck());
+                        }, () => this.router.navigate(['/contabilidad/activos']));
                 } else {
-                    this.cdr.markForCheck();
+                    this.router.navigate(['/contabilidad/activos']);
                 }
             }, error => {
 
