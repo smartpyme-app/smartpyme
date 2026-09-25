@@ -7,6 +7,7 @@ import {
   OnInit,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ActivatedRoute } from '@angular/router';
 import { RestauranteService } from '@services/restaurante.service';
 import { AlertService } from '@services/alert.service';
 import { RestauranteRealtimeService } from '@services/restaurante-realtime.service';
@@ -28,14 +29,28 @@ export class CocinaComponent implements OnInit {
   comandasListas: any[] = [];
   loading = true;
   actualizandoId: number | null = null;
+  titulo = 'Pantalla general';
+  pantallaId: number | null = null;
 
   constructor(
     private restauranteService: RestauranteService,
     private alertService: AlertService,
     private realtime: RestauranteRealtimeService,
+    private route: ActivatedRoute,
   ) {}
 
   ngOnInit(): void {
+    const id = this.route.snapshot.paramMap.get('id');
+    if (id && id !== 'general') {
+      this.pantallaId = Number(id);
+    }
+    this.restauranteService.getPantallas({ activo: true }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (filas) => {
+        const pantalla = (filas || []).find((p) => p.id === this.pantallaId);
+        this.titulo = pantalla?.nombre || (this.pantallaId ? 'Pantalla' : 'Pantalla general');
+        this.cdr.markForCheck();
+      },
+    });
     this.cargarComandas();
     this.realtime.watch('cocina', () => this.cargarComandas());
     this.realtime.onRecover(() => this.cargarComandas());
@@ -52,7 +67,7 @@ export class CocinaComponent implements OnInit {
     this.loading = true;
     this.cdr.markForCheck();
     this.restauranteService
-      .getComandas()
+      .getComandas(this.pantallaId ?? undefined)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (comandas) => {
@@ -90,6 +105,19 @@ export class CocinaComponent implements OnInit {
 
   marcarServida(comanda: any): void {
     this.cambiarEstado(comanda, 'servido');
+  }
+
+  nombrePantalla(comanda: { pantalla?: { nombre?: string } | null; destino?: string } | null | undefined): string {
+    if (comanda?.pantalla?.nombre) {
+      return comanda.pantalla.nombre;
+    }
+    if (comanda?.destino === 'barra') {
+      return 'Barra';
+    }
+    if (comanda?.destino === 'cocina') {
+      return 'Cocina';
+    }
+    return '';
   }
 
   nombreLineaOrden(item: { producto?: { nombre?: string } | null; presentacion?: { nombre_comercial?: string } | null } | null | undefined): string {

@@ -20,6 +20,7 @@ use App\Support\Restaurante\PresentacionPos;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 
 class OrdenDetalleController extends Controller
@@ -63,23 +64,63 @@ class OrdenDetalleController extends Controller
         return null;
     }
 
+    /**
+     * @return array<int, Comanda>
+     */
+    private function crearComandasEliminado(
+        SesionMesa $sesion,
+        OrdenDetalle $item,
+        bool $itemHabiaSidoEnviado,
+        string $motivoCodigo,
+        ?string $motivoDetalle,
+    ): array {
+        $pantallaIds = [];
+        if (Schema::hasTable('restaurante_envio_pantalla')) {
+            $pantallaIds = DB::table('restaurante_envio_pantalla')
+                ->where('orden_detalle_id', $item->id)
+                ->pluck('pantalla_id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+        }
+        if ($pantallaIds === []) {
+            $pantallaIds = [null];
+        }
+
+        $comandas = [];
+        foreach ($pantallaIds as $pantallaId) {
+            $comandas[] = $this->crearComandaEliminado(
+                $sesion,
+                $item,
+                $itemHabiaSidoEnviado,
+                $motivoCodigo,
+                $motivoDetalle,
+                $pantallaId,
+            );
+        }
+
+        return $comandas;
+    }
+
     private function crearComandaEliminado(
         SesionMesa $sesion,
         OrdenDetalle $item,
         bool $itemHabiaSidoEnviado,
         string $motivoCodigo,
         ?string $motivoDetalle,
+        ?int $pantallaId = null,
     ): Comanda {
         $sesion->loadMissing('mesa');
         $numeroMesa = $sesion->mesa->numero ?? '?';
         $correlativo = Comanda::where('sesion_id', $sesion->id)->count() + 1;
+        $suf = $pantallaId ? '-'.$pantallaId : '';
 
         $comanda = Comanda::create([
             'id_empresa' => (int) $sesion->id_empresa,
             'sesion_id' => $sesion->id,
-            'numero_comanda' => "DEL-{$numeroMesa}-{$correlativo}",
+            'numero_comanda' => substr("DEL-{$numeroMesa}-{$correlativo}{$suf}", 0, 30),
             'estado' => 'pendiente',
             'destino' => 'eliminacion',
+            'pantalla_id' => $pantallaId,
             'eliminacion_item_enviado' => $itemHabiaSidoEnviado,
             'motivo_eliminacion_codigo' => $motivoCodigo,
             'motivo_eliminacion_detalle' => $motivoDetalle,
@@ -287,7 +328,7 @@ class OrdenDetalleController extends Controller
                 'autorizado_usuario_id' => $fueEnviado ? $user->id : null,
             ]);
 
-            $comandaElim = $this->crearComandaEliminado(
+            $comandasElim = $this->crearComandasEliminado(
                 $sesion,
                 $item,
                 $fueEnviado,
@@ -302,18 +343,21 @@ class OrdenDetalleController extends Controller
             throw $e;
         }
 
-        $this->sideEffects->enqueueComandaTicket((int) $comandaElim->id, (int) $user->id_empresa);
-        $this->realtime->cocinaChanged(
-            (int) $user->id_empresa,
-            (int) $comandaElim->id,
-            'eliminacion',
-            'pendiente',
-            'eliminar_item'
-        );
+        foreach ($comandasElim as $comandaElim) {
+            $this->sideEffects->enqueueComandaTicket((int) $comandaElim->id, (int) $user->id_empresa);
+            $this->realtime->cocinaChanged(
+                (int) $user->id_empresa,
+                (int) $comandaElim->id,
+                'eliminacion',
+                'pendiente',
+                'eliminar_item'
+            );
+        }
 
         return response()->json([
             'ok' => true,
-            'comanda_eliminacion' => $comandaElim,
+            'comanda_eliminacion' => $comandasElim[0] ?? null,
+            'comandas_eliminacion' => $comandasElim,
         ]);
     }
 

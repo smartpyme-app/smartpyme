@@ -13,6 +13,7 @@ import {
 
 import { Router, ActivatedRoute } from '@angular/router';
 import { AlertService } from '@services/alert.service';
+import { RestauranteService } from '@services/restaurante.service';
 import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { HttpCacheService } from '@services/http-cache.service';
@@ -69,6 +70,7 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
   public tallas: any = [];
   public colores: any = [];
   public materiales: any = [];
+  pantallasComanda: { id: number; nombre: string }[] = [];
 
   tipoAtributoActual: string = '';
   nuevoAtributo: any = {};
@@ -97,6 +99,7 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
     private cdr: ChangeDetectorRef,
     private zone: NgZone,
     private haciendaCabys: HaciendaCabysClientService,
+    private restauranteService: RestauranteService,
   ) {
     super(modalManager, alertService);
     // this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
@@ -105,6 +108,7 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
 
   ngOnInit() {
     this.loadAtributes();
+    this.cargarPantallasComanda();
     this.usuario = this.apiService.auth_user();
 
     this.cabysInput$
@@ -194,6 +198,7 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['producto']) {
+      this.aplicarPantallasProducto();
       this.normalizarCategoriaProducto();
       this.inicializarImpuestosProducto();
       this.intentarCargarBarcodeSugerido();
@@ -205,6 +210,54 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
       }
       this.cdr.markForCheck();
     }
+  }
+
+  private cargarPantallasComanda(): void {
+    this.restauranteService.getPantallas({ activo: true }).pipe(this.untilDestroyed()).subscribe({
+      next: (filas) => {
+        this.pantallasComanda = filas || [];
+        this.aplicarPantallasProducto();
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.pantallasComanda = [];
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  private aplicarPantallasProducto(): void {
+    if (!this.producto) {
+      return;
+    }
+    if (Array.isArray(this.producto.pantalla_ids) && this.producto.pantalla_ids.length) {
+      return;
+    }
+    const rel = this.producto.pantallas_comanda;
+    if (Array.isArray(rel) && rel.length) {
+      this.producto.pantalla_ids = rel.map((p: { id: number }) => p.id);
+      return;
+    }
+    const destino = String(this.producto.destino_comanda || 'cocina').toLowerCase();
+    const nombres = destino === 'barra' ? ['barra'] : destino === 'ambos' ? ['cocina', 'barra'] : ['cocina'];
+    this.producto.pantalla_ids = this.pantallasComanda
+      .filter((p) => nombres.includes(p.nombre.toLowerCase()))
+      .map((p) => p.id);
+  }
+
+  pantallaMarcada(id: number): boolean {
+    return (this.producto?.pantalla_ids || []).includes(id);
+  }
+
+  togglePantalla(id: number, marcado: boolean): void {
+    const ids = new Set<number>(this.producto.pantalla_ids || []);
+    if (marcado) {
+      ids.add(id);
+    } else {
+      ids.delete(id);
+    }
+    this.producto.pantalla_ids = [...ids];
+    this.cdr.markForCheck();
   }
 
   /** ng-select bindValue="id" requiere número; la API suele devolver string. */

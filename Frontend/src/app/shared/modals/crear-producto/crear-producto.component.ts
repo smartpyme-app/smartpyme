@@ -6,6 +6,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { RestauranteService } from '@services/restaurante.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '../../base/base-modal.component';
@@ -45,6 +46,7 @@ export class CrearProductoComponent extends BaseModalComponent implements OnInit
     public override loading = false;
     public guardar = false;
     public usuario: any;
+    pantallasComanda: { id: number; nombre: string }[] = [];
 
 
     constructor(
@@ -52,7 +54,8 @@ export class CrearProductoComponent extends BaseModalComponent implements OnInit
         protected override alertService: AlertService,
         protected override modalManager: ModalManagerService,
         private route: ActivatedRoute,
-        private router: Router
+        private router: Router,
+        private restauranteService: RestauranteService,
     ) {
         super(modalManager, alertService);
         this.usuario = this.apiService.auth_user();
@@ -60,6 +63,15 @@ export class CrearProductoComponent extends BaseModalComponent implements OnInit
 
     ngOnInit() {
         this.producto.empresa_id = this.apiService.auth_user().empresa_id;
+        this.restauranteService.getPantallas({ activo: true }).pipe(this.untilDestroyed()).subscribe({
+            next: (filas) => {
+                this.pantallasComanda = filas || [];
+                this.aplicarPantallasProducto();
+            },
+            error: () => {
+                this.pantallasComanda = [];
+            },
+        });
 
         this.apiService.getAll('categorias/padre')
             .pipe(this.untilDestroyed())
@@ -165,6 +177,34 @@ export class CrearProductoComponent extends BaseModalComponent implements OnInit
         if (pct <= 0) return;
         this.producto.impuesto = pct / 100;
         this.producto.precio_final = ((this.producto.precio * 1) + (this.producto.precio * this.producto.impuesto)).toFixed(2);
+    }
+
+    private aplicarPantallasProducto(): void {
+        if (!this.producto) {
+            return;
+        }
+        if (Array.isArray(this.producto.pantalla_ids) && this.producto.pantalla_ids.length) {
+            return;
+        }
+        const destino = String(this.producto.destino_comanda || 'cocina').toLowerCase();
+        const nombres = destino === 'barra' ? ['barra'] : destino === 'ambos' ? ['cocina', 'barra'] : ['cocina'];
+        this.producto.pantalla_ids = this.pantallasComanda
+            .filter((p) => nombres.includes(p.nombre.toLowerCase()))
+            .map((p) => p.id);
+    }
+
+    pantallaMarcada(id: number): boolean {
+        return (this.producto?.pantalla_ids || []).includes(id);
+    }
+
+    togglePantalla(id: number, marcado: boolean): void {
+        const ids = new Set<number>(this.producto.pantalla_ids || []);
+        if (marcado) {
+            ids.add(id);
+        } else {
+            ids.delete(id);
+        }
+        this.producto.pantalla_ids = [...ids];
     }
 
     public onSubmit() {

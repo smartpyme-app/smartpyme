@@ -76,9 +76,8 @@
             ? $sucursalVenta->nombre
             : 'Principal';
 
-        // Correlativo HN: prefijo + 8 dígitos (p. ej. 001-001-01-00000001).
-        // El UI de documentos no captura `prefijo`; Accesorios lo cubre con mapa por sucursal.
-        // Aquí: sucursal → documento.prefijo → prefijo extraído del rango autorizado (Serie).
+        // Correlativo HN: 001-001-01- + 8 dígitos (879 → 001-001-01-00000879).
+        // Sucursal o documento.prefijo o el rango CAI pueden reemplazar el prefijo.
         $corr = str_pad((string) $venta->correlativo, 8, '0', STR_PAD_LEFT);
         $prefPorSucursalJson = data_get($empresa->custom_empresa, 'configuraciones.prefijo_factura_santre_por_sucursal', []);
         $prefPorSucursal = is_array($prefPorSucursalJson) ? $prefPorSucursalJson : [];
@@ -102,7 +101,10 @@
                 $pref = $mPref[1];
             }
         }
-        $numFacturaDisplay = $pref !== '' ? rtrim($pref, '-').'-'.$corr : $corr;
+        if ($pref === '') {
+            $pref = '001-001-01-';
+        }
+        $numFacturaDisplay = rtrim($pref, '-').'-'.$corr;
 
         $fechaEmision = \Carbon\Carbon::parse($venta->fecha);
         $fechaEmisionFmt = $fechaEmision->locale('es')->isoFormat('D [de] MMMM [de] YYYY HH:mm');

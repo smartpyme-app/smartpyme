@@ -7,7 +7,9 @@ use App\Models\Inventario\Producto;
 use App\Models\Restaurante\Comanda;
 use App\Models\Restaurante\ComandaDetalle;
 use App\Models\Restaurante\OrdenDetalle;
+use App\Models\Restaurante\PantallaRestaurante;
 use App\Models\Restaurante\SesionMesa;
+use App\Services\Restaurante\PantallasComandaService;
 use App\Services\Restaurante\RestauranteIdempotencyService;
 use App\Services\Restaurante\RestauranteSideEffectDispatcher;
 use App\Services\Restaurante\RestauranteRealtimePublisher;
@@ -22,6 +24,7 @@ class ComandaController extends Controller
         private RestauranteSideEffectDispatcher $sideEffects,
         private RestauranteTicketHtmlService $ticketHtml,
         private RestauranteRealtimePublisher $realtime,
+        private PantallasComandaService $pantallas,
     ) {}
 
     private function normalizarDestino(?string $dest): string
@@ -63,7 +66,7 @@ class ComandaController extends Controller
     /**
      * @param  OrdenDetalle[]  $items
      */
-    private function crearComandaSesion(SesionMesa $sesion, string $destino, array $items, int $correlativo): ?Comanda
+    private function crearComandaSesion(SesionMesa $sesion, string $destino, array $items, int $correlativo, ?int $pantallaId = null): ?Comanda
     {
         if ($items === []) {
             return null;
@@ -71,14 +74,15 @@ class ComandaController extends Controller
 
         $mesa = $sesion->mesa ?? $sesion->mesa()->first();
         $numeroMesa = $mesa->numero ?? '?';
-        $suf = $destino === 'barra' ? 'B' : 'C';
+        $suf = $pantallaId ? (string) $pantallaId : ($destino === 'barra' ? 'B' : 'C');
 
         $comanda = Comanda::create([
             'id_empresa' => (int) $sesion->id_empresa,
             'sesion_id' => $sesion->id,
-            'numero_comanda' => "C-{$numeroMesa}-{$correlativo}-{$suf}",
+            'numero_comanda' => substr("C-{$numeroMesa}-{$correlativo}-{$suf}", 0, 30),
             'estado' => 'pendiente',
             'destino' => $destino,
+            'pantalla_id' => $pantallaId,
             'enviado_at' => now(),
         ]);
 
@@ -101,6 +105,41 @@ class ComandaController extends Controller
         $comanda->load(['detalles.ordenDetalle.producto']);
 
         return $comanda;
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection<int, OrdenDetalle>  $pendientes
+     * @return array<int, Comanda>
+     */
+    private function comandasPorPantalla(SesionMesa $sesion, $pendientes): array
+    {
+        $grupos = $this->pantallas->agruparPendientes($pendientes, 'orden_detalle_id');
+        if ($grupos === []) {
+            return [];
+        }
+
+        $comandas = [];
+        $n = Comanda::where('sesion_id', $sesion->id)->lockForUpdate()->count();
+        foreach ($grupos as $grupo) {
+            /** @var PantallaRestaurante $pantalla */
+            $pantalla = $grupo['pantalla'];
+            $n++;
+            $creada = $this->crearComandaSesion(
+                $sesion,
+                $this->pantallas->destinoLegacy($pantalla),
+                $grupo['items'],
+                $n,
+                (int) $pantalla->id
+            );
+            if (! $creada) {
+                continue;
+            }
+            $ids = array_map(fn (OrdenDetalle $item) => (int) $item->id, $grupo['items']);
+            $this->pantallas->marcarEnviados($pantalla, $ids, 'orden_detalle_id');
+            $comandas[] = $creada;
+        }
+
+        return $comandas;
     }
 
     /**
@@ -137,7 +176,12 @@ class ComandaController extends Controller
         // Filtro directo por id_empresa (denormalizado); evita whereHas costoso en cocina.
         $comandas = Comanda::where('id_empresa', $user->id_empresa)
             ->whereIn('estado', ['pendiente', 'preparando', 'listo'])
+            ->when(
+                $request->filled('pantalla_id'),
+                fn ($q) => $q->where('pantalla_id', (int) $request->query('pantalla_id'))
+            )
             ->with([
+                'pantalla',
                 'sesion.mesa',
                 'pedido',
                 'detalles.ordenDetalle' => fn ($q) => $q->withTrashed()->with(['producto', 'presentacion']),
@@ -166,10 +210,18 @@ class ComandaController extends Controller
                             ->with('mesa')
                             ->firstOrFail();
 
+                        $con = ['producto', 'presentacion'];
+                        if ($this->pantallas->tablaLista()) {
+                            $con = ['producto.pantallasComanda', 'presentacion'];
+                        }
                         $pendientes = OrdenDetalle::where('sesion_id', $sesion->id)
-                            ->with(['producto', 'presentacion'])
+                            ->with($con)
                             ->lockForUpdate()
                             ->get();
+
+                        if ($this->pantallas->tablaLista()) {
+                            return $this->comandasPorPantalla($sesion, $pendientes);
+                        }
 
                         $itemsCocina = [];
                         $itemsBarra = [];

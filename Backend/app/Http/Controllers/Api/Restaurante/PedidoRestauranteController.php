@@ -14,6 +14,7 @@ use App\Models\Restaurante\PedidoRestaurante;
 use App\Models\Restaurante\PedidoRestauranteDetalle;
 use App\Models\Ventas\Clientes\Cliente;
 use App\Services\Inventario\LoteAsignacionService;
+use App\Services\Restaurante\PantallasComandaService;
 use App\Services\Restaurante\PedidoCanalInventarioService;
 use App\Services\Restaurante\PedidoCanalIvaCalculator;
 use App\Services\Restaurante\RestauranteIdempotencyService;
@@ -33,6 +34,7 @@ class PedidoRestauranteController extends Controller
         private RestauranteSideEffectDispatcher $sideEffects,
         private RestauranteTicketHtmlService $ticketHtml,
         private RestauranteRealtimePublisher $realtime,
+        private PantallasComandaService $pantallas,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -140,11 +142,15 @@ class PedidoRestauranteController extends Controller
         }
 
         $pedido = PedidoRestaurante::where('id_empresa', $user->id_empresa)
-            ->with(['detalles.producto'])
+            ->with([$this->pantallas->tablaLista() ? 'detalles.producto.pantallasComanda' : 'detalles.producto'])
             ->findOrFail($id);
 
         if (! in_array($pedido->estado, ['borrador', 'pendiente_facturar'], true)) {
             return response()->json(['error' => 'No se puede enviar comanda en este estado'], 422);
+        }
+
+        if ($this->pantallas->tablaLista()) {
+            return $this->enviarComandaPorPantallas($pedido, (int) $user->id_empresa);
         }
 
         $itemsCocina = [];
@@ -246,6 +252,72 @@ class PedidoRestauranteController extends Controller
             $this->sideEffects->enqueueComandaTicket((int) $comanda->id, (int) $user->id_empresa);
             $this->realtime->cocinaChanged(
                 (int) $user->id_empresa,
+                (int) $comanda->id,
+                $comanda->destino ?? null,
+                $comanda->estado ?? 'pendiente',
+                'pedido_enviar_comanda'
+            );
+        }
+
+        return response()->json([
+            'comandas' => $comandasCreadas,
+            'primera' => $comandasCreadas[0] ?? null,
+        ], 201);
+    }
+
+    private function enviarComandaPorPantallas(PedidoRestaurante $pedido, int $idEmpresa): JsonResponse
+    {
+        $grupos = $this->pantallas->agruparPendientes($pedido->detalles, 'pedido_detalle_id');
+        if ($grupos === []) {
+            return response()->json(['error' => 'No hay ítems pendientes por enviar a cocina/barra'], 422);
+        }
+
+        $comandasCreadas = [];
+        $n = Comanda::where('pedido_id', $pedido->id)->count();
+
+        DB::beginTransaction();
+        try {
+            foreach ($grupos as $grupo) {
+                $pantalla = $grupo['pantalla'];
+                $n++;
+                $comanda = Comanda::create([
+                    'id_empresa' => $idEmpresa,
+                    'pedido_id' => $pedido->id,
+                    'numero_comanda' => substr("P-{$pedido->id}-{$n}-{$pantalla->id}", 0, 30),
+                    'estado' => 'pendiente',
+                    'destino' => $this->pantallas->destinoLegacy($pantalla),
+                    'pantalla_id' => $pantalla->id,
+                    'enviado_at' => now(),
+                ]);
+                $now = now();
+                $rows = [];
+                $ids = [];
+                foreach ($grupo['items'] as $item) {
+                    $rows[] = [
+                        'comanda_id' => $comanda->id,
+                        'orden_detalle_id' => null,
+                        'pedido_detalle_id' => $item->id,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
+                    $ids[] = (int) $item->id;
+                }
+                if ($rows !== []) {
+                    ComandaDetalle::insert($rows);
+                }
+                $this->pantallas->marcarEnviados($pantalla, $ids, 'pedido_detalle_id');
+                $comandasCreadas[] = $comanda->load(['detalles.pedidoDetalle.producto', 'pantalla']);
+            }
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
+        }
+
+        foreach ($comandasCreadas as $comanda) {
+            $this->sideEffects->enqueueComandaTicket((int) $comanda->id, $idEmpresa);
+            $this->realtime->cocinaChanged(
+                $idEmpresa,
                 (int) $comanda->id,
                 $comanda->destino ?? null,
                 $comanda->estado ?? 'pendiente',

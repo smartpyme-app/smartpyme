@@ -46,6 +46,7 @@ class RestauranteTicketHtmlService
                 'sesion.mesa',
                 'sesion.mesero',
                 'pedido',
+                'pantalla',
                 'detalles.ordenDetalle' => fn ($q) => $q->withTrashed()->with(['producto', 'presentacion']),
                 'detalles.pedidoDetalle.producto',
             ])
