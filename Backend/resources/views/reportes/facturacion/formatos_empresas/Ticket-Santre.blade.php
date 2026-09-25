@@ -107,6 +107,10 @@
         $numFacturaDisplay = rtrim($pref, '-').'-'.$corr;
 
         $fechaEmision = \Carbon\Carbon::parse($venta->fecha);
+        if ($venta->created_at) {
+            $horaVenta = \Carbon\Carbon::parse($venta->created_at);
+            $fechaEmision->setTime($horaVenta->hour, $horaVenta->minute);
+        }
         $fechaEmisionFmt = $fechaEmision->locale('es')->isoFormat('D [de] MMMM [de] YYYY HH:mm');
         $metodoPago = trim((string) ($venta->forma_pago ?: $venta->condicion ?: ''));
         $nombreCliente = trim((string) ($venta->nombre_cliente ?? '')) !== ''
