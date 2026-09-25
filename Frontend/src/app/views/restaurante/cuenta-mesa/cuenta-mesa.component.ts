@@ -114,7 +114,9 @@ export class CuentaMesaComponent implements OnInit {
   nombresPantallasEnviadas(item: any): string[] {
     const envios = item?.envios_pantalla;
     if (Array.isArray(envios) && envios.length) {
-      return envios.map((e: { pantalla?: { nombre?: string } }) => e.pantalla?.nombre).filter(Boolean);
+      return envios
+        .map((e: { pantalla?: { nombre?: string } }) => e.pantalla?.nombre)
+        .filter((nombre: string | undefined): nombre is string => !!nombre);
     }
     const nombres: string[] = [];
     if (item?.enviado_cocina) {
