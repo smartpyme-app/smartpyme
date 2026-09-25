@@ -196,7 +196,16 @@
                     </div>
                 </div>
 
-                <div class="form-group col-md-6 col-lg-5 without-label" *ngIf="producto.genera_comanda">
+                <div class="form-group col-md-6 col-lg-5" *ngIf="producto.genera_comanda && pantallasComanda.length">
+                    <label class="small text-muted">Imprimir comanda en</label>
+                    <div class="form-check" *ngFor="let p of pantallasComanda">
+                        <input class="form-check-input" type="checkbox" [id]="'nueva-pantalla-' + p.id"
+                            [checked]="pantallaMarcada(p.id)"
+                            (change)="togglePantalla(p.id, $any($event.target).checked)">
+                        <label class="form-check-label" [for]="'nueva-pantalla-' + p.id">{{ p.nombre }}</label>
+                    </div>
+                </div>
+                <div class="form-group col-md-6 col-lg-5 without-label" *ngIf="producto.genera_comanda && !pantallasComanda.length">
                     <label class="small text-muted">Imprimir comanda en</label>
                     <select class="form-control form-select" [(ngModel)]="producto.destino_comanda" name="destino_comanda">
                         <option value="cocina">Cocina</option>

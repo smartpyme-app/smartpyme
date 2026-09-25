@@ -7,6 +7,7 @@ import { RestauranteComponent } from './restaurante.component';
 import { CuentaMesaComponent } from './cuenta-mesa/cuenta-mesa.component';
 import { CocinaComponent } from './cocina/cocina.component';
 import { ZonasRestauranteComponent } from './zonas/zonas-restaurante.component';
+import { PantallasRestauranteComponent } from './pantallas/pantallas-restaurante.component';
 
 const routes: Routes = [
   {
@@ -36,8 +37,18 @@ const routes: Routes = [
       },
       {
         path: 'restaurante/cocina',
+        redirectTo: 'restaurante/pantalla/general',
+        pathMatch: 'full'
+      },
+      {
+        path: 'restaurante/pantalla/:id',
         component: CocinaComponent,
-        title: 'Pantalla Cocina'
+        title: 'Pantalla de comanda'
+      },
+      {
+        path: 'restaurante/pantallas',
+        component: PantallasRestauranteComponent,
+        title: 'Pantallas de comanda'
       },
       {
         path: 'restaurante/zonas',

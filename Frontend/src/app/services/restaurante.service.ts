@@ -28,6 +28,13 @@ export interface ZonaRestaurante {
   id_sucursal?: number;
 }
 
+export interface PantallaRestaurante {
+  id: number;
+  nombre: string;
+  orden: number;
+  activo: boolean;
+}
+
 export interface SesionMesa {
   id: number;
   mesa_id: number;
@@ -126,6 +133,22 @@ export class RestauranteService {
     return this.api.delete(BASE + 'zonas/', id);
   }
 
+  getPantallas(params?: { activo?: boolean }): Observable<PantallaRestaurante[]> {
+    return this.api.getAll(BASE + 'pantallas', params || {});
+  }
+
+  crearPantalla(data: Partial<PantallaRestaurante>): Observable<PantallaRestaurante> {
+    return this.api.store(BASE + 'pantallas', data);
+  }
+
+  actualizarPantalla(id: number, data: Partial<PantallaRestaurante>): Observable<PantallaRestaurante> {
+    return this.api.update(BASE + 'pantallas', id, data);
+  }
+
+  eliminarPantalla(id: number): Observable<{ ok: boolean }> {
+    return this.api.delete(BASE + 'pantallas/', id);
+  }
+
   abrirSesion(mesaId: number, data: { num_comensales?: number; observaciones?: string }): Observable<SesionMesa> {
     return this.withIdempotency(`abrir_mesa:${mesaId}`, (headers) =>
       this.api.store(BASE + 'sesiones-mesa', { mesa_id: mesaId, ...data }, headers)
@@ -210,8 +233,9 @@ export class RestauranteService {
     );
   }
 
-  getComandas(): Observable<any[]> {
-    return this.api.getAll(BASE + 'comandas');
+  getComandas(pantallaId?: number): Observable<any[]> {
+    const params = pantallaId ? { pantalla_id: pantallaId } : {};
+    return this.api.getAll(BASE + 'comandas', params);
   }
 
   actualizarEstadoComanda(

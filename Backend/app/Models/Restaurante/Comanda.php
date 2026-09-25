@@ -33,6 +33,7 @@ class Comanda extends AuditableModel
         'numero_comanda',
         'estado',
         'destino',
+        'pantalla_id',
         'eliminacion_item_enviado',
         'motivo_eliminacion_codigo',
         'motivo_eliminacion_detalle',
@@ -43,6 +44,11 @@ class Comanda extends AuditableModel
         'enviado_at' => 'datetime',
         'eliminacion_item_enviado' => 'boolean',
     ];
+
+    public function pantalla()
+    {
+        return $this->belongsTo(PantallaRestaurante::class, 'pantalla_id');
+    }
 
     public function sesion()
     {

@@ -1,0 +1,74 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+  <div>
+    <h2 class="page-heading mb-0">Pantallas de comanda</h2>
+    <p class="text-muted small mb-0 mt-1">Cocina, barra u otras estaciones. Cada producto se asigna a una o varias.</p>
+  </div>
+  <div>
+    <button type="button" class="btn btn-default" (click)="openModal(mpantalla, {})">
+      <i class="fa fa-plus"></i> Añadir pantalla
+    </button>
+  </div>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+  <div class="table-responsive">
+    <table class="table table-borderless table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th class="text-center">Orden</th>
+          <th>Estado</th>
+          <th class="text-center"><i class="fa fa-cog"></i></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngIf="!pantallas.length && !loading">
+          <td colspan="4" class="text-center"><span class="badge bg-primary">No hay pantallas</span></td>
+        </tr>
+        <tr *ngIf="loading">
+          <td colspan="4" class="text-center"><span class="badge bg-primary">Cargando...</span></td>
+        </tr>
+        <tr *ngFor="let p of pantallas">
+          <td>{{ p.nombre }}</td>
+          <td class="text-center">{{ p.orden }}</td>
+          <td>{{ p.activo ? 'Activa' : 'Inactiva' }}</td>
+          <td class="text-center">
+            <button type="button" class="btn btn-light btn-sm me-1" (click)="openModal(mpantalla, p)">
+              <i class="fa fa-pencil-alt"></i>
+            </button>
+            <button type="button" class="btn btn-light btn-sm" (click)="eliminar(p)">
+              <i class="fa fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<ng-template #mpantalla>
+  <div class="modal-header">
+    <h5 class="modal-title">{{ pantalla.id ? 'Editar pantalla' : 'Nueva pantalla' }}</h5>
+    <button type="button" class="btn-close" (click)="closeModal()"></button>
+  </div>
+  <form (ngSubmit)="onSubmit()">
+    <div class="modal-body">
+      <div class="mb-3">
+        <label class="form-label">Nombre</label>
+        <input class="form-control" name="nombre" [(ngModel)]="pantalla.nombre" required maxlength="80">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Orden</label>
+        <input class="form-control" type="number" name="orden" [(ngModel)]="pantalla.orden" min="0">
+      </div>
+      <div class="form-check form-switch">
+        <input class="form-check-input" type="checkbox" name="activo" id="pantallaActivo" [(ngModel)]="pantalla.activo">
+        <label class="form-check-label" for="pantallaActivo">Activa</label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="closeModal()">Cancelar</button>
+      <button type="submit" class="btn btn-primary" [disabled]="guardando">Guardar</button>
+    </div>
+  </form>
+</ng-template>

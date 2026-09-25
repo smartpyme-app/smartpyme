@@ -26,7 +26,11 @@ function numFacturaDisplay(string $correlativo, ?string $prefijo, ?string $prefS
         $pref = prefijoDesdeRango($rango);
     }
 
-    return $pref !== '' ? rtrim($pref, '-').'-'.$corr : $corr;
+    if ($pref === '') {
+        $pref = '001-001-01-';
+    }
+
+    return rtrim($pref, '-').'-'.$corr;
 }
 
 function assertEq(string $label, $got, $expected): void
@@ -38,7 +42,8 @@ function assertEq(string $label, $got, $expected): void
     echo "OK $label\n";
 }
 
-assertEq('pad-only', numFacturaDisplay('1', null), '00000001');
+assertEq('pad-only', numFacturaDisplay('1', null), '001-001-01-00000001');
+assertEq('correlativo-879', numFacturaDisplay('879', null), '001-001-01-00000879');
 assertEq('prefijo-doc', numFacturaDisplay('439', '001-001-01-'), '001-001-01-00000439');
 assertEq('prefijo-sin-guion', numFacturaDisplay('439', '001-001-01'), '001-001-01-00000439');
 assertEq('prefijo-sucursal', numFacturaDisplay('1', null, '001-001-01-'), '001-001-01-00000001');
@@ -47,7 +52,7 @@ assertEq(
     numFacturaDisplay('1', null, null, '001-001-01-00000001 A 001-001-01-00003000'),
     '001-001-01-00000001'
 );
-assertEq('rango-vacio-sin-pref', numFacturaDisplay('1', null, null, ''), '00000001');
+assertEq('rango-vacio-sin-pref', numFacturaDisplay('1', null, null, ''), '001-001-01-00000001');
 
 echo "All checks passed.\n";
 exit(0);

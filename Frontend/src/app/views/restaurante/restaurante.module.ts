@@ -15,6 +15,7 @@ import { PosSheetAgregarComponent } from './cuenta-mesa/pos-sheet-agregar/pos-sh
 import { PosFlujoCuentaComponent } from './cuenta-mesa/pos-flujo-cuenta/pos-flujo-cuenta.component';
 import { CocinaComponent } from './cocina/cocina.component';
 import { ZonasRestauranteComponent } from './zonas/zonas-restaurante.component';
+import { PantallasRestauranteComponent } from './pantallas/pantallas-restaurante.component';
 import { RestauranteRoutingModule } from './restaurante-routing.module';
 
 @NgModule({
@@ -25,7 +26,8 @@ import { RestauranteRoutingModule } from './restaurante-routing.module';
     PosSheetAgregarComponent,
     PosFlujoCuentaComponent,
     CocinaComponent,
-    ZonasRestauranteComponent
+    ZonasRestauranteComponent,
+    PantallasRestauranteComponent
   ],
   imports: [
     CommonModule,

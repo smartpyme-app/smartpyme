@@ -73,8 +73,7 @@
                 @for (item of sesion.orden_detalle; track item.id) {
                 <tr>
                   <td>
-                    <span *ngIf="item.producto?.genera_comanda && item.enviado_cocina" class="badge bg-success me-1">Cocina</span>
-                    <span *ngIf="item.producto?.genera_comanda && item.enviado_barra" class="badge bg-info text-dark me-1">Barra</span>
+                    <span *ngFor="let nombre of nombresPantallasEnviadas(item)" class="badge bg-success me-1">{{ nombre }}</span>
                     <span *ngIf="editandoItemId !== item.id">{{ nombreLineaOrden(item) }}</span>
                     <span *ngIf="editandoItemId === item.id">{{ nombreLineaOrden(item) }}</span>
                     <small class="text-muted d-block" *ngIf="editandoItemId !== item.id && item.notas">{{ item.notas }}</small>
@@ -266,8 +265,7 @@
                     <label class="mb-0 small d-flex align-items-center gap-2">
                       <input type="checkbox" [checked]="itemsTrasladoIds.includes(item.id)" (change)="toggleTrasladoItem(item.id)">
                       <span>
-                        <span *ngIf="item.producto?.genera_comanda && item.enviado_cocina" class="badge bg-success me-1">Cocina</span>
-                        <span *ngIf="item.producto?.genera_comanda && item.enviado_barra" class="badge bg-info text-dark me-1">Barra</span>
+                        <span *ngFor="let nombre of nombresPantallasEnviadas(item)" class="badge bg-success me-1">{{ nombre }}</span>
                         {{ nombreLineaOrden(item) }} ({{ item.cantidad }}x)
                       </span>
                     </label>
