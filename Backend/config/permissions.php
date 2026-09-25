@@ -63,6 +63,18 @@ return [
             'editar' => 'administracion.sucursales.editar',
             'eliminar' => 'administracion.sucursales.eliminar'
         ],
+        'departamentos' => [
+            'ver' => 'administracion.departamentos.ver',
+            'crear' => 'administracion.departamentos.crear',
+            'editar' => 'administracion.departamentos.editar',
+            'eliminar' => 'administracion.departamentos.eliminar'
+        ],
+        'areas' => [
+            'ver' => 'administracion.areas.ver',
+            'crear' => 'administracion.areas.crear',
+            'editar' => 'administracion.areas.editar',
+            'eliminar' => 'administracion.areas.eliminar'
+        ],
         'roles' => [
             'ver' => 'administracion.roles.ver',
             'crear' => 'administracion.roles.crear',
@@ -276,6 +288,12 @@ return [
             'editar' => 'ventas.ordenes_produccion.editar',
             'eliminar' => 'ventas.ordenes_produccion.eliminar'
         ],
+        'consignas' => [
+            'ver' => 'ventas.consignas.ver',
+            'crear' => 'ventas.consignas.crear',
+            'editar' => 'ventas.consignas.editar',
+            'eliminar' => 'ventas.consignas.eliminar'
+        ],
         'descuentos' => [
             'aplicar' => 'ventas.descuentos.aplicar',
             'autorizar' => 'ventas.descuentos.autorizar',
@@ -325,6 +343,12 @@ return [
             'crear' => 'compras.devoluciones.crear',
             'editar' => 'compras.devoluciones.editar',
             'eliminar' => 'compras.devoluciones.eliminar'
+        ],
+        'consignas' => [
+            'ver' => 'compras.consignas.ver',
+            'crear' => 'compras.consignas.crear',
+            'editar' => 'compras.consignas.editar',
+            'eliminar' => 'compras.consignas.eliminar'
         ]
     ],
 
@@ -351,13 +375,6 @@ return [
             'crear' => 'gastos.categorias.crear',
             'editar' => 'gastos.categorias.editar',
             'eliminar' => 'gastos.categorias.eliminar'
-        ],
-
-        'departamentos' => [
-            'ver' => 'gastos.departamentos.ver',
-            'crear' => 'gastos.departamentos.crear',
-            'editar' => 'gastos.departamentos.editar',
-            'eliminar' => 'gastos.departamentos.eliminar'
         ]
     ],
 
@@ -391,19 +408,28 @@ return [
             'crear' => 'planilla.configuracion.crear',
             'editar' => 'planilla.configuracion.editar',
             'eliminar' => 'planilla.configuracion.eliminar'
-        ]
-    ],
+        ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Permisos de Consignas
-    |--------------------------------------------------------------------------
-    */
-    'PERMISSION_CONSIGNAS' => [
-        'ver' => 'consignas.ver',
-        'crear' => 'consignas.crear',
-        'editar' => 'consignas.editar',
-        'eliminar' => 'consignas.eliminar',
+        'comisiones' => [
+            'ver' => 'planilla.comisiones.ver',
+            'crear' => 'planilla.comisiones.crear',
+            'editar' => 'planilla.comisiones.editar',
+            'eliminar' => 'planilla.comisiones.eliminar'
+        ],
+
+        'bonos' => [
+            'ver' => 'planilla.bonos.ver',
+            'crear' => 'planilla.bonos.crear',
+            'editar' => 'planilla.bonos.editar',
+            'eliminar' => 'planilla.bonos.eliminar'
+        ],
+
+        'incentivos' => [
+            'ver' => 'planilla.incentivos.ver',
+            'crear' => 'planilla.incentivos.crear',
+            'editar' => 'planilla.incentivos.editar',
+            'eliminar' => 'planilla.incentivos.eliminar'
+        ]
     ],
 
     /*

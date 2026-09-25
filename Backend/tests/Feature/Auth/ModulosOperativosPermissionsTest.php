@@ -15,8 +15,8 @@ final class ModulosOperativosPermissionsTest extends TestCase
 {
     public function test_consignas_requiere_permiso_de_lectura(): void
     {
-        $this->assertRouteHasPermission('api/productos/consignas', 'GET', 'permission:consignas.ver');
-        $this->assertRouteHasPermission('api/productos/consignas-compras', 'GET', 'permission:consignas.ver');
+        $this->assertRouteHasPermission('api/productos/consignas', 'GET', 'permission:ventas.consignas.ver');
+        $this->assertRouteHasPermission('api/productos/consignas-compras', 'GET', 'permission:compras.consignas.ver');
     }
 
     public function test_planillas_registros_empleados_y_configuracion_tienen_permisos(): void

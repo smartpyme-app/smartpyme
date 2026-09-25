@@ -35,7 +35,6 @@ class ModulosOperativosPermissionSeederTest extends TestCase
     public function test_catalogo_define_permisos_operativos_y_conserva_planilla_completa(): void
     {
         foreach ([
-            'PERMISSION_CONSIGNAS' => 'consignas',
             'PERMISSION_RESTAURANTE' => 'restaurante',
             'PERMISSION_PEDIDOS' => 'pedidos',
         ] as $configKey => $prefix) {
@@ -50,7 +49,26 @@ class ModulosOperativosPermissionSeederTest extends TestCase
             ], array_values($permissions));
         }
 
-        $this->assertCount(16, collect(config('permissions.PERMISSION_PLANILLA'))->flatten());
+        $this->assertCount(28, collect(config('permissions.PERMISSION_PLANILLA'))->flatten());
+
+        foreach ([
+            'permissions.PERMISSION_VENTAS.consignas' => 'ventas.consignas',
+            'permissions.PERMISSION_COMPRAS.consignas' => 'compras.consignas',
+            'permissions.PERMISSION_ADMINISTRACION.departamentos' => 'administracion.departamentos',
+            'permissions.PERMISSION_ADMINISTRACION.areas' => 'administracion.areas',
+        ] as $configKey => $prefix) {
+            $permissions = config($configKey);
+
+            $this->assertSame(['ver', 'crear', 'editar', 'eliminar'], array_keys($permissions));
+            $this->assertSame([
+                "{$prefix}.ver",
+                "{$prefix}.crear",
+                "{$prefix}.editar",
+                "{$prefix}.eliminar",
+            ], array_values($permissions));
+        }
+        $this->assertNull(config('permissions.PERMISSION_CONSIGNAS'));
+        $this->assertArrayNotHasKey('departamentos', config('permissions.PERMISSION_GASTOS'));
     }
 
     public function test_seeder_es_aditivo_idempotente_y_asigna_solo_roles_predeterminados(): void
@@ -99,16 +117,19 @@ class ModulosOperativosPermissionSeederTest extends TestCase
             'module_permissions' => DB::table('module_permissions')->count(),
             'role_permissions' => DB::table('role_has_permissions')->count(),
         ]);
-        $this->assertSame(29, $countsAfterFirstRun['permissions']);
-        $this->assertSame(5, $countsAfterFirstRun['modules']);
-        $this->assertSame(3, $countsAfterFirstRun['submodules']);
-        $this->assertSame(29, $countsAfterFirstRun['module_permissions']);
+        $this->assertSame(53, $countsAfterFirstRun['permissions']);
+        $this->assertSame(7, $countsAfterFirstRun['modules']);
+        $this->assertSame(10, $countsAfterFirstRun['submodules']);
+        $this->assertSame(53, $countsAfterFirstRun['module_permissions']);
 
         $operationalPermissions = collect([
             config('permissions.PERMISSION_PLANILLA'),
-            config('permissions.PERMISSION_CONSIGNAS'),
             config('permissions.PERMISSION_RESTAURANTE'),
             config('permissions.PERMISSION_PEDIDOS'),
+            config('permissions.PERMISSION_VENTAS.consignas'),
+            config('permissions.PERMISSION_COMPRAS.consignas'),
+            config('permissions.PERMISSION_ADMINISTRACION.departamentos'),
+            config('permissions.PERMISSION_ADMINISTRACION.areas'),
         ])->flatten()->all();
 
         foreach (['super_admin', 'admin', 'usuario_supervisor', 'contador_superior'] as $roleName) {
@@ -134,6 +155,24 @@ class ModulosOperativosPermissionSeederTest extends TestCase
         $this->assertTrue(Role::findByName('supervisor_limitado')->hasPermissionTo('legacy.ver'));
     }
 
+    public function test_seeder_copia_consignas_y_departamentos_al_rol_que_ya_los_tenia(): void
+    {
+        $rol = Role::create(['name' => 'cajero', 'guard_name' => 'web']);
+        $rol->givePermissionTo([
+            Permission::create(['name' => 'consignas.ver', 'guard_name' => 'web']),
+            Permission::create(['name' => 'gastos.departamentos.editar', 'guard_name' => 'web']),
+        ]);
+
+        $this->seed(ModulosOperativosPermissionSeeder::class);
+
+        $this->assertTrue($rol->hasPermissionTo('ventas.consignas.ver'));
+        $this->assertTrue($rol->hasPermissionTo('compras.consignas.ver'));
+        $this->assertTrue($rol->hasPermissionTo('administracion.departamentos.editar'));
+        $this->assertTrue($rol->hasPermissionTo('administracion.areas.editar'));
+        $this->assertFalse($rol->hasPermissionTo('ventas.consignas.crear'));
+        $this->assertFalse($rol->hasPermissionTo('planilla.ver'));
+    }
+
     public function test_seeder_ignora_roles_predeterminados_ausentes(): void
     {
         Role::create(['name' => 'admin', 'guard_name' => 'web']);
@@ -149,7 +188,14 @@ class ModulosOperativosPermissionSeederTest extends TestCase
         $contadorSuperior = Str::between($source, '// Contador Superior', '// Contador Auxiliar');
         $usuarioSupervisor = Str::between($source, '// Usuario Supervisor', '// Gerente Operaciones');
 
-        foreach (['PERMISSION_CONSIGNAS', 'PERMISSION_RESTAURANTE', 'PERMISSION_PEDIDOS'] as $configKey) {
+        foreach ([
+            'PERMISSION_VENTAS.consignas',
+            'PERMISSION_COMPRAS.consignas',
+            'PERMISSION_ADMINISTRACION.departamentos',
+            'PERMISSION_ADMINISTRACION.areas',
+            'PERMISSION_RESTAURANTE',
+            'PERMISSION_PEDIDOS',
+        ] as $configKey) {
             foreach (array_keys(config("permissions.{$configKey}")) as $action) {
                 $configCall = "config('permissions.{$configKey}.{$action}')";
 

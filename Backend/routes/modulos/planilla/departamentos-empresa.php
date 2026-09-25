@@ -6,12 +6,12 @@ use Illuminate\Support\Facades\Route;
 
 Route::group(['prefix' => 'departamentosEmpresa', 'middleware' => ['jwt.auth']], function () {
     Route::controller(DepartamentosEmpresaController::class)->group(function () {
-        Route::get('/', 'index');
+        Route::get('/', 'index')->middleware('permission:administracion.departamentos.ver');
         Route::get('/list', 'list');
-        Route::get('/{id}', 'show');
-        Route::post('/', 'store');
-        Route::post('/update', 'update');
-        Route::post('/changeState/{id}', 'changeState');
+        Route::get('/{id}', 'show')->middleware('permission:administracion.departamentos.ver');
+        Route::post('/', 'store')->middleware('permission:administracion.departamentos.crear');
+        Route::post('/update', 'update')->middleware('permission:administracion.departamentos.editar');
+        Route::post('/changeState/{id}', 'changeState')->middleware('permission:administracion.departamentos.editar');
     });
 
 });

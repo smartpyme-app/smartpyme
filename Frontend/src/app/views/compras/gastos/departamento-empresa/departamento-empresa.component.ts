@@ -11,12 +11,13 @@ import { Router } from '@angular/router';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
+import { SucursalesNavComponent } from '@views/admin/sucursales/sucursales-nav/sucursales-nav.component';
 
 @Component({
     selector: 'app-departamento-empresa',
     templateUrl: './departamento-empresa.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, TruncatePipe, PopoverModule, TooltipModule, PaginationComponent],
+    imports: [CommonModule, RouterModule, FormsModule, TruncatePipe, PopoverModule, TooltipModule, PaginationComponent, SucursalesNavComponent],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 

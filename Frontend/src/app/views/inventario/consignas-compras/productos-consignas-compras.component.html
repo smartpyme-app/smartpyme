@@ -1,5 +1,5 @@
 ﻿<section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
-    <h2 class="page-heading">Consignas</h2>
+    <h2 class="page-heading">Consignas de compras</h2>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
@@ -17,12 +17,6 @@
                 </button>
                 <input type="text" name="search" class="form-control pull-right" placeholder="Buscar por proveedor o documento..." [(ngModel)]="buscador">
             </div>
-        </div>
-    </div>
-    <div class="d-flex flex-wrap gap-2 mb-3">
-        <div class="d-flex gap-2 flex-wrap">
-            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/consignas">Compras</button>
-            <button class="btn" routerLinkActive="btn-primary" routerLink="/consignas/ventas">Ventas</button>
         </div>
     </div>
     <div class="row">

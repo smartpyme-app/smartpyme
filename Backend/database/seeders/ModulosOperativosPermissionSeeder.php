@@ -24,9 +24,16 @@ class ModulosOperativosPermissionSeeder extends Seeder
 
     private const MODULES = [
         'PERMISSION_PLANILLA' => 'Planilla',
-        'PERMISSION_CONSIGNAS' => 'Consignas',
         'PERMISSION_RESTAURANTE' => 'Restaurante',
         'PERMISSION_PEDIDOS' => 'Pedidos',
+    ];
+
+    /** Submódulos que dejaron de ser un módulo propio o de Gastos. */
+    private const REUBICADOS = [
+        ['module' => 'ventas', 'module_display' => 'Ventas', 'submodule' => 'consignas', 'submodule_display' => 'Consignas', 'config' => 'permissions.PERMISSION_VENTAS.consignas', 'origen' => 'consignas.%s'],
+        ['module' => 'compras', 'module_display' => 'Compras', 'submodule' => 'consignas', 'submodule_display' => 'Consignas', 'config' => 'permissions.PERMISSION_COMPRAS.consignas', 'origen' => 'consignas.%s'],
+        ['module' => 'administracion', 'module_display' => 'Administración', 'submodule' => 'departamentos', 'submodule_display' => 'Departamentos', 'config' => 'permissions.PERMISSION_ADMINISTRACION.departamentos', 'origen' => 'gastos.departamentos.%s'],
+        ['module' => 'administracion', 'module_display' => 'Administración', 'submodule' => 'areas', 'submodule_display' => 'Áreas', 'config' => 'permissions.PERMISSION_ADMINISTRACION.areas', 'origen' => 'gastos.departamentos.%s'],
     ];
 
     public function run(): void
@@ -92,6 +99,47 @@ class ModulosOperativosPermissionSeeder extends Seeder
             }
         }
 
+        foreach (self::REUBICADOS as $reubicado) {
+            $permisos = config($reubicado['config']);
+            if (! is_array($permisos)) {
+                continue;
+            }
+
+            $module = Module::firstOrCreate(
+                ['name' => $reubicado['module']],
+                [
+                    'display_name' => $reubicado['module_display'],
+                    'description' => "Módulo de {$reubicado['module_display']}",
+                    'status' => 1,
+                ]
+            );
+            $submodule = Submodule::firstOrCreate(
+                [
+                    'module_id' => $module->id,
+                    'name' => $reubicado['submodule'],
+                ],
+                [
+                    'display_name' => $reubicado['submodule_display'],
+                    'description' => 'Submódulo de '.$reubicado['submodule_display'],
+                    'status' => 1,
+                ]
+            );
+
+            foreach ($permisos as $accion => $permissionName) {
+                $permission = Permission::firstOrCreate(['name' => $permissionName, 'guard_name' => 'web']);
+                ModulePermission::firstOrCreate(
+                    [
+                        'module_id' => null,
+                        'submodule_id' => $submodule->id,
+                        'permission_id' => $permission->id,
+                    ],
+                    ['permission_type' => 'base']
+                );
+                $allNames[] = $permissionName;
+                $this->copiarAsignacion(sprintf($reubicado['origen'], $accion), $permissionName);
+            }
+        }
+
         $allNames = array_values(array_unique($allNames));
 
         foreach (self::ROLES_DEFAULT as $roleName) {
@@ -103,5 +151,16 @@ class ModulosOperativosPermissionSeeder extends Seeder
         }
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
+    }
+
+    private function copiarAsignacion(string $origen, string $destino): void
+    {
+        $roles = Role::query()
+            ->whereHas('permissions', fn ($query) => $query->where('name', $origen))
+            ->get();
+
+        foreach ($roles as $role) {
+            $role->givePermissionTo($destino);
+        }
     }
 }

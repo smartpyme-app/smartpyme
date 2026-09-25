@@ -14,12 +14,13 @@ import { AlertService } from '../../../services/alert.service';
 import { ApiService } from '../../../services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { formatEmpresaCurrency } from '@helpers/currency-format.helper';
+import { PlanillaNavComponent } from '../planilla-nav/planilla-nav.component';
 
 @Component({
     selector: 'app-configuracion-planilla',
     templateUrl: './configuracion-planilla.component.html',
     standalone: true,
-    imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule],
+    imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, PlanillaNavComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ConfiguracionPlanillaComponent implements OnInit {

@@ -8,6 +8,7 @@ import { PipesModule } from '@pipes/pipes.module';
 
 import { IncentivosRoutingModule } from './incentivos-routing.module';
 import { DashboardComponent } from './dashboard/dashboard.component';
+import { PlanillaNavComponent } from '@views/planillas/planilla-nav/planilla-nav.component';
 
 @NgModule({
   declarations: [DashboardComponent],
@@ -18,7 +19,8 @@ import { DashboardComponent } from './dashboard/dashboard.component';
     IncentivosRoutingModule,
     SharedModule,
     PipesModule,
-    ModalModule.forRoot()
+    ModalModule.forRoot(),
+    PlanillaNavComponent
   ]
 })
 export class IncentivosModule {}

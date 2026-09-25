@@ -7,7 +7,7 @@ use App\Http\Controllers\Api\Comisiones\ComisionReglaController;
 use App\Http\Controllers\Api\Comisiones\ComisionReporteController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['verificar.funcionalidad:comisiones-vendedores'])->group(function () {
+Route::middleware(['verificar.funcionalidad:comisiones-vendedores', 'permission:planilla.comisiones.ver'])->group(function () {
     Route::get('comisiones/config/reglas', [ComisionReglaController::class, 'index']);
     Route::post('comisiones/config/reglas', [ComisionReglaController::class, 'store']);
     Route::put('comisiones/config/reglas/{id}', [ComisionReglaController::class, 'update']);

@@ -18,6 +18,7 @@ import {
 } from '@services/facturacion-electronica/contribuyente-hacienda.mapper';
 import { HaciendaContribuyenteClientService } from '@services/facturacion-electronica/hacienda-contribuyente-client.service';
 import { FeCrUbicacionService } from '@services/fe-cr-ubicacion.service';
+import { SucursalesNavComponent } from './sucursales-nav/sucursales-nav.component';
 import {
     alCambiarDepartamento,
     alCambiarDistrito,
@@ -30,7 +31,7 @@ import {
     selector: 'app-sucursales',
     templateUrl: './sucursales.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, TranslatePipe, NgSelectModule],
+    imports: [CommonModule, RouterModule, FormsModule, TranslatePipe, NgSelectModule, SucursalesNavComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SucursalesComponent extends BaseCrudComponent<any> implements OnInit {

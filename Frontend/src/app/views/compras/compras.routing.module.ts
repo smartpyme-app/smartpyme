@@ -277,11 +277,15 @@ const routes: Routes = [
       {
         path: 'departamentos-empresa',
         loadComponent: () => import('./gastos/departamento-empresa/departamento-empresa.component').then(m => m.DepartamentoEmpresaComponent),
+        canActivate: [PermissionGuard],
+        data: { permission: 'administracion.departamentos.ver' },
         title:'Departamentos de empresa'
       },
       {
         path: 'areas-empresa',
         loadComponent: () => import('./gastos/area-empresa/area-empresa.component').then(m => m.AreaEmpresaComponent),
+        canActivate: [PermissionGuard],
+        data: { permission: 'administracion.areas.ver' },
         title:'Áreas de empresa'
       },
         { path: 'gastos', component: GastosComponent, title:'Gastos', canActivate: gastosSupervisorRestriccion },
@@ -291,8 +295,8 @@ const routes: Routes = [
         { path: 'gasto/:id', component: GastoComponent, title:'Gasto', canActivate: gastosSupervisorRestriccion },
         { path: 'gastos/dash', component: GastosDashComponent, canActivate: gastosSupervisorRestriccion },
         { path: 'gastos/categorias', component: GastosCategoriasComponent, canActivate: gastosSupervisorRestriccion },
-        { path: 'gastos/departamentos-empresa', component: DepartamentoEmpresaComponent, title: 'Departamentos de empresa', canActivate: gastosSupervisorRestriccion },
-        { path: 'gastos/areas-empresa', component: AreaEmpresaComponent, title: 'Áreas de empresa', canActivate: gastosSupervisorRestriccion },
+        { path: 'gastos/departamentos-empresa', component: DepartamentoEmpresaComponent, title: 'Departamentos de empresa', canActivate: [PermissionGuard, ...gastosSupervisorRestriccion], data: { permission: 'administracion.departamentos.ver' } },
+        { path: 'gastos/areas-empresa', component: AreaEmpresaComponent, title: 'Áreas de empresa', canActivate: [PermissionGuard, ...gastosSupervisorRestriccion], data: { permission: 'administracion.areas.ver' } },
 
     ]
   }

@@ -24,6 +24,7 @@
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
+    <app-sucursales-nav></app-sucursales-nav>
     <div class="row">
         <div class="col-md-6 mb-3">
             @if (areas?.total) {
@@ -55,10 +56,7 @@
         </div>
     </div>
 
-    <div class="d-flex mb-3">
-        <div class="col d-flex gap-2">
-            <button class="btn btn-primary tcla-F5" tooltip="Filtrar (F5)" (click)="loadAll()">Todos</button>
-        </div>
+    <div class="d-flex mb-3 justify-content-end">
         <div class="col d-flex gap-2 justify-content-end">
             <select name="estado" (change)="aplicarFiltros()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
                 <option value="">Estado</option>

@@ -12,6 +12,7 @@ import { ConfigCategoriasComponent } from './config-categorias/config-categorias
 import { PeriodosLiquidacionesComponent } from './periodos-liquidaciones/periodos-liquidaciones.component';
 import { PeriodoDetalleComponent } from './periodo-detalle/periodo-detalle.component';
 import { ReportesComponent } from './reportes/reportes.component';
+import { PlanillaNavComponent } from '@views/planillas/planilla-nav/planilla-nav.component';
 
 @NgModule({
   declarations: [
@@ -28,7 +29,8 @@ import { ReportesComponent } from './reportes/reportes.component';
     SharedModule,
     PipesModule,
     TooltipModule.forRoot(),
-    PopoverModule.forRoot()
+    PopoverModule.forRoot(),
+    PlanillaNavComponent
   ]
 })
 export class ComisionesModule {}

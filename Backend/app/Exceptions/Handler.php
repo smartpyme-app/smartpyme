@@ -14,6 +14,7 @@ use Illuminate\Auth\AuthenticationException;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Spatie\Permission\Exceptions\UnauthorizedException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
@@ -153,6 +154,13 @@ class Handler extends ExceptionHandler
                 return $this->applyCorsToApi(
                     $request,
                     response()->json(['error' => $exception->getMessage(), 'code' => 500], 500)
+                );
+            }
+
+            if ($exception instanceof UnauthorizedException) {
+                return $this->applyCorsToApi(
+                    $request,
+                    response()->json(['error' => 'No tienes permiso para ver esta información.', 'code' => 403], 403)
                 );
             }
 

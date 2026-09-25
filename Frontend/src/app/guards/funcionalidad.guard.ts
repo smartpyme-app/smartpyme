@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Router, CanActivate, ActivatedRouteSnapshot } from '@angular/router';
-import { Observable } from 'rxjs';
+import { Observable, forkJoin } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { FuncionalidadesService } from '@services/functionalities.service';
 import { ApiService } from '@services/api.service';
@@ -17,6 +17,13 @@ export class FuncionalidadGuard implements CanActivate {
   ) {}
 
   canActivate(route: ActivatedRouteSnapshot): Observable<boolean> {
+    const slugs = route.data['funcionalidadSlugs'] as string[] | undefined;
+    if (slugs?.length) {
+      return forkJoin(slugs.map((item) => this.funcionalidadesService.verificarAcceso(item))).pipe(
+        map((accesos) => this.resolveAccess(accesos.some(Boolean)))
+      );
+    }
+
     const slug = route.data['funcionalidadSlug'] as string;
     if (!slug) {
       return this.funcionalidadesService.verificarAcceso(SLUG_DESCARGA_AUTOMATIZADA_DTES).pipe(
