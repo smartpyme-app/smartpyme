@@ -65,7 +65,7 @@ class LibrosIvaCrController extends Controller
         $idSucursal = $request->id_sucursal ? (int) $request->id_sucursal : null;
         $filas = $this->reporteDetalleIvaCrService->filasVentas($request->inicio, $request->fin, $idSucursal);
 
-        return Excel::download(new ReporteDetalleIvaVentasExport($filas), 'Reporte_Detalle_IVA.xlsx');
+        return Excel::download(new ReporteDetalleIvaVentasExport($filas, $request->inicio, $request->fin), 'Reporte_Detalle_IVA.xlsx');
     }
 
     public function reporteDetalleIvaVentasCsv(BaseLibroIVARequest $request)
@@ -75,7 +75,7 @@ class LibrosIvaCrController extends Controller
         $idSucursal = $request->id_sucursal ? (int) $request->id_sucursal : null;
         $filas = $this->reporteDetalleIvaCrService->filasVentas($request->inicio, $request->fin, $idSucursal);
 
-        return Excel::download(new ReporteDetalleIvaVentasExport($filas), 'Reporte_Detalle_IVA.csv', \Maatwebsite\Excel\Excel::CSV);
+        return Excel::download(new ReporteDetalleIvaVentasExport($filas, $request->inicio, $request->fin), 'Reporte_Detalle_IVA.csv', \Maatwebsite\Excel\Excel::CSV);
     }
 
     public function reporteDetalleIvaComprasExcel(BaseLibroIVARequest $request)
@@ -85,7 +85,7 @@ class LibrosIvaCrController extends Controller
         $idSucursal = $request->id_sucursal ? (int) $request->id_sucursal : null;
         $filas = $this->reporteDetalleIvaCrService->filasCompras($request->inicio, $request->fin, $idSucursal);
 
-        return Excel::download(new ReporteDetalleIvaComprasExport($filas), 'Reporte_Detalle_IVA_Compras.xlsx');
+        return Excel::download(new ReporteDetalleIvaComprasExport($filas, $request->inicio, $request->fin), 'Reporte_Detalle_IVA_Compras.xlsx');
     }
 
     public function reporteDetalleIvaComprasCsv(BaseLibroIVARequest $request)
@@ -95,7 +95,7 @@ class LibrosIvaCrController extends Controller
         $idSucursal = $request->id_sucursal ? (int) $request->id_sucursal : null;
         $filas = $this->reporteDetalleIvaCrService->filasCompras($request->inicio, $request->fin, $idSucursal);
 
-        return Excel::download(new ReporteDetalleIvaComprasExport($filas), 'Reporte_Detalle_IVA_Compras.csv', \Maatwebsite\Excel\Excel::CSV);
+        return Excel::download(new ReporteDetalleIvaComprasExport($filas, $request->inicio, $request->fin), 'Reporte_Detalle_IVA_Compras.csv', \Maatwebsite\Excel\Excel::CSV);
     }
 
     public function reporteDetalleIvaVentasPdf(BaseLibroIVARequest $request)

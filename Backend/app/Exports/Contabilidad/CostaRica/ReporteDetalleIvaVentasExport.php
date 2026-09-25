@@ -4,21 +4,29 @@ namespace App\Exports\Contabilidad\CostaRica;
 
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
-use Maatwebsite\Excel\Concerns\WithHeadings;
 
 /** Columnas alineadas con plantilla Reporte_Detalle_IVA (ventas). */
-final class ReporteDetalleIvaVentasExport implements FromCollection, WithHeadings
+final class ReporteDetalleIvaVentasExport implements FromCollection
 {
     /** @param  array<int, array<string, mixed>>|Collection<int, array<string, mixed>>  $filas */
     public function __construct(
-        private readonly array|Collection $filas
+        private readonly array|Collection $filas,
+        private readonly string $inicio = '',
+        private readonly string $fin = '',
     ) {}
 
     public function collection(): Collection
     {
         $c = is_array($this->filas) ? collect($this->filas) : $this->filas;
+        $headings = $this->headings();
+        $blank = array_fill(0, count($headings), '');
+        $periodo = $blank;
+        $periodo[0] = 'PERIODO: '.$this->inicio.' al '.$this->fin;
+        $grupos = $blank;
+        $grupos[15] = 'SUBTOTALES';
+        $grupos[23] = 'DETALLES IVA';
 
-        return $c->map(function (array $r) {
+        $datos = $c->map(function (array $r) {
             return [
                 $r['nombre_emisor'] ?? '',
                 $r['rfc_emisor'] ?? '',
@@ -51,6 +59,8 @@ final class ReporteDetalleIvaVentasExport implements FromCollection, WithHeading
                 (float) ($r['iva_devuelto'] ?? 0),
             ];
         });
+
+        return collect([$periodo, $grupos, $headings])->concat($datos);
     }
 
     /** @return array<int, string> */

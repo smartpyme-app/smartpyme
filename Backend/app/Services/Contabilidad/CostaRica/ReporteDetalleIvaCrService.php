@@ -572,7 +572,7 @@ final class ReporteDetalleIvaCrService
             'exoneracion' => $tieneExo ? 'SI' : 'NO',
         ];
         if (! $libroCompras) {
-            $row['exo_porc'] = $exoPorc === '' ? '' : round((float) $exoPorc, 2);
+            $row['exo_porc'] = $exoPorc === '' ? 0 : round((float) $exoPorc, 2);
         }
         $row['retenciones'] = $retenciones;
         $row['folio'] = $folio;
@@ -612,7 +612,7 @@ final class ReporteDetalleIvaCrService
             $code = (string) ($p0['payment_method'] ?? $p0['tipo'] ?? '01');
             $monto = isset($p0['amount']) ? round((float) $p0['amount'] * $tasaCambio * abs($signe), 5) : 0.0;
 
-            return $code.':'.$monto.':'.($signe < 0 ? 'Devolución / ajuste' : 'Pago');
+            return $code.':'.number_format($monto, 5, '.', '').':'.($signe < 0 ? 'Devolución / ajuste' : 'Pago');
         }
         $total = 0.0;
         if (is_object($model) && property_exists($model, 'total')) {
@@ -626,7 +626,7 @@ final class ReporteDetalleIvaCrService
             $forma = 'Efectivo';
         }
 
-        return '01:'.$total.':'.$forma;
+        return '01:'.number_format($total, 5, '.', '').':'.$forma;
     }
 
     /** @return array<string, float> */
