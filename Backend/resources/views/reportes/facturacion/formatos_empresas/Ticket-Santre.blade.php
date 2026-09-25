@@ -192,7 +192,9 @@
 
         // CAI / rango / fecha límite — mismas claves y formato que Accesorios HN
         $cai = data_get($empresa->custom_empresa, 'configuraciones.factura_cai') ?: $documento->resolucion;
-        $rangoAuth = data_get($empresa->custom_empresa, 'configuraciones.factura_rango_autorizado') ?: $documento->rangos;
+        $rangoAuth = data_get($empresa->custom_empresa, 'configuraciones.factura_rango_autorizado')
+            ?: (trim((string) ($documento->rangos ?? '')) !== '' ? $documento->rangos : null)
+            ?: (trim((string) ($documento->numero_autorizacion ?? '')) !== '' ? $documento->numero_autorizacion : null);
         $fechaLimiteCai = data_get($empresa->custom_empresa, 'configuraciones.factura_fecha_limite');
         if ($fechaLimiteCai) {
             try {
@@ -387,8 +389,7 @@
         <p class="mt2"><span class="b">Total en letras</span></p>
         <p class="mt1 up">{{ strtoupper($dolares) }} LEMPIRAS {{ $centavosNum }}/100</p>
         @if ($rangoAuth)
-            <p class="mt2"><span class="b">Rango autorizado</span></p>
-            <p class="mt1">{{ $rangoAuth }}</p>
+            <p class="mt2"><span class="b">Rango Autorizado:</span> {{ $rangoAuth }}</p>
         @endif
         @if ($fechaLimiteFmt)
             <p class="mt2"><span class="b">Fecha limite de emisión:</span></p>
