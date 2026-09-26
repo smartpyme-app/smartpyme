@@ -5,13 +5,13 @@ use Illuminate\Support\Facades\Route;
 
 Route::group(['prefix' => 'area-empresa', 'middleware' => ['jwt.auth']], function () {
     Route::controller(AreasEmpresaController::class)->group(function () {
-        Route::get('/list', 'list');                       // Lista simple para selectores
-        Route::get('/list_departamentos', 'list_departamentos');                       // Lista simple para selectores
-        Route::get('/exportar', 'exportar');               // Exportar a Excel
-        Route::post('/cambiar-estado-multiple', 'cambiarEstadoMultiple'); // Cambiar estado en lote
-        Route::get('/', 'index');                          // Listar con filtros y paginación
-        Route::post('/', 'store');                         // Crear o actualizar
-        Route::get('/{id}', 'show');                       // Mostrar área específica
-        Route::delete('/{id}', 'destroy');                 // Eliminar área
+        Route::get('/list', 'list');
+        Route::get('/list_departamentos', 'list_departamentos');
+        Route::get('/exportar', 'exportar')->middleware('permission:administracion.areas.ver');
+        Route::post('/cambiar-estado-multiple', 'cambiarEstadoMultiple')->middleware('permission:administracion.areas.editar');
+        Route::get('/', 'index')->middleware('permission:administracion.areas.ver');
+        Route::post('/', 'store')->middleware('permission:administracion.areas.crear|administracion.areas.editar');
+        Route::get('/{id}', 'show')->middleware('permission:administracion.areas.ver');
+        Route::delete('/{id}', 'destroy')->middleware('permission:administracion.areas.eliminar');
     });
 });

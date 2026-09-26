@@ -10,6 +10,7 @@ import { PipesModule } from '@pipes/pipes.module';
 import { BonosRoutingModule } from './bonos-routing.module';
 import { ReglasComponent } from './reglas/reglas.component';
 import { GeneradosComponent } from './generados/generados.component';
+import { PlanillaNavComponent } from '@views/planillas/planilla-nav/planilla-nav.component';
 
 @NgModule({
   declarations: [
@@ -24,7 +25,8 @@ import { GeneradosComponent } from './generados/generados.component';
     SharedModule,
     PipesModule,
     TooltipModule.forRoot(),
-    PopoverModule.forRoot()
+    PopoverModule.forRoot(),
+    PlanillaNavComponent
   ]
 })
 export class BonosModule {}

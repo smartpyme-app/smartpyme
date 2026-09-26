@@ -1,0 +1,11 @@
+<div class="d-flex flex-wrap gap-2 mb-3">
+    @if (apiService.hasPermission('administracion.sucursales.ver')) {
+        <a class="btn" routerLink="/sucursales" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}">Todos</a>
+    }
+    @if (apiService.hasPermission('administracion.departamentos.ver')) {
+        <a class="btn" routerLink="/departamentos-empresa" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}">Departamentos</a>
+    }
+    @if (apiService.hasPermission('administracion.areas.ver')) {
+        <a class="btn" routerLink="/areas-empresa" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}">Áreas</a>
+    }
+</div>

@@ -72,8 +72,8 @@
                 @if (usuario.empresa?.modulo_proyectos) {
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/proyectos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/share-2.png" class="icon me-2">Proyectos</a></li>
                 }
-                @if (tieneIncentivosHabilitada) {
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/incentivos/vendedores']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/clipboard.png" class="icon me-2">Incentivos</a></li>
+                @if (apiService.canAccederOperacionesInventario() && apiService.hasPermission('ventas.consignas.ver')) {
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/consignas/ventas']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/package.png" class="icon me-2">Consignas</a></li>
                 }
                 @if (tieneGiftCardsHabilitada) {
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/gift-cards/consulta']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/money-transaction.png" class="icon me-2">Gift Cards</a></li>
@@ -94,6 +94,9 @@
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/compras']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/arrow-right.png" class="icon me-2">Registros</a></li>
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/ordenes-de-compras']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/tag.png" class="icon me-2">Órdenes de compra</a></li>
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/proveedores']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/user-check.png" class="icon me-2">Proveedores</a></li>
+                    @if (apiService.canAccederOperacionesInventario() && apiService.hasPermission('compras.consignas.ver')) {
+                        <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/consignas']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/package.png" class="icon me-2">Consignas</a></li>
+                    }
                   </ul>
                 </div>
             </li>
@@ -105,8 +108,6 @@
                   <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/gastos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/arrow-right.png" class="icon me-2">Registros</a></li>
                     <li *ngIf="apiService.mostrarMenuConfigGastos(contabilidadHabilitada)" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/gastos/categorias']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/folder.png" class="icon me-2">Categorías</a></li>
-                    <li *ngIf="apiService.mostrarMenuConfigGastos(contabilidadHabilitada)" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/departamentos-empresa']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/building-cog.png" class="icon me-2">Departamentos</a></li>
-                    <li *ngIf="apiService.mostrarMenuConfigGastos(contabilidadHabilitada)" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/areas-empresa']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/2-layers.png" class="icon me-2">Áreas</a></li>
                   </ul>
                 </div>
             </li>
@@ -132,20 +133,28 @@
                   </ul>
                 </div>
             </li>
+          @if (mostrarMenuPlanilla) {
           <li class="mb-1">
             <button (click)="togglePlanilla()" tooltip="Planilla" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!planillaIsCollapsed" aria-controls="collapsePlanilla">
               <img src="/assets/icons/clipboard.png" class="icon me-2">Planilla
             </button>
             <div [collapse]="planillaIsCollapsed" [isAnimated]="true">
               <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/planilla/empleados']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/user.png" class="icon me-2">Empleados</a></li>
-                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/planilla/']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/clipboard.png" class="icon me-2">Planillas</a></li>
+                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: false}"><a [routerLink]="[enlacePlanillas]" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/clipboard.png" class="icon me-2">Planillas</a></li>
                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/planilla/aguinaldos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/gift.png" class="icon me-2">Aguinaldos</a></li>
-                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/planilla/configuracion-planilla']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/settings.png" class="icon me-2">Configuración Planillas</a></li>
-                <!-- <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/planilla/detalles']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/clipboard.png" class="icon me-2">Detalles planilla</a></li> -->
+                @if (tieneComisionesHabilitada && (apiService.hasPermission('planilla.comisiones.ver') || apiService.hasPermission('planilla.ver'))) {
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: false}"><a [routerLink]="['/comisiones/configuracion']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/clipboard.png" class="icon me-2">Comisiones</a></li>
+                }
+                @if (tieneBonosHabilitada && (apiService.hasPermission('planilla.bonos.ver') || apiService.hasPermission('planilla.ver'))) {
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: false}"><a [routerLink]="['/bonos/reglas']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/money-transaction.png" class="icon me-2">Bonos</a></li>
+                }
+                @if (tieneIncentivosHabilitada && (apiService.hasPermission('planilla.incentivos.ver') || apiService.hasPermission('planilla.ver'))) {
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/incentivos/vendedores']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/clipboard.png" class="icon me-2">Incentivos</a></li>
+                }
               </ul>
             </div>
           </li>
+          }
             @if (usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor') {
                 <li class="mb-1">
                     <button (click)="toggleAdmin()" tooltip="Admin" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!adminIsCollapsed" aria-controls="collapseBasic">
@@ -212,48 +221,6 @@
                     </div>
                 </li>
             }
-            <li *ngIf="tieneComisionesHabilitada" class="mb-1">
-                <button (click)="toggleComisiones()" tooltip="Comisiones" [adaptivePosition]="false" placement="right"
-                    class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1"
-                    [attr.aria-expanded]="!comisionesIsCollapsed" aria-controls="collapseComisionesAdmin">
-                    <img src="/assets/icons/clipboard.png" class="icon me-2">Comisiones
-                </button>
-                <div [collapse]="comisionesIsCollapsed" [isAnimated]="true">
-                    <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                        <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a
-                                [routerLink]="['/comisiones/configuracion']"
-                                class="link-body-emphasis d-inline-flex text-decoration-none"><img
-                                    src="/assets/icons/settings.png" class="icon me-2">Configuración</a></li>
-                        <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a
-                                [routerLink]="['/comisiones/periodos']"
-                                class="link-body-emphasis d-inline-flex text-decoration-none"><img
-                                    src="/assets/icons/clipboard.png" class="icon me-2">Períodos</a></li>
-                        <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a
-                                [routerLink]="['/comisiones/reportes']"
-                                class="link-body-emphasis d-inline-flex text-decoration-none"><img
-                                    src="/assets/icons/download.png" class="icon me-2">Reportes</a></li>
-                    </ul>
-                </div>
-            </li>
-            <li *ngIf="tieneBonosHabilitada" class="mb-1">
-                <button (click)="toggleBonos()" tooltip="Bonos" [adaptivePosition]="false" placement="right"
-                    class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1"
-                    [attr.aria-expanded]="!bonosIsCollapsed" aria-controls="collapseBonosAdmin">
-                    <img src="/assets/icons/money-transaction.png" class="icon me-2">Bonos
-                </button>
-                <div [collapse]="bonosIsCollapsed" [isAnimated]="true">
-                    <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                        <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a
-                                [routerLink]="['/bonos/reglas']"
-                                class="link-body-emphasis d-inline-flex text-decoration-none"><img
-                                    src="/assets/icons/settings.png" class="icon me-2">Reglas</a></li>
-                        <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a
-                                [routerLink]="['/bonos/generados']"
-                                class="link-body-emphasis d-inline-flex text-decoration-none"><img
-                                    src="/assets/icons/clipboard.png" class="icon me-2">Generados</a></li>
-                    </ul>
-                </div>
-            </li>
             <li *ngIf="mostrarMenuRestaurante && apiService.hasPermission('restaurante.ver')" class="mb-1">
                 <button (click)="toggleRestaurante()" tooltip="Restaurante" [adaptivePosition]="false" placement="right"
                     class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1"

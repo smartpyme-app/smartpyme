@@ -18,8 +18,6 @@ const routes: Routes = [
     path: 'planilla',
     component: LayoutComponent,
     title: 'Planillas',
-    canActivate: [PermissionGuard],
-    data: { permission: 'planilla.ver' },
     children: [
       {path: '', component: PlanillasComponent, title: 'Planillas', canActivate: [PermissionGuard], data: { permission: 'planilla.registros.ver' }},
       {path: 'empleados', component: EmpleadosComponent, title: 'Empleados', canActivate: [PermissionGuard], data: { permission: 'planilla.empleados.ver' }},

@@ -5,7 +5,7 @@ use App\Http\Controllers\Api\Bonos\BonoGeneradoController;
 use App\Http\Controllers\Api\Bonos\BonoReglaController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['verificar.funcionalidad:bonos-vendedores'])->group(function () {
+Route::middleware(['verificar.funcionalidad:bonos-vendedores', 'permission:planilla.bonos.ver'])->group(function () {
     Route::get('bonos/reglas', [BonoReglaController::class, 'index']);
     Route::post('bonos/reglas', [BonoReglaController::class, 'store']);
     Route::get('bonos/reglas/{id}', [BonoReglaController::class, 'show']);

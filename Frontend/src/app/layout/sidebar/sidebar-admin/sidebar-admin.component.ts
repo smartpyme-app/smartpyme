@@ -62,6 +62,38 @@ export class SidebarAdminComponent extends BaseComponent implements OnInit, OnDe
         return this.tieneComisionesHabilitada || this.tieneBonosHabilitada || this.tieneGiftCardsHabilitada;
     }
 
+    public get mostrarMenuPlanilla(): boolean {
+        return this.apiService.hasPermission('planilla.ver')
+            || this.apiService.hasPermission('planilla.registros.ver')
+            || this.apiService.hasPermission('planilla.empleados.ver')
+            || this.apiService.hasPermission('planilla.configuracion.ver')
+            || (this.tieneComisionesHabilitada && this.apiService.hasPermission('planilla.comisiones.ver'))
+            || (this.tieneBonosHabilitada && this.apiService.hasPermission('planilla.bonos.ver'))
+            || (this.tieneIncentivosHabilitada && this.apiService.hasPermission('planilla.incentivos.ver'));
+    }
+
+    public get enlacePlanillas(): string {
+        if (this.apiService.hasPermission('planilla.registros.ver')) {
+            return '/planilla';
+        }
+        if (this.apiService.hasPermission('planilla.empleados.ver')) {
+            return '/planilla/empleados';
+        }
+        if (this.apiService.hasPermission('planilla.configuracion.ver')) {
+            return '/planilla/configuracion-planilla';
+        }
+        if (this.tieneComisionesHabilitada && this.apiService.hasPermission('planilla.comisiones.ver')) {
+            return '/comisiones/configuracion';
+        }
+        if (this.tieneBonosHabilitada && this.apiService.hasPermission('planilla.bonos.ver')) {
+            return '/bonos/reglas';
+        }
+        if (this.tieneIncentivosHabilitada && this.apiService.hasPermission('planilla.incentivos.ver')) {
+            return '/incentivos/vendedores';
+        }
+        return '/planilla';
+    }
+
     public get mostrarMenuCreditos(): boolean {
         return puedeVerMenuCreditos(this.tieneCreditosHabilitada, true);
     }

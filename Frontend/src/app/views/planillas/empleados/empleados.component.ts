@@ -16,12 +16,13 @@ import { VerHistorialButtonComponent } from './shared/ver-historial-button.compo
 import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
+import { PlanillaNavComponent } from '../planilla-nav/planilla-nav.component';
 
 @Component({
     selector: 'app-empleados',
     templateUrl: './empleados.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, PopoverModule, TooltipModule, PaginationComponent, VerHistorialButtonComponent, NotificacionesContainerComponent, LazyImageDirective, TranslatePipe],
+    imports: [CommonModule, RouterModule, FormsModule, PopoverModule, TooltipModule, PaginationComponent, VerHistorialButtonComponent, NotificacionesContainerComponent, LazyImageDirective, TranslatePipe, PlanillaNavComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EmpleadosComponent extends BaseCrudComponent<any> implements OnInit {

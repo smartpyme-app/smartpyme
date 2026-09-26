@@ -45,7 +45,6 @@ class PermissionSeeder extends Seeder
             'PERMISSION_COMPRAS' => 'Compras',
             'PERMISSION_GASTOS' => 'Gastos',
             'PERMISSION_PLANILLA' => 'Planilla',
-            'PERMISSION_CONSIGNAS' => 'Consignas',
             'PERMISSION_RESTAURANTE' => 'Restaurante',
             'PERMISSION_PEDIDOS' => 'Pedidos',
             'PERMISSION_CITAS' => 'Citas',

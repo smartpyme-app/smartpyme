@@ -1,0 +1,35 @@
+@if (!enComisiones && !enBonos && !enIncentivos) {
+<div class="d-flex flex-wrap gap-2 mb-3">
+    @if (apiService.hasPermission('planilla.registros.ver')) {
+        <a class="btn" routerLink="/planilla" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}">Planillas</a>
+    }
+    @if (apiService.hasPermission('planilla.empleados.ver')) {
+        <a class="btn" routerLink="/planilla/empleados" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}">Empleados</a>
+    }
+    @if (apiService.hasPermission('planilla.configuracion.ver')) {
+        <a class="btn" routerLink="/planilla/configuracion-planilla" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}">Configuración</a>
+    }
+    @if (mostrarComisiones) {
+        <a class="btn" routerLink="/comisiones/configuracion" [class.btn-primary]="enComisiones">Comisiones</a>
+    }
+    @if (mostrarBonos) {
+        <a class="btn" routerLink="/bonos/reglas" [class.btn-primary]="enBonos">Bonos</a>
+    }
+    @if (mostrarIncentivos) {
+        <a class="btn" routerLink="/incentivos/vendedores" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}">Incentivos</a>
+    }
+</div>
+}
+@if (enComisiones && mostrarComisiones) {
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <a class="btn" routerLink="/comisiones/configuracion" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}">Configuración</a>
+        <a class="btn" routerLink="/comisiones/periodos" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}">Períodos</a>
+        <a class="btn" routerLink="/comisiones/reportes" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}">Reportes</a>
+    </div>
+}
+@if (enBonos && mostrarBonos) {
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <a class="btn" routerLink="/bonos/reglas" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}">Reglas</a>
+        <a class="btn" routerLink="/bonos/generados" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}">Generados</a>
+    </div>
+}
