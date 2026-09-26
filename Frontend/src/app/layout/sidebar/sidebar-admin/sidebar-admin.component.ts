@@ -17,12 +17,13 @@ import { FormControl } from '@angular/forms';
 import { debounceTime, switchMap, filter, filter as rxFilter } from 'rxjs/operators';
 import { Subject, takeUntil } from 'rxjs';
 import { BaseComponent } from '@shared/base/base.component';
+import { RestauranteSidebarLinksComponent } from '../restaurante-sidebar-links.component';
 
 @Component({
     selector: 'app-sidebar-admin',
     templateUrl: './sidebar-admin.component.html',
     standalone: true,
-    imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, CollapseModule, TooltipModule],
+    imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, CollapseModule, TooltipModule, RestauranteSidebarLinksComponent],
 
 })
 

@@ -104,6 +104,8 @@
   <p class="text-center"><strong>
     @if($dest === 'eliminacion')
       --- ELIMINADO ---
+    @elseif($comanda->pantalla)
+      --- {{ strtoupper($comanda->pantalla->nombre) }} ---
     @elseif($dest === 'barra')
       --- BARRA ---
     @else

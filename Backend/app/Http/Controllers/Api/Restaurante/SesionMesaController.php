@@ -18,6 +18,7 @@ use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 
 class SesionMesaController extends Controller
@@ -109,8 +110,9 @@ class SesionMesaController extends Controller
             ->with([
                 'mesa.zonaRestaurante',
                 'mesero',
-                'ordenDetalle.producto',
+                'ordenDetalle.producto.pantallasComanda',
                 'ordenDetalle.presentacion',
+                'ordenDetalle.enviosPantalla.pantalla',
                 'preCuentas.ordenDetalles.producto',
             ])
             ->findOrFail($id);
@@ -268,8 +270,9 @@ class SesionMesaController extends Controller
         $sesion->load([
             'mesa.zonaRestaurante',
             'mesero',
-            'ordenDetalle.producto',
+            'ordenDetalle.producto.pantallasComanda',
             'ordenDetalle.presentacion',
+            'ordenDetalle.enviosPantalla.pantalla',
             'preCuentas.ordenDetalles.producto',
         ]);
 
@@ -370,6 +373,19 @@ class SesionMesaController extends Controller
         }
         $existente = $q->first();
         if ($existente) {
+            if (Schema::hasTable('restaurante_envio_pantalla')) {
+                $pantallaIds = DB::table('restaurante_envio_pantalla')
+                    ->where('orden_detalle_id', $item->id)
+                    ->pluck('pantalla_id');
+                foreach ($pantallaIds as $pantallaId) {
+                    DB::table('restaurante_envio_pantalla')->insertOrIgnore([
+                        'pantalla_id' => $pantallaId,
+                        'orden_detalle_id' => $existente->id,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+            }
             $existente->update([
                 'cantidad' => $existente->cantidad + $item->cantidad,
             ]);

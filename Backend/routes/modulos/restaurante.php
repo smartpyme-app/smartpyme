@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\Restaurante\PreCuentaController;
 use App\Http\Controllers\Api\Restaurante\ReservaController;
 use App\Http\Controllers\Api\Restaurante\PedidoRestauranteController;
 use App\Http\Controllers\Api\Restaurante\ZonaRestauranteController;
+use App\Http\Controllers\Api\Restaurante\PantallaRestauranteController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('restaurante')
@@ -25,6 +26,12 @@ Route::prefix('restaurante')
         Route::get('/pos-menu/categorias/{id}/contenido', [PosMenuController::class, 'contenidoCategoria'])->middleware('permission:restaurante.ver');
         Route::get('/pos-menu/subcategorias/{id}/productos', [PosMenuController::class, 'productosSubcategoria'])->middleware('permission:restaurante.ver');
         Route::get('/pos-menu/buscar', [PosMenuController::class, 'buscar'])->middleware('permission:restaurante.ver');
+
+        // Pantallas de comanda
+        Route::get('/pantallas', [PantallaRestauranteController::class, 'index'])->middleware('permission:restaurante.ver');
+        Route::post('/pantallas', [PantallaRestauranteController::class, 'store'])->middleware('permission:restaurante.crear');
+        Route::put('/pantallas/{id}', [PantallaRestauranteController::class, 'update'])->middleware('permission:restaurante.editar');
+        Route::delete('/pantallas/{id}', [PantallaRestauranteController::class, 'destroy'])->middleware('permission:restaurante.eliminar');
 
         // Zonas
         Route::get('/zonas', [ZonaRestauranteController::class, 'index'])->middleware('permission:restaurante.ver');

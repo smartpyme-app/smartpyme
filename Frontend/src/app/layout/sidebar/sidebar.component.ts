@@ -17,6 +17,7 @@ import { FormControl } from '@angular/forms';
 import { debounceTime, switchMap, filter  } from 'rxjs/operators';
 import { BaseComponent } from '@shared/base/base.component';
 import { LazyImageDirective } from '../../directives/lazy-image.directive';
+import { RestauranteSidebarLinksComponent } from './restaurante-sidebar-links.component';
 import { filter as rxFilter } from 'rxjs/operators';
 import { Subject, takeUntil } from 'rxjs';
 
@@ -31,7 +32,8 @@ import { Subject, takeUntil } from 'rxjs';
         ReactiveFormsModule,
         CollapseModule,
         TooltipModule,
-        LazyImageDirective
+        LazyImageDirective,
+        RestauranteSidebarLinksComponent
     ],
 
 })

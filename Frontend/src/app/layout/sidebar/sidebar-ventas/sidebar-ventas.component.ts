@@ -8,12 +8,13 @@ import { ApiService } from '@services/api.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { filter as rxFilter } from 'rxjs/operators';
+import { RestauranteSidebarLinksComponent } from '../restaurante-sidebar-links.component';
 
 @Component({
     selector: 'app-sidebar-ventas',
     templateUrl: './sidebar-ventas.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, TooltipModule, CollapseModule],
+    imports: [CommonModule, RouterModule, TooltipModule, CollapseModule, RestauranteSidebarLinksComponent],
 })
 export class SidebarVentasComponent implements OnInit {
     public sidebarCollapsed:boolean = false;

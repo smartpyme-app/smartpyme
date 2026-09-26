@@ -48,4 +48,9 @@ class OrdenDetalle extends Model
     {
         return $this->hasMany(ComandaDetalle::class, 'orden_detalle_id');
     }
+
+    public function enviosPantalla()
+    {
+        return $this->hasMany(EnvioPantalla::class, 'orden_detalle_id');
+    }
 }

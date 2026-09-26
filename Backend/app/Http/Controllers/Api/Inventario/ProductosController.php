@@ -25,6 +25,7 @@ use App\Exports\ProductosExport;
 use App\Imports\TrasladosImport;
 use App\Models\Inventario\Traslado;
 use App\Imports\InventarioImport;
+use App\Services\Restaurante\PantallasComandaService;
 use Maatwebsite\Excel\Facades\Excel;
 // use Auth;
 use App\Exports\WooCommerceExport;
@@ -622,6 +623,10 @@ class ProductosController extends Controller
             $with[] = 'impuestos';
         }
 
+        if (Schema::hasTable('producto_restaurante_pantalla')) {
+            $with[] = 'pantallasComanda';
+        }
+
         $producto = Producto::where('id', $id)
             ->with($with)
             ->firstOrFail();
@@ -731,6 +736,14 @@ class ProductosController extends Controller
 
         if (Schema::hasTable('producto_impuestos')) {
             $producto->load('impuestos');
+        }
+
+        if ($request->exists('pantalla_ids') && Schema::hasTable('producto_restaurante_pantalla')) {
+            app(PantallasComandaService::class)->syncProducto(
+                $producto,
+                (array) $request->input('pantalla_ids', [])
+            );
+            $producto->load('pantallasComanda');
         }
 
         $payload = $producto->toArray();

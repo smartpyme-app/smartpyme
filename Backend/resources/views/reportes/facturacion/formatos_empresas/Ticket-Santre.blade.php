@@ -76,9 +76,8 @@
             ? $sucursalVenta->nombre
             : 'Principal';
 
-        // Correlativo HN: prefijo + 8 dígitos (p. ej. 001-001-01-00000001).
-        // El UI de documentos no captura `prefijo`; Accesorios lo cubre con mapa por sucursal.
-        // Aquí: sucursal → documento.prefijo → prefijo extraído del rango autorizado (Serie).
+        // Correlativo HN: 001-001-01- + 8 dígitos (879 → 001-001-01-00000879).
+        // Sucursal o documento.prefijo o el rango CAI pueden reemplazar el prefijo.
         $corr = str_pad((string) $venta->correlativo, 8, '0', STR_PAD_LEFT);
         $prefPorSucursalJson = data_get($empresa->custom_empresa, 'configuraciones.prefijo_factura_santre_por_sucursal', []);
         $prefPorSucursal = is_array($prefPorSucursalJson) ? $prefPorSucursalJson : [];
@@ -102,9 +101,16 @@
                 $pref = $mPref[1];
             }
         }
-        $numFacturaDisplay = $pref !== '' ? rtrim($pref, '-').'-'.$corr : $corr;
+        if ($pref === '') {
+            $pref = '001-001-01-';
+        }
+        $numFacturaDisplay = rtrim($pref, '-').'-'.$corr;
 
         $fechaEmision = \Carbon\Carbon::parse($venta->fecha);
+        if ($venta->created_at) {
+            $horaVenta = \Carbon\Carbon::parse($venta->created_at);
+            $fechaEmision->setTime($horaVenta->hour, $horaVenta->minute);
+        }
         $fechaEmisionFmt = $fechaEmision->locale('es')->isoFormat('D [de] MMMM [de] YYYY HH:mm');
         $metodoPago = trim((string) ($venta->forma_pago ?: $venta->condicion ?: ''));
         $nombreCliente = trim((string) ($venta->nombre_cliente ?? '')) !== ''
@@ -190,7 +196,9 @@
 
         // CAI / rango / fecha límite — mismas claves y formato que Accesorios HN
         $cai = data_get($empresa->custom_empresa, 'configuraciones.factura_cai') ?: $documento->resolucion;
-        $rangoAuth = data_get($empresa->custom_empresa, 'configuraciones.factura_rango_autorizado') ?: $documento->rangos;
+        $rangoAuth = data_get($empresa->custom_empresa, 'configuraciones.factura_rango_autorizado')
+            ?: (trim((string) ($documento->rangos ?? '')) !== '' ? $documento->rangos : null)
+            ?: (trim((string) ($documento->numero_autorizacion ?? '')) !== '' ? $documento->numero_autorizacion : null);
         $fechaLimiteCai = data_get($empresa->custom_empresa, 'configuraciones.factura_fecha_limite');
         if ($fechaLimiteCai) {
             try {
@@ -385,8 +393,7 @@
         <p class="mt2"><span class="b">Total en letras</span></p>
         <p class="mt1 up">{{ strtoupper($dolares) }} LEMPIRAS {{ $centavosNum }}/100</p>
         @if ($rangoAuth)
-            <p class="mt2"><span class="b">Rango autorizado</span></p>
-            <p class="mt1">{{ $rangoAuth }}</p>
+            <p class="mt2"><span class="b">Rango Autorizado:</span> {{ $rangoAuth }}</p>
         @endif
         @if ($fechaLimiteFmt)
             <p class="mt2"><span class="b">Fecha limite de emisión:</span></p>

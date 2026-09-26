@@ -108,31 +108,47 @@ export class CuentaMesaComponent implements OnInit {
   }
 
   itemFueEnviado(item: any): boolean {
-    return !!(item?.enviado_cocina || item?.enviado_barra);
+    return !!(item?.enviado_cocina || item?.enviado_barra || item?.envios_pantalla?.length);
   }
 
-  normalizarDestinoProducto(p: any): string {
-    const d = String(p?.destino_comanda || 'cocina').toLowerCase().trim();
-    if (d === 'barra' || d === 'ambos') {
-      return d;
+  nombresPantallasEnviadas(item: any): string[] {
+    const envios = item?.envios_pantalla;
+    if (Array.isArray(envios) && envios.length) {
+      return envios
+        .map((e: { pantalla?: { nombre?: string } }) => e.pantalla?.nombre)
+        .filter((nombre: string | undefined): nombre is string => !!nombre);
     }
-    return 'cocina';
+    const nombres: string[] = [];
+    if (item?.enviado_cocina) {
+      nombres.push('Cocina');
+    }
+    if (item?.enviado_barra) {
+      nombres.push('Barra');
+    }
+    return nombres;
   }
 
-  /** Hay envío pendiente para cocina y/o barra según producto. */
+  /** Hay envío pendiente para alguna pantalla asignada al producto. */
   itemPendienteDeEnvio(item: any): boolean {
     const p = item?.producto;
     if (!p?.genera_comanda) {
       return false;
     }
-    const dest = this.normalizarDestinoProducto(p);
-    if (dest === 'cocina') {
-      return !item.enviado_cocina;
+    const asignadas = p.pantallas_comanda;
+    if (Array.isArray(asignadas) && asignadas.length) {
+      const enviadas = new Set(
+        (item.envios_pantalla || []).map((e: { pantalla_id?: number }) => e.pantalla_id)
+      );
+      return asignadas.some((pantalla: { id: number; activo?: boolean }) => pantalla.activo !== false && !enviadas.has(pantalla.id));
     }
+    const dest = String(p?.destino_comanda || 'cocina').toLowerCase().trim();
     if (dest === 'barra') {
       return !item.enviado_barra;
     }
-    return !item.enviado_cocina || !item.enviado_barra;
+    if (dest === 'ambos') {
+      return !item.enviado_cocina || !item.enviado_barra;
+    }
+    return !item.enviado_cocina;
   }
 
   cargarSesion(): void {

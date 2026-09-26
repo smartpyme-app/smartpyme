@@ -3,6 +3,7 @@
 namespace App\Models\Inventario;
 
 use App\Models\Concerns\AuditableModel;
+use App\Models\Restaurante\PantallaRestaurante;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Builder;
@@ -322,6 +323,16 @@ class Producto extends AuditableModel
     public function presentaciones()
     {
         return $this->hasMany('App\Models\Inventario\ProductoPresentacion', 'id_producto');
+    }
+
+    public function pantallasComanda()
+    {
+        return $this->belongsToMany(
+            PantallaRestaurante::class,
+            'producto_restaurante_pantalla',
+            'producto_id',
+            'pantalla_id'
+        );
     }
 
     public function impuestos()
