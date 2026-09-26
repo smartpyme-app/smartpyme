@@ -276,17 +276,18 @@ class RolePermissionService
             ->get()
             ->map(function ($module) use ($revokedPermissions) {
                 $module->permissions = $module->permissions->filter(function ($permission) use ($revokedPermissions) {
-                    return !$revokedPermissions->contains($permission->permission->name);
-                });
+                    return !$revokedPermissions->contains($permission->permission?->name);
+                })->values();
 
                 $module->submodules->each(function ($submodule) use ($revokedPermissions) {
                     $submodule->permissions = $submodule->permissions->filter(function ($permission) use ($revokedPermissions) {
-                        return !$revokedPermissions->contains($permission->permission->name);
-                    });
+                        return !$revokedPermissions->contains($permission->permission?->name);
+                    })->values();
                 });
 
                 return $module;
-            });
+            })
+            ->values();
 
         return [
             'role' => $user->roles->first()->name ?? 'Sin rol asignado',

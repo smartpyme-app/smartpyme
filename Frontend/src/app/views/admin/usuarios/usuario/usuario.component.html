@@ -464,14 +464,32 @@
                                       <div>
                                         <!-- Filtros de Módulos -->
                                         <div class="mb-4 d-flex flex-wrap gap-2">
+                                            <button
+                                              type="button"
+                                              class="btn btn-sm"
+                                              [class.btn-primary]="isModuleFilterActive(null)"
+                                              [class.btn-outline-primary]="!isModuleFilterActive(null)"
+                                              (click)="clearModuleFilter()">
+                                              Todos
+                                            </button>
                                             @for (module of modules; track module.id) {
-                                              <button class="btn btn-outline-primary btn-sm" (click)="filterModule(module)">
+                                              <button
+                                                type="button"
+                                                class="btn btn-sm"
+                                                [class.btn-primary]="isModuleFilterActive(module.name)"
+                                                [class.btn-outline-primary]="!isModuleFilterActive(module.name)"
+                                                (click)="filterModule(module)">
                                                 <i class="fa fa-folder me-2"></i> {{module.display_name}}
                                               </button>
                                             }
                                         </div>
 
                                         <!-- Lista de Módulos y Permisos -->
+                                        @if (filterModules.length === 0) {
+                                          <div class="text-center py-5">
+                                            <span class="text-muted">No hay permisos para mostrar.</span>
+                                          </div>
+                                        }
                                         <div class="row g-3">
                                             @for (module of filterModules; track module.id) {
                                               <div class="col-12">

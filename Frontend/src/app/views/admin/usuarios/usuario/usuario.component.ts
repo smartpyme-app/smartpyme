@@ -128,6 +128,7 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
   ];
   public searchTerm: string = '';
   public filterModules: any[] = [];
+  public selectedModuleName: string | null = null;
   public selectedCountry = this.countries[0];
 
   // Img Upload
@@ -224,7 +225,9 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
     );
 
     this.usuarioLogueado();
-    this.loadPermissions(id);
+    if (id && !isNaN(id)) {
+      this.loadPermissions(id);
+    }
   }
 
   public loadAll(id: number) {
@@ -238,14 +241,11 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
         if (usuario.roles?.length > 0) {
           this.usuario.rol_id = usuario.roles[0].id;
           this.rol = usuario.roles[0];
+          this.rol.name = this.formatRoleName(this.rol.name);
         } else {
           this.usuario.rol_id = null;
-          this.rol = {};
+          this.rol = { name: 'Sin rol asignado' };
         }
-        this.rol.name = this.rol.name
-          .split('_')
-          .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
-          .join(' ');
 
         this.nuevoCodigoAuth = usuario.codigo_autorizacion;
 
@@ -349,10 +349,10 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
         if (this.usuario.roles && this.usuario.roles.length > 0) {
             this.usuario.rol_id = this.usuario.roles[0].id;
             this.rol = this.usuario.roles[0];
-            this.rol.name = this.rol.name
-                .split('_')
-                .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
-                .join(' ');
+            this.rol.name = this.formatRoleName(this.rol.name);
+        } else {
+            this.usuario.rol_id = null;
+            this.rol = { name: 'Sin rol asignado' };
         }
 
         this.loading = false;
@@ -673,7 +673,7 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
       .subscribe({
       next: (response: any) => {
         if (response.data) {
-          this.modules = response.data.modules.map((module: any) => ({
+          this.modules = (response.data.modules || []).map((module: any) => ({
             ...module,
             expanded: false,
           }));
@@ -681,6 +681,10 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
           this.directPermissions = response.data.directPermissions || [];
           this.revokedPermissions = response.data.revokedPermissions || [];
           this.effectivePermissions = response.data.effectivePermissions || [];
+          this.applyModuleFilter(this.selectedModuleName);
+        } else {
+          this.modules = [];
+          this.filterModules = [];
         }
         this.permissionsLoading = false;
         this.cdr.markForCheck();
@@ -994,8 +998,34 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
       return;
     }
 
-    this.filterModules = this.modules.filter((mod) => mod.name.includes(module.name));
+    this.applyModuleFilter(module.name);
+  }
+
+  clearModuleFilter(): void {
+    this.applyModuleFilter(null);
+  }
+
+  isModuleFilterActive(moduleName: string | null): boolean {
+    return this.selectedModuleName === moduleName;
+  }
+
+  private applyModuleFilter(moduleName: string | null): void {
+    this.selectedModuleName = moduleName;
+    this.filterModules = moduleName
+      ? this.modules.filter((mod) => mod.name === moduleName)
+      : [...this.modules];
     this.cdr.markForCheck();
+  }
+
+  private formatRoleName(name?: string): string {
+    if (!name) {
+      return 'Sin rol asignado';
+    }
+
+    return name
+      .split('_')
+      .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
   }
 
   public usuarioLogueado() {
