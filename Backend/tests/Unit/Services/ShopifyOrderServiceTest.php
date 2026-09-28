@@ -244,6 +244,115 @@ class ShopifyOrderServiceTest extends TestCase
         $this->assertSame('60.00', $payload['line_items'][0]['price']);
         $this->assertSame('ZAP-DEP-42', $payload['line_items'][0]['sku']);
         $this->assertSame(99911122, $payload['customer']['id']);
+        $this->assertArrayNotHasKey('taxes_included', $payload);
+    }
+
+    /**
+     * La venta guarda el neto en precio y el cobrado en precio_con_iva.
+     * Shopify debe recibir el precio con IVA incluido y la línea VAT, como una orden nativa.
+     */
+    public function test_envia_precio_con_iva_incluido_cuando_la_venta_cobra_impuesto(): void
+    {
+        Schema::table('empresas', function ($table) {
+            $table->decimal('iva', 8, 2)->nullable();
+        });
+        Schema::table('detalles_venta', function ($table) {
+            $table->decimal('precio_sin_iva', 10, 4)->nullable();
+            $table->decimal('precio_con_iva', 10, 4)->nullable();
+            $table->decimal('iva', 10, 4)->nullable();
+            $table->decimal('porcentaje_impuesto', 8, 2)->nullable();
+            $table->string('tipo_gravado')->nullable();
+            $table->decimal('descuento', 10, 2)->default(0);
+        });
+
+        $this->empresa->iva = 13;
+        $this->empresa->save();
+
+        $producto = Producto::create([
+            'id_empresa' => $this->empresa->id,
+            'nombre' => 'case s25 ultra',
+            'shopify_variant_id' => 62398067048818,
+            'codigo' => 'cs25ult',
+            'precio' => 8.85,
+        ]);
+
+        $venta = Venta::create([
+            'id_empresa' => $this->empresa->id,
+            'estado' => 'Pagada',
+            'total' => 10.00,
+            'forma_pago' => 'Efectivo',
+        ]);
+
+        Detalle::create([
+            'id_venta' => $venta->id,
+            'id_producto' => $producto->id,
+            'cantidad' => 1,
+            'precio' => 8.85,
+            'precio_sin_iva' => 8.85,
+            'precio_con_iva' => 10.00,
+            'iva' => 1.1505,
+            'porcentaje_impuesto' => 13,
+            'tipo_gravado' => 'gravada',
+            'descuento' => 0,
+            'total' => 8.85,
+        ]);
+
+        $venta->load(['detalles.producto', 'cliente']);
+
+        $payload = $this->orderService->construirPayloadOrden($venta, $this->empresa);
+
+        $this->assertTrue($payload['taxes_included']);
+        $this->assertSame('10.00', $payload['line_items'][0]['price']);
+        $this->assertTrue($payload['line_items'][0]['taxable']);
+        $this->assertSame('VAT', $payload['line_items'][0]['tax_lines'][0]['title']);
+        $this->assertSame('1.15', $payload['line_items'][0]['tax_lines'][0]['price']);
+        $this->assertEquals(0.13, $payload['line_items'][0]['tax_lines'][0]['rate']);
+        $this->assertSame('10.00', $payload['transactions'][0]['amount']);
+        $this->assertSame('sale', $payload['transactions'][0]['kind']);
+    }
+
+    public function test_linea_exenta_no_lleva_impuesto_en_shopify(): void
+    {
+        Schema::table('detalles_venta', function ($table) {
+            $table->decimal('precio_sin_iva', 10, 4)->nullable();
+            $table->decimal('precio_con_iva', 10, 4)->nullable();
+            $table->decimal('iva', 10, 4)->nullable();
+            $table->decimal('porcentaje_impuesto', 8, 2)->nullable();
+            $table->string('tipo_gravado')->nullable();
+        });
+
+        $producto = Producto::create([
+            'id_empresa' => $this->empresa->id,
+            'nombre' => 'Servicio exento',
+            'precio' => 8.85,
+        ]);
+
+        $venta = Venta::create([
+            'id_empresa' => $this->empresa->id,
+            'estado' => 'Pagada',
+            'total' => 8.85,
+        ]);
+
+        Detalle::create([
+            'id_venta' => $venta->id,
+            'id_producto' => $producto->id,
+            'cantidad' => 1,
+            'precio' => 8.85,
+            'precio_sin_iva' => 8.85,
+            'precio_con_iva' => 8.85,
+            'iva' => 0,
+            'porcentaje_impuesto' => 13,
+            'tipo_gravado' => 'exenta',
+            'total' => 8.85,
+        ]);
+
+        $venta->load(['detalles.producto', 'cliente']);
+
+        $payload = $this->orderService->construirPayloadOrden($venta, $this->empresa);
+
+        $this->assertSame('8.85', $payload['line_items'][0]['price']);
+        $this->assertArrayNotHasKey('tax_lines', $payload['line_items'][0]);
+        $this->assertArrayNotHasKey('taxes_included', $payload);
     }
 
     /**
