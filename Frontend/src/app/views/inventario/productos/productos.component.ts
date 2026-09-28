@@ -81,6 +81,12 @@ export class ProductosComponent implements OnInit {
         private funcionalidadesService: FuncionalidadesService
     ) { }
 
+    /** Supervisor consulta el listado; las acciones de fila quedan para el resto de roles. */
+    mostrarMenuAcciones(): boolean {
+        return !this.apiService.isSupervisorLimitado()
+            && this.apiService.validateRole('usuario_supervisor', false);
+    }
+
     ngOnInit() {
         this.funcionalidadesService.verificarAcceso('transformacion-productos').subscribe((tieneFuncionalidad) => {
             this.mostrarTransformacionProductos = tieneFuncionalidad
