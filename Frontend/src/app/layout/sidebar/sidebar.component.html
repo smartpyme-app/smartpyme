@@ -233,16 +233,16 @@
                               <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/planilla/aguinaldos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/gift.png" class="icon me-2">Aguinaldos</a></li>
                           }
                           @if (apiService.hasPermission('planilla.registros.ver')) {
-                              <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/planilla/prestamos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/clipboard.png" class="icon me-2">Préstamos</a></li>
+                              <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/planilla/prestamos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/coin-stack.png" class="icon me-2">Préstamos</a></li>
                           }
                           @if (tieneComisionesHabilitada && (apiService.hasPermission('planilla.comisiones.ver') || apiService.hasPermission('planilla.ver'))) {
-                              <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: false}"><a [routerLink]="['/comisiones/configuracion']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/clipboard.png" class="icon me-2">Comisiones</a></li>
+                              <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: false}"><a [routerLink]="['/comisiones/configuracion']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/percent.png" class="icon me-2">Comisiones</a></li>
                           }
                           @if (tieneBonosHabilitada && (apiService.hasPermission('planilla.bonos.ver') || apiService.hasPermission('planilla.ver'))) {
                               <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: false}"><a [routerLink]="['/bonos/reglas']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/money-transaction.png" class="icon me-2">Bonos</a></li>
                           }
                           @if (tieneIncentivosHabilitada && (apiService.hasPermission('planilla.incentivos.ver') || apiService.hasPermission('planilla.ver'))) {
-                              <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/incentivos/vendedores']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/clipboard.png" class="icon me-2">Incentivos</a></li>
+                              <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/incentivos/vendedores']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/award.png" class="icon me-2">Incentivos</a></li>
                           }
                       </ul>
                   </div>
