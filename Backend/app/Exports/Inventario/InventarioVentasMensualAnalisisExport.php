@@ -28,6 +28,15 @@ class InventarioVentasMensualAnalisisExport implements FromQuery, WithHeadings, 
     /** @var array<string, float|int> cantidades por producto y mes ({id}_{Y-m}) */
     private array $ventasPorProductoYm = [];
 
+    /** @var array<int, float> descuento de línea del periodo, por producto */
+    private array $descuentoPorProducto = [];
+
+    /** @var array<int, array{valor: float, costo: float, qty: float}> salidas de venta del kardex */
+    private array $kardexPorProducto = [];
+
+    /** @var array<int, float> costo unitario promedio de retaceos aplicados */
+    private array $costoRetaceoPorProducto = [];
+
     private Empresa $empresa;
 
     public function prepare(Request $request, Empresa $empresa): void
@@ -60,13 +69,73 @@ class InventarioVentasMensualAnalisisExport implements FromQuery, WithHeadings, 
                 'detalles_venta.id_producto',
                 DB::raw("DATE_FORMAT(ventas.fecha, '%Y-%m') as ym"),
                 DB::raw('SUM(detalles_venta.cantidad) as qty'),
+                DB::raw('SUM(detalles_venta.descuento) as descuento'),
             ])
             ->groupBy('detalles_venta.id_producto', DB::raw("DATE_FORMAT(ventas.fecha, '%Y-%m')"))
             ->get();
 
         foreach ($rows as $row) {
-            $key = ((int) $row->id_producto) . '_' . $row->ym;
+            $idProducto = (int) $row->id_producto;
+            $key = $idProducto . '_' . $row->ym;
             $this->ventasPorProductoYm[$key] = (float) $row->qty;
+            $this->descuentoPorProducto[$idProducto] = ($this->descuentoPorProducto[$idProducto] ?? 0) + (float) $row->descuento;
+        }
+
+        $this->cargarKardexVentas($empresa->id, $inicio, $fin);
+        $this->cargarCostoRetaceo($empresa->id);
+    }
+
+    private function cargarKardexVentas(int $idEmpresa, Carbon $inicio, Carbon $fin): void
+    {
+        $rows = DB::table('kardexs')
+            ->join('ventas', 'ventas.id', '=', 'kardexs.referencia')
+            ->where('ventas.id_empresa', $idEmpresa)
+            ->where('ventas.estado', '!=', 'Anulada')
+            ->where('ventas.cotizacion', 0)
+            ->whereDate('kardexs.fecha', '>=', $inicio->toDateString())
+            ->whereDate('kardexs.fecha', '<=', $fin->toDateString())
+            ->where('kardexs.salida_cantidad', '>', 0)
+            ->where(function ($q) {
+                $q->where('kardexs.detalle', 'Venta')
+                    ->orWhere('kardexs.detalle', 'Venta a consigna')
+                    ->orWhere('kardexs.detalle', 'like', 'Venta %');
+            })
+            ->where('kardexs.detalle', 'not like', 'Venta Anulada%')
+            ->select([
+                'kardexs.id_producto',
+                DB::raw('SUM(kardexs.salida_cantidad) as qty'),
+                DB::raw('SUM(kardexs.salida_valor) as valor'),
+                DB::raw('SUM(kardexs.salida_cantidad * kardexs.costo_unitario) as costo'),
+            ])
+            ->groupBy('kardexs.id_producto')
+            ->get();
+
+        foreach ($rows as $row) {
+            $this->kardexPorProducto[(int) $row->id_producto] = [
+                'valor' => (float) $row->valor,
+                'costo' => (float) $row->costo,
+                'qty' => (float) $row->qty,
+            ];
+        }
+    }
+
+    private function cargarCostoRetaceo(int $idEmpresa): void
+    {
+        // ponytail: promedio ponderado por cantidad de todos los retaceos Aplicado del producto, sin recortar al año del reporte.
+        $rows = DB::table('retaceo_distribucion')
+            ->join('retaceos', 'retaceos.id', '=', 'retaceo_distribucion.id_retaceo')
+            ->where('retaceos.id_empresa', $idEmpresa)
+            ->where('retaceos.estado', 'Aplicado')
+            ->where('retaceo_distribucion.cantidad', '>', 0)
+            ->select([
+                'retaceo_distribucion.id_producto',
+                DB::raw('SUM(retaceo_distribucion.costo_retaceado * retaceo_distribucion.cantidad) / SUM(retaceo_distribucion.cantidad) as costo_unitario'),
+            ])
+            ->groupBy('retaceo_distribucion.id_producto')
+            ->get();
+
+        foreach ($rows as $row) {
+            $this->costoRetaceoPorProducto[(int) $row->id_producto] = (float) $row->costo_unitario;
         }
     }
 
@@ -98,7 +167,23 @@ class InventarioVentasMensualAnalisisExport implements FromQuery, WithHeadings, 
         foreach ($this->months as $m) {
             $headings[] = self::MESES_CORTOS[(int) $m->month] ?? $m->format('M');
         }
-        array_push($headings, 'Vendidos', 'Inventario', 'VALOR', 'COSTO', 'UTILIDAD', 'Categoría', 'Provee', 'VENTA PROMEDIO', 'MES INV');
+        array_push(
+            $headings,
+            'Vendidos',
+            'valor kardex',
+            'costo',
+            'utilidad kardex',
+            'Inventario',
+            'valor esperado',
+            'costo2',
+            'utilidad esperada',
+            'Categoría',
+            'Provee',
+            'VENTA PROMEDIO',
+            'MES INV',
+            'precio venta promedio',
+            'costo por unidad'
+        );
 
         return $headings;
     }
@@ -155,7 +240,19 @@ class InventarioVentasMensualAnalisisExport implements FromQuery, WithHeadings, 
         foreach ($monthQtys as $q) {
             $row[] = $q;
         }
+        $kardex = $this->kardexPorProducto[$producto->id] ?? ['valor' => 0.0, 'costo' => 0.0, 'qty' => 0.0];
+        [$valorKardex, $costoKardex, $utilidadKardex, $precioVentaPromedio, $costoPorUnidad] = self::metricasDesdeKardex(
+            $kardex['valor'],
+            $this->descuentoPorProducto[$producto->id] ?? 0.0,
+            $kardex['qty'],
+            $kardex['costo'],
+            $this->costoRetaceoPorProducto[$producto->id] ?? null
+        );
+
         $row[] = $totalVendido;
+        $row[] = $valorKardex;
+        $row[] = $costoKardex;
+        $row[] = $utilidadKardex;
         $row[] = $stock;
         $row[] = $valorInventario;
         $row[] = $costoInventario;
@@ -164,8 +261,31 @@ class InventarioVentasMensualAnalisisExport implements FromQuery, WithHeadings, 
         $row[] = $proveedorNombre;
         $row[] = $ventaPromedio;
         $row[] = $mesesInv;
+        $row[] = $precioVentaPromedio;
+        $row[] = $costoPorUnidad;
 
         return $row;
+    }
+
+    /**
+     * salida_valor es cantidad × precio de lista. El descuento de la línea no está en el kardex.
+     *
+     * @return array{0: float, 1: float, 2: float, 3: float|string, 4: float|string}
+     */
+    public static function metricasDesdeKardex(
+        float $salidaValor,
+        float $descuento,
+        float $salidaCantidad,
+        float $costoSalida,
+        ?float $costoRetaceo
+    ): array {
+        $valor = round($salidaValor - $descuento, 2);
+        $costo = round($costoSalida, 2);
+        $utilidad = round($valor - $costo, 2);
+        $precioPromedio = $salidaCantidad > 0 ? round($valor / $salidaCantidad, 4) : '';
+        $costoUnidad = $costoRetaceo === null ? '' : round($costoRetaceo, 4);
+
+        return [$valor, $costo, $utilidad, $precioPromedio, $costoUnidad];
     }
 
     private function unitCostoProducto(Producto $producto): float
@@ -180,7 +300,7 @@ class InventarioVentasMensualAnalisisExport implements FromQuery, WithHeadings, 
 
     public function styles(Worksheet $sheet)
     {
-        $ncol = max(2 + count($this->months) + 9, 1);
+        $ncol = max(count($this->headings()), 1);
         $lastColLetter = Coordinate::stringFromColumnIndex($ncol);
         $sheet->getStyle('A1:' . $lastColLetter . '1')->applyFromArray([
             'font' => ['bold' => true],
