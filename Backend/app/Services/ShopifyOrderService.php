@@ -143,18 +143,20 @@ class ShopifyOrderService
     public function construirPayloadOrden(Venta $venta, Empresa $empresa): ?array
     {
         $lineItems = [];
+        $totalTax = 0.0;
+        $montoOrden = 0.0;
 
         foreach ($venta->detalles as $detalle) {
             $producto = $detalle->producto;
             $cantidad = (int) max(1, round($detalle->cantidad));
-            $precio = number_format((float) $detalle->precio, 2, '.', '');
+            $impuesto = $this->resolverImpuestoLinea($detalle, $empresa);
 
             // Si el producto está vinculado con una variante de Shopify
             if ($producto && !empty($producto->shopify_variant_id)) {
                 $item = [
                     'variant_id' => (int) $producto->shopify_variant_id,
                     'quantity' => $cantidad,
-                    'price' => $precio,
+                    'price' => $impuesto['price'],
                 ];
             } else {
                 // Custom line item para servicios o productos locales no catalogados en Shopify
@@ -166,9 +168,21 @@ class ShopifyOrderService
                 $item = [
                     'title' => $nombreItem,
                     'quantity' => $cantidad,
-                    'price' => $precio,
+                    'price' => $impuesto['price'],
                 ];
             }
+
+            if ($impuesto['tax'] > 0) {
+                $item['taxable'] = true;
+                $item['tax_lines'] = [[
+                    'title' => 'VAT',
+                    'price' => number_format($impuesto['tax'], 2, '.', ''),
+                    'rate' => $impuesto['rate'],
+                ]];
+                $totalTax += $impuesto['tax'];
+            }
+
+            $montoOrden += (float) $impuesto['price'] * $cantidad;
 
             if ($producto && !empty($producto->shopify_sku)) {
                 $item['sku'] = $producto->shopify_sku;
@@ -248,7 +262,88 @@ class ShopifyOrderService
             $payload['customer'] = $customerData;
         }
 
+        // La API de órdenes no calcula IVA. El precio de la línea es el cobrado (con IVA)
+        // y tax_lines lo desglosa como impuesto incluido, igual que una orden nativa.
+        if ($totalTax > 0) {
+            $payload['taxes_included'] = true;
+        }
+
+        // Sin transacción, Shopify marca la orden pagada pero el monto cobrado queda en 0.
+        if ($financialStatus === 'paid') {
+            $gateway = !empty($venta->forma_pago) ? strtolower((string) $venta->forma_pago) : 'manual';
+            $payload['transactions'] = [[
+                'kind' => 'sale',
+                'status' => 'success',
+                'amount' => number_format(round($montoOrden, 2), 2, '.', ''),
+                'gateway' => $gateway,
+                'source' => 'external',
+            ]];
+        }
+
         return $payload;
+    }
+
+    /**
+     * Precio que Shopify debe mostrar. En SmartPyme `precio` es el neto;
+     * `precio_con_iva` es lo cobrado al cliente.
+     *
+     * @return array{price: string, tax: float, rate: float}
+     */
+    private function resolverImpuestoLinea($detalle, Empresa $empresa): array
+    {
+        $cantidad = (int) max(1, round((float) $detalle->cantidad));
+        $precioNeto = (float) $detalle->precio;
+        if ($detalle->precio_sin_iva !== null && (float) $detalle->precio_sin_iva > 0) {
+            $precioNeto = (float) $detalle->precio_sin_iva;
+        }
+
+        $tipo = strtolower(trim((string) ($detalle->tipo_gravado ?? '')));
+        $exenta = in_array($tipo, ['exenta', 'no_sujeta'], true);
+        $precioConIva = (float) ($detalle->precio_con_iva ?? 0);
+        $ivaLinea = round((float) ($detalle->iva ?? 0), 2);
+        $pct = (float) ($detalle->porcentaje_impuesto ?? 0);
+        if ($pct <= 0) {
+            $pct = (float) ($empresa->iva ?? 0);
+        }
+
+        $cobraImpuesto = !$exenta && (
+            $ivaLinea > 0 || ($precioConIva > 0 && ($precioConIva - $precioNeto) > 0.009)
+        );
+
+        if (!$cobraImpuesto) {
+            return [
+                'price' => number_format($precioNeto, 2, '.', ''),
+                'tax' => 0.0,
+                'rate' => 0.0,
+            ];
+        }
+
+        if ($precioConIva <= 0 && $pct > 0) {
+            $precioConIva = round($precioNeto * (1 + $pct / 100), 2);
+        }
+        if ($ivaLinea <= 0 && $pct > 0) {
+            $base = max(0, round($precioNeto * $cantidad - (float) ($detalle->descuento ?? 0), 2));
+            $ivaLinea = round($base * ($pct / 100), 2);
+        }
+        if ($precioConIva <= 0) {
+            $precioConIva = round($precioNeto + ($cantidad > 0 ? $ivaLinea / $cantidad : 0), 2);
+        }
+        if ($pct <= 0 && $precioNeto > 0 && $ivaLinea > 0) {
+            $pct = round((($ivaLinea / $cantidad) / $precioNeto) * 100, 2);
+        }
+
+        $descuento = (float) ($detalle->descuento ?? 0);
+        if ($descuento > 0 && $cantidad > 0) {
+            $factor = $pct > 0 ? 1 + ($pct / 100) : 1;
+            $totalConIva = round(($precioConIva * $cantidad) - round($descuento * $factor, 2), 2);
+            $precioConIva = round(max(0, $totalConIva) / $cantidad, 2);
+        }
+
+        return [
+            'price' => number_format($precioConIva, 2, '.', ''),
+            'tax' => $ivaLinea,
+            'rate' => round($pct / 100, 6),
+        ];
     }
 
     /**
