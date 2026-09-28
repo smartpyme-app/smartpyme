@@ -9,12 +9,14 @@ import Swal from 'sweetalert2';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { CrearAjusteLoteComponent } from '@shared/modals/crear-ajuste-lote/crear-ajuste-lote.component';
+import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
 
 @Component({
   selector: 'app-producto-lotes',
   templateUrl: './producto-lotes.component.html',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, TooltipModule],
+  imports: [CommonModule, FormsModule, RouterModule, TooltipModule, CrearAjusteLoteComponent, NotificacionesContainerComponent],
 })
 export class ProductoLotesComponent implements OnInit, OnChanges {
 

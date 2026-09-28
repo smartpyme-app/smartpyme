@@ -1,13 +1,18 @@
 import { Component, OnInit, TemplateRef, Input, Output, EventEmitter } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
 
 @Component({
   selector: 'app-crear-ajuste-lote',
-  templateUrl: './crear-ajuste-lote.component.html'
+  templateUrl: './crear-ajuste-lote.component.html',
+  imports: [CommonModule, FormsModule, TooltipModule, NotificacionesContainerComponent],
 })
 export class CrearAjusteLoteComponent implements OnInit {
 
