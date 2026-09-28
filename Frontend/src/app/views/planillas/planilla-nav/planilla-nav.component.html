@@ -9,15 +9,6 @@
     @if (apiService.hasPermission('planilla.configuracion.ver')) {
         <a class="btn" routerLink="/planilla/configuracion-planilla" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}">Configuración</a>
     }
-    @if (mostrarComisiones) {
-        <a class="btn" routerLink="/comisiones/configuracion" [class.btn-primary]="enComisiones">Comisiones</a>
-    }
-    @if (mostrarBonos) {
-        <a class="btn" routerLink="/bonos/reglas" [class.btn-primary]="enBonos">Bonos</a>
-    }
-    @if (mostrarIncentivos) {
-        <a class="btn" routerLink="/incentivos/vendedores" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}">Incentivos</a>
-    }
 </div>
 }
 @if (enComisiones && mostrarComisiones) {

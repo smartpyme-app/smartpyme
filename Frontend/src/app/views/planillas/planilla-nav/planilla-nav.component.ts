@@ -15,7 +15,6 @@ import { environment } from 'src/environments/environment';
 export class PlanillaNavComponent implements OnInit {
     private comisionesActiva = signal(false);
     private bonosActiva = signal(false);
-    private giftCardsActiva = signal(false);
 
     constructor(
         public apiService: ApiService,
@@ -26,7 +25,6 @@ export class PlanillaNavComponent implements OnInit {
     ngOnInit(): void {
         this.marcar('comisiones-vendedores', this.comisionesActiva);
         this.marcar('bonos-vendedores', this.bonosActiva);
-        this.marcar('gift-cards', this.giftCardsActiva);
     }
 
     get mostrarComisiones(): boolean {
@@ -35,11 +33,6 @@ export class PlanillaNavComponent implements OnInit {
 
     get mostrarBonos(): boolean {
         return this.bonosActiva() && this.puedeVer('planilla.bonos.ver');
-    }
-
-    get mostrarIncentivos(): boolean {
-        const funcionalidad = this.comisionesActiva() || this.bonosActiva() || this.giftCardsActiva();
-        return funcionalidad && this.puedeVer('planilla.incentivos.ver');
     }
 
     private puedeVer(permiso: string): boolean {

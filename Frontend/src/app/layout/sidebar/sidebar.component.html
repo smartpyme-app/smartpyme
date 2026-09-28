@@ -228,7 +228,7 @@
                   </button>
                   <div [collapse]="planillaIsCollapsed" [isAnimated]="true">
                       <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                          <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: false}"><a [routerLink]="[enlacePlanillas]" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/clipboard.png" class="icon me-2">Planillas</a></li>
+                          <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="[enlacePlanillas]" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/clipboard.png" class="icon me-2">Planillas</a></li>
                           @if (apiService.hasPermission('planilla.registros.ver')) {
                               <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/planilla/aguinaldos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/gift.png" class="icon me-2">Aguinaldos</a></li>
                           }
