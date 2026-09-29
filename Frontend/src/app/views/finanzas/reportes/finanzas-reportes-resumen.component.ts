@@ -1,8 +1,15 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ActivatedRoute, Router } from '@angular/router';
+import { TranslatePipe } from '@ngx-translate/core';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { LibroIvaCrNavComponent } from '@views/contabilidad/libro-iva-cr/libro-iva-cr-nav.component';
+import { LibroIvaGeneralNavComponent } from '@views/contabilidad/libro-iva-general/libro-iva-general-nav.component';
+import { LibroIvaHdNavComponent } from '@views/contabilidad/libro-iva-hd/libro-iva-hd-nav.component';
+import { LibroIvaSvNavComponent } from '@views/contabilidad/libro-iva-sv/libro-iva-sv-nav.component';
 import { LibroIvaPeriodoFiltrosComponent } from '@views/contabilidad/libro-iva-shared/libro-iva-periodo-filtros.component';
+import { LibroIvaPaisService, LibroIvaPaisTipo } from '@views/contabilidad/libro-iva-shared/libro-iva-pais.service';
 import { LibroIvaResumenPanelComponent } from '@views/contabilidad/libro-iva-shared/libro-iva-resumen-panel.component';
 import { LibroIvaResumenDescargasComponent } from '@views/contabilidad/libro-iva-shared/libro-iva-resumen-descargas.component';
 import {
@@ -18,7 +25,12 @@ import { FinanzasReportesNavComponent } from './finanzas-reportes-nav.component'
   standalone: true,
   imports: [
     CommonModule,
+    TranslatePipe,
     FinanzasReportesNavComponent,
+    LibroIvaSvNavComponent,
+    LibroIvaCrNavComponent,
+    LibroIvaHdNavComponent,
+    LibroIvaGeneralNavComponent,
     LibroIvaPeriodoFiltrosComponent,
     LibroIvaResumenPanelComponent,
     LibroIvaResumenDescargasComponent,
@@ -31,13 +43,28 @@ export class FinanzasReportesResumenComponent implements OnInit {
   sucursales: unknown[] = [];
   loading = false;
   filtros: Record<string, unknown> = {};
+  enLibrosFiscales = false;
+  tipoLibro: LibroIvaPaisTipo = 'general';
 
   constructor(
     public apiService: ApiService,
-    private alertService: AlertService
+    private alertService: AlertService,
+    private route: ActivatedRoute,
+    private router: Router,
+    private libroIvaPais: LibroIvaPaisService
   ) {}
 
   ngOnInit(): void {
+    this.enLibrosFiscales = this.route.snapshot.data['enLibrosFiscales'] === true;
+    this.tipoLibro = this.libroIvaPais.tipoLibroIva();
+    if (this.enLibrosFiscales) {
+      const destino = this.libroIvaPais.rutaResumenLibroIva()[0];
+      if (this.router.url.split('?')[0] !== destino) {
+        void this.router.navigateByUrl(destino, { replaceUrl: true });
+        return;
+      }
+    }
+
     this.years = crearAniosLibroIva();
     this.filtros = crearFiltrosLibroIvaIniciales();
     this.apiService.getAll('sucursales/list').subscribe(

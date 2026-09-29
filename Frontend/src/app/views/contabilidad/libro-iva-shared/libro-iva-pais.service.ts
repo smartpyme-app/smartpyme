@@ -55,7 +55,16 @@ export class LibroIvaPaisService {
   }
 
   rutaResumenLibroIva(): string[] {
-    return ['/finanzas/reportes/resumen-impuestos'];
+    switch (this.tipoLibroIva()) {
+      case 'sv':
+        return ['/libro-iva-sv/resumen'];
+      case 'cr':
+        return ['/libro-iva-cr/resumen'];
+      case 'hd':
+        return ['/libro-iva-hd/resumen'];
+      default:
+        return ['/libro-iva-general/resumen'];
+    }
   }
 
   /** Redirige al libro IVA del país correcto si el componente no corresponde. */
