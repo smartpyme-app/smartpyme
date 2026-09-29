@@ -14,6 +14,21 @@ const inventarioRouting = fs.readFileSync(path.join(root, 'src/app/views/inventa
 const restauranteRouting = fs.readFileSync(path.join(root, 'src/app/views/restaurante/restaurante-routing.module.ts'), 'utf8');
 const pedidosRouting = fs.readFileSync(path.join(root, 'src/app/views/pedidos/pedidos-routing.module.ts'), 'utf8');
 
+assert.match(sidebar, /hasPermission\('auditoria\.ver'\)/);
+assert.match(sidebar, /\[routerLink\]="\['\/auditoria'\]"/);
+assert.doesNotMatch(sidebar, /auditoria\.plataforma\.ver/);
+
+for (const file of [
+  'src/app/layout/sidebar/sidebar-organizaciones/sidebar-organizaciones.component.html',
+  'src/app/layout/sidebar/sidebar-ventas/sidebar-ventas.component.html',
+  'src/app/layout/sidebar/sidebar-servicios/sidebar-servicios.component.html',
+  'src/app/layout/sidebar/sidebar-cajero/sidebar-cajero.component.html',
+]) {
+  const html = fs.readFileSync(path.join(root, file), 'utf8');
+  assert.match(html, /auditoria\.ver/, file);
+  assert.match(html, /\[routerLink\]="\['\/auditoria'\]"/, file);
+}
+
 assert.doesNotMatch(sidebar, /!apiService\.hasPermission\('planilla/);
 assert.match(sidebar, /apiService\.hasPermission\('planilla\.ver'\)/);
 assert.match(sidebar, /canAccederOperacionesInventario\(\) && apiService\.hasPermission\('consignas\.ver'\)/);
