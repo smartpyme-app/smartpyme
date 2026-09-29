@@ -1,4 +1,6 @@
 import { Component, EventEmitter, Input, Output, TemplateRef, ViewChild } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { BsModalRef, BsModalService } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
@@ -16,6 +18,7 @@ import {
 @Component({
   selector: 'app-distribucion-lotes-modal',
   templateUrl: './distribucion-lotes-modal.component.html',
+  imports: [CommonModule, FormsModule],
 })
 export class DistribucionLotesModalComponent {
   @Input() etiquetaCantidad = 'Total';
