@@ -315,13 +315,6 @@
               </ul>
             </div>
           </li>
-          @if (apiService.hasPermission('auditoria.ver')) {
-            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
-              <a [routerLink]="['/auditoria']" tooltip="Auditoría" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
-                <img appLazyImage="/assets/icons/check-square.png" class="icon me-2">Auditoría
-              </a>
-            </li>
-          }
           <li *ngIf="mostrarMenuPedidos && apiService.hasPermission('pedidos.ver')" class="mb-1">
             <button (click)="togglePedidos()" tooltip="Pedidos" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!pedidosIsCollapsed" aria-controls="collapsePedidos">
               <img src="/assets/icons/shopping-cart.png" class="icon me-2">Pedidos
@@ -373,6 +366,9 @@
                     }
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/mi-cuenta']" tooltip="Mi cuenta" [adaptivePosition]="false" placement="right" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/settings.png" class="icon me-2">Mi cuenta</a></li>
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/reportes-automaticos']" tooltip="Reportes automáticos" [adaptivePosition]="false" placement="right" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/file.png" class="icon me-2">Reportes automáticos</a></li>
+                    @if (apiService.hasPermission('auditoria.ver')) {
+                      <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/auditoria']" tooltip="Auditoría" [adaptivePosition]="false" placement="right" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/check-square.png" class="icon me-2">Auditoría</a></li>
+                    }
                   </ul>
                 </div>
             </li>

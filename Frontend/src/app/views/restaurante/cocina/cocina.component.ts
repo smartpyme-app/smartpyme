@@ -31,6 +31,8 @@ export class CocinaComponent implements OnInit {
   actualizandoId: number | null = null;
   titulo = 'Pantalla general';
   pantallaId: number | null = null;
+  private cargaSeq = 0;
+  private tituloSeq = 0;
 
   constructor(
     private restauranteService: RestauranteService,
@@ -40,20 +42,32 @@ export class CocinaComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    const id = this.route.snapshot.paramMap.get('id');
-    if (id && id !== 'general') {
-      this.pantallaId = Number(id);
-    }
+    // Misma ruta pantalla/:id: Angular reutiliza el componente, hay que reaccionar al param.
+    this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      const id = params.get('id');
+      this.pantallaId = id && id !== 'general' ? Number(id) : null;
+      this.titulo = this.pantallaId ? 'Pantalla' : 'Pantalla general';
+      this.cdr.markForCheck();
+      this.cargarTitulo();
+      this.cargarComandas();
+    });
+    this.realtime.watch('cocina', () => this.cargarComandas());
+    this.realtime.onRecover(() => this.cargarComandas());
+  }
+
+  private cargarTitulo(): void {
+    const seq = ++this.tituloSeq;
+    const pantallaId = this.pantallaId;
     this.restauranteService.getPantallas({ activo: true }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (filas) => {
-        const pantalla = (filas || []).find((p) => p.id === this.pantallaId);
-        this.titulo = pantalla?.nombre || (this.pantallaId ? 'Pantalla' : 'Pantalla general');
+        if (seq !== this.tituloSeq) {
+          return;
+        }
+        const pantalla = (filas || []).find((p) => p.id === pantallaId);
+        this.titulo = pantalla?.nombre || (pantallaId ? 'Pantalla' : 'Pantalla general');
         this.cdr.markForCheck();
       },
     });
-    this.cargarComandas();
-    this.realtime.watch('cocina', () => this.cargarComandas());
-    this.realtime.onRecover(() => this.cargarComandas());
   }
 
   private rebuildListas(): void {
@@ -64,19 +78,27 @@ export class CocinaComponent implements OnInit {
   }
 
   cargarComandas(): void {
+    const seq = ++this.cargaSeq;
+    const pantallaId = this.pantallaId;
     this.loading = true;
     this.cdr.markForCheck();
     this.restauranteService
-      .getComandas(this.pantallaId ?? undefined)
+      .getComandas(pantallaId ?? undefined)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (comandas) => {
+          if (seq !== this.cargaSeq) {
+            return;
+          }
           this.comandas = comandas;
           this.rebuildListas();
           this.loading = false;
           this.cdr.markForCheck();
         },
         error: (err) => {
+          if (seq !== this.cargaSeq) {
+            return;
+          }
           this.alertService.error(err);
           this.loading = false;
           this.cdr.markForCheck();
