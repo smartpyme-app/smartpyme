@@ -454,6 +454,62 @@ class ShopifySyncBidirectionalTest extends TestCase
     }
 
     /**
+     * products/update reemplaza la variante default. Con una sola ficha local
+     * se reengancha; si ya hay dos variantes, no se fusionan.
+     */
+    public function test_buscar_producto_existente_reengancha_variante_reemplazada_si_es_unica(): void
+    {
+        $empresa = Empresa::create(['shopify_sync_bidirectional' => false]);
+
+        $unico = Producto::create([
+            'id_empresa' => $empresa->id,
+            'nombre' => 'Termo',
+            'codigo' => '',
+            'shopify_product_id' => 9424561274934,
+            'shopify_variant_id' => 111,
+            'shopify_inventory_item_id' => 222,
+            'precio' => 10.00,
+            'enable' => 1,
+        ]);
+
+        $reflector = new ReflectionClass(ShopifyController::class);
+        $method = $reflector->getMethod('buscarProductoExistente');
+        $method->setAccessible(true);
+
+        $encontrado = $method->invoke($this->controller, 9424561274934, [
+            'shopify_variant_id' => 333,
+            'shopify_inventory_item_id' => 444,
+            'shopify_sku' => '',
+            'codigo' => '',
+        ], $empresa->id, true);
+
+        $this->assertNotNull($encontrado);
+        $this->assertSame($unico->id, $encontrado->id);
+        $unico->refresh();
+        $this->assertSame('333', (string) $unico->shopify_variant_id);
+        $this->assertSame('444', (string) $unico->shopify_inventory_item_id);
+        $this->assertSame(1, Producto::where('id_empresa', $empresa->id)->count());
+
+        Producto::create([
+            'id_empresa' => $empresa->id,
+            'nombre' => 'Termo',
+            'nombre_variante' => 'Rojo',
+            'shopify_product_id' => 9424561274934,
+            'shopify_variant_id' => 555,
+            'precio' => 10.00,
+            'enable' => 1,
+        ]);
+
+        $noFusiona = $method->invoke($this->controller, 9424561274934, [
+            'shopify_variant_id' => 999,
+            'shopify_sku' => '',
+            'codigo' => '',
+        ], $empresa->id, true);
+
+        $this->assertNull($noFusiona);
+    }
+
+    /**
      * Verifica que si un producto ya posee shopify_product_id o shopify_variant_id,
      * ante un fallo en actualizarProductoPorId NUNCA llame a crearNuevoProducto ni
      * sobreescriba los identificadores de Shopify.

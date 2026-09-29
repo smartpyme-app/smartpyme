@@ -583,6 +583,9 @@ class ShopifyConsolidationService
                         if (empty($existente->shopify_sku) && $sku) {
                             $existente->shopify_sku = $sku;
                         }
+                        if (empty($existente->barcode) && $barcode) {
+                            $existente->barcode = $barcode;
+                        }
                         if (empty($existente->shopify_inventory_item_id) && !empty($fila['shopify_inventory_item_id'])) {
                             $existente->shopify_inventory_item_id = $fila['shopify_inventory_item_id'];
                         }
@@ -645,6 +648,9 @@ class ShopifyConsolidationService
                             $productoVinculable->shopify_sku = $sku;
                             if (!empty($fila['nombre_variante'])) {
                                 $productoVinculable->nombre_variante = $fila['nombre_variante'];
+                            }
+                            if (empty($productoVinculable->barcode) && $barcode) {
+                                $productoVinculable->barcode = $barcode;
                             }
                             if ($actualizarPrecios && isset($fila['precio'])) {
                                 $productoVinculable->precio = $fila['precio'];

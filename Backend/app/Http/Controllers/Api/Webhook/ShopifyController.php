@@ -291,6 +291,45 @@ class ShopifyController extends Controller
 
     private function procesarProductoActualizado(Request $request, $empresa, $usuario)
     {
+        // create y update del mismo producto llegan juntos. Sin esta espera, los dos
+        // buscan antes del insert y cada uno crea una ficha.
+        $lock = $this->esperarIngresoProductoShopify($empresa->id, $request->id);
+        try {
+            return $this->aplicarProductoDesdeShopify($request, $empresa, $usuario);
+        } finally {
+            $this->soltarIngresoProductoShopify($lock);
+        }
+    }
+
+    private function esperarIngresoProductoShopify($empresaId, $shopifyProductId)
+    {
+        if (empty($shopifyProductId)) {
+            return null;
+        }
+
+        try {
+            $lock = Cache::lock("shopify_prod_ingest_{$empresaId}_{$shopifyProductId}", 90);
+            $lock->block(30);
+            return $lock;
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    private function soltarIngresoProductoShopify($lock): void
+    {
+        if (!$lock) {
+            return;
+        }
+
+        try {
+            $lock->release();
+        } catch (\Throwable $e) {
+        }
+    }
+
+    private function aplicarProductoDesdeShopify(Request $request, $empresa, $usuario)
+    {
         // ShopifyHelper::log("procesarProductoActualizado iniciado", [
             // 'shopify_product_id' => $request->id,
             // 'title' => $request->title,
@@ -327,7 +366,12 @@ class ShopifyController extends Controller
             $variantImageId = $productoData['shopify_variant_image_id'] ?? null;
             unset($productoData['shopify_variant_image_id']);
 
-            $producto = $this->buscarProductoExistente($request->id, $productoData, $empresa->id);
+            $producto = $this->buscarProductoExistente(
+                $request->id,
+                $productoData,
+                $empresa->id,
+                count($productosData) === 1
+            );
             $categoria = $this->obtenerCategoria($request->all(), $categoriaData, $empresa->id);
             $productoData['id_categoria'] = $categoria->id;
 
@@ -470,7 +514,7 @@ class ShopifyController extends Controller
         ], 200);
     }
 
-    private function buscarProductoExistente($shopifyId, $productoData, $empresaId)
+    private function buscarProductoExistente($shopifyId, $productoData, $empresaId, $reengancharSiUnica = false)
     {
         // Búsqueda principal por IDs de Shopify
         $producto = Producto::where('shopify_product_id', $shopifyId)
@@ -509,6 +553,29 @@ class ShopifyController extends Controller
                     'shopify_variant_id' => $productoData['shopify_variant_id'],
                     'shopify_inventory_item_id' => $productoData['shopify_inventory_item_id'] ?? null,
                 ]);
+            }
+        }
+
+        // Shopify reemplaza la variante default al guardar (nuevo variant_id, mismo producto).
+        // Si la ficha local es la única de ese producto y el webhook trae una sola variante,
+        // se reengancha. Con dos o más variantes locales no se toca: cada una sigue por su variant_id.
+        if (!$producto && $reengancharSiUnica) {
+            $unicos = Producto::where('shopify_product_id', $shopifyId)
+                ->where('id_empresa', $empresaId)
+                ->where('enable', '!=', '0')
+                ->limit(2)
+                ->get();
+
+            if ($unicos->count() === 1) {
+                $producto = $unicos->first();
+                $variantId = $productoData['shopify_variant_id'] ?? null;
+                if ($variantId && (string) $producto->shopify_variant_id !== (string) $variantId) {
+                    $producto->shopify_variant_id = $variantId;
+                    if (!empty($productoData['shopify_inventory_item_id'])) {
+                        $producto->shopify_inventory_item_id = $productoData['shopify_inventory_item_id'];
+                    }
+                    $producto->saveQuietly();
+                }
             }
         }
 
@@ -2423,6 +2490,10 @@ class ShopifyController extends Controller
             $producto->shopify_inventory_item_id = $variantShopify['inventory_item_id'] ?? $producto->shopify_inventory_item_id;
             if (!empty($variantShopify['sku'])) {
                 $producto->shopify_sku = $variantShopify['sku'];
+            }
+            $barcodeShopify = trim((string) ($variantShopify['barcode'] ?? ''));
+            if ($barcodeShopify !== '' && empty($producto->barcode)) {
+                $producto->barcode = $barcodeShopify;
             }
 
             // El price de Shopify ya incluye IVA. `precio` es la base sin IVA
