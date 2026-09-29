@@ -2435,6 +2435,10 @@ class ShopifyController extends Controller
             if (!empty($variantShopify['sku'])) {
                 $producto->shopify_sku = $variantShopify['sku'];
             }
+            $barcodeShopify = trim((string) ($variantShopify['barcode'] ?? ''));
+            if ($barcodeShopify !== '' && empty($producto->barcode)) {
+                $producto->barcode = $barcodeShopify;
+            }
 
             // El price de Shopify ya incluye IVA. `precio` es la base sin IVA
             // (igual que al crear el producto en ShopifyTransformer).

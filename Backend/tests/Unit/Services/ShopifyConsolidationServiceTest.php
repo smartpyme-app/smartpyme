@@ -858,6 +858,81 @@ class ShopifyConsolidationServiceTest extends TestCase
         $this->assertEquals(66001, $prodActualizado->shopify_variant_id);
     }
 
+    public function test_consolidar_shopify_hacia_smartpyme_llena_barcode_vacio_y_no_pisa_el_local(): void
+    {
+        $vacio = Producto::forceCreate([
+            'id_empresa' => 1,
+            'nombre' => 'Sin codigo',
+            'codigo' => 'SIN-COD',
+            'barcode' => null,
+            'precio' => 10.00,
+            'enable' => true,
+            'shopify_product_id' => 100,
+            'shopify_variant_id' => 200,
+        ]);
+
+        $conBarcode = Producto::forceCreate([
+            'id_empresa' => 1,
+            'nombre' => 'Con codigo',
+            'codigo' => 'CON-COD',
+            'barcode' => '111',
+            'precio' => 10.00,
+            'enable' => true,
+            'shopify_product_id' => 101,
+            'shopify_variant_id' => 201,
+        ]);
+
+        $shopifyProducts = [
+            [
+                'id' => 100,
+                'title' => 'Sin codigo',
+                'status' => 'active',
+                'variants' => [[
+                    'id' => 200,
+                    'product_id' => 100,
+                    'title' => 'Default Title',
+                    'sku' => 'SIN-COD',
+                    'barcode' => '7501234567890',
+                    'price' => '10.00',
+                    'inventory_item_id' => 300,
+                ]],
+                'options' => [['name' => 'Title']],
+            ],
+            [
+                'id' => 101,
+                'title' => 'Con codigo',
+                'status' => 'active',
+                'variants' => [[
+                    'id' => 201,
+                    'product_id' => 101,
+                    'title' => 'Default Title',
+                    'sku' => 'CON-COD',
+                    'barcode' => '999',
+                    'price' => '10.00',
+                    'inventory_item_id' => 301,
+                ]],
+                'options' => [['name' => 'Title']],
+            ],
+        ];
+
+        $mockClient = $this->createMock(ShopifyApiClient::class);
+        $service = $this->getMockBuilder(ShopifyConsolidationService::class)
+            ->setConstructorArgs([$this->transformer, $mockClient])
+            ->onlyMethods(['obtenerTodosProductosShopify'])
+            ->getMock();
+        $service->method('obtenerTodosProductosShopify')->willReturn($shopifyProducts);
+
+        $service->consolidarShopifyHaciaSmartpyme($this->empresa, $this->user, [
+            'deduplicar' => false,
+            'vincular_sku' => true,
+            'crear_nuevos' => false,
+            'actualizar_stock' => false,
+        ]);
+
+        $this->assertSame('7501234567890', Producto::find($vacio->id)->barcode);
+        $this->assertSame('111', Producto::find($conBarcode->id)->barcode);
+    }
+
     public function test_consolidar_smartpyme_hacia_shopify_reutiliza_producto_padre_existente_por_titulo(): void
     {
         // En SmartPyme existe producto sin vincular
