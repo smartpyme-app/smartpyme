@@ -5,6 +5,7 @@ import { RouterModule, Routes } from '@angular/router';
 import { LayoutComponent } from '@layout/layout.component';
 
 import { FuncionalidadGuard } from '@guards/funcionalidad.guard';
+import { PermissionGuard } from '@guards/permission.guard';
 
 import { PresupuestosComponent } from '@views/contabilidad/presupuestos/presupuestos.component';
 
@@ -224,8 +225,10 @@ const routes: Routes = [
         {
 
           path: 'libro-iva-sv/resumen',
-          redirectTo: '/finanzas/reportes/resumen-impuestos',
-          pathMatch: 'full'
+          loadComponent: () => import('@views/finanzas/reportes/finanzas-reportes-resumen.component').then(m => m.FinanzasReportesResumenComponent),
+          canActivate: [PermissionGuard],
+          data: { enLibrosFiscales: true, permission: 'finanzas.libro_iva.ver' },
+          title: 'Resumen de impuestos'
 
         },
 
@@ -264,8 +267,10 @@ const routes: Routes = [
         {
 
           path: 'libro-iva-cr/resumen',
-          redirectTo: '/finanzas/reportes/resumen-impuestos',
-          pathMatch: 'full'
+          loadComponent: () => import('@views/finanzas/reportes/finanzas-reportes-resumen.component').then(m => m.FinanzasReportesResumenComponent),
+          canActivate: [PermissionGuard],
+          data: { enLibrosFiscales: true, permission: 'finanzas.libro_iva.ver' },
+          title: 'Resumen de impuestos'
 
         },
 
@@ -324,8 +329,10 @@ const routes: Routes = [
         {
 
           path: 'libro-iva-hd/resumen',
-          redirectTo: '/finanzas/reportes/resumen-impuestos',
-          pathMatch: 'full'
+          loadComponent: () => import('@views/finanzas/reportes/finanzas-reportes-resumen.component').then(m => m.FinanzasReportesResumenComponent),
+          canActivate: [PermissionGuard],
+          data: { enLibrosFiscales: true, permission: 'finanzas.libro_iva.ver' },
+          title: 'Resumen de impuestos'
 
         },
 
@@ -354,8 +361,10 @@ const routes: Routes = [
         {
 
           path: 'libro-iva-general/resumen',
-          redirectTo: '/finanzas/reportes/resumen-impuestos',
-          pathMatch: 'full'
+          loadComponent: () => import('@views/finanzas/reportes/finanzas-reportes-resumen.component').then(m => m.FinanzasReportesResumenComponent),
+          canActivate: [PermissionGuard],
+          data: { enLibrosFiscales: true, permission: 'finanzas.libro_iva.ver' },
+          title: 'Resumen de impuestos'
 
         },
 
@@ -404,8 +413,10 @@ const routes: Routes = [
         {
 
           path: 'libro-iva/resumen',
-          redirectTo: '/finanzas/reportes/resumen-impuestos',
-          pathMatch: 'full'
+          loadComponent: () => import('@views/finanzas/reportes/finanzas-reportes-resumen.component').then(m => m.FinanzasReportesResumenComponent),
+          canActivate: [PermissionGuard],
+          data: { enLibrosFiscales: true, permission: 'finanzas.libro_iva.ver' },
+          title: 'Resumen de impuestos'
 
         },
 
