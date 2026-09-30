@@ -16,8 +16,19 @@ class Funcionalidad extends Model
         'slug',
         'descripcion',
         'icono',
-        'orden'
+        'orden',
+        'parent_id',
     ];
+
+    public function padre()
+    {
+        return $this->belongsTo(self::class, 'parent_id');
+    }
+
+    public function hijos()
+    {
+        return $this->hasMany(self::class, 'parent_id');
+    }
 
     /**
      * Relación con las empresas que tienen esta funcionalidad

@@ -56,6 +56,11 @@
   border-left-color: var(--bs-primary);
 }
 
+.table tbody tr.funcionalidad-hija .funcionalidad-nombre {
+  padding-left: 1.75rem;
+  border-left: 2px solid var(--bs-border-color, #dee2e6);
+}
+
 /* Contenedor de íconos */
 .icon-container {
   width: 40px;

@@ -22,6 +22,7 @@ interface Funcionalidad {
   descripcion: string;
   icono: string;
   orden: number;
+  parent_id?: number | null;
   asignada: boolean;
   configuracion: any;
   estado?: string; // Para seguimiento de cambios
@@ -143,9 +144,58 @@ export class EmpresasFuncionalidadesComponent implements OnInit {
       });
   }
 
-  // Detecta cambios en el estado de la funcionalidad
-  cambioEstadoFuncionalidad(funcionalidad: Funcionalidad) {
-    funcionalidad.estado = funcionalidad.asignada ? 'activado' : 'desactivado';
+  funcionalidadesEnOrden(): Funcionalidad[] {
+    const ids = new Set<number>();
+    const salida: Funcionalidad[] = [];
+    const raices = this.funcionalidades.filter(funcionalidad => !funcionalidad.parent_id);
+
+    for (const raiz of raices) {
+      salida.push(raiz);
+      ids.add(raiz.id);
+      for (const hijo of this.funcionalidades) {
+        if (hijo.parent_id === raiz.id) {
+          salida.push(hijo);
+          ids.add(hijo.id);
+        }
+      }
+    }
+
+    for (const funcionalidad of this.funcionalidades) {
+      if (!ids.has(funcionalidad.id)) {
+        salida.push(funcionalidad);
+      }
+    }
+
+    return salida;
+  }
+
+  aplicarJerarquia(funcionalidad: Funcionalidad): void {
+    if (funcionalidad.asignada && funcionalidad.parent_id) {
+      const padre = this.funcionalidades.find(item => item.id === funcionalidad.parent_id);
+      if (padre) {
+        padre.asignada = true;
+      }
+    }
+
+    if (!funcionalidad.asignada) {
+      for (const hijo of this.funcionalidades) {
+        if (hijo.parent_id === funcionalidad.id) {
+          hijo.asignada = false;
+        }
+      }
+
+      if (funcionalidad.parent_id) {
+        const quedaAlguno = this.funcionalidades.some(item =>
+          item.parent_id === funcionalidad.parent_id && item.asignada
+        );
+        if (!quedaAlguno) {
+          const padre = this.funcionalidades.find(item => item.id === funcionalidad.parent_id);
+          if (padre) {
+            padre.asignada = false;
+          }
+        }
+      }
+    }
   }
 
   actualizarFuncionalidad(funcionalidad: Funcionalidad) {
@@ -168,9 +218,7 @@ export class EmpresasFuncionalidadesComponent implements OnInit {
         next: (response: any) => {
           this.mensajeExito = `Funcionalidad "${funcionalidad.nombre}" ${funcionalidad.asignada ? 'activada' : 'desactivada'} correctamente`;
           this.guardando = false;
-          
-          // Actualizar estado
-          funcionalidad.estado = funcionalidad.asignada ? 'activado' : 'desactivado';
+          this.sincronizarAfectadas(response?.afectadas);
           
           this.invalidarCacheSiEmpresaActual();
 
@@ -209,11 +257,7 @@ export class EmpresasFuncionalidadesComponent implements OnInit {
         next: (response: any) => {
           this.mensajeExito = `Configuración de funcionalidades para "${this.empresaActualNombre}" guardada correctamente`;
           this.guardando = false;
-          
-          // Actualizar estado de todas las funcionalidades
-          this.funcionalidades.forEach(f => {
-            f.estado = f.asignada ? 'activado' : 'desactivado';
-          });
+          this.sincronizarAfectadas(response?.afectadas);
 
           this.invalidarCacheSiEmpresaActual();
           
@@ -241,6 +285,24 @@ export class EmpresasFuncionalidadesComponent implements OnInit {
   // Método para verificar si hay cambios pendientes
   hayCambiosPendientes(): boolean {
     return this.contarCambiosPendientes() > 0;
+  }
+
+  private sincronizarAfectadas(afectadas: { id: number; activo: boolean }[] | undefined): void {
+    if (!afectadas?.length) {
+      this.funcionalidades.forEach(funcionalidad => {
+        funcionalidad.estado = funcionalidad.asignada ? 'activado' : 'desactivado';
+      });
+      return;
+    }
+
+    for (const row of afectadas) {
+      const funcionalidad = this.funcionalidades.find(item => item.id === row.id);
+      if (!funcionalidad) {
+        continue;
+      }
+      funcionalidad.asignada = row.activo;
+      funcionalidad.estado = row.activo ? 'activado' : 'desactivado';
+    }
   }
 
   /** Si se editó la empresa del usuario logueado, refrescar menús sin relogin. */

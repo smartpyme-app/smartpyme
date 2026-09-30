@@ -179,8 +179,8 @@
                     </tr>
                   </thead>
                   <tbody>
-                    @for (funcionalidad of funcionalidades; track funcionalidad.id) {
-                      <tr>
+                    @for (funcionalidad of funcionalidadesEnOrden(); track funcionalidad.id) {
+                      <tr [class.funcionalidad-hija]="!!funcionalidad.parent_id">
                         <td class="text-center">
                           <div class="icon-container rounded-circle p-2" [ngClass]="funcionalidad.asignada ? 'bg-success bg-opacity-10' : 'bg-danger bg-opacity-10'">
                             <i class="fa" [ngClass]="funcionalidad.icono || 'fa-puzzle-piece'" 
@@ -188,7 +188,7 @@
                           </div>
                         </td>
                         <td>
-                          <div class="d-flex flex-column">
+                          <div class="d-flex flex-column funcionalidad-nombre">
                             <strong>{{ funcionalidad.nombre }}</strong>
                             @if (funcionalidad.descripcion) {
                               <small class="text-muted">{{ funcionalidad.descripcion }}</small>
@@ -202,7 +202,8 @@
                               type="checkbox" 
                               role="switch" 
                               [id]="'switch-' + funcionalidad.id" 
-                              [(ngModel)]="funcionalidad.asignada">
+                              [(ngModel)]="funcionalidad.asignada"
+                              (ngModelChange)="aplicarJerarquia(funcionalidad)">
                             <label class="form-check-label" [for]="'switch-' + funcionalidad.id">
                               <span class="badge" [ngClass]="funcionalidad.asignada ? 'bg-success' : 'bg-danger'">
                                 {{ funcionalidad.asignada ? 'Activado' : 'Desactivado' }}
@@ -233,7 +234,7 @@
                 <i class="fa fa-info-circle me-2 fa-lg"></i>
                 <div>
                   <small>
-                    Puede activar/desactivar funcionalidades individuales o guardar todos los cambios de una vez con el botón "Guardar Cambios".
+                    Puede activar o desactivar funcionalidades individuales, o guardar todos los cambios con el botón "Guardar Cambios". Un módulo hijo aparece bajo su principal: al activarlo se activa el padre, y al apagar el padre se apagan sus hijos.
                   </small>
                 </div>
               </div>
