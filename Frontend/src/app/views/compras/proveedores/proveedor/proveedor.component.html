@@ -178,7 +178,7 @@
                           <input type="text" class="form-control" placeholder="Escribe aquí" name="departamento" [(ngModel)]="proveedor.departamento">
                         }
                         @if (apiService.auth_user().empresa.facturacion_electronica && !esCostaRicaFe()) {
-                          <ng-select [(ngModel)]="proveedor.cod_departamento" (change)="setDepartamento()" placeholder="Escribe aquí" class="form-control form-select p-0" name="proveedor.cod_departamento">
+                          <ng-select [(ngModel)]="proveedor.cod_departamento" (ngModelChange)="setDepartamento($event)" placeholder="Escribe aquí" class="form-control form-select p-0" name="proveedor.cod_departamento">
                             @for (departamento of departamentos; track departamento.cod) {
                               <ng-option [value]="departamento.cod">
                                 {{ departamento.nombre }}
@@ -187,7 +187,7 @@
                           </ng-select>
                         }
                         @if (esCostaRicaFe()) {
-                          <ng-select [(ngModel)]="proveedor.cod_departamento" (change)="setDepartamento()" placeholder="Seleccione" class="form-control form-select p-0" name="prov_pv_p" id="prov_pv_p">
+                          <ng-select [(ngModel)]="proveedor.cod_departamento" (ngModelChange)="setDepartamento($event)" placeholder="Seleccione" class="form-control form-select p-0" name="prov_pv_p" id="prov_pv_p">
                             @for (prov of departamentos; track prov.cod) {
                               <ng-option [value]="prov.cod">{{ prov.nombre }}</ng-option>
                             }
@@ -210,8 +210,8 @@
                           <input type="text" class="form-control" placeholder="Escribe aquí" name="distrito" [(ngModel)]="proveedor.distrito">
                         }
                         @if (apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador' && !esCostaRicaFe()) {
-                          <ng-select [(ngModel)]="proveedor.cod_distrito" (change)="setDistrito()" placeholder="Escribe aquí" class="form-control form-select p-0" name="proveedor.cod_distrito">
-                            @for (distrito of distritos | filter:'cod_departamento':proveedor.cod_departamento; track distrito.cod) {
+                          <ng-select [(ngModel)]="proveedor.cod_distrito" (ngModelChange)="setDistrito($event)" placeholder="Escribe aquí" class="form-control form-select p-0" name="proveedor.cod_distrito">
+                            @for (distrito of distritosFiltrados; track trackUbicacion(distrito)) {
                               <ng-option [value]="distrito.cod">
                                 {{ distrito.nombre }}
                               </ng-option>
@@ -219,8 +219,8 @@
                           </ng-select>
                         }
                         @if (esCostaRicaFe()) {
-                          <ng-select [(ngModel)]="proveedor.cod_municipio" (change)="setMunicipio()" placeholder="Seleccione" class="form-control form-select p-0" name="canton_pv_p" id="canton_pv_p">
-                            @for (mun of municipiosFiltradosCr(); track mun.cod) {
+                          <ng-select [(ngModel)]="proveedor.cod_municipio" (ngModelChange)="setMunicipio($event)" placeholder="Seleccione" class="form-control form-select p-0" name="canton_pv_p" id="canton_pv_p">
+                            @for (mun of municipiosFiltradosCr(); track trackUbicacion(mun)) {
                               <ng-option [value]="mun.cod">{{ mun.nombre }}</ng-option>
                             }
                           </ng-select>
@@ -239,8 +239,8 @@
                           <input type="text" class="form-control" placeholder="Escribe aquí" name="municipio" [(ngModel)]="proveedor.municipio">
                         }
                         @if (apiService.auth_user().empresa.facturacion_electronica && !esCostaRicaFe()) {
-                          <ng-select [(ngModel)]="proveedor.cod_municipio" (change)="setMunicipio()" placeholder="Escribe aquí" class="form-control form-select p-0" name="proveedor.cod_municipio">
-                            @for (municipio of municipios | filter:'cod_departamento':proveedor.cod_departamento; track municipio.cod) {
+                          <ng-select [(ngModel)]="proveedor.cod_municipio" (ngModelChange)="setMunicipio($event)" placeholder="Escribe aquí" class="form-control form-select p-0" name="proveedor.cod_municipio">
+                            @for (municipio of municipiosFiltrados; track trackUbicacion(municipio)) {
                               <ng-option [value]="municipio.cod">
                                 {{ municipio.nombre }}
                               </ng-option>
@@ -248,8 +248,8 @@
                           </ng-select>
                         }
                         @if (esCostaRicaFe()) {
-                          <ng-select [(ngModel)]="proveedor.cod_distrito" (change)="setDistrito()" placeholder="Seleccione" class="form-control form-select p-0" name="distrito_pv_p" id="distrito_pv_p">
-                            @for (dis of distritosFiltradosCr(); track dis.cod) {
+                          <ng-select [(ngModel)]="proveedor.cod_distrito" (ngModelChange)="setDistrito($event)" placeholder="Seleccione" class="form-control form-select p-0" name="distrito_pv_p" id="distrito_pv_p">
+                            @for (dis of distritosFiltradosCr(); track trackUbicacion(dis)) {
                               <ng-option [value]="dis.cod">{{ dis.nombre }}</ng-option>
                             }
                           </ng-select>
@@ -423,7 +423,7 @@
                           <input type="text" class="form-control" placeholder="Escribe aquí" name="departamento" [(ngModel)]="proveedor.departamento">
                         }
                         @if (apiService.auth_user().empresa.facturacion_electronica && !esCostaRicaFe()) {
-                          <ng-select [(ngModel)]="proveedor.cod_departamento" (change)="setDepartamento()" placeholder="Escribe aquí" class="form-control form-select p-0" name="proveedor.cod_departamento">
+                          <ng-select [(ngModel)]="proveedor.cod_departamento" (ngModelChange)="setDepartamento($event)" placeholder="Escribe aquí" class="form-control form-select p-0" name="proveedor.cod_departamento">
                             @for (departamento of departamentos; track departamento.cod) {
                               <ng-option [value]="departamento.cod">
                                 {{ departamento.nombre }}
@@ -432,7 +432,7 @@
                           </ng-select>
                         }
                         @if (esCostaRicaFe()) {
-                          <ng-select [(ngModel)]="proveedor.cod_departamento" (change)="setDepartamento()" placeholder="Seleccione" class="form-control form-select p-0" name="prov_pv_e" id="prov_pv_e">
+                          <ng-select [(ngModel)]="proveedor.cod_departamento" (ngModelChange)="setDepartamento($event)" placeholder="Seleccione" class="form-control form-select p-0" name="prov_pv_e" id="prov_pv_e">
                             @for (prov of departamentos; track prov.cod) {
                               <ng-option [value]="prov.cod">{{ prov.nombre }}</ng-option>
                             }
@@ -455,8 +455,8 @@
                           <input type="text" class="form-control" placeholder="Escribe aquí" name="distrito" [(ngModel)]="proveedor.distrito">
                         }
                         @if (apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador' && !esCostaRicaFe()) {
-                          <ng-select [(ngModel)]="proveedor.cod_distrito" (change)="setDistrito()" placeholder="Escribe aquí" class="form-control form-select p-0" name="proveedor.cod_distrito">
-                            @for (distrito of distritos | filter:'cod_departamento':proveedor.cod_departamento; track distrito.cod) {
+                          <ng-select [(ngModel)]="proveedor.cod_distrito" (ngModelChange)="setDistrito($event)" placeholder="Escribe aquí" class="form-control form-select p-0" name="proveedor.cod_distrito">
+                            @for (distrito of distritosFiltrados; track trackUbicacion(distrito)) {
                               <ng-option [value]="distrito.cod">
                                 {{ distrito.nombre }}
                               </ng-option>
@@ -464,8 +464,8 @@
                           </ng-select>
                         }
                         @if (esCostaRicaFe()) {
-                          <ng-select [(ngModel)]="proveedor.cod_municipio" (change)="setMunicipio()" placeholder="Seleccione" class="form-control form-select p-0" name="canton_pv_e" id="canton_pv_e">
-                            @for (mun of municipiosFiltradosCr(); track mun.cod) {
+                          <ng-select [(ngModel)]="proveedor.cod_municipio" (ngModelChange)="setMunicipio($event)" placeholder="Seleccione" class="form-control form-select p-0" name="canton_pv_e" id="canton_pv_e">
+                            @for (mun of municipiosFiltradosCr(); track trackUbicacion(mun)) {
                               <ng-option [value]="mun.cod">{{ mun.nombre }}</ng-option>
                             }
                           </ng-select>
@@ -484,8 +484,8 @@
                           <input type="text" class="form-control" placeholder="Escribe aquí" name="municipio" [(ngModel)]="proveedor.municipio">
                         }
                         @if (apiService.auth_user().empresa.facturacion_electronica && !esCostaRicaFe()) {
-                          <ng-select [(ngModel)]="proveedor.cod_municipio" (change)="setMunicipio()" placeholder="Escribe aquí" class="form-control form-select p-0" name="proveedor.cod_municipio">
-                            @for (municipio of municipios | filter:'cod_departamento':proveedor.cod_departamento; track municipio.cod) {
+                          <ng-select [(ngModel)]="proveedor.cod_municipio" (ngModelChange)="setMunicipio($event)" placeholder="Escribe aquí" class="form-control form-select p-0" name="proveedor.cod_municipio">
+                            @for (municipio of municipiosFiltrados; track trackUbicacion(municipio)) {
                               <ng-option [value]="municipio.cod">
                                 {{ municipio.nombre }}
                               </ng-option>
@@ -493,8 +493,8 @@
                           </ng-select>
                         }
                         @if (esCostaRicaFe()) {
-                          <ng-select [(ngModel)]="proveedor.cod_distrito" (change)="setDistrito()" placeholder="Seleccione" class="form-control form-select p-0" name="distrito_pv_e" id="distrito_pv_e">
-                            @for (dis of distritosFiltradosCr(); track dis.cod) {
+                          <ng-select [(ngModel)]="proveedor.cod_distrito" (ngModelChange)="setDistrito($event)" placeholder="Seleccione" class="form-control form-select p-0" name="distrito_pv_e" id="distrito_pv_e">
+                            @for (dis of distritosFiltradosCr(); track trackUbicacion(dis)) {
                               <ng-option [value]="dis.cod">{{ dis.nombre }}</ng-option>
                             }
                           </ng-select>
