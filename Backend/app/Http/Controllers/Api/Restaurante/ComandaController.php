@@ -11,6 +11,7 @@ use App\Models\Restaurante\OrdenDetalle;
 use App\Models\Restaurante\PantallaRestaurante;
 use App\Models\Restaurante\SesionMesa;
 use App\Services\Restaurante\PantallasComandaService;
+use App\Services\Restaurante\RestauranteAutorizacionService;
 use App\Services\Restaurante\RestauranteIdempotencyService;
 use App\Services\Restaurante\RestauranteSideEffectDispatcher;
 use App\Services\Restaurante\RestauranteRealtimePublisher;
@@ -27,6 +28,7 @@ class ComandaController extends Controller
         private RestauranteTicketHtmlService $ticketHtml,
         private RestauranteRealtimePublisher $realtime,
         private PantallasComandaService $pantallas,
+        private RestauranteAutorizacionService $autorizacion,
     ) {}
 
     private function normalizarDestino(?string $dest): string
@@ -355,6 +357,9 @@ class ComandaController extends Controller
     public function guardarSemaforo(Request $request): JsonResponse
     {
         $user = auth()->user();
+        if (! $this->autorizacion->usuarioPuedeConfigurarTiempos($user)) {
+            return response()->json(['error' => 'Solo el administrador puede cambiar los tiempos.'], 403);
+        }
         $empresa = $user?->empresa;
         if (! $empresa) {
             return response()->json(['error' => 'Usuario sin empresa asociada'], 400);

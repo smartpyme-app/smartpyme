@@ -20,6 +20,16 @@ class RestauranteAutorizacionService
         return in_array($t, ['administrador', 'admin', 'gerente'], true);
     }
 
+    /** Tiempos del semáforo: solo el administrador de la empresa. */
+    public function usuarioPuedeConfigurarTiempos(?User $user): bool
+    {
+        if (! $user || empty($user->tipo)) {
+            return false;
+        }
+
+        return in_array(trim((string) $user->tipo), ['Administrador', 'Super Administrador'], true);
+    }
+
     /** SP-2158: cerrar mesa sin factura (Supervisor, Administrador, Ventas). */
     public function usuarioPuedeCerrarMesa(?User $user): bool
     {

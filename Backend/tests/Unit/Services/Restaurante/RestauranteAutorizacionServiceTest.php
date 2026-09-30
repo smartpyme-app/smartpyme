@@ -36,6 +36,22 @@ class RestauranteAutorizacionServiceTest extends TestCase
         }
     }
 
+    public function test_solo_administrador_configura_tiempos_del_semaforo(): void
+    {
+        foreach (['Administrador', 'Super Administrador'] as $tipo) {
+            $user = new User;
+            $user->exists = true;
+            $user->tipo = $tipo;
+            $this->assertTrue($this->svc->usuarioPuedeConfigurarTiempos($user), $tipo);
+        }
+        foreach (['Supervisor', 'Ventas', 'Mesero', ''] as $tipo) {
+            $user = new User;
+            $user->exists = true;
+            $user->tipo = $tipo;
+            $this->assertFalse($this->svc->usuarioPuedeConfigurarTiempos($user), $tipo ?: '(vacío)');
+        }
+    }
+
     public function test_usuario_puede_cerrar_mesa_forzada_sin_codigo_solo_admin_y_supervisor(): void
     {
         foreach (['Administrador', 'Supervisor'] as $tipo) {

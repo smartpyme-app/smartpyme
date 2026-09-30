@@ -5,7 +5,7 @@
       <p class="text-muted small mb-0">Comandas activas y listas para preparar</p>
     </div>
     <div class="col-auto d-flex gap-2">
-      <button type="button" class="btn btn-outline-secondary" (click)="mostrarTiempos = !mostrarTiempos">
+      <button *ngIf="puedeEditarTiempos" type="button" class="btn btn-outline-secondary" (click)="mostrarTiempos = !mostrarTiempos">
         Tiempos
       </button>
       <button type="button" class="btn btn-outline-primary" (click)="cargarComandas()">
@@ -14,7 +14,7 @@
     </div>
   </div>
 
-  <div *ngIf="mostrarTiempos" class="card border-0 shadow-sm mb-3">
+  <div *ngIf="puedeEditarTiempos && mostrarTiempos" class="card border-0 shadow-sm mb-3">
     <div class="card-body py-3 d-flex flex-wrap align-items-end gap-3">
       <div>
         <label class="form-label small mb-1" for="semaforo-verde">Verde hasta (min)</label>
@@ -46,12 +46,10 @@
         @for (comanda of comandasPendientes; track comanda.id) {
           <div class="col-md-6 col-lg-4">
             <div class="card border-0 shadow-sm h-100" [class.border-warning]="comanda.estado === 'pendiente'" [class.border-info]="comanda.estado === 'preparando'">
-              <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
-                <span class="d-flex align-items-center">
-                  <strong>{{ comanda.numero_comanda }}</strong>
-                  <span class="badge ms-2 semaforo" [ngClass]="'semaforo-' + colorSemaforo(comanda)">{{ reloj(comanda) }}</span>
-                </span>
-                <span>
+              <div class="comanda-reloj" [ngClass]="'semaforo-' + colorSemaforo(comanda)">{{ reloj(comanda) }}</div>
+              <div class="card-header bg-light d-flex justify-content-between align-items-center gap-2 py-2">
+                <strong class="comanda-numero">{{ comanda.numero_comanda }}</strong>
+                <span class="comanda-badges">
                   <span class="badge bg-secondary me-1" *ngIf="nombrePantalla(comanda)">{{ nombrePantalla(comanda) }}</span>
                   <span class="badge bg-danger me-1" *ngIf="comanda.destino === 'eliminacion'">Eliminado</span>
                   <span class="badge" [class.bg-warning]="comanda.estado === 'pendiente'" [class.bg-info]="comanda.estado === 'preparando'">
@@ -96,9 +94,9 @@
       <div class="list-group">
         @for (comanda of comandasListas; track comanda.id) {
           <div class="list-group-item d-flex justify-content-between align-items-center gap-2">
-            <span>
-              <strong>{{ comanda.numero_comanda }}</strong>
-              <span class="badge ms-1 semaforo" [ngClass]="'semaforo-' + colorSemaforo(comanda)">{{ reloj(comanda) }}</span>
+            <span class="comanda-reloj comanda-reloj-inline flex-shrink-0" [ngClass]="'semaforo-' + colorSemaforo(comanda)">{{ reloj(comanda) }}</span>
+            <span class="min-w-0">
+              <strong class="comanda-numero">{{ comanda.numero_comanda }}</strong>
               —
               <span *ngIf="comanda.sesion?.mesa">Mesa {{ comanda.sesion?.mesa?.numero }}</span>
               <span *ngIf="comanda.pedido_id">Pedido #{{ comanda.pedido_id }}</span>

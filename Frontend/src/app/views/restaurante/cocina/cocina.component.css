@@ -1,3 +1,30 @@
+.comanda-reloj {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 1.35rem;
+  letter-spacing: 0.04em;
+  text-align: center;
+  padding: 0.45rem 0.5rem;
+  line-height: 1.2;
+}
+
+.comanda-reloj-inline {
+  font-size: 0.95rem;
+  min-width: 5.5rem;
+  border-radius: 0.375rem;
+}
+
+.comanda-numero {
+  white-space: nowrap;
+}
+
+.comanda-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.25rem;
+}
+
 .semaforo-verde {
   background: #198754;
   color: #fff;

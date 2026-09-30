@@ -8,6 +8,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
+import { ApiService } from '@services/api.service';
 import { RestauranteService } from '@services/restaurante.service';
 import { AlertService } from '@services/alert.service';
 import { RestauranteRealtimeService } from '@services/restaurante-realtime.service';
@@ -38,6 +39,7 @@ export class CocinaComponent implements OnInit {
   formVerde = 7;
   formAmarillo = 14;
   mostrarTiempos = false;
+  puedeEditarTiempos = false;
   guardandoTiempos = false;
   private cargaSeq = 0;
   private tituloSeq = 0;
@@ -47,9 +49,12 @@ export class CocinaComponent implements OnInit {
     private alertService: AlertService,
     private realtime: RestauranteRealtimeService,
     private route: ActivatedRoute,
+    private apiService: ApiService,
   ) {}
 
   ngOnInit(): void {
+    const tipo = String(this.apiService.auth_user()?.tipo ?? '').trim();
+    this.puedeEditarTiempos = tipo === 'Administrador' || tipo === 'Super Administrador';
     // Misma ruta pantalla/:id: Angular reutiliza el componente, hay que reaccionar al param.
     this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       const id = params.get('id');
@@ -114,9 +119,12 @@ export class CocinaComponent implements OnInit {
       return '--:--';
     }
     const seg = Math.max(0, Math.floor((this.ahora - inicio) / 1000));
-    const m = Math.floor(seg / 60);
+    const h = Math.floor(seg / 3600);
+    const m = Math.floor((seg % 3600) / 60);
     const s = seg % 60;
-    return `${m}:${s.toString().padStart(2, '0')}`;
+    const mm = m.toString().padStart(2, '0');
+    const ss = s.toString().padStart(2, '0');
+    return `${h}:${mm}:${ss}`;
   }
 
   colorSemaforo(comanda: { enviado_at?: string; created_at?: string }): 'verde' | 'amarillo' | 'rojo' {
