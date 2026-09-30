@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Inventario\Producto;
 use App\Models\Restaurante\Comanda;
 use App\Models\Restaurante\ComandaDetalle;
+use App\Models\Restaurante\ComandaEstadoTiempo;
 use App\Models\Restaurante\OrdenDetalle;
 use App\Models\Restaurante\PantallaRestaurante;
 use App\Models\Restaurante\SesionMesa;
@@ -14,6 +15,7 @@ use App\Services\Restaurante\RestauranteIdempotencyService;
 use App\Services\Restaurante\RestauranteSideEffectDispatcher;
 use App\Services\Restaurante\RestauranteRealtimePublisher;
 use App\Services\Restaurante\RestauranteTicketHtmlService;
+use App\Support\Restaurante\ComandaSemaforo;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -302,6 +304,36 @@ class ComandaController extends Controller
             'estado' => 'required|in:pendiente,preparando,listo,servido',
         ]);
 
+        $anterior = (string) $comanda->estado;
+        if ($anterior !== $validated['estado']) {
+            $fin = now();
+            $inicio = match ($anterior) {
+                'preparando' => $comanda->preparando_at,
+                'listo' => $comanda->listo_at,
+                default => $comanda->enviado_at,
+            } ?? $comanda->enviado_at ?? $comanda->created_at ?? $fin;
+
+            ComandaEstadoTiempo::create([
+                'id_empresa' => (int) $comanda->id_empresa,
+                'comanda_id' => (int) $comanda->id,
+                'estado_desde' => $anterior,
+                'estado_hasta' => $validated['estado'],
+                'inicio_at' => $inicio,
+                'fin_at' => $fin,
+                'segundos' => ComandaSemaforo::segundos($inicio, $fin),
+            ]);
+
+            $marca = match ($validated['estado']) {
+                'preparando' => 'preparando_at',
+                'listo' => 'listo_at',
+                'servido' => 'servido_at',
+                default => null,
+            };
+            if ($marca !== null) {
+                $validated[$marca] = $fin;
+            }
+        }
+
         $comanda->update($validated);
         $this->realtime->cocinaChanged(
             (int) $user->id_empresa,
@@ -311,6 +343,37 @@ class ComandaController extends Controller
             'comanda_estado'
         );
         return response()->json($comanda);
+    }
+
+    public function semaforo(): JsonResponse
+    {
+        $user = auth()->user();
+
+        return response()->json(ComandaSemaforo::leer($user?->empresa));
+    }
+
+    public function guardarSemaforo(Request $request): JsonResponse
+    {
+        $user = auth()->user();
+        $empresa = $user?->empresa;
+        if (! $empresa) {
+            return response()->json(['error' => 'Usuario sin empresa asociada'], 400);
+        }
+
+        $data = $request->validate([
+            'verde_min' => 'required|integer|min:1|max:240',
+            'amarillo_min' => 'required|integer|min:2|max:480',
+        ]);
+        if ((int) $data['amarillo_min'] <= (int) $data['verde_min']) {
+            return response()->json([
+                'error' => 'El amarillo tiene que terminar después del verde.',
+            ], 422);
+        }
+
+        $empresa->updateCustomConfig('configuraciones', ComandaSemaforo::CLAVE_VERDE, (int) $data['verde_min']);
+        $empresa->updateCustomConfig('configuraciones', ComandaSemaforo::CLAVE_AMARILLO, (int) $data['amarillo_min']);
+
+        return response()->json(ComandaSemaforo::leer($empresa->fresh()));
     }
 
     public function imprimir(int $id)

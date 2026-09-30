@@ -676,6 +676,19 @@
                         <div *ngIf="preferenciasGrupo === 'facturacion'">
                             <div class="empresa-pref-row">
                                 <div class="empresa-pref-row-text">
+                                    <label class="empresa-pref-row-label" for="imprimir_factura_ticket_80mm">Imprimir facturas y tickets en formato ticket (80 mm)</label>
+                                    <p class="empresa-pref-row-help text-muted small mb-0">Factura y ticket salen en un ticket de 80 mm. El comprobante electrónico conserva su formato legal.</p>
+                                </div>
+                                <div class="form-switch m-0">
+                                    <input class="form-check-input" type="checkbox" role="switch"
+                                        id="imprimir_factura_ticket_80mm"
+                                        [checked]="isImprimirFacturaTicket80mm()"
+                                        (change)="toggleImprimirFacturaTicket80mm()"
+                                        name="imprimir_factura_ticket_80mm">
+                                </div>
+                            </div>
+                            <div class="empresa-pref-row">
+                                <div class="empresa-pref-row-text">
                                     <label class="empresa-pref-row-label" for="cobrar_iva">{{ 'country.tax.chargeTax' | translate }}</label>
                                     <p class="empresa-pref-row-help text-muted small mb-0">{{ 'country.tax.defaultTaxCalcDesc' | translate }}</p>
                                 </div>

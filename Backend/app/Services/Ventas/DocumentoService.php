@@ -14,6 +14,7 @@ use App\Services\FacturacionElectronica\CostaRica\CostaRicaFeComprobantePdfServi
 use App\Services\FacturacionElectronica\FacturacionElectronicaCountryResolver;
 use App\Support\Admin\DocumentosDefaultPorPais;
 use App\Support\Honduras\DocumentoImpresionHn;
+use App\Support\Ventas\Ticket80mm;
 
 class DocumentoService
 {
@@ -40,6 +41,10 @@ class DocumentoService
 
         $venta = Venta::where('id', $ventaId)->with('detalles', 'empresa', 'giftCardsEmitidas')->firstOrFail();
         $documento = Documento::findOrfail($venta->id_documento);
+
+        if (Ticket80mm::aplica($empresa, $documento)) {
+            return Ticket80mm::imprimir($venta, $empresa, $documento);
+        }
 
         if (DocumentoImpresionHn::usaTicketAccesorios($empresa, $documento->nombre)) {
             return $this->generarFacturaTicketAccesoriosHn($venta, $empresa, $documento);
@@ -166,6 +171,10 @@ class DocumentoService
      */
     public function generarTicket(Venta $venta, Empresa $empresa, Documento $documento)
     {
+        if (Ticket80mm::aplica($empresa, $documento)) {
+            return Ticket80mm::imprimir($venta, $empresa, $documento);
+        }
+
         $venta->loadMissing('giftCardsEmitidas');
 
         $ticketEnPdf = isset($empresa->custom_empresa['configuraciones']['ticket_en_pdf']) &&
@@ -191,6 +200,11 @@ class DocumentoService
      */
     public function generarFactura(Venta $venta, Empresa $empresa)
     {
+        $documentoTicket = Documento::find($venta->id_documento);
+        if ($documentoTicket && Ticket80mm::aplica($empresa, $documentoTicket)) {
+            return Ticket80mm::imprimir($venta, $empresa, $documentoTicket);
+        }
+
         $cliente = Cliente::withoutGlobalScope('empresa')->find($venta->id_cliente);
         $numeroALetras = $this->convertirNumeroALetras($venta->total);
         $dolares = $numeroALetras['dolares'];

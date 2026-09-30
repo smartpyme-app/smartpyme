@@ -1,1 +1,14 @@
-/* Estilos pantalla cocina */
+.semaforo-verde {
+  background: #198754;
+  color: #fff;
+}
+
+.semaforo-amarillo {
+  background: #ffc107;
+  color: #212529;
+}
+
+.semaforo-rojo {
+  background: #dc3545;
+  color: #fff;
+}
