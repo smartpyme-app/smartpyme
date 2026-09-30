@@ -121,6 +121,11 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     return this.facturacionElectronica.isCostaRicaFe();
   }
 
+  /** Fecha, tipo y correlativo quedan fijos si el comprobante ya tiene sello. */
+  public ventaEmitida(venta: any = this.venta): boolean {
+    return !!venta?.sello_mh;
+  }
+
   public clientes: any = [];
   public usuario: any = {};
   public usuarios: any = [];
