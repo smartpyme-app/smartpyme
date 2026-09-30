@@ -7,6 +7,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { RestauranteService } from '@services/restaurante.service';
+import { FuncionalidadesService } from '@services/functionalities.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '../../base/base-modal.component';
@@ -47,6 +48,7 @@ export class CrearProductoComponent extends BaseModalComponent implements OnInit
     public guardar = false;
     public usuario: any;
     pantallasComanda: { id: number; nombre: string }[] = [];
+    restauranteHabilitado = false;
 
 
     constructor(
@@ -56,6 +58,7 @@ export class CrearProductoComponent extends BaseModalComponent implements OnInit
         private route: ActivatedRoute,
         private router: Router,
         private restauranteService: RestauranteService,
+        private funcionalidadesService: FuncionalidadesService,
     ) {
         super(modalManager, alertService);
         this.usuario = this.apiService.auth_user();
@@ -63,14 +66,12 @@ export class CrearProductoComponent extends BaseModalComponent implements OnInit
 
     ngOnInit() {
         this.producto.empresa_id = this.apiService.auth_user().empresa_id;
-        this.restauranteService.getPantallas({ activo: true }).pipe(this.untilDestroyed()).subscribe({
-            next: (filas) => {
-                this.pantallasComanda = filas || [];
-                this.aplicarPantallasProducto();
-            },
-            error: () => {
-                this.pantallasComanda = [];
-            },
+        this.funcionalidadesService.verificarAcceso('modulo-restaurante').pipe(this.untilDestroyed()).subscribe((ok) => {
+            this.restauranteHabilitado = !!ok;
+            if (!this.restauranteHabilitado) {
+                return;
+            }
+            this.cargarPantallasComanda();
         });
 
         this.apiService.getAll('categorias/padre')
@@ -87,6 +88,18 @@ export class CrearProductoComponent extends BaseModalComponent implements OnInit
         }, error => { this.alertService.error(error); });
 
         this.medidas = JSON.parse(localStorage.getItem('unidades_medidas')!);
+    }
+
+    private cargarPantallasComanda(): void {
+        this.restauranteService.getPantallas({ activo: true }).pipe(this.untilDestroyed()).subscribe({
+            next: (filas) => {
+                this.pantallasComanda = filas || [];
+                this.aplicarPantallasProducto();
+            },
+            error: () => {
+                this.pantallasComanda = [];
+            },
+        });
     }
 
     override openModal(template: TemplateRef<any>) {

@@ -21,6 +21,20 @@ describe('Abonos acciones menú', () => {
     expect(html).toContain('generarPartidaContable(abono)');
   });
 
+  it('gastos: partida solo con contabilidad', () => {
+    const html = read('views/compras/gastos/gastos.component.html');
+    expect(html).toContain('*ngIf="contabilidadHabilitada" (click)="generarPartidaContable(gasto)"');
+  });
+
+  it('producto: switches de restaurante solo con el módulo', () => {
+    const editar = read('views/inventario/productos/producto/informacion/producto-informacion.component.html');
+    const crear = read('shared/modals/crear-producto/crear-producto.component.html');
+    expect(editar).toContain('*ngIf="restauranteHabilitado"');
+    expect(editar).toContain('Genera comanda');
+    expect(crear).toContain('@if (restauranteHabilitado)');
+    expect(crear).toContain('Genera comanda');
+  });
+
   it('abonos compras: Imprimir con canEdit y partida solo con contabilidad', () => {
     const html = read('views/compras/abonos/abonos-compras.component.html');
     expect(html).toContain('(click)="imprimir(abono)"');

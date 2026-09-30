@@ -14,6 +14,7 @@ import {
 import { Router, ActivatedRoute } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { RestauranteService } from '@services/restaurante.service';
+import { FuncionalidadesService } from '@services/functionalities.service';
 import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { HttpCacheService } from '@services/http-cache.service';
@@ -71,6 +72,7 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
   public colores: any = [];
   public materiales: any = [];
   pantallasComanda: { id: number; nombre: string }[] = [];
+  restauranteHabilitado = false;
 
   tipoAtributoActual: string = '';
   nuevoAtributo: any = {};
@@ -100,6 +102,7 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
     private zone: NgZone,
     private haciendaCabys: HaciendaCabysClientService,
     private restauranteService: RestauranteService,
+    private funcionalidadesService: FuncionalidadesService,
   ) {
     super(modalManager, alertService);
     // this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
@@ -108,7 +111,13 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
 
   ngOnInit() {
     this.loadAtributes();
-    this.cargarPantallasComanda();
+    this.funcionalidadesService.verificarAcceso('modulo-restaurante').pipe(this.untilDestroyed()).subscribe((ok) => {
+      this.restauranteHabilitado = !!ok;
+      if (this.restauranteHabilitado) {
+        this.cargarPantallasComanda();
+      }
+      this.cdr.markForCheck();
+    });
     this.usuario = this.apiService.auth_user();
 
     this.cabysInput$
