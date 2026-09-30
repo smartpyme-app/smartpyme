@@ -11,6 +11,7 @@ import { ActivatedRoute } from '@angular/router';
 import { RestauranteService } from '@services/restaurante.service';
 import { AlertService } from '@services/alert.service';
 import { RestauranteRealtimeService } from '@services/restaurante-realtime.service';
+import { interval } from 'rxjs';
 import { nombreLineaOrden as nombreLineaOrdenFn } from '../cuenta-mesa/pos/pos-menu-nav';
 
 @Component({
@@ -31,6 +32,13 @@ export class CocinaComponent implements OnInit {
   actualizandoId: number | null = null;
   titulo = 'Pantalla general';
   pantallaId: number | null = null;
+  ahora = Date.now();
+  verdeMin = 7;
+  amarilloMin = 14;
+  formVerde = 7;
+  formAmarillo = 14;
+  mostrarTiempos = false;
+  guardandoTiempos = false;
   private cargaSeq = 0;
   private tituloSeq = 0;
 
@@ -53,6 +61,86 @@ export class CocinaComponent implements OnInit {
     });
     this.realtime.watch('cocina', () => this.cargarComandas());
     this.realtime.onRecover(() => this.cargarComandas());
+    this.cargarSemaforo();
+    interval(1000).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      this.ahora = Date.now();
+      this.cdr.markForCheck();
+    });
+  }
+
+  private cargarSemaforo(): void {
+    this.restauranteService.getSemaforo().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (cfg) => {
+        this.verdeMin = Number(cfg?.verde_min) || 7;
+        this.amarilloMin = Number(cfg?.amarillo_min) || 14;
+        this.formVerde = this.verdeMin;
+        this.formAmarillo = this.amarilloMin;
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  guardarTiempos(): void {
+    const verde = Math.floor(Number(this.formVerde));
+    const amarillo = Math.floor(Number(this.formAmarillo));
+    if (verde < 1 || amarillo <= verde) {
+      this.alertService.warning('Tiempos', 'El amarillo tiene que terminar después del verde.');
+      return;
+    }
+    this.guardandoTiempos = true;
+    this.cdr.markForCheck();
+    this.restauranteService.guardarSemaforo(verde, amarillo).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (cfg) => {
+        this.verdeMin = Number(cfg?.verde_min) || verde;
+        this.amarilloMin = Number(cfg?.amarillo_min) || amarillo;
+        this.formVerde = this.verdeMin;
+        this.formAmarillo = this.amarilloMin;
+        this.guardandoTiempos = false;
+        this.mostrarTiempos = false;
+        this.alertService.success('Tiempos guardados', 'El semáforo de las comandas usa estos minutos.');
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.guardandoTiempos = false;
+        this.alertService.error(err);
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  reloj(comanda: { enviado_at?: string; created_at?: string }): string {
+    const inicio = this.inicioMs(comanda);
+    if (inicio === null) {
+      return '--:--';
+    }
+    const seg = Math.max(0, Math.floor((this.ahora - inicio) / 1000));
+    const m = Math.floor(seg / 60);
+    const s = seg % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  }
+
+  colorSemaforo(comanda: { enviado_at?: string; created_at?: string }): 'verde' | 'amarillo' | 'rojo' {
+    const inicio = this.inicioMs(comanda);
+    if (inicio === null) {
+      return 'verde';
+    }
+    const segundos = Math.max(0, Math.floor((this.ahora - inicio) / 1000));
+    if (segundos < this.verdeMin * 60) {
+      return 'verde';
+    }
+    if (segundos < this.amarilloMin * 60) {
+      return 'amarillo';
+    }
+    return 'rojo';
+  }
+
+  private inicioMs(comanda: { enviado_at?: string; created_at?: string }): number | null {
+    const raw = comanda?.enviado_at || comanda?.created_at;
+    if (!raw) {
+      return null;
+    }
+    const t = new Date(String(raw).replace(' ', 'T')).getTime();
+    return Number.isNaN(t) ? null : t;
   }
 
   private cargarTitulo(): void {

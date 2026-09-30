@@ -54,6 +54,10 @@ Route::prefix('restaurante')
         Route::post('/sesiones-mesa/{sesionId}/items/{itemId}/eliminar', [OrdenDetalleController::class, 'eliminar'])->middleware('permission:restaurante.eliminar');
         Route::delete('/sesiones-mesa/{sesionId}/items/{itemId}', [OrdenDetalleController::class, 'destroy'])->middleware('permission:restaurante.eliminar');
 
+        // Semáforo de comandas
+        Route::get('/semaforo', [ComandaController::class, 'semaforo'])->middleware('permission:restaurante.ver');
+        Route::put('/semaforo', [ComandaController::class, 'guardarSemaforo'])->middleware('permission:restaurante.editar');
+
         // Comandas
         Route::get('/comandas', [ComandaController::class, 'index'])->middleware('permission:restaurante.ver');
         Route::post('/sesiones-mesa/{id}/comandas', [ComandaController::class, 'store'])->middleware('permission:restaurante.crear');

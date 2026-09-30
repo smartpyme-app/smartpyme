@@ -233,6 +233,14 @@ export class RestauranteService {
     );
   }
 
+  getSemaforo(): Observable<{ verde_min: number; amarillo_min: number }> {
+    return this.api.getAll(BASE + 'semaforo');
+  }
+
+  guardarSemaforo(verdeMin: number, amarilloMin: number): Observable<{ verde_min: number; amarillo_min: number }> {
+    return this.api.putToUrl('restaurante/semaforo', { verde_min: verdeMin, amarillo_min: amarilloMin });
+  }
+
   getComandas(pantallaId?: number): Observable<any[]> {
     const params = pantallaId ? { pantalla_id: pantallaId } : {};
     return this.api.getAll(BASE + 'comandas', params);

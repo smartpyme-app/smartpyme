@@ -38,10 +38,16 @@ class Comanda extends AuditableModel
         'motivo_eliminacion_codigo',
         'motivo_eliminacion_detalle',
         'enviado_at',
+        'preparando_at',
+        'listo_at',
+        'servido_at',
     ];
 
     protected $casts = [
         'enviado_at' => 'datetime',
+        'preparando_at' => 'datetime',
+        'listo_at' => 'datetime',
+        'servido_at' => 'datetime',
         'eliminacion_item_enviado' => 'boolean',
     ];
 
