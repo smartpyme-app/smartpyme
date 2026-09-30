@@ -55,7 +55,7 @@ class ChatController extends Controller
             $options = [
                 'user_id' => $user->id,
                 'empresa_id' => $user->id_empresa ?? $empresaId,
-                'user_type' => $user->tipo ?? 'Usuario',
+                'user_type' => $user->tipoParaLucas(),
                 'source' => $source,
             ];
 
@@ -118,7 +118,7 @@ class ChatController extends Controller
                 'message' => $request->input('message'),
                 'user_id' => $user->id,
                 'empresa_id' => $user->id_empresa,
-                'user_type' => $user->tipo ?? 'Usuario',
+                'user_type' => $user->tipoParaLucas(),
                 'source' => $request->input('source', $source),
             ];
 

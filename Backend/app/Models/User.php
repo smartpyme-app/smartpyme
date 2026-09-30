@@ -90,6 +90,31 @@ class User extends Authenticatable implements JWTSubject
         }
     }
 
+    /**
+     * Lucas solo autoriza el texto exacto "Administrador".
+     * super_admin se guarda como "Super Administrador" y Lucas lo rechaza.
+     */
+    public function tipoParaLucas(): string
+    {
+        return self::tipoLucas($this->roles()->pluck('name')->all(), $this->tipo);
+    }
+
+    public static function tipoLucas(array $roles, ?string $tipo): string
+    {
+        foreach ($roles as $rol) {
+            if ($rol === 'admin' || $rol === 'super_admin') {
+                return 'Administrador';
+            }
+        }
+
+        $etiqueta = mb_strtolower(trim((string) $tipo));
+        if (in_array($etiqueta, ['administrador', 'super administrador', 'admin', 'super admin'], true)) {
+            return 'Administrador';
+        }
+
+        return $etiqueta !== '' ? trim((string) $tipo) : 'Usuario';
+    }
+
     protected static function boot()
     {
         parent::boot();
