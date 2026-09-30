@@ -156,13 +156,7 @@ class Suscripcion extends Model
             }
         }
         
-        // Si es un día diferente
-        if ($fechaActual > $fechaProximoPago) {
-            // Si está vencida, retorna días negativos
-            return -$fechaActual->diffInDays($fechaProximoPago);
-        }
-        
-        return $fechaActual->diffInDays($fechaProximoPago);
+        return $this->diasConSigno($fechaActual, $fechaProximoPago);
     }
 
     public function calcularDiasFaltantesPrueba(): int
@@ -181,12 +175,18 @@ class Suscripcion extends Model
             }
         }
         
-        // Si es un día diferente
-        if ($fechaActual > $fechaFinPrueba) {
-            return -$fechaActual->diffInDays($fechaFinPrueba);
-        }
-        
-        return $fechaActual->diffInDays($fechaFinPrueba);
+        return $this->diasConSigno($fechaActual, $fechaFinPrueba);
+    }
+
+    /**
+     * Carbon 3 devuelve diffInDays con signo. El segundo argumento true pide el valor absoluto,
+     * igual que Carbon 2, y el signo lo pone esta función: vencido = negativo.
+     */
+    private function diasConSigno(Carbon $desde, Carbon $hasta): int
+    {
+        $dias = (int) $desde->copy()->startOfDay()->diffInDays($hasta->copy()->startOfDay(), true);
+
+        return $desde > $hasta ? -$dias : $dias;
     }
 
     public function diasFaltantes(): ?int 

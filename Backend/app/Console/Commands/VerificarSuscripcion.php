@@ -57,7 +57,10 @@ class VerificarSuscripcion extends Command
             ->get();
 
         foreach ($suscripciones as $suscripcion) {
-            $diasVencidos = now()->diffInDays($suscripcion->fecha_proximo_pago);
+            $diasVencidos = (int) now()->startOfDay()->diffInDays(
+                Carbon::parse($suscripcion->fecha_proximo_pago)->startOfDay(),
+                true
+            );
 
             $this->manejarSuscripcionVencida($suscripcion, $diasVencidos);
         }
