@@ -238,7 +238,7 @@
                     }
                     <div class="form-group col-12 col-md-6 col-lg-4">
                         <label for="pais">País</label>
-                        <select class="form-select" name="pais" (change)="setPais()" [(ngModel)]="empresa.pais">
+                        <select class="form-select" name="pais" (ngModelChange)="setPais()" [(ngModel)]="empresa.pais">
                             <option value="Belice">+501 Belice</option>
                             <option value="Guatemala">+502 Guatemala</option>
                             <option value="El Salvador">+503 El Salvador</option>

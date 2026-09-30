@@ -173,10 +173,7 @@ class EmpresasController extends Controller
 
         $this->handleCustomEmpresa($request, $empresa); // Maneja la personalización de la empresa
 
-        // Si se envía el país pero no el cod_pais, establecerlo automáticamente
-        if ($request->has('pais') && !$request->has('cod_pais')) {
-            $request->merge(['cod_pais' => $this->mapearCodigoPais($request->pais)]);
-        }
+        $this->sincronizarCodPais($request);
 
         $empresa->fill($request->all());
 
@@ -213,10 +210,7 @@ class EmpresasController extends Controller
 
     private function createEmpresa(Request $request)
     {
-        // Si se envía el país pero no el cod_pais, establecerlo automáticamente
-        if ($request->has('pais') && !$request->has('cod_pais')) {
-            $request->merge(['cod_pais' => $this->mapearCodigoPais($request->pais)]);
-        }
+        $this->sincronizarCodPais($request);
 
         $empresa = new Empresa;
         $empresa->fill($request->all());
@@ -378,6 +372,15 @@ class EmpresasController extends Controller
         // no-op
     }
 
+    private function sincronizarCodPais(Request $request): void
+    {
+        if (!$request->filled('pais')) {
+            return;
+        }
+
+        $request->merge(['cod_pais' => $this->mapearCodigoPais($request->pais)]);
+    }
+
     private function mapearCodigoPais($nombrePais)
     {
         $mapeo = [
@@ -388,7 +391,9 @@ class EmpresasController extends Controller
             'Costa Rica' => 'CR',
             'Panama' => 'PA',
             'Panamá' => 'PA',
-            'Belice' => 'BZ'
+            'Belice' => 'BZ',
+            'México' => 'MX',
+            'Mexico' => 'MX',
         ];
 
         return $mapeo[$nombrePais] ?? 'SV';
