@@ -257,6 +257,13 @@
                     </ul>
                 </div>
             </li>
+            @if (usuario.empresa?.acces_chatbot_whatsapp) {
+            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+                <a [routerLink]="['/whatsapp']" tooltip="WhatsApp" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                    <img src="/assets/icons/whatsapp.png" class="icon me-2">WhatsApp
+                </a>
+            </li>
+            }
             <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
                 <a [routerLink]="['/admin/funcionalidades']" tooltip="Funcionalidades" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
                     <img src="/assets/icons/access.png" class="icon me-2">Funcionalidades

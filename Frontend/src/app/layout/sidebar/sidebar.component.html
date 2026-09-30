@@ -367,6 +367,9 @@
                       <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/suscripcion']" tooltip="Mi suscripción" [adaptivePosition]="false" placement="right" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/star.png" class="icon me-2">Mi suscripción</a></li>
                     }
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/mi-cuenta']" tooltip="Mi cuenta" [adaptivePosition]="false" placement="right" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/settings.png" class="icon me-2">Mi cuenta</a></li>
+                    @if (apiService.isAdminCreate() && usuario.empresa?.acces_chatbot_whatsapp) {
+                      <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/whatsapp']" tooltip="WhatsApp" [adaptivePosition]="false" placement="right" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/whatsapp.png" class="icon me-2">WhatsApp</a></li>
+                    }
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/reportes-automaticos']" tooltip="Reportes automáticos" [adaptivePosition]="false" placement="right" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/file.png" class="icon me-2">Reportes automáticos</a></li>
                     @if (apiService.hasPermission('auditoria.ver')) {
                       <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/auditoria']" tooltip="Auditoría" [adaptivePosition]="false" placement="right" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/check-square.png" class="icon me-2">Auditoría</a></li>

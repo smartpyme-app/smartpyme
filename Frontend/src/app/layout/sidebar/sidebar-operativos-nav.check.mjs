@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 const sidebar = fs.readFileSync(path.join(root, 'src/app/layout/sidebar/sidebar.component.html'), 'utf8');
+const sidebarAdmin = fs.readFileSync(path.join(root, 'src/app/layout/sidebar/sidebar-admin/sidebar-admin.component.html'), 'utf8');
 const planillasRouting = fs.readFileSync(path.join(root, 'src/app/views/planillas/planillas.routing.module.ts'), 'utf8');
 const inventarioRouting = fs.readFileSync(path.join(root, 'src/app/views/inventario/inventario.routing.module.ts'), 'utf8');
 const restauranteRouting = fs.readFileSync(path.join(root, 'src/app/views/restaurante/restaurante-routing.module.ts'), 'utf8');
@@ -41,6 +42,10 @@ assert.match(sidebar, /organizacion\.usuarios\.ver/);
 assert.match(sidebar, /administracion\.sucursales\.ver/);
 assert.match(sidebar, /validateRole\('admin', true\)/);
 assert.doesNotMatch(sidebar, /<li \*ngIf="apiService\.auth_user\(\)\.tipo != 'Contador'"/);
+assert.match(sidebar, /acces_chatbot_whatsapp/);
+assert.match(sidebar, /\[routerLink\]="\['\/whatsapp'\]"/);
+assert.match(sidebarAdmin, /acces_chatbot_whatsapp/);
+assert.match(sidebarAdmin, /\[routerLink\]="\['\/whatsapp'\]"/);
 assert.match(sidebar, /\[routerLink\]="\['\/reportes-automaticos'\]"/);
 assert.match(sidebar, /\[routerLink\]="\['\/finanzas\/reportes'\]"/);
 assert.match(sidebar, /mostrarMenuPrestamos/);
