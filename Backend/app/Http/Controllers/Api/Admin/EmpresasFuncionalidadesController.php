@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Log;
 use App\Http\Requests\Admin\EmpresasFuncionalidades\ActualizarFuncionalidadRequest;
 use App\Http\Requests\Admin\EmpresasFuncionalidades\ActualizarMultipleFuncionalidadesRequest;
 use App\Services\Contabilidad\ActivosCategoriasBootstrapService;
+use App\Services\Funcionalidades\FuncionalidadJerarquia;
 use App\Services\GiftCards\GiftCardCategoryBootstrap;
 
 class EmpresasFuncionalidadesController extends Controller
@@ -65,26 +66,26 @@ class EmpresasFuncionalidadesController extends Controller
     public function actualizarFuncionalidad(ActualizarFuncionalidadRequest $request)
     {
         try {
+            $idFuncionalidad = (int) $request->id_funcionalidad;
+            $afectadas = DB::transaction(function () use ($request, $idFuncionalidad) {
+                $antes = $this->estadoEmpresa((int) $request->id_empresa);
 
-            $empresaFunc = EmpresaFuncionalidad::updateOrCreate(
-                [
-                    'id_empresa' => $request->id_empresa,
-                    'id_funcionalidad' => $request->id_funcionalidad
-                ],
-                [
-                    'activo' => $request->activo,
-                    'configuracion' => $request->configuracion ?? null
-                ]
-            );
-
-            $this->bootstrapGiftCardsIfActivated($empresaFunc);
-            $this->bootstrapActivosFijosIfActivated($empresaFunc);
-            $empresaFunc->refresh();
+                return $this->guardarEstados(
+                    (int) $request->id_empresa,
+                    $antes,
+                    FuncionalidadJerarquia::aplicar(
+                        $antes,
+                        $idFuncionalidad,
+                        $request->boolean('activo')
+                    ),
+                    [$idFuncionalidad => $request->configuracion ?? null]
+                );
+            });
 
             return response()->json([
                 'success' => true,
                 'message' => 'Funcionalidad actualizada correctamente',
-                'data' => $empresaFunc
+                'afectadas' => $afectadas,
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -96,34 +97,39 @@ class EmpresasFuncionalidadesController extends Controller
     public function actualizarMultiple(ActualizarMultipleFuncionalidadesRequest $request)
     {
         try {
+            $afectadas = DB::transaction(function () use ($request) {
+                $idEmpresa = (int) $request->id_empresa;
+                $antes = $this->estadoEmpresa($idEmpresa);
+                $actual = [];
+                foreach ($antes as $item) {
+                    $actual[$item['id']] = $item['activo'];
+                }
 
-            DB::beginTransaction();
+                $cambios = [];
+                $configuraciones = [];
+                foreach ($request->funcionalidades as $func) {
+                    $id = (int) $func['id'];
+                    $activo = filter_var($func['activo'], FILTER_VALIDATE_BOOLEAN);
+                    $configuraciones[$id] = $func['configuracion'] ?? null;
+                    if (! array_key_exists($id, $actual) || $actual[$id] !== $activo) {
+                        $cambios[] = ['id' => $id, 'activo' => $activo];
+                    }
+                }
 
-            foreach ($request->funcionalidades as $func) {
-                $empresaFunc = EmpresaFuncionalidad::updateOrCreate(
-                    [
-                        'id_empresa' => $request->id_empresa,
-                        'id_funcionalidad' => $func['id']
-                    ],
-                    [
-                        'activo' => $func['activo'],
-                        'configuracion' => $func['configuracion'] ?? null
-                    ]
+                return $this->guardarEstados(
+                    $idEmpresa,
+                    $antes,
+                    FuncionalidadJerarquia::aplicarCambios($antes, $cambios),
+                    $configuraciones
                 );
-
-                $this->bootstrapGiftCardsIfActivated($empresaFunc);
-                $this->bootstrapActivosFijosIfActivated($empresaFunc);
-            }
-
-            DB::commit();
+            });
 
             return response()->json([
                 'success' => true,
-                'message' => 'Funcionalidades actualizadas correctamente'
+                'message' => 'Funcionalidades actualizadas correctamente',
+                'afectadas' => $afectadas,
             ]);
         } catch (\Exception $e) {
-            DB::rollBack();
-
             return response()->json([
                 'error' => 'Error al actualizar funcionalidades: ' . $e->getMessage()
             ], 500);
@@ -244,6 +250,74 @@ class EmpresasFuncionalidadesController extends Controller
             Log::error("Error al obtener configuración de funcionalidad: " . $e->getMessage());
             return response()->json(['configuracion' => null]);
         }
+    }
+
+    /**
+     * @return list<array{id:int, parent_id:?int, activo:bool}>
+     */
+    private function estadoEmpresa(int $idEmpresa): array
+    {
+        $actuales = EmpresaFuncionalidad::where('id_empresa', $idEmpresa)
+            ->pluck('activo', 'id_funcionalidad');
+
+        return Funcionalidad::query()
+            ->orderBy('orden')
+            ->orderBy('id')
+            ->get(['id', 'parent_id'])
+            ->map(fn ($funcionalidad) => [
+                'id' => (int) $funcionalidad->id,
+                'parent_id' => $funcionalidad->parent_id !== null ? (int) $funcionalidad->parent_id : null,
+                'activo' => (bool) ($actuales[$funcionalidad->id] ?? false),
+            ])
+            ->all();
+    }
+
+    /**
+     * @param  list<array{id:int, parent_id:?int, activo:bool}>  $antes
+     * @param  list<array{id:int, parent_id:?int, activo:bool}>  $final
+     * @param  array<int, mixed>  $configuraciones
+     * @return list<array{id:int, activo:bool}>
+     */
+    private function guardarEstados(int $idEmpresa, array $antes, array $final, array $configuraciones): array
+    {
+        $activoAnterior = [];
+        foreach ($antes as $row) {
+            $activoAnterior[(int) $row['id']] = (bool) $row['activo'];
+        }
+
+        $afectadas = [];
+
+        foreach ($final as $row) {
+            $id = (int) $row['id'];
+            $activo = (bool) $row['activo'];
+            $cambioActivo = ($activoAnterior[$id] ?? false) !== $activo;
+            $tieneConfiguracion = array_key_exists($id, $configuraciones);
+            if (! $cambioActivo && ! $tieneConfiguracion) {
+                continue;
+            }
+
+            $attrs = ['activo' => $activo];
+            if ($tieneConfiguracion) {
+                $attrs['configuracion'] = $configuraciones[$id];
+            }
+
+            $empresaFunc = EmpresaFuncionalidad::updateOrCreate(
+                [
+                    'id_empresa' => $idEmpresa,
+                    'id_funcionalidad' => $id,
+                ],
+                $attrs
+            );
+
+            $this->bootstrapGiftCardsIfActivated($empresaFunc);
+            $this->bootstrapActivosFijosIfActivated($empresaFunc);
+            $afectadas[] = [
+                'id' => $id,
+                'activo' => $activo,
+            ];
+        }
+
+        return $afectadas;
     }
 
     private function bootstrapGiftCardsIfActivated(EmpresaFuncionalidad $empresaFunc): void
