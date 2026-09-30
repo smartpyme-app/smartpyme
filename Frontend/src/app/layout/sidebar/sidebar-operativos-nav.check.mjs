@@ -14,6 +14,9 @@ const inventarioRouting = fs.readFileSync(path.join(root, 'src/app/views/inventa
 const restauranteRouting = fs.readFileSync(path.join(root, 'src/app/views/restaurante/restaurante-routing.module.ts'), 'utf8');
 const pedidosRouting = fs.readFileSync(path.join(root, 'src/app/views/pedidos/pedidos-routing.module.ts'), 'utf8');
 
+assert.match(sidebar, /hasPermission\('productos\.kardex\.ver'\)/);
+assert.match(sidebar, /\[routerLink\]="\['\/kardex'\]"/);
+assert.match(inventarioRouting, /permission: 'productos\.kardex\.ver'/);
 assert.match(sidebar, /hasPermission\('auditoria\.ver'\)/);
 assert.match(sidebar, /\[routerLink\]="\['\/auditoria'\]"/);
 assert.doesNotMatch(sidebar, /auditoria\.plataforma\.ver/);

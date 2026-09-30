@@ -148,6 +148,10 @@ return [
             'eliminar' => 'productos.bodegas.eliminar'
         ],
 
+        'kardex' => [
+            'ver' => 'productos.kardex.ver',
+        ],
+
         'categorias' => [
             'ver' => 'productos.categorias.ver',
             'crear' => 'productos.categorias.crear',

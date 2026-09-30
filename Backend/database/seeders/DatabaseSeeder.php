@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             //MHTableSeeder::class,
             PermissionSeeder::class,
             RoleSeeder::class,
+            KardexPermissionSeeder::class,
             UserRoleSeeder::class,
             FidelizacionFuncionalidadSeeder::class,
             MultimonedaFuncionalidadSeeder::class,
