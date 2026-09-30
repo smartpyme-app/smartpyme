@@ -36,7 +36,9 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use App\Exports\PlantillaInventarioMasivoExport;
 use App\Models\Inventario\Composiciones\Composicion;
+use App\Exports\ActualizacionMasivaProductosExport;
 use App\Exports\PlantillaProductosImportExport;
+use App\Imports\ActualizacionMasivaProductosImport;
 use App\Exports\TrasladoLineasUiExport;
 use App\Exports\ShopifyExport;
 use App\Services\Inventario\ProductoImportacionDteService;
@@ -1285,6 +1287,52 @@ class ProductosController extends Controller
             new PlantillaProductosImportExport(),
             'plantilla_importacion_productos.xlsx'
         );
+    }
+
+    public function descargarActualizacionMasiva()
+    {
+        if ($respuesta = $this->denegarActualizacionMasiva()) {
+            return $respuesta;
+        }
+
+        return Excel::download(
+            new ActualizacionMasivaProductosExport(),
+            'actualizacion_masiva_productos.xlsx'
+        );
+    }
+
+    public function importarActualizacionMasiva(Request $request)
+    {
+        if ($respuesta = $this->denegarActualizacionMasiva()) {
+            return $respuesta;
+        }
+
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls',
+        ], [
+            'file.required' => 'El archivo es obligatorio.',
+            'file.mimes' => 'El archivo debe ser Excel (.xlsx o .xls).',
+        ]);
+
+        $import = new ActualizacionMasivaProductosImport((int) Auth::user()->id_empresa, (int) Auth::id());
+        Excel::import($import, $request->file('file'));
+
+        return response()->json($import->resultado, 200);
+    }
+
+    private function denegarActualizacionMasiva()
+    {
+        $user = Auth::user();
+        if (!$user || !$user->can('productos.actualizacion_masiva.ejecutar')) {
+            return response()->json(['mensaje' => 'No tiene permiso para la actualización masiva de productos.'], 403);
+        }
+
+        $empresa = Empresa::find($user->id_empresa);
+        if (!$empresa || !$empresa->isActualizacionMasivaProductosActiva()) {
+            return response()->json(['mensaje' => 'La actualización masiva de productos no está activada en Preferencias.'], 403);
+        }
+
+        return null;
     }
 
     public function importarWooCommerce(Request $request)

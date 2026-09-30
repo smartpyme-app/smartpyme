@@ -1019,6 +1019,17 @@
                                         name="inventario_sumar_stock_busquedas">
                                 </div>
                             </div>
+                            <div class="empresa-pref-row">
+                                <div class="empresa-pref-row-text">
+                                    <label class="empresa-pref-row-label" for="actualizacion_masiva_productos">Actualización masiva de productos</label>
+                                    <p class="empresa-pref-row-help text-muted small mb-0">Permite descargar los productos existentes, editar el archivo y volver a subirlo para actualizar código, costo, precio sin IVA, menú, comanda y stock mínimo o máximo por bodega. Queda apagada hasta que se active aquí. El usuario además necesita el permiso de actualización masiva.</p>
+                                </div>
+                                <div class="form-switch m-0">
+                                    <input class="form-check-input" type="checkbox" role="switch"
+                                        id="actualizacion_masiva_productos" [checked]="isActualizacionMasivaProductos()"
+                                        (change)="toggleActualizacionMasivaProductos()" name="actualizacion_masiva_productos">
+                                </div>
+                            </div>
                             <div *ngIf="tieneAccesoTransformacionProductos" class="empresa-pref-row">
                                 <div class="empresa-pref-row-text">
                                     <label class="empresa-pref-row-label" for="transformacion_productos_activo">Habilitar transformación de productos</label>

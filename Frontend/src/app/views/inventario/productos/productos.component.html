@@ -41,6 +41,10 @@
         <div class="col-md-6 mb-3" tourAnchor="tour.toolbar" id="tour.toolbar">
             <div class="d-flex gap-2">
                 <app-importar-excel (loadAll)="loadAll()" [nombre]="'productos'"></app-importar-excel>
+                <button *ngIf="puedeActualizacionMasiva()" tooltip="Actualizar productos existentes desde Excel"
+                    (click)="openActualizacionMasiva(mactualizacion)" class="btn btn-default">
+                    <i class="fa fa-refresh text-primary" aria-hidden="true"></i>
+                </button>
                 <button *ngIf="apiService.isInventarioReporteAnalisisVentasMensual()"
                     [disabled]="downloadingReporteAnalisis" tooltip="Descargar reporte inventario vs ventas (Excel)"
                     (click)="descargarReporteInventarioVentasMensual()" class="btn btn-default">
@@ -446,6 +450,74 @@
             </div>
 
         </form>
+    </div>
+</ng-template>
+
+<ng-template #mactualizacion>
+    <div class="modal-header align-items-start">
+        <div>
+            <h4 class="modal-title mb-1">Actualización masiva</h4>
+            <p class="text-muted small mb-0">Solo modifica productos que ya existen. No crea productos ni cambia la existencia.</p>
+        </div>
+        <button type="button" class="btn-close" (click)="cerrarActualizacionMasiva()" aria-label="Cerrar"></button>
+    </div>
+    <div class="modal-body">
+        <app-notificaciones-container></app-notificaciones-container>
+
+        <div class="border rounded p-3 mb-3">
+            <div class="d-flex gap-3">
+                <span class="badge bg-primary rounded-circle d-inline-flex align-items-center justify-content-center"
+                    style="width: 1.75rem; height: 1.75rem;">1</span>
+                <div class="flex-grow-1">
+                    <div class="fw-semibold">Descargue sus productos</div>
+                    <p class="small text-muted mb-2">El archivo incluye el ID, código, costo, precio sin IVA, menú, comanda y el mínimo y máximo de cada bodega.</p>
+                    <button type="button" class="btn btn-outline-primary btn-sm" [disabled]="downloadingActualizacion"
+                        (click)="descargarActualizacionMasiva()">
+                        <i class="fa fa-download me-1" aria-hidden="true"></i>
+                        <span *ngIf="!downloadingActualizacion">Descargar Excel</span>
+                        <span *ngIf="downloadingActualizacion">Descargando...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="border rounded p-3">
+            <div class="d-flex gap-3">
+                <span class="badge bg-primary rounded-circle d-inline-flex align-items-center justify-content-center"
+                    style="width: 1.75rem; height: 1.75rem;">2</span>
+                <div class="flex-grow-1">
+                    <div class="fw-semibold">Edite ese archivo y súbalo</div>
+                    <ul class="small text-muted mb-2 ps-3">
+                        <li>Deje vacía la celda que no quiera cambiar.</li>
+                        <li>Escriba 0 para poner un mínimo o máximo en cero.</li>
+                        <li>No borre la columna del ID.</li>
+                    </ul>
+                    <label class="form-label small mb-1" for="archivo-actualizacion-masiva">Archivo editado (.xlsx)</label>
+                    <input id="archivo-actualizacion-masiva" type="file" class="form-control" accept=".xlsx,.xls"
+                        (change)="onArchivoActualizacion($event)">
+                    <p class="small mb-0 mt-2" *ngIf="archivoActualizacion">
+                        <i class="fa fa-file-excel-o text-success me-1" aria-hidden="true"></i>{{ archivoActualizacion.name }}
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="alert mt-3 mb-0" *ngIf="actualizacionResultado"
+            [class.alert-success]="!actualizacionResultado.errores?.length"
+            [class.alert-warning]="actualizacionResultado.errores?.length">
+            <div class="fw-semibold">{{ actualizacionResultado.actualizados }} productos actualizados.</div>
+            <ul class="mb-0 mt-2 small overflow-auto" style="max-height: 9rem;" *ngIf="actualizacionResultado.errores?.length">
+                <li *ngFor="let error of actualizacionResultado.errores">Fila {{ error.fila }}: {{ error.mensaje }}</li>
+            </ul>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-default" (click)="cerrarActualizacionMasiva()" [disabled]="subiendoActualizacion">Cancelar</button>
+        <button type="button" class="btn btn-primary" [disabled]="subiendoActualizacion || !archivoActualizacion"
+            (click)="subirActualizacionMasiva()">
+            <span *ngIf="!subiendoActualizacion">Subir y actualizar</span>
+            <span *ngIf="subiendoActualizacion">Actualizando...</span>
+        </button>
     </div>
 </ng-template>
 
