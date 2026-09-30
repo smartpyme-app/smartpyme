@@ -50,6 +50,7 @@ use App\Models\Admin\Empresa;
 use App\Models\Admin\Caja;
 use App\Models\Admin\Documento;
 use App\Support\Honduras\DocumentoImpresionHn;
+use App\Support\Ventas\Ticket80mm;
 use App\Models\Ventas\Clientes\Cliente;
 use App\Models\Ventas\Impuesto;
 use App\Models\Ventas\MetodoDePago;
@@ -901,6 +902,10 @@ class VentasController extends Controller
         $venta = Venta::where('id', $id)->with('detalles', 'empresa')->firstOrFail();
         $documento = Documento::findOrfail($venta->id_documento);
         $empresa = Empresa::findOrfail(Auth::user()->id_empresa);
+
+        if (Ticket80mm::aplica($empresa, $documento)) {
+            return Ticket80mm::imprimir($venta, $empresa, $documento);
+        }
 
         if ($documento->nombre == 'Ticket' || $documento->nombre == 'Recibo') {
             $documento = Documento::findOrfail($venta->id_documento);

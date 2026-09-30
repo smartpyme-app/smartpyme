@@ -18,6 +18,7 @@ use App\Services\FacturacionElectronica\CostaRica\CostaRicaFeComprobantePdfServi
 use App\Services\FacturacionElectronica\FacturacionElectronicaCountryResolver;
 use App\Support\Admin\DocumentosDefaultPorPais;
 use App\Support\Honduras\DocumentoImpresionHn;
+use App\Support\Ventas\Ticket80mm;
 // Usamos app('dompdf.wrapper') para evitar errores de Facade en producción
 
 use Auth;
@@ -104,6 +105,10 @@ class GenerarDocumentosController extends Controller
 
         $venta = Venta::where('id', $id)->with('detalles', 'empresa')->firstOrFail();
         $documento = Documento::findOrfail($venta->id_documento);
+
+        if (Ticket80mm::aplica($empresa, $documento)) {
+            return Ticket80mm::imprimir($venta, $empresa, $documento);
+        }
 
         if (
             $documento->nombre == 'Ticket'

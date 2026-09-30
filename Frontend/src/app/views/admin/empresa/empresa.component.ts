@@ -1801,6 +1801,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
             modulos: {},
             configuraciones: {
                 ticket_en_pdf: false,
+                imprimir_factura_ticket_80mm: false,
                 version_facturacion: 'original', // 'original' | 'v2' | 'pos'
                 mostrar_campos_contables: true, // Mostrar tipo de operación y tipo de ingreso
                 lotes_activo: false, // Activar/desactivar módulo de lotes
@@ -2111,6 +2112,23 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
 
     public toggleBloquearCotizacionesVendedores() {
         this.updateBloquearCotizacionesVendedores(!this.isBloquearCotizacionesVendedoresEnabled());
+    }
+
+    public isImprimirFacturaTicket80mm(): boolean {
+        return this.getCustomConfig('configuraciones', 'imprimir_factura_ticket_80mm', false);
+    }
+
+    public toggleImprimirFacturaTicket80mm(): void {
+        const enabled = !this.isImprimirFacturaTicket80mm();
+        this.addCustomConfig('configuraciones', 'imprimir_factura_ticket_80mm', enabled);
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                enabled
+                    ? 'Facturas y tickets se imprimen en formato ticket de 80 mm.'
+                    : 'Facturas y tickets vuelven a su formato anterior.'
+            );
+        });
     }
 
     public isBloquearEdicionCorrelativoEnabled(): boolean {

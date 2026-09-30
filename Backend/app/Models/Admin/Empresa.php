@@ -788,6 +788,7 @@ class Empresa extends Model
             'modulos' => [],
             'configuraciones' => [
                 'ticket_en_pdf' => false,
+                'imprimir_factura_ticket_80mm' => false,
                 'bloquear_cotizaciones_vendedores' => false,
                 'bloquear_edicion_correlativo' => false,
                 'dte_mostrar_descripcion_producto' => true,

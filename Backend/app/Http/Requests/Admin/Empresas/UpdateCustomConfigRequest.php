@@ -26,7 +26,7 @@ class UpdateCustomConfigRequest extends FormRequest
         ];
 
         // Validación condicional para ticket_en_pdf
-        if ($this->input('section') === 'configuraciones' && $this->input('key') === 'ticket_en_pdf') {
+        if ($this->input('section') === 'configuraciones' && in_array($this->input('key'), ['ticket_en_pdf', 'imprimir_factura_ticket_80mm'], true)) {
             $rules['value'] = 'required|boolean';
         }
 
@@ -66,7 +66,7 @@ class UpdateCustomConfigRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         // Convertir value a boolean si es necesario
-        if ($this->input('section') === 'configuraciones' && $this->input('key') === 'ticket_en_pdf') {
+        if ($this->input('section') === 'configuraciones' && in_array($this->input('key'), ['ticket_en_pdf', 'imprimir_factura_ticket_80mm'], true)) {
             $this->merge([
                 'value' => filter_var($this->value, FILTER_VALIDATE_BOOLEAN),
             ]);
@@ -80,7 +80,7 @@ class UpdateCustomConfigRequest extends FormRequest
     {
         $validator->after(function ($validator) {
             // Validación adicional para asegurar que value sea boolean cuando corresponde
-            if ($this->input('section') === 'configuraciones' && $this->input('key') === 'ticket_en_pdf') {
+            if ($this->input('section') === 'configuraciones' && in_array($this->input('key'), ['ticket_en_pdf', 'imprimir_factura_ticket_80mm'], true)) {
                 if (!is_bool($this->input('value'))) {
                     $validator->errors()->add('value', 'El valor debe ser verdadero o falso.');
                 }
