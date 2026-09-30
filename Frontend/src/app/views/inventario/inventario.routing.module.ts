@@ -66,8 +66,8 @@ const routes: Routes = [
 
         { path: 'producto/:id', component: ProductoComponent },
         { path: 'producto/:id/presentaciones', component: ProductoPresentacionesComponent, title: 'Presentaciones del producto' },
-        { path: 'kardex', component: KardexComponent, title: 'Kardex' },
-        { path: 'kardex/:id', component: KardexComponent },
+        { path: 'kardex', canActivate: [PermissionGuard], data: { permission: 'productos.kardex.ver' }, component: KardexComponent, title: 'Kardex' },
+        { path: 'kardex/:id', canActivate: [PermissionGuard], data: { permission: 'productos.kardex.ver' }, component: KardexComponent },
         { path: 'promociones', component: PromocionesComponent},
 
         { path: 'traslados', canActivate: [InventarioOperacionesAdminGuard], component: TrasladosComponent, title: 'Traslados' },
