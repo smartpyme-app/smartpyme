@@ -53,6 +53,10 @@ export class ProductosComponent implements OnInit {
     public productos: any = [];
     public loading: boolean = false;
     public downloading: boolean = false;
+    public downloadingActualizacion = false;
+    public subiendoActualizacion = false;
+    public archivoActualizacion: File | null = null;
+    public actualizacionResultado: { actualizados: number; errores: { fila: number; mensaje: string }[] } | null = null;
     public downloadingReporteAnalisis: boolean = false;
     public filtros: any = {};
     public producto: any = {};
@@ -266,6 +270,61 @@ export class ProductosComponent implements OnInit {
             window.URL.revokeObjectURL(url);
             this.downloadingReporteAnalisis = false;
         }, (error) => { this.alertService.error(error); this.downloadingReporteAnalisis = false; });
+    }
+
+    public puedeActualizacionMasiva(): boolean {
+        return this.apiService.isActualizacionMasivaProductosActiva()
+            && this.apiService.hasPermission('productos.actualizacion_masiva.ejecutar');
+    }
+
+    public openActualizacionMasiva(template: TemplateRef<any>) {
+        this.archivoActualizacion = null;
+        this.actualizacionResultado = null;
+        this.alertService.modal = true;
+        this.modalRef = this.modalService.show(template, { class: 'modal-lg', backdrop: 'static' });
+    }
+
+    public cerrarActualizacionMasiva(): void {
+        this.alertService.modal = false;
+        if (this.modalRef) {
+            this.modalRef.hide();
+        }
+    }
+
+    public descargarActualizacionMasiva() {
+        this.downloadingActualizacion = true;
+        this.apiService.export('productos/actualizacion-masiva', {}).subscribe((data: Blob) => {
+            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'actualizacion_masiva_productos.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            this.downloadingActualizacion = false;
+        }, (error) => { this.alertService.error(error); this.downloadingActualizacion = false; });
+    }
+
+    public onArchivoActualizacion(event: Event) {
+        const input = event.target as HTMLInputElement;
+        this.archivoActualizacion = input.files && input.files.length ? input.files[0] : null;
+        this.actualizacionResultado = null;
+    }
+
+    public subirActualizacionMasiva() {
+        if (!this.archivoActualizacion) {
+            return;
+        }
+        const formData = new FormData();
+        formData.append('file', this.archivoActualizacion);
+        this.subiendoActualizacion = true;
+        this.apiService.store('productos/actualizacion-masiva', formData).subscribe((data: any) => {
+            this.subiendoActualizacion = false;
+            this.actualizacionResultado = data;
+            this.cargarProductos();
+        }, (error) => { this.alertService.error(error); this.subiendoActualizacion = false; });
     }
 
     public descargar() {

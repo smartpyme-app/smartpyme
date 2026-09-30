@@ -1074,6 +1074,11 @@ class Empresa extends Model
         return (bool) $this->getCustomConfigValue('configuraciones', 'inventario_reporte_analisis_ventas_mensual', false);
     }
 
+    public function isActualizacionMasivaProductosActiva(): bool
+    {
+        return (bool) $this->getCustomConfigValue('configuraciones', 'actualizacion_masiva_productos', false);
+    }
+
     /**
      * Verificar si el módulo de bancos está activo para la empresa
      */

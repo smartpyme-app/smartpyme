@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             PermissionSeeder::class,
             RoleSeeder::class,
             KardexPermissionSeeder::class,
+            ActualizacionMasivaProductosPermissionSeeder::class,
             UserRoleSeeder::class,
             FidelizacionFuncionalidadSeeder::class,
             MultimonedaFuncionalidadSeeder::class,

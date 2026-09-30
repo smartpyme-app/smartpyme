@@ -1817,6 +1817,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
                 sku_correlativo_automatico: false, // obsoleto: migrar a barcode_correlativo_automatico; se lee por compatibilidad
                 barcode_correlativo_automatico: false, // Código de barras correlativo automático al crear productos
                 inventario_sumar_stock_busquedas: false, // Total de stock en listado de inventario según filtros
+                actualizacion_masiva_productos: false, // Plantilla para actualizar productos existentes
                 transformacion_productos_activo: false, // Módulo de transformación/conversión de productos en inventario
                 inventario_reporte_analisis_ventas_mensual: false, // Botón Excel: ventas ene→mes actual + inventario
                 cotizacion_mostrar_descripcion: true, // Mostrar descripción en PDF/vista de cotizaciones
@@ -2362,6 +2363,26 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
 
     public isInventarioSumarStockBusquedas(): boolean {
         return this.getCustomConfig('configuraciones', 'inventario_sumar_stock_busquedas', false);
+    }
+
+    public isActualizacionMasivaProductos(): boolean {
+        return this.getCustomConfig('configuraciones', 'actualizacion_masiva_productos', false);
+    }
+
+    public toggleActualizacionMasivaProductos() {
+        const activo = !this.isActualizacionMasivaProductos();
+        this.addCustomConfig('configuraciones', 'actualizacion_masiva_productos', activo);
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                `Actualización masiva de productos ${activo ? 'habilitada' : 'deshabilitada'} correctamente`
+            );
+            const authUser = this.apiService.auth_user();
+            if (authUser?.empresa?.id === this.empresa?.id) {
+                authUser.empresa.custom_empresa = this.empresa.custom_empresa;
+                localStorage.setItem('SP_auth_user', JSON.stringify(authUser));
+            }
+        });
     }
 
     public toggleInventarioSumarStockBusquedas() {
