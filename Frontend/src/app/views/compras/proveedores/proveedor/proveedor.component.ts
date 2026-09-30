@@ -34,6 +34,13 @@ import {
     plantillaIdentificacionTipos,
     tiposPorUso,
 } from '@utils/identificacion-tipos.util';
+import {
+    alCambiarDepartamento,
+    alCambiarDistrito,
+    alCambiarMunicipio,
+    filtrarPorCodDepartamento,
+    trackUbicacionCod,
+} from '@utils/ubicacion-catalogo.util';
 
 @Component({
     selector: 'app-proveedor',
@@ -158,6 +165,21 @@ export class ProveedorComponent extends BaseComponent implements OnInit {
             this.proveedor?.cod_municipio,
         );
     }
+
+    get distritosFiltrados(): any[] {
+        let list = filtrarPorCodDepartamento(this.distritos, this.proveedor?.cod_departamento);
+        const mun = this.proveedor?.cod_municipio;
+        if (mun !== undefined && mun !== null && mun !== '') {
+            list = list.filter((d: any) => String(d.cod_municipio) === String(mun));
+        }
+        return list;
+    }
+
+    get municipiosFiltrados(): any[] {
+        return filtrarPorCodDepartamento(this.municipios, this.proveedor?.cod_departamento);
+    }
+
+    trackUbicacion = trackUbicacionCod;
 
     tiposIdentificacionReceptor() {
         return tiposPorUso(this.identificacionCfg, 'receptor');
@@ -453,46 +475,18 @@ export class ProveedorComponent extends BaseComponent implements OnInit {
         this.cdr.markForCheck();
     }
     
-    setDistrito(){
-        let distrito = this.distritos.find((item:any) => item.cod == this.proveedor.cod_distrito && item.cod_departamento == this.proveedor.cod_departamento);
-        console.log(distrito);
-        if(distrito){
-            this.proveedor.cod_municipio = distrito.cod_municipio;
-            const mun = this.municipios.find(
-                (m: any) => m.cod == distrito.cod_municipio && m.cod_departamento == distrito.cod_departamento,
-            );
-            if (mun) {
-                this.proveedor.municipio = mun.nombre;
-            }
-            this.proveedor.distrito = distrito.nombre;
-            this.proveedor.cod_distrito = distrito.cod;
-        }
+    setDistrito(cod?: unknown): void {
+        alCambiarDistrito(this.proveedor, this.distritos, this.municipios, cod ?? this.proveedor.cod_distrito);
         this.cdr.markForCheck();
     }
 
-    setMunicipio(){
-        let municipio = this.municipios.find((item:any) => item.cod == this.proveedor.cod_municipio && item.cod_departamento == this.proveedor.cod_departamento);
-        if(municipio){
-            this.proveedor.municipio = municipio.nombre; 
-            this.proveedor.cod_municipio = municipio.cod;
-
-            this.proveedor.distrito = ''; 
-            this.proveedor.cod_distrito = '';
-        }
+    setMunicipio(cod?: unknown): void {
+        alCambiarMunicipio(this.proveedor, this.municipios, cod ?? this.proveedor.cod_municipio);
         this.cdr.markForCheck();
     }
 
-    setDepartamento(){
-        let departamento = this.departamentos.find((item:any) => item.cod == this.proveedor.cod_departamento);
-        if(departamento){
-            this.proveedor.departamento = departamento.nombre; 
-            this.proveedor.cod_departamento = departamento.cod;
-
-        }
-        this.proveedor.municipio = ''; 
-        this.proveedor.cod_municipio = '';
-        this.proveedor.distrito = ''; 
-        this.proveedor.cod_distrito = '';
+    setDepartamento(cod?: unknown): void {
+        alCambiarDepartamento(this.proveedor, this.departamentos, cod ?? this.proveedor.cod_departamento);
         this.cdr.markForCheck();
     }
 

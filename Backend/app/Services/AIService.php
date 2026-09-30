@@ -162,7 +162,7 @@ class AIService
             'message' => $prompt,
             'user_id' => $options['user_id'] ?? Auth::id(),
             'empresa_id' => $options['empresa_id'] ?? session('id_empresa'),
-            'user_type' => $options['user_type'] ?? ($user ? $user->tipo : 'Usuario'),
+            'user_type' => $options['user_type'] ?? ($user ? $user->tipoParaLucas() : 'Usuario'),
             'source' => $options['source'] ?? $this->source,
         ];
 
