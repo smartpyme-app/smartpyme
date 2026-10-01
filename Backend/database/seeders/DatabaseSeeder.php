@@ -34,7 +34,6 @@ class DatabaseSeeder extends Seeder
             ClinicaFuncionalidadSeeder::class,
             ActivosFijosPermissionSeeder::class,
             ActivosFijosFuncionalidadSeeder::class,
-            VentasRecurrentesFuncionalidadSeeder::class,
             ActivosFijosPlantillasSeeder::class,
             PrestamosEmpresaPermissionSeeder::class,
             // PaquetesTableSeeder::class,

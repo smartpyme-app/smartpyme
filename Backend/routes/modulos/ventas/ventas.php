@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Route;
     Route::post('/venta/{id}/shopify/consolidar', [VentasController::class, 'consolidarShopify']);
     Route::post('/venta',               [VentasController::class, 'store']);
     Route::post('/venta/{id}/recurrencia', [VentaRecurrenciaController::class, 'guardar']);
+    Route::get('/ventas-recurrentes/preferencias', [VentaRecurrenciaController::class, 'preferencias']);
     Route::post('/ventas-recurrentes/preferencias', [VentaRecurrenciaController::class, 'guardarPreferencias']);
     Route::delete('/venta/{id}',        [VentasController::class, 'delete']);
 

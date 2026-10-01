@@ -3,14 +3,22 @@
 namespace App\Http\Controllers\Api\Ventas;
 
 use App\Http\Controllers\Controller;
-use App\Models\Admin\EmpresaFuncionalidad;
-use App\Models\Admin\Funcionalidad;
 use App\Models\Ventas\Venta;
-use App\Services\Ventas\GenerarVentasRecurrentesService;
+use App\Services\Ventas\VentasRecurrentesEmpresaConfig;
 use Illuminate\Http\Request;
 
 class VentaRecurrenciaController extends Controller
 {
+    public function preferencias()
+    {
+        $empresa = auth()->user()->empresa;
+        if (!$empresa) {
+            return response()->json(['error' => 'Empresa no encontrada.'], 404);
+        }
+
+        return response()->json(VentasRecurrentesEmpresaConfig::preferencias($empresa), 200);
+    }
+
     public function guardar(Request $request, $id)
     {
         $datos = $request->validate([
@@ -18,8 +26,9 @@ class VentaRecurrenciaController extends Controller
             'pausada' => 'required|boolean',
         ]);
 
-        if (!$this->asignacionActiva(auth()->user()->id_empresa)) {
-            return response()->json(['error' => 'Activa la recurrencia en la empresa.'], 403);
+        $empresa = auth()->user()->empresa;
+        if (!$empresa || !VentasRecurrentesEmpresaConfig::activo($empresa)) {
+            return response()->json(['error' => 'Activa las ventas recurrentes automáticas en Preferencias del sistema.'], 403);
         }
 
         $venta = Venta::where('id', $id)->firstOrFail();
@@ -28,8 +37,8 @@ class VentaRecurrenciaController extends Controller
             return response()->json(['error' => 'Configura la venta original, no esta copia.'], 422);
         }
 
-        if (empty($venta->sello_mh)) {
-            return response()->json(['error' => 'Emite el DTE antes de programarla.'], 422);
+        if ($venta->estado === 'Anulada') {
+            return response()->json(['error' => 'No se puede programar una venta anulada.'], 422);
         }
 
         $venta->frecuencia_recurrencia = $datos['frecuencia'];
@@ -43,35 +52,25 @@ class VentaRecurrenciaController extends Controller
     public function guardarPreferencias(Request $request)
     {
         $datos = $request->validate([
+            'activo' => 'required|boolean',
             'correo_resumen' => 'required|email|max:255',
             'generacion_pausada' => 'required|boolean',
         ]);
 
-        $user = auth()->user();
-        $asignacion = $this->asignacionActiva($user->id_empresa);
-        if (!$asignacion) {
-            return response()->json(['error' => 'Activa la recurrencia en la empresa.'], 403);
+        $empresa = auth()->user()->empresa;
+        if (!$empresa) {
+            return response()->json(['error' => 'Empresa no encontrada.'], 404);
         }
 
-        $config = $asignacion->configuracion ?? [];
-        $config['correo_resumen'] = $datos['correo_resumen'];
-        $config['generacion_pausada'] = $request->boolean('generacion_pausada');
-        $asignacion->configuracion = $config;
-        $asignacion->save();
+        VentasRecurrentesEmpresaConfig::guardarPreferencias(
+            $empresa,
+            $request->boolean('activo'),
+            $datos['correo_resumen'],
+            $request->boolean('generacion_pausada'),
+        );
 
-        return response()->json(['configuracion' => $asignacion->configuracion], 200);
-    }
-
-    private function asignacionActiva(int $idEmpresa): ?EmpresaFuncionalidad
-    {
-        $funcionalidad = Funcionalidad::where('slug', GenerarVentasRecurrentesService::SLUG)->first();
-        if (!$funcionalidad) {
-            return null;
-        }
-
-        return EmpresaFuncionalidad::where('id_empresa', $idEmpresa)
-            ->where('id_funcionalidad', $funcionalidad->id)
-            ->where('activo', 1)
-            ->first();
+        return response()->json([
+            'configuracion' => VentasRecurrentesEmpresaConfig::preferencias($empresa->fresh()),
+        ], 200);
     }
 }

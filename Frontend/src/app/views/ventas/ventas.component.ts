@@ -45,6 +45,7 @@ import {
   validarPeriodoExport,
 } from '../../helpers/export-period.helper';
 import { FE_PAIS_SV, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
+import { VentaRecurrenciaConfigComponent } from '@shared/modals/venta-recurrencia-config/venta-recurrencia-config.component';
 
 export type VentasExportPeriodoTipo = 'detalles' | 'ventas' | 'general';
 
@@ -52,7 +53,7 @@ export type VentasExportPeriodoTipo = 'detalles' | 'ventas' | 'general';
     selector: 'app-ventas',
     templateUrl: './ventas.component.html',
     standalone: true,
-    imports: [CommonModule, PipesModule, RouterModule, FormsModule, ImportarExcelComponent, PaginationComponent, CrearAbonoVentaComponent, TruncatePipe, PopoverModule, TooltipModule, NgSelectModule, LazyImageDirective, AlertsHaciendaComponent, FeCrEmisionAvanzadoComponent, NotificacionesContainerComponent, SharedModule, CurrencyPipe],
+    imports: [CommonModule, PipesModule, RouterModule, FormsModule, ImportarExcelComponent, PaginationComponent, CrearAbonoVentaComponent, TruncatePipe, PopoverModule, TooltipModule, NgSelectModule, LazyImageDirective, AlertsHaciendaComponent, FeCrEmisionAvanzadoComponent, NotificacionesContainerComponent, SharedModule, CurrencyPipe, VentaRecurrenciaConfigComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     styleUrls: ['./ventas.component.css'],
 })
@@ -64,8 +65,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
   public queryFacturarVenta = queryFacturarVenta;
   public creditosClientesActivo = false;
   public recurrenciaAutomatica = false;
-  public frecuenciaRecurrencia: 'mensual' | 'anual' = 'mensual';
-  public recurrenciaPausada = false;
+  @ViewChild(VentaRecurrenciaConfigComponent) recurrenciaConfigModal?: VentaRecurrenciaConfigComponent;
 
   private destroy$ = new Subject<void>();
   private searchSubject$ = new Subject<void>();
@@ -1375,48 +1375,13 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
   }
 
     public verificarAccesoRecurrencia() {
-        this.funcionalidadesService.verificarAcceso('ventas-recurrentes-automaticas')
-            .pipe(this.untilDestroyed())
-            .subscribe({
-                next: (acceso: boolean) => {
-                    this.recurrenciaAutomatica = !!acceso;
-                    this.cdr.markForCheck();
-                },
-                error: () => {
-                    this.recurrenciaAutomatica = false;
-                    this.cdr.markForCheck();
-                }
-            });
-    }
-
-    public abrirRecurrencia(template: TemplateRef<any>, venta: any) {
-        this.venta = venta;
-        this.frecuenciaRecurrencia = venta.frecuencia_recurrencia === 'anual' ? 'anual' : 'mensual';
-        this.recurrenciaPausada = !!venta.recurrencia_pausada;
-        this.openModal(template);
-    }
-
-    public guardarRecurrencia() {
-        this.saving = true;
+        this.recurrenciaAutomatica = this.apiService.isVentasRecurrentesAutomaticasActivo();
         this.cdr.markForCheck();
-        this.apiService.store('venta/' + this.venta.id + '/recurrencia', {
-            frecuencia: this.frecuenciaRecurrencia,
-            pausada: this.recurrenciaPausada,
-        }).pipe(this.untilDestroyed()).subscribe((venta: any) => {
-            this.venta.frecuencia_recurrencia = venta.frecuencia_recurrencia;
-            this.venta.recurrencia_pausada = venta.recurrencia_pausada;
-            this.venta.recurrente = venta.recurrente;
-            this.saving = false;
-            this.modalRef?.hide();
-            this.alertService.success('Listo', this.recurrenciaPausada
-                ? 'Quedó en pausa.'
-                : 'Se facturará el día de esta venta.');
-            this.cdr.markForCheck();
-        }, (error: any) => {
-            this.alertService.error(error);
-            this.saving = false;
-            this.cdr.markForCheck();
-        });
+    }
+
+    public abrirRecurrencia(venta: any) {
+        this.venta = venta;
+        this.recurrenciaConfigModal?.open(venta).then(() => this.cdr.markForCheck());
     }
 
     public setRecurrencia(venta:any){

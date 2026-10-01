@@ -306,8 +306,8 @@
                                             <i class="fas fa-fw fa-hand-holding-usd"></i> Revisar consigna
                                         </a>
                                     }
-                                    @if (recurrenciaAutomatica && venta.sello_mh && !venta.id_venta_plantilla && canEditVentas()) {
-                                        <a (click)="abrirRecurrencia(mrecurrencia, venta)" class="list-group-item list-group-item-action border-0 click">
+                                    @if (recurrenciaAutomatica && !venta.id_venta_plantilla && venta.estado != 'Anulada' && canEditVentas()) {
+                                        <a (click)="abrirRecurrencia(venta)" class="list-group-item list-group-item-action border-0 click">
                                             <i class="fa fa-fw fa-repeat"></i> Configurar recurrencia
                                         </a>
                                     }
@@ -1304,38 +1304,4 @@
   </div>
 </ng-template>
 
-<ng-template #mrecurrencia>
-  <div class="modal-header">
-    <h4 class="modal-title text-center w-100">Recurrencia</h4>
-    <button type="button" class="btn-close" (click)="modalRef.hide()" [disabled]="saving" aria-label="Close"></button>
-  </div>
-  <div class="modal-body">
-    <p class="text-muted small mb-3">Se repite el día de esta venta, cada mes o cada año.</p>
-    <div class="form-group mb-3">
-      <label class="form-label" for="frecuenciaRecurrencia">Frecuencia</label>
-      <select id="frecuenciaRecurrencia" class="form-select" [(ngModel)]="frecuenciaRecurrencia" name="frecuenciaRecurrencia">
-        <option value="mensual">Mensual</option>
-        <option value="anual">Anual</option>
-      </select>
-    </div>
-    <div class="form-group without-label mb-0">
-      <div class="form-switch bg-light-info rounded">
-        <label for="recurrenciaPausada">Pausada</label>
-        <input id="recurrenciaPausada" class="form-check-input float-end" type="checkbox" role="switch"
-          [(ngModel)]="recurrenciaPausada" name="recurrenciaPausada">
-      </div>
-      <p class="text-muted small mb-0 mt-2">Solo esta venta. Para detener todas, usa Preferencias del sistema en Mi cuenta.</p>
-    </div>
-  </div>
-  <div class="modal-footer">
-    <button type="button" class="btn btn-default" (click)="modalRef.hide()" [disabled]="saving">Cancelar</button>
-    <button type="button" class="btn btn-primary" (click)="guardarRecurrencia()" [disabled]="saving">
-      @if (!saving) {
-        <span>Guardar</span>
-      }
-      @if (saving) {
-        <span>Guardando…</span>
-      }
-    </button>
-  </div>
-</ng-template>
+<app-venta-recurrencia-config />
