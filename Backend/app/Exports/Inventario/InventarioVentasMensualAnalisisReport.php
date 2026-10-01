@@ -5,7 +5,6 @@ namespace App\Exports\Inventario;
 use App\Models\Admin\Empresa;
 use App\Models\Inventario\Producto;
 use App\Models\User;
-use App\Models\Ventas\Clientes\Cliente;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -75,9 +74,9 @@ class InventarioVentasMensualAnalisisReport
      */
     public function buildSheets(): array
     {
-        $this->loadCatalog();
         $this->loadCostoRetaceo();
         $this->loadAggregates();
+        $this->loadProductsForRows();
         $this->hydrateMetaLabels();
 
         $rows = $this->buildRows();
@@ -155,6 +154,9 @@ class InventarioVentasMensualAnalisisReport
     public function headings(): array
     {
         $headings = ['DIVISION', 'NOMBRE'];
+        if ($this->agruparPor === 'cliente') {
+            $headings[] = 'Cliente';
+        }
         foreach ($this->months as $m) {
             $headings[] = self::MESES_CORTOS[(int) $m->month] ?? $m->format('M');
         }
@@ -175,9 +177,6 @@ class InventarioVentasMensualAnalisisReport
             'costo por unidad',
         ]);
 
-        if ($this->agruparPor === 'cliente') {
-            $headings[] = 'Cliente';
-        }
         if ($this->agruparPor === 'vendedor') {
             $headings[] = 'Vendedor';
         }
@@ -185,8 +184,37 @@ class InventarioVentasMensualAnalisisReport
         return $headings;
     }
 
-    private function loadCatalog(): void
+    private function loadProductsForRows(): void
     {
+        $needsFullCatalog = ($this->agruparPor === 'producto' && $this->todosProductos)
+            || $this->agruparPor === 'categoria';
+
+        if ($needsFullCatalog) {
+            $this->fillProductosFromQuery(null);
+
+            return;
+        }
+
+        $ids = [];
+        foreach (array_keys($this->totalsByKey) as $key) {
+            $pid = $this->productIdFromKey($key);
+            if ($pid !== null) {
+                $ids[] = $pid;
+            }
+        }
+
+        $this->fillProductosFromQuery(array_values(array_unique($ids)));
+    }
+
+    /**
+     * @param array<int, int>|null $ids null = todos los productos que cumplan filtros
+     */
+    private function fillProductosFromQuery(?array $ids): void
+    {
+        if ($ids !== null && $ids === []) {
+            return;
+        }
+
         $query = Producto::query()
             ->with([
                 'categoria:id,nombre',
@@ -200,8 +228,25 @@ class InventarioVentasMensualAnalisisReport
                         $bq->where('activo', 1);
                     });
                 },
-            ])
-            ->where('id_empresa', $this->empresa->id)
+            ]);
+
+        $this->applyProductEloquentFilters($query);
+
+        if ($ids !== null) {
+            $query->whereIn('id', $ids);
+        }
+
+        foreach ($query->get() as $producto) {
+            $this->productosById[(int) $producto->id] = $producto;
+            if ($producto->categoria) {
+                $this->categoriasById[(int) $producto->categoria->id] = $producto->categoria;
+            }
+        }
+    }
+
+    private function applyProductEloquentFilters($query): void
+    {
+        $query->where('id_empresa', $this->empresa->id)
             ->whereIn('tipo', ['Producto', 'Compuesto'])
             ->where('enable', true);
 
@@ -216,13 +261,6 @@ class InventarioVentasMensualAnalisisReport
             $query->whereHas('proveedores', static function ($q) use ($idProveedor) {
                 $q->where('id_proveedor', $idProveedor);
             });
-        }
-
-        foreach ($query->get() as $producto) {
-            $this->productosById[(int) $producto->id] = $producto;
-            if ($producto->categoria) {
-                $this->categoriasById[(int) $producto->categoria->id] = $producto->categoria;
-            }
         }
     }
 
@@ -247,9 +285,6 @@ class InventarioVentasMensualAnalisisReport
 
     private function loadAggregates(): void
     {
-        if ($this->productosById === []) {
-            return;
-        }
         $this->mergeMonthlyRows($this->fetchDetalleMonthly(), 'detalle');
         $this->mergeMonthlyRows($this->fetchKardexMonthly(), 'kardex');
         $this->rollupTotalsFromMonthly();
@@ -353,8 +388,15 @@ class InventarioVentasMensualAnalisisReport
     {
         $clienteIds = [];
         $vendedorIds = [];
+        if ($this->agruparPor === 'cliente') {
+            foreach (array_keys($this->totalsByKey) as $key) {
+                if (preg_match('/\|c:(\d+)/', $key, $matches)) {
+                    $clienteIds[] = (int) $matches[1];
+                }
+            }
+        }
         foreach ($this->metaByKey as $meta) {
-            if (!empty($meta['id_cliente'])) {
+            if (array_key_exists('id_cliente', $meta)) {
                 $clienteIds[] = (int) $meta['id_cliente'];
             }
             if (!empty($meta['id_vendedor'])) {
@@ -363,8 +405,13 @@ class InventarioVentasMensualAnalisisReport
         }
 
         if ($clienteIds !== []) {
-            foreach (Cliente::query()->whereIn('id', array_unique($clienteIds))->get() as $cliente) {
-                $this->clienteNombreById[(int) $cliente->id] = (string) $cliente->nombre_completo;
+            $rows = DB::table('clientes')
+                ->where('id_empresa', $this->empresa->id)
+                ->whereIn('id', array_unique($clienteIds))
+                ->get(['id', 'nombre', 'apellido', 'tipo', 'nombre_empresa', 'nombre_comercial']);
+
+            foreach ($rows as $cliente) {
+                $this->clienteNombreById[(int) $cliente->id] = $this->formatClienteNombre($cliente);
             }
         }
         if ($vendedorIds !== []) {
@@ -374,8 +421,8 @@ class InventarioVentasMensualAnalisisReport
         }
 
         foreach ($this->metaByKey as $key => $meta) {
-            if (!empty($meta['id_cliente'])) {
-                $this->metaByKey[$key]['cliente'] = $this->clienteNombreById[$meta['id_cliente']] ?? ('Cliente #' . $meta['id_cliente']);
+            if (array_key_exists('id_cliente', $meta)) {
+                $this->metaByKey[$key]['cliente'] = $this->resolveClienteNombre((int) $meta['id_cliente']);
             }
             if (!empty($meta['id_vendedor'])) {
                 $this->metaByKey[$key]['vendedor'] = $this->vendedorNombreById[$meta['id_vendedor']] ?? ('Vendedor #' . $meta['id_vendedor']);
@@ -492,6 +539,9 @@ class InventarioVentasMensualAnalisisReport
             (string) ($producto->codigo ?? ''),
             $nombre,
         ];
+        if ($this->agruparPor === 'cliente') {
+            $row[] = $this->clienteNombreForKey($key);
+        }
         foreach ($monthCells as $cell) {
             $row[] = $cell;
         }
@@ -512,14 +562,40 @@ class InventarioVentasMensualAnalisisReport
             $costoPorUnidad,
         ]);
 
-        if ($this->agruparPor === 'cliente') {
-            $row[] = $this->metaByKey[$key]['cliente'] ?? '';
-        }
         if ($this->agruparPor === 'vendedor') {
             $row[] = $this->metaByKey[$key]['vendedor'] ?? '';
         }
 
         return $row;
+    }
+
+    private function clienteNombreForKey(string $key): string
+    {
+        if (preg_match('/\|c:(\d+)/', $key, $matches)) {
+            return $this->resolveClienteNombre((int) $matches[1]);
+        }
+
+        return $this->metaByKey[$key]['cliente'] ?? '';
+    }
+
+    private function resolveClienteNombre(int $idCliente): string
+    {
+        if ($idCliente === 0) {
+            return 'Consumidor final';
+        }
+
+        return $this->clienteNombreById[$idCliente] ?? ('Cliente #' . $idCliente);
+    }
+
+    private function formatClienteNombre(object $cliente): string
+    {
+        if (($cliente->tipo ?? '') === 'Empresa' || ($cliente->tipo ?? '') === 'Extranjero') {
+            $legal = (string) ($cliente->nombre_empresa ?? '');
+
+            return trim($legal . ($cliente->nombre_comercial ? ' (' . $cliente->nombre_comercial . ')' : ''));
+        }
+
+        return trim(((string) ($cliente->nombre ?? '')) . ' ' . ((string) ($cliente->apellido ?? '')));
     }
 
     /**
@@ -647,7 +723,10 @@ class InventarioVentasMensualAnalisisReport
         $clienteCol = array_search('Cliente', $headings, true);
         $byClient = [];
         foreach ($rows as $row) {
-            $name = $clienteCol !== false ? (string) ($row[$clienteCol] ?? 'Sin cliente') : 'Sin cliente';
+            $name = $clienteCol !== false ? (string) ($row[$clienteCol] ?? '') : '';
+            if ($name === '') {
+                $name = 'Sin cliente';
+            }
             $byClient[$name][] = $row;
         }
         ksort($byClient, SORT_NATURAL | SORT_FLAG_CASE);
@@ -693,9 +772,9 @@ class InventarioVentasMensualAnalisisReport
             ->where('ventas.estado', '!=', 'Anulada')
             ->where('ventas.cotizacion', 0)
             ->whereDate('ventas.fecha', '>=', $this->inicio->toDateString())
-            ->whereDate('ventas.fecha', '<=', $this->fin->toDateString())
-            ->whereIn('productos.id', array_keys($this->productosById));
+            ->whereDate('ventas.fecha', '<=', $this->fin->toDateString());
 
+        $this->applyProductFiltersOnQuery($q);
         $this->applySaleFilters($q);
 
         if ($this->agruparPor === 'proveedor' || $this->filters['id_proveedor']) {
@@ -721,9 +800,9 @@ class InventarioVentasMensualAnalisisReport
                     ->orWhere('kardexs.detalle', 'Venta a consigna')
                     ->orWhere('kardexs.detalle', 'like', 'Venta %');
             })
-            ->where('kardexs.detalle', 'not like', 'Venta Anulada%')
-            ->whereIn('productos.id', array_keys($this->productosById));
+            ->where('kardexs.detalle', 'not like', 'Venta Anulada%');
 
+        $this->applyProductFiltersOnQuery($q);
         $this->applySaleFilters($q);
 
         if ($this->agruparPor === 'proveedor' || $this->filters['id_proveedor']) {
@@ -731,6 +810,29 @@ class InventarioVentasMensualAnalisisReport
         }
 
         return $q;
+    }
+
+    private function applyProductFiltersOnQuery($q): void
+    {
+        $q->where('productos.id_empresa', $this->empresa->id)
+            ->whereIn('productos.tipo', ['Producto', 'Compuesto'])
+            ->where('productos.enable', true);
+
+        if ($this->filters['id_categoria']) {
+            $q->where('productos.id_categoria', $this->filters['id_categoria']);
+        }
+        if ($this->filters['codigo'] !== '') {
+            $q->where('productos.codigo', 'like', '%' . $this->filters['codigo'] . '%');
+        }
+        if ($this->filters['id_proveedor']) {
+            $idProveedor = $this->filters['id_proveedor'];
+            $q->whereExists(function ($sub) use ($idProveedor) {
+                $sub->select(DB::raw('1'))
+                    ->from('producto_proveedores')
+                    ->whereColumn('producto_proveedores.id_producto', 'productos.id')
+                    ->where('producto_proveedores.id_proveedor', $idProveedor);
+            });
+        }
     }
 
     private function applySaleFilters($q): void
@@ -750,8 +852,8 @@ class InventarioVentasMensualAnalisisReport
     {
         return match ($this->agruparPor) {
             'cliente' => [
-                'select' => ['detalles_venta.id_producto', 'ventas.id_cliente'],
-                'groupBy' => ['detalles_venta.id_producto', 'ventas.id_cliente'],
+                'select' => ['detalles_venta.id_producto', DB::raw('COALESCE(ventas.id_cliente, 0) AS id_cliente')],
+                'groupBy' => ['detalles_venta.id_producto', DB::raw('COALESCE(ventas.id_cliente, 0)')],
             ],
             'vendedor' => [
                 'select' => ['detalles_venta.id_producto', DB::raw('COALESCE(ventas.id_vendedor, 0) AS id_vendedor')],
@@ -779,8 +881,8 @@ class InventarioVentasMensualAnalisisReport
     {
         return match ($this->agruparPor) {
             'cliente' => [
-                'select' => ['kardexs.id_producto', 'ventas.id_cliente'],
-                'groupBy' => ['kardexs.id_producto', 'ventas.id_cliente'],
+                'select' => ['kardexs.id_producto', DB::raw('COALESCE(ventas.id_cliente, 0) AS id_cliente')],
+                'groupBy' => ['kardexs.id_producto', DB::raw('COALESCE(ventas.id_cliente, 0)')],
             ],
             'vendedor' => [
                 'select' => ['kardexs.id_producto', DB::raw('COALESCE(ventas.id_vendedor, 0) AS id_vendedor')],
