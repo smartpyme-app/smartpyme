@@ -14,6 +14,7 @@ use App\Services\FacturacionElectronica\FacturacionElectronicaCountryGate;
 use App\Services\MhGovSvGatewayService;
 use Carbon\Carbon;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -133,7 +134,13 @@ class GenerarVentasRecurrentesService
                 return ['ok' => true, 'linea' => ''];
             }
 
-            return ['ok' => false, 'linea' => $etiqueta.': no se pudo crear la venta. '.$e->getMessage()];
+            $detalleDoc = 'documento '.$documento->id.' (empresa '.$plantilla->id_empresa.')';
+            $msg = $e->getMessage();
+            if (str_contains($msg, 'Documento')) {
+                $msg = $detalleDoc.'. '.$msg;
+            }
+
+            return ['ok' => false, 'linea' => $etiqueta.': no se pudo crear la venta. '.$msg];
         }
 
         if (!$empresa->facturacion_electronica) {
@@ -188,7 +195,12 @@ class GenerarVentasRecurrentesService
         $guard->setUser($usuario);
 
         try {
-            $request = request()->duplicate(null, $this->payload($plantilla, $fecha, $periodo, $documento));
+            $payload = $this->payload($plantilla, $fecha, $periodo, $documento);
+            $payload['id_documento'] = (int) $documento->id;
+            $payload['id_empresa'] = (int) $plantilla->id_empresa;
+            $request = Request::create('/internal/ventas-recurrentes', 'POST', $payload);
+            $request->setUserResolver(static fn () => $usuario);
+
             $this->facturacion->assertReglasNegocio($usuario, $request);
 
             return $this->facturacion->procesar($usuario, $request);

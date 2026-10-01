@@ -192,11 +192,23 @@ class FacturacionService
                     }
                 }
 
+                $idDocumento = (int) $request->input('id_documento');
+                if ($idDocumento <= 0) {
+                    throw new FacturacionException('Debe indicar un documento fiscal (id_documento).', 422);
+                }
+
                 $documento = Documento::withoutGlobalScopes()
-                    ->where('id', $request->id_documento)
-                    ->where('id_empresa', $empresa->id)
+                    ->where('id', $idDocumento)
+                    ->where('id_empresa', (int) $empresa->id)
                     ->lockForUpdate()
-                    ->firstOrFail();
+                    ->first();
+
+                if (!$documento) {
+                    throw new FacturacionException(
+                        'Documento id '.$idDocumento.' no existe para la empresa '.$empresa->id.'.',
+                        422
+                    );
+                }
 
                 $this->aplicarReglasVentaRemisionConsigna($venta, $documento, $request);
 
