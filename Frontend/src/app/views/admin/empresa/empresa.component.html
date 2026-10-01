@@ -459,14 +459,14 @@
                                 </div>
                                 <div class="empresa-pref-row mb-3">
                                   <div class="empresa-pref-row-text">
-                                    <label class="empresa-pref-row-label" for="ventasRecurrentesGeneracionPausada">Detener facturación automática</label>
-                                    <p class="empresa-pref-row-help text-muted small mb-0">Mientras esté activo, no se crean facturas recurrentes para ningún cliente.</p>
+                                    <label class="empresa-pref-row-label" for="ventasRecurrentesGeneracionActiva">Activar facturación automática</label>
+                                    <p class="empresa-pref-row-help text-muted small mb-0">El cron diario crea las ventas programadas. Si lo apagas, las plantillas siguen configuradas pero no se generan solas.</p>
                                   </div>
                                   <div class="form-switch m-0">
                                     <input class="form-check-input" type="checkbox" role="switch"
-                                      id="ventasRecurrentesGeneracionPausada"
-                                      [(ngModel)]="ventasRecurrentesGeneracionPausada"
-                                      name="ventasRecurrentesGeneracionPausada">
+                                      id="ventasRecurrentesGeneracionActiva"
+                                      [(ngModel)]="ventasRecurrentesGeneracionActiva"
+                                      name="ventasRecurrentesGeneracionActiva">
                                   </div>
                                 </div>
                                 <div class="mb-3">

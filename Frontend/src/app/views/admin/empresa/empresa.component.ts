@@ -112,7 +112,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
     public tieneAccesoFidelizacionGlobal: boolean = false;
     public ventasRecurrentesAutomaticasActivo = false;
     public ventasRecurrentesCorreo = '';
-    public ventasRecurrentesGeneracionPausada = false;
+    public ventasRecurrentesGeneracionActiva = true;
     public guardandoVentasRecurrentes = false;
 
     public customConfig: any = {
@@ -1834,7 +1834,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
                 fidelizacion_completa: false, // Activar completamente la fidelización (ganar/consumir puntos)
                 ventas_recurrentes_automaticas_activo: false,
                 ventas_recurrentes_correo_resumen: '',
-                ventas_recurrentes_generacion_pausada: false,
+                ventas_recurrentes_generacion_activa: true,
             },
             campos_personalizados: {}
         };
@@ -1875,7 +1875,13 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
         const cfg = this.customConfig?.configuraciones;
         this.ventasRecurrentesAutomaticasActivo = !!cfg?.ventas_recurrentes_automaticas_activo;
         this.ventasRecurrentesCorreo = (cfg?.ventas_recurrentes_correo_resumen || this.empresa?.correo || '').trim();
-        this.ventasRecurrentesGeneracionPausada = !!cfg?.ventas_recurrentes_generacion_pausada;
+        if (cfg?.ventas_recurrentes_generacion_activa !== undefined) {
+            this.ventasRecurrentesGeneracionActiva = !!cfg.ventas_recurrentes_generacion_activa;
+        } else if (cfg?.ventas_recurrentes_generacion_pausada !== undefined) {
+            this.ventasRecurrentesGeneracionActiva = !cfg.ventas_recurrentes_generacion_pausada;
+        } else {
+            this.ventasRecurrentesGeneracionActiva = true;
+        }
     }
 
     private deepMerge(target: any, source: any): any {
@@ -2682,14 +2688,15 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
         this.apiService.store('ventas-recurrentes/preferencias', {
             activo: this.ventasRecurrentesAutomaticasActivo,
             correo_resumen: this.ventasRecurrentesCorreo,
-            generacion_pausada: this.ventasRecurrentesGeneracionPausada,
+            generacion_activa: this.ventasRecurrentesGeneracionActiva,
         }).pipe(this.untilDestroyed()).subscribe({
             next: (resp: any) => {
                 const cfg = resp?.configuracion;
                 if (this.customConfig?.configuraciones) {
                     this.customConfig.configuraciones.ventas_recurrentes_automaticas_activo = !!cfg?.activo;
                     this.customConfig.configuraciones.ventas_recurrentes_correo_resumen = cfg?.correo_resumen ?? this.ventasRecurrentesCorreo;
-                    this.customConfig.configuraciones.ventas_recurrentes_generacion_pausada = !!cfg?.generacion_pausada;
+                    this.customConfig.configuraciones.ventas_recurrentes_generacion_activa = !!cfg?.generacion_activa;
+                    delete this.customConfig.configuraciones.ventas_recurrentes_generacion_pausada;
                     this.empresa.custom_empresa = this.customConfig;
                 }
                 const authEmpresa = this.apiService.auth_user()?.empresa;

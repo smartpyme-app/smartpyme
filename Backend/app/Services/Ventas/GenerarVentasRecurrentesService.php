@@ -44,7 +44,7 @@ class GenerarVentasRecurrentesService
             if (!$empresa || !VentasRecurrentesEmpresaConfig::activo($empresa)) {
                 continue;
             }
-            if (VentasRecurrentesEmpresaConfig::generacionPausada($empresa)) {
+            if (!VentasRecurrentesEmpresaConfig::generacionActiva($empresa)) {
                 continue;
             }
             $this->procesarEmpresa($empresa, $fecha);

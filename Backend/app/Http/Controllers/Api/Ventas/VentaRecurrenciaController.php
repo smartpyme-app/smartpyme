@@ -54,7 +54,7 @@ class VentaRecurrenciaController extends Controller
         $datos = $request->validate([
             'activo' => 'required|boolean',
             'correo_resumen' => 'required|email|max:255',
-            'generacion_pausada' => 'required|boolean',
+            'generacion_activa' => 'required|boolean',
         ]);
 
         $empresa = auth()->user()->empresa;
@@ -66,7 +66,7 @@ class VentaRecurrenciaController extends Controller
             $empresa,
             $request->boolean('activo'),
             $datos['correo_resumen'],
-            $request->boolean('generacion_pausada'),
+            $request->boolean('generacion_activa'),
         );
 
         return response()->json([
