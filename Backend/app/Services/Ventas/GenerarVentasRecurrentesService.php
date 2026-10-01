@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Schema;
 
 class GenerarVentasRecurrentesService
 {
@@ -129,6 +130,7 @@ class GenerarVentasRecurrentesService
 
         try {
             $venta = $this->clonar($plantilla, $usuario, $fecha, $periodo, $documento);
+            $this->marcarCopiaNoRecurrente($venta);
         } catch (FacturacionException $e) {
             if (str_contains($e->getMessage(), 'venta_recurrencia_periodo_unique')) {
                 return ['ok' => true, 'linea' => ''];
@@ -276,8 +278,6 @@ class GenerarVentasRecurrentesService
             'id_canal' => $plantilla->id_canal,
             'id_documento' => $documento->id,
             'forma_pago' => $plantilla->forma_pago,
-            'tipo_documento' => $plantilla->tipo_documento,
-            'condicion' => $plantilla->condicion,
             'iva_percibido' => $plantilla->iva_percibido ?? 0,
             'iva_retenido' => $plantilla->iva_retenido ?? 0,
             'renta_retenida' => $plantilla->renta_retenida ?? 0,
@@ -315,7 +315,61 @@ class GenerarVentasRecurrentesService
             $data['impuestos'] = $impuestos;
         }
 
+        $detalles = $data['detalles'];
+        $impuestosPayload = $data['impuestos'] ?? null;
+        unset($data['detalles'], $data['impuestos']);
+
+        $data = $this->filtrarAtributosVenta($data);
+        $data['detalles'] = $detalles;
+        if ($impuestosPayload !== null) {
+            $data['impuestos'] = $impuestosPayload;
+        }
+
         return $data;
+    }
+
+    /** Solo columnas que existen en `ventas` (el modelo fillable puede incluir campos legacy). */
+    private function filtrarAtributosVenta(array $attrs): array
+    {
+        static $columnas = null;
+        $columnas ??= array_flip(Schema::getColumnListing('ventas'));
+
+        $filtrado = [];
+        foreach ($attrs as $clave => $valor) {
+            if (isset($columnas[$clave])) {
+                $filtrado[$clave] = $valor;
+            }
+        }
+
+        $filtrado['recurrente'] = '0';
+        if (isset($columnas['frecuencia_recurrencia'])) {
+            $filtrado['frecuencia_recurrencia'] = null;
+        }
+        if (isset($columnas['recurrencia_pausada'])) {
+            $filtrado['recurrencia_pausada'] = false;
+        }
+
+        return $filtrado;
+    }
+
+    private function marcarCopiaNoRecurrente(Venta $venta): void
+    {
+        $dirty = false;
+        if ($venta->recurrente !== '0' && $venta->recurrente !== 0 && $venta->recurrente !== false) {
+            $venta->recurrente = '0';
+            $dirty = true;
+        }
+        if ($venta->frecuencia_recurrencia !== null) {
+            $venta->frecuencia_recurrencia = null;
+            $dirty = true;
+        }
+        if ($venta->recurrencia_pausada) {
+            $venta->recurrencia_pausada = false;
+            $dirty = true;
+        }
+        if ($dirty) {
+            $venta->save();
+        }
     }
 
     private function detallePayload(Detalle $detalle): array
