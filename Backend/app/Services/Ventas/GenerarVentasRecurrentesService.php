@@ -4,6 +4,7 @@ namespace App\Services\Ventas;
 
 use App\Exceptions\FacturacionException;
 use App\Http\Requests\MH\EnviarDTERequest;
+use App\Models\Admin\Documento;
 use App\Models\Admin\Empresa;
 use App\Models\User;
 use App\Models\Ventas\Detalle;
@@ -114,8 +115,16 @@ class GenerarVentasRecurrentesService
             return ['ok' => false, 'linea' => $etiqueta.': la venta no tiene usuario para facturar.'];
         }
 
+        $documento = $this->resolverDocumentoPlantilla($plantilla);
+        if (!$documento) {
+            return [
+                'ok' => false,
+                'linea' => $etiqueta.': no hay documento fiscal válido (revise id_documento o el predeterminado de la sucursal).',
+            ];
+        }
+
         try {
-            $venta = $this->clonar($plantilla, $usuario, $fecha, $periodo);
+            $venta = $this->clonar($plantilla, $usuario, $fecha, $periodo, $documento);
         } catch (FacturacionException $e) {
             if (str_contains($e->getMessage(), 'venta_recurrencia_periodo_unique')) {
                 return ['ok' => true, 'linea' => ''];
@@ -163,26 +172,53 @@ class GenerarVentasRecurrentesService
         return ['ok' => true, 'linea' => 'Venta #'.$venta->correlativo.' (id '.$venta->id.') emitida.'.$avisoCorreo];
     }
 
-    private function clonar(Venta $plantilla, User $usuario, string $fecha, string $periodo): Venta
-    {
-        $anterior = Auth::user();
-        Auth::login($usuario);
+    private function clonar(
+        Venta $plantilla,
+        User $usuario,
+        string $fecha,
+        string $periodo,
+        Documento $documento,
+    ): Venta {
+        $guard = Auth::guard();
+        $anterior = $guard->user();
+        // ponytail: setUser evita Login/Logout y el listener que escribe ultimo_logout (columna ausente en algunos entornos)
+        $guard->setUser($usuario);
 
         try {
-            $request = request()->duplicate(null, $this->payload($plantilla, $fecha, $periodo));
+            $request = request()->duplicate(null, $this->payload($plantilla, $fecha, $periodo, $documento));
             $this->facturacion->assertReglasNegocio($usuario, $request);
 
             return $this->facturacion->procesar($usuario, $request);
         } finally {
             if ($anterior) {
-                Auth::login($anterior);
+                $guard->setUser($anterior);
             } else {
-                Auth::logout();
+                $guard->forgetUser();
             }
         }
     }
 
-    private function payload(Venta $plantilla, string $fecha, string $periodo): array
+    private function resolverDocumentoPlantilla(Venta $plantilla): ?Documento
+    {
+        $base = Documento::withoutGlobalScopes()
+            ->where('id_empresa', $plantilla->id_empresa)
+            ->where('id_sucursal', $plantilla->id_sucursal);
+
+        if ($plantilla->id_documento) {
+            $documento = (clone $base)->where('id', $plantilla->id_documento)->first();
+            if ($documento) {
+                return $documento;
+            }
+        }
+
+        return (clone $base)
+            ->where('activo', '1')
+            ->orderByRaw("CASE WHEN predeterminado = '1' THEN 0 ELSE 1 END")
+            ->orderBy('id')
+            ->first();
+    }
+
+    private function payload(Venta $plantilla, string $fecha, string $periodo, Documento $documento): array
     {
         $origen = Carbon::parse($plantilla->fecha)->startOfDay();
         $pago = $plantilla->fecha_pago ? Carbon::parse($plantilla->fecha_pago)->startOfDay() : $origen->copy();
@@ -204,7 +240,7 @@ class GenerarVentasRecurrentesService
             'puntos_canjeados' => 0,
             'descuento_puntos' => 0,
             'id_canal' => $plantilla->id_canal,
-            'id_documento' => $plantilla->id_documento,
+            'id_documento' => $documento->id,
             'forma_pago' => $plantilla->forma_pago,
             'tipo_documento' => $plantilla->tipo_documento,
             'condicion' => $plantilla->condicion,
