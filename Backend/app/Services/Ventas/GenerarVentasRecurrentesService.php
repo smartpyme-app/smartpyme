@@ -446,6 +446,21 @@ class GenerarVentasRecurrentesService
             $venta->codigo_generacion = $hacienda['codigoGeneracion'];
         }
         $venta->tipo_dte = $dteJson['identificacion']['tipoDte'] ?? $venta->tipo_dte;
+        $this->guardarVentaSoloColumnasReales($venta);
+    }
+
+    /** MHFactura/MHCCF asignan ambiente, cod_condicion, etc. solo para armar el JSON; no son columnas en prod. */
+    private function guardarVentaSoloColumnasReales(Venta $venta): void
+    {
+        static $columnas = null;
+        $columnas ??= array_flip(Schema::getColumnListing('ventas'));
+
+        foreach (array_keys($venta->getAttributes()) as $clave) {
+            if (!isset($columnas[$clave])) {
+                $venta->offsetUnset($clave);
+            }
+        }
+
         $venta->save();
     }
 
