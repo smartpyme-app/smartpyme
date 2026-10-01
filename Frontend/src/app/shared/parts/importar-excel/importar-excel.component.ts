@@ -31,6 +31,9 @@ export class ImportarExcelComponent implements OnInit, OnDestroy {
     public loading:boolean = false;
     public file:any = {};
     public plantillaUrl: string = '';
+    public modoProducto: 'nuevos' | 'actualizar' = 'nuevos';
+    public resultadoActualizacion: { actualizados: number; errores: { fila: number; mensaje: string }[] } | null = null;
+    public descargandoActualizacion = false;
     public importResult: any = null;
     public showResults: boolean = false;
     public validationErrors: string[] = [];
@@ -173,16 +176,34 @@ export class ImportarExcelComponent implements OnInit, OnDestroy {
     }
 
     openModal(template: TemplateRef<any>) {
-        // Recalcular la URL de la plantilla cuando se abre el modal
-        // para asegurarnos de que tenemos los datos más recientes de la empresa
         this.calcularPlantillaUrl();
+        this.modoProducto = 'nuevos';
+        this.resultadoActualizacion = null;
+        this.file = {};
         this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template);
+        this.modalRef = this.modalService.show(template, { backdrop: 'static' });
+    }
+
+    puedeActualizarProductos(): boolean {
+        return this.nombre.toLowerCase() === 'productos'
+            && this.apiService.isActualizacionMasivaProductosActiva()
+            && this.apiService.hasPermission('productos.actualizacion_masiva.ejecutar');
+    }
+
+    elegirModoProducto(modo: 'nuevos' | 'actualizar', archivo?: HTMLInputElement): void {
+        this.modoProducto = modo;
+        this.resultadoActualizacion = null;
+        this.file = {};
+        this.ventasErrores = [];
+        if (archivo) {
+            archivo.value = '';
+        }
     }
 
     setFile(event:any){
         this.file.file = event.target.files[0];
         this.ventasErrores = [];
+        this.resultadoActualizacion = null;
     }
 
     // onSubmit(event:any) {
@@ -208,6 +229,11 @@ export class ImportarExcelComponent implements OnInit, OnDestroy {
     // }
 
     onSubmit(event:any) {
+        if (this.puedeActualizarProductos() && this.modoProducto === 'actualizar') {
+            this.subirActualizacionProductos();
+            return;
+        }
+
         console.log(this.file);
 
         let formData:FormData = new FormData();
@@ -318,6 +344,47 @@ export class ImportarExcelComponent implements OnInit, OnDestroy {
         this.modalRef?.hide();
         this.alertService.modal = false;
         this.resetState();
+    }
+
+    public descargarActualizacionProductos(event: Event): void {
+        event.preventDefault();
+        this.descargandoActualizacion = true;
+        this.apiService.download('productos/actualizacion-masiva')
+            .pipe(takeUntil(this.destroy$))
+            .subscribe({
+                next: (blob) => {
+                    this.apiService.downloadFile(blob, 'actualizacion_masiva_productos.xlsx');
+                    this.descargandoActualizacion = false;
+                },
+                error: (err) => {
+                    this.descargandoActualizacion = false;
+                    this.alertService.error(err?.error?.message || 'Error al descargar los productos');
+                },
+            });
+    }
+
+    private subirActualizacionProductos(): void {
+        if (!this.file?.file) {
+            return;
+        }
+        const formData = new FormData();
+        formData.append('file', this.file.file);
+        this.loading = true;
+        this.resultadoActualizacion = null;
+        this.apiService.store('productos/actualizacion-masiva', formData)
+            .pipe(takeUntil(this.destroy$))
+            .subscribe({
+                next: (data: any) => {
+                    this.loading = false;
+                    this.resultadoActualizacion = data;
+                    this.loadAll.emit();
+                },
+                error: (error) => {
+                    this.loading = false;
+                    this.alertService.error(error);
+                    this.alertService.modal = true;
+                },
+            });
     }
 
     public descargarPlantillaImportacionProductos(event: Event): void {

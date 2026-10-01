@@ -39,6 +39,8 @@ use App\Models\Inventario\Composiciones\Composicion;
 use App\Exports\ActualizacionMasivaProductosExport;
 use App\Exports\PlantillaProductosImportExport;
 use App\Imports\ActualizacionMasivaProductosImport;
+use App\Support\Inventario\ActualizacionMasivaProductos;
+use Maatwebsite\Excel\HeadingRowImport;
 use App\Exports\TrasladoLineasUiExport;
 use App\Exports\ShopifyExport;
 use App\Services\Inventario\ProductoImportacionDteService;
@@ -1271,6 +1273,11 @@ class ProductosController extends Controller
 
     public function import(ImportProductosRequest $request)
     {
+        if ($this->tipoPlantillaArchivo($request->file) === 'actualizar') {
+            return response()->json([
+                'message' => 'Este archivo es la plantilla de actualización. Elija «Actualizar existentes».',
+            ], 422);
+        }
 
         $import = new Productos();
         Excel::import($import, $request->file);
@@ -1314,10 +1321,29 @@ class ProductosController extends Controller
             'file.mimes' => 'El archivo debe ser Excel (.xlsx o .xls).',
         ]);
 
+        $tipo = $this->tipoPlantillaArchivo($request->file('file'));
+        if ($tipo === 'nuevos') {
+            return response()->json([
+                'message' => 'Este archivo es la plantilla de productos nuevos. Elija «Productos nuevos».',
+            ], 422);
+        }
+        if ($tipo !== 'actualizar') {
+            return response()->json([
+                'message' => 'El archivo no es la plantilla de actualización de productos.',
+            ], 422);
+        }
+
         $import = new ActualizacionMasivaProductosImport((int) Auth::user()->id_empresa, (int) Auth::id());
         Excel::import($import, $request->file('file'));
 
         return response()->json($import->resultado, 200);
+    }
+
+    private function tipoPlantillaArchivo($archivo): string
+    {
+        $hojas = (new HeadingRowImport())->toArray($archivo);
+
+        return ActualizacionMasivaProductos::tipoPlantilla($hojas[0][0] ?? []);
     }
 
     private function denegarActualizacionMasiva()

@@ -6,13 +6,25 @@
 
 <ng-template #importar>
   <div class="modal-header text-center">
-    <h3 class="modal-title">Importar {{ this.nombre.replace('-', ' ') }}</h3>
+    <h3 class="modal-title">Importar {{ nombre.replace('-', ' ') }}</h3>
     <button type="button" class="btn-close" (click)="modalRef.hide(); this.alertService.modal = false;" aria-label="Close"></button>
   </div>
   <div class="modal-body">
     <app-notificaciones-container></app-notificaciones-container>
-        <form #form="ngForm" (ngSubmit)="onSubmit()" enctype="multipart/form-data">
+        <form #form="ngForm" (ngSubmit)="onSubmit($event)" enctype="multipart/form-data">
         <div class="row mb-4">
+            <div class="col-12 mb-3 text-center" *ngIf="nombre.toLowerCase() === 'productos' && puedeActualizarProductos()">
+              <div class="btn-group btn-group-sm" role="group" aria-label="Tipo de carga">
+                <button type="button" class="btn"
+                  [class.btn-primary]="modoProducto === 'nuevos'"
+                  [class.btn-outline-secondary]="modoProducto !== 'nuevos'"
+                  (click)="elegirModoProducto('nuevos', archivoProductos)">Productos nuevos</button>
+                <button type="button" class="btn"
+                  [class.btn-primary]="modoProducto === 'actualizar'"
+                  [class.btn-outline-secondary]="modoProducto !== 'actualizar'"
+                  (click)="elegirModoProducto('actualizar', archivoProductos)">Actualizar existentes</button>
+              </div>
+            </div>
             <!-- <div class="col-md-12">
               <div class="alert bg-info  text-center">
                 <p>Seleccionar un archivo de Excel con el listado de sus {{ this.nombre.replace('-', ' ') }}, debe tener la misma estructura de la plantilla que se comparte a continuación. <br>
@@ -23,13 +35,21 @@
             </div> -->
             <div class="col-md-12">
               <div class="alert bg-info text-center">
-                <p>Seleccionar un archivo de Excel con el listado de sus {{ this.nombre.replace('-', ' ') }}, debe tener la misma estructura de la plantilla que se comparte a continuación. <br>
+                <p *ngIf="!(nombre.toLowerCase() === 'productos' && puedeActualizarProductos() && modoProducto === 'actualizar')">Seleccionar un archivo de Excel con el listado de sus {{ this.nombre.replace('-', ' ') }}, debe tener la misma estructura de la plantilla que se comparte a continuación. <br>
 
-                  <!-- Productos: plantilla dinámica por bodega (requiere sesión) -->
-                  <span *ngIf="this.nombre === 'productos'">
+                  <!-- Productos nuevos -->
+                  <span *ngIf="this.nombre === 'productos' && modoProducto !== 'actualizar'">
                     Descargue la plantilla con una columna de stock por cada bodega activa (con nombre de bodega y sucursal):
                     <a role="button" href="#" class="link-primary" (click)="descargarPlantillaImportacionProductos($event)">Descargar plantilla</a>
                   </span>
+
+                </p>
+                <p *ngIf="nombre.toLowerCase() === 'productos' && puedeActualizarProductos() && modoProducto === 'actualizar'" class="mb-0">
+                  Descargue los productos ya registrados, edite el archivo y vuelva a subirlo. Conserve las columnas de la plantilla.<br>
+                  El ID identifica cada producto. Una celda vacía no cambia ese dato. Escriba 0 para dejar un mínimo o máximo en cero. No modifica la existencia ni crea productos.<br>
+                  <a role="button" href="#" class="link-primary" (click)="descargarActualizacionProductos($event)">{{ descargandoActualizacion ? 'Descargando...' : 'Descargar productos' }}</a>
+                </p>
+                <p *ngIf="nombre.toLowerCase() !== 'productos'">
 
                   <!-- Servicios: plantilla dinámica desde la API (misma fuente que valida el importador) -->
                   <span *ngIf="this.nombre === 'servicios'">
@@ -52,8 +72,8 @@
               </div>
             </div>
 
-              <div class="mb-5 form-group col-md-12 text-center">
-                <input type="file" class="form-control" name="file"  (change)="setFile($event)" required>
+              <div class="mb-3 form-group col-md-12">
+                <input #archivoProductos id="archivo-importar-excel" type="file" class="form-control" name="file" (change)="setFile($event)" accept=".xlsx,.xls,.csv" required>
               </div>
 
               <div class="table-responsive validation-errors mb-3" *ngIf="nombre === 'ventas' && ventasErrores.length">
@@ -76,10 +96,20 @@
                 </table>
               </div>
 
+              <div class="alert mt-3 mb-0" *ngIf="resultadoActualizacion"
+                [class.alert-success]="!resultadoActualizacion.errores?.length"
+                [class.alert-warning]="resultadoActualizacion.errores?.length">
+                <div class="fw-semibold">{{ resultadoActualizacion.actualizados }} productos actualizados.</div>
+                <ul class="mb-0 mt-2 small overflow-auto" style="max-height: 9rem;" *ngIf="resultadoActualizacion.errores?.length">
+                  <li *ngFor="let error of resultadoActualizacion.errores">Fila {{ error.fila }}: {{ error.mensaje }}</li>
+                </ul>
+              </div>
+
               <div class="d-grid mt-3">
                   <button type="submit" class="btn btn-primary btn-block" [disabled]="!form.form.valid || loading">
-                      <span *ngIf="!loading">Importar</span>
-                      <span *ngIf="loading">Importando...</span>
+                      <span *ngIf="!loading && !(puedeActualizarProductos() && modoProducto === 'actualizar')">Importar</span>
+                      <span *ngIf="!loading && puedeActualizarProductos() && modoProducto === 'actualizar'">Actualizar</span>
+                      <span *ngIf="loading">Procesando...</span>
                   </button>
               </div>
 

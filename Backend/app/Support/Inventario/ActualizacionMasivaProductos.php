@@ -291,6 +291,31 @@ class ActualizacionMasivaProductos
         return ['actualizados' => $actualizados, 'errores' => $errores];
     }
 
+    /**
+     * @param  array<int, mixed>  $encabezados
+     */
+    public static function tipoPlantilla(array $encabezados): string
+    {
+        $claves = [];
+        foreach ($encabezados as $encabezado) {
+            $clave = strtolower(trim((string) $encabezado));
+            if ($clave !== '') {
+                $claves[$clave] = true;
+            }
+        }
+
+        $actualizar = isset($claves['id_creacion']) || isset($claves['id_de_creacion']);
+        $nuevos = isset($claves['nombre']);
+        if ($actualizar && !$nuevos) {
+            return 'actualizar';
+        }
+        if ($nuevos && !$actualizar) {
+            return 'nuevos';
+        }
+
+        return '';
+    }
+
     public static function encabezadoStock(string $campo, int $idBodega, string $nombre, string $sucursal): string
     {
         $prefijo = $campo === 'stock_maximo' ? 'stock_maximo' : 'stock_minimo';

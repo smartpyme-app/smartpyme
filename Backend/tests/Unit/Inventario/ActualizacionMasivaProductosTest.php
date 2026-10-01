@@ -184,4 +184,11 @@ class ActualizacionMasivaProductosTest extends TestCase
         $this->assertTrue($r['ok']);
         $this->assertSame(0.0, $r['inventarios'][3]['stock_minimo']);
     }
+
+    public function test_distingue_la_plantilla_de_nuevos_y_la_de_actualizacion(): void
+    {
+        $this->assertSame('nuevos', ActualizacionMasivaProductos::tipoPlantilla(['nombre', 'precio_sin_iva', 'costo']));
+        $this->assertSame('actualizar', ActualizacionMasivaProductos::tipoPlantilla(['id_creacion', 'codigo', 'costo']));
+        $this->assertSame('', ActualizacionMasivaProductos::tipoPlantilla(['nombre', 'id_creacion']));
+    }
 }
