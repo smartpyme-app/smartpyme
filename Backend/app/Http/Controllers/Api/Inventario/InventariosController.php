@@ -7,7 +7,8 @@ use Illuminate\Http\Request;
 use App\Models\Admin\Empresa;
 use App\Models\Inventario\Inventario;
 use App\Exports\Inventario\InventarioAFechaExport;
-use App\Exports\Inventario\InventarioVentasMensualAnalisisExport;
+use App\Exports\Inventario\InventarioVentasMensualAnalisisReport;
+use App\Exports\Inventario\InventarioVentasMensualAnalisisWorkbookExport;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Http\Requests\Inventario\StoreInventarioRequest;
@@ -154,6 +155,16 @@ class InventariosController extends Controller
         $request->validate([
             'id_empresa' => 'required|numeric',
             'fecha' => 'nullable|date',
+            'anio' => 'nullable|integer|min:2000|max:2100',
+            'agrupar_por' => 'nullable|in:producto,cliente,categoria,vendedor,proveedor',
+            'mostrar_datos' => 'nullable|in:unidades,valor',
+            'todos_productos' => 'nullable|boolean',
+            'cliente_layout' => 'nullable|in:unica,separadas',
+            'id_vendedor' => 'nullable|integer',
+            'id_cliente' => 'nullable|integer',
+            'id_categoria' => 'nullable|integer',
+            'id_proveedor' => 'nullable|integer',
+            'codigo' => 'nullable|string|max:100',
         ]);
 
         $idEmpresa = (int) $request->input('id_empresa');
@@ -171,10 +182,11 @@ class InventariosController extends Controller
         }
 
         try {
-            $export = new InventarioVentasMensualAnalisisExport();
-            $export->prepare($request, $empresa);
+            $report = new InventarioVentasMensualAnalisisReport($empresa, $request);
+            $export = new InventarioVentasMensualAnalisisWorkbookExport($report->buildSheets());
 
-            $filename = 'reporte-inventario-ventas-' . date('Y-m-d') . '.xlsx';
+            $anio = $request->input('anio', date('Y'));
+            $filename = 'reporte-inventario-ventas-' . $anio . '.xlsx';
 
             return Excel::download($export, $filename);
         } catch (\Throwable $e) {

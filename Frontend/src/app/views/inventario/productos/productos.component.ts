@@ -54,6 +54,30 @@ export class ProductosComponent implements OnInit {
     public loading: boolean = false;
     public downloading: boolean = false;
     public downloadingReporteAnalisis: boolean = false;
+    public reporteAnalisisVentas: {
+        anio: number;
+        id_vendedor: number | null;
+        id_cliente: number | null;
+        id_categoria: number | null;
+        id_proveedor: number | null;
+        agrupar_por: 'producto' | 'cliente' | 'categoria' | 'vendedor' | 'proveedor';
+        mostrar_datos: 'unidades' | 'valor';
+        todos_productos: boolean;
+        cliente_layout: 'unica' | 'separadas';
+    } = {
+        anio: new Date().getFullYear(),
+        id_vendedor: null,
+        id_cliente: null,
+        id_categoria: null,
+        id_proveedor: null,
+        agrupar_por: 'producto',
+        mostrar_datos: 'unidades',
+        todos_productos: true,
+        cliente_layout: 'unica',
+    };
+    public clientesReporte: any[] = [];
+    public vendedoresReporte: any[] = [];
+    public readonly aniosReporteAnalisis = aniosDisponiblesExportDesde();
     public filtros: any = {};
     public producto: any = {};
     public bodegas: any = [];
@@ -247,24 +271,55 @@ export class ProductosComponent implements OnInit {
         }
     }
 
+    public openReporteAnalisisVentasMensual(template: TemplateRef<any>) {
+        if (!this.proveedores?.length) {
+            this.apiService.getAll('proveedores/list').subscribe(proveedores => {
+                this.proveedores = proveedores;
+            }, error => { this.alertService.error(error); });
+        }
+        if (!this.clientesReporte?.length) {
+            this.apiService.getAll('clientes/list').subscribe(clientes => {
+                this.clientesReporte = clientes;
+            }, error => { this.alertService.error(error); });
+        }
+        if (!this.vendedoresReporte?.length) {
+            this.apiService.getAll('usuarios/list').subscribe(usuarios => {
+                this.vendedoresReporte = usuarios;
+            }, error => { this.alertService.error(error); });
+        }
+        this.modalRef = this.modalService.show(template, { class: 'modal-lg' });
+    }
+
     public descargarReporteInventarioVentasMensual() {
         this.downloadingReporteAnalisis = true;
         const empresa = this.apiService.auth_user()?.empresa;
+        const r = this.reporteAnalisisVentas;
         const params = {
             id_empresa: empresa?.id,
-            fecha: this.apiService.date(),
+            anio: r.anio,
+            agrupar_por: r.agrupar_por,
+            mostrar_datos: r.mostrar_datos,
+            todos_productos: r.todos_productos ? 1 : 0,
+            cliente_layout: r.cliente_layout,
+            ...(r.id_vendedor ? { id_vendedor: r.id_vendedor } : {}),
+            ...(r.id_cliente ? { id_cliente: r.id_cliente } : {}),
+            ...(r.id_categoria ? { id_categoria: r.id_categoria } : {}),
+            ...(r.id_proveedor ? { id_proveedor: r.id_proveedor } : {}),
         };
         this.apiService.export('inventarios/exportar-analisis-ventas-mensual', params).subscribe((data: Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'reporte-inventario-ventas.xlsx';
+            a.download = `reporte-inventario-ventas-${r.anio}.xlsx`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
             this.downloadingReporteAnalisis = false;
+            if (this.modalRef) {
+                this.modalRef.hide();
+            }
         }, (error) => { this.alertService.error(error); this.downloadingReporteAnalisis = false; });
     }
 
