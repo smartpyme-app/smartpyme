@@ -440,6 +440,36 @@
                                 </div>
                               </div>
                             }
+                            @if (tieneAccesoVentasRecurrentes) {
+                              <div class="empresa-pref-field border-top pt-3 mt-3">
+                                <h4 class="mb-2 fw-bold">Ventas recurrentes automáticas</h4>
+                                <p class="text-muted small mb-3">
+                                  Cada mañana el sistema puede crear y emitir las facturas programadas. Aquí eliges el correo donde te avisamos qué salió bien y qué quedó pendiente.
+                                </p>
+                                <div class="empresa-pref-row mb-3">
+                                  <div class="empresa-pref-row-text">
+                                    <label class="empresa-pref-row-label" for="ventasRecurrentesGeneracionPausada">Detener facturación automática</label>
+                                    <p class="empresa-pref-row-help text-muted small mb-0">Mientras esté activo, no se crean facturas recurrentes para ningún cliente.</p>
+                                  </div>
+                                  <div class="form-switch m-0">
+                                    <input class="form-check-input" type="checkbox" role="switch"
+                                      id="ventasRecurrentesGeneracionPausada"
+                                      [(ngModel)]="ventasRecurrentesGeneracionPausada"
+                                      name="ventasRecurrentesGeneracionPausada">
+                                  </div>
+                                </div>
+                                <div class="mb-3">
+                                  <label class="form-label" for="ventasRecurrentesCorreo">Correo de avisos</label>
+                                  <input type="email" class="form-control" id="ventasRecurrentesCorreo"
+                                    [(ngModel)]="ventasRecurrentesCorreo" name="ventasRecurrentesCorreo">
+                                </div>
+                                <button type="button" class="btn btn-primary btn-sm"
+                                  (click)="guardarPreferenciasVentasRecurrentes()"
+                                  [disabled]="guardandoVentasRecurrentes">
+                                  Guardar
+                                </button>
+                              </div>
+                            }
                             <div *ngIf="tieneAccesoModuloRestaurantePedidos" class="empresa-pref-field">
                                 <h4 class="mb-2 fw-bold">Restaurantes y pedidos</h4>
                                 <p class="text-muted small mb-2">

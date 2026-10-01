@@ -110,6 +110,10 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
     public tieneAccesoModuloPresentacionesProductos: boolean = false;
     public tieneAccesoBoxFul: boolean = false;
     public tieneAccesoFidelizacionGlobal: boolean = false;
+    public tieneAccesoVentasRecurrentes = false;
+    public ventasRecurrentesCorreo = '';
+    public ventasRecurrentesGeneracionPausada = false;
+    public guardandoVentasRecurrentes = false;
 
     public customConfig: any = {
         columnas: {
@@ -201,6 +205,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
         this.verificarAccesoTransformacionProductos();
         this.verificarAccesoModuloPresentacionesProductos();
         this.verificarAccesoBoxFul();
+        this.verificarAccesoVentasRecurrentes();
         
         this.funcionalidadesService.verificarAcceso('fidelizacion-clientes').subscribe({
             next: (tieneAcceso) => { this.tieneAccesoFidelizacionGlobal = tieneAcceso; },
@@ -2658,6 +2663,53 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
             error: () => {
                 this.tieneAccesoModuloPresentacionesProductos = false;
             }
+        });
+    }
+
+    public verificarAccesoVentasRecurrentes() {
+        this.funcionalidadesService.verificarAcceso('ventas-recurrentes-automaticas')
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (acceso: boolean) => {
+                    this.tieneAccesoVentasRecurrentes = !!acceso;
+                    if (acceso) {
+                        this.cargarPreferenciasVentasRecurrentes();
+                    }
+                    this.cdr.markForCheck();
+                },
+                error: () => {
+                    this.tieneAccesoVentasRecurrentes = false;
+                    this.cdr.markForCheck();
+                },
+            });
+    }
+
+    private cargarPreferenciasVentasRecurrentes() {
+        this.funcionalidadesService.obtenerConfiguracion('ventas-recurrentes-automaticas')
+            .pipe(this.untilDestroyed())
+            .subscribe((cfg: any) => {
+                this.ventasRecurrentesCorreo = cfg?.correo_resumen || this.empresa?.correo || '';
+                this.ventasRecurrentesGeneracionPausada = !!cfg?.generacion_pausada;
+                this.cdr.markForCheck();
+            });
+    }
+
+    public guardarPreferenciasVentasRecurrentes() {
+        this.guardandoVentasRecurrentes = true;
+        this.apiService.store('ventas-recurrentes/preferencias', {
+            correo_resumen: this.ventasRecurrentesCorreo,
+            generacion_pausada: this.ventasRecurrentesGeneracionPausada,
+        }).pipe(this.untilDestroyed()).subscribe({
+            next: () => {
+                this.guardandoVentasRecurrentes = false;
+                this.alertService.success('Guardado', 'Preferencias de ventas recurrentes actualizadas.');
+                this.cdr.markForCheck();
+            },
+            error: (error: any) => {
+                this.guardandoVentasRecurrentes = false;
+                this.alertService.error(error);
+                this.cdr.markForCheck();
+            },
         });
     }
 
