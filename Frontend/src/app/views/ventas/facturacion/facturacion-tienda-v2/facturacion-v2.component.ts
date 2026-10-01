@@ -63,6 +63,14 @@ import {
   isImpresionEnFacturacionActiva,
 } from '@helpers/empresa.helper';
 import * as moment from 'moment';
+import { VentaRecurrenciaConfigComponent } from '@shared/modals/venta-recurrencia-config/venta-recurrencia-config.component';
+import {
+  RecurrenciaVentaConfig,
+  aplicarRecurrenciaEnVenta,
+  limpiarRecurrenciaEnVenta,
+  persistirRecurrenciaPendiente,
+  tieneRecurrenciaProgramada,
+} from '@utils/venta-recurrencia.util';
 
 @Component({
   selector: 'app-facturacion-v2',
@@ -83,6 +91,7 @@ import * as moment from 'moment';
     VentaDetallesV2Component,
     TranslatePipe,
     SharedModule,
+    VentaRecurrenciaConfigComponent,
   ],
   providers: [SumPipe],
 })
@@ -132,6 +141,9 @@ export class FacturacionV2Component implements OnInit {
   public mensajeErrorBanco: string = '';
   public debeImprimir: boolean = false;
   public giftCardsActivo = false;
+  public recurrenciaAutomatica = false;
+  public recurrenciaPendiente: RecurrenciaVentaConfig | null = null;
+  @ViewChild(VentaRecurrenciaConfigComponent) recurrenciaConfigModal?: VentaRecurrenciaConfigComponent;
   public giftCardInfo: GiftCardLookup | null = null;
   public giftCardLookupError = '';
   public giftCardLookupLoading = false;
@@ -331,6 +343,7 @@ export class FacturacionV2Component implements OnInit {
     this.verificarAccesoMultimoneda();
     this.verificarFidelizacionHabilitada();
     this.verificarGiftCardsActivo();
+    this.verificarRecurrenciaAutomatica();
     this.verificarAccesoCreditosClientes();
   }
 
@@ -2545,6 +2558,45 @@ export class FacturacionV2Component implements OnInit {
     });
   }
 
+  private verificarRecurrenciaAutomatica(): void {
+    this.recurrenciaAutomatica = this.apiService.isVentasRecurrentesAutomaticasActivo();
+  }
+
+  public tieneRecurrenciaFacturacion(): boolean {
+    return tieneRecurrenciaProgramada(this.venta, this.recurrenciaPendiente);
+  }
+
+  public async onRecurrenciaAutomaticaChange(activa: boolean): Promise<void> {
+    if (!activa) {
+      this.recurrenciaPendiente = null;
+      limpiarRecurrenciaEnVenta(this.venta);
+      return;
+    }
+    await this.abrirConfigRecurrencia();
+  }
+
+  public async abrirConfigRecurrencia(): Promise<void> {
+    const config = await this.recurrenciaConfigModal?.open(this.venta);
+    if (!config) {
+      if (!this.venta?.frecuencia_recurrencia) {
+        this.recurrenciaPendiente = null;
+        this.venta.recurrente = false;
+      }
+      return;
+    }
+    aplicarRecurrenciaEnVenta(this.venta, config);
+    this.recurrenciaPendiente = this.venta.id ? null : config;
+  }
+
+  private async finalizarRecurrenciaTrasFacturar(venta: any): Promise<void> {
+    if (!this.recurrenciaPendiente) {
+      return;
+    }
+    const pendiente = this.recurrenciaPendiente;
+    this.recurrenciaPendiente = null;
+    await persistirRecurrenciaPendiente(this.apiService, venta, pendiente);
+  }
+
   // Guardar venta
   public async onSubmit() {
     this.saving = true;
@@ -2553,6 +2605,8 @@ export class FacturacionV2Component implements OnInit {
     // que no aparezca en las ventas recurrentes
     if (this.duplicarventa) {
       this.venta.recurrente = false;
+      this.recurrenciaPendiente = null;
+      limpiarRecurrenciaEnVenta(this.venta);
     }
 
     if (!this.venta.monto_pago) {
@@ -2586,7 +2640,7 @@ export class FacturacionV2Component implements OnInit {
       delete this.venta.descuento_autorizacion;
     }
     this.apiService.store(endpointSave, this.venta).subscribe(
-      (venta) => {
+      async (venta) => {
         // Actualizar siempre la venta local con la respuesta del backend (id, correlativo, etc.)
         // para que en un siguiente guardado se envíe el mismo correlativo.
         const detallesAntes = this.venta.detalles;
@@ -2599,6 +2653,12 @@ export class FacturacionV2Component implements OnInit {
           detallesAntes.length > 0
         ) {
           this.venta.detalles = detallesAntes;
+        }
+
+        try {
+          await this.finalizarRecurrenciaTrasFacturar(venta);
+        } catch (error) {
+          this.alertService.error(error);
         }
 
         if (this.venta.cotizacion != 1) {

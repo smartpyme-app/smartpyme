@@ -5,8 +5,6 @@ namespace App\Services\Ventas;
 use App\Exceptions\FacturacionException;
 use App\Http\Requests\MH\EnviarDTERequest;
 use App\Models\Admin\Empresa;
-use App\Models\Admin\EmpresaFuncionalidad;
-use App\Models\Admin\Funcionalidad;
 use App\Models\User;
 use App\Models\Ventas\Detalle;
 use App\Models\Ventas\Venta;
@@ -22,8 +20,6 @@ use Illuminate\Support\Facades\Mail;
 
 class GenerarVentasRecurrentesService
 {
-    public const SLUG = 'ventas-recurrentes-automaticas';
-
     public function __construct(
         private readonly FacturacionService $facturacion,
         private readonly ElSalvadorDteService $dte,
@@ -34,33 +30,29 @@ class GenerarVentasRecurrentesService
     public function ejecutar(Carbon $hoy): void
     {
         $fecha = $hoy->copy()->timezone('America/El_Salvador')->toDateString();
-        $funcionalidad = Funcionalidad::where('slug', self::SLUG)->first();
-        if (!$funcionalidad) {
-            Log::warning('Ventas recurrentes: falta la funcionalidad '.self::SLUG);
 
-            return;
-        }
+        $idsEmpresas = Venta::withoutGlobalScopes()
+            ->whereNull('id_venta_plantilla')
+            ->whereIn('frecuencia_recurrencia', ['mensual', 'anual'])
+            ->where('recurrencia_pausada', false)
+            ->where('estado', '!=', 'Anulada')
+            ->distinct()
+            ->pluck('id_empresa');
 
-        $asignaciones = EmpresaFuncionalidad::where('id_funcionalidad', $funcionalidad->id)
-            ->where('activo', 1)
-            ->get();
-
-        foreach ($asignaciones as $asignacion) {
-            $this->procesarEmpresa($asignacion, $fecha);
+        foreach ($idsEmpresas as $idEmpresa) {
+            $empresa = Empresa::find($idEmpresa);
+            if (!$empresa || !VentasRecurrentesEmpresaConfig::activo($empresa)) {
+                continue;
+            }
+            if (!VentasRecurrentesEmpresaConfig::generacionActiva($empresa)) {
+                continue;
+            }
+            $this->procesarEmpresa($empresa, $fecha);
         }
     }
 
-    private function procesarEmpresa(EmpresaFuncionalidad $asignacion, string $fecha): void
+    private function procesarEmpresa(Empresa $empresa, string $fecha): void
     {
-        $empresa = Empresa::find($asignacion->id_empresa);
-        if (!$empresa) {
-            return;
-        }
-
-        $config = $asignacion->configuracion ?? [];
-        if (!empty($config['generacion_pausada'])) {
-            return;
-        }
 
         $plantillas = Venta::withoutGlobalScopes()
             ->with(['detalles.composiciones', 'impuestos'])
@@ -68,8 +60,6 @@ class GenerarVentasRecurrentesService
             ->whereNull('id_venta_plantilla')
             ->where('recurrencia_pausada', false)
             ->whereIn('frecuencia_recurrencia', ['mensual', 'anual'])
-            ->whereNotNull('sello_mh')
-            ->where('sello_mh', '!=', '')
             ->where('estado', '!=', 'Anulada')
             ->get();
 
@@ -101,7 +91,7 @@ class GenerarVentasRecurrentesService
             return;
         }
 
-        $this->enviarResumen($empresa, $asignacion, $fecha, $emitidas, $fallidas);
+        $this->enviarResumen($empresa, $fecha, $emitidas, $fallidas);
     }
 
     private function yaGenerada(int $idPlantilla, string $periodo): bool
@@ -119,10 +109,6 @@ class GenerarVentasRecurrentesService
     {
         $etiqueta = 'Plantilla #'.$plantilla->correlativo.' (id '.$plantilla->id.')';
 
-        if (FacturacionElectronicaCountryGate::ensureSvDteOrFail($empresa)) {
-            return ['ok' => false, 'linea' => $etiqueta.': la facturación electrónica de esta empresa no es de El Salvador.'];
-        }
-
         $usuario = User::find($plantilla->id_usuario);
         if (!$usuario) {
             return ['ok' => false, 'linea' => $etiqueta.': la venta no tiene usuario para facturar.'];
@@ -136,6 +122,20 @@ class GenerarVentasRecurrentesService
             }
 
             return ['ok' => false, 'linea' => $etiqueta.': no se pudo crear la venta. '.$e->getMessage()];
+        }
+
+        if (!$empresa->facturacion_electronica) {
+            return [
+                'ok' => true,
+                'linea' => 'Venta #'.$venta->correlativo.' (id '.$venta->id.') generada (sin facturación electrónica).',
+            ];
+        }
+
+        if (FacturacionElectronicaCountryGate::ensureSvDteOrFail($empresa)) {
+            return [
+                'ok' => true,
+                'linea' => 'Venta #'.$venta->correlativo.' (id '.$venta->id.') generada; la emisión automática de DTE solo aplica en El Salvador.',
+            ];
         }
 
         try {
@@ -403,13 +403,9 @@ class GenerarVentasRecurrentesService
         }
     }
 
-    private function enviarResumen(Empresa $empresa, EmpresaFuncionalidad $asignacion, string $fecha, array $emitidas, array $fallidas): void
+    private function enviarResumen(Empresa $empresa, string $fecha, array $emitidas, array $fallidas): void
     {
-        $config = $asignacion->configuracion ?? [];
-        $correo = trim((string) ($config['correo_resumen'] ?? ''));
-        if ($correo === '') {
-            $correo = trim((string) $empresa->correo);
-        }
+        $correo = VentasRecurrentesEmpresaConfig::correoResumen($empresa);
         if ($correo === '') {
             Log::warning('Ventas recurrentes: empresa sin correo de resumen', ['empresa_id' => $empresa->id]);
 

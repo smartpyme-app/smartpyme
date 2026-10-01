@@ -354,6 +354,18 @@ export class ApiService {
     return this.permissionService.isVentas();
   }
 
+  /** Ventas recurrentes automáticas activadas en Preferencias del sistema (Mi cuenta). */
+  isVentasRecurrentesAutomaticasActivo(): boolean {
+    const empresa = this.auth_user()?.empresa;
+    if (!empresa?.custom_empresa) {
+      return false;
+    }
+    const customConfig = typeof empresa.custom_empresa === 'string'
+      ? JSON.parse(empresa.custom_empresa)
+      : empresa.custom_empresa;
+    return customConfig?.configuraciones?.ventas_recurrentes_automaticas_activo === true;
+  }
+
   isLotesActivo(): boolean {
     const empresa = this.auth_user()?.empresa;
     if (!empresa?.custom_empresa) {

@@ -110,9 +110,9 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
     public tieneAccesoModuloPresentacionesProductos: boolean = false;
     public tieneAccesoBoxFul: boolean = false;
     public tieneAccesoFidelizacionGlobal: boolean = false;
-    public tieneAccesoVentasRecurrentes = false;
+    public ventasRecurrentesAutomaticasActivo = false;
     public ventasRecurrentesCorreo = '';
-    public ventasRecurrentesGeneracionPausada = false;
+    public ventasRecurrentesGeneracionActiva = true;
     public guardandoVentasRecurrentes = false;
 
     public customConfig: any = {
@@ -205,7 +205,6 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
         this.verificarAccesoTransformacionProductos();
         this.verificarAccesoModuloPresentacionesProductos();
         this.verificarAccesoBoxFul();
-        this.verificarAccesoVentasRecurrentes();
         
         this.funcionalidadesService.verificarAcceso('fidelizacion-clientes').subscribe({
             next: (tieneAcceso) => { this.tieneAccesoFidelizacionGlobal = tieneAcceso; },
@@ -1833,6 +1832,9 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
                 dte_mostrar_descripcion_producto: true, // Descripción extendida del catálogo en PDF de factura y CCF (DTE)
                 fidelizacion_activa: false, // Activar fidelización de clientes para configurar
                 fidelizacion_completa: false, // Activar completamente la fidelización (ganar/consumir puntos)
+                ventas_recurrentes_automaticas_activo: false,
+                ventas_recurrentes_correo_resumen: '',
+                ventas_recurrentes_generacion_activa: true,
             },
             campos_personalizados: {}
         };
@@ -1864,6 +1866,21 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
             if (fe['emisor_tipo_identificacion'] === undefined || fe['emisor_tipo_identificacion'] === null || fe['emisor_tipo_identificacion'] === '') {
                 fe['emisor_tipo_identificacion'] = '02';
             }
+        }
+
+        this.syncVentasRecurrentesFromCustomConfig();
+    }
+
+    private syncVentasRecurrentesFromCustomConfig(): void {
+        const cfg = this.customConfig?.configuraciones;
+        this.ventasRecurrentesAutomaticasActivo = !!cfg?.ventas_recurrentes_automaticas_activo;
+        this.ventasRecurrentesCorreo = (cfg?.ventas_recurrentes_correo_resumen || this.empresa?.correo || '').trim();
+        if (cfg?.ventas_recurrentes_generacion_activa !== undefined) {
+            this.ventasRecurrentesGeneracionActiva = !!cfg.ventas_recurrentes_generacion_activa;
+        } else if (cfg?.ventas_recurrentes_generacion_pausada !== undefined) {
+            this.ventasRecurrentesGeneracionActiva = !cfg.ventas_recurrentes_generacion_pausada;
+        } else {
+            this.ventasRecurrentesGeneracionActiva = true;
         }
     }
 
@@ -2666,41 +2683,27 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
         });
     }
 
-    public verificarAccesoVentasRecurrentes() {
-        this.funcionalidadesService.verificarAcceso('ventas-recurrentes-automaticas')
-            .pipe(this.untilDestroyed())
-            .subscribe({
-                next: (acceso: boolean) => {
-                    this.tieneAccesoVentasRecurrentes = !!acceso;
-                    if (acceso) {
-                        this.cargarPreferenciasVentasRecurrentes();
-                    }
-                    this.cdr.markForCheck();
-                },
-                error: () => {
-                    this.tieneAccesoVentasRecurrentes = false;
-                    this.cdr.markForCheck();
-                },
-            });
-    }
-
-    private cargarPreferenciasVentasRecurrentes() {
-        this.funcionalidadesService.obtenerConfiguracion('ventas-recurrentes-automaticas')
-            .pipe(this.untilDestroyed())
-            .subscribe((cfg: any) => {
-                this.ventasRecurrentesCorreo = cfg?.correo_resumen || this.empresa?.correo || '';
-                this.ventasRecurrentesGeneracionPausada = !!cfg?.generacion_pausada;
-                this.cdr.markForCheck();
-            });
-    }
-
     public guardarPreferenciasVentasRecurrentes() {
         this.guardandoVentasRecurrentes = true;
         this.apiService.store('ventas-recurrentes/preferencias', {
+            activo: this.ventasRecurrentesAutomaticasActivo,
             correo_resumen: this.ventasRecurrentesCorreo,
-            generacion_pausada: this.ventasRecurrentesGeneracionPausada,
+            generacion_activa: this.ventasRecurrentesGeneracionActiva,
         }).pipe(this.untilDestroyed()).subscribe({
-            next: () => {
+            next: (resp: any) => {
+                const cfg = resp?.configuracion;
+                if (this.customConfig?.configuraciones) {
+                    this.customConfig.configuraciones.ventas_recurrentes_automaticas_activo = !!cfg?.activo;
+                    this.customConfig.configuraciones.ventas_recurrentes_correo_resumen = cfg?.correo_resumen ?? this.ventasRecurrentesCorreo;
+                    this.customConfig.configuraciones.ventas_recurrentes_generacion_activa = !!cfg?.generacion_activa;
+                    delete this.customConfig.configuraciones.ventas_recurrentes_generacion_pausada;
+                    this.empresa.custom_empresa = this.customConfig;
+                }
+                const authEmpresa = this.apiService.auth_user()?.empresa;
+                if (authEmpresa) {
+                    authEmpresa.custom_empresa = this.customConfig;
+                }
+                this.syncVentasRecurrentesFromCustomConfig();
                 this.guardandoVentasRecurrentes = false;
                 this.alertService.success('Guardado', 'Preferencias de ventas recurrentes actualizadas.');
                 this.cdr.markForCheck();
