@@ -704,4 +704,65 @@ final class ReporteDetalleIvaCrService
 
         return $sum;
     }
+
+    /**
+     * Mismas filas que la tabla de pantalla. El exento es la tarifa 0%.
+     *
+     * @param  array<string, float|int>  $totales
+     * @return array<int, array{etiqueta: string, base: float, iva: float}>
+     */
+    public static function resumenTarifas(array $totales): array
+    {
+        $n = static fn (string $key): float => round((float) ($totales[$key] ?? 0), 5);
+        $rows = [];
+        foreach ([13, 8, 4, 2, 1] as $tarifa) {
+            $rows[] = [
+                'etiqueta' => 'IVA '.$tarifa.'%',
+                'base' => $n('subtotal_'.$tarifa),
+                'iva' => $n('iva_'.$tarifa),
+            ];
+        }
+        $rows[] = ['etiqueta' => 'Exento (IVA 0%)', 'base' => $n('subtotal_exento'), 'iva' => 0.0];
+        $rows[] = ['etiqueta' => 'Exonerado', 'base' => $n('subtotal_exonerado'), 'iva' => 0.0];
+
+        return $rows;
+    }
+
+    /**
+     * Bloque al final del Excel/CSV, ancho de las columnas del detalle.
+     *
+     * @param  array<int, array<string, mixed>>  $filas
+     * @return array<int, array<int, mixed>>
+     */
+    public static function filasResumenExport(array $filas, int $columnas): array
+    {
+        $blank = static fn (): array => array_fill(0, $columnas, '');
+        $rows = [$blank()];
+
+        $header = $blank();
+        $header[0] = 'Resumen por tipo de impuesto';
+        $header[1] = 'Base';
+        $header[2] = 'IVA';
+        $rows[] = $header;
+
+        $sumaBase = 0.0;
+        $sumaIva = 0.0;
+        foreach (self::resumenTarifas((new self())->totales($filas)) as $r) {
+            $line = $blank();
+            $line[0] = $r['etiqueta'];
+            $line[1] = $r['base'];
+            $line[2] = $r['iva'];
+            $rows[] = $line;
+            $sumaBase += $r['base'];
+            $sumaIva += $r['iva'];
+        }
+
+        $total = $blank();
+        $total[0] = 'Total';
+        $total[1] = round($sumaBase, 5);
+        $total[2] = round($sumaIva, 5);
+        $rows[] = $total;
+
+        return $rows;
+    }
 }
