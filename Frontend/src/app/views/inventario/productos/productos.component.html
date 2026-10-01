@@ -700,13 +700,65 @@
                     <label class="form-check-label" for="clienteSeparadas">Hoja separada por cliente</label>
                 </div>
             </div>
+            <div class="mb-3">
+                <label class="form-label">Correo para recibir el Excel</label>
+                <input type="email" class="form-control" name="emailReporteAnalisis" [(ngModel)]="emailReporteAnalisisVentas"
+                    placeholder="correo@empresa.com" required>
+                <p class="text-muted small mt-2 mb-0">
+                    El reporte se procesa en cola (como el kardex masivo). Puede tardar varios minutos si hay muchos datos.
+                </p>
+            </div>
             <div class="d-grid">
                 <button type="submit" class="btn btn-primary" [disabled]="downloadingReporteAnalisis">
-                    <span *ngIf="!downloadingReporteAnalisis">Exportar a Excel</span>
-                    <span *ngIf="downloadingReporteAnalisis">Generando...</span>
+                    <span *ngIf="!downloadingReporteAnalisis">Solicitar reporte por correo</span>
+                    <span *ngIf="downloadingReporteAnalisis">Registrando...</span>
                 </button>
             </div>
         </form>
+
+        <hr class="my-4">
+
+        <div class="d-flex align-items-center justify-content-between mb-2">
+            <h6 class="mb-0">Últimas solicitudes</h6>
+            <button type="button" class="btn btn-sm btn-outline-secondary" (click)="cargarEstadoColaAnalisisVentas()"
+                [disabled]="loadingAnalisisVentasCola">
+                <i class="fa" [ngClass]="loadingAnalisisVentasCola ? 'fa-spinner fa-spin' : 'fa-refresh'"></i>
+                Actualizar
+            </button>
+        </div>
+        <p class="text-muted small" *ngIf="!loadingAnalisisVentasCola && !analisisVentasColaEstados.length">
+            Aún no hay solicitudes registradas para esta empresa.
+        </p>
+        <div class="table-responsive" *ngIf="analisisVentasColaEstados.length">
+            <table class="table table-sm table-striped mb-0">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Correo</th>
+                        <th>Año</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let item of analisisVentasColaEstados">
+                        <td>{{ item.created_at | date:'short' }}</td>
+                        <td class="text-break">{{ item.email }}</td>
+                        <td>{{ item.params?.anio ?? '—' }}</td>
+                        <td>
+                            <span class="badge" [ngClass]="claseBadgeEstadoColaAnalisisVentas(item.status)">
+                                {{ etiquetaEstadoColaAnalisisVentas(item.status) }}
+                            </span>
+                            <small class="d-block text-danger mt-1" *ngIf="item.status === 'failed' && item.error_message">
+                                {{ item.error_message }}
+                            </small>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <p class="text-muted small mt-2 mb-0" *ngIf="analisisVentasColaEstados.length">
+            Si hay solicitudes en cola o procesándose, el listado se actualiza solo cada 15 segundos.
+        </p>
     </div>
 </ng-template>
 

@@ -436,6 +436,18 @@ class EstadoResultadosNiifSvPresenter
             return;
         }
 
+        // ponytail: rubro Ingreso sin keywords (p. ej. cuenta solo "SUCURSAL X") → venta operativa, no otros ingresos
+        if (strpos($r, 'ingreso') !== false
+            && ! preg_match('/(arriendo|alquiler|arrendam|interes|interés|financ|enajen|utilidad.*activo|extraordin|diverso)/u', $h)) {
+            if ($monto < 0) {
+                $this->L['devoluciones_ventas'] += abs($monto);
+            } else {
+                $this->L['ventas_brutas'] += $monto;
+            }
+
+            return;
+        }
+
         $this->L['otros_ingresos'] += $monto;
     }
 

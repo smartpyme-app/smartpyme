@@ -1,4 +1,4 @@
-﻿<button type="button" class="btn btn-default tcla-F1" (click)="openModal(mproveedor)">
+<button type="button" class="btn btn-default tcla-F1" (click)="openModal(mproveedor)">
     @if (!id_proveedor) {
       <i tooltip="Crear nuevo proveedor (F1)" class="fa fa-plus"></i>
     }
@@ -281,7 +281,7 @@
                         <div class="form-group col-12 col-md-6 col-lg-4">
                             <label for="nit_cr_modal_pv_e">{{ 'country.tax.nit' | translate }}</label>
                             <input type="text" class="form-control" id="nit_cr_modal_pv_e" placeholder="Escribe aquí" name="nit" [(ngModel)]="proveedor.nit"
-                              (ngModelChange)="onNitProveedorChange()" [dropSpecialCharacters]="false" mask={{apiService.auth_user().empresa.validador_nit}}>
+                              (ngModelChange)="onNitProveedorChange()" [dropSpecialCharacters]="false" [mask]="apiService.auth_user().empresa.validador_nit || ''">
                             @if (contribuyenteCargandoCr) {
                               <small class="text-muted">Consultando Hacienda…</small>
                             }
@@ -347,7 +347,7 @@
                         <div class="form-group col-6" [ngClass]="apiService.auth_user().empresa.pais == 'El Salvador' ? 'col-lg-3' : 'col-lg-6'">
                             <label for="nit">{{ 'country.tax.nitColon' | translate }}</label>
                             <input type="text" class="form-control" placeholder="Escribe aquí" name="nit" [(ngModel)]="proveedor.nit"
-                                (ngModelChange)="onNitProveedorChange()" [dropSpecialCharacters]="false" mask={{apiService.auth_user().empresa.validador_nit}}>
+                                (ngModelChange)="onNitProveedorChange()" [dropSpecialCharacters]="false" [mask]="apiService.auth_user().empresa.validador_nit || ''">
                         </div>
                         @if (apiService.auth_user().empresa.pais == 'El Salvador') {
                         <div class="form-group col-6 col-lg-3">

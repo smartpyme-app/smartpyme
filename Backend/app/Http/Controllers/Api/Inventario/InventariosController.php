@@ -7,12 +7,13 @@ use Illuminate\Http\Request;
 use App\Models\Admin\Empresa;
 use App\Models\Inventario\Inventario;
 use App\Exports\Inventario\InventarioAFechaExport;
-use App\Exports\Inventario\InventarioVentasMensualAnalisisReport;
-use App\Exports\Inventario\InventarioVentasMensualAnalisisWorkbookExport;
+use App\Models\Inventario\AnalisisVentasMensualQueue;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Http\Requests\Inventario\StoreInventarioRequest;
 use App\Http\Requests\Inventario\ExportInventarioRequest;
+use App\Http\Requests\Inventario\EstadoColaAnalisisVentasMensualRequest;
+use Illuminate\Support\Facades\Log;
 
 class InventariosController extends Controller
 {
@@ -150,9 +151,10 @@ class InventariosController extends Controller
         }
     }
 
-    public function exportAnalisisVentasMensual(Request $request)
+    public function solicitarAnalisisVentasMensual(Request $request)
     {
         $request->validate([
+            'email' => 'required|email|max:255',
             'id_empresa' => 'required|numeric',
             'fecha' => 'nullable|date',
             'anio' => 'nullable|integer|min:2000|max:2100',
@@ -182,19 +184,64 @@ class InventariosController extends Controller
         }
 
         try {
-            $report = new InventarioVentasMensualAnalisisReport($empresa, $request);
-            $export = new InventarioVentasMensualAnalisisWorkbookExport($report->buildSheets());
+            $params = $request->except(['email', 'id_empresa']);
+            $queueItem = AnalisisVentasMensualQueue::create([
+                'email' => $request->input('email'),
+                'id_empresa' => $idEmpresa,
+                'id_usuario' => Auth::id(),
+                'params' => $params,
+                'status' => 'pending',
+            ]);
 
-            $anio = $request->input('anio', date('Y'));
-            $filename = 'reporte-inventario-ventas-' . $anio . '.xlsx';
-
-            return Excel::download($export, $filename);
+            return response()->json([
+                'success' => true,
+                'message' => 'Solicitud registrada. Recibirá un correo cuando el reporte esté listo.',
+                'queue_id' => $queueItem->id,
+            ], 200);
         } catch (\Throwable $e) {
-            \Log::error('Error al exportar reporte inventario ventas mensual: ' . $e->getMessage(), [
+            \Log::error('Error al encolar reporte inventario ventas mensual: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
                 'request' => $request->all(),
             ]);
             throw $e;
+        }
+    }
+
+    public function estadoColaAnalisisVentasMensual(EstadoColaAnalisisVentasMensualRequest $request)
+    {
+        $idEmpresa = (int) $request->input('id_empresa');
+        if (!Auth::user() || (int) Auth::user()->id_empresa !== $idEmpresa) {
+            return response()->json([
+                'error' => 'No autorizado.',
+            ], 403);
+        }
+
+        try {
+            $estados = AnalisisVentasMensualQueue::where('id_empresa', $idEmpresa)
+                ->orderBy('created_at', 'desc')
+                ->limit(10)
+                ->get([
+                    'id',
+                    'email',
+                    'params',
+                    'status',
+                    'created_at',
+                    'started_at',
+                    'completed_at',
+                    'error_message',
+                ]);
+
+            return response()->json([
+                'success' => true,
+                'estados' => $estados,
+            ], 200);
+        } catch (\Throwable $e) {
+            Log::error('Error al obtener estado cola análisis ventas mensual: ' . $e->getMessage());
+
+            return response()->json([
+                'message' => 'Error al obtener estado de cola.',
+                'error' => $e->getMessage(),
+            ], 500);
         }
     }
 
