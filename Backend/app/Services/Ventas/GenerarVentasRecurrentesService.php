@@ -110,9 +110,12 @@ class GenerarVentasRecurrentesService
     {
         $etiqueta = 'Plantilla #'.$plantilla->correlativo.' (id '.$plantilla->id.')';
 
-        $usuario = User::find($plantilla->id_usuario);
+        $usuario = User::withoutGlobalScopes()
+            ->where('id', $plantilla->id_usuario)
+            ->where('id_empresa', $plantilla->id_empresa)
+            ->first();
         if (!$usuario) {
-            return ['ok' => false, 'linea' => $etiqueta.': la venta no tiene usuario para facturar.'];
+            return ['ok' => false, 'linea' => $etiqueta.': no hay usuario de la misma empresa para facturar.'];
         }
 
         $documento = $this->resolverDocumentoPlantilla($plantilla);
@@ -200,22 +203,41 @@ class GenerarVentasRecurrentesService
 
     private function resolverDocumentoPlantilla(Venta $plantilla): ?Documento
     {
-        $base = Documento::withoutGlobalScopes()
-            ->where('id_empresa', $plantilla->id_empresa)
-            ->where('id_sucursal', $plantilla->id_sucursal);
+        $empresaId = (int) $plantilla->id_empresa;
 
         if ($plantilla->id_documento) {
-            $documento = (clone $base)->where('id', $plantilla->id_documento)->first();
-            if ($documento) {
+            $documento = Documento::withoutGlobalScopes()
+                ->where('id_empresa', $empresaId)
+                ->where('id', $plantilla->id_documento)
+                ->first();
+            if ($documento && $this->documentoAptoFacturacion($documento)) {
                 return $documento;
             }
         }
 
-        return (clone $base)
-            ->where('activo', '1')
-            ->orderByRaw("CASE WHEN predeterminado = '1' THEN 0 ELSE 1 END")
-            ->orderBy('id')
-            ->first();
+        $query = Documento::withoutGlobalScopes()
+            ->where('id_empresa', $empresaId)
+            ->where('activo', '1');
+
+        if ($plantilla->id_sucursal) {
+            $porSucursal = (clone $query)
+                ->where('id_sucursal', $plantilla->id_sucursal)
+                ->orderByRaw("CASE WHEN predeterminado = '1' THEN 0 ELSE 1 END")
+                ->orderBy('id')
+                ->get()
+                ->first(fn (Documento $doc) => $this->documentoAptoFacturacion($doc));
+            if ($porSucursal) {
+                return $porSucursal;
+            }
+        }
+
+        return $query->orderBy('id')->get()
+            ->first(fn (Documento $doc) => $this->documentoAptoFacturacion($doc));
+    }
+
+    private function documentoAptoFacturacion(Documento $documento): bool
+    {
+        return !in_array($documento->nombre, Venta::DOCUMENTOS_NO_CONTABLES, true);
     }
 
     private function payload(Venta $plantilla, string $fecha, string $periodo, Documento $documento): array
