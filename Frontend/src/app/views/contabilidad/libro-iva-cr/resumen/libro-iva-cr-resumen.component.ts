@@ -14,6 +14,11 @@ import {
   crearFiltrosLibroIvaIniciales,
 } from '@views/contabilidad/libro-iva-shared/libro-iva-filtros.util';
 import { LibroIvaResumenDescargasComponent } from '@views/contabilidad/libro-iva-shared/libro-iva-resumen-descargas.component';
+import { CurrencyPipe } from '@pipes/currency-format.pipe';
+import {
+  resumenEjecutivoPorTipoIva,
+  ResumenEjecutivoTipoIva,
+} from '@views/contabilidad/libro-iva-cr/shared/libro-iva-cr-resumen-ejecutivo.util';
 import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
@@ -25,6 +30,7 @@ import { TranslatePipe } from '@ngx-translate/core';
     LibroIvaPeriodoFiltrosComponent,
     LibroIvaResumenPanelComponent,
     LibroIvaResumenDescargasComponent,
+    CurrencyPipe,
     TranslatePipe,
   ],
   templateUrl: './libro-iva-cr-resumen.component.html',
@@ -60,6 +66,14 @@ export class LibroIvaCrResumenComponent implements OnInit {
         this.loadData();
       }
     );
+  }
+
+  resumenEjecutivo(): ResumenEjecutivoTipoIva[] {
+    return resumenEjecutivoPorTipoIva(this.fiscalResumen);
+  }
+
+  sumaEjecutivo(campo: 'ventas' | 'compras' | 'neto'): number {
+    return this.resumenEjecutivo().reduce((s, row) => s + row[campo], 0);
   }
 
   loadData(): void {

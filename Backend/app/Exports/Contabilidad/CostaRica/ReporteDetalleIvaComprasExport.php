@@ -2,6 +2,7 @@
 
 namespace App\Exports\Contabilidad\CostaRica;
 
+use App\Services\Contabilidad\CostaRica\ReporteDetalleIvaCrService;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 
@@ -59,7 +60,9 @@ final class ReporteDetalleIvaComprasExport implements FromCollection
             ];
         });
 
-        return collect([$periodo, $grupos, $headings])->concat($datos);
+        return collect([$periodo, $grupos, $headings])
+            ->concat($datos)
+            ->concat(ReporteDetalleIvaCrService::filasResumenExport($c->all(), count($headings)));
     }
 
     /** @return array<int, string> */

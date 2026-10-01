@@ -1,5 +1,9 @@
 import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import {
+  ResumenTarifaIvaCr,
+  resumenTarifasLibroIvaCr,
+} from '@views/contabilidad/libro-iva-cr/shared/libro-iva-cr-resumen-tarifas.util';
 
 /** Libro detalle IVA Costa Rica (plantillas Reporte_Detalle_IVA / Compras). Solo presentación. */
 export type LibroIvaCrDetalleLibroTipo = 'ventas' | 'compras';
@@ -34,5 +38,13 @@ export class LibroIvaCrDetalleTableComponent {
   total(k: string): number {
     const v = Number(this.totales?.[k]);
     return Number.isFinite(v) ? v : 0;
+  }
+
+  resumenTarifas(): ResumenTarifaIvaCr[] {
+    return resumenTarifasLibroIvaCr(this.totales);
+  }
+
+  sumaResumen(campo: 'base' | 'iva'): number {
+    return this.resumenTarifas().reduce((s, row) => s + row[campo], 0);
   }
 }

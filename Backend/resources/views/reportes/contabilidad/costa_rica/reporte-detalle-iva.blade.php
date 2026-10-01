@@ -6,6 +6,9 @@
     <style>
         body { font-family: Arial, sans-serif; font-size: 6px; }
         h1, h2 { margin: 2px 0; text-align: center; }
+        h3 { margin: 10px 0 4px; text-align: left; font-size: 9px; }
+        table.resumen { width: 280px; font-size: 8px; }
+        table.resumen th, table.resumen td { padding: 3px 6px; }
         .meta { margin: 4px 0 6px; }
         .meta span { margin-right: 1.2rem; }
         table { width: 100%; border-collapse: collapse; }
@@ -24,6 +27,13 @@
     $inicio = $request->inicio ?? now()->toDateString();
     $fin = $request->fin ?? $inicio;
     $n = static fn ($v) => number_format((float) ($v ?? 0), 2);
+    $resumenTarifas = \App\Services\Contabilidad\CostaRica\ReporteDetalleIvaCrService::resumenTarifas($totales);
+    $sumaBaseResumen = 0.0;
+    $sumaIvaResumen = 0.0;
+    foreach ($resumenTarifas as $filaResumen) {
+        $sumaBaseResumen += $filaResumen['base'];
+        $sumaIvaResumen += $filaResumen['iva'];
+    }
 @endphp
 
     <h1>{{ $empresa->nombre ?? 'EMPRESA' }}</h1>
@@ -131,6 +141,33 @@
                 </tr>
             </tfoot>
         @endif
+    </table>
+
+    <h3>Resumen por tipo de impuesto</h3>
+    <table class="resumen">
+        <thead>
+            <tr>
+                <th>Tipo</th>
+                <th>Base</th>
+                <th>IVA</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach ($resumenTarifas as $filaResumen)
+                <tr>
+                    <td>{{ $filaResumen['etiqueta'] }}</td>
+                    <td class="text-right">{{ $n($filaResumen['base']) }}</td>
+                    <td class="text-right">{{ $n($filaResumen['iva']) }}</td>
+                </tr>
+            @endforeach
+        </tbody>
+        <tfoot>
+            <tr>
+                <td><strong>Total</strong></td>
+                <td class="text-right"><strong>{{ $n($sumaBaseResumen) }}</strong></td>
+                <td class="text-right"><strong>{{ $n($sumaIvaResumen) }}</strong></td>
+            </tr>
+        </tfoot>
     </table>
 </body>
 </html>
