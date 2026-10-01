@@ -1,0 +1,461 @@
+<?php
+
+namespace App\Services\Ventas;
+
+use App\Exceptions\FacturacionException;
+use App\Http\Requests\MH\EnviarDTERequest;
+use App\Models\Admin\Empresa;
+use App\Models\Admin\EmpresaFuncionalidad;
+use App\Models\Admin\Funcionalidad;
+use App\Models\User;
+use App\Models\Ventas\Detalle;
+use App\Models\Ventas\Venta;
+use App\Services\FacturacionElectronica\ElSalvador\ElSalvadorDteService;
+use App\Services\FacturacionElectronica\FacturacionElectronicaCountryGate;
+use App\Services\MhGovSvGatewayService;
+use Carbon\Carbon;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+
+class GenerarVentasRecurrentesService
+{
+    public const SLUG = 'ventas-recurrentes-automaticas';
+
+    public function __construct(
+        private readonly FacturacionService $facturacion,
+        private readonly ElSalvadorDteService $dte,
+        private readonly MhGovSvGatewayService $mhGateway,
+    ) {
+    }
+
+    public function ejecutar(Carbon $hoy): void
+    {
+        $fecha = $hoy->copy()->timezone('America/El_Salvador')->toDateString();
+        $funcionalidad = Funcionalidad::where('slug', self::SLUG)->first();
+        if (!$funcionalidad) {
+            Log::warning('Ventas recurrentes: falta la funcionalidad '.self::SLUG);
+
+            return;
+        }
+
+        $asignaciones = EmpresaFuncionalidad::where('id_funcionalidad', $funcionalidad->id)
+            ->where('activo', 1)
+            ->get();
+
+        foreach ($asignaciones as $asignacion) {
+            $this->procesarEmpresa($asignacion, $fecha);
+        }
+    }
+
+    private function procesarEmpresa(EmpresaFuncionalidad $asignacion, string $fecha): void
+    {
+        $empresa = Empresa::find($asignacion->id_empresa);
+        if (!$empresa) {
+            return;
+        }
+
+        $config = $asignacion->configuracion ?? [];
+        if (!empty($config['generacion_pausada'])) {
+            return;
+        }
+
+        $plantillas = Venta::withoutGlobalScopes()
+            ->with(['detalles.composiciones', 'impuestos'])
+            ->where('id_empresa', $empresa->id)
+            ->whereNull('id_venta_plantilla')
+            ->where('recurrencia_pausada', false)
+            ->whereIn('frecuencia_recurrencia', ['mensual', 'anual'])
+            ->whereNotNull('sello_mh')
+            ->where('sello_mh', '!=', '')
+            ->where('estado', '!=', 'Anulada')
+            ->get();
+
+        $emitidas = [];
+        $fallidas = [];
+
+        foreach ($plantillas as $plantilla) {
+            if (!$plantilla->fecha || !RecurrenciaCalendario::corresponde($plantilla->frecuencia_recurrencia, (string) $plantilla->fecha, $fecha)) {
+                continue;
+            }
+
+            $periodo = RecurrenciaCalendario::periodo($fecha);
+            if ($this->yaGenerada($plantilla->id, $periodo)) {
+                continue;
+            }
+
+            $resultado = $this->generar($plantilla, $empresa, $fecha, $periodo);
+            if ($resultado['linea'] === '') {
+                continue;
+            }
+            if ($resultado['ok']) {
+                $emitidas[] = $resultado['linea'];
+            } else {
+                $fallidas[] = $resultado['linea'];
+            }
+        }
+
+        if ($emitidas === [] && $fallidas === []) {
+            return;
+        }
+
+        $this->enviarResumen($empresa, $asignacion, $fecha, $emitidas, $fallidas);
+    }
+
+    private function yaGenerada(int $idPlantilla, string $periodo): bool
+    {
+        return Venta::withoutGlobalScopes()
+            ->where('id_venta_plantilla', $idPlantilla)
+            ->where('periodo_recurrencia', $periodo)
+            ->exists();
+    }
+
+    /**
+     * @return array{ok: bool, linea: string}
+     */
+    private function generar(Venta $plantilla, Empresa $empresa, string $fecha, string $periodo): array
+    {
+        $etiqueta = 'Plantilla #'.$plantilla->correlativo.' (id '.$plantilla->id.')';
+
+        if (FacturacionElectronicaCountryGate::ensureSvDteOrFail($empresa)) {
+            return ['ok' => false, 'linea' => $etiqueta.': la facturación electrónica de esta empresa no es de El Salvador.'];
+        }
+
+        $usuario = User::find($plantilla->id_usuario);
+        if (!$usuario) {
+            return ['ok' => false, 'linea' => $etiqueta.': la venta no tiene usuario para facturar.'];
+        }
+
+        try {
+            $venta = $this->clonar($plantilla, $usuario, $fecha, $periodo);
+        } catch (FacturacionException $e) {
+            if (str_contains($e->getMessage(), 'venta_recurrencia_periodo_unique')) {
+                return ['ok' => true, 'linea' => ''];
+            }
+
+            return ['ok' => false, 'linea' => $etiqueta.': no se pudo crear la venta. '.$e->getMessage()];
+        }
+
+        try {
+            $this->emitir($venta, $empresa);
+        } catch (\Throwable $e) {
+            Log::error('Ventas recurrentes: emisión fallida', [
+                'venta_id' => $venta->id,
+                'plantilla_id' => $plantilla->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'ok' => false,
+                'linea' => 'Venta #'.$venta->correlativo.' (id '.$venta->id.') quedó pendiente de emitir a mano. '.$e->getMessage(),
+            ];
+        }
+
+        $avisoCorreo = '';
+        try {
+            $this->enviarFacturaAlCliente($venta);
+        } catch (\Throwable $e) {
+            $avisoCorreo = ' El DTE se emitió, pero no se envió al cliente: '.$e->getMessage();
+        }
+
+        return ['ok' => true, 'linea' => 'Venta #'.$venta->correlativo.' (id '.$venta->id.') emitida.'.$avisoCorreo];
+    }
+
+    private function clonar(Venta $plantilla, User $usuario, string $fecha, string $periodo): Venta
+    {
+        $anterior = Auth::user();
+        Auth::login($usuario);
+
+        try {
+            $request = request()->duplicate(null, $this->payload($plantilla, $fecha, $periodo));
+            $this->facturacion->assertReglasNegocio($usuario, $request);
+
+            return $this->facturacion->procesar($usuario, $request);
+        } finally {
+            if ($anterior) {
+                Auth::login($anterior);
+            } else {
+                Auth::logout();
+            }
+        }
+    }
+
+    private function payload(Venta $plantilla, string $fecha, string $periodo): array
+    {
+        $origen = Carbon::parse($plantilla->fecha)->startOfDay();
+        $pago = $plantilla->fecha_pago ? Carbon::parse($plantilla->fecha_pago)->startOfDay() : $origen->copy();
+        $dias = (int) $origen->diffInDays($pago, false);
+        $fechaPago = Carbon::parse($fecha)->addDays(max(0, $dias))->toDateString();
+
+        $data = [
+            'fecha' => $fecha,
+            'fecha_pago' => $fechaPago,
+            'estado' => $plantilla->estado ?: 'Pagada',
+            'cotizacion' => 0,
+            'recurrente' => '0',
+            'frecuencia_recurrencia' => null,
+            'recurrencia_pausada' => false,
+            'id_venta_plantilla' => $plantilla->id,
+            'periodo_recurrencia' => $periodo,
+            'observaciones' => 'Generada automáticamente desde la venta #'.$plantilla->correlativo,
+            'puntos_ganados' => 0,
+            'puntos_canjeados' => 0,
+            'descuento_puntos' => 0,
+            'id_canal' => $plantilla->id_canal,
+            'id_documento' => $plantilla->id_documento,
+            'forma_pago' => $plantilla->forma_pago,
+            'tipo_documento' => $plantilla->tipo_documento,
+            'condicion' => $plantilla->condicion,
+            'iva_percibido' => $plantilla->iva_percibido ?? 0,
+            'iva_retenido' => $plantilla->iva_retenido ?? 0,
+            'renta_retenida' => $plantilla->renta_retenida ?? 0,
+            'iva' => $plantilla->iva ?? 0,
+            'total_costo' => $plantilla->total_costo ?? 0,
+            'descuento' => $plantilla->descuento ?? 0,
+            'sub_total' => $plantilla->sub_total ?? 0,
+            'no_sujeta' => $plantilla->no_sujeta ?? 0,
+            'exenta' => $plantilla->exenta ?? 0,
+            'gravada' => $plantilla->gravada ?? 0,
+            'cuenta_a_terceros' => $plantilla->cuenta_a_terceros ?? 0,
+            'total' => $plantilla->total ?? 0,
+            'propina' => $plantilla->propina ?? 0,
+            'id_bodega' => $plantilla->id_bodega,
+            'id_cliente' => $plantilla->id_cliente,
+            'id_usuario' => $plantilla->id_usuario,
+            'id_vendedor' => $plantilla->id_vendedor,
+            'id_empresa' => $plantilla->id_empresa,
+            'id_sucursal' => $plantilla->id_sucursal,
+            'currency_code' => $plantilla->currency_code,
+            'exchange_rate' => $plantilla->exchange_rate,
+            'exchange_rate_date' => $plantilla->exchange_rate_date,
+            'descripcion_personalizada' => $plantilla->descripcion_personalizada,
+            'descripcion_impresion' => $plantilla->descripcion_impresion,
+            'num_identificacion' => $plantilla->num_identificacion,
+            'detalles' => $plantilla->detalles->map(fn (Detalle $detalle) => $this->detallePayload($detalle))->values()->all(),
+        ];
+
+        $impuestos = $plantilla->impuestos->map(fn ($impuesto) => [
+            'id_impuesto' => $impuesto->id_impuesto,
+            'monto' => $impuesto->monto,
+        ])->values()->all();
+
+        if ($impuestos !== []) {
+            $data['impuestos'] = $impuestos;
+        }
+
+        return $data;
+    }
+
+    private function detallePayload(Detalle $detalle): array
+    {
+        $data = [
+            'id_producto' => $detalle->id_producto,
+            'id_presentacion' => $detalle->id_presentacion,
+            'lote_id' => $detalle->lote_id,
+            'origen_stock' => $detalle->origen_stock,
+            'descripcion' => $detalle->getAttributes()['descripcion'] ?? null,
+            'cantidad' => $detalle->cantidad,
+            'precio' => $detalle->precio,
+            'precio_sin_iva' => $detalle->precio_sin_iva,
+            'precio_con_iva' => $detalle->precio_con_iva,
+            'costo' => $detalle->costo,
+            'descuento' => $detalle->descuento ?? 0,
+            'sub_total' => $detalle->sub_total,
+            'tipo_gravado' => $detalle->tipo_gravado,
+            'no_sujeta' => $detalle->no_sujeta,
+            'exenta' => $detalle->exenta,
+            'gravada' => $detalle->gravada,
+            'cuenta_a_terceros' => $detalle->cuenta_a_terceros,
+            'total_costo' => $detalle->total_costo,
+            'total' => $detalle->total,
+            'id_vendedor' => $detalle->id_vendedor,
+            'iva' => $detalle->iva,
+            'porcentaje_impuesto' => $detalle->porcentaje_impuesto,
+        ];
+
+        $composiciones = $detalle->composiciones->map(fn ($compuesto) => [
+            'id_compuesto' => $compuesto->id_producto,
+            'cantidad' => $compuesto->cantidad,
+        ])->values()->all();
+
+        if ($composiciones !== []) {
+            $data['composiciones'] = $composiciones;
+        }
+
+        return $data;
+    }
+
+    private function emitir(Venta $venta, Empresa $empresa): void
+    {
+        $venta->load(['detalles.producto', 'cliente', 'empresa', 'sucursal', 'documento']);
+
+        $respuesta = $this->dte->generarDTE($venta);
+        if ($respuesta->getStatusCode() >= 400) {
+            throw new \RuntimeException($this->mensaje($respuesta->getData(true)));
+        }
+
+        $dteJson = $respuesta->getData(true);
+        if (!is_array($dteJson)) {
+            throw new \RuntimeException('El DTE generado no es válido.');
+        }
+
+        $firmado = $this->firmar($dteJson, $empresa);
+        $hacienda = $this->enviarHacienda($venta, $dteJson, $firmado, $empresa);
+        $estado = $hacienda['estado'] ?? null;
+        $sello = $hacienda['selloRecibido'] ?? null;
+
+        if ($estado !== 'PROCESADO' || empty($sello)) {
+            throw new \RuntimeException('Hacienda no procesó el DTE: '.json_encode($hacienda, JSON_UNESCAPED_UNICODE));
+        }
+
+        $dteJson['firmaElectronica'] = $firmado;
+        $dteJson['sello'] = $sello;
+        $dteJson['selloRecibido'] = $sello;
+        $venta->dte = $dteJson;
+        $venta->sello_mh = $sello;
+        if (!empty($hacienda['numeroControl'])) {
+            $venta->numero_control = $hacienda['numeroControl'];
+        }
+        if (!empty($hacienda['codigoGeneracion'])) {
+            $venta->codigo_generacion = $hacienda['codigoGeneracion'];
+        }
+        $venta->tipo_dte = $dteJson['identificacion']['tipoDte'] ?? $venta->tipo_dte;
+        $venta->save();
+    }
+
+    private function firmar(array $dteJson, Empresa $empresa): mixed
+    {
+        $nit = str_replace('-', '', (string) $empresa->nit);
+        if ($nit === '' || empty($empresa->mh_pwd_certificado)) {
+            throw new \RuntimeException('Faltan el NIT o la contraseña del certificado.');
+        }
+
+        $response = Http::timeout((int) config('mh.timeout_seconds', 120))
+            ->withOptions([
+                'verify' => (bool) config('mh.verify_ssl', true),
+                'http_errors' => false,
+                'connect_timeout' => (int) config('mh.connect_timeout_seconds', 30),
+            ])
+            ->acceptJson()
+            ->asJson()
+            ->post(config('app.mh_url_firmado', 'https://facturadtesv.com:8443/firmardocumento/'), [
+                'nit' => $nit,
+                'activo' => true,
+                'passwordPri' => (string) $empresa->mh_pwd_certificado,
+                'dteJson' => $dteJson,
+            ]);
+
+        if (!$response->successful()) {
+            throw new \RuntimeException('Firmador HTTP '.$response->status().': '.$response->body());
+        }
+
+        $decoded = $response->json();
+        if (!is_array($decoded)) {
+            throw new \RuntimeException('Respuesta del firmador no es JSON válido.');
+        }
+        if (($decoded['status'] ?? null) === 'ERROR') {
+            $msg = $decoded['body']['mensaje'] ?? json_encode($decoded, JSON_UNESCAPED_UNICODE);
+            throw new \RuntimeException('Firmador: '.$msg);
+        }
+
+        return $decoded['body'] ?? $decoded;
+    }
+
+    private function enviarHacienda(Venta $venta, array $dteJson, mixed $firmado, Empresa $empresa): array
+    {
+        $payload = [
+            'ambiente' => $dteJson['identificacion']['ambiente'] ?? $empresa->fe_ambiente,
+            'idEnvio' => $venta->id,
+            'version' => $dteJson['identificacion']['version'] ?? 1,
+            'tipoDte' => $venta->tipo_dte,
+            'documento' => $firmado,
+            'codigoGeneracion' => $venta->codigo_generacion,
+        ];
+
+        try {
+            $result = $this->mhGateway->postJson($empresa, '/fesv/recepciondte', $payload);
+        } catch (ConnectionException $e) {
+            throw new \RuntimeException('Sin conexión con Hacienda: '.$e->getMessage(), 0, $e);
+        }
+
+        $body = $result['body'] ?? null;
+        if (!is_array($body)) {
+            throw new \RuntimeException('Respuesta inválida de Hacienda.');
+        }
+
+        return $body;
+    }
+
+    private function enviarFacturaAlCliente(Venta $venta): void
+    {
+        $request = EnviarDTERequest::create('/api/enviarDTE', 'POST', [
+            'id' => $venta->id,
+            'tipo_dte' => $venta->tipo_dte,
+        ]);
+        $request->setContainer(app())->setRedirector(app('redirect'));
+        $request->validateResolved();
+
+        $respuesta = $this->dte->enviarDTE($request);
+        if ($respuesta->getStatusCode() >= 400) {
+            throw new \RuntimeException($this->mensaje($respuesta->getData(true)));
+        }
+    }
+
+    private function enviarResumen(Empresa $empresa, EmpresaFuncionalidad $asignacion, string $fecha, array $emitidas, array $fallidas): void
+    {
+        $config = $asignacion->configuracion ?? [];
+        $correo = trim((string) ($config['correo_resumen'] ?? ''));
+        if ($correo === '') {
+            $correo = trim((string) $empresa->correo);
+        }
+        if ($correo === '') {
+            Log::warning('Ventas recurrentes: empresa sin correo de resumen', ['empresa_id' => $empresa->id]);
+
+            return;
+        }
+
+        $lineas = ["Resumen de ventas recurrentes del {$fecha}.", ''];
+        if ($emitidas !== []) {
+            $lineas[] = 'Emitidas:';
+            foreach ($emitidas as $linea) {
+                $lineas[] = '- '.$linea;
+            }
+            $lineas[] = '';
+        }
+        if ($fallidas !== []) {
+            $lineas[] = 'Con error:';
+            foreach ($fallidas as $linea) {
+                $lineas[] = '- '.$linea;
+            }
+        }
+
+        try {
+            Mail::raw(implode("\n", $lineas), function ($mensaje) use ($correo) {
+                $mensaje->from('noreply@smartpyme.sv', 'SmartPyme')
+                    ->to($correo)
+                    ->subject('Resumen de ventas recurrentes');
+            });
+        } catch (\Throwable $e) {
+            Log::error('Ventas recurrentes: no se envió el resumen', [
+                'empresa_id' => $empresa->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    private function mensaje(mixed $data): string
+    {
+        if (!is_array($data)) {
+            return 'No se pudo completar la emisión.';
+        }
+
+        $error = $data['error'] ?? $data['descripcionMsg'] ?? null;
+        if (is_string($error) && $error !== '') {
+            return $error;
+        }
+
+        return json_encode($data, JSON_UNESCAPED_UNICODE) ?: 'No se pudo completar la emisión.';
+    }
+}

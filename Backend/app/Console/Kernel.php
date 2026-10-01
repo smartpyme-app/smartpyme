@@ -98,6 +98,12 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->appendOutputTo(storage_path('logs/facturas-generar-suscripciones.log'));
 
+        $schedule->command('ventas:generar-recurrentes')
+            ->dailyAt('06:00')
+            ->timezone('America/El_Salvador')
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/ventas-recurrentes.log'));
+
         $schedule->command('suscripciones:enviar-recordatorios-correo')
             ->dailyAt('08:00')
             ->withoutOverlapping()
