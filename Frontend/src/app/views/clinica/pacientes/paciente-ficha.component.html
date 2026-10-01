@@ -1,0 +1,128 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <div class="d-flex align-items-center">
+        <h2 class="page-heading">Paciente</h2>
+        @if (paciente) {
+            <span class="badge py-2 ms-2" style="font-size: 0.8rem;" [ngClass]="{'bg-info': paciente.tipo === 'HUMANO', 'bg-success': paciente.tipo === 'ANIMAL'}">
+                {{ paciente.tipo === 'HUMANO' ? 'Humano' : 'Animal' }}
+            </span>
+            <span class="badge py-2 ms-2" style="font-size: 0.8rem;" [ngClass]="{'bg-success': paciente.activo, 'bg-danger': !paciente.activo}">
+                {{ paciente.activo ? 'Activo' : 'Inactivo' }}
+            </span>
+        }
+    </div>
+    <button class="btn btn-default" routerLink="/clinica/pacientes">
+        <i class="fa fa-arrow-left"></i> Regresar
+    </button>
+</section>
+
+@if (cargando) {
+    <section class="bg-white p-4 rounded mb-3">
+        <span class="badge bg-primary">Cargando...</span>
+    </section>
+}
+
+@if (!cargando && paciente) {
+    <div class="row mb-5">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        <h6 class="col-12 pb-2 mb-3">Información del paciente</h6>
+                        <div class="form-group col-lg-3">
+                            <label class="fw-medium">Expediente:</label>
+                            <p>{{ paciente.expediente?.numero }}</p>
+                        </div>
+                        <div class="form-group col-lg-3">
+                            <label class="fw-medium">Nombre:</label>
+                            <p>{{ paciente.nombre_completo }}</p>
+                        </div>
+                        <div class="form-group col-lg-3">
+                            <label class="fw-medium">Sexo:</label>
+                            <p>{{ paciente.sexo }}</p>
+                        </div>
+                        <div class="form-group col-lg-3">
+                            <label class="fw-medium">Nacimiento:</label>
+                            <p>{{ paciente.fecha_nacimiento || '—' }}</p>
+                        </div>
+                        <div class="form-group col-lg-3">
+                            <label class="fw-medium">Edad:</label>
+                            <p>{{ paciente.edad }}</p>
+                        </div>
+                        <div class="form-group col-lg-3">
+                            <label class="fw-medium">Sucursal:</label>
+                            <p>{{ paciente.sucursal?.nombre || '—' }}</p>
+                        </div>
+                        <div class="form-group col-lg-3">
+                            <label class="fw-medium">Apertura del expediente:</label>
+                            <p>{{ paciente.expediente?.fecha_apertura || '—' }}</p>
+                        </div>
+                        @if (paciente.tipo === 'HUMANO') {
+                            <div class="form-group col-lg-3">
+                                <label class="fw-medium">Documento:</label>
+                                <p>{{ paciente.documento || '—' }}</p>
+                            </div>
+                        }
+                        @if (paciente.tipo === 'ANIMAL') {
+                            <h6 class="col-12 pb-2 my-3">Datos del animal</h6>
+                            <div class="form-group col-lg-3">
+                                <label class="fw-medium">Especie:</label>
+                                <p>{{ paciente.especie?.nombre || '—' }}</p>
+                            </div>
+                            <div class="form-group col-lg-3">
+                                <label class="fw-medium">Raza:</label>
+                                <p>{{ paciente.raza?.nombre || 'Sin raza definida' }}</p>
+                            </div>
+                            <div class="form-group col-lg-3">
+                                <label class="fw-medium">Color:</label>
+                                <p>{{ paciente.color || '—' }}</p>
+                            </div>
+                            <div class="form-group col-lg-3">
+                                <label class="fw-medium">Peso:</label>
+                                <p>{{ paciente.peso || '—' }}</p>
+                            </div>
+                            <div class="form-group col-lg-3">
+                                <label class="fw-medium">Microchip:</label>
+                                <p>{{ paciente.microchip || '—' }}</p>
+                            </div>
+                            <div class="form-group col-lg-3">
+                                <label class="fw-medium">Esterilizado:</label>
+                                <p>{{ paciente.esterilizado === null ? '—' : (paciente.esterilizado ? 'Sí' : 'No') }}</p>
+                            </div>
+                            <div class="form-group col-lg-6">
+                                <label class="fw-medium">Identificadores:</label>
+                                <p>{{ paciente.identificadores || '—' }}</p>
+                            </div>
+                        }
+                        <h6 class="col-12 pb-2 my-3">Contacto</h6>
+                        <div class="form-group col-lg-3">
+                            <label class="fw-medium">Teléfono:</label>
+                            <p>{{ paciente.telefono || '—' }}</p>
+                        </div>
+                        <div class="form-group col-lg-3">
+                            <label class="fw-medium">Correo:</label>
+                            <p>{{ paciente.correo || '—' }}</p>
+                        </div>
+                        <div class="form-group col-lg-6">
+                            <label class="fw-medium">Dirección:</label>
+                            <p>{{ paciente.direccion || '—' }}</p>
+                        </div>
+                        <div class="form-group col-lg-6">
+                            <label class="fw-medium">Información relevante:</label>
+                            <p>{{ paciente.informacion_relevante || '—' }}</p>
+                        </div>
+                        <h6 class="col-12 pb-2 my-3">Responsables</h6>
+                        <div class="form-group col-12">
+                            @if (paciente.responsables?.length) {
+                                @for (responsable of paciente.responsables; track responsable.id) {
+                                    <p class="mb-1">{{ responsable.nombre }}</p>
+                                }
+                            } @else {
+                                <p class="mb-0">Sin responsables registrados.</p>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}

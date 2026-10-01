@@ -1,0 +1,198 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading">{{ id ? 'Editar paciente' : 'Nuevo paciente' }}</h2>
+    <button class="btn btn-default" routerLink="/clinica/pacientes">
+        <i class="fa fa-arrow-left"></i> Regresar
+    </button>
+</section>
+
+<div class="row mb-5">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <form (ngSubmit)="guardar()" autocomplete="off">
+                    <div class="row">
+                        <h6 class="col-12 pb-2 mb-2">Información del paciente</h6>
+                        <div class="form-group col-12 col-md-6 col-lg-3">
+                            <label for="tipo">Tipo</label>
+                            <select id="tipo" class="form-select" [(ngModel)]="paciente.tipo" name="tipo" (change)="cambiarTipo()">
+                                <option value="HUMANO">Humano</option>
+                                <option value="ANIMAL">Animal</option>
+                            </select>
+                        </div>
+                        <div class="form-group col-12 col-md-6 col-lg-3">
+                            <label for="id_sucursal">Sucursal de registro</label>
+                            <select id="id_sucursal" class="form-select" [(ngModel)]="paciente.id_sucursal" name="id_sucursal">
+                                <option value="">Sin sucursal</option>
+                                @for (sucursal of sucursales; track sucursal.id) {
+                                    <option [ngValue]="sucursal.id">{{ sucursal.nombre }}</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="form-group col-12 col-md-6 col-lg-3">
+                            <label for="sexo">Sexo</label>
+                            <select id="sexo" class="form-select" [(ngModel)]="paciente.sexo" name="sexo" required>
+                                <option value="">Seleccione aquí</option>
+                                @for (sexo of sexos; track sexo) {
+                                    <option [value]="sexo">{{ sexo }}</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="form-group col-12 col-md-6 col-lg-3">
+                            <label for="fecha_nacimiento">Fecha de nacimiento</label>
+                            <input id="fecha_nacimiento" class="form-control" type="date" [(ngModel)]="paciente.fecha_nacimiento" name="fecha_nacimiento">
+                        </div>
+
+                        @if (paciente.tipo === 'HUMANO') {
+                            <div class="form-group col-12 col-md-6 col-lg-3">
+                                <label for="nombres">Nombres</label>
+                                <input id="nombres" class="form-control" placeholder="Escribe aquí" [(ngModel)]="paciente.nombres" name="nombres" required>
+                            </div>
+                            <div class="form-group col-12 col-md-6 col-lg-3">
+                                <label for="apellidos">Apellidos</label>
+                                <input id="apellidos" class="form-control" placeholder="Escribe aquí" [(ngModel)]="paciente.apellidos" name="apellidos" required>
+                            </div>
+                            <div class="form-group col-12 col-md-6 col-lg-3">
+                                <label for="documento">Documento</label>
+                                <input id="documento" class="form-control" placeholder="Escribe aquí" [(ngModel)]="paciente.documento" name="documento">
+                            </div>
+                        }
+
+                        @if (paciente.tipo === 'ANIMAL') {
+                            <h6 class="col-12 pb-2 my-3">Datos del animal</h6>
+                            <div class="form-group col-12 col-md-6 col-lg-3">
+                                <label for="nombre">Nombre</label>
+                                <input id="nombre" class="form-control" placeholder="Escribe aquí" [(ngModel)]="paciente.nombre" name="nombre" required>
+                            </div>
+                            <div class="form-group col-12 col-md-6 col-lg-3">
+                                <label for="id_especie">Especie</label>
+                                <div class="input-group flex-nowrap">
+                                    <select id="id_especie" class="form-select" [(ngModel)]="paciente.id_especie" name="id_especie" (change)="paciente.id_raza = ''">
+                                        <option value="">Seleccione aquí</option>
+                                        @for (especie of especies; track especie.id) {
+                                            <option [ngValue]="especie.id">{{ especie.nombre }}</option>
+                                        }
+                                    </select>
+                                    @if (apiService.hasPermission('clinica.pacientes.editar')) {
+                                        <button type="button" class="btn btn-default" tooltip="Nueva especie" (click)="abrirCatalogo(mespecie)">
+                                            <i class="fa fa-plus"></i>
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+                            <div class="form-group col-12 col-md-6 col-lg-3">
+                                <label for="id_raza">Raza</label>
+                                <div class="input-group flex-nowrap">
+                                    <select id="id_raza" class="form-select" [(ngModel)]="paciente.id_raza" name="id_raza" [disabled]="razasDeEspecie.length === 0">
+                                        <option value="">{{ razasDeEspecie.length ? 'Seleccione aquí' : 'Sin raza definida' }}</option>
+                                        @for (raza of razasDeEspecie; track raza.id) {
+                                            <option [ngValue]="raza.id">{{ raza.nombre }}</option>
+                                        }
+                                    </select>
+                                    @if (apiService.hasPermission('clinica.pacientes.editar')) {
+                                        <button type="button" class="btn btn-default" tooltip="Nueva raza" [disabled]="!paciente.id_especie" (click)="abrirCatalogo(mraza)">
+                                            <i class="fa fa-plus"></i>
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+                            <div class="form-group col-12 col-md-6 col-lg-3">
+                                <label for="color">Color</label>
+                                <input id="color" class="form-control" placeholder="Escribe aquí" [(ngModel)]="paciente.color" name="color">
+                            </div>
+                            <div class="form-group col-12 col-md-6 col-lg-3">
+                                <label for="peso">Peso</label>
+                                <input id="peso" class="form-control" type="number" min="0" step="0.01" placeholder="Escribe aquí" [(ngModel)]="paciente.peso" name="peso">
+                            </div>
+                            <div class="form-group col-12 col-md-6 col-lg-3">
+                                <label for="microchip">Microchip</label>
+                                <input id="microchip" class="form-control" placeholder="Escribe aquí" [(ngModel)]="paciente.microchip" name="microchip">
+                            </div>
+                            <div class="form-group col-12 col-md-6 col-lg-3">
+                                <label for="esterilizado">Esterilizado</label>
+                                <select id="esterilizado" class="form-select" [(ngModel)]="paciente.esterilizado" name="esterilizado">
+                                    <option value="">Sin dato</option>
+                                    <option value="1">Sí</option>
+                                    <option value="0">No</option>
+                                </select>
+                            </div>
+                            <div class="form-group col-12 col-md-6 col-lg-3">
+                                <label for="identificadores">Identificadores</label>
+                                <input id="identificadores" class="form-control" placeholder="Escribe aquí" [(ngModel)]="paciente.identificadores" name="identificadores">
+                            </div>
+                        }
+
+                        <h6 class="col-12 pb-2 my-3">Contacto</h6>
+                        <div class="form-group col-12 col-md-6 col-lg-3">
+                            <label for="telefono">Teléfono</label>
+                            <input id="telefono" class="form-control" placeholder="Escribe aquí" [(ngModel)]="paciente.telefono" name="telefono">
+                        </div>
+                        <div class="form-group col-12 col-md-6 col-lg-3">
+                            <label for="correo">Correo</label>
+                            <input id="correo" class="form-control" type="email" placeholder="Escribe aquí" [(ngModel)]="paciente.correo" name="correo">
+                        </div>
+                        <div class="form-group col-12 col-md-6 col-lg-6">
+                            <label for="direccion">Dirección</label>
+                            <input id="direccion" class="form-control" placeholder="Escribe aquí" [(ngModel)]="paciente.direccion" name="direccion">
+                        </div>
+                        <div class="form-group col-12">
+                            <label for="informacion_relevante">Información relevante</label>
+                            <input id="informacion_relevante" class="form-control" placeholder="Escribe aquí" [(ngModel)]="paciente.informacion_relevante" name="informacion_relevante">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="form-group col-md-12 mt-3">
+                            <button type="submit" [disabled]="guardando" class="btn btn-primary float-end">
+                                @if (!guardando) {
+                                    <span>Guardar paciente <img appLazyImage="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
+                                }
+                                @if (guardando) {
+                                    <span>Guardando...</span>
+                                }
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<ng-template #mespecie>
+    <div class="modal-header justify-content-between">
+        <h3 class="modal-title">Nueva especie</h3>
+        <button type="button" class="btn btn-light text-danger" (click)="cerrarCatalogo()">Cancelar <i class="fa fa-close"></i></button>
+    </div>
+    <div class="modal-body p-3">
+        <form (ngSubmit)="agregarEspecie()" autocomplete="off">
+            <div class="form-group">
+                <label for="nuevaEspecie">Nombre</label>
+                <input id="nuevaEspecie" class="form-control" placeholder="Escribe aquí" [(ngModel)]="nuevaEspecie" name="nuevaEspecie">
+            </div>
+            <div class="form-group mt-3">
+                <button type="submit" class="btn btn-primary float-end" [disabled]="!nuevaEspecie.trim()">
+                    Guardar especie <img appLazyImage="assets/icons/arrow-right-stroke.png" class="icon2 ms-2">
+                </button>
+            </div>
+        </form>
+    </div>
+</ng-template>
+
+<ng-template #mraza>
+    <div class="modal-header justify-content-between">
+        <h3 class="modal-title">Nueva raza</h3>
+        <button type="button" class="btn btn-light text-danger" (click)="cerrarCatalogo()">Cancelar <i class="fa fa-close"></i></button>
+    </div>
+    <div class="modal-body p-3">
+        <form (ngSubmit)="agregarRaza()" autocomplete="off">
+            <div class="form-group">
+                <label for="nuevaRaza">Nombre</label>
+                <input id="nuevaRaza" class="form-control" placeholder="Escribe aquí" [(ngModel)]="nuevaRaza" name="nuevaRaza">
+            </div>
+            <div class="form-group mt-3">
+                <button type="submit" class="btn btn-primary float-end" [disabled]="!nuevaRaza.trim()">
+                    Guardar raza <img appLazyImage="assets/icons/arrow-right-stroke.png" class="icon2 ms-2">
+                </button>
+            </div>
+        </form>
+    </div>
+</ng-template>

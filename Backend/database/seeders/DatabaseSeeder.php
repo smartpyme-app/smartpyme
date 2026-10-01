@@ -31,6 +31,7 @@ class DatabaseSeeder extends Seeder
             PaisConfiguracionIdentificacionSeeder::class,
             RestauranteFuncionalidadSeeder::class,
             ClinicaFuncionalidadSeeder::class,
+            ClinicaPacientesPermissionSeeder::class,
             ActivosFijosPermissionSeeder::class,
             ActivosFijosFuncionalidadSeeder::class,
             ActivosFijosPlantillasSeeder::class,

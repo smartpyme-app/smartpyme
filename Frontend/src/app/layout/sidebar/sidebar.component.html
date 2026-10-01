@@ -90,6 +90,18 @@
                     </a>
                 </li>
             }
+            @if (tieneClinicaPacientes && apiService.hasPermission('clinica.pacientes.ver')) {
+                <li class="mb-1">
+                    <button (click)="toggleClinica()" tooltip="Clínica" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!clinicaIsCollapsed" aria-controls="clinica">
+                        <img appLazyImage="/assets/icons/users.png" class="icon me-2">Clínica
+                    </button>
+                    <div [collapse]="clinicaIsCollapsed" [isAnimated]="true" id="clinica">
+                        <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                            <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/clinica/pacientes']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/user.png" class="icon me-2">Pacientes</a></li>
+                        </ul>
+                    </div>
+                </li>
+            }
             @if (apiService.hasPermission('ventas.ver') || tieneGiftCardsHabilitada || (apiService.canAccederOperacionesInventario() && apiService.hasPermission('ventas.consignas.ver'))) {
                 <li class="mb-1">
                     <button (click)="toggleVentas()" tooltip="Ventas" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!ventasIsCollapsed" aria-controls="ventas">

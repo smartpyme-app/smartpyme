@@ -32,6 +32,8 @@ export class SidebarVentasComponent implements OnInit {
     /** true cuando el dominio es abaco.smartpyme.site */
     public isAbacoSite: boolean = false;
     public tieneModuloRestaurante = false;
+    public tieneClinicaPacientes = false;
+    public clinicaIsCollapsed = true;
     public mostrarMenuRestaurante = false;
     public mostrarMenuPedidos = false;
 
@@ -86,15 +88,22 @@ export class SidebarVentasComponent implements OnInit {
         } else {
             this.pedidosIsCollapsed = JSON.parse(localStorage.getItem('pedidosIsCollapsed')!);
         }
+        if (!localStorage.getItem('clinicaIsCollapsed')) {
+            localStorage.setItem('clinicaIsCollapsed', this.clinicaIsCollapsed.toString());
+        } else {
+            this.clinicaIsCollapsed = JSON.parse(localStorage.getItem('clinicaIsCollapsed')!);
+        }
 
         this.usuario = this.apiService.auth_user();
         this.loadModules();
         this.verificarModuloRestauranteHabilitado();
+        this.verificarClinicaPacientes();
 
         this.funcionalidadesService.onCambios()
             .pipe(this.untilDestroyed())
             .subscribe(() => {
                 this.verificarModuloRestauranteHabilitado();
+                this.verificarClinicaPacientes();
             });
 
         this.router.events
@@ -105,6 +114,17 @@ export class SidebarVentasComponent implements OnInit {
             .subscribe(() => {
                 this.actualizarMenusRestaurantePedidos();
             });
+    }
+
+    private verificarClinicaPacientes(): void {
+        this.funcionalidadesService.verificarAcceso('clinica-pacientes').subscribe({
+            next: (tieneAcceso) => {
+                this.tieneClinicaPacientes = tieneAcceso;
+            },
+            error: () => {
+                this.tieneClinicaPacientes = false;
+            },
+        });
     }
 
     private verificarModuloRestauranteHabilitado(): void {
@@ -147,6 +167,8 @@ export class SidebarVentasComponent implements OnInit {
             localStorage.setItem('restauranteIsCollapsed', this.restauranteIsCollapsed.toString());
             this.pedidosIsCollapsed = true;
             localStorage.setItem('pedidosIsCollapsed', this.pedidosIsCollapsed.toString());
+            this.clinicaIsCollapsed = true;
+            localStorage.setItem('clinicaIsCollapsed', this.clinicaIsCollapsed.toString());
         };
 
     }
@@ -193,6 +215,12 @@ export class SidebarVentasComponent implements OnInit {
     toggleFinanzas() {
         this.finanzasIsCollapsed = !this.finanzasIsCollapsed;
         localStorage.setItem('finanzasIsCollapsed', this.finanzasIsCollapsed.toString());
+        this.toggleSidebarMenu();
+    }
+
+    toggleClinica() {
+        this.clinicaIsCollapsed = !this.clinicaIsCollapsed;
+        localStorage.setItem('clinicaIsCollapsed', this.clinicaIsCollapsed.toString());
         this.toggleSidebarMenu();
     }
 
