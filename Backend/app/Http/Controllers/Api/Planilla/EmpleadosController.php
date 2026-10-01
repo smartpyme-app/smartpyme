@@ -88,8 +88,54 @@ class EmpleadosController extends Controller
         return $query->paginate($perPage);
     }
 
+    /**
+     * Verifica si el DUI ya pertenece a otro empleado de la misma empresa.
+     * Retorna el mensaje de error o null si no hay duplicado.
+     */
+    private function verificarDuiDuplicado(string $dui, $idEmpleadoIgnorar = null): ?string
+    {
+        $duiTrim = trim($dui);
+        if ($duiTrim === '') {
+            return null;
+        }
+
+        $duiRaw = str_replace('-', '', $duiTrim);
+
+        $empleadoExistente = Empleado::withTrashed()
+            ->where('id_empresa', auth()->user()->id_empresa)
+            ->when($idEmpleadoIgnorar, function ($q, $id) {
+                return $q->where('id', '!=', $id);
+            })
+            ->where(function ($q) use ($duiTrim, $duiRaw) {
+                $q->where('dui', $duiTrim)
+                  ->orWhere('dui', $duiRaw)
+                  ->orWhereRaw("REPLACE(dui, '-', '') = ?", [$duiRaw]);
+            })
+            ->first();
+
+        if ($empleadoExistente) {
+            $nombreCompleto = trim($empleadoExistente->nombres . ' ' . $empleadoExistente->apellidos);
+            $codigo = $empleadoExistente->codigo ? " (Código: {$empleadoExistente->codigo})" : "";
+            $estado = $empleadoExistente->trashed() ? " [Inactivo/Eliminado]" : "";
+            return "El DUI {$duiTrim} ya pertenece al empleado {$nombreCompleto}{$codigo}{$estado}.";
+        }
+
+        return null;
+    }
+
     public function store(Request $request)
     {
+        if ($request->has('dui') && $request->dui !== null) {
+            $errorDui = $this->verificarDuiDuplicado($request->dui, $request->id);
+            if ($errorDui) {
+                return response()->json([
+                    'error' => $errorDui,
+                    'message' => $errorDui,
+                    'errors' => ['dui' => [$errorDui]]
+                ], 422);
+            }
+        }
+
         $request->validate(array_merge([
             'nombres' => 'required|string|max:100',
             'apellidos' => 'required|string|max:100',
@@ -262,7 +308,19 @@ class EmpleadosController extends Controller
             $duiActual = trim($empleado->dui ?? '');
             $duiNuevo = trim($request->dui);
 
-            if ($duiNuevo !== $duiActual) {
+            $duiActualRaw = str_replace('-', '', $duiActual);
+            $duiNuevoRaw = str_replace('-', '', $duiNuevo);
+
+            if ($duiNuevoRaw !== $duiActualRaw) {
+                $errorDui = $this->verificarDuiDuplicado($duiNuevo, $id);
+                if ($errorDui) {
+                    return response()->json([
+                        'error' => $errorDui,
+                        'message' => $errorDui,
+                        'errors' => ['dui' => [$errorDui]]
+                    ], 422);
+                }
+
                 // Si el DUI cambió, validar unicidad
                 $reglasDui = [
                     'sometimes',
@@ -280,6 +338,7 @@ class EmpleadosController extends Controller
 
         // Validación con campos opcionales (sometimes)
         $reglasValidacion = array_merge([
+            'codigo' => 'sometimes|string|max:50',
             'nombres' => 'sometimes|string|max:100',
             'apellidos' => 'sometimes|string|max:100',
             'dui_homologado' => 'nullable|boolean',
@@ -330,6 +389,7 @@ class EmpleadosController extends Controller
             $datosActualizar = [];
 
             $camposPermitidos = [
+                'codigo',
                 'nombres',
                 'apellidos',
                 'dui',

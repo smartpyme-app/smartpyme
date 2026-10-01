@@ -3,11 +3,16 @@
 namespace App\Models\Restaurante;
 
 use App\Models\Admin\Empresa;
+use App\Models\Concerns\AuditableModel;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Model;
 
-class SesionMesa extends Model
+class SesionMesa extends AuditableModel
 {
+    protected static function auditModule(): string
+    {
+        return 'restaurante';
+    }
+
     protected $table = 'restaurante_sesiones_mesa';
 
     protected $fillable = [
