@@ -12,6 +12,9 @@ use Illuminate\Validation\ValidationException;
 
 class PacienteService
 {
+    public function __construct(private ResponsableService $responsables)
+    {
+    }
     public function crear(int $idEmpresa, ?int $idUsuario, array $datos): Paciente
     {
         return DB::transaction(function () use ($idEmpresa, $idUsuario, $datos) {
@@ -45,6 +48,7 @@ class PacienteService
             'id' => $paciente->id,
             'tipo' => $paciente->tipo,
             'activo' => (bool) $paciente->activo,
+            'alta_cerrada' => (bool) $paciente->alta_cerrada,
             'nombres' => $paciente->nombres,
             'apellidos' => $paciente->apellidos,
             'nombre' => $paciente->nombre,
@@ -81,7 +85,7 @@ class PacienteService
                 'fecha_apertura' => $paciente->expediente->fecha_apertura?->format('Y-m-d'),
                 'estado' => $paciente->expediente->estado,
             ] : null,
-            'responsables' => [],
+            'responsables' => $this->responsables->deFicha($paciente),
         ];
     }
 

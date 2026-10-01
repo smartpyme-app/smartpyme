@@ -70,6 +70,7 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
     public tieneBonosHabilitada: boolean = false;
     public tieneGiftCardsHabilitada: boolean = false;
     public tieneClinicaPacientes = false;
+    public tieneClinicaProfesionales = false;
     public clinicaIsCollapsed = true;
     public tieneCreditosHabilitada: boolean = false;
 
@@ -272,6 +273,7 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
         this.verificarBonosHabilitada();
         this.verificarGiftCardsHabilitada();
         this.verificarClinicaPacientes();
+        this.verificarClinicaProfesionales();
         this.verificarCreditosHabilitada();
         this.verificarPrestamosHabilitada();
         this.verificarModuloRestauranteHabilitado();
@@ -286,6 +288,7 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
                 this.verificarBonosHabilitada();
                 this.verificarGiftCardsHabilitada();
                 this.verificarClinicaPacientes();
+                this.verificarClinicaProfesionales();
                 this.verificarCreditosHabilitada();
                 this.verificarPrestamosHabilitada();
                 this.verificarModuloRestauranteHabilitado();
@@ -304,6 +307,7 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
                     this.verificarBonosHabilitada();
                     this.verificarGiftCardsHabilitada();
                     this.verificarClinicaPacientes();
+                    this.verificarClinicaProfesionales();
                     this.verificarCreditosHabilitada();
                     this.verificarPrestamosHabilitada();
                     this.verificarModuloRestauranteHabilitado();
@@ -647,6 +651,17 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
             },
             error: () => {
                 this.tieneClinicaPacientes = false;
+            },
+        });
+    }
+
+    private verificarClinicaProfesionales() {
+        this.funcionalidadesService.verificarAcceso('clinica-profesionales').subscribe({
+            next: (tieneAcceso: boolean) => {
+                this.tieneClinicaProfesionales = tieneAcceso;
+            },
+            error: () => {
+                this.tieneClinicaProfesionales = false;
             },
         });
     }

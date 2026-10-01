@@ -29,4 +29,20 @@ class EdadPaciente
 
         return $diff->d === 1 ? '1 día' : $diff->d.' días';
     }
+
+    public static function anios(?string $fecha, ?\DateTimeInterface $hoy = null): ?int
+    {
+        if ($fecha === null || trim($fecha) === '') {
+            return null;
+        }
+
+        $nacimiento = (new \DateTimeImmutable($fecha))->setTime(0, 0);
+        $hoy = $hoy ? \DateTimeImmutable::createFromInterface($hoy) : new \DateTimeImmutable('today');
+        $hoy = $hoy->setTime(0, 0);
+        if ($nacimiento > $hoy) {
+            return null;
+        }
+
+        return $nacimiento->diff($hoy)->y;
+    }
 }

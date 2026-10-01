@@ -25,6 +25,26 @@ class ClinicaPacientesRoutesTest extends TestCase
             'verificar.funcionalidad:clinica-pacientes',
             'permission:clinica.pacientes.desactivar',
         ]);
+        $this->assertRoute('api/clinica/pacientes/{id}/responsables', 'POST', [
+            'verificar.funcionalidad:clinica-pacientes',
+            'permission:clinica.pacientes.crear|clinica.pacientes.editar',
+        ]);
+        $this->assertRoute('api/clinica/pacientes/{id}/alta', 'PATCH', [
+            'verificar.funcionalidad:clinica-pacientes',
+            'permission:clinica.pacientes.editar',
+        ]);
+        $this->assertRoute('api/clinica/clientes/{idCliente}/pacientes', 'GET', [
+            'verificar.funcionalidad:clinica-pacientes',
+            'permission:clinica.pacientes.ver|ventas.clientes.ver',
+        ]);
+        $this->assertRoute('api/clinica/profesionales', 'GET', [
+            'verificar.funcionalidad:clinica-profesionales',
+            'permission:clinica.profesionales.ver|clinica.pacientes.ver',
+        ]);
+        $this->assertRoute('api/clinica/profesionales', 'POST', [
+            'verificar.funcionalidad:clinica-profesionales',
+            'permission:clinica.profesionales.editar',
+        ]);
     }
 
     public function test_no_hay_ruta_para_borrar_pacientes(): void

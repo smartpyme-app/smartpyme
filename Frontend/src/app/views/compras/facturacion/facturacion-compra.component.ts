@@ -47,7 +47,7 @@ import {
   descuentoDesdeLineaDte,
   totalLineaDesdeDte,
 } from '@services/compras/compra-detalle-desde-dte.util';
-import { esDocumentoCompraSinIvaFiscal } from '../../../constants/documento.constants';
+import { esDocumentoCompraSinIvaFiscal, FACTURA_REMISION } from '../../../constants/documento.constants';
 import { debeDispararAtajoTcla } from '@utils/atajos-teclado.util';
 import { aplicarIvaCompra, snapshotPorcentajeImpuestoProducto } from '@utils/impuestos-compra.util';
 
@@ -703,12 +703,36 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
         }
     }
 
+    /** Tipo elegido antes de pasar a Factura de remisión, para restaurarlo al quitar consigna. */
+    private tipoDocumentoAntesDeConsigna: string | null = null;
+
     public setConsigna(){
         if(this.compra.consigna){
             this.compra.estado = 'Consigna';
+            this.tipoDocumentoAntesDeConsigna = this.compra.tipo_documento;
+            const documento = (this.documentos || []).find((x: any) => x.nombre === FACTURA_REMISION);
+            if (!documento) {
+                this.alertService.warning(
+                    'Consigna',
+                    'No hay un documento "Factura de remisión" configurado para esta sucursal.'
+                );
+            } else {
+                this.compra.tipo_documento = FACTURA_REMISION;
+                this.selectTipoDocumento();
+            }
         }else{
             this.setCredito();
+            if (
+                this.compra.tipo_documento === FACTURA_REMISION
+                && this.tipoDocumentoAntesDeConsigna
+                && this.tipoDocumentoAntesDeConsigna !== FACTURA_REMISION
+            ) {
+                this.compra.tipo_documento = this.tipoDocumentoAntesDeConsigna;
+                this.selectTipoDocumento();
+            }
+            this.tipoDocumentoAntesDeConsigna = null;
         }
+        this.cdr.markForCheck();
     }
 
     /** Alinea switches UI con `estado` al cargar (credito/consigna no vienen del API). */

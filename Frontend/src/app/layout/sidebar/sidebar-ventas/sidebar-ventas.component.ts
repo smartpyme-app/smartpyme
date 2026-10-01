@@ -33,6 +33,7 @@ export class SidebarVentasComponent implements OnInit {
     public isAbacoSite: boolean = false;
     public tieneModuloRestaurante = false;
     public tieneClinicaPacientes = false;
+    public tieneClinicaProfesionales = false;
     public clinicaIsCollapsed = true;
     public mostrarMenuRestaurante = false;
     public mostrarMenuPedidos = false;
@@ -98,12 +99,14 @@ export class SidebarVentasComponent implements OnInit {
         this.loadModules();
         this.verificarModuloRestauranteHabilitado();
         this.verificarClinicaPacientes();
+        this.verificarClinicaProfesionales();
 
         this.funcionalidadesService.onCambios()
             .pipe(this.untilDestroyed())
             .subscribe(() => {
                 this.verificarModuloRestauranteHabilitado();
                 this.verificarClinicaPacientes();
+                this.verificarClinicaProfesionales();
             });
 
         this.router.events
@@ -123,6 +126,17 @@ export class SidebarVentasComponent implements OnInit {
             },
             error: () => {
                 this.tieneClinicaPacientes = false;
+            },
+        });
+    }
+
+    private verificarClinicaProfesionales(): void {
+        this.funcionalidadesService.verificarAcceso('clinica-profesionales').subscribe({
+            next: (tieneAcceso) => {
+                this.tieneClinicaProfesionales = tieneAcceso;
+            },
+            error: () => {
+                this.tieneClinicaProfesionales = false;
             },
         });
     }

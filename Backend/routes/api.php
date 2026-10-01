@@ -70,6 +70,7 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	require base_path('routes/modulos/bonos.php');
 	require base_path('routes/modulos/gift-cards.php');
 	require base_path('routes/modulos/clinica/pacientes.php');
+	require base_path('routes/modulos/clinica/profesionales.php');
 	require base_path('routes/modulos/incentivos.php');
 
 	// Restaurante

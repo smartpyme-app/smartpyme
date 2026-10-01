@@ -18,6 +18,7 @@ class Paciente extends AuditableModel
         'id_usuario',
         'tipo',
         'activo',
+        'alta_cerrada',
         'nombres',
         'apellidos',
         'nombre',
@@ -39,6 +40,7 @@ class Paciente extends AuditableModel
 
     protected $casts = [
         'activo' => 'boolean',
+        'alta_cerrada' => 'boolean',
         'fecha_nacimiento' => 'date',
         'esterilizado' => 'boolean',
         'peso' => 'decimal:2',

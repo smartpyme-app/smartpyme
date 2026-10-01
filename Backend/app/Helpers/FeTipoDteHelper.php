@@ -17,6 +17,7 @@ class FeTipoDteHelper
         'crédito fiscal' => FEConstants::TIPO_DTE_COMPROBANTE_DE_CREDITO_FISCAL,
         'nota de crédito' => FEConstants::TIPO_DTE_NOTA_DE_CREDITO,
         'nota de débito' => FEConstants::TIPO_DTE_NOTA_DE_DEBITO,
+        'factura de remisión' => FEConstants::TIPO_DTE_NOTA_DE_REMISION,
         'factura de exportación' => FEConstants::TIPO_DTE_FACTURAS_DE_EXPORTACION,
         'sujeto excluido' => FEConstants::TIPO_DTE_FACTURA_DE_SUJETO_EXCLUIDO,
     ];

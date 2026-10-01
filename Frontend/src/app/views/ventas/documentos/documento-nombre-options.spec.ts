@@ -29,6 +29,7 @@ describe('documentoNombreOpciones', () => {
 
   it('devuelve default SV para El Salvador', () => {
     expect(documentoNombreOpciones({ pais: 'El Salvador' })).toEqual(DOCUMENTO_NOMBRE_OPCIONES_DEFAULT);
+    expect(DOCUMENTO_NOMBRE_OPCIONES_DEFAULT.map((o) => o.value)).toContain('Factura de remisión');
   });
 
   it('HN no incluye Crédito fiscal ni Sujeto excluido', () => {

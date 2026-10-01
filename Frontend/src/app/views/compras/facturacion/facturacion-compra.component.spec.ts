@@ -51,6 +51,57 @@ describe('FacturacionCompraComponent lotes SPT-443', () => {
     expect(falta).toBe(false);
   });
 
+  it('al marcar consigna cambia el documento a Factura de remisión', () => {
+    const component = createComponent();
+    component.alertService.warning = jasmine.createSpy('warning');
+    component.cdr = { markForCheck() {} };
+    component.selectTipoDocumento = jasmine.createSpy('selectTipoDocumento');
+    component.setCredito = jasmine.createSpy('setCredito');
+    component.documentos = [
+      { nombre: 'Factura', correlativo: 10 },
+      { nombre: 'Factura de remisión', correlativo: 3 },
+    ];
+    component.compra = { consigna: true, tipo_documento: 'Crédito fiscal', estado: 'Pendiente' };
+
+    component.setConsigna();
+
+    expect(component.compra.estado).toBe('Consigna');
+    expect(component.compra.tipo_documento).toBe('Factura de remisión');
+    expect(component.selectTipoDocumento).toHaveBeenCalled();
+  });
+
+  it('al quitar consigna restaura el documento anterior', () => {
+    const component = createComponent();
+    component.alertService.warning = jasmine.createSpy('warning');
+    component.cdr = { markForCheck() {} };
+    component.selectTipoDocumento = jasmine.createSpy('selectTipoDocumento');
+    component.setCredito = jasmine.createSpy('setCredito');
+    component.documentos = [{ nombre: 'Factura de remisión', correlativo: 3 }];
+    component.compra = { consigna: true, tipo_documento: 'Factura', estado: 'Pendiente' };
+    component.setConsigna();
+
+    component.compra.consigna = false;
+    component.setConsigna();
+
+    expect(component.setCredito).toHaveBeenCalled();
+    expect(component.compra.tipo_documento).toBe('Factura');
+  });
+
+  it('avisa si la sucursal no tiene Factura de remisión', () => {
+    const component = createComponent();
+    component.alertService.warning = jasmine.createSpy('warning');
+    component.cdr = { markForCheck() {} };
+    component.selectTipoDocumento = jasmine.createSpy('selectTipoDocumento');
+    component.documentos = [{ nombre: 'Factura', correlativo: 10 }];
+    component.compra = { consigna: true, tipo_documento: 'Factura', estado: 'Pendiente' };
+
+    component.setConsigna();
+
+    expect(component.compra.tipo_documento).toBe('Factura');
+    expect(component.alertService.warning).toHaveBeenCalled();
+    expect(component.selectTipoDocumento).not.toHaveBeenCalled();
+  });
+
   it('bloquea guardar si el producto usa lotes y no hay asignación', () => {
     const component = createComponent();
     const detalle = {

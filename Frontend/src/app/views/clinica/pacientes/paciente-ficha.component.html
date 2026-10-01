@@ -8,11 +8,21 @@
             <span class="badge py-2 ms-2" style="font-size: 0.8rem;" [ngClass]="{'bg-success': paciente.activo, 'bg-danger': !paciente.activo}">
                 {{ paciente.activo ? 'Activo' : 'Inactivo' }}
             </span>
+            <span class="badge py-2 ms-2" style="font-size: 0.8rem;" [ngClass]="{'bg-primary': paciente.alta_cerrada, 'bg-secondary': !paciente.alta_cerrada}">
+                {{ paciente.alta_cerrada ? 'Alta cerrada' : 'Alta abierta' }}
+            </span>
         }
     </div>
-    <button class="btn btn-default" routerLink="/clinica/pacientes">
-        <i class="fa fa-arrow-left"></i> Regresar
-    </button>
+    <div class="d-flex align-items-center gap-2">
+        @if (paciente && apiService.hasPermission('clinica.pacientes.editar')) {
+            <button class="btn btn-default" type="button" (click)="cerrarAlta(!paciente.alta_cerrada)">
+                {{ paciente.alta_cerrada ? 'Reabrir alta' : 'Cerrar alta' }}
+            </button>
+        }
+        <button class="btn btn-default" routerLink="/clinica/pacientes">
+            <i class="fa fa-arrow-left"></i> Regresar
+        </button>
+    </div>
 </section>
 
 @if (cargando) {
@@ -110,14 +120,73 @@
                             <label class="fw-medium">Información relevante:</label>
                             <p>{{ paciente.informacion_relevante || '—' }}</p>
                         </div>
-                        <h6 class="col-12 pb-2 my-3">Responsables</h6>
-                        <div class="form-group col-12">
-                            @if (paciente.responsables?.length) {
-                                @for (responsable of paciente.responsables; track responsable.id) {
-                                    <p class="mb-1">{{ responsable.nombre }}</p>
+                        <div class="col-12 d-flex justify-content-between align-items-center pb-2 my-3">
+                            <h6 class="mb-0">Responsables</h6>
+                            @if (apiService.hasPermission('clinica.pacientes.editar')) {
+                                <button type="button" class="btn btn-default" (click)="abrirResponsable(mresponsable)">
+                                    <i class="fa fa-plus"></i> Añadir responsable
+                                </button>
+                            }
+                        </div>
+                        <div class="col-12">
+                            <div class="table-responsive">
+                                <table class="table table-borderless table-hover mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Nombre</th>
+                                            <th>Rol</th>
+                                            <th>Desde</th>
+                                            <th class="text-center"><i class="fa fa-cog"></i></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @if (!responsablesVigentes.length) {
+                                            <tr>
+                                                <td colspan="4" class="text-center">
+                                                    <span class="badge bg-primary">Sin responsables registrados</span>
+                                                </td>
+                                            </tr>
+                                        }
+                                        @for (responsable of responsablesVigentes; track responsable.id) {
+                                            <tr>
+                                                <td>
+                                                    {{ responsable.nombre }}
+                                                    @if (responsable.es_principal) {
+                                                        <span class="badge bg-primary ms-1">Principal</span>
+                                                    }
+                                                    @if (responsable.es_el_paciente) {
+                                                        <span class="badge bg-info ms-1">El paciente</span>
+                                                    }
+                                                </td>
+                                                <td>{{ etiquetaRol(responsable.rol) }}</td>
+                                                <td>{{ responsable.vigente_desde }}</td>
+                                                <td class="text-center">
+                                                    @if (apiService.hasPermission('clinica.pacientes.editar')) {
+                                                        <span class="btn" [popover]="accionesResponsable" [outsideClick]="true" tooltip="Acciones">
+                                                            <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                                                        </span>
+                                                        <ng-template #accionesResponsable>
+                                                            <div class="list-group border-0">
+                                                                <a (click)="abrirResponsable(mresponsable, responsable)" class="list-group-item list-group-item-action border-0 click">
+                                                                    <i class="fa fa-fw fa-edit"></i> Editar
+                                                                </a>
+                                                                <a (click)="desactivarResponsable(responsable)" class="list-group-item list-group-item-action border-0 click">
+                                                                    <i class="fa fa-ban"></i> Deshabilitar
+                                                                </a>
+                                                            </div>
+                                                        </ng-template>
+                                                    }
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                            @if (responsablesAnteriores.length) {
+                                <h6 class="pb-2 my-3">Anteriores</h6>
+                                @for (responsable of responsablesAnteriores; track responsable.id) {
+                                    <p class="mb-1">{{ responsable.nombre }} · {{ etiquetaRol(responsable.rol) }} · {{ responsable.vigente_desde }} a {{ responsable.vigente_hasta }}</p>
                                 }
-                            } @else {
-                                <p class="mb-0">Sin responsables registrados.</p>
                             }
                         </div>
                     </div>
@@ -126,3 +195,90 @@
         </div>
     </div>
 }
+
+<ng-template #mresponsable>
+    <div class="modal-header justify-content-between">
+        <h3 class="modal-title">{{ editandoId ? 'Editar responsable' : 'Nuevo responsable' }}</h3>
+        <button type="button" class="btn btn-light text-danger" (click)="cerrarModal()">Cancelar <i class="fa fa-close"></i></button>
+    </div>
+    <div class="modal-body p-3">
+        <form (ngSubmit)="guardarResponsable()" autocomplete="off">
+            @if (editandoId) {
+                <div class="form-group">
+                    <label>Nombre</label>
+                    <p>{{ form.nombre }}</p>
+                </div>
+            } @else {
+                <div class="form-group">
+                    <label for="modo">Vínculo</label>
+                    <select id="modo" class="form-select" name="modo" [(ngModel)]="form.modo">
+                        <option value="cliente">Cliente existente</option>
+                        <option value="persona">Persona que aún no es cliente</option>
+                        @if (paciente?.tipo === 'HUMANO') {
+                            <option value="paciente">El mismo paciente</option>
+                        }
+                    </select>
+                </div>
+                @if (form.modo === 'cliente') {
+                    <div class="form-group mt-3">
+                        <label for="busqueda">Buscar cliente</label>
+                        <div class="input-group">
+                            <input id="busqueda" class="form-control" placeholder="Escribe aquí" name="busqueda" [(ngModel)]="form.busqueda">
+                            <button class="btn btn-default" type="button" (click)="buscarClientes()">Buscar</button>
+                        </div>
+                    </div>
+                    <div class="form-group mt-3">
+                        <label for="id_cliente">Cliente</label>
+                        <select id="id_cliente" class="form-select" name="id_cliente" [(ngModel)]="form.id_cliente">
+                            <option value="">Seleccione aquí</option>
+                            @for (cliente of clientesEncontrados; track cliente.id) {
+                                <option [ngValue]="cliente.id">{{ nombreCliente(cliente) }}</option>
+                            }
+                        </select>
+                    </div>
+                }
+                @if (form.modo === 'persona') {
+                    <div class="form-group mt-3">
+                        <label for="nombreResponsable">Nombre</label>
+                        <input id="nombreResponsable" class="form-control" placeholder="Escribe aquí" name="nombre" [(ngModel)]="form.nombre">
+                    </div>
+                    <div class="form-group mt-3">
+                        <label for="documentoResponsable">Documento</label>
+                        <input id="documentoResponsable" class="form-control" placeholder="Escribe aquí" name="documento" [(ngModel)]="form.documento">
+                    </div>
+                    <div class="form-group mt-3">
+                        <label for="telefonoResponsable">Teléfono</label>
+                        <input id="telefonoResponsable" class="form-control" placeholder="Escribe aquí" name="telefono" [(ngModel)]="form.telefono">
+                    </div>
+                    <div class="form-group mt-3">
+                        <label for="correoResponsable">Correo</label>
+                        <input id="correoResponsable" class="form-control" placeholder="Escribe aquí" name="correo" [(ngModel)]="form.correo">
+                    </div>
+                }
+            }
+            <div class="form-group mt-3">
+                <label for="rol">Rol</label>
+                <select id="rol" class="form-select" name="rol" [(ngModel)]="form.rol">
+                    <option value="principal">Principal</option>
+                    <option value="secundario">Secundario</option>
+                    <option value="tutor">Tutor</option>
+                    <option value="contacto_emergencia">Contacto de emergencia</option>
+                </select>
+            </div>
+            @if (form.rol !== 'principal') {
+                <div class="form-group mt-3">
+                    <div class="form-check">
+                        <input id="es_principal" class="form-check-input" type="checkbox" name="es_principal" [(ngModel)]="form.es_principal">
+                        <label class="form-check-label" for="es_principal">Es el principal</label>
+                    </div>
+                </div>
+            }
+            <div class="form-group mt-3">
+                <button type="submit" class="btn btn-primary float-end">
+                    Guardar responsable <img appLazyImage="assets/icons/arrow-right-stroke.png" class="icon2 ms-2">
+                </button>
+            </div>
+        </form>
+    </div>
+</ng-template>
+

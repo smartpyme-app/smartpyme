@@ -18,6 +18,11 @@ export class PacienteFormComponent implements OnInit {
   nuevaEspecie = '';
   nuevaRaza = '';
   modalRef!: BsModalRef;
+  responsables: any[] = [];
+  clientesEncontrados: any[] = [];
+  editandoResponsable: number | null = null;
+  responsable: any = this.responsableVacio();
+  private siguienteLocal = -1;
   paciente: any = this.vacio();
 
   private destroyRef = inject(DestroyRef);
@@ -56,6 +61,23 @@ export class PacienteFormComponent implements OnInit {
   cambiarTipo(): void {
     this.paciente.sexo = '';
     this.paciente.id_raza = '';
+    if (this.paciente.tipo === 'ANIMAL') {
+      this.responsables = this.responsables.filter((item) => !item.local || !item.es_el_paciente);
+    }
+  }
+
+  get responsablesVigentes(): any[] {
+    return this.responsables.filter((item) => item.vigente !== false);
+  }
+
+  etiquetaRol(rol: string): string {
+    const etiquetas: Record<string, string> = {
+      principal: 'Principal',
+      secundario: 'Secundario',
+      tutor: 'Tutor',
+      contacto_emergencia: 'Contacto de emergencia',
+    };
+    return etiquetas[rol] ?? rol;
   }
 
   guardar(): void {
@@ -67,8 +89,13 @@ export class PacienteFormComponent implements OnInit {
 
     solicitud.pipe(this.untilDestroyed()).subscribe({
       next: (respuesta) => {
-        this.guardando = false;
         const id = respuesta?.data?.id ?? this.id;
+        const pendientes = this.responsables.filter((item) => item.local && item.vigente !== false);
+        if (!this.id && id && pendientes.length) {
+          this.vincularPendientes(id, pendientes);
+          return;
+        }
+        this.guardando = false;
         this.alertService.success('Listo', 'Paciente guardado. No se creó un cliente.');
         this.router.navigate(['/clinica/pacientes', id]);
       },
@@ -130,6 +157,196 @@ export class PacienteFormComponent implements OnInit {
       });
   }
 
+  abrirResponsable(template: TemplateRef<any>, vinculo?: any): void {
+    this.editandoResponsable = vinculo?.id ?? null;
+    this.clientesEncontrados = [];
+    this.responsable = vinculo
+      ? { ...this.responsableVacio(), rol: vinculo.rol, es_principal: vinculo.es_principal, nombre: vinculo.nombre }
+      : this.responsableVacio();
+    this.alertService.modal = true;
+    this.modalRef = this.modalService.show(template, { class: 'modal-md', backdrop: 'static' });
+  }
+
+  cerrarModal(): void {
+    this.modalRef?.hide();
+    this.alertService.modal = false;
+  }
+
+  buscarClientes(): void {
+    const q = (this.responsable.busqueda || '').trim();
+    if (q.length < 2) {
+      return;
+    }
+    this.apiService.getAll('clientes/search', { q }).pipe(this.untilDestroyed()).subscribe({
+      next: (lista) => {
+        this.clientesEncontrados = Array.isArray(lista) ? lista : [];
+      },
+      error: (error) => this.alertService.error(error),
+    });
+  }
+
+  guardarResponsable(): void {
+    const cuerpo = this.cuerpoResponsable();
+    if (!cuerpo) {
+      return;
+    }
+    if (!this.id) {
+      this.guardarResponsableLocal(cuerpo);
+      return;
+    }
+    const solicitud = this.editandoResponsable
+      ? this.apiService.update('clinica/pacientes/' + this.id + '/responsables', this.editandoResponsable, cuerpo)
+      : this.apiService.store('clinica/pacientes/' + this.id + '/responsables', cuerpo);
+    solicitud.pipe(this.untilDestroyed()).subscribe({
+      next: (respuesta) => {
+        this.responsables = respuesta?.data?.responsables ?? this.responsables;
+        this.cerrarModal();
+        this.alertService.success('Listo', 'Responsable guardado. El paciente no se convirtió en cliente.');
+      },
+      error: (error) => this.alertService.error(error),
+    });
+  }
+
+  desactivarResponsable(vinculo: any): void {
+    if (vinculo.local || !this.id) {
+      this.responsables = this.responsables.filter((item) => item.id !== vinculo.id);
+      return;
+    }
+    this.apiService.patch('clinica/pacientes', this.id + '/responsables/' + vinculo.id, {})
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (respuesta) => {
+          this.responsables = respuesta?.data?.responsables ?? this.responsables;
+          this.alertService.success('Listo', 'Vínculo desactivado. El paciente y el cliente se conservan.');
+        },
+        error: (error) => this.alertService.error(error),
+      });
+  }
+
+  nombreCliente(cliente: any): string {
+    return cliente?.tipo === 'Empresa'
+      ? (cliente.nombre_empresa || cliente.nombre)
+      : `${cliente?.nombre || ''} ${cliente?.apellido || ''}`.trim();
+  }
+
+  private cuerpoResponsable(): any | null {
+    const cuerpo: any = {
+      rol: this.responsable.rol,
+      es_principal: this.responsable.rol === 'principal' || this.responsable.es_principal,
+    };
+    if (this.editandoResponsable) {
+      return cuerpo;
+    }
+    if (this.responsable.modo === 'paciente') {
+      if (this.paciente.tipo !== 'HUMANO') {
+        return null;
+      }
+      cuerpo.es_el_paciente = true;
+      return cuerpo;
+    }
+    if (this.responsable.modo === 'cliente') {
+      if (!this.responsable.id_cliente) {
+        return null;
+      }
+      cuerpo.id_cliente = this.responsable.id_cliente;
+      return cuerpo;
+    }
+    if (!String(this.responsable.nombre || '').trim()) {
+      return null;
+    }
+    cuerpo.nombre = this.responsable.nombre;
+    cuerpo.documento = this.responsable.documento;
+    cuerpo.telefono = this.responsable.telefono;
+    cuerpo.correo = this.responsable.correo;
+    return cuerpo;
+  }
+
+  private guardarResponsableLocal(cuerpo: any): void {
+    const esPrincipal = !!cuerpo.es_principal;
+    if (esPrincipal) {
+      this.responsables = this.responsables.map((item) => {
+        if (item.id === this.editandoResponsable || !item.es_principal) {
+          return item;
+        }
+        const rol = item.rol === 'principal' ? 'secundario' : item.rol;
+        return {
+          ...item,
+          es_principal: false,
+          rol,
+          cuerpo: item.cuerpo ? { ...item.cuerpo, es_principal: false, rol } : item.cuerpo,
+        };
+      });
+    }
+    if (this.editandoResponsable) {
+      this.responsables = this.responsables.map((item) => item.id === this.editandoResponsable
+        ? {
+            ...item,
+            rol: cuerpo.rol,
+            es_principal: esPrincipal,
+            cuerpo: { ...(item.cuerpo ?? {}), rol: cuerpo.rol, es_principal: esPrincipal },
+          }
+        : item);
+    } else {
+      this.responsables = [...this.responsables, {
+        id: this.siguienteLocal--,
+        local: true,
+        vigente: true,
+        nombre: this.nombrePendiente(cuerpo),
+        rol: cuerpo.rol,
+        es_principal: esPrincipal,
+        es_el_paciente: !!cuerpo.es_el_paciente,
+        cuerpo,
+      }];
+    }
+    this.cerrarModal();
+  }
+
+  private nombrePendiente(cuerpo: any): string {
+    if (cuerpo.es_el_paciente) {
+      return this.paciente.tipo === 'HUMANO'
+        ? `${this.paciente.nombres || ''} ${this.paciente.apellidos || ''}`.trim() || 'El paciente'
+        : (this.paciente.nombre || 'El paciente');
+    }
+    if (cuerpo.id_cliente) {
+      const cliente = this.clientesEncontrados.find((item) => String(item.id) === String(cuerpo.id_cliente));
+      return cliente ? this.nombreCliente(cliente) : 'Cliente';
+    }
+    return cuerpo.nombre;
+  }
+
+  private vincularPendientes(id: number, lista: any[], indice = 0): void {
+    if (indice >= lista.length) {
+      this.guardando = false;
+      this.alertService.success('Listo', 'Paciente guardado. No se creó un cliente.');
+      this.router.navigate(['/clinica/pacientes', id]);
+      return;
+    }
+    this.apiService.store('clinica/pacientes/' + id + '/responsables', lista[indice].cuerpo)
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: () => this.vincularPendientes(id, lista, indice + 1),
+        error: (error) => {
+          this.guardando = false;
+          this.alertService.error(error);
+          this.router.navigate(['/clinica/pacientes', id, 'editar']);
+        },
+      });
+  }
+
+  private responsableVacio(): any {
+    return {
+      modo: 'cliente',
+      id_cliente: '',
+      nombre: '',
+      documento: '',
+      telefono: '',
+      correo: '',
+      rol: 'principal',
+      es_principal: true,
+      busqueda: '',
+    };
+  }
+
   private idDesdeRuta(): number | null {
     const valor = this.route.snapshot.paramMap.get('id');
     return valor ? Number(valor) : null;
@@ -170,6 +387,7 @@ export class PacienteFormComponent implements OnInit {
           esterilizado: data.esterilizado === null || data.esterilizado === undefined ? '' : (data.esterilizado ? '1' : '0'),
           identificadores: data.identificadores ?? '',
         };
+        this.responsables = data.responsables ?? [];
       },
       error: () => this.alertService.error('No se pudo cargar el paciente.'),
     });

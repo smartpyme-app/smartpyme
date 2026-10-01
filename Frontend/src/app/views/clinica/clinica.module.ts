@@ -11,9 +11,10 @@ import { ClinicaRoutingModule } from './clinica-routing.module';
 import { PacientesComponent } from './pacientes/pacientes.component';
 import { PacienteFormComponent } from './pacientes/paciente-form.component';
 import { PacienteFichaComponent } from './pacientes/paciente-ficha.component';
+import { ProfesionalesComponent } from './profesionales/profesionales.component';
 
 @NgModule({
-  declarations: [PacientesComponent, PacienteFormComponent, PacienteFichaComponent],
+  declarations: [PacientesComponent, PacienteFormComponent, PacienteFichaComponent, ProfesionalesComponent],
   imports: [
     CommonModule,
     FormsModule,

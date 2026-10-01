@@ -23,14 +23,19 @@
     </div>
     <div style="min-height: 45vh;">
         <ul class="list-unstyled ps-0">
-            @if (tieneClinicaPacientes && apiService.hasPermission('clinica.pacientes.ver')) {
+            @if ((tieneClinicaPacientes && apiService.hasPermission('clinica.pacientes.ver')) || (tieneClinicaProfesionales && apiService.hasPermission('clinica.profesionales.ver'))) {
                 <li class="mb-1">
                     <button (click)="toggleClinica()" tooltip="Clínica" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!clinicaIsCollapsed" aria-controls="clinicaVentas">
                         <img src="/assets/icons/users.png" class="icon me-2">Clínica
                     </button>
                     <div [collapse]="clinicaIsCollapsed" [isAnimated]="true">
                         <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                            <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/clinica/pacientes']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/user.png" class="icon me-2">Pacientes</a></li>
+                            @if (tieneClinicaPacientes && apiService.hasPermission('clinica.pacientes.ver')) {
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/clinica/pacientes']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/user.png" class="icon me-2">Pacientes</a></li>
+                            }
+                            @if (tieneClinicaProfesionales && apiService.hasPermission('clinica.profesionales.ver')) {
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/clinica/profesionales']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/briefcase.png" class="icon me-2">Profesionales</a></li>
+                            }
                         </ul>
                     </div>
                 </li>

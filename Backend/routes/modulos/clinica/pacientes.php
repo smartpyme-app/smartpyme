@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\Clinica\PacientesController;
+use App\Http\Controllers\Api\Clinica\ResponsablesController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['verificar.funcionalidad:clinica-pacientes'])->group(function () {
@@ -21,4 +22,15 @@ Route::middleware(['verificar.funcionalidad:clinica-pacientes'])->group(function
         ->middleware('permission:clinica.pacientes.editar');
     Route::patch('clinica/pacientes/{id}/estado', [PacientesController::class, 'estado'])
         ->middleware('permission:clinica.pacientes.desactivar');
+
+    Route::post('clinica/pacientes/{id}/responsables', [ResponsablesController::class, 'store'])
+        ->middleware('permission:clinica.pacientes.crear|clinica.pacientes.editar');
+    Route::put('clinica/pacientes/{id}/responsables/{idVinculo}', [ResponsablesController::class, 'update'])
+        ->middleware('permission:clinica.pacientes.editar');
+    Route::patch('clinica/pacientes/{id}/responsables/{idVinculo}', [ResponsablesController::class, 'desactivar'])
+        ->middleware('permission:clinica.pacientes.editar');
+    Route::patch('clinica/pacientes/{id}/alta', [ResponsablesController::class, 'cerrarAlta'])
+        ->middleware('permission:clinica.pacientes.editar');
+    Route::get('clinica/clientes/{idCliente}/pacientes', [ResponsablesController::class, 'deCliente'])
+        ->middleware('permission:clinica.pacientes.ver|ventas.clientes.ver');
 });
