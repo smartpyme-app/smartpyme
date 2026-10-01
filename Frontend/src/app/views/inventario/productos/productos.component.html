@@ -43,7 +43,7 @@
                 <app-importar-excel (loadAll)="loadAll()" [nombre]="'productos'"></app-importar-excel>
                 <button *ngIf="puedeActualizacionMasiva()" tooltip="Actualizar productos existentes desde Excel"
                     (click)="openActualizacionMasiva(mactualizacion)" class="btn btn-default">
-                    <i class="fa fa-refresh text-primary" aria-hidden="true"></i>
+                    <i class="fa fa-refresh" aria-hidden="true"></i>
                 </button>
                 <button *ngIf="apiService.isInventarioReporteAnalisisVentasMensual()"
                     [disabled]="downloadingReporteAnalisis" tooltip="Descargar reporte inventario vs ventas (Excel)"
