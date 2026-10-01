@@ -30,6 +30,17 @@ export class EmpleadosComponent extends BaseCrudComponent<any> implements OnInit
   public empleado: any = {};
   public departamentos: any = [];
   public cargos: any = [];
+  public override filtros: any = {
+    estado: '',
+    id_departamento: '',
+    id_cargo: '',
+    tipo_contrato: '',
+    tipo_jornada: '',
+    buscador: '',
+    orden: 'nombres',
+    direccion: 'asc',
+    paginate: 10,
+  };
   public datosImportacion = {
     archivo: null as File | null,
   };
@@ -64,8 +75,7 @@ export class EmpleadosComponent extends BaseCrudComponent<any> implements OnInit
   }
 
   ngOnInit() {
-    this.loadEmpleados();
-    this.loadCatalogos();
+    this.loadAll();
     this.verificarAccesoContabilidad();
   }
 
@@ -118,6 +128,9 @@ export class EmpleadosComponent extends BaseCrudComponent<any> implements OnInit
         .subscribe({
             next: (empleados) => {
                 this.empleados = empleados;
+                if (empleados?.per_page) {
+                  this.filtros.paginate = Number(empleados.per_page);
+                }
                 this.loading = false;
                 this.cdr.markForCheck();
             },

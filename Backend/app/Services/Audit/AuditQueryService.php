@@ -20,6 +20,8 @@ use App\Models\OrdenCompra;
 use App\Models\Planilla\Planilla;
 use App\Models\Restaurante\Comanda;
 use App\Models\Restaurante\PedidoRestaurante;
+use App\Models\Restaurante\Reserva;
+use App\Models\Restaurante\SesionMesa;
 use App\Models\Ventas\Clientes\Cliente;
 use App\Models\Ventas\Orden_Produccion\OrdenProduccion;
 use App\Models\Ventas\Venta;
@@ -107,6 +109,7 @@ class AuditQueryService
             Paquete::class => $this->pluckFirstColumn($type, $ids, ['num_guia', 'wr', 'num_seguimiento']),
             PedidoRestaurante::class => $this->loadPedidoReferences($ids),
             Comanda::class => $this->pluckColumn($type, $ids, 'numero_comanda'),
+            SesionMesa::class, Reserva::class => $this->loadMesaLabelReferences($type, $ids),
             Producto::class => $this->pluckFirstColumn($type, $ids, ['codigo', 'nombre']),
             Entrada::class, Salida::class, Traslado::class
                 => $this->pluckFirstColumn($type, $ids, ['concepto']),
@@ -162,6 +165,20 @@ class AuditQueryService
             if ($name !== '') {
                 $out[$row->id] = $name;
             }
+        }
+
+        return $out;
+    }
+
+    /** @param class-string<Model> $modelClass @return array<int, string> */
+    private function loadMesaLabelReferences(string $modelClass, array $ids): array
+    {
+        $out = [];
+        foreach ($modelClass::withoutGlobalScopes()->whereIn('id', $ids)->with('mesa:id,numero')->get(['id', 'mesa_id']) as $row) {
+            $num = $row->mesa?->numero;
+            $out[$row->id] = ($num !== null && $num !== '')
+                ? 'Mesa '.$num
+                : 'Mesa #'.($row->mesa_id ?? $row->id);
         }
 
         return $out;
