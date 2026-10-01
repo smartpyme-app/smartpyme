@@ -100,6 +100,21 @@ export class AlertService {
                     // Si es una cadena, mostrarla directamente
                     this.alertSubject.next({'tipo': 'alert-warning' ,'titulo': 'Error de validación', 'mensaje' : errBody.error});
                 }
+            } else if (errBody && errBody.errors && typeof errBody.errors === 'object') {
+                let alerts = '';
+                const values = Object.values(errBody.errors);
+                for (const val of values) {
+                    if (Array.isArray(val)) {
+                        for (const msg of val) {
+                            alerts += '- ' + msg + '<br>';
+                        }
+                    } else if (typeof val === 'string') {
+                        alerts += '- ' + val + '<br>';
+                    }
+                }
+                this.alertSubject.next({'tipo': 'alert-warning' ,'titulo': 'Corrige los siguientes errores', 'mensaje' : alerts || errBody.message || 'Error de validación'});
+            } else if (errBody && errBody.message) {
+                this.alertSubject.next({'tipo': 'alert-warning' ,'titulo': 'Error de validación', 'mensaje' : errBody.message});
             } else {
                 // Fallback por si la estructura es diferente
                 this.alertSubject.next({'tipo': 'alert-warning' ,'titulo': 'Error de validación', 'mensaje' : 'Ocurrió un error de validación'});
