@@ -1,4 +1,4 @@
-﻿
+
 <form (ngSubmit)="onSubmit()">
     <div class="row mb-3">
         <div class="form-group col-12 col-md-6 col-lg-4">
@@ -306,7 +306,7 @@
                 <div class="form-group col-12 col-md-6 col-lg-4">
                     <label for="nit_cr_empresa_info">{{ 'country.tax.nit' | translate }}</label>
                     <input type="text" class="form-control" id="nit_cr_empresa_info" placeholder="Escribe aquí" name="nit" [(ngModel)]="cliente.nit"
-                      (ngModelChange)="onIdentificacionClienteCrDebounced()" [dropSpecialCharacters]="false" mask={{apiService.auth_user().empresa.validador_nit}}>
+                      (ngModelChange)="onIdentificacionClienteCrDebounced()" [dropSpecialCharacters]="false" [mask]="apiService.auth_user().empresa.validador_nit || ''">
                     @if (contribuyenteCargandoCr) {
                       <small class="text-muted">Consultando Hacienda…</small>
                     }
@@ -369,7 +369,7 @@
                 </div>
                 <div class="form-group col-6 col-lg-3">
                     <label for="nit">{{ 'country.tax.nit' | translate }}</label>
-                    <input type="text" class="form-control" placeholder="Escribe aquí" name="nit" [(ngModel)]="cliente.nit" [dropSpecialCharacters]="false" mask={{apiService.auth_user().empresa.validador_nit}}>
+                    <input type="text" class="form-control" placeholder="Escribe aquí" name="nit" [(ngModel)]="cliente.nit" [dropSpecialCharacters]="false" [mask]="apiService.auth_user().empresa.validador_nit || ''">
                 </div>
                 @if (mostrarRegistroSecundarioCliente()) {
                 <div class="form-group col-6 col-lg-2">
