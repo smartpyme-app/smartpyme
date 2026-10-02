@@ -43,13 +43,13 @@ class Sucursal extends AuditableModel {
     {
         parent::boot();
 
-        if (Auth::check()) {
-            if (Auth::user()->id_empresa != 2) {
-                static::addGlobalScope('empresa', function (Builder $builder) {
-                    $builder->where('id_empresa', Auth::user()->id_empresa);
-                });
+        static::addGlobalScope('empresa', function (Builder $builder) {
+            $user = Auth::guard('api')->user() ?? Auth::user();
+            if (!$user || (int) $user->id_empresa === 2) {
+                return;
             }
-        }
+            $builder->where('id_empresa', $user->id_empresa);
+        });
     }
 
     public function cajas(){
