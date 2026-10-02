@@ -157,7 +157,7 @@
                           <tr>
                             <td [attr.colspan]="apiService.supervisorLimitadoRestringidoEnCompras() ? 1 : 2" class="text-end"></td>
                             <td [attr.colspan]="apiService.supervisorLimitadoRestringidoEnCompras() ? 1 : 2" class="text-end">
-                              {{ impuesto.nombre || impuesto?.impuesto?.nombre || 'Impuesto' }}
+                              {{ (impuesto.nombre || impuesto?.impuesto?.nombre || 'Impuesto') | displayNombreImpuesto }}
                               <small class="text-muted">({{ (impuesto.porcentaje ?? impuesto?.impuesto?.porcentaje) | number:'1.0-2' }}%)</small>
                             </td>
                             @if (!apiService.supervisorLimitadoRestringidoEnCompras()) {

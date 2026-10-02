@@ -2,6 +2,7 @@
 import { CommonModule } from '@angular/common';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { TranslatePipe } from '@ngx-translate/core';
+import { DisplayNombreImpuestoPipe } from '@pipes/display-nombre-impuesto.pipe';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -44,7 +45,7 @@ import { LazyImageDirective } from '../../../../directives/lazy-image.directive'
         CrearClienteComponent,
         CrearProyectoComponent,
         LazyImageDirective,
-        TranslatePipe, CurrencyPipe],
+        TranslatePipe, DisplayNombreImpuestoPipe, CurrencyPipe],
     providers: [SumPipe],
     changeDetection: ChangeDetectionStrategy.OnPush,
     

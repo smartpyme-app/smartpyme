@@ -499,7 +499,7 @@
                         (change)="onImpuestosChange()"
                         class="form-select p-0">
                         <ng-option *ngFor="let impuesto of impuestos" [value]="impuesto.id">
-                            {{ impuesto.nombre }} ({{ impuesto.porcentaje }}%)
+                            {{ impuesto.nombre | displayNombreImpuesto }} ({{ impuesto.porcentaje }}%)
                         </ng-option>
                     </ng-select>
                     <app-crear-impuesto (update)="setImpuesto($event)"></app-crear-impuesto>
@@ -509,7 +509,7 @@
                 <div class="mt-2 mb-3" *ngIf="impuestos_seleccionados.length > 0">
                     <div class="d-flex flex-wrap gap-2">
                         <span *ngFor="let impuesto of impuestos_seleccionados" class="badge bg-light-info text-info">
-                            {{ impuesto.nombre }} ({{ impuesto.porcentaje }}%)
+                            {{ impuesto.nombre | displayNombreImpuesto }} ({{ impuesto.porcentaje }}%)
                         </span>
                     </div>
                 </div>

@@ -601,6 +601,27 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Permisos de Clínica (fase 1)
+    |--------------------------------------------------------------------------
+    */
+    'PERMISSION_CLINICA' => [
+        'pacientes' => [
+            'ver' => 'clinica.pacientes.ver',
+            'crear' => 'clinica.pacientes.crear',
+            'editar' => 'clinica.pacientes.editar',
+            'desactivar' => 'clinica.pacientes.desactivar',
+        ],
+        'expediente' => [
+            'ver' => 'clinica.expediente.ver',
+        ],
+        'profesionales' => [
+            'ver' => 'clinica.profesionales.ver',
+            'editar' => 'clinica.profesionales.editar',
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Permisos de Ayuda
     |--------------------------------------------------------------------------
     */

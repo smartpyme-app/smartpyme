@@ -1,0 +1,127 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading">Profesionales</h2>
+    @if (apiService.hasPermission('clinica.profesionales.editar')) {
+        <button type="button" class="btn btn-default" (click)="abrir(mprofesional)"><i class="fa fa-plus"></i> Añadir profesional</button>
+    }
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+    <div class="d-flex mb-3">
+        <div class="col d-flex gap-2 justify-content-end">
+            <select name="estado" (change)="filtrar()" [(ngModel)]="estado" class="form-select bg-default w-auto">
+                <option value="">Estado</option>
+                <option value="1">Activo</option>
+                <option value="0">Inactivo</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-borderless table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th class="d-none d-md-table-cell">Cargo</th>
+                    <th class="d-none d-lg-table-cell">Especialidad</th>
+                    <th class="d-none d-lg-table-cell">Sucursales</th>
+                    <th class="d-none d-md-table-cell">Estado</th>
+                    <th class="text-center"><i class="fa fa-cog"></i></th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!loading && !profesionales.length) {
+                    <tr>
+                        <td colspan="6" class="text-center">
+                            <span class="badge bg-primary">No tiene profesionales registrados</span>
+                        </td>
+                    </tr>
+                }
+                @if (loading) {
+                    <tr>
+                        <td colspan="6" class="text-center">
+                            <span class="badge bg-primary">Cargando...</span>
+                        </td>
+                    </tr>
+                }
+                @for (profesional of profesionales; track profesional.id) {
+                    <tr>
+                        <td>{{ profesional.nombre }}</td>
+                        <td class="d-none d-md-table-cell">{{ profesional.cargo || '—' }}</td>
+                        <td class="d-none d-lg-table-cell">{{ profesional.especialidad || '—' }}</td>
+                        <td class="d-none d-lg-table-cell">{{ sucursalesDe(profesional) }}</td>
+                        <td class="d-none d-md-table-cell">
+                            <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-success': profesional.activo, 'bg-danger': !profesional.activo}">
+                                {{ profesional.activo ? 'Activo' : 'Inactivo' }}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                            </span>
+                            <ng-template #accionesTemplate>
+                                <div class="list-group border-0">
+                                    @if (apiService.hasPermission('clinica.profesionales.editar')) {
+                                        <a (click)="abrir(mprofesional, profesional)" class="list-group-item list-group-item-action border-0 click">
+                                            <i class="fa fa-fw fa-edit"></i> Editar
+                                        </a>
+                                        @if (profesional.activo) {
+                                            <a (click)="desactivar(profesional)" class="list-group-item list-group-item-action border-0 click">
+                                                <i class="fa fa-ban"></i> Deshabilitar
+                                            </a>
+                                        }
+                                    }
+                                </div>
+                            </ng-template>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<ng-template #mprofesional>
+    <div class="modal-header justify-content-between">
+        <h3 class="modal-title">{{ editando ? 'Editar profesional' : 'Nuevo profesional' }}</h3>
+        <button type="button" class="btn btn-light text-danger" (click)="cerrar()">Cancelar <i class="fa fa-close"></i></button>
+    </div>
+    <div class="modal-body p-3">
+        <form (ngSubmit)="guardar()" autocomplete="off">
+            <div class="form-group">
+                <label for="id_usuario">Usuario</label>
+                <select id="id_usuario" class="form-select" name="id_usuario" [(ngModel)]="form.id_usuario" [disabled]="editando">
+                    <option value="">Seleccione aquí</option>
+                    @for (usuario of candidatos; track usuario.id) {
+                        <option [ngValue]="usuario.id">{{ usuario.nombre }}</option>
+                    }
+                </select>
+            </div>
+            <div class="form-group mt-3">
+                <label for="cargo">Cargo</label>
+                <input id="cargo" class="form-control" placeholder="Escribe aquí" name="cargo" [(ngModel)]="form.cargo">
+            </div>
+            <div class="form-group mt-3">
+                <label for="especialidad">Especialidad</label>
+                <input id="especialidad" class="form-control" placeholder="Escribe aquí" name="especialidad" [(ngModel)]="form.especialidad">
+            </div>
+            <div class="form-group mt-3">
+                <label for="colegiatura">Colegiatura</label>
+                <input id="colegiatura" class="form-control" placeholder="Escribe aquí" name="colegiatura" [(ngModel)]="form.colegiatura">
+            </div>
+            <div class="form-group mt-3">
+                <label>Sucursales</label>
+                @for (sucursal of sucursales; track sucursal.id) {
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" [id]="'sucursal-' + sucursal.id" [checked]="marcada(sucursal.id)" (change)="alternarSucursal(sucursal.id, $any($event.target).checked)">
+                        <label class="form-check-label" [for]="'sucursal-' + sucursal.id">{{ sucursal.nombre }}</label>
+                    </div>
+                }
+            </div>
+            <div class="form-group mt-3">
+                <button type="submit" class="btn btn-primary float-end" [disabled]="!form.id_usuario || !form.sucursales.length">
+                    Guardar profesional <img appLazyImage="assets/icons/arrow-right-stroke.png" class="icon2 ms-2">
+                </button>
+            </div>
+        </form>
+    </div>
+</ng-template>

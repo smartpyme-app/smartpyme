@@ -9,6 +9,7 @@ import {
 } from '@utils/venta-recurrencia.util';
 import { CommonModule } from '@angular/common';
 import { TranslatePipe } from '@ngx-translate/core';
+import { DisplayNombreImpuestoPipe } from '@pipes/display-nombre-impuesto.pipe';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -99,6 +100,7 @@ import {
         BuscadorClientesComponent,
         CrearProyectoComponent,
         TranslatePipe,
+        DisplayNombreImpuestoPipe,
         SharedModule,
         VentaRecurrenciaConfigComponent,
     ],

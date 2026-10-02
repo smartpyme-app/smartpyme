@@ -14,6 +14,7 @@ use App\Services\Contabilidad\Partidas\ReglaCuentaIva;
 use App\Services\Contabilidad\Partidas\ReglaIngresoVenta;
 use Illuminate\Support\Facades\DB;
 use Exception;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class VentasService
 {
@@ -380,7 +381,7 @@ class VentasService
 
         } catch (Exception $e) {
             DB::rollback();
-            throw new Exception('Error al crear las partidas de venta: ' . $e->getMessage(), 400);
+            throw new HttpException(400, 'Error al crear las partidas de venta: ' . $e->getMessage(), $e);
         } catch (\Throwable $e) {
             DB::rollback();
             throw new Exception('Error inesperado al crear las partidas de venta: ' . $e->getMessage(), 500);

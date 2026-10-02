@@ -30,6 +30,16 @@ class ClinicaFuncionalidadSeeder extends Seeder
                     'parent_id' => $clinica->id,
                 ]
             );
+
+            Funcionalidad::updateOrCreate(
+                ['slug' => 'clinica-profesionales'],
+                [
+                    'nombre' => 'Profesionales',
+                    'descripcion' => 'Usuarios habilitados para atender en la clínica',
+                    'orden' => 32,
+                    'parent_id' => $clinica->id,
+                ]
+            );
         } catch (\Exception $e) {
             Log::error('Error al crear funcionalidades de clínica: '.$e->getMessage());
         }

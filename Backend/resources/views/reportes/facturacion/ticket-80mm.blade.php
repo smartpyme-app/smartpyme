@@ -80,7 +80,8 @@
     $cai = '';
     $rango = '';
     $fechaLimite = '';
-    $totalesHn = null;
+    $ivaEmpresa = (float) ($empresa->iva ?? 15);
+    $totales = \App\Support\Honduras\DocumentoImpresionHn::totales($venta->detalles, $ivaEmpresa);
     if ($esHonduras) {
         $cai = trim((string) data_get($empresa->custom_empresa, 'configuraciones.factura_cai'));
         if ($cai === '') {
@@ -101,7 +102,6 @@
                 $fechaLimite = (string) $fechaLimiteRaw;
             }
         }
-        $totalesHn = \App\Support\Honduras\DocumentoImpresionHn::totales($venta->detalles, (float) ($empresa->iva ?? 15));
     }
 
     $obs = trim((string) ($documento->nota ?? ''));
@@ -203,45 +203,14 @@
 <hr>
 
 <table class="lines">
-    <tr>
-        <td>Subtotal</td>
-        <td class="val">{{ $moneda }} {{ number_format((float) ($venta->sub_total ?? 0), 2) }}</td>
-    </tr>
-    <tr>
-        <td>Exento</td>
-        <td class="val">{{ $moneda }} {{ number_format((float) ($venta->exenta ?? 0), 2) }}</td>
-    </tr>
-    @if ($esHonduras && $totalesHn)
-        <tr>
-            <td>Gravado 15% ISV</td>
-            <td class="val">{{ $moneda }} {{ number_format($totalesHn['gravado_15'], 2) }}</td>
-        </tr>
-        <tr>
-            <td>Gravado 18% ISV</td>
-            <td class="val">{{ $moneda }} {{ number_format($totalesHn['gravado_18'], 2) }}</td>
-        </tr>
-        <tr>
-            <td>ISV 15%</td>
-            <td class="val">{{ $moneda }} {{ number_format($totalesHn['isv_15'], 2) }}</td>
-        </tr>
-        <tr>
-            <td>ISV 18%</td>
-            <td class="val">{{ $moneda }} {{ number_format($totalesHn['isv_18'], 2) }}</td>
-        </tr>
-    @else
-        <tr>
-            <td>{{ $etiquetaImpuesto }}</td>
-            <td class="val">{{ $moneda }} {{ number_format((float) ($venta->iva ?? 0), 2) }}</td>
-        </tr>
-    @endif
-    <tr>
-        <td>Descuento</td>
-        <td class="val">{{ $moneda }} {{ number_format((float) ($venta->descuento ?? 0), 2) }}</td>
-    </tr>
-    <tr>
-        <td class="b">Total</td>
-        <td class="val b">{{ $moneda }} {{ number_format((float) $venta->total, 2) }}</td>
-    </tr>
+    @include('reportes.facturacion.partials.resumen-totales-fiscales', [
+        'totales' => $totales,
+        'venta' => $venta,
+        'moneda' => $moneda,
+        'prefijoMoneda' => $moneda,
+        'esHonduras' => $esHonduras,
+        'etiquetaImpuesto' => $etiquetaImpuesto,
+    ])
 </table>
 
 <div class="sec">

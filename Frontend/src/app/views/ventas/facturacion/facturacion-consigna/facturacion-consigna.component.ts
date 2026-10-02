@@ -6,6 +6,7 @@ import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { SumPipe }     from '@pipes/sum.pipe';
 import { TranslatePipe } from '@ngx-translate/core';
+import { DisplayNombreImpuestoPipe } from '@pipes/display-nombre-impuesto.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
@@ -25,7 +26,7 @@ import { LazyImageDirective } from '../../../../directives/lazy-image.directive'
     selector: 'app-facturacion-consigna',
     templateUrl: './facturacion-consigna.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, LazyImageDirective, TranslatePipe, CurrencyPipe],
+    imports: [CommonModule, RouterModule, FormsModule, LazyImageDirective, TranslatePipe, DisplayNombreImpuestoPipe, CurrencyPipe],
     providers: [SumPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })

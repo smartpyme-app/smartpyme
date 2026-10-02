@@ -7,6 +7,7 @@ import { FilterPipe } from './filter.pipe';
 import { SortPipe } from './sort.pipe';
 import { CurrencyPipe } from './currency-format.pipe';
 import { TranslatePipe } from '@ngx-translate/core';
+import { DisplayNombreImpuestoPipe } from './display-nombre-impuesto.pipe';
 
 @NgModule({
   imports: [
@@ -18,6 +19,7 @@ import { TranslatePipe } from '@ngx-translate/core';
     SortPipe,
     CurrencyPipe,
     TranslatePipe,
+    DisplayNombreImpuestoPipe,
   ],
   declarations: [],
   exports: [
@@ -29,6 +31,7 @@ import { TranslatePipe } from '@ngx-translate/core';
     SortPipe,
     CurrencyPipe,
     TranslatePipe,
+    DisplayNombreImpuestoPipe,
     DatePipe,
   ],
   providers: [
