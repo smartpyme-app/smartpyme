@@ -113,7 +113,6 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
     public ventasRecurrentesAutomaticasActivo = false;
     public ventasRecurrentesCorreo = '';
     public ventasRecurrentesGeneracionActiva = true;
-    public guardandoVentasRecurrentes = false;
 
     public customConfig: any = {
         columnas: {
@@ -318,12 +317,18 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
             if (this.empresa) {
                 this.empresa.impresion_en_facturacion = isImpresionEnFacturacionActiva(this.empresa);
             }
+            this.aplicarVentasRecurrentesEnCustomConfig();
             this.empresa.custom_empresa = this.customConfig;
             const empresaGuardada = await this.apiService.store('empresa', this.empresa)
                 .pipe(this.untilDestroyed())
                 .toPromise();
 
             this.empresa = empresaGuardada;
+            await this.persistirVentasRecurrentesEnServidor();
+            const authEmpresa = this.apiService.auth_user()?.empresa;
+            if (authEmpresa) {
+                authEmpresa.custom_empresa = this.customConfig;
+            }
             this.normalizarRtnHonduras();
             if (this.empresa) {
                 this.empresa.impresion_en_facturacion = isImpresionEnFacturacionActiva(this.empresa);
@@ -1884,6 +1889,43 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
         }
     }
 
+    private aplicarVentasRecurrentesEnCustomConfig(): void {
+        if (!this.customConfig.configuraciones || Array.isArray(this.customConfig.configuraciones)) {
+            this.customConfig.configuraciones = {};
+        }
+        const cfg = this.customConfig.configuraciones;
+        cfg.ventas_recurrentes_automaticas_activo = !!this.ventasRecurrentesAutomaticasActivo;
+        cfg.ventas_recurrentes_correo_resumen = this.correoVentasRecurrentesResuelto();
+        cfg.ventas_recurrentes_generacion_activa = !!this.ventasRecurrentesGeneracionActiva;
+        delete cfg.ventas_recurrentes_generacion_pausada;
+    }
+
+    private correoVentasRecurrentesResuelto(): string {
+        return (this.ventasRecurrentesCorreo || this.empresa?.correo || '').trim();
+    }
+
+    private async persistirVentasRecurrentesEnServidor(): Promise<void> {
+        const correo = this.correoVentasRecurrentesResuelto();
+        if (!correo) {
+            return;
+        }
+        const resp: any = await this.apiService.store('ventas-recurrentes/preferencias', {
+            activo: !!this.ventasRecurrentesAutomaticasActivo,
+            correo_resumen: correo,
+            generacion_activa: !!this.ventasRecurrentesGeneracionActiva,
+        }).pipe(this.untilDestroyed()).toPromise();
+
+        const cfg = resp?.configuracion;
+        if (this.customConfig?.configuraciones && cfg) {
+            this.customConfig.configuraciones.ventas_recurrentes_automaticas_activo = !!cfg.activo;
+            this.customConfig.configuraciones.ventas_recurrentes_correo_resumen = cfg.correo_resumen ?? correo;
+            this.customConfig.configuraciones.ventas_recurrentes_generacion_activa = !!cfg.generacion_activa;
+            delete this.customConfig.configuraciones.ventas_recurrentes_generacion_pausada;
+            this.empresa.custom_empresa = this.customConfig;
+        }
+        this.syncVentasRecurrentesFromCustomConfig();
+    }
+
     private deepMerge(target: any, source: any): any {
         const result = { ...target };
 
@@ -2680,39 +2722,6 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
             error: () => {
                 this.tieneAccesoModuloPresentacionesProductos = false;
             }
-        });
-    }
-
-    public guardarPreferenciasVentasRecurrentes() {
-        this.guardandoVentasRecurrentes = true;
-        this.apiService.store('ventas-recurrentes/preferencias', {
-            activo: this.ventasRecurrentesAutomaticasActivo,
-            correo_resumen: this.ventasRecurrentesCorreo,
-            generacion_activa: this.ventasRecurrentesGeneracionActiva,
-        }).pipe(this.untilDestroyed()).subscribe({
-            next: (resp: any) => {
-                const cfg = resp?.configuracion;
-                if (this.customConfig?.configuraciones) {
-                    this.customConfig.configuraciones.ventas_recurrentes_automaticas_activo = !!cfg?.activo;
-                    this.customConfig.configuraciones.ventas_recurrentes_correo_resumen = cfg?.correo_resumen ?? this.ventasRecurrentesCorreo;
-                    this.customConfig.configuraciones.ventas_recurrentes_generacion_activa = !!cfg?.generacion_activa;
-                    delete this.customConfig.configuraciones.ventas_recurrentes_generacion_pausada;
-                    this.empresa.custom_empresa = this.customConfig;
-                }
-                const authEmpresa = this.apiService.auth_user()?.empresa;
-                if (authEmpresa) {
-                    authEmpresa.custom_empresa = this.customConfig;
-                }
-                this.syncVentasRecurrentesFromCustomConfig();
-                this.guardandoVentasRecurrentes = false;
-                this.alertService.success('Guardado', 'Preferencias de ventas recurrentes actualizadas.');
-                this.cdr.markForCheck();
-            },
-            error: (error: any) => {
-                this.guardandoVentasRecurrentes = false;
-                this.alertService.error(error);
-                this.cdr.markForCheck();
-            },
         });
     }
 

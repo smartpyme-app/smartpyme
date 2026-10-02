@@ -31,4 +31,16 @@ class RecurrenciaCalendarioTest extends TestCase
         $this->assertFalse(RecurrenciaCalendario::corresponde('anual', '2026-10-02', '2027-11-02'));
         $this->assertSame('2027-10', RecurrenciaCalendario::periodo('2027-10-02'));
     }
+
+    public function test_dia_generacion_distinto_a_la_fecha_de_la_plantilla(): void
+    {
+        $this->assertFalse(RecurrenciaCalendario::corresponde('mensual', '2026-10-10', '2026-11-10', 5));
+        $this->assertTrue(RecurrenciaCalendario::corresponde('mensual', '2026-10-10', '2026-11-05', 5));
+    }
+
+    public function test_anual_usa_mes_de_plantilla_y_dia_configurado(): void
+    {
+        $this->assertTrue(RecurrenciaCalendario::corresponde('anual', '2026-10-10', '2027-10-05', 5));
+        $this->assertFalse(RecurrenciaCalendario::corresponde('anual', '2026-10-10', '2027-11-05', 5));
+    }
 }

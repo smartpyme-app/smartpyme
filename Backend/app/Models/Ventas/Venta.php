@@ -64,6 +64,7 @@ class Venta extends AuditableModel {
         'recurrente',
         'frecuencia_recurrencia',
         'recurrencia_pausada',
+        'dia_generacion_recurrencia',
         'id_venta_plantilla',
         'periodo_recurrencia',
         'cotizacion',

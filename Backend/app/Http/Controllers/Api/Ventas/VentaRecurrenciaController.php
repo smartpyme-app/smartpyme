@@ -24,6 +24,7 @@ class VentaRecurrenciaController extends Controller
         $datos = $request->validate([
             'frecuencia' => 'required|in:mensual,anual',
             'pausada' => 'required|boolean',
+            'dia_generacion' => 'nullable|integer|min:1|max:31',
         ]);
 
         $empresa = auth()->user()->empresa;
@@ -43,6 +44,9 @@ class VentaRecurrenciaController extends Controller
 
         $venta->frecuencia_recurrencia = $datos['frecuencia'];
         $venta->recurrencia_pausada = $request->boolean('pausada');
+        $venta->dia_generacion_recurrencia = isset($datos['dia_generacion'])
+            ? (int) $datos['dia_generacion']
+            : null;
         $venta->recurrente = '1';
         $venta->save();
 

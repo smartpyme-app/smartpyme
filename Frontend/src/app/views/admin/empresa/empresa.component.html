@@ -440,46 +440,41 @@
                                 </div>
                               </div>
                             }
-                              <div class="empresa-pref-field border-top pt-3 mt-3">
-                                <h4 class="mb-2 fw-bold">Ventas recurrentes automáticas</h4>
-                                <p class="text-muted small mb-3">
-                                  Cada mañana el sistema puede crear y emitir las facturas programadas. Aquí eliges el correo donde te avisamos qué salió bien y qué quedó pendiente.
-                                </p>
-                                <div class="empresa-pref-row mb-3">
-                                  <div class="empresa-pref-row-text">
-                                    <label class="empresa-pref-row-label" for="ventasRecurrentesAutomaticasActivo">Activar en esta cuenta</label>
-                                    <p class="empresa-pref-row-help text-muted small mb-0">Habilita programar ventas desde Facturación y Ventas.</p>
-                                  </div>
-                                  <div class="form-switch m-0">
-                                    <input class="form-check-input" type="checkbox" role="switch"
-                                      id="ventasRecurrentesAutomaticasActivo"
-                                      [(ngModel)]="ventasRecurrentesAutomaticasActivo"
-                                      name="ventasRecurrentesAutomaticasActivo">
-                                  </div>
+                            <h4 class="mb-2 mt-2 fw-bold">Ventas recurrentes automáticas</h4>
+                            <div class="empresa-pref-row">
+                              <div class="empresa-pref-row-text">
+                                <label class="empresa-pref-row-label" for="ventasRecurrentesAutomaticasActivo">Activar en esta cuenta</label>
+                                <p class="empresa-pref-row-help text-muted small mb-0">Habilita programar ventas desde Facturación y Ventas.</p>
+                              </div>
+                              <div class="form-switch m-0">
+                                <input class="form-check-input" type="checkbox" role="switch"
+                                  id="ventasRecurrentesAutomaticasActivo"
+                                  [(ngModel)]="ventasRecurrentesAutomaticasActivo"
+                                  name="ventasRecurrentesAutomaticasActivo">
+                              </div>
+                            </div>
+                            @if (ventasRecurrentesAutomaticasActivo) {
+                              <div class="empresa-pref-row">
+                                <div class="empresa-pref-row-text">
+                                  <label class="empresa-pref-row-label" for="ventasRecurrentesGeneracionActiva">Activar facturación automática</label>
+                                  <p class="empresa-pref-row-help text-muted small mb-0">El cron diario crea las ventas programadas. Si lo apagas, las plantillas siguen configuradas pero no se generan solas.</p>
                                 </div>
-                                <div class="empresa-pref-row mb-3">
-                                  <div class="empresa-pref-row-text">
-                                    <label class="empresa-pref-row-label" for="ventasRecurrentesGeneracionActiva">Activar facturación automática</label>
-                                    <p class="empresa-pref-row-help text-muted small mb-0">El cron diario crea las ventas programadas. Si lo apagas, las plantillas siguen configuradas pero no se generan solas.</p>
-                                  </div>
-                                  <div class="form-switch m-0">
-                                    <input class="form-check-input" type="checkbox" role="switch"
-                                      id="ventasRecurrentesGeneracionActiva"
-                                      [(ngModel)]="ventasRecurrentesGeneracionActiva"
-                                      name="ventasRecurrentesGeneracionActiva">
-                                  </div>
+                                <div class="form-switch m-0">
+                                  <input class="form-check-input" type="checkbox" role="switch"
+                                    id="ventasRecurrentesGeneracionActiva"
+                                    [(ngModel)]="ventasRecurrentesGeneracionActiva"
+                                    name="ventasRecurrentesGeneracionActiva">
                                 </div>
-                                <div class="mb-3">
-                                  <label class="form-label" for="ventasRecurrentesCorreo">Correo de avisos</label>
+                              </div>
+                              <div class="empresa-pref-row align-items-start">
+                                <div class="empresa-pref-row-text">
+                                  <label class="empresa-pref-row-label" for="ventasRecurrentesCorreo">Correo de avisos</label>
+                                  <p class="empresa-pref-row-help text-muted small mb-2">Resumen diario de facturas generadas y pendientes.</p>
                                   <input type="email" class="form-control" id="ventasRecurrentesCorreo"
                                     [(ngModel)]="ventasRecurrentesCorreo" name="ventasRecurrentesCorreo">
                                 </div>
-                                <button type="button" class="btn btn-primary btn-sm"
-                                  (click)="guardarPreferenciasVentasRecurrentes()"
-                                  [disabled]="guardandoVentasRecurrentes">
-                                  Guardar
-                                </button>
                               </div>
+                            }
                             <div *ngIf="tieneAccesoModuloRestaurantePedidos" class="empresa-pref-field">
                                 <h4 class="mb-2 fw-bold">Restaurantes y pedidos</h4>
                                 <p class="text-muted small mb-2">

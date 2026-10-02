@@ -14,6 +14,7 @@ import { BaseComponent } from '@shared/base/base.component';
 import {
   RecurrenciaVentaConfig,
   aplicarRecurrenciaEnVenta,
+  diaRecurrenciaDesdeVenta,
   payloadRecurrenciaApi,
 } from '@utils/venta-recurrencia.util';
 
@@ -28,6 +29,8 @@ export class VentaRecurrenciaConfigComponent extends BaseComponent {
   @ViewChild('modalTpl', { static: true }) modalTpl!: TemplateRef<unknown>;
 
   public frecuenciaRecurrencia: 'mensual' | 'anual' = 'mensual';
+  public diaGeneracionRecurrencia = 1;
+  public fechaVentaReferencia = '';
   public recurrenciaPausada = false;
   public saving = false;
 
@@ -48,6 +51,8 @@ export class VentaRecurrenciaConfigComponent extends BaseComponent {
   open(venta: any): Promise<RecurrenciaVentaConfig | null> {
     this.ventaObjetivo = venta;
     this.frecuenciaRecurrencia = venta?.frecuencia_recurrencia === 'anual' ? 'anual' : 'mensual';
+    this.diaGeneracionRecurrencia = diaRecurrenciaDesdeVenta(venta);
+    this.fechaVentaReferencia = venta?.fecha ? String(venta.fecha).slice(0, 10) : '';
     this.recurrenciaPausada = !!venta?.recurrencia_pausada;
     this.saving = false;
     this.modalRef = this.modalService.show(this.modalTpl, { class: 'modal-md', backdrop: 'static' });
@@ -59,7 +64,8 @@ export class VentaRecurrenciaConfigComponent extends BaseComponent {
   }
 
   guardar(): void {
-    const config = payloadRecurrenciaApi(this.frecuenciaRecurrencia, this.recurrenciaPausada);
+    const dia = Math.min(31, Math.max(1, Math.trunc(Number(this.diaGeneracionRecurrencia) || 1)));
+    const config = payloadRecurrenciaApi(this.frecuenciaRecurrencia, this.recurrenciaPausada, dia);
     if (!this.ventaObjetivo?.id) {
       this.cerrar(config);
       return;
@@ -75,11 +81,16 @@ export class VentaRecurrenciaConfigComponent extends BaseComponent {
           aplicarRecurrenciaEnVenta(this.ventaObjetivo, config);
           this.ventaObjetivo.frecuencia_recurrencia = venta.frecuencia_recurrencia;
           this.ventaObjetivo.recurrencia_pausada = venta.recurrencia_pausada;
+          this.ventaObjetivo.dia_generacion_recurrencia = venta.dia_generacion_recurrencia;
           this.ventaObjetivo.recurrente = venta.recurrente;
           this.saving = false;
           this.alertService.success(
             'Listo',
-            config.pausada ? 'Quedó en pausa.' : 'Se repetirá el día de esta venta.',
+            config.pausada
+              ? 'Quedó en pausa.'
+              : this.frecuenciaRecurrencia === 'anual'
+                ? `Se generará el día ${dia} de cada año (mismo mes que la plantilla).`
+                : `Se generará el día ${dia} de cada mes.`,
           );
           this.cerrar(config);
           this.cdr.markForCheck();

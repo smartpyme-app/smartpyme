@@ -6,12 +6,25 @@ use Carbon\Carbon;
 
 /**
  * Decide si hoy toca generar una venta recurrente y con qué período.
- * El día y el mes salen de la fecha de la venta plantilla.
+ * El mes (anual) sale de la plantilla; el día puede ser distinto (ej. venta del 10, generar el 5).
  */
 class RecurrenciaCalendario
 {
-    public static function corresponde(string $frecuencia, string $fechaPlantilla, string $hoy): bool
+    public static function diaEjecucion(?int $diaGeneracion, string $fechaPlantilla): int
     {
+        if ($diaGeneracion !== null && $diaGeneracion >= 1 && $diaGeneracion <= 31) {
+            return $diaGeneracion;
+        }
+
+        return Carbon::parse($fechaPlantilla)->day;
+    }
+
+    public static function corresponde(
+        string $frecuencia,
+        string $fechaPlantilla,
+        string $hoy,
+        ?int $diaGeneracion = null,
+    ): bool {
         if (!in_array($frecuencia, ['mensual', 'anual'], true)) {
             return false;
         }
@@ -23,7 +36,7 @@ class RecurrenciaCalendario
             return false;
         }
 
-        if ($fecha->day !== $origen->day) {
+        if ($fecha->day !== self::diaEjecucion($diaGeneracion, $fechaPlantilla)) {
             return false;
         }
 

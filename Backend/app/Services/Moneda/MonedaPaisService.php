@@ -117,7 +117,10 @@ final class MonedaPaisService
     ): array {
         $cfg = $this->configForEmpresa($empresa);
         $funcional = strtoupper((string) ($cfg['moneda_funcional'] ?? 'USD'));
-        $monedas = array_map('strtoupper', $cfg['monedas_documento'] ?? [$funcional]);
+        $monedas = array_values(array_unique(array_map(
+            'strtoupper',
+            array_merge($cfg['monedas_documento'] ?? [$funcional], [$funcional])
+        )));
         $fecha = Carbon::instance(\DateTimeImmutable::createFromInterface($fechaDoc))->startOfDay();
 
         $currencyCode = strtoupper(trim((string) ($input['currency_code'] ?? $funcional)));

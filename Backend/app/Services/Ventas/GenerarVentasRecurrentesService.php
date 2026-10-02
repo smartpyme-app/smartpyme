@@ -12,6 +12,7 @@ use App\Models\Ventas\Venta;
 use App\Services\FacturacionElectronica\ElSalvador\ElSalvadorDteService;
 use App\Services\FacturacionElectronica\FacturacionElectronicaCountryGate;
 use App\Services\MhGovSvGatewayService;
+use App\Services\Moneda\MonedaPaisService;
 use Carbon\Carbon;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Request;
@@ -70,7 +71,12 @@ class GenerarVentasRecurrentesService
         $fallidas = [];
 
         foreach ($plantillas as $plantilla) {
-            if (!$plantilla->fecha || !RecurrenciaCalendario::corresponde($plantilla->frecuencia_recurrencia, (string) $plantilla->fecha, $fecha)) {
+            if (!$plantilla->fecha || !RecurrenciaCalendario::corresponde(
+                $plantilla->frecuencia_recurrencia,
+                (string) $plantilla->fecha,
+                $fecha,
+                $plantilla->dia_generacion_recurrencia !== null ? (int) $plantilla->dia_generacion_recurrencia : null,
+            )) {
                 continue;
             }
 
@@ -142,7 +148,7 @@ class GenerarVentasRecurrentesService
         $this->liberarPeriodoCopiaAnulada($plantilla->id, $periodo);
 
         try {
-            $venta = $this->clonar($plantilla, $usuario, $fecha, $periodo, $documento);
+            $venta = $this->clonar($plantilla, $empresa, $usuario, $fecha, $periodo, $documento);
             $this->marcarCopiaNoRecurrente($venta);
         } catch (FacturacionException $e) {
             if (str_contains($e->getMessage(), 'venta_recurrencia_periodo_unique')) {
@@ -203,6 +209,7 @@ class GenerarVentasRecurrentesService
 
     private function clonar(
         Venta $plantilla,
+        Empresa $empresa,
         User $usuario,
         string $fecha,
         string $periodo,
@@ -214,7 +221,7 @@ class GenerarVentasRecurrentesService
         $guard->setUser($usuario);
 
         try {
-            $payload = $this->payload($plantilla, $fecha, $periodo, $documento);
+            $payload = $this->payload($plantilla, $empresa, $fecha, $periodo, $documento);
             $payload['id_documento'] = (int) $documento->id;
             $payload['id_empresa'] = (int) $plantilla->id_empresa;
             $request = Request::create('/internal/ventas-recurrentes', 'POST', $payload);
@@ -271,7 +278,7 @@ class GenerarVentasRecurrentesService
         return !in_array($documento->nombre, Venta::DOCUMENTOS_NO_CONTABLES, true);
     }
 
-    private function payload(Venta $plantilla, string $fecha, string $periodo, Documento $documento): array
+    private function payload(Venta $plantilla, Empresa $empresa, string $fecha, string $periodo, Documento $documento): array
     {
         $origen = Carbon::parse($plantilla->fecha)->startOfDay();
         $pago = $plantilla->fecha_pago ? Carbon::parse($plantilla->fecha_pago)->startOfDay() : $origen->copy();
@@ -314,9 +321,6 @@ class GenerarVentasRecurrentesService
             'id_vendedor' => $plantilla->id_vendedor,
             'id_empresa' => $plantilla->id_empresa,
             'id_sucursal' => $plantilla->id_sucursal,
-            'currency_code' => $plantilla->currency_code,
-            'exchange_rate' => $plantilla->exchange_rate,
-            'exchange_rate_date' => $plantilla->exchange_rate_date,
             'descripcion_personalizada' => $plantilla->descripcion_personalizada,
             'descripcion_impresion' => $plantilla->descripcion_impresion,
             'num_identificacion' => $plantilla->num_identificacion,
@@ -342,7 +346,46 @@ class GenerarVentasRecurrentesService
             $data['impuestos'] = $impuestosPayload;
         }
 
+        $data = array_merge($data, $this->monedaCamposClon($empresa, $plantilla, $fecha));
+
         return $data;
+    }
+
+    /** Misma lógica que facturación: moneda funcional o permitida para el país (evita HNL en empresa USD-only). */
+    private function monedaCamposClon(Empresa $empresa, Venta $plantilla, string $fecha): array
+    {
+        /** @var MonedaPaisService $monedaService */
+        $monedaService = app(MonedaPaisService::class);
+        $cfg = $monedaService->configForEmpresa($empresa);
+        $funcional = strtoupper((string) ($cfg['moneda_funcional'] ?? 'USD'));
+        $monedas = array_map('strtoupper', $cfg['monedas_documento'] ?? [$funcional]);
+
+        $currencyCode = strtoupper(trim((string) ($plantilla->currency_code ?: $funcional)));
+        if (! $empresa->tieneFuncionalidadMultimoneda()) {
+            $currencyCode = $funcional;
+        } elseif (! in_array($currencyCode, $monedas, true)) {
+            $currencyCode = $funcional;
+        }
+
+        $input = [
+            'currency_code' => $currencyCode,
+            'total' => (float) ($plantilla->total ?? 0),
+            'iva' => (float) ($plantilla->iva ?? 0),
+        ];
+        if ($currencyCode !== $funcional && $plantilla->exchange_rate) {
+            $input['exchange_rate'] = $plantilla->exchange_rate;
+        }
+
+        $allowManual = $currencyCode !== $funcional
+            && $empresa->tieneFuncionalidadMultimoneda()
+            && (bool) ($cfg['permitir_editar'] ?? false);
+
+        return $monedaService->resolveDocumento(
+            $empresa,
+            $input,
+            Carbon::parse($fecha),
+            $allowManual
+        );
     }
 
     /** Solo columnas que existen en `ventas` (el modelo fillable puede incluir campos legacy). */
