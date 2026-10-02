@@ -3,7 +3,6 @@
 namespace App\Services\Ventas;
 
 use App\Exceptions\FacturacionException;
-use App\Http\Requests\MH\EnviarDTERequest;
 use App\Models\Admin\Documento;
 use App\Models\Admin\Empresa;
 use App\Models\MH\MHCCF;
@@ -12,7 +11,6 @@ use App\Models\MH\MHFacturaExportacion;
 use App\Models\User;
 use App\Models\Ventas\Detalle;
 use App\Models\Ventas\Venta;
-use App\Services\FacturacionElectronica\ElSalvador\ElSalvadorDteService;
 use App\Services\FacturacionElectronica\FacturacionElectronicaCountryGate;
 use App\Services\MhGovSvGatewayService;
 use App\Services\Moneda\MonedaPaisService;
@@ -29,7 +27,6 @@ class GenerarVentasRecurrentesService
 {
     public function __construct(
         private readonly FacturacionService $facturacion,
-        private readonly ElSalvadorDteService $dte,
         private readonly MhGovSvGatewayService $mhGateway,
     ) {
     }
@@ -88,7 +85,19 @@ class GenerarVentasRecurrentesService
                 continue;
             }
 
-            $resultado = $this->generar($plantilla, $empresa, $fecha, $periodo);
+            try {
+                $resultado = $this->generar($plantilla, $empresa, $fecha, $periodo);
+            } catch (\Throwable $e) {
+                Log::channel('facturacion')->error('Ventas recurrentes: error inesperado en plantilla', [
+                    'plantilla_id' => $plantilla->id,
+                    'empresa_id' => $empresa->id,
+                    'error' => $e->getMessage(),
+                ]);
+                $fallidas[] = 'Plantilla #'.$plantilla->correlativo.' (id '.$plantilla->id.'): '.$e->getMessage();
+
+                continue;
+            }
+
             if ($resultado['linea'] === '') {
                 continue;
             }
@@ -190,36 +199,34 @@ class GenerarVentasRecurrentesService
                 try {
                     $this->emitir($venta, $empresa);
                     $venta->refresh();
-                    $this->enviarFacturaAlCliente($venta);
                 } catch (\Throwable $e) {
-                    $venta->refresh();
-                    $tieneDte = !empty($venta->sello_mh) || !empty($venta->dte);
-
-                    if (!$tieneDte) {
-                        Log::channel('facturacion')->error('Ventas recurrentes: emisión fallida', [
-                            'venta_id' => $venta->id,
-                            'plantilla_id' => $plantilla->id,
-                            'error' => $e->getMessage(),
-                        ]);
-
-                        return [
-                            'ok' => false,
-                            'linea' => 'Venta #'.$venta->correlativo.' (id '.$venta->id.') quedó pendiente de emitir a mano. '.$e->getMessage(),
-                        ];
-                    }
-
-                    Log::channel('facturacion')->warning('Ventas recurrentes: DTE emitido pero correo al cliente falló', [
+                    Log::channel('facturacion')->error('Ventas recurrentes: emisión fallida', [
                         'venta_id' => $venta->id,
+                        'plantilla_id' => $plantilla->id,
                         'error' => $e->getMessage(),
                     ]);
 
                     return [
-                        'ok' => true,
-                        'linea' => 'Venta #'.$venta->correlativo.' (id '.$venta->id.') emitida. El DTE no se envió al cliente: '.$e->getMessage(),
+                        'ok' => false,
+                        'linea' => 'Venta #'.$venta->correlativo.' (id '.$venta->id.') quedó pendiente de emitir a mano. '.$e->getMessage(),
                     ];
                 }
 
-                return ['ok' => true, 'linea' => 'Venta #'.$venta->correlativo.' (id '.$venta->id.') emitida.'];
+                $avisoCorreoCliente = '';
+                try {
+                    $this->enviarFacturaAlCliente($venta);
+                } catch (\Throwable $e) {
+                    Log::channel('facturacion')->warning('Ventas recurrentes: correo DTE al cliente falló', [
+                        'venta_id' => $venta->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                    $avisoCorreoCliente = ' El DTE no se envió al cliente: '.$e->getMessage();
+                }
+
+                return [
+                    'ok' => true,
+                    'linea' => 'Venta #'.$venta->correlativo.' (id '.$venta->id.') emitida.'.$avisoCorreoCliente,
+                ];
         });
     }
 
@@ -735,19 +742,55 @@ class GenerarVentasRecurrentesService
         return $body;
     }
 
+    /** Mismo criterio que facturas:generar-suscripciones (sin HTTP ni scopes Auth en consola). */
     private function enviarFacturaAlCliente(Venta $venta): void
     {
-        $request = EnviarDTERequest::create('/api/enviarDTE', 'POST', [
-            'id' => $venta->id,
-            'tipo_dte' => $venta->tipo_dte,
-        ]);
-        $request->setContainer(app())->setRedirector(app('redirect'));
-        $request->validateResolved();
+        $venta = Venta::withoutGlobalScopes()
+            ->with(['cliente' => fn ($q) => $q->withoutGlobalScope('empresa')])
+            ->findOrFail($venta->id);
 
-        $respuesta = $this->dte->enviarDTE($request);
-        if ($respuesta->getStatusCode() >= 400) {
-            throw new \RuntimeException($this->mensaje($respuesta->getData(true)));
+        if (!$venta->cliente || trim((string) $venta->cliente->correo) === '') {
+            throw new \RuntimeException('El cliente no tiene correo electrónico configurado.');
         }
+
+        $dte = $venta->dte;
+        if (!is_array($dte) || $dte === []) {
+            throw new \RuntimeException('La venta no tiene DTE guardado.');
+        }
+
+        $tipoDte = (string) ($dte['identificacion']['tipoDte'] ?? $venta->tipo_dte ?? '');
+        $vistaPdf = match ($tipoDte) {
+            '01' => 'reportes.facturacion.DTE-Factura',
+            '03' => 'reportes.facturacion.DTE-CCF',
+            '11' => 'reportes.facturacion.DTE-Factura-Exportacion',
+            default => throw new \RuntimeException('Tipo de DTE no soportado para correo: '.$tipoDte),
+        };
+
+        $venta->qr = 'https://admin.factura.gob.sv/consultaPublica?ambiente='
+            .$dte['identificacion']['ambiente']
+            .'&codGen='.$dte['identificacion']['codigoGeneracion']
+            .'&fechaEmi='.$dte['identificacion']['fecEmi'];
+
+        $pdfContent = app('dompdf.wrapper')
+            ->loadView($vistaPdf, ['registro' => $venta, 'DTE' => $dte])
+            ->output();
+
+        $correo = trim((string) $venta->cliente->correo);
+        $nombre = $dte['receptor']['nombre'] ?? $venta->cliente->nombre_completo ?? $venta->cliente->nombre;
+        $fromAddress = config('mail.from.address') ?: 'noreply@smartpyme.sv';
+        $fromName = $dte['emisor']['nombre'] ?? config('mail.from.name') ?: 'SmartPyme';
+
+        Mail::send('mails.DTE', ['DTE' => $dte, 'nombre' => $nombre], function ($m) use ($pdfContent, $dte, $correo, $nombre, $fromAddress, $fromName) {
+            $m->from($fromAddress, $fromName)
+                ->to($correo, $nombre)
+                ->attachData($pdfContent, $dte['identificacion']['codigoGeneracion'].'.pdf', [
+                    'mime' => 'application/pdf',
+                ])
+                ->attachData(json_encode($dte), $dte['identificacion']['codigoGeneracion'].'.json', [
+                    'mime' => 'application/json',
+                ])
+                ->subject('Documento Tributario Electrónico');
+        });
     }
 
     private function enviarResumen(Empresa $empresa, string $fecha, array $emitidas, array $fallidas): void
@@ -774,31 +817,27 @@ class GenerarVentasRecurrentesService
             }
         }
 
+        $fromAddress = config('mail.from.address') ?: 'noreply@smartpyme.sv';
+        $fromName = config('mail.from.name') ?: 'SmartPyme';
+
         try {
-            Mail::raw(implode("\n", $lineas), function ($mensaje) use ($correo) {
-                $mensaje->from('noreply@smartpyme.sv', 'SmartPyme')
+            Mail::raw(implode("\n", $lineas), function ($mensaje) use ($correo, $fromAddress, $fromName) {
+                $mensaje->from($fromAddress, $fromName)
                     ->to($correo)
                     ->subject('Resumen de ventas recurrentes');
             });
-        } catch (\Throwable $e) {
-            Log::error('Ventas recurrentes: no se envió el resumen', [
+            Log::channel('facturacion')->info('Ventas recurrentes: resumen enviado', [
                 'empresa_id' => $empresa->id,
+                'correo' => $correo,
+                'emitidas' => count($emitidas),
+                'fallidas' => count($fallidas),
+            ]);
+        } catch (\Throwable $e) {
+            Log::channel('facturacion')->error('Ventas recurrentes: no se envió el resumen', [
+                'empresa_id' => $empresa->id,
+                'correo' => $correo,
                 'error' => $e->getMessage(),
             ]);
         }
-    }
-
-    private function mensaje(mixed $data): string
-    {
-        if (!is_array($data)) {
-            return 'No se pudo completar la emisión.';
-        }
-
-        $error = $data['error'] ?? $data['descripcionMsg'] ?? null;
-        if (is_string($error) && $error !== '') {
-            return $error;
-        }
-
-        return json_encode($data, JSON_UNESCAPED_UNICODE) ?: 'No se pudo completar la emisión.';
     }
 }
