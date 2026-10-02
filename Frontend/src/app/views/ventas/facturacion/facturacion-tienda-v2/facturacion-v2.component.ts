@@ -2,6 +2,7 @@ import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { TranslatePipe } from '@ngx-translate/core';
+import { DisplayNombreImpuestoPipe } from '@pipes/display-nombre-impuesto.pipe';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule } from '@angular/forms';
 import { NgSelectModule } from '@ng-select/ng-select';
@@ -90,6 +91,7 @@ import {
     MetodosDePagoComponent,
     VentaDetallesV2Component,
     TranslatePipe,
+    DisplayNombreImpuestoPipe,
     SharedModule,
     VentaRecurrenciaConfigComponent,
   ],

@@ -14,6 +14,7 @@ import { CrearProyectoComponent } from '@shared/modals/crear-proyecto/crear-proy
 import { NgSelectModule } from '@ng-select/ng-select';
 import { BaseComponent } from '@shared/base/base.component';
 import { TranslatePipe } from '@ngx-translate/core';
+import { DisplayNombreImpuestoPipe } from '@pipes/display-nombre-impuesto.pipe';
 import { LazyImageDirective } from '../../../../../directives/lazy-image.directive';
 
 @Component({
@@ -21,7 +22,7 @@ import { LazyImageDirective } from '../../../../../directives/lazy-image.directi
     templateUrl: './cotizacion-form.component.html',
     styleUrls: ['./cotizacion-form.component.css'],
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, VentaDetallesComponent, CrearClienteComponent, CrearProyectoComponent, LazyImageDirective, TranslatePipe, CurrencyPipe],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, VentaDetallesComponent, CrearClienteComponent, CrearProyectoComponent, LazyImageDirective, TranslatePipe, DisplayNombreImpuestoPipe, CurrencyPipe],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CotizacionFormComponent extends BaseComponent implements OnInit {

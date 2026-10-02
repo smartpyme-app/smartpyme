@@ -191,25 +191,23 @@ final class DocumentoImpresionHnTest extends TestCase
             ],
         ];
 
-        $this->assertSame([
-            'exonerado' => 75.0,
-            'exento' => 50.0,
-            'gravado_15' => 100.0,
-            'gravado_18' => 200.0,
-            'isv_15' => 15.0,
-            'isv_18' => 36.0,
-            'descuento' => 5.0,
-        ], DocumentoImpresionHn::totales($detalles, 15));
+        $totales = DocumentoImpresionHn::totales($detalles, 15);
 
+        $this->assertSame(75.0, $totales['exonerado']);
+        $this->assertSame(50.0, $totales['exento']);
+        $this->assertSame(100.0, $totales['gravado_15']);
+        $this->assertSame(200.0, $totales['gravado_18']);
+        $this->assertSame(15.0, $totales['isv_15']);
+        $this->assertSame(36.0, $totales['isv_18']);
+        $this->assertSame(5.0, $totales['descuento']);
         $this->assertSame([
-            'exonerado' => 0.0,
-            'exento' => 0.0,
-            'gravado_15' => 0.0,
-            'gravado_18' => 0.0,
-            'isv_15' => 0.0,
-            'isv_18' => 0.0,
-            'descuento' => 0.0,
-        ], DocumentoImpresionHn::totales([], 15));
+            '15.00' => ['tasa' => 15.0, 'gravado' => 100.0, 'isv' => 15.0],
+            '18.00' => ['tasa' => 18.0, 'gravado' => 200.0, 'isv' => 36.0],
+        ], $totales['isv_por_tasa']);
+
+        $vacios = DocumentoImpresionHn::totales([], 15);
+        $this->assertSame(0.0, $vacios['descuento']);
+        $this->assertSame([], $vacios['isv_por_tasa']);
     }
 
     public function test_porcentaje_impuesto_vacio_usa_el_iva_de_la_empresa(): void
@@ -317,5 +315,35 @@ final class DocumentoImpresionHnTest extends TestCase
     {
         $this->assertSame('439', DocumentoImpresionHn::correlativo(new Documento(), 439));
         $this->assertSame('439', DocumentoImpresionHn::correlativo(new Documento(['numero_emision' => '']), '439'));
+    }
+
+    public function test_descuento_impresion_toma_el_mayor_entre_cabecera_y_lineas(): void
+    {
+        $totales = ['descuento' => 12.5];
+
+        $this->assertSame(12.5, DocumentoImpresionHn::descuentoImpresion(0, $totales));
+        $this->assertSame(20.0, DocumentoImpresionHn::descuentoImpresion(20, $totales));
+    }
+
+    public function test_agrupa_cualquier_tasa_de_impuesto_en_isv_por_tasa(): void
+    {
+        $totales = DocumentoImpresionHn::totales([
+            (object) [
+                'tipo_gravado' => 'gravada',
+                'porcentaje_impuesto' => 13,
+                'gravada' => 100,
+                'iva' => 13,
+            ],
+            (object) [
+                'tipo_gravado' => 'gravada',
+                'porcentaje_impuesto' => 15,
+                'gravada' => 50,
+                'iva' => 7.5,
+            ],
+        ], 15);
+
+        $this->assertSame(100.0, $totales['isv_por_tasa']['13.00']['gravado']);
+        $this->assertSame(13.0, $totales['isv_por_tasa']['13.00']['isv']);
+        $this->assertSame(50.0, $totales['isv_por_tasa']['15.00']['gravado']);
     }
 }

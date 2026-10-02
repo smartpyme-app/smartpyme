@@ -371,7 +371,7 @@
                     }
                     @for (impuesto of venta?.impuestos; track impuesto.id || $index) {
                         <tr>
-                            <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end">{{ impuesto?.impuesto?.nombre }} <small class="text-muted">({{ impuesto?.impuesto?.porcentaje | number:'1.0-2' }}%)</small> </td>
+                            <td [attr.colspan]="5 + (usuario.empresa.vendedor_detalle_venta ? 1 : 0)" class="text-end">{{ impuesto?.impuesto?.nombre | displayNombreImpuesto }} <small class="text-muted">({{ impuesto?.impuesto?.porcentaje | number:'1.0-2' }}%)</small> </td>
                             <td class="text-end">{{ impuesto.monto | currency}} </td>
                         </tr>
                     }

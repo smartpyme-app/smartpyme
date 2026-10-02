@@ -50,10 +50,7 @@ class DocumentoService
             return $this->generarFacturaTicketAccesoriosHn($venta, $empresa, $documento);
         }
 
-        // El Ticket HN conserva su impresión térmica; el resto de fiscales HN usa el resolver del país.
-        $vistaHn = $documento->nombre === 'Ticket'
-            ? null
-            : DocumentoImpresionHn::resolverVista($empresa, $documento);
+        $vistaHn = DocumentoImpresionHn::resolverVista($empresa, $documento);
 
         if ($vistaHn !== null) {
             return $this->generarDocumentoHonduras($venta, $empresa, $documento, $vistaHn);
