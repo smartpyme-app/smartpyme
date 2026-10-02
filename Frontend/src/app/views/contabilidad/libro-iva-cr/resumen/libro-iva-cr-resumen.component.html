@@ -16,5 +16,45 @@
     </div>
   </div>
 
+  @if (!loading && resumenEjecutivo().length > 0) {
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body p-0">
+        <div class="px-3 pt-3 pb-2 border-bottom bg-light bg-opacity-50">
+          <h6 class="text-dark mb-0 fw-semibold">Detalle de impuestos por tipo de IVA</h6>
+        </div>
+        <div class="table-responsive px-2 pb-2">
+          <table class="table table-borderless table-hover align-middle mb-0">
+            <thead class="border-bottom">
+              <tr>
+                <th class="text-muted small fw-semibold">Tipo de IVA</th>
+                <th class="text-end text-muted small fw-semibold">Ventas</th>
+                <th class="text-end text-muted small fw-semibold">Compras</th>
+                <th class="text-end text-muted small fw-semibold">Neto</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of resumenEjecutivo(); track row.tipo) {
+                <tr>
+                  <td class="text-dark">{{ row.tipo }}</td>
+                  <td class="text-end">{{ row.ventas | currency }}</td>
+                  <td class="text-end">{{ row.compras | currency }}</td>
+                  <td class="text-end" [class.text-danger]="row.neto < 0">{{ row.neto | currency }}</td>
+                </tr>
+              }
+            </tbody>
+            <tfoot class="border-top">
+              <tr class="fw-semibold">
+                <td class="text-dark">Total</td>
+                <td class="text-end">{{ sumaEjecutivo('ventas') | currency }}</td>
+                <td class="text-end">{{ sumaEjecutivo('compras') | currency }}</td>
+                <td class="text-end" [class.text-danger]="sumaEjecutivo('neto') < 0">{{ sumaEjecutivo('neto') | currency }}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+  }
+
   <app-libro-iva-resumen-panel [fiscalResumen]="fiscalResumen" [loading]="loading" />
 </div>

@@ -53,4 +53,49 @@ class AuditPresentationServiceTest extends TestCase
         $text = $svc->describe('updated', 'App\\Models\\Foo\\Bar', ['total' => 100], null, [], 99);
         $this->assertSame('Sistema actualizó Bar #99', $text);
     }
+
+    public function test_describe_sesion_mesa_abierta(): void
+    {
+        $svc = new AuditPresentationService();
+        $svc->setDocumentReferences(['App\\Models\\Restaurante\\SesionMesa:7' => 'Mesa 12']);
+        $text = $svc->describe(
+            'created',
+            'App\\Models\\Restaurante\\SesionMesa',
+            ['mesa_id' => 3, 'estado' => 'abierta'],
+            'Ana',
+            [],
+            7
+        );
+        $this->assertSame('Ana abrió Mesa 12', $text);
+    }
+
+    public function test_describe_sesion_mesa_cerrada(): void
+    {
+        $svc = new AuditPresentationService();
+        $svc->setDocumentReferences(['App\\Models\\Restaurante\\SesionMesa:7' => 'Mesa 12']);
+        $text = $svc->describe(
+            'updated',
+            'App\\Models\\Restaurante\\SesionMesa',
+            ['estado' => 'cerrada'],
+            'Ana',
+            ['estado' => 'abierta'],
+            7
+        );
+        $this->assertSame('Ana cerró Mesa 12', $text);
+    }
+
+    public function test_describe_reserva_creada(): void
+    {
+        $svc = new AuditPresentationService();
+        $svc->setDocumentReferences(['App\\Models\\Restaurante\\Reserva:4' => 'Mesa 5']);
+        $text = $svc->describe(
+            'created',
+            'App\\Models\\Restaurante\\Reserva',
+            ['mesa_id' => 5],
+            'Luis',
+            [],
+            4
+        );
+        $this->assertSame('Luis reservó Mesa 5', $text);
+    }
 }

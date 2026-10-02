@@ -354,6 +354,18 @@ export class ApiService {
     return this.permissionService.isVentas();
   }
 
+  /** Ventas recurrentes automáticas activadas en Preferencias del sistema (Mi cuenta). */
+  isVentasRecurrentesAutomaticasActivo(): boolean {
+    const empresa = this.auth_user()?.empresa;
+    if (!empresa?.custom_empresa) {
+      return false;
+    }
+    const customConfig = typeof empresa.custom_empresa === 'string'
+      ? JSON.parse(empresa.custom_empresa)
+      : empresa.custom_empresa;
+    return customConfig?.configuraciones?.ventas_recurrentes_automaticas_activo === true;
+  }
+
   isLotesActivo(): boolean {
     const empresa = this.auth_user()?.empresa;
     if (!empresa?.custom_empresa) {
@@ -495,6 +507,17 @@ export class ApiService {
             ? JSON.parse(empresa.custom_empresa)
             : empresa.custom_empresa;
         return customConfig?.configuraciones?.inventario_sumar_stock_busquedas === true;
+    }
+
+    isActualizacionMasivaProductosActiva(): boolean {
+        const empresa = this.auth_user()?.empresa;
+        if (!empresa || !empresa.custom_empresa) {
+            return false;
+        }
+        const customConfig = typeof empresa.custom_empresa === 'string'
+            ? JSON.parse(empresa.custom_empresa)
+            : empresa.custom_empresa;
+        return customConfig?.configuraciones?.actualizacion_masiva_productos === true;
     }
 
     /** Preferencia en Mi cuenta → Inventario (requiere funcionalidad asignada en Super Admin). */

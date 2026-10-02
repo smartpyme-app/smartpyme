@@ -87,7 +87,10 @@ class FacturacionService
         }
 
         if ((int) $request->cotizacion !== 1 && $request->filled('id_documento')) {
-            $documento = Documento::find($request->id_documento);
+            $documento = Documento::withoutGlobalScopes()
+                ->where('id', $request->id_documento)
+                ->where('id_empresa', $user->id_empresa)
+                ->first();
             if ($documento && in_array($documento->nombre, Venta::DOCUMENTOS_NO_CONTABLES, true)) {
                 throw new FacturacionException(
                     'Debe seleccionar un documento fiscal válido. No se puede facturar con el documento "' . $documento->nombre . '".',
@@ -189,9 +192,23 @@ class FacturacionService
                     }
                 }
 
-                $documento = Documento::where('id', $request->id_documento)
+                $idDocumento = (int) $request->input('id_documento');
+                if ($idDocumento <= 0) {
+                    throw new FacturacionException('Debe indicar un documento fiscal (id_documento).', 422);
+                }
+
+                $documento = Documento::withoutGlobalScopes()
+                    ->where('id', $idDocumento)
+                    ->where('id_empresa', (int) $empresa->id)
                     ->lockForUpdate()
-                    ->firstOrFail();
+                    ->first();
+
+                if (!$documento) {
+                    throw new FacturacionException(
+                        'Documento id '.$idDocumento.' no existe para la empresa '.$empresa->id.'.',
+                        422
+                    );
+                }
 
                 $this->aplicarReglasVentaRemisionConsigna($venta, $documento, $request);
 

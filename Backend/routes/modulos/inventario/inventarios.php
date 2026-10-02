@@ -21,4 +21,5 @@ use Illuminate\Support\Facades\Route;
     Route::post('/bodega/productos/filtrar',       [InventariosController::class, 'productosFiltrar']);
 
     Route::get('/inventarios/exportar',              [InventariosController::class, 'export']);
-    Route::get('/inventarios/exportar-analisis-ventas-mensual', [InventariosController::class, 'exportAnalisisVentasMensual']);
+    Route::post('/inventarios/solicitar-analisis-ventas-mensual', [InventariosController::class, 'solicitarAnalisisVentasMensual']);
+    Route::get('/inventarios/analisis-ventas-mensual/estado-cola', [InventariosController::class, 'estadoColaAnalisisVentasMensual']);

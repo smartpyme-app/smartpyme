@@ -3,6 +3,8 @@
 namespace App\Services\Audit;
 
 use App\Models\Inventario\Producto;
+use App\Models\Restaurante\Reserva;
+use App\Models\Restaurante\SesionMesa;
 
 class AuditPresentationService
 {
@@ -41,6 +43,8 @@ class AuditPresentationService
         'App\\Models\\Inventario\\Paquete' => 'Paquete',
         'App\\Models\\Restaurante\\PedidoRestaurante' => 'Pedido',
         'App\\Models\\Restaurante\\Comanda' => 'Comanda',
+        'App\\Models\\Restaurante\\SesionMesa' => 'Sesión de mesa',
+        'App\\Models\\Restaurante\\Reserva' => 'Reserva',
     ];
 
     private const PRODUCT_AWARE_TYPES = [
@@ -79,7 +83,40 @@ class AuditPresentationService
 
         $ref = $this->resolveReference($type, $newValues, $oldValues, $auditableId);
 
+        $restauranteMesa = $this->describeRestauranteMesaEvent($event, $type, $newValues, $who, $ref);
+        if ($restauranteMesa !== null) {
+            return $restauranteMesa;
+        }
+
         return sprintf('%s %s %s #%s', $who, $action, $label, $ref);
+    }
+
+    private function describeRestauranteMesaEvent(
+        string $event,
+        string $type,
+        array $newValues,
+        string $who,
+        string $ref
+    ): ?string {
+        if ($type === SesionMesa::class) {
+            if ($event === 'created') {
+                return sprintf('%s abrió %s', $who, $ref);
+            }
+            if ($event === 'updated' && ($newValues['estado'] ?? null) === 'cerrada') {
+                return sprintf('%s cerró %s', $who, $ref);
+            }
+        }
+
+        if ($type === Reserva::class) {
+            if ($event === 'created') {
+                return sprintf('%s reservó %s', $who, $ref);
+            }
+            if ($event === 'updated' && ($newValues['estado'] ?? null) === 'cancelada') {
+                return sprintf('%s canceló la reserva de %s', $who, $ref);
+            }
+        }
+
+        return null;
     }
 
     private function resolveReference(string $type, array $newValues, array $oldValues, ?int $auditableId): string

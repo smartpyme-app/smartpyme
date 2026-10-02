@@ -152,6 +152,10 @@ return [
             'ver' => 'productos.kardex.ver',
         ],
 
+        'actualizacion_masiva' => [
+            'ejecutar' => 'productos.actualizacion_masiva.ejecutar',
+        ],
+
         'categorias' => [
             'ver' => 'productos.categorias.ver',
             'crear' => 'productos.categorias.crear',

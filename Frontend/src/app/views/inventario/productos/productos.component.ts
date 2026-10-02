@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { Component, OnDestroy, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
 import { FormsModule } from '@angular/forms';
@@ -32,6 +32,17 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { RecalcularPreciosTcComponent } from '@views/inventario/recalcular-precios-tc/recalcular-precios-tc.component';
 import { DescargarInventarioComponent } from '@shared/parts/descargar-inventario/descargar-inventario.component';
 
+export type AnalisisVentasColaEstado = {
+    id: number;
+    email: string;
+    params?: { anio?: number; agrupar_por?: string };
+    status: 'pending' | 'processing' | 'completed' | 'failed';
+    created_at: string;
+    started_at?: string | null;
+    completed_at?: string | null;
+    error_message?: string | null;
+};
+
 @Component({
     selector: 'app-productos',
     templateUrl: './productos.component.html',
@@ -48,12 +59,40 @@ import { DescargarInventarioComponent } from '@shared/parts/descargar-inventario
         ProductoShopifySyncComponent,
         TranslatePipe, CurrencyPipe, RecalcularPreciosTcComponent, DescargarInventarioComponent],
 })
-export class ProductosComponent implements OnInit {
+export class ProductosComponent implements OnInit, OnDestroy {
 
     public productos: any = [];
     public loading: boolean = false;
     public downloading: boolean = false;
     public downloadingReporteAnalisis: boolean = false;
+    public reporteAnalisisVentas: {
+        anio: number;
+        id_vendedor: number | null;
+        id_cliente: number | null;
+        id_categoria: number | null;
+        id_proveedor: number | null;
+        agrupar_por: 'producto' | 'cliente' | 'categoria' | 'vendedor' | 'proveedor';
+        mostrar_datos: 'unidades' | 'valor';
+        todos_productos: boolean;
+        cliente_layout: 'unica' | 'separadas';
+    } = {
+        anio: new Date().getFullYear(),
+        id_vendedor: null,
+        id_cliente: null,
+        id_categoria: null,
+        id_proveedor: null,
+        agrupar_por: 'producto',
+        mostrar_datos: 'unidades',
+        todos_productos: true,
+        cliente_layout: 'unica',
+    };
+    public clientesReporte: any[] = [];
+    public vendedoresReporte: any[] = [];
+    public emailReporteAnalisisVentas = '';
+    public analisisVentasColaEstados: AnalisisVentasColaEstado[] = [];
+    public loadingAnalisisVentasCola = false;
+    private analisisVentasColaPollTimer: ReturnType<typeof setInterval> | null = null;
+    public readonly aniosReporteAnalisis = aniosDisponiblesExportDesde();
     public filtros: any = {};
     public producto: any = {};
     public bodegas: any = [];
@@ -242,29 +281,141 @@ export class ProductosComponent implements OnInit {
     }
 
     public cerrarModalDescargar(): void {
+        this.detenerPollColaAnalisisVentas();
         if (this.modalRef) {
             this.modalRef.hide();
         }
     }
 
+    public openReporteAnalisisVentasMensual(template: TemplateRef<any>) {
+        if (!this.proveedores?.length) {
+            this.apiService.getAll('proveedores/list').subscribe(proveedores => {
+                this.proveedores = proveedores;
+            }, error => { this.alertService.error(error); });
+        }
+        if (!this.clientesReporte?.length) {
+            this.apiService.getAll('clientes/list').subscribe(clientes => {
+                this.clientesReporte = clientes;
+            }, error => { this.alertService.error(error); });
+        }
+        if (!this.vendedoresReporte?.length) {
+            this.apiService.getAll('usuarios/list').subscribe(usuarios => {
+                this.vendedoresReporte = usuarios;
+            }, error => { this.alertService.error(error); });
+        }
+        const user = this.apiService.auth_user();
+        this.emailReporteAnalisisVentas = user?.email || '';
+        this.modalRef = this.modalService.show(template, { class: 'modal-lg' });
+        this.cargarEstadoColaAnalisisVentas();
+    }
+
+    ngOnDestroy(): void {
+        this.detenerPollColaAnalisisVentas();
+    }
+
+    public cargarEstadoColaAnalisisVentas(silent = false): void {
+        const idEmpresa = this.apiService.auth_user()?.empresa?.id;
+        if (!idEmpresa) {
+            return;
+        }
+        if (!silent) {
+            this.loadingAnalisisVentasCola = true;
+        }
+        this.apiService.getAll('inventarios/analisis-ventas-mensual/estado-cola', { id_empresa: idEmpresa }).subscribe(
+            (response: { estados?: AnalisisVentasColaEstado[] }) => {
+                this.analisisVentasColaEstados = response?.estados ?? [];
+                this.loadingAnalisisVentasCola = false;
+                this.actualizarPollColaAnalisisVentas();
+            },
+            (error) => {
+                this.loadingAnalisisVentasCola = false;
+                this.alertService.error(error);
+            }
+        );
+    }
+
+    private actualizarPollColaAnalisisVentas(): void {
+        const activo = this.analisisVentasColaEstados.some(
+            (e) => e.status === 'pending' || e.status === 'processing'
+        );
+        if (activo && !this.analisisVentasColaPollTimer) {
+            this.analisisVentasColaPollTimer = setInterval(() => this.cargarEstadoColaAnalisisVentas(true), 15000);
+        } else if (!activo) {
+            this.detenerPollColaAnalisisVentas();
+        }
+    }
+
+    private detenerPollColaAnalisisVentas(): void {
+        if (this.analisisVentasColaPollTimer) {
+            clearInterval(this.analisisVentasColaPollTimer);
+            this.analisisVentasColaPollTimer = null;
+        }
+    }
+
+    public etiquetaEstadoColaAnalisisVentas(status: AnalisisVentasColaEstado['status']): string {
+        switch (status) {
+            case 'pending':
+                return 'En cola';
+            case 'processing':
+                return 'Procesando';
+            case 'completed':
+                return 'Completado';
+            case 'failed':
+                return 'Error';
+            default: {
+                const _exhaustive: never = status;
+                return _exhaustive;
+            }
+        }
+    }
+
+    public claseBadgeEstadoColaAnalisisVentas(status: AnalisisVentasColaEstado['status']): string {
+        switch (status) {
+            case 'pending':
+                return 'bg-secondary';
+            case 'processing':
+                return 'bg-primary';
+            case 'completed':
+                return 'bg-success';
+            case 'failed':
+                return 'bg-danger';
+            default: {
+                const _exhaustive: never = status;
+                return _exhaustive;
+            }
+        }
+    }
+
     public descargarReporteInventarioVentasMensual() {
+        const email = (this.emailReporteAnalisisVentas || '').trim();
+        if (!email || !email.includes('@')) {
+            this.alertService.error('Debe ingresar un correo electrónico válido');
+            return;
+        }
+
         this.downloadingReporteAnalisis = true;
         const empresa = this.apiService.auth_user()?.empresa;
-        const params = {
+        const r = this.reporteAnalisisVentas;
+        const payload = {
+            email,
             id_empresa: empresa?.id,
-            fecha: this.apiService.date(),
+            anio: r.anio,
+            agrupar_por: r.agrupar_por,
+            mostrar_datos: r.mostrar_datos,
+            todos_productos: r.todos_productos ? 1 : 0,
+            cliente_layout: r.cliente_layout,
+            ...(r.id_vendedor ? { id_vendedor: r.id_vendedor } : {}),
+            ...(r.id_cliente ? { id_cliente: r.id_cliente } : {}),
+            ...(r.id_categoria ? { id_categoria: r.id_categoria } : {}),
+            ...(r.id_proveedor ? { id_proveedor: r.id_proveedor } : {}),
         };
-        this.apiService.export('inventarios/exportar-analisis-ventas-mensual', params).subscribe((data: Blob) => {
-            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'reporte-inventario-ventas.xlsx';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
+        this.apiService.store('inventarios/solicitar-analisis-ventas-mensual', payload).subscribe(() => {
+            this.alertService.success(
+                'Solicitud registrada',
+                'El reporte se generará en segundo plano. Recibirá un correo con el Excel cuando esté listo.'
+            );
             this.downloadingReporteAnalisis = false;
+            this.cargarEstadoColaAnalisisVentas();
         }, (error) => { this.alertService.error(error); this.downloadingReporteAnalisis = false; });
     }
 

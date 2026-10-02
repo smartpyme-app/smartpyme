@@ -45,6 +45,7 @@ import {
   validarPeriodoExport,
 } from '../../helpers/export-period.helper';
 import { FE_PAIS_SV, resolveCodigoPaisFe } from '@services/facturacion-electronica/fe-pais.util';
+import { VentaRecurrenciaConfigComponent } from '@shared/modals/venta-recurrencia-config/venta-recurrencia-config.component';
 
 export type VentasExportPeriodoTipo = 'detalles' | 'ventas' | 'general';
 
@@ -52,7 +53,7 @@ export type VentasExportPeriodoTipo = 'detalles' | 'ventas' | 'general';
     selector: 'app-ventas',
     templateUrl: './ventas.component.html',
     standalone: true,
-    imports: [CommonModule, PipesModule, RouterModule, FormsModule, ImportarExcelComponent, PaginationComponent, CrearAbonoVentaComponent, TruncatePipe, PopoverModule, TooltipModule, NgSelectModule, LazyImageDirective, AlertsHaciendaComponent, FeCrEmisionAvanzadoComponent, NotificacionesContainerComponent, SharedModule, CurrencyPipe],
+    imports: [CommonModule, PipesModule, RouterModule, FormsModule, ImportarExcelComponent, PaginationComponent, CrearAbonoVentaComponent, TruncatePipe, PopoverModule, TooltipModule, NgSelectModule, LazyImageDirective, AlertsHaciendaComponent, FeCrEmisionAvanzadoComponent, NotificacionesContainerComponent, SharedModule, CurrencyPipe, VentaRecurrenciaConfigComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     styleUrls: ['./ventas.component.css'],
 })
@@ -63,6 +64,8 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     puedeFacturarVentaCuota(venta, this.creditosClientesActivo);
   public queryFacturarVenta = queryFacturarVenta;
   public creditosClientesActivo = false;
+  public recurrenciaAutomatica = false;
+  @ViewChild(VentaRecurrenciaConfigComponent) recurrenciaConfigModal?: VentaRecurrenciaConfigComponent;
 
   private destroy$ = new Subject<void>();
   private searchSubject$ = new Subject<void>();
@@ -294,6 +297,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
     this.usuario = this.apiService.auth_user();
     this.verificarAccesoContabilidad();
     this.verificarAccesoCreditosClientes();
+    this.verificarAccesoRecurrencia();
 
     this.apiService.getAll('boxful/status')
       .pipe(this.untilDestroyed())
@@ -1369,6 +1373,61 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit, O
       this.cdr.markForCheck();
     }
   }
+
+    public verificarAccesoRecurrencia() {
+        this.apiService.getAll('ventas-recurrentes/preferencias')
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (cfg: any) => {
+                    this.recurrenciaAutomatica = !!cfg?.activo;
+                    this.syncRecurrenciaEnSesion(!!cfg?.activo);
+                    this.cdr.markForCheck();
+                },
+                error: () => {
+                    this.recurrenciaAutomatica = this.apiService.isVentasRecurrentesAutomaticasActivo();
+                    this.cdr.markForCheck();
+                },
+            });
+    }
+
+    private syncRecurrenciaEnSesion(activo: boolean): void {
+        const authEmpresa = this.apiService.auth_user()?.empresa;
+        if (!authEmpresa) {
+            return;
+        }
+        let custom = authEmpresa.custom_empresa;
+        if (typeof custom === 'string') {
+            try {
+                custom = JSON.parse(custom);
+            } catch {
+                return;
+            }
+        }
+        if (!custom || typeof custom !== 'object') {
+            custom = { configuraciones: {} };
+        }
+        if (!custom.configuraciones || typeof custom.configuraciones !== 'object') {
+            custom.configuraciones = {};
+        }
+        custom.configuraciones.ventas_recurrentes_automaticas_activo = activo;
+        authEmpresa.custom_empresa = custom;
+    }
+
+    public abrirRecurrencia(venta: any) {
+        if (!this.recurrenciaAutomatica) {
+            this.alertService.warning(
+                'Recurrencia automática',
+                'Actívala en Mi cuenta → Preferencias del sistema → Módulos → Ventas recurrentes automáticas, y guarda los cambios.',
+            );
+            return;
+        }
+        if (!this.recurrenciaConfigModal) {
+            this.alertService.error('No se pudo abrir el formulario. Recarga la página e intenta de nuevo.');
+            return;
+        }
+        this.venta = venta;
+        this.recurrenciaConfigModal.open(venta).then(() => this.cdr.markForCheck());
+    }
 
     public setRecurrencia(venta:any){
         this.venta = venta;

@@ -42,8 +42,8 @@
             <div class="d-flex gap-2">
                 <app-importar-excel (loadAll)="loadAll()" [nombre]="'productos'"></app-importar-excel>
                 <button *ngIf="apiService.isInventarioReporteAnalisisVentasMensual()"
-                    [disabled]="downloadingReporteAnalisis" tooltip="Descargar reporte inventario vs ventas (Excel)"
-                    (click)="descargarReporteInventarioVentasMensual()" class="btn btn-default">
+                    [disabled]="downloadingReporteAnalisis" tooltip="Comportamiento anual / inventario vs ventas (Excel)"
+                    (click)="openReporteAnalisisVentasMensual(mreporteAnalisisVentas)" class="btn btn-default">
                     <i class="fa fa-line-chart text-primary" aria-hidden="true"></i>
                 </button>
                 <button [disabled]="downloading" tooltip="Descargar productos" (click)="openDescargar(mdescargar)"
@@ -605,6 +605,160 @@
                 </button>
             </div>
         </form>
+    </div>
+</ng-template>
+
+<ng-template #mreporteAnalisisVentas>
+    <div class="modal-header">
+        <h4 class="modal-title">Comportamiento anual</h4>
+        <button type="button" class="btn-close" (click)="cerrarModalDescargar()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <form autocomplete="off" (ngSubmit)="descargarReporteInventarioVentasMensual()">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Año</label>
+                    <select class="form-select" name="anioReporte" [(ngModel)]="reporteAnalisisVentas.anio">
+                        <option *ngFor="let y of aniosReporteAnalisis" [ngValue]="y">{{ y }}</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Vendedor</label>
+                    <ng-select [items]="vendedoresReporte" bindLabel="name" bindValue="id" [clearable]="true"
+                        placeholder="Todos" name="vendedorReporte" [(ngModel)]="reporteAnalisisVentas.id_vendedor"
+                        class="form-select p-0">
+                    </ng-select>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Cliente</label>
+                    <ng-select [items]="clientesReporte" bindLabel="nombre_completo" bindValue="id" [clearable]="true"
+                        placeholder="Todos" name="clienteReporte" [(ngModel)]="reporteAnalisisVentas.id_cliente"
+                        class="form-select p-0">
+                    </ng-select>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Categoría</label>
+                    <ng-select [items]="categorias" bindLabel="nombre" bindValue="id" [clearable]="true"
+                        placeholder="Todas" name="categoriaReporte" [(ngModel)]="reporteAnalisisVentas.id_categoria"
+                        class="form-select p-0">
+                    </ng-select>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Proveedor</label>
+                    <ng-select [items]="proveedores" bindLabel="nombre" bindValue="id" [clearable]="true"
+                        placeholder="Todos" name="proveedorReporte" [(ngModel)]="reporteAnalisisVentas.id_proveedor"
+                        class="form-select p-0">
+                    </ng-select>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label d-block">Agrupar por</label>
+                    <select class="form-select" name="agruparReporte" [(ngModel)]="reporteAnalisisVentas.agrupar_por">
+                        <option value="producto">Producto</option>
+                        <option value="cliente">Cliente</option>
+                        <option value="categoria">Categoría</option>
+                        <option value="vendedor">Vendedor</option>
+                        <option value="proveedor">Proveedor</option>
+                    </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label d-block">Mostrar datos</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="mostrarDatosReporte" id="mostrarUnidades"
+                            value="unidades" [(ngModel)]="reporteAnalisisVentas.mostrar_datos">
+                        <label class="form-check-label" for="mostrarUnidades">Unidades vendidas</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="mostrarDatosReporte" id="mostrarValor"
+                            value="valor" [(ngModel)]="reporteAnalisisVentas.mostrar_datos">
+                        <label class="form-check-label" for="mostrarValor">Valor monetario (kardex con descuento)</label>
+                    </div>
+                </div>
+            </div>
+            <div class="mb-3" *ngIf="reporteAnalisisVentas.agrupar_por === 'producto'">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="todosProductosReporte" name="todosProductosReporte"
+                        [(ngModel)]="reporteAnalisisVentas.todos_productos">
+                    <label class="form-check-label" for="todosProductosReporte">Todos los productos (incluir sin ventas)</label>
+                </div>
+            </div>
+            <div class="mb-3" *ngIf="reporteAnalisisVentas.agrupar_por === 'cliente'">
+                <label class="form-label d-block">Excel por cliente</label>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="clienteLayoutReporte" id="clienteUnica"
+                        value="unica" [(ngModel)]="reporteAnalisisVentas.cliente_layout">
+                    <label class="form-check-label" for="clienteUnica">Una hoja (columna Cliente)</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="clienteLayoutReporte" id="clienteSeparadas"
+                        value="separadas" [(ngModel)]="reporteAnalisisVentas.cliente_layout">
+                    <label class="form-check-label" for="clienteSeparadas">Hoja separada por cliente</label>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Correo para recibir el Excel</label>
+                <input type="email" class="form-control" name="emailReporteAnalisis" [(ngModel)]="emailReporteAnalisisVentas"
+                    placeholder="correo@empresa.com" required>
+                <p class="text-muted small mt-2 mb-0">
+                    El reporte se procesa en cola (como el kardex masivo). Puede tardar varios minutos si hay muchos datos.
+                </p>
+            </div>
+            <div class="d-grid">
+                <button type="submit" class="btn btn-primary" [disabled]="downloadingReporteAnalisis">
+                    <span *ngIf="!downloadingReporteAnalisis">Solicitar reporte por correo</span>
+                    <span *ngIf="downloadingReporteAnalisis">Registrando...</span>
+                </button>
+            </div>
+        </form>
+
+        <hr class="my-4">
+
+        <div class="d-flex align-items-center justify-content-between mb-2">
+            <h6 class="mb-0">Últimas solicitudes</h6>
+            <button type="button" class="btn btn-sm btn-outline-secondary" (click)="cargarEstadoColaAnalisisVentas()"
+                [disabled]="loadingAnalisisVentasCola">
+                <i class="fa" [ngClass]="loadingAnalisisVentasCola ? 'fa-spinner fa-spin' : 'fa-refresh'"></i>
+                Actualizar
+            </button>
+        </div>
+        <p class="text-muted small" *ngIf="!loadingAnalisisVentasCola && !analisisVentasColaEstados.length">
+            Aún no hay solicitudes registradas para esta empresa.
+        </p>
+        <div class="table-responsive" *ngIf="analisisVentasColaEstados.length">
+            <table class="table table-sm table-striped mb-0">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Correo</th>
+                        <th>Año</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let item of analisisVentasColaEstados">
+                        <td>{{ item.created_at | date:'short' }}</td>
+                        <td class="text-break">{{ item.email }}</td>
+                        <td>{{ item.params?.anio ?? '—' }}</td>
+                        <td>
+                            <span class="badge" [ngClass]="claseBadgeEstadoColaAnalisisVentas(item.status)">
+                                {{ etiquetaEstadoColaAnalisisVentas(item.status) }}
+                            </span>
+                            <small class="d-block text-danger mt-1" *ngIf="item.status === 'failed' && item.error_message">
+                                {{ item.error_message }}
+                            </small>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <p class="text-muted small mt-2 mb-0" *ngIf="analisisVentasColaEstados.length">
+            Si hay solicitudes en cola o procesándose, el listado se actualiza solo cada 15 segundos.
+        </p>
     </div>
 </ng-template>
 

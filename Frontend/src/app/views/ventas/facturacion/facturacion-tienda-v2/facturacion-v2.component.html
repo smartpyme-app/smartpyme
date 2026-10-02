@@ -361,7 +361,16 @@
                 {{ mensajeValidacionFecha }}
             </div>
         </div>
-        <div class="form-group col-md-6 col-lg-3 without-label" *ngIf="venta.cotizacion != 1">
+        <div class="form-group col-md-6 col-lg-3 without-label" *ngIf="venta.cotizacion != 1 && recurrenciaAutomatica">
+            <div class="form-switch bg-light-info rounded">
+              <label for="recurrenciaAutomaticaFactura">Recurrencia automática</label>
+              <input id="recurrenciaAutomaticaFactura" class="form-check-input float-end" type="checkbox" role="switch"
+                [ngModel]="tieneRecurrenciaFacturacion()" (ngModelChange)="onRecurrenciaAutomaticaChange($event)"
+                name="recurrenciaAutomaticaFactura">
+            </div>
+            <button type="button" class="btn btn-link btn-sm ps-0" *ngIf="tieneRecurrenciaFacturacion()" (click)="abrirConfigRecurrencia()">Configurar</button>
+        </div>
+        <div class="form-group col-md-6 col-lg-3 without-label" *ngIf="venta.cotizacion != 1 && !recurrenciaAutomatica">
             <div class="form-switch bg-light-info rounded">
               <label for="recurrente">Recurrente</label>
               <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="venta.recurrente" name="venta.recurrente">
@@ -864,3 +873,5 @@
   (cerrar)="cerrarModalBoxful()"
   (crearOtraVenta)="iniciarOtraVentaTrasBoxful()">
 </app-boxful-shipping-selector>
+
+<app-venta-recurrencia-config />

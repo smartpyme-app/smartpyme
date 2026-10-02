@@ -62,6 +62,11 @@ class Venta extends AuditableModel {
         'observaciones',
         'observaciones_shopify',
         'recurrente',
+        'frecuencia_recurrencia',
+        'recurrencia_pausada',
+        'dia_generacion_recurrencia',
+        'id_venta_plantilla',
+        'periodo_recurrencia',
         'cotizacion',
         'descripcion_personalizada',
         'descripcion_impresion',
@@ -133,6 +138,7 @@ class Venta extends AuditableModel {
     ];
     protected $casts = [
         'recurrente' => 'string',
+        'recurrencia_pausada' => 'boolean',
         'puntos_ganados' => 'integer',
         'puntos_canjeados' => 'integer',
         'descuento_puntos' => 'decimal:2',

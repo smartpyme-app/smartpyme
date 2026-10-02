@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\Ventas\VentaRecurrenciaController;
 use App\Http\Controllers\Api\Ventas\VentasController;
 use App\Http\Controllers\Api\Ventas\VentasImportController;
 use App\Http\Controllers\Api\WompiController;
@@ -9,6 +10,9 @@ use Illuminate\Support\Facades\Route;
     Route::get('/venta/{id}',           [VentasController::class, 'read']);
     Route::post('/venta/{id}/shopify/consolidar', [VentasController::class, 'consolidarShopify']);
     Route::post('/venta',               [VentasController::class, 'store']);
+    Route::post('/venta/{id}/recurrencia', [VentaRecurrenciaController::class, 'guardar']);
+    Route::get('/ventas-recurrentes/preferencias', [VentaRecurrenciaController::class, 'preferencias']);
+    Route::post('/ventas-recurrentes/preferencias', [VentaRecurrenciaController::class, 'guardarPreferencias']);
     Route::delete('/venta/{id}',        [VentasController::class, 'delete']);
 
     Route::post('/venta/facturacion',  [VentasController::class, 'facturacion']);

@@ -225,6 +225,9 @@ class Inventario extends Model {
 
         $idUsuario = $opciones['id_usuario'] ?? $modelo->id_usuario ?? null;
 
+        $entradaCantidad = $entradaCantidad ?? 0;
+        $salidaCantidad = $salidaCantidad ?? 0;
+
         Kardex::create([
             'fecha'             => $fechaKardex,
             'id_producto'       => $this->id_producto,
@@ -235,9 +238,9 @@ class Inventario extends Model {
             'precio_unitario'   => $precio,
             'costo_unitario'    => $costo,
             'entrada_cantidad'  => $entradaCantidad,
-            'entrada_valor'     => $entradaCantidad ? $entradaCantidad * $costo : null,
+            'entrada_valor'     => $entradaCantidad > 0 ? $entradaCantidad * $costo : 0,
             'salida_cantidad'   => $salidaCantidad,
-            'salida_valor'      => $salidaCantidad ? $salidaCantidad * $precio : null,
+            'salida_valor'      => $salidaCantidad > 0 ? $salidaCantidad * $precio : 0,
             'total_cantidad'    => $totalCantidad,
             'total_valor'       => $totalCantidad * $costo,
             'id_usuario'        => $idUsuario,

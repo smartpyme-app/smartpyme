@@ -133,6 +133,8 @@ Route::delete('/producto/composicion/opcion/{id}', [OpcionesController::class, '
 
     Route::post('/productos/importar',          [ProductosController::class, 'import']);
     Route::get('/productos/plantilla-importacion', [ProductosController::class, 'plantillaImportacionProductos']);
+    Route::get('/productos/actualizacion-masiva', [ProductosController::class, 'descargarActualizacionMasiva']);
+    Route::post('/productos/actualizacion-masiva', [ProductosController::class, 'importarActualizacionMasiva']);
     Route::get('/productos/exportar',          [ProductosController::class, 'export']);
     //exportar-plantilla
     Route::get('/productos/exportar-plantilla', [ProductosController::class, 'exportarPlantilla']);

@@ -3,12 +3,17 @@
 namespace App\Models\Restaurante;
 
 use App\Models\Admin\Empresa;
+use App\Models\Concerns\AuditableModel;
 use App\Models\User;
 use App\Models\Ventas\Clientes\Cliente;
-use Illuminate\Database\Eloquent\Model;
 
-class Reserva extends Model
+class Reserva extends AuditableModel
 {
+    protected static function auditModule(): string
+    {
+        return 'restaurante';
+    }
+
     protected $table = 'reservas_restaurante';
 
     protected $fillable = [

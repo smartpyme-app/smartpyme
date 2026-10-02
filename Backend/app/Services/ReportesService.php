@@ -42,41 +42,25 @@ class ReportesService
         $pivotData = [];
 
         foreach ($suscripciones as $sus) {
-            $fechaProximoPago  = Carbon::parse($sus->fecha_proximo_pago);
-            $tipoNorm   = strtolower(trim($sus->tipo_plan ?? ''));
-            $esAnual    = ($tipoNorm === 'anual');
-            $diaPago    = $sus->dia_pago ?? $fechaProximoPago->day;
+            $fechaProximoPago = Carbon::parse($sus->fecha_proximo_pago);
+            $cadencia = self::cadenciaCobro(
+                $sus->empresa?->frecuencia_pago,
+                $sus->empresa?->tipo_plan,
+                $sus->tipo_plan ?? null
+            );
 
             // Monto: preferir monto de la suscripción; si es 0 usar empresa
             $monto = (float) $sus->monto;
             if ($monto <= 0 && $sus->empresa) {
-                $monto = $esAnual
+                $monto = $cadencia === 'anual'
                     ? (float) $sus->empresa->monto_anual
                     : (float) $sus->empresa->monto_mensual;
             }
 
-            // Si es anual, solo cobramos en su fecha_proximo_pago
-            if ($esAnual) {
-                if ($fechaProximoPago->between($inicio, $fin)) {
-                    $esNueva = ($sus->created_at && Carbon::parse($sus->created_at)->format('Y-m') === $fechaProximoPago->format('Y-m'));
-                    $this->registrarPago($sus, $fechaProximoPago, $monto, $esAnual, $esNueva, $quincenas, $pivotData);
-                }
-            } else {
-                // Si es mensual (o cualquier otro tipo recurrente mensual), proyectamos para cada mes en el rango
-                $mesCursor = $inicio->copy()->startOfMonth();
-                while ($mesCursor->lte($fin)) {
-                    $daysInMonth = $mesCursor->daysInMonth;
-                    $diaActual = min($diaPago, $daysInMonth);
-                    $fechaProyectada = $mesCursor->copy()->day($diaActual)->startOfDay();
-
-                    // Solo proyectamos si la fecha proyectada es mayor o igual a la fecha de próximo pago real
-                    // y cae dentro del rango de visualización
-                    if ($fechaProyectada->gte($fechaProximoPago->startOfDay()) && $fechaProyectada->between($inicio, $fin)) {
-                        $esNueva = ($sus->created_at && Carbon::parse($sus->created_at)->format('Y-m') === $fechaProyectada->format('Y-m'));
-                        $this->registrarPago($sus, $fechaProyectada, $monto, $esAnual, $esNueva, $quincenas, $pivotData);
-                    }
-                    $mesCursor->addMonth();
-                }
+            foreach (self::fechasCobro($inicio, $fin, $fechaProximoPago, $cadencia) as $fecha) {
+                $fechaPago = Carbon::parse($fecha);
+                $esNueva = ($sus->created_at && Carbon::parse($sus->created_at)->format('Y-m') === $fechaPago->format('Y-m'));
+                $this->registrarPago($sus, $fechaPago, $monto, $cadencia, $esNueva, $quincenas, $pivotData);
             }
         }
 
@@ -119,10 +103,93 @@ class ReportesService
     }
 
     /**
+     * Cadencia de cobro. frecuencia_pago manda: tipo_plan de la suscripción
+     * queda en Mensual aunque el cliente pague al año.
+     */
+    public static function cadenciaCobro(?string $frecuenciaPago, ?string $empresaTipoPlan, ?string $suscripcionTipoPlan): string
+    {
+        foreach ([$frecuenciaPago, $empresaTipoPlan, $suscripcionTipoPlan] as $candidato) {
+            $norm = strtolower(trim((string) $candidato));
+            if (in_array($norm, ['mensual', 'trimestral', 'semestral', 'anual'], true)) {
+                return $norm;
+            }
+        }
+
+        return 'sin_frecuencia';
+    }
+
+    public static function etiquetaCadencia(string $cadencia): string
+    {
+        if ($cadencia === 'sin_frecuencia') {
+            return 'Sin frecuencia';
+        }
+
+        return ucfirst($cadencia);
+    }
+
+    /**
+     * Fechas de cobro dentro del rango, avanzando desde fecha_proximo_pago.
+     *
+     * @return string[] Y-m-d
+     */
+    public static function fechasCobro(Carbon $inicio, Carbon $fin, Carbon $fechaProximoPago, string $cadencia): array
+    {
+        $diaPago = (int) $fechaProximoPago->day;
+        $cursor = $fechaProximoPago->copy()->startOfDay();
+        $desde = $inicio->copy()->startOfDay();
+        $hasta = $fin->copy()->endOfDay();
+
+        if ($cadencia === 'sin_frecuencia') {
+            if ($cursor->gte($desde) && $cursor->lte($hasta)) {
+                return [$cursor->format('Y-m-d')];
+            }
+
+            return [];
+        }
+
+        $meses = self::mesesDeCadencia($cadencia);
+        $fechas = [];
+
+        // España Dev: tope de 240 periodos. Una fecha de próximo pago de hace más de 20 años en un plan mensual no alcanza el rango.
+        for ($i = 0; $i < 240 && $cursor->lte($hasta); $i++) {
+            if ($cursor->gte($desde)) {
+                $fechas[] = $cursor->format('Y-m-d');
+            }
+            $cursor = self::avanzarMeses($cursor, $meses, $diaPago);
+        }
+
+        return $fechas;
+    }
+
+    private static function mesesDeCadencia(string $cadencia): int
+    {
+        if ($cadencia === 'trimestral') {
+            return 3;
+        }
+        if ($cadencia === 'semestral') {
+            return 6;
+        }
+        if ($cadencia === 'anual') {
+            return 12;
+        }
+
+        return 1;
+    }
+
+    private static function avanzarMeses(Carbon $desde, int $meses, int $diaPago): Carbon
+    {
+        $siguiente = $desde->copy()->startOfMonth()->addMonths($meses);
+        $dia = min($diaPago, $siguiente->daysInMonth);
+
+        return $siguiente->day($dia)->startOfDay();
+    }
+
+    /**
      * Helper para registrar un pago proyectado tanto en quincenas como en pivot_data.
      */
-    private function registrarPago($sus, Carbon $fechaPago, float $monto, bool $esAnual, bool $esNueva, array &$quincenas, array &$pivotData)
+    private function registrarPago($sus, Carbon $fechaPago, float $monto, string $cadencia, bool $esNueva, array &$quincenas, array &$pivotData)
     {
+        $esAnual = $cadencia === 'anual';
         $entrada = [
             'id'          => $sus->id,
             'empresa'     => $sus->empresa ? $sus->empresa->nombre : '—',
@@ -159,7 +226,7 @@ class ReportesService
             'Empresa'    => $sus->empresa ? $sus->empresa->nombre : '—',
             'Monto'      => round($monto, 2),
             'Fecha Pago' => $fechaPago->format('Y-m-d'),
-            'Tipo Plan'  => $esAnual ? 'Anual' : 'Mensual',
+            'Tipo Plan'  => self::etiquetaCadencia($cadencia),
             'Categoría'  => $esNueva ? 'Nueva suscripción' : 'Renovación',
             'Plan'       => $sus->plan ? $sus->plan->nombre : 'Desconocido',
             'Quincena'   => $quincenaLabel,

@@ -440,6 +440,41 @@
                                 </div>
                               </div>
                             }
+                            <h4 class="mb-2 mt-2 fw-bold">Ventas recurrentes automáticas</h4>
+                            <div class="empresa-pref-row">
+                              <div class="empresa-pref-row-text">
+                                <label class="empresa-pref-row-label" for="ventasRecurrentesAutomaticasActivo">Activar en esta cuenta</label>
+                                <p class="empresa-pref-row-help text-muted small mb-0">Habilita programar ventas desde Facturación y Ventas.</p>
+                              </div>
+                              <div class="form-switch m-0">
+                                <input class="form-check-input" type="checkbox" role="switch"
+                                  id="ventasRecurrentesAutomaticasActivo"
+                                  [(ngModel)]="ventasRecurrentesAutomaticasActivo"
+                                  name="ventasRecurrentesAutomaticasActivo">
+                              </div>
+                            </div>
+                            @if (ventasRecurrentesAutomaticasActivo) {
+                              <div class="empresa-pref-row">
+                                <div class="empresa-pref-row-text">
+                                  <label class="empresa-pref-row-label" for="ventasRecurrentesGeneracionActiva">Activar facturación automática</label>
+                                  <p class="empresa-pref-row-help text-muted small mb-0">El cron diario crea las ventas programadas. Si lo apagas, las plantillas siguen configuradas pero no se generan solas.</p>
+                                </div>
+                                <div class="form-switch m-0">
+                                  <input class="form-check-input" type="checkbox" role="switch"
+                                    id="ventasRecurrentesGeneracionActiva"
+                                    [(ngModel)]="ventasRecurrentesGeneracionActiva"
+                                    name="ventasRecurrentesGeneracionActiva">
+                                </div>
+                              </div>
+                              <div class="empresa-pref-row align-items-start">
+                                <div class="empresa-pref-row-text">
+                                  <label class="empresa-pref-row-label" for="ventasRecurrentesCorreo">Correo de avisos</label>
+                                  <p class="empresa-pref-row-help text-muted small mb-2">Resumen diario de facturas generadas y pendientes.</p>
+                                  <input type="email" class="form-control" id="ventasRecurrentesCorreo"
+                                    [(ngModel)]="ventasRecurrentesCorreo" name="ventasRecurrentesCorreo">
+                                </div>
+                              </div>
+                            }
                             <div *ngIf="tieneAccesoModuloRestaurantePedidos" class="empresa-pref-field">
                                 <h4 class="mb-2 fw-bold">Restaurantes y pedidos</h4>
                                 <p class="text-muted small mb-2">
@@ -1017,6 +1052,17 @@
                                         id="inventario_sumar_stock_busquedas" [checked]="isInventarioSumarStockBusquedas()"
                                         (change)="toggleInventarioSumarStockBusquedas()"
                                         name="inventario_sumar_stock_busquedas">
+                                </div>
+                            </div>
+                            <div class="empresa-pref-row">
+                                <div class="empresa-pref-row-text">
+                                    <label class="empresa-pref-row-label" for="actualizacion_masiva_productos">Actualización masiva de productos</label>
+                                    <p class="empresa-pref-row-help text-muted small mb-0">Permite descargar los productos existentes, editar el archivo y volver a subirlo para actualizar código, costo, precio sin IVA, menú, comanda y stock mínimo o máximo por bodega. Queda apagada hasta que se active aquí. El usuario además necesita el permiso de actualización masiva.</p>
+                                </div>
+                                <div class="form-switch m-0">
+                                    <input class="form-check-input" type="checkbox" role="switch"
+                                        id="actualizacion_masiva_productos" [checked]="isActualizacionMasivaProductos()"
+                                        (change)="toggleActualizacionMasivaProductos()" name="actualizacion_masiva_productos">
                                 </div>
                             </div>
                             <div *ngIf="tieneAccesoTransformacionProductos" class="empresa-pref-row">

@@ -110,6 +110,9 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
     public tieneAccesoModuloPresentacionesProductos: boolean = false;
     public tieneAccesoBoxFul: boolean = false;
     public tieneAccesoFidelizacionGlobal: boolean = false;
+    public ventasRecurrentesAutomaticasActivo = false;
+    public ventasRecurrentesCorreo = '';
+    public ventasRecurrentesGeneracionActiva = true;
 
     public customConfig: any = {
         columnas: {
@@ -314,12 +317,18 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
             if (this.empresa) {
                 this.empresa.impresion_en_facturacion = isImpresionEnFacturacionActiva(this.empresa);
             }
+            this.aplicarVentasRecurrentesEnCustomConfig();
             this.empresa.custom_empresa = this.customConfig;
             const empresaGuardada = await this.apiService.store('empresa', this.empresa)
                 .pipe(this.untilDestroyed())
                 .toPromise();
 
             this.empresa = empresaGuardada;
+            await this.persistirVentasRecurrentesEnServidor();
+            const authEmpresa = this.apiService.auth_user()?.empresa;
+            if (authEmpresa) {
+                authEmpresa.custom_empresa = this.customConfig;
+            }
             this.normalizarRtnHonduras();
             if (this.empresa) {
                 this.empresa.impresion_en_facturacion = isImpresionEnFacturacionActiva(this.empresa);
@@ -1817,6 +1826,7 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
                 sku_correlativo_automatico: false, // obsoleto: migrar a barcode_correlativo_automatico; se lee por compatibilidad
                 barcode_correlativo_automatico: false, // Código de barras correlativo automático al crear productos
                 inventario_sumar_stock_busquedas: false, // Total de stock en listado de inventario según filtros
+                actualizacion_masiva_productos: false, // Plantilla para actualizar productos existentes
                 transformacion_productos_activo: false, // Módulo de transformación/conversión de productos en inventario
                 inventario_reporte_analisis_ventas_mensual: false, // Botón Excel: ventas ene→mes actual + inventario
                 cotizacion_mostrar_descripcion: true, // Mostrar descripción en PDF/vista de cotizaciones
@@ -1827,6 +1837,9 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
                 dte_mostrar_descripcion_producto: true, // Descripción extendida del catálogo en PDF de factura y CCF (DTE)
                 fidelizacion_activa: false, // Activar fidelización de clientes para configurar
                 fidelizacion_completa: false, // Activar completamente la fidelización (ganar/consumir puntos)
+                ventas_recurrentes_automaticas_activo: false,
+                ventas_recurrentes_correo_resumen: '',
+                ventas_recurrentes_generacion_activa: true,
             },
             campos_personalizados: {}
         };
@@ -1859,6 +1872,58 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
                 fe['emisor_tipo_identificacion'] = '02';
             }
         }
+
+        this.syncVentasRecurrentesFromCustomConfig();
+    }
+
+    private syncVentasRecurrentesFromCustomConfig(): void {
+        const cfg = this.customConfig?.configuraciones;
+        this.ventasRecurrentesAutomaticasActivo = !!cfg?.ventas_recurrentes_automaticas_activo;
+        this.ventasRecurrentesCorreo = (cfg?.ventas_recurrentes_correo_resumen || this.empresa?.correo || '').trim();
+        if (cfg?.ventas_recurrentes_generacion_activa !== undefined) {
+            this.ventasRecurrentesGeneracionActiva = !!cfg.ventas_recurrentes_generacion_activa;
+        } else if (cfg?.ventas_recurrentes_generacion_pausada !== undefined) {
+            this.ventasRecurrentesGeneracionActiva = !cfg.ventas_recurrentes_generacion_pausada;
+        } else {
+            this.ventasRecurrentesGeneracionActiva = true;
+        }
+    }
+
+    private aplicarVentasRecurrentesEnCustomConfig(): void {
+        if (!this.customConfig.configuraciones || Array.isArray(this.customConfig.configuraciones)) {
+            this.customConfig.configuraciones = {};
+        }
+        const cfg = this.customConfig.configuraciones;
+        cfg.ventas_recurrentes_automaticas_activo = !!this.ventasRecurrentesAutomaticasActivo;
+        cfg.ventas_recurrentes_correo_resumen = this.correoVentasRecurrentesResuelto();
+        cfg.ventas_recurrentes_generacion_activa = !!this.ventasRecurrentesGeneracionActiva;
+        delete cfg.ventas_recurrentes_generacion_pausada;
+    }
+
+    private correoVentasRecurrentesResuelto(): string {
+        return (this.ventasRecurrentesCorreo || this.empresa?.correo || '').trim();
+    }
+
+    private async persistirVentasRecurrentesEnServidor(): Promise<void> {
+        const correo = this.correoVentasRecurrentesResuelto();
+        if (!correo) {
+            return;
+        }
+        const resp: any = await this.apiService.store('ventas-recurrentes/preferencias', {
+            activo: !!this.ventasRecurrentesAutomaticasActivo,
+            correo_resumen: correo,
+            generacion_activa: !!this.ventasRecurrentesGeneracionActiva,
+        }).pipe(this.untilDestroyed()).toPromise();
+
+        const cfg = resp?.configuracion;
+        if (this.customConfig?.configuraciones && cfg) {
+            this.customConfig.configuraciones.ventas_recurrentes_automaticas_activo = !!cfg.activo;
+            this.customConfig.configuraciones.ventas_recurrentes_correo_resumen = cfg.correo_resumen ?? correo;
+            this.customConfig.configuraciones.ventas_recurrentes_generacion_activa = !!cfg.generacion_activa;
+            delete this.customConfig.configuraciones.ventas_recurrentes_generacion_pausada;
+            this.empresa.custom_empresa = this.customConfig;
+        }
+        this.syncVentasRecurrentesFromCustomConfig();
     }
 
     private deepMerge(target: any, source: any): any {
@@ -2362,6 +2427,26 @@ export class EmpresaComponent implements OnInit, AfterViewInit, OnDestroy {
 
     public isInventarioSumarStockBusquedas(): boolean {
         return this.getCustomConfig('configuraciones', 'inventario_sumar_stock_busquedas', false);
+    }
+
+    public isActualizacionMasivaProductos(): boolean {
+        return this.getCustomConfig('configuraciones', 'actualizacion_masiva_productos', false);
+    }
+
+    public toggleActualizacionMasivaProductos() {
+        const activo = !this.isActualizacionMasivaProductos();
+        this.addCustomConfig('configuraciones', 'actualizacion_masiva_productos', activo);
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                `Actualización masiva de productos ${activo ? 'habilitada' : 'deshabilitada'} correctamente`
+            );
+            const authUser = this.apiService.auth_user();
+            if (authUser?.empresa?.id === this.empresa?.id) {
+                authUser.empresa.custom_empresa = this.empresa.custom_empresa;
+                localStorage.setItem('SP_auth_user', JSON.stringify(authUser));
+            }
+        });
     }
 
     public toggleInventarioSumarStockBusquedas() {
