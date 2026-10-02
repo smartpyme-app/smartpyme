@@ -35,13 +35,11 @@ class Documento extends Model {
     {
         parent::boot();
 
-        static::addGlobalScope('empresa', function (Builder $builder) {
-            $user = Auth::guard('api')->user() ?? Auth::user();
-            if (!$user) {
-                return;
-            }
-            $builder->where('id_empresa', $user->id_empresa);
-        });
+        if (Auth::check()) {
+            static::addGlobalScope('empresa', function (Builder $builder) {
+                $builder->where('id_empresa', Auth::user()->id_empresa);
+            });
+        }
     }
 
     public function getNombreSucursalAttribute(){

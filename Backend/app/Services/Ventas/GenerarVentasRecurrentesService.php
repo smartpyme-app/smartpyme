@@ -151,12 +151,8 @@ class GenerarVentasRecurrentesService
         $this->liberarPeriodoCopiaAnulada($plantilla->id, $periodo);
 
         try {
-            $venta = $this->ejecutarComoUsuario($usuario, function () use ($plantilla, $empresa, $usuario, $fecha, $periodo, $documento) {
-                $copia = $this->clonarInterno($plantilla, $empresa, $usuario, $fecha, $periodo, $documento);
-                $this->marcarCopiaNoRecurrente($copia);
-
-                return $copia;
-            });
+            $venta = $this->clonar($plantilla, $empresa, $usuario, $fecha, $periodo, $documento);
+            $this->marcarCopiaNoRecurrente($venta);
         } catch (FacturacionException $e) {
             if (str_contains($e->getMessage(), 'venta_recurrencia_periodo_unique')) {
                 if ($this->yaGenerada($plantilla->id, $periodo)) {
@@ -220,7 +216,7 @@ class GenerarVentasRecurrentesService
         return ['ok' => true, 'linea' => 'Venta #'.$venta->correlativo.' (id '.$venta->id.') emitida.'.$avisoCorreo];
     }
 
-    private function clonarInterno(
+    private function clonar(
         Venta $plantilla,
         Empresa $empresa,
         User $usuario,
@@ -228,41 +224,35 @@ class GenerarVentasRecurrentesService
         string $periodo,
         Documento $documento,
     ): Venta {
-        $payload = $this->payload($plantilla, $empresa, $fecha, $periodo, $documento);
-        $payload['id_documento'] = (int) $documento->id;
-        $payload['id_empresa'] = (int) $plantilla->id_empresa;
-        $request = Request::create('/internal/ventas-recurrentes', 'POST', $payload);
-        $request->setUserResolver(static fn () => $usuario);
+        return $this->ejecutarComoUsuario($usuario, function () use ($plantilla, $empresa, $usuario, $fecha, $periodo, $documento) {
+            $payload = $this->payload($plantilla, $empresa, $fecha, $periodo, $documento);
+            $payload['id_documento'] = (int) $documento->id;
+            $payload['id_empresa'] = (int) $plantilla->id_empresa;
+            $request = Request::create('/internal/ventas-recurrentes', 'POST', $payload);
+            $request->setUserResolver(static fn () => $usuario);
 
-        $this->facturacion->assertReglasNegocio($usuario, $request);
+            $this->facturacion->assertReglasNegocio($usuario, $request);
 
-        return $this->facturacion->procesar($usuario, $request);
+            return $this->facturacion->procesar($usuario, $request);
+        });
     }
 
     /**
-     * Impersona al usuario de la plantilla (setUser, no Login) en web y api para reglas de negocio y scopes por empresa.
+     * Impersona al usuario de la plantilla en el guard web (setUser, no Login) para reglas de negocio y scopes por empresa.
      */
     private function ejecutarComoUsuario(User $usuario, callable $callback): mixed
     {
-        $web = Auth::guard('web');
-        $api = Auth::guard('api');
-        $anteriorWeb = $web->user();
-        $anteriorApi = $api->user();
-        $web->setUser($usuario);
-        $api->setUser($usuario);
+        $guard = Auth::guard();
+        $anterior = $guard->user();
+        $guard->setUser($usuario);
 
         try {
             return $callback();
         } finally {
-            if ($anteriorWeb) {
-                $web->setUser($anteriorWeb);
+            if ($anterior) {
+                $guard->setUser($anterior);
             } else {
-                $web->forgetUser();
-            }
-            if ($anteriorApi) {
-                $api->setUser($anteriorApi);
-            } else {
-                $api->forgetUser();
+                $guard->forgetUser();
             }
         }
     }
@@ -323,7 +313,7 @@ class GenerarVentasRecurrentesService
             'recurrencia_pausada' => false,
             'id_venta_plantilla' => $plantilla->id,
             'periodo_recurrencia' => $periodo,
-            'observaciones' => $this->observacionesCopiaRecurrente($fecha, $plantilla->frecuencia_recurrencia),
+            'observaciones' => 'Generada automáticamente desde la venta #'.$plantilla->correlativo,
             'puntos_ganados' => 0,
             'puntos_canjeados' => 0,
             'descuento_puntos' => 0,
@@ -534,10 +524,7 @@ class GenerarVentasRecurrentesService
         if (empty($empresa->mh_pwd_certificado)) {
             throw new \RuntimeException('Falta mh_pwd_certificado (contraseña del certificado).');
         }
-        $venta->loadMissing([
-            'sucursal' => fn ($q) => $q->withoutGlobalScope('empresa'),
-            'cliente' => fn ($q) => $q->withoutGlobalScope('empresa'),
-        ]);
+        $venta->loadMissing(['sucursal', 'cliente']);
         if (empty($venta->sucursal?->cod_estable_mh)) {
             throw new \RuntimeException('Falta configurar cod_estable_mh en la sucursal de la venta.');
         }
@@ -547,28 +534,14 @@ class GenerarVentasRecurrentesService
     }
 
     /** Igual que suscripciones: MHFactura/MHCCF y refresh para codigo_generacion / tipo_dte en BD. */
-    private function observacionesCopiaRecurrente(string $fecha, ?string $frecuencia): string
-    {
-        $carbon = Carbon::parse($fecha)->locale('es');
-        if ($frecuencia === 'anual') {
-            return 'Venta generada para el año '.$carbon->year;
-        }
-
-        return 'Venta generada para el mes '.ucfirst($carbon->translatedFormat('F'));
-    }
-
     private function generarJsonDte(Venta $venta): array
     {
-        $venta = Venta::withoutGlobalScopes()->findOrFail($venta->id);
         $venta->load([
             'detalles' => fn ($q) => $q->with(['producto' => fn ($pq) => $pq->withoutGlobalScopes()]),
-            'cliente' => fn ($q) => $q->withoutGlobalScope('empresa'),
+            'cliente',
             'empresa',
-            'sucursal' => fn ($q) => $q->withoutGlobalScope('empresa'),
-            'documento' => fn ($q) => $q->withoutGlobalScope('empresa'),
-            'impuestos' => fn ($q) => $q->with([
-                'impuesto' => fn ($iq) => $iq->withoutGlobalScope('empresa'),
-            ]),
+            'sucursal',
+            'documento',
         ]);
 
         $dteJson = match ($venta->nombre_documento) {

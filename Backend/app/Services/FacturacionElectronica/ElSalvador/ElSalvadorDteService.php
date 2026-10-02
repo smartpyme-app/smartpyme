@@ -417,10 +417,7 @@ class ElSalvadorDteService
         $correo = null;
 
         if ($request->tipo_dte == '01' || $request->tipo_dte == '03' || $request->tipo_dte == '11') {
-            $registro = Venta::withoutGlobalScopes()
-                ->with(['cliente' => fn ($q) => $q->withoutGlobalScope('empresa')])
-                ->where('id', $request->id)
-                ->firstOrFail();
+            $registro = Venta::with('cliente')->where('id', $request->id)->firstOrFail();
             $correo = $registro->cliente ? $registro->cliente->correo : null;
         }
 
