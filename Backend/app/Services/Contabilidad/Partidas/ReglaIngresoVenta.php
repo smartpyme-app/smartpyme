@@ -5,12 +5,12 @@ namespace App\Services\Contabilidad\Partidas;
 class ReglaIngresoVenta
 {
     /**
-     * Misma regla que la partida de ingreso del día: el Debe es la cuenta
-     * de la forma de pago, tanto al contado como al crédito.
+     * Venta pendiente de pago: el Debe es cuentas por cobrar.
+     * Venta cobrada: el Debe es la cuenta del banco de la forma de pago.
      */
     public static function origenCuentaDebe(object $venta): string
     {
-        return 'forma_pago';
+        return ($venta->estado ?? null) === 'Pendiente' ? 'cxc' : 'forma_pago';
     }
 
     /**

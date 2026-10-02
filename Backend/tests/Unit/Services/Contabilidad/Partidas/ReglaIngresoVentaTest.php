@@ -7,11 +7,11 @@ use PHPUnit\Framework\TestCase;
 
 class ReglaIngresoVentaTest extends TestCase
 {
-    public function test_venta_pendiente_usa_forma_de_pago_no_cxc(): void
+    public function test_venta_pendiente_usa_cxc(): void
     {
         $venta = (object) ['estado' => 'Pendiente', 'forma_pago' => 'Efectivo'];
 
-        $this->assertSame('forma_pago', ReglaIngresoVenta::origenCuentaDebe($venta));
+        $this->assertSame('cxc', ReglaIngresoVenta::origenCuentaDebe($venta));
     }
 
     public function test_venta_pagada_usa_forma_de_pago(): void

@@ -109,14 +109,14 @@
       <table class="table table-borderless table-hover mb-0">
         <thead>
           <tr>
-            <th>ID</th>
-            <th>Fecha</th>
-            <th>Concepto</th>
-            <th>Correlativo</th>
-            <th>Tipo</th>
-            <th class="text-end">Debe</th>
-            <th class="text-end">Haber</th>
-            <th class="text-center">Estado</th>
+            <th (click)="setOrden('id')" class="click" [ngClass]="claseOrden('id')">ID</th>
+            <th (click)="setOrden('fecha')" class="click" [ngClass]="claseOrden('fecha')">Fecha</th>
+            <th (click)="setOrden('concepto')" class="click" [ngClass]="claseOrden('concepto')">Concepto</th>
+            <th (click)="setOrden('correlativo')" class="click" [ngClass]="claseOrden('correlativo')">Correlativo</th>
+            <th (click)="setOrden('tipo')" class="click" [ngClass]="claseOrden('tipo')">Tipo</th>
+            <th (click)="setOrden('total_debe')" class="click text-end" [ngClass]="claseOrden('total_debe')">Debe</th>
+            <th (click)="setOrden('total_haber')" class="click text-end" [ngClass]="claseOrden('total_haber')">Haber</th>
+            <th (click)="setOrden('estado')" class="click text-center" [ngClass]="claseOrden('estado')">Estado</th>
             <th class="text-center">Más</th>
           </tr>
         </thead>
