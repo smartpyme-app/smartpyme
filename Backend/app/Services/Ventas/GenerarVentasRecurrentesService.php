@@ -546,6 +546,7 @@ class GenerarVentasRecurrentesService
 
         Log::channel('facturacion')->info('Ventas recurrentes: generar JSON DTE', ['venta_id' => $venta->id]);
         $dteJson = $this->generarJsonDte($venta);
+        $venta->refresh();
 
         Log::channel('facturacion')->info('Ventas recurrentes: firmar DTE', ['venta_id' => $venta->id]);
         $firmado = $this->firmarJsonDte($dteJson, $empresa);
@@ -719,13 +720,23 @@ class GenerarVentasRecurrentesService
 
     private function enviarDteRecepcionHacienda(Venta $venta, array $dteJson, mixed $documentoFirmado, Empresa $empresa): array
     {
+        $ident = $dteJson['identificacion'] ?? [];
+        $tipoDte = (string) ($ident['tipoDte'] ?? $venta->tipo_dte ?? '');
+        if ($tipoDte === '') {
+            throw new \RuntimeException('Falta tipoDte en el JSON del DTE (revisar nombre_documento y generación MH).');
+        }
+        $codigoGeneracion = (string) ($ident['codigoGeneracion'] ?? $venta->codigo_generacion ?? '');
+        if ($codigoGeneracion === '') {
+            throw new \RuntimeException('Falta codigoGeneracion en el JSON del DTE.');
+        }
+
         $payload = [
-            'ambiente' => $dteJson['identificacion']['ambiente'] ?? $empresa->fe_ambiente,
+            'ambiente' => $ident['ambiente'] ?? $empresa->fe_ambiente,
             'idEnvio' => $venta->id,
-            'version' => $dteJson['identificacion']['version'] ?? ($venta->tipo_dte === '03' ? 3 : 1),
-            'tipoDte' => $venta->tipo_dte,
+            'version' => $ident['version'] ?? ($tipoDte === '03' ? 3 : 1),
+            'tipoDte' => $tipoDte,
             'documento' => $documentoFirmado,
-            'codigoGeneracion' => $venta->codigo_generacion,
+            'codigoGeneracion' => $codigoGeneracion,
         ];
 
         try {
