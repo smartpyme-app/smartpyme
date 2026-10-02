@@ -6,6 +6,9 @@ use App\Exceptions\FacturacionException;
 use App\Http\Requests\MH\EnviarDTERequest;
 use App\Models\Admin\Documento;
 use App\Models\Admin\Empresa;
+use App\Models\MH\MHCCF;
+use App\Models\MH\MHFactura;
+use App\Models\MH\MHFacturaExportacion;
 use App\Models\User;
 use App\Models\Ventas\Detalle;
 use App\Models\Ventas\Venta;
@@ -184,8 +187,9 @@ class GenerarVentasRecurrentesService
 
         try {
             $this->emitir($venta, $empresa);
+            $venta->refresh();
         } catch (\Throwable $e) {
-            Log::error('Ventas recurrentes: emisión fallida', [
+            Log::channel('facturacion')->error('Ventas recurrentes: emisión fallida', [
                 'venta_id' => $venta->id,
                 'plantilla_id' => $plantilla->id,
                 'error' => $e->getMessage(),
@@ -473,39 +477,105 @@ class GenerarVentasRecurrentesService
 
     private function emitir(Venta $venta, Empresa $empresa): void
     {
-        $venta->load(['detalles.producto', 'cliente', 'empresa', 'sucursal', 'documento']);
+        $this->validarRequisitosEmisionFe($empresa, $venta);
 
-        $respuesta = $this->dte->generarDTE($venta);
-        if ($respuesta->getStatusCode() >= 400) {
-            throw new \RuntimeException($this->mensaje($respuesta->getData(true)));
+        Log::channel('facturacion')->info('Ventas recurrentes: generar JSON DTE', ['venta_id' => $venta->id]);
+        $dteJson = $this->generarJsonDte($venta);
+
+        Log::channel('facturacion')->info('Ventas recurrentes: firmar DTE', ['venta_id' => $venta->id]);
+        $firmado = $this->firmarJsonDte($dteJson, $empresa);
+
+        Log::channel('facturacion')->info('Ventas recurrentes: recepción MH', ['venta_id' => $venta->id]);
+        $hacienda = $this->enviarDteRecepcionHacienda($venta, $dteJson, $firmado, $empresa);
+
+        $estado = $hacienda['estado'] ?? null;
+        $sello = $hacienda['selloRecibido'] ?? null;
+        if ($estado !== 'PROCESADO' || empty($sello)) {
+            throw new \RuntimeException(
+                'Respuesta de Hacienda no indica PROCESADO o falta selloRecibido: '
+                .json_encode($hacienda, JSON_UNESCAPED_UNICODE)
+            );
         }
 
-        $dteJson = $respuesta->getData(true);
+        Log::channel('facturacion')->info('Ventas recurrentes: persistir DTE', ['venta_id' => $venta->id]);
+        $this->persistirVentaDteEmitido($venta, $dteJson, $firmado, $sello, $hacienda);
+    }
+
+    /** Mismas validaciones que facturas:generar-suscripciones antes de firmar/enviar. */
+    private function validarRequisitosEmisionFe(Empresa $empresa, Venta $venta): void
+    {
+        if (empty($empresa->mh_usuario) || empty($empresa->mh_contrasena)) {
+            throw new \RuntimeException('Faltan mh_usuario o mh_contrasena para la API de Hacienda.');
+        }
+        if (empty($empresa->mh_pwd_certificado)) {
+            throw new \RuntimeException('Falta mh_pwd_certificado (contraseña del certificado).');
+        }
+        $venta->loadMissing(['sucursal', 'cliente']);
+        if (empty($venta->sucursal?->cod_estable_mh)) {
+            throw new \RuntimeException('Falta configurar cod_estable_mh en la sucursal de la venta.');
+        }
+        if (!$venta->id_cliente || !$venta->cliente) {
+            throw new \RuntimeException('La venta no tiene cliente para emitir DTE.');
+        }
+    }
+
+    /** Igual que suscripciones: MHFactura/MHCCF y refresh para codigo_generacion / tipo_dte en BD. */
+    private function generarJsonDte(Venta $venta): array
+    {
+        $venta->load([
+            'detalles' => fn ($q) => $q->with(['producto' => fn ($pq) => $pq->withoutGlobalScopes()]),
+            'cliente',
+            'empresa',
+            'sucursal',
+            'documento',
+        ]);
+
+        $dteJson = match ($venta->nombre_documento) {
+            'Crédito fiscal' => (new MHCCF)->generarDTE($venta),
+            'Factura de exportación' => (new MHFacturaExportacion)->generarDTE($venta),
+            'Factura' => (new MHFactura)->generarDTE($venta),
+            default => throw new \RuntimeException(
+                'El tipo de documento no puede emitirse automáticamente: '.($venta->nombre_documento ?: 'desconocido')
+            ),
+        };
+
+        $venta->refresh();
+
         if (!is_array($dteJson)) {
             throw new \RuntimeException('El DTE generado no es válido.');
         }
 
-        $firmado = $this->firmar($dteJson, $empresa);
-        $hacienda = $this->enviarHacienda($venta, $dteJson, $firmado, $empresa);
-        $estado = $hacienda['estado'] ?? null;
-        $sello = $hacienda['selloRecibido'] ?? null;
+        return $dteJson;
+    }
 
-        if ($estado !== 'PROCESADO' || empty($sello)) {
-            throw new \RuntimeException('Hacienda no procesó el DTE: '.json_encode($hacienda, JSON_UNESCAPED_UNICODE));
+    private function persistirVentaDteEmitido(
+        Venta $venta,
+        array $dteJson,
+        mixed $documentoFirmado,
+        string $sello,
+        array $respuestaHacienda,
+    ): void {
+        $firma = $documentoFirmado;
+        if (is_string($firma)) {
+            $decoded = json_decode($firma, true);
+            $firma = json_last_error() === JSON_ERROR_NONE ? $decoded : $firma;
         }
 
-        $dteJson['firmaElectronica'] = $firmado;
+        $dteJson['firmaElectronica'] = $firma;
         $dteJson['sello'] = $sello;
         $dteJson['selloRecibido'] = $sello;
+
+        if (!empty($respuestaHacienda['numeroControl'])) {
+            $venta->numero_control = $respuestaHacienda['numeroControl'];
+        }
+        if (!empty($respuestaHacienda['codigoGeneracion'])) {
+            $venta->codigo_generacion = $respuestaHacienda['codigoGeneracion'];
+        }
+
         $venta->dte = $dteJson;
         $venta->sello_mh = $sello;
-        if (!empty($hacienda['numeroControl'])) {
-            $venta->numero_control = $hacienda['numeroControl'];
-        }
-        if (!empty($hacienda['codigoGeneracion'])) {
-            $venta->codigo_generacion = $hacienda['codigoGeneracion'];
-        }
         $venta->tipo_dte = $dteJson['identificacion']['tipoDte'] ?? $venta->tipo_dte;
+
         $this->guardarVentaSoloColumnasReales($venta);
     }
 
@@ -524,11 +594,11 @@ class GenerarVentasRecurrentesService
         $venta->save();
     }
 
-    private function firmar(array $dteJson, Empresa $empresa): mixed
+    private function firmarJsonDte(array $dteJson, Empresa $empresa): array|string
     {
         $nit = str_replace('-', '', (string) $empresa->nit);
-        if ($nit === '' || empty($empresa->mh_pwd_certificado)) {
-            throw new \RuntimeException('Faltan el NIT o la contraseña del certificado.');
+        if ($nit === '') {
+            throw new \RuntimeException('NIT de empresa vacío para el firmador.');
         }
 
         $response = Http::timeout((int) config('mh.timeout_seconds', 120))
@@ -552,36 +622,39 @@ class GenerarVentasRecurrentesService
 
         $decoded = $response->json();
         if (!is_array($decoded)) {
-            throw new \RuntimeException('Respuesta del firmador no es JSON válido.');
+            throw new \RuntimeException('Respuesta del firmador no es JSON válido: '.$response->body());
         }
         if (($decoded['status'] ?? null) === 'ERROR') {
-            $msg = $decoded['body']['mensaje'] ?? json_encode($decoded, JSON_UNESCAPED_UNICODE);
-            throw new \RuntimeException('Firmador: '.$msg);
+            $msg = $decoded['body']['mensaje'] ?? json_encode($decoded['body'] ?? $decoded, JSON_UNESCAPED_UNICODE);
+            throw new \RuntimeException('Firmador devolvió ERROR: '.$msg);
+        }
+        if (array_key_exists('body', $decoded) && $decoded['body'] !== null && $decoded['body'] !== '') {
+            return $decoded['body'];
         }
 
-        return $decoded['body'] ?? $decoded;
+        return $decoded;
     }
 
-    private function enviarHacienda(Venta $venta, array $dteJson, mixed $firmado, Empresa $empresa): array
+    private function enviarDteRecepcionHacienda(Venta $venta, array $dteJson, mixed $documentoFirmado, Empresa $empresa): array
     {
         $payload = [
             'ambiente' => $dteJson['identificacion']['ambiente'] ?? $empresa->fe_ambiente,
             'idEnvio' => $venta->id,
-            'version' => $dteJson['identificacion']['version'] ?? 1,
+            'version' => $dteJson['identificacion']['version'] ?? ($venta->tipo_dte === '03' ? 3 : 1),
             'tipoDte' => $venta->tipo_dte,
-            'documento' => $firmado,
+            'documento' => $documentoFirmado,
             'codigoGeneracion' => $venta->codigo_generacion,
         ];
 
         try {
             $result = $this->mhGateway->postJson($empresa, '/fesv/recepciondte', $payload);
         } catch (ConnectionException $e) {
-            throw new \RuntimeException('Sin conexión con Hacienda: '.$e->getMessage(), 0, $e);
+            throw new \RuntimeException('Sin conexión con Hacienda al enviar DTE: '.$e->getMessage(), 0, $e);
         }
 
         $body = $result['body'] ?? null;
         if (!is_array($body)) {
-            throw new \RuntimeException('Respuesta inválida de Hacienda.');
+            throw new \RuntimeException('Respuesta inválida de Hacienda (no JSON): '.($result['raw_body'] ?? ''));
         }
 
         return $body;
