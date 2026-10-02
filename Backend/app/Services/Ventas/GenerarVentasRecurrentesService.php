@@ -186,7 +186,10 @@ class GenerarVentasRecurrentesService
         }
 
         try {
-            $this->emitir($venta, $empresa);
+            // ponytail: clonar registra scopes de Documento/Producto/etc. con Auth::check(); emitir sin usuario rompe Auth::user()->id_empresa en esos scopes
+            $this->ejecutarComoUsuario($usuario, function () use ($venta, $empresa) {
+                $this->emitir($venta, $empresa);
+            });
             $venta->refresh();
         } catch (\Throwable $e) {
             Log::channel('facturacion')->error('Ventas recurrentes: emisión fallida', [
@@ -203,7 +206,9 @@ class GenerarVentasRecurrentesService
 
         $avisoCorreo = '';
         try {
-            $this->enviarFacturaAlCliente($venta);
+            $this->ejecutarComoUsuario($usuario, function () use ($venta) {
+                $this->enviarFacturaAlCliente($venta);
+            });
         } catch (\Throwable $e) {
             $avisoCorreo = ' El DTE se emitió, pero no se envió al cliente: '.$e->getMessage();
         }
@@ -219,12 +224,7 @@ class GenerarVentasRecurrentesService
         string $periodo,
         Documento $documento,
     ): Venta {
-        $guard = Auth::guard();
-        $anterior = $guard->user();
-        // ponytail: setUser evita Login/Logout y el listener que escribe ultimo_logout (columna ausente en algunos entornos)
-        $guard->setUser($usuario);
-
-        try {
+        return $this->ejecutarComoUsuario($usuario, function () use ($plantilla, $empresa, $usuario, $fecha, $periodo, $documento) {
             $payload = $this->payload($plantilla, $empresa, $fecha, $periodo, $documento);
             $payload['id_documento'] = (int) $documento->id;
             $payload['id_empresa'] = (int) $plantilla->id_empresa;
@@ -234,6 +234,20 @@ class GenerarVentasRecurrentesService
             $this->facturacion->assertReglasNegocio($usuario, $request);
 
             return $this->facturacion->procesar($usuario, $request);
+        });
+    }
+
+    /**
+     * Impersona al usuario de la plantilla en el guard web (setUser, no Login) para reglas de negocio y scopes por empresa.
+     */
+    private function ejecutarComoUsuario(User $usuario, callable $callback): mixed
+    {
+        $guard = Auth::guard();
+        $anterior = $guard->user();
+        $guard->setUser($usuario);
+
+        try {
+            return $callback();
         } finally {
             if ($anterior) {
                 $guard->setUser($anterior);
