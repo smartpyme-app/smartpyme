@@ -135,8 +135,10 @@
                             <input id="direccion" class="form-control" placeholder="Escribe aquí" [(ngModel)]="paciente.direccion" name="direccion">
                         </div>
                         <div class="form-group col-12">
-                            <label for="informacion_relevante">Información relevante</label>
-                            <input id="informacion_relevante" class="form-control" placeholder="Escribe aquí" [(ngModel)]="paciente.informacion_relevante" name="informacion_relevante">
+                            @if (apiService.hasPermission('clinica.expediente.ver')) {
+                                <label for="informacion_relevante">Información relevante</label>
+                                <input id="informacion_relevante" class="form-control" placeholder="Escribe aquí" [(ngModel)]="paciente.informacion_relevante" name="informacion_relevante">
+                            }
                         </div>
                         <div class="col-12 d-flex justify-content-between align-items-center pb-2 my-3">
                             <h6 class="mb-0">Responsables</h6>

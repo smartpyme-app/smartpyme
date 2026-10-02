@@ -48,7 +48,9 @@
             <table class="table table-borderless table-hover mb-0">
                 <thead>
                     <tr>
-                        <th>Expediente</th>
+                        @if (apiService.hasPermission('clinica.expediente.ver')) {
+                            <th>Expediente</th>
+                        }
                         <th>Nombre</th>
                         <th class="d-none d-md-table-cell">Tipo</th>
                         <th class="d-none d-lg-table-cell">Edad</th>
@@ -60,21 +62,23 @@
                 <tbody>
                     @if (!loading && pacientes?.total < 1) {
                         <tr>
-                            <td colspan="7" class="text-center">
+                            <td [attr.colspan]="apiService.hasPermission('clinica.expediente.ver') ? 7 : 6" class="text-center">
                                 <span class="badge bg-primary">No tiene pacientes registrados</span>
                             </td>
                         </tr>
                     }
                     @if (loading) {
                         <tr>
-                            <td colspan="7" class="text-center">
+                            <td [attr.colspan]="apiService.hasPermission('clinica.expediente.ver') ? 7 : 6" class="text-center">
                                 <span class="badge bg-primary">Cargando...</span>
                             </td>
                         </tr>
                     }
                     @for (paciente of pacientes?.data; track paciente.id) {
                         <tr>
-                            <td>{{ paciente.expediente?.numero }}</td>
+                            @if (apiService.hasPermission('clinica.expediente.ver')) {
+                                <td>{{ paciente.expediente?.numero }}</td>
+                            }
                             <td>{{ paciente.nombre_completo }}</td>
                             <td class="d-none d-md-table-cell">
                                 <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-info': paciente.tipo === 'HUMANO', 'bg-success': paciente.tipo === 'ANIMAL'}">

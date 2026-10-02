@@ -38,10 +38,12 @@
                 <div class="card-body">
                     <div class="row">
                         <h6 class="col-12 pb-2 mb-3">Información del paciente</h6>
-                        <div class="form-group col-lg-3">
-                            <label class="fw-medium">Expediente:</label>
-                            <p>{{ paciente.expediente?.numero }}</p>
-                        </div>
+                        @if (apiService.hasPermission('clinica.expediente.ver')) {
+                            <div class="form-group col-lg-3">
+                                <label class="fw-medium">Expediente:</label>
+                                <p>{{ paciente.expediente?.numero }}</p>
+                            </div>
+                        }
                         <div class="form-group col-lg-3">
                             <label class="fw-medium">Nombre:</label>
                             <p>{{ paciente.nombre_completo }}</p>
@@ -62,10 +64,12 @@
                             <label class="fw-medium">Sucursal:</label>
                             <p>{{ paciente.sucursal?.nombre || '—' }}</p>
                         </div>
-                        <div class="form-group col-lg-3">
-                            <label class="fw-medium">Apertura del expediente:</label>
-                            <p>{{ paciente.expediente?.fecha_apertura || '—' }}</p>
-                        </div>
+                        @if (apiService.hasPermission('clinica.expediente.ver')) {
+                            <div class="form-group col-lg-3">
+                                <label class="fw-medium">Apertura del expediente:</label>
+                                <p>{{ paciente.expediente?.fecha_apertura || '—' }}</p>
+                            </div>
+                        }
                         @if (paciente.tipo === 'HUMANO') {
                             <div class="form-group col-lg-3">
                                 <label class="fw-medium">Documento:</label>
@@ -116,10 +120,12 @@
                             <label class="fw-medium">Dirección:</label>
                             <p>{{ paciente.direccion || '—' }}</p>
                         </div>
-                        <div class="form-group col-lg-6">
-                            <label class="fw-medium">Información relevante:</label>
-                            <p>{{ paciente.informacion_relevante || '—' }}</p>
-                        </div>
+                        @if (apiService.hasPermission('clinica.expediente.ver')) {
+                            <div class="form-group col-lg-6">
+                                <label class="fw-medium">Información relevante:</label>
+                                <p>{{ paciente.informacion_relevante || '—' }}</p>
+                            </div>
+                        }
                         <div class="col-12 d-flex justify-content-between align-items-center pb-2 my-3">
                             <h6 class="mb-0">Responsables</h6>
                             @if (apiService.hasPermission('clinica.pacientes.editar')) {

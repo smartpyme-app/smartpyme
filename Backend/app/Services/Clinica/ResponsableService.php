@@ -48,11 +48,13 @@ class ResponsableService
             ->map(function (PacienteResponsable $vinculo) {
                 $paciente = $vinculo->paciente;
 
+                $verExpediente = auth()->user()?->can(ClinicaPermisos::EXPEDIENTE_VER) ?? false;
+
                 return [
                     'id' => $paciente->id,
                     'nombre' => $this->nombrePaciente($paciente),
                     'tipo' => $paciente->tipo,
-                    'expediente' => $paciente->expediente?->numero,
+                    'expediente' => $verExpediente ? $paciente->expediente?->numero : null,
                 ];
             })
             ->unique('id')

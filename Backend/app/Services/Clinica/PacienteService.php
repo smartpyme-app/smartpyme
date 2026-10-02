@@ -43,6 +43,7 @@ class PacienteService
     {
         $paciente->loadMissing(['expediente', 'especie', 'raza', 'sucursal']);
         $fecha = $paciente->fecha_nacimiento?->format('Y-m-d');
+        $verExpediente = auth()->user()?->can(ClinicaPermisos::EXPEDIENTE_VER) ?? false;
 
         return [
             'id' => $paciente->id,
@@ -62,7 +63,7 @@ class PacienteService
             'telefono' => $paciente->telefono,
             'correo' => $paciente->correo,
             'direccion' => $paciente->direccion,
-            'informacion_relevante' => $paciente->informacion_relevante,
+            'informacion_relevante' => $verExpediente ? $paciente->informacion_relevante : null,
             'color' => $paciente->color,
             'peso' => $paciente->peso,
             'microchip' => $paciente->microchip,
@@ -80,7 +81,7 @@ class PacienteService
                 'id' => $paciente->sucursal->id,
                 'nombre' => $paciente->sucursal->nombre,
             ] : null,
-            'expediente' => $paciente->expediente ? [
+            'expediente' => $verExpediente && $paciente->expediente ? [
                 'numero' => $paciente->expediente->numero,
                 'fecha_apertura' => $paciente->expediente->fecha_apertura?->format('Y-m-d'),
                 'estado' => $paciente->expediente->estado,

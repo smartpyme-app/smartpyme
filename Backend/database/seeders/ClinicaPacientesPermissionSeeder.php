@@ -3,8 +3,6 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 
 class ClinicaPacientesPermissionSeeder extends Seeder
 {
@@ -17,12 +15,6 @@ class ClinicaPacientesPermissionSeeder extends Seeder
 
     public function run(): void
     {
-        foreach (self::PERMISOS as $name) {
-            Permission::firstOrCreate(['name' => $name, 'guard_name' => 'web']);
-        }
-
-        foreach (['super_admin', 'admin'] as $rol) {
-            Role::where('name', $rol)->first()?->givePermissionTo(self::PERMISOS);
-        }
+        $this->call(ClinicaFase1PermissionSeeder::class);
     }
 }
