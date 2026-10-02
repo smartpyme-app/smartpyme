@@ -150,82 +150,82 @@ class GenerarVentasRecurrentesService
 
         $this->liberarPeriodoCopiaAnulada($plantilla->id, $periodo);
 
-        try {
-            $venta = $this->ejecutarComoUsuario($usuario, function () use ($plantilla, $empresa, $usuario, $fecha, $periodo, $documento) {
-                $copia = $this->clonarInterno($plantilla, $empresa, $usuario, $fecha, $periodo, $documento);
-                $this->marcarCopiaNoRecurrente($copia);
+        return $this->ejecutarComoUsuario($usuario, function () use ($plantilla, $empresa, $usuario, $fecha, $periodo, $documento, $etiqueta) {
+                try {
+                    [$venta, $requestFacturacion] = $this->clonarInterno($plantilla, $empresa, $usuario, $fecha, $periodo, $documento);
+                    $this->marcarCopiaNoRecurrente($venta);
+                    $this->postProcesoGiftCardsTrasClon($venta, $requestFacturacion);
+                } catch (FacturacionException $e) {
+                    if (str_contains($e->getMessage(), 'venta_recurrencia_periodo_unique')) {
+                        if ($this->yaGenerada($plantilla->id, $periodo)) {
+                            return ['ok' => true, 'linea' => ''];
+                        }
 
-                return $copia;
-            });
-        } catch (FacturacionException $e) {
-            if (str_contains($e->getMessage(), 'venta_recurrencia_periodo_unique')) {
-                if ($this->yaGenerada($plantilla->id, $periodo)) {
-                    return ['ok' => true, 'linea' => ''];
+                        return ['ok' => false, 'linea' => $etiqueta.': conflicto de periodo de recurrencia (venta activa duplicada).'];
+                    }
+
+                    $detalleDoc = 'documento '.$documento->id.' (empresa '.$plantilla->id_empresa.')';
+                    $msg = $e->getMessage();
+                    if (str_contains($msg, 'Documento')) {
+                        $msg = $detalleDoc.'. '.$msg;
+                    }
+
+                    return ['ok' => false, 'linea' => $etiqueta.': no se pudo crear la venta. '.$msg];
                 }
 
-                return ['ok' => false, 'linea' => $etiqueta.': conflicto de periodo de recurrencia (venta activa duplicada).'];
-            }
+                if (!$empresa->facturacion_electronica) {
+                    return [
+                        'ok' => true,
+                        'linea' => 'Venta #'.$venta->correlativo.' (id '.$venta->id.') generada (sin facturación electrónica).',
+                    ];
+                }
 
-            $detalleDoc = 'documento '.$documento->id.' (empresa '.$plantilla->id_empresa.')';
-            $msg = $e->getMessage();
-            if (str_contains($msg, 'Documento')) {
-                $msg = $detalleDoc.'. '.$msg;
-            }
+                if (FacturacionElectronicaCountryGate::ensureSvDteOrFail($empresa)) {
+                    return [
+                        'ok' => true,
+                        'linea' => 'Venta #'.$venta->correlativo.' (id '.$venta->id.') generada; la emisión automática de DTE solo aplica en El Salvador.',
+                    ];
+                }
 
-            return ['ok' => false, 'linea' => $etiqueta.': no se pudo crear la venta. '.$msg];
-        }
+                try {
+                    $this->emitir($venta, $empresa);
+                    $venta->refresh();
+                    $this->enviarFacturaAlCliente($venta);
+                } catch (\Throwable $e) {
+                    $venta->refresh();
+                    $tieneDte = !empty($venta->sello_mh) || !empty($venta->dte);
 
-        if (!$empresa->facturacion_electronica) {
-            return [
-                'ok' => true,
-                'linea' => 'Venta #'.$venta->correlativo.' (id '.$venta->id.') generada (sin facturación electrónica).',
-            ];
-        }
+                    if (!$tieneDte) {
+                        Log::channel('facturacion')->error('Ventas recurrentes: emisión fallida', [
+                            'venta_id' => $venta->id,
+                            'plantilla_id' => $plantilla->id,
+                            'error' => $e->getMessage(),
+                        ]);
 
-        if (FacturacionElectronicaCountryGate::ensureSvDteOrFail($empresa)) {
-            return [
-                'ok' => true,
-                'linea' => 'Venta #'.$venta->correlativo.' (id '.$venta->id.') generada; la emisión automática de DTE solo aplica en El Salvador.',
-            ];
-        }
+                        return [
+                            'ok' => false,
+                            'linea' => 'Venta #'.$venta->correlativo.' (id '.$venta->id.') quedó pendiente de emitir a mano. '.$e->getMessage(),
+                        ];
+                    }
 
-        try {
-            $this->ejecutarComoUsuario($usuario, function () use ($venta, $empresa) {
-                $this->emitir($venta, $empresa);
-                $venta->refresh();
-                $this->enviarFacturaAlCliente($venta);
-            });
-        } catch (\Throwable $e) {
-            $venta->refresh();
-            $tieneDte = !empty($venta->sello_mh) || !empty($venta->dte);
+                    Log::channel('facturacion')->warning('Ventas recurrentes: DTE emitido pero correo al cliente falló', [
+                        'venta_id' => $venta->id,
+                        'error' => $e->getMessage(),
+                    ]);
 
-            if (!$tieneDte) {
-                Log::channel('facturacion')->error('Ventas recurrentes: emisión fallida', [
-                    'venta_id' => $venta->id,
-                    'plantilla_id' => $plantilla->id,
-                    'error' => $e->getMessage(),
-                ]);
+                    return [
+                        'ok' => true,
+                        'linea' => 'Venta #'.$venta->correlativo.' (id '.$venta->id.') emitida. El DTE no se envió al cliente: '.$e->getMessage(),
+                    ];
+                }
 
-                return [
-                    'ok' => false,
-                    'linea' => 'Venta #'.$venta->correlativo.' (id '.$venta->id.') quedó pendiente de emitir a mano. '.$e->getMessage(),
-                ];
-            }
-
-            Log::channel('facturacion')->warning('Ventas recurrentes: DTE emitido pero correo al cliente falló', [
-                'venta_id' => $venta->id,
-                'error' => $e->getMessage(),
-            ]);
-
-            return [
-                'ok' => true,
-                'linea' => 'Venta #'.$venta->correlativo.' (id '.$venta->id.') emitida. El DTE no se envió al cliente: '.$e->getMessage(),
-            ];
-        }
-
-        return ['ok' => true, 'linea' => 'Venta #'.$venta->correlativo.' (id '.$venta->id.') emitida.'];
+                return ['ok' => true, 'linea' => 'Venta #'.$venta->correlativo.' (id '.$venta->id.') emitida.'];
+        });
     }
 
+    /**
+     * @return array{0: Venta, 1: Request}
+     */
     private function clonarInterno(
         Venta $plantilla,
         Empresa $empresa,
@@ -233,16 +233,44 @@ class GenerarVentasRecurrentesService
         string $fecha,
         string $periodo,
         Documento $documento,
-    ): Venta {
+    ): array {
         $payload = $this->payload($plantilla, $empresa, $fecha, $periodo, $documento);
         $payload['id_documento'] = (int) $documento->id;
         $payload['id_empresa'] = (int) $plantilla->id_empresa;
         $request = Request::create('/internal/ventas-recurrentes', 'POST', $payload);
         $request->setUserResolver(static fn () => $usuario);
+        $request->attributes->set(FacturacionService::ATTR_VENTAS_RECURRENTES_CRON, true);
 
         $this->facturacion->assertReglasNegocio($usuario, $request);
 
-        return $this->facturacion->procesar($usuario, $request);
+        return [$this->facturacion->procesar($usuario, $request), $request];
+    }
+
+    /** Gift cards fuera de FacturacionService::procesar para evitar scopes Auth en consola; aquí Auth está impersonado. */
+    private function postProcesoGiftCardsTrasClon(Venta $venta, Request $request): void
+    {
+        if ($venta->estado !== 'Pagada') {
+            return;
+        }
+
+        try {
+            $venta->loadMissing(['detalles.producto', 'metodos_de_pago']);
+            app(\App\Services\GiftCards\GiftCardRedeemService::class)->redeemDesdeVenta($venta, $request);
+        } catch (\Throwable $e) {
+            Log::error('ventas-recurrentes: gift-cards redimir', [
+                'venta_id' => $venta->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        try {
+            app(\App\Services\GiftCards\GiftCardEmitService::class)->emitirDesdeVenta($venta);
+        } catch (\Throwable $e) {
+            Log::error('ventas-recurrentes: gift-cards emitir', [
+                'venta_id' => $venta->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
