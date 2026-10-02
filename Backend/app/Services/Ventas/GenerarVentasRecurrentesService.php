@@ -102,7 +102,18 @@ class GenerarVentasRecurrentesService
         return Venta::withoutGlobalScopes()
             ->where('id_venta_plantilla', $idPlantilla)
             ->where('periodo_recurrencia', $periodo)
+            ->where('estado', '!=', 'Anulada')
             ->exists();
+    }
+
+    /** Libera el índice único (plantilla + periodo) si la única copia existente está anulada. */
+    private function liberarPeriodoCopiaAnulada(int $idPlantilla, string $periodo): void
+    {
+        Venta::withoutGlobalScopes()
+            ->where('id_venta_plantilla', $idPlantilla)
+            ->where('periodo_recurrencia', $periodo)
+            ->where('estado', 'Anulada')
+            ->update(['periodo_recurrencia' => null]);
     }
 
     /**
@@ -128,12 +139,18 @@ class GenerarVentasRecurrentesService
             ];
         }
 
+        $this->liberarPeriodoCopiaAnulada($plantilla->id, $periodo);
+
         try {
             $venta = $this->clonar($plantilla, $usuario, $fecha, $periodo, $documento);
             $this->marcarCopiaNoRecurrente($venta);
         } catch (FacturacionException $e) {
             if (str_contains($e->getMessage(), 'venta_recurrencia_periodo_unique')) {
-                return ['ok' => true, 'linea' => ''];
+                if ($this->yaGenerada($plantilla->id, $periodo)) {
+                    return ['ok' => true, 'linea' => ''];
+                }
+
+                return ['ok' => false, 'linea' => $etiqueta.': conflicto de periodo de recurrencia (venta activa duplicada).'];
             }
 
             $detalleDoc = 'documento '.$documento->id.' (empresa '.$plantilla->id_empresa.')';
