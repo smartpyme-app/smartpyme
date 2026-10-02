@@ -813,29 +813,22 @@ class GenerarVentasRecurrentesService
             return;
         }
 
-        $lineas = ["Resumen de ventas recurrentes del {$fecha}.", ''];
-        if ($emitidas !== []) {
-            $lineas[] = 'Emitidas:';
-            foreach ($emitidas as $linea) {
-                $lineas[] = '- '.$linea;
-            }
-            $lineas[] = '';
-        }
-        if ($fallidas !== []) {
-            $lineas[] = 'Con error:';
-            foreach ($fallidas as $linea) {
-                $lineas[] = '- '.$linea;
-            }
-        }
-
         $fromAddress = config('mail.from.address') ?: 'noreply@smartpyme.sv';
         $fromName = config('mail.from.name') ?: 'SmartPyme';
+        $fechaEtiqueta = Carbon::parse($fecha)->format('d/m/Y');
+        $asunto = '[SmartPyme] Ventas recurrentes — '.$empresa->nombre.' — '.$fechaEtiqueta;
 
         try {
-            Mail::raw(implode("\n", $lineas), function ($mensaje) use ($correo, $fromAddress, $fromName) {
+            Mail::send('mails.ventas-recurrentes-resumen', [
+                'empresaNombre' => $empresa->nombre,
+                'fechaEtiqueta' => $fechaEtiqueta,
+                'emitidas' => $emitidas,
+                'fallidas' => $fallidas,
+                'generado' => Carbon::now('America/El_Salvador')->format('d/m/Y H:i:s'),
+            ], function ($mensaje) use ($correo, $fromAddress, $fromName, $asunto) {
                 $mensaje->from($fromAddress, $fromName)
                     ->to($correo)
-                    ->subject('Resumen de ventas recurrentes');
+                    ->subject($asunto);
             });
             Log::channel('facturacion')->info('Ventas recurrentes: resumen enviado', [
                 'empresa_id' => $empresa->id,
