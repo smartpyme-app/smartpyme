@@ -2,11 +2,12 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { TranslatePipe } from '@ngx-translate/core';
 import { CurrencyPipe } from '@pipes/currency-format.pipe';
+import { DisplayNombreImpuestoPipe } from '@pipes/display-nombre-impuesto.pipe';
 
 @Component({
   selector: 'app-pos-ticket-ventas',
   standalone: true,
-  imports: [CommonModule, CurrencyPipe, DecimalPipe, TranslatePipe],
+  imports: [CommonModule, CurrencyPipe, DecimalPipe, TranslatePipe, DisplayNombreImpuestoPipe],
   templateUrl: './pos-ticket-ventas.component.html',
   styleUrls: ['./pos-ticket-ventas.component.css'],
 })

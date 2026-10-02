@@ -177,7 +177,7 @@
                     </tr>
                     <!-- Desglose de impuestos por tasa: nombre con % al lado, valor en la columna derecha (igual que en ventas) -->
                     <tr *ngFor="let impuesto of compra?.impuestos">
-                        <td class="text-right"> {{ impuesto.nombre }} <small class="text-muted">({{ impuesto.porcentaje | number:'1.0-2' }}%)</small> </td>
+                        <td class="text-right"> {{ impuesto.nombre | displayNombreImpuesto }} <small class="text-muted">({{ impuesto.porcentaje | number:'1.0-2' }}%)</small> </td>
                         <td style="width: 150px;" class="text-right"> {{ (impuesto.monto ?? 0) | currency}} </td>
                         <td style="width: 50px;"></td>
                     </tr>

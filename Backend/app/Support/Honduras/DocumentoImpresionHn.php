@@ -114,6 +114,7 @@ final class DocumentoImpresionHn
             'isv_15' => 0.0,
             'isv_18' => 0.0,
             'descuento' => 0.0,
+            'isv_por_tasa' => [],
         ];
 
         foreach ($detalles as $detalle) {
@@ -132,13 +133,40 @@ final class DocumentoImpresionHn
             } elseif (abs($tasa - 18) < 0.01) {
                 $totales['gravado_18'] += $base;
                 $totales['isv_18'] += $impuesto;
+                self::acumularIsvPorTasa($totales, $tasa, $base, $impuesto);
             } else {
                 $totales['gravado_15'] += $base;
                 $totales['isv_15'] += $impuesto;
+                self::acumularIsvPorTasa($totales, $tasa, $base, $impuesto);
             }
         }
 
+        ksort($totales['isv_por_tasa'], SORT_NUMERIC);
+
         return $totales;
+    }
+
+    /** Descuento visible: cabecera o suma de líneas (no duplicar si ya está en cabecera). */
+    public static function descuentoImpresion(float $descuentoVenta, array $totales): float
+    {
+        $lineas = (float) ($totales['descuento'] ?? 0);
+
+        return max($descuentoVenta, $lineas);
+    }
+
+    /** @param array<string, mixed> $totales */
+    private static function acumularIsvPorTasa(array &$totales, float $tasa, float $base, float $impuesto): void
+    {
+        $claveTasa = number_format($tasa, 2, '.', '');
+        if (! isset($totales['isv_por_tasa'][$claveTasa])) {
+            $totales['isv_por_tasa'][$claveTasa] = [
+                'tasa' => $tasa,
+                'gravado' => 0.0,
+                'isv' => 0.0,
+            ];
+        }
+        $totales['isv_por_tasa'][$claveTasa]['gravado'] += $base;
+        $totales['isv_por_tasa'][$claveTasa]['isv'] += $impuesto;
     }
 
     /** Vacíos y textos no numéricos no son un cero fiscal: devuelven null para que decida el llamador. */

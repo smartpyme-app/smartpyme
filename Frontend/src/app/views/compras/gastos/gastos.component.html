@@ -538,7 +538,7 @@
                     <th>Tipo</th>
                     <th class="text-end">Cant.</th>
                     <th class="text-end">Subtotal</th>
-                    <th class="text-end">IVA</th>
+                    <th class="text-end">{{ 'country.tax.taxLabel' | translate }}</th>
                     <th class="text-end">Total</th>
                   </tr>
                 </thead>
@@ -566,7 +566,7 @@
             <div>
               <strong>Total:</strong> {{ item.gasto.total | number:'1.2-2' }}
               <span class="text-muted small ms-2">
-                Sub: {{ item.gasto.sub_total | number:'1.2-2' }} · IVA {{ item.gasto.iva | number:'1.2-2' }}
+                Sub: {{ item.gasto.sub_total | number:'1.2-2' }} · {{ 'country.tax.summaryTaxInline' | translate }} {{ item.gasto.iva | number:'1.2-2' }}
               </span>
             </div>
             <button

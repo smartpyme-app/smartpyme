@@ -181,21 +181,37 @@
     </tbody>
 </table>
 
+@php
+    $descuentoImp = \App\Support\Honduras\DocumentoImpresionHn::descuentoImpresion(
+        (float) ($venta->descuento ?? 0),
+        $totales
+    );
+    $filasTasa = collect($totales['isv_por_tasa'] ?? [])->sortBy('tasa', SORT_NUMERIC);
+    $filasResumen = 3 + ($filasTasa->isEmpty() ? 1 : $filasTasa->count() * 2) + ($descuentoImp > 0 ? 1 : 0) + 1;
+@endphp
 <table class="resumen borde">
     <tr>
-        <td class="letras" rowspan="8">
+        <td class="letras" rowspan="{{ $filasResumen }}">
             <strong>Total en letras:</strong><br>
             {{ mb_strtoupper((string) $dolares, 'UTF-8') }} CON {{ $centavos }}/100 LEMPIRAS
         </td>
         <td class="etiqueta">Importe Exonerado:</td>
         <td class="monto">L {{ number_format($totales['exonerado'], 2) }}</td>
     </tr>
-    <tr><td class="etiqueta">Importe Exento:</td><td class="monto">L {{ number_format($totales['exento'], 2) }}</td></tr>
-    <tr><td class="etiqueta">Importe Gravado 15%:</td><td class="monto">L {{ number_format($totales['gravado_15'], 2) }}</td></tr>
-    <tr><td class="etiqueta">Importe Gravado 18%:</td><td class="monto">L {{ number_format($totales['gravado_18'], 2) }}</td></tr>
-    <tr><td class="etiqueta">ISV 15%:</td><td class="monto">L {{ number_format($totales['isv_15'], 2) }}</td></tr>
-    <tr><td class="etiqueta">ISV 18%:</td><td class="monto">L {{ number_format($totales['isv_18'], 2) }}</td></tr>
-    <tr><td class="etiqueta">Descuentos y rebajas:</td><td class="monto">L {{ number_format($totales['descuento'], 2) }}</td></tr>
+    <tr><td class="etiqueta">Importe Exento:</td><td class="monto">L {{ number_format(max((float) ($venta->exenta ?? 0), (float) $totales['exento']), 2) }}</td></tr>
+    @foreach ($filasTasa as $fila)
+        @php
+            $tasaFmt = rtrim(rtrim(number_format((float) $fila['tasa'], 2, '.', ''), '0'), '.');
+        @endphp
+        <tr><td class="etiqueta">Importe Gravado {{ $tasaFmt }}%:</td><td class="monto">L {{ number_format((float) $fila['gravado'], 2) }}</td></tr>
+        <tr><td class="etiqueta">ISV {{ $tasaFmt }}%:</td><td class="monto">L {{ number_format((float) $fila['isv'], 2) }}</td></tr>
+    @endforeach
+    @if ($filasTasa->isEmpty())
+        <tr><td class="etiqueta">ISV:</td><td class="monto">L {{ number_format((float) ($venta->iva ?? 0), 2) }}</td></tr>
+    @endif
+    @if ($descuentoImp > 0)
+        <tr><td class="etiqueta">Descuentos y rebajas:</td><td class="monto">L {{ number_format($descuentoImp, 2) }}</td></tr>
+    @endif
     <tr><td class="etiqueta"><strong>TOTAL A PAGAR:</strong></td><td class="monto"><strong>L {{ number_format((float) $venta->total, 2) }}</strong></td></tr>
 </table>
 

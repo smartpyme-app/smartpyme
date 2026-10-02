@@ -103,4 +103,22 @@ export class CountryI18nService {
   libroIva(key: string): string {
     return this.t(`country.tax.libroIva.${key}`);
   }
+
+  /** Etiqueta corta del impuesto (ISV / IVA) según locale activo. */
+  taxLabel(): string {
+    return this.tax('taxLabel');
+  }
+
+  /** Nombre de impuesto de catálogo con terminología del país. */
+  displayImpuestoNombre(nombre?: string | null): string {
+    const raw = (nombre ?? '').trim();
+    const label = this.taxLabel();
+    if (!raw) {
+      return label;
+    }
+    if (label === 'ISV') {
+      return raw.replace(/\bIVA\b/gi, 'ISV');
+    }
+    return raw;
+  }
 }

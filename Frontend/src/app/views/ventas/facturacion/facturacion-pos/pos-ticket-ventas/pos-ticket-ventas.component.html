@@ -6,7 +6,7 @@
         <div class="fw-semibold text-truncate">{{ detalle.descripcion }}</div>
         <div class="pos-ticket-linea-precios">
           <span class="pos-ticket-unit">
-            {{ unitPrecioConIva(detalle) | currency }} c/IVA
+            {{ unitPrecioConIva(detalle) | currency }} c/{{ 'country.tax.taxLabel' | translate }}
             <span *ngIf="cantidadLinea(detalle) > 1" class="text-muted">× {{ detalle.cantidad }}</span>
           </span>
           <span class="pos-ticket-line-total">{{ lineTotalConIva(detalle) | currency }}</span>
@@ -55,7 +55,7 @@
       </tr>
       <tr *ngFor="let impuesto of venta?.impuestos">
         <td class="text-end">
-          {{ impuesto.nombre }}
+          {{ impuesto.nombre | displayNombreImpuesto }}
           <small class="text-muted">({{ impuesto.porcentaje | number:'1.0-2' }}%)</small>
         </td>
         <td class="text-end">{{ (impuesto.monto ?? 0) | currency }}</td>

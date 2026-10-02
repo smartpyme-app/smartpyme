@@ -84,6 +84,14 @@ final class Ticket80mmTest extends TestCase
         $this->assertStringNotContainsString('001-001-01-', $html);
     }
 
+    public function test_html_muestra_descuento_de_linea_aunque_cabecera_este_en_cero(): void
+    {
+        $html = $this->html('Honduras', ['nombre' => 'Ticket'], 'HNL', 0, 7.5);
+
+        $this->assertStringContainsString('Descuentos y rebajas', $html);
+        $this->assertStringContainsString('7.50', $html);
+    }
+
     public function test_html_otro_pais_no_incluye_cai(): void
     {
         $html = $this->html('El Salvador', [
@@ -115,8 +123,13 @@ final class Ticket80mmTest extends TestCase
         return $empresa;
     }
 
-    private function html(string $pais, array $documentoDatos, string $moneda): string
-    {
+    private function html(
+        string $pais,
+        array $documentoDatos,
+        string $moneda,
+        float $descuentoVenta = 5,
+        ?float $descuentoLinea = null
+    ): string {
         $empresa = new Empresa([
             'nombre' => 'Empresa prueba',
             'pais' => $pais,
@@ -132,7 +145,7 @@ final class Ticket80mmTest extends TestCase
             'forma_pago' => 'Efectivo',
             'sub_total' => 300,
             'exenta' => 50,
-            'descuento' => 5,
+            'descuento' => $descuentoVenta,
             'iva' => 51,
             'total' => 426,
         ]);
@@ -145,6 +158,7 @@ final class Ticket80mmTest extends TestCase
                 'gravada' => 100,
                 'iva' => 15,
                 'porcentaje_impuesto' => 15,
+                'descuento' => $descuentoLinea ?? $descuentoVenta,
                 'tipo_gravado' => 'gravada',
             ]),
         ]));

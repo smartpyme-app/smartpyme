@@ -111,7 +111,7 @@
           </tr>
           @for (impuesto of venta?.impuestos; track impuesto.id || impuesto.nombre) {
             <tr>
-              <td class="text-right"> {{ impuesto.nombre }} </td>
+              <td class="text-right"> {{ impuesto.nombre | displayNombreImpuesto }} </td>
               <td style="width: 150px;" class="text-right">
                 @if (!impuesto?.monto) {
                   <span>%{{ impuesto.porcentaje }}</span>
