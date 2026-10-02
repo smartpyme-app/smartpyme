@@ -16,7 +16,6 @@ import { FuncionalidadesService } from '@services/functionalities.service';
 import { BaseComponent } from '@shared/base/base.component';
 import { DuplicateCheckService } from '@services/duplicate-check.service';
 import { FeCrUbicacionService } from '@services/fe-cr-ubicacion.service';
-import { FilterPipe } from '@pipes/filter.pipe';
 import {
     ContribuyenteActividadOption,
     extractNombreContribuyenteDesdeAe,
@@ -46,7 +45,7 @@ import {
     selector: 'app-proveedor',
     templateUrl: './proveedor.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TagInputModule, FilterPipe, TranslatePipe, NgxMaskDirective],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TagInputModule, TranslatePipe, NgxMaskDirective],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ProveedorComponent extends BaseComponent implements OnInit {

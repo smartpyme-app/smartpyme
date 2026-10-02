@@ -6,6 +6,7 @@ import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { TagInputModule } from 'ngx-chips';
 
+import { FuncionalidadesService } from '@services/functionalities.service';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
@@ -47,6 +48,7 @@ export class ClienteDetallesComponent extends BaseModalComponent implements OnIn
     };
     public override loading = false;
     public contacto: any = {};
+    public pacientesClinica: any[] = [];
     identificacionCfg: ConfigIdentificacionTipos = plantillaIdentificacionTipos('SV');
 
     private cdr = inject(ChangeDetectorRef);
@@ -55,6 +57,7 @@ export class ClienteDetallesComponent extends BaseModalComponent implements OnIn
         private apiService: ApiService,
         protected override alertService: AlertService,
         protected override modalManager: ModalManagerService,
+        private funcionalidadesService: FuncionalidadesService,
         private route: ActivatedRoute, private router: Router
     ) {
         super(modalManager, alertService);
@@ -74,6 +77,7 @@ export class ClienteDetallesComponent extends BaseModalComponent implements OnIn
                 this.apiService.read('cliente/', params.id).pipe(this.untilDestroyed()).subscribe(cliente => {
                     this.cliente = cliente;
                     this.loading = false;
+                    this.cargarPacientesClinica(cliente.id);
                     this.cdr.markForCheck();
                 }, error => { this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
             } else {
@@ -82,6 +86,26 @@ export class ClienteDetallesComponent extends BaseModalComponent implements OnIn
                 this.cliente.id_usuario = this.apiService.auth_user().id;
                 this.cdr.markForCheck();
             }
+        });
+    }
+
+    private cargarPacientesClinica(id: number): void {
+        this.funcionalidadesService.verificarAcceso('clinica-pacientes').pipe(this.untilDestroyed()).subscribe((acceso) => {
+            if (!acceso) {
+                this.pacientesClinica = [];
+                this.cdr.markForCheck();
+                return;
+            }
+            this.apiService.getAll('clinica/clientes/' + id + '/pacientes').pipe(this.untilDestroyed()).subscribe({
+                next: (respuesta) => {
+                    this.pacientesClinica = respuesta?.data ?? [];
+                    this.cdr.markForCheck();
+                },
+                error: () => {
+                    this.pacientesClinica = [];
+                    this.cdr.markForCheck();
+                },
+            });
         });
     }
 

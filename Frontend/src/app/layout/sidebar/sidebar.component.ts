@@ -69,6 +69,9 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
     public tieneComisionesHabilitada: boolean = false;
     public tieneBonosHabilitada: boolean = false;
     public tieneGiftCardsHabilitada: boolean = false;
+    public tieneClinicaPacientes = false;
+    public tieneClinicaProfesionales = false;
+    public clinicaIsCollapsed = true;
     public tieneCreditosHabilitada: boolean = false;
 
     public get tieneIncentivosHabilitada(): boolean {
@@ -168,6 +171,11 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
         }else{
             this.ventasIsCollapsed = JSON.parse(localStorage.getItem('ventasIsCollapsed')!);
         }
+        if (!localStorage.getItem('clinicaIsCollapsed')) {
+            localStorage.setItem('clinicaIsCollapsed', this.clinicaIsCollapsed.toString());
+        } else {
+            this.clinicaIsCollapsed = JSON.parse(localStorage.getItem('clinicaIsCollapsed')!);
+        }
         if (!localStorage.getItem('comprasIsCollapsed')) {
             localStorage.setItem('comprasIsCollapsed', this.comprasIsCollapsed.toString());
         }else{
@@ -264,6 +272,8 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
         this.verificarComisionesHabilitada();
         this.verificarBonosHabilitada();
         this.verificarGiftCardsHabilitada();
+        this.verificarClinicaPacientes();
+        this.verificarClinicaProfesionales();
         this.verificarCreditosHabilitada();
         this.verificarPrestamosHabilitada();
         this.verificarModuloRestauranteHabilitado();
@@ -277,6 +287,8 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
                 this.verificarComisionesHabilitada();
                 this.verificarBonosHabilitada();
                 this.verificarGiftCardsHabilitada();
+                this.verificarClinicaPacientes();
+                this.verificarClinicaProfesionales();
                 this.verificarCreditosHabilitada();
                 this.verificarPrestamosHabilitada();
                 this.verificarModuloRestauranteHabilitado();
@@ -294,6 +306,8 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
                     this.verificarComisionesHabilitada();
                     this.verificarBonosHabilitada();
                     this.verificarGiftCardsHabilitada();
+                    this.verificarClinicaPacientes();
+                    this.verificarClinicaProfesionales();
                     this.verificarCreditosHabilitada();
                     this.verificarPrestamosHabilitada();
                     this.verificarModuloRestauranteHabilitado();
@@ -376,6 +390,15 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
         }
         this.ventasIsCollapsed = !this.ventasIsCollapsed;
         localStorage.setItem('ventasIsCollapsed', this.ventasIsCollapsed.toString());
+        this.toggleSidebarMenu();
+    }
+
+    toggleClinica() {
+        if (this.clinicaIsCollapsed) {
+            this.closeAll();
+        }
+        this.clinicaIsCollapsed = !this.clinicaIsCollapsed;
+        localStorage.setItem('clinicaIsCollapsed', this.clinicaIsCollapsed.toString());
         this.toggleSidebarMenu();
     }
 
@@ -510,6 +533,8 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
         localStorage.setItem('productosIsCollapsed', this.productosIsCollapsed.toString());
         this.ventasIsCollapsed = true;
         localStorage.setItem('ventasIsCollapsed', this.ventasIsCollapsed.toString());
+        this.clinicaIsCollapsed = true;
+        localStorage.setItem('clinicaIsCollapsed', this.clinicaIsCollapsed.toString());
         this.comprasIsCollapsed = true;
         localStorage.setItem('comprasIsCollapsed', this.comprasIsCollapsed.toString());
         this.gastosIsCollapsed = true;
@@ -615,6 +640,28 @@ export class SidebarComponent extends BaseComponent implements OnInit, OnDestroy
             },
             error: () => {
                 this.tieneGiftCardsHabilitada = false;
+            },
+        });
+    }
+
+    private verificarClinicaPacientes() {
+        this.funcionalidadesService.verificarAcceso('clinica-pacientes').subscribe({
+            next: (tieneAcceso: boolean) => {
+                this.tieneClinicaPacientes = tieneAcceso;
+            },
+            error: () => {
+                this.tieneClinicaPacientes = false;
+            },
+        });
+    }
+
+    private verificarClinicaProfesionales() {
+        this.funcionalidadesService.verificarAcceso('clinica-profesionales').subscribe({
+            next: (tieneAcceso: boolean) => {
+                this.tieneClinicaProfesionales = tieneAcceso;
+            },
+            error: () => {
+                this.tieneClinicaProfesionales = false;
             },
         });
     }

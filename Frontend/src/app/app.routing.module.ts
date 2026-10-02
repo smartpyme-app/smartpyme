@@ -169,6 +169,10 @@ export const routes: Routes = [
         {
           path: '',
           loadChildren: () => import('./views/pedidos/pedidos.module').then(m => m.PedidosModule),
+        },
+        {
+          path: '',
+          loadChildren: () => import('./views/clinica/clinica.module').then(m => m.ClinicaModule),
         }
       ]
     },

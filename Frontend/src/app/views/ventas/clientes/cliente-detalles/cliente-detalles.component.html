@@ -139,6 +139,18 @@
                         </div>
                     }
 
+                    @if (pacientesClinica.length) {
+                        <div class="col-12 pt-2">
+                            <h6 class="pb-2 mb-3">Pacientes</h6>
+                        </div>
+                        @for (paciente of pacientesClinica; track paciente.id) {
+                            <div class="form-group col-lg-4">
+                                <label class="fw-medium">{{ paciente.tipo === 'HUMANO' ? 'Humano' : 'Animal' }} · Expediente {{ paciente.expediente }}</label>
+                                <p>{{ paciente.nombre }}</p>
+                            </div>
+                        }
+                    }
+
 
                 </div>
                 @if (mostrarContactosAdicionales()) {
