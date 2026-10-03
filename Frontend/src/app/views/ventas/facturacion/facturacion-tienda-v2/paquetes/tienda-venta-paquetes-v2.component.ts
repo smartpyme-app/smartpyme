@@ -174,7 +174,7 @@ export class TiendaVentaPaquetesV2Component implements OnInit {
         if (this.detalle.cuenta_a_terceros > 0.0001) {
             this.alMenosUnPaqueteConCuentaTerceros.emit();
         }
-        console.log(this.detalle);
+        //console.log(this.detalle);
         this.onSubmit();
     }
 
