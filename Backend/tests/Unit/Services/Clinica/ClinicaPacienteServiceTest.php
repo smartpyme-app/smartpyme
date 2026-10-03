@@ -5,6 +5,7 @@ namespace Tests\Unit\Services\Clinica;
 use App\Models\Clinica\Paciente;
 use App\Models\User;
 use App\Services\Clinica\ClinicaPermisos;
+use App\Services\Clinica\ExpedienteService;
 use App\Services\Clinica\PacienteService;
 use App\Services\Clinica\ResponsableService;
 use Illuminate\Database\Schema\Blueprint;
@@ -124,6 +125,7 @@ class ClinicaPacienteServiceTest extends TestCase
             $table->id();
             $table->unsignedInteger('id_empresa');
             $table->unsignedBigInteger('id_paciente');
+            $table->integer('id_sucursal_apertura')->nullable();
             $table->unsignedInteger('numero');
             $table->date('fecha_apertura');
             $table->string('estado', 20)->default('abierto');
@@ -161,7 +163,8 @@ class ClinicaPacienteServiceTest extends TestCase
         $usuario = $this->usuarioEmpresa(1, ['clinica.pacientes.crear', ClinicaPermisos::EXPEDIENTE_VER]);
         Auth::login($usuario);
 
-        $servicio = new PacienteService(new ResponsableService());
+        $expedientes = new ExpedienteService();
+        $servicio = new PacienteService(new ResponsableService($expedientes), $expedientes);
         $paciente = $servicio->crear(1, $usuario->id, [
             'tipo' => 'HUMANO',
             'nombres' => 'Ana',
@@ -182,7 +185,8 @@ class ClinicaPacienteServiceTest extends TestCase
 
     public function test_sin_permiso_expediente_oculta_cabecera_clinica_en_presentacion(): void
     {
-        $servicio = new PacienteService(new ResponsableService());
+        $expedientes = new ExpedienteService();
+        $servicio = new PacienteService(new ResponsableService($expedientes), $expedientes);
         Auth::login($this->usuarioEmpresa(1, ['clinica.pacientes.crear', ClinicaPermisos::EXPEDIENTE_VER]));
         $paciente = $servicio->crear(1, 1, [
             'tipo' => 'HUMANO',
@@ -202,7 +206,8 @@ class ClinicaPacienteServiceTest extends TestCase
     {
         $usuario = $this->usuarioEmpresa(1, ['clinica.pacientes.crear']);
         Auth::login($usuario);
-        $servicio = new PacienteService(new ResponsableService());
+        $expedientes = new ExpedienteService();
+        $servicio = new PacienteService(new ResponsableService($expedientes), $expedientes);
 
         $servicio->crear(1, $usuario->id, [
             'tipo' => 'HUMANO',
@@ -238,7 +243,8 @@ class ClinicaPacienteServiceTest extends TestCase
 
     public function test_alcance_por_empresa_no_expone_paciente_ajeno(): void
     {
-        $servicio = new PacienteService(new ResponsableService());
+        $expedientes = new ExpedienteService();
+        $servicio = new PacienteService(new ResponsableService($expedientes), $expedientes);
         Auth::login($this->usuarioEmpresa(1, ['clinica.pacientes.crear']));
         $paciente = $servicio->crear(1, 1, [
             'tipo' => 'HUMANO',

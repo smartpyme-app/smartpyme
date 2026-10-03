@@ -613,6 +613,7 @@ return [
         ],
         'expediente' => [
             'ver' => 'clinica.expediente.ver',
+            'archivar' => 'clinica.expediente.archivar',
         ],
         'profesionales' => [
             'ver' => 'clinica.profesionales.ver',

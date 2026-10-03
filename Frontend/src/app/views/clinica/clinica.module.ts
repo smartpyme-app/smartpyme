@@ -12,9 +12,10 @@ import { PacientesComponent } from './pacientes/pacientes.component';
 import { PacienteFormComponent } from './pacientes/paciente-form.component';
 import { PacienteFichaComponent } from './pacientes/paciente-ficha.component';
 import { ProfesionalesComponent } from './profesionales/profesionales.component';
+import { ExpedienteFichaComponent } from './expediente/expediente-ficha.component';
 
 @NgModule({
-  declarations: [PacientesComponent, PacienteFormComponent, PacienteFichaComponent, ProfesionalesComponent],
+  declarations: [PacientesComponent, PacienteFormComponent, PacienteFichaComponent, ProfesionalesComponent, ExpedienteFichaComponent],
   imports: [
     CommonModule,
     FormsModule,

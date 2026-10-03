@@ -1,0 +1,73 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <div class="d-flex align-items-center flex-wrap gap-2">
+        <h2 class="page-heading mb-0">Expediente clínico</h2>
+        @if (expediente) {
+            <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="expediente.estado === 'archivado' ? 'bg-secondary' : 'bg-primary'">
+                {{ etiquetaEstado(expediente.estado) }}
+            </span>
+            @if (!expediente.operativo) {
+                <span class="badge bg-warning text-dark py-2" style="font-size: 0.8rem;">Solo consulta</span>
+            }
+        }
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        @if (expediente && apiService.hasPermission('clinica.expediente.archivar')) {
+            @if (expediente.estado === 'abierto') {
+                <button type="button" class="btn btn-default" (click)="archivar(false)">Archivar expediente</button>
+            } @else {
+                <button type="button" class="btn btn-default" (click)="archivar(true)">Reabrir expediente</button>
+            }
+        }
+        <button type="button" class="btn btn-default" [routerLink]="['/clinica/pacientes', idPaciente]">
+            <i class="fa fa-arrow-left"></i> Regresar al paciente
+        </button>
+    </div>
+</section>
+
+@if (cargando) {
+    <section class="bg-white p-4 rounded mb-3">
+        <span class="badge bg-primary">Cargando...</span>
+    </section>
+}
+
+@if (!cargando && expediente) {
+    <section class="bg-white p-4 rounded mb-3">
+        <div class="row">
+            <div class="form-group col-lg-3">
+                <label class="fw-medium">Número:</label>
+                <p>{{ expediente.numero }}</p>
+            </div>
+            <div class="form-group col-lg-3">
+                <label class="fw-medium">Apertura:</label>
+                <p>{{ expediente.fecha_apertura || '—' }}</p>
+            </div>
+            <div class="form-group col-lg-3">
+                <label class="fw-medium">Paciente:</label>
+                <p>{{ expediente.paciente?.nombre_completo }}</p>
+            </div>
+            <div class="form-group col-lg-3">
+                <label class="fw-medium">Sucursal de apertura:</label>
+                <p>{{ expediente.sucursal_apertura?.nombre || '—' }}</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="bg-white p-4 rounded mb-3">
+        <h6 class="pb-2 mb-3">Secciones del expediente</h6>
+        <p class="text-muted small">Las secciones se habilitarán en las siguientes fases del módulo clínico.</p>
+        <div class="row g-2">
+            @for (seccion of expediente.secciones; track seccion.slug) {
+                <div class="col-md-4 col-lg-3">
+                    <div class="border rounded p-3 h-100" [class.bg-light]="!seccion.disponible">
+                        <span class="fw-medium d-block">{{ seccion.nombre }}</span>
+                        @if (seccion.disponible) {
+                            <span class="badge bg-success mt-2">Disponible</span>
+                        } @else {
+                            <span class="badge bg-secondary mt-2">Próximamente</span>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </section>
+}
