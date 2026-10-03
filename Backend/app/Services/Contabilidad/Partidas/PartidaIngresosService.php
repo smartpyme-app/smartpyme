@@ -61,6 +61,7 @@ class PartidaIngresosService
 
             // OPTIMIZACIÓN 1: Eager loading optimizado - solo campos necesarios
             $ventas = Venta::where('estado','!=', 'Anulada')
+                        ->where('estado', '!=', 'Pendiente')
                         ->where('fecha', $fecha)
                         ->select(['id', 'fecha', 'correlativo', 'id_documento', 'forma_pago',
                                  'total', 'sub_total', 'iva', 'iva_retenido', 'total_costo',
