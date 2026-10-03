@@ -66,7 +66,7 @@ export class BusquedaProductoComponent extends BaseModalComponent implements OnI
             this.detalle.descuento = producto.precio - producto.promocion.precio;
         }
 
-        console.log(this.detalle);
+        //console.log(this.detalle);
 
         document.getElementById('cantidad')?.focus();
     }
