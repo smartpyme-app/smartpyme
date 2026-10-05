@@ -304,6 +304,11 @@ export class CalendarioComponent extends BaseComponent implements OnInit {
     if (arg.view?.type === 'multiMonthYear') {
       return;
     }
+    if (arg.view?.type === 'dayGridMonth') {
+      const hora = arg.timeText ? `${this.textoPlano(arg.timeText)} ` : '';
+      const titulo = this.textoPlano(arg.event.title || '');
+      return { html: `<div class="cita-evento-mes">${hora}${titulo}</div>` };
+    }
     const tipo = arg.event.extendedProps?.data?.tipo;
     const badge = tipo
       ? `<span class="cita-estado" style="display:inline-block;flex:0 0 auto;margin:0 0 2px;padding:0 6px;border-radius:999px;font-size:11px;font-weight:700;line-height:16px;color:#1e293b;background:${this.fondoEstado(tipo)};position:relative;z-index:2;">${this.textoPlano(tipo)}</span>`
@@ -324,7 +329,7 @@ export class CalendarioComponent extends BaseComponent implements OnInit {
     info.el.style.backgroundColor = color;
     info.el.style.borderColor = color;
     info.el.style.color = '#1e293b';
-    info.el.style.overflow = 'visible';
+    info.el.style.overflow = info.view?.type === 'dayGridMonth' ? 'hidden' : 'visible';
   }
 
   isCitas() {

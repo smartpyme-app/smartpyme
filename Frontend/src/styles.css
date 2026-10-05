@@ -120,10 +120,16 @@ a.fc-col-header-cell-cushion{
     padding: 2.5px !important;
   }
 
+  .fc-dayGridMonth-view .fc-daygrid-day,
+  .fc-dayGridMonth-view .fc-daygrid-day-frame {
+    overflow: hidden;
+  }
+
   .fc-dayGridMonth-view .fc-daygrid-day-frame {
     display: flex !important;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
+    max-width: 100%;
   }
 
   .fc-dayGridMonth-view .fc-daygrid-day-events {
@@ -143,8 +149,24 @@ a.fc-col-header-cell-cushion{
     border-radius: 3px !important;
   }
 
+  .fc-dayGridMonth-view .fc-daygrid-event-harness,
+  .fc-dayGridMonth-view .fc-daygrid-event,
+  .fc-dayGridMonth-view .fc-daygrid-event .fc-event-main {
+    max-width: 100%;
+    overflow: hidden;
+  }
+
   .fc-dayGridMonth-view .fc-daygrid-event .fc-event-main {
     color: #1e293b;
+  }
+
+  .fc-dayGridMonth-view .cita-evento-mes {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 11px;
+    line-height: 16px;
   }
 
   .fc-dayGridMonth-view .fc-col-header-cell-cushion {
