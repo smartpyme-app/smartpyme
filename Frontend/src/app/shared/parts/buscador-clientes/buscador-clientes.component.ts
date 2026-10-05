@@ -43,6 +43,7 @@ export class BuscadorClientesComponent implements OnInit, AfterViewInit, OnDestr
     ngOnChanges(changes: SimpleChanges): void {
         if (changes['cliente']) {
             this.normalizeCliente();
+            this.cdr.markForCheck();
         }
     }
 

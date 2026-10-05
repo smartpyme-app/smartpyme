@@ -110,13 +110,14 @@ export class CrearEventoComponent extends BaseModalComponent implements OnInit, 
       const evento = changes['evento'].currentValue;
       console.log('Evento recibido en ngOnChanges:', evento);
       
-      // Convertir fechas del formato backend (YYYY-MM-DD HH:mm:ss) a datetime-local (YYYY-MM-DDTHH:mm)
-      if (evento.inicio && evento.inicio.includes(' ') && !evento.inicio.includes('T')) {
-        evento.inicio = evento.inicio.replace(' ', 'T').substring(0, 16);
+      if (evento.inicio) {
+        evento.inicio = this.aDatetimeLocal(evento.inicio);
       }
-      if (evento.fin && evento.fin.includes(' ') && !evento.fin.includes('T')) {
-        evento.fin = evento.fin.replace(' ', 'T').substring(0, 16);
+      if (evento.fin) {
+        evento.fin = this.aDatetimeLocal(evento.fin);
       }
+      this.corregirFinDeMadrugada(evento);
+      this.normalizarSelects(evento);
       
       // Debug productos
       if (evento.productos && evento.productos.length > 0) {
@@ -169,31 +170,82 @@ export class CrearEventoComponent extends BaseModalComponent implements OnInit, 
   }
 
   setTime() {
-    let fecha = moment(this.evento.inicio);
+    const fecha = moment(this.evento.inicio);
+    const duraciones: Record<string, [number, 'minutes' | 'hour']> = {
+      '15 minutos': [15, 'minutes'],
+      '30 minutos': [30, 'minutes'],
+      '1 hora': [1, 'hour'],
+      '2 horas': [2, 'hour'],
+      '3 horas': [3, 'hour'],
+      '5 horas': [5, 'hour'],
+      '8 horas': [8, 'hour'],
+      '12 horas': [12, 'hour'],
+    };
+    const duracion = duraciones[this.evento.duracion];
+    if (!duracion || !fecha.isValid()) {
+      return;
+    }
+    this.evento.fin = fecha.clone().add(duracion[0], duracion[1]).format('YYYY-MM-DDTHH:mm');
+  }
 
-    if (this.evento.duracion == '15 minutos') {
-      this.evento.fin = fecha.add(15, 'minutes').format('YYYY-MM-DD HH:mm:ss');
+  private aDatetimeLocal(value: string): string {
+    return String(value).replace(' ', 'T').replace(/\.\d+/, '').replace(/Z$/, '').substring(0, 16);
+  }
+
+  private corregirFinDeMadrugada(evento: any) {
+    const inicio = new Date(evento.inicio);
+    const fin = new Date(evento.fin);
+    if (Number.isNaN(inicio.getTime()) || Number.isNaN(fin.getTime()) || fin >= inicio) {
+      return;
     }
-    if (this.evento.duracion == '30 minutos') {
-      this.evento.fin = fecha.add(30, 'minutes').format('YYYY-MM-DD HH:mm:ss');
+    const mismoDia = inicio.getFullYear() === fin.getFullYear()
+      && inicio.getMonth() === fin.getMonth()
+      && inicio.getDate() === fin.getDate();
+    if (!mismoDia) {
+      return;
     }
-    if (this.evento.duracion == '1 hora') {
-      this.evento.fin = fecha.add(1, 'hour').format('YYYY-MM-DD HH:mm:ss');
+    fin.setDate(fin.getDate() + 1);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    evento.fin = `${fin.getFullYear()}-${pad(fin.getMonth() + 1)}-${pad(fin.getDate())}T${pad(fin.getHours())}:${pad(fin.getMinutes())}`;
+  }
+
+  private normalizarSelects(evento: any) {
+    const repeticiones = ['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'];
+    if (!repeticiones.includes(evento.frecuencia)) {
+      evento.frecuencia = '';
+      evento.frecuencia_fin = null;
     }
-    if (this.evento.duracion == '2 horas') {
-      this.evento.fin = fecha.add(2, 'hour').format('YYYY-MM-DD HH:mm:ss');
+
+    const opciones = ['15 minutos', '30 minutos', '1 hora', '2 horas', '3 horas', '5 horas', '8 horas', '12 horas'];
+    if (opciones.includes(evento.duracion)) {
+      return;
     }
-    if (this.evento.duracion == '3 horas') {
-      this.evento.fin = fecha.add(3, 'hour').format('YYYY-MM-DD HH:mm:ss');
+
+    const porNumero: Record<string, string> = {
+      '15': '15 minutos',
+      '30': '30 minutos',
+      '1': '1 hora',
+      '2': '2 horas',
+      '3': '3 horas',
+      '5': '5 horas',
+      '8': '8 horas',
+      '12': '12 horas',
+    };
+    const numero = String(Number(evento.duracion));
+    if (porNumero[numero]) {
+      evento.duracion = porNumero[numero];
+      return;
     }
-    if (this.evento.duracion == '5 horas') {
-      this.evento.fin = fecha.add(5, 'hour').format('YYYY-MM-DD HH:mm:ss');
-    }
-    if (this.evento.duracion == '8 horas') {
-      this.evento.fin = fecha.add(8, 'hour').format('YYYY-MM-DD HH:mm:ss');
-    }
-    if (this.evento.duracion == '12 horas') {
-      this.evento.fin = fecha.add(12, 'hour').format('YYYY-MM-DD HH:mm:ss');
+
+    const inicio = new Date(evento.inicio);
+    const fin = new Date(evento.fin);
+    const minutos = Math.round((fin.getTime() - inicio.getTime()) / 60000);
+    const porMinutos: Record<number, string> = {
+      15: '15 minutos', 30: '30 minutos', 60: '1 hora', 120: '2 horas',
+      180: '3 horas', 300: '5 horas', 480: '8 horas', 720: '12 horas',
+    };
+    if (porMinutos[minutos]) {
+      evento.duracion = porMinutos[minutos];
     }
   }
 
@@ -244,6 +296,11 @@ export class CrearEventoComponent extends BaseModalComponent implements OnInit, 
       if (eventoParaEnviar.fin.includes('T')) {
         eventoParaEnviar.fin = eventoParaEnviar.fin.replace('T', ' ') + ':00';
       }
+    }
+
+    if (!['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'].includes(eventoParaEnviar.frecuencia)) {
+      eventoParaEnviar.frecuencia = null;
+      delete eventoParaEnviar.frecuencia_fin;
     }
     
     this.apiService.store('evento', eventoParaEnviar)

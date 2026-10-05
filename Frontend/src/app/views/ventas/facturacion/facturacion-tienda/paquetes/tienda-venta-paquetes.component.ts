@@ -177,7 +177,7 @@ export class TiendaVentaPaquetesComponent extends BasePaginatedModalComponent im
         if (this.detalle.cuenta_a_terceros > 0.0001) {
             this.alMenosUnPaqueteConCuentaTerceros.emit();
         }
-        console.log(this.detalle);
+        //console.log(this.detalle);
         this.onSubmit();
     }
 

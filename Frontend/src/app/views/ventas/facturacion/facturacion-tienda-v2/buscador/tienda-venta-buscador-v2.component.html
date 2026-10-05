@@ -1,9 +1,10 @@
-﻿<form class="w-100 d-flex input-group buscador" name="form" autocomplete="off">
+<form class="w-100 d-flex input-group buscador" name="form" autocomplete="off" (submit)="$event.preventDefault()">
     <div class="input-group">
         <span class="input-group-text bg-white border-rigth-0"><i class="fa fa-search"></i></span>
         <input id="search" [formControl]="searchControl" type="search" name="buscador" class="form-control"
             [placeholder]="isComponenteQuimicoHabilitado() ? 'Buscar por nombre, código o componente químico' : 'Buscar por nombre o código'"
-            [attr.title]="'Escriba al menos ' + minCaracteresBusqueda + ' caracteres para buscar.'">
+            [attr.title]="'Escriba al menos ' + minCaracteresBusqueda + ' caracteres para buscar.'"
+            (keydown.enter)="$event.preventDefault()">
     </div>
     
     <ul *ngIf="puedeMostrarResultadosBusqueda" class="list-group opciones">

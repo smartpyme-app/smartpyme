@@ -114,12 +114,30 @@ class LibroIvaResumenFiscalExport implements FromArray, WithEvents, WithTitle
                 $row = $this->writeSectionTitle($sheet, $row, $lastCol, 'Resumen de impuestos');
                 $row = $this->writeLabelValue($sheet, $row, $lastCol, 'Crédito', (float) ($iva['iva_a_favor'] ?? 0));
                 $row = $this->writeLabelValue($sheet, $row, $lastCol, 'Débito', (float) ($iva['iva_en_contra'] ?? 0));
-                $row = $this->writeLabelValue($sheet, $row, $lastCol, 'Diferencia', (float) ($iva['diferencia_estimada_pago_iva'] ?? 0), true);
+                if (array_key_exists('iva_a_pagar', $iva)) {
+                    $row = $this->writeLabelValue($sheet, $row, $lastCol, 'Débito − crédito', (float) ($iva['diferencia_estimada_pago_iva'] ?? 0));
+                    $row = $this->writeLabelValue($sheet, $row, $lastCol, 'IVA retenido y percibido (1%)', (float) ($iva['iva_retenido_y_percibido'] ?? 0));
+                    $row = $this->writeLabelValue($sheet, $row, $lastCol, 'IVA a pagar (estimado)', (float) ($iva['iva_a_pagar'] ?? 0), true);
+                    $notaRem = trim((string) ($iva['remanente_nota'] ?? ''));
+                    if ($notaRem !== '') {
+                        $sheet->setCellValue('A'.$row, $notaRem);
+                        $sheet->mergeCells("A{$row}:{$lastCol}{$row}");
+                        $row++;
+                    }
+                } else {
+                    $row = $this->writeLabelValue($sheet, $row, $lastCol, 'Diferencia', (float) ($iva['diferencia_estimada_pago_iva'] ?? 0), true);
+                }
 
                 $pago = $this->resumen['pago_a_cuenta_iva'] ?? [];
                 if (! empty($pago['aplica'])) {
                     $row = $this->blankRow($sheet, $row, 10);
-                    $row = $this->writeSectionTitle($sheet, $row, $lastCol, 'Pago a cuenta (impuesto)');
+                    $row = $this->writeSectionTitle($sheet, $row, $lastCol, 'Pago a cuenta (ISR)');
+                    if (array_key_exists('pago_cuenta_isr', $pago)) {
+                        $row = $this->writeLabelValue($sheet, $row, $lastCol, 'Ingresos brutos del mes', (float) ($pago['ingresos_brutos'] ?? 0));
+                        $row = $this->writeLabelValue($sheet, $row, $lastCol, 'Pago a cuenta (1,75%)', (float) ($pago['pago_cuenta_isr'] ?? 0));
+                        $row = $this->writeLabelValue($sheet, $row, $lastCol, 'Renta retenida (planilla)', (float) ($pago['renta_retenida_planilla'] ?? 0));
+                        $row = $this->writeLabelValue($sheet, $row, $lastCol, 'Renta retenida (compras y gastos)', (float) ($pago['renta_retenida_compras_gastos'] ?? 0));
+                    }
                     $sheet->setCellValue('A'.$row, (float) ($pago['monto'] ?? 0));
                     $sheet->mergeCells("A{$row}:{$lastCol}{$row}");
                     $this->applyMoneyFormat($sheet, "A{$row}:{$lastCol}{$row}");

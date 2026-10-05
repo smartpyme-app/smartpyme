@@ -56,6 +56,7 @@ import { esVentaPorConsigna, sincronizarFlagConsignaVenta, aplicarEstadoConsigna
 import { debeDispararAtajoTcla } from '@utils/atajos-teclado.util';
 import { calcularCambioEfectivo } from '@utils/cambio-efectivo.util';
 import { aplicarMeseroPrefillVenta, meseroPrefillDesdeNav, MeseroPrefill, resolverCanalVentaDefault } from '@utils/canal-venta.util';
+import { aplicarCitaEnVenta } from '../cita-venta';
 import { FACTURA_REMISION, esVentaConsignaRemision } from '../../../../constants/documento.constants';
 import { SharedModule } from '@shared/shared.module';
 import {
@@ -944,7 +945,31 @@ export class FacturacionV2Component implements OnInit {
       this.sincronizarSucursalDesdeBodega();
       this.cargarDocumentos();
     }
+
+    this.cargarVentaDesdeCita();
   }
+
+  private cargarVentaDesdeCita(): void {
+    const idCita = this.route.snapshot.queryParamMap.get('id_cita');
+    if (!idCita) {
+      return;
+    }
+    this.apiService.read('evento/', +idCita).subscribe({
+      next: (evento) => {
+        this.evento = evento;
+        this.venta = aplicarCitaEnVenta(this.venta, evento);
+        this.sumTotal();
+        if (evento?.id_cliente) {
+          this.apiService.read('cliente/', evento.id_cliente).subscribe({
+            next: (cliente) => this.setCliente(cliente),
+            error: (error) => this.alertService.error(error),
+          });
+        }
+      },
+      error: (error) => this.alertService.error(error),
+    });
+  }
+
     // Método para procesar productos de orden de compra
   public procesarProductosOrdenCompra(detalles: any[]) {
     detalles.forEach((detalleCompra: any) => {
@@ -1058,89 +1083,6 @@ export class FacturacionV2Component implements OnInit {
         });
       });
     });
-
-    // Cita a venta
-    if (this.route.snapshot.queryParamMap.get('id_cita')!) {
-      this.loading = true;
-      this.apiService
-        .read('evento/', +this.route.snapshot.queryParamMap.get('id_cita')!)
-        .subscribe(
-          (evento) => {
-            this.evento = evento;
-            this.venta.id_cliente = evento.id_cliente;
-            this.venta.id_evento = evento.id;
-
-            this.evento.productos.forEach((detalleProducto: any) => {
-              this.apiService
-                .read('producto/', detalleProducto.id_producto)
-                .subscribe(
-                  (producto) => {
-                    let detalle: any = {};
-                    detalle.id_producto = producto.id;
-                    detalle.descripcion = producto.nombre;
-                    detalle.img = producto.img;
-                    // En v2, el precio ya incluye IVA
-                    detalle.precio = parseFloat(producto.precio);
-                    detalle.costo = parseFloat(producto.costo);
-                    if (producto.inventarios.length > 0) {
-                      producto.inventarios = producto.inventarios.filter(
-                        (item: any) =>
-                          item.id_sucursal == this.venta.id_sucursal
-                      );
-                      detalle.stock = parseFloat(
-                        this.sumPipe.transform(producto.inventarios, 'stock')
-                      );
-                    } else {
-                      detalle.stock = null;
-                    }
-                    detalle.cantidad = detalleProducto.cantidad;
-                    detalle.descuento = 0;
-                    detalle.descuento_porcentaje = 0;
-                    detalle.total_costo = detalle.costo;
-                    detalle.total = detalle.precio;
-
-                    if (!detalle.exenta) {
-                      detalle.exenta = 0;
-                    }
-                    if (!detalle.no_sujeta) {
-                      detalle.no_sujeta = 0;
-                    }
-                    if (!detalle.cuenta_a_terceros) {
-                      detalle.cuenta_a_terceros = 0;
-                    }
-
-                    detalle.total = (
-                      parseFloat(detalle.cantidad) *
-                        parseFloat(detalle.precio) -
-                      parseFloat(detalle.descuento)
-                    ).toFixed(4);
-
-                    if (!this.venta.propina) {
-                      this.venta.propina = 0;
-                    }
-
-                    if (!detalle.gravada) {
-                      detalle.gravada = detalle.total;
-                    }
-
-                    this.venta.detalles.push(detalle);
-                    this.sumTotal();
-                    this.loading = false;
-                    console.log(this.venta);
-                  },
-                  (error) => {
-                    this.alertService.error(error);
-                    this.loading = false;
-                  }
-                );
-            });
-          },
-          (error) => {
-            this.alertService.error(error);
-            this.loading = false;
-          }
-        );
-    }
 
     this.cargarDocumentos();
   }

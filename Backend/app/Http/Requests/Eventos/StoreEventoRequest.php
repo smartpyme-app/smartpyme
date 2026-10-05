@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Eventos;
 
+use App\Support\Eventos\AjusteFechasCita;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreEventoRequest extends FormRequest
@@ -19,17 +20,21 @@ class StoreEventoRequest extends FormRequest
      */
     public function rules(): array
     {
+        $repite = in_array($this->input('frecuencia'), ['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'], true);
+
         return [
             'id' => ['nullable', 'integer', 'exists:eventos,id'],
             'descripcion' => ['required', 'string', 'max:500'],
             'id_cliente' => ['required', 'integer', 'exists:clientes,id'],
-            'frecuencia_fin' => ['required_with:frecuencia', 'date', 'after_or_equal:inicio'],
+            'frecuencia_fin' => $repite
+                ? ['required', 'date', 'after_or_equal:inicio']
+                : ['nullable'],
             'inicio' => ['required', 'date'],
             'fin' => ['nullable', 'date', 'after_or_equal:inicio'],
             'frecuencia' => ['nullable', 'string'],
             'tipo' => ['nullable', 'string'],
             'estado' => ['nullable', 'string'],
-            'duracion' => ['nullable', 'numeric'],
+            'duracion' => ['nullable', 'string', 'max:50'],
             'id_servicio' => ['nullable', 'integer', 'exists:servicios,id'],
             'id_venta' => ['nullable', 'integer', 'exists:ventas,id'],
             'id_usuario' => ['nullable', 'integer', 'exists:users,id'],
@@ -101,9 +106,7 @@ class StoreEventoRequest extends FormRequest
             $this->merge(['productos' => $productos]);
         }
 
-        if ($this->has('duracion')) {
-            $this->merge(['duracion' => (float) $this->duracion]);
-        }
+        $this->replace(AjusteFechasCita::aplicar($this->all()));
     }
 }
 

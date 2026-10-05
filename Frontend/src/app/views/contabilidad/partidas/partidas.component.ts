@@ -203,13 +203,20 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
   }
 
   public setOrden(columna: string) {
-    if (this.filtros.columna == columna) {
-      this.filtros.orden = this.filtros.orden == 'asc' ? 'desc' : 'asc';
+    if (this.filtros.orden === columna) {
+      this.filtros.direccion = this.filtros.direccion === 'asc' ? 'desc' : 'asc';
     } else {
-      this.filtros.orden = 'asc';
+      this.filtros.orden = columna;
+      this.filtros.direccion = ['concepto', 'tipo', 'estado'].includes(columna) ? 'asc' : 'desc';
     }
-    this.filtros.columna = columna;
     this.filtrarPartidas();
+  }
+
+  public claseOrden(columna: string): string {
+    if (this.filtros.orden !== columna) {
+      return '';
+    }
+    return this.filtros.direccion === 'asc' ? 'sorted-asc' : 'sorted-desc';
   }
 
   public loadAll() {

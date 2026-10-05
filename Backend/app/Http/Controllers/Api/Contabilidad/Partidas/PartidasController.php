@@ -114,9 +114,18 @@ class PartidasController extends Controller
             return $q->where('partidas.tipo', $request->tipo);
         });
 
-        // Ordenamiento por correlativo por defecto
-        $orden = $request->orden ?: 'correlativo';
-        $direccion = $request->direccion ?: 'desc';
+        $columnas = [
+            'id' => 'partidas.id',
+            'fecha' => 'partidas.fecha',
+            'concepto' => 'partidas.concepto',
+            'correlativo' => 'partidas.correlativo',
+            'tipo' => 'partidas.tipo',
+            'estado' => 'partidas.estado',
+            'total_debe' => 'total_debe',
+            'total_haber' => 'total_haber',
+        ];
+        $orden = $columnas[$request->orden] ?? 'partidas.correlativo';
+        $direccion = $request->direccion === 'asc' ? 'asc' : 'desc';
 
         $partidas = $query->orderBy($orden, $direccion)->paginate($request->paginate ?: 10);
 
@@ -613,6 +622,7 @@ class PartidasController extends Controller
             // NOTA: nombre_documento es un accessor, no una columna, por eso cargamos la relación 'documento'
             $ventas = Venta::contabilizable()
                         ->where('estado','!=', 'Anulada')
+                        ->where('estado', '!=', 'Pendiente')
                         ->where('fecha', $request->fecha)
                         ->where('id_empresa', auth()->user()->id_empresa)
                         ->select(['id', 'fecha', 'correlativo', 'id_documento', 'forma_pago', 

@@ -36,6 +36,9 @@ use Illuminate\Support\Facades\Log;
 
 class FacturacionService
 {
+    /** Request attribute: cron ventas recurrentes (post-venta gift cards se ejecuta fuera, con usuario impersonado). */
+    public const ATTR_VENTAS_RECURRENTES_CRON = 'ventas_recurrentes_cron';
+
     /**
      * Reglas de negocio previas a validar el request (crédito, permisos).
      *
@@ -606,29 +609,31 @@ class FacturacionService
                 }
 
                 if ($venta->estado == 'Pagada') {
-                    try {
-                        $venta->loadMissing(['detalles.producto', 'metodos_de_pago']);
-                        app(\App\Services\GiftCards\GiftCardRedeemService::class)->redeemDesdeVenta($venta, $request);
-                    } catch (\Throwable $e) {
-                        Log::error('gift-cards: fallo al redimir en venta', [
-                            'venta' => $venta->id,
-                            'error' => $e->getMessage(),
-                        ]);
+                    if (!$this->esFacturacionVentasRecurrentes($request)) {
+                        try {
+                            $venta->loadMissing(['detalles.producto', 'metodos_de_pago']);
+                            app(\App\Services\GiftCards\GiftCardRedeemService::class)->redeemDesdeVenta($venta, $request);
+                        } catch (\Throwable $e) {
+                            Log::error('gift-cards: fallo al redimir en venta', [
+                                'venta' => $venta->id,
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
+
+                        try {
+                            app(\App\Services\GiftCards\GiftCardEmitService::class)->emitirDesdeVenta($venta);
+                        } catch (\Throwable $e) {
+                            Log::error('gift-cards: fallo al emitir desde venta', [
+                                'venta' => $venta->id,
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
                     }
 
                     try {
                         app(\App\Services\Comisiones\ComisionService::class)->registrarVentaPagada($venta);
                     } catch (\Throwable $e) {
                         Log::error('comisiones: fallo al registrar venta', [
-                            'venta' => $venta->id,
-                            'error' => $e->getMessage(),
-                        ]);
-                    }
-
-                    try {
-                        app(\App\Services\GiftCards\GiftCardEmitService::class)->emitirDesdeVenta($venta);
-                    } catch (\Throwable $e) {
-                        Log::error('gift-cards: fallo al emitir desde venta', [
                             'venta' => $venta->id,
                             'error' => $e->getMessage(),
                         ]);
@@ -738,5 +743,10 @@ class FacturacionService
         $venta->iva_percibido = 0;
         $venta->iva_retenido = 0;
         $venta->total = round((float) $venta->sub_total, 2);
+    }
+
+    private function esFacturacionVentasRecurrentes(Request $request): bool
+    {
+        return (bool) $request->attributes->get(self::ATTR_VENTAS_RECURRENTES_CRON, false);
     }
 }

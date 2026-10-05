@@ -36,6 +36,11 @@ registerLocaleData(localeEs);
 })
 export class CalendarioComponent extends BaseComponent implements OnInit {
 
+  static readonly PALETA_ENCARGADO = [
+    '#DBEAFE', '#FDE68A', '#BBF7D0', '#E9D5FF', '#FBCFE8', '#CCFBF1',
+    '#FED7AA', '#C7D2FE', '#FEF3C7', '#F5D0FE', '#FECACA', '#BAE6FD',
+  ];
+
   @Output() update = new EventEmitter();
   public eventos: any = [];
   public evento: any = {};
@@ -141,6 +146,7 @@ export class CalendarioComponent extends BaseComponent implements OnInit {
           click: this.handleDateClick.bind(this)
         }
       },
+      eventMinHeight: 48,
       initialView: 'timeGridDay',
       views: {
         timeGridDay: {
@@ -195,6 +201,8 @@ export class CalendarioComponent extends BaseComponent implements OnInit {
       dateClick: this.handleDateClick.bind(this),
       eventClick: this.handleEventClick.bind(this),
       eventChange: this.handleEventChange.bind(this),
+      eventContent: (arg) => this.contenidoEvento(arg),
+      eventDidMount: (info) => this.pintarEvento(info),
       events: []
     };
 
@@ -227,7 +235,10 @@ export class CalendarioComponent extends BaseComponent implements OnInit {
       .subscribe(eventos => {
       this.loading = false;
       if (this.calendarOptions) {
-        this.calendarOptions.events = [...eventos];
+        this.calendarOptions.events = eventos.map((evento: any) => {
+          const color = this.colorEncargado(evento?.data?.id_usuario);
+          return { ...evento, color, backgroundColor: color, borderColor: color, textColor: '#1e293b' };
+        });
         this.updateMinMaxTime(eventos);
 
 
@@ -240,6 +251,47 @@ export class CalendarioComponent extends BaseComponent implements OnInit {
     }, error => { this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
   }
 
+
+  colorEncargado(id: number): string {
+    const n = Math.abs(Math.trunc(Number(id))) || 0;
+    return CalendarioComponent.PALETA_ENCARGADO[n % CalendarioComponent.PALETA_ENCARGADO.length];
+  }
+
+  fondoEstado(tipo: string): string {
+    const fondos: Record<string, string> = {
+      'Pagado': '#86efac',
+      'Confirmado': '#93c5fd',
+      'Sin confirmar': '#fdba74',
+      'Pendiente': '#fca5a5',
+      'Cancelado': '#d1d5db',
+    };
+    return fondos[tipo] || '#fca5a5';
+  }
+
+  contenidoEvento(arg: any) {
+    if (arg.view?.type === 'multiMonthYear') {
+      return;
+    }
+    const tipo = arg.event.extendedProps?.data?.tipo;
+    const badge = tipo
+      ? `<span class="cita-estado" style="display:inline-block;flex:0 0 auto;margin:0 0 2px;padding:0 6px;border-radius:999px;font-size:11px;font-weight:700;line-height:16px;color:#1e293b;background:${this.fondoEstado(tipo)};position:relative;z-index:2;">${this.textoPlano(tipo)}</span>`
+      : '';
+    const hora = arg.timeText ? `<div class="cita-hora">${this.textoPlano(arg.timeText)}</div>` : '';
+    const titulo = `<div class="cita-titulo">${this.textoPlano(arg.event.title || '')}</div>`;
+    return { html: `<div class="cita-evento">${badge}${hora}${titulo}</div>` };
+  }
+
+  textoPlano(value: string): string {
+    return String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  pintarEvento(info: any) {
+    const datos = info.event.extendedProps?.data;
+    const color = this.colorEncargado(datos?.id_usuario);
+    info.el.style.setProperty('--staff-color', color);
+    info.el.style.color = '#1e293b';
+    info.el.style.overflow = 'visible';
+  }
 
   isCitas() {
     return this.usuarioActual.tipo === 'Citas';
