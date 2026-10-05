@@ -327,7 +327,8 @@ final class LibroIvaResumenFiscalService
      *   total_ventas: float,
      *   iva_debito: float,
      *   iva_retenido_contrib: float,
-     *   iva_percibido_contrib: float
+     *   iva_percibido_contrib: float,
+     *   ingresos_brutos_pago_cuenta: float
      * }
      */
     private function contextoLibrosVentasElSalvador(BaseLibroIVARequest $request): array
@@ -422,6 +423,25 @@ final class LibroIvaResumenFiscalService
             2
         );
         $totalContrib = round((float) $filasContrib->sum('total') + (float) $filasNc->sum('total'), 2);
+
+        $ingresoContrib = round(
+            (float) $ventasContrib->sum(fn (Venta $v) => $this->ingresoBrutoIsrDocumentoElSalvador($v)),
+            2
+        );
+        $ingresoConsumidor = round(
+            (float) $ventasCf->sum(fn (Venta $v) => $this->ingresoBrutoIsrDocumentoElSalvador($v)),
+            2
+        );
+        $ingresoNotasCredito = round(
+            (float) $devoluciones->sum(function (DevolucionVenta $d) {
+                $ingreso = $this->ingresoBrutoIsrDocumentoElSalvador($d);
+
+                return (float) $d->total > 0 ? -$ingreso : $ingreso;
+            }),
+            2
+        );
+        $ingresosBrutosPagoCuenta = round($ingresoContrib + $ingresoConsumidor + $ingresoNotasCredito, 2);
+
         $ivaDebito = round(
             (float) $filasContrib->sum('debito_fiscal')
             + (float) $filasNc->sum('debito_fiscal')
@@ -436,7 +456,20 @@ final class LibroIvaResumenFiscalService
             'iva_debito' => $ivaDebito,
             'iva_retenido_contrib' => $ivaRetenidoContrib,
             'iva_percibido_contrib' => $ivaPercibidoContrib,
+            'ingresos_brutos_pago_cuenta' => $ingresosBrutosPagoCuenta,
         ];
+    }
+
+    /**
+     * Ingresos brutos para anticipo ISR (Art. 151 CT): gravadas + exentas + ventas a terceros, sin IVA.
+     */
+    private function ingresoBrutoIsrDocumentoElSalvador(object $documento): float
+    {
+        $gravada = LibroIvaMontosHelper::ventasGravadas($documento);
+        $exenta = LibroIvaMontosHelper::ventasExentas($documento);
+        $terceros = (float) ($documento->cuenta_a_terceros ?? 0);
+
+        return round($gravada + $exenta + $terceros, 2);
     }
 
     private function montoVentaPropioSinCuentaTerceros(Venta $venta): float
@@ -947,7 +980,7 @@ final class LibroIvaResumenFiscalService
         $diferenciaIva = round($ctxVentas['iva_debito'] - $ivaCredito, 2);
         $ivaAPagar = round($diferenciaIva - $ivaRetenidoYpercibido, 2);
 
-        $ingresosBrutos = (float) $ctxVentas['total_ventas'];
+        $ingresosBrutos = (float) $ctxVentas['ingresos_brutos_pago_cuenta'];
         $pagoCuentaIsr = round($ingresosBrutos * self::TASA_PAGO_CUENTA_ISR_SV, 2);
         $rentaPlanilla = $this->rentaRetenidaPlanillaElSalvador($request);
         $rentaComprasGastos = $this->rentaRetenidaComprasGastosElSalvador($request);
@@ -1006,7 +1039,7 @@ final class LibroIvaResumenFiscalService
                 'renta_retenida_planilla' => $rentaPlanilla,
                 'renta_retenida_compras_gastos' => $rentaComprasGastos,
                 'monto' => $totalPagoCuenta,
-                'descripcion' => 'Total = pago a cuenta ISR (1,75% ingresos brutos del mes) + renta retenida del mes (planilla y compras/gastos).',
+                'descripcion' => 'Total = pago a cuenta ISR (1,75% ingresos brutos del mes, sin IVA) + renta retenida del mes (planilla y compras/gastos).',
             ],
         ];
     }
