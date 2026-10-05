@@ -23,7 +23,7 @@ import { registerLocaleData } from '@angular/common';
 import localeEs from '@angular/common/locales/es';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { NgSelectModule } from '@ng-select/ng-select';
+import { NgSelectComponent, NgSelectModule } from '@ng-select/ng-select';
 registerLocaleData(localeEs);
 @Component({
     selector: 'app-calendario',
@@ -43,6 +43,7 @@ export class CalendarioComponent extends BaseComponent implements OnInit {
 
   @Output() update = new EventEmitter();
   public eventos: any = [];
+  public encargadoPorAgregar: number | null = null;
   public evento: any = {};
   public filtros: any = {};
   public loading: boolean = false;
@@ -67,6 +68,7 @@ export class CalendarioComponent extends BaseComponent implements OnInit {
     super();
   }
 
+  @ViewChild('encargadoSelect') encargadoSelect?: NgSelectComponent;
   @ViewChild('fullcalendar') fullcalendar?: FullCalendarComponent;
   @ViewChild("fullCalendarContainer") fullCalendarContainer?: any;
   get calendar(): Calendar | undefined {
@@ -85,7 +87,7 @@ export class CalendarioComponent extends BaseComponent implements OnInit {
       this.filtros.id_usuario = this.usuarioActual.id;
     } else {
       // Si no es Citas, no filtrar por usuario para mostrar todos los eventos
-      this.filtros.id_usuario = null;
+      this.filtros.id_usuario = [];
     }
 
     this.apiService.getAll('usuarios/list')
@@ -176,17 +178,8 @@ export class CalendarioComponent extends BaseComponent implements OnInit {
         },
 
         dayGridMonth: {
-          slotLabelFormat: {
-            hour: 'numeric',
-            minute: '2-digit',
-            omitZeroMinute: false,
-            meridiem: 'short'
-          },
+          eventDisplay: 'block',
           headerToolbar: false,
-
-          events: [
-
-          ]
         },
         multiMonthYear: {
           slotLabelFormat: {
@@ -218,6 +211,10 @@ export class CalendarioComponent extends BaseComponent implements OnInit {
     const filtrosEnvio = { ...this.filtros };
 
     // Si los filtros son null, undefined o string vacío, no enviarlos en la petición
+    const encargados = filtrosEnvio.id_usuario;
+    if (Array.isArray(encargados)) {
+      filtrosEnvio.id_usuario = encargados.length ? encargados.join(',') : undefined;
+    }
     if (!filtrosEnvio.id_usuario) {
       delete filtrosEnvio.id_usuario;
     }
@@ -251,6 +248,41 @@ export class CalendarioComponent extends BaseComponent implements OnInit {
     }, error => { this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
   }
 
+
+  usuariosParaFiltro(): any[] {
+    const ids = new Set((this.filtros.id_usuario || []).map((id: any) => Number(id)));
+    return (this.usuarios || []).filter((usuario: any) => !ids.has(Number(usuario.id)));
+  }
+
+  encargadosSeleccionados(): any[] {
+    const ids = Array.isArray(this.filtros.id_usuario) ? this.filtros.id_usuario : [];
+    return ids
+      .map((id: number) => (this.usuarios || []).find((usuario: any) => Number(usuario.id) === Number(id)))
+      .filter(Boolean);
+  }
+
+  agregarEncargado(id: number | null): void {
+    if (id == null) {
+      return;
+    }
+    const ids = Array.isArray(this.filtros.id_usuario) ? this.filtros.id_usuario : [];
+    if (!ids.some((item: number) => Number(item) === Number(id))) {
+      this.filtros.id_usuario = [...ids, id];
+      this.loadAll();
+    }
+    this.encargadoPorAgregar = null;
+    this.encargadoSelect?.writeValue(null);
+    this.cdr.markForCheck();
+  }
+
+  quitarEncargado(id: number): void {
+    this.filtros.id_usuario = (this.filtros.id_usuario || []).filter((item: number) => Number(item) !== Number(id));
+    if (!this.filtros.id_usuario.length) {
+      this.encargadoPorAgregar = null;
+      this.encargadoSelect?.writeValue(null);
+    }
+    this.loadAll();
+  }
 
   colorEncargado(id: number): string {
     const n = Math.abs(Math.trunc(Number(id))) || 0;
@@ -289,6 +321,8 @@ export class CalendarioComponent extends BaseComponent implements OnInit {
     const datos = info.event.extendedProps?.data;
     const color = this.colorEncargado(datos?.id_usuario);
     info.el.style.setProperty('--staff-color', color);
+    info.el.style.backgroundColor = color;
+    info.el.style.borderColor = color;
     info.el.style.color = '#1e293b';
     info.el.style.overflow = 'visible';
   }

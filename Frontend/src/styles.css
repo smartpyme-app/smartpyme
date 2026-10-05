@@ -134,7 +134,17 @@ a.fc-col-header-cell-cushion{
 
   .fc-dayGridMonth-view a {
     text-decoration: none !important;
-    color: #000;
+    color: #1e293b;
+  }
+
+  .fc-dayGridMonth-view .fc-daygrid-block-event,
+  .fc-dayGridMonth-view .fc-h-event {
+    border: none !important;
+    border-radius: 3px !important;
+  }
+
+  .fc-dayGridMonth-view .fc-daygrid-event .fc-event-main {
+    color: #1e293b;
   }
 
   .fc-dayGridMonth-view .fc-col-header-cell-cushion {

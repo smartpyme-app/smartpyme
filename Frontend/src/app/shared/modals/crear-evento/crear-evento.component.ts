@@ -20,11 +20,11 @@ import { Observable, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 
 @Component({
-    selector: 'app-crear-evento',
-    templateUrl: './crear-evento.component.html',
-    standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, SelectSearchComponent, NotificacionesContainerComponent, CrearClienteComponent, NgSelectModule],
-    
+  selector: 'app-crear-evento',
+  templateUrl: './crear-evento.component.html',
+  standalone: true,
+  imports: [CommonModule, RouterModule, FormsModule, SelectSearchComponent, NotificacionesContainerComponent, CrearClienteComponent, NgSelectModule],
+
 })
 export class CrearEventoComponent extends BaseModalComponent implements OnInit, OnChanges {
 
@@ -60,44 +60,44 @@ export class CrearEventoComponent extends BaseModalComponent implements OnInit, 
     this.apiService.getAll('usuarios/list')
       .pipe(this.untilDestroyed())
       .subscribe(usuarios => {
-      this.usuarios = usuarios;
-    }, error => { this.alertService.error(error); });
+        this.usuarios = usuarios;
+      }, error => { this.alertService.error(error); });
 
     this.apiService.getAll('clientes/list')
       .pipe(this.untilDestroyed())
       .subscribe(clientes => {
-      this.clientes = clientes;
-      // Si estamos editando un evento y tiene un cliente asignado, 
-      // asegurarnos de que el cliente esté en la lista para que se muestre correctamente
-      if (this.evento && this.evento.id_cliente) {
-        const clienteExistente = this.clientes.find((c: any) => c.id === this.evento.id_cliente);
-        if (!clienteExistente && this.evento.cliente) {
-          // Si el cliente no está en la lista pero viene en el evento, agregarlo
-          this.clientes.push(this.evento.cliente);
-        } else if (!clienteExistente) {
-          // Si el cliente no está en la lista, intentar cargarlo individualmente
-          this.apiService.read('clientes/', this.evento.id_cliente)
-            .pipe(this.untilDestroyed())
-            .subscribe((cliente: any) => {
-            if (cliente) {
-              this.clientes.push(cliente);
-            }
-          }, (error: any) => {
-            console.error('Error cargando cliente:', error);
-          });
+        this.clientes = clientes;
+        // Si estamos editando un evento y tiene un cliente asignado, 
+        // asegurarnos de que el cliente esté en la lista para que se muestre correctamente
+        if (this.evento && this.evento.id_cliente) {
+          const clienteExistente = this.clientes.find((c: any) => c.id === this.evento.id_cliente);
+          if (!clienteExistente && this.evento.cliente) {
+            // Si el cliente no está en la lista pero viene en el evento, agregarlo
+            this.clientes.push(this.evento.cliente);
+          } else if (!clienteExistente) {
+            // Si el cliente no está en la lista, intentar cargarlo individualmente
+            this.apiService.read('clientes/', this.evento.id_cliente)
+              .pipe(this.untilDestroyed())
+              .subscribe((cliente: any) => {
+                if (cliente) {
+                  this.clientes.push(cliente);
+                }
+              }, (error: any) => {
+                console.error('Error cargando cliente:', error);
+              });
+          }
         }
-      }
-    }, error => { this.alertService.error(error); });
+      }, error => { this.alertService.error(error); });
 
     this.apiService.getAll('sucursales/list')
       .pipe(this.untilDestroyed())
       .subscribe(sucursales => {
-      this.sucursales = sucursales;
-    }, error => { this.alertService.error(error); });
+        this.sucursales = sucursales;
+      }, error => { this.alertService.error(error); });
 
     this.usuarioActual = this.apiService.auth_user();
     console.log(this.usuarioActual);
-    
+
     if (this.isCitas()) {
       this.evento.id_usuario = this.usuarioActual.id;
     }
@@ -108,8 +108,7 @@ export class CrearEventoComponent extends BaseModalComponent implements OnInit, 
     // Cuando cambia el evento (al editar), asegurarse de que los productos tengan los datos correctos
     if (changes['evento'] && changes['evento'].currentValue) {
       const evento = changes['evento'].currentValue;
-      console.log('Evento recibido en ngOnChanges:', evento);
-      
+
       if (evento.inicio) {
         evento.inicio = this.aDatetimeLocal(evento.inicio);
       }
@@ -118,7 +117,7 @@ export class CrearEventoComponent extends BaseModalComponent implements OnInit, 
       }
       this.corregirFinDeMadrugada(evento);
       this.normalizarSelects(evento);
-      
+
       // Debug productos
       if (evento.productos && evento.productos.length > 0) {
         console.log('Productos del evento:', evento.productos);
@@ -131,11 +130,11 @@ export class CrearEventoComponent extends BaseModalComponent implements OnInit, 
             total_calculado: (producto.precio_producto || 0) * (producto.cantidad || 0)
           });
         });
-        
+
         // Asegurar que los productos tengan los datos correctos
         this.ensureProductosData(evento.productos);
       }
-      
+
       if (evento.id_cliente && this.clientes.length > 0) {
         const clienteExistente = this.clientes.find((c: any) => c.id === evento.id_cliente);
         if (!clienteExistente && evento.cliente) {
@@ -146,12 +145,12 @@ export class CrearEventoComponent extends BaseModalComponent implements OnInit, 
           this.apiService.read('clientes/', evento.id_cliente)
             .pipe(this.untilDestroyed())
             .subscribe((cliente: any) => {
-            if (cliente) {
-              this.clientes.push(cliente);
-            }
-          }, (error: any) => {
-            console.error('Error cargando cliente:', error);
-          });
+              if (cliente) {
+                this.clientes.push(cliente);
+              }
+            }, (error: any) => {
+              console.error('Error cargando cliente:', error);
+            });
         }
       }
     }
@@ -280,17 +279,17 @@ export class CrearEventoComponent extends BaseModalComponent implements OnInit, 
 
   public onSubmit() {
     this.saving = true;
-    
+
     // Preparar el evento para enviar, convirtiendo fechas de datetime-local a formato backend
     const eventoParaEnviar = { ...this.evento };
-    
+
     // Convertir inicio de datetime-local (YYYY-MM-DDTHH:mm) a formato backend (YYYY-MM-DD HH:mm:ss)
     if (eventoParaEnviar.inicio) {
       if (eventoParaEnviar.inicio.includes('T')) {
         eventoParaEnviar.inicio = eventoParaEnviar.inicio.replace('T', ' ') + ':00';
       }
     }
-    
+
     // Convertir fin de datetime-local a formato backend
     if (eventoParaEnviar.fin) {
       if (eventoParaEnviar.fin.includes('T')) {
@@ -302,26 +301,26 @@ export class CrearEventoComponent extends BaseModalComponent implements OnInit, 
       eventoParaEnviar.frecuencia = null;
       delete eventoParaEnviar.frecuencia_fin;
     }
-    
+
     this.apiService.store('evento', eventoParaEnviar)
       .pipe(this.untilDestroyed())
       .subscribe(evento => {
-      if (!this.evento.id) {
-        this.alertService.success('Cita creada', 'La cita fue añadida exitosamente.');
-      } else {
-        this.alertService.success('Cita guardada', 'La cita fue guardada exitosamente.');
-      }
-      this.update.emit();
-      this.saving = false;
-      this.closeModal();
-    }, error => {
-      if (error.error.errorType == "event_conflict") {
-        this.conflictEvents = error.error.conflicts;
-      }
-      else {
-        this.alertService.error(error); this.saving = false;
-      }
-    });
+        if (!this.evento.id) {
+          this.alertService.success('Cita creada', 'La cita fue añadida exitosamente.');
+        } else {
+          this.alertService.success('Cita guardada', 'La cita fue guardada exitosamente.');
+        }
+        this.update.emit();
+        this.saving = false;
+        this.closeModal();
+      }, error => {
+        if (error.error.errorType == "event_conflict") {
+          this.conflictEvents = error.error.conflicts;
+        }
+        else {
+          this.alertService.error(error); this.saving = false;
+        }
+      });
   }
 
   ObSubmitConflicted() {
@@ -369,13 +368,13 @@ export class CrearEventoComponent extends BaseModalComponent implements OnInit, 
         this.apiService.read('productos/', producto.id_producto)
           .pipe(this.untilDestroyed())
           .subscribe((productoOriginal: any) => {
-          if (productoOriginal) {
-            producto.precio_producto = productoOriginal.precio;
-            console.log('Producto actualizado con datos del original:', producto);
-          }
-        }, (error: any) => {
-          console.error('Error cargando producto original:', error);
-        });
+            if (productoOriginal) {
+              producto.precio_producto = productoOriginal.precio;
+              console.log('Producto actualizado con datos del original:', producto);
+            }
+          }, (error: any) => {
+            console.error('Error cargando producto original:', error);
+          });
       }
     });
   }
@@ -406,8 +405,8 @@ export class CrearEventoComponent extends BaseModalComponent implements OnInit, 
         this.apiService.delete('evento/', evento.id)
           .pipe(this.untilDestroyed())
           .subscribe(data => {
-          this.onSubmit();
-        }, error => { this.alertService.error(error); });
+            this.onSubmit();
+          }, error => { this.alertService.error(error); });
       } else if (result.dismiss === Swal.DismissReason.cancel) {
         // Swal.fire('Cancelado', 'Tu archivo está seguro :)', 'info');
       }
@@ -421,12 +420,12 @@ export class CrearEventoComponent extends BaseModalComponent implements OnInit, 
     this.apiService.store('evento', this.conflictedEvent)
       .pipe(this.untilDestroyed())
       .subscribe(evento => {
-      this.alertService.success('Cita actualizada', 'La cita fue actualida exitosamente.');
-      this.ObSubmitConflicted();
-      this.conflictedEvent = null;
-    }, error => {
-      this.alertService.error(error); this.saving = false;
-    });
+        this.alertService.success('Cita actualizada', 'La cita fue actualida exitosamente.');
+        this.ObSubmitConflicted();
+        this.conflictedEvent = null;
+      }, error => {
+        this.alertService.error(error); this.saving = false;
+      });
   }
 
   // Función de búsqueda para clientes en servidor, con manejo de errores y respuesta flexible
@@ -434,7 +433,7 @@ export class CrearEventoComponent extends BaseModalComponent implements OnInit, 
     if (!term || term.length < 2) {
       return of([]); // No buscar si el término es muy corto
     }
-    
+
     return this.apiService.getAll(`clientes/search?q=${encodeURIComponent(term)}`)
       .pipe(
         map((response: any) => {
@@ -451,8 +450,8 @@ export class CrearEventoComponent extends BaseModalComponent implements OnInit, 
 
   // Función personalizada para mostrar clientes
   getClienteDisplay = (cliente: any): string => {
-    return cliente.tipo === 'Persona' 
-      ? cliente.nombre_completo 
+    return cliente.tipo === 'Persona'
+      ? cliente.nombre_completo
       : cliente.nombre_empresa;
   };
 
@@ -466,11 +465,11 @@ export class CrearEventoComponent extends BaseModalComponent implements OnInit, 
     if (!term || term.length < 2) {
       return of([]);
     }
-    
+
     // Buscar tanto productos como servicios
     const tipos = ['Producto', 'Servicio'];
     const tiposParam = tipos.map(t => `tipos[]=${encodeURIComponent(t)}`).join('&');
-    
+
     return this.apiService.getAll(`productos/search?q=${encodeURIComponent(term)}&limit=15&${tiposParam}`)
       .pipe(
         map((response: any) => Array.isArray(response) ? response : (response.data || [])),

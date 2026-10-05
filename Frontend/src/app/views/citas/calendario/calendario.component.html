@@ -40,14 +40,23 @@
     <div class="row col-6 justify-content-end">
       @if (!isCitas()) {
         <div class="form-group col-12 col-md-4">
-          <ng-select name="id_usuario" [(ngModel)]="filtros.id_usuario" class="form-select p-0 bg-default" placeholder="Encargado"
-            (change)="loadAll()" clearable="true">
-            @for (usuario of usuarios; track usuario.id) {
+          <ng-select #encargadoSelect name="id_usuario" [ngModel]="encargadoPorAgregar" (ngModelChange)="agregarEncargado($event)" class="form-select p-0 bg-default" [placeholder]="encargadosSeleccionados().length ? 'Encargado' : 'Todos'" [clearable]="false">
+            @for (usuario of usuariosParaFiltro(); track usuario.id) {
               <ng-option [value]="usuario.id">
                 {{ usuario.name }}
               </ng-option>
             }
           </ng-select>
+          @if (encargadosSeleccionados().length) {
+            <div class="d-flex flex-wrap gap-1 mt-2">
+              @for (usuario of encargadosSeleccionados(); track usuario.id) {
+                <button type="button" class="btn btn-sm py-0" (click)="quitarEncargado(usuario.id)"
+                  [style.background]="colorEncargado(usuario.id)" style="color:#1e293b;border-radius:999px;">
+                  {{ usuario.name }} <i class="fa fa-times ms-1"></i>
+                </button>
+              }
+            </div>
+          }
         </div>
       }
 
