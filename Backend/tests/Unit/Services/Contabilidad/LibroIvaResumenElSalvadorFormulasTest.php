@@ -16,6 +16,17 @@ class LibroIvaResumenElSalvadorFormulasTest extends TestCase
         $this->assertSame(40.0, $ivaAPagar);
     }
 
+    public function test_pago_a_cuenta_isr_sobre_base_sin_iva(): void
+    {
+        $baseGravada = 594.0;
+        $totalConIva = 671.22;
+        $pagoSobreBase = round($baseGravada * 0.0175, 2);
+        $pagoSobreTotal = round($totalConIva * 0.0175, 2);
+
+        $this->assertSame(10.4, $pagoSobreBase);
+        $this->assertSame(11.75, $pagoSobreTotal);
+    }
+
     public function test_pago_a_cuenta_isr_mas_renta_retenida(): void
     {
         $ingresosBrutos = 8000.0;
