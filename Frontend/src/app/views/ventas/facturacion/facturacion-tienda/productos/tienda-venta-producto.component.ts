@@ -171,7 +171,7 @@ export class TiendaVentaProductoComponent extends BasePaginatedModalComponent im
         this.detalle.descuento_porcentaje      = 0;
         this.detalle.inventario_por_lotes = producto.inventario_por_lotes || false;
         this.detalle.lote_id = null;
-        console.log(this.detalle);
+        //console.log(this.detalle);
         this.onSubmit();
     }
 

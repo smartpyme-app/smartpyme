@@ -270,7 +270,7 @@ export class TiendaVentaBuscadorComponent extends BasePaginatedModalComponent im
         this.detalle.cantidad       = 1;
         this.detalle.descuento      = 0;
         this.detalle.descuento_porcentaje      = 0;
-        console.log(this.detalle);
+        //console.log(this.detalle);
         this.onSubmit();
     }
 
