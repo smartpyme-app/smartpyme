@@ -20,6 +20,12 @@ export const GUARD_TYPES = {
 
 export const routes: Routes = [
     { path: 'login', component: LoginEntryComponent, title: 'Inicio de sesión' },
+    {
+      path: 'contadores',
+      canActivate: [AuthGuard],
+      loadComponent: () => import('./views/contadores/contadores-portafolio.component').then(m => m.ContadoresPortafolioComponent),
+      title: 'Empresas',
+    },
     { path: 'registro', component: RegisterEntryComponent, title: 'Registro' },
     { path: 'pago', component: PagoEntryComponent, title: 'Pago' },
     {

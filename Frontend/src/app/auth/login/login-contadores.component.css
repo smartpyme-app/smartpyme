@@ -1,0 +1,126 @@
+.contadores-login {
+  display: flex;
+  min-height: 100vh;
+  background: #fff;
+}
+
+.contadores-login__hero {
+  flex: 1 1 50%;
+  flex-direction: column;
+  padding: 48px 56px 56px;
+  background: #eef4fc;
+  color: #16324f;
+}
+
+.contadores-login__logo {
+  width: 150px;
+  height: auto;
+  margin-bottom: 40px;
+}
+
+.contadores-login__hero h1 {
+  max-width: 440px;
+  margin: 0 0 28px;
+  font-size: 34px;
+  line-height: 1.2;
+  font-weight: 700;
+  color: #0f2744;
+}
+
+.contadores-login__features {
+  max-width: 440px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.contadores-login__features li {
+  margin: 0;
+  padding: 18px 0;
+  font-size: 15px;
+  line-height: 1.55;
+  color: #3d5168;
+  border-bottom: 1px solid #d4e0ef;
+}
+
+.contadores-login__features li:first-child {
+  padding-top: 0;
+}
+
+.contadores-login__features li:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.contadores-login__form {
+  flex: 1 1 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+}
+
+.contadores-login__card {
+  width: 100%;
+  max-width: 400px;
+}
+
+.contadores-login__step {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #1775e5;
+}
+
+.contadores-login__card h2 {
+  margin: 0 0 12px;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #0f2744;
+}
+
+.contadores-login__lede {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #5c7190;
+}
+
+.contadores-login__card label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #16324f;
+}
+
+.contadores-login__forgot {
+  font-size: 13px;
+  color: #1775e5;
+}
+
+.contadores-login__submit {
+  padding-top: 0.65rem;
+  padding-bottom: 0.65rem;
+  font-weight: 600;
+}
+
+.contadores-login__owner-note {
+  margin: 28px 0 0;
+  padding-top: 20px;
+  border-top: 1px solid #e8edf3;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #5c7190;
+}
+
+.contadores-login__owner-note a {
+  color: #1775e5;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.contadores-login__owner-note a:hover {
+  text-decoration: underline;
+}
