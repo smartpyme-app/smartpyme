@@ -8,6 +8,8 @@ use App\Http\Requests\Contabilidad\LibrosIVA\BaseLibroIVARequest;
 use App\Models\Compras\Compra;
 use App\Models\Compras\Devoluciones\Devolucion as DevolucionCompra;
 use App\Models\Compras\Gastos\Gasto;
+use App\Models\Planilla\Planilla;
+use App\Models\Planilla\PlanillaDetalle;
 use App\Models\Ventas\Venta;
 use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
 use App\Services\FacturacionElectronica\FacturacionElectronicaCountryResolver;
@@ -20,6 +22,8 @@ use Illuminate\Support\Collection;
  */
 final class LibroIvaResumenFiscalService
 {
+    private const TASA_PAGO_CUENTA_ISR_SV = 0.0175;
+
     private FacturacionElectronicaHelperService $feHelper;
 
     private LibroVentasResumenContableService $ventasResumenContable;
@@ -321,7 +325,9 @@ final class LibroIvaResumenFiscalService
      *   ventas: Collection<int, Venta>,
      *   devoluciones: Collection<int, DevolucionVenta>,
      *   total_ventas: float,
-     *   iva_debito: float
+     *   iva_debito: float,
+     *   iva_retenido_contrib: float,
+     *   iva_percibido_contrib: float
      * }
      */
     private function contextoLibrosVentasElSalvador(BaseLibroIVARequest $request): array
@@ -354,12 +360,36 @@ final class LibroIvaResumenFiscalService
             'debito_fiscal' => (float) $v->iva,
         ]);
 
-        $devoluciones = DevolucionVenta::with(['cliente', 'venta.impuestos.impuesto'])
+        $devoluciones = DevolucionVenta::with(['cliente', 'venta.documento', 'venta.impuestos.impuesto'])
             ->where('enable', true)
             ->whereHas('venta', fn ($q) => $q->where('estado', '!=', 'Anulada'))
             ->when($request->id_sucursal, fn ($q) => $q->where('id_sucursal', $request->id_sucursal))
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->get();
+
+        $devolucionesCreditoFiscal = $devoluciones->filter(
+            fn (DevolucionVenta $d) => optional(optional($d->venta)->documento)->nombre === 'Crédito fiscal'
+        );
+
+        $ivaRetenidoContrib = round(
+            (float) $ventasContrib->sum(fn (Venta $v) => (float) ($v->iva_retenido ?? 0))
+            + (float) $devolucionesCreditoFiscal->sum(function (DevolucionVenta $d) {
+                $iva = (float) ($d->iva_retenido ?? 0);
+
+                return $iva > 0 ? -$iva : $iva;
+            }),
+            2
+        );
+
+        $ivaPercibidoContrib = round(
+            (float) $ventasContrib->sum(fn (Venta $v) => (float) ($v->iva_percibido ?? 0))
+            + (float) $devolucionesCreditoFiscal->sum(function (DevolucionVenta $d) {
+                $iva = (float) ($d->iva_percibido ?? 0);
+
+                return $iva > 0 ? -$iva : $iva;
+            }),
+            2
+        );
 
         $filasNc = $devoluciones->map(fn (DevolucionVenta $d) => [
             'total' => $d->total > 0 ? -1 * (float) $d->total : (float) $d->total,
@@ -404,6 +434,8 @@ final class LibroIvaResumenFiscalService
             'devoluciones' => $devoluciones,
             'total_ventas' => round($totalContrib + $totalConsumidor, 2),
             'iva_debito' => $ivaDebito,
+            'iva_retenido_contrib' => $ivaRetenidoContrib,
+            'iva_percibido_contrib' => $ivaPercibidoContrib,
         ];
     }
 
@@ -905,7 +937,22 @@ final class LibroIvaResumenFiscalService
         $creditoGastos = round((float) $libroCompras->where('origen', 'gasto')->sum('credito_fiscal'), 2);
         $creditoDevoluciones = round((float) $libroCompras->where('origen', 'devolucion')->sum('credito_fiscal'), 2);
         $ivaCredito = round($creditoCompras + $creditoGastos + $creditoDevoluciones, 2);
-        $anticipoIva = round((float) $libroCompras->sum('anticipo_iva_percibido'), 2);
+        $percepcionIvaCompras = round((float) $libroCompras->sum('anticipo_iva_percibido'), 2);
+        $ivaRetenidoYpercibido = round(
+            (float) $ctxVentas['iva_retenido_contrib']
+            + (float) $ctxVentas['iva_percibido_contrib']
+            + $percepcionIvaCompras,
+            2
+        );
+        $diferenciaIva = round($ctxVentas['iva_debito'] - $ivaCredito, 2);
+        $ivaAPagar = round($diferenciaIva - $ivaRetenidoYpercibido, 2);
+
+        $ingresosBrutos = (float) $ctxVentas['total_ventas'];
+        $pagoCuentaIsr = round($ingresosBrutos * self::TASA_PAGO_CUENTA_ISR_SV, 2);
+        $rentaPlanilla = $this->rentaRetenidaPlanillaElSalvador($request);
+        $rentaComprasGastos = $this->rentaRetenidaComprasGastosElSalvador($request);
+        $rentaRetenidaMes = round($rentaPlanilla + $rentaComprasGastos, 2);
+        $totalPagoCuenta = round($pagoCuentaIsr + $rentaRetenidaMes, 2);
 
         $totalCompras = round(
             (float) $libroCompras->whereIn('origen', ['compra', 'devolucion'])->sum('total')
@@ -941,14 +988,62 @@ final class LibroIvaResumenFiscalService
                 'credito_fiscal_gastos' => $creditoGastos,
                 'credito_fiscal_devoluciones_compras' => $creditoDevoluciones,
                 'iva_en_contra' => $ctxVentas['iva_debito'],
-                'diferencia_estimada_pago_iva' => round($ctxVentas['iva_debito'] - $ivaCredito, 2),
+                'diferencia_estimada_pago_iva' => $diferenciaIva,
+                'iva_retenido_y_percibido' => $ivaRetenidoYpercibido,
+                'iva_retenido_ventas' => (float) $ctxVentas['iva_retenido_contrib'],
+                'iva_percibido_ventas' => (float) $ctxVentas['iva_percibido_contrib'],
+                'percepcion_iva_compras' => $percepcionIvaCompras,
+                'remanente_meses_anteriores' => null,
+                'remanente_nota' => 'Remanente de meses anteriores: no se calcula porque el saldo no se guarda en el sistema.',
+                'iva_a_pagar' => $ivaAPagar,
             ],
             'pago_a_cuenta_iva' => [
                 'aplica' => true,
-                'monto' => $anticipoIva,
-                'descripcion' => 'Anticipo / percepción a cuenta de impuesto (libro de compras y gastos)',
+                'ingresos_brutos' => round($ingresosBrutos, 2),
+                'tasa_isr' => self::TASA_PAGO_CUENTA_ISR_SV,
+                'pago_cuenta_isr' => $pagoCuentaIsr,
+                'renta_retenida' => $rentaRetenidaMes,
+                'renta_retenida_planilla' => $rentaPlanilla,
+                'renta_retenida_compras_gastos' => $rentaComprasGastos,
+                'monto' => $totalPagoCuenta,
+                'descripcion' => 'Total = pago a cuenta ISR (1,75% ingresos brutos del mes) + renta retenida del mes (planilla y compras/gastos).',
             ],
         ];
+    }
+
+    private function rentaRetenidaPlanillaElSalvador(BaseLibroIVARequest $request): float
+    {
+        $inicio = Carbon::parse($request->inicio);
+        $planillaIds = Planilla::query()
+            ->whereIn('estado', [2, 3])
+            ->where('anio', (int) $inicio->year)
+            ->where('mes', (int) $inicio->month)
+            ->when($request->id_sucursal, fn ($q) => $q->where('id_sucursal', $request->id_sucursal))
+            ->pluck('id');
+
+        if ($planillaIds->isEmpty()) {
+            return 0.0;
+        }
+
+        return round((float) PlanillaDetalle::query()->whereIn('id_planilla', $planillaIds)->sum('renta'), 2);
+    }
+
+    private function rentaRetenidaComprasGastosElSalvador(BaseLibroIVARequest $request): float
+    {
+        $compras = (float) Compra::query()
+            ->where('estado', '!=', 'Anulada')
+            ->when($request->id_sucursal, fn ($q) => $q->where('id_sucursal', $request->id_sucursal))
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->sum('renta_retenida');
+
+        $gastos = (float) Gasto::query()
+            ->where('estado', '!=', 'Cancelado')
+            ->where('estado', '!=', 'Anulada')
+            ->when($request->id_sucursal, fn ($q) => $q->where('id_sucursal', $request->id_sucursal))
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->sum('renta_retenida');
+
+        return round($compras + $gastos, 2);
     }
 
     /**
