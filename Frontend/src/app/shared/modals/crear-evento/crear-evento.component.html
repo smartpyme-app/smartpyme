@@ -1,40 +1,15 @@
 <form name="form" (ngSubmit)="onSubmit()" [ngClass]="{'d-none':conflictEvents?.length>0}">
-  <div class="d-flex flex-wrap justify-content-between mb-2">
+  <app-notificaciones-container></app-notificaciones-container>
 
-    <h4>Detalles</h4>
-    <div class="text-primary">
-
-    </div>
-  </div>
-
+  <h4 class="mb-3">Cita</h4>
   <div class="row">
-
-    <app-notificaciones-container></app-notificaciones-container>
-    <div class="form-group col-12 col-md-4">
-      <label for="descripcion">Titulo <i class="fa-solid fa-pencil"></i></label>
+    <div class="form-group col-12">
+      <label for="descripcion">Título <i class="fa-solid fa-pencil"></i></label>
       <input type="text" placeholder="Escribe aquí" class="form-control" [(ngModel)]="evento.descripcion"
-        name="descripcion">
+        name="descripcion" id="descripcion">
     </div>
 
-    <div class="form-group col-12 col-md-4">
-      <label for="id_usuario">
-        Encargado
-        <i class="fa-regular fa-user"></i>
-      </label>
-      <ng-select name="id_usuario"
-                 [(ngModel)]="evento.id_usuario"
-                 [items]="usuarios"
-                 bindValue="id"
-                 bindLabel="name"
-                 placeholder="Seleccione un encargado"
-                 [disabled]="isCitas()"
-                 [clearable]="false"
-                 class="form-select">
-      </ng-select>
-    </div>
-    
-
-    <div class="form-group col-12 col-md-4">
+    <div class="form-group col-12 col-md-6">
       <label for="">Cliente
         <i class="fa-regular fa-user"></i>
       </label>
@@ -54,41 +29,61 @@
         <app-crear-cliente [id_cliente]="evento.id_cliente" (update)="setCliente($event)">
           Crear cliente
         </app-crear-cliente>
-
       </div>
     </div>
-    <div class="form-group col-md-6 col-lg-4">
-      <label class="form-label font-weight-bold">Frecuencia <i class="fa-regular fa-calendar"></i> </label>
-      <select name="frecuencia" [(ngModel)]="evento.frecuencia" (change)="setFrecuenciaFin()"
-        class="form-control form-select" id="frecuencia">
-        <option value="">No se repite</option>
-        <option value="DAILY">A diario</option>
-        <option value="WEEKLY">Semanalmente</option>
-        <option value="MONTHLY">Mensualmente</option>
-        <option value="YEARLY">Anualmente</option>
+
+    <div class="form-group col-12 col-md-6">
+      <label for="id_usuario">
+        Encargado
+        <i class="fa-regular fa-user"></i>
+      </label>
+      <ng-select name="id_usuario"
+                 [(ngModel)]="evento.id_usuario"
+                 [items]="usuarios"
+                 bindValue="id"
+                 bindLabel="name"
+                 placeholder="Seleccione un encargado"
+                 [disabled]="isCitas()"
+                 [clearable]="false"
+                 class="form-select">
+      </ng-select>
+    </div>
+
+    <div class="form-group col-md-6">
+      <label class="form-label font-weight-bold">Sucursal <i class="fa-regular fa-location-dot"></i></label>
+      <select name="id_sucursal" [(ngModel)]="evento.id_sucursal" class="form-control form-select">
+        <option value="">Seleccione una sucursal</option>
+        @for (sucursal of sucursales; track sucursal.id) {
+          <option [value]="sucursal.id">{{ sucursal.nombre }}</option>
+        }
       </select>
     </div>
-    @if (evento.frecuencia) {
-      <div class="form-group col-12 col-md-4">
-        <label for="veces">Repetir</label>
-        <div class="input-group">
-          <input type="number" class="form-control" name="veces" (keyup)="setFrecuenciaFin()"
-            (change)="setFrecuenciaFin()" [(ngModel)]="evento.veces">
-          <span class="input-group-text">Veces</span>
-        </div>
-      </div>
-    }
+
+    <div class="form-group col-md-6">
+      <label class="form-label font-weight-bold">Estado <i class="fa-regular fa-circle-check"></i></label>
+      <select name="tipo" [(ngModel)]="evento.tipo" class="form-control form-select">
+        <option value="Sin confirmar">Sin confirmar</option>
+        <option value="Confirmado">Confirmado</option>
+        <option value="Pendiente">Pendiente</option>
+        <option value="Pagado">Pagado</option>
+        <option value="Cancelado">Cancelado</option>
+      </select>
+    </div>
+  </div>
+
+  <h4 class="mt-2 mb-3">Horario</h4>
+  <div class="row">
     <div class="form-group col-md-4">
       <label for="inicio">Fecha inicio</label>
-      <input type="datetime-local" class="form-control" (change)="setTime()" name="inicio" [(ngModel)]="evento.inicio">
+      <input type="datetime-local" class="form-control" (change)="setTime()" name="inicio" [(ngModel)]="evento.inicio" id="inicio">
     </div>
 
     <div class="form-group col-md-4">
       <label for="duracion">Duración</label>
-      <select name="duracion" (change)="setTime()" [(ngModel)]="evento.duracion" class="form-select" required>
+      <select name="duracion" (change)="setTime()" [(ngModel)]="evento.duracion" class="form-select" id="duracion" required>
         <option value="15 minutos">15 minutos</option>
         <option value="30 minutos">30 minutos</option>
-        <option value="1 hora" selected>1 hora</option>
+        <option value="1 hora">1 hora</option>
         <option value="2 horas">2 horas</option>
         <option value="3 horas">3 horas</option>
         <option value="5 horas">5 horas</option>
@@ -99,54 +94,57 @@
 
     <div class="form-group col-md-4">
       <label for="fin">Finaliza</label>
-      <input type="datetime-local" class="form-control" name="fin" [(ngModel)]="evento.fin">
+      <input type="datetime-local" class="form-control" name="fin" [(ngModel)]="evento.fin" id="fin">
     </div>
 
-    <div class="form-group col-md-6 col-lg-4">
-      <label class="form-label font-weight-bold">Estado <i class="fa-regular fa-circle-check"></i></label>
-      <select name="tipo" [(ngModel)]="evento.tipo" class="form-control form-select">
-        <option value="Sin confirmar">Sin confirmar</option>
-        <option value="Confirmado">Confirmado</option>
-        <option value="Cancelado">Cancelado</option>
-        <option value="Pagado">Pagado</option>
-        <option value="Pendiente">Pendiente</option>
+    <div class="form-group col-md-6">
+      <label class="form-label font-weight-bold" for="frecuencia">Frecuencia <i class="fa-regular fa-calendar"></i></label>
+      <select name="frecuencia" [(ngModel)]="evento.frecuencia" (change)="setFrecuenciaFin()"
+        class="form-control form-select" id="frecuencia">
+        <option value="">No se repite</option>
+        <option value="DAILY">A diario</option>
+        <option value="WEEKLY">Semanalmente</option>
+        <option value="MONTHLY">Mensualmente</option>
+        <option value="YEARLY">Anualmente</option>
       </select>
     </div>
+    @if (evento.frecuencia) {
+      <div class="form-group col-md-6">
+        <label for="veces">Repetir</label>
+        <div class="input-group">
+          <input type="number" class="form-control" name="veces" id="veces" (keyup)="setFrecuenciaFin()"
+            (change)="setFrecuenciaFin()" [(ngModel)]="evento.veces">
+          <span class="input-group-text">Veces</span>
+        </div>
+      </div>
+    }
+  </div>
 
-    <div class="form-group col-md-4">
-      <label class="form-label font-weight-bold">Sucursal <i class="fa-regular fa-location-dot"></i></label>
-      <select name="id_sucursal" [(ngModel)]="evento.id_sucursal" class="form-control form-select">
-        <option value="">Seleccione una sucursal</option>
-        @for (sucursal of sucursales; track sucursal.id) {
-          <option [value]="sucursal.id">{{ sucursal.nombre }}</option>
-        }
-      </select>
-    </div>
-
-    <div class="form-group col-md-12">
-      <label class="form-label font-weight-bold">Detalles del evento</label>
-      <textarea class="form-control" placeholder="Escribe aquí (Opcional)" name="detalles" [(ngModel)]="evento.detalles"
+  <div class="row">
+    <div class="form-group col-12">
+      <label class="form-label font-weight-bold" for="detalles">Detalles</label>
+      <textarea class="form-control" placeholder="Escribe aquí (opcional)" name="detalles" id="detalles" [(ngModel)]="evento.detalles"
         rows="2"></textarea>
     </div>
   </div>
   <hr>
   <div class="row">
-    <h5 class="col-6">Productos y servicios</h5>
-    <div class="form-group col-md-6">
-      <small class="text-muted mb-2 d-block">El producto o servicio se agregará automáticamente al seleccionarlo</small>
-      <div class="d-flex">
-        <app-select-search
-          name="id_producto"
-          [(ngModel)]="productoSeleccionado"
-          [items]="productos"
-          displayProperty="nombre"
-          valueProperty="id"
-          [searchFunction]="searchProductos"
-          placeholder="Seleccione un producto o servicio"
-          cssClass="form-select p-0"
-          (selectionChange)="onProductoChange($event)">
-        </app-select-search>
-      </div>
+    <div class="col-12 mb-2">
+      <h5 class="mb-1">Productos y servicios</h5>
+      <small class="text-muted">Se agrega al seleccionarlo</small>
+    </div>
+    <div class="form-group col-md-8">
+      <app-select-search
+        name="id_producto"
+        [(ngModel)]="productoSeleccionado"
+        [items]="productos"
+        displayProperty="nombre"
+        valueProperty="id"
+        [searchFunction]="searchProductos"
+        placeholder="Seleccione un producto o servicio"
+        cssClass="form-select p-0"
+        (selectionChange)="onProductoChange($event)">
+      </app-select-search>
     </div>
     <div class="col-12">
       @if (evento?.productos?.length > 0) {
@@ -199,10 +197,10 @@
     <div class="d-grid mt-4">
       <button [disabled]="saving" class="btn btn-primary btn-block">
         @if (!saving) {
-          <span>Agregar</span>
+          <span>{{ evento.id ? 'Guardar' : 'Agregar' }}</span>
         }
         @if (saving) {
-          <span>Agregando...</span>
+          <span>Guardando...</span>
         }
       </button>
     </div>
