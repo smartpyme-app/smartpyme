@@ -210,6 +210,21 @@ a.fc-col-header-cell-cushion{
     cursor: pointer;
   }
 
+  .cita-ficha {
+    position: fixed;
+    z-index: 12000;
+    max-width: 280px;
+    padding: 8px 10px;
+    background: #fff;
+    color: #1e293b;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+    font-size: 12px;
+    line-height: 1.45;
+    pointer-events: none;
+  }
+
   .select-width {
     min-width:180px;
     max-width:180px;

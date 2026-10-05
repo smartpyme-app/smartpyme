@@ -330,6 +330,52 @@ export class CalendarioComponent extends BaseComponent implements OnInit {
     info.el.style.borderColor = color;
     info.el.style.color = '#1e293b';
     info.el.style.overflow = info.view?.type === 'dayGridMonth' ? 'hidden' : 'visible';
+    info.el.addEventListener('mouseenter', (event: MouseEvent) => this.mostrarFicha(info.event, event));
+    info.el.addEventListener('mouseleave', () => this.ocultarFicha());
+  }
+
+  private fichaCita?: HTMLDivElement;
+
+  private mostrarFicha(fcEvent: any, mouse: MouseEvent): void {
+    const datos = fcEvent.extendedProps?.data || {};
+    const productos = (datos.productos || [])
+      .map((linea: any) => linea?.nombre_producto)
+      .filter(Boolean)
+      .join(', ');
+    const inicio = fcEvent.start ? moment(fcEvent.start).format('DD/MM/YYYY hh:mm a') : '';
+    const fin = fcEvent.end ? moment(fcEvent.end).format('hh:mm a') : '';
+    const lineas = [
+      datos.descripcion || fcEvent.title,
+      datos.nombre_cliente ? `Cliente: ${datos.nombre_cliente}` : '',
+      datos.nombre_usuario ? `Encargado: ${datos.nombre_usuario}` : '',
+      datos.tipo ? `Estado: ${datos.tipo}` : '',
+      inicio ? `Horario: ${inicio}${fin ? ' – ' + fin : ''}` : '',
+      productos ? `Productos: ${productos}` : '',
+    ].filter(Boolean);
+    const ficha = this.asegurarFicha();
+    ficha.innerHTML = lineas.map((linea) => `<div>${this.textoPlano(String(linea))}</div>`).join('');
+    ficha.hidden = false;
+    ficha.style.left = `${Math.min(mouse.clientX + 12, window.innerWidth - 300)}px`;
+    ficha.style.top = `${Math.min(mouse.clientY + 12, window.innerHeight - 180)}px`;
+  }
+
+  private ocultarFicha(): void {
+    if (this.fichaCita) {
+      this.fichaCita.hidden = true;
+    }
+  }
+
+  private asegurarFicha(): HTMLDivElement {
+    if (this.fichaCita) {
+      return this.fichaCita;
+    }
+    const ficha = document.createElement('div');
+    ficha.className = 'cita-ficha';
+    ficha.hidden = true;
+    document.body.appendChild(ficha);
+    this.destroyRef.onDestroy(() => ficha.remove());
+    this.fichaCita = ficha;
+    return ficha;
   }
 
   isCitas() {
