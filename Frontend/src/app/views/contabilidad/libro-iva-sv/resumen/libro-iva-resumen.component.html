@@ -178,12 +178,12 @@
 
   <div class="card border-0 shadow-sm mb-4">
     <div class="card-body py-3">
-      <h6 class="text-dark mb-3 fw-semibold">Resumen de impuestos</h6>
+      <h6 class="text-dark mb-3 fw-semibold">Resumen de impuestos (IVA)</h6>
       <div class="row">
         <div class="col-md-4 mb-3 mb-md-0">
           <div class="card border-0 shadow-sm mb-0 h-100 bg-light bg-opacity-25">
             <div class="card-body py-3">
-              <h6 class="text-muted small mb-2">Crédito</h6>
+              <h6 class="text-muted small mb-2">Crédito fiscal</h6>
               <h3 class="text-dark mb-0">{{ resumenIva.iva_a_favor | currency }}</h3>
             </div>
           </div>
@@ -191,20 +191,39 @@
         <div class="col-md-4 mb-3 mb-md-0">
           <div class="card border-0 shadow-sm mb-0 h-100 bg-light bg-opacity-25">
             <div class="card-body py-3">
-              <h6 class="text-muted small mb-2">Débito</h6>
+              <h6 class="text-muted small mb-2">Débito fiscal</h6>
               <h3 class="text-dark mb-0">{{ resumenIva.iva_en_contra | currency }}</h3>
             </div>
           </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-4 mb-3 mb-md-0">
           <div class="card border-0 shadow-sm mb-0 h-100 bg-light bg-opacity-25">
             <div class="card-body py-3">
-              <h6 class="text-muted small mb-2">Diferencia</h6>
+              <h6 class="text-muted small mb-2">Débito − crédito</h6>
               <h3 class="text-dark mb-0">{{ resumenIva.diferencia_estimada_pago_iva | currency }}</h3>
             </div>
           </div>
         </div>
       </div>
+      @if (resumenIva.iva_retenido_y_percibido != null) {
+        <div class="row mt-2">
+          <div class="col-md-6 mb-3 mb-md-0">
+            <div class="d-flex justify-content-between small py-2 border-bottom">
+              <span class="text-muted">IVA retenido y percibido (1%)</span>
+              <span class="text-dark fw-semibold">− {{ resumenIva.iva_retenido_y_percibido | currency }}</span>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="d-flex justify-content-between small py-2 border-bottom">
+              <span class="text-muted">IVA a pagar (estimado)</span>
+              <span class="text-dark fw-semibold">{{ resumenIva.iva_a_pagar | currency }}</span>
+            </div>
+          </div>
+        </div>
+        @if (resumenIva.remanente_nota) {
+          <p class="text-muted small mb-0 mt-2">{{ resumenIva.remanente_nota }}</p>
+        }
+      }
     </div>
   </div>
 
@@ -212,10 +231,28 @@
     <div class="card border-0 shadow-sm mb-0">
       <div class="card-body p-0">
         <div class="px-3 pt-3 pb-2 border-bottom bg-light bg-opacity-50">
-          <h6 class="text-dark mb-0 fw-semibold">Pago a cuenta (impuesto)</h6>
+          <h6 class="text-dark mb-0 fw-semibold">Pago a cuenta (ISR)</h6>
         </div>
         <div class="px-3 py-3">
-          <h3 class="text-dark mb-2">{{ pagoCuentaIva.monto | currency }}</h3>
+          <h3 class="text-dark mb-3">{{ pagoCuentaIva.monto | currency }}</h3>
+          @if (pagoCuentaIva.pago_cuenta_isr != null) {
+            <div class="small mb-2 d-flex justify-content-between">
+              <span class="text-muted">Ingresos brutos del mes</span>
+              <span>{{ pagoCuentaIva.ingresos_brutos | currency }}</span>
+            </div>
+            <div class="small mb-2 d-flex justify-content-between">
+              <span class="text-muted">Pago a cuenta (1,75%)</span>
+              <span>{{ pagoCuentaIva.pago_cuenta_isr | currency }}</span>
+            </div>
+            <div class="small mb-2 d-flex justify-content-between">
+              <span class="text-muted">Renta retenida (planilla)</span>
+              <span>{{ pagoCuentaIva.renta_retenida_planilla | currency }}</span>
+            </div>
+            <div class="small mb-2 d-flex justify-content-between">
+              <span class="text-muted">Renta retenida (compras y gastos)</span>
+              <span>{{ pagoCuentaIva.renta_retenida_compras_gastos | currency }}</span>
+            </div>
+          }
           <p class="text-muted small mb-0">{{ pagoCuentaIva.descripcion }}</p>
         </div>
       </div>

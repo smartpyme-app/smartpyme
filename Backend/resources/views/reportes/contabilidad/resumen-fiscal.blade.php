@@ -104,15 +104,25 @@
             <div class="card-value">{{ $fmt($iva['iva_en_contra'] ?? 0) }}</div>
         </td>
         <td>
-            <div class="card-label">Diferencia</div>
+            <div class="card-label">{{ isset($iva['iva_a_pagar']) ? 'Débito − crédito' : 'Diferencia' }}</div>
             <div class="card-value">{{ $fmt($iva['diferencia_estimada_pago_iva'] ?? 0) }}</div>
         </td>
     </tr>
 </table>
+@if (isset($iva['iva_a_pagar']))
+    <p class="muted"><strong>IVA retenido y percibido (1%):</strong> − {{ $fmt($iva['iva_retenido_y_percibido'] ?? 0) }}</p>
+    <p><strong>IVA a pagar (estimado):</strong> {{ $fmt($iva['iva_a_pagar'] ?? 0) }}</p>
+    @if (!empty($iva['remanente_nota']))
+        <p class="muted">{{ $iva['remanente_nota'] }}</p>
+    @endif
+@endif
 
 @if (!empty($pago['aplica']))
-    <h3>Pago a cuenta (impuesto)</h3>
-    <p><strong>{{ $fmt($pago['monto'] ?? 0) }}</strong></p>
+    <h3>Pago a cuenta (ISR)</h3>
+    <p><strong>Total: {{ $fmt($pago['monto'] ?? 0) }}</strong></p>
+    @if (isset($pago['pago_cuenta_isr']))
+        <p class="muted">Ingresos brutos: {{ $fmt($pago['ingresos_brutos'] ?? 0) }} — Pago a cuenta 1,75%: {{ $fmt($pago['pago_cuenta_isr'] ?? 0) }} — Renta retenida: {{ $fmt($pago['renta_retenida'] ?? 0) }}</p>
+    @endif
     <p class="muted">{{ $pago['descripcion'] ?? '' }}</p>
 @endif
 

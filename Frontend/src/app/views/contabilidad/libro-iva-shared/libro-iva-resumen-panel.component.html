@@ -190,15 +190,34 @@
             </div>
           </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-4 mb-3 mb-md-0">
           <div class="card border-0 shadow-sm mb-0 h-100 bg-light bg-opacity-25">
             <div class="card-body py-3">
-              <h6 class="text-muted small mb-2">Diferencia</h6>
+              <h6 class="text-muted small mb-2">{{ iva.iva_a_pagar != null ? 'Débito − crédito' : 'Diferencia' }}</h6>
               <h3 class="text-dark mb-0">{{ iva.diferencia_estimada_pago_iva | currency }}</h3>
             </div>
           </div>
         </div>
       </div>
+      @if (iva.iva_retenido_y_percibido != null) {
+        <div class="row mt-2">
+          <div class="col-md-6 mb-3 mb-md-0">
+            <div class="d-flex justify-content-between small py-2 border-bottom">
+              <span class="text-muted">IVA retenido y percibido (1%)</span>
+              <span class="text-dark fw-semibold">− {{ iva.iva_retenido_y_percibido | currency }}</span>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="d-flex justify-content-between small py-2 border-bottom">
+              <span class="text-muted">IVA a pagar (estimado)</span>
+              <span class="text-dark fw-semibold">{{ iva.iva_a_pagar | currency }}</span>
+            </div>
+          </div>
+        </div>
+        @if (iva.remanente_nota) {
+          <p class="text-muted small mb-0 mt-2">{{ iva.remanente_nota }}</p>
+        }
+      }
     </div>
   </div>
 
@@ -206,10 +225,20 @@
     <div class="card border-0 shadow-sm mb-0">
       <div class="card-body p-0">
         <div class="px-3 pt-3 pb-2 border-bottom bg-light bg-opacity-50">
-          <h6 class="text-dark mb-0 fw-semibold">Pago a cuenta (impuesto)</h6>
+          <h6 class="text-dark mb-0 fw-semibold">Pago a cuenta (ISR)</h6>
         </div>
         <div class="px-3 py-3">
-          <h3 class="text-dark mb-2">{{ pagoCuenta.monto | currency }}</h3>
+          <h3 class="text-dark mb-3">{{ pagoCuenta.monto | currency }}</h3>
+          @if (pagoCuenta.pago_cuenta_isr != null) {
+            <div class="small mb-2 d-flex justify-content-between">
+              <span class="text-muted">Pago a cuenta (1,75%)</span>
+              <span>{{ pagoCuenta.pago_cuenta_isr | currency }}</span>
+            </div>
+            <div class="small mb-2 d-flex justify-content-between">
+              <span class="text-muted">Renta retenida del mes</span>
+              <span>{{ pagoCuenta.renta_retenida | currency }}</span>
+            </div>
+          }
           <p class="text-muted small mb-0">{{ pagoCuenta.descripcion }}</p>
         </div>
       </div>

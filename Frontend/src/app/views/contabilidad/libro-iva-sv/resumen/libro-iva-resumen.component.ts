@@ -18,6 +18,8 @@ import {
   ventasPorImpuestoResumenLibroIva,
   ventasResumenContableLibroIva,
   mostrarVentasResumenContableLibroIva,
+  resumenIvaLibroIva,
+  pagoCuentaIvaResumenLibroIva,
 } from '@views/contabilidad/libro-iva-shared/libro-iva-resumen.util';
 import * as moment from 'moment';
 import { LibroIvaResumenDescargasComponent } from '@views/contabilidad/libro-iva-shared/libro-iva-resumen-descargas.component';
@@ -131,33 +133,12 @@ export class LibroIvaResumenComponent implements OnInit {
     return sumaVentasDesgloseLibroIva(this.ventasPorImpuesto);
   }
 
-  get resumenIva(): {
-    iva_a_favor: number;
-    iva_en_contra: number;
-    diferencia_estimada_pago_iva: number;
-    credito_fiscal_compras: number | null;
-    credito_fiscal_gastos: number | null;
-    credito_fiscal_devoluciones_compras: number | null;
-  } {
-    const i = this.resumen?.iva;
-    return {
-      iva_a_favor: Number(i?.iva_a_favor ?? 0),
-      iva_en_contra: Number(i?.iva_en_contra ?? 0),
-      diferencia_estimada_pago_iva: Number(i?.diferencia_estimada_pago_iva ?? 0),
-      credito_fiscal_compras: i?.credito_fiscal_compras != null ? Number(i.credito_fiscal_compras) : null,
-      credito_fiscal_gastos: i?.credito_fiscal_gastos != null ? Number(i.credito_fiscal_gastos) : null,
-      credito_fiscal_devoluciones_compras:
-        i?.credito_fiscal_devoluciones_compras != null ? Number(i.credito_fiscal_devoluciones_compras) : null,
-    };
+  get resumenIva() {
+    return resumenIvaLibroIva(this.resumen);
   }
 
-  get pagoCuentaIva(): { aplica: boolean; monto: number; descripcion: string } {
-    const p = this.resumen?.pago_a_cuenta_iva;
-    return {
-      aplica: Boolean(p?.aplica),
-      monto: Number(p?.monto ?? 0),
-      descripcion: String(p?.descripcion ?? ''),
-    };
+  get pagoCuentaIva() {
+    return pagoCuentaIvaResumenLibroIva(this.resumen);
   }
 
   get ventasResumenContable() {
