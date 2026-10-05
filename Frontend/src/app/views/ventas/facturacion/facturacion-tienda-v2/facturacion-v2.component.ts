@@ -1067,73 +1067,45 @@ export class FacturacionV2Component implements OnInit {
         .subscribe(
           (evento) => {
             this.evento = evento;
-            this.venta.id_cliente = evento.id_cliente;
             this.venta.id_evento = evento.id;
-
-            this.evento.productos.forEach((detalleProducto: any) => {
-              this.apiService
-                .read('producto/', detalleProducto.id_producto)
-                .subscribe(
-                  (producto) => {
-                    let detalle: any = {};
-                    detalle.id_producto = producto.id;
-                    detalle.descripcion = producto.nombre;
-                    detalle.img = producto.img;
-                    // En v2, el precio ya incluye IVA
-                    detalle.precio = parseFloat(producto.precio);
-                    detalle.costo = parseFloat(producto.costo);
-                    if (producto.inventarios.length > 0) {
-                      producto.inventarios = producto.inventarios.filter(
-                        (item: any) =>
-                          item.id_sucursal == this.venta.id_sucursal
-                      );
-                      detalle.stock = parseFloat(
-                        this.sumPipe.transform(producto.inventarios, 'stock')
-                      );
-                    } else {
-                      detalle.stock = null;
-                    }
-                    detalle.cantidad = detalleProducto.cantidad;
-                    detalle.descuento = 0;
-                    detalle.descuento_porcentaje = 0;
-                    detalle.total_costo = detalle.costo;
-                    detalle.total = detalle.precio;
-
-                    if (!detalle.exenta) {
-                      detalle.exenta = 0;
-                    }
-                    if (!detalle.no_sujeta) {
-                      detalle.no_sujeta = 0;
-                    }
-                    if (!detalle.cuenta_a_terceros) {
-                      detalle.cuenta_a_terceros = 0;
-                    }
-
-                    detalle.total = (
-                      parseFloat(detalle.cantidad) *
-                        parseFloat(detalle.precio) -
-                      parseFloat(detalle.descuento)
-                    ).toFixed(4);
-
-                    if (!this.venta.propina) {
-                      this.venta.propina = 0;
-                    }
-
-                    if (!detalle.gravada) {
-                      detalle.gravada = detalle.total;
-                    }
-
-                    this.venta.detalles.push(detalle);
-                    this.sumTotal();
-                    this.loading = false;
-                    console.log(this.venta);
-                  },
-                  (error) => {
-                    this.alertService.error(error);
-                    this.loading = false;
-                  }
-                );
-            });
+            if (evento.id_cliente) {
+              this.apiService.read('cliente/', evento.id_cliente).subscribe({
+                next: (cliente) => this.setCliente(cliente),
+                error: (error) => this.alertService.error(error),
+              });
+            }
+            const lineas = Array.isArray(evento.productos) ? evento.productos : [];
+            const detalles = lineas
+              .filter((linea: any) => linea?.id_producto)
+              .map((linea: any) => {
+                const precio = parseFloat(linea.precio_producto) || 0;
+                const cantidad = parseFloat(linea.cantidad) || 1;
+                const detalle: any = {
+                  id: null,
+                  id_cita: evento.id,
+                  id_producto: linea.id_producto,
+                  descripcion: linea.nombre_producto || 'Producto',
+                  cantidad,
+                  precio: precio.toFixed(4),
+                  precio_iva: null,
+                  costo: 0,
+                  total_costo: 0,
+                  descuento: 0,
+                  descuento_porcentaje: 0,
+                  stock: null,
+                  exenta: 0,
+                  no_sujeta: 0,
+                  cuenta_a_terceros: 0,
+                  tipo_gravado: 'gravada',
+                };
+                this.aplicarLineaGravadaDesdePrecio(detalle);
+                return detalle;
+              });
+            if (detalles.length) {
+              this.venta.detalles = [...(this.venta.detalles || []), ...detalles];
+              this.sumTotal();
+            }
+            this.loading = false;
           },
           (error) => {
             this.alertService.error(error);

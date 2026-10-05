@@ -158,6 +158,22 @@ a.fc-col-header-cell-cushion{
     border: none !important;
   }
 
+  .fc-timegrid-event-harness,
+  .fc-timegrid-event,
+  .fc-timegrid-event .fc-event-main {
+    overflow: visible !important;
+  }
+
+  .fc-timegrid-event .fc-event-main {
+    height: auto !important;
+  }
+
+  .fc-timegrid-event .cita-estado {
+    display: inline-block !important;
+    position: relative;
+    z-index: 2;
+  }
+
   .cursor-pointer {
     cursor: pointer;
   }
